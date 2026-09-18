@@ -1,0 +1,1647 @@
+<!-- ================================================================
+     MERCADO - SARIEL'S ECOSYSTEM
+     Panel del Repartidor · Pedidos disponibles + mis entregas
+     Ruta: /features/mercado/repartidor/panel.html
+     ================================================================ -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>◈ Panel Repartidor · Sariel's</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+
+    <script src="/features/shared/js/apariencia-global.js"></script>
+
+    <style>
+        :root {
+            --gold: #D4AF37;
+            --gold-dark: #b8923a;
+            --gold-light: #e8c84a;
+            --green-deep: #0F2D1A;
+            --green-mid: #1a4a2a;
+            --green-bright: #2a6a3a;
+            --space: #05080f;
+            --text-primary: #f0f4f8;
+            --text-secondary: #c0d8e8;
+            --text-muted: #8aa8b8;
+            --glass-bg: rgba(15, 45, 26, 0.55);
+            --glass-border: rgba(212, 175, 55, 0.15);
+            --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
+            --radius: 16px;
+            --radius-xl: 24px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --success: #00d68f;
+            --danger: #ff3366;
+            --warning: #f7d44a;
+            --cyan: #00e5ff;
+            --purple: #a855f7;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--space);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            background-image: radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
+        }
+
+        .nebula { position: fixed; border-radius: 50%; filter: blur(120px); opacity: 0.12; pointer-events: none; z-index: 0; animation: nebula-drift 25s ease-in-out infinite alternate; }
+        .nebula-1 { width: 700px; height: 700px; background: var(--green-bright); top: -15%; right: -15%; }
+        .nebula-2 { width: 600px; height: 600px; background: var(--gold-light); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.06; }
+        .nebula-3 { width: 500px; height: 500px; background: var(--purple); top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -15s; opacity: 0.04; }
+        @keyframes nebula-drift { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(40px,-30px) scale(1.15); } }
+
+        .app { position: relative; z-index: 1; max-width: 900px; width: 100%; margin: 0 auto; padding: 12px 16px 30px; }
+
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0 14px; border-bottom: 1px solid var(--glass-border);
+            background: rgba(5, 8, 15, 0.92); position: sticky; top: 0; z-index: 100;
+        }
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .logo-hex { font-size: 1.8rem; color: var(--gold); font-family: 'Orbitron', monospace; }
+        .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--text-primary); letter-spacing: 2px; }
+        .logo-text span { color: var(--gold); }
+        .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; }
+        .token-badge { display: flex; align-items: center; gap: 6px; background: rgba(212,175,55,0.1); border: 1px solid rgba(212,175,55,0.15); padding: 4px 14px; border-radius: 20px; font-size: 0.7rem; color: var(--gold); font-family: 'Orbitron', monospace; cursor: pointer; }
+
+        .main-nav {
+            display: flex; gap: 4px; background: rgba(15,45,26,0.3); border-radius: var(--radius);
+            padding: 4px; border: 1px solid var(--glass-border); margin: 16px 0 20px; overflow-x: auto;
+        }
+        .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; white-space: nowrap; transition: var(--transition); }
+        .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212,175,55,0.05); }
+        .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); }
+        .main-nav .nav-link.live { color: var(--danger); }
+
+        .btn-back {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border);
+            color: var(--text-muted); padding: 8px 16px; border-radius: 30px;
+            font-size: 0.72rem; text-decoration: none; margin-bottom: 16px;
+            transition: var(--transition); cursor: pointer;
+        }
+        .btn-back:hover { border-color: var(--gold); color: var(--gold); }
+
+        .titulo {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px; flex-wrap: wrap; gap: 10px;
+        }
+        .titulo h1 {
+            font-family: 'Orbitron', monospace; font-size: 1.3rem;
+            font-weight: 700; color: var(--gold);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .rol-badge {
+            font-size: 0.55rem; padding: 4px 12px; border-radius: 20px;
+            font-family: 'Orbitron', monospace; font-weight: 700;
+            letter-spacing: 1px; text-transform: uppercase;
+            background: linear-gradient(135deg, var(--purple), #7c3aed);
+            color: #fff;
+        }
+
+        /* Estado del repartidor (online/offline) */
+        .estado-toggle {
+            display: flex; align-items: center; gap: 10px;
+            background: var(--glass-bg); border: 1px solid var(--glass-border);
+            border-radius: var(--radius); padding: 14px 16px;
+            margin-bottom: 16px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .estado-toggle:hover { border-color: var(--gold); }
+        .estado-toggle .dot-estado {
+            width: 12px; height: 12px; border-radius: 50%;
+            background: var(--text-muted);
+            flex-shrink: 0;
+        }
+        .estado-toggle.online .dot-estado {
+            background: var(--success);
+            box-shadow: 0 0 12px var(--success);
+            animation: pulseOnline 2s ease-in-out infinite;
+        }
+        @keyframes pulseOnline {
+            0%, 100% { box-shadow: 0 0 12px var(--success); }
+            50% { box-shadow: 0 0 20px var(--success), 0 0 30px rgba(0,214,143,0.5); }
+        }
+        .estado-toggle .txt-estado {
+            flex: 1; font-size: 0.78rem;
+        }
+        .estado-toggle .txt-estado .t1 {
+            font-weight: 700; color: var(--text-primary);
+        }
+        .estado-toggle .txt-estado .t2 {
+            font-size: 0.65rem; color: var(--text-muted); margin-top: 2px;
+        }
+        .estado-toggle .switch {
+            width: 42px; height: 24px;
+            background: rgba(0,0,0,0.5); border-radius: 12px;
+            position: relative; flex-shrink: 0;
+            transition: var(--transition);
+        }
+        .estado-toggle .switch::after {
+            content: ''; position: absolute;
+            width: 18px; height: 18px; border-radius: 50%;
+            background: var(--text-muted);
+            top: 3px; left: 3px;
+            transition: var(--transition);
+        }
+        .estado-toggle.online .switch { background: rgba(0,214,143,0.3); }
+        .estado-toggle.online .switch::after {
+            background: var(--success);
+            transform: translateX(18px);
+        }
+
+        /* Resumen de ganancias */
+        .resumen-ganancias {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 12px; margin-bottom: 16px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, rgba(212,175,55,0.08), rgba(15,45,26,0.4));
+            border: 1px solid rgba(212,175,55,0.3);
+            border-radius: var(--radius); padding: 14px 16px;
+        }
+        .stat-card .lbl {
+            font-size: 0.6rem; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        .stat-card .val {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.2rem; font-weight: 700;
+            color: var(--gold);
+        }
+        .stat-card .sub {
+            font-size: 0.62rem; color: var(--text-muted); margin-top: 2px;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex; gap: 6px; background: var(--glass-bg);
+            border: 1px solid var(--glass-border); border-radius: var(--radius);
+            padding: 4px; margin-bottom: 20px; overflow-x: auto;
+            -webkit-overflow-scrolling: touch; scrollbar-width: none;
+        }
+        .tabs::-webkit-scrollbar { display: none; }
+        .tab-btn {
+            flex-shrink: 0; padding: 10px 18px; border: none;
+            background: transparent; color: var(--text-muted);
+            font-family: 'Inter', sans-serif; font-size: 0.72rem;
+            font-weight: 600; border-radius: 10px; cursor: pointer;
+            transition: var(--transition); white-space: nowrap;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .tab-btn.active { background: rgba(212,175,55,0.12); color: var(--gold); }
+        .tab-btn:hover:not(.active) { color: var(--text-primary); background: rgba(212,175,55,0.05); }
+        .tab-btn .badge-count {
+            background: rgba(255,51,102,0.2); color: var(--danger);
+            padding: 1px 7px; border-radius: 10px;
+            font-size: 0.6rem; font-weight: 700;
+            margin-left: 2px;
+        }
+        .tab-btn .badge-count.verde { background: rgba(0,214,143,0.2); color: var(--success); }
+
+        .tab-content { display: none; animation: fadeIn 0.3s ease; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Cards de pedidos */
+        .pedidos-lista { display: flex; flex-direction: column; gap: 12px; }
+
+        .pedido-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 16px;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+        .pedido-card:hover { border-color: var(--gold); box-shadow: var(--shadow-gold); }
+        .pedido-card::before {
+            content: ''; position: absolute;
+            left: 0; top: 0; bottom: 0; width: 4px;
+            background: var(--gold);
+        }
+        .pedido-card.listo::before { background: var(--gold); }
+        .pedido-card.asignado::before { background: var(--purple); }
+        .pedido-card.en_camino::before { background: var(--cyan); }
+        .pedido-card.entregado::before { background: var(--success); }
+
+        .pedido-card.nuevo { animation: cardNuevo 0.6s ease-out; }
+        @keyframes cardNuevo {
+            0% { transform: scale(0.96); box-shadow: 0 0 0 0 rgba(212,175,55,0.7); }
+            100% { transform: scale(1); box-shadow: 0 0 0 12px rgba(212,175,55,0); }
+        }
+
+        .pedido-card .header-p {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            gap: 10px; margin-bottom: 12px; flex-wrap: wrap;
+        }
+        .pedido-card .header-p .codigo {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.95rem; font-weight: 700;
+            color: var(--gold); letter-spacing: 1px;
+        }
+        .pedido-card .header-p .fecha {
+            font-size: 0.62rem; color: var(--text-muted); margin-top: 2px;
+        }
+
+        .estado-badge {
+            font-size: 0.55rem; padding: 3px 10px;
+            border-radius: 20px;
+            font-family: 'Orbitron', monospace; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            border: 1px solid var(--glass-border);
+            background: rgba(0,0,0,0.3);
+            white-space: nowrap;
+        }
+        .estado-badge.listo { color: var(--gold); border-color: var(--gold); }
+        .estado-badge.asignado { color: var(--purple); border-color: var(--purple); }
+        .estado-badge.en_camino { color: var(--cyan); border-color: var(--cyan); }
+        .estado-badge.entregado { color: var(--success); border-color: var(--success); }
+
+        /* Ruta: tienda -> cliente */
+        .ruta-info {
+            background: rgba(0,0,0,0.25);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        .ruta-info .punto {
+            display: flex; gap: 10px; align-items: flex-start;
+            padding: 6px 0;
+        }
+        .ruta-info .punto:not(:last-child) {
+            border-bottom: 1px solid var(--glass-border);
+        }
+        .ruta-info .punto .icono-p {
+            width: 24px; height: 24px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.75rem; flex-shrink: 0;
+        }
+        .ruta-info .punto.origen .icono-p {
+            background: rgba(212,175,55,0.2); color: var(--gold);
+        }
+        .ruta-info .punto.destino .icono-p {
+            background: rgba(168,85,247,0.2); color: var(--purple);
+        }
+        .ruta-info .punto .info-p { flex: 1; min-width: 0; }
+        .ruta-info .punto .info-p .lbl-p {
+            font-size: 0.55rem; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .ruta-info .punto .info-p .val-p {
+            font-size: 0.78rem; color: var(--text-primary);
+            margin-top: 2px; word-break: break-word;
+        }
+
+        .meta-info {
+            display: flex; gap: 12px; flex-wrap: wrap;
+            padding: 8px 0;
+            font-size: 0.7rem; color: var(--text-secondary);
+        }
+        .meta-info .meta {
+            display: flex; align-items: center; gap: 4px;
+        }
+        .meta-info .meta strong {
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
+        }
+
+        .footer-p {
+            display: flex; justify-content: space-between; align-items: center;
+            padding-top: 12px;
+            border-top: 1px solid var(--glass-border);
+            gap: 10px; flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .footer-p .ganancia {
+            display: flex; flex-direction: column;
+        }
+        .footer-p .ganancia .lbl-g {
+            font-size: 0.55rem; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .footer-p .ganancia .val-g {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.05rem; font-weight: 700;
+            color: var(--success);
+        }
+        .footer-p .pago-metodo {
+            font-size: 0.65rem; color: var(--text-muted);
+            text-align: right;
+        }
+
+        .acciones-p {
+            display: flex; gap: 8px; flex-wrap: wrap;
+        }
+        .btn-accion-p {
+            flex: 1; min-width: 120px;
+            padding: 11px 14px;
+            border-radius: 24px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700; font-size: 0.7rem;
+            cursor: pointer; transition: var(--transition);
+            display: inline-flex; align-items: center; justify-content: center;
+            gap: 6px; border: none;
+        }
+        .btn-accion-p:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn-tomar {
+            background: linear-gradient(135deg, var(--purple), #7c3aed);
+            color: #fff;
+        }
+        .btn-tomar:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(168,85,247,0.3); }
+        .btn-camino {
+            background: linear-gradient(135deg, var(--cyan), #00b3cc);
+            color: var(--space);
+        }
+        .btn-camino:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,229,255,0.3); }
+        .btn-entregado {
+            background: linear-gradient(135deg, var(--success), #00a86b);
+            color: #fff;
+        }
+        .btn-entregado:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,214,143,0.3); }
+        .btn-ver {
+            background: transparent;
+            border: 1px solid var(--glass-border) !important;
+            color: var(--text-secondary);
+        }
+        .btn-ver:hover:not(:disabled) { border-color: var(--gold) !important; color: var(--gold); }
+        .btn-whats {
+            background: linear-gradient(135deg, #25d366, #128c7e);
+            color: #fff;
+        }
+        .btn-whats:hover:not(:disabled) { transform: translateY(-2px); }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
+            display: none; justify-content: center; align-items: center;
+            z-index: 9999; padding: 20px; overflow-y: auto;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal {
+            background: linear-gradient(135deg, var(--glass-bg), rgba(5,8,15,0.98));
+            border: 2px solid var(--gold);
+            border-radius: var(--radius-xl);
+            padding: 26px 22px; max-width: 500px; width: 100%;
+            max-height: 90vh; overflow-y: auto;
+            position: relative; animation: scaleIn 0.3s ease;
+        }
+        @keyframes scaleIn {
+            from { transform: scale(0.85); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .modal .close-btn {
+            position: absolute; top: 10px; right: 15px;
+            background: transparent; border: none;
+            color: var(--text-muted); font-size: 1.5rem;
+            cursor: pointer; transition: var(--transition);
+        }
+        .modal .close-btn:hover { color: var(--text-primary); transform: rotate(90deg); }
+        .modal h2 {
+            font-family: 'Orbitron', monospace;
+            color: var(--gold); font-size: 1rem; margin-bottom: 16px;
+        }
+
+        .detalle-seccion { margin-bottom: 16px; }
+        .detalle-seccion h3 {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.75rem; color: var(--gold);
+            margin-bottom: 8px;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .dato-fila {
+            display: flex; gap: 10px;
+            padding: 6px 0; font-size: 0.75rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        .dato-fila:last-child { border-bottom: none; }
+        .dato-fila .lbl { color: var(--text-muted); min-width: 90px; }
+        .dato-fila .val { color: var(--text-primary); flex: 1; word-break: break-word; }
+
+        /* Loading / empty */
+        .loading-state {
+            text-align: center; padding: 60px 20px; color: var(--text-muted);
+        }
+        .loading-state .spinner {
+            width: 40px; height: 40px;
+            border: 3px solid rgba(212, 175, 55, 0.15);
+            border-top-color: var(--gold);
+            border-radius: 50%; animation: spin 0.8s linear infinite;
+            margin: 0 auto 12px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .empty-state {
+            text-align: center; padding: 60px 20px;
+            color: var(--text-muted); background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+        }
+        .empty-state .icon {
+            font-size: 3.5rem; display: block; margin-bottom: 16px;
+            color: var(--gold); opacity: 0.4;
+        }
+        .empty-state h3 {
+            font-family: 'Orbitron', monospace;
+            color: var(--text-secondary); font-size: 1rem; margin-bottom: 8px;
+        }
+        .empty-state p { font-size: 0.85rem; }
+
+        .toast {
+            position: fixed; bottom: 30px; right: 20px;
+            background: var(--green-deep); border: 1px solid var(--gold);
+            color: var(--gold); padding: 14px 24px;
+            border-radius: 12px; font-size: 0.8rem;
+            transform: translateY(100px); opacity: 0;
+            transition: all 0.4s ease; z-index: 99999;
+            max-width: 320px; pointer-events: none;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { border-color: var(--danger); color: var(--danger); }
+        .toast.warning { border-color: var(--warning); color: var(--warning); }
+        .toast.success { border-color: var(--success); color: var(--success); }
+
+        .footer {
+            margin-top: 30px; padding-top: 16px;
+            border-top: 1px solid var(--glass-border);
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 0.7rem; color: var(--text-muted);
+            flex-wrap: wrap; gap: 10px;
+        }
+        .footer .brand { color: var(--gold); font-weight: 600; }
+        .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; }
+        .footer-links a:hover { color: var(--gold); }
+
+        html.tema-dia, html[data-tema="dia"] {
+            --space: #f5f7fa;
+            --text-primary: #1a2332;
+            --text-secondary: #4a5568;
+            --text-muted: #718096;
+            --glass-bg: rgba(255, 255, 255, 0.9);
+            --glass-border: rgba(0, 0, 0, 0.1);
+        }
+        html.tema-dia body, html[data-tema="dia"] body {
+            background: #f5f7fa !important;
+            background-image: radial-gradient(ellipse at 20% 50%, rgba(212, 175, 55, 0.05) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(42, 106, 58, 0.05) 0%, transparent 60%) !important;
+            color: var(--text-primary) !important;
+        }
+        html.tema-dia .nebula, html[data-tema="dia"] .nebula { display: none !important; }
+        html.tema-dia .header, html[data-tema="dia"] .header { background: rgba(255, 255, 255, 0.95) !important; border-bottom-color: rgba(0, 0, 0, 0.1) !important; }
+        html.tema-dia .logo-text, html[data-tema="dia"] .logo-text { color: var(--text-primary) !important; }
+        html.tema-dia .main-nav, html[data-tema="dia"] .main-nav { background: rgba(255, 255, 255, 0.7) !important; border-color: rgba(0, 0, 0, 0.1) !important; }
+        html.tema-dia .main-nav .nav-link, html[data-tema="dia"] .main-nav .nav-link { color: #718096 !important; }
+        html.tema-dia .main-nav .nav-link.active, html[data-tema="dia"] .main-nav .nav-link.active { background: rgba(212, 175, 55, 0.15) !important; color: var(--gold) !important; }
+        html.tema-dia .footer, html[data-tema="dia"] .footer { color: #718096 !important; border-top-color: rgba(0, 0, 0, 0.1) !important; }
+        html.tema-dia .ruta-info, html[data-tema="dia"] .ruta-info { background: rgba(0,0,0,0.03) !important; }
+
+        @media (max-width: 480px) {
+            .titulo h1 { font-size: 1.05rem; }
+            .resumen-ganancias { grid-template-columns: 1fr; }
+            .pedido-card { padding: 14px; }
+            .btn-accion-p { min-width: 100px; font-size: 0.62rem; padding: 9px 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="nebula nebula-1" aria-hidden="true"></div>
+    <div class="nebula nebula-2" aria-hidden="true"></div>
+    <div class="nebula nebula-3" aria-hidden="true"></div>
+
+    <div class="app">
+
+        <header class="header">
+            <a href="/" class="logo" aria-label="Ir a la página de inicio">
+                <span class="logo-hex">◈</span>
+                <span class="logo-text">Sariel<span>'s</span></span>
+                <span class="logo-badge">✦ WEB3</span>
+            </a>
+            <div class="header-actions">
+                <span class="token-badge" onclick="verTokens()">
+                    ◈ <span id="tokenBadgeCantidad">0</span> Es.stoks
+                </span>
+            </div>
+        </header>
+
+        <nav class="main-nav" aria-label="Navegación principal">
+            <a href="/" class="nav-link">⌂ Inicio</a>
+            <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
+            <a href="/features/perfil/perfil.html" class="nav-link">◆ Perfil</a>
+            <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
+            <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
+            <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
+            <a href="/features/videos/videos.html" class="nav-link">🎬 Videos</a>
+            <a href="/features/grupos/grupos.html" class="nav-link">👥 Grupos</a>
+            <a href="/features/mercado/index.html" class="nav-link active">🛒 Mercado</a>
+        </nav>
+
+        <a href="/features/mercado/index.html" class="btn-back">
+            ← <span data-clave="mercado_volver">Volver al Mercado</span>
+        </a>
+
+        <div class="titulo">
+            <h1>🛵 <span data-clave="repartidor_mi_panel">Panel Repartidor</span></h1>
+            <span class="rol-badge" data-clave="repartidor_rol">Repartidor</span>
+        </div>
+
+        <!-- Toggle online/offline -->
+        <div class="estado-toggle" id="toggleOnline" onclick="toggleEstadoRepartidor()">
+            <span class="dot-estado"></span>
+            <div class="txt-estado">
+                <div class="t1" id="txtEstadoRep">Cargando...</div>
+                <div class="t2" data-clave="repartidor_toggle_hint">Toca para cambiar tu disponibilidad</div>
+            </div>
+            <div class="switch"></div>
+        </div>
+
+        <!-- Resumen de ganancias -->
+        <div class="resumen-ganancias">
+            <div class="stat-card">
+                <div class="lbl" data-clave="repartidor_ganancias_hoy">Ganancias hoy</div>
+                <div class="val" id="gananciasHoy">$0.00</div>
+                <div class="sub" id="entregasHoy">0 entregas</div>
+            </div>
+            <div class="stat-card">
+                <div class="lbl" data-clave="repartidor_ganancias_total">Total acumulado</div>
+                <div class="val" id="gananciasTotal">$0.00</div>
+                <div class="sub" id="entregasTotal">0 entregas</div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="disponibles" onclick="cambiarTab('disponibles', this)">
+                📦 <span data-clave="repartidor_tab_disponibles">Disponibles</span>
+                <span class="badge-count" id="badgeDisponibles" style="display:none;">0</span>
+            </button>
+            <button class="tab-btn" data-tab="mios" onclick="cambiarTab('mios', this)">
+                🛵 <span data-clave="repartidor_tab_mios">Mis entregas</span>
+                <span class="badge-count verde" id="badgeMios" style="display:none;">0</span>
+            </button>
+            <button class="tab-btn" data-tab="historial" onclick="cambiarTab('historial', this)">
+                📜 <span data-clave="repartidor_tab_historial">Historial</span>
+            </button>
+        </div>
+
+        <!-- Tab: Disponibles -->
+        <div class="tab-content active" data-tab-content="disponibles">
+            <div id="disponiblesContainer">
+                <div class="loading-state">
+                    <div class="spinner"></div>
+                    <p data-clave="repartidor_cargando_disponibles">Buscando pedidos disponibles...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Mis entregas -->
+        <div class="tab-content" data-tab-content="mios">
+            <div id="miosContainer">
+                <div class="loading-state">
+                    <div class="spinner"></div>
+                    <p data-clave="repartidor_cargando_mios">Cargando tus entregas...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Historial -->
+        <div class="tab-content" data-tab-content="historial">
+            <div id="historialContainer">
+                <div class="loading-state">
+                    <div class="spinner"></div>
+                    <p data-clave="repartidor_cargando_historial">Cargando historial...</p>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <span><span class="brand">◈ Sariel's</span> · <span data-clave="mercado_footer">Sabor al Paladar · WEB3</span></span>
+            <div class="footer-links">
+                <a href="/terminos" data-clave="footer_terminos">📜 Términos</a>
+                <a href="/privacidad" data-clave="footer_privacidad">🔒 Privacidad</a>
+                <a href="/cookies" data-clave="footer_cookies">🍪 Cookies</a>
+                <a href="/live-terminos" data-clave="footer_terminos_live">📡 Términos de Live</a>
+                <span style="opacity:0.3;">⚡ Polygon</span>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- Modal detalle -->
+    <div class="modal-overlay" id="modalDetalle">
+        <div class="modal">
+            <button class="close-btn" onclick="cerrarModalDetalle()">×</button>
+            <h2 id="modalDetalleTitulo">📦 Detalle del pedido</h2>
+            <div id="modalDetalleContenido"></div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast" role="alert" aria-live="polite"></div>
+
+    <div id="errorBanner" style="
+        display:none; position:fixed; top:0; left:0; right:0; z-index:99999;
+        background:#ff3366; color:#fff; padding:12px 16px; font-family:monospace;
+        font-size:0.75rem; word-break:break-word; box-shadow:0 4px 20px rgba(0,0,0,0.4);
+    ">
+        <strong>⚠️ Error detectado:</strong>
+        <span id="errorBannerText"></span>
+        <button onclick="document.getElementById('errorBanner').style.display='none'"
+            style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">
+            Cerrar
+        </button>
+    </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/features/shared/js/idiomas.js"></script>
+
+<script>
+// ================================================================
+// CONFIGURACIÓN
+// ================================================================
+var supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
+var supabaseKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+var supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+window.supabaseClient = supabaseClient;
+var supabase = supabaseClient;
+
+// Ganancia por entrega (ajústalo si quieres otro modelo)
+var GANANCIA_POR_ENTREGA = 25.00; // MXN por defecto
+
+// ================================================================
+// ESTADO
+// ================================================================
+var sessionUser = null;
+var repartidorData = null; // datos extendidos en mercado_repartidores
+var disponible = false;
+var pedidosDisponibles = [];
+var misEntregas = [];
+var historial = [];
+var tiendasCache = {};
+var compradoresCache = {};
+var itemsPorPedido = {};
+var pedidosVistos = {};
+var autoRefreshTimer = null;
+var AUTO_REFRESH_MS = 15000;
+
+// ================================================================
+// BANNER DE ERRORES
+// ================================================================
+function mostrarErrorEnPantalla(mensaje) {
+    var banner = document.getElementById('errorBanner');
+    var texto = document.getElementById('errorBannerText');
+    if (banner && texto) { texto.textContent = mensaje; banner.style.display = 'block'; }
+}
+window.addEventListener('error', function (event) {
+    mostrarErrorEnPantalla((event.message || 'Error desconocido') + ' — línea ' + event.lineno);
+});
+window.addEventListener('unhandledrejection', function (event) {
+    mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason && event.reason.message ? event.reason.message : event.reason));
+});
+
+// ================================================================
+// TOAST
+// ================================================================
+function showToast(mensaje, tipo) {
+    try {
+        var toastEl = document.getElementById('toast');
+        if (!toastEl) { console.warn(mensaje); return; }
+        toastEl.textContent = mensaje;
+        toastEl.className = 'toast show';
+        if (tipo === 'error') toastEl.classList.add('error');
+        else if (tipo === 'warning') toastEl.classList.add('warning');
+        else if (tipo === 'success') toastEl.classList.add('success');
+        clearTimeout(toastEl._timeout);
+        toastEl._timeout = setTimeout(function() { toastEl.classList.remove('show'); }, 3500);
+    } catch (e) { console.warn('Toast error:', e); }
+}
+
+// ================================================================
+// HELPERS
+// ================================================================
+function escapeHTML(texto) {
+    if (!texto) return '';
+    var div = document.createElement('div');
+    div.textContent = texto;
+    return div.innerHTML;
+}
+
+function formatearPrecio(n) {
+    return '$' + parseFloat(n || 0).toFixed(2);
+}
+
+function formatearFecha(fecha) {
+    if (!fecha) return '—';
+    try {
+        var d = new Date(fecha);
+        var ahora = new Date();
+        var diffMin = Math.floor((ahora - d) / 60000);
+        if (diffMin < 1) return 'Hace unos segundos';
+        if (diffMin < 60) return 'Hace ' + diffMin + ' min';
+        var diffHrs = Math.floor(diffMin / 60);
+        if (diffHrs < 24) return 'Hace ' + diffHrs + ' h';
+        return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) +
+            ' · ' + d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+    } catch (e) { return '—'; }
+}
+
+function traducirEstado(estado) {
+    var mapa = {
+        'listo': '📦 Listo para recoger',
+        'asignado': '🛵 Asignado a ti',
+        'en_camino': '🚀 En camino',
+        'entregado': '✅ Entregado'
+    };
+    return mapa[estado] || estado;
+}
+
+// ================================================================
+// CARGAR USUARIO
+// ================================================================
+async function cargarUsuarioActual() {
+    try {
+        var result = await supabase.auth.getSession();
+        var session = result.data.session;
+        if (!session) { sessionUser = null; return null; }
+        sessionUser = session.user;
+        var u = await supabase
+            .from('usuarios')
+            .select('nombre, handle, avatar_url, telefono, tokens')
+            .eq('id', session.user.id)
+            .single();
+        if (!u.error && u.data) {
+            var badge = document.getElementById('tokenBadgeCantidad');
+            if (badge) badge.textContent = u.data.tokens || 0;
+            // Guardar teléfono en memoria
+            if (u.data.telefono) repartidorData = { telefono: u.data.telefono };
+        }
+        return u.data || null;
+    } catch (e) { console.error('Error cargando usuario:', e); return null; }
+}
+
+// ================================================================
+// CARGAR DATOS EXTENDIDOS DEL REPARTIDOR
+// ================================================================
+async function cargarDatosRepartidor() {
+    try {
+        var result = await supabase
+            .from('mercado_repartidores')
+            .select('*')
+            .eq('usuario_id', sessionUser.id)
+            .maybeSingle();
+
+        if (result.error && result.error.code !== 'PGRST116') throw result.error;
+
+        if (result.data) {
+            repartidorData = Object.assign(repartidorData || {}, result.data);
+            disponible = !!result.data.disponible;
+        } else {
+            // Crear perfil de repartidor si no existe
+            var ins = await supabase
+                .from('mercado_repartidores')
+                .insert({
+                    usuario_id: sessionUser.id,
+                    disponible: false,
+                    ganancia_por_entrega: GANANCIA_POR_ENTREGA,
+                    total_entregas: 0,
+                    total_ganado: 0
+                })
+                .select()
+                .single();
+            if (!ins.error && ins.data) {
+                repartidorData = ins.data;
+                disponible = false;
+            }
+        }
+
+        actualizarToggleEstado();
+        actualizarGanancias();
+
+    } catch (e) {
+        console.error('Error cargando repartidor:', e);
+        // Modo fallback: sin tabla extendida
+        disponible = false;
+        actualizarToggleEstado();
+    }
+}
+
+// ================================================================
+// TOGGLE ONLINE / OFFLINE
+// ================================================================
+async function toggleEstadoRepartidor() {
+    disponible = !disponible;
+
+    try {
+        if (repartidorData && repartidorData.id) {
+            await supabase
+                .from('mercado_repartidores')
+                .update({ disponible: disponible, updated_at: new Date().toISOString() })
+                .eq('id', repartidorData.id);
+        }
+        actualizarToggleEstado();
+        showToast(disponible ? '🟢 Estás disponible para entregas' : '🔴 Ya no recibirás pedidos', disponible ? 'success' : 'warning');
+
+        // Recargar disponibles
+        await cargarDisponibles();
+    } catch (e) {
+        console.error('Error cambiando estado:', e);
+        disponible = !disponible; // revertir
+        actualizarToggleEstado();
+        showToast('❌ No se pudo cambiar el estado', 'error');
+    }
+}
+
+function actualizarToggleEstado() {
+    var toggle = document.getElementById('toggleOnline');
+    var txt = document.getElementById('txtEstadoRep');
+    if (!toggle || !txt) return;
+
+    if (disponible) {
+        toggle.classList.add('online');
+        txt.innerHTML = '🟢 Disponible · Recibiendo pedidos';
+    } else {
+        toggle.classList.remove('online');
+        txt.innerHTML = '🔴 Fuera de línea · Toca para activar';
+    }
+}
+
+// ================================================================
+// ACTUALIZAR GANANCIAS
+// ================================================================
+function actualizarGanancias() {
+    var totalGanado = repartidorData ? parseFloat(repartidorData.total_ganado || 0) : 0;
+    var totalEntregas = repartidorData ? parseInt(repartidorData.total_entregas || 0) : 0;
+
+    // Calcular hoy
+    var hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+    var gananciasHoy = 0;
+    var entregasHoy = 0;
+    historial.forEach(function (p) {
+        if (p.entregado_en) {
+            var f = new Date(p.entregado_en);
+            if (f >= hoy) {
+                gananciasHoy += parseFloat(p.ganancia_repartidor || GANANCIA_POR_ENTREGA);
+                entregasHoy++;
+            }
+        }
+    });
+
+    var elGH = document.getElementById('gananciasHoy');
+    var elEH = document.getElementById('entregasHoy');
+    var elGT = document.getElementById('gananciasTotal');
+    var elET = document.getElementById('entregasTotal');
+
+    if (elGH) elGH.textContent = formatearPrecio(gananciasHoy);
+    if (elEH) elEH.textContent = entregasHoy + (entregasHoy === 1 ? ' entrega' : ' entregas');
+    if (elGT) elGT.textContent = formatearPrecio(totalGanado);
+    if (elET) elET.textContent = totalEntregas + (totalEntregas === 1 ? ' entrega' : ' entregas');
+}
+
+// ================================================================
+// CARGAR PEDIDOS DISPONIBLES (estado = listo, sin repartidor)
+// ================================================================
+async function cargarDisponibles(silencioso) {
+    var container = document.getElementById('disponiblesContainer');
+    if (!container) return;
+
+    if (!silencioso) {
+        container.innerHTML = '<div class="loading-state"><div class="spinner"></div><p data-clave="repartidor_cargando_disponibles">Buscando pedidos disponibles...</p></div>';
+    }
+
+    if (!disponible) {
+        container.innerHTML = '<div class="empty-state">' +
+            '<span class="icon">🔴</span>' +
+            '<h3 data-clave="repartidor_offline_titulo">Estás fuera de línea</h3>' +
+            '<p data-clave="repartidor_offline_desc">Actívate como disponible para ver pedidos para entregar.</p>' +
+        '</div>';
+        if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
+        actualizarBadgeDisponibles(0);
+        return;
+    }
+
+    try {
+        var result = await supabase
+            .from('mercado_pedidos')
+            .select('*')
+            .eq('estado', 'listo')
+            .is('repartidor_id', null)
+            .order('listo_en', { ascending: true, nullsFirst: false })
+            .limit(50);
+
+        if (result.error) throw result.error;
+        pedidosDisponibles = result.data || [];
+
+        // Detectar nuevos
+        var hayNuevos = false;
+        pedidosDisponibles.forEach(function (p) {
+            if (!pedidosVistos[p.id]) {
+                pedidosVistos[p.id] = true;
+                hayNuevos = true;
+            }
+        });
+
+        // Cargar datos relacionados
+        await cargarDatosRelacionados(pedidosDisponibles);
+
+        renderizarDisponibles();
+        actualizarBadgeDisponibles(pedidosDisponibles.length);
+
+        if (silencioso && hayNuevos && pedidosDisponibles.length > 0) {
+            showToast('🔔 ¡Nuevo pedido disponible!', 'success');
+        }
+
+    } catch (e) {
+        console.error('Error cargando disponibles:', e);
+        if (!silencioso) {
+            container.innerHTML = '<div class="empty-state"><span class="icon">⚠️</span><h3>Error al cargar</h3><p>' + escapeHTML(e.message) + '</p></div>';
+        }
+    }
+}
+
+// ================================================================
+// CARGAR MIS ENTREGAS (asignado o en_camino)
+// ================================================================
+async function cargarMisEntregas(silencioso) {
+    var container = document.getElementById('miosContainer');
+    if (!container) return;
+
+    if (!silencioso) {
+        container.innerHTML = '<div class="loading-state"><div class="spinner"></div><p data-clave="repartidor_cargando_mios">Cargando tus entregas...</p></div>';
+    }
+
+    try {
+        var result = await supabase
+            .from('mercado_pedidos')
+            .select('*')
+            .eq('repartidor_id', sessionUser.id)
+            .in('estado', ['asignado', 'en_camino'])
+            .order('asignado_en', { ascending: false })
+            .limit(50);
+
+        if (result.error) throw result.error;
+        misEntregas = result.data || [];
+
+        await cargarDatosRelacionados(misEntregas);
+        renderizarMisEntregas();
+        actualizarBadgeMios(misEntregas.length);
+
+    } catch (e) {
+        console.error('Error cargando mis entregas:', e);
+        if (!silencioso) {
+            container.innerHTML = '<div class="empty-state"><span class="icon">⚠️</span><h3>Error al cargar</h3><p>' + escapeHTML(e.message) + '</p></div>';
+        }
+    }
+}
+
+// ================================================================
+// CARGAR HISTORIAL (entregado)
+// ================================================================
+async function cargarHistorial(silencioso) {
+    var container = document.getElementById('historialContainer');
+    if (!container) return;
+
+    if (!silencioso) {
+        container.innerHTML = '<div class="loading-state"><div class="spinner"></div><p data-clave="repartidor_cargando_historial">Cargando historial...</p></div>';
+    }
+
+    try {
+        var result = await supabase
+            .from('mercado_pedidos')
+            .select('*')
+            .eq('repartidor_id', sessionUser.id)
+            .eq('estado', 'entregado')
+            .order('entregado_en', { ascending: false })
+            .limit(100);
+
+        if (result.error) throw result.error;
+        historial = result.data || [];
+
+        await cargarDatosRelacionados(historial);
+        renderizarHistorial();
+        actualizarGanancias();
+
+    } catch (e) {
+        console.error('Error cargando historial:', e);
+        if (!silencioso) {
+            container.innerHTML = '<div class="empty-state"><span class="icon">⚠️</span><h3>Error al cargar</h3><p>' + escapeHTML(e.message) + '</p></div>';
+        }
+    }
+}
+
+// ================================================================
+// CARGAR DATOS RELACIONADOS (tiendas, compradores, items)
+// ================================================================
+async function cargarDatosRelacionados(pedidos) {
+    if (!pedidos || pedidos.length === 0) return;
+
+    var tiendaIds = [], compradorIds = [], pedidoIds = [];
+    pedidos.forEach(function (p) {
+        if (p.tienda_id && tiendaIds.indexOf(p.tienda_id) === -1) tiendaIds.push(p.tienda_id);
+        if (p.comprador_id && compradorIds.indexOf(p.comprador_id) === -1) compradorIds.push(p.comprador_id);
+        pedidoIds.push(p.id);
+    });
+
+    try {
+        var promises = [];
+
+        if (tiendaIds.length > 0) {
+            promises.push(
+                supabase.from('mercado_tiendas')
+                    .select('id, nombre_negocio, direccion, telefono, whatsapp, logo_url')
+                    .in('id', tiendaIds)
+                    .then(function (res) {
+                        if (!res.error && res.data) {
+                            res.data.forEach(function (t) { tiendasCache[t.id] = t; });
+                        }
+                    })
+            );
+        }
+
+        if (compradorIds.length > 0) {
+            promises.push(
+                supabase.from('usuarios')
+                    .select('id, nombre, handle, avatar_url, telefono')
+                    .in('id', compradorIds)
+                    .then(function (res) {
+                        if (!res.error && res.data) {
+                            res.data.forEach(function (u) { compradoresCache[u.id] = u; });
+                        }
+                    })
+            );
+        }
+
+        if (pedidoIds.length > 0) {
+            promises.push(
+                supabase.from('mercado_pedido_items')
+                    .select('*')
+                    .in('pedido_id', pedidoIds)
+                    .then(function (res) {
+                        if (!res.error && res.data) {
+                            res.data.forEach(function (it) {
+                                if (!itemsPorPedido[it.pedido_id]) itemsPorPedido[it.pedido_id] = [];
+                                itemsPorPedido[it.pedido_id].push(it);
+                            });
+                        }
+                    })
+            );
+        }
+
+        await Promise.all(promises);
+    } catch (e) {
+        console.error('Error cargando datos relacionados:', e);
+    }
+}
+
+// ================================================================
+// BADGES
+// ================================================================
+function actualizarBadgeDisponibles(n) {
+    var el = document.getElementById('badgeDisponibles');
+    if (!el) return;
+    if (n > 0) { el.textContent = n; el.style.display = 'inline-block'; }
+    else { el.style.display = 'none'; }
+}
+
+function actualizarBadgeMios(n) {
+    var el = document.getElementById('badgeMios');
+    if (!el) return;
+    if (n > 0) { el.textContent = n; el.style.display = 'inline-block'; }
+    else { el.style.display = 'none'; }
+}
+
+// ================================================================
+// RENDER: DISPONIBLES
+// ================================================================
+function renderizarDisponibles() {
+    var container = document.getElementById('disponiblesContainer');
+    if (!container) return;
+
+    if (pedidosDisponibles.length === 0) {
+        container.innerHTML = '<div class="empty-state">' +
+            '<span class="icon">📭</span>' +
+            '<h3 data-clave="repartidor_sin_disponibles">Sin pedidos disponibles</h3>' +
+            '<p data-clave="repartidor_sin_disponibles_desc">Cuando un vendedor marque un pedido como listo, aparecerá aquí.</p>' +
+        '</div>';
+        if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
+        return;
+    }
+
+    var html = '<div class="pedidos-lista">';
+    pedidosDisponibles.forEach(function (p) {
+        html += renderCardDisponible(p);
+    });
+    html += '</div>';
+
+    container.innerHTML = html;
+    if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
+}
+
+function renderCardDisponible(p) {
+    var tienda = tiendasCache[p.tienda_id] || null;
+    var comprador = compradoresCache[p.comprador_id] || null;
+
+    var origenNombre = tienda ? tienda.nombre_negocio : 'Tienda';
+    var origenDir = tienda ? (tienda.direccion || 'Dirección no registrada') : '—';
+
+    var destinoNombre = comprador ? (comprador.nombre || comprador.handle || 'Cliente') : 'Cliente';
+    var destinoDir = p.direccion_entrega || (p.tipo_entrega === 'pickup' ? 'El cliente recoge' : 'Sin dirección');
+
+    var items = itemsPorPedido[p.id] || [];
+    var totalItems = items.reduce(function (s, it) { return s + (it.cantidad || 0); }, 0);
+
+    return '<div class="pedido-card listo ' + (pedidosVistos[p.id] ? '' : 'nuevo') + '">' +
+        '<div class="header-p">' +
+            '<div>' +
+                '<div class="codigo">' + escapeHTML(p.codigo || '—') + '</div>' +
+                '<div class="fecha">' + formatearFecha(p.listo_en || p.created_at) + '</div>' +
+            '</div>' +
+            '<span class="estado-badge listo">' + traducirEstado('listo') + '</span>' +
+        '</div>' +
+
+        '<div class="ruta-info">' +
+            '<div class="punto origen">' +
+                '<div class="icono-p">🏪</div>' +
+                '<div class="info-p">' +
+                    '<div class="lbl-p">Recoger en</div>' +
+                    '<div class="val-p"><strong>' + escapeHTML(origenNombre) + '</strong></div>' +
+                    '<div class="val-p" style="font-size:0.7rem;color:var(--text-muted);">' + escapeHTML(origenDir) + '</div>' +
+                '</div>' +
+            '</div>' +
+            '<div class="punto destino">' +
+                '<div class="icono-p">📍</div>' +
+                '<div class="info-p">' +
+                    '<div class="lbl-p">Entregar a</div>' +
+                    '<div class="val-p"><strong>' + escapeHTML(destinoNombre) + '</strong></div>' +
+                    '<div class="val-p" style="font-size:0.7rem;color:var(--text-muted);">' + escapeHTML(destinoDir) + '</div>' +
+                '</div>' +
+            '</div>' +
+        '</div>' +
+
+        '<div class="meta-info">' +
+            '<span class="meta">📦 <strong>' + totalItems + '</strong> items</span>' +
+            '<span class="meta">' + (p.tipo_entrega === 'pickup' ? '🏪 Recoger' : '🛵 Delivery') + '</span>' +
+        '</div>' +
+
+        '<div class="footer-p">' +
+            '<div class="ganancia">' +
+                '<div class="lbl-g">Tu ganancia</div>' +
+                '<div class="val-g">' + formatearPrecio(GANANCIA_POR_ENTREGA) + '</div>' +
+            '</div>' +
+            '<div class="pago-metodo">💵 Envío cobrado en efectivo<br>al entregar</div>' +
+        '</div>' +
+
+        '<div class="acciones-p">' +
+            '<button class="btn-accion-p btn-tomar" onclick="tomarPedido(\'' + p.id + '\', this)">' +
+                '🛵 <span data-clave="repartidor_tomar">Tomar pedido</span>' +
+            '</button>' +
+            '<button class="btn-accion-p btn-ver" onclick="verDetalle(\'' + p.id + '\', \'disponible\')">' +
+                '👁️ <span data-clave="repartidor_ver">Ver</span>' +
+            '</button>' +
+        '</div>' +
+    '</div>';
+}
+
+// ================================================================
+// RENDER: MIS ENTREGAS
+// ================================================================
+function renderizarMisEntregas() {
+    var container = document.getElementById('miosContainer');
+    if (!container) return;
+
+    if (misEntregas.length === 0) {
+        container.innerHTML = '<div class="empty-state">' +
+            '<span class="icon">🛵</span>' +
+            '<h3 data-clave="repartidor_sin_mios">Sin entregas activas</h3>' +
+            '<p data-clave="repartidor_sin_mios_desc">Cuando tomes un pedido aparecerá aquí hasta que lo entregues.</p>' +
+        '</div>';
+        if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
+        return;
+    }
+
+    var html = '<div class="pedidos-lista">';
+    misEntregas.forEach(function (p) {
+        html += renderCardMia(p);
+    });
+    html += '</div>';
+
+    container.innerHTML = html;
+    if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
+}
+
+function renderCardMia(p) {
+    var tienda = tiendasCache[p.tienda_id] || null;
+    var comprador = compradoresCache[p.comprador_id] || null;
+    var estado = (p.estado || 'asignado').toLowerCase();
+
+    var origenNombre = tienda ? tienda.nombre_negocio : 'Tienda';
+    var origenDir = tienda ? (tienda.direccion || '—') : '—';
+    var destinoNombre = comprador ? (comprador.nombre || comprador.handle || 'Cliente') : 'Cliente';
+    var destinoDir = p.direccion_entrega || '—';
+
+    var botones = '';
+    if (estado === 'asignado') {
+        botones = '<button class="btn-accion-p btn-camino" onclick="marcarEnCamino(\'' + p.id + '\', this)">' +
+            '🚀 <span data-clave="repartidor_en_camino">Salir en camino</span>' +
+        '</button>';
+    } else if (estado === 'en_camino') {
+        botones = '<button class="btn-accion-p btn-entregado" onclick="marcarEntregado(\'' + p.id + '\', this)">' +
+            '✅ <span data-clave="repartidor_entregado">Marcar entregado</span>' +
+        '</button>';
+    }
+
+    // WhatsApp al cliente
+    var telCli = comprador && comprador.telefono ? comprador.telefono.replace(/\D/g, '') : '';
+    var btnWhats = telCli ? '<a href="https://wa.me/' + telCli + '?text=' + encodeURIComponent('Hola, soy tu repartidor. Voy en camino con tu pedido ' + (p.codigo || '')) + '" target="_blank" rel="noopener" class="btn-accion-p btn-whats">' +
+        '💬 <span data-clave="repartidor_whats">WhatsApp</span>' +
+    '</a>' : '';
+
+    return '<div class="pedido-card ' + estado + '">' +
+        '<div class="header-p">' +
+            '<div>' +
+                '<div class="codigo">' + escapeHTML(p.codigo || '—') + '</div>' +
+                '<div class="fecha">' + formatearFecha(p.asignado_en || p.created_at) + '</div>' +
+            '</div>' +
+            '<span class="estado-badge ' + estado + '">' + traducirEstado(estado) + '</span>' +
+        '</div>' +
+
+        '<div class="ruta-info">' +
+            '<div class="punto origen">' +
+                '<div class="icono-p">🏪</div>' +
+                '<div class="info-p">' +
+                    '<div class="lbl-p">Recoger en</div>' +
+                    '<div class="val-p"><strong>' + escapeHTML(origenNombre) + '</strong></div>' +
+                    '<div class="val-p" style="font-size:0.7rem;color:var(--text-muted);">' + escapeHTML(origenDir) + '</div>' +
+                '</div>' +
+            '</div>' +
+            '<div class="punto destino">' +
+                '<div class="icono-p">📍</div>' +
+                '<div class="info-p">' +
+                    '<div class="lbl-p">Entregar a</div>' +
+                    '<div class="val-p"><strong>' + escapeHTML(destinoNombre) + '</strong></div>' +
+                    '<div class="val-p" style="font-size:0.7rem;color:var(--text-muted);">' + escapeHTML(destinoDir) + '</div>' +
+                '</div>' +
+            '</div>' +
+        '</div>' +
+
+        '<div class="footer-p">' +
+            '<div class="ganancia">' +
+                '<div class="lbl-g">Tu ganancia</div>' +
+                '<div class="val-g">' + formatearPrecio(GANANCIA_POR_ENTREGA) + '</div>' +
+            '</div>' +
+            '<div class="pago-metodo">💵 Cobra envío en efectivo<br>' + formatearPrecio(0) + ' en app</div>' +
+        '</div>' +
+
+        '<div class="acciones-p">' + botones + btnWhats +
+            '<button class="btn-accion-p btn-ver" onclick="verDetalle(\'' + p.id + '\', \'mio\')">' +
+                '👁️ <span data-clave="repartidor_ver">Ver</span>' +
+            '</button>' +
+        '</div>' +
+    '</div>';
+}
+
+// ================================================================
+// RENDER: HISTORIAL
+// ================================================================
+function renderizarHistorial() {
+    var container = document.getElementById('historialContainer');
+    if (!container) return;
+
+    if (historial.length === 0) {
+        container.innerHTML = '<div class="empty-state">' +
+            '<span class="icon">📜</span>' +
+            '<h3 data-clave="repartidor_sin_historial">Sin historial</h3>' +
+            '<p data-clave="repartidor_sin_historial_desc">Aquí verás tus entregas completadas.</p>' +
+        '</div>';
+        if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
+        return;
+    }
+
+    var html = '<div class="pedidos-lista">';
+    historial.forEach(function (p) {
+        var tienda = tiendasCache[p.tienda_id] || null;
+        var ganancia = parseFloat(p.ganancia_repartidor || GANANCIA_POR_ENTREGA);
+
+        html += '<div class="pedido-card entregado">' +
+            '<div class="header-p">' +
+                '<div>' +
+                    '<div class="codigo">' + escapeHTML(p.codigo || '—') + '</div>' +
+                    '<div class="fecha">' + formatearFecha(p.entregado_en) + '</div>' +
+                '</div>' +
+                '<span class="estado-badge entregado">✅ Entregado</span>' +
+            '</div>' +
+            '<div class="meta-info">' +
+                '<span class="meta">🏪 ' + escapeHTML(tienda ? tienda.nombre_negocio : '—') + '</span>' +
+            '</div>' +
+            '<div class="footer-p">' +
+                '<div class="ganancia">' +
+                    '<div class="lbl-g">Ganancia</div>' +
+                    '<div class="val-g">+' + formatearPrecio(ganancia) + '</div>' +
+                '</div>' +
+            '</div>' +
+        '</div>';
+    });
+    html += '</div>';
+
+    container.innerHTML = html;
+    if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
+}
+
+// ================================================================
+// TOMAR PEDIDO
+// ================================================================
+async function tomarPedido(pedidoId, btn) {
+    if (!disponible) {
+        showToast('⚠️ Actívate como disponible primero', 'warning');
+        return;
+    }
+    if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Tomando...'; }
+
+    try {
+        var result = await supabase
+            .from('mercado_pedidos')
+            .update({
+                estado: 'asignado',
+                repartidor_id: sessionUser.id,
+                asignado_en: new Date().toISOString()
+            })
+            .eq('id', pedidoId)
+            .eq('estado', 'listo')
+            .is('repartidor_id', null)
+            .select()
+            .single();
+
+        if (result.error) throw result.error;
+
+        showToast('🛵 ¡Pedido tomado! Ve a la tienda a recogerlo.', 'success');
+        await Promise.all([cargarDisponibles(true), cargarMisEntregas(true)]);
+
+    } catch (e) {
+        console.error('Error tomando pedido:', e);
+        showToast('❌ ' + (e.message || 'No se pudo tomar el pedido'), 'error');
+        if (btn) { btn.disabled = false; }
+        await cargarDisponibles(true);
+    }
+}
+
+// ================================================================
+// MARCAR EN CAMINO
+// ================================================================
+async function marcarEnCamino(pedidoId, btn) {
+    if (btn) { btn.disabled = true; btn.innerHTML = '⏳...'; }
+
+    try {
+        var result = await supabase
+            .from('mercado_pedidos')
+            .update({
+                estado: 'en_camino',
+                en_camino_en: new Date().toISOString()
+            })
+            .eq('id', pedidoId)
+            .eq('repartidor_id', sessionUser.id)
+            .eq('estado', 'asignado')
+            .select()
+            .single();
+
+        if (result.error) throw result.error;
+        showToast('🚀 ¡En camino!', 'success');
+        await cargarMisEntregas(true);
+
+    } catch (e) {
+        console.error('Error marcando en camino:', e);
+        showToast('❌ ' + e.message, 'error');
+        if (btn) { btn.disabled = false; }
+    }
+}
+
+// ================================================================
+// MARCAR ENTREGADO
+// ================================================================
+async function marcarEntregado(pedidoId, btn) {
+    if (!confirm('¿Confirmas que ya entregaste el pedido y cobraste el envío en efectivo?')) return;
+    if (btn) { btn.disabled = true; btn.innerHTML = '⏳...'; }
+
+    try {
+        var ganancia = GANANCIA_POR_ENTREGA;
+        if (repartidorData && repartidorData.ganancia_por_entrega) {
+            ganancia = parseFloat(repartidorData.ganancia_por_entrega);
+        }
+
+        var result = await supabase
+            .from('mercado_pedidos')
+            .update({
+                estado: 'entregado',
+                entregado_en: new Date().toISOString(),
+                ganancia_repartidor: ganancia
+            })
+            .eq('id', pedidoId)
+            .eq('repartidor_id', sessionUser.id)
+            .eq('estado', 'en_camino')
+            .select()
+            .single();
+
+        if (result.error) throw result.error;
+
+        // Actualizar stats del repartidor
+        if (repartidorData && repartidorData.id) {
+            var totalEntregas = (parseInt(repartidorData.total_entregas || 0)) + 1;
+            var totalGanado = (parseFloat(repartidorData.total_ganado || 0)) + ganancia;
+
+            await supabase
+                .from('mercado_repartidores')
+                .update({
+                    total_entregas: totalEntregas,
+                    total_ganado: totalGanado,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', repartidorData.id);
+
+            repartidorData.total_entregas = totalEntregas;
+            repartidorData.total_ganado = totalGanado;
+        }
+
+        showToast('✅ ¡Entrega completada! +' + formatearPrecio(ganancia), 'success');
+        await Promise.all([cargarMisEntregas(true), cargarHistorial(true)]);
+
+    } catch (e) {
+        console.error('Error marcando entregado:', e);
+        showToast('❌ ' + e.message, 'error');
+        if (btn) { btn.disabled = false; }
+    }
+}
+
+// ================================================================
+// VER DETALLE
+// ================================================================
+function verDetalle(pedidoId, origen) {
+    var lista = origen === 'mio' ? misEntregas : (origen === 'historial' ? historial : pedidosDisponibles);
+    var p = lista.find(function (x) { return x.id === pedidoId; });
+    if (!p) return;
+
+    var tienda = tiendasCache[p.tienda_id] || null;
+    var comprador = compradoresCache[p.comprador_id] || null;
+    var items = itemsPorPedido[p.id] || [];
+
+    var titulo = document.getElementById('modalDetalleTitulo');
+    if (titulo) titulo.innerHTML = '📦 ' + escapeHTML(p.codigo || 'Pedido');
+
+    var html = '';
+
+    html += '<div class="detalle-seccion">' +
+        '<span class="estado-badge ' + (p.estado || 'listo') + '">' + traducirEstado(p.estado || 'listo') + '</span>' +
+    '</div>';
+
+    html += '<div class="detalle-seccion">' +
+        '<h3>🏪 <span data-clave="repartidor_origen">Origen</span></h3>' +
+        '<div class="dato-fila"><span class="lbl">Tienda</span><span class="val">' + escapeHTML(tienda ? tienda.nombre_negocio : '—') + '</span></div>' +
+        '<div class="dato-fila"><span class="lbl">Dirección</span><span class="val">' + escapeHTML(tienda ? (tienda.direccion || '—') : '—') + '</span></div>' +
+        (tienda && tienda.telefono ? '<div class="dato-fila"><span class="lbl">Teléfono</span><span class="val">' + escapeHTML(tienda.telefono) + '</span></div>' : '') +
+    '</div>';
+
+    html += '<div class="detalle-seccion">' +
+        '<h3>📍 <span data-clave="repartidor_destino">Destino</span></h3>' +
+        '<div class="dato-fila"><span class="lbl">Cliente</span><span class="val">' + escapeHTML(comprador ? (comprador.nombre || comprador.handle) : '—') + '</span></div>' +
+        (comprador && comprador.telefono ? '<div class="dato-fila"><span class="lbl">Teléfono</span><span class="val">' + escapeHTML(comprador.telefono) + '</span></div>' : '') +
+        '<div class="dato-fila"><span class="lbl">Dirección</span><span class="val">' + escapeHTML(p.direccion_entrega || '—') + '</span></div>' +
+        (p.notas ? '<div class="dato-fila"><span class="lbl">Notas</span><span class="val">' + escapeHTML(p.notas) + '</span></div>' : '') +
+    '</div>';
+
+    html += '<div class="detalle-seccion">' +
+        '<h3>📦 <span data-clave="repartidor_productos">Productos</span></h3>';
+    items.forEach(function (it) {
+        html += '<div class="dato-fila">' +
+            '<span class="lbl">' + it.cantidad + '×</span>' +
+            '<span class="val">' + escapeHTML(it.nombre_producto || 'Producto') + '</span>' +
+        '</div>';
+    });
+    html += '</div>';
+
+    html += '<div class="detalle-seccion">' +
+        '<h3>💵 <span data-clave="repartidor_pago">Pago</span></h3>' +
+        '<div class="dato-fila"><span class="lbl">Productos</span><span class="val">Pagados en app</span></div>' +
+        '<div class="dato-fila"><span class="lbl">Envío</span><span class="val" style="color:var(--warning);">Cobrar en efectivo</span></div>' +
+        '<div class="dato-fila"><span class="lbl">Tu ganancia</span><span class="val" style="color:var(--success);font-weight:700;">' + formatearPrecio(GANANCIA_POR_ENTREGA) + '</span></div>' +
+    '</div>';
+
+    var cont = document.getElementById('modalDetalleContenido');
+    if (cont) cont.innerHTML = html;
+
+    var modal = document.getElementById('modalDetalle');
+    if (modal) modal.classList.add('show');
+
+    if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(cont);
+}
+
+function cerrarModalDetalle() {
+    var modal = document.getElementById('modalDetalle');
+    if (modal) modal.classList.remove('show');
+}
+
+// ================================================================
+// TABS
+// ================================================================
+function cambiarTab(tab, btn) {
+    document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
+    document.querySelectorAll('.tab-content').forEach(function (c) { c.classList.remove('active'); });
+    if (btn) btn.classList.add('active');
+    var target = document.querySelector('[data-tab-content="' + tab + '"]');
+    if (target) target.classList.add('active');
+
+    // Cargar datos de la pestaña
+    if (tab === 'disponibles') cargarDisponibles(true);
+    else if (tab === 'mios') cargarMisEntregas(true);
+    else if (tab === 'historial') cargarHistorial(true);
+}
+
+// ================================================================
+// AUTO REFRESH
+// ================================================================
+function iniciarAutoRefresh() {
+    detenerAutoRefresh();
+    autoRefreshTimer = setInterval(function () {
+        if (document.hidden) return;
+        if (disponible) cargarDisponibles(true);
+        cargarMisEntregas(true);
+    }, AUTO_REFRESH_MS);
+}
+
+function detenerAutoRefresh() {
+    if (autoRefreshTimer) {
+        clearInterval(autoRefreshTimer);
+        autoRefreshTimer = null;
+    }
+}
+
+document.addEventListener('visibilitychange', function () {
+    if (document.hidden) {
+        detenerAutoRefresh();
+    } else {
+        if (disponible) cargarDisponibles(true);
+        cargarMisEntregas(true);
+        iniciarAutoRefresh();
+    }
+});
+
+// ================================================================
+// VER TOKENS
+// ================================================================
+function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
+
+// ================================================================
+// INICIALIZACIÓN
+// ================================================================
+document.addEventListener('DOMContentLoaded', async function () {
+    await cargarUsuarioActual();
+
+    if (!sessionUser) {
+        window.location.href = '/';
+        return;
+    }
+
+    await cargarDatosRepartidor();
+
+    // Cargar en paralelo
+    await Promise.all([
+        cargarDisponibles(false),
+        cargarMisEntregas(false),
+        cargarHistorial(false)
+    ]);
+
+    iniciarAutoRefresh();
+
+    setTimeout(async function () {
+        try {
+            if (typeof window.inicializarIdiomas === 'function') {
+                await window.inicializarIdiomas();
+                console.log('✅ Idiomas aplicados al panel del repartidor');
+            }
+        } catch (e) { console.warn('Error idiomas:', e); }
+    }, 400);
+});
+
+// ================================================================
+// EXPOSICIÓN GLOBAL
+// ================================================================
+window.verTokens = verTokens;
+window.showToast = showToast;
+window.cambiarTab = cambiarTab;
+window.toggleEstadoRepartidor = toggleEstadoRepartidor;
+window.tomarPedido = tomarPedido;
+window.marcarEnCamino = marcarEnCamino;
+window.marcarEntregado = marcarEntregado;
+window.verDetalle = verDetalle;
+window.cerrarModalDetalle = cerrarModalDetalle;
+</script>
+</body>
+</html>
