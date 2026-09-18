@@ -2,8 +2,9 @@
      MERCADO - SARIEL'S ECOSYSTEM
      Checkout / Confirmar pedido
      Ruta: /features/mercado/checkout.html
-     Esquema real: bigint IDs, envio_mxn dual (app o efectivo),
-                   forma_pago, campos de dirección + lat/lng, notas
+     
+     GPS obligatorio para seguridad del comprador y del repartidor
+     Dirección escrita + coordenadas GPS ambas requeridas
      ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
@@ -114,32 +115,20 @@
             font-size: 0.6rem;
             color: var(--text-muted);
         }
-        .pasos .paso-item {
-            display: flex; align-items: center; gap: 4px;
-        }
+        .pasos .paso-item { display: flex; align-items: center; gap: 4px; }
         .pasos .paso-num {
             width: 18px; height: 18px;
             border-radius: 50%;
             background: rgba(0,0,0,0.4);
             border: 1px solid var(--glass-border);
             display: flex; align-items: center; justify-content: center;
-            font-size: 0.55rem;
-            font-weight: 700;
+            font-size: 0.55rem; font-weight: 700;
         }
-        .pasos .paso-item.completado .paso-num {
-            background: var(--success); border-color: var(--success); color: #fff;
-        }
-        .pasos .paso-item.actual .paso-num {
-            background: var(--gold); border-color: var(--gold); color: var(--space);
-        }
+        .pasos .paso-item.completado .paso-num { background: var(--success); border-color: var(--success); color: #fff; }
+        .pasos .paso-item.actual .paso-num { background: var(--gold); border-color: var(--gold); color: var(--space); }
         .pasos .paso-item.completado,
         .pasos .paso-item.actual { color: var(--text-primary); }
-        .pasos .linea {
-            width: 14px;
-            height: 1px;
-            background: var(--glass-border);
-            align-self: center;
-        }
+        .pasos .linea { width: 14px; height: 1px; background: var(--glass-border); align-self: center; }
 
         /* Sección */
         .seccion-card {
@@ -175,34 +164,19 @@
             transition: var(--transition);
             text-align: center;
         }
-        .tipo-opcion:hover {
-            border-color: var(--gold);
-        }
+        .tipo-opcion:hover { border-color: var(--gold); }
         .tipo-opcion.activo {
             border-color: var(--gold);
             background: rgba(212,175,55,0.1);
         }
-        .tipo-opcion.deshabilitado {
-            opacity: 0.3;
-            cursor: not-allowed;
-        }
-        .tipo-opcion .icono {
-            font-size: 1.4rem;
-            margin-bottom: 4px;
-        }
+        .tipo-opcion.deshabilitado { opacity: 0.3; cursor: not-allowed; }
+        .tipo-opcion .icono { font-size: 1.4rem; margin-bottom: 4px; }
         .tipo-opcion .nombre {
-            font-size: 0.72rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 2px;
+            font-size: 0.72rem; font-weight: 600;
+            color: var(--text-primary); margin-bottom: 2px;
         }
-        .tipo-opcion .precio {
-            font-size: 0.62rem;
-            color: var(--text-muted);
-        }
-        .tipo-opcion.activo .precio {
-            color: var(--gold);
-        }
+        .tipo-opcion .precio { font-size: 0.62rem; color: var(--text-muted); }
+        .tipo-opcion.activo .precio { color: var(--gold); }
 
         /* Formularios */
         .form-group { margin-bottom: 14px; }
@@ -229,15 +203,11 @@
             transition: var(--transition);
         }
         .form-group input:focus,
-        .form-group textarea:focus,
-        .form-group select:focus {
+        .form-group textarea:focus {
             border-color: var(--gold);
             background: rgba(0,0,0,0.5);
         }
-        .form-group textarea {
-            resize: vertical;
-            min-height: 70px;
-        }
+        .form-group textarea { resize: vertical; min-height: 70px; }
         .form-group .helper {
             font-size: 0.6rem;
             color: var(--text-muted);
@@ -254,8 +224,126 @@
             .tipo-entrega-toggle { grid-template-columns: 1fr; }
         }
 
-        /* Botón ubicación GPS */
-        .btn-gps {
+        /* NUEVO: Bloque GPS obligatorio */
+        .gps-bloque {
+            background: rgba(0,229,255,0.05);
+            border: 1px solid rgba(0,229,255,0.2);
+            border-radius: 14px;
+            padding: 14px;
+            margin-top: 6px;
+            transition: var(--transition);
+        }
+        .gps-bloque.capturado {
+            background: rgba(0,214,143,0.08);
+            border-color: rgba(0,214,143,0.4);
+        }
+        .gps-bloque.error {
+            background: rgba(255,51,102,0.08);
+            border-color: rgba(255,51,102,0.3);
+        }
+        .gps-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .gps-header .gps-icono {
+            font-size: 1.2rem;
+        }
+        .gps-header .gps-titulo {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--cyan);
+            flex: 1;
+        }
+        .gps-bloque.capturado .gps-header .gps-titulo { color: var(--success); }
+        .gps-bloque.error .gps-header .gps-titulo { color: var(--danger); }
+
+        .gps-aviso {
+            font-size: 0.68rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+        .gps-aviso strong { color: var(--warning); }
+
+        .btn-gps-grande {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--cyan), #00b3cc);
+            color: var(--space);
+            border: none;
+            border-radius: 30px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 0.78rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-gps-grande:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,229,255,0.3);
+        }
+        .btn-gps-grande:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn-gps-actualizar {
+            width: 100%;
+            padding: 10px;
+            background: transparent;
+            border: 1px solid var(--success);
+            color: var(--success);
+            border-radius: 20px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        .btn-gps-actualizar:hover { background: rgba(0,214,143,0.1); }
+
+        .gps-coords {
+            background: rgba(0,0,0,0.4);
+            border-radius: 10px;
+            padding: 10px;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.7rem;
+            color: var(--success);
+            text-align: center;
+            margin-bottom: 8px;
+            word-break: break-all;
+        }
+        .gps-coords .precision {
+            display: block;
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .gps-instrucciones {
+            font-size: 0.68rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            padding: 10px;
+            background: rgba(255,51,102,0.08);
+            border-radius: 10px;
+            margin-top: 8px;
+        }
+        .gps-instrucciones ol {
+            padding-left: 18px;
+            margin-top: 6px;
+        }
+        .gps-instrucciones li { margin-bottom: 4px; }        /* Botón GPS pequeño (fallback) */
+        .btn-gps-mini {
             margin-top: 8px;
             padding: 9px 14px;
             background: rgba(0,229,255,0.08);
@@ -269,8 +357,8 @@
             align-items: center;
             gap: 6px;
         }
-        .btn-gps:hover { background: rgba(0,229,255,0.15); }
-        .btn-gps:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-gps-mini:hover { background: rgba(0,229,255,0.15); }
+        .btn-gps-mini:disabled { opacity: 0.5; cursor: not-allowed; }
 
         /* Métodos de pago */
         .pago-opciones {
@@ -289,16 +377,9 @@
             align-items: center;
             gap: 10px;
         }
-        .pago-opcion:hover {
-            border-color: var(--gold);
-        }
-        .pago-opcion.activo {
-            border-color: var(--gold);
-            background: rgba(212,175,55,0.1);
-        }
-        .pago-opcion .icono {
-            font-size: 1.3rem;
-        }
+        .pago-opcion:hover { border-color: var(--gold); }
+        .pago-opcion.activo { border-color: var(--gold); background: rgba(212,175,55,0.1); }
+        .pago-opcion .icono { font-size: 1.3rem; }
         .pago-opcion .texto {
             font-size: 0.72rem;
             font-weight: 600;
@@ -319,17 +400,12 @@
             gap: 10px;
             align-items: flex-start;
         }
-        .aviso-envio .icono {
-            font-size: 1.2rem;
-            flex-shrink: 0;
-        }
+        .aviso-envio .icono { font-size: 1.2rem; flex-shrink: 0; }
 
-        /* Resumen del pedido */
+        /* Resumen */
         .resumen-items {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-bottom: 14px;
+            display: flex; flex-direction: column;
+            gap: 10px; margin-bottom: 14px;
         }
         .resumen-grupo {
             background: rgba(0,0,0,0.2);
@@ -337,26 +413,19 @@
             padding: 10px 12px;
         }
         .resumen-grupo .tienda-nombre {
-            font-size: 0.7rem;
-            color: var(--gold);
-            font-weight: 600;
-            margin-bottom: 8px;
+            font-size: 0.7rem; color: var(--gold);
+            font-weight: 600; margin-bottom: 8px;
             padding-bottom: 6px;
             border-bottom: 1px solid var(--glass-border);
             font-family: 'Orbitron', monospace;
         }
         .resumen-item {
-            display: flex;
-            justify-content: space-between;
-            gap: 8px;
-            font-size: 0.72rem;
+            display: flex; justify-content: space-between;
+            gap: 8px; font-size: 0.72rem;
             padding: 4px 0;
             color: var(--text-secondary);
         }
-        .resumen-item .cant {
-            color: var(--text-muted);
-            margin-right: 6px;
-        }
+        .resumen-item .cant { color: var(--text-muted); margin-right: 6px; }
         .resumen-item .subtotal {
             color: var(--gold);
             font-weight: 600;
@@ -371,15 +440,11 @@
             margin-top: 12px;
         }
         .totales .fila {
-            display: flex;
-            justify-content: space-between;
-            padding: 5px 0;
-            font-size: 0.78rem;
+            display: flex; justify-content: space-between;
+            padding: 5px 0; font-size: 0.78rem;
             color: var(--text-secondary);
         }
-        .totales .fila.envio .val {
-            font-size: 0.72rem;
-        }
+        .totales .fila.envio .val { font-size: 0.72rem; }
         .totales .fila.total {
             border-top: 2px solid var(--glass-border);
             margin-top: 8px;
@@ -423,62 +488,58 @@
             box-shadow: var(--shadow-gold);
         }
         .btn-confirmar:disabled {
-            opacity: 0.5;
+            opacity: 0.4;
             cursor: not-allowed;
+            filter: grayscale(0.5);
         }
+
+        .aviso-bloqueo {
+            text-align: center;
+            font-size: 0.68rem;
+            color: var(--warning);
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .aviso-bloqueo.hidden { display: none; }
 
         /* Loading / empty */
         .loading-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--text-muted);
+            text-align: center; padding: 60px 20px; color: var(--text-muted);
         }
         .loading-state .spinner {
             width: 40px; height: 40px;
             border: 3px solid rgba(212, 175, 55, 0.15);
             border-top-color: var(--gold);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
+            border-radius: 50%; animation: spin 0.8s linear infinite;
             margin: 0 auto 12px;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
         .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--text-muted);
-            background: var(--glass-bg);
+            text-align: center; padding: 60px 20px;
+            color: var(--text-muted); background: var(--glass-bg);
             border: 1px solid var(--glass-border);
             border-radius: var(--radius-xl);
         }
         .empty-state .icon {
-            font-size: 3.5rem;
-            display: block;
-            margin-bottom: 16px;
-            color: var(--gold);
-            opacity: 0.4;
+            font-size: 3.5rem; display: block; margin-bottom: 16px;
+            color: var(--gold); opacity: 0.4;
         }
         .empty-state h3 {
             font-family: 'Orbitron', monospace;
-            color: var(--text-secondary);
-            font-size: 1rem;
-            margin-bottom: 8px;
+            color: var(--text-secondary); font-size: 1rem; margin-bottom: 8px;
         }
         .empty-state p { font-size: 0.85rem; margin-bottom: 20px; }
         .empty-state .btn-ir {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
+            display: inline-flex; align-items: center; gap: 8px;
             padding: 12px 28px;
             background: linear-gradient(135deg, var(--gold), var(--gold-dark));
-            color: var(--space);
-            border: none;
-            border-radius: 30px;
-            font-family: 'Orbitron', monospace;
-            font-weight: 700;
-            font-size: 0.8rem;
-            cursor: pointer;
-            text-decoration: none;
+            color: var(--space); border: none; border-radius: 30px;
+            font-family: 'Orbitron', monospace; font-weight: 700;
+            font-size: 0.8rem; cursor: pointer; text-decoration: none;
             transition: var(--transition);
         }
 
@@ -529,6 +590,12 @@
         html.tema-dia .main-nav .nav-link, html[data-tema="dia"] .main-nav .nav-link { color: #718096 !important; }
         html.tema-dia .main-nav .nav-link.active, html[data-tema="dia"] .main-nav .nav-link.active { background: rgba(212, 175, 55, 0.15) !important; color: var(--gold) !important; }
         html.tema-dia .footer, html[data-tema="dia"] .footer { color: #718096 !important; border-top-color: rgba(0, 0, 0, 0.1) !important; }
+
+        @media (max-width: 480px) {
+            .titulo h1 { font-size: 1.05rem; }
+            .pago-opciones { grid-template-columns: 1fr; }
+            .gps-coords { font-size: 0.62rem; }
+        }
     </style>
 </head>
 <body>
@@ -624,9 +691,7 @@
             style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">
             Cerrar
         </button>
-    </div>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    </div><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/features/shared/js/idiomas.js"></script>
 
 <script>
@@ -634,7 +699,7 @@
 // CONFIGURACIÓN
 // ================================================================
 var supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
-var supabaseKey = 'sb_publishable_S3jAzmRO4JKBRhUdI1A_-nsyVhKu'.replace('AzmRO4', 'Az3mRO4').replace('S3jAz', 'S3jONAz');
+var supabaseKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
 var supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 window.supabaseClient = supabaseClient;
 var supabase = supabaseClient;
@@ -647,9 +712,10 @@ var CARRITO_KEY = 'mercado_carrito_v1';
 var sessionUser = null;
 var itemsCarrito = [];
 var tiendasCache = {};
-var tipoEntrega = 'delivery'; // 'delivery' o 'pickup'
+var tipoEntrega = 'delivery';
 var metodoPago = 'efectivo';
-var coordenadas = { lat: null, lng: null };
+var coordenadas = { lat: null, lng: null, precision: null };
+var gpsTimeoutId = null;
 var procesando = false;
 var gruposTiendas = {};
 
@@ -734,7 +800,7 @@ async function cargarUsuarioActual() {
         sessionUser = session.user;
         var u = await supabase
             .from('usuarios')
-            .select('nombre, handle, telefono, tokens')
+            .select('nombre, handle, telefono, direccion, tokens')
             .eq('id', session.user.id)
             .single();
         if (!u.error && u.data) {
@@ -746,13 +812,13 @@ async function cargarUsuarioActual() {
 }
 
 // ================================================================
-// CARGAR DATOS DEL CARRITO
+// PREPARAR CHECKOUT
 // ================================================================
 async function prepararCheckout() {
     itemsCarrito = leerCarrito();
 
     if (itemsCarrito.length === 0) {
-        mostrarVacio();
+        mostrarVacio('Tu carrito está vacío.');
         return;
     }
 
@@ -778,7 +844,7 @@ async function prepararCheckout() {
         } catch (e) { console.error('Error tiendas:', e); }
     }
 
-    // Verificar que todas las tiendas estén activas
+    // Verificar que todas estén activas
     var tiendaInactiva = null;
     tiendaIds.forEach(function (tid) {
         var t = tiendasCache[tid];
@@ -790,7 +856,7 @@ async function prepararCheckout() {
         return;
     }
 
-    // Verificar disponibilidad de delivery/pickup en TODAS las tiendas
+    // Verificar delivery/pickup
     var todasAceptanDelivery = tiendaIds.every(function (tid) {
         var t = tiendasCache[tid];
         return t && t.acepta_delivery;
@@ -800,12 +866,11 @@ async function prepararCheckout() {
         return t && t.acepta_pickup;
     });
 
-    // Elegir tipo de entrega por defecto
     if (todasAceptanDelivery) tipoEntrega = 'delivery';
     else if (todasAceptanPickup) tipoEntrega = 'pickup';
     else tipoEntrega = 'delivery';
 
-    // Agrupar items por tienda
+    // Agrupar items
     gruposTiendas = {};
     itemsCarrito.forEach(function (it) {
         if (!gruposTiendas[it.tienda_id]) {
@@ -851,11 +916,8 @@ function calcularEnvio() {
         var t = tiendasCache[tid];
         if (!t) return;
         var envio = parseFloat(t.envio_mxn || 0);
-        if (envio > 0) {
-            envioApp += envio;
-        } else if (t.acepta_delivery) {
-            hayCoordinar = true;
-        }
+        if (envio > 0) envioApp += envio;
+        else if (t.acepta_delivery) hayCoordinar = true;
     });
 
     return {
@@ -866,9 +928,7 @@ function calcularEnvio() {
 }
 
 function calcularTotal() {
-    var sub = calcularSubtotal();
-    var envio = calcularEnvio();
-    return sub + envio.app;
+    return calcularSubtotal() + calcularEnvio().app;
 }
 
 // ================================================================
@@ -897,21 +957,63 @@ function renderCheckout(aceptaDelivery, aceptaPickup) {
         '</div>' +
     '</div>';
 
-    // ============ DIRECCIÓN (solo si delivery) ============
+    // ============ DIRECCIÓN + GPS (solo si delivery) ============
     if (tipoEntrega === 'delivery') {
         html += '<div class="seccion-card">' +
             '<h2>📍 <span data-clave="mercado_direccion_entrega">Dirección de entrega</span></h2>' +
+
+            // Dirección escrita
             '<div class="form-group">' +
-                '<label><span data-clave="mercado_direccion">Dirección</span> <span class="required">*</span></label>' +
-                '<input type="text" id="inputDireccion" maxlength="200" placeholder="Calle, número, colonia, referencias..." />' +
-                '<button type="button" class="btn-gps" id="btnGPS" onclick="obtenerUbicacion()">' +
-                    '📡 Usar mi ubicación GPS' +
-                '</button>' +
-                '<div class="helper" id="gpsHelper" style="display:none;">✓ Ubicación capturada</div>' +
+                '<label><span data-clave="mercado_direccion">Dirección escrita</span> <span class="required">*</span></label>' +
+                '<input type="text" id="inputDireccion" maxlength="200" placeholder="Calle, número, colonia, referencias, depto, color de fachada..." />' +
+                '<div class="helper">Sé lo más específico posible: el repartidor debe encontrarte rápido</div>' +
             '</div>' +
-            '<div class="form-group">' +
+
+            // GPS obligatorio
+            '<div class="form-group" style="margin-bottom:0;">' +
+                '<label><span data-clave="mercado_ubicacion_gps">Ubicación GPS</span> <span class="required">*</span></label>' +
+
+                '<div class="gps-bloque" id="gpsBloque">' +
+                    '<div class="gps-header">' +
+                        '<span class="gps-icono" id="gpsIcono">📡</span>' +
+                        '<span class="gps-titulo" id="gpsTitulo">Activa tu ubicación GPS</span>' +
+                    '</div>' +
+
+                    '<div class="gps-aviso" id="gpsAviso">' +
+                        '<strong>Obligatorio:</strong> activa tu GPS para que el repartidor llegue sin problemas. ' +
+                        'Tu ubicación exacta solo se comparte con el repartidor asignado y se borra al terminar la entrega.' +
+                    '</div>' +
+
+                    '<button type="button" class="btn-gps-grande" id="btnGPS" onclick="capturarUbicacion()">' +
+                        '📡 <span data-clave="mercado_activar_gps">Activar mi ubicación GPS</span>' +
+                    '</button>' +
+
+                    '<div id="gpsCoordsBox" style="display:none; margin-top:10px;">' +
+                        '<div class="gps-coords" id="gpsCoords">' +
+                            '—<span class="precision" id="gpsPrecision"></span>' +
+                        '</div>' +
+                        '<button type="button" class="btn-gps-actualizar" onclick="capturarUbicacion()">' +
+                            '🔄 Actualizar ubicación' +
+                        '</button>' +
+                    '</div>' +
+
+                    '<div class="gps-instrucciones" id="gpsInstrucciones" style="display:none;">' +
+                        '<strong>⚠️ No pudimos acceder a tu ubicación</strong>' +
+                        '<ol>' +
+                            '<li>Revisa que el GPS del teléfono esté encendido</li>' +
+                            '<li>Acepta el permiso de ubicación cuando el navegador pregunte</li>' +
+                            '<li>Si lo rechazaste antes, ve a configuración del navegador → este sitio → Permitir ubicación</li>' +
+                            '<li>Vuelve e intenta de nuevo</li>' +
+                        '</ol>' +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+
+            // Teléfono
+            '<div class="form-group" style="margin-top:14px; margin-bottom:0;">' +
                 '<label><span data-clave="mercado_telefono_contacto">Teléfono de contacto</span> <span class="required">*</span></label>' +
                 '<input type="tel" id="inputTelefono" maxlength="20" placeholder="+52 123 456 7890" />' +
+                '<div class="helper">El repartidor podrá llamarte si se pierde</div>' +
             '</div>' +
         '</div>';
     } else {
@@ -954,10 +1056,12 @@ function renderCheckout(aceptaDelivery, aceptaPickup) {
 
     container.innerHTML = html;
 
-    // Autocompletar teléfono del usuario
     autocompletarDatosUsuario();
 
     if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
+
+    // Actualizar estado del botón confirmar
+    actualizarEstadoBotonConfirmar();
 }
 
 function obtenerTextoEnvio() {
@@ -995,14 +1099,12 @@ function renderResumen() {
     });
 
     html += '</div>' +
-
         '<div class="totales">' +
             '<div class="fila">' +
                 '<span>Subtotal productos</span>' +
                 '<span>' + formatearPrecio(subtotal) + '</span>' +
             '</div>';
 
-    // Envío
     if (tipoEntrega === 'pickup') {
         html += '<div class="fila envio">' +
             '<span>🏪 Recoger en tienda</span>' +
@@ -1029,7 +1131,6 @@ function renderResumen() {
     '</div>' +
     '</div>';
 
-    // Aviso de envío en efectivo
     if (tipoEntrega === 'delivery' && envio.coordinar) {
         html += '<div class="aviso-envio">' +
             '<span class="icono">💵</span>' +
@@ -1040,17 +1141,64 @@ function renderResumen() {
         '</div>';
     }
 
-    // Botón confirmar
-    html += '<button class="btn-confirmar" id="btnConfirmar" onclick="confirmarPedido()">' +
+    html += '<button class="btn-confirmar" id="btnConfirmar" onclick="confirmarPedido()" disabled>' +
         '✓ <span data-clave="mercado_confirmar_pedido">Confirmar pedido</span>' +
-    '</button>' +
+    '</button>';
+
+    html += '<div class="aviso-bloqueo" id="avisoBloqueo">' +
+        '⚠️ <span id="textoBloqueo">Completa todos los datos para continuar</span>' +
     '</div>';
+
+    html += '</div>';
 
     return html;
 }
 
 // ================================================================
-// AUTOCOMPLETAR DATOS DEL USUARIO
+// VALIDAR ESTADO DEL FORMULARIO
+// ================================================================
+function actualizarEstadoBotonConfirmar() {
+    var btn = document.getElementById('btnConfirmar');
+    var textoBloqueo = document.getElementById('textoBloqueo');
+    var avisoBloqueo = document.getElementById('avisoBloqueo');
+    if (!btn) return;
+
+    var telefono = (document.getElementById('inputTelefono') || {}).value || '';
+    telefono = telefono.trim();
+
+    var direccion = '';
+    if (tipoEntrega === 'delivery') {
+        direccion = (document.getElementById('inputDireccion') || {}).value || '';
+        direccion = direccion.trim();
+    }
+
+    var tieneTelefono = telefono.length >= 8;
+    var tieneDireccion = tipoEntrega === 'pickup' || direccion.length >= 5;
+    var tieneGPS = tipoEntrega === 'pickup' || (coordenadas.lat !== null && coordenadas.lng !== null);
+
+    var puedeContinuar = tieneTelefono && tieneDireccion && tieneGPS;
+
+    if (puedeContinuar) {
+        btn.disabled = false;
+        if (avisoBloqueo) avisoBloqueo.classList.add('hidden');
+    } else {
+        btn.disabled = true;
+        if (avisoBloqueo) avisoBloqueo.classList.remove('hidden');
+
+        // Mensaje dinámico
+        var faltantes = [];
+        if (!tieneDireccion && tipoEntrega === 'delivery') faltantes.push('dirección');
+        if (!tieneGPS && tipoEntrega === 'delivery') faltantes.push('GPS');
+        if (!tieneTelefono) faltantes.push('teléfono');
+
+        if (textoBloqueo) {
+            textoBloqueo.textContent = 'Falta: ' + faltantes.join(', ');
+        }
+    }
+}
+
+// ================================================================
+// AUTOCOMPLETAR DATOS
 // ================================================================
 async function autocompletarDatosUsuario() {
     if (!sessionUser) return;
@@ -1072,6 +1220,12 @@ async function autocompletarDatosUsuario() {
             if (dir && u.data.direccion && !dir.value) {
                 dir.value = u.data.direccion;
             }
+
+            // Enganchar eventos
+            if (tel) tel.addEventListener('input', actualizarEstadoBotonConfirmar);
+            if (dir) dir.addEventListener('input', actualizarEstadoBotonConfirmar);
+
+            actualizarEstadoBotonConfirmar();
         }
     } catch (e) { /* silencioso */ }
 }
@@ -1098,36 +1252,124 @@ function cambiarMetodoPago(metodo) {
 }
 
 // ================================================================
-// GPS
+// GPS - CAPTURA DE UBICACIÓN
 // ================================================================
-function obtenerUbicacion() {
+function capturarUbicacion() {
+    var btn = document.getElementById('btnGPS');
+    var btnActualizar = document.querySelector('.btn-gps-actualizar');
+    var bloque = document.getElementById('gpsBloque');
+    var titulo = document.getElementById('gpsTitulo');
+    var icono = document.getElementById('gpsIcono');
+    var aviso = document.getElementById('gpsAviso');
+    var instrucciones = document.getElementById('gpsInstrucciones');
+    var coordsBox = document.getElementById('gpsCoordsBox');
+    var coords = document.getElementById('gpsCoords');
+    var precision = document.getElementById('gpsPrecision');
+
     if (!navigator.geolocation) {
-        showToast('GPS no disponible en este navegador', 'warning');
+        showToast('❌ Tu navegador no soporta GPS', 'error');
+        if (bloque) bloque.classList.add('error');
+        if (instrucciones) instrucciones.style.display = 'block';
         return;
     }
 
-    var btn = document.getElementById('btnGPS');
-    if (btn) { btn.disabled = true; btn.textContent = '📡 Obteniendo...'; }
+    // Estado "cargando"
+    if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Obteniendo ubicación...'; }
+    if (btnActualizar) { btnActualizar.disabled = true; btnActualizar.innerHTML = '⏳...'; }
+    if (bloque) { bloque.classList.remove('capturado', 'error'); }
+    if (instrucciones) instrucciones.style.display = 'none';
+    if (titulo) titulo.textContent = 'Buscando tu ubicación...';
+    if (icono) icono.textContent = '📡';
+
+    // Timeout de seguridad (15s)
+    if (gpsTimeoutId) clearTimeout(gpsTimeoutId);
+    gpsTimeoutId = setTimeout(function () {
+        if (coordenadas.lat === null) {
+            onGPSError({ code: 3, message: 'Tiempo de espera agotado' });
+        }
+    }, 15000);
 
     navigator.geolocation.getCurrentPosition(
         function (pos) {
+            if (gpsTimeoutId) clearTimeout(gpsTimeoutId);
+
             coordenadas.lat = pos.coords.latitude;
             coordenadas.lng = pos.coords.longitude;
-            if (btn) { btn.textContent = '✓ Ubicación capturada'; }
-            var helper = document.getElementById('gpsHelper');
-            if (helper) {
-                helper.style.display = 'block';
-                helper.textContent = '✓ ' + coordenadas.lat.toFixed(5) + ', ' + coordenadas.lng.toFixed(5);
+            coordenadas.precision = Math.round(pos.coords.accuracy || 0);
+
+            // UI éxito
+            if (bloque) {
+                bloque.classList.remove('error');
+                bloque.classList.add('capturado');
             }
-            showToast('📍 Ubicación capturada', 'success');
+            if (icono) icono.textContent = '✅';
+            if (titulo) titulo.textContent = '¡Ubicación capturada!';
+            if (aviso) aviso.style.display = 'none';
+            if (coordsBox) coordsBox.style.display = 'block';
+            if (coords) {
+                coords.innerHTML = pos.coords.latitude.toFixed(6) + ', ' + pos.coords.longitude.toFixed(6) +
+                    '<span class="precision" id="gpsPrecision">Precisión: ±' + coordenadas.precision + 'm</span>';
+            }
+            if (btn) {
+                btn.style.display = 'none';
+            }
+            if (btnActualizar) {
+                btnActualizar.disabled = false;
+                btnActualizar.innerHTML = '🔄 Actualizar ubicación';
+            }
+
+            showToast('📍 Ubicación capturada (±' + coordenadas.precision + 'm)', 'success');
+            actualizarEstadoBotonConfirmar();
         },
         function (err) {
-            console.error('Error GPS:', err);
-            if (btn) { btn.disabled = false; btn.textContent = '📡 Usar mi ubicación GPS'; }
-            showToast('❌ No se pudo obtener tu ubicación', 'error');
+            if (gpsTimeoutId) clearTimeout(gpsTimeoutId);
+            onGPSError(err);
         },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+        {
+            enableHighAccuracy: true,
+            timeout: 12000,
+            maximumAge: 0
+        }
     );
+}
+
+function onGPSError(err) {
+    console.error('Error GPS:', err);
+
+    var btn = document.getElementById('btnGPS');
+    var btnActualizar = document.querySelector('.btn-gps-actualizar');
+    var bloque = document.getElementById('gpsBloque');
+    var titulo = document.getElementById('gpsTitulo');
+    var icono = document.getElementById('gpsIcono');
+    var aviso = document.getElementById('gpsAviso');
+    var instrucciones = document.getElementById('gpsInstrucciones');
+
+    if (bloque) {
+        bloque.classList.remove('capturado');
+        bloque.classList.add('error');
+    }
+    if (icono) icono.textContent = '⚠️';
+    if (titulo) titulo.textContent = 'No pudimos acceder a tu ubicación';
+    if (aviso) aviso.style.display = 'none';
+    if (instrucciones) instrucciones.style.display = 'block';
+
+    if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '📡 Reintentar captura';
+        btn.style.display = 'inline-flex';
+    }
+    if (btnActualizar) {
+        btnActualizar.disabled = false;
+        btnActualizar.innerHTML = '🔄 Reintentar';
+    }
+
+    var msg = 'Error de GPS';
+    if (err && err.code === 1) msg = '❌ Permiso denegado. Revisa las instrucciones';
+    else if (err && err.code === 2) msg = '❌ Ubicación no disponible';
+    else if (err && err.code === 3) msg = '❌ Tiempo agotado. Intenta de nuevo';
+
+    showToast(msg, 'error');
+    actualizarEstadoBotonConfirmar();
 }
 
 // ================================================================
@@ -1136,17 +1378,15 @@ function obtenerUbicacion() {
 async function confirmarPedido() {
     if (procesando) return;
 
-    // Validar sesión
     if (!sessionUser) {
         showToast('⚠️ Inicia sesión primero', 'warning');
         return;
     }
 
-    // Validar datos según tipo entrega
+    // Validaciones finales
     var telefono = (document.getElementById('inputTelefono') || {}).value || '';
     telefono = telefono.trim();
-
-    if (!telefono) {
+    if (!telefono || telefono.length < 8) {
         showToast('⚠️ Ingresa tu teléfono de contacto', 'warning');
         document.getElementById('inputTelefono').focus();
         return;
@@ -1156,9 +1396,16 @@ async function confirmarPedido() {
     if (tipoEntrega === 'delivery') {
         direccion = (document.getElementById('inputDireccion') || {}).value || '';
         direccion = direccion.trim();
-        if (!direccion) {
-            showToast('⚠️ Ingresa tu dirección de entrega', 'warning');
+        if (!direccion || direccion.length < 5) {
+            showToast('⚠️ Ingresa tu dirección completa', 'warning');
             document.getElementById('inputDireccion').focus();
+            return;
+        }
+
+        if (coordenadas.lat === null || coordenadas.lng === null) {
+            showToast('⚠️ Activa tu ubicación GPS para continuar', 'warning');
+            var btnGps = document.getElementById('btnGPS');
+            if (btnGps) btnGps.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return;
         }
     }
@@ -1171,10 +1418,6 @@ async function confirmarPedido() {
     if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Procesando...'; }
 
     try {
-        // ============================================================
-        // OPCIÓN A: Si hay 1 sola tienda → 1 pedido
-        // OPCIÓN B: Si hay varias → 1 pedido por tienda
-        // ============================================================
         var tiendasIds = Object.keys(gruposTiendas);
         var pedidosCreados = [];
 
@@ -1183,12 +1426,10 @@ async function confirmarPedido() {
             var items = gruposTiendas[tiendasIds[i]];
             var t = tiendasCache[tid];
 
-            // Calcular subtotal de esta tienda
             var subtotalTienda = items.reduce(function (s, it) {
                 return s + parseFloat(it.subtotal || 0);
             }, 0);
 
-            // Calcular envío de esta tienda
             var envioTienda = 0;
             var envioCobradoEnApp = false;
             if (tipoEntrega === 'delivery' && t && t.acepta_delivery) {
@@ -1200,11 +1441,8 @@ async function confirmarPedido() {
             }
 
             var totalTienda = subtotalTienda + envioTienda;
-
-            // Generar código único
             var codigo = generarCodigoPedido();
 
-            // Crear pedido
             var payloadPedido = {
                 codigo: codigo,
                 comprador_id: sessionUser.id,
@@ -1214,6 +1452,7 @@ async function confirmarPedido() {
                 subtotal_mxn: subtotalTienda,
                 envio_mxn: envioTienda,
                 total_mxn: totalTienda,
+                total_items: items.reduce(function (s, it) { return s + (it.cantidad || 0); }, 0),
                 direccion_entrega: tipoEntrega === 'delivery' ? direccion : null,
                 latitud_entrega: tipoEntrega === 'delivery' ? coordenadas.lat : null,
                 longitud_entrega: tipoEntrega === 'delivery' ? coordenadas.lng : null,
@@ -1235,7 +1474,6 @@ async function confirmarPedido() {
 
             var pedido = insPedido.data;
 
-            // Crear los items
             var itemsPayload = items.map(function (it) {
                 return {
                     pedido_id: pedido.id,
@@ -1254,12 +1492,11 @@ async function confirmarPedido() {
 
             if (insItems.error) {
                 console.error('Error items:', insItems.error);
-                // Intentar limpiar el pedido huérfano
                 await supabase.from('mercado_pedidos').delete().eq('id', pedido.id);
                 throw new Error('Error al guardar items: ' + insItems.error.message);
             }
 
-            // Descontar stock de cada producto (si no es ilimitado)
+            // Descontar stock
             for (var j = 0; j < items.length; j++) {
                 var it = items[j];
                 try {
@@ -1281,42 +1518,31 @@ async function confirmarPedido() {
                 }
             }
 
-            // Incrementar contadores de la tienda
+            // Actualizar contadores de tienda
             try {
-                await supabase.rpc('mercado_incrementar_pedidos_tienda', {
-                    p_tienda_id: tid
-                });
-            } catch (eRpc) {
-                // Si no existe el RPC, lo hacemos manual
-                try {
-                    var tiendaActual = await supabase
-                        .from('mercado_tiendas')
-                        .select('total_pedidos, total_ventas_mxn')
-                        .eq('id', tid)
-                        .single();
+                var tiendaActual = await supabase
+                    .from('mercado_tiendas')
+                    .select('total_pedidos, total_ventas_mxn')
+                    .eq('id', tid)
+                    .single();
 
-                    if (!tiendaActual.error && tiendaActual.data) {
-                        await supabase
-                            .from('mercado_tiendas')
-                            .update({
-                                total_pedidos: (parseInt(tiendaActual.data.total_pedidos || 0)) + 1,
-                                total_ventas_mxn: (parseFloat(tiendaActual.data.total_ventas_mxn || 0)) + totalTienda
-                            })
-                            .eq('id', tid);
-                    }
-                } catch (e2) { console.warn('No se pudo actualizar tienda:', e2); }
-            }
+                if (!tiendaActual.error && tiendaActual.data) {
+                    await supabase
+                        .from('mercado_tiendas')
+                        .update({
+                            total_pedidos: (parseInt(tiendaActual.data.total_pedidos || 0)) + 1,
+                            total_ventas_mxn: (parseFloat(tiendaActual.data.total_ventas_mxn || 0)) + totalTienda
+                        })
+                        .eq('id', tid);
+                }
+            } catch (e2) { console.warn('No se pudo actualizar tienda:', e2); }
 
             pedidosCreados.push(pedido);
         }
 
-        // Vaciar carrito
         guardarCarrito([]);
-
-        // Éxito
         showToast('🎉 ¡Pedido' + (pedidosCreados.length > 1 ? 's' : '') + ' confirmado' + (pedidosCreados.length > 1 ? 's' : '') + '!', 'success');
 
-        // Redirigir
         setTimeout(function () {
             if (pedidosCreados.length === 1) {
                 window.location.href = '/features/mercado/pedido.html?id=' + pedidosCreados[0].id;
@@ -1328,7 +1554,10 @@ async function confirmarPedido() {
     } catch (e) {
         console.error('Error confirmando pedido:', e);
         showToast('❌ ' + (e.message || 'Error al confirmar'), 'error');
-        if (btn) { btn.disabled = false; btn.innerHTML = '✓ Confirmar pedido'; }
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '✓ Confirmar pedido';
+        }
         procesando = false;
     }
 }
@@ -1376,7 +1605,7 @@ window.verTokens = verTokens;
 window.showToast = showToast;
 window.cambiarTipoEntrega = cambiarTipoEntrega;
 window.cambiarMetodoPago = cambiarMetodoPago;
-window.obtenerUbicacion = obtenerUbicacion;
+window.capturarUbicacion = capturarUbicacion;
 window.confirmarPedido = confirmarPedido;
 </script>
 </body>
