@@ -1,7 +1,9 @@
 <!-- ================================================================
      MERCADO - SARIEL'S ECOSYSTEM
      Detalle y seguimiento de un pedido (vista del comprador)
-     + Auto-refresh · Modal cancelación · Nota envío efectivo · Card repartidor
+     Ruta: /features/mercado/pedido.html?id=BIGINT
+     Esquema real: bigint IDs, envio_cobrado_en_app, forma_pago,
+                   lat/lng entrega, cancelado_por
      ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
@@ -89,27 +91,18 @@
 
         .titulo {
             display: flex; justify-content: space-between; align-items: flex-start;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            gap: 10px;
+            margin-bottom: 20px; flex-wrap: wrap; gap: 10px;
         }
         .titulo h1 {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: var(--gold);
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            font-family: 'Orbitron', monospace; font-size: 1.2rem;
+            font-weight: 700; color: var(--gold);
+            display: flex; align-items: center; gap: 8px;
         }
         .estado-badge {
-            font-size: 0.6rem;
-            padding: 4px 12px;
+            font-size: 0.6rem; padding: 4px 12px;
             border-radius: 20px;
-            font-family: 'Orbitron', monospace;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            font-family: 'Orbitron', monospace; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.5px;
             border: 1px solid var(--glass-border);
             background: rgba(0,0,0,0.3);
         }
@@ -123,434 +116,12 @@
         .estado-badge.cancelado { color: var(--danger); border-color: var(--danger); }
         .estado-badge.rechazado { color: var(--danger); border-color: var(--danger); }
 
-        .seccion-card {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-xl);
-            padding: 20px;
-            margin-bottom: 16px;
-        }
-        .seccion-card h2 {
-            font-family: 'Orbitron', monospace;
-            font-size: 0.9rem;
-            color: var(--gold);
-            margin-bottom: 14px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        /* Código grande */
-        .codigo-box {
-            text-align: center;
-            padding: 16px;
-            background: rgba(0,0,0,0.4);
-            border: 1px dashed var(--gold);
-            border-radius: 14px;
-            margin-bottom: 16px;
-        }
-        .codigo-box .lbl {
-            font-size: 0.6rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 4px;
-        }
-        .codigo-box .codigo {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.4rem;
-            font-weight: 700;
-            color: var(--gold);
-            letter-spacing: 2px;
-        }
-
-        /* Timeline vertical */
-        .timeline {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            position: relative;
-        }
-        .timeline-item {
-            display: flex;
-            gap: 12px;
-            align-items: flex-start;
-            position: relative;
-            padding-bottom: 16px;
-        }
-        .timeline-item:last-child { padding-bottom: 0; }
-        .timeline-item .icono {
-            width: 32px; height: 32px;
-            border-radius: 50%;
-            background: rgba(0,0,0,0.4);
-            border: 2px solid var(--glass-border);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 0.85rem;
-            flex-shrink: 0;
-            position: relative;
-            z-index: 2;
-        }
-        .timeline-item.completado .icono {
-            background: var(--success);
-            border-color: var(--success);
-            color: #fff;
-        }
-        .timeline-item.activo .icono {
-            background: var(--gold);
-            border-color: var(--gold);
-            color: var(--space);
-            animation: pulseActive 1.5s ease-in-out infinite;
-        }
-        @keyframes pulseActive {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.5); }
-            50% { box-shadow: 0 0 0 8px rgba(212, 175, 55, 0); }
-        }
-        .timeline-item .contenido { flex: 1; min-width: 0; padding-top: 4px; }
-        .timeline-item .contenido .titulo-tl {
-            font-size: 0.78rem;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-        .timeline-item.activo .contenido .titulo-tl { color: var(--gold); }
-        .timeline-item.completado .contenido .titulo-tl { color: var(--text-secondary); }
-        .timeline-item .contenido .fecha {
-            font-size: 0.6rem;
-            color: var(--text-muted);
-            margin-top: 2px;
-        }
-        .timeline-item::before {
-            content: '';
-            position: absolute;
-            left: 15px;
-            top: 32px;
-            bottom: 0;
-            width: 2px;
-            background: var(--glass-border);
-            z-index: 1;
-        }
-        .timeline-item:last-child::before { display: none; }
-        .timeline-item.completado::before { background: var(--success); }
-
-        /* Items del pedido */
-        .items-lista {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .item-pedido {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            padding: 10px;
-            background: rgba(0,0,0,0.2);
-            border-radius: 12px;
-        }
-        .item-pedido .foto {
-            width: 50px; height: 50px;
-            border-radius: 10px;
-            overflow: hidden;
-            background: linear-gradient(135deg, var(--green-deep), var(--green-mid));
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.3rem;
-            flex-shrink: 0;
-        }
-        .item-pedido .foto img { width: 100%; height: 100%; object-fit: cover; }
-        .item-pedido .info { flex: 1; min-width: 0; }
-        .item-pedido .info .nombre {
-            font-weight: 600;
-            font-size: 0.8rem;
-            color: var(--text-primary);
-            margin-bottom: 2px;
-        }
-        .item-pedido .info .detalle {
-            font-size: 0.65rem;
-            color: var(--text-muted);
-        }
-        .item-pedido .precio {
-            font-family: 'Orbitron', monospace;
-            font-weight: 700;
-            color: var(--gold);
-            font-size: 0.85rem;
-            white-space: nowrap;
-        }
-
-        /* Totales */
-        .totales {
-            padding-top: 12px;
-            border-top: 1px solid var(--glass-border);
-            margin-top: 12px;
-        }
-        .totales .fila {
-            display: flex;
-            justify-content: space-between;
-            padding: 4px 0;
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-        }
-        .totales .fila.total {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.05rem;
-            font-weight: 700;
-            color: var(--gold);
-            padding-top: 8px;
-            border-top: 1px solid var(--glass-border);
-            margin-top: 6px;
-        }
-
-        /* MEJORA 3: Nota de envío en efectivo */
-        .envio-nota {
-            margin-top: 12px;
-            padding: 12px 14px;
-            background: rgba(0,229,255,0.08);
-            border: 1px solid rgba(0,229,255,0.3);
-            border-radius: 12px;
-            font-size: 0.72rem;
-            color: var(--cyan);
-            line-height: 1.5;
-        }
-        .envio-nota strong { color: var(--cyan); }
-
-        /* Info grid */
-        .info-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-        .info-grid .info-item {
-            background: rgba(0,0,0,0.2);
-            border-radius: 12px;
-            padding: 10px 12px;
-        }
-        .info-grid .info-item .lbl {
-            font-size: 0.55rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 4px;
-        }
-        .info-grid .info-item .valor {
-            font-size: 0.78rem;
-            color: var(--text-primary);
-            font-weight: 600;
-            word-wrap: break-word;
-        }
-        .info-item.full { grid-column: span 2; }
-
-        /* MEJORA 4: Card del repartidor */
-        .repartidor-card {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px;
-            background: rgba(168,85,247,0.08);
-            border: 1px solid rgba(168,85,247,0.3);
-            border-radius: 14px;
-        }
-        .repartidor-card .avatar {
-            width: 48px; height: 48px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--purple), #7c3aed);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.3rem;
-            color: #fff;
-            flex-shrink: 0;
-            overflow: hidden;
-        }
-        .repartidor-card .avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .repartidor-card .info-rep { flex: 1; min-width: 0; }
-        .repartidor-card .info-rep .nombre-rep {
-            font-weight: 700;
-            font-size: 0.85rem;
-            color: var(--text-primary);
-            margin-bottom: 2px;
-        }
-        .repartidor-card .info-rep .tel-rep {
-            font-size: 0.7rem;
-            color: var(--text-muted);
-        }
-        .repartidor-card .btn-tel {
-            background: var(--purple);
-            color: #fff;
-            padding: 8px 16px;
-            border-radius: 20px;
-            text-decoration: none;
-            font-size: 0.7rem;
-            font-weight: 600;
-            flex-shrink: 0;
-            transition: var(--transition);
-            border: none;
-            cursor: pointer;
-        }
-        .repartidor-card .btn-tel:hover { transform: translateY(-2px); }
-
-        /* Botones */
-        .acciones {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        .btn-accion {
-            flex: 1;
-            padding: 14px;
-            border-radius: 30px;
-            font-family: 'Orbitron', monospace;
-            font-weight: 700;
-            font-size: 0.75rem;
-            cursor: pointer;
-            transition: var(--transition);
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            min-width: 140px;
-            text-decoration: none;
-            border: none;
-        }
-        .btn-primario {
-            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
-            color: var(--space);
-        }
-        .btn-primario:hover { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
-        .btn-peligro {
-            background: transparent;
-            border: 1px solid var(--danger);
-            color: var(--danger);
-        }
-        .btn-peligro:hover { background: rgba(255,51,102,0.1); }
-        .btn-secundario {
-            background: transparent;
-            border: 1px solid var(--glass-border);
-            color: var(--text-secondary);
-        }
-        .btn-secundario:hover { border-color: var(--gold); color: var(--gold); }
-
-        /* Estrellas de calificación */
-        .estrellas-input {
-            display: flex;
-            justify-content: center;
-            gap: 8px;
-            margin: 14px 0;
-        }
-        .estrella {
-            font-size: 2rem;
-            cursor: pointer;
-            color: var(--text-muted);
-            transition: var(--transition);
-            user-select: none;
-        }
-        .estrella:hover,
-        .estrella.activa {
-            color: var(--warning);
-            transform: scale(1.1);
-        }
-
-        .form-group {
-            margin-bottom: 14px;
-        }
-        .form-group label {
-            display: block;
-            font-size: 0.72rem;
-            color: var(--text-muted);
-            margin-bottom: 6px;
-            font-weight: 600;
-        }
-        .form-group textarea {
-            width: 100%;
-            padding: 12px 14px;
-            background: rgba(0,0,0,0.35);
-            border: 1px solid var(--glass-border);
-            border-radius: 10px;
-            color: var(--text-primary);
-            font-size: 0.85rem;
-            outline: none;
-            font-family: 'Inter', sans-serif;
-            resize: vertical;
-            min-height: 80px;
-        }
-        .form-group textarea:focus { border-color: var(--gold); }
-
-        .resena-existente {
-            background: rgba(212,175,55,0.08);
-            border: 1px solid rgba(212,175,55,0.2);
-            border-radius: 14px;
-            padding: 14px;
-            text-align: center;
-        }
-        .resena-existente .estrellas {
-            font-size: 1.3rem;
-            margin-bottom: 6px;
-        }
-        .resena-existente .comentario {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            font-style: italic;
-        }
-
-        /* MEJORA 2: Modal de cancelación custom */
-        .modal-overlay {
-            position: fixed; inset: 0;
-            background: rgba(0,0,0,0.85);
-            backdrop-filter: blur(10px);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            padding: 20px;
-            overflow-y: auto;
-        }
-        .modal-overlay.show { display: flex; }
-        .modal {
-            background: linear-gradient(135deg, var(--glass-bg), rgba(5,8,15,0.98));
-            border: 2px solid var(--danger);
-            border-radius: var(--radius-xl);
-            padding: 26px 22px;
-            max-width: 420px;
-            width: 100%;
-            position: relative;
-            animation: scaleIn 0.3s ease;
-        }
-        @keyframes scaleIn {
-            from { transform: scale(0.85); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-        .modal .close-btn {
-            position: absolute; top: 10px; right: 15px;
-            background: transparent; border: none;
-            color: var(--text-muted); font-size: 1.5rem;
-            cursor: pointer; transition: var(--transition);
-        }
-        .modal .close-btn:hover { color: var(--text-primary); transform: rotate(90deg); }
-        .modal h2 {
-            font-family: 'Orbitron', monospace;
-            color: var(--danger);
-            font-size: 1rem;
-            margin-bottom: 10px;
-            text-align: center;
-        }
-        .modal p {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            text-align: center;
-            margin-bottom: 20px;
-            line-height: 1.5;
-        }
-        .modal .modal-botones {
-            display: flex;
-            gap: 10px;
-        }
-        .modal .modal-botones button { flex: 1; }
-
-        /* MEJORA 1: Indicador de auto-refresh */
         .live-indicator {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.6rem;
-            color: var(--success);
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 0.6rem; color: var(--success);
             background: rgba(0,214,143,0.08);
             border: 1px solid rgba(0,214,143,0.3);
-            padding: 4px 10px;
-            border-radius: 20px;
+            padding: 4px 10px; border-radius: 20px;
             font-family: 'Orbitron', monospace;
             letter-spacing: 0.5px;
         }
@@ -571,51 +142,367 @@
         }
         .live-indicator.off .pulse-dot { background: var(--text-muted); animation: none; }
 
-        .loading-state {
-            text-align: center;
-            padding: 60px 20px;
+        .seccion-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+        .seccion-card h2 {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.9rem; color: var(--gold);
+            margin-bottom: 14px;
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        /* Código grande */
+        .codigo-box {
+            text-align: center; padding: 16px;
+            background: rgba(0,0,0,0.4);
+            border: 1px dashed var(--gold);
+            border-radius: 14px;
+            margin-bottom: 16px;
+        }
+        .codigo-box .lbl {
+            font-size: 0.6rem; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+        .codigo-box .codigo {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.4rem; font-weight: 700;
+            color: var(--gold); letter-spacing: 2px;
+        }
+
+        /* Timeline */
+        .timeline {
+            display: flex; flex-direction: column;
+            gap: 4px; position: relative;
+        }
+        .timeline-item {
+            display: flex; gap: 12px;
+            align-items: flex-start;
+            position: relative; padding-bottom: 16px;
+        }
+        .timeline-item:last-child { padding-bottom: 0; }
+        .timeline-item .icono {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.4);
+            border: 2px solid var(--glass-border);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.85rem; flex-shrink: 0;
+            position: relative; z-index: 2;
+        }
+        .timeline-item.completado .icono {
+            background: var(--success); border-color: var(--success); color: #fff;
+        }
+        .timeline-item.activo .icono {
+            background: var(--gold); border-color: var(--gold); color: var(--space);
+            animation: pulseActive 1.5s ease-in-out infinite;
+        }
+        @keyframes pulseActive {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.5); }
+            50% { box-shadow: 0 0 0 8px rgba(212, 175, 55, 0); }
+        }
+        .timeline-item .contenido { flex: 1; min-width: 0; padding-top: 4px; }
+        .timeline-item .contenido .titulo-tl {
+            font-size: 0.78rem; font-weight: 600;
+            color: var(--text-primary);
+        }
+        .timeline-item.activo .contenido .titulo-tl { color: var(--gold); }
+        .timeline-item.completado .contenido .titulo-tl { color: var(--text-secondary); }
+        .timeline-item .contenido .fecha {
+            font-size: 0.6rem; color: var(--text-muted); margin-top: 2px;
+        }
+        .timeline-item::before {
+            content: ''; position: absolute;
+            left: 15px; top: 32px; bottom: 0;
+            width: 2px; background: var(--glass-border);
+            z-index: 1;
+        }
+        .timeline-item:last-child::before { display: none; }
+        .timeline-item.completado::before { background: var(--success); }
+
+        /* Items del pedido */
+        .items-lista {
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        .item-pedido {
+            display: flex; gap: 10px;
+            align-items: center; padding: 10px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px;
+        }
+        .item-pedido .foto {
+            width: 50px; height: 50px;
+            border-radius: 10px; overflow: hidden;
+            background: linear-gradient(135deg, var(--green-deep), var(--green-mid));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem; flex-shrink: 0;
+        }
+        .item-pedido .foto img { width: 100%; height: 100%; object-fit: cover; }
+        .item-pedido .info { flex: 1; min-width: 0; }
+        .item-pedido .info .nombre {
+            font-weight: 600; font-size: 0.8rem;
+            color: var(--text-primary); margin-bottom: 2px;
+        }
+        .item-pedido .info .detalle {
+            font-size: 0.65rem; color: var(--text-muted);
+        }
+        .item-pedido .precio {
+            font-family: 'Orbitron', monospace;
+            font-weight: 700; color: var(--gold);
+            font-size: 0.85rem; white-space: nowrap;
+        }
+
+        /* Totales */
+        .totales {
+            padding-top: 12px;
+            border-top: 1px solid var(--glass-border);
+            margin-top: 12px;
+        }
+        .totales .fila {
+            display: flex; justify-content: space-between;
+            padding: 4px 0; font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        .totales .fila.total {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.05rem; font-weight: 700;
+            color: var(--gold);
+            padding-top: 8px;
+            border-top: 1px solid var(--glass-border);
+            margin-top: 6px;
+        }
+
+        .envio-nota {
+            margin-top: 12px;
+            padding: 12px 14px;
+            background: rgba(0,229,255,0.08);
+            border: 1px solid rgba(0,229,255,0.3);
+            border-radius: 12px;
+            font-size: 0.72rem;
+            color: var(--cyan);
+            line-height: 1.5;
+        }
+        .envio-nota strong { color: var(--cyan); }
+
+        /* Info grid */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .info-grid .info-item {
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px; padding: 10px 12px;
+        }
+        .info-grid .info-item .lbl {
+            font-size: 0.55rem; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        .info-grid .info-item .valor {
+            font-size: 0.78rem; color: var(--text-primary);
+            font-weight: 600; word-wrap: break-word;
+        }
+        .info-item.full { grid-column: span 2; }
+
+        /* Card repartidor */
+        .repartidor-card {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px;
+            background: rgba(168,85,247,0.08);
+            border: 1px solid rgba(168,85,247,0.3);
+            border-radius: 14px;
+        }
+        .repartidor-card .avatar {
+            width: 48px; height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--purple), #7c3aed);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem; color: #fff;
+            flex-shrink: 0; overflow: hidden;
+        }
+        .repartidor-card .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .repartidor-card .info-rep { flex: 1; min-width: 0; }
+        .repartidor-card .info-rep .nombre-rep {
+            font-weight: 700; font-size: 0.85rem;
+            color: var(--text-primary); margin-bottom: 2px;
+        }
+        .repartidor-card .info-rep .tel-rep {
+            font-size: 0.7rem; color: var(--text-muted);
+        }
+        .repartidor-card .btn-tel {
+            background: var(--purple); color: #fff;
+            padding: 8px 16px; border-radius: 20px;
+            text-decoration: none; font-size: 0.7rem;
+            font-weight: 600; flex-shrink: 0;
+            transition: var(--transition); border: none; cursor: pointer;
+        }
+        .repartidor-card .btn-tel:hover { transform: translateY(-2px); }
+
+        /* Botones */
+        .acciones {
+            display: flex; gap: 10px; flex-wrap: wrap;
+        }
+        .btn-accion {
+            flex: 1; padding: 14px;
+            border-radius: 30px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700; font-size: 0.75rem;
+            cursor: pointer; transition: var(--transition);
+            display: inline-flex; align-items: center; justify-content: center;
+            gap: 6px; min-width: 140px;
+            text-decoration: none; border: none;
+        }
+        .btn-primario {
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space);
+        }
+        .btn-primario:hover { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
+        .btn-peligro {
+            background: transparent;
+            border: 1px solid var(--danger);
+            color: var(--danger);
+        }
+        .btn-peligro:hover { background: rgba(255,51,102,0.1); }
+        .btn-secundario {
+            background: transparent;
+            border: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+        }
+        .btn-secundario:hover { border-color: var(--gold); color: var(--gold); }
+
+        /* Estrellas */
+        .estrellas-input {
+            display: flex; justify-content: center;
+            gap: 8px; margin: 14px 0;
+        }
+        .estrella {
+            font-size: 2rem; cursor: pointer;
             color: var(--text-muted);
+            transition: var(--transition);
+            user-select: none;
+        }
+        .estrella:hover,
+        .estrella.activa {
+            color: var(--warning);
+            transform: scale(1.1);
+        }
+
+        .form-group { margin-bottom: 14px; }
+        .form-group label {
+            display: block; font-size: 0.72rem;
+            color: var(--text-muted); margin-bottom: 6px;
+            font-weight: 600;
+        }
+        .form-group textarea {
+            width: 100%; padding: 12px 14px;
+            background: rgba(0,0,0,0.35);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 0.85rem; outline: none;
+            font-family: 'Inter', sans-serif;
+            resize: vertical; min-height: 80px;
+        }
+        .form-group textarea:focus { border-color: var(--gold); }
+
+        .resena-existente {
+            background: rgba(212,175,55,0.08);
+            border: 1px solid rgba(212,175,55,0.2);
+            border-radius: 14px;
+            padding: 14px; text-align: center;
+        }
+        .resena-existente .estrellas {
+            font-size: 1.3rem; margin-bottom: 6px;
+        }
+        .resena-existente .comentario {
+            font-size: 0.8rem; color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
+            display: none; justify-content: center; align-items: center;
+            z-index: 9999; padding: 20px; overflow-y: auto;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal {
+            background: linear-gradient(135deg, var(--glass-bg), rgba(5,8,15,0.98));
+            border: 2px solid var(--danger);
+            border-radius: var(--radius-xl);
+            padding: 26px 22px; max-width: 420px; width: 100%;
+            position: relative; animation: scaleIn 0.3s ease;
+        }
+        @keyframes scaleIn {
+            from { transform: scale(0.85); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .modal .close-btn {
+            position: absolute; top: 10px; right: 15px;
+            background: transparent; border: none;
+            color: var(--text-muted); font-size: 1.5rem;
+            cursor: pointer; transition: var(--transition);
+        }
+        .modal .close-btn:hover { color: var(--text-primary); transform: rotate(90deg); }
+        .modal h2 {
+            font-family: 'Orbitron', monospace;
+            color: var(--danger); font-size: 1rem;
+            margin-bottom: 10px; text-align: center;
+        }
+        .modal p {
+            font-size: 0.8rem; color: var(--text-secondary);
+            text-align: center; margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        .modal .modal-botones {
+            display: flex; gap: 10px;
+        }
+        .modal .modal-botones button { flex: 1; }
+
+        /* Loading / empty */
+        .loading-state {
+            text-align: center; padding: 60px 20px; color: var(--text-muted);
         }
         .loading-state .spinner {
             width: 40px; height: 40px;
             border: 3px solid rgba(212, 175, 55, 0.15);
             border-top-color: var(--gold);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
+            border-radius: 50%; animation: spin 0.8s linear infinite;
             margin: 0 auto 12px;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
         .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--text-muted);
-            background: var(--glass-bg);
+            text-align: center; padding: 60px 20px;
+            color: var(--text-muted); background: var(--glass-bg);
             border: 1px solid var(--glass-border);
             border-radius: var(--radius-xl);
         }
         .empty-state .icon {
-            font-size: 3rem;
-            display: block;
-            margin-bottom: 16px;
-            color: var(--gold);
-            opacity: 0.4;
+            font-size: 3rem; display: block; margin-bottom: 16px;
+            color: var(--gold); opacity: 0.4;
             font-family: 'Orbitron', monospace;
         }
         .empty-state h3 {
             font-family: 'Orbitron', monospace;
-            color: var(--text-secondary);
-            font-size: 1rem;
-            margin-bottom: 8px;
+            color: var(--text-secondary); font-size: 1rem; margin-bottom: 8px;
         }
 
+        /* Toast */
         .toast {
             position: fixed; bottom: 30px; right: 20px;
             background: var(--green-deep); border: 1px solid var(--gold);
             color: var(--gold); padding: 14px 24px;
             border-radius: 12px; font-size: 0.8rem;
             transform: translateY(100px); opacity: 0;
-            transition: all 0.4s ease; z-index: 9999;
+            transition: all 0.4s ease; z-index: 99999;
             max-width: 320px; pointer-events: none;
         }
         .toast.show { transform: translateY(0); opacity: 1; }
@@ -655,8 +542,6 @@
         html.tema-dia .main-nav .nav-link, html[data-tema="dia"] .main-nav .nav-link { color: #718096 !important; }
         html.tema-dia .main-nav .nav-link.active, html[data-tema="dia"] .main-nav .nav-link.active { background: rgba(212, 175, 55, 0.15) !important; color: var(--gold) !important; }
         html.tema-dia .footer, html[data-tema="dia"] .footer { color: #718096 !important; border-top-color: rgba(0, 0, 0, 0.1) !important; }
-        html.tema-dia .item-pedido, html[data-tema="dia"] .item-pedido { background: rgba(0, 0, 0, 0.03) !important; }
-        html.tema-dia .info-grid .info-item, html[data-tema="dia"] .info-grid .info-item { background: rgba(0, 0, 0, 0.03) !important; }
 
         @media (max-width: 480px) {
             .info-grid { grid-template-columns: 1fr; }
@@ -724,7 +609,7 @@
 
     </div>
 
-    <!-- MEJORA 2: Modal de cancelación custom -->
+    <!-- Modal cancelar -->
     <div class="modal-overlay" id="modalCancelar">
         <div class="modal">
             <button class="close-btn" onclick="cerrarModalCancelar()" aria-label="Cerrar">×</button>
@@ -783,7 +668,6 @@ var autoRefreshTimer = null;
 var AUTO_REFRESH_MS = 20000;
 var pedidoId = null;
 
-// Estados válidos y su orden para timeline
 var ESTADOS_ORDEN = ['pendiente', 'aceptado', 'preparando', 'listo', 'asignado', 'en_camino', 'entregado'];
 var ESTADOS_TERMINALES = ['entregado', 'cancelado', 'rechazado'];
 
@@ -815,9 +699,7 @@ function showToast(mensaje, tipo) {
         else if (tipo === 'warning') toastEl.classList.add('warning');
         else if (tipo === 'success') toastEl.classList.add('success');
         clearTimeout(toastEl._timeout);
-        toastEl._timeout = setTimeout(function() {
-            toastEl.classList.remove('show');
-        }, 3500);
+        toastEl._timeout = setTimeout(function() { toastEl.classList.remove('show'); }, 3500);
     } catch (e) { console.warn('Toast error:', e); }
 }
 
@@ -852,6 +734,21 @@ function getParamURL(nombre) {
     } catch (e) { return null; }
 }
 
+function traducirEstado(estado) {
+    var mapa = {
+        'pendiente': '⏳ Pendiente',
+        'aceptado': '✓ Aceptado',
+        'preparando': '🍳 Preparando',
+        'listo': '📦 Listo',
+        'asignado': '🛵 Asignado',
+        'en_camino': '🛵 En camino',
+        'entregado': '✅ Entregado',
+        'cancelado': '❌ Cancelado',
+        'rechazado': '❌ Rechazado'
+    };
+    return mapa[estado] || estado;
+}
+
 // ================================================================
 // CARGAR USUARIO
 // ================================================================
@@ -863,7 +760,7 @@ async function cargarUsuarioActual() {
         sessionUser = session.user;
         var u = await supabase
             .from('usuarios')
-            .select('nombre, handle, avatar_url, tokens')
+            .select('nombre, handle, tokens')
             .eq('id', session.user.id)
             .single();
         if (!u.error && u.data) {
@@ -871,11 +768,11 @@ async function cargarUsuarioActual() {
             if (badge) badge.textContent = u.data.tokens || 0;
         }
         return u.data || null;
-    } catch (e) { console.error('Error cargando usuario:', e); return null; }
+    } catch (e) { console.error('Error usuario:', e); return null; }
 }
 
 // ================================================================
-// CARGAR PEDIDO POR ID
+// CARGAR PEDIDO
 // ================================================================
 async function cargarPedido(idPedido, silencioso) {
     var container = document.getElementById('pedidoContainer');
@@ -901,30 +798,27 @@ async function cargarPedido(idPedido, silencioso) {
                 '<p data-clave="mercado_pedido_no_encontrado_desc">Puede que el enlace sea incorrecto.</p>' +
                 '<a href="/features/mercado/mis-pedidos.html" class="btn-back" style="margin-top:16px;">← <span data-clave="mercado_volver_pedidos">Volver a mis pedidos</span></a>' +
             '</div>';
-            if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
             detenerAutoRefresh();
             return;
         }
 
-        // Si es refresco silencioso y el estado no cambió, no re-renderizar
         var estadoAnterior = pedidoActual ? pedidoActual.estado : null;
         var esPrimeraCarga = !pedidoActual;
 
         pedidoActual = result.data;
 
-        // Verificar que sea del comprador actual
+        // Verificar que sea del comprador
         if (pedidoActual.comprador_id !== sessionUser.id) {
             container.innerHTML = '<div class="empty-state">' +
                 '<span class="icon">🔒</span>' +
                 '<h3 data-clave="mercado_pedido_no_tuyo">Este pedido no es tuyo</h3>' +
                 '<a href="/features/mercado/mis-pedidos.html" class="btn-back" style="margin-top:16px;">← <span data-clave="mercado_volver_pedidos">Volver a mis pedidos</span></a>' +
             '</div>';
-            if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
             detenerAutoRefresh();
             return;
         }
 
-        // Si es refresco y el estado no cambió, salir sin re-render
+        // Si es refresco y no cambió el estado, no re-renderizar
         if (silencioso && !esPrimeraCarga && estadoAnterior === pedidoActual.estado) {
             return;
         }
@@ -939,12 +833,10 @@ async function cargarPedido(idPedido, silencioso) {
 
         renderizarPedido();
 
-        // MEJORA 1: Avisar si el estado cambió en un refresh
         if (silencioso && !esPrimeraCarga && estadoAnterior && estadoAnterior !== pedidoActual.estado) {
             showToast('🔄 Estado actualizado: ' + traducirEstado(pedidoActual.estado), 'success');
         }
 
-        // Detener auto-refresh si llegó a estado terminal
         if (ESTADOS_TERMINALES.indexOf((pedidoActual.estado || '').toLowerCase()) !== -1) {
             detenerAutoRefresh();
         }
@@ -959,7 +851,7 @@ async function cargarPedido(idPedido, silencioso) {
 }
 
 // ================================================================
-// CARGAR ITEMS DEL PEDIDO
+// CARGAR DATOS RELACIONADOS
 // ================================================================
 async function cargarItemsPedido(idPedido) {
     try {
@@ -972,60 +864,54 @@ async function cargarItemsPedido(idPedido) {
         itemsPedido = result.data || [];
         return itemsPedido;
     } catch (e) {
-        console.error('Error cargando items:', e);
+        console.error('Error items:', e);
         itemsPedido = [];
         return [];
     }
 }
 
-// ================================================================
-// CARGAR TIENDA DEL PEDIDO
-// ================================================================
 async function cargarTiendaPedido(tiendaId) {
     if (!tiendaId) { tiendaPedido = null; return null; }
     try {
         var result = await supabase
             .from('mercado_tiendas')
-            .select('id, nombre_negocio, slug, telefono, whatsapp, direccion, logo_url')
+            .select('id, nombre_negocio, slug, telefono, whatsapp, direccion, logo_url, portada_url, nivel')
             .eq('id', tiendaId)
             .maybeSingle();
         if (result.error) throw result.error;
         tiendaPedido = result.data;
         return tiendaPedido;
     } catch (e) {
-        console.error('Error cargando tienda:', e);
+        console.error('Error tienda:', e);
         tiendaPedido = null;
         return null;
     }
 }
 
-// ================================================================
-// MEJORA 4: CARGAR REPARTIDOR DEL PEDIDO
-// ================================================================
 async function cargarRepartidorPedido(repartidorId) {
     if (!repartidorId) { repartidorPedido = null; return null; }
     try {
-        // Intenta buscar en usuarios (más probable)
+        // Buscar en usuarios
         var result = await supabase
             .from('usuarios')
             .select('id, nombre, handle, avatar_url, telefono')
             .eq('id', repartidorId)
             .maybeSingle();
-
         if (result.error) throw result.error;
 
-        // Si no tiene teléfono en usuarios, intenta buscar en mercado_repartidores
+        // Si no tiene teléfono en usuarios, intentar en mercado_repartidores
         if (result.data && !result.data.telefono) {
             try {
                 var repRes = await supabase
                     .from('mercado_repartidores')
-                    .select('telefono, vehiculo, placas')
+                    .select('telefono, vehiculo, zona, calificacion')
                     .eq('usuario_id', repartidorId)
                     .maybeSingle();
                 if (!repRes.error && repRes.data) {
                     result.data.telefono = repRes.data.telefono;
                     result.data.vehiculo = repRes.data.vehiculo;
-                    result.data.placas = repRes.data.placas;
+                    result.data.zona = repRes.data.zona;
+                    result.data.calificacion = repRes.data.calificacion;
                 }
             } catch (e2) { /* silencioso */ }
         }
@@ -1033,15 +919,12 @@ async function cargarRepartidorPedido(repartidorId) {
         repartidorPedido = result.data;
         return repartidorPedido;
     } catch (e) {
-        console.error('Error cargando repartidor:', e);
+        console.error('Error repartidor:', e);
         repartidorPedido = null;
         return null;
     }
 }
 
-// ================================================================
-// CARGAR RESEÑA EXISTENTE
-// ================================================================
 async function cargarResenaExistente(idPedido) {
     try {
         var result = await supabase
@@ -1054,7 +937,7 @@ async function cargarResenaExistente(idPedido) {
         resenaExistente = result.data || null;
         return resenaExistente;
     } catch (e) {
-        console.error('Error cargando reseña:', e);
+        console.error('Error reseña:', e);
         resenaExistente = null;
         return null;
     }
@@ -1074,7 +957,7 @@ function renderizarPedido() {
 
     var html = '';
 
-    // Título + estado + indicador live
+    // Título + estado
     html += '<div class="titulo">';
     html += '<h1>📦 <span data-clave="mercado_pedido">Pedido</span></h1>';
     html += '<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">';
@@ -1086,14 +969,13 @@ function renderizarPedido() {
     html += '</div>';
     html += '</div>';
 
-    // Código
+    // Código + info
     html += '<div class="seccion-card">';
     html += '<div class="codigo-box">';
     html += '<div class="lbl" data-clave="mercado_codigo_pedido">Código del pedido</div>';
     html += '<div class="codigo">' + escapeHTML(p.codigo || '—') + '</div>';
     html += '</div>';
 
-    // Info grid
     html += '<div class="info-grid">';
     html += '<div class="info-item">';
     html += '<div class="lbl" data-clave="mercado_fecha_pedido">Fecha</div>';
@@ -1105,16 +987,28 @@ function renderizarPedido() {
     html += '<div class="valor">' + (p.tipo_entrega === 'pickup' ? '🏪 Recoger' : '🛵 Delivery') + '</div>';
     html += '</div>';
 
+    if (p.forma_pago) {
+        html += '<div class="info-item">';
+        html += '<div class="lbl" data-clave="mercado_forma_pago">Forma de pago</div>';
+        html += '<div class="valor">' + (p.forma_pago === 'transferencia' ? '🏦 Transferencia' : '💵 Efectivo') + '</div>';
+        html += '</div>';
+    }
+
+    html += '<div class="info-item">';
+    html += '<div class="lbl" data-clave="mercado_items_count">Items</div>';
+    html += '<div class="valor">' + (p.total_items || itemsPedido.length || 0) + '</div>';
+    html += '</div>';
+
     if (p.direccion_entrega) {
         html += '<div class="info-item full">';
-        html += '<div class="lbl" data-clave="mercado_direccion">Dirección</div>';
+        html += '<div class="lbl" data-clave="mercado_direccion">Dirección de entrega</div>';
         html += '<div class="valor">' + escapeHTML(p.direccion_entrega) + '</div>';
         html += '</div>';
     }
 
     if (p.telefono_contacto) {
         html += '<div class="info-item full">';
-        html += '<div class="lbl" data-clave="mercado_telefono">Teléfono</div>';
+        html += '<div class="lbl" data-clave="mercado_telefono">Teléfono de contacto</div>';
         html += '<div class="valor">' + escapeHTML(p.telefono_contacto) + '</div>';
         html += '</div>';
     }
@@ -1129,14 +1023,22 @@ function renderizarPedido() {
     html += '</div>';
     html += '</div>';
 
-    // Timeline de seguimiento
+    // Timeline
     html += '<div class="seccion-card">';
     html += '<h2>📍 <span data-clave="mercado_seguimiento">Seguimiento</span></h2>';
     html += '<div class="timeline">';
 
     var idxActual = ESTADOS_ORDEN.indexOf(estado);
     if (estado === 'cancelado' || estado === 'rechazado') {
-        html += renderTimelineItem('cancelado', true, false, formatearFecha(p.cancelado_en || p.updated_at));
+        var motivoCancel = p.cancelado_motivo ? ' · ' + escapeHTML(p.cancelado_motivo) : '';
+        var quien = p.cancelado_por ? ' por ' + escapeHTML(p.cancelado_por) : '';
+        html += '<div class="timeline-item completado">' +
+            '<div class="icono" style="background:var(--danger); border-color:var(--danger);">❌</div>' +
+            '<div class="contenido">' +
+                '<div class="titulo-tl" style="color:var(--danger);">Pedido ' + (estado === 'rechazado' ? 'rechazado' : 'cancelado') + quien + '</div>' +
+                (p.cancelado_en ? '<div class="fecha">' + formatearFecha(p.cancelado_en) + motivoCancel + '</div>' : '') +
+            '</div>' +
+        '</div>';
     } else {
         ESTADOS_ORDEN.forEach(function (est, i) {
             var completado = i < idxActual;
@@ -1149,14 +1051,14 @@ function renderizarPedido() {
     html += '</div>';
     html += '</div>';
 
-    // Items del pedido
+    // Items
     html += '<div class="seccion-card">';
     html += '<h2>🛒 <span data-clave="mercado_productos_pedido">Productos</span></h2>';
     html += '<div class="items-lista">';
 
     itemsPedido.forEach(function (item) {
         var fotoContent = item.foto_url
-            ? '<img src="' + escapeHTML(item.foto_url) + '" alt="' + escapeHTML(item.nombre_producto) + '" onerror="this.style.display=\'none\';this.parentElement.textContent=\'🍽️\';" />'
+            ? '<img src="' + escapeHTML(item.foto_url) + '" alt="" onerror="this.style.display=\'none\';this.parentElement.textContent=\'🍽️\';" />'
             : '🍽️';
         html += '<div class="item-pedido">' +
             '<div class="foto">' + fotoContent + '</div>' +
@@ -1173,12 +1075,22 @@ function renderizarPedido() {
     // Totales
     html += '<div class="totales">';
     html += '<div class="fila"><span data-clave="mercado_subtotal">Subtotal</span><span>' + formatearPrecio(p.subtotal_mxn) + '</span></div>';
-    html += '<div class="fila"><span data-clave="mercado_envio">Envío</span><span style="color:var(--text-muted);">' + (p.tipo_entrega === 'delivery' ? 'A coordinar' : 'Recoger') + '</span></div>';
+
+    // Envío
+    var envioMxn = parseFloat(p.envio_mxn || 0);
+    if (p.tipo_entrega === 'pickup') {
+        html += '<div class="fila"><span data-clave="mercado_envio">Envío</span><span style="color:var(--success);">🏪 Recoger (sin costo)</span></div>';
+    } else if (p.envio_cobrado_en_app && envioMxn > 0) {
+        html += '<div class="fila"><span data-clave="mercado_envio">Envío (pagado)</span><span>' + formatearPrecio(envioMxn) + '</span></div>';
+    } else {
+        html += '<div class="fila"><span data-clave="mercado_envio">Envío</span><span style="color:var(--text-muted);">A coordinar</span></div>';
+    }
+
     html += '<div class="fila total"><span data-clave="mercado_total">Total</span><span>' + formatearPrecio(p.total_mxn) + '</span></div>';
     html += '</div>';
 
-    // MEJORA 3: Nota de envío en efectivo (solo si es delivery)
-    if (p.tipo_entrega !== 'pickup') {
+    // Nota de envío en efectivo
+    if (p.tipo_entrega !== 'pickup' && !p.envio_cobrado_en_app) {
         html += '<div class="envio-nota">' +
             '🛵 <strong>Envío:</strong> se paga en efectivo directamente al repartidor al momento de la entrega. ' +
             'El monto lo coordinas con él.' +
@@ -1211,7 +1123,7 @@ function renderizarPedido() {
         html += '</div>';
 
         if (tiendaPedido.whatsapp) {
-            var waNum = tiendaPedido.whatsapp.replace(/\D/g, '');
+            var waNum = String(tiendaPedido.whatsapp).replace(/\D/g, '');
             html += '<a href="https://wa.me/' + waNum + '?text=' + encodeURIComponent('Hola, sobre mi pedido ' + (p.codigo || '')) + '" target="_blank" rel="noopener" class="btn-accion btn-secundario" style="width:100%;margin-top:14px;">';
             html += '💬 <span data-clave="mercado_contactar_vendedor">Contactar al vendedor</span>';
             html += '</a>';
@@ -1220,7 +1132,7 @@ function renderizarPedido() {
         html += '</div>';
     }
 
-    // MEJORA 4: Card del repartidor (si está asignado)
+    // Repartidor
     if (repartidorPedido) {
         var avatarRep = repartidorPedido.avatar_url
             ? '<img src="' + escapeHTML(repartidorPedido.avatar_url) + '" alt="" onerror="this.style.display=\'none\';this.parentElement.textContent=\'🛵\';" />'
@@ -1247,7 +1159,7 @@ function renderizarPedido() {
         html += '</div>';
     }
 
-    // Botón cancelar (solo si está pendiente)
+    // Botón cancelar (solo pendiente)
     if (estado === 'pendiente') {
         html += '<div class="seccion-card">';
         html += '<div class="acciones">';
@@ -1258,7 +1170,7 @@ function renderizarPedido() {
         html += '</div>';
     }
 
-    // Reseña (solo si está entregado)
+    // Reseña (solo entregado)
     if (estado === 'entregado') {
         html += '<div class="seccion-card">';
         html += '<h2>⭐ <span data-clave="mercado_calificar">Calificar al vendedor</span></h2>';
@@ -1293,7 +1205,7 @@ function renderizarPedido() {
         html += '</div>';
     }
 
-    // Botones de navegación
+    // Navegación
     html += '<div class="seccion-card">';
     html += '<div class="acciones">';
     html += '<a href="/features/mercado/mis-pedidos.html" class="btn-accion btn-secundario">';
@@ -1307,7 +1219,6 @@ function renderizarPedido() {
 
     container.innerHTML = html;
 
-    // Restaurar estrellas seleccionadas si había
     if (calificacionSeleccionada > 0) {
         var estrellasUI = document.querySelectorAll('#estrellasInput .estrella');
         estrellasUI.forEach(function (el) {
@@ -1320,7 +1231,7 @@ function renderizarPedido() {
 }
 
 // ================================================================
-// HELPERS DE TIMELINE
+// HELPERS TIMELINE
 // ================================================================
 function renderTimelineItem(estado, completado, activo, fecha) {
     var iconos = {
@@ -1330,8 +1241,7 @@ function renderTimelineItem(estado, completado, activo, fecha) {
         'listo': '📦',
         'asignado': '🛵',
         'en_camino': '🛵',
-        'entregado': '✅',
-        'cancelado': '❌'
+        'entregado': '✅'
     };
     var textos = {
         'pendiente': 'Pedido recibido',
@@ -1340,8 +1250,7 @@ function renderTimelineItem(estado, completado, activo, fecha) {
         'listo': 'Listo para enviar',
         'asignado': 'Repartidor asignado',
         'en_camino': 'En camino',
-        'entregado': 'Entregado',
-        'cancelado': 'Cancelado'
+        'entregado': 'Entregado'
     };
     var cls = '';
     if (completado) cls = 'completado';
@@ -1361,33 +1270,17 @@ function obtenerFechaEstado(p, estado) {
         'pendiente': p.created_at,
         'aceptado': p.aceptado_en,
         'preparando': null,
-        'listo': null,
+        'listo': p.listo_en,
         'asignado': p.asignado_en,
         'en_camino': p.en_camino_en,
-        'entregado': p.entregado_en,
-        'cancelado': p.cancelado_en
+        'entregado': p.entregado_en
     };
     var fecha = mapa[estado];
     return fecha ? formatearFecha(fecha) : '';
 }
 
-function traducirEstado(estado) {
-    var mapa = {
-        'pendiente': '⏳ Pendiente',
-        'aceptado': '✓ Aceptado',
-        'preparando': '🍳 Preparando',
-        'listo': '📦 Listo',
-        'asignado': '🛵 Asignado',
-        'en_camino': '🛵 En camino',
-        'entregado': '✅ Entregado',
-        'cancelado': '❌ Cancelado',
-        'rechazado': '❌ Rechazado'
-    };
-    return mapa[estado] || estado;
-}
-
 // ================================================================
-// MEJORA 2: MODAL DE CANCELACIÓN CUSTOM
+// CANCELAR
 // ================================================================
 function abrirModalCancelar() {
     if (!pedidoActual || pedidoActual.estado !== 'pendiente') {
@@ -1412,7 +1305,7 @@ async function confirmarCancelarPedido() {
     }
 
     var btn = document.getElementById('btnConfirmarCancelar');
-    if (btn) { btn.disabled = true; btn.innerHTML = 'Cancelando...'; }
+    if (btn) { btn.disabled = true; btn.textContent = 'Cancelando...'; }
 
     try {
         var updateResult = await supabase
@@ -1420,7 +1313,8 @@ async function confirmarCancelarPedido() {
             .update({
                 estado: 'cancelado',
                 cancelado_en: new Date().toISOString(),
-                cancelado_motivo: 'Cancelado por el comprador'
+                cancelado_motivo: 'Cancelado por el comprador',
+                cancelado_por: 'comprador'
             })
             .eq('id', pedidoActual.id)
             .eq('comprador_id', sessionUser.id)
@@ -1438,16 +1332,13 @@ async function confirmarCancelarPedido() {
 
     } catch (e) {
         console.error('Error cancelando:', e);
-        showToast('❌ Error: ' + e.message, 'error');
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = '<span data-clave="mercado_si_cancelar">Sí, cancelar</span>';
-        }
+        showToast('❌ ' + e.message, 'error');
+        if (btn) { btn.disabled = false; btn.textContent = 'Sí, cancelar'; }
     }
 }
 
 // ================================================================
-// RESEÑA - SELECCIONAR ESTRELLAS
+// RESEÑA
 // ================================================================
 function seleccionarEstrella(valor) {
     calificacionSeleccionada = valor;
@@ -1459,9 +1350,6 @@ function seleccionarEstrella(valor) {
     });
 }
 
-// ================================================================
-// ENVIAR RESEÑA
-// ================================================================
 async function enviarResena() {
     if (calificacionSeleccionada < 1) {
         showToast('⚠️ Selecciona al menos 1 estrella', 'warning');
@@ -1496,7 +1384,7 @@ async function enviarResena() {
             throw insertResult.error;
         }
 
-        // Actualizar contador y promedio de la tienda
+        // Actualizar promedio y contador de la tienda
         try {
             var tiendaUpdate = await supabase
                 .from('mercado_tiendas')
@@ -1519,7 +1407,7 @@ async function enviarResena() {
                     .eq('id', pedidoActual.tienda_id);
             }
         } catch (e) {
-            console.warn('No se pudo actualizar promedio de tienda:', e);
+            console.warn('No se pudo actualizar promedio:', e);
         }
 
         resenaExistente = insertResult.data;
@@ -1529,18 +1417,17 @@ async function enviarResena() {
 
     } catch (e) {
         console.error('Error enviando reseña:', e);
-        showToast('❌ Error: ' + e.message, 'error');
+        showToast('❌ ' + e.message, 'error');
     }
 }
 
 // ================================================================
-// MEJORA 1: AUTO-REFRESH
+// AUTO REFRESH
 // ================================================================
 function iniciarAutoRefresh() {
     detenerAutoRefresh();
     autoRefreshTimer = setInterval(function () {
         if (!pedidoId) return;
-        // No refrescar si la pestaña no es visible (ahorra recursos)
         if (document.hidden) return;
         cargarPedido(pedidoId, true);
     }, AUTO_REFRESH_MS);
@@ -1553,14 +1440,12 @@ function detenerAutoRefresh() {
     }
 }
 
-// Pausar auto-refresh cuando la pestaña no es visible, reanudar al volver
 document.addEventListener('visibilitychange', function () {
     if (document.hidden) {
         detenerAutoRefresh();
     } else if (pedidoId) {
         var est = pedidoActual ? (pedidoActual.estado || '').toLowerCase() : '';
         if (ESTADOS_TERMINALES.indexOf(est) === -1) {
-            // Refrescar inmediatamente al volver
             cargarPedido(pedidoId, true);
             iniciarAutoRefresh();
         }
@@ -1599,7 +1484,6 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     await cargarPedido(pedidoId, false);
 
-    // Iniciar auto-refresh solo si no es estado terminal
     var est = pedidoActual ? (pedidoActual.estado || '').toLowerCase() : '';
     if (ESTADOS_TERMINALES.indexOf(est) === -1) {
         iniciarAutoRefresh();
@@ -1615,6 +1499,12 @@ document.addEventListener('DOMContentLoaded', async function () {
     }, 400);
 });
 
+// Click fuera del modal
+document.addEventListener('click', function (e) {
+    var modal = document.getElementById('modalCancelar');
+    if (e.target === modal) cerrarModalCancelar();
+});
+
 // ================================================================
 // EXPOSICIÓN GLOBAL
 // ================================================================
@@ -1625,6 +1515,7 @@ window.seleccionarEstrella = seleccionarEstrella;
 window.enviarResena = enviarResena;
 window.verTokens = verTokens;
 window.showToast = showToast;
+window.cargarPedido = cargarPedido;
 </script>
 </body>
 </html>
