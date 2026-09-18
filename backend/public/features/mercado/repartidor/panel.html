@@ -1,7 +1,11 @@
 <!-- ================================================================
      MERCADO - SARIEL'S ECOSYSTEM
-     Panel del Repartidor · Pedidos disponibles + mis entregas
+     Panel del Repartidor · Con tracking GPS en tiempo real
      Ruta: /features/mercado/repartidor/panel.html
+     
+     Esquema real: bigint IDs, mercado_repartidores con lat/lng,
+                   Supabase Realtime activo, envío de ubicación
+                   cada 15s con pedido activo / 60s online sin pedido
      ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
@@ -104,20 +108,18 @@
             color: #fff;
         }
 
-        /* Estado del repartidor (online/offline) */
+        /* Toggle online/offline */
         .estado-toggle {
             display: flex; align-items: center; gap: 10px;
             background: var(--glass-bg); border: 1px solid var(--glass-border);
             border-radius: var(--radius); padding: 14px 16px;
-            margin-bottom: 16px;
-            cursor: pointer;
+            margin-bottom: 16px; cursor: pointer;
             transition: var(--transition);
         }
         .estado-toggle:hover { border-color: var(--gold); }
         .estado-toggle .dot-estado {
             width: 12px; height: 12px; border-radius: 50%;
-            background: var(--text-muted);
-            flex-shrink: 0;
+            background: var(--text-muted); flex-shrink: 0;
         }
         .estado-toggle.online .dot-estado {
             background: var(--success);
@@ -128,9 +130,7 @@
             0%, 100% { box-shadow: 0 0 12px var(--success); }
             50% { box-shadow: 0 0 20px var(--success), 0 0 30px rgba(0,214,143,0.5); }
         }
-        .estado-toggle .txt-estado {
-            flex: 1; font-size: 0.78rem;
-        }
+        .estado-toggle .txt-estado { flex: 1; font-size: 0.78rem; }
         .estado-toggle .txt-estado .t1 {
             font-weight: 700; color: var(--text-primary);
         }
@@ -154,6 +154,60 @@
         .estado-toggle.online .switch::after {
             background: var(--success);
             transform: translateX(18px);
+        }
+
+        /* NUEVO: Indicador GPS */
+        .gps-indicator {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 0.68rem;
+            margin-bottom: 16px;
+            transition: var(--transition);
+            border: 1px solid var(--glass-border);
+            background: rgba(0,0,0,0.3);
+            color: var(--text-muted);
+        }
+        .gps-indicator .dot-gps {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            flex-shrink: 0;
+        }
+        .gps-indicator.activo {
+            background: rgba(0,229,255,0.08);
+            border-color: rgba(0,229,255,0.3);
+            color: var(--cyan);
+        }
+        .gps-indicator.activo .dot-gps {
+            background: var(--cyan);
+            box-shadow: 0 0 10px var(--cyan);
+            animation: pulseGps 2s ease-in-out infinite;
+        }
+        @keyframes pulseGps {
+            0%, 100% { box-shadow: 0 0 10px var(--cyan); }
+            50% { box-shadow: 0 0 16px var(--cyan), 0 0 24px rgba(0,229,255,0.4); }
+        }
+        .gps-indicator.error {
+            background: rgba(255,51,102,0.08);
+            border-color: rgba(255,51,102,0.3);
+            color: var(--danger);
+        }
+        .gps-indicator.error .dot-gps {
+            background: var(--danger);
+        }
+        .gps-indicator .gps-info {
+            flex: 1;
+        }
+        .gps-indicator .gps-info strong {
+            display: block;
+            font-weight: 700;
+            font-size: 0.7rem;
+        }
+        .gps-indicator .gps-info .gps-detalle {
+            font-size: 0.6rem;
+            opacity: 0.7;
+            margin-top: 2px;
         }
 
         /* Resumen de ganancias */
@@ -213,7 +267,7 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Cards de pedidos */
+        /* Pedidos */
         .pedidos-lista { display: flex; flex-direction: column; gap: 12px; }
 
         .pedido-card {
@@ -269,7 +323,6 @@
         .estado-badge.en_camino { color: var(--cyan); border-color: var(--cyan); }
         .estado-badge.entregado { color: var(--success); border-color: var(--success); }
 
-        /* Ruta: tienda -> cliente */
         .ruta-info {
             background: rgba(0,0,0,0.25);
             border-radius: 12px;
@@ -316,6 +369,31 @@
         .meta-info .meta strong {
             color: var(--gold);
             font-family: 'Orbitron', monospace;
+        }
+
+        .chips-info {
+            display: flex; flex-wrap: wrap; gap: 4px;
+            margin-bottom: 10px;
+        }
+        .chip-mini {
+            font-size: 0.55rem;
+            padding: 3px 8px;
+            border-radius: 10px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--glass-border);
+            color: var(--text-muted);
+        }
+        .chip-mini.cobrar {
+            color: var(--warning); border-color: rgba(247,212,74,0.3);
+            background: rgba(247,212,74,0.08);
+        }
+        .chip-mini.pagado {
+            color: var(--success); border-color: rgba(0,214,143,0.3);
+            background: rgba(0,214,143,0.08);
+        }
+        .chip-mini.gps-ok {
+            color: var(--cyan); border-color: rgba(0,229,255,0.3);
+            background: rgba(0,229,255,0.08);
         }
 
         .footer-p {
@@ -568,6 +646,15 @@
             <div class="switch"></div>
         </div>
 
+        <!-- NUEVO: Indicador GPS -->
+        <div class="gps-indicator" id="gpsIndicator">
+            <span class="dot-gps"></span>
+            <div class="gps-info">
+                <strong id="gpsTitulo">📍 Ubicación GPS inactiva</strong>
+                <div class="gps-detalle" id="gpsDetalle">Actívate online para compartir tu ubicación</div>
+            </div>
+        </div>
+
         <!-- Resumen de ganancias -->
         <div class="resumen-ganancias">
             <div class="stat-card">
@@ -597,7 +684,6 @@
             </button>
         </div>
 
-        <!-- Tab: Disponibles -->
         <div class="tab-content active" data-tab-content="disponibles">
             <div id="disponiblesContainer">
                 <div class="loading-state">
@@ -607,7 +693,6 @@
             </div>
         </div>
 
-        <!-- Tab: Mis entregas -->
         <div class="tab-content" data-tab-content="mios">
             <div id="miosContainer">
                 <div class="loading-state">
@@ -617,7 +702,6 @@
             </div>
         </div>
 
-        <!-- Tab: Historial -->
         <div class="tab-content" data-tab-content="historial">
             <div id="historialContainer">
                 <div class="loading-state">
@@ -662,9 +746,7 @@
             style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">
             Cerrar
         </button>
-    </div>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    </div><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/features/shared/js/idiomas.js"></script>
 
 <script>
@@ -677,14 +759,19 @@ var supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 window.supabaseClient = supabaseClient;
 var supabase = supabaseClient;
 
-// Ganancia por entrega (ajústalo si quieres otro modelo)
-var GANANCIA_POR_ENTREGA = 25.00; // MXN por defecto
+var GANANCIA_POR_ENTREGA_DEFAULT = 25.00;
+
+// Config de GPS
+var GPS_INTERVALO_ACTIVO = 15000;    // 15s cuando tiene pedido
+var GPS_INTERVALO_IDLE = 60000;      // 60s cuando solo está online
+var GPS_MIN_DISTANCIA_M = 10;        // mínima distancia para enviar (metros)
+var GPS_TIMEOUT = 10000;             // timeout de captura
 
 // ================================================================
 // ESTADO
 // ================================================================
 var sessionUser = null;
-var repartidorData = null; // datos extendidos en mercado_repartidores
+var repartidorData = null;
 var disponible = false;
 var pedidosDisponibles = [];
 var misEntregas = [];
@@ -695,6 +782,15 @@ var itemsPorPedido = {};
 var pedidosVistos = {};
 var autoRefreshTimer = null;
 var AUTO_REFRESH_MS = 15000;
+
+// Estado GPS
+var gpsWatchId = null;
+var gpsUltimaPosicion = null;         // {lat, lng}
+var gpsUltimaEnviada = null;          // {lat, lng}
+var gpsUltimaVez = null;              // timestamp
+var gpsTimerEnvio = null;
+var gpsEstado = 'inactivo';           // inactivo | activo | error | sin_permiso
+var gpsContadorEnvios = 0;
 
 // ================================================================
 // BANNER DE ERRORES
@@ -767,6 +863,25 @@ function traducirEstado(estado) {
     return mapa[estado] || estado;
 }
 
+function gananciaRepartidor() {
+    if (repartidorData && repartidorData.ganancia_por_entrega) {
+        return parseFloat(repartidorData.ganancia_por_entrega);
+    }
+    return GANANCIA_POR_ENTREGA_DEFAULT;
+}
+
+// Distancia entre 2 coordenadas (Haversine, en metros)
+function distanciaMetros(lat1, lng1, lat2, lng2) {
+    var R = 6371000;
+    var dLat = (lat2 - lat1) * Math.PI / 180;
+    var dLng = (lng2 - lng1) * Math.PI / 180;
+    var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+}
+
 // ================================================================
 // CARGAR USUARIO
 // ================================================================
@@ -784,15 +899,13 @@ async function cargarUsuarioActual() {
         if (!u.error && u.data) {
             var badge = document.getElementById('tokenBadgeCantidad');
             if (badge) badge.textContent = u.data.tokens || 0;
-            // Guardar teléfono en memoria
-            if (u.data.telefono) repartidorData = { telefono: u.data.telefono };
         }
         return u.data || null;
-    } catch (e) { console.error('Error cargando usuario:', e); return null; }
+    } catch (e) { console.error('Error usuario:', e); return null; }
 }
 
 // ================================================================
-// CARGAR DATOS EXTENDIDOS DEL REPARTIDOR
+// CARGAR DATOS DEL REPARTIDOR
 // ================================================================
 async function cargarDatosRepartidor() {
     try {
@@ -805,21 +918,38 @@ async function cargarDatosRepartidor() {
         if (result.error && result.error.code !== 'PGRST116') throw result.error;
 
         if (result.data) {
-            repartidorData = Object.assign(repartidorData || {}, result.data);
+            repartidorData = result.data;
             disponible = !!result.data.disponible;
         } else {
-            // Crear perfil de repartidor si no existe
+            // Crear perfil de repartidor
+            var usuarioInfo = await supabase
+                .from('usuarios')
+                .select('nombre, handle, telefono')
+                .eq('id', sessionUser.id)
+                .single();
+
+            var nombreCompleto = 'Repartidor';
+            var telefono = null;
+            if (!usuarioInfo.error && usuarioInfo.data) {
+                nombreCompleto = usuarioInfo.data.nombre || usuarioInfo.data.handle || 'Repartidor';
+                telefono = usuarioInfo.data.telefono || null;
+            }
+
             var ins = await supabase
                 .from('mercado_repartidores')
                 .insert({
                     usuario_id: sessionUser.id,
+                    nombre_completo: nombreCompleto,
+                    telefono: telefono,
+                    vehiculo: 'moto',
                     disponible: false,
-                    ganancia_por_entrega: GANANCIA_POR_ENTREGA,
-                    total_entregas: 0,
-                    total_ganado: 0
+                    activo: true,
+                    pedidos_completados: 0,
+                    calificacion: 0
                 })
                 .select()
                 .single();
+
             if (!ins.error && ins.data) {
                 repartidorData = ins.data;
                 disponible = false;
@@ -829,35 +959,48 @@ async function cargarDatosRepartidor() {
         actualizarToggleEstado();
         actualizarGanancias();
 
+        // Si ya estaba online al cargar, activar GPS
+        if (disponible) {
+            iniciarGPS();
+        }
+
     } catch (e) {
-        console.error('Error cargando repartidor:', e);
-        // Modo fallback: sin tabla extendida
+        console.error('Error repartidor:', e);
         disponible = false;
         actualizarToggleEstado();
     }
 }
 
 // ================================================================
-// TOGGLE ONLINE / OFFLINE
+// TOGGLE DISPONIBLE
 // ================================================================
 async function toggleEstadoRepartidor() {
     disponible = !disponible;
 
     try {
         if (repartidorData && repartidorData.id) {
-            await supabase
+            var upd = await supabase
                 .from('mercado_repartidores')
                 .update({ disponible: disponible, updated_at: new Date().toISOString() })
                 .eq('id', repartidorData.id);
+
+            if (upd.error) throw upd.error;
         }
         actualizarToggleEstado();
-        showToast(disponible ? '🟢 Estás disponible para entregas' : '🔴 Ya no recibirás pedidos', disponible ? 'success' : 'warning');
 
-        // Recargar disponibles
-        await cargarDisponibles();
+        if (disponible) {
+            showToast('🟢 Estás disponible para entregas', 'success');
+            iniciarGPS();
+        } else {
+            showToast('🔴 Ya no recibirás pedidos', 'warning');
+            detenerGPS();
+        }
+
+        await cargarDisponibles(false);
+
     } catch (e) {
-        console.error('Error cambiando estado:', e);
-        disponible = !disponible; // revertir
+        console.error('Error toggle:', e);
+        disponible = !disponible;
         actualizarToggleEstado();
         showToast('❌ No se pudo cambiar el estado', 'error');
     }
@@ -882,17 +1025,17 @@ function actualizarToggleEstado() {
 // ================================================================
 function actualizarGanancias() {
     var totalGanado = repartidorData ? parseFloat(repartidorData.total_ganado || 0) : 0;
-    var totalEntregas = repartidorData ? parseInt(repartidorData.total_entregas || 0) : 0;
+    var totalEntregas = repartidorData ? parseInt(repartidorData.pedidos_completados || repartidorData.total_entregas || 0) : 0;
 
-    // Calcular hoy
     var hoy = new Date(); hoy.setHours(0, 0, 0, 0);
     var gananciasHoy = 0;
     var entregasHoy = 0;
+
     historial.forEach(function (p) {
         if (p.entregado_en) {
             var f = new Date(p.entregado_en);
             if (f >= hoy) {
-                gananciasHoy += parseFloat(p.ganancia_repartidor || GANANCIA_POR_ENTREGA);
+                gananciasHoy += parseFloat(p.ganancia_repartidor || gananciaRepartidor());
                 entregasHoy++;
             }
         }
@@ -910,7 +1053,193 @@ function actualizarGanancias() {
 }
 
 // ================================================================
-// CARGAR PEDIDOS DISPONIBLES (estado = listo, sin repartidor)
+// 🎯 SISTEMA GPS EN TIEMPO REAL
+// ================================================================
+
+// Actualiza el indicador visual del GPS
+function actualizarIndicadorGPS(estado, titulo, detalle) {
+    var el = document.getElementById('gpsIndicator');
+    var elTitulo = document.getElementById('gpsTitulo');
+    var elDetalle = document.getElementById('gpsDetalle');
+    if (!el) return;
+
+    el.classList.remove('activo', 'error');
+
+    if (estado === 'activo') el.classList.add('activo');
+    else if (estado === 'error' || estado === 'sin_permiso') el.classList.add('error');
+
+    if (elTitulo) elTitulo.textContent = titulo || '📍 Ubicación GPS';
+    if (elDetalle) elDetalle.textContent = detalle || '';
+
+    gpsEstado = estado;
+}
+
+// Iniciar el sistema GPS
+function iniciarGPS() {
+    // Si ya está activo, no hacer nada
+    if (gpsWatchId !== null) return;
+
+    if (!navigator.geolocation) {
+        actualizarIndicadorGPS('error', '📍 GPS no disponible', 'Este navegador no soporta geolocalización');
+        return;
+    }
+
+    actualizarIndicadorGPS('activo', '📍 GPS inicializando...', 'Pidiendo permiso de ubicación...');
+
+    // watchPosition: más eficiente que getCurrentPosition repetido
+    try {
+        gpsWatchId = navigator.geolocation.watchPosition(
+            function (pos) {
+                gpsUltimaPosicion = {
+                    lat: pos.coords.latitude,
+                    lng: pos.coords.longitude,
+                    accuracy: pos.coords.accuracy
+                };
+                // Primera vez que llegó una posición → empezar a enviar
+                if (!gpsTimerEnvio) {
+                    iniciarEnvioPeriodico();
+                }
+            },
+            function (err) {
+                console.error('Error GPS:', err);
+                if (err.code === 1) {
+                    actualizarIndicadorGPS('sin_permiso', '⚠️ Permiso denegado', 'Acepta el permiso de ubicación en tu navegador');
+                } else {
+                    actualizarIndicadorGPS('error', '⚠️ Error GPS', err.message || 'No se pudo obtener ubicación');
+                }
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: GPS_TIMEOUT,
+                maximumAge: 5000
+            }
+        );
+    } catch (e) {
+        console.error('Error iniciando GPS:', e);
+        actualizarIndicadorGPS('error', '⚠️ Error GPS', e.message);
+    }
+}
+
+// Detener el sistema GPS
+function detenerGPS() {
+    if (gpsWatchId !== null) {
+        try {
+            navigator.geolocation.clearWatch(gpsWatchId);
+        } catch (e) { /* silencioso */ }
+        gpsWatchId = null;
+    }
+    if (gpsTimerEnvio) {
+        clearInterval(gpsTimerEnvio);
+        gpsTimerEnvio = null;
+    }
+    gpsUltimaPosicion = null;
+    gpsUltimaEnviada = null;
+
+    actualizarIndicadorGPS('inactivo', '📍 Ubicación GPS inactiva', 'Actívate online para compartir tu ubicación');
+}
+
+// Envío periódico de ubicación a Supabase
+function iniciarEnvioPeriodico() {
+    if (gpsTimerEnvio) clearInterval(gpsTimerEnvio);
+
+    // Determinar intervalo según si tiene pedido activo
+    var tieneActivo = (misEntregas && misEntregas.length > 0);
+    var intervalo = tieneActivo ? GPS_INTERVALO_ACTIVO : GPS_INTERVALO_IDLE;
+
+    // Enviar inmediatamente al iniciar
+    enviarUbicacion();
+
+    // Programar envíos periódicos
+    gpsTimerEnvio = setInterval(function () {
+        // Si la pestaña no está visible, no enviar (ahorra batería)
+        if (document.hidden) return;
+
+        // Recalcular intervalo según pedidos activos
+        var tieneActivo = (misEntregas && misEntregas.length > 0);
+        var nuevoIntervalo = tieneActivo ? GPS_INTERVALO_ACTIVO : GPS_INTERVALO_IDLE;
+
+        // Si cambió el intervalo, reiniciar
+        if (nuevoIntervalo !== intervalo) {
+            intervalo = nuevoIntervalo;
+            iniciarEnvioPeriodico();
+            return;
+        }
+
+        enviarUbicacion();
+    }, intervalo);
+}
+
+// Enviar la última ubicación a Supabase
+async function enviarUbicacion() {
+    if (!repartidorData || !repartidorData.id) return;
+    if (!disponible) return;
+    if (!gpsUltimaPosicion) {
+        actualizarIndicadorGPS('activo', '📍 Esperando GPS...', 'Aún no tenemos tu ubicación');
+        return;
+    }
+
+    var lat = gpsUltimaPosicion.lat;
+    var lng = gpsUltimaPosicion.lng;
+
+    // Verificar distancia mínima desde la última enviada (evita spam)
+    if (gpsUltimaEnviada) {
+        var dist = distanciaMetros(gpsUltimaEnviada.lat, gpsUltimaEnviada.lng, lat, lng);
+        if (dist < GPS_MIN_DISTANCIA_M) {
+            // No se movió lo suficiente, no enviar pero actualizar indicador
+            var minAtras = Math.floor((Date.now() - (gpsUltimaVez || Date.now())) / 60000);
+            actualizarIndicadorGPS('activo', '📍 Ubicación sin cambios', 'Último envío: ' + (minAtras < 1 ? 'ahora' : 'hace ' + minAtras + ' min'));
+            return;
+        }
+    }
+
+    try {
+        var upd = await supabase
+            .from('mercado_repartidores')
+            .update({
+                latitud_actual: lat,
+                longitud_actual: lng,
+                ultima_ubicacion: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', repartidorData.id);
+
+        if (upd.error) throw upd.error;
+
+        gpsUltimaEnviada = { lat: lat, lng: lng };
+        gpsUltimaVez = Date.now();
+        gpsContadorEnvios++;
+
+        var haceSeg = Math.floor((Date.now() - gpsUltimaVez) / 1000);
+        actualizarIndicadorGPS(
+            'activo',
+            '📍 Enviando ubicación',
+            'Última actualización: hace ' + (haceSeg < 5 ? 'instantes' : haceSeg + 's') + ' · ' + gpsContadorEnvios + ' envíos'
+        );
+
+    } catch (e) {
+        console.error('Error enviando ubicación:', e);
+        actualizarIndicadorGPS('error', '⚠️ Error enviando ubicación', e.message);
+    }
+}
+
+// Pausar/reanudar GPS según visibilidad
+document.addEventListener('visibilitychange', function () {
+    if (document.hidden) {
+        // Pausar envíos mientras no se ve la pestaña
+        if (gpsTimerEnvio) {
+            clearInterval(gpsTimerEnvio);
+            gpsTimerEnvio = null;
+        }
+    } else {
+        // Reanudar al volver
+        if (disponible && gpsWatchId !== null && !gpsTimerEnvio) {
+            iniciarEnvioPeriodico();
+        }
+    }
+});
+
+// ================================================================
+// CARGAR DISPONIBLES
 // ================================================================
 async function cargarDisponibles(silencioso) {
     var container = document.getElementById('disponiblesContainer');
@@ -924,7 +1253,7 @@ async function cargarDisponibles(silencioso) {
         container.innerHTML = '<div class="empty-state">' +
             '<span class="icon">🔴</span>' +
             '<h3 data-clave="repartidor_offline_titulo">Estás fuera de línea</h3>' +
-            '<p data-clave="repartidor_offline_desc">Actívate como disponible para ver pedidos para entregar.</p>' +
+            '<p data-clave="repartidor_offline_desc">Actívate como disponible para ver pedidos.</p>' +
         '</div>';
         if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
         actualizarBadgeDisponibles(0);
@@ -943,7 +1272,6 @@ async function cargarDisponibles(silencioso) {
         if (result.error) throw result.error;
         pedidosDisponibles = result.data || [];
 
-        // Detectar nuevos
         var hayNuevos = false;
         pedidosDisponibles.forEach(function (p) {
             if (!pedidosVistos[p.id]) {
@@ -952,7 +1280,6 @@ async function cargarDisponibles(silencioso) {
             }
         });
 
-        // Cargar datos relacionados
         await cargarDatosRelacionados(pedidosDisponibles);
 
         renderizarDisponibles();
@@ -963,7 +1290,7 @@ async function cargarDisponibles(silencioso) {
         }
 
     } catch (e) {
-        console.error('Error cargando disponibles:', e);
+        console.error('Error disponibles:', e);
         if (!silencioso) {
             container.innerHTML = '<div class="empty-state"><span class="icon">⚠️</span><h3>Error al cargar</h3><p>' + escapeHTML(e.message) + '</p></div>';
         }
@@ -971,7 +1298,7 @@ async function cargarDisponibles(silencioso) {
 }
 
 // ================================================================
-// CARGAR MIS ENTREGAS (asignado o en_camino)
+// CARGAR MIS ENTREGAS
 // ================================================================
 async function cargarMisEntregas(silencioso) {
     var container = document.getElementById('miosContainer');
@@ -997,8 +1324,13 @@ async function cargarMisEntregas(silencioso) {
         renderizarMisEntregas();
         actualizarBadgeMios(misEntregas.length);
 
+        // Si cambió a tener pedidos activos, reiniciar el timer GPS para usar el intervalo corto
+        if (disponible && gpsWatchId !== null && misEntregas.length > 0) {
+            iniciarEnvioPeriodico();
+        }
+
     } catch (e) {
-        console.error('Error cargando mis entregas:', e);
+        console.error('Error mis entregas:', e);
         if (!silencioso) {
             container.innerHTML = '<div class="empty-state"><span class="icon">⚠️</span><h3>Error al cargar</h3><p>' + escapeHTML(e.message) + '</p></div>';
         }
@@ -1006,7 +1338,7 @@ async function cargarMisEntregas(silencioso) {
 }
 
 // ================================================================
-// CARGAR HISTORIAL (entregado)
+// CARGAR HISTORIAL
 // ================================================================
 async function cargarHistorial(silencioso) {
     var container = document.getElementById('historialContainer');
@@ -1033,7 +1365,7 @@ async function cargarHistorial(silencioso) {
         actualizarGanancias();
 
     } catch (e) {
-        console.error('Error cargando historial:', e);
+        console.error('Error historial:', e);
         if (!silencioso) {
             container.innerHTML = '<div class="empty-state"><span class="icon">⚠️</span><h3>Error al cargar</h3><p>' + escapeHTML(e.message) + '</p></div>';
         }
@@ -1041,7 +1373,7 @@ async function cargarHistorial(silencioso) {
 }
 
 // ================================================================
-// CARGAR DATOS RELACIONADOS (tiendas, compradores, items)
+// CARGAR DATOS RELACIONADOS
 // ================================================================
 async function cargarDatosRelacionados(pedidos) {
     if (!pedidos || pedidos.length === 0) return;
@@ -1100,7 +1432,7 @@ async function cargarDatosRelacionados(pedidos) {
 
         await Promise.all(promises);
     } catch (e) {
-        console.error('Error cargando datos relacionados:', e);
+        console.error('Error datos relacionados:', e);
     }
 }
 
@@ -1161,6 +1493,17 @@ function renderCardDisponible(p) {
     var items = itemsPorPedido[p.id] || [];
     var totalItems = items.reduce(function (s, it) { return s + (it.cantidad || 0); }, 0);
 
+    var chipCobro = '';
+    if (p.tipo_entrega === 'delivery' && !p.envio_cobrado_en_app && parseFloat(p.envio_mxn || 0) >= 0) {
+        if (parseFloat(p.envio_mxn || 0) === 0) {
+            chipCobro = '<span class="chip-mini cobrar">💵 Cobrar envío en efectivo</span>';
+        } else {
+            chipCobro = '<span class="chip-mini cobrar">💵 Cobrar ' + formatearPrecio(p.envio_mxn) + ' en efectivo</span>';
+        }
+    } else if (p.envio_cobrado_en_app) {
+        chipCobro = '<span class="chip-mini pagado">✓ Envío ya pagado por app</span>';
+    }
+
     return '<div class="pedido-card listo ' + (pedidosVistos[p.id] ? '' : 'nuevo') + '">' +
         '<div class="header-p">' +
             '<div>' +
@@ -1194,20 +1537,22 @@ function renderCardDisponible(p) {
             '<span class="meta">' + (p.tipo_entrega === 'pickup' ? '🏪 Recoger' : '🛵 Delivery') + '</span>' +
         '</div>' +
 
+        (chipCobro ? '<div class="chips-info">' + chipCobro + '</div>' : '') +
+
         '<div class="footer-p">' +
             '<div class="ganancia">' +
                 '<div class="lbl-g">Tu ganancia</div>' +
-                '<div class="val-g">' + formatearPrecio(GANANCIA_POR_ENTREGA) + '</div>' +
+                '<div class="val-g">' + formatearPrecio(gananciaRepartidor()) + '</div>' +
             '</div>' +
             '<div class="pago-metodo">💵 Envío cobrado en efectivo<br>al entregar</div>' +
         '</div>' +
 
         '<div class="acciones-p">' +
-            '<button class="btn-accion-p btn-tomar" onclick="tomarPedido(\'' + p.id + '\', this)">' +
+            '<button class="btn-accion-p btn-tomar" onclick="tomarPedido(' + p.id + ', this)">' +
                 '🛵 <span data-clave="repartidor_tomar">Tomar pedido</span>' +
             '</button>' +
-            '<button class="btn-accion-p btn-ver" onclick="verDetalle(\'' + p.id + '\', \'disponible\')">' +
-                '👁️ <span data-clave="repartidor_ver">Ver</span>' +
+            '<button class="btn-accion-p btn-ver" onclick="verDetalle(' + p.id + ', \'disponible\')">' +
+                '👁️ Ver' +
             '</button>' +
         '</div>' +
     '</div>';
@@ -1224,7 +1569,7 @@ function renderizarMisEntregas() {
         container.innerHTML = '<div class="empty-state">' +
             '<span class="icon">🛵</span>' +
             '<h3 data-clave="repartidor_sin_mios">Sin entregas activas</h3>' +
-            '<p data-clave="repartidor_sin_mios_desc">Cuando tomes un pedido aparecerá aquí hasta que lo entregues.</p>' +
+            '<p data-clave="repartidor_sin_mios_desc">Cuando tomes un pedido aparecerá aquí.</p>' +
         '</div>';
         if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
         return;
@@ -1252,20 +1597,36 @@ function renderCardMia(p) {
 
     var botones = '';
     if (estado === 'asignado') {
-        botones = '<button class="btn-accion-p btn-camino" onclick="marcarEnCamino(\'' + p.id + '\', this)">' +
+        botones = '<button class="btn-accion-p btn-camino" onclick="marcarEnCamino(' + p.id + ', this)">' +
             '🚀 <span data-clave="repartidor_en_camino">Salir en camino</span>' +
         '</button>';
     } else if (estado === 'en_camino') {
-        botones = '<button class="btn-accion-p btn-entregado" onclick="marcarEntregado(\'' + p.id + '\', this)">' +
+        botones = '<button class="btn-accion-p btn-entregado" onclick="marcarEntregado(' + p.id + ', this)">' +
             '✅ <span data-clave="repartidor_entregado">Marcar entregado</span>' +
         '</button>';
     }
 
-    // WhatsApp al cliente
-    var telCli = comprador && comprador.telefono ? comprador.telefono.replace(/\D/g, '') : '';
+    var telCli = comprador && comprador.telefono ? String(comprador.telefono).replace(/\D/g, '') : '';
     var btnWhats = telCli ? '<a href="https://wa.me/' + telCli + '?text=' + encodeURIComponent('Hola, soy tu repartidor. Voy en camino con tu pedido ' + (p.codigo || '')) + '" target="_blank" rel="noopener" class="btn-accion-p btn-whats">' +
-        '💬 <span data-clave="repartidor_whats">WhatsApp</span>' +
+        '💬 WhatsApp' +
     '</a>' : '';
+
+    var chipCobro = '';
+    if (p.tipo_entrega === 'delivery' && !p.envio_cobrado_en_app) {
+        if (parseFloat(p.envio_mxn || 0) > 0) {
+            chipCobro = '<span class="chip-mini cobrar">💵 Cobrar ' + formatearPrecio(p.envio_mxn) + ' en efectivo</span>';
+        } else {
+            chipCobro = '<span class="chip-mini cobrar">💵 Cobrar envío en efectivo (monto a coordinar)</span>';
+        }
+    } else if (p.envio_cobrado_en_app) {
+        chipCobro = '<span class="chip-mini pagado">✓ Envío ya pagado por app</span>';
+    }
+
+    // Chip de GPS si está en camino
+    var chipGps = '';
+    if (estado === 'en_camino' && gpsEstado === 'activo') {
+        chipGps = '<span class="chip-mini gps-ok">📍 Compartiendo ubicación</span>';
+    }
 
     return '<div class="pedido-card ' + estado + '">' +
         '<div class="header-p">' +
@@ -1295,17 +1656,18 @@ function renderCardMia(p) {
             '</div>' +
         '</div>' +
 
+        (chipCobro || chipGps ? '<div class="chips-info">' + chipCobro + chipGps + '</div>' : '') +
+
         '<div class="footer-p">' +
             '<div class="ganancia">' +
                 '<div class="lbl-g">Tu ganancia</div>' +
-                '<div class="val-g">' + formatearPrecio(GANANCIA_POR_ENTREGA) + '</div>' +
+                '<div class="val-g">' + formatearPrecio(gananciaRepartidor()) + '</div>' +
             '</div>' +
-            '<div class="pago-metodo">💵 Cobra envío en efectivo<br>' + formatearPrecio(0) + ' en app</div>' +
         '</div>' +
 
         '<div class="acciones-p">' + botones + btnWhats +
-            '<button class="btn-accion-p btn-ver" onclick="verDetalle(\'' + p.id + '\', \'mio\')">' +
-                '👁️ <span data-clave="repartidor_ver">Ver</span>' +
+            '<button class="btn-accion-p btn-ver" onclick="verDetalle(' + p.id + ', \'mio\')">' +
+                '👁️ Ver' +
             '</button>' +
         '</div>' +
     '</div>';
@@ -1331,7 +1693,7 @@ function renderizarHistorial() {
     var html = '<div class="pedidos-lista">';
     historial.forEach(function (p) {
         var tienda = tiendasCache[p.tienda_id] || null;
-        var ganancia = parseFloat(p.ganancia_repartidor || GANANCIA_POR_ENTREGA);
+        var ganancia = parseFloat(p.ganancia_repartidor || gananciaRepartidor());
 
         html += '<div class="pedido-card entregado">' +
             '<div class="header-p">' +
@@ -1387,6 +1749,12 @@ async function tomarPedido(pedidoId, btn) {
         showToast('🛵 ¡Pedido tomado! Ve a la tienda a recogerlo.', 'success');
         await Promise.all([cargarDisponibles(true), cargarMisEntregas(true)]);
 
+        // Reiniciar GPS para usar intervalo corto (hay pedido activo)
+        if (gpsWatchId !== null) {
+            iniciarEnvioPeriodico();
+            enviarUbicacion();
+        }
+
     } catch (e) {
         console.error('Error tomando pedido:', e);
         showToast('❌ ' + (e.message || 'No se pudo tomar el pedido'), 'error');
@@ -1415,11 +1783,15 @@ async function marcarEnCamino(pedidoId, btn) {
             .single();
 
         if (result.error) throw result.error;
-        showToast('🚀 ¡En camino!', 'success');
+        showToast('🚀 ¡En camino! El cliente puede ver tu ubicación', 'success');
+
+        // Enviar ubicación inmediatamente
+        enviarUbicacion();
+
         await cargarMisEntregas(true);
 
     } catch (e) {
-        console.error('Error marcando en camino:', e);
+        console.error('Error en camino:', e);
         showToast('❌ ' + e.message, 'error');
         if (btn) { btn.disabled = false; }
     }
@@ -1433,10 +1805,7 @@ async function marcarEntregado(pedidoId, btn) {
     if (btn) { btn.disabled = true; btn.innerHTML = '⏳...'; }
 
     try {
-        var ganancia = GANANCIA_POR_ENTREGA;
-        if (repartidorData && repartidorData.ganancia_por_entrega) {
-            ganancia = parseFloat(repartidorData.ganancia_por_entrega);
-        }
+        var ganancia = gananciaRepartidor();
 
         var result = await supabase
             .from('mercado_pedidos')
@@ -1455,24 +1824,29 @@ async function marcarEntregado(pedidoId, btn) {
 
         // Actualizar stats del repartidor
         if (repartidorData && repartidorData.id) {
-            var totalEntregas = (parseInt(repartidorData.total_entregas || 0)) + 1;
+            var totalEntregas = (parseInt(repartidorData.pedidos_completados || repartidorData.total_entregas || 0)) + 1;
             var totalGanado = (parseFloat(repartidorData.total_ganado || 0)) + ganancia;
 
             await supabase
                 .from('mercado_repartidores')
                 .update({
-                    total_entregas: totalEntregas,
+                    pedidos_completados: totalEntregas,
                     total_ganado: totalGanado,
                     updated_at: new Date().toISOString()
                 })
                 .eq('id', repartidorData.id);
 
-            repartidorData.total_entregas = totalEntregas;
+            repartidorData.pedidos_completados = totalEntregas;
             repartidorData.total_ganado = totalGanado;
         }
 
         showToast('✅ ¡Entrega completada! +' + formatearPrecio(ganancia), 'success');
         await Promise.all([cargarMisEntregas(true), cargarHistorial(true)]);
+
+        // Si ya no hay pedidos activos, el GPS vuelve a intervalo largo
+        if (misEntregas.length === 0 && gpsWatchId !== null) {
+            iniciarEnvioPeriodico();
+        }
 
     } catch (e) {
         console.error('Error marcando entregado:', e);
@@ -1503,14 +1877,14 @@ function verDetalle(pedidoId, origen) {
     '</div>';
 
     html += '<div class="detalle-seccion">' +
-        '<h3>🏪 <span data-clave="repartidor_origen">Origen</span></h3>' +
+        '<h3>🏪 Origen</h3>' +
         '<div class="dato-fila"><span class="lbl">Tienda</span><span class="val">' + escapeHTML(tienda ? tienda.nombre_negocio : '—') + '</span></div>' +
         '<div class="dato-fila"><span class="lbl">Dirección</span><span class="val">' + escapeHTML(tienda ? (tienda.direccion || '—') : '—') + '</span></div>' +
         (tienda && tienda.telefono ? '<div class="dato-fila"><span class="lbl">Teléfono</span><span class="val">' + escapeHTML(tienda.telefono) + '</span></div>' : '') +
     '</div>';
 
     html += '<div class="detalle-seccion">' +
-        '<h3>📍 <span data-clave="repartidor_destino">Destino</span></h3>' +
+        '<h3>📍 Destino</h3>' +
         '<div class="dato-fila"><span class="lbl">Cliente</span><span class="val">' + escapeHTML(comprador ? (comprador.nombre || comprador.handle) : '—') + '</span></div>' +
         (comprador && comprador.telefono ? '<div class="dato-fila"><span class="lbl">Teléfono</span><span class="val">' + escapeHTML(comprador.telefono) + '</span></div>' : '') +
         '<div class="dato-fila"><span class="lbl">Dirección</span><span class="val">' + escapeHTML(p.direccion_entrega || '—') + '</span></div>' +
@@ -1518,7 +1892,7 @@ function verDetalle(pedidoId, origen) {
     '</div>';
 
     html += '<div class="detalle-seccion">' +
-        '<h3>📦 <span data-clave="repartidor_productos">Productos</span></h3>';
+        '<h3>📦 Productos</h3>';
     items.forEach(function (it) {
         html += '<div class="dato-fila">' +
             '<span class="lbl">' + it.cantidad + '×</span>' +
@@ -1528,10 +1902,18 @@ function verDetalle(pedidoId, origen) {
     html += '</div>';
 
     html += '<div class="detalle-seccion">' +
-        '<h3>💵 <span data-clave="repartidor_pago">Pago</span></h3>' +
-        '<div class="dato-fila"><span class="lbl">Productos</span><span class="val">Pagados en app</span></div>' +
-        '<div class="dato-fila"><span class="lbl">Envío</span><span class="val" style="color:var(--warning);">Cobrar en efectivo</span></div>' +
-        '<div class="dato-fila"><span class="lbl">Tu ganancia</span><span class="val" style="color:var(--success);font-weight:700;">' + formatearPrecio(GANANCIA_POR_ENTREGA) + '</span></div>' +
+        '<h3>💵 Pago</h3>' +
+        '<div class="dato-fila"><span class="lbl">Productos</span><span class="val">Pagados en app</span></div>';
+
+    if (p.tipo_entrega === 'delivery' && !p.envio_cobrado_en_app) {
+        var montoCobrar = parseFloat(p.envio_mxn || 0);
+        var txtCobrar = montoCobrar > 0 ? formatearPrecio(montoCobrar) : 'A coordinar';
+        html += '<div class="dato-fila"><span class="lbl">Envío</span><span class="val" style="color:var(--warning);font-weight:700;">Cobrar ' + txtCobrar + ' en efectivo</span></div>';
+    } else if (p.envio_cobrado_en_app) {
+        html += '<div class="dato-fila"><span class="lbl">Envío</span><span class="val" style="color:var(--success);">✓ Ya pagado por app</span></div>';
+    }
+
+    html += '<div class="dato-fila"><span class="lbl">Tu ganancia</span><span class="val" style="color:var(--success);font-weight:700;">' + formatearPrecio(gananciaRepartidor()) + '</span></div>' +
     '</div>';
 
     var cont = document.getElementById('modalDetalleContenido');
@@ -1558,7 +1940,6 @@ function cambiarTab(tab, btn) {
     var target = document.querySelector('[data-tab-content="' + tab + '"]');
     if (target) target.classList.add('active');
 
-    // Cargar datos de la pestaña
     if (tab === 'disponibles') cargarDisponibles(true);
     else if (tab === 'mios') cargarMisEntregas(true);
     else if (tab === 'historial') cargarHistorial(true);
@@ -1611,7 +1992,6 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     await cargarDatosRepartidor();
 
-    // Cargar en paralelo
     await Promise.all([
         cargarDisponibles(false),
         cargarMisEntregas(false),
@@ -1628,6 +2008,17 @@ document.addEventListener('DOMContentLoaded', async function () {
             }
         } catch (e) { console.warn('Error idiomas:', e); }
     }, 400);
+});
+
+// Cerrar modal con click fuera
+document.addEventListener('click', function (e) {
+    var modal = document.getElementById('modalDetalle');
+    if (e.target === modal) cerrarModalDetalle();
+});
+
+// Al cerrar la pestaña, detener el GPS
+window.addEventListener('beforeunload', function () {
+    detenerGPS();
 });
 
 // ================================================================
