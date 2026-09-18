@@ -2,6 +2,8 @@
      MERCADO - SARIEL'S ECOSYSTEM
      Pedidos entrantes del vendedor
      Ruta: /features/mercado/vendedor/pedidos.html
+     Esquema real: bigint IDs, envio_cobrado_en_app, forma_pago,
+                   cancelado_por, listo_en
      ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
@@ -136,11 +138,9 @@
             font-weight: 600;
         }
 
-        /* Lista de pedidos */
+        /* Pedidos */
         .pedidos-lista {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
+            display: flex; flex-direction: column; gap: 12px;
         }
 
         .pedido-card {
@@ -159,8 +159,7 @@
         .pedido-card::before {
             content: '';
             position: absolute;
-            left: 0; top: 0; bottom: 0;
-            width: 4px;
+            left: 0; top: 0; bottom: 0; width: 4px;
             background: var(--gold);
         }
         .pedido-card.pendiente::before { background: var(--warning); }
@@ -257,6 +256,31 @@
             margin-top: 2px;
         }
 
+        .pedido-card .chips-info {
+            display: flex; flex-wrap: wrap; gap: 4px;
+            margin-bottom: 10px;
+        }
+        .pedido-card .chips-info .chip-mini {
+            font-size: 0.55rem;
+            padding: 3px 8px;
+            border-radius: 10px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--glass-border);
+            color: var(--text-muted);
+        }
+        .pedido-card .chips-info .chip-mini.envio-app {
+            color: var(--gold); border-color: rgba(212,175,55,0.3); background: rgba(212,175,55,0.08);
+        }
+        .pedido-card .chips-info .chip-mini.envio-efectivo {
+            color: var(--cyan); border-color: rgba(0,229,255,0.3); background: rgba(0,229,255,0.08);
+        }
+        .pedido-card .chips-info .chip-mini.pickup {
+            color: var(--purple); border-color: rgba(168,85,247,0.3); background: rgba(168,85,247,0.08);
+        }
+        .pedido-card .chips-info .chip-mini.urgente {
+            color: var(--warning); border-color: rgba(247,212,74,0.3); background: rgba(247,212,74,0.08);
+        }
+
         .pedido-card .footer-pedido {
             display: flex;
             justify-content: space-between;
@@ -278,7 +302,6 @@
             color: var(--gold);
         }
 
-        /* Botones de acción por pedido */
         .pedido-card .acciones-pedido {
             display: flex; gap: 8px; flex-wrap: wrap;
             margin-top: 12px;
@@ -336,7 +359,7 @@
         }
         .btn-ver:hover:not(:disabled) { border-color: var(--gold) !important; color: var(--gold); }
 
-        /* Loading */
+        /* Loading / empty */
         .loading-state {
             text-align: center; padding: 60px 20px; color: var(--text-muted);
         }
@@ -375,7 +398,7 @@
         }
         .empty-state .btn-ir:hover { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
 
-        /* Modal detalle */
+        /* Modal */
         .modal-overlay {
             position: fixed; inset: 0;
             background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
@@ -407,9 +430,7 @@
             color: var(--gold); font-size: 1rem; margin-bottom: 16px;
         }
 
-        .detalle-seccion {
-            margin-bottom: 16px;
-        }
+        .detalle-seccion { margin-bottom: 16px; }
         .detalle-seccion h3 {
             font-family: 'Orbitron', monospace;
             font-size: 0.75rem; color: var(--gold);
@@ -418,16 +439,13 @@
         }
         .detalle-item {
             display: flex; gap: 10px;
-            align-items: center;
-            padding: 8px;
+            align-items: center; padding: 8px;
             background: rgba(0,0,0,0.25);
-            border-radius: 10px;
-            margin-bottom: 6px;
+            border-radius: 10px; margin-bottom: 6px;
         }
         .detalle-item .foto {
             width: 42px; height: 42px;
-            border-radius: 8px;
-            overflow: hidden;
+            border-radius: 8px; overflow: hidden;
             background: linear-gradient(135deg, var(--green-deep), var(--green-mid));
             display: flex; align-items: center; justify-content: center;
             font-size: 1.2rem; flex-shrink: 0;
@@ -444,32 +462,23 @@
         .detalle-item .precio {
             font-family: 'Orbitron', monospace;
             font-size: 0.78rem; font-weight: 700;
-            color: var(--gold);
-            white-space: nowrap;
+            color: var(--gold); white-space: nowrap;
         }
 
         .dato-fila {
             display: flex; gap: 10px;
-            padding: 6px 0;
-            font-size: 0.75rem;
+            padding: 6px 0; font-size: 0.75rem;
             border-bottom: 1px solid var(--glass-border);
         }
         .dato-fila:last-child { border-bottom: none; }
-        .dato-fila .lbl {
-            color: var(--text-muted);
-            min-width: 90px;
-        }
-        .dato-fila .val {
-            color: var(--text-primary);
-            flex: 1; word-break: break-word;
-        }
+        .dato-fila .lbl { color: var(--text-muted); min-width: 90px; }
+        .dato-fila .val { color: var(--text-primary); flex: 1; word-break: break-word; }
 
         .total-resumen {
             background: rgba(212,175,55,0.08);
             border: 1px solid rgba(212,175,55,0.3);
             border-radius: 12px;
-            padding: 12px 14px;
-            margin-top: 8px;
+            padding: 12px 14px; margin-top: 8px;
         }
         .total-resumen .fila {
             display: flex; justify-content: space-between;
@@ -483,6 +492,24 @@
             padding-top: 8px; margin-top: 6px;
             border-top: 1px solid var(--glass-border);
         }
+
+        .form-group { margin-bottom: 14px; }
+        .form-group label {
+            display: block; font-size: 0.72rem;
+            color: var(--text-muted); margin-bottom: 6px;
+            font-weight: 600;
+        }
+        .form-group textarea {
+            width: 100%; padding: 12px 14px;
+            background: rgba(0,0,0,0.35);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 0.85rem; outline: none;
+            font-family: 'Inter', sans-serif;
+            resize: vertical; min-height: 60px;
+        }
+        .form-group textarea:focus { border-color: var(--gold); }
 
         .toast {
             position: fixed; bottom: 30px; right: 20px;
@@ -618,7 +645,7 @@
 
     </div>
 
-    <!-- Modal detalle del pedido -->
+    <!-- Modal detalle -->
     <div class="modal-overlay" id="modalDetalle">
         <div class="modal">
             <button class="close-btn" onclick="cerrarModalDetalle()">×</button>
@@ -627,7 +654,7 @@
         </div>
     </div>
 
-    <!-- Modal confirmar rechazo -->
+    <!-- Modal rechazar -->
     <div class="modal-overlay" id="modalRechazar">
         <div class="modal" style="border-color: var(--danger); max-width: 400px;">
             <button class="close-btn" onclick="cerrarModalRechazar()">×</button>
@@ -637,7 +664,7 @@
             </p>
             <div class="form-group" style="margin-bottom:14px;">
                 <label data-clave="vendedor_motivo_rechazo">Motivo (opcional)</label>
-                <textarea id="motivoRechazo" maxlength="200" style="min-height:60px;" placeholder="Ej: Sin stock, cerrado, etc."></textarea>
+                <textarea id="motivoRechazo" maxlength="200" placeholder="Ej: Sin stock, cerrado, etc."></textarea>
             </div>
             <div style="display:flex; gap:10px;">
                 <button class="btn-accion-p btn-ver" onclick="cerrarModalRechazar()" style="flex:1;">
@@ -692,7 +719,6 @@ var pedidosVistos = {};
 var autoRefreshTimer = null;
 var AUTO_REFRESH_MS = 15000;
 
-// Estados por filtro
 var F_ACTIVOS = ['aceptado', 'preparando', 'listo', 'asignado', 'en_camino'];
 var F_COMPLETADOS = ['entregado', 'cancelado', 'rechazado'];
 
@@ -791,25 +817,25 @@ async function cargarUsuarioActual() {
             if (badge) badge.textContent = u.data.tokens || 0;
         }
         return u.data || null;
-    } catch (e) { console.error('Error cargando usuario:', e); return null; }
+    } catch (e) { console.error('Error usuario:', e); return null; }
 }
 
 // ================================================================
-// CARGAR TIENDA DEL VENDEDOR
+// CARGAR TIENDA
 // ================================================================
 async function cargarTienda() {
     try {
         var result = await supabase
             .from('mercado_tiendas')
-            .select('id, nombre_negocio, slug, logo_url')
-            .eq('vendedor_id', sessionUser.id)
+            .select('id, nombre_negocio, slug, logo_url, nivel, activa_hasta, estado')
+            .eq('usuario_id', sessionUser.id)
             .maybeSingle();
 
         if (result.error && result.error.code !== 'PGRST116') throw result.error;
         tiendaActual = result.data || null;
         return tiendaActual;
     } catch (e) {
-        console.error('Error cargando tienda:', e);
+        console.error('Error tienda:', e);
         tiendaActual = null;
         return null;
     }
@@ -837,7 +863,7 @@ async function cargarPedidos(silencioso) {
         if (result.error) throw result.error;
         var nuevos = result.data || [];
 
-        // Detectar pedidos nuevos (que no estaban antes) para animarlos
+        // Detectar nuevos
         var idsPrevios = Object.keys(pedidosVistos);
         var hayNuevos = false;
         nuevos.forEach(function (p) {
@@ -851,24 +877,18 @@ async function cargarPedidos(silencioso) {
 
         pedidosCache = nuevos;
 
-        // Cargar items de todos los pedidos en batch
         await cargarItemsBatch(pedidosCache);
-
-        // Cargar compradores en batch
         await cargarCompradoresBatch(pedidosCache);
 
-        // Actualizar contador de pendientes
         actualizarContadorPendientes();
-
         renderizarPedidos();
 
-        // Avisar si hay nuevos
         if (silencioso && hayNuevos) {
             showToast('🔔 ¡Tienes pedido(s) nuevo(s)!', 'success');
         }
 
     } catch (e) {
-        console.error('Error cargando pedidos:', e);
+        console.error('Error pedidos:', e);
         if (!silencioso) {
             container.innerHTML = '<div class="empty-state"><span class="icon">⚠️</span><h3>Error al cargar</h3><p>' + escapeHTML(e.message) + '</p></div>';
         }
@@ -876,7 +896,7 @@ async function cargarPedidos(silencioso) {
 }
 
 // ================================================================
-// CARGAR ITEMS EN BATCH
+// CARGAR ITEMS Y COMPRADORES EN BATCH
 // ================================================================
 async function cargarItemsBatch(pedidos) {
     if (!pedidos || pedidos.length === 0) return;
@@ -896,14 +916,11 @@ async function cargarItemsBatch(pedidos) {
             itemsPorPedido[it.pedido_id].push(it);
         });
     } catch (e) {
-        console.error('Error cargando items batch:', e);
+        console.error('Error items batch:', e);
         itemsPorPedido = {};
     }
 }
 
-// ================================================================
-// CARGAR COMPRADORES EN BATCH
-// ================================================================
 async function cargarCompradoresBatch(pedidos) {
     if (!pedidos || pedidos.length === 0) return;
     var ids = [];
@@ -924,24 +941,21 @@ async function cargarCompradoresBatch(pedidos) {
             compradoresCache[u.id] = u;
         });
     } catch (e) {
-        console.error('Error cargando compradores batch:', e);
+        console.error('Error compradores batch:', e);
         compradoresCache = {};
     }
 }
 
 // ================================================================
-// CONTADOR DE PENDIENTES
+// CONTADOR
 // ================================================================
 function actualizarContadorPendientes() {
     var pendientes = pedidosCache.filter(function (p) { return p.estado === 'pendiente'; }).length;
     var el = document.getElementById('contadorPendientes');
     if (!el) return;
     el.textContent = pendientes + (pendientes === 1 ? ' pendiente' : ' pendientes');
-    if (pendientes > 0) {
-        el.classList.add('urgente');
-    } else {
-        el.classList.remove('urgente');
-    }
+    if (pendientes > 0) el.classList.add('urgente');
+    else el.classList.remove('urgente');
 }
 
 // ================================================================
@@ -955,7 +969,7 @@ function filtrarPedidos(filtro, btn) {
 }
 
 // ================================================================
-// RENDERIZAR PEDIDOS
+// RENDER
 // ================================================================
 function renderizarPedidos() {
     var container = document.getElementById('pedidosContainer');
@@ -995,9 +1009,6 @@ function renderizarPedidos() {
     if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
 }
 
-// ================================================================
-// RENDER: CARD DE UN PEDIDO
-// ================================================================
 function renderPedidoCard(p) {
     var estado = (p.estado || 'pendiente').toLowerCase();
     var comprador = compradoresCache[p.comprador_id] || null;
@@ -1006,7 +1017,6 @@ function renderPedidoCard(p) {
 
     var items = itemsPorPedido[p.id] || [];
 
-    // Resumen de items (máx 3 líneas)
     var itemsHtml = '';
     var itemsMostrados = items.slice(0, 3);
     itemsMostrados.forEach(function (it) {
@@ -1019,47 +1029,58 @@ function renderPedidoCard(p) {
         itemsHtml += '<div class="mas-items">+' + (items.length - 3) + ' producto(s) más</div>';
     }
 
+    // Chips de info
+    var chips = '';
+    if (p.tipo_entrega === 'pickup') {
+        chips += '<span class="chip-mini pickup">🏪 Recoger</span>';
+    } else {
+        chips += '<span class="chip-mini">🛵 Delivery</span>';
+        if (p.envio_cobrado_en_app) {
+            chips += '<span class="chip-mini envio-app">💳 Envío ' + formatearPrecio(p.envio_mxn) + '</span>';
+        } else {
+            chips += '<span class="chip-mini envio-efectivo">💵 Envío al repartidor</span>';
+        }
+    }
+    if (p.forma_pago) {
+        var iconPago = p.forma_pago === 'transferencia' ? '🏦' : '💵';
+        chips += '<span class="chip-mini">' + iconPago + ' ' + escapeHTML(p.forma_pago) + '</span>';
+    }
+
+    // Alerta si lleva mucho tiempo pendiente (>15 min)
+    if (estado === 'pendiente' && p.created_at) {
+        var minEspera = Math.floor((new Date() - new Date(p.created_at)) / 60000);
+        if (minEspera > 15) {
+            chips += '<span class="chip-mini urgente">⚠️ Esperando ' + minEspera + ' min</span>';
+        }
+    }
+
     // Botones según estado
     var botones = '';
     if (estado === 'pendiente') {
-        botones = 
-            '<button class="btn-accion-p btn-aceptar" onclick="cambiarEstadoPedido(\'' + p.id + '\', \'aceptado\', this)">' +
+        botones =
+            '<button class="btn-accion-p btn-aceptar" onclick="cambiarEstadoPedido(' + p.id + ', \'aceptado\', this)">' +
                 '✓ <span data-clave="vendedor_aceptar">Aceptar</span>' +
             '</button>' +
-            '<button class="btn-accion-p btn-rechazar" onclick="abrirModalRechazar(\'' + p.id + '\')">' +
+            '<button class="btn-accion-p btn-rechazar" onclick="abrirModalRechazar(' + p.id + ')">' +
                 '❌ <span data-clave="vendedor_rechazar">Rechazar</span>' +
             '</button>';
     } else if (estado === 'aceptado') {
-        botones = 
-            '<button class="btn-accion-p btn-preparar" onclick="cambiarEstadoPedido(\'' + p.id + '\', \'preparando\', this)">' +
+        botones =
+            '<button class="btn-accion-p btn-preparar" onclick="cambiarEstadoPedido(' + p.id + ', \'preparando\', this)">' +
                 '🍳 <span data-clave="vendedor_preparar">Empezar a preparar</span>' +
             '</button>';
     } else if (estado === 'preparando') {
-        botones = 
-            '<button class="btn-accion-p btn-listo" onclick="cambiarEstadoPedido(\'' + p.id + '\', \'listo\', this)">' +
+        botones =
+            '<button class="btn-accion-p btn-listo" onclick="cambiarEstadoPedido(' + p.id + ', \'listo\', this)">' +
                 '📦 <span data-clave="vendedor_marcar_listo">Marcar listo</span>' +
             '</button>';
-    } else {
-        // Estados avanzados: solo ver detalle
-        botones = 
-            '<button class="btn-accion-p btn-ver" onclick="verDetalle(\'' + p.id + '\')">' +
-                '👁️ <span data-clave="vendedor_ver_detalle">Ver detalle</span>' +
-            '</button>';
     }
 
-    // Si es estado pendiente o activo, también dejamos ver detalle
-    if (estado !== 'pendiente' && estado !== 'aceptado' && estado !== 'preparando') {
-        // ya está el ver detalle
-    } else {
-        botones += '<button class="btn-accion-p btn-ver" onclick="verDetalle(\'' + p.id + '\')">' +
-            '👁️ <span data-clave="vendedor_ver">Ver</span>' +
-        '</button>';
-    }
+    botones += '<button class="btn-accion-p btn-ver" onclick="verDetalle(' + p.id + ')">' +
+        '👁️ <span data-clave="vendedor_ver">Ver</span>' +
+    '</button>';
 
-    // Info extra
-    var extra = '';
-    if (p.tipo_entrega === 'pickup') extra += '🏪 Recoger en tienda';
-    else extra += '🛵 Delivery';
+    var extra = p.tipo_entrega === 'pickup' ? '🏪 Recoger en tienda' : '🛵 Delivery';
 
     return '<div class="pedido-card ' + estado + (pedidosVistos[p.id] === 'nuevo' ? ' nuevo' : '') + '" data-pedido-id="' + p.id + '">' +
         '<div class="header-pedido">' +
@@ -1081,6 +1102,7 @@ function renderPedidoCard(p) {
         '</div>' +
 
         (itemsHtml ? '<div class="items-resumen">' + itemsHtml + '</div>' : '') +
+        (chips ? '<div class="chips-info">' + chips + '</div>' : '') +
 
         '<div class="footer-pedido">' +
             '<div class="info-extra">' +
@@ -1095,18 +1117,15 @@ function renderPedidoCard(p) {
 }
 
 // ================================================================
-// CAMBIAR ESTADO DE UN PEDIDO
+// CAMBIAR ESTADO
 // ================================================================
 async function cambiarEstadoPedido(pedidoId, nuevoEstado, btn) {
     if (btn) { btn.disabled = true; btn.innerHTML = '⏳...'; }
 
     try {
-        var update = {
-            estado: nuevoEstado
-        };
-
-        // Setear fechas según el estado
+        var update = { estado: nuevoEstado };
         var ahora = new Date().toISOString();
+
         if (nuevoEstado === 'aceptado') update.aceptado_en = ahora;
         else if (nuevoEstado === 'listo') update.listo_en = ahora;
 
@@ -1120,7 +1139,6 @@ async function cambiarEstadoPedido(pedidoId, nuevoEstado, btn) {
 
         if (result.error) throw result.error;
 
-        // Actualizar cache local
         var idx = pedidosCache.findIndex(function (p) { return p.id === pedidoId; });
         if (idx !== -1) pedidosCache[idx] = result.data;
 
@@ -1143,7 +1161,7 @@ async function cambiarEstadoPedido(pedidoId, nuevoEstado, btn) {
 }
 
 // ================================================================
-// MODAL RECHAZAR
+// RECHAZAR
 // ================================================================
 function abrirModalRechazar(pedidoId) {
     pedidoARechazar = pedidoId;
@@ -1184,7 +1202,6 @@ async function confirmarRechazo() {
 
         if (result.error) throw result.error;
 
-        // Actualizar cache
         var idx = pedidosCache.findIndex(function (p) { return p.id === pedidoARechazar; });
         if (idx !== -1) pedidosCache[idx] = result.data;
 
@@ -1216,7 +1233,6 @@ function verDetalle(pedidoId) {
 
     var html = '';
 
-    // Estado
     html += '<div class="detalle-seccion">' +
         '<span class="estado-badge ' + estado + '" style="display:inline-block;">' + traducirEstado(estado) + '</span>' +
     '</div>';
@@ -1258,8 +1274,14 @@ function verDetalle(pedidoId) {
 
     // Totales
     html += '<div class="total-resumen">' +
-        '<div class="fila"><span>Subtotal</span><span>' + formatearPrecio(p.subtotal_mxn) + '</span></div>' +
-        '<div class="fila total"><span>TOTAL</span><span>' + formatearPrecio(p.total_mxn) + '</span></div>' +
+        '<div class="fila"><span>Subtotal</span><span>' + formatearPrecio(p.subtotal_mxn) + '</span></div>';
+
+    var envioMxn = parseFloat(p.envio_mxn || 0);
+    if (p.tipo_entrega !== 'pickup' && envioMxn > 0) {
+        html += '<div class="fila"><span>Envío</span><span>' + formatearPrecio(envioMxn) + (p.envio_cobrado_en_app ? ' (por app)' : ' (efectivo)') + '</span></div>';
+    }
+
+    html += '<div class="fila total"><span>TOTAL</span><span>' + formatearPrecio(p.total_mxn) + '</span></div>' +
     '</div>';
 
     var cont = document.getElementById('modalDetalleContenido');
@@ -1345,6 +1367,14 @@ document.addEventListener('DOMContentLoaded', async function () {
             }
         } catch (e) { console.warn('Error idiomas:', e); }
     }, 400);
+});
+
+// Cerrar modales con click fuera
+document.addEventListener('click', function (e) {
+    var modalDet = document.getElementById('modalDetalle');
+    var modalRech = document.getElementById('modalRechazar');
+    if (e.target === modalDet) cerrarModalDetalle();
+    if (e.target === modalRech) cerrarModalRechazar();
 });
 
 // ================================================================
