@@ -1,6 +1,9 @@
 <!-- ================================================================
      MERCADO - SARIEL'S ECOSYSTEM
-     Catálogo principal - muestra tiendas activas
+     Catálogo de tiendas (vista del comprador)
+     Ruta: /features/mercado/index.html
+     Esquema real: bigint IDs, categoria_id (FK), nivel, activa_hasta,
+                   envio_mxn, acepta_delivery/pickup
      ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
@@ -18,7 +21,6 @@
             --gold: #D4AF37;
             --gold-dark: #b8923a;
             --gold-light: #e8c84a;
-            --gold-bright: #f0d060;
             --green-deep: #0F2D1A;
             --green-mid: #1a4a2a;
             --green-bright: #2a6a3a;
@@ -29,7 +31,6 @@
             --glass-bg: rgba(15, 45, 26, 0.55);
             --glass-border: rgba(212, 175, 55, 0.15);
             --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
-            --shadow-gold-strong: 0 0 60px rgba(212, 175, 55, 0.15);
             --radius: 16px;
             --radius-xl: 24px;
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -38,7 +39,6 @@
             --warning: #f7d44a;
             --cyan: #00e5ff;
             --purple: #a855f7;
-            --pink: #ec4899;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -57,7 +57,7 @@
         .nebula-3 { width: 500px; height: 500px; background: var(--purple); top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -15s; opacity: 0.04; }
         @keyframes nebula-drift { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(40px,-30px) scale(1.15); } }
 
-        .app { position: relative; z-index: 1; max-width: 100%; width: 100%; margin: 0 auto; padding: 12px 16px 30px; }
+        .app { position: relative; z-index: 1; max-width: 900px; width: 100%; margin: 0 auto; padding: 12px 16px 30px; }
 
         .header {
             display: flex; justify-content: space-between; align-items: center;
@@ -69,7 +69,6 @@
         .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--text-primary); letter-spacing: 2px; }
         .logo-text span { color: var(--gold); }
         .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; }
-        .network-badge { display: flex; align-items: center; gap: 6px; font-size: 0.6rem; color: var(--gold); background: rgba(212,175,55,0.1); padding: 4px 12px; border-radius: 20px; }
         .token-badge { display: flex; align-items: center; gap: 6px; background: rgba(212,175,55,0.1); border: 1px solid rgba(212,175,55,0.15); padding: 4px 14px; border-radius: 20px; font-size: 0.7rem; color: var(--gold); font-family: 'Orbitron', monospace; cursor: pointer; }
 
         .main-nav {
@@ -81,122 +80,84 @@
         .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); }
         .main-nav .nav-link.live { color: var(--danger); }
 
-        /* HERO */
-        .mercado-hero {
-            background: linear-gradient(155deg, rgba(15, 45, 26, 0.75), rgba(8, 15, 26, 0.9));
-            border: 1px solid rgba(212, 175, 55, 0.25);
-            border-radius: var(--radius-xl);
-            padding: 28px 24px;
-            margin-bottom: 20px;
+        /* Encabezado del mercado */
+        .mercado-header {
             text-align: center;
-            position: relative;
-            overflow: hidden;
+            padding: 16px 0 22px;
         }
-        .mercado-hero::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 20%;
-            width: 60%; height: 1px;
-            background: linear-gradient(90deg, transparent, var(--gold), transparent);
-            opacity: 0.5;
-        }
-        .mercado-hero h1 {
+        .mercado-header h1 {
             font-family: 'Orbitron', monospace;
             font-size: 1.6rem;
-            font-weight: 700;
-            color: var(--gold);
-            margin-bottom: 8px;
-            letter-spacing: 2px;
+            color: var(--text-primary);
+            margin-bottom: 6px;
         }
-        .mercado-hero p {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            max-width: 500px;
-            margin: 0 auto;
-        }
-        .mercado-hero .stats-row {
-            display: flex;
-            justify-content: center;
-            gap: 24px;
-            margin-top: 18px;
-            flex-wrap: wrap;
-        }
-        .mercado-hero .stat {
-            text-align: center;
-        }
-        .mercado-hero .stat .num {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: var(--gold);
-        }
-        .mercado-hero .stat .lbl {
-            font-size: 0.55rem;
+        .mercado-header h1 span { color: var(--gold); }
+        .mercado-header p {
+            font-size: 0.78rem;
             color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 1px;
         }
 
-        /* BUSCADOR Y FILTROS */
+        /* Buscador */
         .buscador-box {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-xl);
-            padding: 14px 16px;
-            margin-bottom: 16px;
-        }
-        .buscador-box .input-wrap {
-            position: relative;
             display: flex;
-            align-items: center;
             gap: 8px;
+            margin-bottom: 16px;
         }
         .buscador-box input {
             flex: 1;
-            padding: 12px 16px 12px 40px;
-            background: rgba(0,0,0,0.35);
+            padding: 14px 18px;
+            background: rgba(0,0,0,0.4);
             border: 1px solid var(--glass-border);
             border-radius: 30px;
             color: var(--text-primary);
             font-size: 0.85rem;
             outline: none;
+            font-family: 'Inter', sans-serif;
             transition: var(--transition);
         }
         .buscador-box input:focus {
             border-color: var(--gold);
-            background: rgba(0,0,0,0.5);
+            background: rgba(0,0,0,0.55);
         }
-        .buscador-box .search-icon {
-            position: absolute;
-            left: 14px;
-            color: var(--text-muted);
-            font-size: 0.9rem;
-            pointer-events: none;
+        .buscador-box input::placeholder { color: var(--text-muted); }
+        .buscador-box .btn-buscar {
+            width: 46px; height: 46px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space);
+            border: none;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
         }
+        .buscador-box .btn-buscar:hover { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
 
+        /* Filtro de categorías */
         .categorias-scroll {
             display: flex;
             gap: 8px;
             overflow-x: auto;
-            padding: 4px 0;
+            padding: 4px 0 12px;
             -webkit-overflow-scrolling: touch;
             scrollbar-width: none;
+            margin-bottom: 6px;
         }
         .categorias-scroll::-webkit-scrollbar { display: none; }
         .cat-btn {
             flex-shrink: 0;
-            padding: 8px 16px;
+            padding: 9px 16px;
             background: rgba(0,0,0,0.35);
             border: 1px solid var(--glass-border);
             border-radius: 20px;
             color: var(--text-muted);
-            font-size: 0.7rem;
+            font-size: 0.72rem;
             cursor: pointer;
             transition: var(--transition);
-            display: flex;
-            align-items: center;
-            gap: 6px;
+            display: flex; align-items: center; gap: 6px;
             white-space: nowrap;
+            font-family: 'Inter', sans-serif;
         }
         .cat-btn:hover { border-color: var(--gold); color: var(--gold); }
         .cat-btn.active {
@@ -206,78 +167,45 @@
             font-weight: 600;
         }
 
-        /* GRID DE TIENDAS */
-        .tiendas-titulo {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 14px;
-            padding: 0 4px;
-        }
-        .tiendas-titulo h2 {
-            font-family: 'Orbitron', monospace;
-            color: var(--gold);
-            font-size: 1rem;
-            font-weight: 600;
-        }
-        .tiendas-titulo .count {
-            font-size: 0.65rem;
-            color: var(--text-muted);
-            background: rgba(0,0,0,0.35);
-            padding: 4px 12px;
-            border-radius: 20px;
-            border: 1px solid var(--glass-border);
-        }
-
+        /* Grid de tiendas */
         .tiendas-grid {
             display: grid;
-            grid-template-columns: 1fr;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
             gap: 14px;
-        }
-        @media (min-width: 600px) {
-            .tiendas-grid { grid-template-columns: repeat(2, 1fr); }
-        }
-        @media (min-width: 900px) {
-            .tiendas-grid { grid-template-columns: repeat(3, 1fr); }
+            margin-bottom: 24px;
         }
 
         .tienda-card {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
-            border-radius: var(--radius-xl);
+            border-radius: var(--radius);
             overflow: hidden;
-            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
             transition: var(--transition);
-            display: flex;
-            flex-direction: column;
+            display: block;
             position: relative;
         }
         .tienda-card:hover {
+            transform: translateY(-3px);
             border-color: var(--gold);
             box-shadow: var(--shadow-gold);
-            transform: translateY(-2px);
         }
+
         .tienda-card .portada {
-            width: 100%;
-            height: 110px;
+            width: 100%; height: 110px;
             background: linear-gradient(135deg, var(--green-deep), var(--green-mid));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--gold);
-            font-size: 2.5rem;
-            position: relative;
-            overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+            position: relative; overflow: hidden;
         }
         .tienda-card .portada img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+            width: 100%; height: 100%; object-fit: cover;
+        }
+        .tienda-card .portada .emoji-fallback {
+            font-size: 2.5rem; color: var(--gold);
         }
         .tienda-card .portada .badge-nivel {
-            position: absolute;
-            top: 10px;
-            right: 10px;
+            position: absolute; top: 10px; right: 10px;
             font-size: 0.5rem;
             padding: 3px 10px;
             border-radius: 12px;
@@ -285,134 +213,150 @@
             font-weight: 700;
             letter-spacing: 1px;
             text-transform: uppercase;
-            z-index: 2;
         }
-        .tienda-card .portada .badge-nivel.max {
+        .badge-nivel.max {
             background: linear-gradient(135deg, #a855f7, #7c3aed);
             color: #fff;
-            box-shadow: 0 0 15px rgba(168, 85, 247, 0.5);
         }
-        .tienda-card .portada .badge-nivel.pro {
+        .badge-nivel.pro {
             background: linear-gradient(135deg, var(--gold), var(--gold-dark));
             color: var(--space);
         }
-        .tienda-card .portada .logo-overlap {
-            position: absolute;
-            bottom: -20px;
-            left: 14px;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--green-deep), var(--gold));
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .badge-nivel.basico {
+            background: rgba(255,255,255,0.15);
             color: #fff;
-            font-size: 1.3rem;
-            border: 3px solid var(--space);
-            overflow: hidden;
-            z-index: 3;
-            font-family: 'Orbitron', monospace;
+            border: 1px solid rgba(255,255,255,0.3);
         }
-        .tienda-card .portada .logo-overlap img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .tienda-card .contenido {
-            padding: 26px 14px 14px;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-        .tienda-card .contenido .nombre {
-            font-family: 'Orbitron', monospace;
-            font-size: 0.85rem;
+
+        .tienda-card .portada .badge-horario {
+            position: absolute; top: 10px; left: 10px;
+            font-size: 0.5rem;
+            padding: 3px 10px;
+            border-radius: 12px;
             font-weight: 700;
-            color: var(--gold);
-            margin-bottom: 4px;
-            display: -webkit-box;
-            -webkit-line-clamp: 1;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
+            display: flex; align-items: center; gap: 4px;
+            letter-spacing: 0.5px;
         }
-        .tienda-card .contenido .categoria {
-            font-size: 0.65rem;
+        .badge-horario.abierto {
+            background: rgba(0,214,143,0.9);
+            color: #fff;
+        }
+        .badge-horario.cerrado {
+            background: rgba(255,51,102,0.9);
+            color: #fff;
+        }
+        .badge-horario.sin-horario {
+            background: rgba(255,255,255,0.15);
+            color: rgba(255,255,255,0.8);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .tienda-card .logo-wrap {
+            margin-top: -28px;
+            padding: 0 14px;
+            position: relative;
+            z-index: 2;
+        }
+        .tienda-card .logo-wrap .logo {
+            width: 56px; height: 56px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, var(--green-deep), var(--green-mid));
+            border: 2px solid var(--glass-bg);
+            overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+        }
+        .tienda-card .logo-wrap .logo img {
+            width: 100%; height: 100%; object-fit: cover;
+        }
+
+        .tienda-card .info {
+            padding: 12px 14px 14px;
+        }
+        .tienda-card .info .nombre {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .tienda-card .info .categoria {
+            font-size: 0.68rem;
             color: var(--text-muted);
             margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
+            display: flex; align-items: center; gap: 6px;
         }
-        .tienda-card .contenido .descripcion {
-            font-size: 0.72rem;
-            color: var(--text-secondary);
-            margin-bottom: 12px;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            flex: 1;
+        .tienda-card .info .categoria .icono-cat {
+            font-size: 0.85rem;
         }
-        .tienda-card .contenido .meta {
+
+        .tienda-card .info .meta-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
             font-size: 0.65rem;
             color: var(--text-muted);
-            padding-top: 10px;
-            border-top: 1px solid var(--glass-border);
+            margin-bottom: 8px;
+            gap: 8px;
         }
-        .tienda-card .contenido .meta .rating {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            color: var(--warning);
-            font-weight: 600;
-        }
-        .tienda-card .contenido .meta .btn-ver {
+        .tienda-card .info .meta-row .rating {
             color: var(--gold);
-            font-size: 0.65rem;
             font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 4px;
+            display: flex; align-items: center; gap: 3px;
+        }
+        .tienda-card .info .meta-row .rating.sin-rating {
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+        .tienda-card .info .meta-row .pedidos {
+            color: var(--text-muted);
         }
 
-        .empty-state {
+        .tienda-card .info .chips {
+            display: flex; flex-wrap: wrap; gap: 4px;
+            margin-bottom: 8px;
+        }
+        .tienda-card .info .chips .chip {
+            font-size: 0.55rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+        .chip.delivery { background: rgba(0,229,255,0.12); color: var(--cyan); }
+        .chip.pickup { background: rgba(168,85,247,0.12); color: var(--purple); }
+
+        .tienda-card .info .envio-info {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding-top: 8px;
+            border-top: 1px solid var(--glass-border);
+        }
+        .tienda-card .info .envio-info .gratis {
+            color: var(--success);
+            font-weight: 600;
+        }
+        .tienda-card .info .envio-info .costo {
+            color: var(--gold);
+            font-weight: 600;
+        }
+
+        /* Loading / empty */
+        .loading-state {
             text-align: center;
             padding: 60px 20px;
             color: var(--text-muted);
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-xl);
-        }
-        .empty-state .icon {
-            font-size: 3rem;
-            display: block;
-            margin-bottom: 16px;
-            color: var(--gold);
-            opacity: 0.4;
-            font-family: 'Orbitron', monospace;
-        }
-        .empty-state h3 {
-            font-family: 'Orbitron', monospace;
-            color: var(--text-secondary);
-            font-size: 1rem;
-            margin-bottom: 8px;
-        }
-        .empty-state p {
-            font-size: 0.8rem;
-        }
-
-        .loading-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--text-muted);
+            grid-column: 1 / -1;
         }
         .loading-state .spinner {
-            width: 40px;
-            height: 40px;
+            width: 40px; height: 40px;
             border: 3px solid rgba(212, 175, 55, 0.15);
             border-top-color: var(--gold);
             border-radius: 50%;
@@ -421,30 +365,33 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* CTA PARA VENDEDORES */
-        .cta-vendedor {
-            margin-top: 24px;
-            padding: 22px 20px;
-            background: linear-gradient(155deg, rgba(212, 175, 55, 0.08), rgba(15, 45, 26, 0.5));
-            border: 1px solid rgba(212, 175, 55, 0.3);
-            border-radius: var(--radius-xl);
+        .empty-state {
             text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+            grid-column: 1 / -1;
         }
-        .cta-vendedor h3 {
-            font-family: 'Orbitron', monospace;
+        .empty-state .icon {
+            font-size: 3.5rem;
+            display: block;
+            margin-bottom: 16px;
             color: var(--gold);
+            opacity: 0.4;
+        }
+        .empty-state h3 {
+            font-family: 'Orbitron', monospace;
+            color: var(--text-secondary);
             font-size: 1rem;
             margin-bottom: 8px;
         }
-        .cta-vendedor p {
-            font-size: 0.78rem;
-            color: var(--text-secondary);
-            margin-bottom: 14px;
-            max-width: 500px;
-            margin-left: auto;
-            margin-right: auto;
+        .empty-state p {
+            font-size: 0.85rem;
+            margin-bottom: 20px;
         }
-        .cta-vendedor .btn-vender {
+        .empty-state .btn-cta {
             display: inline-flex;
             align-items: center;
             gap: 8px;
@@ -460,31 +407,90 @@
             text-decoration: none;
             transition: var(--transition);
         }
+        .empty-state .btn-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-gold);
+        }
+
+        /* CTA vendedor */
+        .cta-vendedor {
+            background: linear-gradient(135deg, rgba(212,175,55,0.1), rgba(15,45,26,0.5));
+            border: 1px solid rgba(212,175,55,0.3);
+            border-radius: var(--radius-xl);
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+        .cta-vendedor .texto {
+            flex: 1;
+            min-width: 200px;
+        }
+        .cta-vendedor .texto .titulo {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.9rem;
+            color: var(--gold);
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .cta-vendedor .texto .subtitulo {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+        .cta-vendedor .btn-vender {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space);
+            border: none;
+            border-radius: 30px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 0.72rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: var(--transition);
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
         .cta-vendedor .btn-vender:hover {
             transform: translateY(-2px);
             box-shadow: var(--shadow-gold);
         }
 
+        /* Toast */
+        .toast {
+            position: fixed; bottom: 30px; right: 20px;
+            background: var(--green-deep); border: 1px solid var(--gold);
+            color: var(--gold); padding: 14px 24px;
+            border-radius: 12px; font-size: 0.8rem;
+            transform: translateY(100px); opacity: 0;
+            transition: all 0.4s ease; z-index: 99999;
+            max-width: 320px; pointer-events: none;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { border-color: var(--danger); color: var(--danger); }
+        .toast.warning { border-color: var(--warning); color: var(--warning); }
+        .toast.success { border-color: var(--success); color: var(--success); }
+
         .footer {
-            margin-top: 30px;
-            padding-top: 16px;
+            margin-top: 30px; padding-top: 16px;
             border-top: 1px solid var(--glass-border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            flex-wrap: wrap;
-            gap: 10px;
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 0.7rem; color: var(--text-muted);
+            flex-wrap: wrap; gap: 10px;
         }
         .footer .brand { color: var(--gold); font-weight: 600; }
         .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
         .footer-links a { color: var(--text-muted); text-decoration: none; }
         .footer-links a:hover { color: var(--gold); }
 
-        /* TEMA DÍA */
-        html.tema-dia,
-        html[data-tema="dia"] {
+        html.tema-dia, html[data-tema="dia"] {
             --space: #f5f7fa;
             --text-primary: #1a2332;
             --text-secondary: #4a5568;
@@ -492,32 +498,25 @@
             --glass-bg: rgba(255, 255, 255, 0.9);
             --glass-border: rgba(0, 0, 0, 0.1);
         }
-        html.tema-dia body,
-        html[data-tema="dia"] body {
+        html.tema-dia body, html[data-tema="dia"] body {
             background: #f5f7fa !important;
             background-image: radial-gradient(ellipse at 20% 50%, rgba(212, 175, 55, 0.05) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(42, 106, 58, 0.05) 0%, transparent 60%) !important;
             color: var(--text-primary) !important;
         }
-        html.tema-dia .nebula,
-        html[data-tema="dia"] .nebula { display: none !important; }
-        html.tema-dia .header,
-        html[data-tema="dia"] .header { background: rgba(255, 255, 255, 0.95) !important; border-bottom-color: rgba(0, 0, 0, 0.1) !important; }
-        html.tema-dia .logo-text,
-        html[data-tema="dia"] .logo-text { color: var(--text-primary) !important; }
-        html.tema-dia .main-nav,
-        html[data-tema="dia"] .main-nav { background: rgba(255, 255, 255, 0.7) !important; border-color: rgba(0, 0, 0, 0.1) !important; }
-        html.tema-dia .main-nav .nav-link,
-        html[data-tema="dia"] .main-nav .nav-link { color: #718096 !important; }
-        html.tema-dia .main-nav .nav-link.active,
-        html[data-tema="dia"] .main-nav .nav-link.active { background: rgba(212, 175, 55, 0.15) !important; color: var(--gold) !important; }
-        html.tema-dia .footer,
-        html[data-tema="dia"] .footer { color: #718096 !important; border-top-color: rgba(0, 0, 0, 0.1) !important; }
-        html.tema-dia .footer-links a,
-        html[data-tema="dia"] .footer-links a { color: #718096 !important; }
+        html.tema-dia .nebula, html[data-tema="dia"] .nebula { display: none !important; }
+        html.tema-dia .header, html[data-tema="dia"] .header { background: rgba(255, 255, 255, 0.95) !important; border-bottom-color: rgba(0, 0, 0, 0.1) !important; }
+        html.tema-dia .logo-text, html[data-tema="dia"] .logo-text { color: var(--text-primary) !important; }
+        html.tema-dia .main-nav, html[data-tema="dia"] .main-nav { background: rgba(255, 255, 255, 0.7) !important; border-color: rgba(0, 0, 0, 0.1) !important; }
+        html.tema-dia .main-nav .nav-link, html[data-tema="dia"] .main-nav .nav-link { color: #718096 !important; }
+        html.tema-dia .main-nav .nav-link.active, html[data-tema="dia"] .main-nav .nav-link.active { background: rgba(212, 175, 55, 0.15) !important; color: var(--gold) !important; }
+        html.tema-dia .footer, html[data-tema="dia"] .footer { color: #718096 !important; border-top-color: rgba(0, 0, 0, 0.1) !important; }
+        html.tema-dia .buscador-box input, html[data-tema="dia"] .buscador-box input { background: rgba(255,255,255,0.9) !important; }
 
         @media (max-width: 480px) {
-            .mercado-hero { padding: 22px 18px; }
-            .mercado-hero h1 { font-size: 1.3rem; }
+            .mercado-header h1 { font-size: 1.2rem; }
+            .tiendas-grid { grid-template-columns: 1fr; }
+            .cta-vendedor { flex-direction: column; align-items: stretch; text-align: center; }
+            .cta-vendedor .btn-vender { width: 100%; justify-content: center; }
         }
     </style>
 </head>
@@ -536,8 +535,7 @@
                 <span class="logo-badge">✦ WEB3</span>
             </a>
             <div class="header-actions">
-                <span class="network-badge"><span class="dot"></span> Polygon</span>
-                <span class="token-badge" id="tokenBadge" onclick="verTokens()">
+                <span class="token-badge" onclick="verTokens()">
                     ◈ <span id="tokenBadgeCantidad">0</span> Es.stoks
                 </span>
             </div>
@@ -555,64 +553,60 @@
             <a href="/features/mercado/index.html" class="nav-link active">🛒 Mercado</a>
         </nav>
 
-        <!-- HERO -->
-        <div class="mercado-hero">
-            <h1 data-clave="mercado_titulo">◈ Mercado Sariel's</h1>
-            <p data-clave="mercado_subtitulo">Descubre tiendas locales, pide a domicilio o recoge en tienda.</p>
-            <div class="stats-row">
-                <div class="stat">
-                    <div class="num" id="statTiendas">0</div>
-                    <div class="lbl" data-clave="mercado_tiendas">Tiendas</div>
-                </div>
-                <div class="stat">
-                    <div class="num" id="statProductos">0</div>
-                    <div class="lbl" data-clave="mercado_productos">Productos</div>
-                </div>
-                <div class="stat">
-                    <div class="num" id="statCategorias">0</div>
-                    <div class="lbl" data-clave="mercado_categorias">Categorías</div>
-                </div>
-            </div>
+        <!-- Botones rápidos del comprador -->
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
+            <a href="/features/mercado/mis-pedidos.html" class="btn-back" style="margin:0;">
+                📋 <span data-clave="mercado_mis_pedidos">Mis pedidos</span>
+            </a>
+            <a href="/features/mercado/vendedor/panel.html" class="btn-back" style="margin:0;">
+                🏪 <span data-clave="mercado_mi_tienda">Mi tienda</span>
+            </a>
+            <a href="/features/mercado/repartidor/panel.html" class="btn-back" style="margin:0;">
+                🛵 <span data-clave="mercado_soy_repartidor">Soy repartidor</span>
+            </a>
         </div>
 
-        <!-- BUSCADOR -->
+        <!-- Header del mercado -->
+        <div class="mercado-header">
+            <h1>🛒 <span data-clave="mercado_titulo">Mercado</span></h1>
+            <p data-clave="mercado_subtitulo">Descubre tiendas y productos cerca de ti</p>
+        </div>
+
+        <!-- Buscador -->
         <div class="buscador-box">
-            <div class="input-wrap">
-                <span class="search-icon">🔍</span>
-                <input type="text" id="inputBuscar" data-placeholder="mercado_buscar" placeholder="Buscar tienda o producto..." />
-            </div>
+            <input
+                type="text"
+                id="inputBusqueda"
+                placeholder="Buscar tiendas o productos..."
+                data-placeholder="mercado_buscar_placeholder"
+                onkeypress="if(event.key==='Enter') buscar()"
+            />
+            <button class="btn-buscar" onclick="buscar()" aria-label="Buscar">🔍</button>
         </div>
 
-        <!-- CATEGORÍAS -->
-        <div class="buscador-box">
-            <div class="categorias-scroll" id="categoriasScroll">
-                <button class="cat-btn active" data-categoria="todas" onclick="filtrarPorCategoria('todas', this)">
-                    <span>◈</span> <span data-clave="mercado_todas">Todas</span>
-                </button>
-                <!-- Las demás se cargan por JS -->
-            </div>
+        <!-- Filtro por categorías -->
+        <div class="categorias-scroll" id="categoriasScroll">
+            <!-- Se llena desde JS -->
         </div>
 
-        <!-- LISTA DE TIENDAS -->
-        <div class="tiendas-titulo">
-            <h2 data-clave="mercado_tiendas_disponibles">◈ Tiendas disponibles</h2>
-            <span class="count" id="contadorTiendas">0</span>
-        </div>
-
-        <div id="tiendasContainer">
+        <!-- Grid de tiendas -->
+        <div class="tiendas-grid" id="tiendasGrid">
             <div class="loading-state">
                 <div class="spinner"></div>
-                <p data-clave="mercado_cargando">Cargando tiendas...</p>
+                <p data-clave="mercado_cargando_tiendas">Cargando tiendas...</p>
             </div>
         </div>
 
-        <!-- CTA VENDEDOR -->
+        <!-- CTA vendedor -->
         <div class="cta-vendedor">
-            <h3 data-clave="mercado_vende_titulo">¿Tienes un negocio?</h3>
-            <p data-clave="mercado_vende_desc">Únete al Mercado Sariel's y llega a más clientes. Planes desde $100 MXN al mes.</p>
+            <div class="texto">
+                <div class="titulo">💼 ¿Tienes un negocio?</div>
+                <div class="subtitulo" data-clave="mercado_cta_vendedor">
+                    Abre tu tienda en el Mercado y empieza a vender con cripto.
+                </div>
+            </div>
             <a href="/features/mercado/vendedor/panel.html" class="btn-vender">
-                <span>◆</span>
-                <span data-clave="mercado_vende_boton">Abrir mi tienda</span>
+                ✨ <span data-clave="mercado_abrir_tienda">Abrir mi tienda</span>
             </a>
         </div>
 
@@ -649,7 +643,7 @@
 
 <script>
 // ================================================================
-// CONFIGURACIÓN SUPABASE
+// CONFIGURACIÓN
 // ================================================================
 var supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
 var supabaseKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
@@ -663,8 +657,8 @@ var supabase = supabaseClient;
 var sessionUser = null;
 var tiendasCache = [];
 var categoriasCache = [];
-var categoriaActiva = 'todas';
-var textoBusqueda = '';
+var filtroCategoria = null;
+var filtroBusqueda = '';
 
 // ================================================================
 // BANNER DE ERRORES
@@ -694,14 +688,12 @@ function showToast(mensaje, tipo) {
         else if (tipo === 'warning') toastEl.classList.add('warning');
         else if (tipo === 'success') toastEl.classList.add('success');
         clearTimeout(toastEl._timeout);
-        toastEl._timeout = setTimeout(function() {
-            toastEl.classList.remove('show');
-        }, 3500);
+        toastEl._timeout = setTimeout(function() { toastEl.classList.remove('show'); }, 3000);
     } catch (e) { console.warn('Toast error:', e); }
 }
 
 // ================================================================
-// ESCAPE HTML
+// HELPERS
 // ================================================================
 function escapeHTML(texto) {
     if (!texto) return '';
@@ -710,43 +702,67 @@ function escapeHTML(texto) {
     return div.innerHTML;
 }
 
-// ================================================================
-// OBTENER SESIÓN
-// ================================================================
-async function getSession() {
+function formatearPrecio(n) {
+    return '$' + parseFloat(n || 0).toFixed(2);
+}
+
+// Determina si la tienda está abierta ahora
+function tiendaEstaAbierta(tienda) {
+    if (!tienda.horario_apertura || !tienda.horario_cierre) return null; // sin horario
     try {
-        var result = await supabase.auth.getSession();
-        return result.data.session;
-    } catch (e) {
-        console.error('Error obteniendo sesión:', e);
-        return null;
+        var ahora = new Date();
+        var ahoraMin = ahora.getHours() * 60 + ahora.getMinutes();
+
+        var ap = String(tienda.horario_apertura).split(':');
+        var ci = String(tienda.horario_cierre).split(':');
+        var apMin = parseInt(ap[0]) * 60 + parseInt(ap[1] || 0);
+        var ciMin = parseInt(ci[0]) * 60 + parseInt(ci[1] || 0);
+
+        // Si cruza medianoche (ej: abre 22:00, cierra 02:00)
+        if (ciMin < apMin) {
+            return ahoraMin >= apMin || ahoraMin <= ciMin;
+        }
+        return ahoraMin >= apMin && ahoraMin <= ciMin;
+    } catch (e) { return null; }
+}
+
+// ¿La membresía está activa?
+function membresiaActiva(tienda) {
+    if (!tienda.activa_hasta) return false;
+    try {
+        return new Date(tienda.activa_hasta) > new Date();
+    } catch (e) { return false; }
+}
+
+// Info del envío de una tienda
+function infoEnvio(tienda) {
+    var envio = parseFloat(tienda.envio_mxn || 0);
+    if (envio > 0) {
+        return { tipo: 'app', texto: 'Envío: ' + formatearPrecio(envio), clase: 'costo' };
     }
+    return { tipo: 'efectivo', texto: 'Envío: a coordinar', clase: '' };
 }
 
 // ================================================================
-// CARGAR USUARIO ACTUAL
+// CARGAR USUARIO (opcional, para badge de tokens)
 // ================================================================
 async function cargarUsuarioActual() {
     try {
-        var session = await getSession();
-        if (!session) { sessionUser = null; return null; }
+        var result = await supabase.auth.getSession();
+        var session = result.data.session;
+        if (!session) return null;
         sessionUser = session.user;
-        var result = await supabase
+        var u = await supabase
             .from('usuarios')
             .select('nombre, handle, tokens')
             .eq('id', session.user.id)
             .single();
-        if (result.error) throw result.error;
-        var data = result.data;
-        if (data) {
+        if (!u.error && u.data) {
             var badge = document.getElementById('tokenBadgeCantidad');
-            if (badge) badge.textContent = data.tokens || 0;
+            if (badge) badge.textContent = u.data.tokens || 0;
         }
-        return data;
-    } catch (e) {
-        console.error('Error cargando usuario:', e);
-        return null;
-    }
+        return u.data || null;
+    } catch (e) { console.error('Error cargando usuario:', e); return null; }
 }
 
 // ================================================================
@@ -762,277 +778,233 @@ async function cargarCategorias() {
 
         if (result.error) throw result.error;
         categoriasCache = result.data || [];
-
-        var statCat = document.getElementById('statCategorias');
-        if (statCat) statCat.textContent = categoriasCache.length;
-
-        var scroll = document.getElementById('categoriasScroll');
-        if (!scroll) return;
-
-        // Mantener la primera (Todas) y agregar las demás
-        var html = '<button class="cat-btn active" data-categoria="todas" onclick="filtrarPorCategoria(\'todas\', this)">' +
-            '<span>◈</span> <span data-clave="mercado_todas">Todas</span></button>';
-
-        categoriasCache.forEach(function (cat) {
-            html += '<button class="cat-btn" data-categoria="' + escapeHTML(cat.slug) + '" onclick="filtrarPorCategoria(\'' + escapeHTML(cat.slug) + '\', this)">' +
-                '<span>' + escapeHTML(cat.icono || '◈') + '</span> <span>' + escapeHTML(cat.nombre) + '</span>' +
-            '</button>';
-        });
-
-        scroll.innerHTML = html;
-
-        // Reaplicar i18n
-        if (typeof window.aplicarTraducciones === 'function') {
-            window.aplicarTraducciones(scroll);
-        }
+        return categoriasCache;
     } catch (e) {
         console.error('Error cargando categorías:', e);
+        categoriasCache = [];
+        return [];
     }
+}
+
+// ================================================================
+// RENDER CATEGORÍAS
+// ================================================================
+function renderCategorias() {
+    var scroll = document.getElementById('categoriasScroll');
+    if (!scroll) return;
+
+    var html = '<button class="cat-btn active" onclick="filtrarCategoria(null, this)">' +
+        '<span>◈</span> <span data-clave="mercado_todas">Todas</span>' +
+    '</button>';
+
+    categoriasCache.forEach(function (c) {
+        html += '<button class="cat-btn" onclick="filtrarCategoria(' + c.id + ', this)">' +
+            '<span>' + (c.icono || '◈') + '</span> ' +
+            escapeHTML(c.nombre) +
+        '</button>';
+    });
+
+    scroll.innerHTML = html;
+    if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(scroll);
 }
 
 // ================================================================
 // CARGAR TIENDAS
 // ================================================================
 async function cargarTiendas() {
-    var container = document.getElementById('tiendasContainer');
-    if (!container) return;
+    var grid = document.getElementById('tiendasGrid');
+    if (!grid) return;
 
-    container.innerHTML = '<div class="loading-state"><div class="spinner"></div><p data-clave="mercado_cargando">Cargando tiendas...</p></div>';
+    grid.innerHTML = '<div class="loading-state"><div class="spinner"></div><p data-clave="mercado_cargando_tiendas">Cargando tiendas...</p></div>';
 
     try {
         var query = supabase
             .from('mercado_tiendas')
-            .select('id, slug, nombre_negocio, descripcion, categoria_id, logo_url, portada_url, direccion, nivel, calificacion_promedio, total_resenas, total_pedidos, productos_count, estado, activa_hasta')
+            .select('id, usuario_id, slug, nombre_negocio, descripcion, categoria_id, logo_url, portada_url, telefono, whatsapp, instagram, facebook, direccion, horario_apertura, horario_cierre, acepta_delivery, acepta_pickup, nivel, activa_hasta, estado, productos_count, total_pedidos, total_ventas_mxn, calificacion_promedio, total_resenas, envio_mxn, created_at')
             .eq('estado', 'activa')
-            .order('nivel', { ascending: false })
-            .order('calificacion_promedio', { ascending: false });
+            .order('calificacion_promedio', { ascending: false })
+            .order('total_pedidos', { ascending: false })
+            .limit(60);
+
+        if (filtroCategoria) {
+            query = query.eq('categoria_id', filtroCategoria);
+        }
 
         var result = await query;
         if (result.error) throw result.error;
 
         tiendasCache = result.data || [];
 
-        // Filtrar las que tengan activa_hasta vencida (por si el cron falló)
-        var ahora = new Date();
-        tiendasCache = tiendasCache.filter(function (t) {
-            if (!t.activa_hasta) return true;
-            return new Date(t.activa_hasta) > ahora;
-        });
-
-        // Contadores
-        var statTiendas = document.getElementById('statTiendas');
-        if (statTiendas) statTiendas.textContent = tiendasCache.length;
-
-        // Contar productos totales
-        if (tiendasCache.length > 0) {
-            var totalProductos = 0;
-            tiendasCache.forEach(function (t) { totalProductos += (t.productos_count || 0); });
-            var statProd = document.getElementById('statProductos');
-            if (statProd) statProd.textContent = totalProductos;
+        // Filtrar por búsqueda de texto (frontend)
+        if (filtroBusqueda) {
+            var q = filtroBusqueda.toLowerCase();
+            tiendasCache = tiendasCache.filter(function (t) {
+                return (t.nombre_negocio || '').toLowerCase().indexOf(q) !== -1 ||
+                    (t.descripcion || '').toLowerCase().indexOf(q) !== -1;
+            });
         }
 
-        aplicarFiltros();
+        renderTiendas();
+
     } catch (e) {
         console.error('Error cargando tiendas:', e);
-        container.innerHTML = '<div class="empty-state"><span class="icon">⚠️</span><h3>Error al cargar</h3><p>' + escapeHTML(e.message) + '</p></div>';
-        showToast('❌ Error al cargar el Mercado', 'error');
-    }
-}
-
-// ================================================================
-// APLICAR FILTROS (categoría + búsqueda)
-// ================================================================
-function aplicarFiltros() {
-    var filtradas = tiendasCache.slice();
-
-    // Filtro por categoría
-    if (categoriaActiva !== 'todas') {
-        var cat = categoriasCache.find(function (c) { return c.slug === categoriaActiva; });
-        if (cat) {
-            filtradas = filtradas.filter(function (t) { return t.categoria_id === cat.id; });
-        }
-    }
-
-    // Filtro por búsqueda
-    if (textoBusqueda && textoBusqueda.length > 0) {
-        var q = textoBusqueda.toLowerCase();
-        filtradas = filtradas.filter(function (t) {
-            var n = (t.nombre_negocio || '').toLowerCase();
-            var d = (t.descripcion || '').toLowerCase();
-            return n.indexOf(q) !== -1 || d.indexOf(q) !== -1;
-        });
-    }
-
-    renderizarTiendas(filtradas);
-}
-
-// ================================================================
-// RENDERIZAR TIENDAS
-// ================================================================
-function renderizarTiendas(tiendas) {
-    var container = document.getElementById('tiendasContainer');
-    var contador = document.getElementById('contadorTiendas');
-    if (!container) return;
-
-    if (contador) contador.textContent = tiendas.length;
-
-    if (tiendas.length === 0) {
-        container.innerHTML = '<div class="empty-state">' +
-            '<span class="icon">🛒</span>' +
-            '<h3 data-clave="mercado_sin_tiendas">Aún no hay tiendas aquí</h3>' +
-            '<p data-clave="mercado_sin_tiendas_desc">Sé el primero en abrir tu negocio en el Mercado Sariel\'s.</p>' +
+        grid.innerHTML = '<div class="empty-state">' +
+            '<span class="icon">⚠️</span>' +
+            '<h3>Error al cargar</h3>' +
+            '<p>' + escapeHTML(e.message) + '</p>' +
         '</div>';
-        if (typeof window.aplicarTraducciones === 'function') {
-            window.aplicarTraducciones(container);
-        }
+    }
+}
+
+// ================================================================
+// RENDER TIENDAS
+// ================================================================
+function renderTiendas() {
+    var grid = document.getElementById('tiendasGrid');
+    if (!grid) return;
+
+    if (tiendasCache.length === 0) {
+        grid.innerHTML = '<div class="empty-state">' +
+            '<span class="icon">🏪</span>' +
+            '<h3 data-clave="mercado_sin_tiendas">No hay tiendas por aquí</h3>' +
+            '<p data-clave="mercado_sin_tiendas_desc">Prueba con otra categoría o búsqueda.</p>' +
+            '<a href="/features/mercado/vendedor/panel.html" class="btn-cta">' +
+                '✨ <span data-clave="mercado_se_el_primero">Sé el primero en abrir una tienda</span>' +
+            '</a>' +
+        '</div>';
+        if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(grid);
         return;
     }
 
-    var html = '<div class="tiendas-grid">';
+    var html = '';
 
-    tiendas.forEach(function (t) {
-        var categoriaNombre = '';
-        var categoriaIcono = '◈';
-        if (t.categoria_id) {
-            var cat = categoriasCache.find(function (c) { return c.id === t.categoria_id; });
-            if (cat) {
-                categoriaNombre = cat.nombre;
-                categoriaIcono = cat.icono || '◈';
-            }
-        }
-
-        var rating = (t.calificacion_promedio || 0).toFixed(1);
-        var totalResenas = t.total_resenas || 0;
+    tiendasCache.forEach(function (t) {
+        var categoria = categoriasCache.find(function (c) { return c.id === t.categoria_id; }) || null;
         var nivel = (t.nivel || 'basico').toLowerCase();
-        var badgeNivel = '';
-
-        if (nivel === 'max') {
-            badgeNivel = '<span class="badge-nivel max" data-clave="mercado_max">✦ Max</span>';
-        } else if (nivel === 'pro') {
-            badgeNivel = '<span class="badge-nivel pro" data-clave="mercado_pro">◆ Pro</span>';
-        }
+        var abierta = tiendaEstaAbierta(t);
+        var envio = infoEnvio(t);
+        var rating = parseFloat(t.calificacion_promedio || 0);
+        var totalResenas = parseInt(t.total_resenas || 0);
+        var portadaUrl = t.portada_url || null;
+        var logoUrl = t.logo_url || null;
 
         // Portada
-        var portadaContent;
-        if (t.portada_url) {
-            portadaContent = '<img src="' + escapeHTML(t.portada_url) + '" alt="' + escapeHTML(t.nombre_negocio) + '" loading="lazy" onerror="this.style.display=\'none\';" />';
-        } else {
-            portadaContent = '<span>🛒</span>';
+        var portadaHTML = portadaUrl
+            ? '<img src="' + escapeHTML(portadaUrl) + '" alt="" onerror="this.style.display=\'none\';this.parentElement.innerHTML=\'<span class=&quot;emoji-fallback&quot;>🏪</span>\';" />'
+            : '<span class="emoji-fallback">🏪</span>';
+
+        // Badge horario
+        var horarioHTML = '';
+        if (abierta === true) {
+            horarioHTML = '<span class="badge-horario abierto">● Abierto</span>';
+        } else if (abierta === false) {
+            horarioHTML = '<span class="badge-horario cerrado">● Cerrado</span>';
         }
 
         // Logo
-        var logoContent;
-        if (t.logo_url) {
-            logoContent = '<img src="' + escapeHTML(t.logo_url) + '" alt="Logo" loading="lazy" onerror="this.style.display=\'none\';this.parentElement.textContent=\'◈\';" />';
-        } else {
-            logoContent = '◈';
-        }
+        var logoHTML = logoUrl
+            ? '<img src="' + escapeHTML(logoUrl) + '" alt="" onerror="this.style.display=\'none\';this.parentElement.textContent=\'🏪\';" />'
+            : '🏪';
 
-        html += '<div class="tienda-card" onclick="verTienda(\'' + t.slug + '\')">' +
+        // Chips
+        var chips = '';
+        if (t.acepta_delivery) chips += '<span class="chip delivery">🛵 Delivery</span>';
+        if (t.acepta_pickup) chips += '<span class="chip pickup">🏪 Recoger</span>';
+
+        // Rating
+        var ratingHTML = totalResenas > 0
+            ? '<span class="rating">★ ' + rating.toFixed(1) + ' <span style="opacity:0.6;">(' + totalResenas + ')</span></span>'
+            : '<span class="rating sin-rating">★ Sin reseñas</span>';
+
+        // Envío
+        var envioHTML = envio.tipo === 'app'
+            ? '<span class="costo">🛵 ' + envio.texto + '</span>'
+            : '<span>🛵 Envío a coordinar</span>';
+
+        html += '<a href="/features/mercado/tienda.html?id=' + t.id + '" class="tienda-card">' +
             '<div class="portada">' +
-                badgeNivel +
-                portadaContent +
-                '<div class="logo-overlap">' + logoContent + '</div>' +
+                portadaHTML +
+                '<span class="badge-nivel ' + nivel + '">' + nivel + '</span>' +
+                horarioHTML +
             '</div>' +
-            '<div class="contenido">' +
+            '<div class="logo-wrap">' +
+                '<div class="logo">' + logoHTML + '</div>' +
+            '</div>' +
+            '<div class="info">' +
                 '<div class="nombre">' + escapeHTML(t.nombre_negocio) + '</div>' +
                 '<div class="categoria">' +
-                    '<span>' + escapeHTML(categoriaIcono) + '</span>' +
-                    '<span>' + escapeHTML(categoriaNombre || 'Sin categoría') + '</span>' +
+                    '<span class="icono-cat">' + (categoria ? (categoria.icono || '◈') : '◈') + '</span> ' +
+                    escapeHTML(categoria ? categoria.nombre : 'General') +
                 '</div>' +
-                '<div class="descripcion">' + escapeHTML(t.descripcion || 'Sin descripción') + '</div>' +
-                '<div class="meta">' +
-                    '<span class="rating">⭐ ' + rating + ' <span style="color:var(--text-muted);font-weight:400;">(' + totalResenas + ')</span></span>' +
-                    '<span class="btn-ver">' +
-                        '<span data-clave="mercado_ver_tienda">Ver tienda</span> →' +
-                    '</span>' +
+                '<div class="meta-row">' +
+                    ratingHTML +
+                    '<span class="pedidos">📦 ' + (t.total_pedidos || 0) + '</span>' +
                 '</div>' +
+                (chips ? '<div class="chips">' + chips + '</div>' : '') +
+                '<div class="envio-info">' + envioHTML + '</div>' +
             '</div>' +
-        '</div>';
+        '</a>';
     });
 
-    html += '</div>';
-    container.innerHTML = html;
-
-    if (typeof window.aplicarTraducciones === 'function') {
-        window.aplicarTraducciones(container);
-    }
+    grid.innerHTML = html;
+    if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(grid);
 }
 
 // ================================================================
-// FILTRAR POR CATEGORÍA
+// FILTROS
 // ================================================================
-function filtrarPorCategoria(slug, btn) {
-    categoriaActiva = slug;
-    document.querySelectorAll('.cat-btn').forEach(function (b) {
-        b.classList.remove('active');
-    });
+function filtrarCategoria(categoriaId, btn) {
+    filtroCategoria = categoriaId;
+    document.querySelectorAll('.cat-btn').forEach(function (b) { b.classList.remove('active'); });
     if (btn) btn.classList.add('active');
-    aplicarFiltros();
+    cargarTiendas();
 }
 
-// ================================================================
-// BUSCADOR CON DEBOUNCE
-// ================================================================
-var debounceTimer = null;
-function configurarBuscador() {
-    var input = document.getElementById('inputBuscar');
+function buscar() {
+    var input = document.getElementById('inputBusqueda');
     if (!input) return;
-    input.addEventListener('input', function () {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(function () {
-            textoBusqueda = input.value.trim();
-            aplicarFiltros();
-        }, 250);
-    });
+    filtroBusqueda = input.value.trim();
+    cargarTiendas();
 }
 
 // ================================================================
-// IR A TIENDA
-// ================================================================
-function verTienda(slug) {
-    if (!slug) return;
-    window.location.href = '/features/mercado/tienda.html?slug=' + encodeURIComponent(slug);
-}
-
-// ================================================================
-// VER TOKENS (perfil)
+// VER TOKENS
 // ================================================================
 function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
 
 // ================================================================
 // INICIALIZACIÓN
 // ================================================================
-document.addEventListener('DOMContentLoaded', function () {
-    cargarUsuarioActual().then(function () {
-        cargarCategorias();
-        cargarTiendas();
-        configurarBuscador();
-    });
+document.addEventListener('DOMContentLoaded', async function () {
+    // Cargar usuario (opcional)
+    await cargarUsuarioActual();
 
+    // Cargar categorías primero (para filtros)
+    await cargarCategorias();
+    renderCategorias();
+
+    // Cargar tiendas
+    await cargarTiendas();
+
+    // Idiomas
     setTimeout(async function () {
         try {
             if (typeof window.inicializarIdiomas === 'function') {
                 await window.inicializarIdiomas();
-                console.log('✅ Idiomas aplicados al Mercado');
+                console.log('✅ Idiomas aplicados al catálogo');
             }
-        } catch (e) {
-            console.warn('⚠️ Error aplicando idiomas:', e);
-        }
-    }, 500);
-
-    console.log('◈ Sariel\'s - Mercado inicializado');
+        } catch (e) { console.warn('Error idiomas:', e); }
+    }, 400);
 });
 
 // ================================================================
 // EXPOSICIÓN GLOBAL
 // ================================================================
-window.filtrarPorCategoria = filtrarPorCategoria;
-window.verTienda = verTienda;
 window.verTokens = verTokens;
 window.showToast = showToast;
+window.filtrarCategoria = filtrarCategoria;
+window.buscar = buscar;
 window.cargarTiendas = cargarTiendas;
-window.cargarCategorias = cargarCategorias;
 </script>
 </body>
 </html>
