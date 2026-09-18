@@ -81,7 +81,6 @@
         .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); }
         .main-nav .nav-link.live { color: var(--danger); }
 
-        /* Botón atrás */
         .btn-back {
             display: inline-flex; align-items: center; gap: 6px;
             background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border);
@@ -91,7 +90,6 @@
         }
         .btn-back:hover { border-color: var(--gold); color: var(--gold); }
 
-        /* HERO TIENDA */
         .tienda-hero {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
@@ -175,7 +173,6 @@
         .tienda-hero .info-texto .contacto a { color: var(--cyan); text-decoration: none; }
         .tienda-hero .info-texto .contacto a:hover { text-decoration: underline; }
 
-        /* Estado abierto/cerrado */
         .estado-tienda {
             display: inline-flex; align-items: center; gap: 6px;
             padding: 4px 12px; border-radius: 20px;
@@ -187,7 +184,6 @@
         .estado-tienda.abierto { color: var(--success); border-color: var(--success); }
         .estado-tienda.cerrado { color: var(--danger); border-color: var(--danger); }
 
-        /* Formas de entrega */
         .formas-entrega {
             display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;
         }
@@ -200,7 +196,6 @@
         }
         .forma-entrega.activa { color: var(--gold); border-color: var(--gold); background: rgba(212,175,55,0.1); }
 
-        /* CATEGORÍAS DE PRODUCTOS */
         .productos-nav {
             display: flex; gap: 6px; overflow-x: auto;
             padding: 4px 0; margin-bottom: 16px;
@@ -229,7 +224,6 @@
             font-weight: 600;
         }
 
-        /* TÍTULO SECCIÓN */
         .seccion-titulo {
             display: flex; justify-content: space-between; align-items: center;
             margin: 20px 0 12px;
@@ -250,7 +244,6 @@
             border: 1px solid var(--glass-border);
         }
 
-        /* LISTA DE PRODUCTOS */
         .productos-lista {
             display: flex; flex-direction: column; gap: 12px;
         }
@@ -349,7 +342,6 @@
             opacity: 0.7;
         }
 
-        /* Badge destacado */
         .badge-destacado {
             display: inline-flex; align-items: center; gap: 4px;
             font-size: 0.5rem;
@@ -363,7 +355,6 @@
             letter-spacing: 0.5px;
         }
 
-        /* CARRITO FLOTANTE */
         .carrito-flotante {
             position: fixed;
             bottom: 0;
@@ -489,7 +480,6 @@
             margin-bottom: 8px;
         }
 
-        /* Toast */
         .toast {
             position: fixed; bottom: 90px; right: 20px;
             background: var(--green-deep); border: 1px solid var(--gold);
@@ -516,7 +506,6 @@
         .footer-links a { color: var(--text-muted); text-decoration: none; }
         .footer-links a:hover { color: var(--gold); }
 
-        /* TEMA DÍA */
         html.tema-dia, html[data-tema="dia"] {
             --space: #f5f7fa;
             --text-primary: #1a2332;
@@ -586,12 +575,10 @@
             <a href="/features/mercado/index.html" class="nav-link active">🛒 Mercado</a>
         </nav>
 
-        <!-- BOTÓN ATRÁS -->
         <a href="/features/mercado/index.html" class="btn-back" id="btnBack">
             ← <span data-clave="mercado_volver">Volver al Mercado</span>
         </a>
 
-        <!-- CONTENEDOR DE LA TIENDA -->
         <div id="tiendaContainer">
             <div class="loading-state">
                 <div class="spinner"></div>
@@ -612,7 +599,6 @@
 
     </div>
 
-    <!-- CARRITO FLOTANTE -->
     <div class="carrito-flotante" id="carritoFlotante">
         <div class="icono">
             🛒
@@ -664,7 +650,7 @@ var tiendaActual = null;
 var productosCache = [];
 var categoriasCache = [];
 var categoriaProductoActiva = 'todas';
-var carrito = []; // { producto_id, nombre, precio, cantidad, foto_url, tienda_id }
+var carrito = [];
 
 // ================================================================
 // BANNER DE ERRORES
@@ -710,16 +696,10 @@ function escapeHTML(texto) {
     return div.innerHTML;
 }
 
-// ================================================================
-// FORMATEO DE PRECIO
-// ================================================================
 function formatearPrecio(n) {
     return '$' + parseFloat(n || 0).toFixed(2);
 }
 
-// ================================================================
-// OBTENER PARÁMETRO DE LA URL
-// ================================================================
 function getParamURL(nombre) {
     try {
         var params = new URLSearchParams(window.location.search);
@@ -784,7 +764,6 @@ function estaAbiertaAhora(tienda) {
         var apMin = parseInt(ap[0]) * 60 + parseInt(ap[1] || 0);
         var ciMin = parseInt(ci[0]) * 60 + parseInt(ci[1] || 0);
         if (ciMin < apMin) {
-            // Cruza medianoche
             return minutosAhora >= apMin || minutosAhora <= ciMin;
         }
         return minutosAhora >= apMin && minutosAhora <= ciMin;
@@ -818,7 +797,6 @@ async function cargarTienda(slug) {
             return;
         }
 
-        // Verificar vigencia
         if (result.data.activa_hasta && new Date(result.data.activa_hasta) < new Date()) {
             container.innerHTML = '<div class="empty-state">' +
                 '<span class="icon">⏱️</span>' +
@@ -872,7 +850,6 @@ function renderizarTienda() {
 
     var t = tiendaActual;
 
-    // Categoría
     var categoriaNombre = 'Sin categoría';
     var categoriaIcono = '◈';
     if (t.categoria_id) {
@@ -883,23 +860,19 @@ function renderizarTienda() {
         }
     }
 
-    // Badge de nivel
     var nivel = (t.nivel || 'basico').toLowerCase();
     var badgeNivel = '';
     if (nivel === 'max') badgeNivel = '<span class="badge-nivel max" data-clave="mercado_max">✦ Max</span>';
     else if (nivel === 'pro') badgeNivel = '<span class="badge-nivel pro" data-clave="mercado_pro">◆ Pro</span>';
 
-    // Portada
     var portadaContent = t.portada_url
         ? '<img src="' + escapeHTML(t.portada_url) + '" alt="' + escapeHTML(t.nombre_negocio) + '" onerror="this.style.display=\'none\';this.parentElement.innerHTML=\'<span>🛒</span>\';" />'
         : '<span>🛒</span>';
 
-    // Logo
     var logoContent = t.logo_url
         ? '<img src="' + escapeHTML(t.logo_url) + '" alt="Logo" onerror="this.style.display=\'none\';this.parentElement.textContent=\'◈\';" />'
         : '◈';
 
-    // Estado abierto/cerrado
     var abierta = estaAbiertaAhora(t);
     var estadoHtml = '';
     if (abierta === true) {
@@ -908,7 +881,6 @@ function renderizarTienda() {
         estadoHtml = '<span class="estado-tienda cerrado">● <span data-clave="mercado_cerrado">Cerrado</span></span>';
     }
 
-    // Formas de entrega
     var deliveryHtml = '';
     if (t.acepta_delivery) {
         deliveryHtml += '<span class="forma-entrega activa">🛵 <span data-clave="mercado_delivery">Delivery</span></span>';
@@ -917,11 +889,9 @@ function renderizarTienda() {
         deliveryHtml += '<span class="forma-entrega activa">🏪 <span data-clave="mercado_pickup">Recoger</span></span>';
     }
 
-    // Rating
     var rating = parseFloat(t.calificacion_promedio || 0).toFixed(1);
     var totalResenas = t.total_resenas || 0;
 
-    // Contacto
     var contactoHtml = '';
     if (t.direccion) {
         contactoHtml += '<span>📍 ' + escapeHTML(t.direccion) + '</span>';
@@ -940,7 +910,6 @@ function renderizarTienda() {
         contactoHtml += '<span>🕐 ' + escapeHTML(t.horario_apertura) + ' - ' + escapeHTML(t.horario_cierre) + '</span>';
     }
 
-    // HTML completo
     var html = '';
 
     html += '<div class="tienda-hero">';
@@ -965,13 +934,11 @@ function renderizarTienda() {
     html += '</div>';
     html += '</div>';
 
-    // Título productos + filtro
     html += '<div class="seccion-titulo">';
     html += '<h2 data-clave="mercado_productos_titulo">◈ Productos</h2>';
     html += '<span class="count" id="contadorProductos">' + productosCache.length + '</span>';
     html += '</div>';
 
-    // Filtros de categorías de productos (si hay más de 1 categoría en los productos)
     var categoriasEnProductos = [];
     productosCache.forEach(function (p) {
         if (p.categoria_id && categoriasEnProductos.indexOf(p.categoria_id) === -1) {
@@ -991,20 +958,16 @@ function renderizarTienda() {
         html += '</div>';
     }
 
-    // Lista de productos
     html += '<div class="productos-lista" id="productosLista"></div>';
 
     container.innerHTML = html;
 
-    // Renderizar productos
     renderizarProductos();
 
-    // Aplicar i18n
     if (typeof window.aplicarTraducciones === 'function') {
         window.aplicarTraducciones(container);
     }
 
-    // Actualizar carrito flotante
     actualizarCarritoFlotante();
 }
 
@@ -1040,7 +1003,6 @@ function renderizarProductos() {
         var agotado = !tieneStock;
         var enCarrito = carrito.find(function (c) { return c.producto_id === p.id; });
 
-        // Foto
         var fotos = Array.isArray(p.fotos) ? p.fotos : [];
         var primeraFoto = fotos.length > 0 ? fotos[0] : null;
         if (typeof primeraFoto === 'object' && primeraFoto !== null) {
@@ -1051,14 +1013,12 @@ function renderizarProductos() {
             ? '<img src="' + escapeHTML(primeraFoto) + '" alt="' + escapeHTML(p.nombre) + '" loading="lazy" onerror="this.style.display=\'none\';this.parentElement.textContent=\'🍽️\';" />'
             : '🍽️';
 
-        // Precio (con promoción si aplica)
         var precioHtml = '<span class="precio">' + formatearPrecio(p.precio_mxn) + '</span>';
         if (p.precio_promocion && p.precio_promocion > 0 && p.precio_promocion < p.precio_mxn) {
             precioHtml = '<span class="precio">' + formatearPrecio(p.precio_promocion) + '</span>' +
                          '<span class="precio-tachado">' + formatearPrecio(p.precio_mxn) + '</span>';
         }
 
-        // Stock
         var stockHtml = '';
         if (p.stock_ilimitado) {
             stockHtml = '<span class="stock">Disponible</span>';
@@ -1070,10 +1030,8 @@ function renderizarProductos() {
             stockHtml = '<span class="stock">' + p.stock + ' disponibles</span>';
         }
 
-        // Badge destacado
         var badgeDestacado = p.destacado ? '<span class="badge-destacado">★ <span data-clave="mercado_destacado">Destacado</span></span>' : '';
 
-        // Botón agregar
         var botonHtml = '';
         if (agotado) {
             botonHtml = '<button class="btn-agregar" disabled data-clave="mercado_agotado">Agotado</button>';
@@ -1145,13 +1103,11 @@ function agregarAlCarrito(productoId) {
     var producto = productosCache.find(function (p) { return p.id === productoId; });
     if (!producto) { showToast('❌ Producto no encontrado', 'error'); return; }
 
-    // Verificar stock
     if (!producto.stock_ilimitado && producto.stock <= 0) {
         showToast('❌ Producto agotado', 'error');
         return;
     }
 
-    // Si el carrito ya tenía productos de OTRA tienda, preguntar si reiniciar
     if (carrito.length > 0) {
         var tiendaIdActual = carrito[0].tienda_id;
         if (tiendaIdActual !== tiendaActual.id) {
@@ -1161,10 +1117,8 @@ function agregarAlCarrito(productoId) {
         }
     }
 
-    // Ver si ya existe
     var existente = carrito.find(function (c) { return c.producto_id === productoId; });
     if (existente) {
-        // Aumentar cantidad (respetando stock)
         var maxCantidad = producto.stock_ilimitado ? 99 : producto.stock;
         if (existente.cantidad >= maxCantidad) {
             showToast('⚠️ No hay más stock disponible', 'warning');
@@ -1173,12 +1127,10 @@ function agregarAlCarrito(productoId) {
         existente.cantidad += 1;
         showToast('✓ Cantidad actualizada', 'success');
     } else {
-        // Precio unitario (con promoción si aplica)
         var precioUnit = producto.precio_promocion && producto.precio_promocion > 0
             ? parseFloat(producto.precio_promocion)
             : parseFloat(producto.precio_mxn);
 
-        // Foto
         var fotos = Array.isArray(producto.fotos) ? producto.fotos : [];
         var fotoUrl = fotos.length > 0 ? fotos[0] : null;
         if (typeof fotoUrl === 'object' && fotoUrl !== null) {
@@ -1233,15 +1185,14 @@ function actualizarCarritoFlotante() {
 }
 
 // ================================================================
-// ABRIR CARRITO (placeholder - el archivo carrito.html lo haremos después)
+// ABRIR CARRITO → redirige a carrito.html
 // ================================================================
 function abrirCarrito() {
     if (carrito.length === 0) {
         showToast('🛒 Tu carrito está vacío', 'warning');
         return;
     }
-    // TODO: redirigir a carrito.html (se hace en el siguiente archivo)
-    showToast('🛒 Ver carrito · Próximamente', 'success');
+    window.location.href = '/features/mercado/carrito.html';
 }
 
 // ================================================================
@@ -1253,14 +1204,10 @@ function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
 // INICIALIZACIÓN
 // ================================================================
 document.addEventListener('DOMContentLoaded', async function () {
-    // Cargar carrito guardado
     cargarCarritoGuardado();
-
-    // Cargar usuario y categorías
     await cargarUsuarioActual();
     await cargarCategorias();
 
-    // Leer slug de la URL
     var slug = getParamURL('slug');
     if (!slug) {
         var container = document.getElementById('tiendaContainer');
