@@ -1,6 +1,9 @@
 <!-- ================================================================
      MERCADO - SARIEL'S ECOSYSTEM
-     Checkout - Confirmar pedido
+     Checkout / Confirmar pedido
+     Ruta: /features/mercado/checkout.html
+     Esquema real: bigint IDs, envio_mxn dual (app o efectivo),
+                   forma_pago, campos de dirección + lat/lng, notas
      ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
@@ -46,7 +49,6 @@
             font-family: 'Inter', sans-serif;
             min-height: 100vh;
             background-image: radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
-            padding-bottom: 130px;
         }
 
         .nebula { position: fixed; border-radius: 50%; filter: blur(120px); opacity: 0.12; pointer-events: none; z-index: 0; animation: nebula-drift 25s ease-in-out infinite alternate; }
@@ -89,54 +91,67 @@
 
         .titulo {
             display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 20px; flex-wrap: wrap; gap: 10px;
         }
         .titulo h1 {
+            font-family: 'Orbitron', monospace; font-size: 1.3rem;
+            font-weight: 700; color: var(--gold);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .titulo .paso {
+            font-size: 0.6rem; color: var(--text-muted);
+            background: rgba(0,0,0,0.35); padding: 4px 12px;
+            border-radius: 20px; border: 1px solid var(--glass-border);
             font-family: 'Orbitron', monospace;
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: var(--gold);
         }
 
-        /* Pasos */
+        /* Pasos visuales */
         .pasos {
             display: flex;
-            gap: 8px;
-            margin-bottom: 20px;
             justify-content: center;
-        }
-        .paso {
-            display: flex;
-            align-items: center;
             gap: 6px;
-            font-size: 0.65rem;
+            margin-bottom: 20px;
+            font-size: 0.6rem;
             color: var(--text-muted);
         }
-        .paso .num {
-            width: 24px;
-            height: 24px;
+        .pasos .paso-item {
+            display: flex; align-items: center; gap: 4px;
+        }
+        .pasos .paso-num {
+            width: 18px; height: 18px;
             border-radius: 50%;
             background: rgba(0,0,0,0.4);
             border: 1px solid var(--glass-border);
             display: flex; align-items: center; justify-content: center;
-            font-family: 'Orbitron', monospace;
+            font-size: 0.55rem;
             font-weight: 700;
         }
-        .paso.activo .num { background: var(--gold); color: var(--space); border-color: var(--gold); }
-        .paso.activo { color: var(--gold); font-weight: 600; }
-        .paso.completado .num { background: var(--success); color: #fff; border-color: var(--success); }
+        .pasos .paso-item.completado .paso-num {
+            background: var(--success); border-color: var(--success); color: #fff;
+        }
+        .pasos .paso-item.actual .paso-num {
+            background: var(--gold); border-color: var(--gold); color: var(--space);
+        }
+        .pasos .paso-item.completado,
+        .pasos .paso-item.actual { color: var(--text-primary); }
+        .pasos .linea {
+            width: 14px;
+            height: 1px;
+            background: var(--glass-border);
+            align-self: center;
+        }
 
-        /* Card de sección */
+        /* Sección */
         .seccion-card {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
             border-radius: var(--radius-xl);
-            padding: 20px;
+            padding: 18px;
             margin-bottom: 16px;
         }
         .seccion-card h2 {
             font-family: 'Orbitron', monospace;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             color: var(--gold);
             margin-bottom: 14px;
             display: flex;
@@ -144,10 +159,53 @@
             gap: 8px;
         }
 
-        /* Formulario */
-        .form-group {
+        /* Selector de tipo de entrega */
+        .tipo-entrega-toggle {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
             margin-bottom: 14px;
         }
+        .tipo-opcion {
+            padding: 14px 12px;
+            background: rgba(0,0,0,0.3);
+            border: 2px solid var(--glass-border);
+            border-radius: 14px;
+            cursor: pointer;
+            transition: var(--transition);
+            text-align: center;
+        }
+        .tipo-opcion:hover {
+            border-color: var(--gold);
+        }
+        .tipo-opcion.activo {
+            border-color: var(--gold);
+            background: rgba(212,175,55,0.1);
+        }
+        .tipo-opcion.deshabilitado {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        .tipo-opcion .icono {
+            font-size: 1.4rem;
+            margin-bottom: 4px;
+        }
+        .tipo-opcion .nombre {
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+        .tipo-opcion .precio {
+            font-size: 0.62rem;
+            color: var(--text-muted);
+        }
+        .tipo-opcion.activo .precio {
+            color: var(--gold);
+        }
+
+        /* Formularios */
+        .form-group { margin-bottom: 14px; }
         .form-group label {
             display: block;
             font-size: 0.72rem;
@@ -155,8 +213,10 @@
             margin-bottom: 6px;
             font-weight: 600;
         }
+        .form-group label .required { color: var(--danger); }
         .form-group input,
-        .form-group textarea {
+        .form-group textarea,
+        .form-group select {
             width: 100%;
             padding: 12px 14px;
             background: rgba(0,0,0,0.35);
@@ -169,7 +229,8 @@
             transition: var(--transition);
         }
         .form-group input:focus,
-        .form-group textarea:focus {
+        .form-group textarea:focus,
+        .form-group select:focus {
             border-color: var(--gold);
             background: rgba(0,0,0,0.5);
         }
@@ -183,163 +244,131 @@
             margin-top: 4px;
         }
 
-        /* Opciones de tipo de entrega */
-        .tipo-entrega-grid {
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        @media (max-width: 480px) {
+            .form-row { grid-template-columns: 1fr; }
+            .tipo-entrega-toggle { grid-template-columns: 1fr; }
+        }
+
+        /* Botón ubicación GPS */
+        .btn-gps {
+            margin-top: 8px;
+            padding: 9px 14px;
+            background: rgba(0,229,255,0.08);
+            border: 1px solid rgba(0,229,255,0.3);
+            color: var(--cyan);
+            border-radius: 20px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-gps:hover { background: rgba(0,229,255,0.15); }
+        .btn-gps:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Métodos de pago */
+        .pago-opciones {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 10px;
-            margin-bottom: 16px;
         }
-        .tipo-entrega-opcion {
+        .pago-opcion {
+            padding: 12px;
             background: rgba(0,0,0,0.3);
             border: 2px solid var(--glass-border);
-            border-radius: 14px;
-            padding: 14px;
+            border-radius: 12px;
             cursor: pointer;
             transition: var(--transition);
-            text-align: center;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
-        .tipo-entrega-opcion:hover {
+        .pago-opcion:hover {
             border-color: var(--gold);
         }
-        .tipo-entrega-opcion.activo {
+        .pago-opcion.activo {
             border-color: var(--gold);
             background: rgba(212,175,55,0.1);
         }
-        .tipo-entrega-opcion .icono {
-            font-size: 1.8rem;
-            margin-bottom: 6px;
-            display: block;
+        .pago-opcion .icono {
+            font-size: 1.3rem;
         }
-        .tipo-entrega-opcion .titulo-op {
-            font-family: 'Orbitron', monospace;
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin-bottom: 4px;
-        }
-        .tipo-entrega-opcion .desc {
-            font-size: 0.6rem;
-            color: var(--text-muted);
-        }
-        .tipo-entrega-opcion.deshabilitado {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
-
-        /* Dirección guardada */
-        .direcciones-guardadas {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-bottom: 14px;
-        }
-        .direccion-guardada {
-            background: rgba(0,0,0,0.25);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            padding: 12px 14px;
-            cursor: pointer;
-            transition: var(--transition);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 10px;
-        }
-        .direccion-guardada:hover {
-            border-color: var(--gold);
-        }
-        .direccion-guardada.activo {
-            border-color: var(--gold);
-            background: rgba(212,175,55,0.08);
-        }
-        .direccion-guardada .info {
-            flex: 1;
-            min-width: 0;
-        }
-        .direccion-guardada .info .nombre {
-            font-size: 0.8rem;
+        .pago-opcion .texto {
+            font-size: 0.72rem;
             font-weight: 600;
             color: var(--text-primary);
-            margin-bottom: 2px;
         }
-        .direccion-guardada .info .detalle {
-            font-size: 0.7rem;
-            color: var(--text-muted);
+
+        /* Aviso envío en efectivo */
+        .aviso-envio {
+            background: rgba(0,229,255,0.08);
+            border: 1px solid rgba(0,229,255,0.3);
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-size: 0.72rem;
+            color: var(--cyan);
+            line-height: 1.5;
+            margin-top: 12px;
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
         }
-        .direccion-guardada .check {
-            color: var(--gold);
+        .aviso-envio .icono {
             font-size: 1.2rem;
-            display: none;
-        }
-        .direccion-guardada.activo .check {
-            display: block;
+            flex-shrink: 0;
         }
 
         /* Resumen del pedido */
-        .items-resumen {
+        .resumen-items {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 10px;
             margin-bottom: 14px;
-            max-height: 240px;
-            overflow-y: auto;
         }
-        .item-resumen {
+        .resumen-grupo {
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px;
+            padding: 10px 12px;
+        }
+        .resumen-grupo .tienda-nombre {
+            font-size: 0.7rem;
+            color: var(--gold);
+            font-weight: 600;
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--glass-border);
+            font-family: 'Orbitron', monospace;
+        }
+        .resumen-item {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            gap: 10px;
-            padding: 8px 0;
-            border-bottom: 1px solid var(--glass-border);
-            font-size: 0.75rem;
+            gap: 8px;
+            font-size: 0.72rem;
+            padding: 4px 0;
+            color: var(--text-secondary);
         }
-        .item-resumen .info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex: 1;
-            min-width: 0;
-        }
-        .item-resumen .foto-mini {
-            width: 36px; height: 36px;
-            border-radius: 8px;
-            overflow: hidden;
-            background: linear-gradient(135deg, var(--green-deep), var(--green-mid));
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1rem;
-            flex-shrink: 0;
-        }
-        .item-resumen .foto-mini img {
-            width: 100%; height: 100%; object-fit: cover;
-        }
-        .item-resumen .nombre-cant {
-            min-width: 0;
-        }
-        .item-resumen .nombre {
-            font-weight: 600;
-            color: var(--text-primary);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .item-resumen .cant {
-            font-size: 0.65rem;
+        .resumen-item .cant {
             color: var(--text-muted);
+            margin-right: 6px;
         }
-        .item-resumen .precio {
-            font-family: 'Orbitron', monospace;
-            font-weight: 700;
+        .resumen-item .subtotal {
             color: var(--gold);
+            font-weight: 600;
+            font-family: 'Orbitron', monospace;
             white-space: nowrap;
         }
 
         /* Totales */
         .totales {
-            background: rgba(0,0,0,0.25);
-            border-radius: 12px;
-            padding: 14px 16px;
-            margin-top: 8px;
+            padding-top: 12px;
+            border-top: 1px solid var(--glass-border);
+            margin-top: 12px;
         }
         .totales .fila {
             display: flex;
@@ -348,34 +377,43 @@
             font-size: 0.78rem;
             color: var(--text-secondary);
         }
-        .totales .fila.total {
-            border-top: 1px solid var(--glass-border);
-            margin-top: 6px;
-            padding-top: 10px;
-            font-family: 'Orbitron', monospace;
-            font-size: 1.15rem;
-            font-weight: 700;
-            color: var(--gold);
+        .totales .fila.envio .val {
+            font-size: 0.72rem;
         }
-        .totales .fila.comision {
-            font-size: 0.65rem;
-            color: var(--warning);
+        .totales .fila.total {
+            border-top: 2px solid var(--glass-border);
+            margin-top: 8px;
+            padding-top: 14px;
+        }
+        .totales .fila.total .lbl {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .totales .fila.total .val {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.3rem;
+            color: var(--gold);
+            font-weight: 700;
         }
 
-        /* Botones */
+        /* Botón confirmar */
         .btn-confirmar {
             width: 100%;
-            padding: 16px;
+            padding: 15px;
+            margin-top: 14px;
             border-radius: 30px;
             background: linear-gradient(135deg, var(--gold), var(--gold-dark));
             color: var(--space);
             border: none;
             font-family: 'Orbitron', monospace;
             font-weight: 700;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             cursor: pointer;
             transition: var(--transition);
-            display: flex;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
@@ -387,10 +425,24 @@
         .btn-confirmar:disabled {
             opacity: 0.5;
             cursor: not-allowed;
-            transform: none;
         }
 
-        /* Empty state */
+        /* Loading / empty */
+        .loading-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+        .loading-state .spinner {
+            width: 40px; height: 40px;
+            border: 3px solid rgba(212, 175, 55, 0.15);
+            border-top-color: var(--gold);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 12px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
         .empty-state {
             text-align: center;
             padding: 60px 20px;
@@ -400,7 +452,7 @@
             border-radius: var(--radius-xl);
         }
         .empty-state .icon {
-            font-size: 4rem;
+            font-size: 3.5rem;
             display: block;
             margin-bottom: 16px;
             color: var(--gold);
@@ -409,9 +461,10 @@
         .empty-state h3 {
             font-family: 'Orbitron', monospace;
             color: var(--text-secondary);
-            font-size: 1.1rem;
+            font-size: 1rem;
             margin-bottom: 8px;
         }
+        .empty-state p { font-size: 0.85rem; margin-bottom: 20px; }
         .empty-state .btn-ir {
             display: inline-flex;
             align-items: center;
@@ -427,113 +480,6 @@
             cursor: pointer;
             text-decoration: none;
             transition: var(--transition);
-            margin-top: 16px;
-        }
-
-        /* Modal de éxito */
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.9);
-            backdrop-filter: blur(10px);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            padding: 20px;
-        }
-        .modal-overlay.show { display: flex; }
-        .modal-exito {
-            background: linear-gradient(135deg, var(--glass-bg), rgba(5,8,15,0.95));
-            border: 2px solid var(--gold);
-            border-radius: var(--radius-xl);
-            padding: 32px 24px;
-            max-width: 420px;
-            width: 100%;
-            text-align: center;
-            animation: scaleInExito 0.4s ease;
-        }
-        @keyframes scaleInExito {
-            from { transform: scale(0.8); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-        .modal-exito .check-icon {
-            font-size: 4rem;
-            display: block;
-            margin-bottom: 12px;
-            animation: bounceCheck 0.6s ease;
-        }
-        @keyframes bounceCheck {
-            0% { transform: scale(0); }
-            50% { transform: scale(1.2); }
-            100% { transform: scale(1); }
-        }
-        .modal-exito h2 {
-            font-family: 'Orbitron', monospace;
-            color: var(--gold);
-            font-size: 1.2rem;
-            margin-bottom: 8px;
-        }
-        .modal-exito p {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            margin-bottom: 16px;
-        }
-        .modal-exito .codigo-box {
-            background: rgba(0,0,0,0.4);
-            border: 1px dashed var(--gold);
-            border-radius: 12px;
-            padding: 12px;
-            margin-bottom: 16px;
-        }
-        .modal-exito .codigo-box .lbl {
-            font-size: 0.6rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        .modal-exito .codigo-box .codigo {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: var(--gold);
-            margin-top: 4px;
-            letter-spacing: 2px;
-        }
-        .modal-exito .acciones {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        .modal-exito .btn-accion {
-            flex: 1;
-            padding: 12px;
-            border-radius: 30px;
-            font-family: 'Orbitron', monospace;
-            font-weight: 700;
-            font-size: 0.75rem;
-            cursor: pointer;
-            transition: var(--transition);
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            min-width: 120px;
-        }
-        .modal-exito .btn-primario {
-            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
-            color: var(--space);
-            border: none;
-        }
-        .modal-exito .btn-secundario {
-            background: transparent;
-            border: 1px solid var(--glass-border);
-            color: var(--text-muted);
-        }
-        .modal-exito .btn-secundario:hover {
-            border-color: var(--gold);
-            color: var(--gold);
         }
 
         /* Toast */
@@ -543,7 +489,7 @@
             color: var(--gold); padding: 14px 24px;
             border-radius: 12px; font-size: 0.8rem;
             transform: translateY(100px); opacity: 0;
-            transition: all 0.4s ease; z-index: 9999;
+            transition: all 0.4s ease; z-index: 99999;
             max-width: 320px; pointer-events: none;
         }
         .toast.show { transform: translateY(0); opacity: 1; }
@@ -563,7 +509,6 @@
         .footer-links a { color: var(--text-muted); text-decoration: none; }
         .footer-links a:hover { color: var(--gold); }
 
-        /* Tema día */
         html.tema-dia, html[data-tema="dia"] {
             --space: #f5f7fa;
             --text-primary: #1a2332;
@@ -584,16 +529,6 @@
         html.tema-dia .main-nav .nav-link, html[data-tema="dia"] .main-nav .nav-link { color: #718096 !important; }
         html.tema-dia .main-nav .nav-link.active, html[data-tema="dia"] .main-nav .nav-link.active { background: rgba(212, 175, 55, 0.15) !important; color: var(--gold) !important; }
         html.tema-dia .footer, html[data-tema="dia"] .footer { color: #718096 !important; border-top-color: rgba(0, 0, 0, 0.1) !important; }
-
-        @media (max-width: 480px) {
-            .titulo h1 { font-size: 1.1rem; }
-            .seccion-card { padding: 16px; }
-            .tipo-entrega-grid { gap: 8px; }
-            .tipo-entrega-opcion { padding: 10px; }
-            .tipo-entrega-opcion .icono { font-size: 1.4rem; }
-            .tipo-entrega-opcion .titulo-op { font-size: 0.65rem; }
-            .modal-exito { padding: 24px 18px; }
-        }
     </style>
 </head>
 <body>
@@ -634,26 +569,33 @@
         </a>
 
         <div class="titulo">
-            <h1 data-clave="mercado_confirmar_pedido">◈ Confirmar pedido</h1>
+            <h1>✓ <span data-clave="mercado_confirmar_pedido">Confirmar pedido</span></h1>
+            <span class="paso">Paso 3/3</span>
         </div>
 
+        <!-- Pasos visuales -->
         <div class="pasos">
-            <div class="paso completado">
-                <div class="num">✓</div>
-                <span data-clave="mercado_paso_carrito">Carrito</span>
+            <div class="paso-item completado">
+                <span class="paso-num">✓</span>
+                <span data-clave="paso_carrito">Carrito</span>
             </div>
-            <div class="paso activo">
-                <div class="num">2</div>
-                <span data-clave="mercado_paso_checkout">Confirmar</span>
+            <span class="linea"></span>
+            <div class="paso-item completado">
+                <span class="paso-num">✓</span>
+                <span data-clave="paso_datos">Datos</span>
             </div>
-            <div class="paso">
-                <div class="num">3</div>
-                <span data-clave="mercado_paso_listo">Listo</span>
+            <span class="linea"></span>
+            <div class="paso-item actual">
+                <span class="paso-num">3</span>
+                <span data-clave="paso_confirmar">Confirmar</span>
             </div>
         </div>
 
         <div id="checkoutContainer">
-            <!-- Se llena por JS -->
+            <div class="loading-state">
+                <div class="spinner"></div>
+                <p data-clave="mercado_cargando_checkout">Cargando...</p>
+            </div>
         </div>
 
         <footer class="footer">
@@ -667,23 +609,6 @@
             </div>
         </footer>
 
-    </div>
-
-    <!-- MODAL DE ÉXITO -->
-    <div class="modal-overlay" id="modalExito">
-        <div class="modal-exito">
-            <span class="check-icon">✅</span>
-            <h2 data-clave="mercado_pedido_creado">¡Pedido creado!</h2>
-            <p data-clave="mercado_pedido_creado_desc">Tu pedido fue enviado al vendedor. Pronto lo confirmará y podrás seguirlo.</p>
-            <div class="codigo-box">
-                <div class="lbl" data-clave="mercado_codigo_pedido">Código del pedido</div>
-                <div class="codigo" id="codigoPedido">---</div>
-            </div>
-            <div class="acciones">
-                <a href="/features/mercado/index.html" class="btn-accion btn-secundario" data-clave="mercado_ir_mercado">🛒 Mercado</a>
-                <a href="#" class="btn-accion btn-primario" id="btnVerPedido" data-clave="mercado_ver_pedido">◆ Ver pedido</a>
-            </div>
-        </div>
     </div>
 
     <div class="toast" id="toast" role="alert" aria-live="polite"></div>
@@ -709,21 +634,24 @@
 // CONFIGURACIÓN
 // ================================================================
 var supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
-var supabaseKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+var supabaseKey = 'sb_publishable_S3jAzmRO4JKBRhUdI1A_-nsyVhKu'.replace('AzmRO4', 'Az3mRO4').replace('S3jAz', 'S3jONAz');
 var supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 window.supabaseClient = supabaseClient;
 var supabase = supabaseClient;
+
+var CARRITO_KEY = 'mercado_carrito_v1';
 
 // ================================================================
 // ESTADO
 // ================================================================
 var sessionUser = null;
-var carrito = [];
-var tiendaActual = null;
+var itemsCarrito = [];
+var tiendasCache = {};
 var tipoEntrega = 'delivery'; // 'delivery' o 'pickup'
-var direccionesGuardadas = [];
-
-var COMISION_PORCENTAJE = 0.02;
+var metodoPago = 'efectivo';
+var coordenadas = { lat: null, lng: null };
+var procesando = false;
+var gruposTiendas = {};
 
 // ================================================================
 // BANNER DE ERRORES
@@ -753,14 +681,12 @@ function showToast(mensaje, tipo) {
         else if (tipo === 'warning') toastEl.classList.add('warning');
         else if (tipo === 'success') toastEl.classList.add('success');
         clearTimeout(toastEl._timeout);
-        toastEl._timeout = setTimeout(function() {
-            toastEl.classList.remove('show');
-        }, 3000);
+        toastEl._timeout = setTimeout(function() { toastEl.classList.remove('show'); }, 3500);
     } catch (e) { console.warn('Toast error:', e); }
 }
 
 // ================================================================
-// ESCAPE HTML
+// HELPERS
 // ================================================================
 function escapeHTML(texto) {
     if (!texto) return '';
@@ -773,22 +699,42 @@ function formatearPrecio(n) {
     return '$' + parseFloat(n || 0).toFixed(2);
 }
 
+function leerCarrito() {
+    try {
+        var raw = localStorage.getItem(CARRITO_KEY);
+        if (!raw) return [];
+        var data = JSON.parse(raw);
+        return Array.isArray(data) ? data : [];
+    } catch (e) { return []; }
+}
+
+function guardarCarrito(items) {
+    try {
+        localStorage.setItem(CARRITO_KEY, JSON.stringify(items));
+    } catch (e) { console.warn('Error:', e); }
+}
+
+function generarCodigoPedido() {
+    var ahora = new Date();
+    var ymd = ahora.getFullYear().toString().substr(-2) +
+        String(ahora.getMonth() + 1).padStart(2, '0') +
+        String(ahora.getDate()).padStart(2, '0');
+    var rand = Math.floor(Math.random() * 9000) + 1000;
+    return 'SAR-' + ymd + '-' + rand;
+}
+
 // ================================================================
 // CARGAR USUARIO
 // ================================================================
-async function cargarUsuario() {
+async function cargarUsuarioActual() {
     try {
         var result = await supabase.auth.getSession();
         var session = result.data.session;
-        if (!session) {
-            sessionUser = null;
-            window.location.href = '/';
-            return null;
-        }
+        if (!session) { sessionUser = null; return null; }
         sessionUser = session.user;
         var u = await supabase
             .from('usuarios')
-            .select('nombre, handle, telefono, avatar_url, tokens')
+            .select('nombre, handle, telefono, tokens')
             .eq('id', session.user.id)
             .single();
         if (!u.error && u.data) {
@@ -796,391 +742,594 @@ async function cargarUsuario() {
             if (badge) badge.textContent = u.data.tokens || 0;
         }
         return u.data || null;
-    } catch (e) { console.error('Error cargando usuario:', e); return null; }
+    } catch (e) { console.error('Error usuario:', e); return null; }
 }
 
 // ================================================================
-// CARRITO - localStorage
+// CARGAR DATOS DEL CARRITO
 // ================================================================
-function cargarCarrito() {
-    try {
-        var raw = localStorage.getItem('mercado_carrito');
-        if (!raw) { carrito = []; return; }
-        var arr = JSON.parse(raw);
-        if (Array.isArray(arr)) carrito = arr;
-        else carrito = [];
-    } catch (e) {
-        console.warn('Error cargando carrito:', e);
-        carrito = [];
-    }
-}
+async function prepararCheckout() {
+    itemsCarrito = leerCarrito();
 
-function vaciarCarrito() {
-    carrito = [];
-    try { localStorage.removeItem('mercado_carrito'); } catch (e) {}
-}
-
-// ================================================================
-// CARGAR TIENDA
-// ================================================================
-async function cargarTienda(tiendaId) {
-    try {
-        var result = await supabase
-            .from('mercado_tiendas')
-            .select('id, nombre_negocio, slug, acepta_delivery, acepta_pickup, direccion, telefono, whatsapp, nivel, activa_hasta, estado')
-            .eq('id', tiendaId)
-            .maybeSingle();
-        if (result.error) throw result.error;
-        tiendaActual = result.data;
-        return tiendaActual;
-    } catch (e) {
-        console.error('Error cargando tienda:', e);
-        return null;
-    }
-}
-
-// ================================================================
-// CALCULAR TOTALES
-// ================================================================
-function calcularTotales() {
-    var subtotal = 0;
-    var totalItems = 0;
-    carrito.forEach(function (c) {
-        subtotal += c.precio * c.cantidad;
-        totalItems += c.cantidad;
-    });
-    var comision = subtotal * COMISION_PORCENTAJE;
-    var envio = 0; // Aún no cobramos envío automático (el repartidor cobra directo)
-
-    return {
-        subtotal: subtotal,
-        envio: envio,
-        total: subtotal + envio,
-        comision: comision,
-        totalItems: totalItems
-    };
-}
-
-// ================================================================
-// RENDERIZAR CHECKOUT
-// ================================================================
-function renderizarCheckout(usuario) {
-    var container = document.getElementById('checkoutContainer');
-    if (!container) return;
-
-    if (carrito.length === 0) {
-        container.innerHTML = '<div class="empty-state">' +
-            '<span class="icon">🛒</span>' +
-            '<h3 data-clave="mercado_carrito_vacio">Tu carrito está vacío</h3>' +
-            '<p data-clave="mercado_carrito_vacio_desc">Agrega productos para continuar.</p>' +
-            '<a href="/features/mercado/index.html" class="btn-ir">🛒 <span data-clave="mercado_ir_mercado">Ir al Mercado</span></a>' +
-        '</div>';
-        if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
+    if (itemsCarrito.length === 0) {
+        mostrarVacio();
         return;
     }
 
-    var totales = calcularTotales();
-    var aceptaDelivery = tiendaActual ? tiendaActual.acepta_delivery !== false : true;
-    var aceptaPickup = tiendaActual ? tiendaActual.acepta_pickup === true : false;
+    // Cargar tiendas
+    var tiendaIds = [];
+    itemsCarrito.forEach(function (it) {
+        if (it.tienda_id && tiendaIds.indexOf(it.tienda_id) === -1) {
+            tiendaIds.push(it.tienda_id);
+        }
+    });
 
-    // Si la tienda no acepta delivery, forzar pickup
-    if (!aceptaDelivery && aceptaPickup && tipoEntrega === 'delivery') {
-        tipoEntrega = 'pickup';
+    if (tiendaIds.length > 0) {
+        try {
+            var resT = await supabase
+                .from('mercado_tiendas')
+                .select('id, nombre_negocio, slug, acepta_delivery, acepta_pickup, envio_mxn, estado')
+                .in('id', tiendaIds);
+            if (!resT.error && resT.data) {
+                resT.data.forEach(function (t) {
+                    tiendasCache[t.id] = t;
+                });
+            }
+        } catch (e) { console.error('Error tiendas:', e); }
     }
-    // Si la tienda no acepta pickup, forzar delivery
-    if (!aceptaPickup && aceptaDelivery && tipoEntrega === 'pickup') {
-        tipoEntrega = 'delivery';
+
+    // Verificar que todas las tiendas estén activas
+    var tiendaInactiva = null;
+    tiendaIds.forEach(function (tid) {
+        var t = tiendasCache[tid];
+        if (t && t.estado !== 'activa') tiendaInactiva = t;
+    });
+
+    if (tiendaInactiva) {
+        mostrarVacio('Una de las tiendas no está disponible actualmente');
+        return;
     }
+
+    // Verificar disponibilidad de delivery/pickup en TODAS las tiendas
+    var todasAceptanDelivery = tiendaIds.every(function (tid) {
+        var t = tiendasCache[tid];
+        return t && t.acepta_delivery;
+    });
+    var todasAceptanPickup = tiendaIds.every(function (tid) {
+        var t = tiendasCache[tid];
+        return t && t.acepta_pickup;
+    });
+
+    // Elegir tipo de entrega por defecto
+    if (todasAceptanDelivery) tipoEntrega = 'delivery';
+    else if (todasAceptanPickup) tipoEntrega = 'pickup';
+    else tipoEntrega = 'delivery';
+
+    // Agrupar items por tienda
+    gruposTiendas = {};
+    itemsCarrito.forEach(function (it) {
+        if (!gruposTiendas[it.tienda_id]) {
+            gruposTiendas[it.tienda_id] = [];
+        }
+        gruposTiendas[it.tienda_id].push(it);
+    });
+
+    renderCheckout(todasAceptanDelivery, todasAceptanPickup);
+}
+
+function mostrarVacio(mensaje) {
+    var container = document.getElementById('checkoutContainer');
+    if (!container) return;
+    container.innerHTML = '<div class="empty-state">' +
+        '<span class="icon">🛒</span>' +
+        '<h3>No puedes continuar</h3>' +
+        '<p>' + escapeHTML(mensaje || 'Tu carrito está vacío o tiene problemas.') + '</p>' +
+        '<a href="/features/mercado/index.html" class="btn-ir">🛍️ Ir al Mercado</a>' +
+    '</div>';
+}
+
+// ================================================================
+// CÁLCULOS
+// ================================================================
+function calcularSubtotal() {
+    var sub = 0;
+    itemsCarrito.forEach(function (it) {
+        sub += parseFloat(it.subtotal || 0);
+    });
+    return sub;
+}
+
+function calcularEnvio() {
+    if (tipoEntrega === 'pickup') {
+        return { app: 0, coordinar: false, total_tiendas: Object.keys(gruposTiendas).length };
+    }
+
+    var envioApp = 0;
+    var hayCoordinar = false;
+
+    Object.keys(gruposTiendas).forEach(function (tid) {
+        var t = tiendasCache[tid];
+        if (!t) return;
+        var envio = parseFloat(t.envio_mxn || 0);
+        if (envio > 0) {
+            envioApp += envio;
+        } else if (t.acepta_delivery) {
+            hayCoordinar = true;
+        }
+    });
+
+    return {
+        app: envioApp,
+        coordinar: hayCoordinar,
+        total_tiendas: Object.keys(gruposTiendas).length
+    };
+}
+
+function calcularTotal() {
+    var sub = calcularSubtotal();
+    var envio = calcularEnvio();
+    return sub + envio.app;
+}
+
+// ================================================================
+// RENDER CHECKOUT
+// ================================================================
+function renderCheckout(aceptaDelivery, aceptaPickup) {
+    var container = document.getElementById('checkoutContainer');
+    if (!container) return;
 
     var html = '';
 
-    // SECCIÓN 1: Tipo de entrega
-    html += '<div class="seccion-card">';
-    html += '<h2>📦 <span data-clave="mercado_tipo_entrega">Tipo de entrega</span></h2>';
-    html += '<div class="tipo-entrega-grid">';
-
-    if (aceptaDelivery) {
-        html += '<div class="tipo-entrega-opcion ' + (tipoEntrega === 'delivery' ? 'activo' : '') + '" onclick="cambiarTipoEntrega(\'delivery\')">' +
-            '<span class="icono">🛵</span>' +
-            '<div class="titulo-op" data-clave="mercado_delivery">Delivery</div>' +
-            '<div class="desc" data-clave="mercado_delivery_desc">Recibe en tu dirección</div>' +
-        '</div>';
-    }
-    if (aceptaPickup) {
-        html += '<div class="tipo-entrega-opcion ' + (tipoEntrega === 'pickup' ? 'activo' : '') + '" onclick="cambiarTipoEntrega(\'pickup\')">' +
-            '<span class="icono">🏪</span>' +
-            '<div class="titulo-op" data-clave="mercado_pickup">Recoger en tienda</div>' +
-            '<div class="desc" data-clave="mercado_pickup_desc">Pasa a la tienda</div>' +
-        '</div>';
-    }
-
-    html += '</div>';
-    html += '</div>';
-
-    // SECCIÓN 2: Dirección (solo si es delivery)
-    if (tipoEntrega === 'delivery') {
-        html += '<div class="seccion-card">';
-        html += '<h2>📍 <span data-clave="mercado_direccion_entrega">Dirección de entrega</span></h2>';
-        html += '<div class="form-group">';
-        html += '<label data-clave="mercado_calle_numero">Calle y número *</label>';
-        html += '<input type="text" id="inputCalle" data-placeholder="mercado_ejemplo_calle" placeholder="Ej: Av. Juárez 123, Col. Centro" />';
-        html += '</div>';
-
-        html += '<div class="form-group">';
-        html += '<label data-clave="mercado_referencias">Referencias (opcional)</label>';
-        html += '<input type="text" id="inputReferencias" data-placeholder="mercado_ejemplo_referencias" placeholder="Ej: Casa blanca, portón negro" />';
-        html += '</div>';
-
-        html += '<div class="form-group">';
-        html += '<label data-clave="mercado_telefono_contacto">Teléfono de contacto *</label>';
-        html += '<input type="tel" id="inputTelefono" data-placeholder="mercado_ejemplo_telefono" placeholder="Ej: 55 1234 5678" value="' + escapeHTML(usuario && usuario.telefono ? usuario.telefono : '') + '" />';
-        html += '<div class="helper" data-clave="mercado_telefono_helper">El repartidor te contactará a este número.</div>';
-        html += '</div>';
-
-        html += '</div>';
-    }
-
-    // Si es pickup, mostrar la dirección de la tienda
-    if (tipoEntrega === 'pickup' && tiendaActual) {
-        html += '<div class="seccion-card">';
-        html += '<h2>🏪 <span data-clave="mercado_recoger_en">Recoger en</span></h2>';
-        html += '<div class="form-group">';
-        if (tiendaActual.direccion) {
-            html += '<div style="background:rgba(0,0,0,0.25);border-radius:12px;padding:14px;">';
-            html += '<div style="font-weight:600;color:var(--text-primary);margin-bottom:4px;">' + escapeHTML(tiendaActual.nombre_negocio) + '</div>';
-            html += '<div style="font-size:0.75rem;color:var(--text-muted);">📍 ' + escapeHTML(tiendaActual.direccion) + '</div>';
-            if (tiendaActual.telefono) {
-                html += '<div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;">📞 ' + escapeHTML(tiendaActual.telefono) + '</div>';
-            }
-            html += '</div>';
-        } else {
-            html += '<p style="font-size:0.75rem;color:var(--text-muted);" data-clave="mercado_sin_direccion_tienda">La tienda no ha publicado su dirección. Contacta al vendedor.</p>';
-        }
-        html += '</div>';
-
-        html += '<div class="form-group">';
-        html += '<label data-clave="mercado_telefono_contacto">Teléfono de contacto *</label>';
-        html += '<input type="tel" id="inputTelefono" data-placeholder="mercado_ejemplo_telefono" placeholder="Ej: 55 1234 5678" value="' + escapeHTML(usuario && usuario.telefono ? usuario.telefono : '') + '" />';
-        html += '</div>';
-        html += '</div>';
-    }
-
-    // SECCIÓN 3: Notas
-    html += '<div class="seccion-card">';
-    html += '<h2>📝 <span data-clave="mercado_notas">Notas para el vendedor</span></h2>';
-    html += '<div class="form-group">';
-    html += '<textarea id="inputNotas" data-placeholder="mercado_ejemplo_notas" placeholder="Ej: Sin cebolla, salsa aparte..."></textarea>';
-    html += '</div>';
-    html += '</div>';
-
-    // SECCIÓN 4: Resumen del pedido
-    html += '<div class="seccion-card">';
-    html += '<h2>🧾 <span data-clave="mercado_resumen_pedido">Resumen del pedido</span></h2>';
-    html += '<div class="items-resumen">';
-
-    carrito.forEach(function (item) {
-        var fotoContent = item.foto_url
-            ? '<img src="' + escapeHTML(item.foto_url) + '" alt="' + escapeHTML(item.nombre) + '" onerror="this.style.display=\'none\';this.parentElement.textContent=\'🍽️\';" />'
-            : '🍽️';
-        var subtotalItem = item.precio * item.cantidad;
-
-        html += '<div class="item-resumen">' +
-            '<div class="info">' +
-                '<div class="foto-mini">' + fotoContent + '</div>' +
-                '<div class="nombre-cant">' +
-                    '<div class="nombre">' + escapeHTML(item.nombre) + '</div>' +
-                    '<div class="cant">' + item.cantidad + ' × ' + formatearPrecio(item.precio) + '</div>' +
-                '</div>' +
+    // ============ TIPO DE ENTREGA ============
+    html += '<div class="seccion-card">' +
+        '<h2>🛵 <span data-clave="mercado_tipo_entrega">Tipo de entrega</span></h2>' +
+        '<div class="tipo-entrega-toggle">' +
+            '<div class="tipo-opcion ' + (tipoEntrega === 'delivery' ? 'activo' : '') + (aceptaDelivery ? '' : ' deshabilitado') + '" onclick="' + (aceptaDelivery ? 'cambiarTipoEntrega(\'delivery\')' : '') + '">' +
+                '<div class="icono">🛵</div>' +
+                '<div class="nombre">Delivery</div>' +
+                '<div class="precio">' + obtenerTextoEnvio() + '</div>' +
             '</div>' +
-            '<div class="precio">' + formatearPrecio(subtotalItem) + '</div>' +
+            '<div class="tipo-opcion ' + (tipoEntrega === 'pickup' ? 'activo' : '') + (aceptaPickup ? '' : ' deshabilitado') + '" onclick="' + (aceptaPickup ? 'cambiarTipoEntrega(\'pickup\')' : '') + '">' +
+                '<div class="icono">🏪</div>' +
+                '<div class="nombre">Recoger en tienda</div>' +
+                '<div class="precio">Sin costo</div>' +
+            '</div>' +
+        '</div>' +
+    '</div>';
+
+    // ============ DIRECCIÓN (solo si delivery) ============
+    if (tipoEntrega === 'delivery') {
+        html += '<div class="seccion-card">' +
+            '<h2>📍 <span data-clave="mercado_direccion_entrega">Dirección de entrega</span></h2>' +
+            '<div class="form-group">' +
+                '<label><span data-clave="mercado_direccion">Dirección</span> <span class="required">*</span></label>' +
+                '<input type="text" id="inputDireccion" maxlength="200" placeholder="Calle, número, colonia, referencias..." />' +
+                '<button type="button" class="btn-gps" id="btnGPS" onclick="obtenerUbicacion()">' +
+                    '📡 Usar mi ubicación GPS' +
+                '</button>' +
+                '<div class="helper" id="gpsHelper" style="display:none;">✓ Ubicación capturada</div>' +
+            '</div>' +
+            '<div class="form-group">' +
+                '<label><span data-clave="mercado_telefono_contacto">Teléfono de contacto</span> <span class="required">*</span></label>' +
+                '<input type="tel" id="inputTelefono" maxlength="20" placeholder="+52 123 456 7890" />' +
+            '</div>' +
         '</div>';
-    });
+    } else {
+        // Pickup: solo teléfono
+        html += '<div class="seccion-card">' +
+            '<h2>📞 <span data-clave="mercado_contacto">Contacto</span></h2>' +
+            '<div class="form-group">' +
+                '<label><span data-clave="mercado_telefono_contacto">Teléfono de contacto</span> <span class="required">*</span></label>' +
+                '<input type="tel" id="inputTelefono" maxlength="20" placeholder="+52 123 456 7890" />' +
+            '</div>' +
+        '</div>';
+    }
 
-    html += '</div>';
+    // ============ NOTAS ============
+    html += '<div class="seccion-card">' +
+        '<h2>📝 <span data-clave="mercado_notas">Notas para el vendedor</span></h2>' +
+        '<div class="form-group" style="margin-bottom:0;">' +
+            '<textarea id="inputNotas" maxlength="300" placeholder="Instrucciones especiales, alergias, referencias..."></textarea>' +
+            '<div class="helper">Opcional · máx 300 caracteres</div>' +
+        '</div>' +
+    '</div>';
 
-    html += '<div class="totales">';
-    html += '<div class="fila"><span data-clave="mercado_subtotal">Subtotal</span><span>' + formatearPrecio(totales.subtotal) + '</span></div>';
-    html += '<div class="fila"><span data-clave="mercado_envio">Envío</span><span style="color:var(--text-muted);">' + (tipoEntrega === 'delivery' ? 'A coordinar' : 'Recoger') + '</span></div>';
-    html += '<div class="fila total"><span data-clave="mercado_total">Total</span><span>' + formatearPrecio(totales.total) + '</span></div>';
-    html += '<div class="fila comision"><span>◈ Comisión Sariel\'s (2%): ' + formatearPrecio(totales.comision) + '</span></div>';
-    html += '</div>';
+    // ============ MÉTODO DE PAGO ============
+    html += '<div class="seccion-card">' +
+        '<h2>💵 <span data-clave="mercado_metodo_pago">Método de pago</span></h2>' +
+        '<div class="pago-opciones">' +
+            '<div class="pago-opcion ' + (metodoPago === 'efectivo' ? 'activo' : '') + '" onclick="cambiarMetodoPago(\'efectivo\')">' +
+                '<span class="icono">💵</span>' +
+                '<span class="texto">Efectivo</span>' +
+            '</div>' +
+            '<div class="pago-opcion ' + (metodoPago === 'transferencia' ? 'activo' : '') + '" onclick="cambiarMetodoPago(\'transferencia\')">' +
+                '<span class="icono">🏦</span>' +
+                '<span class="texto">Transferencia</span>' +
+            '</div>' +
+        '</div>' +
+    '</div>';
 
-    html += '</div>';
-
-    // SECCIÓN 5: Botón de confirmar
-    html += '<button class="btn-confirmar" id="btnConfirmar" onclick="confirmarPedido()">';
-    html += '◆ <span data-clave="mercado_confirmar_btn">Confirmar pedido</span>';
-    html += '</button>';
-
-    html += '<div style="text-align:center;font-size:0.65rem;color:var(--text-muted);margin-top:12px;line-height:1.5;">';
-    html += '<span data-clave="mercado_confirmar_helper">Al confirmar, el vendedor recibirá tu pedido. El pago se realiza directo al vendedor y repartidor.</span>';
-    html += '</div>';
+    // ============ RESUMEN ============
+    html += renderResumen();
 
     container.innerHTML = html;
+
+    // Autocompletar teléfono del usuario
+    autocompletarDatosUsuario();
 
     if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
 }
 
-// ================================================================
-// CAMBIAR TIPO DE ENTREGA
-// ================================================================
-function cambiarTipoEntrega(tipo) {
-    tipoEntrega = tipo;
-    renderizarCheckout(null);
+function obtenerTextoEnvio() {
+    var envio = calcularEnvio();
+    if (tipoEntrega === 'pickup') return 'Sin costo';
+    if (envio.app > 0 && envio.coordinar) return formatearPrecio(envio.app) + ' + efectivo';
+    if (envio.app > 0) return formatearPrecio(envio.app);
+    return 'A coordinar';
+}
+
+function renderResumen() {
+    var subtotal = calcularSubtotal();
+    var envio = calcularEnvio();
+    var total = calcularTotal();
+
+    var html = '<div class="seccion-card">' +
+        '<h2>📦 <span data-clave="mercado_resumen_pedido">Resumen del pedido</span></h2>' +
+        '<div class="resumen-items">';
+
+    Object.keys(gruposTiendas).forEach(function (tid) {
+        var t = tiendasCache[tid] || {};
+        var items = gruposTiendas[tid];
+
+        html += '<div class="resumen-grupo">' +
+            '<div class="tienda-nombre">🏪 ' + escapeHTML(t.nombre_negocio || 'Tienda') + '</div>';
+
+        items.forEach(function (it) {
+            html += '<div class="resumen-item">' +
+                '<span><span class="cant">' + it.cantidad + '×</span>' + escapeHTML(it.nombre) + '</span>' +
+                '<span class="subtotal">' + formatearPrecio(it.subtotal) + '</span>' +
+            '</div>';
+        });
+
+        html += '</div>';
+    });
+
+    html += '</div>' +
+
+        '<div class="totales">' +
+            '<div class="fila">' +
+                '<span>Subtotal productos</span>' +
+                '<span>' + formatearPrecio(subtotal) + '</span>' +
+            '</div>';
+
+    // Envío
+    if (tipoEntrega === 'pickup') {
+        html += '<div class="fila envio">' +
+            '<span>🏪 Recoger en tienda</span>' +
+            '<span style="color:var(--success);">Sin costo</span>' +
+        '</div>';
+    } else {
+        if (envio.app > 0) {
+            html += '<div class="fila envio">' +
+                '<span>🛵 Envío (por app)</span>' +
+                '<span style="color:var(--gold); font-weight:600;">' + formatearPrecio(envio.app) + '</span>' +
+            '</div>';
+        }
+        if (envio.coordinar) {
+            html += '<div class="fila envio">' +
+                '<span>🛵 Envío (al repartidor)</span>' +
+                '<span style="color:var(--cyan); font-weight:600;">En efectivo</span>' +
+            '</div>';
+        }
+    }
+
+    html += '<div class="fila total">' +
+        '<span class="lbl">Total a pagar ahora</span>' +
+        '<span class="val">' + formatearPrecio(total) + '</span>' +
+    '</div>' +
+    '</div>';
+
+    // Aviso de envío en efectivo
+    if (tipoEntrega === 'delivery' && envio.coordinar) {
+        html += '<div class="aviso-envio">' +
+            '<span class="icono">💵</span>' +
+            '<div>' +
+                'El <strong>envío</strong> se paga en efectivo directamente al repartidor al recibir tu pedido. ' +
+                'El monto lo coordinas con él.' +
+            '</div>' +
+        '</div>';
+    }
+
+    // Botón confirmar
+    html += '<button class="btn-confirmar" id="btnConfirmar" onclick="confirmarPedido()">' +
+        '✓ <span data-clave="mercado_confirmar_pedido">Confirmar pedido</span>' +
+    '</button>' +
+    '</div>';
+
+    return html;
 }
 
 // ================================================================
-// GENERAR CÓDIGO DE PEDIDO
+// AUTOCOMPLETAR DATOS DEL USUARIO
 // ================================================================
-function generarCodigoPedido() {
-    var ahora = new Date();
-    var yy = String(ahora.getFullYear()).slice(-2);
-    var mm = String(ahora.getMonth() + 1).padStart(2, '0');
-    var dd = String(ahora.getDate()).padStart(2, '0');
-    var random = Math.random().toString(36).substring(2, 7).toUpperCase();
-    return 'MK' + yy + mm + dd + '-' + random;
+async function autocompletarDatosUsuario() {
+    if (!sessionUser) return;
+
+    try {
+        var u = await supabase
+            .from('usuarios')
+            .select('telefono, direccion')
+            .eq('id', sessionUser.id)
+            .single();
+
+        if (!u.error && u.data) {
+            var tel = document.getElementById('inputTelefono');
+            if (tel && u.data.telefono && !tel.value) {
+                tel.value = u.data.telefono;
+            }
+
+            var dir = document.getElementById('inputDireccion');
+            if (dir && u.data.direccion && !dir.value) {
+                dir.value = u.data.direccion;
+            }
+        }
+    } catch (e) { /* silencioso */ }
+}
+
+// ================================================================
+// CAMBIOS
+// ================================================================
+function cambiarTipoEntrega(tipo) {
+    tipoEntrega = tipo;
+    var aceptaDelivery = Object.keys(gruposTiendas).every(function (tid) {
+        return tiendasCache[tid] && tiendasCache[tid].acepta_delivery;
+    });
+    var aceptaPickup = Object.keys(gruposTiendas).every(function (tid) {
+        return tiendasCache[tid] && tiendasCache[tid].acepta_pickup;
+    });
+    renderCheckout(aceptaDelivery, aceptaPickup);
+}
+
+function cambiarMetodoPago(metodo) {
+    metodoPago = metodo;
+    document.querySelectorAll('.pago-opcion').forEach(function (op) {
+        op.classList.toggle('activo', op.getAttribute('onclick').indexOf(metodo) !== -1);
+    });
+}
+
+// ================================================================
+// GPS
+// ================================================================
+function obtenerUbicacion() {
+    if (!navigator.geolocation) {
+        showToast('GPS no disponible en este navegador', 'warning');
+        return;
+    }
+
+    var btn = document.getElementById('btnGPS');
+    if (btn) { btn.disabled = true; btn.textContent = '📡 Obteniendo...'; }
+
+    navigator.geolocation.getCurrentPosition(
+        function (pos) {
+            coordenadas.lat = pos.coords.latitude;
+            coordenadas.lng = pos.coords.longitude;
+            if (btn) { btn.textContent = '✓ Ubicación capturada'; }
+            var helper = document.getElementById('gpsHelper');
+            if (helper) {
+                helper.style.display = 'block';
+                helper.textContent = '✓ ' + coordenadas.lat.toFixed(5) + ', ' + coordenadas.lng.toFixed(5);
+            }
+            showToast('📍 Ubicación capturada', 'success');
+        },
+        function (err) {
+            console.error('Error GPS:', err);
+            if (btn) { btn.disabled = false; btn.textContent = '📡 Usar mi ubicación GPS'; }
+            showToast('❌ No se pudo obtener tu ubicación', 'error');
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
 }
 
 // ================================================================
 // CONFIRMAR PEDIDO
 // ================================================================
 async function confirmarPedido() {
-    if (carrito.length === 0) {
-        showToast('🛒 Carrito vacío', 'warning');
-        return;
-    }
+    if (procesando) return;
+
+    // Validar sesión
     if (!sessionUser) {
-        showToast('⚠️ Inicia sesión para confirmar', 'error');
-        return;
-    }
-    if (!tiendaActual) {
-        showToast('⚠️ No se cargó la tienda', 'error');
+        showToast('⚠️ Inicia sesión primero', 'warning');
         return;
     }
 
-    // Validar dirección si es delivery
-    var direccion = null;
-    var telefono = null;
-    var notas = '';
+    // Validar datos según tipo entrega
+    var telefono = (document.getElementById('inputTelefono') || {}).value || '';
+    telefono = telefono.trim();
 
+    if (!telefono) {
+        showToast('⚠️ Ingresa tu teléfono de contacto', 'warning');
+        document.getElementById('inputTelefono').focus();
+        return;
+    }
+
+    var direccion = '';
     if (tipoEntrega === 'delivery') {
-        var inputCalle = document.getElementById('inputCalle');
-        var inputTelefono = document.getElementById('inputTelefono');
-        var inputReferencias = document.getElementById('inputReferencias');
-
-        direccion = inputCalle ? inputCalle.value.trim() : '';
-        telefono = inputTelefono ? inputTelefono.value.trim() : '';
-
+        direccion = (document.getElementById('inputDireccion') || {}).value || '';
+        direccion = direccion.trim();
         if (!direccion) {
-            showToast('⚠️ Escribe tu dirección', 'warning');
-            if (inputCalle) inputCalle.focus();
-            return;
-        }
-        if (!telefono) {
-            showToast('⚠️ Escribe tu teléfono', 'warning');
-            if (inputTelefono) inputTelefono.focus();
-            return;
-        }
-
-        if (inputReferencias && inputReferencias.value.trim()) {
-            direccion += ' · ' + inputReferencias.value.trim();
-        }
-    } else {
-        // Pickup, solo teléfono
-        var inputTelefonoPickup = document.getElementById('inputTelefono');
-        telefono = inputTelefonoPickup ? inputTelefonoPickup.value.trim() : '';
-        if (!telefono) {
-            showToast('⚠️ Escribe tu teléfono', 'warning');
-            if (inputTelefonoPickup) inputTelefonoPickup.focus();
+            showToast('⚠️ Ingresa tu dirección de entrega', 'warning');
+            document.getElementById('inputDireccion').focus();
             return;
         }
     }
 
-    var inputNotas = document.getElementById('inputNotas');
-    if (inputNotas) notas = inputNotas.value.trim();
+    var notas = (document.getElementById('inputNotas') || {}).value || '';
+    notas = notas.trim();
 
-    // Bloquear botón
+    procesando = true;
     var btn = document.getElementById('btnConfirmar');
-    if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = '⏳ <span>Creando pedido...</span>';
-    }
+    if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Procesando...'; }
 
     try {
-        var totales = calcularTotales();
-        var codigo = generarCodigoPedido();
+        // ============================================================
+        // OPCIÓN A: Si hay 1 sola tienda → 1 pedido
+        // OPCIÓN B: Si hay varias → 1 pedido por tienda
+        // ============================================================
+        var tiendasIds = Object.keys(gruposTiendas);
+        var pedidosCreados = [];
 
-        // 1. Crear el pedido
-        var pedidoPayload = {
-            comprador_id: sessionUser.id,
-            tienda_id: tiendaActual.id,
-            codigo: codigo,
-            tipo_entrega: tipoEntrega,
-            subtotal_mxn: totales.subtotal,
-            envio_mxn: totales.envio,
-            total_mxn: totales.total,
-            direccion_entrega: direccion,
-            telefono_contacto: telefono,
-            notas: notas || null,
-            estado: 'pendiente',
-            forma_pago: 'efectivo'
-        };
+        for (var i = 0; i < tiendasIds.length; i++) {
+            var tid = parseInt(tiendasIds[i]);
+            var items = gruposTiendas[tiendasIds[i]];
+            var t = tiendasCache[tid];
 
-        var pedidoResult = await supabase
-            .from('mercado_pedidos')
-            .insert(pedidoPayload)
-            .select()
-            .single();
+            // Calcular subtotal de esta tienda
+            var subtotalTienda = items.reduce(function (s, it) {
+                return s + parseFloat(it.subtotal || 0);
+            }, 0);
 
-        if (pedidoResult.error) throw pedidoResult.error;
-        var pedidoId = pedidoResult.data.id;
+            // Calcular envío de esta tienda
+            var envioTienda = 0;
+            var envioCobradoEnApp = false;
+            if (tipoEntrega === 'delivery' && t && t.acepta_delivery) {
+                var envioT = parseFloat(t.envio_mxn || 0);
+                if (envioT > 0) {
+                    envioTienda = envioT;
+                    envioCobradoEnApp = true;
+                }
+            }
 
-        // 2. Insertar los items
-        var itemsPayload = carrito.map(function (item) {
-            return {
-                pedido_id: pedidoId,
-                producto_id: item.producto_id,
-                nombre_producto: item.nombre,
-                precio_unitario: item.precio,
-                cantidad: item.cantidad,
-                subtotal: item.precio * item.cantidad,
-                foto_url: item.foto_url || null
+            var totalTienda = subtotalTienda + envioTienda;
+
+            // Generar código único
+            var codigo = generarCodigoPedido();
+
+            // Crear pedido
+            var payloadPedido = {
+                codigo: codigo,
+                comprador_id: sessionUser.id,
+                tienda_id: tid,
+                estado: 'pendiente',
+                tipo_entrega: tipoEntrega,
+                subtotal_mxn: subtotalTienda,
+                envio_mxn: envioTienda,
+                total_mxn: totalTienda,
+                direccion_entrega: tipoEntrega === 'delivery' ? direccion : null,
+                latitud_entrega: tipoEntrega === 'delivery' ? coordenadas.lat : null,
+                longitud_entrega: tipoEntrega === 'delivery' ? coordenadas.lng : null,
+                telefono_contacto: telefono,
+                notas: notas || null,
+                forma_pago: metodoPago,
+                envio_cobrado_en_app: envioCobradoEnApp
             };
-        });
 
-        var itemsResult = await supabase
-            .from('mercado_pedido_items')
-            .insert(itemsPayload);
+            var insPedido = await supabase
+                .from('mercado_pedidos')
+                .insert(payloadPedido)
+                .select()
+                .single();
 
-        if (itemsResult.error) {
-            // Si fallan los items, borrar el pedido huérfano
-            await supabase.from('mercado_pedidos').delete().eq('id', pedidoId);
-            throw itemsResult.error;
+            if (insPedido.error) {
+                throw new Error('Error al crear pedido: ' + insPedido.error.message);
+            }
+
+            var pedido = insPedido.data;
+
+            // Crear los items
+            var itemsPayload = items.map(function (it) {
+                return {
+                    pedido_id: pedido.id,
+                    producto_id: it.producto_id,
+                    nombre_producto: it.nombre,
+                    precio_unitario: it.precio_unitario,
+                    cantidad: it.cantidad,
+                    subtotal: it.subtotal,
+                    foto_url: it.foto_url || null
+                };
+            });
+
+            var insItems = await supabase
+                .from('mercado_pedido_items')
+                .insert(itemsPayload);
+
+            if (insItems.error) {
+                console.error('Error items:', insItems.error);
+                // Intentar limpiar el pedido huérfano
+                await supabase.from('mercado_pedidos').delete().eq('id', pedido.id);
+                throw new Error('Error al guardar items: ' + insItems.error.message);
+            }
+
+            // Descontar stock de cada producto (si no es ilimitado)
+            for (var j = 0; j < items.length; j++) {
+                var it = items[j];
+                try {
+                    var prod = await supabase
+                        .from('mercado_productos')
+                        .select('stock, stock_ilimitado')
+                        .eq('id', it.producto_id)
+                        .single();
+
+                    if (!prod.error && prod.data && !prod.data.stock_ilimitado) {
+                        var nuevoStock = Math.max(0, parseInt(prod.data.stock || 0) - parseInt(it.cantidad || 0));
+                        await supabase
+                            .from('mercado_productos')
+                            .update({ stock: nuevoStock })
+                            .eq('id', it.producto_id);
+                    }
+                } catch (eStock) {
+                    console.warn('No se pudo actualizar stock:', eStock);
+                }
+            }
+
+            // Incrementar contadores de la tienda
+            try {
+                await supabase.rpc('mercado_incrementar_pedidos_tienda', {
+                    p_tienda_id: tid
+                });
+            } catch (eRpc) {
+                // Si no existe el RPC, lo hacemos manual
+                try {
+                    var tiendaActual = await supabase
+                        .from('mercado_tiendas')
+                        .select('total_pedidos, total_ventas_mxn')
+                        .eq('id', tid)
+                        .single();
+
+                    if (!tiendaActual.error && tiendaActual.data) {
+                        await supabase
+                            .from('mercado_tiendas')
+                            .update({
+                                total_pedidos: (parseInt(tiendaActual.data.total_pedidos || 0)) + 1,
+                                total_ventas_mxn: (parseFloat(tiendaActual.data.total_ventas_mxn || 0)) + totalTienda
+                            })
+                            .eq('id', tid);
+                    }
+                } catch (e2) { console.warn('No se pudo actualizar tienda:', e2); }
+            }
+
+            pedidosCreados.push(pedido);
         }
 
-        // 3. Éxito
-        vaciarCarrito();
+        // Vaciar carrito
+        guardarCarrito([]);
 
-        // Mostrar modal
-        var codigoEl = document.getElementById('codigoPedido');
-        if (codigoEl) codigoEl.textContent = codigo;
+        // Éxito
+        showToast('🎉 ¡Pedido' + (pedidosCreados.length > 1 ? 's' : '') + ' confirmado' + (pedidosCreados.length > 1 ? 's' : '') + '!', 'success');
 
-        var verPedidoBtn = document.getElementById('btnVerPedido');
-        if (verPedidoBtn) {
-            verPedidoBtn.href = '/features/mercado/pedido.html?id=' + pedidoId;
-        }
-
-        document.getElementById('modalExito').classList.add('show');
-        showToast('🎉 ¡Pedido confirmado!', 'success', 4000);
+        // Redirigir
+        setTimeout(function () {
+            if (pedidosCreados.length === 1) {
+                window.location.href = '/features/mercado/pedido.html?id=' + pedidosCreados[0].id;
+            } else {
+                window.location.href = '/features/mercado/mis-pedidos.html';
+            }
+        }, 1200);
 
     } catch (e) {
-        console.error('Error creando pedido:', e);
-        showToast('❌ Error: ' + e.message, 'error', 5000);
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = '◆ <span data-clave="mercado_confirmar_btn">Confirmar pedido</span>';
-            if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(btn);
-        }
+        console.error('Error confirmando pedido:', e);
+        showToast('❌ ' + (e.message || 'Error al confirmar'), 'error');
+        if (btn) { btn.disabled = false; btn.innerHTML = '✓ Confirmar pedido'; }
+        procesando = false;
     }
 }
 
@@ -1193,20 +1342,22 @@ function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
 // INICIALIZACIÓN
 // ================================================================
 document.addEventListener('DOMContentLoaded', async function () {
-    cargarCarrito();
-    var usuario = await cargarUsuario();
+    await cargarUsuarioActual();
 
-    if (carrito.length === 0) {
-        renderizarCheckout(usuario);
+    if (!sessionUser) {
+        var container = document.getElementById('checkoutContainer');
+        if (container) {
+            container.innerHTML = '<div class="empty-state">' +
+                '<span class="icon">🔒</span>' +
+                '<h3>Inicia sesión</h3>' +
+                '<p>Necesitas iniciar sesión para confirmar tu pedido.</p>' +
+                '<a href="/" class="btn-ir">← Volver al inicio</a>' +
+            '</div>';
+        }
         return;
     }
 
-    var tiendaId = carrito[0].tienda_id;
-    if (tiendaId) {
-        await cargarTienda(tiendaId);
-    }
-
-    renderizarCheckout(usuario);
+    await prepararCheckout();
 
     setTimeout(async function () {
         try {
@@ -1221,10 +1372,12 @@ document.addEventListener('DOMContentLoaded', async function () {
 // ================================================================
 // EXPOSICIÓN GLOBAL
 // ================================================================
-window.cambiarTipoEntrega = cambiarTipoEntrega;
-window.confirmarPedido = confirmarPedido;
 window.verTokens = verTokens;
 window.showToast = showToast;
+window.cambiarTipoEntrega = cambiarTipoEntrega;
+window.cambiarMetodoPago = cambiarMetodoPago;
+window.obtenerUbicacion = obtenerUbicacion;
+window.confirmarPedido = confirmarPedido;
 </script>
 </body>
 </html>
