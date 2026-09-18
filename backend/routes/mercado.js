@@ -10,6 +10,10 @@
      activa_desde, activa_hasta, pagado_en)
    - Estados: pendiente, pagando, confirmando, pagada, cancelada, expirada, fallida
    - Al confirmar → actualiza mercado_tiendas.nivel + activa_hasta
+   
+   Este archivo YA INCLUYE el webhook de NOWPayments (ruta
+   /api/mercado/webhook-nowpayments). NO montar el archivo separado
+   routes/webhooks/nowpayments.js.
    ================================================================ */
 
 const express = require('express');
@@ -534,7 +538,7 @@ router.post('/webhook-nowpayments', async (req, res) => {
                 .update(bodyString)
                 .digest('hex');
 
-            // Comparación segura
+            // Comparación segura contra timing attacks
             let firmaValida = false;
             try {
                 firmaValida = crypto.timingSafeEqual(
@@ -554,8 +558,6 @@ router.post('/webhook-nowpayments', async (req, res) => {
         const data = req.body;
         const paymentId = data.payment_id;
         const npStatus = data.payment_status;
-        const payinHash = data.payin_hash;
-        const outcomeHash = data.outcome_hash;
 
         console.log('📥 Webhook NOWPayments:', {
             payment_id: paymentId,
@@ -594,8 +596,9 @@ router.post('/webhook-nowpayments', async (req, res) => {
             updated_at: new Date().toISOString()
         };
 
-        if (payinHash) updates.payment_id = updates.payment_id || pago.payment_id; // no tocar
-        if (estadoFinal === 'pagada') updates.pagado_en = new Date().toISOString();
+        if (estadoFinal === 'pagada') {
+            updates.pagado_en = new Date().toISOString();
+        }
 
         await supabaseAdmin
             .from('mercado_membresias_pagos')
@@ -633,7 +636,9 @@ router.post('/webhook-nowpayments', async (req, res) => {
                         mensaje: 'Tu membresía ' + pago.plan_slug + ' está activa hasta ' + resultado.fecha_fin,
                         created_at: new Date().toISOString()
                     });
-            } catch (eN) { /* silencioso */ }
+            } catch (eN) {
+                console.log('ℹ️ No se pudo insertar notificación (tabla opcional)');
+            }
 
             return res.status(200).json({
                 ok: true,
@@ -649,7 +654,8 @@ router.post('/webhook-nowpayments', async (req, res) => {
         return res.status(200).json({
             ok: true,
             procesado: true,
-            estado: estadoFinal
+            estado: estadoFinal,
+            duracion_ms: Date.now() - inicio
         });
 
     } catch (e) {
