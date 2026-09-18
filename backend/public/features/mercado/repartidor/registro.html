@@ -1,10 +1,10 @@
 <!-- ================================================================
-     MERCADO - SARIEL'S ECOSYSTEM
+     CSARIEL'S ECOSYSTEM
      Registro formal de repartidor con verificación automática
      Ruta: /features/mercado/repartidor/registro.html
      
      Sistema de 6 pasos:
-     1. Datos personales
+     1. Datos personales (con validación de edad 18+ y CURP condicional)
      2. Verificación de teléfono (SMS)
      3. Verificación de email
      4. Documentos (INE + selfie + OCR + face match)
@@ -22,7 +22,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>◈ Registro Repartidor · Sariel's</title>
+    <title>◈ Registro Repartidor · Csariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
@@ -765,7 +765,7 @@
         <header class="header">
             <a href="/" class="logo" aria-label="Ir a la página de inicio">
                 <span class="logo-hex">◈</span>
-                <span class="logo-text">Sariel<span>'s</span></span>
+                <span class="logo-text">Csariel<span>'s</span></span>
                 <span class="logo-badge">✦ WEB3</span>
             </a>
             <div class="header-actions">
@@ -845,14 +845,14 @@
 
                     <div class="form-group">
                         <label>Nombre completo <span class="required">*</span></label>
-                        <input type="text" id="inpNombre" maxlength="100" placeholder="Como en tu INE / documento" autocomplete="name" />
+                        <input type="text" id="inpNombre" maxlength="100" placeholder="Como en tu INE / documento" autocomplete="name" style="text-transform:uppercase;" />
                         <div class="helper" id="helperNombre"></div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
                             <label>Fecha de nacimiento <span class="required">*</span></label>
-                            <input type="date" id="inpFechaNac" />
+                            <input type="date" id="inpFechaNac" max="" />
                             <div class="helper" id="helperFechaNac"></div>
                         </div>
                         <div class="form-group">
@@ -868,17 +868,17 @@
                     </div>
 
                     <div class="form-group">
-                        <label>CURP <span class="required">*</span></label>
-                        <input type="text" id="inpCurp" maxlength="18" placeholder="18 caracteres" style="text-transform:uppercase; font-family:'Orbitron',monospace; letter-spacing:1px;" />
-                        <div class="helper" id="helperCurp">Solo México · 18 caracteres alfanuméricos</div>
-                    </div>
-
-                    <div class="form-group">
                         <label>País <span class="required">*</span></label>
                         <select id="inpPais">
                             <option value="">— Selecciona tu país —</option>
                         </select>
                         <div class="helper">Tu país determina qué documento necesitas</div>
+                    </div>
+
+                    <div class="form-group" id="grupoCurp" style="display:none;">
+                        <label id="labelCurp">CURP <span class="required">*</span></label>
+                        <input type="text" id="inpCurp" maxlength="18" placeholder="18 caracteres" style="text-transform:uppercase; font-family:'Orbitron',monospace; letter-spacing:1px;" />
+                        <div class="helper" id="helperCurp">Solo México · 18 caracteres alfanuméricos</div>
                     </div>
 
                     <div class="form-group">
@@ -1029,28 +1029,24 @@
                         </div>
                     </div>
 
-                    <!-- Frente del documento -->
                     <div class="foto-captura" id="capDocFrente" onclick="abrirCamara('doc_frente')">
                         <span class="icono-grande">📄</span>
                         <div class="titulo-foto">Frente del documento *</div>
                         <div class="desc-foto">INE, DNI, cédula o documento oficial</div>
                     </div>
 
-                    <!-- Reverso del documento -->
                     <div class="foto-captura" id="capDocReverso" onclick="abrirCamara('doc_reverso')">
                         <span class="icono-grande">📄</span>
                         <div class="titulo-foto">Reverso del documento</div>
                         <div class="desc-foto">Opcional si tu documento tiene un solo lado</div>
                     </div>
 
-                    <!-- Selfie -->
                     <div class="foto-captura" id="capSelfie" onclick="abrirCamara('selfie')">
                         <span class="icono-grande">🤳</span>
                         <div class="titulo-foto">Selfie de verificación *</div>
                         <div class="desc-foto">Sin gorra, sin lentes, buena iluminación</div>
                     </div>
 
-                    <!-- Procesamiento OCR -->
                     <div class="procesando-ocr" id="bloqueOCR" style="display:none;">
                         <div class="spinner-ocr"></div>
                         <div class="titulo-ocr" id="tituloOCR">Procesando documento...</div>
@@ -1060,7 +1056,6 @@
                         </div>
                     </div>
 
-                    <!-- Resultado OCR -->
                     <div id="resultadoOCR" style="display:none;"></div>
 
                     <div class="botones-nav">
@@ -1152,7 +1147,7 @@
                         <input type="checkbox" id="chkTermServicio" onchange="actualizarTerminos()" />
                         <div class="texto">
                             <strong>Acepto los términos de servicio</strong>
-                            Autorizo a Sariel's Mercado a verificar mi identidad y a operar como repartidor en la plataforma.
+                            Autorizo a Csariel's Mercado a verificar mi identidad y a operar como repartidor en la plataforma.
                         </div>
                     </label>
 
@@ -1212,7 +1207,7 @@
         </div>
 
         <footer class="footer">
-            <span><span class="brand">◈ Sariel's</span> · <span data-clave="mercado_footer">Sabor al Paladar · WEB3</span></span>
+            <span><span class="brand">© Csariel's</span> · <span data-clave="mercado_footer">Sabor al Paladar · WEB3</span></span>
             <div class="footer-links">
                 <a href="/terminos" data-clave="footer_terminos">📜 Términos</a>
                 <a href="/privacidad" data-clave="footer_privacidad">🔒 Privacidad</a>
@@ -1241,12 +1236,34 @@
             style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">
             Cerrar
         </button>
-    </div><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/features/shared/js/idiomas.js"></script>
 
 <script>
 // ================================================================
-// CONFIGURACIÓN
+// ⚙️ CONFIGURACIÓN LEGAL — Csariel's Ecosystem
+// ================================================================
+// 👉 EDITA ESTE BLOQUE cuando tengas los datos legales listos
+// ================================================================
+var CONFIG_LEGAL = {
+    nombre_comercial: 'Csariel\'s',
+    nombre_ecosistema: 'Csariel\'s Ecosystem',
+    slogan: 'Sabor al Paladar · Repostería Fina · Web3',
+    razon_social: '',
+    rfc: '',
+    email_contacto: '',
+    sitio_web: '',
+    pais_operacion: 'México',
+    ciudad_operacion: 'Puebla'
+};
+// ================================================================
+// FIN DE CONFIGURACIÓN LEGAL
+// ================================================================
+
+// ================================================================
+// CONFIGURACIÓN APP
 // ================================================================
 var supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
 var supabaseKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
@@ -1265,7 +1282,6 @@ var pasoActual = 1;
 var maxPasoCompletado = 1;
 
 var registroData = {
-    // Paso 1: Datos personales
     nombre_completo: '',
     fecha_nacimiento: '',
     genero: '',
@@ -1273,18 +1289,12 @@ var registroData = {
     pais: 'MX',
     ciudad: '',
     colonia_principal: '',
-
-    // Paso 2: Teléfono
     telefono: '',
     telefono_verificado: false,
     telefono_codigo_enviado: false,
-
-    // Paso 3: Email
     email: '',
     email_verificado: false,
     email_codigo_enviado: false,
-
-    // Paso 4: Documentos
     documento_frente_file: null,
     documento_reverso_file: null,
     selfie_file: null,
@@ -1296,8 +1306,6 @@ var registroData = {
     ocr_curp: '',
     ocr_nombre_coincide: false,
     face_match_score: 0,
-
-    // Paso 5: Vehículo
     vehiculo: '',
     marca_vehiculo: '',
     modelo_vehiculo: '',
@@ -1306,8 +1314,6 @@ var registroData = {
     placas: '',
     foto_vehiculo_file: null,
     foto_vehiculo_url: null,
-
-    // Paso 6: Términos
     terminos_servicio: false,
     terminos_privacidad: false,
     terminos_conducta: false,
@@ -1323,10 +1329,7 @@ var enviandoRegistro = false;
 function mostrarErrorEnPantalla(mensaje) {
     var banner = document.getElementById('errorBanner');
     var texto = document.getElementById('errorBannerText');
-    if (banner && texto) {
-        texto.textContent = mensaje;
-        banner.style.display = 'block';
-    }
+    if (banner && texto) { texto.textContent = mensaje; banner.style.display = 'block'; }
 }
 window.addEventListener('error', function (event) {
     mostrarErrorEnPantalla((event.message || 'Error desconocido') + ' — línea ' + event.lineno);
@@ -1348,9 +1351,7 @@ function showToast(mensaje, tipo) {
         else if (tipo === 'warning') toastEl.classList.add('warning');
         else if (tipo === 'success') toastEl.classList.add('success');
         clearTimeout(toastEl._timeout);
-        toastEl._timeout = setTimeout(function () {
-            toastEl.classList.remove('show');
-        }, 3500);
+        toastEl._timeout = setTimeout(function () { toastEl.classList.remove('show'); }, 3500);
     } catch (e) { console.warn('Toast error:', e); }
 }
 
@@ -1384,7 +1385,6 @@ function normalizarCURP(curp) {
     return String(curp).trim().toUpperCase();
 }
 
-// Validación de CURP (mismo algoritmo que backend)
 function validarCURPLocal(curp) {
     if (!curp) return false;
     curp = normalizarCURP(curp);
@@ -1444,6 +1444,61 @@ function marcarInput(id, valido) {
 }
 
 // ================================================================
+// CONFIGURAR FECHA MÁXIMA (edad mínima 18 años)
+// ================================================================
+function configurarFechaMaxima() {
+    var inputFecha = document.getElementById('inpFechaNac');
+    if (!inputFecha) return;
+
+    var hoy = new Date();
+    var fechaMax = new Date(hoy.getFullYear() - 18, hoy.getMonth(), hoy.getDate());
+
+    var yyyy = fechaMax.getFullYear();
+    var mm = String(fechaMax.getMonth() + 1).padStart(2, '0');
+    var dd = String(fechaMax.getDate()).padStart(2, '0');
+
+    inputFecha.setAttribute('max', yyyy + '-' + mm + '-' + dd);
+
+    var fechaMin = new Date(hoy.getFullYear() - 100, hoy.getMonth(), hoy.getDate());
+    var yyyyMin = fechaMin.getFullYear();
+    var mmMin = String(fechaMin.getMonth() + 1).padStart(2, '0');
+    var ddMin = String(fechaMin.getDate()).padStart(2, '0');
+
+    inputFecha.setAttribute('min', yyyyMin + '-' + mmMin + '-' + ddMin);
+
+    console.log('📅 Fecha máxima permitida:', yyyy + '-' + mm + '-' + dd, '(18 años)');
+}
+
+// ================================================================
+// MOSTRAR/OCULTAR CURP SEGÚN PAÍS
+// ================================================================
+function actualizarCampoCurpPorPais() {
+    var selectPais = document.getElementById('inpPais');
+    var grupoCurp = document.getElementById('grupoCurp');
+    var inputCurp = document.getElementById('inpCurp');
+    var labelCurp = document.getElementById('labelCurp');
+    var helperCurp = document.getElementById('helperCurp');
+
+    if (!selectPais || !grupoCurp) return;
+
+    var paisSeleccionado = selectPais.value;
+
+    if (paisSeleccionado === 'MX') {
+        grupoCurp.style.display = 'block';
+        if (labelCurp) labelCurp.innerHTML = 'CURP <span class="required">*</span>';
+        if (inputCurp) inputCurp.setAttribute('placeholder', '18 caracteres');
+        if (helperCurp) helperCurp.textContent = 'Solo México · 18 caracteres alfanuméricos';
+    } else if (paisSeleccionado) {
+        grupoCurp.style.display = 'none';
+        if (inputCurp) inputCurp.value = '';
+        if (labelCurp) labelCurp.innerHTML = 'Documento de identidad local';
+    } else {
+        grupoCurp.style.display = 'none';
+        if (inputCurp) inputCurp.value = '';
+    }
+}
+
+// ================================================================
 // CARGAR USUARIO
 // ================================================================
 async function cargarUsuarioActual() {
@@ -1465,10 +1520,9 @@ async function cargarUsuarioActual() {
             var badge = document.getElementById('tokenBadgeCantidad');
             if (badge) badge.textContent = u.data.tokens || 0;
 
-            // Pre-llenar campos si ya tiene datos
             if (u.data.nombre) {
                 var inpNombre = document.getElementById('inpNombre');
-                if (inpNombre && !inpNombre.value) inpNombre.value = u.data.nombre;
+                if (inpNombre && !inpNombre.value) inpNombre.value = u.data.nombre.toUpperCase();
             }
             if (u.data.telefono) {
                 var inpTel = document.getElementById('inpTelefono');
@@ -1502,7 +1556,6 @@ async function verificarSiYaRegistrado() {
         if (result.data) {
             var estado = result.data.estado_verificacion;
 
-            // Si ya está activo, ir directo al panel
             if (estado === 'activo') {
                 showToast('✓ Ya estás verificado como repartidor', 'success');
                 setTimeout(function () {
@@ -1511,15 +1564,12 @@ async function verificarSiYaRegistrado() {
                 return { redirigir: true };
             }
 
-            // Si está procesando o en revisión
             if (estado === 'procesando' || estado === 'revision_manual') {
                 mostrarPantallaEstadoPendiente(estado);
                 return { redirigir: true };
             }
 
-            // Si está rechazado, permitir reintento (si hay intentos)
             if (estado === 'rechazado') {
-                // Dejar continuar con el registro (reintento)
                 console.log('Usuario rechazado previamente, permitiendo reintento');
             }
         }
@@ -1552,7 +1602,6 @@ function mostrarPantallaEstadoPendiente(estado) {
     document.getElementById('btnIrPanel').style.display = 'inline-flex';
     document.getElementById('btnReintentar').style.display = 'none';
 
-    // Cambiar botón del panel para que muestre estado
     var btnPanel = document.getElementById('btnIrPanel');
     if (btnPanel) {
         btnPanel.innerHTML = '📋 Ver mi estado';
@@ -1582,14 +1631,17 @@ async function cargarPaises() {
         return paisesCache;
     } catch (e) {
         console.error('Error países:', e);
-        // Fallback: países básicos hardcoded
         paisesCache = [
             { codigo_iso: 'MX', nombre: 'México', bandera_emoji: '🇲🇽' },
             { codigo_iso: 'CO', nombre: 'Colombia', bandera_emoji: '🇨🇴' },
             { codigo_iso: 'CL', nombre: 'Chile', bandera_emoji: '🇨🇱' },
             { codigo_iso: 'AR', nombre: 'Argentina', bandera_emoji: '🇦🇷' },
             { codigo_iso: 'PE', nombre: 'Perú', bandera_emoji: '🇵🇪' },
-            { codigo_iso: 'EC', nombre: 'Ecuador', bandera_emoji: '🇪🇨' }
+            { codigo_iso: 'EC', nombre: 'Ecuador', bandera_emoji: '🇪🇨' },
+            { codigo_iso: 'US', nombre: 'Estados Unidos', bandera_emoji: '🇺🇸' },
+            { codigo_iso: 'ES', nombre: 'España', bandera_emoji: '🇪🇸' },
+            { codigo_iso: 'BR', nombre: 'Brasil', bandera_emoji: '🇧🇷' },
+            { codigo_iso: 'GT', nombre: 'Guatemala', bandera_emoji: '🇬🇹' }
         ];
         var select = document.getElementById('inpPais');
         if (select) {
@@ -1611,36 +1663,28 @@ function irAPaso(n) {
 
     pasoActual = n;
 
-    // Ocultar todos los pasos
     document.querySelectorAll('.paso').forEach(function (p) {
         p.classList.remove('activo');
     });
 
-    // Ocultar pantalla final
     document.getElementById('pantallaFinal').classList.remove('activo');
 
-    // Mostrar el paso actual
     var pasoEl = document.querySelector('.paso[data-paso="' + n + '"]');
     if (pasoEl) pasoEl.classList.add('activo');
 
-    // Actualizar progress bar
     actualizarProgreso(n);
 
-    // Actualizar texto del paso
     var txt = document.getElementById('pasoActualTexto');
     if (txt) txt.textContent = n;
 
-    // Scroll al top
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    // Si es el paso 6, pre-rellenar
     if (n === 6) {
         actualizarTerminos();
     }
 }
 
 function actualizarProgreso(n) {
-    // Círculos de progreso
     document.querySelectorAll('.progreso-paso').forEach(function (el) {
         var paso = parseInt(el.getAttribute('data-paso'));
         el.classList.remove('completado', 'actual');
@@ -1649,10 +1693,8 @@ function actualizarProgreso(n) {
         else if (paso === n) el.classList.add('actual');
     });
 
-    // Barra de progreso
     var fill = document.getElementById('progresoFill');
     if (fill) {
-        // De 0% a 100% según el paso (1 → 0%, 6 → 100%)
         var porcentaje = ((n - 1) / 5) * 100;
         fill.style.width = porcentaje + '%';
     }
@@ -1661,18 +1703,14 @@ function actualizarProgreso(n) {
 function avanzarPaso(desde) {
     if (desde !== pasoActual) return;
 
-    // Validar el paso actual
     if (!validarPaso(desde)) return;
 
-    // Guardar datos del paso
     guardarDatosPaso(desde);
 
-    // Marcar como completado
     if (pasoActual >= maxPasoCompletado) {
         maxPasoCompletado = Math.min(6, pasoActual + 1);
     }
 
-    // Ir al siguiente
     irAPaso(Math.min(6, pasoActual + 1));
 }
 
@@ -1697,7 +1735,6 @@ function validarPaso(n) {
 function validarPaso1() {
     var nombre = limpiarTexto(document.getElementById('inpNombre').value);
     var fecha = document.getElementById('inpFechaNac').value;
-    var curp = normalizarCURP(document.getElementById('inpCurp').value);
     var pais = document.getElementById('inpPais').value;
     var ciudad = limpiarTexto(document.getElementById('inpCiudad').value);
 
@@ -1711,20 +1748,23 @@ function validarPaso1() {
     }
     var edad = calcularEdad(fecha);
     if (edad < 18) {
-        showToast('⚠️ Debes ser mayor de edad', 'warning');
+        showToast('⚠️ Debes ser mayor de 18 años', 'warning');
         return false;
     }
-    if (edad > 70) {
+    if (edad > 100) {
         showToast('⚠️ Verifica tu fecha de nacimiento', 'warning');
-        return false;
-    }
-    if (!curp || !validarCURPLocal(curp)) {
-        showToast('⚠️ Ingresa una CURP válida', 'warning');
         return false;
     }
     if (!pais) {
         showToast('⚠️ Selecciona tu país', 'warning');
         return false;
+    }
+    if (pais === 'MX') {
+        var curp = normalizarCURP(document.getElementById('inpCurp').value);
+        if (!curp || !validarCURPLocal(curp)) {
+            showToast('⚠️ Ingresa una CURP válida', 'warning');
+            return false;
+        }
     }
     if (ciudad.length < 3) {
         showToast('⚠️ Ingresa tu ciudad', 'warning');
@@ -1774,7 +1814,6 @@ function validarPaso5() {
         return false;
     }
 
-    // Placas obligatorias para moto y auto
     if (vehiculo === 'moto' || vehiculo === 'auto') {
         var placas = limpiarTexto(document.getElementById('inpPlacas').value);
         if (!placas || placas.length < 4) {
@@ -1783,7 +1822,6 @@ function validarPaso5() {
         }
     }
 
-    // Foto obligatoria para todos menos "a pie"
     if (vehiculo !== 'pie') {
         if (!registroData.foto_vehiculo_file && !registroData.foto_vehiculo_url) {
             showToast('⚠️ Sube una foto de tu vehículo con placas visibles', 'warning');
@@ -1810,13 +1848,18 @@ function validarPaso6() {
 // ================================================================
 function guardarDatosPaso(n) {
     if (n === 1) {
-        registroData.nombre_completo = limpiarTexto(document.getElementById('inpNombre').value);
+        registroData.nombre_completo = limpiarTexto(document.getElementById('inpNombre').value).toUpperCase();
         registroData.fecha_nacimiento = document.getElementById('inpFechaNac').value;
         registroData.genero = document.getElementById('inpGenero').value;
-        registroData.curp = normalizarCURP(document.getElementById('inpCurp').value);
         registroData.pais = document.getElementById('inpPais').value;
         registroData.ciudad = limpiarTexto(document.getElementById('inpCiudad').value);
         registroData.colonia_principal = limpiarTexto(document.getElementById('inpColonia').value);
+
+        if (registroData.pais === 'MX') {
+            registroData.curp = normalizarCURP(document.getElementById('inpCurp').value);
+        } else {
+            registroData.curp = '';
+        }
     } else if (n === 2) {
         registroData.telefono = limpiarTexto(document.getElementById('inpTelefono').value);
     } else if (n === 3) {
@@ -1832,175 +1875,28 @@ function guardarDatosPaso(n) {
 }
 
 // ================================================================
-// VALIDACIONES EN VIVO (mientras escribe)
-// ================================================================
-function configurarValidacionesVivo() {
-
-    // Nombre
-    var inpNombre = document.getElementById('inpNombre');
-    if (inpNombre) {
-        inpNombre.addEventListener('input', function () {
-            var v = limpiarTexto(this.value);
-            if (v.length === 0) {
-                marcarInput('inpNombre', null);
-                setHelper('helperNombre', '');
-            } else if (v.length < 5) {
-                marcarInput('inpNombre', false);
-                setHelper('helperNombre', 'Muy corto', 'error');
-            } else if (v.length >= 5) {
-                marcarInput('inpNombre', true);
-                setHelper('helperNombre', '✓ ' + v, 'success');
-            }
-            actualizarBotonPaso1();
-        });
-    }
-
-    // Fecha de nacimiento
-    var inpFecha = document.getElementById('inpFechaNac');
-    if (inpFecha) {
-        inpFecha.addEventListener('change', function () {
-            if (!this.value) {
-                marcarInput('inpFechaNac', null);
-                setHelper('helperFechaNac', '');
-                actualizarBotonPaso1();
-                return;
-            }
-            var edad = calcularEdad(this.value);
-            if (edad < 18) {
-                marcarInput('inpFechaNac', false);
-                setHelper('helperFechaNac', 'Debes ser mayor de 18 años', 'error');
-            } else if (edad > 70) {
-                marcarInput('inpFechaNac', false);
-                setHelper('helperFechaNac', 'Verifica la fecha', 'error');
-            } else {
-                marcarInput('inpFechaNac', true);
-                setHelper('helperFechaNac', '✓ ' + edad + ' años', 'success');
-            }
-            actualizarBotonPaso1();
-        });
-    }
-
-    // CURP
-    var inpCurp = document.getElementById('inpCurp');
-    if (inpCurp) {
-        inpCurp.addEventListener('input', function () {
-            this.value = normalizarCURP(this.value);
-            var v = this.value;
-            if (v.length === 0) {
-                marcarInput('inpCurp', null);
-                setHelper('helperCurp', 'Solo México · 18 caracteres alfanuméricos', '');
-            } else if (v.length < 18) {
-                marcarInput('inpCurp', false);
-                setHelper('helperCurp', 'Faltan ' + (18 - v.length) + ' caracteres', 'warning');
-            } else if (validarCURPLocal(v)) {
-                marcarInput('inpCurp', true);
-                setHelper('helperCurp', '✓ CURP válida', 'success');
-            } else {
-                marcarInput('inpCurp', false);
-                setHelper('helperCurp', 'CURP no válida (revisa dígito verificador)', 'error');
-            }
-            actualizarBotonPaso1();
-        });
-    }
-
-    // Ciudad
-    var inpCiudad = document.getElementById('inpCiudad');
-    if (inpCiudad) {
-        inpCiudad.addEventListener('input', actualizarBotonPaso1);
-    }
-
-    // País
-    var inpPais = document.getElementById('inpPais');
-    if (inpPais) {
-        inpPais.addEventListener('change', actualizarBotonPaso1);
-    }
-
-    // Teléfono (paso 2)
-    var inpTel = document.getElementById('inpTelefono');
-    if (inpTel) {
-        inpTel.addEventListener('input', function () {
-            var v = this.value;
-            if (v.length === 0) {
-                marcarInput('inpTelefono', null);
-                setHelper('helperTelefono', '');
-                document.getElementById('btnEnviarCodigoTel').style.display = 'none';
-            } else if (validarTelefonoLocal(v)) {
-                marcarInput('inpTelefono', true);
-                setHelper('helperTelefono', '✓ Número válido', 'success');
-                if (!registroData.telefono_verificado) {
-                    document.getElementById('btnEnviarCodigoTel').style.display = 'flex';
-                }
-            } else {
-                marcarInput('inpTelefono', false);
-                setHelper('helperTelefono', 'Número muy corto', 'warning');
-                document.getElementById('btnEnviarCodigoTel').style.display = 'none';
-            }
-        });
-    }
-
-    // Email (paso 3)
-    var inpEmail = document.getElementById('inpEmail');
-    if (inpEmail) {
-        inpEmail.addEventListener('input', function () {
-            var v = normalizarEmail(this.value);
-            if (v.length === 0) {
-                marcarInput('inpEmail', null);
-                setHelper('helperEmail', '');
-                document.getElementById('btnEnviarCodigoEmail').style.display = 'none';
-            } else if (!validarEmailLocal(v)) {
-                marcarInput('inpEmail', false);
-                setHelper('helperEmail', 'Email inválido', 'error');
-                document.getElementById('btnEnviarCodigoEmail').style.display = 'none';
-            } else {
-                marcarInput('inpEmail', true);
-                setHelper('helperEmail', '✓ Email válido', 'success');
-                if (!registroData.email_verificado) {
-                    document.getElementById('btnEnviarCodigoEmail').style.display = 'flex';
-                }
-            }
-        });
-    }
-
-    // Vehículo (paso 5)
-    var inpVehiculo = document.getElementById('inpVehiculo');
-    if (inpVehiculo) {
-        inpVehiculo.addEventListener('change', function () {
-            var v = this.value;
-            var campos = document.getElementById('camposVehiculo');
-
-            if (v === 'pie') {
-                campos.style.display = 'none';
-            } else if (v) {
-                campos.style.display = 'block';
-            } else {
-                campos.style.display = 'none';
-            }
-
-            actualizarBotonPaso5();
-        });
-    }
-
-    // Campos de vehículo
-    ['inpPlacas', 'inpMarca', 'inpModelo', 'inpAnio', 'inpColor'].forEach(function (id) {
-        var el = document.getElementById(id);
-        if (el) el.addEventListener('input', actualizarBotonPaso5);
-    });
-}
-
-// ================================================================
-// ACTUALIZAR BOTONES "CONTINUAR" SEGÚN VALIDACIONES
+// ACTUALIZAR BOTONES
 // ================================================================
 function actualizarBotonPaso1() {
     var nombre = limpiarTexto(document.getElementById('inpNombre').value);
     var fecha = document.getElementById('inpFechaNac').value;
-    var curp = normalizarCURP(document.getElementById('inpCurp').value);
     var pais = document.getElementById('inpPais').value;
     var ciudad = limpiarTexto(document.getElementById('inpCiudad').value);
 
+    var edad = fecha ? calcularEdad(fecha) : 0;
+    var edadValida = edad >= 18 && edad <= 100;
+
+    var curpValida = true;
+    if (pais === 'MX') {
+        var curp = normalizarCURP(document.getElementById('inpCurp').value);
+        curpValida = validarCURPLocal(curp);
+    }
+
     var valido =
         nombre.length >= 5 &&
-        fecha && calcularEdad(fecha) >= 18 && calcularEdad(fecha) <= 70 &&
-        validarCURPLocal(curp) &&
+        fecha &&
+        edadValida &&
+        curpValida &&
         pais &&
         ciudad.length >= 3;
 
@@ -2057,7 +1953,6 @@ function actualizarTerminos() {
     registroData.terminos_conducta = document.getElementById('chkTermConducta').checked;
     registroData.terminos_ubicacion = document.getElementById('chkTermUbicacion').checked;
 
-    // Marcar visualmente
     document.getElementById('termServicio').classList.toggle('activo', registroData.terminos_servicio);
     document.getElementById('termPrivacidad').classList.toggle('activo', registroData.terminos_privacidad);
     document.getElementById('termConducta').classList.toggle('activo', registroData.terminos_conducta);
@@ -2073,11 +1968,159 @@ function actualizarTerminos() {
 }
 
 // ================================================================
-// INICIALIZACIÓN
+// VALIDACIONES EN VIVO
+// ================================================================
+function configurarValidacionesVivo() {
+
+    var inpNombre = document.getElementById('inpNombre');
+    if (inpNombre) {
+        inpNombre.addEventListener('input', function () {
+            var v = limpiarTexto(this.value);
+            if (v.length === 0) {
+                marcarInput('inpNombre', null);
+                setHelper('helperNombre', '');
+            } else if (v.length < 5) {
+                marcarInput('inpNombre', false);
+                setHelper('helperNombre', 'Muy corto', 'error');
+            } else {
+                marcarInput('inpNombre', true);
+                setHelper('helperNombre', '✓ ' + v, 'success');
+            }
+            actualizarBotonPaso1();
+        });
+    }
+
+    var inpFecha = document.getElementById('inpFechaNac');
+    if (inpFecha) {
+        inpFecha.addEventListener('change', function () {
+            if (!this.value) {
+                marcarInput('inpFechaNac', null);
+                setHelper('helperFechaNac', '');
+                actualizarBotonPaso1();
+                return;
+            }
+            var edad = calcularEdad(this.value);
+            if (edad < 18) {
+                marcarInput('inpFechaNac', false);
+                setHelper('helperFechaNac', 'Debes ser mayor de 18 años', 'error');
+            } else if (edad > 100) {
+                marcarInput('inpFechaNac', false);
+                setHelper('helperFechaNac', 'Verifica la fecha', 'error');
+            } else {
+                marcarInput('inpFechaNac', true);
+                setHelper('helperFechaNac', '✓ ' + edad + ' años', 'success');
+            }
+            actualizarBotonPaso1();
+        });
+    }
+
+    var inpCurp = document.getElementById('inpCurp');
+    if (inpCurp) {
+        inpCurp.addEventListener('input', function () {
+            this.value = normalizarCURP(this.value);
+            var v = this.value;
+            if (v.length === 0) {
+                marcarInput('inpCurp', null);
+                setHelper('helperCurp', 'Solo México · 18 caracteres alfanuméricos', '');
+            } else if (v.length < 18) {
+                marcarInput('inpCurp', false);
+                setHelper('helperCurp', 'Faltan ' + (18 - v.length) + ' caracteres', 'warning');
+            } else if (validarCURPLocal(v)) {
+                marcarInput('inpCurp', true);
+                setHelper('helperCurp', '✓ CURP válida', 'success');
+            } else {
+                marcarInput('inpCurp', false);
+                setHelper('helperCurp', 'CURP no válida (revisa dígito verificador)', 'error');
+            }
+            actualizarBotonPaso1();
+        });
+    }
+
+    var inpCiudad = document.getElementById('inpCiudad');
+    if (inpCiudad) {
+        inpCiudad.addEventListener('input', actualizarBotonPaso1);
+    }
+
+    var inpPais = document.getElementById('inpPais');
+    if (inpPais) {
+        inpPais.addEventListener('change', function () {
+            actualizarCampoCurpPorPais();
+            actualizarBotonPaso1();
+        });
+    }
+
+    var inpTel = document.getElementById('inpTelefono');
+    if (inpTel) {
+        inpTel.addEventListener('input', function () {
+            var v = this.value;
+            if (v.length === 0) {
+                marcarInput('inpTelefono', null);
+                setHelper('helperTelefono', '');
+                document.getElementById('btnEnviarCodigoTel').style.display = 'none';
+            } else if (validarTelefonoLocal(v)) {
+                marcarInput('inpTelefono', true);
+                setHelper('helperTelefono', '✓ Número válido', 'success');
+                if (!registroData.telefono_verificado) {
+                    document.getElementById('btnEnviarCodigoTel').style.display = 'flex';
+                }
+            } else {
+                marcarInput('inpTelefono', false);
+                setHelper('helperTelefono', 'Número muy corto', 'warning');
+                document.getElementById('btnEnviarCodigoTel').style.display = 'none';
+            }
+        });
+    }
+
+    var inpEmail = document.getElementById('inpEmail');
+    if (inpEmail) {
+        inpEmail.addEventListener('input', function () {
+            var v = normalizarEmail(this.value);
+            if (v.length === 0) {
+                marcarInput('inpEmail', null);
+                setHelper('helperEmail', '');
+                document.getElementById('btnEnviarCodigoEmail').style.display = 'none';
+            } else if (!validarEmailLocal(v)) {
+                marcarInput('inpEmail', false);
+                setHelper('helperEmail', 'Email inválido', 'error');
+                document.getElementById('btnEnviarCodigoEmail').style.display = 'none';
+            } else {
+                marcarInput('inpEmail', true);
+                setHelper('helperEmail', '✓ Email válido', 'success');
+                if (!registroData.email_verificado) {
+                    document.getElementById('btnEnviarCodigoEmail').style.display = 'flex';
+                }
+            }
+        });
+    }
+
+    var inpVehiculo = document.getElementById('inpVehiculo');
+    if (inpVehiculo) {
+        inpVehiculo.addEventListener('change', function () {
+            var v = this.value;
+            var campos = document.getElementById('camposVehiculo');
+
+            if (v === 'pie') {
+                campos.style.display = 'none';
+            } else if (v) {
+                campos.style.display = 'block';
+            } else {
+                campos.style.display = 'none';
+            }
+
+            actualizarBotonPaso5();
+        });
+    }
+
+    ['inpPlacas', 'inpMarca', 'inpModelo', 'inpAnio', 'inpColor'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) el.addEventListener('input', actualizarBotonPaso5);
+    });
+}
+
+// ================================================================
+// INIT
 // ================================================================
 document.addEventListener('DOMContentLoaded', async function () {
-
-    // 1. Cargar usuario
     await cargarUsuarioActual();
 
     if (!sessionUser) {
@@ -2087,24 +2130,19 @@ document.addEventListener('DOMContentLoaded', async function () {
         return;
     }
 
-    // 2. Verificar si ya está registrado
     var check = await verificarSiYaRegistrado();
     if (check.redirigir) return;
 
-    // 3. Cargar países
     await cargarPaises();
-
-    // 4. Configurar validaciones en vivo
+    configurarFechaMaxima();
+    actualizarCampoCurpPorPais();
     configurarValidacionesVivo();
 
-    // 5. Mostrar contenido
     document.getElementById('loaderInicial').style.display = 'none';
     document.getElementById('contenidoRegistro').style.display = 'block';
 
-    // 6. Ir al paso 1
     irAPaso(1);
 
-    // 7. Idiomas
     setTimeout(async function () {
         try {
             if (typeof window.inicializarIdiomas === 'function') {
@@ -2122,7 +2160,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
 
 // ================================================================
-// EXPOSICIÓN GLOBAL (para partes 3, 4 y 5)
+// EXPOSICIÓN GLOBAL
 // ================================================================
 window.verTokens = verTokens;
 window.showToast = showToast;
@@ -2150,60 +2188,32 @@ window.validarTelefonoLocal = validarTelefonoLocal;
 window.calcularEdad = calcularEdad;
 window.setHelper = setHelper;
 window.marcarInput = marcarInput;
-</script><script>
+</script>
+
+<script>
 // ================================================================
 // PARTE 3 — OCR + FACE MATCH + CAPTURA DE FOTOS
 // ================================================================
-// Este script maneja:
-// - Captura de fotos (cámara o galería)
-// - Preview de fotos en la UI
-// - OCR con Tesseract.js para leer INE
-// - Validación de coincidencia de nombre
-// - Subida de documentos a Supabase Storage
-// - Detección de nitidez de imagen
-// ================================================================
-
-// ================================================================
-// ESTADO LOCAL DE PARTE 3
-// ================================================================
-var tipoCamaraActual = null; // 'doc_frente' | 'doc_reverso' | 'selfie' | 'vehiculo'
+var tipoCamaraActual = null;
 var tesseractWorker = null;
 var procesandoOCR = false;
 
-// Configuración de validación
-var OCR_MIN_CONFIANZA = 60;        // % mínima de confianza del OCR
-var NITIDEZ_MINIMA = 100;          // Varianza mínima para considerar imagen nítida
-var TAMANIO_MAX_ARCHIVO = 5 * 1024 * 1024; // 5 MB
+var OCR_MIN_CONFIANZA = 60;
+var NITIDEZ_MINIMA = 100;
+var TAMANIO_MAX_ARCHIVO = 5 * 1024 * 1024;
 
-// ================================================================
-// ABRIR CÁMARA / GALERÍA
-// ================================================================
 function abrirCamara(tipo) {
     tipoCamaraActual = tipo;
-
-    // Seleccionar el input correcto
     var inputId = (tipo === 'selfie') ? 'inputFileSelfie' : 'inputFile';
     var input = document.getElementById(inputId);
-
-    if (!input) {
-        showToast('Error: input no encontrado', 'error');
-        return;
-    }
-
-    // Limpiar el input para permitir volver a elegir el mismo archivo
+    if (!input) { showToast('Error: input no encontrado', 'error'); return; }
     input.value = '';
-
-    // Abrir selector de cámara
     input.click();
 }
 
-// ================================================================
-// MANEJO DEL ARCHIVO SELECCIONADO
-// ================================================================
 function configurarInputsArchivos() {
     var inputGeneral = document.getElementById('inputFile');
     var inputSelfie = document.getElementById('inputFileSelfie');
-
     if (inputGeneral) {
         inputGeneral.addEventListener('change', function (e) {
             var file = e.target.files && e.target.files[0];
@@ -2211,7 +2221,6 @@ function configurarInputsArchivos() {
             procesarArchivoSeleccionado(file, tipoCamaraActual);
         });
     }
-
     if (inputSelfie) {
         inputSelfie.addEventListener('change', function (e) {
             var file = e.target.files && e.target.files[0];
@@ -2221,38 +2230,18 @@ function configurarInputsArchivos() {
     }
 }
 
-// ================================================================
-// PROCESAR ARCHIVO SELECCIONADO
-// ================================================================
 async function procesarArchivoSeleccionado(file, tipo) {
-    // Validar tamaño
-    if (file.size > TAMANIO_MAX_ARCHIVO) {
-        showToast('⚠️ La imagen es muy pesada (máx 5 MB)', 'warning');
-        return;
-    }
-
-    // Validar tipo
-    if (!file.type.startsWith('image/')) {
-        showToast('⚠️ Solo se permiten imágenes', 'warning');
-        return;
-    }
+    if (file.size > TAMANIO_MAX_ARCHIVO) { showToast('⚠️ La imagen es muy pesada (máx 5 MB)', 'warning'); return; }
+    if (!file.type.startsWith('image/')) { showToast('⚠️ Solo se permiten imágenes', 'warning'); return; }
 
     try {
-        // Leer el archivo
         var dataUrl = await leerArchivoComoDataURL(file);
-
-        // Detectar nitidez
         var nitidezOk = await verificarNitidez(dataUrl);
-        if (!nitidezOk) {
-            showToast('⚠️ La foto está borrosa. Intenta de nuevo con mejor luz', 'warning');
-            return;
-        }
+        if (!nitidezOk) { showToast('⚠️ La foto está borrosa. Intenta de nuevo con mejor luz', 'warning'); return; }
 
-        // Guardar en estado según el tipo
         if (tipo === 'doc_frente') {
             registroData.documento_frente_file = file;
             await mostrarPreviewFoto('capDocFrente', dataUrl, 'Frente del documento');
-            // Procesar OCR
             await procesarOCR(file, dataUrl);
         } else if (tipo === 'doc_reverso') {
             registroData.documento_reverso_file = file;
@@ -2265,19 +2254,14 @@ async function procesarArchivoSeleccionado(file, tipo) {
             await mostrarPreviewFoto('capVehiculo', dataUrl, 'Foto del vehículo');
         }
 
-        // Actualizar botones
         actualizarBotonPaso4();
         actualizarBotonPaso5();
-
     } catch (e) {
         console.error('Error procesando archivo:', e);
         showToast('❌ Error: ' + e.message, 'error');
     }
 }
 
-// ================================================================
-// LEER ARCHIVO COMO DATA URL
-// ================================================================
 function leerArchivoComoDataURL(file) {
     return new Promise(function (resolve, reject) {
         var reader = new FileReader();
@@ -2287,9 +2271,6 @@ function leerArchivoComoDataURL(file) {
     });
 }
 
-// ================================================================
-// VERIFICAR NITIDEZ DE LA IMAGEN
-// ================================================================
 async function verificarNitidez(dataUrl) {
     return new Promise(function (resolve) {
         var img = new Image();
@@ -2298,90 +2279,52 @@ async function verificarNitidez(dataUrl) {
                 var canvas = document.createElement('canvas');
                 var maxDim = 400;
                 var ratio = Math.min(maxDim / img.width, maxDim / img.height, 1);
-
                 canvas.width = img.width * ratio;
                 canvas.height = img.height * ratio;
-
                 var ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
                 var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 var data = imageData.data;
-
-                // Convertir a escala de grises
                 var grises = [];
                 for (var i = 0; i < data.length; i += 4) {
-                    var gris = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-                    grises.push(gris);
+                    grises.push(0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
                 }
-
-                // Calcular varianza (medida de nitidez)
                 var suma = grises.reduce(function (a, b) { return a + b; }, 0);
                 var media = suma / grises.length;
-                var varianza = grises.reduce(function (acc, val) {
-                    return acc + Math.pow(val - media, 2);
-                }, 0) / grises.length;
-
-                console.log('Nitidez (varianza):', Math.round(varianza));
-
-                // Si la varianza es muy baja = imagen borrosa
+                var varianza = grises.reduce(function (acc, val) { return acc + Math.pow(val - media, 2); }, 0) / grises.length;
                 resolve(varianza >= NITIDEZ_MINIMA);
-
-            } catch (e) {
-                console.warn('Error verificando nitidez:', e);
-                resolve(true); // Si falla, dejar pasar (mejor que bloquear)
-            }
+            } catch (e) { resolve(true); }
         };
         img.onerror = function () { resolve(true); };
         img.src = dataUrl;
     });
 }
 
-// ================================================================
-// MOSTRAR PREVIEW DE FOTO EN LA UI
-// ================================================================
 async function mostrarPreviewFoto(cardId, dataUrl, titulo) {
     var card = document.getElementById(cardId);
     if (!card) return;
-
     card.classList.add('tiene-foto');
-
-    var html = '' +
+    card.innerHTML =
         '<img src="' + dataUrl + '" class="preview-foto" alt="' + escapeHTML(titulo) + '" />' +
         '<div class="titulo-foto">✅ ' + escapeHTML(titulo) + '</div>' +
         '<div class="desc-foto">Imagen capturada correctamente</div>' +
         '<div class="acciones-foto">' +
-            '<button class="btn-mini-foto" type="button" onclick="event.stopPropagation(); cambiarFoto(\'' + cardId + '\')">' +
-                '🔄 Cambiar' +
-            '</button>' +
-            '<button class="btn-mini-foto eliminar" type="button" onclick="event.stopPropagation(); eliminarFoto(\'' + cardId + '\')">' +
-                '🗑️ Eliminar' +
-            '</button>' +
+            '<button class="btn-mini-foto" type="button" onclick="event.stopPropagation(); cambiarFoto(\'' + cardId + '\')">🔄 Cambiar</button>' +
+            '<button class="btn-mini-foto eliminar" type="button" onclick="event.stopPropagation(); eliminarFoto(\'' + cardId + '\')">🗑️ Eliminar</button>' +
         '</div>';
-
-    card.innerHTML = html;
 }
 
-// ================================================================
-// CAMBIAR FOTO
-// ================================================================
 function cambiarFoto(cardId) {
     var tipo = '';
-
     if (cardId === 'capDocFrente') tipo = 'doc_frente';
     else if (cardId === 'capDocReverso') tipo = 'doc_reverso';
     else if (cardId === 'capSelfie') tipo = 'selfie';
     else if (cardId === 'capVehiculo') tipo = 'vehiculo';
-
     if (tipo) abrirCamara(tipo);
 }
 
-// ================================================================
-// ELIMINAR FOTO
-// ================================================================
 function eliminarFoto(cardId) {
     if (!confirm('¿Eliminar esta foto?')) return;
-
     if (cardId === 'capDocFrente') {
         registroData.documento_frente_file = null;
         registroData.documento_frente_url = null;
@@ -2404,7 +2347,6 @@ function eliminarFoto(cardId) {
         registroData.foto_vehiculo_url = null;
         restaurarCardFoto('capVehiculo', '📸', 'Foto del vehículo', 'Donde se vean las placas claramente');
     }
-
     actualizarBotonPaso4();
     actualizarBotonPaso5();
 }
@@ -2412,23 +2354,15 @@ function eliminarFoto(cardId) {
 function restaurarCardFoto(cardId, icono, titulo, desc) {
     var card = document.getElementById(cardId);
     if (!card) return;
-
     card.classList.remove('tiene-foto');
-    card.innerHTML = '' +
+    card.innerHTML =
         '<span class="icono-grande">' + icono + '</span>' +
         '<div class="titulo-foto">' + titulo + '</div>' +
         '<div class="desc-foto">' + desc + '</div>';
 }
 
-// ================================================================
-// OCR CON TESSERACT.JS
-// ================================================================
 async function procesarOCR(file, dataUrl) {
-    if (procesandoOCR) {
-        showToast('⏳ Espera a que termine el OCR actual', 'warning');
-        return;
-    }
-
+    if (procesandoOCR) { showToast('⏳ Espera a que termine el OCR actual', 'warning'); return; }
     procesandoOCR = true;
 
     var bloqueOCR = document.getElementById('bloqueOCR');
@@ -2437,7 +2371,6 @@ async function procesarOCR(file, dataUrl) {
     var fillOCR = document.getElementById('fillOCR');
     var resultadoOCR = document.getElementById('resultadoOCR');
 
-    // Mostrar bloque de procesamiento
     bloqueOCR.style.display = 'block';
     resultadoOCR.style.display = 'none';
     tituloOCR.textContent = 'Procesando documento...';
@@ -2445,326 +2378,150 @@ async function procesarOCR(file, dataUrl) {
     fillOCR.style.width = '0%';
 
     try {
-        // Inicializar worker de Tesseract (solo una vez)
         if (!tesseractWorker) {
             detalleOCR.textContent = 'Cargando motor OCR (primera vez ~30s)...';
-
             tesseractWorker = await Tesseract.createWorker('spa', 1, {
                 logger: function (m) {
                     if (m.status === 'recognizing text') {
                         var pct = Math.round(m.progress * 100);
                         fillOCR.style.width = pct + '%';
                         detalleOCR.textContent = 'Reconociendo texto... ' + pct + '%';
-                    } else if (m.status === 'loading tesseract core') {
-                        detalleOCR.textContent = 'Cargando núcleo OCR...';
-                        fillOCR.style.width = '10%';
-                    } else if (m.status === 'initializing tesseract') {
-                        detalleOCR.textContent = 'Inicializando motor...';
-                        fillOCR.style.width = '30%';
-                    } else if (m.status === 'loading language traineddata') {
-                        detalleOCR.textContent = 'Cargando diccionario español...';
-                        fillOCR.style.width = '50%';
-                    } else if (m.status === 'initializing api') {
-                        detalleOCR.textContent = 'Preparando API...';
-                        fillOCR.style.width = '70%';
                     }
                 }
             });
         }
 
         tituloOCR.textContent = 'Analizando documento...';
-        detalleOCR.textContent = 'Extrayendo texto del INE...';
-
-        // Ejecutar OCR
         var resultado = await tesseractWorker.recognize(dataUrl);
-
         var texto = resultado.data.text || '';
         var confianza = resultado.data.confidence || 0;
 
-        console.log('OCR Texto:', texto);
-        console.log('OCR Confianza:', confianza);
-
-        // Procesar el texto extraído
         var datos = extraerDatosDelINE(texto);
 
-        // Guardar en estado
         registroData.ocr_texto = texto;
         registroData.ocr_nombre = datos.nombre || '';
         registroData.ocr_curp = datos.curp || '';
         registroData.ocr_confianza = confianza;
 
-        // Comparar nombre con el registrado en paso 1
         var nombreRegistrado = registroData.nombre_completo;
         var coincide = compararNombres(datos.nombre, nombreRegistrado);
 
         registroData.ocr_nombre_coincide = coincide;
 
-        // Mostrar resultado
         mostrarResultadoOCR(datos, confianza, coincide, nombreRegistrado);
 
-        // Ocultar bloque de procesamiento
         bloqueOCR.style.display = 'none';
         resultadoOCR.style.display = 'block';
-
         actualizarBotonPaso4();
-
     } catch (e) {
-        console.error('Error en OCR:', e);
         bloqueOCR.style.display = 'none';
         resultadoOCR.style.display = 'block';
-        resultadoOCR.innerHTML =
-            '<div class="info-box danger">' +
-                '<span class="icono">❌</span>' +
-                '<div><strong>Error al procesar OCR</strong><br>' + escapeHTML(e.message) + '</div>' +
-            '</div>';
-        showToast('❌ Error de OCR: ' + e.message, 'error');
+        resultadoOCR.innerHTML = '<div class="info-box danger"><span class="icono">❌</span><div><strong>Error al procesar OCR</strong><br>' + escapeHTML(e.message) + '</div></div>';
     } finally {
         procesandoOCR = false;
     }
 }
 
-// ================================================================
-// EXTRAER DATOS DEL TEXTO OCR DEL INE
-// ================================================================
 function extraerDatosDelINE(texto) {
     if (!texto) return { nombre: '', curp: '' };
-
-    // Limpiar texto: quitar caracteres raros, normalizar
-    var limpio = texto
-        .replace(/[^\w\sÑñáéíóúÁÉÍÓÚ]/g, ' ')
-        .replace(/\s+/g, ' ')
-        .toUpperCase()
-        .trim();
-
-    // Buscar CURP: patrón de 18 caracteres
+    var limpio = texto.replace(/[^\w\sÑñáéíóúÁÉÍÓÚ]/g, ' ').replace(/\s+/g, ' ').toUpperCase().trim();
     var curpMatch = limpio.match(/\b[A-Z]{4}\d{6}[A-Z]{6}[A-Z0-9]{2}\b/);
     var curp = curpMatch ? curpMatch[0] : '';
-
-    // Buscar nombre: puede estar después de palabras clave o ser la línea más larga
     var nombre = '';
-
-    // Palabras clave del INE
     var lineas = texto.split(/\n+/).map(function (l) { return l.trim(); }).filter(function (l) { return l.length > 3; });
-
-    // Estrategia 1: Buscar líneas que parezcan nombres (2-5 palabras alfabéticas, no son palabras clave)
-    var palabrasClave = [
-        'INSTITUTO', 'NACIONAL', 'ELECTORAL', 'CREDENCIAL', 'VOTAR',
-        'MEXICO', 'MÉXICO', 'CLAVE', 'ELECTOR', 'AÑO', 'REGISTRO',
-        'NACIMIENTO', 'SECCION', 'SECCIÓN', 'VIGENCIA', 'SEXO', 'EDAD',
-        'DOMICILIO', 'ESTADO', 'MUNICIPIO', 'LOCALIDAD', 'EMISION', 'EMISIÓN',
-        'FECHA', 'FIRMA', 'MEX', 'HOMBRE', 'MUJER', 'APELLIDO', 'NOMBRE'
-    ];
-
+    var palabrasClave = ['INSTITUTO','NACIONAL','ELECTORAL','CREDENCIAL','VOTAR','MEXICO','MÉXICO','CLAVE','ELECTOR','AÑO','REGISTRO','NACIMIENTO','SECCION','SECCIÓN','VIGENCIA','SEXO','EDAD','DOMICILIO','ESTADO','MUNICIPIO','LOCALIDAD','EMISION','EMISIÓN','FECHA','FIRMA','MEX','HOMBRE','MUJER','APELLIDO','NOMBRE'];
     var lineasCandidatas = lineas.filter(function (linea) {
         var upper = linea.toUpperCase();
         if (upper.length < 8 || upper.length > 80) return false;
-
-        // No debe contener palabras clave
-        var tieneClave = palabrasClave.some(function (kw) {
-            return upper.indexOf(kw) !== -1;
-        });
+        var tieneClave = palabrasClave.some(function (kw) { return upper.indexOf(kw) !== -1; });
         if (tieneClave) return false;
-
-        // Debe tener al menos 2 palabras alfabéticas
-        var palabras = upper.split(/\s+/).filter(function (p) {
-            return p.length >= 2 && /^[A-ZÑÁÉÍÓÚ]+$/.test(p);
-        });
-
+        var palabras = upper.split(/\s+/).filter(function (p) { return p.length >= 2 && /^[A-ZÑÁÉÍÓÚ]+$/.test(p); });
         return palabras.length >= 2 && palabras.length <= 6;
     });
-
     if (lineasCandidatas.length > 0) {
-        // Elegir la más larga (probablemente el nombre completo)
         lineasCandidatas.sort(function (a, b) { return b.length - a.length; });
         nombre = lineasCandidatas[0];
     }
-
-    // Estrategia 2: Si no encontramos nombre, buscar en el texto después de "NOMBRE"
-    if (!nombre) {
-        var matchNombre = texto.match(/NOMBRE[:\s]+([A-ZÑÁÉÍÓÚ\s]{5,60})/i);
-        if (matchNombre && matchNombre[1]) {
-            nombre = matchNombre[1].trim();
-        }
-    }
-
-    return {
-        nombre: nombre.toUpperCase(),
-        curp: curp
-    };
+    return { nombre: nombre.toUpperCase(), curp: curp };
 }
 
-// ================================================================
-// COMPARAR NOMBRES (registrado vs OCR)
-// ================================================================
 function compararNombres(nombreOCR, nombreRegistrado) {
     if (!nombreOCR || !nombreRegistrado) return false;
-
-    // Normalizar: quitar acentos, espacios múltiples
     var normalizar = function (s) {
-        return String(s).toUpperCase()
-            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-            .replace(/[^A-ZÑ\s]/g, '')
-            .replace(/\s+/g, ' ')
-            .trim();
+        return String(s).toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-ZÑ\s]/g, '').replace(/\s+/g, ' ').trim();
     };
-
     var ocr = normalizar(nombreOCR);
     var reg = normalizar(nombreRegistrado);
-
     var palabrasOCR = ocr.split(' ').filter(function (p) { return p.length >= 3; });
     var palabrasReg = reg.split(' ').filter(function (p) { return p.length >= 3; });
-
     if (palabrasOCR.length === 0 || palabrasReg.length === 0) return false;
-
-    // Contar coincidencias (considerando variaciones)
     var coincidencias = 0;
     palabrasReg.forEach(function (pReg) {
         var match = palabrasOCR.some(function (pOCR) {
-            // Coincidencia exacta
             if (pOCR === pReg) return true;
-            // Uno contiene al otro (por OCR imperfecto)
             if (pOCR.length >= 4 && pReg.length >= 4) {
                 if (pOCR.indexOf(pReg) === 0 || pReg.indexOf(pOCR) === 0) return true;
-                // Distancia de Levenshtein simple (1 carácter)
                 if (levenshtein(pOCR, pReg) <= 1) return true;
             }
             return false;
         });
         if (match) coincidencias++;
     });
-
-    // Considerar coincidencia si al menos 2 palabras importantes coinciden
-    // O si el 60% de las palabras del registro coinciden
     var porcentaje = coincidencias / palabrasReg.length;
-
-    console.log('Comparación nombres:', {
-        ocr: ocr,
-        registrado: reg,
-        coincidencias: coincidencias,
-        total: palabrasReg.length,
-        porcentaje: Math.round(porcentaje * 100) + '%'
-    });
-
     return coincidencias >= 2 || porcentaje >= 0.6;
 }
 
-// Distancia de Levenshtein (para detectar errores de OCR)
 function levenshtein(a, b) {
     if (a.length === 0) return b.length;
     if (b.length === 0) return a.length;
-
     var matriz = [];
-    for (var i = 0; i <= b.length; i++) {
-        matriz[i] = [i];
-    }
-    for (var j = 0; j <= a.length; j++) {
-        matriz[0][j] = j;
-    }
-
+    for (var i = 0; i <= b.length; i++) matriz[i] = [i];
+    for (var j = 0; j <= a.length; j++) matriz[0][j] = j;
     for (var i2 = 1; i2 <= b.length; i2++) {
         for (var j2 = 1; j2 <= a.length; j2++) {
             if (b.charAt(i2 - 1) === a.charAt(j2 - 1)) {
                 matriz[i2][j2] = matriz[i2 - 1][j2 - 1];
             } else {
-                matriz[i2][j2] = Math.min(
-                    matriz[i2 - 1][j2 - 1] + 1,
-                    matriz[i2][j2 - 1] + 1,
-                    matriz[i2 - 1][j2] + 1
-                );
+                matriz[i2][j2] = Math.min(matriz[i2 - 1][j2 - 1] + 1, matriz[i2][j2 - 1] + 1, matriz[i2 - 1][j2] + 1);
             }
         }
     }
-
     return matriz[b.length][a.length];
 }
 
-// ================================================================
-// MOSTRAR RESULTADO DEL OCR
-// ================================================================
 function mostrarResultadoOCR(datos, confianza, coincide, nombreRegistrado) {
     var cont = document.getElementById('resultadoOCR');
     if (!cont) return;
-
     var html = '';
-
-    // Estado general
     if (coincide && confianza >= OCR_MIN_CONFIANZA) {
-        html += '<div class="info-box success">' +
-            '<span class="icono">✅</span>' +
-            '<div><strong>Documento verificado</strong><br>' +
-            'El nombre coincide con tu registro. Confianza del OCR: ' + Math.round(confianza) + '%</div>' +
-        '</div>';
+        html += '<div class="info-box success"><span class="icono">✅</span><div><strong>Documento verificado</strong><br>El nombre coincide con tu registro. Confianza del OCR: ' + Math.round(confianza) + '%</div></div>';
     } else if (!coincide) {
-        html += '<div class="info-box danger">' +
-            '<span class="icono">⚠️</span>' +
-            '<div><strong>El nombre no coincide</strong><br>' +
-            'El nombre en el documento no coincide con "' + escapeHTML(nombreRegistrado) + '". ' +
-            'Asegúrate de que el nombre sea idéntico al que registraste.</div>' +
-        '</div>';
+        html += '<div class="info-box danger"><span class="icono">⚠️</span><div><strong>El nombre no coincide</strong><br>El nombre en el documento no coincide con "' + escapeHTML(nombreRegistrado) + '".</div></div>';
     } else if (confianza < OCR_MIN_CONFIANZA) {
-        html += '<div class="info-box warning">' +
-            '<span class="icono">⚠️</span>' +
-            '<div><strong>Confianza baja</strong><br>' +
-            'No pudimos leer bien tu documento (' + Math.round(confianza) + '%). Intenta con mejor iluminación o una foto más clara.</div>' +
-        '</div>';
+        html += '<div class="info-box warning"><span class="icono">⚠️</span><div><strong>Confianza baja</strong><br>No pudimos leer bien tu documento (' + Math.round(confianza) + '%). Intenta con mejor iluminación.</div></div>';
     }
-
-    // Detalles extraídos
     html += '<div style="background: rgba(0,0,0,0.3); border-radius: 12px; padding: 12px; margin-top: 10px; font-size: 0.7rem;">';
     html += '<div style="color: var(--text-muted); margin-bottom: 6px;">📄 Texto detectado:</div>';
-
-    if (datos.nombre) {
-        html += '<div style="margin-bottom: 4px;"><strong style="color: var(--gold);">Nombre:</strong> ' +
-            escapeHTML(datos.nombre) + '</div>';
-    }
-    if (datos.curp) {
-        html += '<div style="margin-bottom: 4px;"><strong style="color: var(--gold);">CURP:</strong> ' +
-            escapeHTML(datos.curp) + '</div>';
-    }
-    if (!datos.nombre && !datos.curp) {
-        html += '<div style="color: var(--warning);">No se detectaron datos legibles. Intenta con mejor luz.</div>';
-    }
-
-    html += '<div style="margin-top: 8px; color: var(--text-muted); font-size: 0.65rem;">Confianza OCR: ' +
-        Math.round(confianza) + '%</div>';
+    if (datos.nombre) html += '<div style="margin-bottom: 4px;"><strong style="color: var(--gold);">Nombre:</strong> ' + escapeHTML(datos.nombre) + '</div>';
+    if (datos.curp) html += '<div style="margin-bottom: 4px;"><strong style="color: var(--gold);">CURP:</strong> ' + escapeHTML(datos.curp) + '</div>';
+    if (!datos.nombre && !datos.curp) html += '<div style="color: var(--warning);">No se detectaron datos legibles. Intenta con mejor luz.</div>';
+    html += '<div style="margin-top: 8px; color: var(--text-muted); font-size: 0.65rem;">Confianza OCR: ' + Math.round(confianza) + '%</div>';
     html += '</div>';
-
     cont.innerHTML = html;
 }
 
-// ================================================================
-// SUBIR ARCHIVO A SUPABASE STORAGE (bucket privado)
-// ================================================================
 async function subirDocumentoASupabase(file, tipo) {
     if (!file) return null;
-
-    // Generar nombre único
     var ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
     var timestamp = Date.now();
     var nombre = 'mercado_docs/' + sessionUser.id + '/' + tipo + '_' + timestamp + '.' + ext;
-
-    // Subir al bucket
-    var { data, error } = await supabase.storage
-        .from('mercado_docs')
-        .upload(nombre, file, {
-            cacheControl: '3600',
-            upsert: false,
-            contentType: file.type
-        });
-
-    if (error) {
-        console.error('Error subiendo', tipo, ':', error);
-        throw new Error('Error subiendo ' + tipo + ': ' + error.message);
-    }
-
-    // NO obtener URL pública (es bucket privado)
-    // Solo guardamos el path interno
+    var upload = await supabase.storage.from('mercado_docs').upload(nombre, file, {
+        cacheControl: '3600', upsert: false, contentType: file.type
+    });
+    if (upload.error) throw new Error('Error subiendo ' + tipo + ': ' + upload.error.message);
     return nombre;
 }
 
-// ================================================================
-// SUBIR TODOS LOS DOCUMENTOS
-// ================================================================
 async function subirTodosLosDocumentos() {
     var resultados = {
         documento_frente_url: null,
@@ -2772,130 +2529,65 @@ async function subirTodosLosDocumentos() {
         selfie_url: null,
         foto_vehiculo_url: null
     };
-
-    // Subir frente del documento
-    if (registroData.documento_frente_file) {
-        resultados.documento_frente_url = await subirDocumentoASupabase(
-            registroData.documento_frente_file,
-            'ine_frente'
-        );
-    }
-
-    // Subir reverso del documento (opcional)
-    if (registroData.documento_reverso_file) {
-        resultados.documento_reverso_url = await subirDocumentoASupabase(
-            registroData.documento_reverso_file,
-            'ine_reverso'
-        );
-    }
-
-    // Subir selfie
-    if (registroData.selfie_file) {
-        resultados.selfie_url = await subirDocumentoASupabase(
-            registroData.selfie_file,
-            'selfie'
-        );
-    }
-
-    // Subir foto del vehículo
-    if (registroData.foto_vehiculo_file) {
-        resultados.foto_vehiculo_url = await subirDocumentoASupabase(
-            registroData.foto_vehiculo_file,
-            'vehiculo'
-        );
-    }
-
+    if (registroData.documento_frente_file) resultados.documento_frente_url = await subirDocumentoASupabase(registroData.documento_frente_file, 'ine_frente');
+    if (registroData.documento_reverso_file) resultados.documento_reverso_url = await subirDocumentoASupabase(registroData.documento_reverso_file, 'ine_reverso');
+    if (registroData.selfie_file) resultados.selfie_url = await subirDocumentoASupabase(registroData.selfie_file, 'selfie');
+    if (registroData.foto_vehiculo_file) resultados.foto_vehiculo_url = await subirDocumentoASupabase(registroData.foto_vehiculo_file, 'vehiculo');
     return resultados;
 }
 
-// ================================================================
-// INICIALIZAR PARTE 3
-// ================================================================
 document.addEventListener('DOMContentLoaded', function () {
-    // Configurar inputs de archivos
     configurarInputsArchivos();
-
     console.log('✅ Parte 3 (OCR + captura) inicializada');
 });
 
-// ================================================================
-// EXPOSICIÓN GLOBAL
-// ================================================================
 window.abrirCamara = abrirCamara;
 window.cambiarFoto = cambiarFoto;
 window.eliminarFoto = eliminarFoto;
 window.procesarOCR = procesarOCR;
 window.subirTodosLosDocumentos = subirTodosLosDocumentos;
 window.leerArchivoComoDataURL = leerArchivoComoDataURL;
-</script><script>
+</script>
+
+<script>
 // ================================================================
-// PARTE 4 — VALIDACIÓN BACKEND + PROCESAMIENTO DE DOCUMENTOS
-// ================================================================
-// Este script maneja:
-// - Validación de CURP contra el backend
-// - Subida de documentos a Supabase Storage
-// - Registro de usuario en mercado_repartidores
-// - Procesamiento de verificación automática
-// - Pantalla final de resultado
+// PARTE 4 — VALIDACIÓN BACKEND + PROCESAMIENTO FINAL
 // ================================================================
 
-// ================================================================
-// VALIDAR CURP CONTRA BACKEND
-// ================================================================
 async function validarCURPBackend(curp) {
     try {
         var session = await supabase.auth.getSession();
         var token = session.data.session ? session.data.session.access_token : null;
-
-        if (!token) {
-            throw new Error('Sin sesión activa');
-        }
-
+        if (!token) throw new Error('Sin sesión activa');
         var resp = await fetch(API_BASE + '/api/mercado/repartidor/validar-curp', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + token
-            },
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
             body: JSON.stringify({ curp: curp })
         });
-
         var data = await resp.json();
-
-        if (!resp.ok) {
-            throw new Error(data.error || 'Error validando CURP');
-        }
-
+        if (!resp.ok) throw new Error(data.error || 'Error validando CURP');
         return data;
-
     } catch (e) {
         console.error('Error validando CURP backend:', e);
-        // Fallback: usar validación local
-        var valido = validarCURPLocal(curp);
         return {
             ok: true,
-            valida: valido,
+            valida: validarCURPLocal(curp),
             curp_normalizada: normalizarCURP(curp),
             fallback: true
         };
     }
 }
 
-// ================================================================
-// GUARDAR DATOS BÁSICOS DEL REPARTIDOR EN EL BACKEND
-// ================================================================
 async function guardarDatosBasicosRepartidor() {
     try {
         var session = await supabase.auth.getSession();
         var token = session.data.session ? session.data.session.access_token : null;
-
         if (!token) throw new Error('Sin sesión activa');
-
         var payload = {
             nombre_completo: registroData.nombre_completo,
             fecha_nacimiento: registroData.fecha_nacimiento,
             genero: registroData.genero,
-            curp: registroData.curp,
+            curp: registroData.curp || null,
             pais: registroData.pais,
             ciudad: registroData.ciudad,
             colonia_principal: registroData.colonia_principal,
@@ -2908,40 +2600,25 @@ async function guardarDatosBasicosRepartidor() {
             color_vehiculo: registroData.color_vehiculo,
             placas: registroData.placas
         };
-
         var resp = await fetch(API_BASE + '/api/mercado/repartidor/actualizar-datos', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + token
-            },
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
             body: JSON.stringify(payload)
         });
-
         var data = await resp.json();
-
-        if (!resp.ok) {
-            throw new Error(data.error || 'Error guardando datos');
-        }
-
+        if (!resp.ok) throw new Error(data.error || 'Error guardando datos');
         return data;
-
     } catch (e) {
         console.error('Error guardando datos básicos:', e);
         throw e;
     }
 }
 
-// ================================================================
-// GUARDAR DOCUMENTOS EN EL BACKEND
-// ================================================================
 async function guardarDocumentosBackend(urls) {
     try {
         var session = await supabase.auth.getSession();
         var token = session.data.session ? session.data.session.access_token : null;
-
         if (!token) throw new Error('Sin sesión activa');
-
         var payload = {
             documento_frente_url: urls.documento_frente_url,
             documento_reverso_url: urls.documento_reverso_url,
@@ -2952,39 +2629,26 @@ async function guardarDocumentosBackend(urls) {
             ocr_curp: registroData.ocr_curp || '',
             face_match_score: registroData.face_match_score || null
         };
-
         var resp = await fetch(API_BASE + '/api/mercado/repartidor/guardar-documentos', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + token
-            },
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
             body: JSON.stringify(payload)
         });
-
         var data = await resp.json();
-
-        if (!resp.ok) {
-            throw new Error(data.error || 'Error guardando documentos');
-        }
-
+        if (!resp.ok) throw new Error(data.error || 'Error guardando documentos');
         return data;
-
     } catch (e) {
         console.error('Error guardando documentos:', e);
         throw e;
     }
 }
 
-// ================================================================
-// ACTUALIZAR FLAGS EN LA DB (verificaciones hechas en frontend)
-// ================================================================
 async function actualizarFlagsVerificacion() {
     try {
         var update = {
             telefono_verificado: registroData.telefono_verificado || false,
             email_verificado: registroData.email_verificado || false,
-            curp_valida: validarCURPLocal(registroData.curp),
+            curp_valida: registroData.curp ? validarCURPLocal(registroData.curp) : true,
             ocr_nombre_coincide: registroData.ocr_nombre_coincide || false,
             face_match_score: registroData.face_match_score || null,
             vehiculo_verificado: (registroData.vehiculo === 'pie') ? true : !!registroData.foto_vehiculo_file,
@@ -3002,236 +2666,141 @@ async function actualizarFlagsVerificacion() {
             acepta_uso_ubicacion: registroData.terminos_ubicacion,
             updated_at: new Date().toISOString()
         };
-
-        var result = await supabase
-            .from('mercado_repartidores')
-            .update(update)
-            .eq('usuario_id', sessionUser.id);
-
+        var result = await supabase.from('mercado_repartidores').update(update).eq('usuario_id', sessionUser.id);
         if (result.error) throw result.error;
-
         return { ok: true };
-
     } catch (e) {
         console.error('Error actualizando flags:', e);
         throw e;
     }
 }
 
-// ================================================================
-// PROCESAR VERIFICACIÓN EN EL BACKEND (dispara el trigger)
-// ================================================================
 async function procesarVerificacionBackend() {
     try {
         var session = await supabase.auth.getSession();
         var token = session.data.session ? session.data.session.access_token : null;
-
         if (!token) throw new Error('Sin sesión activa');
-
         var resp = await fetch(API_BASE + '/api/mercado/repartidor/procesar-verificacion', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + token
-            },
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
             body: JSON.stringify({})
         });
-
         var data = await resp.json();
-
-        if (!resp.ok) {
-            throw new Error(data.error || 'Error procesando verificación');
-        }
-
+        if (!resp.ok) throw new Error(data.error || 'Error procesando verificación');
         return data;
-
     } catch (e) {
         console.error('Error procesando verificación:', e);
         throw e;
     }
 }
 
-// ================================================================
-// MOSTRAR PROGRESO DE LA PANTALLA FINAL
-// ================================================================
 function actualizarChecklistFinal(paso, estado) {
-    // estado: 'pending' | 'active' | 'ok' | 'error'
     var item = document.getElementById('check-' + paso);
     if (!item) {
-        // Crear el item si no existe
         var cont = document.getElementById('checklistFinal');
         if (!cont) return;
-
         item = document.createElement('div');
         item.className = 'item-check';
         item.id = 'check-' + paso;
         cont.appendChild(item);
     }
-
-    var iconos = {
-        'pending': '⏳',
-        'active': '🔄',
-        'ok': '✅',
-        'error': '❌'
-    };
-
+    var iconos = { 'pending': '⏳', 'active': '🔄', 'ok': '✅', 'error': '❌' };
     var textos = {
         'verificando_datos': 'Datos personales',
-        'validando_curp': 'Validando CURP',
+        'validando_curp': 'Validando identidad',
         'subiendo_documentos': 'Subiendo documentos',
-        'ocr_documentos': 'Analizando INE con OCR',
+        'ocr_documentos': 'Analizando documento',
         'procesando_verificacion': 'Procesando verificación',
         'registrando_sistema': 'Registrando en el sistema'
     };
-
     var texto = textos[paso] || paso;
     var icono = iconos[estado] || '⏳';
-
     item.className = 'item-check ' + (estado === 'ok' ? 'ok' : (estado === 'active' ? 'pending' : ''));
     item.innerHTML = '<span class="check-icon">' + icono + '</span><span>' + texto + '</span>';
 }
 
-// ================================================================
-// ENVIAR REGISTRO FINAL (función principal)
-// ================================================================
 async function enviarRegistroFinal() {
     if (enviandoRegistro) return;
     enviandoRegistro = true;
 
-    // Validar paso 6 primero
-    if (!validarPaso6()) {
-        enviandoRegistro = false;
-        return;
-    }
+    if (!validarPaso6()) { enviandoRegistro = false; return; }
 
-    // Guardar datos del paso 6
     guardarDatosPaso(6);
     registroData.terminos_servicio = document.getElementById('chkTermServicio').checked;
     registroData.terminos_privacidad = document.getElementById('chkTermPrivacidad').checked;
     registroData.terminos_conducta = document.getElementById('chkTermConducta').checked;
     registroData.terminos_ubicacion = document.getElementById('chkTermUbicacion').checked;
 
-    // Deshabilitar botón
     var btn = document.getElementById('btnPaso6');
-    if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = '⏳ Procesando...';
-    }
+    if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Procesando...'; }
 
-    // Mostrar pantalla final
     document.querySelectorAll('.paso').forEach(function (p) { p.classList.remove('activo'); });
     document.getElementById('progresoTop').style.display = 'none';
     document.getElementById('pantallaFinal').classList.add('activo');
 
-    // Reset de pantalla final
     document.getElementById('iconoFinal').textContent = '⏳';
     document.getElementById('tituloFinal').textContent = 'Procesando tu registro...';
     document.getElementById('descFinal').innerHTML = 'El sistema está verificando tu información. No cierres esta ventana.';
     document.getElementById('checklistFinal').innerHTML = '';
     document.getElementById('botonesFinal').style.display = 'none';
 
-    var resultadoFinal = {
-        estado: null,
-        score: 0,
-        motivo_rechazo: null
-    };
+    var resultadoFinal = { estado: null, score: 0, motivo_rechazo: null };
 
     try {
-        // ============ PASO 1: VERIFICAR DATOS BÁSICOS ============
         actualizarChecklistFinal('verificando_datos', 'active');
         await new Promise(function (r) { setTimeout(r, 400); });
-
-        if (!registroData.nombre_completo || !registroData.curp) {
-            throw new Error('Datos personales incompletos');
-        }
+        if (!registroData.nombre_completo) throw new Error('Datos personales incompletos');
         actualizarChecklistFinal('verificando_datos', 'ok');
 
-        // ============ PASO 2: VALIDAR CURP EN BACKEND ============
         actualizarChecklistFinal('validando_curp', 'active');
-        var curpResult = await validarCURPBackend(registroData.curp);
-
-        if (!curpResult.valida) {
-            actualizarChecklistFinal('validando_curp', 'error');
-            throw new Error('La CURP no es válida según el algoritmo oficial');
+        if (registroData.pais === 'MX' && registroData.curp) {
+            var curpResult = await validarCURPBackend(registroData.curp);
+            if (!curpResult.valida) {
+                actualizarChecklistFinal('validando_curp', 'error');
+                throw new Error('La CURP no es válida');
+            }
         }
         actualizarChecklistFinal('validando_curp', 'ok');
 
-        // ============ PASO 3: GUARDAR DATOS BÁSICOS ============
         actualizarChecklistFinal('registrando_sistema', 'active');
         await guardarDatosBasicosRepartidor();
         actualizarChecklistFinal('registrando_sistema', 'ok');
 
-        // ============ PASO 4: SUBIR DOCUMENTOS A STORAGE ============
         actualizarChecklistFinal('subiendo_documentos', 'active');
-
         var urls = await subirTodosLosDocumentos();
-
-        // Verificar que subieron los obligatorios
-        if (!urls.documento_frente_url) {
-            actualizarChecklistFinal('subiendo_documentos', 'error');
-            throw new Error('No se pudo subir el documento de identidad');
-        }
-        if (!urls.selfie_url) {
-            actualizarChecklistFinal('subiendo_documentos', 'error');
-            throw new Error('No se pudo subir la selfie');
-        }
-
+        if (!urls.documento_frente_url) { actualizarChecklistFinal('subiendo_documentos', 'error'); throw new Error('No se pudo subir el documento de identidad'); }
+        if (!urls.selfie_url) { actualizarChecklistFinal('subiendo_documentos', 'error'); throw new Error('No se pudo subir la selfie'); }
         actualizarChecklistFinal('subiendo_documentos', 'ok');
 
-        // ============ PASO 5: GUARDAR DOCUMENTOS EN BACKEND ============
         actualizarChecklistFinal('ocr_documentos', 'active');
         await guardarDocumentosBackend(urls);
         actualizarChecklistFinal('ocr_documentos', 'ok');
 
-        // ============ PASO 6: ACTUALIZAR FLAGS ============
         await actualizarFlagsVerificacion();
 
-        // ============ PASO 7: PROCESAR VERIFICACIÓN (trigger automático) ============
         actualizarChecklistFinal('procesando_verificacion', 'active');
-
         var verificacion = await procesarVerificacionBackend();
-
         resultadoFinal.estado = verificacion.estado;
         resultadoFinal.score = verificacion.score || 0;
         resultadoFinal.motivo_rechazo = verificacion.motivo_rechazo || null;
-
         actualizarChecklistFinal('procesando_verificacion', 'ok');
 
-        // ============ RESULTADO FINAL ============
         await new Promise(function (r) { setTimeout(r, 800); });
-
         mostrarResultadoFinal(resultadoFinal);
-
     } catch (e) {
         console.error('Error en registro:', e);
-
-        // Marcar el último paso activo como error
         var items = document.querySelectorAll('#checklistFinal .item-check');
         if (items.length > 0) {
             var ultimo = items[items.length - 1];
-            ultimo.classList.remove('pending');
-            ultimo.classList.add('pending');
             ultimo.querySelector('.check-icon').textContent = '❌';
         }
-
-        mostrarResultadoFinal({
-            estado: 'error',
-            score: 0,
-            motivo_rechazo: e.message || 'Error desconocido'
-        });
-
+        mostrarResultadoFinal({ estado: 'error', score: 0, motivo_rechazo: e.message || 'Error desconocido' });
     } finally {
         enviandoRegistro = false;
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = '🚀 Enviar para verificación';
-        }
+        if (btn) { btn.disabled = false; btn.innerHTML = '🚀 Enviar para verificación'; }
     }
 }
 
-// ================================================================
-// MOSTRAR RESULTADO FINAL
-// ================================================================
 function mostrarResultadoFinal(resultado) {
     var icono = document.getElementById('iconoFinal');
     var titulo = document.getElementById('tituloFinal');
@@ -3239,163 +2808,100 @@ function mostrarResultadoFinal(resultado) {
     var botones = document.getElementById('botonesFinal');
     var btnPanel = document.getElementById('btnIrPanel');
     var btnReintentar = document.getElementById('btnReintentar');
-
     var estado = resultado.estado;
 
     if (estado === 'activo') {
-        // ✅ APROBADO
         icono.textContent = '🎉';
-        icono.style.animation = 'pulseIcono 1s ease-in-out infinite';
         titulo.textContent = '¡Felicidades, estás aprobado!';
-        desc.innerHTML = 'Tu identidad fue verificada con éxito. Ya puedes empezar a recibir pedidos en Sariel\'s Mercado.';
-        
+        desc.innerHTML = 'Tu identidad fue verificada con éxito. Ya puedes empezar a recibir pedidos en Csariel\'s Mercado.';
         btnPanel.innerHTML = '🛵 Ir a mi panel de repartidor';
         btnPanel.href = '/features/mercado/repartidor/panel.html';
         btnPanel.style.display = 'inline-flex';
         btnReintentar.style.display = 'none';
-
-        // Confetti o animación de éxito
         mostrarConfetti();
-
     } else if (estado === 'revision_manual' || estado === 'procesando') {
-        // ⏳ REVISIÓN MANUAL / PROCESANDO
         icono.textContent = '⏳';
-        icono.style.animation = 'pulseIcono 2s ease-in-out infinite';
         titulo.textContent = 'Verificación en proceso';
-        desc.innerHTML = 'Tu registro requiere una revisión adicional. Te notificaremos cuando termine. ' +
-            'Generalmente toma menos de 24 horas.';
-
+        desc.innerHTML = 'Tu registro requiere una revisión adicional. Te notificaremos cuando termine. Generalmente toma menos de 24 horas.';
         btnPanel.innerHTML = '📋 Ver mi estado';
         btnPanel.href = '/features/mercado/repartidor/estado-verificacion.html';
         btnPanel.style.display = 'inline-flex';
         btnReintentar.style.display = 'none';
-
     } else if (estado === 'rechazado') {
-        // ❌ RECHAZADO
         icono.textContent = '❌';
-        icono.style.animation = 'none';
         titulo.textContent = 'Verificación rechazada';
-        desc.innerHTML = '<strong>Motivo:</strong> ' + escapeHTML(resultado.motivo_rechazo || 'No cumple con los requisitos') +
-            '<br><br>Puedes intentar de nuevo corrigiendo lo indicado.';
-
+        desc.innerHTML = '<strong>Motivo:</strong> ' + escapeHTML(resultado.motivo_rechazo || 'No cumple con los requisitos') + '<br><br>Puedes intentar de nuevo corrigiendo lo indicado.';
         btnPanel.style.display = 'none';
         btnReintentar.innerHTML = '🔄 Volver a intentar';
         btnReintentar.style.display = 'inline-block';
-
     } else {
-        // ⚠️ ERROR TÉCNICO
         icono.textContent = '⚠️';
-        icono.style.animation = 'none';
         titulo.textContent = 'Error al procesar';
-        desc.innerHTML = '<strong>Detalle:</strong> ' + escapeHTML(resultado.motivo_rechazo || 'Error desconocido') +
-            '<br><br>Revisa tu conexión e intenta de nuevo.';
-
+        desc.innerHTML = '<strong>Detalle:</strong> ' + escapeHTML(resultado.motivo_rechazo || 'Error desconocido') + '<br><br>Revisa tu conexión e intenta de nuevo.';
         btnPanel.style.display = 'none';
         btnReintentar.innerHTML = '🔄 Reintentar';
         btnReintentar.style.display = 'inline-block';
     }
 
-    // Mostrar botones
     botones.style.display = 'block';
 }
 
-// ================================================================
-// CONFETTI DE CELEBRACIÓN (sin librerías externas)
-// ================================================================
 function mostrarConfetti() {
     try {
         var colors = ['#D4AF37', '#00d68f', '#00e5ff', '#a855f7', '#ff3366'];
         var container = document.createElement('div');
         container.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 99999;';
         document.body.appendChild(container);
-
-        // Crear 60 partículas
         for (var i = 0; i < 60; i++) {
             (function (index) {
                 setTimeout(function () {
                     var color = colors[Math.floor(Math.random() * colors.length)];
                     var size = 6 + Math.random() * 8;
                     var p = document.createElement('div');
-                    p.style.cssText = 'position: absolute; width: ' + size + 'px; height: ' + size + 'px; ' +
-                        'background: ' + color + '; border-radius: ' + (Math.random() > 0.5 ? '50%' : '2px') + '; ' +
-                        'left: ' + (Math.random() * 100) + '%; top: -20px; ' +
-                        'animation: confettiFall ' + (2 + Math.random() * 2) + 's ease-out forwards;';
+                    p.style.cssText = 'position: absolute; width: ' + size + 'px; height: ' + size + 'px; background: ' + color + '; border-radius: ' + (Math.random() > 0.5 ? '50%' : '2px') + '; left: ' + (Math.random() * 100) + '%; top: -20px; animation: confettiFall ' + (2 + Math.random() * 2) + 's ease-out forwards;';
                     container.appendChild(p);
-
                     setTimeout(function () { p.remove(); }, 5000);
                 }, index * 30);
             })(i);
         }
-
-        // Añadir CSS de animación
         if (!document.getElementById('confettiStyle')) {
             var style = document.createElement('style');
             style.id = 'confettiStyle';
-            style.textContent = '@keyframes confettiFall { ' +
-                '0% { transform: translateY(0) rotate(0deg); opacity: 1; } ' +
-                '100% { transform: translateY(100vh) rotate(720deg); opacity: 0; } ' +
-                '}';
+            style.textContent = '@keyframes confettiFall { 0% { transform: translateY(0) rotate(0deg); opacity: 1; } 100% { transform: translateY(100vh) rotate(720deg); opacity: 0; } }';
             document.head.appendChild(style);
         }
-
         setTimeout(function () { container.remove(); }, 6000);
     } catch (e) { /* silencioso */ }
 }
 
-// ================================================================
-// REREGISTRO (cuando rechazan, permitir reintentar)
-// ================================================================
 async function reintentarRegistro() {
     try {
         var session = await supabase.auth.getSession();
         var token = session.data.session ? session.data.session.access_token : null;
-
         if (!token) throw new Error('Sin sesión activa');
-
         var resp = await fetch(API_BASE + '/api/mercado/repartidor/reintentar', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + token
-            },
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
             body: JSON.stringify({})
         });
-
         var data = await resp.json();
-
-        if (!resp.ok) {
-            throw new Error(data.error || 'Error al reintentar');
-        }
-
+        if (!resp.ok) throw new Error(data.error || 'Error al reintentar');
         showToast('✓ Puedes volver a intentar', 'success');
-
-        // Recargar la página
-        setTimeout(function () {
-            window.location.reload();
-        }, 1200);
-
+        setTimeout(function () { window.location.reload(); }, 1200);
     } catch (e) {
         console.error('Error reintentando:', e);
         showToast('❌ ' + e.message, 'error');
     }
 }
 
-// ================================================================
-// CONECTAR BOTÓN DE REINTENTAR
-// ================================================================
 document.addEventListener('DOMContentLoaded', function () {
     var btnReintentar = document.getElementById('btnReintentar');
     if (btnReintentar) {
-        // Reemplazar el reload simple por la función de reintentar
         btnReintentar.onclick = reintentarRegistro;
     }
-
     console.log('✅ Parte 4 (procesamiento final) inicializada');
 });
 
-// ================================================================
-// EXPOSICIÓN GLOBAL
-// ================================================================
 window.enviarRegistroFinal = enviarRegistroFinal;
 window.validarCURPBackend = validarCURPBackend;
 window.guardarDatosBasicosRepartidor = guardarDatosBasicosRepartidor;
@@ -3404,64 +2910,37 @@ window.actualizarFlagsVerificacion = actualizarFlagsVerificacion;
 window.procesarVerificacionBackend = procesarVerificacionBackend;
 window.mostrarResultadoFinal = mostrarResultadoFinal;
 window.reintentarRegistro = reintentarRegistro;
-</script><script>
+</script>
+
+<script>
 // ================================================================
 // PARTE 5 — VERIFICACIÓN DE TELÉFONO Y EMAIL
 // ================================================================
-// Este script maneja:
-// - Verificación de teléfono por SMS (Firebase Phone Auth o fallback)
-// - Verificación de email por código (Supabase)
-// - Sistema de códigos de 6 dígitos
-// - Reenvío de códigos
-// - Rate limiting básico
-// ================================================================
 
-// ================================================================
-// CONFIGURACIÓN
-// ================================================================
 var CODIGO_LONGITUD = 6;
-var CODIGO_EXPIRACION_SEG = 300; // 5 minutos
-var RATE_LIMIT_SEG = 60;         // 60 segundos entre envíos
+var CODIGO_EXPIRACION_SEG = 300;
+var RATE_LIMIT_SEG = 60;
 
-var telefonoCodigoEnviado = null;
 var telefonoCodigoActual = null;
 var telefonoCodigoExpira = null;
 var telefonoRateLimit = 0;
-
-var emailCodigoEnviado = null;
 var emailCodigoActual = null;
 var emailCodigoExpira = null;
 var emailRateLimit = 0;
-
-// Intentos de verificación
 var intentosTelFallidos = 0;
 var intentosEmailFallidos = 0;
 var MAX_INTENTOS = 5;
 
-// ================================================================
-// GENERAR CÓDIGO ALEATORIO
-// ================================================================
 function generarCodigo() {
     var codigo = '';
-    for (var i = 0; i < CODIGO_LONGITUD; i++) {
-        codigo += Math.floor(Math.random() * 10);
-    }
+    for (var i = 0; i < CODIGO_LONGITUD; i++) codigo += Math.floor(Math.random() * 10);
     return codigo;
 }
 
-// ================================================================
-// VERIFICACIÓN DE TELÉFONO
-// ================================================================
-
 async function enviarCodigoTel() {
     var telefono = limpiarTexto(document.getElementById('inpTelefono').value);
+    if (!telefono || !validarTelefonoLocal(telefono)) { showToast('⚠️ Ingresa un teléfono válido primero', 'warning'); return; }
 
-    if (!telefono || !validarTelefonoLocal(telefono)) {
-        showToast('⚠️ Ingresa un teléfono válido primero', 'warning');
-        return;
-    }
-
-    // Rate limiting
     var ahora = Date.now();
     if (ahora < telefonoRateLimit) {
         var esperar = Math.ceil((telefonoRateLimit - ahora) / 1000);
@@ -3469,27 +2948,15 @@ async function enviarCodigoTel() {
         return;
     }
 
-    // Guardar teléfono en estado
     registroData.telefono = telefono;
-
-    // Intentar verificación real
-    // NOTA: Firebase Phone Auth requiere configuración de Firebase.
-    // Si NO está configurado, usamos un sistema de simulación para desarrollo.
 
     var usarFirebase = typeof firebase !== 'undefined' && firebase.auth;
 
     if (usarFirebase) {
-        // FIREBASE (si está configurado)
-        try {
-            await verificarConFirebase(telefono);
-            return;
-        } catch (e) {
-            console.error('Error Firebase:', e);
-            showToast('⚠️ Error con Firebase, usando modo simulación', 'warning');
-        }
+        try { await verificarConFirebase(telefono); return; }
+        catch (e) { console.error('Error Firebase:', e); showToast('⚠️ Error con Firebase, usando simulación', 'warning'); }
     }
 
-    // FALLBACK: Simulación (para desarrollo o sin Firebase)
     enviarCodigoTelSimulado(telefono);
 }
 
@@ -3497,51 +2964,35 @@ function enviarCodigoTelSimulado(telefono) {
     var btn = document.getElementById('btnEnviarCodigoTel');
     if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Enviando...'; }
 
-    // Generar código
     telefonoCodigoActual = generarCodigo();
-    telefonoCodigoEnviado = Date.now();
     telefonoCodigoExpira = Date.now() + (CODIGO_EXPIRACION_SEG * 1000);
     telefonoRateLimit = Date.now() + (RATE_LIMIT_SEG * 1000);
 
-    // En desarrollo, mostrar el código en el toast para poder probar
     console.log('📱 CÓDIGO SMS (simulado):', telefonoCodigoActual);
 
     setTimeout(function () {
-        // Mostrar bloque de verificación
         var bloque = document.getElementById('bloqueTel');
         if (bloque) {
             bloque.style.display = 'block';
             document.getElementById('telDestino').textContent = 'Código enviado a ' + telefono;
         }
-
-        // Ocultar botón de envío
         var btn = document.getElementById('btnEnviarCodigoTel');
         if (btn) btn.style.display = 'none';
 
-        // En desarrollo: mostrar el código
         if (window.location.hostname === 'localhost' || window.location.hostname.includes('127.0.0.1')) {
             showToast('📱 Código (dev): ' + telefonoCodigoActual, 'success');
         } else {
             showToast('📩 Código enviado por SMS', 'success');
         }
 
-        // Auto-focus en el campo de código
         var inp = document.getElementById('inpCodigoTel');
         if (inp) inp.focus();
-
     }, 1500);
 }
 
 async function verificarConFirebase(telefono) {
-    // Implementación con Firebase Phone Auth
-    // Requiere recaptcha container
-    var appVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-tel', {
-        size: 'invisible'
-    });
-
+    var appVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-tel', { size: 'invisible' });
     var confirmationResult = await firebase.auth().signInWithPhoneNumber(telefono, appVerifier);
-
-    // Guardar el confirmationResult globalmente
     window._confirmationResultTel = confirmationResult;
 
     var bloque = document.getElementById('bloqueTel');
@@ -3549,97 +3000,51 @@ async function verificarConFirebase(telefono) {
         bloque.style.display = 'block';
         document.getElementById('telDestino').textContent = 'Código enviado a ' + telefono;
     }
-
     var btn = document.getElementById('btnEnviarCodigoTel');
     if (btn) btn.style.display = 'none';
-
     telefonoRateLimit = Date.now() + (RATE_LIMIT_SEG * 1000);
     showToast('📩 Código enviado por SMS', 'success');
-
     var inp = document.getElementById('inpCodigoTel');
     if (inp) inp.focus();
 }
 
 async function verificarCodigoTel() {
     var codigo = limpiarTexto(document.getElementById('inpCodigoTel').value);
-
-    if (!codigo || codigo.length !== CODIGO_LONGITUD) {
-        showToast('⚠️ Ingresa los 6 dígitos', 'warning');
-        return;
-    }
-
-    if (!telefonoCodigoActual && !window._confirmationResultTel) {
-        showToast('⚠️ No hay código activo. Reenvía uno nuevo', 'warning');
-        return;
-    }
-
-    if (intentosTelFallidos >= MAX_INTENTOS) {
-        showToast('❌ Demasiados intentos. Espera 5 minutos', 'error');
-        return;
-    }
+    if (!codigo || codigo.length !== CODIGO_LONGITUD) { showToast('⚠️ Ingresa los 6 dígitos', 'warning'); return; }
+    if (!telefonoCodigoActual && !window._confirmationResultTel) { showToast('⚠️ No hay código activo. Reenvía uno nuevo', 'warning'); return; }
+    if (intentosTelFallidos >= MAX_INTENTOS) { showToast('❌ Demasiados intentos. Espera 5 minutos', 'error'); return; }
 
     var btn = document.getElementById('btnVerifTel');
     if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Verificando...'; }
 
     try {
         var verificado = false;
-
-        // Verificar con Firebase si está disponible
         if (window._confirmationResultTel) {
-            try {
-                await window._confirmationResultTel.confirm(codigo);
-                verificado = true;
-            } catch (eFirebase) {
-                console.error('Error Firebase:', eFirebase);
-                verificado = false;
-            }
+            try { await window._confirmationResultTel.confirm(codigo); verificado = true; }
+            catch (eFirebase) { verificado = false; }
         } else {
-            // Verificar simulado
             verificado = (codigo === telefonoCodigoActual);
         }
 
-        if (!verificado) {
-            intentosTelFallidos++;
-            throw new Error('Código incorrecto. Intento ' + intentosTelFallidos + ' de ' + MAX_INTENTOS);
-        }
+        if (!verificado) { intentosTelFallidos++; throw new Error('Código incorrecto. Intento ' + intentosTelFallidos + ' de ' + MAX_INTENTOS); }
+        if (Date.now() > telefonoCodigoExpira) throw new Error('El código ha expirado. Reenvía uno nuevo.');
 
-        // Verificar expiración
-        if (Date.now() > telefonoCodigoExpira) {
-            throw new Error('El código ha expirado. Reenvía uno nuevo.');
-        }
-
-        // ✅ ÉXITO
         registroData.telefono_verificado = true;
         registroData.telefono = limpiarTexto(document.getElementById('inpTelefono').value);
 
-        // Ocultar bloque de verificación
         document.getElementById('bloqueTel').style.display = 'none';
-
-        // Mostrar bloque de éxito
         var bloqueOk = document.getElementById('bloqueTelOk');
         bloqueOk.style.display = 'block';
         document.getElementById('telOkNumero').textContent = registroData.telefono;
 
-        // Habilitar botón de continuar
         actualizarBotonPaso2();
-
         showToast('✅ Teléfono verificado', 'success');
-
     } catch (e) {
         console.error('Error verificando teléfono:', e);
         showToast('❌ ' + e.message, 'error');
-
-        // Limpiar input
         var inp = document.getElementById('inpCodigoTel');
-        if (inp) {
-            inp.value = '';
-            inp.focus();
-        }
-
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = '✓ Verificar';
-        }
+        if (inp) { inp.value = ''; inp.focus(); }
+        if (btn) { btn.disabled = false; btn.innerHTML = '✓ Verificar'; }
     }
 }
 
@@ -3650,28 +3055,15 @@ async function reenviarCodigoTel() {
         showToast('⏳ Espera ' + esperar + 's antes de reenviar', 'warning');
         return;
     }
-
-    // Limpiar código anterior
     telefonoCodigoActual = null;
     window._confirmationResultTel = null;
-
-    // Enviar nuevo
     await enviarCodigoTel();
 }
 
-// ================================================================
-// VERIFICACIÓN DE EMAIL
-// ================================================================
-
 async function enviarCodigoEmail() {
     var email = normalizarEmail(document.getElementById('inpEmail').value);
+    if (!email || !validarEmailLocal(email)) { showToast('⚠️ Ingresa un email válido primero', 'warning'); return; }
 
-    if (!email || !validarEmailLocal(email)) {
-        showToast('⚠️ Ingresa un email válido primero', 'warning');
-        return;
-    }
-
-    // Rate limiting
     var ahora = Date.now();
     if (ahora < emailRateLimit) {
         var esperar = Math.ceil((emailRateLimit - ahora) / 1000);
@@ -3679,37 +3071,26 @@ async function enviarCodigoEmail() {
         return;
     }
 
-    // Guardar email en estado
     registroData.email = email;
-
     var btn = document.getElementById('btnEnviarCodigoEmail');
     if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Enviando...'; }
 
     try {
-        // Generar código
         emailCodigoActual = generarCodigo();
-        emailCodigoEnviado = Date.now();
         emailCodigoExpira = Date.now() + (CODIGO_EXPIRACION_SEG * 1000);
         emailRateLimit = Date.now() + (RATE_LIMIT_SEG * 1000);
 
-        // Enviar email de verificación
         var enviado = await enviarEmailVerificacion(email, emailCodigoActual);
+        if (!enviado) throw new Error('No se pudo enviar el código');
 
-        if (!enviado) {
-            throw new Error('No se pudo enviar el código');
-        }
-
-        // Mostrar bloque de verificación
         var bloque = document.getElementById('bloqueEmail');
         if (bloque) {
             bloque.style.display = 'block';
             document.getElementById('emailDestino').textContent = 'Código enviado a ' + email;
         }
-
         var btnEnv = document.getElementById('btnEnviarCodigoEmail');
         if (btnEnv) btnEnv.style.display = 'none';
 
-        // En desarrollo: mostrar el código
         if (window.location.hostname === 'localhost' || window.location.hostname.includes('127.0.0.1')) {
             showToast('📧 Código (dev): ' + emailCodigoActual, 'success');
         } else {
@@ -3718,149 +3099,77 @@ async function enviarCodigoEmail() {
 
         var inp = document.getElementById('inpCodigoEmail');
         if (inp) inp.focus();
-
     } catch (e) {
         console.error('Error enviando email:', e);
         showToast('❌ ' + e.message, 'error');
-
         var btnEnv = document.getElementById('btnEnviarCodigoEmail');
-        if (btnEnv) {
-            btnEnv.disabled = false;
-            btnEnv.innerHTML = '📨 Enviar código al email';
-        }
+        if (btnEnv) { btnEnv.disabled = false; btnEnv.innerHTML = '📨 Enviar código al email'; }
     }
 }
 
-// ================================================================
-// ENVIAR EMAIL DE VERIFICACIÓN
-// ================================================================
 async function enviarEmailVerificacion(email, codigo) {
     try {
-        // Opción 1: Enviar via backend (recomendado)
         var session = await supabase.auth.getSession();
         var token = session.data.session ? session.data.session.access_token : null;
-
         if (token) {
             var resp = await fetch(API_BASE + '/api/mercado/repartidor/enviar-codigo-email', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + token
-                },
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
                 body: JSON.stringify({ email: email, codigo: codigo })
             });
-
-            if (resp.ok) {
-                console.log('📧 Email enviado por backend');
-                return true;
-            }
+            if (resp.ok) return true;
         }
-
-        // Opción 2: Fallback - guardar código en localStorage (dev)
-        console.log('📧 Fallback: guardar código en localStorage');
-        localStorage.setItem('verif_email_' + email, JSON.stringify({
-            codigo: codigo,
-            expira: Date.now() + (CODIGO_EXPIRACION_SEG * 1000)
-        }));
-
+        localStorage.setItem('verif_email_' + email, JSON.stringify({ codigo: codigo, expira: Date.now() + (CODIGO_EXPIRACION_SEG * 1000) }));
         return true;
-
     } catch (e) {
-        console.error('Error enviando email:', e);
-        // Fallback a localStorage
-        localStorage.setItem('verif_email_' + email, JSON.stringify({
-            codigo: codigo,
-            expira: Date.now() + (CODIGO_EXPIRACION_SEG * 1000)
-        }));
+        localStorage.setItem('verif_email_' + email, JSON.stringify({ codigo: codigo, expira: Date.now() + (CODIGO_EXPIRACION_SEG * 1000) }));
         return true;
     }
 }
 
 async function verificarCodigoEmail() {
     var codigo = limpiarTexto(document.getElementById('inpCodigoEmail').value);
-
-    if (!codigo || codigo.length !== CODIGO_LONGITUD) {
-        showToast('⚠️ Ingresa los 6 dígitos', 'warning');
-        return;
-    }
-
-    if (!emailCodigoActual) {
-        showToast('⚠️ No hay código activo. Reenvía uno nuevo', 'warning');
-        return;
-    }
-
-    if (intentosEmailFallidos >= MAX_INTENTOS) {
-        showToast('❌ Demasiados intentos. Espera 5 minutos', 'error');
-        return;
-    }
+    if (!codigo || codigo.length !== CODIGO_LONGITUD) { showToast('⚠️ Ingresa los 6 dígitos', 'warning'); return; }
+    if (!emailCodigoActual) { showToast('⚠️ No hay código activo. Reenvía uno nuevo', 'warning'); return; }
+    if (intentosEmailFallidos >= MAX_INTENTOS) { showToast('❌ Demasiados intentos. Espera 5 minutos', 'error'); return; }
 
     var btn = document.getElementById('btnVerifEmail');
     if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Verificando...'; }
 
     try {
-        // Verificar código
         var verificado = (codigo === emailCodigoActual);
-
-        // También revisar localStorage
         var email = registroData.email;
         if (!verificado) {
             try {
                 var stored = localStorage.getItem('verif_email_' + email);
                 if (stored) {
                     var parsed = JSON.parse(stored);
-                    if (parsed.codigo === codigo && parsed.expira > Date.now()) {
-                        verificado = true;
-                    }
+                    if (parsed.codigo === codigo && parsed.expira > Date.now()) verificado = true;
                 }
             } catch (eLS) { /* silencioso */ }
         }
 
-        if (!verificado) {
-            intentosEmailFallidos++;
-            throw new Error('Código incorrecto. Intento ' + intentosEmailFallidos + ' de ' + MAX_INTENTOS);
-        }
+        if (!verificado) { intentosEmailFallidos++; throw new Error('Código incorrecto. Intento ' + intentosEmailFallidos + ' de ' + MAX_INTENTOS); }
+        if (Date.now() > emailCodigoExpira) throw new Error('El código ha expirado. Reenvía uno nuevo.');
 
-        // Verificar expiración
-        if (Date.now() > emailCodigoExpira) {
-            throw new Error('El código ha expirado. Reenvía uno nuevo.');
-        }
-
-        // ✅ ÉXITO
         registroData.email_verificado = true;
         registroData.email = normalizarEmail(document.getElementById('inpEmail').value);
 
-        // Limpiar localStorage
-        try {
-            localStorage.removeItem('verif_email_' + registroData.email);
-        } catch (eLS) { /* silencioso */ }
+        try { localStorage.removeItem('verif_email_' + registroData.email); } catch (eLS) { /* silencioso */ }
 
-        // Ocultar bloque de verificación
         document.getElementById('bloqueEmail').style.display = 'none';
-
-        // Mostrar bloque de éxito
         var bloqueOk = document.getElementById('bloqueEmailOk');
         bloqueOk.style.display = 'block';
         document.getElementById('emailOkCorreo').textContent = registroData.email;
 
-        // Habilitar botón de continuar
         actualizarBotonPaso3();
-
         showToast('✅ Email verificado', 'success');
-
     } catch (e) {
         console.error('Error verificando email:', e);
         showToast('❌ ' + e.message, 'error');
-
         var inp = document.getElementById('inpCodigoEmail');
-        if (inp) {
-            inp.value = '';
-            inp.focus();
-        }
-
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = '✓ Verificar';
-        }
+        if (inp) { inp.value = ''; inp.focus(); }
+        if (btn) { btn.disabled = false; btn.innerHTML = '✓ Verificar'; }
     }
 }
 
@@ -3871,106 +3180,63 @@ async function reenviarCodigoEmail() {
         showToast('⏳ Espera ' + esperar + 's antes de reenviar', 'warning');
         return;
     }
-
     emailCodigoActual = null;
     await enviarCodigoEmail();
 }
 
-// ================================================================
-// CONFIGURAR INPUTS DE CÓDIGO
-// ================================================================
 function configurarInputsCodigo() {
-    // Input de código SMS
     var inpTel = document.getElementById('inpCodigoTel');
     if (inpTel) {
         inpTel.addEventListener('input', function () {
-            // Solo números
             this.value = this.value.replace(/\D/g, '').substring(0, CODIGO_LONGITUD);
-
-            // Auto-verificar cuando esté completo
             if (this.value.length === CODIGO_LONGITUD) {
-                setTimeout(function () {
-                    verificarCodigoTel();
-                }, 300);
+                setTimeout(function () { verificarCodigoTel(); }, 300);
             }
         });
-
-        // Enter para verificar
         inpTel.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                verificarCodigoTel();
-            }
+            if (e.key === 'Enter') { e.preventDefault(); verificarCodigoTel(); }
         });
     }
 
-    // Input de código email
     var inpEmail = document.getElementById('inpCodigoEmail');
     if (inpEmail) {
         inpEmail.addEventListener('input', function () {
             this.value = this.value.replace(/\D/g, '').substring(0, CODIGO_LONGITUD);
-
             if (this.value.length === CODIGO_LONGITUD) {
-                setTimeout(function () {
-                    verificarCodigoEmail();
-                }, 300);
+                setTimeout(function () { verificarCodigoEmail(); }, 300);
             }
         });
-
         inpEmail.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                verificarCodigoEmail();
-            }
+            if (e.key === 'Enter') { e.preventDefault(); verificarCodigoEmail(); }
         });
     }
 }
 
-// ================================================================
-// VERIFICAR SI EL USUARIO YA VERIFICÓ ANTES (persistencia)
-// ================================================================
 async function verificarEstadoPrevio() {
     if (!sessionUser) return;
-
     try {
-        var result = await supabase
-            .from('mercado_repartidores')
-            .select('telefono_verificado, email_verificado, telefono, email')
-            .eq('usuario_id', sessionUser.id)
-            .maybeSingle();
-
+        var result = await supabase.from('mercado_repartidores').select('telefono_verificado, email_verificado, telefono, email').eq('usuario_id', sessionUser.id).maybeSingle();
         if (result.data) {
-            // Teléfono
             if (result.data.telefono_verificado) {
                 registroData.telefono_verificado = true;
                 registroData.telefono = result.data.telefono;
-
                 var tel = document.getElementById('inpTelefono');
                 if (tel && result.data.telefono) tel.value = result.data.telefono;
-
                 document.getElementById('bloqueTelOk').style.display = 'block';
                 document.getElementById('telOkNumero').textContent = result.data.telefono || '—';
-
                 var btnTel = document.getElementById('btnEnviarCodigoTel');
                 if (btnTel) btnTel.style.display = 'none';
-
                 actualizarBotonPaso2();
             }
-
-            // Email
             if (result.data.email_verificado) {
                 registroData.email_verificado = true;
                 registroData.email = result.data.email;
-
                 var inpE = document.getElementById('inpEmail');
                 if (inpE && result.data.email) inpE.value = result.data.email;
-
                 document.getElementById('bloqueEmailOk').style.display = 'block';
                 document.getElementById('emailOkCorreo').textContent = result.data.email || '—';
-
                 var btnEmail = document.getElementById('btnEnviarCodigoEmail');
                 if (btnEmail) btnEmail.style.display = 'none';
-
                 actualizarBotonPaso3();
             }
         }
@@ -3979,25 +3245,12 @@ async function verificarEstadoPrevio() {
     }
 }
 
-// ================================================================
-// INICIALIZACIÓN
-// ================================================================
 document.addEventListener('DOMContentLoaded', async function () {
-    // Configurar inputs de código
     configurarInputsCodigo();
-
-    // Verificar si ya verificó antes
-    if (sessionUser) {
-        await verificarEstadoPrevio();
-    }
-
+    if (sessionUser) await verificarEstadoPrevio();
     console.log('✅ Parte 5 (verificación SMS/email) inicializada');
-    console.log('🎉 Sistema de registro 100% cargado');
 });
 
-// ================================================================
-// EXPOSICIÓN GLOBAL
-// ================================================================
 window.enviarCodigoTel = enviarCodigoTel;
 window.verificarCodigoTel = verificarCodigoTel;
 window.reenviarCodigoTel = reenviarCodigoTel;
