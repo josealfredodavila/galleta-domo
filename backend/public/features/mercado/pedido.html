@@ -1,9 +1,17 @@
 <!-- ================================================================
      MERCADO - SARIEL'S ECOSYSTEM
-     Detalle y seguimiento de un pedido (vista del comprador)
+     Detalle y seguimiento de un pedido con MAPA EN VIVO
      Ruta: /features/mercado/pedido.html?id=BIGINT
+     
      Esquema real: bigint IDs, envio_cobrado_en_app, forma_pago,
-                   lat/lng entrega, cancelado_por
+                   lat/lng entrega + tienda + repartidor
+     
+     Tracking en tiempo real:
+     - Leaflet + OpenStreetMap (dark mode)
+     - Supabase Realtime (WebSocket)
+     - Fallback polling cada 15s
+     - Ruta por calles con OSRM
+     - Se muestra solo si hay repartidor asignado
      ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
@@ -13,6 +21,9 @@
     <title>◈ Pedido · Sariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+
+    <!-- Leaflet CSS para el mapa -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
     <script src="/features/shared/js/apariencia-global.js"></script>
 
@@ -141,6 +152,326 @@
             border-color: var(--glass-border);
         }
         .live-indicator.off .pulse-dot { background: var(--text-muted); animation: none; }
+
+        /* ============================================================
+           SECCIÓN NUEVA: HEADER DEL REPARTIDOR + MAPA EN VIVO
+           Solo se muestra si el pedido tiene repartidor asignado
+           ============================================================ */
+        .tracking-section {
+            display: none;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+            padding: 0;
+            margin-bottom: 16px;
+            overflow: hidden;
+            position: relative;
+        }
+        .tracking-section.visible {
+            display: block;
+            animation: fadeIn 0.4s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Header del repartidor */
+        .repartidor-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 16px 18px;
+            background: linear-gradient(135deg, rgba(168,85,247,0.08), rgba(15,45,26,0.4));
+            border-bottom: 1px solid var(--glass-border);
+            flex-wrap: wrap;
+        }
+        .repartidor-header .avatar {
+            width: 52px; height: 52px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--purple), #7c3aed);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem;
+            color: #fff;
+            font-weight: 700;
+            flex-shrink: 0;
+            overflow: hidden;
+            border: 2px solid rgba(168,85,247,0.4);
+            font-family: 'Orbitron', monospace;
+        }
+        .repartidor-header .avatar img {
+            width: 100%; height: 100%; object-fit: cover;
+        }
+        .repartidor-header .info {
+            flex: 1;
+            min-width: 0;
+        }
+        .repartidor-header .info .rol {
+            font-size: 0.55rem;
+            color: var(--purple);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+            font-family: 'Orbitron', monospace;
+            margin-bottom: 2px;
+        }
+        .repartidor-header .info .nombre {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 3px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .repartidor-header .info .meta {
+            font-size: 0.68rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .repartidor-header .info .meta .rating {
+            color: var(--warning);
+            font-weight: 600;
+        }
+        .repartidor-header .info .meta .vehiculo {
+            color: var(--text-secondary);
+        }
+        .repartidor-header .botones-contacto {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+        .btn-contacto-rep {
+            padding: 9px 16px;
+            border-radius: 24px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 0.68rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            border: none;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+        .btn-contacto-rep.llamar {
+            background: linear-gradient(135deg, var(--success), #00a86b);
+            color: #fff;
+        }
+        .btn-contacto-rep.llamar:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,214,143,0.35);
+        }
+        .btn-contacto-rep.llamar:disabled {
+            background: rgba(255,255,255,0.08);
+            color: var(--text-muted);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .btn-contacto-rep.whatsapp {
+            background: linear-gradient(135deg, #25d366, #128c7e);
+            color: #fff;
+        }
+        .btn-contacto-rep.whatsapp:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(37,211,102,0.35);
+        }
+        .btn-contacto-rep.whatsapp:disabled {
+            background: rgba(255,255,255,0.08);
+            color: var(--text-muted);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Contenedor del mapa */
+        .mapa-container {
+            position: relative;
+            width: 100%;
+            height: 320px;
+            background: #1a1a1a;
+        }
+        #mapaTracking {
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* Overlay de "última actualización" */
+        .mapa-overlay {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            z-index: 400;
+            background: rgba(5,8,15,0.9);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 6px 12px;
+            font-size: 0.62rem;
+            color: var(--text-secondary);
+            font-family: 'Orbitron', monospace;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            backdrop-filter: blur(8px);
+            transition: var(--transition);
+        }
+        .mapa-overlay .dot-estado {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: livePulse 1.5s ease-in-out infinite;
+        }
+        .mapa-overlay.stale .dot-estado {
+            background: var(--warning);
+            animation: none;
+        }
+        .mapa-overlay.offline .dot-estado {
+            background: var(--text-muted);
+            animation: none;
+        }
+
+        /* Botón "centrar en repartidor" */
+        .mapa-btn-centrar {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            z-index: 400;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(5,8,15,0.9);
+            border: 1px solid var(--glass-border);
+            color: var(--gold);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(8px);
+        }
+        .mapa-btn-centrar:hover {
+            background: rgba(212,175,55,0.15);
+            border-color: var(--gold);
+            transform: scale(1.05);
+        }
+
+        /* Info inferior del mapa: distancia + ETA + progreso */
+        .tracking-info {
+            padding: 14px 18px;
+        }
+        .distancia-eta {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .info-card-mini {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 10px 14px;
+        }
+        .info-card-mini .lbl-mini {
+            font-size: 0.55rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        .info-card-mini .val-mini {
+            font-family: 'Orbitron', monospace;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--gold);
+        }
+        .info-card-mini .sub-mini {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+        .info-card-mini.cyan .val-mini { color: var(--cyan); }
+        .info-card-mini.success .val-mini { color: var(--success); }
+
+        /* Barra de progreso */
+        .progreso-container {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .progreso-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(0,0,0,0.4);
+            border-radius: 3px;
+            overflow: hidden;
+            position: relative;
+        }
+        .progreso-bar .fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--purple), var(--cyan), var(--success));
+            border-radius: 3px;
+            transition: width 0.8s ease;
+            position: relative;
+        }
+        .progreso-bar .fill::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: -3px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 12px var(--success);
+            animation: pulseProgress 1.5s ease-in-out infinite;
+        }
+        @keyframes pulseProgress {
+            0%, 100% { box-shadow: 0 0 12px var(--success); }
+            50% { box-shadow: 0 0 20px var(--success), 0 0 30px rgba(0,214,143,0.5); }
+        }
+        .progreso-label {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            text-align: center;
+            font-family: 'Orbitron', monospace;
+        }
+
+        /* Override de estilos de Leaflet para el tema dark */
+        .leaflet-container {
+            background: #1a1a1a;
+            font-family: 'Inter', sans-serif;
+        }
+        .leaflet-control-attribution {
+            background: rgba(5,8,15,0.8) !important;
+            color: var(--text-muted) !important;
+            font-size: 0.55rem !important;
+            padding: 2px 6px !important;
+        }
+        .leaflet-control-attribution a {
+            color: var(--text-muted) !important;
+        }
+        .leaflet-control-zoom a {
+            background: rgba(5,8,15,0.9) !important;
+            color: var(--gold) !important;
+            border: 1px solid var(--glass-border) !important;
+        }
+        .leaflet-control-zoom a:hover {
+            background: rgba(212,175,55,0.15) !important;
+            color: var(--gold-light) !important;
+        }
+
+        /* ============================================================
+           FIN SECCIÓN MAPA
+           ============================================================ */
 
         .seccion-card {
             background: var(--glass-bg);
@@ -309,40 +640,6 @@
             font-weight: 600; word-wrap: break-word;
         }
         .info-item.full { grid-column: span 2; }
-
-        /* Card repartidor */
-        .repartidor-card {
-            display: flex; align-items: center; gap: 12px;
-            padding: 12px;
-            background: rgba(168,85,247,0.08);
-            border: 1px solid rgba(168,85,247,0.3);
-            border-radius: 14px;
-        }
-        .repartidor-card .avatar {
-            width: 48px; height: 48px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--purple), #7c3aed);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.3rem; color: #fff;
-            flex-shrink: 0; overflow: hidden;
-        }
-        .repartidor-card .avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .repartidor-card .info-rep { flex: 1; min-width: 0; }
-        .repartidor-card .info-rep .nombre-rep {
-            font-weight: 700; font-size: 0.85rem;
-            color: var(--text-primary); margin-bottom: 2px;
-        }
-        .repartidor-card .info-rep .tel-rep {
-            font-size: 0.7rem; color: var(--text-muted);
-        }
-        .repartidor-card .btn-tel {
-            background: var(--purple); color: #fff;
-            padding: 8px 16px; border-radius: 20px;
-            text-decoration: none; font-size: 0.7rem;
-            font-weight: 600; flex-shrink: 0;
-            transition: var(--transition); border: none; cursor: pointer;
-        }
-        .repartidor-card .btn-tel:hover { transform: translateY(-2px); }
 
         /* Botones */
         .acciones {
@@ -549,6 +846,12 @@
             .codigo-box .codigo { font-size: 1.1rem; }
             .titulo h1 { font-size: 1rem; }
             .modal .modal-botones { flex-direction: column; }
+            .mapa-container { height: 280px; }
+            .repartidor-header { padding: 14px; }
+            .repartidor-header .avatar { width: 44px; height: 44px; font-size: 1.1rem; }
+            .repartidor-header .botones-contacto { width: 100%; }
+            .btn-contacto-rep { flex: 1; justify-content: center; }
+            .distancia-eta { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -641,7 +944,8 @@
         </button>
     </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/features/shared/js/idiomas.js"></script>
 
 <script>
@@ -653,6 +957,9 @@ var supabaseKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
 var supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 window.supabaseClient = supabaseClient;
 var supabase = supabaseClient;
+
+// URL del backend
+var API_BASE = '';
 
 // ================================================================
 // ESTADO
@@ -668,8 +975,23 @@ var autoRefreshTimer = null;
 var AUTO_REFRESH_MS = 20000;
 var pedidoId = null;
 
+// Estado del mapa
+var mapa = null;
+var marcadorTienda = null;
+var marcadorCliente = null;
+var marcadorRepartidor = null;
+var capaRuta = null;
+var realtimeChannel = null;
+var pollingUbicacionTimer = null;
+var POLLING_UBICACION_MS = 15000;
+var seguirRepartidor = true; // auto-centrar cámara al repartidor
+var ultimaUbicacionRep = null; // { lat, lng, ts }
+var ultimaRutaCalculada = 0; // timestamp del último cálculo OSRM
+var RUTA_MIN_INTERVALO_MS = 30000; // recalcular ruta cada 30s máx
+
 var ESTADOS_ORDEN = ['pendiente', 'aceptado', 'preparando', 'listo', 'asignado', 'en_camino', 'entregado'];
 var ESTADOS_TERMINALES = ['entregado', 'cancelado', 'rechazado'];
+var ESTADOS_CON_REPARTIDOR = ['asignado', 'en_camino'];
 
 // ================================================================
 // BANNER DE ERRORES
@@ -727,6 +1049,14 @@ function formatearFecha(fecha) {
     } catch (e) { return '—'; }
 }
 
+function formatearHora(fecha) {
+    if (!fecha) return '—';
+    try {
+        var d = new Date(fecha);
+        return d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+    } catch (e) { return '—'; }
+}
+
 function getParamURL(nombre) {
     try {
         var params = new URLSearchParams(window.location.search);
@@ -747,6 +1077,46 @@ function traducirEstado(estado) {
         'rechazado': '❌ Rechazado'
     };
     return mapa[estado] || estado;
+}
+
+// Haversine: distancia en metros entre 2 puntos
+function distanciaMetros(lat1, lng1, lat2, lng2) {
+    var R = 6371000;
+    var dLat = (lat2 - lat1) * Math.PI / 180;
+    var dLng = (lng2 - lng1) * Math.PI / 180;
+    var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+}
+
+function formatearDistancia(metros) {
+    if (!metros || metros < 0) return '—';
+    if (metros < 1000) return Math.round(metros) + ' m';
+    return (metros / 1000).toFixed(1) + ' km';
+}
+
+// ETA basado en velocidad promedio (25 km/h para moto en ciudad)
+function calcularETA(metros) {
+    if (!metros || metros < 0) return null;
+    var minutos = Math.ceil((metros / 1000) / 25 * 60); // 25 km/h
+    if (minutos < 1) minutos = 1;
+    return minutos;
+}
+
+function formatearETA(minutos) {
+    if (!minutos) return '—';
+    if (minutos < 60) return minutos + ' min';
+    var h = Math.floor(minutos / 60);
+    var m = minutos % 60;
+    return h + 'h ' + m + 'm';
+}
+
+function horaEstimadaLlegada(minutos) {
+    if (!minutos) return '—';
+    var llegada = new Date(Date.now() + minutos * 60000);
+    return formatearHora(llegada);
 }
 
 // ================================================================
@@ -818,12 +1188,13 @@ async function cargarPedido(idPedido, silencioso) {
             return;
         }
 
-        // Si es refresco y no cambió el estado, no re-renderizar
-        if (silencioso && !esPrimeraCarga && estadoAnterior === pedidoActual.estado) {
+        // Si es refresco silencioso y el estado no cambió, no re-renderizar todo
+        var cambioEstado = estadoAnterior !== pedidoActual.estado;
+        if (silencioso && !esPrimeraCarga && !cambioEstado) {
             return;
         }
 
-        // Cargar datos relacionados en paralelo
+        // Cargar datos relacionados
         await Promise.all([
             cargarItemsPedido(pedidoActual.id),
             cargarTiendaPedido(pedidoActual.tienda_id),
@@ -833,7 +1204,14 @@ async function cargarPedido(idPedido, silencioso) {
 
         renderizarPedido();
 
-        if (silencioso && !esPrimeraCarga && estadoAnterior && estadoAnterior !== pedidoActual.estado) {
+        // Gestión del mapa y realtime según el estado
+        if (ESTADOS_CON_REPARTIDOR.indexOf(pedidoActual.estado) !== -1 && repartidorPedido) {
+            setTimeout(inicializarTracking, 200);
+        } else {
+            desmontarTracking();
+        }
+
+        if (silencioso && !esPrimeraCarga && cambioEstado) {
             showToast('🔄 Estado actualizado: ' + traducirEstado(pedidoActual.estado), 'success');
         }
 
@@ -875,7 +1253,7 @@ async function cargarTiendaPedido(tiendaId) {
     try {
         var result = await supabase
             .from('mercado_tiendas')
-            .select('id, nombre_negocio, slug, telefono, whatsapp, direccion, logo_url, portada_url, nivel')
+            .select('id, nombre_negocio, slug, telefono, whatsapp, direccion, logo_url, portada_url, nivel, latitud, longitud')
             .eq('id', tiendaId)
             .maybeSingle();
         if (result.error) throw result.error;
@@ -899,22 +1277,26 @@ async function cargarRepartidorPedido(repartidorId) {
             .maybeSingle();
         if (result.error) throw result.error;
 
-        // Si no tiene teléfono en usuarios, intentar en mercado_repartidores
-        if (result.data && !result.data.telefono) {
-            try {
-                var repRes = await supabase
-                    .from('mercado_repartidores')
-                    .select('telefono, vehiculo, zona, calificacion')
-                    .eq('usuario_id', repartidorId)
-                    .maybeSingle();
-                if (!repRes.error && repRes.data) {
-                    result.data.telefono = repRes.data.telefono;
-                    result.data.vehiculo = repRes.data.vehiculo;
-                    result.data.zona = repRes.data.zona;
-                    result.data.calificacion = repRes.data.calificacion;
-                }
-            } catch (e2) { /* silencioso */ }
-        }
+        // Buscar en mercado_repartidores
+        try {
+            var repRes = await supabase
+                .from('mercado_repartidores')
+                .select('nombre_completo, telefono, vehiculo, calificacion, pedidos_completados, latitud_actual, longitud_actual, ultima_ubicacion')
+                .eq('usuario_id', repartidorId)
+                .maybeSingle();
+
+            if (!repRes.error && repRes.data) {
+                result.data = result.data || {};
+                result.data.nombre = repRes.data.nombre_completo || result.data.nombre;
+                result.data.telefono = repRes.data.telefono || result.data.telefono;
+                result.data.vehiculo = repRes.data.vehiculo;
+                result.data.calificacion = repRes.data.calificacion;
+                result.data.pedidos_completados = repRes.data.pedidos_completados;
+                result.data.latitud_actual = repRes.data.latitud_actual;
+                result.data.longitud_actual = repRes.data.longitud_actual;
+                result.data.ultima_ubicacion = repRes.data.ultima_ubicacion;
+            }
+        } catch (e2) { /* silencioso */ }
 
         repartidorPedido = result.data;
         return repartidorPedido;
@@ -954,10 +1336,11 @@ function renderizarPedido() {
     var estado = (p.estado || 'pendiente').toLowerCase();
     var estadoTexto = traducirEstado(estado);
     var esTerminal = ESTADOS_TERMINALES.indexOf(estado) !== -1;
+    var mostrarTracking = ESTADOS_CON_REPARTIDOR.indexOf(estado) !== -1 && repartidorPedido;
 
     var html = '';
 
-    // Título + estado
+    // ============ TÍTULO ============
     html += '<div class="titulo">';
     html += '<h1>📦 <span data-clave="mercado_pedido">Pedido</span></h1>';
     html += '<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">';
@@ -969,7 +1352,12 @@ function renderizarPedido() {
     html += '</div>';
     html += '</div>';
 
-    // Código + info
+    // ============ TRACKING (solo si hay repartidor) ============
+    if (mostrarTracking) {
+        html += renderTrackingSection();
+    }
+
+    // ============ CÓDIGO + INFO ============
     html += '<div class="seccion-card">';
     html += '<div class="codigo-box">';
     html += '<div class="lbl" data-clave="mercado_codigo_pedido">Código del pedido</div>';
@@ -1023,7 +1411,7 @@ function renderizarPedido() {
     html += '</div>';
     html += '</div>';
 
-    // Timeline
+    // ============ TIMELINE ============
     html += '<div class="seccion-card">';
     html += '<h2>📍 <span data-clave="mercado_seguimiento">Seguimiento</span></h2>';
     html += '<div class="timeline">';
@@ -1051,7 +1439,7 @@ function renderizarPedido() {
     html += '</div>';
     html += '</div>';
 
-    // Items
+    // ============ ITEMS ============
     html += '<div class="seccion-card">';
     html += '<h2>🛒 <span data-clave="mercado_productos_pedido">Productos</span></h2>';
     html += '<div class="items-lista">';
@@ -1072,11 +1460,9 @@ function renderizarPedido() {
 
     html += '</div>';
 
-    // Totales
     html += '<div class="totales">';
     html += '<div class="fila"><span data-clave="mercado_subtotal">Subtotal</span><span>' + formatearPrecio(p.subtotal_mxn) + '</span></div>';
 
-    // Envío
     var envioMxn = parseFloat(p.envio_mxn || 0);
     if (p.tipo_entrega === 'pickup') {
         html += '<div class="fila"><span data-clave="mercado_envio">Envío</span><span style="color:var(--success);">🏪 Recoger (sin costo)</span></div>';
@@ -1089,7 +1475,6 @@ function renderizarPedido() {
     html += '<div class="fila total"><span data-clave="mercado_total">Total</span><span>' + formatearPrecio(p.total_mxn) + '</span></div>';
     html += '</div>';
 
-    // Nota de envío en efectivo
     if (p.tipo_entrega !== 'pickup' && !p.envio_cobrado_en_app) {
         html += '<div class="envio-nota">' +
             '🛵 <strong>Envío:</strong> se paga en efectivo directamente al repartidor al momento de la entrega. ' +
@@ -1099,7 +1484,7 @@ function renderizarPedido() {
 
     html += '</div>';
 
-    // Info de la tienda
+    // ============ INFO TIENDA ============
     if (tiendaPedido) {
         html += '<div class="seccion-card">';
         html += '<h2>🏪 <span data-clave="mercado_tienda">Tienda</span></h2>';
@@ -1132,34 +1517,7 @@ function renderizarPedido() {
         html += '</div>';
     }
 
-    // Repartidor
-    if (repartidorPedido) {
-        var avatarRep = repartidorPedido.avatar_url
-            ? '<img src="' + escapeHTML(repartidorPedido.avatar_url) + '" alt="" onerror="this.style.display=\'none\';this.parentElement.textContent=\'🛵\';" />'
-            : '🛵';
-        var nombreRep = repartidorPedido.nombre || repartidorPedido.handle || 'Repartidor';
-        var telRep = repartidorPedido.telefono || '';
-
-        html += '<div class="seccion-card">';
-        html += '<h2>🛵 <span data-clave="mercado_repartidor">Tu repartidor</span></h2>';
-        html += '<div class="repartidor-card">';
-        html += '<div class="avatar">' + avatarRep + '</div>';
-        html += '<div class="info-rep">';
-        html += '<div class="nombre-rep">' + escapeHTML(nombreRep) + '</div>';
-        if (telRep) {
-            html += '<div class="tel-rep">📞 ' + escapeHTML(telRep) + '</div>';
-        } else {
-            html += '<div class="tel-rep" style="opacity:0.5;">Sin teléfono registrado</div>';
-        }
-        html += '</div>';
-        if (telRep) {
-            html += '<a href="tel:' + escapeHTML(telRep) + '" class="btn-tel">📞 Llamar</a>';
-        }
-        html += '</div>';
-        html += '</div>';
-    }
-
-    // Botón cancelar (solo pendiente)
+    // ============ BOTÓN CANCELAR (solo pendiente) ============
     if (estado === 'pendiente') {
         html += '<div class="seccion-card">';
         html += '<div class="acciones">';
@@ -1170,7 +1528,7 @@ function renderizarPedido() {
         html += '</div>';
     }
 
-    // Reseña (solo entregado)
+    // ============ RESEÑA (solo entregado) ============
     if (estado === 'entregado') {
         html += '<div class="seccion-card">';
         html += '<h2>⭐ <span data-clave="mercado_calificar">Calificar al vendedor</span></h2>';
@@ -1205,7 +1563,7 @@ function renderizarPedido() {
         html += '</div>';
     }
 
-    // Navegación
+    // ============ NAVEGACIÓN ============
     html += '<div class="seccion-card">';
     html += '<div class="acciones">';
     html += '<a href="/features/mercado/mis-pedidos.html" class="btn-accion btn-secundario">';
@@ -1228,6 +1586,92 @@ function renderizarPedido() {
     }
 
     if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
+}
+
+// ================================================================
+// RENDER: SECCIÓN DE TRACKING (header repartidor + mapa + info)
+// ================================================================
+function renderTrackingSection() {
+    var rep = repartidorPedido;
+    var nombreRep = rep.nombre || rep.handle || 'Repartidor';
+    var iniciales = obtenerIniciales(nombreRep);
+    var avatarHTML = rep.avatar_url
+        ? '<img src="' + escapeHTML(rep.avatar_url) + '" alt="" onerror="this.style.display=\'none\';this.parentElement.textContent=\'' + iniciales + '\';" />'
+        : iniciales;
+    var telRep = rep.telefono ? String(rep.telefono).replace(/\D/g, '') : '';
+    var tieneTel = telRep.length >= 8;
+    var rating = rep.calificacion ? parseFloat(rep.calificacion) : 0;
+    var vehiculo = rep.vehiculo || 'moto';
+    var iconoVehiculo = vehiculo === 'bicicleta' ? '🚲' : (vehiculo === 'auto' ? '🚗' : '🛵');
+
+    var metaPartes = [];
+    if (rating > 0) metaPartes.push('<span class="rating">⭐ ' + rating.toFixed(1) + '</span>');
+    metaPartes.push('<span class="vehiculo">' + iconoVehiculo + ' ' + escapeHTML(vehiculo.charAt(0).toUpperCase() + vehiculo.slice(1)) + '</span>');
+
+    var html = '';
+
+    html += '<div class="tracking-section visible" id="trackingSection">';
+
+    // Header del repartidor
+    html += '<div class="repartidor-header">' +
+        '<div class="avatar">' + avatarHTML + '</div>' +
+        '<div class="info">' +
+            '<div class="rol">🛵 Tu repartidor</div>' +
+            '<div class="nombre">' + escapeHTML(nombreRep) + '</div>' +
+            '<div class="meta">' + metaPartes.join(' · ') + '</div>' +
+        '</div>' +
+        '<div class="botones-contacto">' +
+            '<button class="btn-contacto-rep llamar" id="btnLlamar" onclick="llamarRepartidor()" ' + (tieneTel ? '' : 'disabled title="Sin teléfono registrado"') + '>' +
+                '📞 Llamar' +
+            '</button>' +
+            '<button class="btn-contacto-rep whatsapp" id="btnWhatsApp" onclick="whatsAppRepartidor()" ' + (tieneTel ? '' : 'disabled title="Sin teléfono registrado"') + '>' +
+                '💬 WhatsApp' +
+            '</button>' +
+        '</div>' +
+    '</div>';
+
+    // Mapa
+    html += '<div class="mapa-container" id="mapaContainer">' +
+        '<div id="mapaTracking"></div>' +
+        '<div class="mapa-overlay" id="mapaOverlay">' +
+            '<span class="dot-estado"></span>' +
+            '<span id="mapaOverlayText">Conectando...</span>' +
+        '</div>' +
+        '<button class="mapa-btn-centrar" onclick="centrarEnRepartidor()" title="Centrar en el repartidor">🎯</button>' +
+    '</div>';
+
+    // Info inferior
+    html += '<div class="tracking-info">' +
+        '<div class="distancia-eta">' +
+            '<div class="info-card-mini cyan">' +
+                '<div class="lbl-mini">🛣️ Distancia</div>' +
+                '<div class="val-mini" id="distanciaVal">—</div>' +
+                '<div class="sub-mini" id="distanciaSub">Calculando...</div>' +
+            '</div>' +
+            '<div class="info-card-mini success">' +
+                '<div class="lbl-mini">⏱️ Llegada</div>' +
+                '<div class="val-mini" id="etaVal">—</div>' +
+                '<div class="sub-mini" id="etaSub">Calculando...</div>' +
+            '</div>' +
+        '</div>' +
+        '<div class="progreso-container">' +
+            '<div class="progreso-bar">' +
+                '<div class="fill" id="progresoFill" style="width:0%"></div>' +
+            '</div>' +
+            '<div class="progreso-label" id="progresoLabel">Progreso del trayecto</div>' +
+        '</div>' +
+    '</div>';
+
+    html += '</div>';
+
+    return html;
+}
+
+function obtenerIniciales(nombre) {
+    if (!nombre) return '🛵';
+    var partes = nombre.trim().split(/\s+/);
+    if (partes.length === 1) return partes[0].charAt(0).toUpperCase();
+    return (partes[0].charAt(0) + partes[partes.length - 1].charAt(0)).toUpperCase();
 }
 
 // ================================================================
@@ -1280,7 +1724,499 @@ function obtenerFechaEstado(p, estado) {
 }
 
 // ================================================================
-// CANCELAR
+// 🗺️ TRACKING EN TIEMPO REAL
+// ================================================================
+
+function inicializarTracking() {
+    // Solo si hay repartidor y no está ya inicializado
+    if (!repartidorPedido) return;
+    if (!document.getElementById('mapaTracking')) return;
+
+    montarMapa();
+    suscribirRealtime();
+    iniciarPollingUbicacion();
+
+    // Primera lectura
+    actualizarUbicacionRepartidor({
+        lat: repartidorPedido.latitud_actual,
+        lng: repartidorPedido.longitud_actual,
+        ts: repartidorPedido.ultima_ubicacion
+    }, false);
+}
+
+function montarMapa() {
+    var el = document.getElementById('mapaTracking');
+    if (!el || mapa) return;
+
+    // Centro inicial: la tienda o el cliente o un punto neutral
+    var centroInicial = [19.4326, -99.1332]; // CDMX por defecto
+    if (tiendaPedido && tiendaPedido.latitud && tiendaPedido.longitud) {
+        centroInicial = [parseFloat(tiendaPedido.latitud), parseFloat(tiendaPedido.longitud)];
+    } else if (pedidoActual.latitud_entrega && pedidoActual.longitud_entrega) {
+        centroInicial = [parseFloat(pedidoActual.latitud_entrega), parseFloat(pedidoActual.longitud_entrega)];
+    }
+
+    // Crear el mapa con tiles dark de CartoDB
+    mapa = L.map('mapaTracking', {
+        center: centroInicial,
+        zoom: 13,
+        zoomControl: true,
+        attributionControl: true
+    });
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap · © CARTO',
+        subdomains: 'abcd',
+        maxZoom: 19
+    }).addTo(mapa);
+
+    // Iconos custom
+    var iconoTienda = L.divIcon({
+        className: 'custom-marker',
+        html: '<div style="background:linear-gradient(135deg,#D4AF37,#b8923a); width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; border:3px solid #fff; box-shadow:0 4px 12px rgba(212,175,55,0.5);">🏪</div>',
+        iconSize: [36, 36],
+        iconAnchor: [18, 18]
+    });
+
+    var iconoCliente = L.divIcon({
+        className: 'custom-marker',
+        html: '<div style="background:linear-gradient(135deg,#a855f7,#7c3aed); width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; border:3px solid #fff; box-shadow:0 4px 12px rgba(168,85,247,0.5);">🏠</div>',
+        iconSize: [36, 36],
+        iconAnchor: [18, 18]
+    });
+
+    var iconoRepartidor = L.divIcon({
+        className: 'custom-marker',
+        html: '<div style="position:relative;"><div style="position:absolute; inset:-6px; border-radius:50%; background:rgba(0,229,255,0.3); animation:pulseMarker 2s ease-in-out infinite;"></div><div style="position:relative; background:linear-gradient(135deg,#00e5ff,#00b3cc); width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:20px; border:3px solid #fff; box-shadow:0 4px 16px rgba(0,229,255,0.6);">🛵</div></div>',
+        iconSize: [40, 40],
+        iconAnchor: [20, 20]
+    });
+
+    // Marcador tienda
+    if (tiendaPedido && tiendaPedido.latitud && tiendaPedido.longitud) {
+        marcadorTienda = L.marker(
+            [parseFloat(tiendaPedido.latitud), parseFloat(tiendaPedido.longitud)],
+            { icon: iconoTienda }
+        ).addTo(mapa).bindPopup('<b>' + escapeHTML(tiendaPedido.nombre_negocio) + '</b><br>Tienda (origen)');
+    }
+
+    // Marcador cliente
+    if (pedidoActual.latitud_entrega && pedidoActual.longitud_entrega) {
+        marcadorCliente = L.marker(
+            [parseFloat(pedidoActual.latitud_entrega), parseFloat(pedidoActual.longitud_entrega)],
+            { icon: iconoCliente }
+        ).addTo(mapa).bindPopup('<b>Tu dirección</b><br>Destino');
+    }
+
+    // Marcador repartidor (inicial)
+    if (repartidorPedido.latitud_actual && repartidorPedido.longitud_actual) {
+        marcadorRepartidor = L.marker(
+            [parseFloat(repartidorPedido.latitud_actual), parseFloat(repartidorPedido.longitud_actual)],
+            { icon: iconoRepartidor, zIndexOffset: 1000 }
+        ).addTo(mapa).bindPopup('<b>' + escapeHTML(repartidorPedido.nombre || 'Repartidor') + '</b><br>En camino');
+    }
+
+    // Ajustar zoom para ver los 3 puntos
+    ajustarZoomInicial();
+
+    // Evento: si el usuario mueve el mapa, dejar de seguir al repartidor
+    mapa.on('dragstart', function () {
+        seguirRepartidor = false;
+    });
+
+    // Añadir animación CSS para el pulse del marcador
+    if (!document.getElementById('pulseMarkerStyle')) {
+        var style = document.createElement('style');
+        style.id = 'pulseMarkerStyle';
+        style.textContent = '@keyframes pulseMarker { 0%,100% { transform:scale(1); opacity:0.6; } 50% { transform:scale(1.5); opacity:0.2; } }';
+        document.head.appendChild(style);
+    }
+}
+
+function ajustarZoomInicial() {
+    if (!mapa) return;
+    var puntos = [];
+    if (tiendaPedido && tiendaPedido.latitud && tiendaPedido.longitud) {
+        puntos.push([parseFloat(tiendaPedido.latitud), parseFloat(tiendaPedido.longitud)]);
+    }
+    if (pedidoActual.latitud_entrega && pedidoActual.longitud_entrega) {
+        puntos.push([parseFloat(pedidoActual.latitud_entrega), parseFloat(pedidoActual.longitud_entrega)]);
+    }
+    if (repartidorPedido && repartidorPedido.latitud_actual && repartidorPedido.longitud_actual) {
+        puntos.push([parseFloat(repartidorPedido.latitud_actual), parseFloat(repartidorPedido.longitud_actual)]);
+    }
+
+    if (puntos.length >= 2) {
+        var bounds = L.latLngBounds(puntos);
+        mapa.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 });
+    } else if (puntos.length === 1) {
+        mapa.setView(puntos[0], 15);
+    }
+}
+
+// Actualiza la posición del repartidor en el mapa
+function actualizarUbicacionRepartidor(ubicacion, animar) {
+    if (!mapa) return;
+    if (!ubicacion || !ubicacion.lat || !ubicacion.lng) return;
+
+    var lat = parseFloat(ubicacion.lat);
+    var lng = parseFloat(ubicacion.lng);
+    var nuevaPos = [lat, lng];
+
+    ultimaUbicacionRep = { lat: lat, lng: lng, ts: ubicacion.ts || new Date().toISOString() };
+
+    // Actualizar o crear marcador
+    if (marcadorRepartidor) {
+        if (animar) {
+            // Animación suave
+            animarMarcador(marcadorRepartidor, nuevaPos);
+        } else {
+            marcadorRepartidor.setLatLng(nuevaPos);
+        }
+    } else {
+        var iconoRepartidor = L.divIcon({
+            className: 'custom-marker',
+            html: '<div style="position:relative;"><div style="position:absolute; inset:-6px; border-radius:50%; background:rgba(0,229,255,0.3); animation:pulseMarker 2s ease-in-out infinite;"></div><div style="position:relative; background:linear-gradient(135deg,#00e5ff,#00b3cc); width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:20px; border:3px solid #fff; box-shadow:0 4px 16px rgba(0,229,255,0.6);">🛵</div></div>',
+            iconSize: [40, 40],
+            iconAnchor: [20, 20]
+        });
+        marcadorRepartidor = L.marker(nuevaPos, { icon: iconoRepartidor, zIndexOffset: 1000 })
+            .addTo(mapa)
+            .bindPopup('<b>' + escapeHTML(repartidorPedido.nombre || 'Repartidor') + '</b><br>En camino');
+    }
+
+    // Auto-centrar si el usuario está siguiendo
+    if (seguirRepartidor) {
+        mapa.panTo(nuevaPos, { animate: true, duration: 0.5 });
+    }
+
+    // Actualizar overlay de "última actualización"
+    actualizarOverlayTiempo(ultimaUbicacionRep.ts);
+
+    // Actualizar distancia + ETA + progreso
+    actualizarInfoDistancia();
+
+    // Actualizar ruta (con throttling)
+    var ahora = Date.now();
+    if (ahora - ultimaRutaCalculada > RUTA_MIN_INTERVALO_MS) {
+        ultimaRutaCalculada = ahora;
+        calcularRutaOSRM(nuevaPos);
+    }
+}
+
+// Animación suave entre 2 posiciones
+function animarMarcador(marcador, destino) {
+    var actual = marcador.getLatLng();
+    var inicio = { lat: actual.lat, lng: actual.lng };
+    var pasos = 20;
+    var duracion = 800;
+    var intervalo = duracion / pasos;
+    var i = 0;
+
+    var timer = setInterval(function () {
+        i++;
+        var t = i / pasos;
+        var lat = inicio.lat + (destino[0] - inicio.lat) * t;
+        var lng = inicio.lng + (destino[1] - inicio.lng) * t;
+        marcador.setLatLng([lat, lng]);
+        if (i >= pasos) clearInterval(timer);
+    }, intervalo);
+}
+
+// Overlay "hace X seg"
+function actualizarOverlayTiempo(ts) {
+    var overlay = document.getElementById('mapaOverlay');
+    var texto = document.getElementById('mapaOverlayText');
+    if (!overlay || !texto) return;
+
+    if (!ts) {
+        overlay.className = 'mapa-overlay offline';
+        texto.textContent = 'Sin señal';
+        return;
+    }
+
+    var seg = Math.floor((Date.now() - new Date(ts).getTime()) / 1000);
+    var texto2;
+    if (seg < 10) texto2 = 'Hace instantes';
+    else if (seg < 60) texto2 = 'Hace ' + seg + ' seg';
+    else if (seg < 3600) texto2 = 'Hace ' + Math.floor(seg / 60) + ' min';
+    else texto2 = 'Desactualizado';
+
+    texto.textContent = texto2;
+    if (seg < 30) overlay.className = 'mapa-overlay';
+    else if (seg < 120) overlay.className = 'mapa-overlay stale';
+    else overlay.className = 'mapa-overlay offline';
+}
+
+// Calcular distancia restante, ETA y progreso
+function actualizarInfoDistancia() {
+    var elDist = document.getElementById('distanciaVal');
+    var elDistSub = document.getElementById('distanciaSub');
+    var elEta = document.getElementById('etaVal');
+    var elEtaSub = document.getElementById('etaSub');
+    var elProg = document.getElementById('progresoFill');
+    var elProgLbl = document.getElementById('progresoLabel');
+
+    if (!elDist || !elEta) return;
+
+    // Sin repartidor con ubicación
+    if (!ultimaUbicacionRep || !ultimaUbicacionRep.lat) {
+        if (elDist) elDist.textContent = '—';
+        if (elDistSub) elDistSub.textContent = 'Esperando GPS...';
+        if (elEta) elEta.textContent = '—';
+        if (elEtaSub) elEtaSub.textContent = 'Esperando GPS...';
+        return;
+    }
+
+    // Sin destino
+    if (!pedidoActual.latitud_entrega || !pedidoActual.longitud_entrega) {
+        if (elDist) elDist.textContent = '—';
+        if (elDistSub) elDistSub.textContent = 'Sin destino GPS';
+        if (elEta) elEta.textContent = '—';
+        if (elEtaSub) elEtaSub.textContent = 'Sin destino GPS';
+        return;
+    }
+
+    var latDest = parseFloat(pedidoActual.latitud_entrega);
+    var lngDest = parseFloat(pedidoActual.longitud_entrega);
+
+    // Distancia actual
+    var distActual = distanciaMetros(
+        ultimaUbicacionRep.lat, ultimaUbicacionRep.lng,
+        latDest, lngDest
+    );
+
+    // Distancia inicial (desde la tienda hasta el cliente) para calcular progreso
+    var distInicial = distActual;
+    if (tiendaPedido && tiendaPedido.latitud && tiendaPedido.longitud) {
+        distInicial = distanciaMetros(
+            parseFloat(tiendaPedido.latitud), parseFloat(tiendaPedido.longitud),
+            latDest, lngDest
+        );
+    }
+
+    // Progreso (0-100%)
+    var progreso = 0;
+    if (distInicial > 0) {
+        progreso = Math.max(0, Math.min(100, Math.round((1 - distActual / distInicial) * 100)));
+    }
+
+    // ETA
+    var eta = calcularETA(distActual);
+
+    // Actualizar UI
+    elDist.textContent = formatearDistancia(distActual);
+    if (elDistSub) {
+        if (distActual < 100) elDistSub.textContent = '¡Muy cerca!';
+        else if (distActual < 500) elDistSub.textContent = 'A pocas cuadras';
+        else if (distActual < 2000) elDistSub.textContent = 'En la misma zona';
+        else elDistSub.textContent = 'Restantes';
+    }
+
+    elEta.textContent = eta ? formatearETA(eta) : '—';
+    if (elEtaSub) {
+        if (eta) elEtaSub.textContent = 'Llega ' + horaEstimadaLlegada(eta);
+        else elEtaSub.textContent = '—';
+    }
+
+    if (elProg) elProg.style.width = progreso + '%';
+    if (elProgLbl) elProgLbl.textContent = progreso + '% del trayecto';
+}
+
+// Llamar al repartidor
+function llamarRepartidor() {
+    if (!repartidorPedido || !repartidorPedido.telefono) {
+        showToast('⚠️ El repartidor no tiene teléfono registrado', 'warning');
+        return;
+    }
+    var tel = String(repartidorPedido.telefono).replace(/\D/g, '');
+    window.location.href = 'tel:+' + tel;
+}
+
+// WhatsApp al repartidor
+function whatsAppRepartidor() {
+    if (!repartidorPedido || !repartidorPedido.telefono) {
+        showToast('⚠️ El repartidor no tiene teléfono registrado', 'warning');
+        return;
+    }
+    var tel = String(repartidorPedido.telefono).replace(/\D/g, '');
+    var mensaje = 'Hola, soy el comprador del pedido ' + (pedidoActual.codigo || '') + '. ¿Cómo va todo?';
+    window.open('https://wa.me/' + tel + '?text=' + encodeURIComponent(mensaje), '_blank');
+}
+
+// Centrar mapa en el repartidor
+function centrarEnRepartidor() {
+    if (!mapa || !ultimaUbicacionRep) {
+        showToast('Sin ubicación del repartidor', 'warning');
+        return;
+    }
+    mapa.setView([ultimaUbicacionRep.lat, ultimaUbicacionRep.lng], 16, { animate: true });
+    seguirRepartidor = true;
+    showToast('🎯 Siguiendo al repartidor', 'success');
+}
+
+// ================================================================
+// RUTA OSRM (por calles)
+// ================================================================
+async function calcularRutaOSRM(posRepartidor) {
+    if (!mapa) return;
+    if (!posRepartidor || !posRepartidor[0]) return;
+
+    // Necesitamos el destino
+    if (!pedidoActual.latitud_entrega || !pedidoActual.longitud_entrega) return;
+
+    var latO = posRepartidor[0];
+    var lngO = posRepartidor[1];
+    var latD = parseFloat(pedidoActual.latitud_entrega);
+    var lngD = parseFloat(pedidoActual.longitud_entrega);
+
+    try {
+        var url = 'https://router.project-osrm.org/route/v1/driving/' +
+            lngO + ',' + latO + ';' + lngD + ',' + latD +
+            '?overview=full&geometries=geojson';
+
+        var resp = await fetch(url);
+        if (!resp.ok) throw new Error('OSRM error');
+        var data = await resp.json();
+
+        if (!data.routes || !data.routes[0]) throw new Error('Sin ruta');
+
+        var coordenadas = data.routes[0].geometry.coordinates.map(function (c) {
+            return [c[1], c[0]]; // OSRM devuelve [lng, lat], Leaflet necesita [lat, lng]
+        });
+
+        // Remover ruta anterior
+        if (capaRuta) {
+            mapa.removeLayer(capaRuta);
+        }
+
+        // Dibujar nueva ruta
+        capaRuta = L.polyline(coordenadas, {
+            color: '#00e5ff',
+            weight: 4,
+            opacity: 0.85,
+            lineCap: 'round',
+            lineJoin: 'round'
+        }).addTo(mapa);
+
+    } catch (e) {
+        console.warn('No se pudo calcular ruta OSRM:', e);
+        // Fallback: línea recta
+        if (capaRuta) mapa.removeLayer(capaRuta);
+        capaRuta = L.polyline([
+            [latO, lngO],
+            [latD, lngD]
+        ], {
+            color: '#00e5ff',
+            weight: 3,
+            opacity: 0.6,
+            dashArray: '8, 8'
+        }).addTo(mapa);
+    }
+}
+
+// ================================================================
+// SUPABASE REALTIME
+// ================================================================
+function suscribirRealtime() {
+    if (realtimeChannel) return;
+    if (!repartidorPedido || !repartidorPedido.id) return;
+
+    try {
+        realtimeChannel = supabase
+            .channel('tracking-pedido-' + pedidoId)
+            .on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'mercado_repartidores',
+                filter: 'usuario_id=eq.' + repartidorPedido.id
+            }, function (payload) {
+                if (payload.new) {
+                    actualizarUbicacionRepartidor({
+                        lat: payload.new.latitud_actual,
+                        lng: payload.new.longitud_actual,
+                        ts: payload.new.ultima_ubicacion
+                    }, true);
+                }
+            })
+            .subscribe(function (status) {
+                if (status === 'SUBSCRIBED') {
+                    console.log('✅ Realtime conectado');
+                }
+            });
+    } catch (e) {
+        console.warn('Error suscribiendo Realtime:', e);
+    }
+}
+
+function desuscribirRealtime() {
+    if (realtimeChannel) {
+        try {
+            supabase.removeChannel(realtimeChannel);
+        } catch (e) { /* silencioso */ }
+        realtimeChannel = null;
+    }
+}
+
+// ================================================================
+// POLLING FALLBACK (por si Realtime falla)
+// ================================================================
+function iniciarPollingUbicacion() {
+    detenerPollingUbicacion();
+    pollingUbicacionTimer = setInterval(function () {
+        if (document.hidden) return;
+        if (!repartidorPedido || !repartidorPedido.id) return;
+        consultarUbicacionRepartidor();
+    }, POLLING_UBICACION_MS);
+}
+
+function detenerPollingUbicacion() {
+    if (pollingUbicacionTimer) {
+        clearInterval(pollingUbicacionTimer);
+        pollingUbicacionTimer = null;
+    }
+}
+
+async function consultarUbicacionRepartidor() {
+    if (!repartidorPedido || !repartidorPedido.id) return;
+    try {
+        var result = await supabase
+            .from('mercado_repartidores')
+            .select('latitud_actual, longitud_actual, ultima_ubicacion')
+            .eq('usuario_id', repartidorPedido.id)
+            .maybeSingle();
+
+        if (!result.error && result.data) {
+            actualizarUbicacionRepartidor({
+                lat: result.data.latitud_actual,
+                lng: result.data.longitud_actual,
+                ts: result.data.ultima_ubicacion
+            }, true);
+        }
+    } catch (e) { /* silencioso */ }
+}
+
+// ================================================================
+// DESMONTAR TRACKING
+// ================================================================
+function desmontarTracking() {
+    desuscribirRealtime();
+    detenerPollingUbicacion();
+    if (capaRuta && mapa) {
+        try { mapa.removeLayer(capaRuta); } catch (e) {}
+        capaRuta = null;
+    }
+    if (mapa) {
+        try { mapa.remove(); } catch (e) {}
+        mapa = null;
+    }
+    marcadorTienda = null;
+    marcadorCliente = null;
+    marcadorRepartidor = null;
+}
+
+// ================================================================
+// CANCELAR PEDIDO
 // ================================================================
 function abrirModalCancelar() {
     if (!pedidoActual || pedidoActual.estado !== 'pendiente') {
@@ -1384,7 +2320,6 @@ async function enviarResena() {
             throw insertResult.error;
         }
 
-        // Actualizar promedio y contador de la tienda
         try {
             var tiendaUpdate = await supabase
                 .from('mercado_tiendas')
@@ -1406,9 +2341,7 @@ async function enviarResena() {
                     })
                     .eq('id', pedidoActual.tienda_id);
             }
-        } catch (e) {
-            console.warn('No se pudo actualizar promedio:', e);
-        }
+        } catch (e) { /* silencioso */ }
 
         resenaExistente = insertResult.data;
         calificacionSeleccionada = 0;
@@ -1422,7 +2355,7 @@ async function enviarResena() {
 }
 
 // ================================================================
-// AUTO REFRESH
+// AUTO REFRESH DEL PEDIDO
 // ================================================================
 function iniciarAutoRefresh() {
     detenerAutoRefresh();
@@ -1440,17 +2373,30 @@ function detenerAutoRefresh() {
     }
 }
 
+// Pausar/reanudar cuando la pestaña no se ve
 document.addEventListener('visibilitychange', function () {
     if (document.hidden) {
         detenerAutoRefresh();
+        detenerPollingUbicacion();
     } else if (pedidoId) {
         var est = pedidoActual ? (pedidoActual.estado || '').toLowerCase() : '';
         if (ESTADOS_TERMINALES.indexOf(est) === -1) {
             cargarPedido(pedidoId, true);
             iniciarAutoRefresh();
+            if (ESTADOS_CON_REPARTIDOR.indexOf(est) !== -1) {
+                iniciarPollingUbicacion();
+                consultarUbicacionRepartidor();
+            }
         }
     }
 });
+
+// Actualizar "hace X seg" del overlay cada 5s
+setInterval(function () {
+    if (ultimaUbicacionRep) {
+        actualizarOverlayTiempo(ultimaUbicacionRep.ts);
+    }
+}, 5000);
 
 // ================================================================
 // VER TOKENS
@@ -1505,6 +2451,12 @@ document.addEventListener('click', function (e) {
     if (e.target === modal) cerrarModalCancelar();
 });
 
+// Limpiar al salir
+window.addEventListener('beforeunload', function () {
+    desmontarTracking();
+    detenerAutoRefresh();
+});
+
 // ================================================================
 // EXPOSICIÓN GLOBAL
 // ================================================================
@@ -1516,6 +2468,9 @@ window.enviarResena = enviarResena;
 window.verTokens = verTokens;
 window.showToast = showToast;
 window.cargarPedido = cargarPedido;
+window.llamarRepartidor = llamarRepartidor;
+window.whatsAppRepartidor = whatsAppRepartidor;
+window.centrarEnRepartidor = centrarEnRepartidor;
 </script>
 </body>
 </html>
