@@ -1,6 +1,6 @@
 /* ================================================================
    MERCADO - SARIEL'S ECOSYSTEM
-   Rutas backend: membresías + pagos NOWPayments
+   Rutas backend: membresías + pagos NOWPayments + ubicación repartidor
    Ruta: /backend/routes/mercado.js
    
    Esquema real:
@@ -11,9 +11,11 @@
    - Estados: pendiente, pagando, confirmando, pagada, cancelada, expirada, fallida
    - Al confirmar → actualiza mercado_tiendas.nivel + activa_hasta
    
-   Este archivo YA INCLUYE el webhook de NOWPayments (ruta
-   /api/mercado/webhook-nowpayments). NO montar el archivo separado
-   routes/webhooks/nowpayments.js.
+   Este archivo YA INCLUYE:
+   - El webhook de NOWPayments (/api/mercado/webhook-nowpayments)
+   - El endpoint de ubicación (/api/mercado/ubicacion-repartidor/:pedidoId)
+   
+   NO montar el archivo separado routes/webhooks/nowpayments.js.
    ================================================================ */
 
 const express = require('express');
@@ -39,7 +41,7 @@ const NOWPAYMENTS_IPN_SECRET = process.env.NOWPAYMENTS_IPN_SECRET;
 const TIPO_CAMBIO_MXN_USD = 17.5;
 
 // ================================================================
-// PLANES VÁLIDOS (deben coincidir con el frontend)
+// PLANES VÁLIDOS
 // ================================================================
 const PLANES = {
     basico: { slug: 'basico', nombre: 'Básico', precio_mxn: 99,  duracion_dias: 30 },
@@ -118,8 +120,6 @@ async function activarMembresia(tiendaId, pagoId, planSlug, duracionDias) {
         }
 
         // 2) Calcular nueva fecha de vencimiento
-        // Si ya hay una fecha futura, se extiende desde ahí
-        // Si no, se empieza desde ahora
         let fechaBase = ahora;
         if (tienda.activa_hasta) {
             const fechaAnterior = new Date(tienda.activa_hasta);
@@ -131,7 +131,7 @@ async function activarMembresia(tiendaId, pagoId, planSlug, duracionDias) {
         const nuevaFechaFin = new Date(fechaBase);
         nuevaFechaFin.setDate(nuevaFechaFin.getDate() + (duracionDias || planData.duracion_dias));
 
-        // 3) Actualizar tienda (nivel + activa_hasta + estado activa)
+        // 3) Actualizar tienda
         const { error: errUpd } = await supabaseAdmin
             .from('mercado_tiendas')
             .update({
@@ -147,7 +147,7 @@ async function activarMembresia(tiendaId, pagoId, planSlug, duracionDias) {
             return { ok: false, error: errUpd.message };
         }
 
-        // 4) Actualizar el pago con las fechas de activación
+        // 4) Actualizar pago
         const { error: errPago } = await supabaseAdmin
             .from('mercado_membresias_pagos')
             .update({
@@ -161,7 +161,6 @@ async function activarMembresia(tiendaId, pagoId, planSlug, duracionDias) {
 
         if (errPago) {
             console.error('Error actualizando pago:', errPago);
-            // No fallamos porque la tienda ya está activada
         }
 
         console.log('✅ Membresía activada para tienda', tiendaId, 'hasta', nuevaFechaFin.toISOString());
@@ -195,8 +194,6 @@ router.get('/health', (req, res) => {
 
 // ================================================================
 // POST /api/mercado/crear-pago-membresia
-// Body: { tienda_id, plan_slug, plan_nombre, monto_mxn,
-//         duracion_dias, pay_currency }
 // ================================================================
 router.post('/crear-pago-membresia', autenticarUsuario, async (req, res) => {
     try {
@@ -257,7 +254,6 @@ router.post('/crear-pago-membresia', autenticarUsuario, async (req, res) => {
 
         if (pagoExistente) {
             console.log('ℹ️ Ya hay un pago en curso:', pagoExistente.id);
-            // Devolvemos info del pago existente en vez de crear uno nuevo
             const { data: pagoCompleto } = await supabaseAdmin
                 .from('mercado_membresias_pagos')
                 .select('*')
@@ -376,14 +372,12 @@ router.post('/crear-pago-membresia', autenticarUsuario, async (req, res) => {
 
 // ================================================================
 // GET /api/mercado/estado-pago/:pagoId
-// Consulta el estado del pago (frontend hace polling)
 // ================================================================
 router.get('/estado-pago/:pagoId', autenticarUsuario, async (req, res) => {
     try {
         const { pagoId } = req.params;
         const usuarioId = req.usuario.id;
 
-        // Buscar el pago
         const { data: pago, error } = await supabaseAdmin
             .from('mercado_membresias_pagos')
             .select('*')
@@ -395,7 +389,6 @@ router.get('/estado-pago/:pagoId', autenticarUsuario, async (req, res) => {
             return res.status(404).json({ error: 'Pago no encontrado' });
         }
 
-        // Si ya está pagada o en estado terminal, responder directo
         if (pago.estado === 'pagada') {
             return res.json({
                 ok: true,
@@ -414,7 +407,6 @@ router.get('/estado-pago/:pagoId', autenticarUsuario, async (req, res) => {
             });
         }
 
-        // Si aún espera, consultar a NOWPayments
         if (!pago.payment_id) {
             return res.json({ ok: true, estado: pago.estado, pago_id: String(pago.id) });
         }
@@ -433,7 +425,6 @@ router.get('/estado-pago/:pagoId', autenticarUsuario, async (req, res) => {
         const npStatus = (npData.payment_status || '').toLowerCase();
         const estadoFinal = mapearEstadoNOWPayments(npStatus);
 
-        // Si cambió, actualizar DB
         if (estadoFinal !== pago.estado) {
             await supabaseAdmin
                 .from('mercado_membresias_pagos')
@@ -445,7 +436,6 @@ router.get('/estado-pago/:pagoId', autenticarUsuario, async (req, res) => {
                 .eq('id', pagoId);
         }
 
-        // Red de seguridad: si está confirmado pero el webhook no llegó, activar aquí
         if (estadoFinal === 'pagada' && pago.estado !== 'pagada') {
             console.log('⚠️ Red de seguridad: activando membresía desde polling');
             await activarMembresia(
@@ -472,13 +462,11 @@ router.get('/estado-pago/:pagoId', autenticarUsuario, async (req, res) => {
 
 // ================================================================
 // GET /api/mercado/mi-membresia
-// Devuelve la membresía activa de la tienda del usuario
 // ================================================================
 router.get('/mi-membresia', autenticarUsuario, async (req, res) => {
     try {
         const usuarioId = req.usuario.id;
 
-        // Obtener la tienda del usuario
         const { data: tienda, error: errT } = await supabaseAdmin
             .from('mercado_tiendas')
             .select('id, nombre_negocio, nivel, activa_hasta, estado')
@@ -520,15 +508,99 @@ router.get('/mi-membresia', autenticarUsuario, async (req, res) => {
 });
 
 // ================================================================
+// GET /api/mercado/ubicacion-repartidor/:pedidoId
+// Devuelve la ubicación actual del repartidor asignado a un pedido
+// (fallback por si Realtime falla)
+// ================================================================
+router.get('/ubicacion-repartidor/:pedidoId', autenticarUsuario, async (req, res) => {
+    try {
+        const { pedidoId } = req.params;
+        const usuarioId = req.usuario.id;
+
+        // 1) Buscar el pedido y verificar que sea del comprador
+        const { data: pedido, error: errP } = await supabaseAdmin
+            .from('mercado_pedidos')
+            .select('id, comprador_id, tienda_id, repartidor_id, estado, latitud_entrega, longitud_entrega')
+            .eq('id', pedidoId)
+            .maybeSingle();
+
+        if (errP || !pedido) {
+            return res.status(404).json({ error: 'Pedido no encontrado' });
+        }
+
+        // Solo el comprador puede ver la ubicación
+        if (pedido.comprador_id !== usuarioId) {
+            return res.status(403).json({ error: 'No tienes acceso a este pedido' });
+        }
+
+        // 2) Si no tiene repartidor, avisar
+        if (!pedido.repartidor_id) {
+            return res.json({
+                ok: true,
+                tiene_repartidor: false,
+                mensaje: 'Aún no hay repartidor asignado'
+            });
+        }
+
+        // 3) Obtener la ubicación del repartidor
+        const { data: rep, error: errR } = await supabaseAdmin
+            .from('mercado_repartidores')
+            .select('id, usuario_id, nombre_completo, telefono, vehiculo, latitud_actual, longitud_actual, ultima_ubicacion')
+            .eq('usuario_id', pedido.repartidor_id)
+            .maybeSingle();
+
+        if (errR) {
+            return res.status(500).json({ error: errR.message });
+        }
+
+        // 4) Obtener la ubicación de la tienda (origen)
+        const { data: tienda } = await supabaseAdmin
+            .from('mercado_tiendas')
+            .select('nombre_negocio, direccion, latitud, longitud, telefono')
+            .eq('id', pedido.tienda_id)
+            .maybeSingle();
+
+        return res.json({
+            ok: true,
+            tiene_repartidor: true,
+            pedido: {
+                estado: pedido.estado,
+                latitud_entrega: pedido.latitud_entrega,
+                longitud_entrega: pedido.longitud_entrega
+            },
+            repartidor: rep ? {
+                id: rep.id,
+                usuario_id: rep.usuario_id,
+                nombre: rep.nombre_completo || 'Repartidor',
+                telefono: rep.telefono,
+                vehiculo: rep.vehiculo,
+                latitud: rep.latitud_actual,
+                longitud: rep.longitud_actual,
+                ultima_actualizacion: rep.ultima_ubicacion
+            } : null,
+            tienda: tienda ? {
+                nombre: tienda.nombre_negocio,
+                direccion: tienda.direccion,
+                latitud: tienda.latitud,
+                longitud: tienda.longitud,
+                telefono: tienda.telefono
+            } : null
+        });
+
+    } catch (e) {
+        console.error('Error ubicación repartidor:', e);
+        return res.status(500).json({ error: e.message });
+    }
+});
+
+// ================================================================
 // POST /api/mercado/webhook-nowpayments
 // Recibe notificaciones IPN de NOWPayments
-// (NO autentica con JWT, usa firma HMAC)
 // ================================================================
 router.post('/webhook-nowpayments', async (req, res) => {
     const inicio = Date.now();
 
     try {
-        // Verificar firma HMAC
         const firmaRecibida = req.headers['x-nowpayments-sig'];
         const bodyString = req.rawBody || JSON.stringify(req.body);
 
@@ -538,7 +610,6 @@ router.post('/webhook-nowpayments', async (req, res) => {
                 .update(bodyString)
                 .digest('hex');
 
-            // Comparación segura contra timing attacks
             let firmaValida = false;
             try {
                 firmaValida = crypto.timingSafeEqual(
@@ -568,7 +639,6 @@ router.post('/webhook-nowpayments', async (req, res) => {
             return res.status(200).json({ ok: true, ignorado: 'sin payment_id' });
         }
 
-        // Buscar el pago por payment_id
         const { data: pago, error } = await supabaseAdmin
             .from('mercado_membresias_pagos')
             .select('*')
@@ -580,16 +650,13 @@ router.post('/webhook-nowpayments', async (req, res) => {
             return res.status(200).json({ ok: true, ignorado: 'pago no encontrado' });
         }
 
-        // Evitar reprocesar si ya está pagada
         if (pago.estado === 'pagada') {
             console.log('ℹ️ Pago ya procesado previamente');
             return res.status(200).json({ ok: true, ya_pagado: true });
         }
 
-        // Mapear estado
         const estadoFinal = mapearEstadoNOWPayments(npStatus);
 
-        // Actualizar pago
         const updates = {
             estado: estadoFinal,
             nowpayments_status: npStatus,
@@ -607,7 +674,6 @@ router.post('/webhook-nowpayments', async (req, res) => {
 
         console.log('💾 Pago actualizado:', pago.id, '→', estadoFinal);
 
-        // Si está confirmada → activar membresía
         if (estadoFinal === 'pagada') {
             const resultado = await activarMembresia(
                 pago.tienda_id,
@@ -625,7 +691,6 @@ router.post('/webhook-nowpayments', async (req, res) => {
                 });
             }
 
-            // Notificación opcional (silenciosa si la tabla no existe)
             try {
                 await supabaseAdmin
                     .from('notificaciones')
@@ -650,7 +715,6 @@ router.post('/webhook-nowpayments', async (req, res) => {
             });
         }
 
-        // Estados no confirmados
         return res.status(200).json({
             ok: true,
             procesado: true,
@@ -660,7 +724,6 @@ router.post('/webhook-nowpayments', async (req, res) => {
 
     } catch (e) {
         console.error('❌ Error procesando webhook:', e);
-        // Siempre 200 para evitar reintentos masivos
         return res.status(200).json({
             ok: true,
             error: e.message,
