@@ -1,5 +1,5 @@
 <!-- ================================================================
-     MERCADO - SARIEL'S ECOSYSTEM
+     CSARIEL'S ECOSYSTEM
      Catálogo de tiendas (vista del comprador)
      Ruta: /features/mercado/index.html
      Esquema real: bigint IDs, categoria_id (FK), nivel, activa_hasta,
@@ -10,7 +10,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>◈ Mercado · Sariel's</title>
+    <title>◈ Mercado · Csariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
@@ -348,6 +348,43 @@
             font-weight: 600;
         }
 
+        /* Botones rápidos del comprador */
+        .quick-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        .quick-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+            padding: 9px 16px;
+            border-radius: 30px;
+            font-size: 0.72rem;
+            text-decoration: none;
+            transition: var(--transition);
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+        }
+        .quick-btn:hover { border-color: var(--gold); color: var(--gold); }
+        .quick-btn.repartidor {
+            border-color: rgba(168,85,247,0.4);
+            color: var(--purple);
+        }
+        .quick-btn.repartidor:hover {
+            background: rgba(168,85,247,0.1);
+            border-color: var(--purple);
+            color: var(--purple);
+        }
+        .quick-btn.repartidor.verificado {
+            border-color: var(--success);
+            color: var(--success);
+        }
+
         /* Loading / empty */
         .loading-state {
             text-align: center;
@@ -463,6 +500,57 @@
             box-shadow: var(--shadow-gold);
         }
 
+        /* CTA repartidor */
+        .cta-repartidor {
+            background: linear-gradient(135deg, rgba(168,85,247,0.1), rgba(15,45,26,0.5));
+            border: 1px solid rgba(168,85,247,0.3);
+            border-radius: var(--radius-xl);
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+        .cta-repartidor .texto {
+            flex: 1;
+            min-width: 200px;
+        }
+        .cta-repartidor .texto .titulo {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.9rem;
+            color: var(--purple);
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .cta-repartidor .texto .subtitulo {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+        .cta-repartidor .btn-repartidor {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, var(--purple), #7c3aed);
+            color: #fff;
+            border: none;
+            border-radius: 30px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 0.72rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: var(--transition);
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .cta-repartidor .btn-repartidor:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(168,85,247,0.3);
+        }
+
         /* Toast */
         .toast {
             position: fixed; bottom: 30px; right: 20px;
@@ -515,8 +603,8 @@
         @media (max-width: 480px) {
             .mercado-header h1 { font-size: 1.2rem; }
             .tiendas-grid { grid-template-columns: 1fr; }
-            .cta-vendedor { flex-direction: column; align-items: stretch; text-align: center; }
-            .cta-vendedor .btn-vender { width: 100%; justify-content: center; }
+            .cta-vendedor, .cta-repartidor { flex-direction: column; align-items: stretch; text-align: center; }
+            .cta-vendedor .btn-vender, .cta-repartidor .btn-repartidor { width: 100%; justify-content: center; }
         }
     </style>
 </head>
@@ -531,7 +619,7 @@
         <header class="header">
             <a href="/" class="logo" aria-label="Ir a la página de inicio">
                 <span class="logo-hex">◈</span>
-                <span class="logo-text">Sariel<span>'s</span></span>
+                <span class="logo-text">Csariel<span>'s</span></span>
                 <span class="logo-badge">✦ WEB3</span>
             </a>
             <div class="header-actions">
@@ -554,16 +642,16 @@
         </nav>
 
         <!-- Botones rápidos del comprador -->
-        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
-            <a href="/features/mercado/mis-pedidos.html" class="btn-back" style="margin:0;">
+        <div class="quick-buttons">
+            <a href="/features/mercado/mis-pedidos.html" class="quick-btn">
                 📋 <span data-clave="mercado_mis_pedidos">Mis pedidos</span>
             </a>
-            <a href="/features/mercado/vendedor/panel.html" class="btn-back" style="margin:0;">
+            <a href="/features/mercado/vendedor/panel.html" class="quick-btn">
                 🏪 <span data-clave="mercado_mi_tienda">Mi tienda</span>
             </a>
-            <a href="/features/mercado/repartidor/panel.html" class="btn-back" style="margin:0;">
-                🛵 <span data-clave="mercado_soy_repartidor">Soy repartidor</span>
-            </a>
+            <button class="quick-btn repartidor" id="btnSoyRepartidor" onclick="irARepartidor()">
+                🛵 <span id="txtBtnRepartidor" data-clave="mercado_soy_repartidor">Ser repartidor</span>
+            </button>
         </div>
 
         <!-- Header del mercado -->
@@ -610,8 +698,21 @@
             </a>
         </div>
 
+        <!-- CTA repartidor -->
+        <div class="cta-repartidor">
+            <div class="texto">
+                <div class="titulo">🛵 ¿Quieres ganar dinero?</div>
+                <div class="subtitulo">
+                    Regístrate como repartidor y empieza a ganar entregando pedidos en tu ciudad.
+                </div>
+            </div>
+            <button class="btn-repartidor" onclick="irARepartidor()" id="btnCtaRepartidor">
+                ✨ Registrarme como repartidor
+            </button>
+        </div>
+
         <footer class="footer">
-            <span><span class="brand">◈ Sariel's</span> · <span data-clave="mercado_footer">Sabor al Paladar · WEB3</span></span>
+            <span><span class="brand">© Csariel's</span> · <span data-clave="mercado_footer">Sabor al Paladar · WEB3</span></span>
             <div class="footer-links">
                 <a href="/terminos" data-clave="footer_terminos">📜 Términos</a>
                 <a href="/privacidad" data-clave="footer_privacidad">🔒 Privacidad</a>
@@ -643,7 +744,27 @@
 
 <script>
 // ================================================================
-// CONFIGURACIÓN
+// ⚙️ CONFIGURACIÓN LEGAL — Csariel's Ecosystem
+// ================================================================
+// 👉 EDITA ESTE BLOQUE cuando tengas los datos legales listos
+// ================================================================
+var CONFIG_LEGAL = {
+    nombre_comercial: 'Csariel\'s',
+    nombre_ecosistema: 'Csariel\'s Ecosystem',
+    slogan: 'Sabor al Paladar · Repostería Fina · Web3',
+    razon_social: '',
+    rfc: '',
+    email_contacto: '',
+    sitio_web: '',
+    pais_operacion: 'México',
+    ciudad_operacion: 'Puebla'
+};
+// ================================================================
+// FIN DE CONFIGURACIÓN LEGAL
+// ================================================================
+
+// ================================================================
+// CONFIGURACIÓN APP
 // ================================================================
 var supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
 var supabaseKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
@@ -659,6 +780,7 @@ var tiendasCache = [];
 var categoriasCache = [];
 var filtroCategoria = null;
 var filtroBusqueda = '';
+var estadoRepartidor = null; // null | 'no_logueado' | 'no_registrado' | 'activo' | 'rechazado' | 'procesando' | 'revision_manual' | 'suspendido'
 
 // ================================================================
 // BANNER DE ERRORES
@@ -708,7 +830,7 @@ function formatearPrecio(n) {
 
 // Determina si la tienda está abierta ahora
 function tiendaEstaAbierta(tienda) {
-    if (!tienda.horario_apertura || !tienda.horario_cierre) return null; // sin horario
+    if (!tienda.horario_apertura || !tienda.horario_cierre) return null;
     try {
         var ahora = new Date();
         var ahoraMin = ahora.getHours() * 60 + ahora.getMinutes();
@@ -718,20 +840,11 @@ function tiendaEstaAbierta(tienda) {
         var apMin = parseInt(ap[0]) * 60 + parseInt(ap[1] || 0);
         var ciMin = parseInt(ci[0]) * 60 + parseInt(ci[1] || 0);
 
-        // Si cruza medianoche (ej: abre 22:00, cierra 02:00)
         if (ciMin < apMin) {
             return ahoraMin >= apMin || ahoraMin <= ciMin;
         }
         return ahoraMin >= apMin && ahoraMin <= ciMin;
     } catch (e) { return null; }
-}
-
-// ¿La membresía está activa?
-function membresiaActiva(tienda) {
-    if (!tienda.activa_hasta) return false;
-    try {
-        return new Date(tienda.activa_hasta) > new Date();
-    } catch (e) { return false; }
 }
 
 // Info del envío de una tienda
@@ -744,13 +857,13 @@ function infoEnvio(tienda) {
 }
 
 // ================================================================
-// CARGAR USUARIO (opcional, para badge de tokens)
+// CARGAR USUARIO
 // ================================================================
 async function cargarUsuarioActual() {
     try {
         var result = await supabase.auth.getSession();
         var session = result.data.session;
-        if (!session) return null;
+        if (!session) { sessionUser = null; return null; }
         sessionUser = session.user;
         var u = await supabase
             .from('usuarios')
@@ -763,6 +876,113 @@ async function cargarUsuarioActual() {
         }
         return u.data || null;
     } catch (e) { console.error('Error cargando usuario:', e); return null; }
+}
+
+// ================================================================
+// VERIFICAR ESTADO DEL REPARTIDOR
+// ================================================================
+async function verificarEstadoRepartidor() {
+    if (!sessionUser) {
+        estadoRepartidor = 'no_logueado';
+        return null;
+    }
+
+    try {
+        var result = await supabase
+            .from('mercado_repartidores')
+            .select('id, estado_verificacion, score_confianza, motivo_rechazo')
+            .eq('usuario_id', sessionUser.id)
+            .maybeSingle();
+
+        if (result.error && result.error.code !== 'PGRST116') throw result.error;
+
+        if (!result.data) {
+            estadoRepartidor = 'no_registrado';
+            return null;
+        }
+
+        estadoRepartidor = result.data.estado_verificacion || 'pendiente_registro';
+        return result.data;
+
+    } catch (e) {
+        console.error('Error verificando repartidor:', e);
+        estadoRepartidor = 'no_registrado';
+        return null;
+    }
+}
+
+// ================================================================
+// ACTUALIZAR BOTÓN "SER REPARTIDOR"
+// ================================================================
+function actualizarBotonRepartidor() {
+    var btn = document.getElementById('btnSoyRepartidor');
+    var btnCta = document.getElementById('btnCtaRepartidor');
+    var txt = document.getElementById('txtBtnRepartidor');
+
+    if (!btn || !txt) return;
+
+    if (estadoRepartidor === 'activo') {
+        // Ya verificado → mostrar "Panel Repartidor"
+        txt.textContent = 'Mi panel';
+        btn.classList.add('verificado');
+        if (btnCta) {
+            btnCta.innerHTML = '🛵 Ir a mi panel de repartidor';
+        }
+    } else if (estadoRepartidor === 'procesando' || estadoRepartidor === 'revision_manual') {
+        // En revisión → mostrar "Ver estado"
+        txt.textContent = 'Ver estado';
+        if (btnCta) {
+            btnCta.innerHTML = '⏳ Ver estado de verificación';
+        }
+    } else if (estadoRepartidor === 'rechazado') {
+        // Rechazado → mostrar "Reintentar"
+        txt.textContent = 'Reintentar registro';
+        if (btnCta) {
+            btnCta.innerHTML = '🔄 Reintentar registro como repartidor';
+        }
+    } else {
+        // No registrado o pendiente → mostrar "Ser repartidor"
+        txt.textContent = 'Ser repartidor';
+        if (btnCta) {
+            btnCta.innerHTML = '✨ Registrarme como repartidor';
+        }
+    }
+}
+
+// ================================================================
+// IR A REPARTIDOR (función inteligente)
+// ================================================================
+async function irARepartidor() {
+    // 1. Verificar sesión
+    if (!sessionUser) {
+        showToast('⚠️ Inicia sesión para ser repartidor', 'warning');
+        setTimeout(function () {
+            window.location.href = '/';
+        }, 1500);
+        return;
+    }
+
+    // 2. Re-verificar estado (por si cambió)
+    await verificarEstadoRepartidor();
+    actualizarBotonRepartidor();
+
+    // 3. Decidir a dónde ir
+    if (estadoRepartidor === 'activo') {
+        // Ya verificado → al panel
+        window.location.href = '/features/mercado/repartidor/panel.html';
+
+    } else if (estadoRepartidor === 'procesando' || estadoRepartidor === 'revision_manual') {
+        // En proceso → a ver estado
+        window.location.href = '/features/mercado/repartidor/estado-verificacion.html';
+
+    } else if (estadoRepartidor === 'rechazado') {
+        // Rechazado → a ver estado con opción de reintentar
+        window.location.href = '/features/mercado/repartidor/estado-verificacion.html';
+
+    } else {
+        // No registrado o pendiente → al registro
+        window.location.href = '/features/mercado/repartidor/registro.html';
+    }
 }
 
 // ================================================================
@@ -835,7 +1055,6 @@ async function cargarTiendas() {
 
         tiendasCache = result.data || [];
 
-        // Filtrar por búsqueda de texto (frontend)
         if (filtroBusqueda) {
             var q = filtroBusqueda.toLowerCase();
             tiendasCache = tiendasCache.filter(function (t) {
@@ -888,12 +1107,10 @@ function renderTiendas() {
         var portadaUrl = t.portada_url || null;
         var logoUrl = t.logo_url || null;
 
-        // Portada
         var portadaHTML = portadaUrl
             ? '<img src="' + escapeHTML(portadaUrl) + '" alt="" onerror="this.style.display=\'none\';this.parentElement.innerHTML=\'<span class=&quot;emoji-fallback&quot;>🏪</span>\';" />'
             : '<span class="emoji-fallback">🏪</span>';
 
-        // Badge horario
         var horarioHTML = '';
         if (abierta === true) {
             horarioHTML = '<span class="badge-horario abierto">● Abierto</span>';
@@ -901,22 +1118,18 @@ function renderTiendas() {
             horarioHTML = '<span class="badge-horario cerrado">● Cerrado</span>';
         }
 
-        // Logo
         var logoHTML = logoUrl
             ? '<img src="' + escapeHTML(logoUrl) + '" alt="" onerror="this.style.display=\'none\';this.parentElement.textContent=\'🏪\';" />'
             : '🏪';
 
-        // Chips
         var chips = '';
         if (t.acepta_delivery) chips += '<span class="chip delivery">🛵 Delivery</span>';
         if (t.acepta_pickup) chips += '<span class="chip pickup">🏪 Recoger</span>';
 
-        // Rating
         var ratingHTML = totalResenas > 0
             ? '<span class="rating">★ ' + rating.toFixed(1) + ' <span style="opacity:0.6;">(' + totalResenas + ')</span></span>'
             : '<span class="rating sin-rating">★ Sin reseñas</span>';
 
-        // Envío
         var envioHTML = envio.tipo === 'app'
             ? '<span class="costo">🛵 ' + envio.texto + '</span>'
             : '<span>🛵 Envío a coordinar</span>';
@@ -976,17 +1189,23 @@ function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
 // INICIALIZACIÓN
 // ================================================================
 document.addEventListener('DOMContentLoaded', async function () {
-    // Cargar usuario (opcional)
+    // 1. Cargar usuario
     await cargarUsuarioActual();
 
-    // Cargar categorías primero (para filtros)
+    // 2. Verificar estado del repartidor (si está logueado)
+    if (sessionUser) {
+        await verificarEstadoRepartidor();
+        actualizarBotonRepartidor();
+    }
+
+    // 3. Cargar categorías
     await cargarCategorias();
     renderCategorias();
 
-    // Cargar tiendas
+    // 4. Cargar tiendas
     await cargarTiendas();
 
-    // Idiomas
+    // 5. Idiomas
     setTimeout(async function () {
         try {
             if (typeof window.inicializarIdiomas === 'function') {
@@ -1005,6 +1224,7 @@ window.showToast = showToast;
 window.filtrarCategoria = filtrarCategoria;
 window.buscar = buscar;
 window.cargarTiendas = cargarTiendas;
+window.irARepartidor = irARepartidor;
 </script>
 </body>
 </html>
