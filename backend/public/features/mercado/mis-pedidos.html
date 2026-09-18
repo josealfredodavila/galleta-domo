@@ -1,6 +1,8 @@
 <!-- ================================================================
      MERCADO - SARIEL'S ECOSYSTEM
      Mis pedidos (vista del comprador)
+     Ruta: /features/mercado/mis-pedidos.html
+     Esquema real: bigint IDs, envio_cobrado_en_app, forma_pago
      ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
@@ -88,52 +90,33 @@
 
         .titulo {
             display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            gap: 10px;
+            margin-bottom: 20px; flex-wrap: wrap; gap: 10px;
         }
         .titulo h1 {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: var(--gold);
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            font-family: 'Orbitron', monospace; font-size: 1.3rem;
+            font-weight: 700; color: var(--gold);
+            display: flex; align-items: center; gap: 8px;
         }
         .titulo .count {
-            font-size: 0.65rem;
-            color: var(--text-muted);
-            background: rgba(0,0,0,0.35);
-            padding: 4px 12px;
-            border-radius: 20px;
-            border: 1px solid var(--glass-border);
+            font-size: 0.65rem; color: var(--text-muted);
+            background: rgba(0,0,0,0.35); padding: 4px 12px;
+            border-radius: 20px; border: 1px solid var(--glass-border);
         }
 
         /* Filtros */
         .filtros {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 16px;
-            overflow-x: auto;
-            padding: 4px 0;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
+            display: flex; gap: 8px; margin-bottom: 16px;
+            overflow-x: auto; padding: 4px 0;
+            -webkit-overflow-scrolling: touch; scrollbar-width: none;
         }
         .filtros::-webkit-scrollbar { display: none; }
         .filtro-btn {
-            flex-shrink: 0;
-            padding: 8px 16px;
-            background: rgba(0,0,0,0.35);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            color: var(--text-muted);
-            font-size: 0.7rem;
-            cursor: pointer;
+            flex-shrink: 0; padding: 8px 16px;
+            background: rgba(0,0,0,0.35); border: 1px solid var(--glass-border);
+            border-radius: 20px; color: var(--text-muted);
+            font-size: 0.7rem; cursor: pointer;
             transition: var(--transition);
-            display: flex;
-            align-items: center;
-            gap: 6px;
+            display: flex; align-items: center; gap: 6px;
             white-space: nowrap;
         }
         .filtro-btn:hover { border-color: var(--gold); color: var(--gold); }
@@ -172,10 +155,7 @@
         .pedido-card::before {
             content: '';
             position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 4px;
+            left: 0; top: 0; bottom: 0; width: 4px;
             background: var(--gold);
         }
         .pedido-card.pendiente::before { background: var(--warning); }
@@ -206,6 +186,7 @@
         .pedido-card .header-pedido .fecha {
             font-size: 0.6rem;
             color: var(--text-muted);
+            margin-top: 2px;
         }
         .pedido-card .estado-badge {
             font-size: 0.55rem;
@@ -215,7 +196,7 @@
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            border: 1px solid var(--line);
+            border: 1px solid var(--glass-border);
             background: rgba(0,0,0,0.3);
             white-space: nowrap;
         }
@@ -237,7 +218,6 @@
             align-items: center;
             gap: 6px;
         }
-
         .pedido-card .resumen-items {
             font-size: 0.7rem;
             color: var(--text-muted);
@@ -246,6 +226,35 @@
             -webkit-line-clamp: 1;
             -webkit-box-orient: vertical;
             overflow: hidden;
+        }
+        .pedido-card .mini-chips {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .mini-chip {
+            font-size: 0.55rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--glass-border);
+            color: var(--text-muted);
+        }
+        .mini-chip.envio-app {
+            color: var(--gold);
+            border-color: rgba(212,175,55,0.3);
+            background: rgba(212,175,55,0.08);
+        }
+        .mini-chip.envio-efectivo {
+            color: var(--cyan);
+            border-color: rgba(0,229,255,0.3);
+            background: rgba(0,229,255,0.08);
+        }
+        .mini-chip.pickup {
+            color: var(--purple);
+            border-color: rgba(168,85,247,0.3);
+            background: rgba(168,85,247,0.08);
         }
 
         .pedido-card .footer-pedido {
@@ -275,61 +284,41 @@
             font-weight: 600;
         }
 
-        /* Loading */
+        /* Loading / empty */
         .loading-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--text-muted);
+            text-align: center; padding: 60px 20px; color: var(--text-muted);
         }
         .loading-state .spinner {
             width: 40px; height: 40px;
             border: 3px solid rgba(212, 175, 55, 0.15);
             border-top-color: var(--gold);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
+            border-radius: 50%; animation: spin 0.8s linear infinite;
             margin: 0 auto 12px;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
         .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--text-muted);
-            background: var(--glass-bg);
+            text-align: center; padding: 60px 20px;
+            color: var(--text-muted); background: var(--glass-bg);
             border: 1px solid var(--glass-border);
             border-radius: var(--radius-xl);
         }
         .empty-state .icon {
-            font-size: 3.5rem;
-            display: block;
-            margin-bottom: 16px;
-            color: var(--gold);
-            opacity: 0.4;
+            font-size: 3.5rem; display: block; margin-bottom: 16px;
+            color: var(--gold); opacity: 0.4;
         }
         .empty-state h3 {
             font-family: 'Orbitron', monospace;
-            color: var(--text-secondary);
-            font-size: 1rem;
-            margin-bottom: 8px;
+            color: var(--text-secondary); font-size: 1rem; margin-bottom: 8px;
         }
-        .empty-state p {
-            font-size: 0.85rem;
-            margin-bottom: 20px;
-        }
+        .empty-state p { font-size: 0.85rem; margin-bottom: 20px; }
         .empty-state .btn-ir-mercado {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
+            display: inline-flex; align-items: center; gap: 8px;
             padding: 12px 28px;
             background: linear-gradient(135deg, var(--gold), var(--gold-dark));
-            color: var(--space);
-            border: none;
-            border-radius: 30px;
-            font-family: 'Orbitron', monospace;
-            font-weight: 700;
-            font-size: 0.8rem;
-            cursor: pointer;
-            text-decoration: none;
+            color: var(--space); border: none; border-radius: 30px;
+            font-family: 'Orbitron', monospace; font-weight: 700;
+            font-size: 0.8rem; cursor: pointer; text-decoration: none;
             transition: var(--transition);
         }
         .empty-state .btn-ir-mercado:hover {
@@ -337,6 +326,7 @@
             box-shadow: var(--shadow-gold);
         }
 
+        /* Toast */
         .toast {
             position: fixed; bottom: 30px; right: 20px;
             background: var(--green-deep); border: 1px solid var(--gold);
@@ -502,9 +492,9 @@ var supabase = supabaseClient;
 var sessionUser = null;
 var pedidosCache = [];
 var tiendasCache = {};
+var itemsPorPedido = {};
 var filtroActual = 'todos';
 
-// Estados considerados "activos"
 var ESTADOS_ACTIVOS = ['pendiente', 'aceptado', 'preparando', 'listo', 'asignado', 'en_camino'];
 var ESTADOS_ENTREGADOS = ['entregado'];
 var ESTADOS_CANCELADOS = ['cancelado', 'rechazado'];
@@ -537,9 +527,7 @@ function showToast(mensaje, tipo) {
         else if (tipo === 'warning') toastEl.classList.add('warning');
         else if (tipo === 'success') toastEl.classList.add('success');
         clearTimeout(toastEl._timeout);
-        toastEl._timeout = setTimeout(function() {
-            toastEl.classList.remove('show');
-        }, 3000);
+        toastEl._timeout = setTimeout(function() { toastEl.classList.remove('show'); }, 3000);
     } catch (e) { console.warn('Toast error:', e); }
 }
 
@@ -593,7 +581,7 @@ async function cargarUsuarioActual() {
         sessionUser = session.user;
         var u = await supabase
             .from('usuarios')
-            .select('nombre, handle, avatar_url, tokens')
+            .select('nombre, handle, tokens')
             .eq('id', session.user.id)
             .single();
         if (!u.error && u.data) {
@@ -645,6 +633,9 @@ async function cargarPedidos() {
             }
         }
 
+        // Cargar items en batch para resumen
+        await cargarItemsBatch(pedidosCache);
+
         // Actualizar contador
         var contador = document.getElementById('contadorPedidos');
         if (contador) contador.textContent = pedidosCache.length;
@@ -659,19 +650,43 @@ async function cargarPedidos() {
 }
 
 // ================================================================
-// FILTRAR PEDIDOS
+// CARGAR ITEMS EN BATCH
+// ================================================================
+async function cargarItemsBatch(pedidos) {
+    if (!pedidos || pedidos.length === 0) return;
+    var ids = pedidos.map(function (p) { return p.id; });
+
+    try {
+        var result = await supabase
+            .from('mercado_pedido_items')
+            .select('pedido_id, nombre_producto, cantidad')
+            .in('pedido_id', ids);
+
+        if (result.error) throw result.error;
+
+        itemsPorPedido = {};
+        (result.data || []).forEach(function (it) {
+            if (!itemsPorPedido[it.pedido_id]) itemsPorPedido[it.pedido_id] = [];
+            itemsPorPedido[it.pedido_id].push(it);
+        });
+    } catch (e) {
+        console.error('Error cargando items:', e);
+        itemsPorPedido = {};
+    }
+}
+
+// ================================================================
+// FILTRAR
 // ================================================================
 function filtrarPedidos(filtro, btn) {
     filtroActual = filtro;
-    document.querySelectorAll('.filtro-btn').forEach(function (b) {
-        b.classList.remove('active');
-    });
+    document.querySelectorAll('.filtro-btn').forEach(function (b) { b.classList.remove('active'); });
     if (btn) btn.classList.add('active');
     renderizarPedidos();
 }
 
 // ================================================================
-// RENDERIZAR PEDIDOS
+// RENDERIZAR
 // ================================================================
 function renderizarPedidos() {
     var container = document.getElementById('pedidosContainer');
@@ -711,38 +726,69 @@ function renderizarPedidos() {
     var html = '<div class="pedidos-lista">';
 
     filtrados.forEach(function (p) {
-        var estado = (p.estado || 'pendiente').toLowerCase();
-        var tienda = tiendasCache[p.tienda_id] || null;
-        var tiendaNombre = tienda ? tienda.nombre_negocio : 'Tienda';
-
-        // Armar resumen de items
-        var resumenItems = 'Pedido';
-        if (p.tipo_entrega === 'pickup') resumenItems = '🏪 Recoger en tienda';
-        else resumenItems = '🛵 Delivery';
-
-        html += '<a href="/features/mercado/pedido.html?id=' + p.id + '" class="pedido-card ' + estado + '">' +
-            '<div class="header-pedido">' +
-                '<div>' +
-                    '<div class="codigo">' + escapeHTML(p.codigo || '—') + '</div>' +
-                    '<div class="fecha">' + formatearFecha(p.created_at) + '</div>' +
-                '</div>' +
-                '<span class="estado-badge ' + estado + '">' + traducirEstado(estado) + '</span>' +
-            '</div>' +
-            '<div class="tienda-nombre">🏪 ' + escapeHTML(tiendaNombre) + '</div>' +
-            '<div class="resumen-items">' + resumenItems + ' · ' + (p.total_items || 0) + ' item(s)</div>' +
-            '<div class="footer-pedido">' +
-                '<div class="total">' + formatearPrecio(p.total_mxn) + '</div>' +
-                '<div class="accion ver">' +
-                    '<span data-clave="mercado_ver_detalle">Ver detalle</span> →' +
-                '</div>' +
-            '</div>' +
-        '</a>';
+        html += renderPedidoCard(p);
     });
 
     html += '</div>';
     container.innerHTML = html;
 
     if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
+}
+
+function renderPedidoCard(p) {
+    var estado = (p.estado || 'pendiente').toLowerCase();
+    var tienda = tiendasCache[p.tienda_id] || null;
+    var tiendaNombre = tienda ? tienda.nombre_negocio : 'Tienda';
+
+    var items = itemsPorPedido[p.id] || [];
+    var resumenItems = '';
+    if (items.length > 0) {
+        var nombres = items.slice(0, 2).map(function (it) {
+            return it.cantidad + '× ' + escapeHTML(it.nombre_producto || 'Producto');
+        }).join(', ');
+        if (items.length > 2) {
+            nombres += ' +' + (items.length - 2) + ' más';
+        }
+        resumenItems = nombres;
+    } else {
+        resumenItems = 'Cargando productos...';
+    }
+
+    // Mini chips de info
+    var chips = '';
+    if (p.tipo_entrega === 'pickup') {
+        chips += '<span class="mini-chip pickup">🏪 Recoger</span>';
+    } else {
+        chips += '<span class="mini-chip">🛵 Delivery</span>';
+        if (p.envio_cobrado_en_app) {
+            chips += '<span class="mini-chip envio-app">💳 Envío ' + formatearPrecio(p.envio_mxn) + '</span>';
+        } else {
+            chips += '<span class="mini-chip envio-efectivo">💵 Envío al repartidor</span>';
+        }
+    }
+    if (p.forma_pago) {
+        var iconPago = p.forma_pago === 'transferencia' ? '🏦' : '💵';
+        chips += '<span class="mini-chip">' + iconPago + ' ' + escapeHTML(p.forma_pago) + '</span>';
+    }
+
+    return '<a href="/features/mercado/pedido.html?id=' + p.id + '" class="pedido-card ' + estado + '">' +
+        '<div class="header-pedido">' +
+            '<div>' +
+                '<div class="codigo">' + escapeHTML(p.codigo || '—') + '</div>' +
+                '<div class="fecha">' + formatearFecha(p.created_at) + '</div>' +
+            '</div>' +
+            '<span class="estado-badge ' + estado + '">' + traducirEstado(estado) + '</span>' +
+        '</div>' +
+        '<div class="tienda-nombre">🏪 ' + escapeHTML(tiendaNombre) + '</div>' +
+        '<div class="resumen-items">' + resumenItems + '</div>' +
+        (chips ? '<div class="mini-chips">' + chips + '</div>' : '') +
+        '<div class="footer-pedido">' +
+            '<div class="total">' + formatearPrecio(p.total_mxn) + '</div>' +
+            '<div class="accion ver">' +
+                '<span data-clave="mercado_ver_detalle">Ver detalle</span> →' +
+            '</div>' +
+        '</div>' +
+    '</a>';
 }
 
 // ================================================================
