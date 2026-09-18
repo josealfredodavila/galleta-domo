@@ -1,6 +1,7 @@
 <!-- ================================================================
      MERCADO - SARIEL'S ECOSYSTEM
      Detalle y seguimiento de un pedido (vista del comprador)
+     + Auto-refresh · Modal cancelación · Nota envío efectivo · Card repartidor
      ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
@@ -109,7 +110,7 @@
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            border: 1px solid var(--line);
+            border: 1px solid var(--glass-border);
             background: rgba(0,0,0,0.3);
         }
         .estado-badge.pendiente { color: var(--warning); border-color: var(--warning); }
@@ -163,7 +164,7 @@
             letter-spacing: 2px;
         }
 
-        /* Timeline de seguimiento */
+        /* Timeline vertical */
         .timeline {
             display: flex;
             flex-direction: column;
@@ -296,6 +297,19 @@
             margin-top: 6px;
         }
 
+        /* MEJORA 3: Nota de envío en efectivo */
+        .envio-nota {
+            margin-top: 12px;
+            padding: 12px 14px;
+            background: rgba(0,229,255,0.08);
+            border: 1px solid rgba(0,229,255,0.3);
+            border-radius: 12px;
+            font-size: 0.72rem;
+            color: var(--cyan);
+            line-height: 1.5;
+        }
+        .envio-nota strong { color: var(--cyan); }
+
         /* Info grid */
         .info-grid {
             display: grid;
@@ -321,6 +335,53 @@
             word-wrap: break-word;
         }
         .info-item.full { grid-column: span 2; }
+
+        /* MEJORA 4: Card del repartidor */
+        .repartidor-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: rgba(168,85,247,0.08);
+            border: 1px solid rgba(168,85,247,0.3);
+            border-radius: 14px;
+        }
+        .repartidor-card .avatar {
+            width: 48px; height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--purple), #7c3aed);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem;
+            color: #fff;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+        .repartidor-card .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .repartidor-card .info-rep { flex: 1; min-width: 0; }
+        .repartidor-card .info-rep .nombre-rep {
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+        .repartidor-card .info-rep .tel-rep {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+        .repartidor-card .btn-tel {
+            background: var(--purple);
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-size: 0.7rem;
+            font-weight: 600;
+            flex-shrink: 0;
+            transition: var(--transition);
+            border: none;
+            cursor: pointer;
+        }
+        .repartidor-card .btn-tel:hover { transform: translateY(-2px); }
 
         /* Botones */
         .acciones {
@@ -375,6 +436,7 @@
             cursor: pointer;
             color: var(--text-muted);
             transition: var(--transition);
+            user-select: none;
         }
         .estrella:hover,
         .estrella.activa {
@@ -423,6 +485,91 @@
             color: var(--text-secondary);
             font-style: italic;
         }
+
+        /* MEJORA 2: Modal de cancelación custom */
+        .modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(10px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal {
+            background: linear-gradient(135deg, var(--glass-bg), rgba(5,8,15,0.98));
+            border: 2px solid var(--danger);
+            border-radius: var(--radius-xl);
+            padding: 26px 22px;
+            max-width: 420px;
+            width: 100%;
+            position: relative;
+            animation: scaleIn 0.3s ease;
+        }
+        @keyframes scaleIn {
+            from { transform: scale(0.85); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .modal .close-btn {
+            position: absolute; top: 10px; right: 15px;
+            background: transparent; border: none;
+            color: var(--text-muted); font-size: 1.5rem;
+            cursor: pointer; transition: var(--transition);
+        }
+        .modal .close-btn:hover { color: var(--text-primary); transform: rotate(90deg); }
+        .modal h2 {
+            font-family: 'Orbitron', monospace;
+            color: var(--danger);
+            font-size: 1rem;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .modal p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        .modal .modal-botones {
+            display: flex;
+            gap: 10px;
+        }
+        .modal .modal-botones button { flex: 1; }
+
+        /* MEJORA 1: Indicador de auto-refresh */
+        .live-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.6rem;
+            color: var(--success);
+            background: rgba(0,214,143,0.08);
+            border: 1px solid rgba(0,214,143,0.3);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-family: 'Orbitron', monospace;
+            letter-spacing: 0.5px;
+        }
+        .live-indicator .pulse-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: livePulse 1.5s ease-in-out infinite;
+        }
+        @keyframes livePulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(1.4); }
+        }
+        .live-indicator.off {
+            color: var(--text-muted);
+            background: rgba(0,0,0,0.3);
+            border-color: var(--glass-border);
+        }
+        .live-indicator.off .pulse-dot { background: var(--text-muted); animation: none; }
 
         .loading-state {
             text-align: center;
@@ -508,12 +655,15 @@
         html.tema-dia .main-nav .nav-link, html[data-tema="dia"] .main-nav .nav-link { color: #718096 !important; }
         html.tema-dia .main-nav .nav-link.active, html[data-tema="dia"] .main-nav .nav-link.active { background: rgba(212, 175, 55, 0.15) !important; color: var(--gold) !important; }
         html.tema-dia .footer, html[data-tema="dia"] .footer { color: #718096 !important; border-top-color: rgba(0, 0, 0, 0.1) !important; }
+        html.tema-dia .item-pedido, html[data-tema="dia"] .item-pedido { background: rgba(0, 0, 0, 0.03) !important; }
+        html.tema-dia .info-grid .info-item, html[data-tema="dia"] .info-grid .info-item { background: rgba(0, 0, 0, 0.03) !important; }
 
         @media (max-width: 480px) {
             .info-grid { grid-template-columns: 1fr; }
             .info-item.full { grid-column: span 1; }
             .codigo-box .codigo { font-size: 1.1rem; }
             .titulo h1 { font-size: 1rem; }
+            .modal .modal-botones { flex-direction: column; }
         }
     </style>
 </head>
@@ -574,6 +724,23 @@
 
     </div>
 
+    <!-- MEJORA 2: Modal de cancelación custom -->
+    <div class="modal-overlay" id="modalCancelar">
+        <div class="modal">
+            <button class="close-btn" onclick="cerrarModalCancelar()" aria-label="Cerrar">×</button>
+            <h2>⚠️ Cancelar pedido</h2>
+            <p data-clave="mercado_cancelar_confirmar">¿Seguro que quieres cancelar este pedido? Esta acción no se puede deshacer.</p>
+            <div class="modal-botones">
+                <button class="btn-accion btn-secundario" onclick="cerrarModalCancelar()">
+                    <span data-clave="mercado_no_volver">No, volver</span>
+                </button>
+                <button class="btn-accion btn-peligro" id="btnConfirmarCancelar" onclick="confirmarCancelarPedido()">
+                    <span data-clave="mercado_si_cancelar">Sí, cancelar</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div class="toast" id="toast" role="alert" aria-live="polite"></div>
 
     <div id="errorBanner" style="
@@ -609,11 +776,16 @@ var sessionUser = null;
 var pedidoActual = null;
 var itemsPedido = [];
 var tiendaPedido = null;
+var repartidorPedido = null;
 var resenaExistente = null;
 var calificacionSeleccionada = 0;
+var autoRefreshTimer = null;
+var AUTO_REFRESH_MS = 20000;
+var pedidoId = null;
 
 // Estados válidos y su orden para timeline
 var ESTADOS_ORDEN = ['pendiente', 'aceptado', 'preparando', 'listo', 'asignado', 'en_camino', 'entregado'];
+var ESTADOS_TERMINALES = ['entregado', 'cancelado', 'rechazado'];
 
 // ================================================================
 // BANNER DE ERRORES
@@ -705,15 +877,19 @@ async function cargarUsuarioActual() {
 // ================================================================
 // CARGAR PEDIDO POR ID
 // ================================================================
-async function cargarPedido(pedidoId) {
+async function cargarPedido(idPedido, silencioso) {
     var container = document.getElementById('pedidoContainer');
     if (!container) return;
+
+    if (!silencioso) {
+        container.innerHTML = '<div class="loading-state"><div class="spinner"></div><p data-clave="mercado_cargando_pedido">Cargando pedido...</p></div>';
+    }
 
     try {
         var result = await supabase
             .from('mercado_pedidos')
             .select('*')
-            .eq('id', pedidoId)
+            .eq('id', idPedido)
             .maybeSingle();
 
         if (result.error) throw result.error;
@@ -726,8 +902,13 @@ async function cargarPedido(pedidoId) {
                 '<a href="/features/mercado/mis-pedidos.html" class="btn-back" style="margin-top:16px;">← <span data-clave="mercado_volver_pedidos">Volver a mis pedidos</span></a>' +
             '</div>';
             if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
+            detenerAutoRefresh();
             return;
         }
+
+        // Si es refresco silencioso y el estado no cambió, no re-renderizar
+        var estadoAnterior = pedidoActual ? pedidoActual.estado : null;
+        var esPrimeraCarga = !pedidoActual;
 
         pedidoActual = result.data;
 
@@ -739,33 +920,53 @@ async function cargarPedido(pedidoId) {
                 '<a href="/features/mercado/mis-pedidos.html" class="btn-back" style="margin-top:16px;">← <span data-clave="mercado_volver_pedidos">Volver a mis pedidos</span></a>' +
             '</div>';
             if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
+            detenerAutoRefresh();
             return;
         }
 
-        // Cargar items y tienda en paralelo
+        // Si es refresco y el estado no cambió, salir sin re-render
+        if (silencioso && !esPrimeraCarga && estadoAnterior === pedidoActual.estado) {
+            return;
+        }
+
+        // Cargar datos relacionados en paralelo
         await Promise.all([
             cargarItemsPedido(pedidoActual.id),
             cargarTiendaPedido(pedidoActual.tienda_id),
+            cargarRepartidorPedido(pedidoActual.repartidor_id),
             cargarResenaExistente(pedidoActual.id)
         ]);
 
         renderizarPedido();
 
+        // MEJORA 1: Avisar si el estado cambió en un refresh
+        if (silencioso && !esPrimeraCarga && estadoAnterior && estadoAnterior !== pedidoActual.estado) {
+            showToast('🔄 Estado actualizado: ' + traducirEstado(pedidoActual.estado), 'success');
+        }
+
+        // Detener auto-refresh si llegó a estado terminal
+        if (ESTADOS_TERMINALES.indexOf((pedidoActual.estado || '').toLowerCase()) !== -1) {
+            detenerAutoRefresh();
+        }
+
     } catch (e) {
         console.error('Error cargando pedido:', e);
-        container.innerHTML = '<div class="empty-state"><span class="icon">⚠️</span><h3>Error al cargar</h3><p>' + escapeHTML(e.message) + '</p></div>';
+        if (!silencioso) {
+            container.innerHTML = '<div class="empty-state"><span class="icon">⚠️</span><h3>Error al cargar</h3><p>' + escapeHTML(e.message) + '</p></div>';
+        }
+        detenerAutoRefresh();
     }
 }
 
 // ================================================================
 // CARGAR ITEMS DEL PEDIDO
 // ================================================================
-async function cargarItemsPedido(pedidoId) {
+async function cargarItemsPedido(idPedido) {
     try {
         var result = await supabase
             .from('mercado_pedido_items')
             .select('*')
-            .eq('pedido_id', pedidoId)
+            .eq('pedido_id', idPedido)
             .order('id', { ascending: true });
         if (result.error) throw result.error;
         itemsPedido = result.data || [];
@@ -781,6 +982,7 @@ async function cargarItemsPedido(pedidoId) {
 // CARGAR TIENDA DEL PEDIDO
 // ================================================================
 async function cargarTiendaPedido(tiendaId) {
+    if (!tiendaId) { tiendaPedido = null; return null; }
     try {
         var result = await supabase
             .from('mercado_tiendas')
@@ -798,14 +1000,54 @@ async function cargarTiendaPedido(tiendaId) {
 }
 
 // ================================================================
+// MEJORA 4: CARGAR REPARTIDOR DEL PEDIDO
+// ================================================================
+async function cargarRepartidorPedido(repartidorId) {
+    if (!repartidorId) { repartidorPedido = null; return null; }
+    try {
+        // Intenta buscar en usuarios (más probable)
+        var result = await supabase
+            .from('usuarios')
+            .select('id, nombre, handle, avatar_url, telefono')
+            .eq('id', repartidorId)
+            .maybeSingle();
+
+        if (result.error) throw result.error;
+
+        // Si no tiene teléfono en usuarios, intenta buscar en mercado_repartidores
+        if (result.data && !result.data.telefono) {
+            try {
+                var repRes = await supabase
+                    .from('mercado_repartidores')
+                    .select('telefono, vehiculo, placas')
+                    .eq('usuario_id', repartidorId)
+                    .maybeSingle();
+                if (!repRes.error && repRes.data) {
+                    result.data.telefono = repRes.data.telefono;
+                    result.data.vehiculo = repRes.data.vehiculo;
+                    result.data.placas = repRes.data.placas;
+                }
+            } catch (e2) { /* silencioso */ }
+        }
+
+        repartidorPedido = result.data;
+        return repartidorPedido;
+    } catch (e) {
+        console.error('Error cargando repartidor:', e);
+        repartidorPedido = null;
+        return null;
+    }
+}
+
+// ================================================================
 // CARGAR RESEÑA EXISTENTE
 // ================================================================
-async function cargarResenaExistente(pedidoId) {
+async function cargarResenaExistente(idPedido) {
     try {
         var result = await supabase
             .from('mercado_resenas')
             .select('*')
-            .eq('pedido_id', pedidoId)
+            .eq('pedido_id', idPedido)
             .eq('comprador_id', sessionUser.id)
             .maybeSingle();
         if (result.error && result.error.code !== 'PGRST116') throw result.error;
@@ -828,13 +1070,20 @@ function renderizarPedido() {
     var p = pedidoActual;
     var estado = (p.estado || 'pendiente').toLowerCase();
     var estadoTexto = traducirEstado(estado);
+    var esTerminal = ESTADOS_TERMINALES.indexOf(estado) !== -1;
 
     var html = '';
 
-    // Título + estado
+    // Título + estado + indicador live
     html += '<div class="titulo">';
     html += '<h1>📦 <span data-clave="mercado_pedido">Pedido</span></h1>';
+    html += '<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">';
     html += '<span class="estado-badge ' + estado + '">' + estadoTexto + '</span>';
+    html += '<span class="live-indicator' + (esTerminal ? ' off' : '') + '" id="liveIndicator">';
+    html += '<span class="pulse-dot"></span>';
+    html += esTerminal ? 'Finalizado' : 'En vivo';
+    html += '</span>';
+    html += '</div>';
     html += '</div>';
 
     // Código
@@ -887,7 +1136,6 @@ function renderizarPedido() {
 
     var idxActual = ESTADOS_ORDEN.indexOf(estado);
     if (estado === 'cancelado' || estado === 'rechazado') {
-        // Estado terminal fuera del flujo
         html += renderTimelineItem('cancelado', true, false, formatearFecha(p.cancelado_en || p.updated_at));
     } else {
         ESTADOS_ORDEN.forEach(function (est, i) {
@@ -929,6 +1177,14 @@ function renderizarPedido() {
     html += '<div class="fila total"><span data-clave="mercado_total">Total</span><span>' + formatearPrecio(p.total_mxn) + '</span></div>';
     html += '</div>';
 
+    // MEJORA 3: Nota de envío en efectivo (solo si es delivery)
+    if (p.tipo_entrega !== 'pickup') {
+        html += '<div class="envio-nota">' +
+            '🛵 <strong>Envío:</strong> se paga en efectivo directamente al repartidor al momento de la entrega. ' +
+            'El monto lo coordinas con él.' +
+        '</div>';
+    }
+
     html += '</div>';
 
     // Info de la tienda
@@ -954,7 +1210,6 @@ function renderizarPedido() {
         }
         html += '</div>';
 
-        // Botón WhatsApp
         if (tiendaPedido.whatsapp) {
             var waNum = tiendaPedido.whatsapp.replace(/\D/g, '');
             html += '<a href="https://wa.me/' + waNum + '?text=' + encodeURIComponent('Hola, sobre mi pedido ' + (p.codigo || '')) + '" target="_blank" rel="noopener" class="btn-accion btn-secundario" style="width:100%;margin-top:14px;">';
@@ -965,11 +1220,38 @@ function renderizarPedido() {
         html += '</div>';
     }
 
+    // MEJORA 4: Card del repartidor (si está asignado)
+    if (repartidorPedido) {
+        var avatarRep = repartidorPedido.avatar_url
+            ? '<img src="' + escapeHTML(repartidorPedido.avatar_url) + '" alt="" onerror="this.style.display=\'none\';this.parentElement.textContent=\'🛵\';" />'
+            : '🛵';
+        var nombreRep = repartidorPedido.nombre || repartidorPedido.handle || 'Repartidor';
+        var telRep = repartidorPedido.telefono || '';
+
+        html += '<div class="seccion-card">';
+        html += '<h2>🛵 <span data-clave="mercado_repartidor">Tu repartidor</span></h2>';
+        html += '<div class="repartidor-card">';
+        html += '<div class="avatar">' + avatarRep + '</div>';
+        html += '<div class="info-rep">';
+        html += '<div class="nombre-rep">' + escapeHTML(nombreRep) + '</div>';
+        if (telRep) {
+            html += '<div class="tel-rep">📞 ' + escapeHTML(telRep) + '</div>';
+        } else {
+            html += '<div class="tel-rep" style="opacity:0.5;">Sin teléfono registrado</div>';
+        }
+        html += '</div>';
+        if (telRep) {
+            html += '<a href="tel:' + escapeHTML(telRep) + '" class="btn-tel">📞 Llamar</a>';
+        }
+        html += '</div>';
+        html += '</div>';
+    }
+
     // Botón cancelar (solo si está pendiente)
     if (estado === 'pendiente') {
         html += '<div class="seccion-card">';
         html += '<div class="acciones">';
-        html += '<button class="btn-accion btn-peligro" onclick="cancelarPedido()">';
+        html += '<button class="btn-accion btn-peligro" onclick="abrirModalCancelar()">';
         html += '❌ <span data-clave="mercado_cancelar_pedido">Cancelar pedido</span>';
         html += '</button>';
         html += '</div>';
@@ -982,7 +1264,6 @@ function renderizarPedido() {
         html += '<h2>⭐ <span data-clave="mercado_calificar">Calificar al vendedor</span></h2>';
 
         if (resenaExistente) {
-            // Ya existe reseña
             var estrellas = '';
             for (var i = 1; i <= 5; i++) {
                 estrellas += i <= resenaExistente.calificacion ? '⭐' : '☆';
@@ -995,10 +1276,9 @@ function renderizarPedido() {
             html += '<div style="font-size:0.6rem;color:var(--text-muted);margin-top:8px;" data-clave="mercado_ya_calificaste">Ya calificaste este pedido</div>';
             html += '</div>';
         } else {
-            // Formulario de reseña
             html += '<div class="estrellas-input" id="estrellasInput">';
-            for (var i = 1; i <= 5; i++) {
-                html += '<span class="estrella" data-valor="' + i + '" onclick="seleccionarEstrella(' + i + ')">★</span>';
+            for (var j = 1; j <= 5; j++) {
+                html += '<span class="estrella" data-valor="' + j + '" onclick="seleccionarEstrella(' + j + ')">★</span>';
             }
             html += '</div>';
             html += '<div class="form-group">';
@@ -1026,6 +1306,15 @@ function renderizarPedido() {
     html += '</div>';
 
     container.innerHTML = html;
+
+    // Restaurar estrellas seleccionadas si había
+    if (calificacionSeleccionada > 0) {
+        var estrellasUI = document.querySelectorAll('#estrellasInput .estrella');
+        estrellasUI.forEach(function (el) {
+            var v = parseInt(el.getAttribute('data-valor'));
+            if (v <= calificacionSeleccionada) el.classList.add('activa');
+        });
+    }
 
     if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
 }
@@ -1098,15 +1387,32 @@ function traducirEstado(estado) {
 }
 
 // ================================================================
-// CANCELAR PEDIDO
+// MEJORA 2: MODAL DE CANCELACIÓN CUSTOM
 // ================================================================
-async function cancelarPedido() {
-    if (!pedidoActual) return;
-    if (pedidoActual.estado !== 'pendiente') {
+function abrirModalCancelar() {
+    if (!pedidoActual || pedidoActual.estado !== 'pendiente') {
         showToast('⚠️ Ya no se puede cancelar', 'warning');
         return;
     }
-    if (!confirm('¿Seguro que quieres cancelar este pedido?')) return;
+    var modal = document.getElementById('modalCancelar');
+    if (modal) modal.classList.add('show');
+}
+
+function cerrarModalCancelar() {
+    var modal = document.getElementById('modalCancelar');
+    if (modal) modal.classList.remove('show');
+}
+
+async function confirmarCancelarPedido() {
+    if (!pedidoActual) return;
+    if (pedidoActual.estado !== 'pendiente') {
+        showToast('⚠️ Ya no se puede cancelar', 'warning');
+        cerrarModalCancelar();
+        return;
+    }
+
+    var btn = document.getElementById('btnConfirmarCancelar');
+    if (btn) { btn.disabled = true; btn.innerHTML = 'Cancelando...'; }
 
     try {
         var updateResult = await supabase
@@ -1124,13 +1430,19 @@ async function cancelarPedido() {
 
         if (updateResult.error) throw updateResult.error;
 
+        cerrarModalCancelar();
         showToast('✅ Pedido cancelado', 'success');
         pedidoActual = updateResult.data;
+        detenerAutoRefresh();
         renderizarPedido();
 
     } catch (e) {
         console.error('Error cancelando:', e);
         showToast('❌ Error: ' + e.message, 'error');
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<span data-clave="mercado_si_cancelar">Sí, cancelar</span>';
+        }
     }
 }
 
@@ -1211,6 +1523,7 @@ async function enviarResena() {
         }
 
         resenaExistente = insertResult.data;
+        calificacionSeleccionada = 0;
         showToast('⭐ ¡Gracias por tu calificación!', 'success');
         renderizarPedido();
 
@@ -1221,6 +1534,40 @@ async function enviarResena() {
 }
 
 // ================================================================
+// MEJORA 1: AUTO-REFRESH
+// ================================================================
+function iniciarAutoRefresh() {
+    detenerAutoRefresh();
+    autoRefreshTimer = setInterval(function () {
+        if (!pedidoId) return;
+        // No refrescar si la pestaña no es visible (ahorra recursos)
+        if (document.hidden) return;
+        cargarPedido(pedidoId, true);
+    }, AUTO_REFRESH_MS);
+}
+
+function detenerAutoRefresh() {
+    if (autoRefreshTimer) {
+        clearInterval(autoRefreshTimer);
+        autoRefreshTimer = null;
+    }
+}
+
+// Pausar auto-refresh cuando la pestaña no es visible, reanudar al volver
+document.addEventListener('visibilitychange', function () {
+    if (document.hidden) {
+        detenerAutoRefresh();
+    } else if (pedidoId) {
+        var est = pedidoActual ? (pedidoActual.estado || '').toLowerCase() : '';
+        if (ESTADOS_TERMINALES.indexOf(est) === -1) {
+            // Refrescar inmediatamente al volver
+            cargarPedido(pedidoId, true);
+            iniciarAutoRefresh();
+        }
+    }
+});
+
+// ================================================================
 // VER TOKENS
 // ================================================================
 function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
@@ -1229,14 +1576,8 @@ function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
 // INICIALIZACIÓN
 // ================================================================
 document.addEventListener('DOMContentLoaded', async function () {
-    await cargarUsuarioActual();
+    pedidoId = getParamURL('id');
 
-    if (!sessionUser) {
-        window.location.href = '/';
-        return;
-    }
-
-    var pedidoId = getParamURL('id');
     if (!pedidoId) {
         var container = document.getElementById('pedidoContainer');
         if (container) {
@@ -1249,7 +1590,20 @@ document.addEventListener('DOMContentLoaded', async function () {
         return;
     }
 
-    await cargarPedido(pedidoId);
+    await cargarUsuarioActual();
+
+    if (!sessionUser) {
+        window.location.href = '/';
+        return;
+    }
+
+    await cargarPedido(pedidoId, false);
+
+    // Iniciar auto-refresh solo si no es estado terminal
+    var est = pedidoActual ? (pedidoActual.estado || '').toLowerCase() : '';
+    if (ESTADOS_TERMINALES.indexOf(est) === -1) {
+        iniciarAutoRefresh();
+    }
 
     setTimeout(async function () {
         try {
@@ -1264,7 +1618,9 @@ document.addEventListener('DOMContentLoaded', async function () {
 // ================================================================
 // EXPOSICIÓN GLOBAL
 // ================================================================
-window.cancelarPedido = cancelarPedido;
+window.abrirModalCancelar = abrirModalCancelar;
+window.cerrarModalCancelar = cerrarModalCancelar;
+window.confirmarCancelarPedido = confirmarCancelarPedido;
 window.seleccionarEstrella = seleccionarEstrella;
 window.enviarResena = enviarResena;
 window.verTokens = verTokens;
