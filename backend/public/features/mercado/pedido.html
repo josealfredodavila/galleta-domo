@@ -1,0 +1,1274 @@
+<!-- ================================================================
+     MERCADO - SARIEL'S ECOSYSTEM
+     Detalle y seguimiento de un pedido (vista del comprador)
+     ================================================================ -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>◈ Pedido · Sariel's</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+
+    <script src="/features/shared/js/apariencia-global.js"></script>
+
+    <style>
+        :root {
+            --gold: #D4AF37;
+            --gold-dark: #b8923a;
+            --gold-light: #e8c84a;
+            --green-deep: #0F2D1A;
+            --green-mid: #1a4a2a;
+            --green-bright: #2a6a3a;
+            --space: #05080f;
+            --text-primary: #f0f4f8;
+            --text-secondary: #c0d8e8;
+            --text-muted: #8aa8b8;
+            --glass-bg: rgba(15, 45, 26, 0.55);
+            --glass-border: rgba(212, 175, 55, 0.15);
+            --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
+            --radius: 16px;
+            --radius-xl: 24px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --success: #00d68f;
+            --danger: #ff3366;
+            --warning: #f7d44a;
+            --cyan: #00e5ff;
+            --purple: #a855f7;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--space);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            background-image: radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
+        }
+
+        .nebula { position: fixed; border-radius: 50%; filter: blur(120px); opacity: 0.12; pointer-events: none; z-index: 0; animation: nebula-drift 25s ease-in-out infinite alternate; }
+        .nebula-1 { width: 700px; height: 700px; background: var(--green-bright); top: -15%; right: -15%; }
+        .nebula-2 { width: 600px; height: 600px; background: var(--gold-light); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.06; }
+        .nebula-3 { width: 500px; height: 500px; background: var(--purple); top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -15s; opacity: 0.04; }
+        @keyframes nebula-drift { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(40px,-30px) scale(1.15); } }
+
+        .app { position: relative; z-index: 1; max-width: 800px; width: 100%; margin: 0 auto; padding: 12px 16px 30px; }
+
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0 14px; border-bottom: 1px solid var(--glass-border);
+            background: rgba(5, 8, 15, 0.92); position: sticky; top: 0; z-index: 100;
+        }
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .logo-hex { font-size: 1.8rem; color: var(--gold); font-family: 'Orbitron', monospace; }
+        .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--text-primary); letter-spacing: 2px; }
+        .logo-text span { color: var(--gold); }
+        .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; }
+        .token-badge { display: flex; align-items: center; gap: 6px; background: rgba(212,175,55,0.1); border: 1px solid rgba(212,175,55,0.15); padding: 4px 14px; border-radius: 20px; font-size: 0.7rem; color: var(--gold); font-family: 'Orbitron', monospace; cursor: pointer; }
+
+        .main-nav {
+            display: flex; gap: 4px; background: rgba(15,45,26,0.3); border-radius: var(--radius);
+            padding: 4px; border: 1px solid var(--glass-border); margin: 16px 0 20px; overflow-x: auto;
+        }
+        .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; white-space: nowrap; transition: var(--transition); }
+        .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212,175,55,0.05); }
+        .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); }
+        .main-nav .nav-link.live { color: var(--danger); }
+
+        .btn-back {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border);
+            color: var(--text-muted); padding: 8px 16px; border-radius: 30px;
+            font-size: 0.72rem; text-decoration: none; margin-bottom: 16px;
+            transition: var(--transition); cursor: pointer;
+        }
+        .btn-back:hover { border-color: var(--gold); color: var(--gold); }
+
+        .titulo {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .titulo h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--gold);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .estado-badge {
+            font-size: 0.6rem;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: 1px solid var(--line);
+            background: rgba(0,0,0,0.3);
+        }
+        .estado-badge.pendiente { color: var(--warning); border-color: var(--warning); }
+        .estado-badge.aceptado { color: var(--cyan); border-color: var(--cyan); }
+        .estado-badge.preparando { color: var(--cyan); border-color: var(--cyan); }
+        .estado-badge.listo { color: var(--gold); border-color: var(--gold); }
+        .estado-badge.asignado { color: var(--purple); border-color: var(--purple); }
+        .estado-badge.en_camino { color: var(--purple); border-color: var(--purple); }
+        .estado-badge.entregado { color: var(--success); border-color: var(--success); }
+        .estado-badge.cancelado { color: var(--danger); border-color: var(--danger); }
+        .estado-badge.rechazado { color: var(--danger); border-color: var(--danger); }
+
+        .seccion-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+        .seccion-card h2 {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.9rem;
+            color: var(--gold);
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Código grande */
+        .codigo-box {
+            text-align: center;
+            padding: 16px;
+            background: rgba(0,0,0,0.4);
+            border: 1px dashed var(--gold);
+            border-radius: 14px;
+            margin-bottom: 16px;
+        }
+        .codigo-box .lbl {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+        .codigo-box .codigo {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--gold);
+            letter-spacing: 2px;
+        }
+
+        /* Timeline de seguimiento */
+        .timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            position: relative;
+        }
+        .timeline-item {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            position: relative;
+            padding-bottom: 16px;
+        }
+        .timeline-item:last-child { padding-bottom: 0; }
+        .timeline-item .icono {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.4);
+            border: 2px solid var(--glass-border);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 2;
+        }
+        .timeline-item.completado .icono {
+            background: var(--success);
+            border-color: var(--success);
+            color: #fff;
+        }
+        .timeline-item.activo .icono {
+            background: var(--gold);
+            border-color: var(--gold);
+            color: var(--space);
+            animation: pulseActive 1.5s ease-in-out infinite;
+        }
+        @keyframes pulseActive {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.5); }
+            50% { box-shadow: 0 0 0 8px rgba(212, 175, 55, 0); }
+        }
+        .timeline-item .contenido { flex: 1; min-width: 0; padding-top: 4px; }
+        .timeline-item .contenido .titulo-tl {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .timeline-item.activo .contenido .titulo-tl { color: var(--gold); }
+        .timeline-item.completado .contenido .titulo-tl { color: var(--text-secondary); }
+        .timeline-item .contenido .fecha {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 15px;
+            top: 32px;
+            bottom: 0;
+            width: 2px;
+            background: var(--glass-border);
+            z-index: 1;
+        }
+        .timeline-item:last-child::before { display: none; }
+        .timeline-item.completado::before { background: var(--success); }
+
+        /* Items del pedido */
+        .items-lista {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .item-pedido {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            padding: 10px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px;
+        }
+        .item-pedido .foto {
+            width: 50px; height: 50px;
+            border-radius: 10px;
+            overflow: hidden;
+            background: linear-gradient(135deg, var(--green-deep), var(--green-mid));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+        .item-pedido .foto img { width: 100%; height: 100%; object-fit: cover; }
+        .item-pedido .info { flex: 1; min-width: 0; }
+        .item-pedido .info .nombre {
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+        .item-pedido .info .detalle {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+        }
+        .item-pedido .precio {
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            color: var(--gold);
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+
+        /* Totales */
+        .totales {
+            padding-top: 12px;
+            border-top: 1px solid var(--glass-border);
+            margin-top: 12px;
+        }
+        .totales .fila {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        .totales .fila.total {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--gold);
+            padding-top: 8px;
+            border-top: 1px solid var(--glass-border);
+            margin-top: 6px;
+        }
+
+        /* Info grid */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .info-grid .info-item {
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px;
+            padding: 10px 12px;
+        }
+        .info-grid .info-item .lbl {
+            font-size: 0.55rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        .info-grid .info-item .valor {
+            font-size: 0.78rem;
+            color: var(--text-primary);
+            font-weight: 600;
+            word-wrap: break-word;
+        }
+        .info-item.full { grid-column: span 2; }
+
+        /* Botones */
+        .acciones {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .btn-accion {
+            flex: 1;
+            padding: 14px;
+            border-radius: 30px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            min-width: 140px;
+            text-decoration: none;
+            border: none;
+        }
+        .btn-primario {
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space);
+        }
+        .btn-primario:hover { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
+        .btn-peligro {
+            background: transparent;
+            border: 1px solid var(--danger);
+            color: var(--danger);
+        }
+        .btn-peligro:hover { background: rgba(255,51,102,0.1); }
+        .btn-secundario {
+            background: transparent;
+            border: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+        }
+        .btn-secundario:hover { border-color: var(--gold); color: var(--gold); }
+
+        /* Estrellas de calificación */
+        .estrellas-input {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 14px 0;
+        }
+        .estrella {
+            font-size: 2rem;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: var(--transition);
+        }
+        .estrella:hover,
+        .estrella.activa {
+            color: var(--warning);
+            transform: scale(1.1);
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 14px;
+            background: rgba(0,0,0,0.35);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            outline: none;
+            font-family: 'Inter', sans-serif;
+            resize: vertical;
+            min-height: 80px;
+        }
+        .form-group textarea:focus { border-color: var(--gold); }
+
+        .resena-existente {
+            background: rgba(212,175,55,0.08);
+            border: 1px solid rgba(212,175,55,0.2);
+            border-radius: 14px;
+            padding: 14px;
+            text-align: center;
+        }
+        .resena-existente .estrellas {
+            font-size: 1.3rem;
+            margin-bottom: 6px;
+        }
+        .resena-existente .comentario {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .loading-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+        .loading-state .spinner {
+            width: 40px; height: 40px;
+            border: 3px solid rgba(212, 175, 55, 0.15);
+            border-top-color: var(--gold);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 12px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+        }
+        .empty-state .icon {
+            font-size: 3rem;
+            display: block;
+            margin-bottom: 16px;
+            color: var(--gold);
+            opacity: 0.4;
+            font-family: 'Orbitron', monospace;
+        }
+        .empty-state h3 {
+            font-family: 'Orbitron', monospace;
+            color: var(--text-secondary);
+            font-size: 1rem;
+            margin-bottom: 8px;
+        }
+
+        .toast {
+            position: fixed; bottom: 30px; right: 20px;
+            background: var(--green-deep); border: 1px solid var(--gold);
+            color: var(--gold); padding: 14px 24px;
+            border-radius: 12px; font-size: 0.8rem;
+            transform: translateY(100px); opacity: 0;
+            transition: all 0.4s ease; z-index: 9999;
+            max-width: 320px; pointer-events: none;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { border-color: var(--danger); color: var(--danger); }
+        .toast.warning { border-color: var(--warning); color: var(--warning); }
+        .toast.success { border-color: var(--success); color: var(--success); }
+
+        .footer {
+            margin-top: 30px; padding-top: 16px;
+            border-top: 1px solid var(--glass-border);
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 0.7rem; color: var(--text-muted);
+            flex-wrap: wrap; gap: 10px;
+        }
+        .footer .brand { color: var(--gold); font-weight: 600; }
+        .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; }
+        .footer-links a:hover { color: var(--gold); }
+
+        html.tema-dia, html[data-tema="dia"] {
+            --space: #f5f7fa;
+            --text-primary: #1a2332;
+            --text-secondary: #4a5568;
+            --text-muted: #718096;
+            --glass-bg: rgba(255, 255, 255, 0.9);
+            --glass-border: rgba(0, 0, 0, 0.1);
+        }
+        html.tema-dia body, html[data-tema="dia"] body {
+            background: #f5f7fa !important;
+            background-image: radial-gradient(ellipse at 20% 50%, rgba(212, 175, 55, 0.05) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(42, 106, 58, 0.05) 0%, transparent 60%) !important;
+            color: var(--text-primary) !important;
+        }
+        html.tema-dia .nebula, html[data-tema="dia"] .nebula { display: none !important; }
+        html.tema-dia .header, html[data-tema="dia"] .header { background: rgba(255, 255, 255, 0.95) !important; border-bottom-color: rgba(0, 0, 0, 0.1) !important; }
+        html.tema-dia .logo-text, html[data-tema="dia"] .logo-text { color: var(--text-primary) !important; }
+        html.tema-dia .main-nav, html[data-tema="dia"] .main-nav { background: rgba(255, 255, 255, 0.7) !important; border-color: rgba(0, 0, 0, 0.1) !important; }
+        html.tema-dia .main-nav .nav-link, html[data-tema="dia"] .main-nav .nav-link { color: #718096 !important; }
+        html.tema-dia .main-nav .nav-link.active, html[data-tema="dia"] .main-nav .nav-link.active { background: rgba(212, 175, 55, 0.15) !important; color: var(--gold) !important; }
+        html.tema-dia .footer, html[data-tema="dia"] .footer { color: #718096 !important; border-top-color: rgba(0, 0, 0, 0.1) !important; }
+
+        @media (max-width: 480px) {
+            .info-grid { grid-template-columns: 1fr; }
+            .info-item.full { grid-column: span 1; }
+            .codigo-box .codigo { font-size: 1.1rem; }
+            .titulo h1 { font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="nebula nebula-1" aria-hidden="true"></div>
+    <div class="nebula nebula-2" aria-hidden="true"></div>
+    <div class="nebula nebula-3" aria-hidden="true"></div>
+
+    <div class="app">
+
+        <header class="header">
+            <a href="/" class="logo" aria-label="Ir a la página de inicio">
+                <span class="logo-hex">◈</span>
+                <span class="logo-text">Sariel<span>'s</span></span>
+                <span class="logo-badge">✦ WEB3</span>
+            </a>
+            <div class="header-actions">
+                <span class="token-badge" onclick="verTokens()">
+                    ◈ <span id="tokenBadgeCantidad">0</span> Es.stoks
+                </span>
+            </div>
+        </header>
+
+        <nav class="main-nav" aria-label="Navegación principal">
+            <a href="/" class="nav-link">⌂ Inicio</a>
+            <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
+            <a href="/features/perfil/perfil.html" class="nav-link">◆ Perfil</a>
+            <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
+            <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
+            <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
+            <a href="/features/videos/videos.html" class="nav-link">🎬 Videos</a>
+            <a href="/features/grupos/grupos.html" class="nav-link">👥 Grupos</a>
+            <a href="/features/mercado/index.html" class="nav-link active">🛒 Mercado</a>
+        </nav>
+
+        <a href="/features/mercado/mis-pedidos.html" class="btn-back">
+            ← <span data-clave="mercado_volver_pedidos">Volver a mis pedidos</span>
+        </a>
+
+        <div id="pedidoContainer">
+            <div class="loading-state">
+                <div class="spinner"></div>
+                <p data-clave="mercado_cargando_pedido">Cargando pedido...</p>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <span><span class="brand">◈ Sariel's</span> · <span data-clave="mercado_footer">Sabor al Paladar · WEB3</span></span>
+            <div class="footer-links">
+                <a href="/terminos" data-clave="footer_terminos">📜 Términos</a>
+                <a href="/privacidad" data-clave="footer_privacidad">🔒 Privacidad</a>
+                <a href="/cookies" data-clave="footer_cookies">🍪 Cookies</a>
+                <a href="/live-terminos" data-clave="footer_terminos_live">📡 Términos de Live</a>
+                <span style="opacity:0.3;">⚡ Polygon</span>
+            </div>
+        </footer>
+
+    </div>
+
+    <div class="toast" id="toast" role="alert" aria-live="polite"></div>
+
+    <div id="errorBanner" style="
+        display:none; position:fixed; top:0; left:0; right:0; z-index:99999;
+        background:#ff3366; color:#fff; padding:12px 16px; font-family:monospace;
+        font-size:0.75rem; word-break:break-word; box-shadow:0 4px 20px rgba(0,0,0,0.4);
+    ">
+        <strong>⚠️ Error detectado:</strong>
+        <span id="errorBannerText"></span>
+        <button onclick="document.getElementById('errorBanner').style.display='none'"
+            style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">
+            Cerrar
+        </button>
+    </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/features/shared/js/idiomas.js"></script>
+
+<script>
+// ================================================================
+// CONFIGURACIÓN
+// ================================================================
+var supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
+var supabaseKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+var supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+window.supabaseClient = supabaseClient;
+var supabase = supabaseClient;
+
+// ================================================================
+// ESTADO
+// ================================================================
+var sessionUser = null;
+var pedidoActual = null;
+var itemsPedido = [];
+var tiendaPedido = null;
+var resenaExistente = null;
+var calificacionSeleccionada = 0;
+
+// Estados válidos y su orden para timeline
+var ESTADOS_ORDEN = ['pendiente', 'aceptado', 'preparando', 'listo', 'asignado', 'en_camino', 'entregado'];
+
+// ================================================================
+// BANNER DE ERRORES
+// ================================================================
+function mostrarErrorEnPantalla(mensaje) {
+    var banner = document.getElementById('errorBanner');
+    var texto = document.getElementById('errorBannerText');
+    if (banner && texto) { texto.textContent = mensaje; banner.style.display = 'block'; }
+}
+window.addEventListener('error', function (event) {
+    mostrarErrorEnPantalla((event.message || 'Error desconocido') + ' — línea ' + event.lineno);
+});
+window.addEventListener('unhandledrejection', function (event) {
+    mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason && event.reason.message ? event.reason.message : event.reason));
+});
+
+// ================================================================
+// TOAST
+// ================================================================
+function showToast(mensaje, tipo) {
+    try {
+        var toastEl = document.getElementById('toast');
+        if (!toastEl) { console.warn(mensaje); return; }
+        toastEl.textContent = mensaje;
+        toastEl.className = 'toast show';
+        if (tipo === 'error') toastEl.classList.add('error');
+        else if (tipo === 'warning') toastEl.classList.add('warning');
+        else if (tipo === 'success') toastEl.classList.add('success');
+        clearTimeout(toastEl._timeout);
+        toastEl._timeout = setTimeout(function() {
+            toastEl.classList.remove('show');
+        }, 3500);
+    } catch (e) { console.warn('Toast error:', e); }
+}
+
+// ================================================================
+// HELPERS
+// ================================================================
+function escapeHTML(texto) {
+    if (!texto) return '';
+    var div = document.createElement('div');
+    div.textContent = texto;
+    return div.innerHTML;
+}
+
+function formatearPrecio(n) {
+    return '$' + parseFloat(n || 0).toFixed(2);
+}
+
+function formatearFecha(fecha) {
+    if (!fecha) return '—';
+    try {
+        var d = new Date(fecha);
+        return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) +
+            ' · ' +
+            d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+    } catch (e) { return '—'; }
+}
+
+function getParamURL(nombre) {
+    try {
+        var params = new URLSearchParams(window.location.search);
+        return params.get(nombre);
+    } catch (e) { return null; }
+}
+
+// ================================================================
+// CARGAR USUARIO
+// ================================================================
+async function cargarUsuarioActual() {
+    try {
+        var result = await supabase.auth.getSession();
+        var session = result.data.session;
+        if (!session) { sessionUser = null; return null; }
+        sessionUser = session.user;
+        var u = await supabase
+            .from('usuarios')
+            .select('nombre, handle, avatar_url, tokens')
+            .eq('id', session.user.id)
+            .single();
+        if (!u.error && u.data) {
+            var badge = document.getElementById('tokenBadgeCantidad');
+            if (badge) badge.textContent = u.data.tokens || 0;
+        }
+        return u.data || null;
+    } catch (e) { console.error('Error cargando usuario:', e); return null; }
+}
+
+// ================================================================
+// CARGAR PEDIDO POR ID
+// ================================================================
+async function cargarPedido(pedidoId) {
+    var container = document.getElementById('pedidoContainer');
+    if (!container) return;
+
+    try {
+        var result = await supabase
+            .from('mercado_pedidos')
+            .select('*')
+            .eq('id', pedidoId)
+            .maybeSingle();
+
+        if (result.error) throw result.error;
+
+        if (!result.data) {
+            container.innerHTML = '<div class="empty-state">' +
+                '<span class="icon">📦</span>' +
+                '<h3 data-clave="mercado_pedido_no_encontrado">Pedido no encontrado</h3>' +
+                '<p data-clave="mercado_pedido_no_encontrado_desc">Puede que el enlace sea incorrecto.</p>' +
+                '<a href="/features/mercado/mis-pedidos.html" class="btn-back" style="margin-top:16px;">← <span data-clave="mercado_volver_pedidos">Volver a mis pedidos</span></a>' +
+            '</div>';
+            if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
+            return;
+        }
+
+        pedidoActual = result.data;
+
+        // Verificar que sea del comprador actual
+        if (pedidoActual.comprador_id !== sessionUser.id) {
+            container.innerHTML = '<div class="empty-state">' +
+                '<span class="icon">🔒</span>' +
+                '<h3 data-clave="mercado_pedido_no_tuyo">Este pedido no es tuyo</h3>' +
+                '<a href="/features/mercado/mis-pedidos.html" class="btn-back" style="margin-top:16px;">← <span data-clave="mercado_volver_pedidos">Volver a mis pedidos</span></a>' +
+            '</div>';
+            if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
+            return;
+        }
+
+        // Cargar items y tienda en paralelo
+        await Promise.all([
+            cargarItemsPedido(pedidoActual.id),
+            cargarTiendaPedido(pedidoActual.tienda_id),
+            cargarResenaExistente(pedidoActual.id)
+        ]);
+
+        renderizarPedido();
+
+    } catch (e) {
+        console.error('Error cargando pedido:', e);
+        container.innerHTML = '<div class="empty-state"><span class="icon">⚠️</span><h3>Error al cargar</h3><p>' + escapeHTML(e.message) + '</p></div>';
+    }
+}
+
+// ================================================================
+// CARGAR ITEMS DEL PEDIDO
+// ================================================================
+async function cargarItemsPedido(pedidoId) {
+    try {
+        var result = await supabase
+            .from('mercado_pedido_items')
+            .select('*')
+            .eq('pedido_id', pedidoId)
+            .order('id', { ascending: true });
+        if (result.error) throw result.error;
+        itemsPedido = result.data || [];
+        return itemsPedido;
+    } catch (e) {
+        console.error('Error cargando items:', e);
+        itemsPedido = [];
+        return [];
+    }
+}
+
+// ================================================================
+// CARGAR TIENDA DEL PEDIDO
+// ================================================================
+async function cargarTiendaPedido(tiendaId) {
+    try {
+        var result = await supabase
+            .from('mercado_tiendas')
+            .select('id, nombre_negocio, slug, telefono, whatsapp, direccion, logo_url')
+            .eq('id', tiendaId)
+            .maybeSingle();
+        if (result.error) throw result.error;
+        tiendaPedido = result.data;
+        return tiendaPedido;
+    } catch (e) {
+        console.error('Error cargando tienda:', e);
+        tiendaPedido = null;
+        return null;
+    }
+}
+
+// ================================================================
+// CARGAR RESEÑA EXISTENTE
+// ================================================================
+async function cargarResenaExistente(pedidoId) {
+    try {
+        var result = await supabase
+            .from('mercado_resenas')
+            .select('*')
+            .eq('pedido_id', pedidoId)
+            .eq('comprador_id', sessionUser.id)
+            .maybeSingle();
+        if (result.error && result.error.code !== 'PGRST116') throw result.error;
+        resenaExistente = result.data || null;
+        return resenaExistente;
+    } catch (e) {
+        console.error('Error cargando reseña:', e);
+        resenaExistente = null;
+        return null;
+    }
+}
+
+// ================================================================
+// RENDERIZAR PEDIDO
+// ================================================================
+function renderizarPedido() {
+    var container = document.getElementById('pedidoContainer');
+    if (!container || !pedidoActual) return;
+
+    var p = pedidoActual;
+    var estado = (p.estado || 'pendiente').toLowerCase();
+    var estadoTexto = traducirEstado(estado);
+
+    var html = '';
+
+    // Título + estado
+    html += '<div class="titulo">';
+    html += '<h1>📦 <span data-clave="mercado_pedido">Pedido</span></h1>';
+    html += '<span class="estado-badge ' + estado + '">' + estadoTexto + '</span>';
+    html += '</div>';
+
+    // Código
+    html += '<div class="seccion-card">';
+    html += '<div class="codigo-box">';
+    html += '<div class="lbl" data-clave="mercado_codigo_pedido">Código del pedido</div>';
+    html += '<div class="codigo">' + escapeHTML(p.codigo || '—') + '</div>';
+    html += '</div>';
+
+    // Info grid
+    html += '<div class="info-grid">';
+    html += '<div class="info-item">';
+    html += '<div class="lbl" data-clave="mercado_fecha_pedido">Fecha</div>';
+    html += '<div class="valor">' + formatearFecha(p.created_at) + '</div>';
+    html += '</div>';
+
+    html += '<div class="info-item">';
+    html += '<div class="lbl" data-clave="mercado_tipo_entrega">Tipo de entrega</div>';
+    html += '<div class="valor">' + (p.tipo_entrega === 'pickup' ? '🏪 Recoger' : '🛵 Delivery') + '</div>';
+    html += '</div>';
+
+    if (p.direccion_entrega) {
+        html += '<div class="info-item full">';
+        html += '<div class="lbl" data-clave="mercado_direccion">Dirección</div>';
+        html += '<div class="valor">' + escapeHTML(p.direccion_entrega) + '</div>';
+        html += '</div>';
+    }
+
+    if (p.telefono_contacto) {
+        html += '<div class="info-item full">';
+        html += '<div class="lbl" data-clave="mercado_telefono">Teléfono</div>';
+        html += '<div class="valor">' + escapeHTML(p.telefono_contacto) + '</div>';
+        html += '</div>';
+    }
+
+    if (p.notas) {
+        html += '<div class="info-item full">';
+        html += '<div class="lbl" data-clave="mercado_notas">Notas</div>';
+        html += '<div class="valor">' + escapeHTML(p.notas) + '</div>';
+        html += '</div>';
+    }
+
+    html += '</div>';
+    html += '</div>';
+
+    // Timeline de seguimiento
+    html += '<div class="seccion-card">';
+    html += '<h2>📍 <span data-clave="mercado_seguimiento">Seguimiento</span></h2>';
+    html += '<div class="timeline">';
+
+    var idxActual = ESTADOS_ORDEN.indexOf(estado);
+    if (estado === 'cancelado' || estado === 'rechazado') {
+        // Estado terminal fuera del flujo
+        html += renderTimelineItem('cancelado', true, false, formatearFecha(p.cancelado_en || p.updated_at));
+    } else {
+        ESTADOS_ORDEN.forEach(function (est, i) {
+            var completado = i < idxActual;
+            var activo = i === idxActual;
+            var fecha = obtenerFechaEstado(p, est);
+            html += renderTimelineItem(est, completado, activo, fecha);
+        });
+    }
+
+    html += '</div>';
+    html += '</div>';
+
+    // Items del pedido
+    html += '<div class="seccion-card">';
+    html += '<h2>🛒 <span data-clave="mercado_productos_pedido">Productos</span></h2>';
+    html += '<div class="items-lista">';
+
+    itemsPedido.forEach(function (item) {
+        var fotoContent = item.foto_url
+            ? '<img src="' + escapeHTML(item.foto_url) + '" alt="' + escapeHTML(item.nombre_producto) + '" onerror="this.style.display=\'none\';this.parentElement.textContent=\'🍽️\';" />'
+            : '🍽️';
+        html += '<div class="item-pedido">' +
+            '<div class="foto">' + fotoContent + '</div>' +
+            '<div class="info">' +
+                '<div class="nombre">' + escapeHTML(item.nombre_producto) + '</div>' +
+                '<div class="detalle">' + item.cantidad + ' × ' + formatearPrecio(item.precio_unitario) + '</div>' +
+            '</div>' +
+            '<div class="precio">' + formatearPrecio(item.subtotal) + '</div>' +
+        '</div>';
+    });
+
+    html += '</div>';
+
+    // Totales
+    html += '<div class="totales">';
+    html += '<div class="fila"><span data-clave="mercado_subtotal">Subtotal</span><span>' + formatearPrecio(p.subtotal_mxn) + '</span></div>';
+    html += '<div class="fila"><span data-clave="mercado_envio">Envío</span><span style="color:var(--text-muted);">' + (p.tipo_entrega === 'delivery' ? 'A coordinar' : 'Recoger') + '</span></div>';
+    html += '<div class="fila total"><span data-clave="mercado_total">Total</span><span>' + formatearPrecio(p.total_mxn) + '</span></div>';
+    html += '</div>';
+
+    html += '</div>';
+
+    // Info de la tienda
+    if (tiendaPedido) {
+        html += '<div class="seccion-card">';
+        html += '<h2>🏪 <span data-clave="mercado_tienda">Tienda</span></h2>';
+        html += '<div class="info-grid">';
+        html += '<div class="info-item full">';
+        html += '<div class="lbl" data-clave="mercado_nombre_tienda">Nombre</div>';
+        html += '<div class="valor">' + escapeHTML(tiendaPedido.nombre_negocio) + '</div>';
+        html += '</div>';
+        if (tiendaPedido.telefono) {
+            html += '<div class="info-item">';
+            html += '<div class="lbl" data-clave="mercado_telefono">Teléfono</div>';
+            html += '<div class="valor">' + escapeHTML(tiendaPedido.telefono) + '</div>';
+            html += '</div>';
+        }
+        if (tiendaPedido.direccion) {
+            html += '<div class="info-item full">';
+            html += '<div class="lbl" data-clave="mercado_direccion">Dirección</div>';
+            html += '<div class="valor">' + escapeHTML(tiendaPedido.direccion) + '</div>';
+            html += '</div>';
+        }
+        html += '</div>';
+
+        // Botón WhatsApp
+        if (tiendaPedido.whatsapp) {
+            var waNum = tiendaPedido.whatsapp.replace(/\D/g, '');
+            html += '<a href="https://wa.me/' + waNum + '?text=' + encodeURIComponent('Hola, sobre mi pedido ' + (p.codigo || '')) + '" target="_blank" rel="noopener" class="btn-accion btn-secundario" style="width:100%;margin-top:14px;">';
+            html += '💬 <span data-clave="mercado_contactar_vendedor">Contactar al vendedor</span>';
+            html += '</a>';
+        }
+
+        html += '</div>';
+    }
+
+    // Botón cancelar (solo si está pendiente)
+    if (estado === 'pendiente') {
+        html += '<div class="seccion-card">';
+        html += '<div class="acciones">';
+        html += '<button class="btn-accion btn-peligro" onclick="cancelarPedido()">';
+        html += '❌ <span data-clave="mercado_cancelar_pedido">Cancelar pedido</span>';
+        html += '</button>';
+        html += '</div>';
+        html += '</div>';
+    }
+
+    // Reseña (solo si está entregado)
+    if (estado === 'entregado') {
+        html += '<div class="seccion-card">';
+        html += '<h2>⭐ <span data-clave="mercado_calificar">Calificar al vendedor</span></h2>';
+
+        if (resenaExistente) {
+            // Ya existe reseña
+            var estrellas = '';
+            for (var i = 1; i <= 5; i++) {
+                estrellas += i <= resenaExistente.calificacion ? '⭐' : '☆';
+            }
+            html += '<div class="resena-existente">';
+            html += '<div class="estrellas">' + estrellas + '</div>';
+            if (resenaExistente.comentario) {
+                html += '<div class="comentario">"' + escapeHTML(resenaExistente.comentario) + '"</div>';
+            }
+            html += '<div style="font-size:0.6rem;color:var(--text-muted);margin-top:8px;" data-clave="mercado_ya_calificaste">Ya calificaste este pedido</div>';
+            html += '</div>';
+        } else {
+            // Formulario de reseña
+            html += '<div class="estrellas-input" id="estrellasInput">';
+            for (var i = 1; i <= 5; i++) {
+                html += '<span class="estrella" data-valor="' + i + '" onclick="seleccionarEstrella(' + i + ')">★</span>';
+            }
+            html += '</div>';
+            html += '<div class="form-group">';
+            html += '<label data-clave="mercado_comentario">Comentario (opcional)</label>';
+            html += '<textarea id="inputResena" data-placeholder="mercado_ejemplo_resena" placeholder="¿Cómo fue tu experiencia?"></textarea>';
+            html += '</div>';
+            html += '<button class="btn-accion btn-primario" onclick="enviarResena()" style="width:100%;">';
+            html += '⭐ <span data-clave="mercado_enviar_resena">Enviar calificación</span>';
+            html += '</button>';
+        }
+
+        html += '</div>';
+    }
+
+    // Botones de navegación
+    html += '<div class="seccion-card">';
+    html += '<div class="acciones">';
+    html += '<a href="/features/mercado/mis-pedidos.html" class="btn-accion btn-secundario">';
+    html += '📋 <span data-clave="mercado_mis_pedidos">Mis pedidos</span>';
+    html += '</a>';
+    html += '<a href="/features/mercado/index.html" class="btn-accion btn-primario">';
+    html += '🛒 <span data-clave="mercado_ir_mercado">Ir al Mercado</span>';
+    html += '</a>';
+    html += '</div>';
+    html += '</div>';
+
+    container.innerHTML = html;
+
+    if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
+}
+
+// ================================================================
+// HELPERS DE TIMELINE
+// ================================================================
+function renderTimelineItem(estado, completado, activo, fecha) {
+    var iconos = {
+        'pendiente': '⏳',
+        'aceptado': '✓',
+        'preparando': '🍳',
+        'listo': '📦',
+        'asignado': '🛵',
+        'en_camino': '🛵',
+        'entregado': '✅',
+        'cancelado': '❌'
+    };
+    var textos = {
+        'pendiente': 'Pedido recibido',
+        'aceptado': 'Aceptado por el vendedor',
+        'preparando': 'Preparando tu pedido',
+        'listo': 'Listo para enviar',
+        'asignado': 'Repartidor asignado',
+        'en_camino': 'En camino',
+        'entregado': 'Entregado',
+        'cancelado': 'Cancelado'
+    };
+    var cls = '';
+    if (completado) cls = 'completado';
+    else if (activo) cls = 'activo';
+
+    return '<div class="timeline-item ' + cls + '">' +
+        '<div class="icono">' + (iconos[estado] || '◈') + '</div>' +
+        '<div class="contenido">' +
+            '<div class="titulo-tl">' + (textos[estado] || estado) + '</div>' +
+            (fecha ? '<div class="fecha">' + fecha + '</div>' : '') +
+        '</div>' +
+    '</div>';
+}
+
+function obtenerFechaEstado(p, estado) {
+    var mapa = {
+        'pendiente': p.created_at,
+        'aceptado': p.aceptado_en,
+        'preparando': null,
+        'listo': null,
+        'asignado': p.asignado_en,
+        'en_camino': p.en_camino_en,
+        'entregado': p.entregado_en,
+        'cancelado': p.cancelado_en
+    };
+    var fecha = mapa[estado];
+    return fecha ? formatearFecha(fecha) : '';
+}
+
+function traducirEstado(estado) {
+    var mapa = {
+        'pendiente': '⏳ Pendiente',
+        'aceptado': '✓ Aceptado',
+        'preparando': '🍳 Preparando',
+        'listo': '📦 Listo',
+        'asignado': '🛵 Asignado',
+        'en_camino': '🛵 En camino',
+        'entregado': '✅ Entregado',
+        'cancelado': '❌ Cancelado',
+        'rechazado': '❌ Rechazado'
+    };
+    return mapa[estado] || estado;
+}
+
+// ================================================================
+// CANCELAR PEDIDO
+// ================================================================
+async function cancelarPedido() {
+    if (!pedidoActual) return;
+    if (pedidoActual.estado !== 'pendiente') {
+        showToast('⚠️ Ya no se puede cancelar', 'warning');
+        return;
+    }
+    if (!confirm('¿Seguro que quieres cancelar este pedido?')) return;
+
+    try {
+        var updateResult = await supabase
+            .from('mercado_pedidos')
+            .update({
+                estado: 'cancelado',
+                cancelado_en: new Date().toISOString(),
+                cancelado_motivo: 'Cancelado por el comprador'
+            })
+            .eq('id', pedidoActual.id)
+            .eq('comprador_id', sessionUser.id)
+            .eq('estado', 'pendiente')
+            .select()
+            .single();
+
+        if (updateResult.error) throw updateResult.error;
+
+        showToast('✅ Pedido cancelado', 'success');
+        pedidoActual = updateResult.data;
+        renderizarPedido();
+
+    } catch (e) {
+        console.error('Error cancelando:', e);
+        showToast('❌ Error: ' + e.message, 'error');
+    }
+}
+
+// ================================================================
+// RESEÑA - SELECCIONAR ESTRELLAS
+// ================================================================
+function seleccionarEstrella(valor) {
+    calificacionSeleccionada = valor;
+    var estrellas = document.querySelectorAll('#estrellasInput .estrella');
+    estrellas.forEach(function (el) {
+        var v = parseInt(el.getAttribute('data-valor'));
+        if (v <= valor) el.classList.add('activa');
+        else el.classList.remove('activa');
+    });
+}
+
+// ================================================================
+// ENVIAR RESEÑA
+// ================================================================
+async function enviarResena() {
+    if (calificacionSeleccionada < 1) {
+        showToast('⚠️ Selecciona al menos 1 estrella', 'warning');
+        return;
+    }
+    if (!pedidoActual || pedidoActual.estado !== 'entregado') {
+        showToast('⚠️ Solo puedes calificar pedidos entregados', 'warning');
+        return;
+    }
+
+    var inputResena = document.getElementById('inputResena');
+    var comentario = inputResena ? inputResena.value.trim() : '';
+
+    try {
+        var insertResult = await supabase
+            .from('mercado_resenas')
+            .insert({
+                pedido_id: pedidoActual.id,
+                tienda_id: pedidoActual.tienda_id,
+                comprador_id: sessionUser.id,
+                calificacion: calificacionSeleccionada,
+                comentario: comentario || null
+            })
+            .select()
+            .single();
+
+        if (insertResult.error) {
+            if (insertResult.error.code === '23505') {
+                showToast('⚠️ Ya calificaste este pedido', 'warning');
+                return;
+            }
+            throw insertResult.error;
+        }
+
+        // Actualizar contador y promedio de la tienda
+        try {
+            var tiendaUpdate = await supabase
+                .from('mercado_tiendas')
+                .select('calificacion_promedio, total_resenas')
+                .eq('id', pedidoActual.tienda_id)
+                .maybeSingle();
+
+            if (tiendaUpdate.data) {
+                var totalActual = tiendaUpdate.data.total_resenas || 0;
+                var promActual = parseFloat(tiendaUpdate.data.calificacion_promedio || 0);
+                var nuevoTotal = totalActual + 1;
+                var nuevoProm = ((promActual * totalActual) + calificacionSeleccionada) / nuevoTotal;
+
+                await supabase
+                    .from('mercado_tiendas')
+                    .update({
+                        calificacion_promedio: parseFloat(nuevoProm.toFixed(2)),
+                        total_resenas: nuevoTotal
+                    })
+                    .eq('id', pedidoActual.tienda_id);
+            }
+        } catch (e) {
+            console.warn('No se pudo actualizar promedio de tienda:', e);
+        }
+
+        resenaExistente = insertResult.data;
+        showToast('⭐ ¡Gracias por tu calificación!', 'success');
+        renderizarPedido();
+
+    } catch (e) {
+        console.error('Error enviando reseña:', e);
+        showToast('❌ Error: ' + e.message, 'error');
+    }
+}
+
+// ================================================================
+// VER TOKENS
+// ================================================================
+function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
+
+// ================================================================
+// INICIALIZACIÓN
+// ================================================================
+document.addEventListener('DOMContentLoaded', async function () {
+    await cargarUsuarioActual();
+
+    if (!sessionUser) {
+        window.location.href = '/';
+        return;
+    }
+
+    var pedidoId = getParamURL('id');
+    if (!pedidoId) {
+        var container = document.getElementById('pedidoContainer');
+        if (container) {
+            container.innerHTML = '<div class="empty-state">' +
+                '<span class="icon">📦</span>' +
+                '<h3 data-clave="mercado_falta_id_pedido">Falta el ID del pedido</h3>' +
+                '<a href="/features/mercado/mis-pedidos.html" class="btn-back" style="margin-top:16px;">← <span data-clave="mercado_volver_pedidos">Volver a mis pedidos</span></a>' +
+            '</div>';
+        }
+        return;
+    }
+
+    await cargarPedido(pedidoId);
+
+    setTimeout(async function () {
+        try {
+            if (typeof window.inicializarIdiomas === 'function') {
+                await window.inicializarIdiomas();
+                console.log('✅ Idiomas aplicados al pedido');
+            }
+        } catch (e) { console.warn('Error idiomas:', e); }
+    }, 400);
+});
+
+// ================================================================
+// EXPOSICIÓN GLOBAL
+// ================================================================
+window.cancelarPedido = cancelarPedido;
+window.seleccionarEstrella = seleccionarEstrella;
+window.enviarResena = enviarResena;
+window.verTokens = verTokens;
+window.showToast = showToast;
+</script>
+</body>
+</html>
