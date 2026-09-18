@@ -88,7 +88,6 @@
         }
         .btn-back:hover { border-color: var(--gold); color: var(--gold); }
 
-        /* Título */
         .carrito-titulo {
             display: flex; justify-content: space-between; align-items: center;
             margin-bottom: 20px;
@@ -108,7 +107,6 @@
             border: 1px solid var(--glass-border);
         }
 
-        /* Info tienda */
         .tienda-info {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
@@ -149,7 +147,6 @@
             color: var(--gold);
         }
 
-        /* Lista items */
         .items-lista {
             display: flex;
             flex-direction: column;
@@ -248,7 +245,6 @@
         }
         .item-card .acciones .btn-eliminar:hover { background: rgba(255,51,102,0.1); }
 
-        /* Resumen */
         .resumen-card {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
@@ -278,7 +274,6 @@
             color: var(--warning);
         }
 
-        /* Botones */
         .acciones-bottom {
             display: flex;
             gap: 10px;
@@ -315,7 +310,6 @@
         }
         .btn-checkout:hover { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
 
-        /* Empty state */
         .empty-state {
             text-align: center;
             padding: 60px 20px;
@@ -362,7 +356,6 @@
             box-shadow: var(--shadow-gold);
         }
 
-        /* Barra inferior fija */
         .barra-inferior {
             position: fixed;
             bottom: 0;
@@ -412,7 +405,6 @@
             box-shadow: var(--shadow-gold);
         }
 
-        /* Toast */
         .toast {
             position: fixed; bottom: 100px; right: 20px;
             background: var(--green-deep); border: 1px solid var(--gold);
@@ -440,7 +432,6 @@
         .footer-links a { color: var(--text-muted); text-decoration: none; }
         .footer-links a:hover { color: var(--gold); }
 
-        /* TEMA DÍA */
         html.tema-dia, html[data-tema="dia"] {
             --space: #f5f7fa;
             --text-primary: #1a2332;
@@ -505,12 +496,10 @@
             <a href="/features/mercado/index.html" class="nav-link active">🛒 Mercado</a>
         </nav>
 
-        <!-- BOTÓN ATRÁS -->
         <a href="javascript:history.back()" class="btn-back">
             ← <span data-clave="mercado_volver">Volver</span>
         </a>
 
-        <!-- CONTENEDOR DEL CARRITO -->
         <div id="carritoContainer"></div>
 
         <footer class="footer">
@@ -526,7 +515,6 @@
 
     </div>
 
-    <!-- BARRA INFERIOR FIJA -->
     <div class="barra-inferior" id="barraInferior" style="display:none;">
         <div class="info-total">
             <div class="lbl" data-clave="mercado_total">Total</div>
@@ -679,7 +667,6 @@ function cambiarCantidad(productoId, delta) {
         return;
     }
 
-    // Verificar stock
     if (!item.stock_ilimitado && nueva > item.stock) {
         showToast('⚠️ No hay más stock disponible', 'warning');
         return;
@@ -729,7 +716,7 @@ function calcularTotales() {
         totalItems += c.cantidad;
     });
     var comision = subtotal * COMISION_PORCENTAJE;
-    var total = subtotal; // El comprador paga el total, la comisión la descuenta la plataforma al vendedor
+    var total = subtotal;
 
     return {
         subtotal: subtotal,
@@ -749,7 +736,6 @@ function renderizarCarrito() {
 
     if (!container) return;
 
-    // Vacío
     if (carrito.length === 0) {
         container.innerHTML = '<div class="empty-state">' +
             '<span class="icon">🛒</span>' +
@@ -764,22 +750,18 @@ function renderizarCarrito() {
         return;
     }
 
-    // Info tienda
     var tiendaNombre = carrito[0].tienda_nombre || 'Tienda';
     var tiendaSlug = carrito[0].tienda_slug || '';
-    var tiendaId = carrito[0].tienda_id;
 
     var totales = calcularTotales();
 
     var html = '';
 
-    // Título
     html += '<div class="carrito-titulo">';
     html += '<h1 data-clave="mercado_mi_carrito">◈ Mi Carrito</h1>';
     html += '<span class="count">' + totales.totalItems + ' item' + (totales.totalItems !== 1 ? 's' : '') + '</span>';
     html += '</div>';
 
-    // Info tienda
     html += '<div class="tienda-info">';
     html += '<div>';
     html += '<div class="lbl" data-clave="mercado_comprando_en">Comprando en</div>';
@@ -792,7 +774,6 @@ function renderizarCarrito() {
     }
     html += '</div>';
 
-    // Lista de items
     html += '<div class="items-lista">';
     carrito.forEach(function (item) {
         var subtotal = item.precio * item.cantidad;
@@ -822,7 +803,6 @@ function renderizarCarrito() {
     });
     html += '</div>';
 
-    // Resumen
     html += '<div class="resumen-card">';
     html += '<div class="fila"><span data-clave="mercado_subtotal">Subtotal</span><span>' + formatearPrecio(totales.subtotal) + '</span></div>';
     html += '<div class="fila"><span data-clave="mercado_envio">Envío</span><span data-clave="mercado_envio_calcular">A calcular</span></div>';
@@ -830,7 +810,6 @@ function renderizarCarrito() {
     html += '<div class="fila comision"><span>◈ Comisión Sariel\'s (2%): ' + formatearPrecio(totales.comision) + '</span></div>';
     html += '</div>';
 
-    // Botones
     html += '<div class="acciones-bottom">';
     html += '<button class="btn-vaciar" onclick="vaciarCarrito()" data-clave="mercado_vaciar">🗑️ Vaciar carrito</button>';
     html += '<button class="btn-checkout" onclick="irACheckout()" data-clave="mercado_ir_checkout">◆ Continuar con el pedido</button>';
@@ -838,7 +817,6 @@ function renderizarCarrito() {
 
     container.innerHTML = html;
 
-    // Barra inferior
     if (barra) {
         barra.style.display = 'flex';
         if (barraTotal) barraTotal.textContent = formatearPrecio(totales.total);
@@ -848,16 +826,14 @@ function renderizarCarrito() {
 }
 
 // ================================================================
-// IR A CHECKOUT
+// IR A CHECKOUT → redirige a checkout.html
 // ================================================================
 function irACheckout() {
     if (carrito.length === 0) {
         showToast('🛒 Tu carrito está vacío', 'warning');
         return;
     }
-    // Aún no existe checkout.html, mostrar aviso por ahora
-    showToast('◆ Checkout · Próximamente', 'success');
-    // Cuando exista: window.location.href = '/features/mercado/checkout.html';
+    window.location.href = '/features/mercado/checkout.html';
 }
 
 // ================================================================
