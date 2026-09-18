@@ -1,18 +1,20 @@
 <!-- ================================================================
-     MERCADO - SARIEL'S ECOSYSTEM
+     CSARIEL'S ECOSYSTEM
      Panel del Repartidor · Con tracking GPS en tiempo real
      Ruta: /features/mercado/repartidor/panel.html
      
-     Esquema real: bigint IDs, mercado_repartidores con lat/lng,
-                   Supabase Realtime activo, envío de ubicación
-                   cada 15s con pedido activo / 60s online sin pedido
+     Requiere:
+     - Usuario verificado como repartidor (estado_verificacion = 'activo')
+     - Si NO está verificado → redirige a registro.html
+     - Si está en revisión → muestra aviso
+     - Si fue rechazado → permite reintentar
      ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>◈ Panel Repartidor · Sariel's</title>
+    <title>◈ Panel Repartidor · Csariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
@@ -108,7 +110,7 @@
             color: #fff;
         }
 
-        /* Toggle online/offline */
+        /* Estado del repartidor (online/offline) */
         .estado-toggle {
             display: flex; align-items: center; gap: 10px;
             background: var(--glass-bg); border: 1px solid var(--glass-border);
@@ -156,7 +158,7 @@
             transform: translateX(18px);
         }
 
-        /* NUEVO: Indicador GPS */
+        /* Indicador GPS */
         .gps-indicator {
             display: flex; align-items: center; gap: 8px;
             padding: 8px 14px;
@@ -538,6 +540,55 @@
         }
         .empty-state p { font-size: 0.85rem; }
 
+        /* Pantalla de estado (para no verificados) */
+        .pantalla-estado {
+            text-align: center;
+            padding: 50px 20px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+            margin-bottom: 20px;
+        }
+        .pantalla-estado .icono-grande {
+            font-size: 4rem;
+            display: block;
+            margin-bottom: 20px;
+        }
+        .pantalla-estado h2 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.15rem;
+            margin-bottom: 12px;
+        }
+        .pantalla-estado p {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 20px;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .pantalla-estado .btn-primario {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 28px;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space);
+            border: none;
+            border-radius: 30px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 0.82rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: var(--transition);
+        }
+        .pantalla-estado .btn-primario:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-gold);
+        }
+
         .toast {
             position: fixed; bottom: 30px; right: 20px;
             background: var(--green-deep); border: 1px solid var(--gold);
@@ -605,7 +656,7 @@
         <header class="header">
             <a href="/" class="logo" aria-label="Ir a la página de inicio">
                 <span class="logo-hex">◈</span>
-                <span class="logo-text">Sariel<span>'s</span></span>
+                <span class="logo-text">Csariel<span>'s</span></span>
                 <span class="logo-badge">✦ WEB3</span>
             </a>
             <div class="header-actions">
@@ -631,88 +682,102 @@
             ← <span data-clave="mercado_volver">Volver al Mercado</span>
         </a>
 
-        <div class="titulo">
-            <h1>🛵 <span data-clave="repartidor_mi_panel">Panel Repartidor</span></h1>
-            <span class="rol-badge" data-clave="repartidor_rol">Repartidor</span>
+        <!-- Loader inicial (mientras verifica estado) -->
+        <div id="loaderEstado" class="loading-state">
+            <div class="spinner"></div>
+            <p>Verificando tu cuenta...</p>
         </div>
 
-        <!-- Toggle online/offline -->
-        <div class="estado-toggle" id="toggleOnline" onclick="toggleEstadoRepartidor()">
-            <span class="dot-estado"></span>
-            <div class="txt-estado">
-                <div class="t1" id="txtEstadoRep">Cargando...</div>
-                <div class="t2" data-clave="repartidor_toggle_hint">Toca para cambiar tu disponibilidad</div>
+        <!-- Contenido del panel (solo si verificado) -->
+        <div id="contenidoPanel" style="display:none;">
+
+            <div class="titulo">
+                <h1>🛵 <span data-clave="repartidor_mi_panel">Panel Repartidor</span></h1>
+                <span class="rol-badge" data-clave="repartidor_rol">Repartidor</span>
             </div>
-            <div class="switch"></div>
-        </div>
 
-        <!-- NUEVO: Indicador GPS -->
-        <div class="gps-indicator" id="gpsIndicator">
-            <span class="dot-gps"></span>
-            <div class="gps-info">
-                <strong id="gpsTitulo">📍 Ubicación GPS inactiva</strong>
-                <div class="gps-detalle" id="gpsDetalle">Actívate online para compartir tu ubicación</div>
+            <!-- Toggle online/offline -->
+            <div class="estado-toggle" id="toggleOnline" onclick="toggleEstadoRepartidor()">
+                <span class="dot-estado"></span>
+                <div class="txt-estado">
+                    <div class="t1" id="txtEstadoRep">Cargando...</div>
+                    <div class="t2" data-clave="repartidor_toggle_hint">Toca para cambiar tu disponibilidad</div>
+                </div>
+                <div class="switch"></div>
             </div>
-        </div>
 
-        <!-- Resumen de ganancias -->
-        <div class="resumen-ganancias">
-            <div class="stat-card">
-                <div class="lbl" data-clave="repartidor_ganancias_hoy">Ganancias hoy</div>
-                <div class="val" id="gananciasHoy">$0.00</div>
-                <div class="sub" id="entregasHoy">0 entregas</div>
-            </div>
-            <div class="stat-card">
-                <div class="lbl" data-clave="repartidor_ganancias_total">Total acumulado</div>
-                <div class="val" id="gananciasTotal">$0.00</div>
-                <div class="sub" id="entregasTotal">0 entregas</div>
-            </div>
-        </div>
-
-        <!-- Tabs -->
-        <div class="tabs">
-            <button class="tab-btn active" data-tab="disponibles" onclick="cambiarTab('disponibles', this)">
-                📦 <span data-clave="repartidor_tab_disponibles">Disponibles</span>
-                <span class="badge-count" id="badgeDisponibles" style="display:none;">0</span>
-            </button>
-            <button class="tab-btn" data-tab="mios" onclick="cambiarTab('mios', this)">
-                🛵 <span data-clave="repartidor_tab_mios">Mis entregas</span>
-                <span class="badge-count verde" id="badgeMios" style="display:none;">0</span>
-            </button>
-            <button class="tab-btn" data-tab="historial" onclick="cambiarTab('historial', this)">
-                📜 <span data-clave="repartidor_tab_historial">Historial</span>
-            </button>
-        </div>
-
-        <div class="tab-content active" data-tab-content="disponibles">
-            <div id="disponiblesContainer">
-                <div class="loading-state">
-                    <div class="spinner"></div>
-                    <p data-clave="repartidor_cargando_disponibles">Buscando pedidos disponibles...</p>
+            <!-- Indicador GPS -->
+            <div class="gps-indicator" id="gpsIndicator">
+                <span class="dot-gps"></span>
+                <div class="gps-info">
+                    <strong id="gpsTitulo">📍 Ubicación GPS inactiva</strong>
+                    <div class="gps-detalle" id="gpsDetalle">Actívate online para compartir tu ubicación</div>
                 </div>
             </div>
-        </div>
 
-        <div class="tab-content" data-tab-content="mios">
-            <div id="miosContainer">
-                <div class="loading-state">
-                    <div class="spinner"></div>
-                    <p data-clave="repartidor_cargando_mios">Cargando tus entregas...</p>
+            <!-- Resumen de ganancias -->
+            <div class="resumen-ganancias">
+                <div class="stat-card">
+                    <div class="lbl" data-clave="repartidor_ganancias_hoy">Ganancias hoy</div>
+                    <div class="val" id="gananciasHoy">$0.00</div>
+                    <div class="sub" id="entregasHoy">0 entregas</div>
+                </div>
+                <div class="stat-card">
+                    <div class="lbl" data-clave="repartidor_ganancias_total">Total acumulado</div>
+                    <div class="val" id="gananciasTotal">$0.00</div>
+                    <div class="sub" id="entregasTotal">0 entregas</div>
                 </div>
             </div>
-        </div>
 
-        <div class="tab-content" data-tab-content="historial">
-            <div id="historialContainer">
-                <div class="loading-state">
-                    <div class="spinner"></div>
-                    <p data-clave="repartidor_cargando_historial">Cargando historial...</p>
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="disponibles" onclick="cambiarTab('disponibles', this)">
+                    📦 <span data-clave="repartidor_tab_disponibles">Disponibles</span>
+                    <span class="badge-count" id="badgeDisponibles" style="display:none;">0</span>
+                </button>
+                <button class="tab-btn" data-tab="mios" onclick="cambiarTab('mios', this)">
+                    🛵 <span data-clave="repartidor_tab_mios">Mis entregas</span>
+                    <span class="badge-count verde" id="badgeMios" style="display:none;">0</span>
+                </button>
+                <button class="tab-btn" data-tab="historial" onclick="cambiarTab('historial', this)">
+                    📜 <span data-clave="repartidor_tab_historial">Historial</span>
+                </button>
+            </div>
+
+            <div class="tab-content active" data-tab-content="disponibles">
+                <div id="disponiblesContainer">
+                    <div class="loading-state">
+                        <div class="spinner"></div>
+                        <p data-clave="repartidor_cargando_disponibles">Buscando pedidos disponibles...</p>
+                    </div>
                 </div>
             </div>
+
+            <div class="tab-content" data-tab-content="mios">
+                <div id="miosContainer">
+                    <div class="loading-state">
+                        <div class="spinner"></div>
+                        <p data-clave="repartidor_cargando_mios">Cargando tus entregas...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content" data-tab-content="historial">
+                <div id="historialContainer">
+                    <div class="loading-state">
+                        <div class="spinner"></div>
+                        <p data-clave="repartidor_cargando_historial">Cargando historial...</p>
+                    </div>
+                </div>
+            </div>
+
         </div>
+
+        <!-- Pantalla de estado (si NO está verificado) -->
+        <div id="pantallaEstado" style="display:none;"></div>
 
         <footer class="footer">
-            <span><span class="brand">◈ Sariel's</span> · <span data-clave="mercado_footer">Sabor al Paladar · WEB3</span></span>
+            <span><span class="brand">© Csariel's</span> · <span data-clave="mercado_footer">Sabor al Paladar · WEB3</span></span>
             <div class="footer-links">
                 <a href="/terminos" data-clave="footer_terminos">📜 Términos</a>
                 <a href="/privacidad" data-clave="footer_privacidad">🔒 Privacidad</a>
@@ -746,12 +811,53 @@
             style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">
             Cerrar
         </button>
-    </div><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/features/shared/js/idiomas.js"></script>
 
 <script>
 // ================================================================
-// CONFIGURACIÓN
+// ⚙️ CONFIGURACIÓN LEGAL — Csariel's Ecosystem
+// ================================================================
+// 👉 EDITA ESTE BLOQUE cuando tengas los datos legales listos
+// 👉 Solo cambia los valores entre comillas (no borres las comillas)
+// 👉 Deja en blanco ('') los que aún no tengas
+// ================================================================
+var CONFIG_LEGAL = {
+    // Identidad de la marca
+    nombre_comercial: 'Csariel\'s',
+    nombre_ecosistema: 'Csariel\'s Ecosystem',
+    slogan: 'Sabor al Paladar · Repostería Fina · Web3',
+
+    // Datos fiscales (EDITAR cuando estén listos)
+    razon_social: '',              // Ej: 'Csariel\'s Repostería Fina S.A. de C.V.'
+    rfc: '',                        // Ej: 'CSR250101ABC'
+    regimen_fiscal: '',             // Ej: 'Régimen Simplificado de Confianza (RESICO)'
+    domicilio_fiscal: '',           // Ej: 'Av. Juárez #123, Centro, Puebla, Pue., CP 72000'
+    pais_operacion: 'México',
+    ciudad_operacion: 'Puebla',
+
+    // Contacto (EDITAR cuando tengas dominio)
+    email_contacto: '',             // Ej: 'contacto@csariels.com'
+    email_legal: '',                // Ej: 'legal@csariels.com'
+    email_soporte: '',              // Ej: 'soporte@csariels.com'
+    sitio_web: '',                  // Ej: 'https://csariels.com'
+
+    // Legal
+    version_terminos: 'v1.0',
+    fecha_actualizacion: '2026-01-01',
+
+    // Blockchain
+    red_blockchain: 'Polygon',
+    token_nombre: 'Es.stoks'
+};
+// ================================================================
+// FIN DE CONFIGURACIÓN LEGAL
+// ================================================================
+
+// ================================================================
+// CONFIGURACIÓN APP
 // ================================================================
 var supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
 var supabaseKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
@@ -762,10 +868,10 @@ var supabase = supabaseClient;
 var GANANCIA_POR_ENTREGA_DEFAULT = 25.00;
 
 // Config de GPS
-var GPS_INTERVALO_ACTIVO = 15000;    // 15s cuando tiene pedido
-var GPS_INTERVALO_IDLE = 60000;      // 60s cuando solo está online
-var GPS_MIN_DISTANCIA_M = 10;        // mínima distancia para enviar (metros)
-var GPS_TIMEOUT = 10000;             // timeout de captura
+var GPS_INTERVALO_ACTIVO = 15000;
+var GPS_INTERVALO_IDLE = 60000;
+var GPS_MIN_DISTANCIA_M = 10;
+var GPS_TIMEOUT = 10000;
 
 // ================================================================
 // ESTADO
@@ -785,11 +891,11 @@ var AUTO_REFRESH_MS = 15000;
 
 // Estado GPS
 var gpsWatchId = null;
-var gpsUltimaPosicion = null;         // {lat, lng}
-var gpsUltimaEnviada = null;          // {lat, lng}
-var gpsUltimaVez = null;              // timestamp
+var gpsUltimaPosicion = null;
+var gpsUltimaEnviada = null;
+var gpsUltimaVez = null;
 var gpsTimerEnvio = null;
-var gpsEstado = 'inactivo';           // inactivo | activo | error | sin_permiso
+var gpsEstado = 'inactivo';
 var gpsContadorEnvios = 0;
 
 // ================================================================
@@ -870,7 +976,6 @@ function gananciaRepartidor() {
     return GANANCIA_POR_ENTREGA_DEFAULT;
 }
 
-// Distancia entre 2 coordenadas (Haversine, en metros)
 function distanciaMetros(lat1, lng1, lat2, lng2) {
     var R = 6371000;
     var dLat = (lat2 - lat1) * Math.PI / 180;
@@ -880,6 +985,167 @@ function distanciaMetros(lat1, lng1, lat2, lng2) {
         Math.sin(dLng / 2) * Math.sin(dLng / 2);
     var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
+}
+
+// ================================================================
+// VERIFICAR ESTADO DE VERIFICACIÓN DEL REPARTIDOR
+// ================================================================
+async function verificarEstadoVerificacion() {
+    try {
+        var result = await supabase
+            .from('mercado_repartidores')
+            .select('id, estado_verificacion, score_confianza, motivo_rechazo, intentos_verificacion')
+            .eq('usuario_id', sessionUser.id)
+            .maybeSingle();
+
+        if (result.error && result.error.code !== 'PGRST116') throw result.error;
+
+        // No existe registro → redirigir a registro
+        if (!result.data) {
+            redirigirARegistro();
+            return { verificado: false, redirigido: true };
+        }
+
+        var estado = result.data.estado_verificacion;
+
+        // Activo → mostrar panel
+        if (estado === 'activo') {
+            return { verificado: true, estado: estado };
+        }
+
+        // Rechazado → mostrar pantalla con opción reintentar
+        if (estado === 'rechazado') {
+            mostrarPantallaRechazado(result.data);
+            return { verificado: false, estado: estado };
+        }
+
+        // En revisión o procesando → mostrar pantalla de espera
+        if (estado === 'revision_manual' || estado === 'procesando') {
+            mostrarPantallaEnRevision(estado);
+            return { verificado: false, estado: estado };
+        }
+
+        // Pendiente de registro → redirigir
+        if (estado === 'pendiente_registro') {
+            redirigirARegistro();
+            return { verificado: false, redirigido: true };
+        }
+
+        // Cualquier otro estado → redirigir
+        redirigirARegistro();
+        return { verificado: false, redirigido: true };
+
+    } catch (e) {
+        console.error('Error verificando estado:', e);
+        mostrarErrorEnPantalla('Error verificando tu cuenta: ' + e.message);
+        return { verificado: false, error: true };
+    }
+}
+
+function redirigirARegistro() {
+    showToast('📝 Necesitas registrarte como repartidor primero', 'warning');
+    setTimeout(function () {
+        window.location.href = '/features/mercado/repartidor/registro.html';
+    }, 1200);
+}
+
+// ================================================================
+// PANTALLAS DE ESTADO (para no verificados)
+// ================================================================
+function mostrarPantallaEnRevision(estado) {
+    document.getElementById('loaderEstado').style.display = 'none';
+    document.getElementById('contenidoPanel').style.display = 'none';
+
+    var cont = document.getElementById('pantallaEstado');
+    cont.style.display = 'block';
+
+    var esRevisionManual = (estado === 'revision_manual');
+
+    cont.innerHTML = '' +
+        '<div class="pantalla-estado">' +
+            '<span class="icono-grande">⏳</span>' +
+            '<h2 style="color: var(--warning);">Verificación en proceso</h2>' +
+            '<p>' +
+                (esRevisionManual
+                    ? 'Tu registro requiere una revisión adicional de nuestro equipo. Te notificaremos cuando termine. Esto puede tomar hasta 24 horas.'
+                    : 'Estamos verificando tus documentos. Este proceso toma unos minutos. Vuelve en un rato o espera la notificación.') +
+            '</p>' +
+            '<a href="/features/mercado/index.html" class="btn-primario">' +
+                '🛒 Volver al Mercado' +
+            '</a>' +
+        '</div>';
+}
+
+function mostrarPantallaRechazado(data) {
+    document.getElementById('loaderEstado').style.display = 'none';
+    document.getElementById('contenidoPanel').style.display = 'none';
+
+    var cont = document.getElementById('pantallaEstado');
+    cont.style.display = 'block';
+
+    var motivo = data.motivo_rechazo || 'No cumple con los requisitos';
+    var intentos = data.intentos_verificacion || 0;
+    var maxIntentos = 3;
+    var intentosRestantes = Math.max(0, maxIntentos - intentos);
+
+    var puedeReintentar = intentosRestantes > 0;
+
+    cont.innerHTML = '' +
+        '<div class="pantalla-estado">' +
+            '<span class="icono-grande">❌</span>' +
+            '<h2 style="color: var(--danger);">Verificación rechazada</h2>' +
+            '<p>' +
+                '<strong style="color: var(--text-primary);">Motivo:</strong> ' + escapeHTML(motivo) +
+                '<br><br>' +
+                (puedeReintentar
+                    ? 'Puedes intentar de nuevo corrigiendo lo indicado. Te quedan <strong>' + intentosRestantes + '</strong> intento' + (intentosRestantes === 1 ? '' : 's') + '.'
+                    : 'Has alcanzado el máximo de intentos. Contacta a soporte para más información.') +
+            '</p>' +
+            (puedeReintentar
+                ? '<button class="btn-primario" onclick="reintentarRegistro()" id="btnReintentar">' +
+                    '🔄 Volver a intentar' +
+                  '</button>'
+                : '') +
+            '<div style="margin-top: 14px;">' +
+                '<a href="/features/mercado/index.html" class="btn-primario" style="background: transparent; border: 1px solid var(--glass-border); color: var(--text-secondary);">' +
+                    '🛒 Volver al Mercado' +
+                '</a>' +
+            '</div>' +
+        '</div>';
+}
+
+async function reintentarRegistro() {
+    var btn = document.getElementById('btnReintentar');
+    if (btn) { btn.disabled = true; btn.textContent = 'Preparando...'; }
+
+    try {
+        var session = await supabase.auth.getSession();
+        var token = session.data.session ? session.data.session.access_token : null;
+
+        var resp = await fetch('/api/mercado/repartidor/reintentar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({})
+        });
+
+        if (!resp.ok) {
+            var errData = await resp.json().catch(function () { return {}; });
+            throw new Error(errData.error || 'No se pudo iniciar el reintento');
+        }
+
+        showToast('✅ Puedes volver a intentar', 'success');
+        setTimeout(function () {
+            window.location.href = '/features/mercado/repartidor/registro.html';
+        }, 1200);
+
+    } catch (e) {
+        console.error('Error reintentando:', e);
+        showToast('❌ ' + e.message, 'error');
+        if (btn) { btn.disabled = false; btn.textContent = '🔄 Volver a intentar'; }
+    }
 }
 
 // ================================================================
@@ -915,59 +1181,17 @@ async function cargarDatosRepartidor() {
             .eq('usuario_id', sessionUser.id)
             .maybeSingle();
 
-        if (result.error && result.error.code !== 'PGRST116') throw result.error;
-
-        if (result.data) {
+        if (!result.error && result.data) {
             repartidorData = result.data;
             disponible = !!result.data.disponible;
-        } else {
-            // Crear perfil de repartidor
-            var usuarioInfo = await supabase
-                .from('usuarios')
-                .select('nombre, handle, telefono')
-                .eq('id', sessionUser.id)
-                .single();
 
-            var nombreCompleto = 'Repartidor';
-            var telefono = null;
-            if (!usuarioInfo.error && usuarioInfo.data) {
-                nombreCompleto = usuarioInfo.data.nombre || usuarioInfo.data.handle || 'Repartidor';
-                telefono = usuarioInfo.data.telefono || null;
-            }
+            actualizarToggleEstado();
+            actualizarGanancias();
 
-            var ins = await supabase
-                .from('mercado_repartidores')
-                .insert({
-                    usuario_id: sessionUser.id,
-                    nombre_completo: nombreCompleto,
-                    telefono: telefono,
-                    vehiculo: 'moto',
-                    disponible: false,
-                    activo: true,
-                    pedidos_completados: 0,
-                    calificacion: 0
-                })
-                .select()
-                .single();
-
-            if (!ins.error && ins.data) {
-                repartidorData = ins.data;
-                disponible = false;
-            }
+            if (disponible) iniciarGPS();
         }
-
-        actualizarToggleEstado();
-        actualizarGanancias();
-
-        // Si ya estaba online al cargar, activar GPS
-        if (disponible) {
-            iniciarGPS();
-        }
-
     } catch (e) {
         console.error('Error repartidor:', e);
-        disponible = false;
-        actualizarToggleEstado();
     }
 }
 
@@ -997,7 +1221,6 @@ async function toggleEstadoRepartidor() {
         }
 
         await cargarDisponibles(false);
-
     } catch (e) {
         console.error('Error toggle:', e);
         disponible = !disponible;
@@ -1021,11 +1244,11 @@ function actualizarToggleEstado() {
 }
 
 // ================================================================
-// ACTUALIZAR GANANCIAS
+// GANANCIAS
 // ================================================================
 function actualizarGanancias() {
     var totalGanado = repartidorData ? parseFloat(repartidorData.total_ganado || 0) : 0;
-    var totalEntregas = repartidorData ? parseInt(repartidorData.pedidos_completados || repartidorData.total_entregas || 0) : 0;
+    var totalEntregas = repartidorData ? parseInt(repartidorData.pedidos_completados || 0) : 0;
 
     var hoy = new Date(); hoy.setHours(0, 0, 0, 0);
     var gananciasHoy = 0;
@@ -1053,10 +1276,8 @@ function actualizarGanancias() {
 }
 
 // ================================================================
-// 🎯 SISTEMA GPS EN TIEMPO REAL
+// 🎯 SISTEMA GPS
 // ================================================================
-
-// Actualiza el indicador visual del GPS
 function actualizarIndicadorGPS(estado, titulo, detalle) {
     var el = document.getElementById('gpsIndicator');
     var elTitulo = document.getElementById('gpsTitulo');
@@ -1074,11 +1295,8 @@ function actualizarIndicadorGPS(estado, titulo, detalle) {
     gpsEstado = estado;
 }
 
-// Iniciar el sistema GPS
 function iniciarGPS() {
-    // Si ya está activo, no hacer nada
     if (gpsWatchId !== null) return;
-
     if (!navigator.geolocation) {
         actualizarIndicadorGPS('error', '📍 GPS no disponible', 'Este navegador no soporta geolocalización');
         return;
@@ -1086,7 +1304,6 @@ function iniciarGPS() {
 
     actualizarIndicadorGPS('activo', '📍 GPS inicializando...', 'Pidiendo permiso de ubicación...');
 
-    // watchPosition: más eficiente que getCurrentPosition repetido
     try {
         gpsWatchId = navigator.geolocation.watchPosition(
             function (pos) {
@@ -1095,10 +1312,7 @@ function iniciarGPS() {
                     lng: pos.coords.longitude,
                     accuracy: pos.coords.accuracy
                 };
-                // Primera vez que llegó una posición → empezar a enviar
-                if (!gpsTimerEnvio) {
-                    iniciarEnvioPeriodico();
-                }
+                if (!gpsTimerEnvio) iniciarEnvioPeriodico();
             },
             function (err) {
                 console.error('Error GPS:', err);
@@ -1108,11 +1322,7 @@ function iniciarGPS() {
                     actualizarIndicadorGPS('error', '⚠️ Error GPS', err.message || 'No se pudo obtener ubicación');
                 }
             },
-            {
-                enableHighAccuracy: true,
-                timeout: GPS_TIMEOUT,
-                maximumAge: 5000
-            }
+            { enableHighAccuracy: true, timeout: GPS_TIMEOUT, maximumAge: 5000 }
         );
     } catch (e) {
         console.error('Error iniciando GPS:', e);
@@ -1120,12 +1330,9 @@ function iniciarGPS() {
     }
 }
 
-// Detener el sistema GPS
 function detenerGPS() {
     if (gpsWatchId !== null) {
-        try {
-            navigator.geolocation.clearWatch(gpsWatchId);
-        } catch (e) { /* silencioso */ }
+        try { navigator.geolocation.clearWatch(gpsWatchId); } catch (e) {}
         gpsWatchId = null;
     }
     if (gpsTimerEnvio) {
@@ -1134,31 +1341,23 @@ function detenerGPS() {
     }
     gpsUltimaPosicion = null;
     gpsUltimaEnviada = null;
-
     actualizarIndicadorGPS('inactivo', '📍 Ubicación GPS inactiva', 'Actívate online para compartir tu ubicación');
 }
 
-// Envío periódico de ubicación a Supabase
 function iniciarEnvioPeriodico() {
     if (gpsTimerEnvio) clearInterval(gpsTimerEnvio);
 
-    // Determinar intervalo según si tiene pedido activo
     var tieneActivo = (misEntregas && misEntregas.length > 0);
     var intervalo = tieneActivo ? GPS_INTERVALO_ACTIVO : GPS_INTERVALO_IDLE;
 
-    // Enviar inmediatamente al iniciar
     enviarUbicacion();
 
-    // Programar envíos periódicos
     gpsTimerEnvio = setInterval(function () {
-        // Si la pestaña no está visible, no enviar (ahorra batería)
         if (document.hidden) return;
 
-        // Recalcular intervalo según pedidos activos
         var tieneActivo = (misEntregas && misEntregas.length > 0);
         var nuevoIntervalo = tieneActivo ? GPS_INTERVALO_ACTIVO : GPS_INTERVALO_IDLE;
 
-        // Si cambió el intervalo, reiniciar
         if (nuevoIntervalo !== intervalo) {
             intervalo = nuevoIntervalo;
             iniciarEnvioPeriodico();
@@ -1169,7 +1368,6 @@ function iniciarEnvioPeriodico() {
     }, intervalo);
 }
 
-// Enviar la última ubicación a Supabase
 async function enviarUbicacion() {
     if (!repartidorData || !repartidorData.id) return;
     if (!disponible) return;
@@ -1181,11 +1379,9 @@ async function enviarUbicacion() {
     var lat = gpsUltimaPosicion.lat;
     var lng = gpsUltimaPosicion.lng;
 
-    // Verificar distancia mínima desde la última enviada (evita spam)
     if (gpsUltimaEnviada) {
         var dist = distanciaMetros(gpsUltimaEnviada.lat, gpsUltimaEnviada.lng, lat, lng);
         if (dist < GPS_MIN_DISTANCIA_M) {
-            // No se movió lo suficiente, no enviar pero actualizar indicador
             var minAtras = Math.floor((Date.now() - (gpsUltimaVez || Date.now())) / 60000);
             actualizarIndicadorGPS('activo', '📍 Ubicación sin cambios', 'Último envío: ' + (minAtras < 1 ? 'ahora' : 'hace ' + minAtras + ' min'));
             return;
@@ -1215,23 +1411,19 @@ async function enviarUbicacion() {
             '📍 Enviando ubicación',
             'Última actualización: hace ' + (haceSeg < 5 ? 'instantes' : haceSeg + 's') + ' · ' + gpsContadorEnvios + ' envíos'
         );
-
     } catch (e) {
         console.error('Error enviando ubicación:', e);
         actualizarIndicadorGPS('error', '⚠️ Error enviando ubicación', e.message);
     }
 }
 
-// Pausar/reanudar GPS según visibilidad
 document.addEventListener('visibilitychange', function () {
     if (document.hidden) {
-        // Pausar envíos mientras no se ve la pestaña
         if (gpsTimerEnvio) {
             clearInterval(gpsTimerEnvio);
             gpsTimerEnvio = null;
         }
     } else {
-        // Reanudar al volver
         if (disponible && gpsWatchId !== null && !gpsTimerEnvio) {
             iniciarEnvioPeriodico();
         }
@@ -1281,14 +1473,12 @@ async function cargarDisponibles(silencioso) {
         });
 
         await cargarDatosRelacionados(pedidosDisponibles);
-
         renderizarDisponibles();
         actualizarBadgeDisponibles(pedidosDisponibles.length);
 
         if (silencioso && hayNuevos && pedidosDisponibles.length > 0) {
             showToast('🔔 ¡Nuevo pedido disponible!', 'success');
         }
-
     } catch (e) {
         console.error('Error disponibles:', e);
         if (!silencioso) {
@@ -1324,11 +1514,9 @@ async function cargarMisEntregas(silencioso) {
         renderizarMisEntregas();
         actualizarBadgeMios(misEntregas.length);
 
-        // Si cambió a tener pedidos activos, reiniciar el timer GPS para usar el intervalo corto
         if (disponible && gpsWatchId !== null && misEntregas.length > 0) {
             iniciarEnvioPeriodico();
         }
-
     } catch (e) {
         console.error('Error mis entregas:', e);
         if (!silencioso) {
@@ -1363,7 +1551,6 @@ async function cargarHistorial(silencioso) {
         await cargarDatosRelacionados(historial);
         renderizarHistorial();
         actualizarGanancias();
-
     } catch (e) {
         console.error('Error historial:', e);
         if (!silencioso) {
@@ -1389,45 +1576,35 @@ async function cargarDatosRelacionados(pedidos) {
         var promises = [];
 
         if (tiendaIds.length > 0) {
-            promises.push(
-                supabase.from('mercado_tiendas')
-                    .select('id, nombre_negocio, direccion, telefono, whatsapp, logo_url')
-                    .in('id', tiendaIds)
-                    .then(function (res) {
-                        if (!res.error && res.data) {
-                            res.data.forEach(function (t) { tiendasCache[t.id] = t; });
-                        }
-                    })
-            );
+            promises.push(supabase.from('mercado_tiendas')
+                .select('id, nombre_negocio, direccion, telefono, whatsapp, logo_url')
+                .in('id', tiendaIds)
+                .then(function (res) {
+                    if (!res.error && res.data) res.data.forEach(function (t) { tiendasCache[t.id] = t; });
+                }));
         }
 
         if (compradorIds.length > 0) {
-            promises.push(
-                supabase.from('usuarios')
-                    .select('id, nombre, handle, avatar_url, telefono')
-                    .in('id', compradorIds)
-                    .then(function (res) {
-                        if (!res.error && res.data) {
-                            res.data.forEach(function (u) { compradoresCache[u.id] = u; });
-                        }
-                    })
-            );
+            promises.push(supabase.from('usuarios')
+                .select('id, nombre, handle, avatar_url, telefono')
+                .in('id', compradorIds)
+                .then(function (res) {
+                    if (!res.error && res.data) res.data.forEach(function (u) { compradoresCache[u.id] = u; });
+                }));
         }
 
         if (pedidoIds.length > 0) {
-            promises.push(
-                supabase.from('mercado_pedido_items')
-                    .select('*')
-                    .in('pedido_id', pedidoIds)
-                    .then(function (res) {
-                        if (!res.error && res.data) {
-                            res.data.forEach(function (it) {
-                                if (!itemsPorPedido[it.pedido_id]) itemsPorPedido[it.pedido_id] = [];
-                                itemsPorPedido[it.pedido_id].push(it);
-                            });
-                        }
-                    })
-            );
+            promises.push(supabase.from('mercado_pedido_items')
+                .select('*')
+                .in('pedido_id', pedidoIds)
+                .then(function (res) {
+                    if (!res.error && res.data) {
+                        res.data.forEach(function (it) {
+                            if (!itemsPorPedido[it.pedido_id]) itemsPorPedido[it.pedido_id] = [];
+                            itemsPorPedido[it.pedido_id].push(it);
+                        });
+                    }
+                }));
         }
 
         await Promise.all(promises);
@@ -1471,11 +1648,8 @@ function renderizarDisponibles() {
     }
 
     var html = '<div class="pedidos-lista">';
-    pedidosDisponibles.forEach(function (p) {
-        html += renderCardDisponible(p);
-    });
+    pedidosDisponibles.forEach(function (p) { html += renderCardDisponible(p); });
     html += '</div>';
-
     container.innerHTML = html;
     if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
 }
@@ -1483,13 +1657,10 @@ function renderizarDisponibles() {
 function renderCardDisponible(p) {
     var tienda = tiendasCache[p.tienda_id] || null;
     var comprador = compradoresCache[p.comprador_id] || null;
-
     var origenNombre = tienda ? tienda.nombre_negocio : 'Tienda';
     var origenDir = tienda ? (tienda.direccion || 'Dirección no registrada') : '—';
-
     var destinoNombre = comprador ? (comprador.nombre || comprador.handle || 'Cliente') : 'Cliente';
     var destinoDir = p.direccion_entrega || (p.tipo_entrega === 'pickup' ? 'El cliente recoge' : 'Sin dirección');
-
     var items = itemsPorPedido[p.id] || [];
     var totalItems = items.reduce(function (s, it) { return s + (it.cantidad || 0); }, 0);
 
@@ -1512,7 +1683,6 @@ function renderCardDisponible(p) {
             '</div>' +
             '<span class="estado-badge listo">' + traducirEstado('listo') + '</span>' +
         '</div>' +
-
         '<div class="ruta-info">' +
             '<div class="punto origen">' +
                 '<div class="icono-p">🏪</div>' +
@@ -1531,14 +1701,11 @@ function renderCardDisponible(p) {
                 '</div>' +
             '</div>' +
         '</div>' +
-
         '<div class="meta-info">' +
             '<span class="meta">📦 <strong>' + totalItems + '</strong> items</span>' +
             '<span class="meta">' + (p.tipo_entrega === 'pickup' ? '🏪 Recoger' : '🛵 Delivery') + '</span>' +
         '</div>' +
-
         (chipCobro ? '<div class="chips-info">' + chipCobro + '</div>' : '') +
-
         '<div class="footer-p">' +
             '<div class="ganancia">' +
                 '<div class="lbl-g">Tu ganancia</div>' +
@@ -1546,7 +1713,6 @@ function renderCardDisponible(p) {
             '</div>' +
             '<div class="pago-metodo">💵 Envío cobrado en efectivo<br>al entregar</div>' +
         '</div>' +
-
         '<div class="acciones-p">' +
             '<button class="btn-accion-p btn-tomar" onclick="tomarPedido(' + p.id + ', this)">' +
                 '🛵 <span data-clave="repartidor_tomar">Tomar pedido</span>' +
@@ -1576,11 +1742,8 @@ function renderizarMisEntregas() {
     }
 
     var html = '<div class="pedidos-lista">';
-    misEntregas.forEach(function (p) {
-        html += renderCardMia(p);
-    });
+    misEntregas.forEach(function (p) { html += renderCardMia(p); });
     html += '</div>';
-
     container.innerHTML = html;
     if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
 }
@@ -1589,7 +1752,6 @@ function renderCardMia(p) {
     var tienda = tiendasCache[p.tienda_id] || null;
     var comprador = compradoresCache[p.comprador_id] || null;
     var estado = (p.estado || 'asignado').toLowerCase();
-
     var origenNombre = tienda ? tienda.nombre_negocio : 'Tienda';
     var origenDir = tienda ? (tienda.direccion || '—') : '—';
     var destinoNombre = comprador ? (comprador.nombre || comprador.handle || 'Cliente') : 'Cliente';
@@ -1622,7 +1784,6 @@ function renderCardMia(p) {
         chipCobro = '<span class="chip-mini pagado">✓ Envío ya pagado por app</span>';
     }
 
-    // Chip de GPS si está en camino
     var chipGps = '';
     if (estado === 'en_camino' && gpsEstado === 'activo') {
         chipGps = '<span class="chip-mini gps-ok">📍 Compartiendo ubicación</span>';
@@ -1636,7 +1797,6 @@ function renderCardMia(p) {
             '</div>' +
             '<span class="estado-badge ' + estado + '">' + traducirEstado(estado) + '</span>' +
         '</div>' +
-
         '<div class="ruta-info">' +
             '<div class="punto origen">' +
                 '<div class="icono-p">🏪</div>' +
@@ -1655,16 +1815,13 @@ function renderCardMia(p) {
                 '</div>' +
             '</div>' +
         '</div>' +
-
         (chipCobro || chipGps ? '<div class="chips-info">' + chipCobro + chipGps + '</div>' : '') +
-
         '<div class="footer-p">' +
             '<div class="ganancia">' +
                 '<div class="lbl-g">Tu ganancia</div>' +
                 '<div class="val-g">' + formatearPrecio(gananciaRepartidor()) + '</div>' +
             '</div>' +
         '</div>' +
-
         '<div class="acciones-p">' + botones + btnWhats +
             '<button class="btn-accion-p btn-ver" onclick="verDetalle(' + p.id + ', \'mio\')">' +
                 '👁️ Ver' +
@@ -1715,7 +1872,6 @@ function renderizarHistorial() {
         '</div>';
     });
     html += '</div>';
-
     container.innerHTML = html;
     if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
 }
@@ -1749,12 +1905,10 @@ async function tomarPedido(pedidoId, btn) {
         showToast('🛵 ¡Pedido tomado! Ve a la tienda a recogerlo.', 'success');
         await Promise.all([cargarDisponibles(true), cargarMisEntregas(true)]);
 
-        // Reiniciar GPS para usar intervalo corto (hay pedido activo)
         if (gpsWatchId !== null) {
             iniciarEnvioPeriodico();
             enviarUbicacion();
         }
-
     } catch (e) {
         console.error('Error tomando pedido:', e);
         showToast('❌ ' + (e.message || 'No se pudo tomar el pedido'), 'error');
@@ -1784,12 +1938,8 @@ async function marcarEnCamino(pedidoId, btn) {
 
         if (result.error) throw result.error;
         showToast('🚀 ¡En camino! El cliente puede ver tu ubicación', 'success');
-
-        // Enviar ubicación inmediatamente
         enviarUbicacion();
-
         await cargarMisEntregas(true);
-
     } catch (e) {
         console.error('Error en camino:', e);
         showToast('❌ ' + e.message, 'error');
@@ -1822,9 +1972,8 @@ async function marcarEntregado(pedidoId, btn) {
 
         if (result.error) throw result.error;
 
-        // Actualizar stats del repartidor
         if (repartidorData && repartidorData.id) {
-            var totalEntregas = (parseInt(repartidorData.pedidos_completados || repartidorData.total_entregas || 0)) + 1;
+            var totalEntregas = (parseInt(repartidorData.pedidos_completados || 0)) + 1;
             var totalGanado = (parseFloat(repartidorData.total_ganado || 0)) + ganancia;
 
             await supabase
@@ -1843,11 +1992,9 @@ async function marcarEntregado(pedidoId, btn) {
         showToast('✅ ¡Entrega completada! +' + formatearPrecio(ganancia), 'success');
         await Promise.all([cargarMisEntregas(true), cargarHistorial(true)]);
 
-        // Si ya no hay pedidos activos, el GPS vuelve a intervalo largo
         if (misEntregas.length === 0 && gpsWatchId !== null) {
             iniciarEnvioPeriodico();
         }
-
     } catch (e) {
         console.error('Error marcando entregado:', e);
         showToast('❌ ' + e.message, 'error');
@@ -1990,6 +2137,18 @@ document.addEventListener('DOMContentLoaded', async function () {
         return;
     }
 
+    // 🔍 VERIFICAR SI ESTÁ VERIFICADO COMO REPARTIDOR
+    var estadoCheck = await verificarEstadoVerificacion();
+
+    // Si NO está verificado, ya se redirigió o se mostró pantalla
+    if (!estadoCheck.verificado) {
+        return;
+    }
+
+    // ✅ Está verificado → cargar el panel normal
+    document.getElementById('loaderEstado').style.display = 'none';
+    document.getElementById('contenidoPanel').style.display = 'block';
+
     await cargarDatosRepartidor();
 
     await Promise.all([
@@ -2004,19 +2163,16 @@ document.addEventListener('DOMContentLoaded', async function () {
         try {
             if (typeof window.inicializarIdiomas === 'function') {
                 await window.inicializarIdiomas();
-                console.log('✅ Idiomas aplicados al panel del repartidor');
             }
         } catch (e) { console.warn('Error idiomas:', e); }
     }, 400);
 });
 
-// Cerrar modal con click fuera
 document.addEventListener('click', function (e) {
     var modal = document.getElementById('modalDetalle');
     if (e.target === modal) cerrarModalDetalle();
 });
 
-// Al cerrar la pestaña, detener el GPS
 window.addEventListener('beforeunload', function () {
     detenerGPS();
 });
@@ -2033,6 +2189,7 @@ window.marcarEnCamino = marcarEnCamino;
 window.marcarEntregado = marcarEntregado;
 window.verDetalle = verDetalle;
 window.cerrarModalDetalle = cerrarModalDetalle;
+window.reintentarRegistro = reintentarRegistro;
 </script>
 </body>
 </html>
