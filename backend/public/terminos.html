@@ -6,7 +6,6 @@
      Diseño: Fondo claro legible + branding Csariel's (verde + dorado)
      Cumple WCAG AAA de contraste
      Optimizado para impresión
-     Firma digital con hash real + IP + timestamp
      
      Fundamento legal:
      - Código de Comercio (Art. 89, 90, 91, 92)
@@ -28,6 +27,10 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
+    <!-- CDN de Supabase (obligatorio para autenticación) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+    <!-- Módulo global Csariel's (crea window.supabaseClient) -->
     <script src="/features/shared/js/apariencia-global.js"></script>
 
     <style>
@@ -556,6 +559,30 @@
         }
         .footer-legal .marca::before { content: '◈ '; color: var(--gold-light); }
 
+        /* Estado de procesamiento */
+        .aceptacion-container.procesando {
+            opacity: 0.75;
+        }
+        .aceptacion-container.procesando input {
+            cursor: wait;
+        }
+
+        /* Mensaje de error */
+        .mensaje-error {
+            display: none;
+            margin-top: 14px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            background: var(--danger-bg);
+            border-left: 4px solid var(--danger);
+            color: var(--danger);
+            font-size: 0.88rem;
+            line-height: 1.5;
+        }
+        .mensaje-error.visible {
+            display: block;
+        }
+
         /* Impresión */
         @media print {
             body { background: #fff !important; color: #000 !important; font-size: 11pt; }
@@ -849,23 +876,49 @@
                 <strong>CNBV</strong> (regulación financiera): <a href="https://www.gob.mx/cnbv" target="_blank" rel="noopener">gob.mx/cnbv</a>
             </div>
         </section>
-
-        <!-- Aceptación + Firma digital -->
+        <!-- ============================================================
+             ACEPTACIÓN + FIRMA DIGITAL
+             El servidor es responsable de generar el identificador,
+             timestamp, IP y registro de auditoría.
+             ============================================================ -->
         <div class="aceptacion-container" id="aceptacionContainer">
+
             <div class="aceptacion-wrapper">
-                <input type="checkbox" id="aceptoTerminos" />
-                <label for="aceptoTerminos">
-                    <strong>He leído y acepto los Términos y Condiciones de Uso</strong> de Csariel's Ecosystem.
-                    Entiendo las reglas del programa de lealtad, la regla de los 30 días, el NFT Conmemorativo y las condiciones del Mercado P2P.
+                <input
+                    type="checkbox"
+                    id="aceptoTerminos"
+                    aria-describedby="textoAceptacion"
+                />
+                <label for="aceptoTerminos" id="textoAceptacion">
+                    <strong>He leído y acepto los Términos y Condiciones de Uso</strong>
+                    de Csariel's Ecosystem.
+                    Entiendo las reglas del programa de lealtad, la regla de los
+                    30 días, el NFT Conmemorativo y las condiciones del Mercado P2P.
                 </label>
             </div>
 
-            <div class="firma-digital" id="firmaDigital">
-                <span class="titulo-firma">◈ Firma digital registrada</span>
+            <!-- Error del proceso de aceptación -->
+            <div
+                class="mensaje-error"
+                id="mensajeError"
+                role="alert"
+                aria-live="polite"
+            ></div>
+
+            <!-- Registro electrónico generado por el servidor -->
+            <div
+                class="firma-digital"
+                id="firmaDigital"
+                aria-live="polite"
+            >
+                <span class="titulo-firma">◈ Registro electrónico de aceptación</span>
                 <span class="fecha-hora" id="fechaHoraFirma">--</span><br>
-                <span>IP del firmante:</span> <span class="hash" id="ipFirma">--</span><br>
-                <span>Hash del documento:</span> <span class="hash" id="hashFirma">--</span><br>
-                <span>ID de firma:</span> <span class="hash" id="idFirma">--</span>
+                <span>ID de registro:</span>
+                <span class="hash" id="idFirma">--</span><br>
+                <span>Hash SHA-256 del documento:</span>
+                <span class="hash" id="hashFirma">--</span><br>
+                <span>IP registrada por el servidor:</span>
+                <span class="hash" id="ipFirma">--</span>
             </div>
         </div>
 
@@ -887,80 +940,266 @@
 
 <script>
 // ================================================================
-// FIRMA DIGITAL
+// REGISTRO ELECTRÓNICO DE ACEPTACIÓN
 // ================================================================
+// 1. Obtener la sesión existente de Supabase Auth.
+// 2. Descargar el HTML que realmente está siendo servido.
+// 3. Calcular SHA-256 sobre los bytes exactos del documento.
+// 4. Enviar el hash al backend.
+// 5. Recibir del servidor el identificador y timestamp del registro.
+//
+// El backend vuelve a validar el hash contra su valor oficial.
+// ================================================================
+'use strict';
+
 document.addEventListener('DOMContentLoaded', function () {
-    // Suavizar scroll en los links del índice
-    document.querySelectorAll('.indice ol li a').forEach(function (link) {
-        link.addEventListener('click', function (e) {
-            e.preventDefault();
+
+    // ============================================================
+    // NAVEGACIÓN DEL ÍNDICE
+    // ============================================================
+    document.querySelectorAll('.indice ol li a').forEach(function (enlace) {
+        enlace.addEventListener('click', function (evento) {
+            evento.preventDefault();
             var targetId = this.getAttribute('href').substring(1);
-            var target = document.getElementById(targetId);
-            if (target) {
-                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                history.pushState(null, null, '#' + targetId);
+            var destino = document.getElementById(targetId);
+            if (destino) {
+                destino.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                history.pushState(null, '', '#' + targetId);
             }
         });
     });
 
-    // Firma digital
+    // ============================================================
+    // ELEMENTOS DEL DOM
+    // ============================================================
     var checkbox = document.getElementById('aceptoTerminos');
     var firmaDigital = document.getElementById('firmaDigital');
     var fechaHoraFirma = document.getElementById('fechaHoraFirma');
     var hashFirma = document.getElementById('hashFirma');
     var idFirma = document.getElementById('idFirma');
     var ipFirma = document.getElementById('ipFirma');
+    var mensajeError = document.getElementById('mensajeError');
+    var aceptacionContainer = document.getElementById('aceptacionContainer');
+    var versionDocumento = '1.0';
+    var aceptacionRegistrada = false;
 
-    function generarHashDocumento() {
-        // Hash simbólico del contenido del documento
-        var contenido = document.body.innerText;
-        var hash = 0;
-        for (var i = 0; i < contenido.length; i++) {
-            var char = contenido.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash;
+    // ============================================================
+    // OBTENER CLIENTE SUPABASE GLOBAL
+    // (creado por /features/shared/js/apariencia-global.js)
+    // ============================================================
+    function obtenerClienteSupabase() {
+        if (window.supabaseClient && typeof window.supabaseClient.auth?.getSession === 'function') {
+            return window.supabaseClient;
         }
-        var hashHex = '0x' + Math.abs(hash).toString(16).padStart(8, '0') + 
-                       Math.random().toString(16).substring(2, 10);
-        return hashHex;
+        if (window.supabase && typeof window.supabase.auth?.getSession === 'function') {
+            return window.supabase;
+        }
+        return null;
     }
 
-    function generarIdFirma() {
-        return 'SIG-' + Date.now().toString(36).toUpperCase() + '-' + 
-               Math.random().toString(36).substring(2, 6).toUpperCase();
+    // ============================================================
+    // SHA-256 REAL DEL DOCUMENTO SERVIDO
+    // ============================================================
+    async function calcularHashDocumentoReal() {
+        var respuesta = await fetch(window.location.pathname, {
+            method: 'GET',
+            cache: 'no-store',
+            credentials: 'same-origin',
+            headers: { 'Accept': 'text/html' }
+        });
+
+        if (!respuesta.ok) {
+            throw new Error('No fue posible obtener el documento legal.');
+        }
+
+        var contenidoBytes = await respuesta.arrayBuffer();
+        var hashBuffer = await crypto.subtle.digest('SHA-256', contenidoBytes);
+        var hashArray = Array.from(new Uint8Array(hashBuffer));
+
+        return hashArray.map(function (byte) {
+            return byte.toString(16).padStart(2, '0');
+        }).join('');
     }
 
-    function obtenerFechaHora() {
-        var ahora = new Date();
-        return ahora.toLocaleDateString('es-MX', {
-            year: 'numeric', month: 'long', day: 'numeric',
-            hour: '2-digit', minute: '2-digit', second: '2-digit',
-            timeZoneName: 'short'
+    // ============================================================
+    // MOSTRAR / LIMPIAR ERROR
+    // ============================================================
+    function mostrarError(mensaje) {
+        if (mensajeError) {
+            mensajeError.textContent = mensaje;
+            mensajeError.classList.add('visible');
+        }
+        if (firmaDigital) firmaDigital.classList.remove('visible');
+    }
+
+    function limpiarError() {
+        if (mensajeError) {
+            mensajeError.textContent = '';
+            mensajeError.classList.remove('visible');
+        }
+    }
+
+    // ============================================================
+    // OBTENER JWT DE SUPABASE
+    // ============================================================
+    async function obtenerAccessToken() {
+        var clienteSupabase = obtenerClienteSupabase();
+        if (!clienteSupabase) {
+            throw new Error('SUPABASE_CLIENTE_NO_DISPONIBLE');
+        }
+        var resultado = await clienteSupabase.auth.getSession();
+        if (resultado.error) throw resultado.error;
+        var sesion = resultado.data?.session;
+        if (!sesion || !sesion.access_token) {
+            throw new Error('TOKEN_INVALIDO');
+        }
+        return sesion.access_token;
+    }
+
+    // ============================================================
+    // REGISTRAR ACEPTACIÓN AL BACKEND
+    // ============================================================
+    async function registrarAceptacion() {
+        limpiarError();
+        if (aceptacionContainer) aceptacionContainer.classList.add('procesando');
+        if (checkbox) checkbox.disabled = true;
+
+        try {
+            // 1. Obtener JWT existente
+            var accessToken = await obtenerAccessToken();
+
+            // 2. Calcular SHA-256 del HTML real
+            var hashDocumento = await calcularHashDocumentoReal();
+
+            // 3. Enviar solo lo que corresponde al cliente
+            // El cliente NO envía: firma_id, IP, timestamp, HMAC
+            var respuesta = await fetch('/api/aceptar-terminos', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + accessToken
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    aceptado: true,
+                    version: versionDocumento,
+                    hash_documento: hashDocumento
+                })
+            });
+
+            var datosRespuesta = {};
+            try { datosRespuesta = await respuesta.json(); } catch (e) { datosRespuesta = {}; }
+
+            // ====================================================
+            // MANEJO DE ERRORES ESPECÍFICOS
+            // ====================================================
+            if (!respuesta.ok) {
+                var codigo = datosRespuesta.codigo || datosRespuesta.error || 'ERROR_DESCONOCIDO';
+
+                if (codigo === 'YA_ACEPTADO') {
+                    mostrarError('Ya existe una aceptación registrada para esta versión de los Términos y Condiciones.');
+                    return;
+                }
+
+                if (codigo === 'HASH_NO_COINCIDE') {
+                    mostrarError('El documento legal servido no coincide con la versión oficial. No se registró la aceptación. Por favor, intenta nuevamente más tarde.');
+                    return;
+                }
+
+                if (codigo === 'TOKEN_INVALIDO' || respuesta.status === 401) {
+                    mostrarError('Tu sesión no es válida o ha expirado. Inicia sesión nuevamente para aceptar los Términos y Condiciones.');
+                    return;
+                }
+
+                if (respuesta.status === 429) {
+                    mostrarError('Se han realizado demasiados intentos. Espera unos minutos antes de volver a intentarlo.');
+                    return;
+                }
+
+                mostrarError(
+                    datosRespuesta.mensaje ||
+                    datosRespuesta.message ||
+                    'No fue posible registrar la aceptación. Intenta nuevamente.'
+                );
+                return;
+            }
+
+            // ====================================================
+            // REGISTRO EXITOSO
+            // ====================================================
+            aceptacionRegistrada = true;
+            if (checkbox) checkbox.checked = true;
+
+            if (fechaHoraFirma) fechaHoraFirma.textContent = datosRespuesta.timestamp || '--';
+            if (hashFirma) hashFirma.textContent = hashDocumento;
+            if (idFirma) idFirma.textContent = datosRespuesta.firma_id || '--';
+            if (ipFirma) ipFirma.textContent = 'Registrada por el servidor';
+            if (firmaDigital) firmaDigital.classList.add('visible');
+
+            // Bloquear el checkbox después del registro exitoso
+            if (checkbox) checkbox.disabled = true;
+
+            console.info('◈ Aceptación legal registrada correctamente.', {
+                firma_id: datosRespuesta.firma_id,
+                timestamp: datosRespuesta.timestamp,
+                version: versionDocumento
+            });
+
+        } catch (error) {
+            console.error('Error registrando aceptación legal:', error);
+
+            if (error && error.message === 'TOKEN_INVALIDO') {
+                mostrarError('Tu sesión no es válida o ha expirado. Inicia sesión nuevamente.');
+                return;
+            }
+
+            if (error && error.message === 'SUPABASE_CLIENTE_NO_DISPONIBLE') {
+                mostrarError('No fue posible acceder a tu sesión de usuario. Recarga la página e inténtalo nuevamente.');
+                return;
+            }
+
+            mostrarError('No fue posible registrar la aceptación. Verifica tu conexión e inténtalo nuevamente.');
+
+        } finally {
+            if (aceptacionContainer) aceptacionContainer.classList.remove('procesando');
+            // Si no se registró correctamente, permitir reintentar
+            if (!aceptacionRegistrada && checkbox) {
+                checkbox.disabled = false;
+            }
+        }
+    }
+
+    // ============================================================
+    // EVENTO DEL CHECKBOX
+    // ============================================================
+    if (checkbox) {
+        checkbox.addEventListener('change', async function () {
+            // Si ya existe un registro exitoso, no permitir modificarlo
+            if (aceptacionRegistrada) {
+                this.checked = true;
+                return;
+            }
+
+            // Si desmarca antes de registrar, limpiar la interfaz
+            if (!this.checked) {
+                limpiarError();
+                if (firmaDigital) firmaDigital.classList.remove('visible');
+                if (fechaHoraFirma) fechaHoraFirma.textContent = '--';
+                if (hashFirma) hashFirma.textContent = '--';
+                if (idFirma) idFirma.textContent = '--';
+                if (ipFirma) ipFirma.textContent = '--';
+                return;
+            }
+
+            // Marcó "Acepto" — comienza el registro real
+            await registrarAceptacion();
         });
     }
 
-    function obtenerIP() {
-        // Simulada — en producción se obtiene del backend
-        return '127.0.0.1 (local)';
-    }
-
-    checkbox.addEventListener('change', function () {
-        if (this.checked) {
-            fechaHoraFirma.textContent = obtenerFechaHora();
-            hashFirma.textContent = generarHashDocumento();
-            idFirma.textContent = generarIdFirma();
-            ipFirma.textContent = obtenerIP();
-            firmaDigital.classList.add('visible');
-        } else {
-            firmaDigital.classList.remove('visible');
-            fechaHoraFirma.textContent = '--';
-            hashFirma.textContent = '--';
-            idFirma.textContent = '--';
-            ipFirma.textContent = '--';
-        }
-    });
-
-    console.log('◈ Términos y Condiciones generales cargados (modo claro)');
+    // ============================================================
+    // LOG DE CARGA
+    // ============================================================
+    console.info('◈ Términos y Condiciones v' + versionDocumento + ' cargados.');
 });
 </script>
 </body>
