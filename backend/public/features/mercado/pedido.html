@@ -1,5 +1,5 @@
 <!-- ================================================================
-     MERCADO - SARIEL'S ECOSYSTEM
+     MERCADO - CSARIEL'S ECOSYSTEM
      Detalle y seguimiento de un pedido con MAPA EN VIVO
      Ruta: /features/mercado/pedido.html?id=BIGINT
      
@@ -18,11 +18,10 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>◈ Pedido · Sariel's</title>
+    <title>◈ Pedido · Csariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
-    <!-- Leaflet CSS para el mapa -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
     <script src="/features/shared/js/apariencia-global.js"></script>
@@ -86,10 +85,11 @@
             display: flex; gap: 4px; background: rgba(15,45,26,0.3); border-radius: var(--radius);
             padding: 4px; border: 1px solid var(--glass-border); margin: 16px 0 20px; overflow-x: auto;
         }
-        .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; white-space: nowrap; transition: var(--transition); }
+        .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; white-space: nowrap; transition: var(--transition); display: flex; align-items: center; gap: 6px; }
         .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212,175,55,0.05); }
         .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); }
         .main-nav .nav-link.live { color: var(--danger); }
+        .main-nav .nav-link .nav-simbolo { color: var(--gold); opacity: 0.7; }
 
         .btn-back {
             display: inline-flex; align-items: center; gap: 6px;
@@ -98,6 +98,7 @@
             font-size: 0.72rem; text-decoration: none; margin-bottom: 16px;
             transition: var(--transition); cursor: pointer;
         }
+        .btn-back .simbolo { color: var(--gold); font-family: 'Orbitron', monospace; }
         .btn-back:hover { border-color: var(--gold); color: var(--gold); }
 
         .titulo {
@@ -109,6 +110,7 @@
             font-weight: 700; color: var(--gold);
             display: flex; align-items: center; gap: 8px;
         }
+        .titulo h1 .simbolo { color: var(--gold); }
         .estado-badge {
             font-size: 0.6rem; padding: 4px 12px;
             border-radius: 20px;
@@ -116,7 +118,9 @@
             text-transform: uppercase; letter-spacing: 0.5px;
             border: 1px solid var(--glass-border);
             background: rgba(0,0,0,0.3);
+            display: inline-flex; align-items: center; gap: 5px;
         }
+        .estado-badge .simbolo { font-family: 'Orbitron', monospace; }
         .estado-badge.pendiente { color: var(--warning); border-color: var(--warning); }
         .estado-badge.aceptado { color: var(--cyan); border-color: var(--cyan); }
         .estado-badge.preparando { color: var(--cyan); border-color: var(--cyan); }
@@ -136,6 +140,7 @@
             font-family: 'Orbitron', monospace;
             letter-spacing: 0.5px;
         }
+        .live-indicator .simbolo { color: var(--success); }
         .live-indicator .pulse-dot {
             width: 6px; height: 6px;
             border-radius: 50%;
@@ -151,11 +156,11 @@
             background: rgba(0,0,0,0.3);
             border-color: var(--glass-border);
         }
+        .live-indicator.off .simbolo { color: var(--text-muted); }
         .live-indicator.off .pulse-dot { background: var(--text-muted); animation: none; }
 
         /* ============================================================
-           SECCIÓN NUEVA: HEADER DEL REPARTIDOR + MAPA EN VIVO
-           Solo se muestra si el pedido tiene repartidor asignado
+           SECCIÓN TRACKING (header repartidor + mapa + info)
            ============================================================ */
         .tracking-section {
             display: none;
@@ -176,7 +181,6 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Header del repartidor */
         .repartidor-header {
             display: flex;
             align-items: center;
@@ -214,7 +218,9 @@
             font-weight: 700;
             font-family: 'Orbitron', monospace;
             margin-bottom: 2px;
+            display: flex; align-items: center; gap: 5px;
         }
+        .repartidor-header .info .rol .simbolo { color: var(--purple); }
         .repartidor-header .info .nombre {
             font-size: 0.95rem;
             font-weight: 700;
@@ -235,10 +241,14 @@
         .repartidor-header .info .meta .rating {
             color: var(--warning);
             font-weight: 600;
+            display: flex; align-items: center; gap: 3px;
         }
+        .repartidor-header .info .meta .rating .simbolo { color: var(--warning); }
         .repartidor-header .info .meta .vehiculo {
             color: var(--text-secondary);
+            display: flex; align-items: center; gap: 3px;
         }
+        .repartidor-header .info .meta .vehiculo .simbolo { color: var(--gold); }
         .repartidor-header .botones-contacto {
             display: flex;
             gap: 8px;
@@ -260,6 +270,7 @@
             text-decoration: none;
             white-space: nowrap;
         }
+        .btn-contacto-rep .simbolo { font-family: 'Orbitron', monospace; }
         .btn-contacto-rep.llamar {
             background: linear-gradient(135deg, var(--success), #00a86b);
             color: #fff;
@@ -291,7 +302,6 @@
             box-shadow: none;
         }
 
-        /* Contenedor del mapa */
         .mapa-container {
             position: relative;
             width: 100%;
@@ -304,7 +314,6 @@
             z-index: 1;
         }
 
-        /* Overlay de "última actualización" */
         .mapa-overlay {
             position: absolute;
             top: 12px;
@@ -338,7 +347,6 @@
             animation: none;
         }
 
-        /* Botón "centrar en repartidor" */
         .mapa-btn-centrar {
             position: absolute;
             bottom: 12px;
@@ -351,6 +359,7 @@
             border: 1px solid var(--glass-border);
             color: var(--gold);
             font-size: 1rem;
+            font-family: 'Orbitron', monospace;
             cursor: pointer;
             transition: var(--transition);
             display: flex;
@@ -364,7 +373,6 @@
             transform: scale(1.05);
         }
 
-        /* Info inferior del mapa: distancia + ETA + progreso */
         .tracking-info {
             padding: 14px 18px;
         }
@@ -386,7 +394,9 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
             margin-bottom: 4px;
+            display: flex; align-items: center; gap: 4px;
         }
+        .info-card-mini .lbl-mini .simbolo { font-family: 'Orbitron', monospace; }
         .info-card-mini .val-mini {
             font-family: 'Orbitron', monospace;
             font-size: 1rem;
@@ -399,9 +409,10 @@
             margin-top: 2px;
         }
         .info-card-mini.cyan .val-mini { color: var(--cyan); }
+        .info-card-mini.cyan .lbl-mini .simbolo { color: var(--cyan); }
         .info-card-mini.success .val-mini { color: var(--success); }
+        .info-card-mini.success .lbl-mini .simbolo { color: var(--success); }
 
-        /* Barra de progreso */
         .progreso-container {
             display: flex;
             flex-direction: column;
@@ -445,7 +456,7 @@
             font-family: 'Orbitron', monospace;
         }
 
-        /* Override de estilos de Leaflet para el tema dark */
+        /* Leaflet override */
         .leaflet-container {
             background: #1a1a1a;
             font-family: 'Inter', sans-serif;
@@ -486,8 +497,8 @@
             margin-bottom: 14px;
             display: flex; align-items: center; gap: 8px;
         }
+        .seccion-card h2 .simbolo { color: var(--gold); }
 
-        /* Código grande */
         .codigo-box {
             text-align: center; padding: 16px;
             background: rgba(0,0,0,0.4);
@@ -499,14 +510,15 @@
             font-size: 0.6rem; color: var(--text-muted);
             text-transform: uppercase; letter-spacing: 1px;
             margin-bottom: 4px;
+            display: flex; align-items: center; justify-content: center; gap: 5px;
         }
+        .codigo-box .lbl .simbolo { color: var(--gold); }
         .codigo-box .codigo {
             font-family: 'Orbitron', monospace;
             font-size: 1.4rem; font-weight: 700;
             color: var(--gold); letter-spacing: 2px;
         }
 
-        /* Timeline */
         .timeline {
             display: flex; flex-direction: column;
             gap: 4px; position: relative;
@@ -525,6 +537,8 @@
             display: flex; align-items: center; justify-content: center;
             font-size: 0.85rem; flex-shrink: 0;
             position: relative; z-index: 2;
+            font-family: 'Orbitron', monospace;
+            color: var(--text-muted);
         }
         .timeline-item.completado .icono {
             background: var(--success); border-color: var(--success); color: #fff;
@@ -542,6 +556,11 @@
             font-size: 0.78rem; font-weight: 600;
             color: var(--text-primary);
         }
+        .timeline-item .contenido .titulo-tl .simbolo {
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
+            margin-right: 5px;
+        }
         .timeline-item.activo .contenido .titulo-tl { color: var(--gold); }
         .timeline-item.completado .contenido .titulo-tl { color: var(--text-secondary); }
         .timeline-item .contenido .fecha {
@@ -556,7 +575,6 @@
         .timeline-item:last-child::before { display: none; }
         .timeline-item.completado::before { background: var(--success); }
 
-        /* Items del pedido */
         .items-lista {
             display: flex; flex-direction: column; gap: 8px;
         }
@@ -572,6 +590,8 @@
             background: linear-gradient(135deg, var(--green-deep), var(--green-mid));
             display: flex; align-items: center; justify-content: center;
             font-size: 1.3rem; flex-shrink: 0;
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
         }
         .item-pedido .foto img { width: 100%; height: 100%; object-fit: cover; }
         .item-pedido .info { flex: 1; min-width: 0; }
@@ -588,7 +608,6 @@
             font-size: 0.85rem; white-space: nowrap;
         }
 
-        /* Totales */
         .totales {
             padding-top: 12px;
             border-top: 1px solid var(--glass-border);
@@ -598,6 +617,11 @@
             display: flex; justify-content: space-between;
             padding: 4px 0; font-size: 0.75rem;
             color: var(--text-secondary);
+        }
+        .totales .fila .lbl-simbolo {
+            font-family: 'Orbitron', monospace;
+            color: var(--gold);
+            margin-right: 5px;
         }
         .totales .fila.total {
             font-family: 'Orbitron', monospace;
@@ -617,10 +641,15 @@
             font-size: 0.72rem;
             color: var(--cyan);
             line-height: 1.5;
+            display: flex; align-items: flex-start; gap: 8px;
+        }
+        .envio-nota .simbolo {
+            font-family: 'Orbitron', monospace;
+            font-size: 1rem;
+            flex-shrink: 0;
         }
         .envio-nota strong { color: var(--cyan); }
 
-        /* Info grid */
         .info-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -638,10 +667,14 @@
         .info-grid .info-item .valor {
             font-size: 0.78rem; color: var(--text-primary);
             font-weight: 600; word-wrap: break-word;
+            display: flex; align-items: center; gap: 5px;
+        }
+        .info-grid .info-item .valor .simbolo {
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
         }
         .info-item.full { grid-column: span 2; }
 
-        /* Botones */
         .acciones {
             display: flex; gap: 10px; flex-wrap: wrap;
         }
@@ -655,6 +688,7 @@
             gap: 6px; min-width: 140px;
             text-decoration: none; border: none;
         }
+        .btn-accion .simbolo { font-family: 'Orbitron', monospace; }
         .btn-primario {
             background: linear-gradient(135deg, var(--gold), var(--gold-dark));
             color: var(--space);
@@ -673,7 +707,6 @@
         }
         .btn-secundario:hover { border-color: var(--gold); color: var(--gold); }
 
-        /* Estrellas */
         .estrellas-input {
             display: flex; justify-content: center;
             gap: 8px; margin: 14px 0;
@@ -683,6 +716,7 @@
             color: var(--text-muted);
             transition: var(--transition);
             user-select: none;
+            font-family: 'Orbitron', monospace;
         }
         .estrella:hover,
         .estrella.activa {
@@ -716,13 +750,15 @@
         }
         .resena-existente .estrellas {
             font-size: 1.3rem; margin-bottom: 6px;
+            color: var(--warning);
+            font-family: 'Orbitron', monospace;
+            letter-spacing: 3px;
         }
         .resena-existente .comentario {
             font-size: 0.8rem; color: var(--text-secondary);
             font-style: italic;
         }
 
-        /* Modal */
         .modal-overlay {
             position: fixed; inset: 0;
             background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
@@ -752,7 +788,9 @@
             font-family: 'Orbitron', monospace;
             color: var(--danger); font-size: 1rem;
             margin-bottom: 10px; text-align: center;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
         }
+        .modal h2 .simbolo { font-family: 'Orbitron', monospace; }
         .modal p {
             font-size: 0.8rem; color: var(--text-secondary);
             text-align: center; margin-bottom: 20px;
@@ -763,7 +801,6 @@
         }
         .modal .modal-botones button { flex: 1; }
 
-        /* Loading / empty */
         .loading-state {
             text-align: center; padding: 60px 20px; color: var(--text-muted);
         }
@@ -792,7 +829,6 @@
             color: var(--text-secondary); font-size: 1rem; margin-bottom: 8px;
         }
 
-        /* Toast */
         .toast {
             position: fixed; bottom: 30px; right: 20px;
             background: var(--green-deep); border: 1px solid var(--gold);
@@ -816,7 +852,8 @@
         }
         .footer .brand { color: var(--gold); font-weight: 600; }
         .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
-        .footer-links a { color: var(--text-muted); text-decoration: none; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; display: flex; align-items: center; gap: 4px; }
+        .footer-links a .simbolo { font-family: 'Orbitron', monospace; color: var(--gold); opacity: 0.7; }
         .footer-links a:hover { color: var(--gold); }
 
         html.tema-dia, html[data-tema="dia"] {
@@ -866,7 +903,7 @@
         <header class="header">
             <a href="/" class="logo" aria-label="Ir a la página de inicio">
                 <span class="logo-hex">◈</span>
-                <span class="logo-text">Sariel<span>'s</span></span>
+                <span class="logo-text">Csariel<span>'s</span></span>
                 <span class="logo-badge">✦ WEB3</span>
             </a>
             <div class="header-actions">
@@ -877,19 +914,19 @@
         </header>
 
         <nav class="main-nav" aria-label="Navegación principal">
-            <a href="/" class="nav-link">⌂ Inicio</a>
-            <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
-            <a href="/features/perfil/perfil.html" class="nav-link">◆ Perfil</a>
-            <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
-            <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
-            <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
-            <a href="/features/videos/videos.html" class="nav-link">🎬 Videos</a>
-            <a href="/features/grupos/grupos.html" class="nav-link">👥 Grupos</a>
-            <a href="/features/mercado/index.html" class="nav-link active">🛒 Mercado</a>
+            <a href="/" class="nav-link"><span class="nav-simbolo">◈</span> Inicio</a>
+            <a href="/features/muro/muro.html" class="nav-link"><span class="nav-simbolo">◆</span> Muro</a>
+            <a href="/features/perfil/perfil.html" class="nav-link"><span class="nav-simbolo">◇</span> Perfil</a>
+            <a href="/features/mensajes/contactos.html" class="nav-link"><span class="nav-simbolo">●</span> Contactos</a>
+            <a href="/features/live/live.html" class="nav-link live"><span class="nav-simbolo">◉</span> Live</a>
+            <a href="/features/internet/internet.html" class="nav-link"><span class="nav-simbolo">◆</span> Internet</a>
+            <a href="/features/videos/videos.html" class="nav-link"><span class="nav-simbolo">◇</span> Videos</a>
+            <a href="/features/grupos/grupos.html" class="nav-link"><span class="nav-simbolo">◆</span> Grupos</a>
+            <a href="/features/mercado/index.html" class="nav-link active"><span class="nav-simbolo">◈</span> Mercado</a>
         </nav>
 
         <a href="/features/mercado/mis-pedidos.html" class="btn-back">
-            ← <span data-clave="mercado_volver_pedidos">Volver a mis pedidos</span>
+            <span class="simbolo">◈</span> <span data-clave="mercado_volver_pedidos">Volver a mis pedidos</span>
         </a>
 
         <div id="pedidoContainer">
@@ -900,30 +937,29 @@
         </div>
 
         <footer class="footer">
-            <span><span class="brand">◈ Sariel's</span> · <span data-clave="mercado_footer">Sabor al Paladar · WEB3</span></span>
+            <span><span class="brand">© Csariel's</span> · <span data-clave="mercado_footer">Sabor al Paladar · WEB3</span></span>
             <div class="footer-links">
-                <a href="/terminos" data-clave="footer_terminos">📜 Términos</a>
-                <a href="/privacidad" data-clave="footer_privacidad">🔒 Privacidad</a>
-                <a href="/cookies" data-clave="footer_cookies">🍪 Cookies</a>
-                <a href="/live-terminos" data-clave="footer_terminos_live">📡 Términos de Live</a>
+                <a href="/terminos" data-clave="footer_terminos"><span class="simbolo">◇</span> Términos</a>
+                <a href="/privacidad" data-clave="footer_privacidad"><span class="simbolo">◆</span> Privacidad</a>
+                <a href="/cookies" data-clave="footer_cookies"><span class="simbolo">◇</span> Cookies</a>
+                <a href="/live-terminos" data-clave="footer_terminos_live"><span class="simbolo">◆</span> Términos de Live</a>
                 <span style="opacity:0.3;">⚡ Polygon</span>
             </div>
         </footer>
 
     </div>
 
-    <!-- Modal cancelar -->
     <div class="modal-overlay" id="modalCancelar">
         <div class="modal">
             <button class="close-btn" onclick="cerrarModalCancelar()" aria-label="Cerrar">×</button>
-            <h2>⚠️ Cancelar pedido</h2>
+            <h2><span class="simbolo">✶</span> Cancelar pedido</h2>
             <p data-clave="mercado_cancelar_confirmar">¿Seguro que quieres cancelar este pedido? Esta acción no se puede deshacer.</p>
             <div class="modal-botones">
                 <button class="btn-accion btn-secundario" onclick="cerrarModalCancelar()">
-                    <span data-clave="mercado_no_volver">No, volver</span>
+                    <span class="simbolo">◈</span> <span data-clave="mercado_no_volver">No, volver</span>
                 </button>
                 <button class="btn-accion btn-peligro" id="btnConfirmarCancelar" onclick="confirmarCancelarPedido()">
-                    <span data-clave="mercado_si_cancelar">Sí, cancelar</span>
+                    <span class="simbolo">✶</span> <span data-clave="mercado_si_cancelar">Sí, cancelar</span>
                 </button>
             </div>
         </div>
@@ -936,7 +972,7 @@
         background:#ff3366; color:#fff; padding:12px 16px; font-family:monospace;
         font-size:0.75rem; word-break:break-word; box-shadow:0 4px 20px rgba(0,0,0,0.4);
     ">
-        <strong>⚠️ Error detectado:</strong>
+        <strong><span style="font-family:Orbitron,monospace;">✶</span> Error detectado:</strong>
         <span id="errorBannerText"></span>
         <button onclick="document.getElementById('errorBanner').style.display='none'"
             style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">
@@ -944,26 +980,19 @@
         </button>
     </div>
 
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/features/shared/js/idiomas.js"></script>
-
-<script>
-// ================================================================
-// CONFIGURACIÓN
-// ================================================================
+</body>
+</html><script>
 var supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
 var supabaseKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
 var supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 window.supabaseClient = supabaseClient;
 var supabase = supabaseClient;
 
-// URL del backend
 var API_BASE = '';
 
-// ================================================================
-// ESTADO
-// ================================================================
 var sessionUser = null;
 var pedidoActual = null;
 var itemsPedido = [];
@@ -975,7 +1004,6 @@ var autoRefreshTimer = null;
 var AUTO_REFRESH_MS = 20000;
 var pedidoId = null;
 
-// Estado del mapa
 var mapa = null;
 var marcadorTienda = null;
 var marcadorCliente = null;
@@ -984,18 +1012,15 @@ var capaRuta = null;
 var realtimeChannel = null;
 var pollingUbicacionTimer = null;
 var POLLING_UBICACION_MS = 15000;
-var seguirRepartidor = true; // auto-centrar cámara al repartidor
-var ultimaUbicacionRep = null; // { lat, lng, ts }
-var ultimaRutaCalculada = 0; // timestamp del último cálculo OSRM
-var RUTA_MIN_INTERVALO_MS = 30000; // recalcular ruta cada 30s máx
+var seguirRepartidor = true;
+var ultimaUbicacionRep = null;
+var ultimaRutaCalculada = 0;
+var RUTA_MIN_INTERVALO_MS = 30000;
 
 var ESTADOS_ORDEN = ['pendiente', 'aceptado', 'preparando', 'listo', 'asignado', 'en_camino', 'entregado'];
 var ESTADOS_TERMINALES = ['entregado', 'cancelado', 'rechazado'];
 var ESTADOS_CON_REPARTIDOR = ['asignado', 'en_camino'];
 
-// ================================================================
-// BANNER DE ERRORES
-// ================================================================
 function mostrarErrorEnPantalla(mensaje) {
     var banner = document.getElementById('errorBanner');
     var texto = document.getElementById('errorBannerText');
@@ -1008,9 +1033,6 @@ window.addEventListener('unhandledrejection', function (event) {
     mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason && event.reason.message ? event.reason.message : event.reason));
 });
 
-// ================================================================
-// TOAST
-// ================================================================
 function showToast(mensaje, tipo) {
     try {
         var toastEl = document.getElementById('toast');
@@ -1025,9 +1047,6 @@ function showToast(mensaje, tipo) {
     } catch (e) { console.warn('Toast error:', e); }
 }
 
-// ================================================================
-// HELPERS
-// ================================================================
 function escapeHTML(texto) {
     if (!texto) return '';
     var div = document.createElement('div');
@@ -1066,20 +1085,19 @@ function getParamURL(nombre) {
 
 function traducirEstado(estado) {
     var mapa = {
-        'pendiente': '⏳ Pendiente',
-        'aceptado': '✓ Aceptado',
-        'preparando': '🍳 Preparando',
-        'listo': '📦 Listo',
-        'asignado': '🛵 Asignado',
-        'en_camino': '🛵 En camino',
-        'entregado': '✅ Entregado',
-        'cancelado': '❌ Cancelado',
-        'rechazado': '❌ Rechazado'
+        'pendiente': '<span class="simbolo">◈</span> Pendiente',
+        'aceptado': '<span class="simbolo">●</span> Aceptado',
+        'preparando': '<span class="simbolo">◆</span> Preparando',
+        'listo': '<span class="simbolo">✦</span> Listo',
+        'asignado': '<span class="simbolo">◆</span> Asignado',
+        'en_camino': '<span class="simbolo">✧</span> En camino',
+        'entregado': '<span class="simbolo">●</span> Entregado',
+        'cancelado': '<span class="simbolo">✶</span> Cancelado',
+        'rechazado': '<span class="simbolo">✶</span> Rechazado'
     };
     return mapa[estado] || estado;
 }
 
-// Haversine: distancia en metros entre 2 puntos
 function distanciaMetros(lat1, lng1, lat2, lng2) {
     var R = 6371000;
     var dLat = (lat2 - lat1) * Math.PI / 180;
@@ -1097,10 +1115,9 @@ function formatearDistancia(metros) {
     return (metros / 1000).toFixed(1) + ' km';
 }
 
-// ETA basado en velocidad promedio (25 km/h para moto en ciudad)
 function calcularETA(metros) {
     if (!metros || metros < 0) return null;
-    var minutos = Math.ceil((metros / 1000) / 25 * 60); // 25 km/h
+    var minutos = Math.ceil((metros / 1000) / 25 * 60);
     if (minutos < 1) minutos = 1;
     return minutos;
 }
@@ -1119,9 +1136,6 @@ function horaEstimadaLlegada(minutos) {
     return formatearHora(llegada);
 }
 
-// ================================================================
-// CARGAR USUARIO
-// ================================================================
 async function cargarUsuarioActual() {
     try {
         var result = await supabase.auth.getSession();
@@ -1141,9 +1155,6 @@ async function cargarUsuarioActual() {
     } catch (e) { console.error('Error usuario:', e); return null; }
 }
 
-// ================================================================
-// CARGAR PEDIDO
-// ================================================================
 async function cargarPedido(idPedido, silencioso) {
     var container = document.getElementById('pedidoContainer');
     if (!container) return;
@@ -1163,10 +1174,10 @@ async function cargarPedido(idPedido, silencioso) {
 
         if (!result.data) {
             container.innerHTML = '<div class="empty-state">' +
-                '<span class="icon">📦</span>' +
+                '<span class="icon">◈</span>' +
                 '<h3 data-clave="mercado_pedido_no_encontrado">Pedido no encontrado</h3>' +
                 '<p data-clave="mercado_pedido_no_encontrado_desc">Puede que el enlace sea incorrecto.</p>' +
-                '<a href="/features/mercado/mis-pedidos.html" class="btn-back" style="margin-top:16px;">← <span data-clave="mercado_volver_pedidos">Volver a mis pedidos</span></a>' +
+                '<a href="/features/mercado/mis-pedidos.html" class="btn-back" style="margin-top:16px;"><span class="simbolo">◈</span> <span data-clave="mercado_volver_pedidos">Volver a mis pedidos</span></a>' +
             '</div>';
             detenerAutoRefresh();
             return;
@@ -1177,24 +1188,21 @@ async function cargarPedido(idPedido, silencioso) {
 
         pedidoActual = result.data;
 
-        // Verificar que sea del comprador
         if (pedidoActual.comprador_id !== sessionUser.id) {
             container.innerHTML = '<div class="empty-state">' +
-                '<span class="icon">🔒</span>' +
+                '<span class="icon">●</span>' +
                 '<h3 data-clave="mercado_pedido_no_tuyo">Este pedido no es tuyo</h3>' +
-                '<a href="/features/mercado/mis-pedidos.html" class="btn-back" style="margin-top:16px;">← <span data-clave="mercado_volver_pedidos">Volver a mis pedidos</span></a>' +
+                '<a href="/features/mercado/mis-pedidos.html" class="btn-back" style="margin-top:16px;"><span class="simbolo">◈</span> <span data-clave="mercado_volver_pedidos">Volver a mis pedidos</span></a>' +
             '</div>';
             detenerAutoRefresh();
             return;
         }
 
-        // Si es refresco silencioso y el estado no cambió, no re-renderizar todo
         var cambioEstado = estadoAnterior !== pedidoActual.estado;
         if (silencioso && !esPrimeraCarga && !cambioEstado) {
             return;
         }
 
-        // Cargar datos relacionados
         await Promise.all([
             cargarItemsPedido(pedidoActual.id),
             cargarTiendaPedido(pedidoActual.tienda_id),
@@ -1204,7 +1212,6 @@ async function cargarPedido(idPedido, silencioso) {
 
         renderizarPedido();
 
-        // Gestión del mapa y realtime según el estado
         if (ESTADOS_CON_REPARTIDOR.indexOf(pedidoActual.estado) !== -1 && repartidorPedido) {
             setTimeout(inicializarTracking, 200);
         } else {
@@ -1212,7 +1219,7 @@ async function cargarPedido(idPedido, silencioso) {
         }
 
         if (silencioso && !esPrimeraCarga && cambioEstado) {
-            showToast('🔄 Estado actualizado: ' + traducirEstado(pedidoActual.estado), 'success');
+            showToast('◈ Estado actualizado: ' + traducirEstado(pedidoActual.estado).replace(/<[^>]+>/g, ''), 'success');
         }
 
         if (ESTADOS_TERMINALES.indexOf((pedidoActual.estado || '').toLowerCase()) !== -1) {
@@ -1222,15 +1229,12 @@ async function cargarPedido(idPedido, silencioso) {
     } catch (e) {
         console.error('Error cargando pedido:', e);
         if (!silencioso) {
-            container.innerHTML = '<div class="empty-state"><span class="icon">⚠️</span><h3>Error al cargar</h3><p>' + escapeHTML(e.message) + '</p></div>';
+            container.innerHTML = '<div class="empty-state"><span class="icon">✶</span><h3>Error al cargar</h3><p>' + escapeHTML(e.message) + '</p></div>';
         }
         detenerAutoRefresh();
     }
 }
 
-// ================================================================
-// CARGAR DATOS RELACIONADOS
-// ================================================================
 async function cargarItemsPedido(idPedido) {
     try {
         var result = await supabase
@@ -1269,7 +1273,6 @@ async function cargarTiendaPedido(tiendaId) {
 async function cargarRepartidorPedido(repartidorId) {
     if (!repartidorId) { repartidorPedido = null; return null; }
     try {
-        // Buscar en usuarios
         var result = await supabase
             .from('usuarios')
             .select('id, nombre, handle, avatar_url, telefono')
@@ -1277,7 +1280,6 @@ async function cargarRepartidorPedido(repartidorId) {
             .maybeSingle();
         if (result.error) throw result.error;
 
-        // Buscar en mercado_repartidores
         try {
             var repRes = await supabase
                 .from('mercado_repartidores')
@@ -1325,9 +1327,6 @@ async function cargarResenaExistente(idPedido) {
     }
 }
 
-// ================================================================
-// RENDERIZAR PEDIDO
-// ================================================================
 function renderizarPedido() {
     var container = document.getElementById('pedidoContainer');
     if (!container || !pedidoActual) return;
@@ -1340,27 +1339,25 @@ function renderizarPedido() {
 
     var html = '';
 
-    // ============ TÍTULO ============
     html += '<div class="titulo">';
-    html += '<h1>📦 <span data-clave="mercado_pedido">Pedido</span></h1>';
+    html += '<h1><span class="simbolo">◈</span> <span data-clave="mercado_pedido">Pedido</span></h1>';
     html += '<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">';
     html += '<span class="estado-badge ' + estado + '">' + estadoTexto + '</span>';
     html += '<span class="live-indicator' + (esTerminal ? ' off' : '') + '" id="liveIndicator">';
+    html += '<span class="simbolo">◈</span>';
     html += '<span class="pulse-dot"></span>';
     html += esTerminal ? 'Finalizado' : 'En vivo';
     html += '</span>';
     html += '</div>';
     html += '</div>';
 
-    // ============ TRACKING (solo si hay repartidor) ============
     if (mostrarTracking) {
         html += renderTrackingSection();
     }
 
-    // ============ CÓDIGO + INFO ============
     html += '<div class="seccion-card">';
     html += '<div class="codigo-box">';
-    html += '<div class="lbl" data-clave="mercado_codigo_pedido">Código del pedido</div>';
+    html += '<div class="lbl"><span class="simbolo">✦</span> <span data-clave="mercado_codigo_pedido">Código del pedido</span></div>';
     html += '<div class="codigo">' + escapeHTML(p.codigo || '—') + '</div>';
     html += '</div>';
 
@@ -1372,13 +1369,13 @@ function renderizarPedido() {
 
     html += '<div class="info-item">';
     html += '<div class="lbl" data-clave="mercado_tipo_entrega">Tipo de entrega</div>';
-    html += '<div class="valor">' + (p.tipo_entrega === 'pickup' ? '🏪 Recoger' : '🛵 Delivery') + '</div>';
+    html += '<div class="valor">' + (p.tipo_entrega === 'pickup' ? '<span class="simbolo">◇</span> Recoger' : '<span class="simbolo">◆</span> Delivery') + '</div>';
     html += '</div>';
 
     if (p.forma_pago) {
         html += '<div class="info-item">';
         html += '<div class="lbl" data-clave="mercado_forma_pago">Forma de pago</div>';
-        html += '<div class="valor">' + (p.forma_pago === 'transferencia' ? '🏦 Transferencia' : '💵 Efectivo') + '</div>';
+        html += '<div class="valor">' + (p.forma_pago === 'transferencia' ? '<span class="simbolo">◇</span> Transferencia' : '<span class="simbolo">◆</span> Efectivo') + '</div>';
         html += '</div>';
     }
 
@@ -1411,9 +1408,8 @@ function renderizarPedido() {
     html += '</div>';
     html += '</div>';
 
-    // ============ TIMELINE ============
     html += '<div class="seccion-card">';
-    html += '<h2>📍 <span data-clave="mercado_seguimiento">Seguimiento</span></h2>';
+    html += '<h2><span class="simbolo">◈</span> <span data-clave="mercado_seguimiento">Seguimiento</span></h2>';
     html += '<div class="timeline">';
 
     var idxActual = ESTADOS_ORDEN.indexOf(estado);
@@ -1421,9 +1417,9 @@ function renderizarPedido() {
         var motivoCancel = p.cancelado_motivo ? ' · ' + escapeHTML(p.cancelado_motivo) : '';
         var quien = p.cancelado_por ? ' por ' + escapeHTML(p.cancelado_por) : '';
         html += '<div class="timeline-item completado">' +
-            '<div class="icono" style="background:var(--danger); border-color:var(--danger);">❌</div>' +
+            '<div class="icono" style="background:var(--danger); border-color:var(--danger); color:#fff;">✶</div>' +
             '<div class="contenido">' +
-                '<div class="titulo-tl" style="color:var(--danger);">Pedido ' + (estado === 'rechazado' ? 'rechazado' : 'cancelado') + quien + '</div>' +
+                '<div class="titulo-tl" style="color:var(--danger);"><span class="simbolo">✶</span>Pedido ' + (estado === 'rechazado' ? 'rechazado' : 'cancelado') + quien + '</div>' +
                 (p.cancelado_en ? '<div class="fecha">' + formatearFecha(p.cancelado_en) + motivoCancel + '</div>' : '') +
             '</div>' +
         '</div>';
@@ -1439,15 +1435,14 @@ function renderizarPedido() {
     html += '</div>';
     html += '</div>';
 
-    // ============ ITEMS ============
     html += '<div class="seccion-card">';
-    html += '<h2>🛒 <span data-clave="mercado_productos_pedido">Productos</span></h2>';
+    html += '<h2><span class="simbolo">◈</span> <span data-clave="mercado_productos_pedido">Productos</span></h2>';
     html += '<div class="items-lista">';
 
     itemsPedido.forEach(function (item) {
         var fotoContent = item.foto_url
-            ? '<img src="' + escapeHTML(item.foto_url) + '" alt="" onerror="this.style.display=\'none\';this.parentElement.textContent=\'🍽️\';" />'
-            : '🍽️';
+            ? '<img src="' + escapeHTML(item.foto_url) + '" alt="" onerror="this.style.display=\'none\';this.parentElement.textContent=\'◈\';" />'
+            : '◈';
         html += '<div class="item-pedido">' +
             '<div class="foto">' + fotoContent + '</div>' +
             '<div class="info">' +
@@ -1465,11 +1460,11 @@ function renderizarPedido() {
 
     var envioMxn = parseFloat(p.envio_mxn || 0);
     if (p.tipo_entrega === 'pickup') {
-        html += '<div class="fila"><span data-clave="mercado_envio">Envío</span><span style="color:var(--success);">🏪 Recoger (sin costo)</span></div>';
+        html += '<div class="fila"><span><span class="lbl-simbolo">◇</span><span data-clave="mercado_envio">Envío</span></span><span style="color:var(--success);">Recoger (sin costo)</span></div>';
     } else if (p.envio_cobrado_en_app && envioMxn > 0) {
-        html += '<div class="fila"><span data-clave="mercado_envio">Envío (pagado)</span><span>' + formatearPrecio(envioMxn) + '</span></div>';
+        html += '<div class="fila"><span><span class="lbl-simbolo">◆</span><span data-clave="mercado_envio">Envío (pagado)</span></span><span>' + formatearPrecio(envioMxn) + '</span></div>';
     } else {
-        html += '<div class="fila"><span data-clave="mercado_envio">Envío</span><span style="color:var(--text-muted);">A coordinar</span></div>';
+        html += '<div class="fila"><span><span class="lbl-simbolo">◆</span><span data-clave="mercado_envio">Envío</span></span><span style="color:var(--text-muted);">A coordinar</span></div>';
     }
 
     html += '<div class="fila total"><span data-clave="mercado_total">Total</span><span>' + formatearPrecio(p.total_mxn) + '</span></div>';
@@ -1477,17 +1472,16 @@ function renderizarPedido() {
 
     if (p.tipo_entrega !== 'pickup' && !p.envio_cobrado_en_app) {
         html += '<div class="envio-nota">' +
-            '🛵 <strong>Envío:</strong> se paga en efectivo directamente al repartidor al momento de la entrega. ' +
-            'El monto lo coordinas con él.' +
+            '<span class="simbolo">◆</span>' +
+            '<div><strong>Envío:</strong> se paga en efectivo directamente al repartidor al momento de la entrega. El monto lo coordinas con él.</div>' +
         '</div>';
     }
 
     html += '</div>';
 
-    // ============ INFO TIENDA ============
     if (tiendaPedido) {
         html += '<div class="seccion-card">';
-        html += '<h2>🏪 <span data-clave="mercado_tienda">Tienda</span></h2>';
+        html += '<h2><span class="simbolo">◈</span> <span data-clave="mercado_tienda">Tienda</span></h2>';
         html += '<div class="info-grid">';
         html += '<div class="info-item full">';
         html += '<div class="lbl" data-clave="mercado_nombre_tienda">Nombre</div>';
@@ -1510,33 +1504,31 @@ function renderizarPedido() {
         if (tiendaPedido.whatsapp) {
             var waNum = String(tiendaPedido.whatsapp).replace(/\D/g, '');
             html += '<a href="https://wa.me/' + waNum + '?text=' + encodeURIComponent('Hola, sobre mi pedido ' + (p.codigo || '')) + '" target="_blank" rel="noopener" class="btn-accion btn-secundario" style="width:100%;margin-top:14px;">';
-            html += '💬 <span data-clave="mercado_contactar_vendedor">Contactar al vendedor</span>';
+            html += '<span class="simbolo">◆</span> <span data-clave="mercado_contactar_vendedor">Contactar al vendedor</span>';
             html += '</a>';
         }
 
         html += '</div>';
     }
 
-    // ============ BOTÓN CANCELAR (solo pendiente) ============
     if (estado === 'pendiente') {
         html += '<div class="seccion-card">';
         html += '<div class="acciones">';
         html += '<button class="btn-accion btn-peligro" onclick="abrirModalCancelar()">';
-        html += '❌ <span data-clave="mercado_cancelar_pedido">Cancelar pedido</span>';
+        html += '<span class="simbolo">✶</span> <span data-clave="mercado_cancelar_pedido">Cancelar pedido</span>';
         html += '</button>';
         html += '</div>';
         html += '</div>';
     }
 
-    // ============ RESEÑA (solo entregado) ============
     if (estado === 'entregado') {
         html += '<div class="seccion-card">';
-        html += '<h2>⭐ <span data-clave="mercado_calificar">Calificar al vendedor</span></h2>';
+        html += '<h2><span class="simbolo">✦</span> <span data-clave="mercado_calificar">Calificar al vendedor</span></h2>';
 
         if (resenaExistente) {
             var estrellas = '';
             for (var i = 1; i <= 5; i++) {
-                estrellas += i <= resenaExistente.calificacion ? '⭐' : '☆';
+                estrellas += i <= resenaExistente.calificacion ? '★' : '☆';
             }
             html += '<div class="resena-existente">';
             html += '<div class="estrellas">' + estrellas + '</div>';
@@ -1556,21 +1548,20 @@ function renderizarPedido() {
             html += '<textarea id="inputResena" data-placeholder="mercado_ejemplo_resena" placeholder="¿Cómo fue tu experiencia?"></textarea>';
             html += '</div>';
             html += '<button class="btn-accion btn-primario" onclick="enviarResena()" style="width:100%;">';
-            html += '⭐ <span data-clave="mercado_enviar_resena">Enviar calificación</span>';
+            html += '<span class="simbolo">✦</span> <span data-clave="mercado_enviar_resena">Enviar calificación</span>';
             html += '</button>';
         }
 
         html += '</div>';
     }
 
-    // ============ NAVEGACIÓN ============
     html += '<div class="seccion-card">';
     html += '<div class="acciones">';
     html += '<a href="/features/mercado/mis-pedidos.html" class="btn-accion btn-secundario">';
-    html += '📋 <span data-clave="mercado_mis_pedidos">Mis pedidos</span>';
+    html += '<span class="simbolo">◇</span> <span data-clave="mercado_mis_pedidos">Mis pedidos</span>';
     html += '</a>';
     html += '<a href="/features/mercado/index.html" class="btn-accion btn-primario">';
-    html += '🛒 <span data-clave="mercado_ir_mercado">Ir al Mercado</span>';
+    html += '<span class="simbolo">◆</span> <span data-clave="mercado_ir_mercado">Ir al Mercado</span>';
     html += '</a>';
     html += '</div>';
     html += '</div>';
@@ -1588,9 +1579,6 @@ function renderizarPedido() {
     if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
 }
 
-// ================================================================
-// RENDER: SECCIÓN DE TRACKING (header repartidor + mapa + info)
-// ================================================================
 function renderTrackingSection() {
     var rep = repartidorPedido;
     var nombreRep = rep.nombre || rep.handle || 'Repartidor';
@@ -1602,54 +1590,51 @@ function renderTrackingSection() {
     var tieneTel = telRep.length >= 8;
     var rating = rep.calificacion ? parseFloat(rep.calificacion) : 0;
     var vehiculo = rep.vehiculo || 'moto';
-    var iconoVehiculo = vehiculo === 'bicicleta' ? '🚲' : (vehiculo === 'auto' ? '🚗' : '🛵');
+    var iconoVehiculo = vehiculo === 'bicicleta' ? '◇' : (vehiculo === 'auto' ? '●' : '◆');
 
     var metaPartes = [];
-    if (rating > 0) metaPartes.push('<span class="rating">⭐ ' + rating.toFixed(1) + '</span>');
-    metaPartes.push('<span class="vehiculo">' + iconoVehiculo + ' ' + escapeHTML(vehiculo.charAt(0).toUpperCase() + vehiculo.slice(1)) + '</span>');
+    if (rating > 0) metaPartes.push('<span class="rating"><span class="simbolo">★</span> ' + rating.toFixed(1) + '</span>');
+    metaPartes.push('<span class="vehiculo"><span class="simbolo">' + iconoVehiculo + '</span> ' + escapeHTML(vehiculo.charAt(0).toUpperCase() + vehiculo.slice(1)) + '</span>');
 
     var html = '';
 
     html += '<div class="tracking-section visible" id="trackingSection">';
 
-    // Header del repartidor
     html += '<div class="repartidor-header">' +
         '<div class="avatar">' + avatarHTML + '</div>' +
         '<div class="info">' +
-            '<div class="rol">🛵 Tu repartidor</div>' +
+            '<div class="rol"><span class="simbolo">◆</span> Tu repartidor</div>' +
             '<div class="nombre">' + escapeHTML(nombreRep) + '</div>' +
             '<div class="meta">' + metaPartes.join(' · ') + '</div>' +
         '</div>' +
         '<div class="botones-contacto">' +
             '<button class="btn-contacto-rep llamar" id="btnLlamar" onclick="llamarRepartidor()" ' + (tieneTel ? '' : 'disabled title="Sin teléfono registrado"') + '>' +
-                '📞 Llamar' +
+                '<span class="simbolo">●</span> Llamar' +
             '</button>' +
             '<button class="btn-contacto-rep whatsapp" id="btnWhatsApp" onclick="whatsAppRepartidor()" ' + (tieneTel ? '' : 'disabled title="Sin teléfono registrado"') + '>' +
-                '💬 WhatsApp' +
+                '<span class="simbolo">◆</span> WhatsApp' +
             '</button>' +
         '</div>' +
     '</div>';
 
-    // Mapa
     html += '<div class="mapa-container" id="mapaContainer">' +
         '<div id="mapaTracking"></div>' +
         '<div class="mapa-overlay" id="mapaOverlay">' +
             '<span class="dot-estado"></span>' +
             '<span id="mapaOverlayText">Conectando...</span>' +
         '</div>' +
-        '<button class="mapa-btn-centrar" onclick="centrarEnRepartidor()" title="Centrar en el repartidor">🎯</button>' +
+        '<button class="mapa-btn-centrar" onclick="centrarEnRepartidor()" title="Centrar en el repartidor">✧</button>' +
     '</div>';
 
-    // Info inferior
     html += '<div class="tracking-info">' +
         '<div class="distancia-eta">' +
             '<div class="info-card-mini cyan">' +
-                '<div class="lbl-mini">🛣️ Distancia</div>' +
+                '<div class="lbl-mini"><span class="simbolo">◆</span> Distancia</div>' +
                 '<div class="val-mini" id="distanciaVal">—</div>' +
                 '<div class="sub-mini" id="distanciaSub">Calculando...</div>' +
             '</div>' +
             '<div class="info-card-mini success">' +
-                '<div class="lbl-mini">⏱️ Llegada</div>' +
+                '<div class="lbl-mini"><span class="simbolo">◈</span> Llegada</div>' +
                 '<div class="val-mini" id="etaVal">—</div>' +
                 '<div class="sub-mini" id="etaSub">Calculando...</div>' +
             '</div>' +
@@ -1668,24 +1653,21 @@ function renderTrackingSection() {
 }
 
 function obtenerIniciales(nombre) {
-    if (!nombre) return '🛵';
+    if (!nombre) return '◆';
     var partes = nombre.trim().split(/\s+/);
     if (partes.length === 1) return partes[0].charAt(0).toUpperCase();
     return (partes[0].charAt(0) + partes[partes.length - 1].charAt(0)).toUpperCase();
 }
 
-// ================================================================
-// HELPERS TIMELINE
-// ================================================================
 function renderTimelineItem(estado, completado, activo, fecha) {
     var iconos = {
-        'pendiente': '⏳',
-        'aceptado': '✓',
-        'preparando': '🍳',
-        'listo': '📦',
-        'asignado': '🛵',
-        'en_camino': '🛵',
-        'entregado': '✅'
+        'pendiente': '◈',
+        'aceptado': '●',
+        'preparando': '◆',
+        'listo': '✦',
+        'asignado': '◆',
+        'en_camino': '✧',
+        'entregado': '●'
     };
     var textos = {
         'pendiente': 'Pedido recibido',
@@ -1703,7 +1685,7 @@ function renderTimelineItem(estado, completado, activo, fecha) {
     return '<div class="timeline-item ' + cls + '">' +
         '<div class="icono">' + (iconos[estado] || '◈') + '</div>' +
         '<div class="contenido">' +
-            '<div class="titulo-tl">' + (textos[estado] || estado) + '</div>' +
+            '<div class="titulo-tl"><span class="simbolo">' + (iconos[estado] || '◈') + '</span>' + (textos[estado] || estado) + '</div>' +
             (fecha ? '<div class="fecha">' + fecha + '</div>' : '') +
         '</div>' +
     '</div>';
@@ -1723,12 +1705,7 @@ function obtenerFechaEstado(p, estado) {
     return fecha ? formatearFecha(fecha) : '';
 }
 
-// ================================================================
-// 🗺️ TRACKING EN TIEMPO REAL
-// ================================================================
-
 function inicializarTracking() {
-    // Solo si hay repartidor y no está ya inicializado
     if (!repartidorPedido) return;
     if (!document.getElementById('mapaTracking')) return;
 
@@ -1736,7 +1713,6 @@ function inicializarTracking() {
     suscribirRealtime();
     iniciarPollingUbicacion();
 
-    // Primera lectura
     actualizarUbicacionRepartidor({
         lat: repartidorPedido.latitud_actual,
         lng: repartidorPedido.longitud_actual,
@@ -1748,15 +1724,13 @@ function montarMapa() {
     var el = document.getElementById('mapaTracking');
     if (!el || mapa) return;
 
-    // Centro inicial: la tienda o el cliente o un punto neutral
-    var centroInicial = [19.4326, -99.1332]; // CDMX por defecto
+    var centroInicial = [19.4326, -99.1332];
     if (tiendaPedido && tiendaPedido.latitud && tiendaPedido.longitud) {
         centroInicial = [parseFloat(tiendaPedido.latitud), parseFloat(tiendaPedido.longitud)];
     } else if (pedidoActual.latitud_entrega && pedidoActual.longitud_entrega) {
         centroInicial = [parseFloat(pedidoActual.latitud_entrega), parseFloat(pedidoActual.longitud_entrega)];
     }
 
-    // Crear el mapa con tiles dark de CartoDB
     mapa = L.map('mapaTracking', {
         center: centroInicial,
         zoom: 13,
@@ -1770,29 +1744,27 @@ function montarMapa() {
         maxZoom: 19
     }).addTo(mapa);
 
-    // Iconos custom
     var iconoTienda = L.divIcon({
         className: 'custom-marker',
-        html: '<div style="background:linear-gradient(135deg,#D4AF37,#b8923a); width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; border:3px solid #fff; box-shadow:0 4px 12px rgba(212,175,55,0.5);">🏪</div>',
+        html: '<div style="background:linear-gradient(135deg,#D4AF37,#b8923a); width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; border:3px solid #fff; box-shadow:0 4px 12px rgba(212,175,55,0.5); color:#05080f; font-family:Orbitron,monospace; font-weight:900;">◈</div>',
         iconSize: [36, 36],
         iconAnchor: [18, 18]
     });
 
     var iconoCliente = L.divIcon({
         className: 'custom-marker',
-        html: '<div style="background:linear-gradient(135deg,#a855f7,#7c3aed); width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; border:3px solid #fff; box-shadow:0 4px 12px rgba(168,85,247,0.5);">🏠</div>',
+        html: '<div style="background:linear-gradient(135deg,#a855f7,#7c3aed); width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; border:3px solid #fff; box-shadow:0 4px 12px rgba(168,85,247,0.5); color:#fff; font-family:Orbitron,monospace; font-weight:900;">●</div>',
         iconSize: [36, 36],
         iconAnchor: [18, 18]
     });
 
     var iconoRepartidor = L.divIcon({
         className: 'custom-marker',
-        html: '<div style="position:relative;"><div style="position:absolute; inset:-6px; border-radius:50%; background:rgba(0,229,255,0.3); animation:pulseMarker 2s ease-in-out infinite;"></div><div style="position:relative; background:linear-gradient(135deg,#00e5ff,#00b3cc); width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:20px; border:3px solid #fff; box-shadow:0 4px 16px rgba(0,229,255,0.6);">🛵</div></div>',
+        html: '<div style="position:relative;"><div style="position:absolute; inset:-6px; border-radius:50%; background:rgba(0,229,255,0.3); animation:pulseMarker 2s ease-in-out infinite;"></div><div style="position:relative; background:linear-gradient(135deg,#00e5ff,#00b3cc); width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; border:3px solid #fff; box-shadow:0 4px 16px rgba(0,229,255,0.6); color:#05080f; font-family:Orbitron,monospace; font-weight:900;">◆</div></div>',
         iconSize: [40, 40],
         iconAnchor: [20, 20]
     });
 
-    // Marcador tienda
     if (tiendaPedido && tiendaPedido.latitud && tiendaPedido.longitud) {
         marcadorTienda = L.marker(
             [parseFloat(tiendaPedido.latitud), parseFloat(tiendaPedido.longitud)],
@@ -1800,7 +1772,6 @@ function montarMapa() {
         ).addTo(mapa).bindPopup('<b>' + escapeHTML(tiendaPedido.nombre_negocio) + '</b><br>Tienda (origen)');
     }
 
-    // Marcador cliente
     if (pedidoActual.latitud_entrega && pedidoActual.longitud_entrega) {
         marcadorCliente = L.marker(
             [parseFloat(pedidoActual.latitud_entrega), parseFloat(pedidoActual.longitud_entrega)],
@@ -1808,7 +1779,6 @@ function montarMapa() {
         ).addTo(mapa).bindPopup('<b>Tu dirección</b><br>Destino');
     }
 
-    // Marcador repartidor (inicial)
     if (repartidorPedido.latitud_actual && repartidorPedido.longitud_actual) {
         marcadorRepartidor = L.marker(
             [parseFloat(repartidorPedido.latitud_actual), parseFloat(repartidorPedido.longitud_actual)],
@@ -1816,15 +1786,12 @@ function montarMapa() {
         ).addTo(mapa).bindPopup('<b>' + escapeHTML(repartidorPedido.nombre || 'Repartidor') + '</b><br>En camino');
     }
 
-    // Ajustar zoom para ver los 3 puntos
     ajustarZoomInicial();
 
-    // Evento: si el usuario mueve el mapa, dejar de seguir al repartidor
     mapa.on('dragstart', function () {
         seguirRepartidor = false;
     });
 
-    // Añadir animación CSS para el pulse del marcador
     if (!document.getElementById('pulseMarkerStyle')) {
         var style = document.createElement('style');
         style.id = 'pulseMarkerStyle';
@@ -1854,7 +1821,6 @@ function ajustarZoomInicial() {
     }
 }
 
-// Actualiza la posición del repartidor en el mapa
 function actualizarUbicacionRepartidor(ubicacion, animar) {
     if (!mapa) return;
     if (!ubicacion || !ubicacion.lat || !ubicacion.lng) return;
@@ -1865,10 +1831,8 @@ function actualizarUbicacionRepartidor(ubicacion, animar) {
 
     ultimaUbicacionRep = { lat: lat, lng: lng, ts: ubicacion.ts || new Date().toISOString() };
 
-    // Actualizar o crear marcador
     if (marcadorRepartidor) {
         if (animar) {
-            // Animación suave
             animarMarcador(marcadorRepartidor, nuevaPos);
         } else {
             marcadorRepartidor.setLatLng(nuevaPos);
@@ -1876,7 +1840,7 @@ function actualizarUbicacionRepartidor(ubicacion, animar) {
     } else {
         var iconoRepartidor = L.divIcon({
             className: 'custom-marker',
-            html: '<div style="position:relative;"><div style="position:absolute; inset:-6px; border-radius:50%; background:rgba(0,229,255,0.3); animation:pulseMarker 2s ease-in-out infinite;"></div><div style="position:relative; background:linear-gradient(135deg,#00e5ff,#00b3cc); width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:20px; border:3px solid #fff; box-shadow:0 4px 16px rgba(0,229,255,0.6);">🛵</div></div>',
+            html: '<div style="position:relative;"><div style="position:absolute; inset:-6px; border-radius:50%; background:rgba(0,229,255,0.3); animation:pulseMarker 2s ease-in-out infinite;"></div><div style="position:relative; background:linear-gradient(135deg,#00e5ff,#00b3cc); width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; border:3px solid #fff; box-shadow:0 4px 16px rgba(0,229,255,0.6); color:#05080f; font-family:Orbitron,monospace; font-weight:900;">◆</div></div>',
             iconSize: [40, 40],
             iconAnchor: [20, 20]
         });
@@ -1885,18 +1849,13 @@ function actualizarUbicacionRepartidor(ubicacion, animar) {
             .bindPopup('<b>' + escapeHTML(repartidorPedido.nombre || 'Repartidor') + '</b><br>En camino');
     }
 
-    // Auto-centrar si el usuario está siguiendo
     if (seguirRepartidor) {
         mapa.panTo(nuevaPos, { animate: true, duration: 0.5 });
     }
 
-    // Actualizar overlay de "última actualización"
     actualizarOverlayTiempo(ultimaUbicacionRep.ts);
-
-    // Actualizar distancia + ETA + progreso
     actualizarInfoDistancia();
 
-    // Actualizar ruta (con throttling)
     var ahora = Date.now();
     if (ahora - ultimaRutaCalculada > RUTA_MIN_INTERVALO_MS) {
         ultimaRutaCalculada = ahora;
@@ -1904,7 +1863,6 @@ function actualizarUbicacionRepartidor(ubicacion, animar) {
     }
 }
 
-// Animación suave entre 2 posiciones
 function animarMarcador(marcador, destino) {
     var actual = marcador.getLatLng();
     var inicio = { lat: actual.lat, lng: actual.lng };
@@ -1923,7 +1881,6 @@ function animarMarcador(marcador, destino) {
     }, intervalo);
 }
 
-// Overlay "hace X seg"
 function actualizarOverlayTiempo(ts) {
     var overlay = document.getElementById('mapaOverlay');
     var texto = document.getElementById('mapaOverlayText');
@@ -1948,7 +1905,6 @@ function actualizarOverlayTiempo(ts) {
     else overlay.className = 'mapa-overlay offline';
 }
 
-// Calcular distancia restante, ETA y progreso
 function actualizarInfoDistancia() {
     var elDist = document.getElementById('distanciaVal');
     var elDistSub = document.getElementById('distanciaSub');
@@ -1959,7 +1915,6 @@ function actualizarInfoDistancia() {
 
     if (!elDist || !elEta) return;
 
-    // Sin repartidor con ubicación
     if (!ultimaUbicacionRep || !ultimaUbicacionRep.lat) {
         if (elDist) elDist.textContent = '—';
         if (elDistSub) elDistSub.textContent = 'Esperando GPS...';
@@ -1968,7 +1923,6 @@ function actualizarInfoDistancia() {
         return;
     }
 
-    // Sin destino
     if (!pedidoActual.latitud_entrega || !pedidoActual.longitud_entrega) {
         if (elDist) elDist.textContent = '—';
         if (elDistSub) elDistSub.textContent = 'Sin destino GPS';
@@ -1980,13 +1934,11 @@ function actualizarInfoDistancia() {
     var latDest = parseFloat(pedidoActual.latitud_entrega);
     var lngDest = parseFloat(pedidoActual.longitud_entrega);
 
-    // Distancia actual
     var distActual = distanciaMetros(
         ultimaUbicacionRep.lat, ultimaUbicacionRep.lng,
         latDest, lngDest
     );
 
-    // Distancia inicial (desde la tienda hasta el cliente) para calcular progreso
     var distInicial = distActual;
     if (tiendaPedido && tiendaPedido.latitud && tiendaPedido.longitud) {
         distInicial = distanciaMetros(
@@ -1995,16 +1947,13 @@ function actualizarInfoDistancia() {
         );
     }
 
-    // Progreso (0-100%)
     var progreso = 0;
     if (distInicial > 0) {
         progreso = Math.max(0, Math.min(100, Math.round((1 - distActual / distInicial) * 100)));
     }
 
-    // ETA
     var eta = calcularETA(distActual);
 
-    // Actualizar UI
     elDist.textContent = formatearDistancia(distActual);
     if (elDistSub) {
         if (distActual < 100) elDistSub.textContent = '¡Muy cerca!';
@@ -2023,20 +1972,18 @@ function actualizarInfoDistancia() {
     if (elProgLbl) elProgLbl.textContent = progreso + '% del trayecto';
 }
 
-// Llamar al repartidor
 function llamarRepartidor() {
     if (!repartidorPedido || !repartidorPedido.telefono) {
-        showToast('⚠️ El repartidor no tiene teléfono registrado', 'warning');
+        showToast('✶ El repartidor no tiene teléfono registrado', 'warning');
         return;
     }
     var tel = String(repartidorPedido.telefono).replace(/\D/g, '');
     window.location.href = 'tel:+' + tel;
 }
 
-// WhatsApp al repartidor
 function whatsAppRepartidor() {
     if (!repartidorPedido || !repartidorPedido.telefono) {
-        showToast('⚠️ El repartidor no tiene teléfono registrado', 'warning');
+        showToast('✶ El repartidor no tiene teléfono registrado', 'warning');
         return;
     }
     var tel = String(repartidorPedido.telefono).replace(/\D/g, '');
@@ -2044,25 +1991,19 @@ function whatsAppRepartidor() {
     window.open('https://wa.me/' + tel + '?text=' + encodeURIComponent(mensaje), '_blank');
 }
 
-// Centrar mapa en el repartidor
 function centrarEnRepartidor() {
     if (!mapa || !ultimaUbicacionRep) {
-        showToast('Sin ubicación del repartidor', 'warning');
+        showToast('✶ Sin ubicación del repartidor', 'warning');
         return;
     }
     mapa.setView([ultimaUbicacionRep.lat, ultimaUbicacionRep.lng], 16, { animate: true });
     seguirRepartidor = true;
-    showToast('🎯 Siguiendo al repartidor', 'success');
+    showToast('✧ Siguiendo al repartidor', 'success');
 }
 
-// ================================================================
-// RUTA OSRM (por calles)
-// ================================================================
 async function calcularRutaOSRM(posRepartidor) {
     if (!mapa) return;
     if (!posRepartidor || !posRepartidor[0]) return;
-
-    // Necesitamos el destino
     if (!pedidoActual.latitud_entrega || !pedidoActual.longitud_entrega) return;
 
     var latO = posRepartidor[0];
@@ -2082,15 +2023,13 @@ async function calcularRutaOSRM(posRepartidor) {
         if (!data.routes || !data.routes[0]) throw new Error('Sin ruta');
 
         var coordenadas = data.routes[0].geometry.coordinates.map(function (c) {
-            return [c[1], c[0]]; // OSRM devuelve [lng, lat], Leaflet necesita [lat, lng]
+            return [c[1], c[0]];
         });
 
-        // Remover ruta anterior
         if (capaRuta) {
             mapa.removeLayer(capaRuta);
         }
 
-        // Dibujar nueva ruta
         capaRuta = L.polyline(coordenadas, {
             color: '#00e5ff',
             weight: 4,
@@ -2101,7 +2040,6 @@ async function calcularRutaOSRM(posRepartidor) {
 
     } catch (e) {
         console.warn('No se pudo calcular ruta OSRM:', e);
-        // Fallback: línea recta
         if (capaRuta) mapa.removeLayer(capaRuta);
         capaRuta = L.polyline([
             [latO, lngO],
@@ -2115,9 +2053,6 @@ async function calcularRutaOSRM(posRepartidor) {
     }
 }
 
-// ================================================================
-// SUPABASE REALTIME
-// ================================================================
 function suscribirRealtime() {
     if (realtimeChannel) return;
     if (!repartidorPedido || !repartidorPedido.id) return;
@@ -2141,7 +2076,7 @@ function suscribirRealtime() {
             })
             .subscribe(function (status) {
                 if (status === 'SUBSCRIBED') {
-                    console.log('✅ Realtime conectado');
+                    console.log('● Realtime conectado');
                 }
             });
     } catch (e) {
@@ -2158,9 +2093,6 @@ function desuscribirRealtime() {
     }
 }
 
-// ================================================================
-// POLLING FALLBACK (por si Realtime falla)
-// ================================================================
 function iniciarPollingUbicacion() {
     detenerPollingUbicacion();
     pollingUbicacionTimer = setInterval(function () {
@@ -2196,9 +2128,6 @@ async function consultarUbicacionRepartidor() {
     } catch (e) { /* silencioso */ }
 }
 
-// ================================================================
-// DESMONTAR TRACKING
-// ================================================================
 function desmontarTracking() {
     desuscribirRealtime();
     detenerPollingUbicacion();
@@ -2215,12 +2144,9 @@ function desmontarTracking() {
     marcadorRepartidor = null;
 }
 
-// ================================================================
-// CANCELAR PEDIDO
-// ================================================================
 function abrirModalCancelar() {
     if (!pedidoActual || pedidoActual.estado !== 'pendiente') {
-        showToast('⚠️ Ya no se puede cancelar', 'warning');
+        showToast('✶ Ya no se puede cancelar', 'warning');
         return;
     }
     var modal = document.getElementById('modalCancelar');
@@ -2235,7 +2161,7 @@ function cerrarModalCancelar() {
 async function confirmarCancelarPedido() {
     if (!pedidoActual) return;
     if (pedidoActual.estado !== 'pendiente') {
-        showToast('⚠️ Ya no se puede cancelar', 'warning');
+        showToast('✶ Ya no se puede cancelar', 'warning');
         cerrarModalCancelar();
         return;
     }
@@ -2261,21 +2187,18 @@ async function confirmarCancelarPedido() {
         if (updateResult.error) throw updateResult.error;
 
         cerrarModalCancelar();
-        showToast('✅ Pedido cancelado', 'success');
+        showToast('● Pedido cancelado', 'success');
         pedidoActual = updateResult.data;
         detenerAutoRefresh();
         renderizarPedido();
 
     } catch (e) {
         console.error('Error cancelando:', e);
-        showToast('❌ ' + e.message, 'error');
+        showToast('✶ ' + e.message, 'error');
         if (btn) { btn.disabled = false; btn.textContent = 'Sí, cancelar'; }
     }
 }
 
-// ================================================================
-// RESEÑA
-// ================================================================
 function seleccionarEstrella(valor) {
     calificacionSeleccionada = valor;
     var estrellas = document.querySelectorAll('#estrellasInput .estrella');
@@ -2288,11 +2211,11 @@ function seleccionarEstrella(valor) {
 
 async function enviarResena() {
     if (calificacionSeleccionada < 1) {
-        showToast('⚠️ Selecciona al menos 1 estrella', 'warning');
+        showToast('✶ Selecciona al menos 1 estrella', 'warning');
         return;
     }
     if (!pedidoActual || pedidoActual.estado !== 'entregado') {
-        showToast('⚠️ Solo puedes calificar pedidos entregados', 'warning');
+        showToast('✶ Solo puedes calificar pedidos entregados', 'warning');
         return;
     }
 
@@ -2314,7 +2237,7 @@ async function enviarResena() {
 
         if (insertResult.error) {
             if (insertResult.error.code === '23505') {
-                showToast('⚠️ Ya calificaste este pedido', 'warning');
+                showToast('✶ Ya calificaste este pedido', 'warning');
                 return;
             }
             throw insertResult.error;
@@ -2345,18 +2268,15 @@ async function enviarResena() {
 
         resenaExistente = insertResult.data;
         calificacionSeleccionada = 0;
-        showToast('⭐ ¡Gracias por tu calificación!', 'success');
+        showToast('✦ ¡Gracias por tu calificación!', 'success');
         renderizarPedido();
 
     } catch (e) {
         console.error('Error enviando reseña:', e);
-        showToast('❌ ' + e.message, 'error');
+        showToast('✶ ' + e.message, 'error');
     }
 }
 
-// ================================================================
-// AUTO REFRESH DEL PEDIDO
-// ================================================================
 function iniciarAutoRefresh() {
     detenerAutoRefresh();
     autoRefreshTimer = setInterval(function () {
@@ -2373,7 +2293,6 @@ function detenerAutoRefresh() {
     }
 }
 
-// Pausar/reanudar cuando la pestaña no se ve
 document.addEventListener('visibilitychange', function () {
     if (document.hidden) {
         detenerAutoRefresh();
@@ -2391,21 +2310,14 @@ document.addEventListener('visibilitychange', function () {
     }
 });
 
-// Actualizar "hace X seg" del overlay cada 5s
 setInterval(function () {
     if (ultimaUbicacionRep) {
         actualizarOverlayTiempo(ultimaUbicacionRep.ts);
     }
 }, 5000);
 
-// ================================================================
-// VER TOKENS
-// ================================================================
 function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
 
-// ================================================================
-// INICIALIZACIÓN
-// ================================================================
 document.addEventListener('DOMContentLoaded', async function () {
     pedidoId = getParamURL('id');
 
@@ -2413,9 +2325,9 @@ document.addEventListener('DOMContentLoaded', async function () {
         var container = document.getElementById('pedidoContainer');
         if (container) {
             container.innerHTML = '<div class="empty-state">' +
-                '<span class="icon">📦</span>' +
+                '<span class="icon">◈</span>' +
                 '<h3 data-clave="mercado_falta_id_pedido">Falta el ID del pedido</h3>' +
-                '<a href="/features/mercado/mis-pedidos.html" class="btn-back" style="margin-top:16px;">← <span data-clave="mercado_volver_pedidos">Volver a mis pedidos</span></a>' +
+                '<a href="/features/mercado/mis-pedidos.html" class="btn-back" style="margin-top:16px;"><span class="simbolo">◈</span> <span data-clave="mercado_volver_pedidos">Volver a mis pedidos</span></a>' +
             '</div>';
         }
         return;
@@ -2439,27 +2351,21 @@ document.addEventListener('DOMContentLoaded', async function () {
         try {
             if (typeof window.inicializarIdiomas === 'function') {
                 await window.inicializarIdiomas();
-                console.log('✅ Idiomas aplicados al pedido');
             }
         } catch (e) { console.warn('Error idiomas:', e); }
     }, 400);
 });
 
-// Click fuera del modal
 document.addEventListener('click', function (e) {
     var modal = document.getElementById('modalCancelar');
     if (e.target === modal) cerrarModalCancelar();
 });
 
-// Limpiar al salir
 window.addEventListener('beforeunload', function () {
     desmontarTracking();
     detenerAutoRefresh();
 });
 
-// ================================================================
-// EXPOSICIÓN GLOBAL
-// ================================================================
 window.abrirModalCancelar = abrirModalCancelar;
 window.cerrarModalCancelar = cerrarModalCancelar;
 window.confirmarCancelarPedido = confirmarCancelarPedido;
@@ -2472,5 +2378,3 @@ window.llamarRepartidor = llamarRepartidor;
 window.whatsAppRepartidor = whatsAppRepartidor;
 window.centrarEnRepartidor = centrarEnRepartidor;
 </script>
-</body>
-</html>
