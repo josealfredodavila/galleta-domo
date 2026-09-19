@@ -1,15 +1,34 @@
 // ================================================================
 // MEMBRESIA.JS - SARIEL'S ECOSYSTEM
 // VERSIÓN SIMPLIFICADA - CON VERIFICACIÓN DE SUPABASE
+//
+// CAMBIOS RESPECTO A LA VERSIÓN ANTERIOR
+// 1) El pago se guarda en Supabase (estado 'pendiente') ANTES de
+//    crear el cobro en NOWPayments. Antes era al revés: si el INSERT
+//    fallaba, el usuario podía pagar y el webhook no encontraba la fila
+//    (pagó y no recibía la membresía).
+// 2) Se usa POST /v1/invoice. El endpoint /v1/payment NO devuelve
+//    invoice_url ni acepta success_url/cancel_url, así que payment_url
+//    quedaba vacío. /v1/invoice sí devuelve invoice_url.
+// 3) Monedas en minúsculas y con ticker válido: price_currency 'mxn',
+//    pay_currency 'usdttrc20' (el mismo que usa payments.js).
+// 4) Timeout de 15 s en la llamada a NOWPayments y limitadorPagos.
+// 5) Si NOWPayments falla, la fila queda en estado 'failed'.
+//
+// El webhook (/api/webhook/nowpayments) encuentra el pago por order_id
+// y la RPC activar_membresia_pro completa payment_id al confirmarse.
 // ================================================================
 
 const express = require('express');
 const router = express.Router();
 
+const { limitadorPagos } = require('../middleware/rateLimit');
+
 // ===== CONFIGURACIÓN =====
 const NOWPAYMENTS_API_KEY = process.env.NOWPAYMENTS_API_KEY;
 const NOWPAYMENTS_API_URL = 'https://api.nowpayments.io/v1';
 const SITE_URL = process.env.SITE_URL || 'https://sariels.xyz';
+const PAY_CURRENCY = 'usdttrc20';
 
 console.log('🔑 NOWPAYMENTS_API_KEY:', NOWPAYMENTS_API_KEY ? '✅ Definida' : '❌ NO DEFINIDA');
 console.log('🌐 SITE_URL:', SITE_URL);
@@ -72,7 +91,7 @@ async function verificarAutenticacion(req, res, next) {
 // POST /api/payments/membresia/create
 // ================================================================
 
-router.post('/create', verificarAutenticacion, async (req, res) => {
+router.post('/create', verificarAutenticacion, limitadorPagos, async (req, res) => {
     try {
         console.log('📩 Solicitud de membresía recibida');
 
@@ -84,10 +103,15 @@ router.post('/create', verificarAutenticacion, async (req, res) => {
         // 🔴 VERIFICACIÓN CRÍTICA
         if (!supabaseAdmin) {
             console.error('❌ supabaseAdmin NO DISPONIBLE');
-            return res.status(500).json({ 
-                success: false, 
-                error: 'Error de configuración: supabaseAdmin no disponible. Verifica SUPABASE_SERVICE_ROLE_KEY en Railway.' 
+            return res.status(500).json({
+                success: false,
+                error: 'Error de configuración: supabaseAdmin no disponible. Verifica SUPABASE_SERVICE_ROLE_KEY en Railway.'
             });
+        }
+
+        if (!NOWPAYMENTS_API_KEY) {
+            console.error('❌ NOWPAYMENTS_API_KEY no configurada');
+            return res.status(500).json({ success: false, error: 'Servicio de pagos no configurado' });
         }
 
         // Obtener usuario
@@ -104,7 +128,7 @@ router.post('/create', verificarAutenticacion, async (req, res) => {
 
         console.log('👤 Usuario encontrado:', usuario.email);
 
-        // Obtener plan Pro
+        // Obtener plan Pro (el precio SIEMPRE sale de la base de datos)
         const { data: plan, error: planError } = await supabaseAdmin
             .from('planes_membresia')
             .select('id, nombre, precio_mxn, intervalo_dias')
@@ -117,23 +141,45 @@ router.post('/create', verificarAutenticacion, async (req, res) => {
             return res.status(404).json({ success: false, error: 'Plan Pro no disponible' });
         }
 
-        console.log('✅ Plan encontrado:', plan.nombre, '$' + plan.precio_mxn);
-
-        // Verificar NOWPayments
-        if (!NOWPAYMENTS_API_KEY) {
-            console.error('❌ NOWPAYMENTS_API_KEY no configurada');
-            return res.status(500).json({ success: false, error: 'Servicio de pagos no configurado' });
-        }
+        const precioMxn = parseFloat(plan.precio_mxn);
+        console.log('✅ Plan encontrado:', plan.nombre, '$' + precioMxn);
 
         // Generar order_id
         const orderId = `PRO-${Date.now()}-${usuario_id.slice(0, 8)}`;
         console.log('📦 Order ID generado:', orderId);
 
-        // Crear pago en NOWPayments
-        const paymentData = {
-            price_amount: parseFloat(plan.precio_mxn),
-            price_currency: 'MXN',
-            pay_currency: 'USDT',
+        // ------------------------------------------------------------
+        // 1) GUARDAR EL PAGO COMO PENDIENTE (antes de cobrar)
+        // payment_id queda NULL hasta que llegue el webhook.
+        // ------------------------------------------------------------
+        const { data: pago, error: pagoError } = await supabaseAdmin
+            .from('pagos_membresia')
+            .insert({
+                usuario_id: usuario_id,
+                proveedor: 'nowpayments',
+                order_id: orderId,
+                estado: 'pendiente',
+                monto_mxn: precioMxn,
+                privacy_version: privacy_version || '1.0',
+                privacy_accepted_at: new Date().toISOString()
+            })
+            .select('id')
+            .single();
+
+        if (pagoError || !pago) {
+            console.error('❌ Error guardando pago:', pagoError);
+            return res.status(500).json({ success: false, error: 'Error al guardar pago' });
+        }
+
+        console.log('✅ Pago pendiente guardado en Supabase:', pago.id);
+
+        // ------------------------------------------------------------
+        // 2) CREAR INVOICE EN NOWPAYMENTS
+        // ------------------------------------------------------------
+        const invoiceData = {
+            price_amount: precioMxn,
+            price_currency: 'mxn',
+            pay_currency: PAY_CURRENCY,
             order_id: orderId,
             order_description: `Membresía Sariel's Pro - ${usuario.email}`,
             ipn_callback_url: `${SITE_URL}/api/webhook/nowpayments`,
@@ -141,62 +187,77 @@ router.post('/create', verificarAutenticacion, async (req, res) => {
             cancel_url: `${SITE_URL}/features/perfil/perfil.html?payment=cancel`
         };
 
-        console.log('📤 Enviando a NOWPayments...');
+        console.log('📤 Enviando invoice a NOWPayments...');
 
-        const nowpaymentsResponse = await fetch(`${NOWPAYMENTS_API_URL}/payment`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': NOWPAYMENTS_API_KEY
-            },
-            body: JSON.stringify(paymentData)
-        });
+        let nowpaymentsOk = false;
+        let nowpaymentsData = {};
 
-        const nowpaymentsData = await nowpaymentsResponse.json();
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 15000);
 
-        if (!nowpaymentsResponse.ok) {
+        try {
+            const nowpaymentsResponse = await fetch(`${NOWPAYMENTS_API_URL}/invoice`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': NOWPAYMENTS_API_KEY
+                },
+                body: JSON.stringify(invoiceData),
+                signal: controller.signal
+            });
+
+            nowpaymentsData = await nowpaymentsResponse.json().catch(() => ({}));
+            nowpaymentsOk = nowpaymentsResponse.ok;
+        } catch (fetchError) {
+            nowpaymentsData = { message: fetchError.message };
+            nowpaymentsOk = false;
+        } finally {
+            clearTimeout(timeout);
+        }
+
+        if (!nowpaymentsOk || !nowpaymentsData.invoice_url) {
             console.error('❌ Error en NOWPayments:', nowpaymentsData);
-            return res.status(500).json({
+
+            // Dejar constancia: este pago nunca se cobró
+            await supabaseAdmin
+                .from('pagos_membresia')
+                .update({ estado: 'failed', updated_at: new Date().toISOString() })
+                .eq('id', pago.id);
+
+            return res.status(502).json({
                 success: false,
                 error: nowpaymentsData.message || 'Error al crear pago en NOWPayments'
             });
         }
 
-        console.log('✅ Pago creado en NOWPayments:', nowpaymentsData.payment_id);
+        console.log('✅ Invoice creado en NOWPayments:', nowpaymentsData.id);
         console.log('🔗 URL de pago:', nowpaymentsData.invoice_url);
 
-        // Guardar pago en Supabase
-        const { data: pago, error: pagoError } = await supabaseAdmin
+        // ------------------------------------------------------------
+        // 3) GUARDAR LA URL DEL INVOICE
+        // Si esto falla no es crítico: el webhook localiza el pago por
+        // order_id y la RPC completa payment_id al confirmarse.
+        // ------------------------------------------------------------
+        const { error: urlError } = await supabaseAdmin
             .from('pagos_membresia')
-            .insert({
-                usuario_id: usuario_id,
-                proveedor: 'nowpayments',
-                order_id: orderId,
-                payment_id: nowpaymentsData.payment_id || `pay_${Date.now()}`,
-                estado: 'pendiente',
-                monto_mxn: parseFloat(plan.precio_mxn),
+            .update({
                 payment_url: nowpaymentsData.invoice_url,
-                pay_address: nowpaymentsData.pay_address || null,
-                privacy_version: privacy_version || '1.0',
-                privacy_accepted_at: new Date().toISOString()
+                moneda_pago: nowpaymentsData.pay_currency || PAY_CURRENCY,
+                updated_at: new Date().toISOString()
             })
-            .select()
-            .single();
+            .eq('id', pago.id);
 
-        if (pagoError) {
-            console.error('❌ Error guardando pago:', pagoError);
-            return res.status(500).json({ success: false, error: 'Error al guardar pago' });
+        if (urlError) {
+            console.error('⚠️ No se pudo guardar payment_url (el pago sigue siendo válido):', urlError.message);
         }
-
-        console.log('✅ Pago guardado en Supabase:', pago.id);
 
         res.json({
             success: true,
             order_id: orderId,
-            payment_id: nowpaymentsData.payment_id,
+            payment_id: null, // se conoce hasta que llega el webhook
             payment_url: nowpaymentsData.invoice_url,
-            pay_address: nowpaymentsData.pay_address,
-            price_amount: parseFloat(plan.precio_mxn),
+            pay_address: null, // el invoice muestra la dirección en su propia página
+            price_amount: precioMxn,
             price_currency: 'MXN'
         });
 
