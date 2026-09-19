@@ -73,10 +73,11 @@
             display: flex; gap: 4px; background: rgba(15,45,26,0.3); border-radius: var(--radius);
             padding: 4px; border: 1px solid var(--glass-border); margin: 16px 0 20px; overflow-x: auto;
         }
-        .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; white-space: nowrap; transition: var(--transition); }
+        .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; white-space: nowrap; transition: var(--transition); display: flex; align-items: center; gap: 6px; }
         .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212,175,55,0.05); }
         .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); }
         .main-nav .nav-link.live { color: var(--danger); }
+        .main-nav .nav-link .nav-simbolo { color: var(--gold); opacity: 0.7; }
 
         .btn-back {
             display: inline-flex; align-items: center; gap: 6px;
@@ -85,6 +86,7 @@
             font-size: 0.72rem; text-decoration: none; margin-bottom: 16px;
             transition: var(--transition); cursor: pointer;
         }
+        .btn-back .simbolo { color: var(--gold); font-family: 'Orbitron', monospace; }
         .btn-back:hover { border-color: var(--gold); color: var(--gold); }
 
         .titulo {
@@ -96,6 +98,7 @@
             font-weight: 700; color: var(--gold);
             display: flex; align-items: center; gap: 8px;
         }
+        .titulo h1 .simbolo { color: var(--gold); }
         .titulo .rol-badge {
             font-size: 0.55rem; padding: 4px 12px; border-radius: 20px;
             font-family: 'Orbitron', monospace; font-weight: 700;
@@ -119,11 +122,13 @@
             transition: var(--transition); white-space: nowrap;
             display: flex; align-items: center; gap: 6px;
         }
+        .tab-btn .simbolo { font-family: 'Orbitron', monospace; color: var(--gold); }
         .tab-btn.active { background: rgba(212,175,55,0.12); color: var(--gold); }
         .tab-btn:hover:not(.active) { color: var(--text-primary); background: rgba(212,175,55,0.05); }
         .tab-btn .badge-count {
             font-size: 0.55rem; background: var(--danger); color: #fff;
             padding: 1px 7px; border-radius: 10px; font-weight: 700;
+            font-family: 'Orbitron', monospace;
         }
 
         .tab-content { display: none; animation: fadeIn 0.3s ease; }
@@ -142,6 +147,7 @@
             color: var(--gold); margin-bottom: 14px;
             display: flex; align-items: center; gap: 8px;
         }
+        .seccion-card h2 .simbolo { color: var(--gold); }
 
         .form-group { margin-bottom: 14px; }
         .form-group label {
@@ -197,6 +203,7 @@
             display: flex; align-items: center; justify-content: center;
             font-size: 2.5rem; color: var(--gold);
             position: relative; overflow: hidden;
+            font-family: 'Orbitron', monospace;
         }
         .tienda-preview .portada img { width: 100%; height: 100%; object-fit: cover; }
         .tienda-preview .portada .badge-nivel {
@@ -247,7 +254,8 @@
             display: flex; justify-content: space-between; align-items: center;
             padding: 6px 0; font-size: 0.75rem; flex-wrap: wrap; gap: 8px;
         }
-        .membresia-info .row .lbl { color: var(--text-muted); }
+        .membresia-info .row .lbl { color: var(--text-muted); display: flex; align-items: center; gap: 5px; }
+        .membresia-info .row .lbl .simbolo { color: var(--gold); font-family: 'Orbitron', monospace; }
         .membresia-info .row .valor { font-weight: 600; color: var(--text-primary); }
         .membresia-info .row .valor.gold { color: var(--gold); font-family: 'Orbitron', monospace; }
         .membresia-info .row .valor.success { color: var(--success); }
@@ -267,6 +275,7 @@
             transition: var(--transition);
             display: inline-flex; align-items: center; gap: 6px;
         }
+        .btn-nuevo-prod .simbolo { font-family: 'Orbitron', monospace; }
         .btn-nuevo-prod:hover { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
         .btn-nuevo-prod:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
 
@@ -288,6 +297,8 @@
             background: linear-gradient(135deg, var(--green-deep), var(--green-mid));
             display: flex; align-items: center; justify-content: center;
             font-size: 1.5rem; flex-shrink: 0;
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
         }
         .producto-admin-card .foto img { width: 100%; height: 100%; object-fit: cover; }
         .producto-admin-card .info { flex: 1; min-width: 0; }
@@ -356,7 +367,9 @@
         .pedido-card .pedido-head .folio {
             font-family: 'Orbitron', monospace; font-size: 0.75rem;
             color: var(--gold); font-weight: 700;
+            display: flex; align-items: center; gap: 5px;
         }
+        .pedido-card .pedido-head .folio .simbolo { color: var(--gold); font-family: 'Orbitron', monospace; }
         .pedido-card .pedido-head .fecha {
             font-size: 0.65rem; color: var(--text-muted);
         }
@@ -377,6 +390,7 @@
             font-size: 0.55rem; font-weight: 700;
             text-transform: uppercase; letter-spacing: 0.5px;
         }
+        .pedido-card .estado-badge .simbolo { font-family: 'Orbitron', monospace; }
         .pedido-card .estado-badge.pendiente { background: rgba(247,212,74,0.15); color: var(--warning); }
         .pedido-card .estado-badge.aceptado { background: rgba(0,229,255,0.15); color: var(--cyan); }
         .pedido-card .estado-badge.preparando { background: rgba(212,175,55,0.15); color: var(--gold); }
@@ -397,7 +411,9 @@
             border: 1px solid var(--glass-border);
             background: transparent; color: var(--text-secondary);
             display: inline-flex; align-items: center; gap: 4px;
+            font-family: 'Orbitron', monospace;
         }
+        .btn-accion .simbolo { font-family: 'Orbitron', monospace; }
         .btn-accion:hover { border-color: var(--gold); color: var(--gold); }
         .btn-accion.primario {
             background: linear-gradient(135deg, var(--gold), var(--gold-dark));
@@ -420,7 +436,9 @@
             border: 1px solid var(--glass-border);
             cursor: pointer; transition: var(--transition);
             white-space: nowrap;
+            display: flex; align-items: center; gap: 5px;
         }
+        .filtro-btn .simbolo { font-family: 'Orbitron', monospace; color: var(--gold); }
         .filtro-btn.active { background: rgba(212,175,55,0.15); color: var(--gold); border-color: var(--gold); }
         .filtro-btn:hover:not(.active) { color: var(--text-primary); }
 
@@ -461,6 +479,7 @@
             cursor: pointer; transition: var(--transition);
             display: inline-flex; align-items: center; gap: 8px;
         }
+        .balance-hero .btn-retirar .simbolo { font-family: 'Orbitron', monospace; }
         .balance-hero .btn-retirar:hover { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
         .balance-hero .btn-retirar:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
 
@@ -474,13 +493,15 @@
             margin-bottom: 12px;
             display: flex; align-items: center; gap: 6px;
         }
+        .desglose-card h3 .simbolo { font-family: 'Orbitron', monospace; }
         .desglose-card .row {
             display: flex; justify-content: space-between; align-items: center;
             padding: 8px 0; font-size: 0.76rem;
             border-bottom: 1px solid rgba(212,175,55,0.06);
         }
         .desglose-card .row:last-child { border-bottom: none; }
-        .desglose-card .row .k { color: var(--text-muted); }
+        .desglose-card .row .k { color: var(--text-muted); display: flex; align-items: center; gap: 5px; }
+        .desglose-card .row .k .simbolo { font-family: 'Orbitron', monospace; color: var(--gold); }
         .desglose-card .row .v { color: var(--text-primary); font-weight: 600; }
         .desglose-card .row .v.gold { color: var(--gold); font-family: 'Orbitron', monospace; }
         .desglose-card .row .v.danger { color: var(--danger); }
@@ -522,7 +543,9 @@
         .modal h2 {
             font-family: 'Orbitron', monospace;
             color: var(--gold); font-size: 1.05rem; margin-bottom: 16px;
+            display: flex; align-items: center; gap: 8px;
         }
+        .modal h2 .simbolo { font-family: 'Orbitron', monospace; }
 
         .image-picker {
             display: flex; gap: 10px; align-items: center;
@@ -534,6 +557,7 @@
             display: flex; align-items: center; justify-content: center;
             overflow: hidden; flex-shrink: 0;
             font-size: 1.5rem; color: var(--text-muted);
+            font-family: 'Orbitron', monospace;
         }
         .image-picker .preview-img img { width: 100%; height: 100%; object-fit: cover; }
         .image-picker .file-info { flex: 1; min-width: 0; }
@@ -559,6 +583,7 @@
             font-size: 1.4rem; color: var(--text-muted);
             transition: var(--transition);
             position: relative;
+            font-family: 'Orbitron', monospace;
         }
         .galeria-producto .slot:hover { border-color: var(--gold); color: var(--gold); }
         .galeria-producto .slot img { width: 100%; height: 100%; object-fit: cover; }
@@ -568,6 +593,7 @@
             border: none; border-radius: 50%; width: 20px; height: 20px;
             font-size: 0.7rem; cursor: pointer; display: flex;
             align-items: center; justify-content: center;
+            font-family: 'Orbitron', monospace;
         }
 
         .btn-primario {
@@ -579,6 +605,7 @@
             transition: var(--transition);
             display: inline-flex; align-items: center; justify-content: center; gap: 8px;
         }
+        .btn-primario .simbolo { font-family: 'Orbitron', monospace; }
         .btn-primario:hover:not(:disabled) { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
         .btn-primario:disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -591,6 +618,7 @@
             transition: var(--transition);
             display: inline-flex; align-items: center; justify-content: center; gap: 8px;
         }
+        .btn-secundario .simbolo { color: var(--gold); font-family: 'Orbitron', monospace; }
         .btn-secundario:hover { border-color: var(--gold); color: var(--gold); }
 
         .loading-state {
@@ -611,6 +639,7 @@
         .empty-state .icon {
             font-size: 3rem; display: block; margin-bottom: 12px;
             color: var(--gold); opacity: 0.4;
+            font-family: 'Orbitron', monospace;
         }
         .empty-state h3 {
             font-family: 'Orbitron', monospace;
@@ -625,7 +654,9 @@
             border-radius: var(--radius-xl);
         }
         .bloqueo-membresia .icon {
-            font-size: 3.5rem; display: block; margin-bottom: 14px;
+            font-size: 3rem; display: block; margin-bottom: 14px;
+            color: var(--danger);
+            font-family: 'Orbitron', monospace;
         }
         .bloqueo-membresia h2 {
             font-family: 'Orbitron', monospace; color: var(--danger);
@@ -644,6 +675,7 @@
             font-size: 0.8rem; transition: var(--transition);
             border: none; cursor: pointer;
         }
+        .bloqueo-membresia .btn-cta .simbolo { font-family: 'Orbitron', monospace; }
         .bloqueo-membresia .btn-cta:hover { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
 
         .toast {
@@ -671,7 +703,9 @@
             font-size: 0.72rem; color: var(--gold);
             margin-bottom: 10px; letter-spacing: 1px;
             text-transform: uppercase;
+            display: flex; align-items: center; gap: 6px;
         }
+        .config-legal h3 .simbolo { font-family: 'Orbitron', monospace; }
         .config-legal .legal-grid {
             display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
             gap: 10px; font-size: 0.7rem;
@@ -693,7 +727,8 @@
         }
         .footer .brand { color: var(--gold); font-weight: 600; }
         .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
-        .footer-links a { color: var(--text-muted); text-decoration: none; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; display: flex; align-items: center; gap: 4px; }
+        .footer-links a .simbolo { font-family: 'Orbitron', monospace; color: var(--gold); opacity: 0.7; }
         .footer-links a:hover { color: var(--gold); }
 
         html.tema-dia, html[data-tema="dia"] {
@@ -750,23 +785,23 @@
         </header>
 
         <nav class="main-nav" aria-label="Navegación principal">
-            <a href="/" class="nav-link">⌂ Inicio</a>
-            <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
-            <a href="/features/perfil/perfil.html" class="nav-link">◆ Perfil</a>
-            <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
-            <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
-            <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
-            <a href="/features/videos/videos.html" class="nav-link">🎬 Videos</a>
-            <a href="/features/grupos/grupos.html" class="nav-link">👥 Grupos</a>
-            <a href="/features/mercado/index.html" class="nav-link active">🛒 Mercado</a>
+            <a href="/" class="nav-link"><span class="nav-simbolo">◈</span> Inicio</a>
+            <a href="/features/muro/muro.html" class="nav-link"><span class="nav-simbolo">◆</span> Muro</a>
+            <a href="/features/perfil/perfil.html" class="nav-link"><span class="nav-simbolo">◇</span> Perfil</a>
+            <a href="/features/mensajes/contactos.html" class="nav-link"><span class="nav-simbolo">●</span> Contactos</a>
+            <a href="/features/live/live.html" class="nav-link live"><span class="nav-simbolo">◉</span> Live</a>
+            <a href="/features/internet/internet.html" class="nav-link"><span class="nav-simbolo">◆</span> Internet</a>
+            <a href="/features/videos/videos.html" class="nav-link"><span class="nav-simbolo">◇</span> Videos</a>
+            <a href="/features/grupos/grupos.html" class="nav-link"><span class="nav-simbolo">◆</span> Grupos</a>
+            <a href="/features/mercado/index.html" class="nav-link active"><span class="nav-simbolo">◈</span> Mercado</a>
         </nav>
 
         <a href="/features/mercado/index.html" class="btn-back">
-            ← <span data-clave="mercado_volver">Volver al Mercado</span>
+            <span class="simbolo">◈</span> <span data-clave="mercado_volver">Volver al Mercado</span>
         </a>
 
         <div class="titulo">
-            <h1>🏪 <span data-clave="vendedor_mi_tienda">Mi Tienda</span></h1>
+            <h1><span class="simbolo">◈</span> <span data-clave="vendedor_mi_tienda">Mi Tienda</span></h1>
             <span class="rol-badge" data-clave="vendedor_rol">Vendedor</span>
         </div>
 
@@ -778,7 +813,7 @@
         </div>
 
         <div class="config-legal">
-            <h3>◈ Configuración legal</h3>
+            <h3><span class="simbolo">◈</span> Configuración legal</h3>
             <div class="legal-grid">
                 <div class="legal-item"><strong>Plataforma</strong><span>Csariel's Ecosystem</span></div>
                 <div class="legal-item"><strong>Comisión vendedor</strong><span>7% sobre producto</span></div>
@@ -787,17 +822,17 @@
                 <div class="legal-item"><strong>Retiro mínimo externo</strong><span>$500 MXN</span></div>
                 <div class="legal-item"><strong>Retiro interno</strong><span>Sin mínimo</span></div>
                 <div class="legal-item"><strong>Blockchain</strong><span>Polygon</span></div>
-                <div class="legal-item"><strong>País</strong><span>México 🇲🇽</span></div>
+                <div class="legal-item"><strong>País</strong><span>México</span></div>
             </div>
         </div>
 
         <footer class="footer">
             <span>© <span id="anioActual"></span> <span class="brand">◈ Csariel's</span> · <span data-clave="mercado_footer">Sabor al Paladar · WEB3</span></span>
             <div class="footer-links">
-                <a href="/terminos" data-clave="footer_terminos">📜 Términos</a>
-                <a href="/privacidad" data-clave="footer_privacidad">🔒 Privacidad</a>
-                <a href="/cookies" data-clave="footer_cookies">🍪 Cookies</a>
-                <a href="/live-terminos" data-clave="footer_terminos_live">📡 Términos de Live</a>
+                <a href="/terminos" data-clave="footer_terminos"><span class="simbolo">◇</span> Términos</a>
+                <a href="/privacidad" data-clave="footer_privacidad"><span class="simbolo">◆</span> Privacidad</a>
+                <a href="/cookies" data-clave="footer_cookies"><span class="simbolo">◇</span> Cookies</a>
+                <a href="/live-terminos" data-clave="footer_terminos_live"><span class="simbolo">◆</span> Términos de Live</a>
                 <span style="opacity:0.3;">⚡ Polygon</span>
             </div>
         </footer>
@@ -807,7 +842,7 @@
     <div class="modal-overlay" id="modalProducto">
         <div class="modal modal-ancho">
             <button class="close-btn" onclick="cerrarModalProducto()">×</button>
-            <h2 id="modalProductoTitulo">➕ Nuevo producto</h2>
+            <h2 id="modalProductoTitulo"><span class="simbolo">◈</span> Nuevo producto</h2>
 
             <input type="hidden" id="prodId" />
 
@@ -847,7 +882,7 @@
                     <label>&nbsp;</label>
                     <label class="check-row" id="checkStockIlimitado">
                         <input type="checkbox" id="prodStockIlimitado" onchange="toggleStockIlimitado()" />
-                        <span>♾️ Stock ilimitado</span>
+                        <span><span class="simbolo" style="font-family:Orbitron,monospace;">✦</span> Stock ilimitado</span>
                     </label>
                 </div>
             </div>
@@ -856,13 +891,13 @@
                 <div class="form-group">
                     <label class="check-row" id="checkDestacado">
                         <input type="checkbox" id="prodDestacado" />
-                        <span>⭐ Producto destacado</span>
+                        <span><span class="simbolo" style="font-family:Orbitron,monospace; color:var(--gold);">✦</span> Producto destacado</span>
                     </label>
                 </div>
                 <div class="form-group">
                     <label class="check-row checked" id="checkActivo">
                         <input type="checkbox" id="prodActivo" checked />
-                        <span>✅ Producto activo</span>
+                        <span><span class="simbolo" style="font-family:Orbitron,monospace; color:var(--success);">●</span> Producto activo</span>
                     </label>
                 </div>
             </div>
@@ -875,7 +910,7 @@
             </div>
 
             <button class="btn-primario" id="btnGuardarProducto" onclick="guardarProducto()">
-                💾 <span data-clave="prod_guardar">Guardar producto</span>
+                <span class="simbolo">◆</span> <span data-clave="prod_guardar">Guardar producto</span>
             </button>
         </div>
     </div>
@@ -883,7 +918,7 @@
     <div class="modal-overlay" id="modalTienda">
         <div class="modal modal-ancho">
             <button class="close-btn" onclick="cerrarModalTienda()">×</button>
-            <h2 id="modalTiendaTitulo">🏪 Crear mi tienda</h2>
+            <h2 id="modalTiendaTitulo"><span class="simbolo">◈</span> Crear mi tienda</h2>
 
             <input type="hidden" id="tiendaId" />
 
@@ -946,13 +981,13 @@
                 <div class="form-group">
                     <label class="check-row checked" id="checkDelivery">
                         <input type="checkbox" id="tiendaAceptaDelivery" checked />
-                        <span>🛵 Acepto delivery</span>
+                        <span><span class="simbolo" style="font-family:Orbitron,monospace; color:var(--cyan);">◆</span> Acepto delivery</span>
                     </label>
                 </div>
                 <div class="form-group">
                     <label class="check-row checked" id="checkPickup">
                         <input type="checkbox" id="tiendaAceptaPickup" checked />
-                        <span>🛍️ Acepto pickup</span>
+                        <span><span class="simbolo" style="font-family:Orbitron,monospace; color:var(--purple);">◇</span> Acepto pickup</span>
                     </label>
                 </div>
             </div>
@@ -966,7 +1001,7 @@
             <div class="form-group">
                 <label><span data-clave="tienda_logo">Logo</span></label>
                 <div class="image-picker">
-                    <div class="preview-img" id="logoPreview">🏪</div>
+                    <div class="preview-img" id="logoPreview">◈</div>
                     <div class="file-info">
                         <button type="button" onclick="document.getElementById('logoInputFile').click()">
                             <span data-clave="tienda_elegir_logo">Elegir logo</span>
@@ -980,7 +1015,7 @@
             <div class="form-group">
                 <label><span data-clave="tienda_portada">Portada</span></label>
                 <div class="image-picker">
-                    <div class="preview-img" id="portadaPreview">🖼️</div>
+                    <div class="preview-img" id="portadaPreview">◇</div>
                     <div class="file-info">
                         <button type="button" onclick="document.getElementById('portadaInputFile').click()">
                             <span data-clave="tienda_elegir_portada">Elegir portada</span>
@@ -992,7 +1027,7 @@
             </div>
 
             <button class="btn-primario" id="btnGuardarTienda" onclick="guardarTienda()">
-                ✨ <span data-clave="tienda_guardar">Guardar tienda</span>
+                <span class="simbolo">✦</span> <span data-clave="tienda_guardar">Guardar tienda</span>
             </button>
         </div>
     </div>
@@ -1000,11 +1035,11 @@
     <div class="modal-overlay" id="modalRetiro">
         <div class="modal">
             <button class="close-btn" onclick="cerrarModalRetiro()">×</button>
-            <h2>💸 Solicitar retiro</h2>
+            <h2><span class="simbolo">◆</span> Solicitar retiro</h2>
 
             <div class="membresia-info" style="margin-bottom:16px;">
                 <div class="row">
-                    <span class="lbl">Balance disponible</span>
+                    <span class="lbl"><span class="simbolo">◈</span> Balance disponible</span>
                     <span class="valor gold" id="retiroBalanceDisponible">$0.00</span>
                 </div>
             </div>
@@ -1020,9 +1055,9 @@
                 <select id="retiroMetodo" onchange="actualizarRetiroMetodo()">
                     <option value="">— Selecciona —</option>
                     <option value="cartera_interna">◈ Cartera interna Csariel's (sin mínimo · instantáneo)</option>
-                    <option value="spei">🏦 SPEI (mínimo $500)</option>
-                    <option value="oxxo">🏪 OXXO (mínimo $500)</option>
-                    <option value="efectivo">💵 Efectivo (mínimo $500)</option>
+                    <option value="spei">◆ SPEI (mínimo $500)</option>
+                    <option value="oxxo">◇ OXXO (mínimo $500)</option>
+                    <option value="efectivo">● Efectivo (mínimo $500)</option>
                 </select>
             </div>
 
@@ -1032,7 +1067,7 @@
             </div>
 
             <button class="btn-primario" id="btnSolicitarRetiro" onclick="solicitarRetiro()">
-                💸 <span data-clave="retiro_solicitar">Solicitar retiro</span>
+                <span class="simbolo">◆</span> <span data-clave="retiro_solicitar">Solicitar retiro</span>
             </button>
         </div>
     </div>
@@ -1040,7 +1075,7 @@
     <div class="modal-overlay" id="modalRechazar">
         <div class="modal">
             <button class="close-btn" onclick="cerrarModalRechazar()">×</button>
-            <h2>🚫 Rechazar pedido</h2>
+            <h2><span class="simbolo">✶</span> Rechazar pedido</h2>
 
             <input type="hidden" id="rechazarPedidoId" />
 
@@ -1062,7 +1097,7 @@
             </div>
 
             <button class="btn-primario" onclick="confirmarRechazo()" style="background: linear-gradient(135deg, var(--danger), #dc2626);">
-                🚫 <span data-clave="rechazar_confirmar">Confirmar rechazo</span>
+                <span class="simbolo">✶</span> <span data-clave="rechazar_confirmar">Confirmar rechazo</span>
             </button>
         </div>
     </div>
@@ -1074,7 +1109,7 @@
         background:#ff3366; color:#fff; padding:12px 16px; font-family:monospace;
         font-size:0.75rem; word-break:break-word; box-shadow:0 4px 20px rgba(0,0,0,0.4);
     ">
-        <strong>⚠️ Error detectado:</strong>
+        <strong><span style="font-family:Orbitron,monospace;">✶</span> Error detectado:</strong>
         <span id="errorBannerText"></span>
         <button onclick="document.getElementById('errorBanner').style.display='none'"
             style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">
@@ -1084,8 +1119,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/features/shared/js/idiomas.js"></script>
-</body>
-</html><script>
+
+<script>
 var supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
 var supabaseKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
 var supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
@@ -1417,7 +1452,7 @@ function renderPrincipal() {
 
 function renderSinTienda() {
     return '<div class="seccion-card" style="text-align:center; padding: 40px 20px;">' +
-        '<div style="font-size:3rem; margin-bottom:16px;">🏪</div>' +
+        '<div style="font-size:3rem; margin-bottom:16px; color: var(--gold); font-family: \'Orbitron\', monospace;">◈</div>' +
         '<h2 style="justify-content:center;">' +
             '<span data-clave="vendedor_crear_tienda">Crea tu tienda para empezar a vender</span>' +
         '</h2>' +
@@ -1426,7 +1461,7 @@ function renderSinTienda() {
             'Después podrás agregar productos y recibir pedidos.' +
         '</p>' +
         '<button class="btn-primario" style="max-width:320px; margin:0 auto;" onclick="abrirModalTienda()">' +
-            '✨ <span data-clave="vendedor_crear_tienda_btn">Crear mi tienda</span>' +
+            '<span class="simbolo">✦</span> <span data-clave="vendedor_crear_tienda_btn">Crear mi tienda</span>' +
         '</button>' +
     '</div>';
 }
@@ -1437,13 +1472,13 @@ function renderBloqueoMembresia() {
         : '—';
 
     return '<div class="bloqueo-membresia">' +
-        '<span class="icon">🔒</span>' +
+        '<span class="icon">◈</span>' +
         '<h2>' + (tiendaActual && tiendaActual.nivel ? 'Tu membresía venció' : 'Necesitas una membresía activa') + '</h2>' +
         '<p>Para mantener tu tienda publicada y seguir vendiendo necesitas una membresía activa. Se paga con criptomonedas (NOWPayments) y se activa al instante.</p>' +
         (tiendaActual && tiendaActual.activa_hasta
             ? '<p style="color:var(--warning);">Venció el: <strong>' + activaHasta + '</strong></p>'
             : '') +
-        '<a href="/features/mercado/membresia.html" class="btn-cta">💳 <span data-clave="vendedor_ver_planes">Ver planes y precios</span></a>' +
+        '<a href="/features/mercado/membresia.html" class="btn-cta"><span class="simbolo">◆</span> <span data-clave="vendedor_ver_planes">Ver planes y precios</span></a>' +
     '</div>';
 }
 
@@ -1455,24 +1490,36 @@ function renderPanelConTienda() {
     var html = '';
 
     html += '<div class="membresia-info">' +
-        '<div class="row"><span class="lbl">Plan</span><span class="valor gold">' + plan.toUpperCase() + '</span></div>' +
-        '<div class="row"><span class="lbl">Activa hasta</span><span class="valor">' + formatearFecha(tiendaActual.activa_hasta) + '</span></div>' +
-        '<div class="row"><span class="lbl">Estado</span><span class="valor success">● Activa</span></div>' +
+        '<div class="row"><span class="lbl"><span class="simbolo">✦</span> Plan</span><span class="valor gold">' + plan.toUpperCase() + '</span></div>' +
+        '<div class="row"><span class="lbl"><span class="simbolo">◈</span> Activa hasta</span><span class="valor">' + formatearFecha(tiendaActual.activa_hasta) + '</span></div>' +
+        '<div class="row"><span class="lbl"><span class="simbolo">●</span> Estado</span><span class="valor success">● Activa</span></div>' +
     '</div>';
 
     html += '<div class="tabs">' +
-        '<button class="tab-btn active" data-tab="productos" onclick="cambiarTab(\'productos\', this)">📦 Productos (' + productosCache.length + ')</button>' +
-        '<button class="tab-btn" data-tab="pedidos" onclick="cambiarTab(\'pedidos\', this)">📥 Pedidos' + (pedidosPendientes > 0 ? ' <span class="badge-count">' + pedidosPendientes + '</span>' : '') + '</button>' +
-        '<button class="tab-btn" data-tab="balance" onclick="cambiarTab(\'balance\', this)">💰 Balance</button>' +
-        '<button class="tab-btn" data-tab="tienda" onclick="cambiarTab(\'tienda\', this)">🏪 Mi tienda</button>' +
-        '<button class="tab-btn" data-tab="membresia" onclick="cambiarTab(\'membresia\', this)">💎 Membresía</button>' +
+        '<button class="tab-btn active" data-tab="productos" onclick="cambiarTab(\'productos\', this)">' +
+            '<span class="simbolo">◈</span> Productos (' + productosCache.length + ')' +
+        '</button>' +
+        '<button class="tab-btn" data-tab="pedidos" onclick="cambiarTab(\'pedidos\', this)">' +
+            '<span class="simbolo">✦</span> Pedidos' + (pedidosPendientes > 0 ? ' <span class="badge-count">' + pedidosPendientes + '</span>' : '') +
+        '</button>' +
+        '<button class="tab-btn" data-tab="balance" onclick="cambiarTab(\'balance\', this)">' +
+            '<span class="simbolo">◆</span> Balance' +
+        '</button>' +
+        '<button class="tab-btn" data-tab="tienda" onclick="cambiarTab(\'tienda\', this)">' +
+            '<span class="simbolo">●</span> Mi tienda' +
+        '</button>' +
+        '<button class="tab-btn" data-tab="membresia" onclick="cambiarTab(\'membresia\', this)">' +
+            '<span class="simbolo">✧</span> Membresía' +
+        '</button>' +
     '</div>';
 
     html += '<div class="tab-content active" data-tab-content="productos">' +
         '<div class="seccion-card">' +
             '<div class="productos-header">' +
                 '<div class="info">' + productosCache.length + ' / ' + limites.productos + ' productos</div>' +
-                '<button class="btn-nuevo-prod" onclick="abrirModalProducto()">➕ Nuevo producto</button>' +
+                '<button class="btn-nuevo-prod" onclick="abrirModalProducto()">' +
+                    '<span class="simbolo">✦</span> Nuevo producto' +
+                '</button>' +
             '</div>' +
             '<div id="productosContainer">' + renderListaProductos() + '</div>' +
         '</div>' +
@@ -1480,15 +1527,15 @@ function renderPanelConTienda() {
 
     html += '<div class="tab-content" data-tab-content="pedidos">' +
         '<div class="seccion-card">' +
-            '<h2>📥 Pedidos entrantes</h2>' +
+            '<h2><span class="simbolo">◈</span> Pedidos entrantes</h2>' +
             '<div class="pedidos-filtros">' +
-                '<button class="filtro-btn active" onclick="filtrarPedidos(\'todos\', this)">Todos</button>' +
-                '<button class="filtro-btn" onclick="filtrarPedidos(\'pendiente\', this)">🔔 Pendientes</button>' +
-                '<button class="filtro-btn" onclick="filtrarPedidos(\'aceptado\', this)">✓ Aceptados</button>' +
-                '<button class="filtro-btn" onclick="filtrarPedidos(\'preparando\', this)">👨‍🍳 Preparando</button>' +
-                '<button class="filtro-btn" onclick="filtrarPedidos(\'listo\', this)">✅ Listos</button>' +
-                '<button class="filtro-btn" onclick="filtrarPedidos(\'entregado\', this)">📦 Entregados</button>' +
-                '<button class="filtro-btn" onclick="filtrarPedidos(\'rechazado\', this)">🚫 Rechazados</button>' +
+                '<button class="filtro-btn active" onclick="filtrarPedidos(\'todos\', this)"><span class="simbolo">◈</span> Todos</button>' +
+                '<button class="filtro-btn" onclick="filtrarPedidos(\'pendiente\', this)"><span class="simbolo">✶</span> Pendientes</button>' +
+                '<button class="filtro-btn" onclick="filtrarPedidos(\'aceptado\', this)"><span class="simbolo">●</span> Aceptados</button>' +
+                '<button class="filtro-btn" onclick="filtrarPedidos(\'preparando\', this)"><span class="simbolo">◆</span> Preparando</button>' +
+                '<button class="filtro-btn" onclick="filtrarPedidos(\'listo\', this)"><span class="simbolo">✦</span> Listos</button>' +
+                '<button class="filtro-btn" onclick="filtrarPedidos(\'entregado\', this)"><span class="simbolo">●</span> Entregados</button>' +
+                '<button class="filtro-btn" onclick="filtrarPedidos(\'rechazado\', this)"><span class="simbolo">✶</span> Rechazados</button>' +
             '</div>' +
             '<div id="pedidosContainer">' + renderListaPedidos() + '</div>' +
         '</div>' +
@@ -1498,14 +1545,14 @@ function renderPanelConTienda() {
 
     html += '<div class="tab-content" data-tab-content="tienda">' +
         '<div class="seccion-card">' +
-            '<h2>🏪 Información de la tienda</h2>' +
+            '<h2><span class="simbolo">◈</span> Información de la tienda</h2>' +
             '<div class="tienda-preview">' +
                 '<div class="portada">' +
                     (tiendaActual.portada_url
                         ? '<img src="' + escapeHTML(tiendaActual.portada_url) + '" alt="" />'
                         : (tiendaActual.logo_url
                             ? '<img src="' + escapeHTML(tiendaActual.logo_url) + '" alt="" />'
-                            : '🏪')) +
+                            : '◈')) +
                     '<span class="badge-nivel ' + plan + '">' + plan.toUpperCase() + '</span>' +
                 '</div>' +
                 '<div class="info">' +
@@ -1518,38 +1565,38 @@ function renderPanelConTienda() {
                 '</div>' +
             '</div>' +
             '<div style="display:grid; gap:8px; margin-bottom:14px;">' +
-                '<button class="btn-secundario" style="width:100%;" onclick="abrirModalTienda(true)">✏️ Editar información</button>' +
-                '<a href="/features/mercado/tienda.html?slug=' + encodeURIComponent(tiendaActual.slug || '') + '" target="_blank" class="btn-secundario" style="width:100%;">👁️ Ver mi tienda pública</a>' +
+                '<button class="btn-secundario" style="width:100%;" onclick="abrirModalTienda(true)"><span class="simbolo">✧</span> Editar información</button>' +
+                '<a href="/features/mercado/tienda.html?slug=' + encodeURIComponent(tiendaActual.slug || '') + '" target="_blank" class="btn-secundario" style="width:100%;"><span class="simbolo">◈</span> Ver mi tienda pública</a>' +
             '</div>' +
             '<div class="membresia-info">' +
-                '<div class="row"><span class="lbl">📞 Teléfono</span><span class="valor">' + escapeHTML(tiendaActual.telefono || '—') + '</span></div>' +
-                '<div class="row"><span class="lbl">💬 WhatsApp</span><span class="valor">' + escapeHTML(tiendaActual.whatsapp || '—') + '</span></div>' +
-                '<div class="row"><span class="lbl">📍 Dirección</span><span class="valor">' + escapeHTML(tiendaActual.direccion || '—') + '</span></div>' +
-                '<div class="row"><span class="lbl">⏰ Horario</span><span class="valor">' + (tiendaActual.horario_apertura || '—') + ' - ' + (tiendaActual.horario_cierre || '—') + '</span></div>' +
-                '<div class="row"><span class="lbl">🛵 Delivery</span><span class="valor">' + (tiendaActual.acepta_delivery ? '✅ Sí' : '❌ No') + '</span></div>' +
-                '<div class="row"><span class="lbl">🛍️ Pickup</span><span class="valor">' + (tiendaActual.acepta_pickup ? '✅ Sí' : '❌ No') + '</span></div>' +
-                '<div class="row"><span class="lbl">🚚 Envío</span><span class="valor gold">' + formatearPrecio(tiendaActual.envio_mxn || 0) + '</span></div>' +
-                '<div class="row"><span class="lbl">📷 Instagram</span><span class="valor">' + escapeHTML(tiendaActual.instagram || '—') + '</span></div>' +
-                '<div class="row"><span class="lbl">👥 Facebook</span><span class="valor">' + escapeHTML(tiendaActual.facebook || '—') + '</span></div>' +
+                '<div class="row"><span class="lbl"><span class="simbolo">◆</span> Teléfono</span><span class="valor">' + escapeHTML(tiendaActual.telefono || '—') + '</span></div>' +
+                '<div class="row"><span class="lbl"><span class="simbolo">◆</span> WhatsApp</span><span class="valor">' + escapeHTML(tiendaActual.whatsapp || '—') + '</span></div>' +
+                '<div class="row"><span class="lbl"><span class="simbolo">●</span> Dirección</span><span class="valor">' + escapeHTML(tiendaActual.direccion || '—') + '</span></div>' +
+                '<div class="row"><span class="lbl"><span class="simbolo">◈</span> Horario</span><span class="valor">' + (tiendaActual.horario_apertura || '—') + ' - ' + (tiendaActual.horario_cierre || '—') + '</span></div>' +
+                '<div class="row"><span class="lbl"><span class="simbolo">◆</span> Delivery</span><span class="valor">' + (tiendaActual.acepta_delivery ? '● Sí' : '✶ No') + '</span></div>' +
+                '<div class="row"><span class="lbl"><span class="simbolo">◇</span> Pickup</span><span class="valor">' + (tiendaActual.acepta_pickup ? '● Sí' : '✶ No') + '</span></div>' +
+                '<div class="row"><span class="lbl"><span class="simbolo">◆</span> Envío</span><span class="valor gold">' + formatearPrecio(tiendaActual.envio_mxn || 0) + '</span></div>' +
+                '<div class="row"><span class="lbl"><span class="simbolo">◇</span> Instagram</span><span class="valor">' + escapeHTML(tiendaActual.instagram || '—') + '</span></div>' +
+                '<div class="row"><span class="lbl"><span class="simbolo">◆</span> Facebook</span><span class="valor">' + escapeHTML(tiendaActual.facebook || '—') + '</span></div>' +
             '</div>' +
         '</div>' +
     '</div>';
 
     html += '<div class="tab-content" data-tab-content="membresia">' +
         '<div class="seccion-card">' +
-            '<h2>💎 Mi membresía</h2>' +
+            '<h2><span class="simbolo">✧</span> Mi membresía</h2>' +
             '<div class="membresia-info">' +
-                '<div class="row"><span class="lbl">Plan actual</span><span class="valor gold">' + plan.toUpperCase() + '</span></div>' +
-                '<div class="row"><span class="lbl">Activa hasta</span><span class="valor">' + formatearFecha(tiendaActual.activa_hasta) + '</span></div>' +
-                '<div class="row"><span class="lbl">Estado</span><span class="valor success">● Activa</span></div>' +
+                '<div class="row"><span class="lbl"><span class="simbolo">✦</span> Plan actual</span><span class="valor gold">' + plan.toUpperCase() + '</span></div>' +
+                '<div class="row"><span class="lbl"><span class="simbolo">◈</span> Activa hasta</span><span class="valor">' + formatearFecha(tiendaActual.activa_hasta) + '</span></div>' +
+                '<div class="row"><span class="lbl"><span class="simbolo">●</span> Estado</span><span class="valor success">● Activa</span></div>' +
             '</div>' +
             '<div class="membresia-info">' +
-                '<div class="row"><span class="lbl">Productos</span><span class="valor">' + productosCache.length + ' / ' + limites.productos + '</span></div>' +
-                '<div class="row"><span class="lbl">Destacados</span><span class="valor">' + limites.destacados + '</span></div>' +
-                '<div class="row"><span class="lbl">Storage</span><span class="valor">' + limites.storage_mb + ' MB</span></div>' +
-                '<div class="row"><span class="lbl">Fotos por producto</span><span class="valor">' + limites.fotos_producto + '</span></div>' +
+                '<div class="row"><span class="lbl"><span class="simbolo">◈</span> Productos</span><span class="valor">' + productosCache.length + ' / ' + limites.productos + '</span></div>' +
+                '<div class="row"><span class="lbl"><span class="simbolo">✦</span> Destacados</span><span class="valor">' + limites.destacados + '</span></div>' +
+                '<div class="row"><span class="lbl"><span class="simbolo">◆</span> Storage</span><span class="valor">' + limites.storage_mb + ' MB</span></div>' +
+                '<div class="row"><span class="lbl"><span class="simbolo">◇</span> Fotos por producto</span><span class="valor">' + limites.fotos_producto + '</span></div>' +
             '</div>' +
-            '<a href="/features/mercado/membresia.html" class="btn-primario" style="margin-top:14px;">🔄 Cambiar de plan</a>' +
+            '<a href="/features/mercado/membresia.html" class="btn-primario" style="margin-top:14px;"><span class="simbolo">✧</span> Cambiar de plan</a>' +
         '</div>' +
     '</div>';
 
@@ -1564,20 +1611,20 @@ function nombreCategoria(id) {
 
 function renderListaProductos() {
     if (productosCache.length === 0) {
-        return '<div class="empty-state"><span class="icon">📦</span><h3>Aún no tienes productos</h3><p>Agrega tu primer producto para empezar a vender.</p></div>';
+        return '<div class="empty-state"><span class="icon">◈</span><h3>Aún no tienes productos</h3><p>Agrega tu primer producto para empezar a vender.</p></div>';
     }
 
     var html = '<div class="productos-lista">';
     productosCache.forEach(function (p) {
         var fotos = Array.isArray(p.fotos) ? p.fotos : [];
-        var foto = fotos.length > 0 ? '<img src="' + escapeHTML(fotos[0]) + '" alt="" />' : '📦';
+        var foto = fotos.length > 0 ? '<img src="' + escapeHTML(fotos[0]) + '" alt="" />' : '◈';
 
         var badges = '';
         if (p.activo === false) badges += '<span class="badge inactivo">Inactivo</span>';
         if (!p.stock_ilimitado && parseInt(p.stock || 0) <= 0) badges += '<span class="badge agotado">Agotado</span>';
         if (p.destacado) badges += '<span class="badge destacado">Destacado</span>';
         if (p.precio_promocion && parseFloat(p.precio_promocion) > 0) badges += '<span class="badge promo">Promo</span>';
-        if (p.stock_ilimitado) badges += '<span class="badge ilimitado">∞ Stock</span>';
+        if (p.stock_ilimitado) badges += '<span class="badge ilimitado">Stock ∞</span>';
 
         var precioHTML = '';
         if (p.precio_promocion && parseFloat(p.precio_promocion) > 0) {
@@ -1597,9 +1644,9 @@ function renderListaProductos() {
                 (badges ? '<div class="badges">' + badges + '</div>' : '') +
             '</div>' +
             '<div class="acciones">' +
-                '<button class="btn-mini" onclick="editarProducto(\'' + p.id + '\')">✏️ Editar</button>' +
+                '<button class="btn-mini" onclick="editarProducto(\'' + p.id + '\')"><span class="simbolo" style="font-family:Orbitron,monospace;">✧</span> Editar</button>' +
                 '<button class="btn-mini ' + (p.activo === false ? '' : 'danger') + '" onclick="toggleProductoActivo(\'' + p.id + '\', ' + (p.activo === false ? 'true' : 'false') + ')">' +
-                    (p.activo === false ? '👁️ Activar' : '🚫 Pausar') +
+                    (p.activo === false ? '<span style="font-family:Orbitron,monospace;">●</span> Activar' : '<span style="font-family:Orbitron,monospace;">✶</span> Pausar') +
                 '</button>' +
             '</div>' +
         '</div>';
@@ -1615,7 +1662,7 @@ function renderListaPedidos() {
     }
 
     if (lista.length === 0) {
-        return '<div class="empty-state"><span class="icon">📥</span><h3>No hay pedidos en esta vista</h3><p>Cuando recibas pedidos, aparecerán aquí.</p></div>';
+        return '<div class="empty-state"><span class="icon">◈</span><h3>No hay pedidos en esta vista</h3><p>Cuando recibas pedidos, aparecerán aquí.</p></div>';
     }
 
     var html = '';
@@ -1625,10 +1672,17 @@ function renderListaPedidos() {
         var puedePreparar = estado === 'aceptado';
         var puedeListo = estado === 'preparando';
 
+        var estadoSimbolo = '<span class="simbolo">◈</span>';
+        if (estado === 'aceptado') estadoSimbolo = '<span class="simbolo">●</span>';
+        else if (estado === 'preparando') estadoSimbolo = '<span class="simbolo">◆</span>';
+        else if (estado === 'listo') estadoSimbolo = '<span class="simbolo">✦</span>';
+        else if (estado === 'entregado') estadoSimbolo = '<span class="simbolo">●</span>';
+        else if (estado === 'rechazado' || estado === 'cancelado') estadoSimbolo = '<span class="simbolo">✶</span>';
+
         html += '<div class="pedido-card ' + estado + '">' +
             '<div class="pedido-head">' +
-                '<span class="folio">#' + String(p.id).substring(0, 8) + '</span>' +
-                '<span class="estado-badge ' + estado + '">● ' + estado.toUpperCase() + '</span>' +
+                '<span class="folio"><span class="simbolo">✦</span>#' + String(p.id).substring(0, 8) + '</span>' +
+                '<span class="estado-badge ' + estado + '">' + estadoSimbolo + ' ' + estado.toUpperCase() + '</span>' +
             '</div>' +
             '<div class="pedido-head"><span class="fecha">' + formatearFechaHora(p.created_at) + '</span></div>' +
             '<div class="pedido-body">' +
@@ -1637,18 +1691,18 @@ function renderListaPedidos() {
                 '<div class="row"><span class="k">Comisión (7%)</span><span class="v danger">-' + formatearPrecio(p.comision_vendedor_mxn) + '</span></div>' +
                 (esCripto(p.metodo_pago_comprador) ?
                     '<div class="row"><span class="k">Cripto extra (0.5%)</span><span class="v danger">-' + formatearPrecio(parseFloat(p.subtotal_mxn || 0) * 0.005) + '</span></div>' : '') +
-                '<div class="row"><span class="k">💰 Recibes</span><span class="v gold">' + formatearPrecio(p.monto_al_vendedor_mxn) + '</span></div>' +
-                '<div class="row"><span class="k">💳 Pago</span><span class="v">' + (p.metodo_pago_comprador || '—') + '</span></div>' +
+                '<div class="row"><span class="k">Recibes</span><span class="v gold">' + formatearPrecio(p.monto_al_vendedor_mxn) + '</span></div>' +
+                '<div class="row"><span class="k">Pago</span><span class="v">' + (p.metodo_pago_comprador || '—') + '</span></div>' +
             '</div>' +
             '<div class="acciones">' +
-                (puedeAceptar ? '<button class="btn-accion primario" onclick="cambiarEstadoPedido(' + p.id + ', \'aceptado\')">✓ Aceptar</button>' : '') +
-                (puedeAceptar ? '<button class="btn-accion danger" onclick="abrirModalRechazar(' + p.id + ')">🚫 Rechazar</button>' : '') +
-                (puedePreparar ? '<button class="btn-accion primario" onclick="cambiarEstadoPedido(' + p.id + ', \'preparando\')">👨‍🍳 Preparar</button>' : '') +
-                (puedeListo ? '<button class="btn-accion primario" onclick="cambiarEstadoPedido(' + p.id + ', \'listo\')">✅ Listo</button>' : '') +
-                (estado === 'listo' ? '<span style="font-size:0.7rem; color:var(--success); align-self:center;">✓ Listo para repartidor</span>' : '') +
-                (estado === 'entregado' ? '<span style="font-size:0.7rem; color:var(--success); align-self:center;">📦 Entregado</span>' : '') +
-                (estado === 'rechazado' ? '<span style="font-size:0.7rem; color:var(--danger); align-self:center;">🚫 Rechazado</span>' : '') +
-                (estado === 'cancelado' ? '<span style="font-size:0.7rem; color:var(--danger); align-self:center;">✕ Cancelado</span>' : '') +
+                (puedeAceptar ? '<button class="btn-accion primario" onclick="cambiarEstadoPedido(' + p.id + ', \'aceptado\')"><span class="simbolo">●</span> Aceptar</button>' : '') +
+                (puedeAceptar ? '<button class="btn-accion danger" onclick="abrirModalRechazar(' + p.id + ')"><span class="simbolo">✶</span> Rechazar</button>' : '') +
+                (puedePreparar ? '<button class="btn-accion primario" onclick="cambiarEstadoPedido(' + p.id + ', \'preparando\')"><span class="simbolo">◆</span> Preparar</button>' : '') +
+                (puedeListo ? '<button class="btn-accion primario" onclick="cambiarEstadoPedido(' + p.id + ', \'listo\')"><span class="simbolo">✦</span> Listo</button>' : '') +
+                (estado === 'listo' ? '<span style="font-size:0.7rem; color:var(--success); align-self:center;"><span style="font-family:Orbitron,monospace;">●</span> Listo para repartidor</span>' : '') +
+                (estado === 'entregado' ? '<span style="font-size:0.7rem; color:var(--success); align-self:center;"><span style="font-family:Orbitron,monospace;">●</span> Entregado</span>' : '') +
+                (estado === 'rechazado' ? '<span style="font-size:0.7rem; color:var(--danger); align-self:center;"><span style="font-family:Orbitron,monospace;">✶</span> Rechazado</span>' : '') +
+                (estado === 'cancelado' ? '<span style="font-size:0.7rem; color:var(--danger); align-self:center;"><span style="font-family:Orbitron,monospace;">✶</span> Cancelado</span>' : '') +
             '</div>' +
         '</div>';
     });
@@ -1677,12 +1731,12 @@ function renderPanelBalance() {
         '<div class="lbl">Balance disponible</div>' +
         '<div class="monto">' + formatearPrecio(b.saldo_disponible) + '</div>' +
         '<div class="monto-cripto">≈ ' + (b.saldo_disponible / 17.5).toFixed(2) + ' USDT</div>' +
-        '<button class="btn-retirar" onclick="abrirModalRetiro()" ' + (puedeRetirar ? '' : 'disabled') + '>💸 Solicitar retiro</button>' +
+        '<button class="btn-retirar" onclick="abrirModalRetiro()" ' + (puedeRetirar ? '' : 'disabled') + '><span class="simbolo">◆</span> Solicitar retiro</button>' +
     '</div>' +
 
     '<div class="desglose-card">' +
-        '<h3>📊 Resumen de ventas</h3>' +
-        '<div class="row"><span class="k">Pedidos entregados</span><span class="v">' + b.pedidos_entregados + '</span></div>' +
+        '<h3><span class="simbolo">◈</span> Resumen de ventas</h3>' +
+        '<div class="row"><span class="k"><span class="simbolo">✦</span> Pedidos entregados</span><span class="v">' + b.pedidos_entregados + '</span></div>' +
         '<div class="row"><span class="k">Ventas brutas</span><span class="v">' + formatearPrecio(b.ventas_brutas) + '</span></div>' +
         '<div class="row"><span class="k">Comisión Csariel\'s (7%)</span><span class="v danger">-' + formatearPrecio(b.comision_vendedor) + '</span></div>' +
         (b.comision_cripto > 0 ? '<div class="row"><span class="k">Comisión cripto (0.5%)</span><span class="v danger">-' + formatearPrecio(b.comision_cripto) + '</span></div>' : '') +
@@ -1691,10 +1745,10 @@ function renderPanelBalance() {
     '</div>' +
 
     '<div class="desglose-card">' +
-        '<h3>💳 Desglose por método de pago</h3>' +
-        '<div class="row"><span class="k">💵 Efectivo</span><span class="v">' + formatearPrecio(b.por_efectivo) + '</span></div>' +
-        '<div class="row"><span class="k">🏦 Transferencia / SPEI / OXXO</span><span class="v">' + formatearPrecio(b.por_transferencia) + '</span></div>' +
-        '<div class="row"><span class="k">💎 Cripto (USDT/USDC/BTC/ETH)</span><span class="v gold">' + formatearPrecio(b.por_cripto) + '</span></div>' +
+        '<h3><span class="simbolo">◆</span> Desglose por método de pago</h3>' +
+        '<div class="row"><span class="k"><span class="simbolo">◆</span> Efectivo</span><span class="v">' + formatearPrecio(b.por_efectivo) + '</span></div>' +
+        '<div class="row"><span class="k"><span class="simbolo">◇</span> Transferencia / SPEI / OXXO</span><span class="v">' + formatearPrecio(b.por_transferencia) + '</span></div>' +
+        '<div class="row"><span class="k"><span class="simbolo">✦</span> Cripto (USDT/USDC/BTC/ETH)</span><span class="v gold">' + formatearPrecio(b.por_cripto) + '</span></div>' +
     '</div>';
 }
 
@@ -1724,13 +1778,13 @@ function abrirModalTienda(esEdicion) {
     document.getElementById('tiendaAceptaDelivery').checked = true;
     document.getElementById('tiendaAceptaPickup').checked = true;
     document.getElementById('tiendaEnvioMxn').value = '35';
-    document.getElementById('logoPreview').innerHTML = '🏪';
-    document.getElementById('portadaPreview').innerHTML = '🖼️';
+    document.getElementById('logoPreview').innerHTML = '◈';
+    document.getElementById('portadaPreview').innerHTML = '◇';
     logoFileSeleccionado = null;
     portadaFileSeleccionada = null;
 
     if (esEdicion && tiendaActual) {
-        titulo.textContent = '✏️ Editar tienda';
+        titulo.innerHTML = '<span class="simbolo">✧</span> Editar tienda';
         document.getElementById('tiendaId').value = tiendaActual.id;
         document.getElementById('tiendaNombre').value = tiendaActual.nombre_negocio || '';
         document.getElementById('tiendaCategoriaId').value = tiendaActual.categoria_id || '';
@@ -1753,7 +1807,7 @@ function abrirModalTienda(esEdicion) {
             document.getElementById('portadaPreview').innerHTML = '<img src="' + escapeHTML(tiendaActual.portada_url) + '" alt="" />';
         }
     } else {
-        titulo.textContent = '🏪 Crear mi tienda';
+        titulo.innerHTML = '<span class="simbolo">◈</span> Crear mi tienda';
     }
 
     pintarSelectCategorias('tiendaCategoriaId', document.getElementById('tiendaCategoriaId').value);
@@ -1768,7 +1822,7 @@ function onLogoFileChange(event) {
     var file = event.target.files && event.target.files[0];
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) {
-        showToast('⚠️ El logo no debe pasar de 2 MB', 'warning');
+        showToast('✶ El logo no debe pasar de 2 MB', 'warning');
         return;
     }
     logoFileSeleccionado = file;
@@ -1783,7 +1837,7 @@ function onPortadaFileChange(event) {
     var file = event.target.files && event.target.files[0];
     if (!file) return;
     if (file.size > MAX_FILE_SIZE) {
-        showToast('⚠️ La portada no debe pasar de 3 MB', 'warning');
+        showToast('✶ La portada no debe pasar de 3 MB', 'warning');
         return;
     }
     portadaFileSeleccionada = file;
@@ -1824,11 +1878,11 @@ async function guardarTienda() {
     var aceptaPickup = document.getElementById('tiendaAceptaPickup').checked;
     var envioMxn = parseFloat(document.getElementById('tiendaEnvioMxn').value || 0);
 
-    if (!nombre || nombre.length < 3) { showToast('⚠️ Escribe un nombre válido', 'warning'); return; }
-    if (!categoriaId) { showToast('⚠️ Selecciona una categoría', 'warning'); return; }
+    if (!nombre || nombre.length < 3) { showToast('✶ Escribe un nombre válido', 'warning'); return; }
+    if (!categoriaId) { showToast('✶ Selecciona una categoría', 'warning'); return; }
 
     var btn = document.getElementById('btnGuardarTienda');
-    if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Guardando...'; }
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="simbolo">◈</span> Guardando...'; }
 
     try {
         var payload = {
@@ -1854,7 +1908,7 @@ async function guardarTienda() {
         if (id) {
             var upd = await supabase.from('mercado_tiendas').update(payload).eq('id', id);
             if (upd.error) throw upd.error;
-            showToast('✅ Tienda actualizada', 'success');
+            showToast('● Tienda actualizada', 'success');
         } else {
             var slugBase = generarSlug(nombre);
             var slug = slugBase;
@@ -1872,7 +1926,7 @@ async function guardarTienda() {
 
             var ins = await supabase.from('mercado_tiendas').insert(payload).select().single();
             if (ins.error) throw ins.error;
-            showToast('🎉 ¡Tienda creada! Ahora elige tu plan.', 'success');
+            showToast('✦ ¡Tienda creada! Ahora elige tu plan.', 'success');
         }
 
         cerrarModalTienda();
@@ -1881,9 +1935,9 @@ async function guardarTienda() {
 
     } catch (e) {
         console.error('Error guardando tienda:', e);
-        showToast('❌ ' + e.message, 'error');
+        showToast('✶ ' + e.message, 'error');
     } finally {
-        if (btn) { btn.disabled = false; btn.innerHTML = '✨ Guardar tienda'; }
+        if (btn) { btn.disabled = false; btn.innerHTML = '<span class="simbolo">✦</span> Guardar tienda'; }
     }
 }
 
@@ -1909,7 +1963,7 @@ function abrirModalProducto(productoId) {
     if (productoId) {
         var p = productosCache.find(function (x) { return String(x.id) === String(productoId); });
         if (p) {
-            titulo.textContent = '✏️ Editar producto';
+            titulo.innerHTML = '<span class="simbolo">✧</span> Editar producto';
             document.getElementById('prodId').value = p.id;
             document.getElementById('prodNombre').value = p.nombre || '';
             document.getElementById('prodDescripcion').value = p.descripcion || '';
@@ -1927,7 +1981,7 @@ function abrirModalProducto(productoId) {
             });
         }
     } else {
-        titulo.textContent = '➕ Nuevo producto';
+        titulo.innerHTML = '<span class="simbolo">◈</span> Nuevo producto';
     }
 
     renderGaleriaProducto();
@@ -1959,7 +2013,7 @@ function renderGaleriaProducto() {
         if (foto) {
             html += '<div class="slot"><img src="' + escapeHTML(foto.url) + '" alt="" /><button type="button" class="remove" onclick="quitarFotoProducto(' + i + ')">×</button></div>';
         } else {
-            html += '<div class="slot" onclick="document.getElementById(\'prodInputFile\').click()">📷</div>';
+            html += '<div class="slot" onclick="document.getElementById(\'prodInputFile\').click()">◈</div>';
         }
     }
     cont.innerHTML = html;
@@ -1969,14 +2023,14 @@ function onProdFileChange(event) {
     var file = event.target.files && event.target.files[0];
     if (!file) return;
     if (file.size > MAX_FILE_SIZE) {
-        showToast('⚠️ La foto no debe pasar de 3 MB', 'warning');
+        showToast('✶ La foto no debe pasar de 3 MB', 'warning');
         return;
     }
 
     var limites = limitesActuales();
     var maxFotos = limites.fotos_producto || 5;
     if (fotosProductoNuevas.length >= maxFotos) {
-        showToast('⚠️ Máximo ' + maxFotos + ' fotos por producto en tu plan', 'warning');
+        showToast('✶ Máximo ' + maxFotos + ' fotos por producto en tu plan', 'warning');
         return;
     }
 
@@ -2006,18 +2060,18 @@ async function guardarProducto() {
     var activo = document.getElementById('prodActivo').checked;
     var categoriaId = document.getElementById('prodCategoriaId').value;
 
-    if (!nombre || nombre.length < 2) { showToast('⚠️ Escribe un nombre válido', 'warning'); return; }
-    if (!precio || precio <= 0) { showToast('⚠️ Escribe un precio válido', 'warning'); return; }
-    if (precioPromo > 0 && precioPromo >= precio) { showToast('⚠️ El precio promo debe ser menor al precio normal', 'warning'); return; }
+    if (!nombre || nombre.length < 2) { showToast('✶ Escribe un nombre válido', 'warning'); return; }
+    if (!precio || precio <= 0) { showToast('✶ Escribe un precio válido', 'warning'); return; }
+    if (precioPromo > 0 && precioPromo >= precio) { showToast('✶ El precio promo debe ser menor al precio normal', 'warning'); return; }
 
     var limites = limitesActuales();
     if (!id && productosCache.length >= limites.productos) {
-        showToast('⚠️ Llegaste al límite de productos de tu plan', 'warning');
+        showToast('✶ Llegaste al límite de productos de tu plan', 'warning');
         return;
     }
 
     var btn = document.getElementById('btnGuardarProducto');
-    if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Guardando...'; }
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="simbolo">◈</span> Guardando...'; }
 
     try {
         var fotosFinales = [];
@@ -2048,11 +2102,11 @@ async function guardarProducto() {
         if (id) {
             var upd = await supabase.from('mercado_productos').update(payload).eq('id', id);
             if (upd.error) throw upd.error;
-            showToast('✅ Producto actualizado', 'success');
+            showToast('● Producto actualizado', 'success');
         } else {
             var ins = await supabase.from('mercado_productos').insert(payload);
             if (ins.error) throw ins.error;
-            showToast('✅ Producto agregado', 'success');
+            showToast('● Producto agregado', 'success');
         }
 
         cerrarModalProducto();
@@ -2062,9 +2116,9 @@ async function guardarProducto() {
 
     } catch (e) {
         console.error('Error guardando producto:', e);
-        showToast('❌ ' + e.message, 'error');
+        showToast('✶ ' + e.message, 'error');
     } finally {
-        if (btn) { btn.disabled = false; btn.innerHTML = '💾 Guardar producto'; }
+        if (btn) { btn.disabled = false; btn.innerHTML = '<span class="simbolo">◆</span> Guardar producto'; }
     }
 }
 
@@ -2074,20 +2128,20 @@ async function toggleProductoActivo(id, nuevoEstado) {
     try {
         var upd = await supabase.from('mercado_productos').update({ activo: nuevoEstado }).eq('id', id);
         if (upd.error) throw upd.error;
-        showToast(nuevoEstado ? '👁️ Producto activado' : '🚫 Producto pausado', 'success');
+        showToast(nuevoEstado ? '● Producto activado' : '✶ Producto pausado', 'success');
         await cargarProductos();
         var lista = document.getElementById('productosContainer');
         if (lista) lista.innerHTML = renderListaProductos();
     } catch (e) {
         console.error('Error cambiando estado:', e);
-        showToast('❌ ' + e.message, 'error');
+        showToast('✶ ' + e.message, 'error');
     }
 }
 
 async function cambiarEstadoPedido(pedidoId, nuevoEstado) {
     var permitidos = ['aceptado', 'preparando', 'listo'];
     if (permitidos.indexOf(nuevoEstado) === -1) {
-        showToast('⚠️ Estado no permitido para el vendedor', 'warning');
+        showToast('✶ Estado no permitido para el vendedor', 'warning');
         return;
     }
 
@@ -2095,7 +2149,7 @@ async function cambiarEstadoPedido(pedidoId, nuevoEstado) {
         var upd = await supabase.from('mercado_pedidos').update({ estado: nuevoEstado }).eq('id', pedidoId);
         if (upd.error) throw upd.error;
 
-        var mensajes = { 'aceptado': '✓ Pedido aceptado', 'preparando': '👨‍🍳 Pedido en preparación', 'listo': '✅ Pedido listo para repartidor' };
+        var mensajes = { 'aceptado': '● Pedido aceptado', 'preparando': '◆ Pedido en preparación', 'listo': '✦ Pedido listo para repartidor' };
         showToast(mensajes[nuevoEstado] || 'Estado actualizado', 'success');
 
         await cargarPedidos();
@@ -2103,7 +2157,7 @@ async function cambiarEstadoPedido(pedidoId, nuevoEstado) {
         if (cont) cont.innerHTML = renderListaPedidos();
     } catch (e) {
         console.error('Error cambiando estado:', e);
-        showToast('❌ ' + e.message, 'error');
+        showToast('✶ ' + e.message, 'error');
     }
 }
 
@@ -2123,7 +2177,7 @@ async function confirmarRechazo() {
     var motivo = document.getElementById('rechazarMotivo').value;
     var comentario = (document.getElementById('rechazarComentario').value || '').trim();
 
-    if (!motivo) { showToast('⚠️ Selecciona un motivo', 'warning'); return; }
+    if (!motivo) { showToast('✶ Selecciona un motivo', 'warning'); return; }
 
     var motivoTexto = motivo + (comentario ? ': ' + comentario : '');
 
@@ -2137,14 +2191,14 @@ async function confirmarRechazo() {
         }
         if (upd.error) throw upd.error;
 
-        showToast('🚫 Pedido rechazado', 'success');
+        showToast('✶ Pedido rechazado', 'success');
         cerrarModalRechazar();
         await cargarPedidos();
         var cont = document.getElementById('pedidosContainer');
         if (cont) cont.innerHTML = renderListaPedidos();
     } catch (e) {
         console.error('Error rechazando pedido:', e);
-        showToast('❌ ' + e.message, 'error');
+        showToast('✶ ' + e.message, 'error');
     }
 }
 
@@ -2186,17 +2240,17 @@ async function solicitarRetiro() {
     var datos = (document.getElementById('retiroDatos').value || '').trim();
     var b = balanceCache || { saldo_disponible: 0 };
 
-    if (!monto || monto <= 0) { showToast('⚠️ Escribe un monto válido', 'warning'); return; }
-    if (monto > b.saldo_disponible) { showToast('⚠️ No tienes suficiente saldo', 'warning'); return; }
+    if (!monto || monto <= 0) { showToast('✶ Escribe un monto válido', 'warning'); return; }
+    if (monto > b.saldo_disponible) { showToast('✶ No tienes suficiente saldo', 'warning'); return; }
 
     var minimo = (metodo === 'cartera_interna') ? RETIRO_MINIMO_INTERNO : RETIRO_MINIMO_EXTERNO;
-    if (monto < minimo) { showToast('⚠️ Mínimo para este método: ' + formatearPrecio(minimo), 'warning'); return; }
+    if (monto < minimo) { showToast('✶ Mínimo para este método: ' + formatearPrecio(minimo), 'warning'); return; }
 
-    if (!metodo) { showToast('⚠️ Selecciona un método', 'warning'); return; }
-    if (metodo !== 'cartera_interna' && !datos) { showToast('⚠️ Ingresa tus datos bancarios/contacto', 'warning'); return; }
+    if (!metodo) { showToast('✶ Selecciona un método', 'warning'); return; }
+    if (metodo !== 'cartera_interna' && !datos) { showToast('✶ Ingresa tus datos bancarios/contacto', 'warning'); return; }
 
     var btn = document.getElementById('btnSolicitarRetiro');
-    if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Solicitando...'; }
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="simbolo">◈</span> Solicitando...'; }
 
     try {
         var ins = await supabase.from('mercado_retiros').insert({
@@ -2208,16 +2262,16 @@ async function solicitarRetiro() {
 
         if (ins.error) throw ins.error;
 
-        showToast('✅ Solicitud enviada. Te contactaremos pronto.', 'success');
+        showToast('● Solicitud enviada. Te contactaremos pronto.', 'success');
         cerrarModalRetiro();
         await cargarBalance();
         var balanceTab = document.querySelector('[data-tab-content="balance"]');
         if (balanceTab) balanceTab.innerHTML = renderPanelBalance();
     } catch (e) {
         console.error('Error solicitando retiro:', e);
-        showToast('❌ ' + e.message, 'error');
+        showToast('✶ ' + e.message, 'error');
     } finally {
-        if (btn) { btn.disabled = false; btn.innerHTML = '💸 Solicitar retiro'; }
+        if (btn) { btn.disabled = false; btn.innerHTML = '<span class="simbolo">◆</span> Solicitar retiro'; }
     }
 }
 
@@ -2278,3 +2332,5 @@ window.cerrarModalRetiro = cerrarModalRetiro;
 window.actualizarRetiroMetodo = actualizarRetiroMetodo;
 window.solicitarRetiro = solicitarRetiro;
 </script>
+</body>
+</html>
