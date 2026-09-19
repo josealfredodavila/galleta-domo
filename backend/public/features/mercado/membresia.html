@@ -1,9 +1,8 @@
 <!-- ================================================================
-     MERCADO - SARIEL'S ECOSYSTEM
+     MERCADO - CSARIEL'S ECOSYSTEM
      Membresías del Mercado · Pago con NOWPayments
      Ruta: /features/mercado/membresia.html
-     Esquema real: mercado_membresias_pagos (tienda_id NOT NULL,
-                   7 estados, plan_slug/plan_nombre libres)
+     Esquema: mercado_membresias_pagos
      Requiere: tener tienda creada (nivel + activa_hasta en tienda)
      ================================================================ -->
 <!DOCTYPE html>
@@ -11,7 +10,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>◈ Membresías · Sariel's Mercado</title>
+    <title>◈ Membresías · Csariel's Mercado</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
@@ -90,7 +89,6 @@
         }
         .btn-back:hover { border-color: var(--gold); color: var(--gold); }
 
-        /* Hero */
         .hero {
             text-align: center;
             padding: 20px 16px 30px;
@@ -146,7 +144,6 @@
             font-size: 0.6rem;
         }
 
-        /* Info tienda actual */
         .tienda-actual-box {
             background: linear-gradient(135deg, rgba(0,214,143,0.08), rgba(15,45,26,0.4));
             border: 1px solid rgba(0,214,143,0.3);
@@ -209,7 +206,6 @@
             transform: translateY(-2px);
         }
 
-        /* Grid de planes */
         .planes-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -394,7 +390,6 @@
             opacity: 1;
         }
 
-        /* FAQ */
         .faq-section {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
@@ -435,7 +430,6 @@
             padding-left: 18px;
         }
 
-        /* Modal */
         .modal-overlay {
             position: fixed; inset: 0;
             background: rgba(0,0,0,0.88); backdrop-filter: blur(10px);
@@ -655,6 +649,30 @@
         }
         .empty-state .btn-ir:hover { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
 
+        .config-legal {
+            margin-top: 30px; padding: 20px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+        }
+        .config-legal h3 {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.72rem; color: var(--gold);
+            margin-bottom: 10px; letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .config-legal .legal-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px; font-size: 0.7rem;
+        }
+        .config-legal .legal-item {
+            color: var(--text-muted);
+            display: flex; flex-direction: column; gap: 2px;
+        }
+        .config-legal .legal-item strong {
+            color: var(--text-secondary); font-weight: 600;
+        }
+
         .toast {
             position: fixed; bottom: 30px; right: 20px;
             background: var(--green-deep); border: 1px solid var(--gold);
@@ -721,7 +739,7 @@
         <header class="header">
             <a href="/" class="logo" aria-label="Ir a la página de inicio">
                 <span class="logo-hex">◈</span>
-                <span class="logo-text">Sariel<span>'s</span></span>
+                <span class="logo-text">Csariel<span>'s</span></span>
                 <span class="logo-badge">✦ WEB3</span>
             </a>
             <div class="header-actions">
@@ -754,8 +772,22 @@
             </div>
         </div>
 
+        <div class="config-legal">
+            <h3>◈ Configuración legal</h3>
+            <div class="legal-grid">
+                <div class="legal-item"><strong>Plataforma</strong><span>Csariel's Ecosystem</span></div>
+                <div class="legal-item"><strong>Comisión vendedor</strong><span>7% sobre producto</span></div>
+                <div class="legal-item"><strong>Comisión cripto</strong><span>+0.5% adicional</span></div>
+                <div class="legal-item"><strong>Servicio comprador</strong><span>$5 MXN fijos</span></div>
+                <div class="legal-item"><strong>Retiro mínimo externo</strong><span>$500 MXN</span></div>
+                <div class="legal-item"><strong>Retiro interno</strong><span>Sin mínimo</span></div>
+                <div class="legal-item"><strong>Blockchain</strong><span>Polygon</span></div>
+                <div class="legal-item"><strong>País</strong><span>México 🇲🇽</span></div>
+            </div>
+        </div>
+
         <footer class="footer">
-            <span><span class="brand">◈ Sariel's</span> · <span data-clave="mercado_footer">Sabor al Paladar · WEB3</span></span>
+            <span>© <span id="anioActual"></span> <span class="brand">◈ Csariel's</span> · <span data-clave="mercado_footer">Sabor al Paladar · WEB3</span></span>
             <div class="footer-links">
                 <a href="/terminos" data-clave="footer_terminos">📜 Términos</a>
                 <a href="/privacidad" data-clave="footer_privacidad">🔒 Privacidad</a>
@@ -767,7 +799,6 @@
 
     </div>
 
-    <!-- Modal de pago -->
     <div class="modal-overlay" id="modalPago">
         <div class="modal">
             <button class="close-btn" onclick="cerrarModalPago()" id="btnCerrarModal" style="display:none;">×</button>
@@ -792,11 +823,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/features/shared/js/idiomas.js"></script>
-
-<script>
-// ================================================================
-// CONFIGURACIÓN
-// ================================================================
+</body>
+</html><script>
 var supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
 var supabaseKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
 var supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
@@ -804,13 +832,8 @@ window.supabaseClient = supabaseClient;
 var supabase = supabaseClient;
 
 var API_BASE = '';
-
-// Tipo de cambio aprox
 var TIPO_CAMBIO_MXN_USD = 17.5;
 
-// ================================================================
-// ESTADO
-// ================================================================
 var sessionUser = null;
 var tiendaActual = null;
 var planSeleccionado = null;
@@ -819,7 +842,6 @@ var pollingPagoTimer = null;
 var metodoPagoElegido = 'usdttrc20';
 var pagoEnCurso = null;
 
-// Planes (deben coincidir con el backend)
 var PLANES = {
     basico: {
         id: 'basico',
@@ -831,6 +853,7 @@ var PLANES = {
         features: [
             'Hasta 20 productos',
             '200 MB de almacenamiento',
+            '3 fotos por producto',
             'Panel de pedidos',
             'Soporte por email',
             'Cobra en cripto'
@@ -850,6 +873,7 @@ var PLANES = {
         features: [
             'Hasta 200 productos',
             '2 GB de almacenamiento',
+            '5 fotos por producto',
             '10 productos destacados',
             'Panel de pedidos avanzado',
             'Estadísticas básicas',
@@ -868,6 +892,7 @@ var PLANES = {
         features: [
             'Hasta 2,000 productos',
             '10 GB de almacenamiento',
+            '5 fotos por producto',
             '50 productos destacados',
             'Todo lo de Pro',
             'Estadísticas avanzadas',
@@ -879,7 +904,6 @@ var PLANES = {
     }
 };
 
-// Criptos soportadas
 var CRIPTOS = [
     { id: 'usdttrc20', nombre: 'USDT (TRC20)', emoji: '💵' },
     { id: 'usdc', nombre: 'USDC (ERC20)', emoji: '💎' },
@@ -887,12 +911,6 @@ var CRIPTOS = [
     { id: 'eth', nombre: 'Ethereum (ETH)', emoji: 'Ξ' }
 ];
 
-// Estados válidos de mercado_membresias_pagos
-// pendiente, pagando, confirmando, pagada, cancelada, expirada, fallida
-
-// ================================================================
-// BANNER DE ERRORES
-// ================================================================
 function mostrarErrorEnPantalla(mensaje) {
     var banner = document.getElementById('errorBanner');
     var texto = document.getElementById('errorBannerText');
@@ -905,9 +923,6 @@ window.addEventListener('unhandledrejection', function (event) {
     mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason && event.reason.message ? event.reason.message : event.reason));
 });
 
-// ================================================================
-// TOAST
-// ================================================================
 function showToast(mensaje, tipo) {
     try {
         var toastEl = document.getElementById('toast');
@@ -922,9 +937,6 @@ function showToast(mensaje, tipo) {
     } catch (e) { console.warn('Toast error:', e); }
 }
 
-// ================================================================
-// HELPERS
-// ================================================================
 function escapeHTML(texto) {
     if (!texto) return '';
     var div = document.createElement('div');
@@ -961,9 +973,6 @@ function membresiaActiva() {
     } catch (e) { return false; }
 }
 
-// ================================================================
-// CARGAR USUARIO
-// ================================================================
 async function cargarUsuarioActual() {
     try {
         var result = await supabase.auth.getSession();
@@ -983,9 +992,6 @@ async function cargarUsuarioActual() {
     } catch (e) { console.error('Error usuario:', e); return null; }
 }
 
-// ================================================================
-// CARGAR TIENDA DEL USUARIO
-// ================================================================
 async function cargarTienda() {
     try {
         var result = await supabase
@@ -1004,9 +1010,6 @@ async function cargarTienda() {
     }
 }
 
-// ================================================================
-// CARGAR PAGO EN CURSO (si hay)
-// ================================================================
 async function cargarPagoEnCurso() {
     try {
         var result = await supabase
@@ -1033,14 +1036,10 @@ async function cargarPagoEnCurso() {
     }
 }
 
-// ================================================================
-// RENDER PRINCIPAL
-// ================================================================
 function renderPrincipal() {
     var cont = document.getElementById('contenidoPrincipal');
     if (!cont) return;
 
-    // Sin tienda → no puede comprar membresía
     if (!tiendaActual) {
         cont.innerHTML = '<div class="empty-state">' +
             '<span class="icon">🏪</span>' +
@@ -1056,9 +1055,8 @@ function renderPrincipal() {
 
     var html = '';
 
-    // Hero
     html += '<div class="hero">' +
-        '<span class="etiqueta">◈ Sariel\'s Mercado Web3</span>' +
+        '<span class="etiqueta">◈ Csariel\'s Mercado Web3</span>' +
         '<h1>Haz crecer tu negocio con <span>membresía premium</span></h1>' +
         '<p>Más productos, más alcance, más ventas. Elige el plan que mejor se adapte a ti.</p>' +
         '<div class="pagos-aceptados">' +
@@ -1073,7 +1071,6 @@ function renderPrincipal() {
         '</div>' +
     '</div>';
 
-    // Info tienda actual
     var planActual = (tiendaActual.nivel || 'basico').toLowerCase();
     var activa = membresiaActiva();
     var dias = diasRestantes(tiendaActual.activa_hasta);
@@ -1095,7 +1092,6 @@ function renderPrincipal() {
         '</a>' +
     '</div>';
 
-    // Si hay pago en curso, mostrar aviso arriba
     if (pagoEnCurso) {
         html += '<div class="pago-resumen" style="background:rgba(247,212,74,0.08); border:1px solid rgba(247,212,74,0.3); margin-bottom:20px;">' +
             '<div style="font-family:Orbitron,monospace; font-size:0.85rem; color:var(--warning); margin-bottom:8px;">⏳ Tienes un pago en curso</div>' +
@@ -1109,7 +1105,6 @@ function renderPrincipal() {
         '</div>';
     }
 
-    // Grid planes
     html += '<div class="planes-grid">';
     ['basico', 'pro', 'max'].forEach(function (key) {
         var plan = PLANES[key];
@@ -1143,20 +1138,15 @@ function renderPrincipal() {
         if (esActual) {
             html += '<button class="btn-comprar actual" disabled>✓ Plan actual</button>';
         } else if (esActualVencida) {
-            html += '<button class="btn-comprar" onclick="abrirModalPago(\'' + key + '\')">' +
-                '🔄 Renovar ahora' +
-            '</button>';
+            html += '<button class="btn-comprar" onclick="abrirModalPago(\'' + key + '\')">🔄 Renovar ahora</button>';
         } else {
-            html += '<button class="btn-comprar" onclick="abrirModalPago(\'' + key + '\')">' +
-                '💳 Pagar con cripto' +
-            '</button>';
+            html += '<button class="btn-comprar" onclick="abrirModalPago(\'' + key + '\')">💳 Pagar con cripto</button>';
         }
 
         html += '</div>';
     });
     html += '</div>';
 
-    // FAQ
     html += '<div class="faq-section">' +
         '<h2>❓ Preguntas frecuentes</h2>' +
 
@@ -1191,9 +1181,6 @@ function renderPrincipal() {
     if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(cont);
 }
 
-// ================================================================
-// MODAL DE PAGO
-// ================================================================
 function abrirModalPago(planKey) {
     if (!sessionUser) {
         showToast('⚠️ Inicia sesión primero', 'warning');
@@ -1233,9 +1220,7 @@ function renderSeleccionMetodo() {
             '<div class="fila total"><span>Total</span><span>$' + mxnAUsd(plan.precio_mxn) + ' USD</span></div>' +
         '</div>' +
 
-        '<div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:10px;">' +
-            'Selecciona la criptomoneda con la que quieres pagar:' +
-        '</div>' +
+        '<div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:10px;">Selecciona la criptomoneda con la que quieres pagar:</div>' +
 
         '<div class="metodos-pago" id="metodosPago">';
 
@@ -1267,9 +1252,6 @@ function elegirMetodo(cripto) {
     });
 }
 
-// ================================================================
-// CREAR PAGO
-// ================================================================
 async function crearPago() {
     var btn = document.getElementById('btnCrearPago');
     if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Generando...'; }
@@ -1323,9 +1305,6 @@ async function crearPago() {
     }
 }
 
-// ================================================================
-// INSTRUCCIONES DE PAGO
-// ================================================================
 function renderInstruccionesPago() {
     var cont = document.getElementById('modalPagoContenido');
     if (!cont || !pagoActual) return;
@@ -1341,9 +1320,7 @@ function renderInstruccionesPago() {
         '<div class="estado-pago">' +
             '<span class="icono-grande">' + criptoInfo.emoji + '</span>' +
             '<div class="titulo-pago esperando">Esperando tu pago...</div>' +
-            '<div class="detalle-pago">' +
-                'Envía exactamente <strong style="color:var(--gold)">' + pagoActual.pay_amount + ' ' + pagoActual.pay_currency.toUpperCase() + '</strong> a la dirección de abajo.' +
-            '</div>' +
+            '<div class="detalle-pago">Envía exactamente <strong style="color:var(--gold)">' + pagoActual.pay_amount + ' ' + pagoActual.pay_currency.toUpperCase() + '</strong> a la dirección de abajo.</div>' +
         '</div>' +
 
         '<div class="crypto-box">' +
@@ -1363,15 +1340,11 @@ function renderInstruccionesPago() {
         '</div>' +
 
         '<div style="font-size:0.7rem;color:var(--text-muted);text-align:center;margin:14px 0;line-height:1.6;">' +
-            '⏳ Se verificará automáticamente cada 15 segundos.<br>' +
-            'No cierres esta ventana hasta confirmar tu pago.' +
+            '⏳ Se verificará automáticamente cada 15 segundos.<br>No cierres esta ventana hasta confirmar tu pago.' +
         '</div>' +
 
-        '<button class="btn-secundario" onclick="verificarPagoManual()">' +
-            '🔄 Ya pagué, verificar ahora' +
-        '</button>';
+        '<button class="btn-secundario" onclick="verificarPagoManual()">🔄 Ya pagué, verificar ahora</button>';
 
-    // Copiar automáticamente
     try {
         navigator.clipboard.writeText(pagoActual.pay_address);
         showToast('📋 Dirección copiada', 'success');
@@ -1388,9 +1361,6 @@ function copiarDireccion() {
     }
 }
 
-// ================================================================
-// POLLING
-// ================================================================
 function iniciarPollingPago() {
     detenerPollingPago();
     pollingPagoTimer = setInterval(function () {
@@ -1443,9 +1413,6 @@ function verificarPagoManual() {
     verificarEstadoPago(pagoActual.pago_id, false);
 }
 
-// ================================================================
-// RENDER: PAGO EXITOSO / FALLIDO
-// ================================================================
 function renderPagoExitoso() {
     var cont = document.getElementById('modalPagoContenido');
     if (!cont) return;
@@ -1454,13 +1421,8 @@ function renderPagoExitoso() {
         '<div class="estado-pago">' +
             '<span class="icono-grande">🎉</span>' +
             '<div class="titulo-pago exito">¡Pago confirmado!</div>' +
-            '<div class="detalle-pago">' +
-                'Tu membresía <strong style="color:var(--gold)">' + (planSeleccionado ? planSeleccionado.nombre : '') + '</strong> está activa.<br>' +
-                'Ya puedes seguir vendiendo en el Mercado.' +
-            '</div>' +
-            '<a href="/features/mercado/vendedor/panel.html" class="btn-primario" style="text-decoration:none;display:inline-flex;width:100%;margin-bottom:10px;">' +
-                '🏪 Ir a mi tienda' +
-            '</a>' +
+            '<div class="detalle-pago">Tu membresía <strong style="color:var(--gold)">' + (planSeleccionado ? planSeleccionado.nombre : '') + '</strong> está activa.<br>Ya puedes seguir vendiendo en el Mercado.</div>' +
+            '<a href="/features/mercado/vendedor/panel.html" class="btn-primario" style="text-decoration:none;display:inline-flex;width:100%;margin-bottom:10px;">🏪 Ir a mi tienda</a>' +
             '<button class="btn-secundario" onclick="cerrarModalPago()">Cerrar</button>' +
         '</div>';
 }
@@ -1473,17 +1435,11 @@ function renderPagoFallido() {
         '<div class="estado-pago">' +
             '<span class="icono-grande">❌</span>' +
             '<div class="titulo-pago error">Pago no completado</div>' +
-            '<div class="detalle-pago">' +
-                'El pago no se recibió a tiempo o fue rechazado.<br>' +
-                'Puedes intentarlo de nuevo con otra cripto.' +
-            '</div>' +
+            '<div class="detalle-pago">El pago no se recibió a tiempo o fue rechazado.<br>Puedes intentarlo de nuevo con otra cripto.</div>' +
             '<button class="btn-primario" onclick="renderSeleccionMetodo()">🔄 Intentar de nuevo</button>' +
         '</div>';
 }
 
-// ================================================================
-// REANUDAR PAGO EN CURSO
-// ================================================================
 function reanudarPago() {
     if (!pagoEnCurso) return;
 
@@ -1509,9 +1465,6 @@ function reanudarPago() {
     iniciarPollingPago();
 }
 
-// ================================================================
-// CERRAR MODAL
-// ================================================================
 function cerrarModalPago() {
     detenerPollingPago();
     document.getElementById('modalPago').classList.remove('show');
@@ -1519,15 +1472,12 @@ function cerrarModalPago() {
     planSeleccionado = null;
 }
 
-// ================================================================
-// VER TOKENS
-// ================================================================
 function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
 
-// ================================================================
-// INICIALIZACIÓN
-// ================================================================
 document.addEventListener('DOMContentLoaded', async function () {
+    var anio = document.getElementById('anioActual');
+    if (anio) anio.textContent = new Date().getFullYear();
+
     await cargarUsuarioActual();
 
     if (!sessionUser) {
@@ -1543,7 +1493,6 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     renderPrincipal();
 
-    // Verificar si viene ?pago=exitoso desde NOWPayments
     try {
         var params = new URLSearchParams(window.location.search);
         if (params.get('pago') === 'exitoso') {
@@ -1558,21 +1507,16 @@ document.addEventListener('DOMContentLoaded', async function () {
         try {
             if (typeof window.inicializarIdiomas === 'function') {
                 await window.inicializarIdiomas();
-                console.log('✅ Idiomas aplicados a membresías');
             }
         } catch (e) { console.warn('Error idiomas:', e); }
     }, 400);
 });
 
-// Click fuera del modal
 document.addEventListener('click', function (e) {
     var modal = document.getElementById('modalPago');
     if (e.target === modal && !pagoActual) cerrarModalPago();
 });
 
-// ================================================================
-// EXPOSICIÓN GLOBAL
-// ================================================================
 window.verTokens = verTokens;
 window.showToast = showToast;
 window.abrirModalPago = abrirModalPago;
@@ -1584,5 +1528,3 @@ window.cerrarModalPago = cerrarModalPago;
 window.renderSeleccionMetodo = renderSeleccionMetodo;
 window.reanudarPago = reanudarPago;
 </script>
-</body>
-</html>
