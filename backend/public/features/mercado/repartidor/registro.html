@@ -26,7 +26,6 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
-    <!-- Tesseract.js para OCR -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
     <script src="/features/shared/js/apariencia-global.js"></script>
@@ -90,74 +89,40 @@
             display: flex; gap: 4px; background: rgba(15,45,26,0.3); border-radius: var(--radius);
             padding: 4px; border: 1px solid var(--glass-border); margin: 16px 0 20px; overflow-x: auto;
         }
-        .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; white-space: nowrap; transition: var(--transition); }
+        .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; white-space: nowrap; transition: var(--transition); display: flex; align-items: center; gap: 6px; }
         .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212,175,55,0.05); }
         .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); }
         .main-nav .nav-link.live { color: var(--danger); }
+        .main-nav .nav-link .nav-simbolo { color: var(--gold); opacity: 0.7; }
 
-        /* Progress bar de pasos */
-        .progreso-top {
-            margin-bottom: 24px;
-        }
+        .progreso-top { margin-bottom: 24px; }
         .progreso-barra {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: relative;
-            margin-bottom: 12px;
+            display: flex; align-items: center; justify-content: space-between;
+            position: relative; margin-bottom: 12px;
         }
         .progreso-barra::before {
-            content: '';
-            position: absolute;
-            top: 16px;
-            left: 20px;
-            right: 20px;
-            height: 2px;
-            background: rgba(0,0,0,0.4);
-            z-index: 1;
+            content: ''; position: absolute; top: 16px; left: 20px; right: 20px;
+            height: 2px; background: rgba(0,0,0,0.4); z-index: 1;
         }
         .progreso-fill {
-            position: absolute;
-            top: 16px;
-            left: 20px;
-            height: 2px;
-            background: linear-gradient(90deg, var(--gold), var(--gold-light));
-            z-index: 2;
-            transition: width 0.5s ease;
-            border-radius: 2px;
+            position: absolute; top: 16px; left: 20px;
+            height: 2px; background: linear-gradient(90deg, var(--gold), var(--gold-light));
+            z-index: 2; transition: width 0.5s ease; border-radius: 2px;
         }
         .progreso-paso {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 6px;
-            z-index: 3;
-            flex: 1;
+            display: flex; flex-direction: column; align-items: center; gap: 6px;
+            z-index: 3; flex: 1;
         }
         .progreso-paso .circulo {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: rgba(0,0,0,0.6);
-            border: 2px solid var(--glass-border);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Orbitron', monospace;
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: var(--text-muted);
-            transition: var(--transition);
+            width: 32px; height: 32px; border-radius: 50%;
+            background: rgba(0,0,0,0.6); border: 2px solid var(--glass-border);
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Orbitron', monospace; font-size: 0.75rem;
+            font-weight: 700; color: var(--text-muted); transition: var(--transition);
         }
-        .progreso-paso.completado .circulo {
-            background: var(--success);
-            border-color: var(--success);
-            color: #fff;
-        }
+        .progreso-paso.completado .circulo { background: var(--success); border-color: var(--success); color: #fff; }
         .progreso-paso.actual .circulo {
-            background: var(--gold);
-            border-color: var(--gold);
-            color: var(--space);
+            background: var(--gold); border-color: var(--gold); color: var(--space);
             box-shadow: 0 0 0 4px rgba(212,175,55,0.2);
             animation: pulseStep 2s ease-in-out infinite;
         }
@@ -166,165 +131,98 @@
             50% { box-shadow: 0 0 0 8px rgba(212,175,55,0.05); }
         }
         .progreso-paso .label {
-            font-size: 0.55rem;
-            color: var(--text-muted);
-            text-align: center;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-weight: 600;
+            font-size: 0.55rem; color: var(--text-muted); text-align: center;
+            text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;
         }
         .progreso-paso.completado .label { color: var(--success); }
         .progreso-paso.actual .label { color: var(--gold); }
 
         .progreso-info {
-            text-align: center;
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            font-family: 'Orbitron', monospace;
+            text-align: center; font-size: 0.7rem;
+            color: var(--text-muted); font-family: 'Orbitron', monospace;
         }
-        .progreso-info strong {
-            color: var(--gold);
-        }
+        .progreso-info strong { color: var(--gold); }
 
-        /* Título */
-        .titulo {
-            text-align: center;
-            margin-bottom: 20px;
-        }
+        .titulo { text-align: center; margin-bottom: 20px; }
         .titulo h1 {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.4rem;
-            color: var(--gold);
-            margin-bottom: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
+            font-family: 'Orbitron', monospace; font-size: 1.4rem;
+            color: var(--gold); margin-bottom: 6px;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
         }
-        .titulo p {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            line-height: 1.5;
-        }
+        .titulo h1 .simbolo { color: var(--gold); }
+        .titulo p { font-size: 0.75rem; color: var(--text-muted); line-height: 1.5; }
 
-        /* Sección card */
         .seccion-card {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-xl);
-            padding: 20px;
-            margin-bottom: 16px;
+            background: var(--glass-bg); border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl); padding: 20px; margin-bottom: 16px;
         }
 
-        /* Cada paso */
-        .paso {
-            display: none;
-            animation: fadeIn 0.4s ease;
-        }
-        .paso.activo {
-            display: block;
-        }
+        .paso { display: none; animation: fadeIn 0.4s ease; }
+        .paso.activo { display: block; }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
         .paso .paso-titulo {
-            font-family: 'Orbitron', monospace;
-            font-size: 0.95rem;
-            color: var(--gold);
-            margin-bottom: 6px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            font-family: 'Orbitron', monospace; font-size: 0.95rem;
+            color: var(--gold); margin-bottom: 6px;
+            display: flex; align-items: center; gap: 8px;
         }
+        .paso .paso-titulo .simbolo { color: var(--gold); }
         .paso .paso-desc {
-            font-size: 0.72rem;
-            color: var(--text-muted);
-            margin-bottom: 18px;
-            line-height: 1.5;
+            font-size: 0.72rem; color: var(--text-muted);
+            margin-bottom: 18px; line-height: 1.5;
         }
 
-        /* Form group */
-        .form-group {
-            margin-bottom: 16px;
-        }
+        .form-group { margin-bottom: 16px; }
         .form-group label {
-            display: block;
-            font-size: 0.72rem;
-            color: var(--text-muted);
-            margin-bottom: 6px;
-            font-weight: 600;
+            display: block; font-size: 0.72rem;
+            color: var(--text-muted); margin-bottom: 6px; font-weight: 600;
         }
         .form-group label .required { color: var(--danger); }
         .form-group input,
         .form-group textarea,
         .form-group select {
-            width: 100%;
-            padding: 12px 14px;
+            width: 100%; padding: 12px 14px;
             background: rgba(0,0,0,0.35);
             border: 1px solid var(--glass-border);
-            border-radius: 10px;
-            color: var(--text-primary);
-            font-size: 0.85rem;
-            outline: none;
-            font-family: 'Inter', sans-serif;
-            transition: var(--transition);
+            border-radius: 10px; color: var(--text-primary);
+            font-size: 0.85rem; outline: none;
+            font-family: 'Inter', sans-serif; transition: var(--transition);
         }
         .form-group input:focus,
         .form-group textarea:focus,
         .form-group select:focus {
-            border-color: var(--gold);
-            background: rgba(0,0,0,0.5);
+            border-color: var(--gold); background: rgba(0,0,0,0.5);
         }
-        .form-group input.valid {
-            border-color: var(--success);
-        }
-        .form-group input.invalid {
-            border-color: var(--danger);
-        }
-        .form-group textarea {
-            resize: vertical;
-            min-height: 80px;
-        }
+        .form-group input.valid { border-color: var(--success); }
+        .form-group input.invalid { border-color: var(--danger); }
+        .form-group textarea { resize: vertical; min-height: 80px; }
         .form-group .helper {
-            font-size: 0.62rem;
-            color: var(--text-muted);
-            margin-top: 4px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
+            font-size: 0.62rem; color: var(--text-muted); margin-top: 4px;
+            display: flex; align-items: center; gap: 4px;
         }
         .form-group .helper.success { color: var(--success); }
         .form-group .helper.error { color: var(--danger); }
         .form-group .helper.warning { color: var(--warning); }
 
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         @media (max-width: 480px) {
             .form-row { grid-template-columns: 1fr; }
         }
 
-        /* Info box */
         .info-box {
             background: rgba(0,229,255,0.08);
             border: 1px solid rgba(0,229,255,0.3);
-            border-radius: 12px;
-            padding: 12px 14px;
-            font-size: 0.7rem;
-            color: var(--cyan);
-            line-height: 1.5;
-            margin-bottom: 14px;
-            display: flex;
-            gap: 10px;
-            align-items: flex-start;
+            border-radius: 12px; padding: 12px 14px;
+            font-size: 0.7rem; color: var(--cyan);
+            line-height: 1.5; margin-bottom: 14px;
+            display: flex; gap: 10px; align-items: flex-start;
         }
         .info-box .icono {
-            font-size: 1.1rem;
-            flex-shrink: 0;
+            font-size: 1rem; flex-shrink: 0;
+            font-family: 'Orbitron', monospace;
         }
         .info-box.warning {
             background: rgba(247,212,74,0.08);
@@ -342,298 +240,200 @@
             color: var(--success);
         }
 
-        /* Botón de captura de foto */
         .foto-captura {
             background: rgba(0,0,0,0.3);
             border: 2px dashed var(--glass-border);
-            border-radius: 16px;
-            padding: 24px 16px;
-            text-align: center;
-            cursor: pointer;
-            transition: var(--transition);
-            margin-bottom: 12px;
+            border-radius: 16px; padding: 24px 16px;
+            text-align: center; cursor: pointer;
+            transition: var(--transition); margin-bottom: 12px;
         }
-        .foto-captura:hover {
-            border-color: var(--gold);
-            background: rgba(212,175,55,0.05);
-        }
+        .foto-captura:hover { border-color: var(--gold); background: rgba(212,175,55,0.05); }
         .foto-captura.tiene-foto {
-            border-style: solid;
-            border-color: var(--success);
+            border-style: solid; border-color: var(--success);
             background: rgba(0,214,143,0.05);
         }
         .foto-captura .icono-grande {
-            font-size: 2.5rem;
-            display: block;
-            margin-bottom: 8px;
+            font-size: 2rem; display: block; margin-bottom: 8px;
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
         }
         .foto-captura .titulo-foto {
-            font-family: 'Orbitron', monospace;
-            font-size: 0.8rem;
-            color: var(--gold);
-            margin-bottom: 4px;
-            font-weight: 700;
+            font-family: 'Orbitron', monospace; font-size: 0.8rem;
+            color: var(--gold); margin-bottom: 4px; font-weight: 700;
         }
         .foto-captura .desc-foto {
-            font-size: 0.68rem;
-            color: var(--text-muted);
-            line-height: 1.4;
+            font-size: 0.68rem; color: var(--text-muted); line-height: 1.4;
         }
         .foto-captura .preview-foto {
-            width: 100%;
-            max-height: 200px;
-            object-fit: contain;
-            border-radius: 12px;
-            margin-bottom: 10px;
+            width: 100%; max-height: 200px; object-fit: contain;
+            border-radius: 12px; margin-bottom: 10px;
         }
         .foto-captura .acciones-foto {
-            display: flex;
-            gap: 8px;
-            justify-content: center;
-            margin-top: 10px;
+            display: flex; gap: 8px; justify-content: center; margin-top: 10px;
         }
         .foto-captura .btn-mini-foto {
             padding: 6px 14px;
             background: rgba(212,175,55,0.15);
-            border: 1px solid var(--gold);
-            color: var(--gold);
-            border-radius: 16px;
-            font-size: 0.65rem;
-            cursor: pointer;
-            transition: var(--transition);
-            font-family: 'Inter', sans-serif;
-            font-weight: 600;
+            border: 1px solid var(--gold); color: var(--gold);
+            border-radius: 16px; font-size: 0.65rem;
+            cursor: pointer; transition: var(--transition);
+            font-family: 'Inter', sans-serif; font-weight: 600;
+            display: inline-flex; align-items: center; gap: 4px;
         }
-        .foto-captura .btn-mini-foto:hover {
-            background: rgba(212,175,55,0.3);
-        }
+        .foto-captura .btn-mini-foto .simbolo { font-family: 'Orbitron', monospace; }
+        .foto-captura .btn-mini-foto:hover { background: rgba(212,175,55,0.3); }
         .foto-captura .btn-mini-foto.eliminar {
             background: rgba(255,51,102,0.1);
-            border-color: var(--danger);
-            color: var(--danger);
+            border-color: var(--danger); color: var(--danger);
         }
-        .foto-captura .btn-mini-foto.eliminar:hover {
-            background: rgba(255,51,102,0.2);
-        }
+        .foto-captura .btn-mini-foto.eliminar:hover { background: rgba(255,51,102,0.2); }
 
-        /* Checkbox término */
         .checkbox-term {
-            display: flex;
-            gap: 10px;
-            align-items: flex-start;
-            padding: 12px;
-            background: rgba(0,0,0,0.2);
+            display: flex; gap: 10px; align-items: flex-start;
+            padding: 12px; background: rgba(0,0,0,0.2);
             border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            cursor: pointer;
-            transition: var(--transition);
-            margin-bottom: 10px;
+            border-radius: 12px; cursor: pointer;
+            transition: var(--transition); margin-bottom: 10px;
         }
-        .checkbox-term:hover {
-            border-color: var(--gold);
-        }
+        .checkbox-term:hover { border-color: var(--gold); }
         .checkbox-term.activo {
             border-color: var(--success);
             background: rgba(0,214,143,0.05);
         }
         .checkbox-term input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            margin-top: 2px;
-            flex-shrink: 0;
-            accent-color: var(--gold);
-            cursor: pointer;
+            width: 20px; height: 20px; margin-top: 2px;
+            flex-shrink: 0; accent-color: var(--gold); cursor: pointer;
         }
         .checkbox-term .texto {
-            flex: 1;
-            font-size: 0.72rem;
-            color: var(--text-secondary);
-            line-height: 1.5;
+            flex: 1; font-size: 0.72rem;
+            color: var(--text-secondary); line-height: 1.5;
         }
         .checkbox-term .texto strong {
-            color: var(--text-primary);
-            display: block;
-            margin-bottom: 2px;
-            font-size: 0.78rem;
+            color: var(--text-primary); display: block;
+            margin-bottom: 2px; font-size: 0.78rem;
         }
-        .checkbox-term .texto a {
-            color: var(--gold);
-            text-decoration: underline;
-        }
+        .checkbox-term .texto a { color: var(--gold); text-decoration: underline; }
 
-        /* Verificación teléfono/email */
         .verificacion-bloque {
             background: rgba(0,0,0,0.25);
             border: 1px solid var(--glass-border);
-            border-radius: 14px;
-            padding: 16px;
-            margin-bottom: 12px;
+            border-radius: 14px; padding: 16px; margin-bottom: 12px;
         }
         .verificacion-bloque.verificado {
             background: rgba(0,214,143,0.05);
             border-color: rgba(0,214,143,0.3);
         }
         .verificacion-bloque .verificacion-estado {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 12px;
+            display: flex; align-items: center;
+            gap: 10px; margin-bottom: 12px;
         }
         .verificacion-bloque .verificacion-estado .icono-v {
-            font-size: 1.5rem;
+            font-size: 1.2rem; flex-shrink: 0;
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
         }
-        .verificacion-bloque .verificacion-estado .info-v {
-            flex: 1;
+        .verificacion-bloque.verificado .verificacion-estado .icono-v {
+            color: var(--success);
         }
+        .verificacion-bloque .verificacion-estado .info-v { flex: 1; }
         .verificacion-bloque .verificacion-estado .info-v .t {
-            font-size: 0.8rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin-bottom: 2px;
+            font-size: 0.8rem; font-weight: 700;
+            color: var(--text-primary); margin-bottom: 2px;
         }
         .verificacion-bloque .verificacion-estado .info-v .d {
-            font-size: 0.68rem;
-            color: var(--text-muted);
+            font-size: 0.68rem; color: var(--text-muted);
         }
         .verificacion-bloque.verificado .verificacion-estado .info-v .t {
             color: var(--success);
         }
         .verificacion-bloque .input-codigo {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 10px;
+            display: flex; gap: 8px; margin-bottom: 10px;
         }
         .verificacion-bloque .input-codigo input {
-            flex: 1;
-            padding: 12px 14px;
+            flex: 1; padding: 12px 14px;
             background: rgba(0,0,0,0.4);
             border: 1px solid var(--glass-border);
-            border-radius: 10px;
-            color: var(--text-primary);
-            font-size: 1.1rem;
-            text-align: center;
+            border-radius: 10px; color: var(--text-primary);
+            font-size: 1.1rem; text-align: center;
             letter-spacing: 4px;
-            font-family: 'Orbitron', monospace;
-            font-weight: 700;
+            font-family: 'Orbitron', monospace; font-weight: 700;
         }
-        .verificacion-bloque .input-codigo input:focus {
-            border-color: var(--gold);
-        }
+        .verificacion-bloque .input-codigo input:focus { border-color: var(--gold); }
 
-        /* Barra de procesamiento OCR */
         .procesando-ocr {
             background: rgba(0,229,255,0.05);
             border: 1px solid rgba(0,229,255,0.3);
-            border-radius: 14px;
-            padding: 16px;
-            text-align: center;
-            margin-bottom: 12px;
+            border-radius: 14px; padding: 16px;
+            text-align: center; margin-bottom: 12px;
         }
         .procesando-ocr .spinner-ocr {
-            width: 50px;
-            height: 50px;
+            width: 50px; height: 50px;
             border: 3px solid rgba(0,229,255,0.2);
             border-top-color: var(--cyan);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
+            border-radius: 50%; animation: spin 1s linear infinite;
             margin: 0 auto 12px;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
         .procesando-ocr .titulo-ocr {
-            font-family: 'Orbitron', monospace;
-            font-size: 0.85rem;
-            color: var(--cyan);
-            margin-bottom: 6px;
+            font-family: 'Orbitron', monospace; font-size: 0.85rem;
+            color: var(--cyan); margin-bottom: 6px;
         }
         .procesando-ocr .detalle-ocr {
-            font-size: 0.7rem;
-            color: var(--text-muted);
+            font-size: 0.7rem; color: var(--text-muted);
         }
         .procesando-ocr .progress-ocr {
-            width: 100%;
-            height: 6px;
+            width: 100%; height: 6px;
             background: rgba(0,0,0,0.4);
-            border-radius: 3px;
-            overflow: hidden;
-            margin-top: 12px;
+            border-radius: 3px; overflow: hidden; margin-top: 12px;
         }
         .procesando-ocr .progress-ocr .fill-ocr {
             height: 100%;
             background: linear-gradient(90deg, var(--cyan), var(--gold));
             border-radius: 3px;
-            transition: width 0.3s ease;
-            width: 0%;
+            transition: width 0.3s ease; width: 0%;
         }
 
-        /* Botones de navegación */
         .botones-nav {
-            display: flex;
-            gap: 12px;
-            margin-top: 20px;
-            flex-wrap: wrap;
+            display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap;
         }
         .btn-primario {
-            flex: 1;
-            min-width: 140px;
-            padding: 14px;
-            border-radius: 30px;
+            flex: 1; min-width: 140px;
+            padding: 14px; border-radius: 30px;
             background: linear-gradient(135deg, var(--gold), var(--gold-dark));
-            color: var(--space);
-            border: none;
+            color: var(--space); border: none;
             font-family: 'Orbitron', monospace;
-            font-weight: 700;
-            font-size: 0.78rem;
-            cursor: pointer;
-            transition: var(--transition);
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
+            font-weight: 700; font-size: 0.78rem;
+            cursor: pointer; transition: var(--transition);
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
         }
+        .btn-primario .simbolo { font-family: 'Orbitron', monospace; }
         .btn-primario:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: var(--shadow-gold);
         }
-        .btn-primario:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
+        .btn-primario:disabled { opacity: 0.4; cursor: not-allowed; }
         .btn-secundario {
-            flex: 1;
-            min-width: 120px;
-            padding: 14px;
-            border-radius: 30px;
+            flex: 1; min-width: 120px;
+            padding: 14px; border-radius: 30px;
             background: transparent;
             border: 1px solid var(--glass-border);
             color: var(--text-secondary);
             font-family: 'Orbitron', monospace;
-            font-weight: 700;
-            font-size: 0.78rem;
-            cursor: pointer;
-            transition: var(--transition);
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
+            font-weight: 700; font-size: 0.78rem;
+            cursor: pointer; transition: var(--transition);
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
         }
-        .btn-secundario:hover {
-            border-color: var(--gold);
-            color: var(--gold);
-        }
+        .btn-secundario .simbolo { color: var(--gold); font-family: 'Orbitron', monospace; }
+        .btn-secundario:hover { border-color: var(--gold); color: var(--gold); }
 
-        /* Pantalla final (procesamiento) */
         .pantalla-final {
-            display: none;
-            text-align: center;
-            padding: 40px 20px;
+            display: none; text-align: center; padding: 40px 20px;
         }
-        .pantalla-final.activo {
-            display: block;
-        }
+        .pantalla-final.activo { display: block; }
         .pantalla-final .icono-grande {
-            font-size: 4rem;
-            margin-bottom: 20px;
-            display: block;
+            font-size: 3rem; margin-bottom: 20px; display: block;
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
             animation: pulseIcono 2s ease-in-out infinite;
         }
         @keyframes pulseIcono {
@@ -642,63 +442,54 @@
         }
         .pantalla-final h2 {
             font-family: 'Orbitron', monospace;
-            font-size: 1.2rem;
-            color: var(--gold);
-            margin-bottom: 12px;
+            font-size: 1.2rem; color: var(--gold); margin-bottom: 12px;
         }
         .pantalla-final p {
-            font-size: 0.82rem;
-            color: var(--text-secondary);
-            line-height: 1.6;
-            margin-bottom: 20px;
+            font-size: 0.82rem; color: var(--text-secondary);
+            line-height: 1.6; margin-bottom: 20px;
         }
         .pantalla-final .checklist-final {
-            text-align: left;
-            max-width: 400px;
+            text-align: left; max-width: 400px;
             margin: 0 auto 20px;
             background: rgba(0,0,0,0.25);
-            border-radius: 14px;
-            padding: 16px;
+            border-radius: 14px; padding: 16px;
         }
         .pantalla-final .checklist-final .item-check {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px 0;
-            font-size: 0.75rem;
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 0; font-size: 0.75rem;
             color: var(--text-secondary);
             border-bottom: 1px solid var(--glass-border);
         }
-        .pantalla-final .checklist-final .item-check:last-child {
-            border-bottom: none;
-        }
+        .pantalla-final .checklist-final .item-check:last-child { border-bottom: none; }
         .pantalla-final .checklist-final .item-check .check-icon {
-            font-size: 1rem;
-            flex-shrink: 0;
+            font-size: 0.9rem; flex-shrink: 0;
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
         }
         .pantalla-final .checklist-final .item-check.ok {
+            color: var(--success);
+        }
+        .pantalla-final .checklist-final .item-check.ok .check-icon {
             color: var(--success);
         }
         .pantalla-final .checklist-final .item-check.pending {
             color: var(--warning);
         }
+        .pantalla-final .checklist-final .item-check.pending .check-icon {
+            color: var(--warning);
+        }
 
-        /* Loading / empty */
         .loading-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--text-muted);
+            text-align: center; padding: 60px 20px; color: var(--text-muted);
         }
         .loading-state .spinner {
             width: 40px; height: 40px;
             border: 3px solid rgba(212, 175, 55, 0.15);
             border-top-color: var(--gold);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
+            border-radius: 50%; animation: spin 0.8s linear infinite;
             margin: 0 auto 12px;
         }
 
-        /* Toast */
         .toast {
             position: fixed; bottom: 30px; right: 20px;
             background: var(--green-deep); border: 1px solid var(--gold);
@@ -722,7 +513,8 @@
         }
         .footer .brand { color: var(--gold); font-weight: 600; }
         .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
-        .footer-links a { color: var(--text-muted); text-decoration: none; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; display: flex; align-items: center; gap: 4px; }
+        .footer-links a .simbolo { font-family: 'Orbitron', monospace; color: var(--gold); opacity: 0.7; }
         .footer-links a:hover { color: var(--gold); }
 
         html.tema-dia, html[data-tema="dia"] {
@@ -776,27 +568,24 @@
         </header>
 
         <nav class="main-nav" aria-label="Navegación principal">
-            <a href="/" class="nav-link">⌂ Inicio</a>
-            <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
-            <a href="/features/perfil/perfil.html" class="nav-link">◆ Perfil</a>
-            <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
-            <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
-            <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
-            <a href="/features/videos/videos.html" class="nav-link">🎬 Videos</a>
-            <a href="/features/grupos/grupos.html" class="nav-link">👥 Grupos</a>
-            <a href="/features/mercado/index.html" class="nav-link active">🛒 Mercado</a>
+            <a href="/" class="nav-link"><span class="nav-simbolo">◈</span> Inicio</a>
+            <a href="/features/muro/muro.html" class="nav-link"><span class="nav-simbolo">◆</span> Muro</a>
+            <a href="/features/perfil/perfil.html" class="nav-link"><span class="nav-simbolo">◇</span> Perfil</a>
+            <a href="/features/mensajes/contactos.html" class="nav-link"><span class="nav-simbolo">●</span> Contactos</a>
+            <a href="/features/live/live.html" class="nav-link live"><span class="nav-simbolo">◉</span> Live</a>
+            <a href="/features/internet/internet.html" class="nav-link"><span class="nav-simbolo">◆</span> Internet</a>
+            <a href="/features/videos/videos.html" class="nav-link"><span class="nav-simbolo">◇</span> Videos</a>
+            <a href="/features/grupos/grupos.html" class="nav-link"><span class="nav-simbolo">◆</span> Grupos</a>
+            <a href="/features/mercado/index.html" class="nav-link active"><span class="nav-simbolo">◈</span> Mercado</a>
         </nav>
 
-        <!-- Loader inicial -->
         <div id="loaderInicial" class="loading-state">
             <div class="spinner"></div>
             <p>Cargando registro...</p>
         </div>
 
-        <!-- Contenido principal -->
         <div id="contenidoRegistro" style="display:none;">
 
-            <!-- Progreso -->
             <div class="progreso-top" id="progresoTop">
                 <div class="progreso-barra">
                     <div class="progreso-fill" id="progresoFill" style="width:0%;"></div>
@@ -831,16 +620,15 @@
                 </div>
             </div>
 
-            <!-- Título -->
             <div class="titulo">
-                <h1>🛵 <span>Registro Repartidor</span></h1>
+                <h1><span class="simbolo">◈</span> <span>Registro Repartidor</span></h1>
                 <p>Verificación 100% automática con IA · Sin esperas · Sin trámites</p>
             </div>
 
-            <!-- PASO 1: DATOS PERSONALES -->
+            <!-- PASO 1 -->
             <div class="paso activo" data-paso="1">
                 <div class="seccion-card">
-                    <div class="paso-titulo">👤 Datos personales</div>
+                    <div class="paso-titulo"><span class="simbolo">◈</span> Datos personales</div>
                     <div class="paso-desc">Ingresa tus datos como aparecen en tu documento de identidad oficial.</div>
 
                     <div class="form-group">
@@ -893,16 +681,16 @@
 
                     <div class="botones-nav">
                         <button class="btn-primario" id="btnPaso1" onclick="avanzarPaso(1)" disabled>
-                            Continuar →
+                            <span class="simbolo">◆</span> Continuar
                         </button>
                     </div>
                 </div>
             </div>
 
-            <!-- PASO 2: VERIFICAR TELÉFONO -->
+            <!-- PASO 2 -->
             <div class="paso" data-paso="2">
                 <div class="seccion-card">
-                    <div class="paso-titulo">📱 Verificar teléfono</div>
+                    <div class="paso-titulo"><span class="simbolo">◆</span> Verificar teléfono</div>
                     <div class="paso-desc">Te enviaremos un código por SMS para confirmar tu número.</div>
 
                     <div class="form-group">
@@ -913,7 +701,7 @@
 
                     <div class="verificacion-bloque" id="bloqueTel" style="display:none;">
                         <div class="verificacion-estado">
-                            <span class="icono-v">📩</span>
+                            <span class="icono-v">◈</span>
                             <div class="info-v">
                                 <div class="t">Código enviado</div>
                                 <div class="d" id="telDestino">Revisa tus SMS</div>
@@ -924,17 +712,17 @@
                         </div>
                         <div style="display:flex; gap:8px; flex-wrap:wrap;">
                             <button class="btn-secundario" style="flex:1; padding:10px; font-size:0.72rem;" onclick="reenviarCodigoTel()">
-                                🔄 Reenviar
+                                <span class="simbolo">✧</span> Reenviar
                             </button>
                             <button class="btn-primario" style="flex:1; padding:10px; font-size:0.72rem;" id="btnVerifTel" onclick="verificarCodigoTel()">
-                                ✓ Verificar
+                                <span class="simbolo">●</span> Verificar
                             </button>
                         </div>
                     </div>
 
                     <div class="verificacion-bloque verificado" id="bloqueTelOk" style="display:none;">
                         <div class="verificacion-estado">
-                            <span class="icono-v">✅</span>
+                            <span class="icono-v">●</span>
                             <div class="info-v">
                                 <div class="t">Teléfono verificado</div>
                                 <div class="d" id="telOkNumero">+52 ...</div>
@@ -943,24 +731,24 @@
                     </div>
 
                     <button class="btn-primario" id="btnEnviarCodigoTel" onclick="enviarCodigoTel()" style="width:100%; display:none;">
-                        📩 Enviar código SMS
+                        <span class="simbolo">◆</span> Enviar código SMS
                     </button>
 
                     <div class="botones-nav">
                         <button class="btn-secundario" onclick="volverPaso(2)">
-                            ← Atrás
+                            <span class="simbolo">◈</span> Atrás
                         </button>
                         <button class="btn-primario" id="btnPaso2" onclick="avanzarPaso(2)" disabled>
-                            Continuar →
+                            <span class="simbolo">◆</span> Continuar
                         </button>
                     </div>
                 </div>
             </div>
 
-            <!-- PASO 3: VERIFICAR EMAIL -->
+            <!-- PASO 3 -->
             <div class="paso" data-paso="3">
                 <div class="seccion-card">
-                    <div class="paso-titulo">📧 Verificar email</div>
+                    <div class="paso-titulo"><span class="simbolo">◇</span> Verificar email</div>
                     <div class="paso-desc">Te enviaremos un código al correo para confirmar tu cuenta.</div>
 
                     <div class="form-group">
@@ -971,7 +759,7 @@
 
                     <div class="verificacion-bloque" id="bloqueEmail" style="display:none;">
                         <div class="verificacion-estado">
-                            <span class="icono-v">📨</span>
+                            <span class="icono-v">✦</span>
                             <div class="info-v">
                                 <div class="t">Código enviado al email</div>
                                 <div class="d" id="emailDestino">Revisa tu correo</div>
@@ -982,17 +770,17 @@
                         </div>
                         <div style="display:flex; gap:8px; flex-wrap:wrap;">
                             <button class="btn-secundario" style="flex:1; padding:10px; font-size:0.72rem;" onclick="reenviarCodigoEmail()">
-                                🔄 Reenviar
+                                <span class="simbolo">✧</span> Reenviar
                             </button>
                             <button class="btn-primario" style="flex:1; padding:10px; font-size:0.72rem;" id="btnVerifEmail" onclick="verificarCodigoEmail()">
-                                ✓ Verificar
+                                <span class="simbolo">●</span> Verificar
                             </button>
                         </div>
                     </div>
 
                     <div class="verificacion-bloque verificado" id="bloqueEmailOk" style="display:none;">
                         <div class="verificacion-estado">
-                            <span class="icono-v">✅</span>
+                            <span class="icono-v">●</span>
                             <div class="info-v">
                                 <div class="t">Email verificado</div>
                                 <div class="d" id="emailOkCorreo">correo@...</div>
@@ -1001,28 +789,28 @@
                     </div>
 
                     <button class="btn-primario" id="btnEnviarCodigoEmail" onclick="enviarCodigoEmail()" style="width:100%; display:none;">
-                        📨 Enviar código al email
+                        <span class="simbolo">◇</span> Enviar código al email
                     </button>
 
                     <div class="botones-nav">
                         <button class="btn-secundario" onclick="volverPaso(3)">
-                            ← Atrás
+                            <span class="simbolo">◈</span> Atrás
                         </button>
                         <button class="btn-primario" id="btnPaso3" onclick="avanzarPaso(3)" disabled>
-                            Continuar →
+                            <span class="simbolo">◆</span> Continuar
                         </button>
                     </div>
                 </div>
             </div>
 
-            <!-- PASO 4: DOCUMENTOS -->
+            <!-- PASO 4 -->
             <div class="paso" data-paso="4">
                 <div class="seccion-card">
-                    <div class="paso-titulo">📷 Documentos de identidad</div>
+                    <div class="paso-titulo"><span class="simbolo">✦</span> Documentos de identidad</div>
                     <div class="paso-desc">Toma fotos claras de tu documento y selfie. El sistema las valida automáticamente con IA.</div>
 
                     <div class="info-box">
-                        <span class="icono">🔒</span>
+                        <span class="icono">●</span>
                         <div>
                             <strong>Tus documentos están protegidos.</strong><br>
                             Se procesan en tu dispositivo y se almacenan cifrados en un bucket privado. Solo tú y el sistema los pueden ver.
@@ -1030,19 +818,19 @@
                     </div>
 
                     <div class="foto-captura" id="capDocFrente" onclick="abrirCamara('doc_frente')">
-                        <span class="icono-grande">📄</span>
+                        <span class="icono-grande">◈</span>
                         <div class="titulo-foto">Frente del documento *</div>
                         <div class="desc-foto">INE, DNI, cédula o documento oficial</div>
                     </div>
 
                     <div class="foto-captura" id="capDocReverso" onclick="abrirCamara('doc_reverso')">
-                        <span class="icono-grande">📄</span>
+                        <span class="icono-grande">◈</span>
                         <div class="titulo-foto">Reverso del documento</div>
                         <div class="desc-foto">Opcional si tu documento tiene un solo lado</div>
                     </div>
 
                     <div class="foto-captura" id="capSelfie" onclick="abrirCamara('selfie')">
-                        <span class="icono-grande">🤳</span>
+                        <span class="icono-grande">●</span>
                         <div class="titulo-foto">Selfie de verificación *</div>
                         <div class="desc-foto">Sin gorra, sin lentes, buena iluminación</div>
                     </div>
@@ -1060,30 +848,30 @@
 
                     <div class="botones-nav">
                         <button class="btn-secundario" onclick="volverPaso(4)">
-                            ← Atrás
+                            <span class="simbolo">◈</span> Atrás
                         </button>
                         <button class="btn-primario" id="btnPaso4" onclick="avanzarPaso(4)" disabled>
-                            Continuar →
+                            <span class="simbolo">◆</span> Continuar
                         </button>
                     </div>
                 </div>
             </div>
 
-            <!-- PASO 5: VEHÍCULO -->
+            <!-- PASO 5 -->
             <div class="paso" data-paso="5">
                 <div class="seccion-card">
-                    <div class="paso-titulo">🛵 Datos del vehículo</div>
+                    <div class="paso-titulo"><span class="simbolo">✧</span> Datos del vehículo</div>
                     <div class="paso-desc">Cuéntanos sobre el vehículo que usarás para las entregas.</div>
 
                     <div class="form-group">
                         <label>Tipo de vehículo <span class="required">*</span></label>
                         <select id="inpVehiculo">
                             <option value="">— Selecciona —</option>
-                            <option value="moto">🛵 Moto</option>
-                            <option value="bicicleta">🚲 Bicicleta</option>
-                            <option value="auto">🚗 Automóvil</option>
-                            <option value="scooter">🛴 Scooter eléctrico</option>
-                            <option value="pie">🚶 A pie</option>
+                            <option value="moto">◆ Moto</option>
+                            <option value="bicicleta">◇ Bicicleta</option>
+                            <option value="auto">● Automóvil</option>
+                            <option value="scooter">✦ Scooter eléctrico</option>
+                            <option value="pie">○ A pie</option>
                         </select>
                     </div>
 
@@ -1119,7 +907,7 @@
                         <div class="form-group">
                             <label>Foto del vehículo con placas visibles</label>
                             <div class="foto-captura" id="capVehiculo" onclick="abrirCamara('vehiculo')">
-                                <span class="icono-grande">📸</span>
+                                <span class="icono-grande">◆</span>
                                 <div class="titulo-foto">Foto del vehículo</div>
                                 <div class="desc-foto">Donde se vean las placas claramente</div>
                             </div>
@@ -1128,19 +916,19 @@
 
                     <div class="botones-nav">
                         <button class="btn-secundario" onclick="volverPaso(5)">
-                            ← Atrás
+                            <span class="simbolo">◈</span> Atrás
                         </button>
                         <button class="btn-primario" id="btnPaso5" onclick="avanzarPaso(5)" disabled>
-                            Continuar →
+                            <span class="simbolo">◆</span> Continuar
                         </button>
                     </div>
                 </div>
             </div>
 
-            <!-- PASO 6: TÉRMINOS Y FINAL -->
+            <!-- PASO 6 -->
             <div class="paso" data-paso="6">
                 <div class="seccion-card">
-                    <div class="paso-titulo">✓ Acepta los términos</div>
+                    <div class="paso-titulo"><span class="simbolo">●</span> Acepta los términos</div>
                     <div class="paso-desc">Antes de terminar, necesitamos tu aceptación para operar.</div>
 
                     <label class="checkbox-term" id="termServicio">
@@ -1177,18 +965,18 @@
 
                     <div class="botones-nav">
                         <button class="btn-secundario" onclick="volverPaso(6)">
-                            ← Atrás
+                            <span class="simbolo">◈</span> Atrás
                         </button>
                         <button class="btn-primario" id="btnPaso6" onclick="enviarRegistroFinal()" disabled>
-                            🚀 Enviar para verificación
+                            <span class="simbolo">✦</span> Enviar para verificación
                         </button>
                     </div>
                 </div>
             </div>
 
-            <!-- Pantalla final de procesamiento -->
+            <!-- Pantalla final -->
             <div class="pantalla-final" id="pantallaFinal">
-                <span class="icono-grande" id="iconoFinal">⏳</span>
+                <span class="icono-grande" id="iconoFinal">✧</span>
                 <h2 id="tituloFinal">Verificando tu identidad...</h2>
                 <p id="descFinal">El sistema está analizando tus documentos. Esto puede tomar hasta 30 segundos.</p>
                 
@@ -1196,10 +984,10 @@
 
                 <div id="botonesFinal" style="display:none;">
                     <a href="/features/mercado/repartidor/panel.html" class="btn-primario" style="text-decoration:none; display:inline-flex; width:100%; margin-bottom:10px;" id="btnIrPanel">
-                        🛵 Ir a mi panel
+                        <span class="simbolo">✦</span> Ir a mi panel
                     </a>
                     <button class="btn-secundario" onclick="window.location.reload()" id="btnReintentar" style="width:100%; display:none;">
-                        🔄 Volver a intentar
+                        <span class="simbolo">✧</span> Volver a intentar
                     </button>
                 </div>
             </div>
@@ -1209,17 +997,16 @@
         <footer class="footer">
             <span><span class="brand">© Csariel's</span> · <span data-clave="mercado_footer">Sabor al Paladar · WEB3</span></span>
             <div class="footer-links">
-                <a href="/terminos" data-clave="footer_terminos">📜 Términos</a>
-                <a href="/privacidad" data-clave="footer_privacidad">🔒 Privacidad</a>
-                <a href="/cookies" data-clave="footer_cookies">🍪 Cookies</a>
-                <a href="/live-terminos" data-clave="footer_terminos_live">📡 Términos de Live</a>
+                <a href="/terminos" data-clave="footer_terminos"><span class="simbolo">◇</span> Términos</a>
+                <a href="/privacidad" data-clave="footer_privacidad"><span class="simbolo">◆</span> Privacidad</a>
+                <a href="/cookies" data-clave="footer_cookies"><span class="simbolo">◇</span> Cookies</a>
+                <a href="/live-terminos" data-clave="footer_terminos_live"><span class="simbolo">◆</span> Términos de Live</a>
                 <span style="opacity:0.3;">⚡ Polygon</span>
             </div>
         </footer>
 
     </div>
 
-    <!-- Modal cámara/archivo -->
     <input type="file" id="inputFile" accept="image/*" capture="environment" style="display:none;" />
     <input type="file" id="inputFileSelfie" accept="image/*" capture="user" style="display:none;" />
 
@@ -1230,7 +1017,7 @@
         background:#ff3366; color:#fff; padding:12px 16px; font-family:monospace;
         font-size:0.75rem; word-break:break-word; box-shadow:0 4px 20px rgba(0,0,0,0.4);
     ">
-        <strong>⚠️ Error detectado:</strong>
+        <strong><span style="font-family:Orbitron,monospace;">✶</span> Error detectado:</strong>
         <span id="errorBannerText"></span>
         <button onclick="document.getElementById('errorBanner').style.display='none'"
             style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">
@@ -1240,13 +1027,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/features/shared/js/idiomas.js"></script>
-
-<script>
-// ================================================================
-// ⚙️ CONFIGURACIÓN LEGAL — Csariel's Ecosystem
-// ================================================================
-// 👉 EDITA ESTE BLOQUE cuando tengas los datos legales listos
-// ================================================================
+</body>
+</html><script>
 var CONFIG_LEGAL = {
     nombre_comercial: 'Csariel\'s',
     nombre_ecosistema: 'Csariel\'s Ecosystem',
@@ -1258,13 +1040,7 @@ var CONFIG_LEGAL = {
     pais_operacion: 'México',
     ciudad_operacion: 'Puebla'
 };
-// ================================================================
-// FIN DE CONFIGURACIÓN LEGAL
-// ================================================================
 
-// ================================================================
-// CONFIGURACIÓN APP
-// ================================================================
 var supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
 var supabaseKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
 var supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
@@ -1273,9 +1049,6 @@ var supabase = supabaseClient;
 
 var API_BASE = '';
 
-// ================================================================
-// ESTADO GLOBAL DEL REGISTRO
-// ================================================================
 var sessionUser = null;
 var usuarioData = null;
 var pasoActual = 1;
@@ -1323,9 +1096,6 @@ var registroData = {
 var paisesCache = [];
 var enviandoRegistro = false;
 
-// ================================================================
-// BANNER DE ERRORES
-// ================================================================
 function mostrarErrorEnPantalla(mensaje) {
     var banner = document.getElementById('errorBanner');
     var texto = document.getElementById('errorBannerText');
@@ -1338,9 +1108,6 @@ window.addEventListener('unhandledrejection', function (event) {
     mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason && event.reason.message ? event.reason.message : event.reason));
 });
 
-// ================================================================
-// TOAST
-// ================================================================
 function showToast(mensaje, tipo) {
     try {
         var toastEl = document.getElementById('toast');
@@ -1355,9 +1122,6 @@ function showToast(mensaje, tipo) {
     } catch (e) { console.warn('Toast error:', e); }
 }
 
-// ================================================================
-// HELPERS
-// ================================================================
 function escapeHTML(texto) {
     if (!texto) return '';
     var div = document.createElement('div');
@@ -1443,9 +1207,6 @@ function marcarInput(id, valido) {
     else if (valido === false) el.classList.add('invalid');
 }
 
-// ================================================================
-// CONFIGURAR FECHA MÁXIMA (edad mínima 18 años)
-// ================================================================
 function configurarFechaMaxima() {
     var inputFecha = document.getElementById('inpFechaNac');
     if (!inputFecha) return;
@@ -1465,13 +1226,8 @@ function configurarFechaMaxima() {
     var ddMin = String(fechaMin.getDate()).padStart(2, '0');
 
     inputFecha.setAttribute('min', yyyyMin + '-' + mmMin + '-' + ddMin);
-
-    console.log('📅 Fecha máxima permitida:', yyyy + '-' + mm + '-' + dd, '(18 años)');
 }
 
-// ================================================================
-// MOSTRAR/OCULTAR CURP SEGÚN PAÍS
-// ================================================================
 function actualizarCampoCurpPorPais() {
     var selectPais = document.getElementById('inpPais');
     var grupoCurp = document.getElementById('grupoCurp');
@@ -1498,9 +1254,6 @@ function actualizarCampoCurpPorPais() {
     }
 }
 
-// ================================================================
-// CARGAR USUARIO
-// ================================================================
 async function cargarUsuarioActual() {
     try {
         var result = await supabase.auth.getSession();
@@ -1540,9 +1293,6 @@ async function cargarUsuarioActual() {
     }
 }
 
-// ================================================================
-// VERIFICAR SI YA ESTÁ REGISTRADO
-// ================================================================
 async function verificarSiYaRegistrado() {
     try {
         var result = await supabase
@@ -1557,7 +1307,7 @@ async function verificarSiYaRegistrado() {
             var estado = result.data.estado_verificacion;
 
             if (estado === 'activo') {
-                showToast('✓ Ya estás verificado como repartidor', 'success');
+                showToast('● Ya estás verificado como repartidor', 'success');
                 setTimeout(function () {
                     window.location.href = '/features/mercado/repartidor/panel.html';
                 }, 1500);
@@ -1590,7 +1340,7 @@ function mostrarPantallaEstadoPendiente(estado) {
     document.querySelectorAll('.paso').forEach(function (p) { p.classList.remove('activo'); });
 
     pantalla.classList.add('activo');
-    document.getElementById('iconoFinal').textContent = '⏳';
+    document.getElementById('iconoFinal').textContent = '✧';
     document.getElementById('tituloFinal').textContent = 'Verificación en proceso';
     document.getElementById('descFinal').innerHTML =
         estado === 'revision_manual'
@@ -1604,14 +1354,11 @@ function mostrarPantallaEstadoPendiente(estado) {
 
     var btnPanel = document.getElementById('btnIrPanel');
     if (btnPanel) {
-        btnPanel.innerHTML = '📋 Ver mi estado';
+        btnPanel.innerHTML = '<span class="simbolo">◈</span> Ver mi estado';
         btnPanel.href = '/features/mercado/repartidor/estado-verificacion.html';
     }
 }
 
-// ================================================================
-// CARGAR PAÍSES
-// ================================================================
 async function cargarPaises() {
     try {
         var resp = await fetch(API_BASE + '/api/mercado/repartidor/paises');
@@ -1624,7 +1371,7 @@ async function cargarPaises() {
             select.innerHTML = '<option value="">— Selecciona tu país —</option>';
             paisesCache.forEach(function (p) {
                 select.innerHTML += '<option value="' + p.codigo_iso + '">' +
-                    (p.bandera_emoji || '') + ' ' + escapeHTML(p.nombre) +
+                    escapeHTML(p.nombre) +
                     '</option>';
             });
         }
@@ -1632,32 +1379,28 @@ async function cargarPaises() {
     } catch (e) {
         console.error('Error países:', e);
         paisesCache = [
-            { codigo_iso: 'MX', nombre: 'México', bandera_emoji: '🇲🇽' },
-            { codigo_iso: 'CO', nombre: 'Colombia', bandera_emoji: '🇨🇴' },
-            { codigo_iso: 'CL', nombre: 'Chile', bandera_emoji: '🇨🇱' },
-            { codigo_iso: 'AR', nombre: 'Argentina', bandera_emoji: '🇦🇷' },
-            { codigo_iso: 'PE', nombre: 'Perú', bandera_emoji: '🇵🇪' },
-            { codigo_iso: 'EC', nombre: 'Ecuador', bandera_emoji: '🇪🇨' },
-            { codigo_iso: 'US', nombre: 'Estados Unidos', bandera_emoji: '🇺🇸' },
-            { codigo_iso: 'ES', nombre: 'España', bandera_emoji: '🇪🇸' },
-            { codigo_iso: 'BR', nombre: 'Brasil', bandera_emoji: '🇧🇷' },
-            { codigo_iso: 'GT', nombre: 'Guatemala', bandera_emoji: '🇬🇹' }
+            { codigo_iso: 'MX', nombre: 'México' },
+            { codigo_iso: 'CO', nombre: 'Colombia' },
+            { codigo_iso: 'CL', nombre: 'Chile' },
+            { codigo_iso: 'AR', nombre: 'Argentina' },
+            { codigo_iso: 'PE', nombre: 'Perú' },
+            { codigo_iso: 'EC', nombre: 'Ecuador' },
+            { codigo_iso: 'US', nombre: 'Estados Unidos' },
+            { codigo_iso: 'ES', nombre: 'España' },
+            { codigo_iso: 'BR', nombre: 'Brasil' },
+            { codigo_iso: 'GT', nombre: 'Guatemala' }
         ];
         var select = document.getElementById('inpPais');
         if (select) {
             select.innerHTML = '<option value="">— Selecciona tu país —</option>';
             paisesCache.forEach(function (p) {
-                select.innerHTML += '<option value="' + p.codigo_iso + '">' +
-                    (p.bandera_emoji || '') + ' ' + escapeHTML(p.nombre) + '</option>';
+                select.innerHTML += '<option value="' + p.codigo_iso + '">' + escapeHTML(p.nombre) + '</option>';
             });
         }
         return paisesCache;
     }
 }
 
-// ================================================================
-// NAVEGACIÓN ENTRE PASOS
-// ================================================================
 function irAPaso(n) {
     if (n < 1 || n > 6) return;
 
@@ -1719,9 +1462,6 @@ function volverPaso(desde) {
     irAPaso(desde - 1);
 }
 
-// ================================================================
-// VALIDAR CADA PASO
-// ================================================================
 function validarPaso(n) {
     if (n === 1) return validarPaso1();
     if (n === 2) return validarPaso2();
@@ -1738,69 +1478,44 @@ function validarPaso1() {
     var pais = document.getElementById('inpPais').value;
     var ciudad = limpiarTexto(document.getElementById('inpCiudad').value);
 
-    if (nombre.length < 5) {
-        showToast('⚠️ Ingresa tu nombre completo', 'warning');
-        return false;
-    }
-    if (!fecha) {
-        showToast('⚠️ Ingresa tu fecha de nacimiento', 'warning');
-        return false;
-    }
+    if (nombre.length < 5) { showToast('✶ Ingresa tu nombre completo', 'warning'); return false; }
+    if (!fecha) { showToast('✶ Ingresa tu fecha de nacimiento', 'warning'); return false; }
+
     var edad = calcularEdad(fecha);
-    if (edad < 18) {
-        showToast('⚠️ Debes ser mayor de 18 años', 'warning');
-        return false;
-    }
-    if (edad > 100) {
-        showToast('⚠️ Verifica tu fecha de nacimiento', 'warning');
-        return false;
-    }
-    if (!pais) {
-        showToast('⚠️ Selecciona tu país', 'warning');
-        return false;
-    }
+    if (edad < 18) { showToast('✶ Debes ser mayor de 18 años', 'warning'); return false; }
+    if (edad > 100) { showToast('✶ Verifica tu fecha de nacimiento', 'warning'); return false; }
+    if (!pais) { showToast('✶ Selecciona tu país', 'warning'); return false; }
+
     if (pais === 'MX') {
         var curp = normalizarCURP(document.getElementById('inpCurp').value);
-        if (!curp || !validarCURPLocal(curp)) {
-            showToast('⚠️ Ingresa una CURP válida', 'warning');
-            return false;
-        }
+        if (!curp || !validarCURPLocal(curp)) { showToast('✶ Ingresa una CURP válida', 'warning'); return false; }
     }
-    if (ciudad.length < 3) {
-        showToast('⚠️ Ingresa tu ciudad', 'warning');
-        return false;
-    }
+    if (ciudad.length < 3) { showToast('✶ Ingresa tu ciudad', 'warning'); return false; }
 
     return true;
 }
 
 function validarPaso2() {
-    if (!registroData.telefono_verificado) {
-        showToast('⚠️ Verifica tu teléfono primero', 'warning');
-        return false;
-    }
+    if (!registroData.telefono_verificado) { showToast('✶ Verifica tu teléfono primero', 'warning'); return false; }
     return true;
 }
 
 function validarPaso3() {
-    if (!registroData.email_verificado) {
-        showToast('⚠️ Verifica tu email primero', 'warning');
-        return false;
-    }
+    if (!registroData.email_verificado) { showToast('✶ Verifica tu email primero', 'warning'); return false; }
     return true;
 }
 
 function validarPaso4() {
     if (!registroData.documento_frente_file && !registroData.documento_frente_url) {
-        showToast('⚠️ Sube el frente de tu documento', 'warning');
+        showToast('✶ Sube el frente de tu documento', 'warning');
         return false;
     }
     if (!registroData.selfie_file && !registroData.selfie_url) {
-        showToast('⚠️ Sube tu selfie de verificación', 'warning');
+        showToast('✶ Sube tu selfie de verificación', 'warning');
         return false;
     }
     if (!registroData.ocr_nombre_coincide) {
-        showToast('⚠️ El nombre del documento no coincide con el registrado', 'warning');
+        showToast('✶ El nombre del documento no coincide con el registrado', 'warning');
         return false;
     }
     return true;
@@ -1809,22 +1524,16 @@ function validarPaso4() {
 function validarPaso5() {
     var vehiculo = document.getElementById('inpVehiculo').value;
 
-    if (!vehiculo) {
-        showToast('⚠️ Selecciona tu tipo de vehículo', 'warning');
-        return false;
-    }
+    if (!vehiculo) { showToast('✶ Selecciona tu tipo de vehículo', 'warning'); return false; }
 
     if (vehiculo === 'moto' || vehiculo === 'auto') {
         var placas = limpiarTexto(document.getElementById('inpPlacas').value);
-        if (!placas || placas.length < 4) {
-            showToast('⚠️ Ingresa las placas de tu ' + vehiculo, 'warning');
-            return false;
-        }
+        if (!placas || placas.length < 4) { showToast('✶ Ingresa las placas de tu ' + vehiculo, 'warning'); return false; }
     }
 
     if (vehiculo !== 'pie') {
         if (!registroData.foto_vehiculo_file && !registroData.foto_vehiculo_url) {
-            showToast('⚠️ Sube una foto de tu vehículo con placas visibles', 'warning');
+            showToast('✶ Sube una foto de tu vehículo con placas visibles', 'warning');
             return false;
         }
     }
@@ -1837,15 +1546,12 @@ function validarPaso6() {
         !registroData.terminos_privacidad ||
         !registroData.terminos_conducta ||
         !registroData.terminos_ubicacion) {
-        showToast('⚠️ Debes aceptar todos los términos', 'warning');
+        showToast('✶ Debes aceptar todos los términos', 'warning');
         return false;
     }
     return true;
 }
 
-// ================================================================
-// GUARDAR DATOS DE CADA PASO
-// ================================================================
 function guardarDatosPaso(n) {
     if (n === 1) {
         registroData.nombre_completo = limpiarTexto(document.getElementById('inpNombre').value).toUpperCase();
@@ -1874,9 +1580,6 @@ function guardarDatosPaso(n) {
     }
 }
 
-// ================================================================
-// ACTUALIZAR BOTONES
-// ================================================================
 function actualizarBotonPaso1() {
     var nombre = limpiarTexto(document.getElementById('inpNombre').value);
     var fecha = document.getElementById('inpFechaNac').value;
@@ -1967,11 +1670,7 @@ function actualizarTerminos() {
     if (btn) btn.disabled = !todos;
 }
 
-// ================================================================
-// VALIDACIONES EN VIVO
-// ================================================================
 function configurarValidacionesVivo() {
-
     var inpNombre = document.getElementById('inpNombre');
     if (inpNombre) {
         inpNombre.addEventListener('input', function () {
@@ -1984,7 +1683,7 @@ function configurarValidacionesVivo() {
                 setHelper('helperNombre', 'Muy corto', 'error');
             } else {
                 marcarInput('inpNombre', true);
-                setHelper('helperNombre', '✓ ' + v, 'success');
+                setHelper('helperNombre', '● ' + v, 'success');
             }
             actualizarBotonPaso1();
         });
@@ -2008,7 +1707,7 @@ function configurarValidacionesVivo() {
                 setHelper('helperFechaNac', 'Verifica la fecha', 'error');
             } else {
                 marcarInput('inpFechaNac', true);
-                setHelper('helperFechaNac', '✓ ' + edad + ' años', 'success');
+                setHelper('helperFechaNac', '● ' + edad + ' años', 'success');
             }
             actualizarBotonPaso1();
         });
@@ -2027,7 +1726,7 @@ function configurarValidacionesVivo() {
                 setHelper('helperCurp', 'Faltan ' + (18 - v.length) + ' caracteres', 'warning');
             } else if (validarCURPLocal(v)) {
                 marcarInput('inpCurp', true);
-                setHelper('helperCurp', '✓ CURP válida', 'success');
+                setHelper('helperCurp', '● CURP válida', 'success');
             } else {
                 marcarInput('inpCurp', false);
                 setHelper('helperCurp', 'CURP no válida (revisa dígito verificador)', 'error');
@@ -2037,9 +1736,7 @@ function configurarValidacionesVivo() {
     }
 
     var inpCiudad = document.getElementById('inpCiudad');
-    if (inpCiudad) {
-        inpCiudad.addEventListener('input', actualizarBotonPaso1);
-    }
+    if (inpCiudad) inpCiudad.addEventListener('input', actualizarBotonPaso1);
 
     var inpPais = document.getElementById('inpPais');
     if (inpPais) {
@@ -2059,7 +1756,7 @@ function configurarValidacionesVivo() {
                 document.getElementById('btnEnviarCodigoTel').style.display = 'none';
             } else if (validarTelefonoLocal(v)) {
                 marcarInput('inpTelefono', true);
-                setHelper('helperTelefono', '✓ Número válido', 'success');
+                setHelper('helperTelefono', '● Número válido', 'success');
                 if (!registroData.telefono_verificado) {
                     document.getElementById('btnEnviarCodigoTel').style.display = 'flex';
                 }
@@ -2085,7 +1782,7 @@ function configurarValidacionesVivo() {
                 document.getElementById('btnEnviarCodigoEmail').style.display = 'none';
             } else {
                 marcarInput('inpEmail', true);
-                setHelper('helperEmail', '✓ Email válido', 'success');
+                setHelper('helperEmail', '● Email válido', 'success');
                 if (!registroData.email_verificado) {
                     document.getElementById('btnEnviarCodigoEmail').style.display = 'flex';
                 }
@@ -2117,16 +1814,13 @@ function configurarValidacionesVivo() {
     });
 }
 
-// ================================================================
-// INIT
-// ================================================================
 document.addEventListener('DOMContentLoaded', async function () {
     await cargarUsuarioActual();
 
     if (!sessionUser) {
         document.getElementById('loaderInicial').innerHTML =
             '<p style="color: var(--danger);">Debes iniciar sesión para registrarte</p>' +
-            '<a href="/" style="color: var(--gold); text-decoration: underline; display: inline-block; margin-top: 12px;">← Volver al inicio</a>';
+            '<a href="/" style="color: var(--gold); text-decoration: underline; display: inline-block; margin-top: 12px;"><span class="simbolo">◈</span> Volver al inicio</a>';
         return;
     }
 
@@ -2150,18 +1844,10 @@ document.addEventListener('DOMContentLoaded', async function () {
             }
         } catch (e) { /* silencioso */ }
     }, 400);
-
-    console.log('✅ Registro inicializado');
 });
 
-// ================================================================
-// VER TOKENS
-// ================================================================
 function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
 
-// ================================================================
-// EXPOSICIÓN GLOBAL
-// ================================================================
 window.verTokens = verTokens;
 window.showToast = showToast;
 window.irAPaso = irAPaso;
@@ -2191,9 +1877,6 @@ window.marcarInput = marcarInput;
 </script>
 
 <script>
-// ================================================================
-// PARTE 3 — OCR + FACE MATCH + CAPTURA DE FOTOS
-// ================================================================
 var tipoCamaraActual = null;
 var tesseractWorker = null;
 var procesandoOCR = false;
@@ -2206,7 +1889,7 @@ function abrirCamara(tipo) {
     tipoCamaraActual = tipo;
     var inputId = (tipo === 'selfie') ? 'inputFileSelfie' : 'inputFile';
     var input = document.getElementById(inputId);
-    if (!input) { showToast('Error: input no encontrado', 'error'); return; }
+    if (!input) { showToast('✶ Error: input no encontrado', 'error'); return; }
     input.value = '';
     input.click();
 }
@@ -2231,13 +1914,13 @@ function configurarInputsArchivos() {
 }
 
 async function procesarArchivoSeleccionado(file, tipo) {
-    if (file.size > TAMANIO_MAX_ARCHIVO) { showToast('⚠️ La imagen es muy pesada (máx 5 MB)', 'warning'); return; }
-    if (!file.type.startsWith('image/')) { showToast('⚠️ Solo se permiten imágenes', 'warning'); return; }
+    if (file.size > TAMANIO_MAX_ARCHIVO) { showToast('✶ La imagen es muy pesada (máx 5 MB)', 'warning'); return; }
+    if (!file.type.startsWith('image/')) { showToast('✶ Solo se permiten imágenes', 'warning'); return; }
 
     try {
         var dataUrl = await leerArchivoComoDataURL(file);
         var nitidezOk = await verificarNitidez(dataUrl);
-        if (!nitidezOk) { showToast('⚠️ La foto está borrosa. Intenta de nuevo con mejor luz', 'warning'); return; }
+        if (!nitidezOk) { showToast('✶ La foto está borrosa. Intenta de nuevo con mejor luz', 'warning'); return; }
 
         if (tipo === 'doc_frente') {
             registroData.documento_frente_file = file;
@@ -2258,7 +1941,7 @@ async function procesarArchivoSeleccionado(file, tipo) {
         actualizarBotonPaso5();
     } catch (e) {
         console.error('Error procesando archivo:', e);
-        showToast('❌ Error: ' + e.message, 'error');
+        showToast('✶ Error: ' + e.message, 'error');
     }
 }
 
@@ -2306,11 +1989,11 @@ async function mostrarPreviewFoto(cardId, dataUrl, titulo) {
     card.classList.add('tiene-foto');
     card.innerHTML =
         '<img src="' + dataUrl + '" class="preview-foto" alt="' + escapeHTML(titulo) + '" />' +
-        '<div class="titulo-foto">✅ ' + escapeHTML(titulo) + '</div>' +
+        '<div class="titulo-foto"><span class="simbolo" style="color:var(--success);">●</span> ' + escapeHTML(titulo) + '</div>' +
         '<div class="desc-foto">Imagen capturada correctamente</div>' +
         '<div class="acciones-foto">' +
-            '<button class="btn-mini-foto" type="button" onclick="event.stopPropagation(); cambiarFoto(\'' + cardId + '\')">🔄 Cambiar</button>' +
-            '<button class="btn-mini-foto eliminar" type="button" onclick="event.stopPropagation(); eliminarFoto(\'' + cardId + '\')">🗑️ Eliminar</button>' +
+            '<button class="btn-mini-foto" type="button" onclick="event.stopPropagation(); cambiarFoto(\'' + cardId + '\')"><span class="simbolo">✧</span> Cambiar</button>' +
+            '<button class="btn-mini-foto eliminar" type="button" onclick="event.stopPropagation(); eliminarFoto(\'' + cardId + '\')"><span class="simbolo">✶</span> Eliminar</button>' +
         '</div>';
 }
 
@@ -2332,20 +2015,20 @@ function eliminarFoto(cardId) {
         registroData.ocr_nombre = '';
         registroData.ocr_curp = '';
         registroData.ocr_nombre_coincide = false;
-        restaurarCardFoto('capDocFrente', '📄', 'Frente del documento *', 'INE, DNI, cédula o documento oficial');
+        restaurarCardFoto('capDocFrente', '◈', 'Frente del documento *', 'INE, DNI, cédula o documento oficial');
         document.getElementById('resultadoOCR').style.display = 'none';
     } else if (cardId === 'capDocReverso') {
         registroData.documento_reverso_file = null;
         registroData.documento_reverso_url = null;
-        restaurarCardFoto('capDocReverso', '📄', 'Reverso del documento', 'Opcional si tu documento tiene un solo lado');
+        restaurarCardFoto('capDocReverso', '◈', 'Reverso del documento', 'Opcional si tu documento tiene un solo lado');
     } else if (cardId === 'capSelfie') {
         registroData.selfie_file = null;
         registroData.selfie_url = null;
-        restaurarCardFoto('capSelfie', '🤳', 'Selfie de verificación *', 'Sin gorra, sin lentes, buena iluminación');
+        restaurarCardFoto('capSelfie', '●', 'Selfie de verificación *', 'Sin gorra, sin lentes, buena iluminación');
     } else if (cardId === 'capVehiculo') {
         registroData.foto_vehiculo_file = null;
         registroData.foto_vehiculo_url = null;
-        restaurarCardFoto('capVehiculo', '📸', 'Foto del vehículo', 'Donde se vean las placas claramente');
+        restaurarCardFoto('capVehiculo', '◆', 'Foto del vehículo', 'Donde se vean las placas claramente');
     }
     actualizarBotonPaso4();
     actualizarBotonPaso5();
@@ -2362,7 +2045,7 @@ function restaurarCardFoto(cardId, icono, titulo, desc) {
 }
 
 async function procesarOCR(file, dataUrl) {
-    if (procesandoOCR) { showToast('⏳ Espera a que termine el OCR actual', 'warning'); return; }
+    if (procesandoOCR) { showToast('✧ Espera a que termine el OCR actual', 'warning'); return; }
     procesandoOCR = true;
 
     var bloqueOCR = document.getElementById('bloqueOCR');
@@ -2416,7 +2099,7 @@ async function procesarOCR(file, dataUrl) {
     } catch (e) {
         bloqueOCR.style.display = 'none';
         resultadoOCR.style.display = 'block';
-        resultadoOCR.innerHTML = '<div class="info-box danger"><span class="icono">❌</span><div><strong>Error al procesar OCR</strong><br>' + escapeHTML(e.message) + '</div></div>';
+        resultadoOCR.innerHTML = '<div class="info-box danger"><span class="icono">✶</span><div><strong>Error al procesar OCR</strong><br>' + escapeHTML(e.message) + '</div></div>';
     } finally {
         procesandoOCR = false;
     }
@@ -2494,14 +2177,14 @@ function mostrarResultadoOCR(datos, confianza, coincide, nombreRegistrado) {
     if (!cont) return;
     var html = '';
     if (coincide && confianza >= OCR_MIN_CONFIANZA) {
-        html += '<div class="info-box success"><span class="icono">✅</span><div><strong>Documento verificado</strong><br>El nombre coincide con tu registro. Confianza del OCR: ' + Math.round(confianza) + '%</div></div>';
+        html += '<div class="info-box success"><span class="icono">●</span><div><strong>Documento verificado</strong><br>El nombre coincide con tu registro. Confianza del OCR: ' + Math.round(confianza) + '%</div></div>';
     } else if (!coincide) {
-        html += '<div class="info-box danger"><span class="icono">⚠️</span><div><strong>El nombre no coincide</strong><br>El nombre en el documento no coincide con "' + escapeHTML(nombreRegistrado) + '".</div></div>';
+        html += '<div class="info-box danger"><span class="icono">✶</span><div><strong>El nombre no coincide</strong><br>El nombre en el documento no coincide con "' + escapeHTML(nombreRegistrado) + '".</div></div>';
     } else if (confianza < OCR_MIN_CONFIANZA) {
-        html += '<div class="info-box warning"><span class="icono">⚠️</span><div><strong>Confianza baja</strong><br>No pudimos leer bien tu documento (' + Math.round(confianza) + '%). Intenta con mejor iluminación.</div></div>';
+        html += '<div class="info-box warning"><span class="icono">✧</span><div><strong>Confianza baja</strong><br>No pudimos leer bien tu documento (' + Math.round(confianza) + '%). Intenta con mejor iluminación.</div></div>';
     }
     html += '<div style="background: rgba(0,0,0,0.3); border-radius: 12px; padding: 12px; margin-top: 10px; font-size: 0.7rem;">';
-    html += '<div style="color: var(--text-muted); margin-bottom: 6px;">📄 Texto detectado:</div>';
+    html += '<div style="color: var(--text-muted); margin-bottom: 6px;"><span class="simbolo" style="font-family:Orbitron,monospace; color:var(--gold);">◈</span> Texto detectado:</div>';
     if (datos.nombre) html += '<div style="margin-bottom: 4px;"><strong style="color: var(--gold);">Nombre:</strong> ' + escapeHTML(datos.nombre) + '</div>';
     if (datos.curp) html += '<div style="margin-bottom: 4px;"><strong style="color: var(--gold);">CURP:</strong> ' + escapeHTML(datos.curp) + '</div>';
     if (!datos.nombre && !datos.curp) html += '<div style="color: var(--warning);">No se detectaron datos legibles. Intenta con mejor luz.</div>';
@@ -2538,7 +2221,6 @@ async function subirTodosLosDocumentos() {
 
 document.addEventListener('DOMContentLoaded', function () {
     configurarInputsArchivos();
-    console.log('✅ Parte 3 (OCR + captura) inicializada');
 });
 
 window.abrirCamara = abrirCamara;
@@ -2550,10 +2232,6 @@ window.leerArchivoComoDataURL = leerArchivoComoDataURL;
 </script>
 
 <script>
-// ================================================================
-// PARTE 4 — VALIDACIÓN BACKEND + PROCESAMIENTO FINAL
-// ================================================================
-
 async function validarCURPBackend(curp) {
     try {
         var session = await supabase.auth.getSession();
@@ -2704,7 +2382,12 @@ function actualizarChecklistFinal(paso, estado) {
         item.id = 'check-' + paso;
         cont.appendChild(item);
     }
-    var iconos = { 'pending': '⏳', 'active': '🔄', 'ok': '✅', 'error': '❌' };
+    var iconos = { 
+        'pending': '◈', 
+        'active': '◆', 
+        'ok': '●', 
+        'error': '✶' 
+    };
     var textos = {
         'verificando_datos': 'Datos personales',
         'validando_curp': 'Validando identidad',
@@ -2714,7 +2397,7 @@ function actualizarChecklistFinal(paso, estado) {
         'registrando_sistema': 'Registrando en el sistema'
     };
     var texto = textos[paso] || paso;
-    var icono = iconos[estado] || '⏳';
+    var icono = iconos[estado] || '◈';
     item.className = 'item-check ' + (estado === 'ok' ? 'ok' : (estado === 'active' ? 'pending' : ''));
     item.innerHTML = '<span class="check-icon">' + icono + '</span><span>' + texto + '</span>';
 }
@@ -2732,13 +2415,13 @@ async function enviarRegistroFinal() {
     registroData.terminos_ubicacion = document.getElementById('chkTermUbicacion').checked;
 
     var btn = document.getElementById('btnPaso6');
-    if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Procesando...'; }
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="simbolo">◈</span> Procesando...'; }
 
     document.querySelectorAll('.paso').forEach(function (p) { p.classList.remove('activo'); });
     document.getElementById('progresoTop').style.display = 'none';
     document.getElementById('pantallaFinal').classList.add('activo');
 
-    document.getElementById('iconoFinal').textContent = '⏳';
+    document.getElementById('iconoFinal').textContent = '✧';
     document.getElementById('tituloFinal').textContent = 'Procesando tu registro...';
     document.getElementById('descFinal').innerHTML = 'El sistema está verificando tu información. No cierres esta ventana.';
     document.getElementById('checklistFinal').innerHTML = '';
@@ -2792,12 +2475,12 @@ async function enviarRegistroFinal() {
         var items = document.querySelectorAll('#checklistFinal .item-check');
         if (items.length > 0) {
             var ultimo = items[items.length - 1];
-            ultimo.querySelector('.check-icon').textContent = '❌';
+            ultimo.querySelector('.check-icon').textContent = '✶';
         }
         mostrarResultadoFinal({ estado: 'error', score: 0, motivo_rechazo: e.message || 'Error desconocido' });
     } finally {
         enviandoRegistro = false;
-        if (btn) { btn.disabled = false; btn.innerHTML = '🚀 Enviar para verificación'; }
+        if (btn) { btn.disabled = false; btn.innerHTML = '<span class="simbolo">✦</span> Enviar para verificación'; }
     }
 }
 
@@ -2811,35 +2494,35 @@ function mostrarResultadoFinal(resultado) {
     var estado = resultado.estado;
 
     if (estado === 'activo') {
-        icono.textContent = '🎉';
+        icono.textContent = '✦';
         titulo.textContent = '¡Felicidades, estás aprobado!';
         desc.innerHTML = 'Tu identidad fue verificada con éxito. Ya puedes empezar a recibir pedidos en Csariel\'s Mercado.';
-        btnPanel.innerHTML = '🛵 Ir a mi panel de repartidor';
+        btnPanel.innerHTML = '<span class="simbolo">✦</span> Ir a mi panel de repartidor';
         btnPanel.href = '/features/mercado/repartidor/panel.html';
         btnPanel.style.display = 'inline-flex';
         btnReintentar.style.display = 'none';
         mostrarConfetti();
     } else if (estado === 'revision_manual' || estado === 'procesando') {
-        icono.textContent = '⏳';
+        icono.textContent = '✧';
         titulo.textContent = 'Verificación en proceso';
         desc.innerHTML = 'Tu registro requiere una revisión adicional. Te notificaremos cuando termine. Generalmente toma menos de 24 horas.';
-        btnPanel.innerHTML = '📋 Ver mi estado';
+        btnPanel.innerHTML = '<span class="simbolo">◈</span> Ver mi estado';
         btnPanel.href = '/features/mercado/repartidor/estado-verificacion.html';
         btnPanel.style.display = 'inline-flex';
         btnReintentar.style.display = 'none';
     } else if (estado === 'rechazado') {
-        icono.textContent = '❌';
+        icono.textContent = '✶';
         titulo.textContent = 'Verificación rechazada';
         desc.innerHTML = '<strong>Motivo:</strong> ' + escapeHTML(resultado.motivo_rechazo || 'No cumple con los requisitos') + '<br><br>Puedes intentar de nuevo corrigiendo lo indicado.';
         btnPanel.style.display = 'none';
-        btnReintentar.innerHTML = '🔄 Volver a intentar';
+        btnReintentar.innerHTML = '<span class="simbolo">✧</span> Volver a intentar';
         btnReintentar.style.display = 'inline-block';
     } else {
-        icono.textContent = '⚠️';
+        icono.textContent = '◈';
         titulo.textContent = 'Error al procesar';
         desc.innerHTML = '<strong>Detalle:</strong> ' + escapeHTML(resultado.motivo_rechazo || 'Error desconocido') + '<br><br>Revisa tu conexión e intenta de nuevo.';
         btnPanel.style.display = 'none';
-        btnReintentar.innerHTML = '🔄 Reintentar';
+        btnReintentar.innerHTML = '<span class="simbolo">✧</span> Reintentar';
         btnReintentar.style.display = 'inline-block';
     }
 
@@ -2886,20 +2569,17 @@ async function reintentarRegistro() {
         });
         var data = await resp.json();
         if (!resp.ok) throw new Error(data.error || 'Error al reintentar');
-        showToast('✓ Puedes volver a intentar', 'success');
+        showToast('● Puedes volver a intentar', 'success');
         setTimeout(function () { window.location.reload(); }, 1200);
     } catch (e) {
         console.error('Error reintentando:', e);
-        showToast('❌ ' + e.message, 'error');
+        showToast('✶ ' + e.message, 'error');
     }
 }
 
 document.addEventListener('DOMContentLoaded', function () {
     var btnReintentar = document.getElementById('btnReintentar');
-    if (btnReintentar) {
-        btnReintentar.onclick = reintentarRegistro;
-    }
-    console.log('✅ Parte 4 (procesamiento final) inicializada');
+    if (btnReintentar) btnReintentar.onclick = reintentarRegistro;
 });
 
 window.enviarRegistroFinal = enviarRegistroFinal;
@@ -2913,10 +2593,6 @@ window.reintentarRegistro = reintentarRegistro;
 </script>
 
 <script>
-// ================================================================
-// PARTE 5 — VERIFICACIÓN DE TELÉFONO Y EMAIL
-// ================================================================
-
 var CODIGO_LONGITUD = 6;
 var CODIGO_EXPIRACION_SEG = 300;
 var RATE_LIMIT_SEG = 60;
@@ -2939,12 +2615,12 @@ function generarCodigo() {
 
 async function enviarCodigoTel() {
     var telefono = limpiarTexto(document.getElementById('inpTelefono').value);
-    if (!telefono || !validarTelefonoLocal(telefono)) { showToast('⚠️ Ingresa un teléfono válido primero', 'warning'); return; }
+    if (!telefono || !validarTelefonoLocal(telefono)) { showToast('✶ Ingresa un teléfono válido primero', 'warning'); return; }
 
     var ahora = Date.now();
     if (ahora < telefonoRateLimit) {
         var esperar = Math.ceil((telefonoRateLimit - ahora) / 1000);
-        showToast('⏳ Espera ' + esperar + 's antes de reenviar', 'warning');
+        showToast('✧ Espera ' + esperar + 's antes de reenviar', 'warning');
         return;
     }
 
@@ -2954,7 +2630,7 @@ async function enviarCodigoTel() {
 
     if (usarFirebase) {
         try { await verificarConFirebase(telefono); return; }
-        catch (e) { console.error('Error Firebase:', e); showToast('⚠️ Error con Firebase, usando simulación', 'warning'); }
+        catch (e) { console.error('Error Firebase:', e); showToast('✧ Error con Firebase, usando simulación', 'warning'); }
     }
 
     enviarCodigoTelSimulado(telefono);
@@ -2962,13 +2638,13 @@ async function enviarCodigoTel() {
 
 function enviarCodigoTelSimulado(telefono) {
     var btn = document.getElementById('btnEnviarCodigoTel');
-    if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Enviando...'; }
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="simbolo">◈</span> Enviando...'; }
 
     telefonoCodigoActual = generarCodigo();
     telefonoCodigoExpira = Date.now() + (CODIGO_EXPIRACION_SEG * 1000);
     telefonoRateLimit = Date.now() + (RATE_LIMIT_SEG * 1000);
 
-    console.log('📱 CÓDIGO SMS (simulado):', telefonoCodigoActual);
+    console.log('◆ CÓDIGO SMS (simulado):', telefonoCodigoActual);
 
     setTimeout(function () {
         var bloque = document.getElementById('bloqueTel');
@@ -2980,9 +2656,9 @@ function enviarCodigoTelSimulado(telefono) {
         if (btn) btn.style.display = 'none';
 
         if (window.location.hostname === 'localhost' || window.location.hostname.includes('127.0.0.1')) {
-            showToast('📱 Código (dev): ' + telefonoCodigoActual, 'success');
+            showToast('◆ Código (dev): ' + telefonoCodigoActual, 'success');
         } else {
-            showToast('📩 Código enviado por SMS', 'success');
+            showToast('◆ Código enviado por SMS', 'success');
         }
 
         var inp = document.getElementById('inpCodigoTel');
@@ -3003,19 +2679,19 @@ async function verificarConFirebase(telefono) {
     var btn = document.getElementById('btnEnviarCodigoTel');
     if (btn) btn.style.display = 'none';
     telefonoRateLimit = Date.now() + (RATE_LIMIT_SEG * 1000);
-    showToast('📩 Código enviado por SMS', 'success');
+    showToast('◆ Código enviado por SMS', 'success');
     var inp = document.getElementById('inpCodigoTel');
     if (inp) inp.focus();
 }
 
 async function verificarCodigoTel() {
     var codigo = limpiarTexto(document.getElementById('inpCodigoTel').value);
-    if (!codigo || codigo.length !== CODIGO_LONGITUD) { showToast('⚠️ Ingresa los 6 dígitos', 'warning'); return; }
-    if (!telefonoCodigoActual && !window._confirmationResultTel) { showToast('⚠️ No hay código activo. Reenvía uno nuevo', 'warning'); return; }
-    if (intentosTelFallidos >= MAX_INTENTOS) { showToast('❌ Demasiados intentos. Espera 5 minutos', 'error'); return; }
+    if (!codigo || codigo.length !== CODIGO_LONGITUD) { showToast('✶ Ingresa los 6 dígitos', 'warning'); return; }
+    if (!telefonoCodigoActual && !window._confirmationResultTel) { showToast('✶ No hay código activo. Reenvía uno nuevo', 'warning'); return; }
+    if (intentosTelFallidos >= MAX_INTENTOS) { showToast('✶ Demasiados intentos. Espera 5 minutos', 'error'); return; }
 
     var btn = document.getElementById('btnVerifTel');
-    if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Verificando...'; }
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="simbolo">◈</span> Verificando...'; }
 
     try {
         var verificado = false;
@@ -3038,13 +2714,13 @@ async function verificarCodigoTel() {
         document.getElementById('telOkNumero').textContent = registroData.telefono;
 
         actualizarBotonPaso2();
-        showToast('✅ Teléfono verificado', 'success');
+        showToast('● Teléfono verificado', 'success');
     } catch (e) {
         console.error('Error verificando teléfono:', e);
-        showToast('❌ ' + e.message, 'error');
+        showToast('✶ ' + e.message, 'error');
         var inp = document.getElementById('inpCodigoTel');
         if (inp) { inp.value = ''; inp.focus(); }
-        if (btn) { btn.disabled = false; btn.innerHTML = '✓ Verificar'; }
+        if (btn) { btn.disabled = false; btn.innerHTML = '<span class="simbolo">●</span> Verificar'; }
     }
 }
 
@@ -3052,7 +2728,7 @@ async function reenviarCodigoTel() {
     var ahora = Date.now();
     if (ahora < telefonoRateLimit) {
         var esperar = Math.ceil((telefonoRateLimit - ahora) / 1000);
-        showToast('⏳ Espera ' + esperar + 's antes de reenviar', 'warning');
+        showToast('✧ Espera ' + esperar + 's antes de reenviar', 'warning');
         return;
     }
     telefonoCodigoActual = null;
@@ -3062,18 +2738,18 @@ async function reenviarCodigoTel() {
 
 async function enviarCodigoEmail() {
     var email = normalizarEmail(document.getElementById('inpEmail').value);
-    if (!email || !validarEmailLocal(email)) { showToast('⚠️ Ingresa un email válido primero', 'warning'); return; }
+    if (!email || !validarEmailLocal(email)) { showToast('✶ Ingresa un email válido primero', 'warning'); return; }
 
     var ahora = Date.now();
     if (ahora < emailRateLimit) {
         var esperar = Math.ceil((emailRateLimit - ahora) / 1000);
-        showToast('⏳ Espera ' + esperar + 's antes de reenviar', 'warning');
+        showToast('✧ Espera ' + esperar + 's antes de reenviar', 'warning');
         return;
     }
 
     registroData.email = email;
     var btn = document.getElementById('btnEnviarCodigoEmail');
-    if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Enviando...'; }
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="simbolo">◈</span> Enviando...'; }
 
     try {
         emailCodigoActual = generarCodigo();
@@ -3092,18 +2768,18 @@ async function enviarCodigoEmail() {
         if (btnEnv) btnEnv.style.display = 'none';
 
         if (window.location.hostname === 'localhost' || window.location.hostname.includes('127.0.0.1')) {
-            showToast('📧 Código (dev): ' + emailCodigoActual, 'success');
+            showToast('✦ Código (dev): ' + emailCodigoActual, 'success');
         } else {
-            showToast('📧 Código enviado a tu correo', 'success');
+            showToast('✦ Código enviado a tu correo', 'success');
         }
 
         var inp = document.getElementById('inpCodigoEmail');
         if (inp) inp.focus();
     } catch (e) {
         console.error('Error enviando email:', e);
-        showToast('❌ ' + e.message, 'error');
+        showToast('✶ ' + e.message, 'error');
         var btnEnv = document.getElementById('btnEnviarCodigoEmail');
-        if (btnEnv) { btnEnv.disabled = false; btnEnv.innerHTML = '📨 Enviar código al email'; }
+        if (btnEnv) { btnEnv.disabled = false; btnEnv.innerHTML = '<span class="simbolo">◇</span> Enviar código al email'; }
     }
 }
 
@@ -3129,12 +2805,12 @@ async function enviarEmailVerificacion(email, codigo) {
 
 async function verificarCodigoEmail() {
     var codigo = limpiarTexto(document.getElementById('inpCodigoEmail').value);
-    if (!codigo || codigo.length !== CODIGO_LONGITUD) { showToast('⚠️ Ingresa los 6 dígitos', 'warning'); return; }
-    if (!emailCodigoActual) { showToast('⚠️ No hay código activo. Reenvía uno nuevo', 'warning'); return; }
-    if (intentosEmailFallidos >= MAX_INTENTOS) { showToast('❌ Demasiados intentos. Espera 5 minutos', 'error'); return; }
+    if (!codigo || codigo.length !== CODIGO_LONGITUD) { showToast('✶ Ingresa los 6 dígitos', 'warning'); return; }
+    if (!emailCodigoActual) { showToast('✶ No hay código activo. Reenvía uno nuevo', 'warning'); return; }
+    if (intentosEmailFallidos >= MAX_INTENTOS) { showToast('✶ Demasiados intentos. Espera 5 minutos', 'error'); return; }
 
     var btn = document.getElementById('btnVerifEmail');
-    if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Verificando...'; }
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="simbolo">◈</span> Verificando...'; }
 
     try {
         var verificado = (codigo === emailCodigoActual);
@@ -3163,13 +2839,13 @@ async function verificarCodigoEmail() {
         document.getElementById('emailOkCorreo').textContent = registroData.email;
 
         actualizarBotonPaso3();
-        showToast('✅ Email verificado', 'success');
+        showToast('● Email verificado', 'success');
     } catch (e) {
         console.error('Error verificando email:', e);
-        showToast('❌ ' + e.message, 'error');
+        showToast('✶ ' + e.message, 'error');
         var inp = document.getElementById('inpCodigoEmail');
         if (inp) { inp.value = ''; inp.focus(); }
-        if (btn) { btn.disabled = false; btn.innerHTML = '✓ Verificar'; }
+        if (btn) { btn.disabled = false; btn.innerHTML = '<span class="simbolo">●</span> Verificar'; }
     }
 }
 
@@ -3177,7 +2853,7 @@ async function reenviarCodigoEmail() {
     var ahora = Date.now();
     if (ahora < emailRateLimit) {
         var esperar = Math.ceil((emailRateLimit - ahora) / 1000);
-        showToast('⏳ Espera ' + esperar + 's antes de reenviar', 'warning');
+        showToast('✧ Espera ' + esperar + 's antes de reenviar', 'warning');
         return;
     }
     emailCodigoActual = null;
@@ -3248,7 +2924,6 @@ async function verificarEstadoPrevio() {
 document.addEventListener('DOMContentLoaded', async function () {
     configurarInputsCodigo();
     if (sessionUser) await verificarEstadoPrevio();
-    console.log('✅ Parte 5 (verificación SMS/email) inicializada');
 });
 
 window.enviarCodigoTel = enviarCodigoTel;
