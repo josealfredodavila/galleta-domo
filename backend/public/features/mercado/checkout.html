@@ -78,10 +78,11 @@
             display: flex; gap: 4px; background: rgba(15,45,26,0.3); border-radius: var(--radius);
             padding: 4px; border: 1px solid var(--glass-border); margin: 16px 0 20px; overflow-x: auto;
         }
-        .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; white-space: nowrap; transition: var(--transition); }
+        .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; white-space: nowrap; transition: var(--transition); display: flex; align-items: center; gap: 6px; }
         .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212,175,55,0.05); }
         .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); }
         .main-nav .nav-link.live { color: var(--danger); }
+        .main-nav .nav-link .nav-simbolo { color: var(--gold); opacity: 0.7; }
 
         .btn-back {
             display: inline-flex; align-items: center; gap: 6px;
@@ -90,6 +91,7 @@
             font-size: 0.72rem; text-decoration: none; margin-bottom: 16px;
             transition: var(--transition); cursor: pointer;
         }
+        .btn-back .simbolo { color: var(--gold); font-family: 'Orbitron', monospace; }
         .btn-back:hover { border-color: var(--gold); color: var(--gold); }
 
         .titulo {
@@ -101,6 +103,7 @@
             font-weight: 700; color: var(--gold);
             display: flex; align-items: center; gap: 8px;
         }
+        .titulo h1 .simbolo { color: var(--gold); }
         .titulo .paso {
             font-size: 0.6rem; color: var(--text-muted);
             background: rgba(0,0,0,0.35); padding: 4px 12px;
@@ -114,10 +117,11 @@
         }
         .pasos .paso-item { display: flex; align-items: center; gap: 4px; }
         .pasos .paso-num {
-            width: 18px; height: 18px; border-radius: 50%;
+            width: 20px; height: 20px; border-radius: 50%;
             background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border);
             display: flex; align-items: center; justify-content: center;
-            font-size: 0.55rem; font-weight: 700;
+            font-size: 0.6rem; font-weight: 700;
+            font-family: 'Orbitron', monospace;
         }
         .pasos .paso-item.completado .paso-num { background: var(--success); border-color: var(--success); color: #fff; }
         .pasos .paso-item.actual .paso-num { background: var(--gold); border-color: var(--gold); color: var(--space); }
@@ -141,6 +145,7 @@
             align-items: center;
             gap: 8px;
         }
+        .seccion-card h2 .simbolo { color: var(--gold); }
 
         .tipo-entrega-toggle {
             display: grid; grid-template-columns: 1fr 1fr;
@@ -154,7 +159,11 @@
         .tipo-opcion:hover { border-color: var(--gold); }
         .tipo-opcion.activo { border-color: var(--gold); background: rgba(212,175,55,0.1); }
         .tipo-opcion.deshabilitado { opacity: 0.3; cursor: not-allowed; }
-        .tipo-opcion .icono { font-size: 1.4rem; margin-bottom: 4px; }
+        .tipo-opcion .icono { 
+            font-size: 1.4rem; margin-bottom: 4px; 
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
+        }
         .tipo-opcion .nombre { font-size: 0.72rem; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
         .tipo-opcion .precio { font-size: 0.62rem; color: var(--text-muted); }
         .tipo-opcion.activo .precio { color: var(--gold); }
@@ -201,8 +210,14 @@
         .gps-bloque.capturado { background: rgba(0,214,143,0.08); border-color: rgba(0,214,143,0.4); }
         .gps-bloque.error { background: rgba(255,51,102,0.08); border-color: rgba(255,51,102,0.3); }
         .gps-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-        .gps-header .gps-icono { font-size: 1.2rem; }
-        .gps-header .gps-titulo { font-size: 0.78rem; font-weight: 700; color: var(--cyan); flex: 1; }
+        .gps-header .gps-icono { 
+            font-size: 1.2rem; 
+            color: var(--cyan);
+            font-family: 'Orbitron', monospace;
+        }
+        .gps-bloque.capturado .gps-icono { color: var(--success); }
+        .gps-bloque.error .gps-icono { color: var(--danger); }
+        .gps-header .gps-titulo { font-size: 0.78rem; font-weight: 700; color: var(--cyan); flex: 1; font-family: 'Orbitron', monospace; }
         .gps-bloque.capturado .gps-header .gps-titulo { color: var(--success); }
         .gps-bloque.error .gps-header .gps-titulo { color: var(--danger); }
         .gps-aviso { font-size: 0.68rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 12px; }
@@ -216,6 +231,7 @@
             font-size: 0.78rem; cursor: pointer; transition: var(--transition);
             display: inline-flex; align-items: center; justify-content: center; gap: 8px;
         }
+        .btn-gps-grande .simbolo { font-family: 'Orbitron', monospace; }
         .btn-gps-grande:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,229,255,0.3); }
         .btn-gps-grande:disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -228,6 +244,7 @@
             display: inline-flex; align-items: center; justify-content: center; gap: 6px;
             margin-top: 8px;
         }
+        .btn-gps-actualizar .simbolo { font-family: 'Orbitron', monospace; }
         .btn-gps-actualizar:hover { background: rgba(0,214,143,0.1); }
 
         .gps-coords {
@@ -245,10 +262,17 @@
             line-height: 1.6; padding: 10px;
             background: rgba(255,51,102,0.08); border-radius: 10px; margin-top: 8px;
         }
+        .gps-instrucciones strong {
+            color: var(--danger);
+            display: flex; align-items: center; gap: 6px;
+        }
+        .gps-instrucciones strong::before {
+            content: '✶';
+            font-family: 'Orbitron', monospace;
+        }
         .gps-instrucciones ol { padding-left: 18px; margin-top: 6px; }
         .gps-instrucciones li { margin-bottom: 4px; }
 
-        /* MÉTODOS DE PAGO - AHORA 3 OPCIONES */
         .pago-opciones {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
@@ -269,7 +293,11 @@
         }
         .pago-opcion:hover { border-color: var(--gold); }
         .pago-opcion.activo { border-color: var(--gold); background: rgba(212,175,55,0.1); }
-        .pago-opcion .icono { font-size: 1.3rem; }
+        .pago-opcion .icono { 
+            font-size: 1.3rem; 
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
+        }
         .pago-opcion .texto {
             font-size: 0.68rem;
             font-weight: 600;
@@ -288,7 +316,10 @@
             line-height: 1.5; margin-top: 12px;
             display: flex; gap: 10px; align-items: flex-start;
         }
-        .aviso-envio .icono { font-size: 1.2rem; flex-shrink: 0; }
+        .aviso-envio .icono { 
+            font-size: 1.2rem; flex-shrink: 0; 
+            font-family: 'Orbitron', monospace;
+        }
 
         .aviso-servicio {
             background: rgba(212,175,55,0.08);
@@ -298,7 +329,10 @@
             line-height: 1.5; margin-top: 12px;
             display: flex; gap: 10px; align-items: flex-start;
         }
-        .aviso-servicio .icono { font-size: 1.2rem; flex-shrink: 0; color: var(--gold); }
+        .aviso-servicio .icono { 
+            font-size: 1.2rem; flex-shrink: 0; color: var(--gold);
+            font-family: 'Orbitron', monospace;
+        }
         .aviso-servicio strong { color: var(--gold); }
 
         .resumen-items {
@@ -313,7 +347,9 @@
             font-weight: 600; margin-bottom: 8px;
             padding-bottom: 6px; border-bottom: 1px solid var(--glass-border);
             font-family: 'Orbitron', monospace;
+            display: flex; align-items: center; gap: 6px;
         }
+        .resumen-grupo .tienda-nombre .simbolo { color: var(--gold); }
         .resumen-item {
             display: flex; justify-content: space-between;
             gap: 8px; font-size: 0.72rem;
@@ -334,6 +370,11 @@
             display: flex; justify-content: space-between;
             padding: 5px 0; font-size: 0.78rem;
             color: var(--text-secondary);
+        }
+        .totales .fila .lbl-simbolo {
+            font-family: 'Orbitron', monospace;
+            color: var(--gold);
+            margin-right: 5px;
         }
         .totales .fila.envio .val { font-size: 0.72rem; }
         .totales .fila.servicio {
@@ -368,6 +409,7 @@
             transition: var(--transition);
             display: inline-flex; align-items: center; justify-content: center; gap: 8px;
         }
+        .btn-confirmar .simbolo { font-family: 'Orbitron', monospace; }
         .btn-confirmar:hover:not(:disabled) { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
         .btn-confirmar:disabled { opacity: 0.4; cursor: not-allowed; filter: grayscale(0.5); }
 
@@ -375,8 +417,10 @@
             text-align: center; font-size: 0.68rem;
             color: var(--warning); margin-top: 8px;
             display: flex; align-items: center; justify-content: center; gap: 6px;
+            font-family: 'Orbitron', monospace;
         }
         .aviso-bloqueo.hidden { display: none; }
+        .aviso-bloqueo .simbolo { font-family: 'Orbitron', monospace; }
 
         .loading-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
         .loading-state .spinner {
@@ -394,7 +438,11 @@
             border: 1px solid var(--glass-border);
             border-radius: var(--radius-xl);
         }
-        .empty-state .icon { font-size: 3.5rem; display: block; margin-bottom: 16px; color: var(--gold); opacity: 0.4; }
+        .empty-state .icon { 
+            font-size: 3.5rem; display: block; margin-bottom: 16px; 
+            color: var(--gold); opacity: 0.4;
+            font-family: 'Orbitron', monospace;
+        }
         .empty-state h3 { font-family: 'Orbitron', monospace; color: var(--text-secondary); font-size: 1rem; margin-bottom: 8px; }
         .empty-state p { font-size: 0.85rem; margin-bottom: 20px; }
         .empty-state .btn-ir {
@@ -406,6 +454,7 @@
             font-size: 0.8rem; cursor: pointer; text-decoration: none;
             transition: var(--transition);
         }
+        .empty-state .btn-ir .simbolo { font-family: 'Orbitron', monospace; }
 
         .toast {
             position: fixed; bottom: 30px; right: 20px;
@@ -430,7 +479,8 @@
         }
         .footer .brand { color: var(--gold); font-weight: 600; }
         .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
-        .footer-links a { color: var(--text-muted); text-decoration: none; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; display: flex; align-items: center; gap: 4px; }
+        .footer-links a .simbolo { font-family: 'Orbitron', monospace; color: var(--gold); opacity: 0.7; }
         .footer-links a:hover { color: var(--gold); }
 
         html.tema-dia, html[data-tema="dia"] {
@@ -482,39 +532,39 @@
         </header>
 
         <nav class="main-nav" aria-label="Navegación principal">
-            <a href="/" class="nav-link">⌂ Inicio</a>
-            <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
-            <a href="/features/perfil/perfil.html" class="nav-link">◆ Perfil</a>
-            <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
-            <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
-            <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
-            <a href="/features/videos/videos.html" class="nav-link">🎬 Videos</a>
-            <a href="/features/grupos/grupos.html" class="nav-link">👥 Grupos</a>
-            <a href="/features/mercado/index.html" class="nav-link active">🛒 Mercado</a>
+            <a href="/" class="nav-link"><span class="nav-simbolo">◈</span> Inicio</a>
+            <a href="/features/muro/muro.html" class="nav-link"><span class="nav-simbolo">◆</span> Muro</a>
+            <a href="/features/perfil/perfil.html" class="nav-link"><span class="nav-simbolo">◇</span> Perfil</a>
+            <a href="/features/mensajes/contactos.html" class="nav-link"><span class="nav-simbolo">●</span> Contactos</a>
+            <a href="/features/live/live.html" class="nav-link live"><span class="nav-simbolo">◉</span> Live</a>
+            <a href="/features/internet/internet.html" class="nav-link"><span class="nav-simbolo">◆</span> Internet</a>
+            <a href="/features/videos/videos.html" class="nav-link"><span class="nav-simbolo">◇</span> Videos</a>
+            <a href="/features/grupos/grupos.html" class="nav-link"><span class="nav-simbolo">◆</span> Grupos</a>
+            <a href="/features/mercado/index.html" class="nav-link active"><span class="nav-simbolo">◈</span> Mercado</a>
         </nav>
 
         <a href="/features/mercado/carrito.html" class="btn-back">
-            ← <span data-clave="mercado_volver_carrito">Volver al carrito</span>
+            <span class="simbolo">◈</span> <span data-clave="mercado_volver_carrito">Volver al carrito</span>
         </a>
 
         <div class="titulo">
-            <h1>✓ <span data-clave="mercado_confirmar_pedido">Confirmar pedido</span></h1>
+            <h1><span class="simbolo">◈</span> <span data-clave="mercado_confirmar_pedido">Confirmar pedido</span></h1>
             <span class="paso">Paso 3/3</span>
         </div>
 
         <div class="pasos">
             <div class="paso-item completado">
-                <span class="paso-num">✓</span>
+                <span class="paso-num">●</span>
                 <span data-clave="paso_carrito">Carrito</span>
             </div>
             <span class="linea"></span>
             <div class="paso-item completado">
-                <span class="paso-num">✓</span>
+                <span class="paso-num">●</span>
                 <span data-clave="paso_datos">Datos</span>
             </div>
             <span class="linea"></span>
             <div class="paso-item actual">
-                <span class="paso-num">3</span>
+                <span class="paso-num">◈</span>
                 <span data-clave="paso_confirmar">Confirmar</span>
             </div>
         </div>
@@ -529,10 +579,10 @@
         <footer class="footer">
             <span><span class="brand">© Csariel's</span> · <span data-clave="mercado_footer">Sabor al Paladar · WEB3</span></span>
             <div class="footer-links">
-                <a href="/terminos" data-clave="footer_terminos">📜 Términos</a>
-                <a href="/privacidad" data-clave="footer_privacidad">🔒 Privacidad</a>
-                <a href="/cookies" data-clave="footer_cookies">🍪 Cookies</a>
-                <a href="/live-terminos" data-clave="footer_terminos_live">📡 Términos de Live</a>
+                <a href="/terminos" data-clave="footer_terminos"><span class="simbolo">◇</span> Términos</a>
+                <a href="/privacidad" data-clave="footer_privacidad"><span class="simbolo">◆</span> Privacidad</a>
+                <a href="/cookies" data-clave="footer_cookies"><span class="simbolo">◇</span> Cookies</a>
+                <a href="/live-terminos" data-clave="footer_terminos_live"><span class="simbolo">◆</span> Términos de Live</a>
                 <span style="opacity:0.3;">⚡ Polygon</span>
             </div>
         </footer>
@@ -546,7 +596,7 @@
         background:#ff3366; color:#fff; padding:12px 16px; font-family:monospace;
         font-size:0.75rem; word-break:break-word; box-shadow:0 4px 20px rgba(0,0,0,0.4);
     ">
-        <strong>⚠️ Error detectado:</strong>
+        <strong><span style="font-family:Orbitron,monospace;">✶</span> Error detectado:</strong>
         <span id="errorBannerText"></span>
         <button onclick="document.getElementById('errorBanner').style.display='none'"
             style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">
@@ -556,13 +606,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/features/shared/js/idiomas.js"></script>
-
-<script>
-// ================================================================
-// ⚙️ CONFIGURACIÓN LEGAL — Csariel's Ecosystem
-// ================================================================
-// 👉 EDITA ESTE BLOQUE cuando tengas los datos legales listos
-// ================================================================
+</body>
+</html><script>
 var CONFIG_LEGAL = {
     nombre_comercial: 'Csariel\'s',
     nombre_ecosistema: 'Csariel\'s Ecosystem',
@@ -574,13 +619,7 @@ var CONFIG_LEGAL = {
     pais_operacion: 'México',
     ciudad_operacion: 'Puebla'
 };
-// ================================================================
-// FIN DE CONFIGURACIÓN LEGAL
-// ================================================================
 
-// ================================================================
-// CONFIGURACIÓN APP
-// ================================================================
 var supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
 var supabaseKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
 var supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
@@ -588,11 +627,8 @@ window.supabaseClient = supabaseClient;
 var supabase = supabaseClient;
 
 var CARRITO_KEY = 'mercado_carrito_v1';
-var COMISION_COMPRADOR = 5.00; // $5 MXN fijos por servicio de plataforma
+var COMISION_COMPRADOR = 5.00;
 
-// ================================================================
-// ESTADO
-// ================================================================
 var sessionUser = null;
 var itemsCarrito = [];
 var tiendasCache = {};
@@ -603,9 +639,6 @@ var gpsTimeoutId = null;
 var procesando = false;
 var gruposTiendas = {};
 
-// ================================================================
-// BANNER DE ERRORES
-// ================================================================
 function mostrarErrorEnPantalla(mensaje) {
     var banner = document.getElementById('errorBanner');
     var texto = document.getElementById('errorBannerText');
@@ -618,9 +651,6 @@ window.addEventListener('unhandledrejection', function (event) {
     mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason && event.reason.message ? event.reason.message : event.reason));
 });
 
-// ================================================================
-// TOAST
-// ================================================================
 function showToast(mensaje, tipo) {
     try {
         var toastEl = document.getElementById('toast');
@@ -635,9 +665,6 @@ function showToast(mensaje, tipo) {
     } catch (e) { console.warn('Toast error:', e); }
 }
 
-// ================================================================
-// HELPERS
-// ================================================================
 function escapeHTML(texto) {
     if (!texto) return '';
     var div = document.createElement('div');
@@ -673,9 +700,6 @@ function generarCodigoPedido() {
     return 'SAR-' + ymd + '-' + rand;
 }
 
-// ================================================================
-// CARGAR USUARIO
-// ================================================================
 async function cargarUsuarioActual() {
     try {
         var result = await supabase.auth.getSession();
@@ -695,9 +719,6 @@ async function cargarUsuarioActual() {
     } catch (e) { console.error('Error usuario:', e); return null; }
 }
 
-// ================================================================
-// PREPARAR CHECKOUT
-// ================================================================
 async function prepararCheckout() {
     itemsCarrito = leerCarrito();
 
@@ -766,16 +787,13 @@ function mostrarVacio(mensaje) {
     var container = document.getElementById('checkoutContainer');
     if (!container) return;
     container.innerHTML = '<div class="empty-state">' +
-        '<span class="icon">🛒</span>' +
+        '<span class="icon">◈</span>' +
         '<h3>No puedes continuar</h3>' +
         '<p>' + escapeHTML(mensaje || 'Tu carrito está vacío o tiene problemas.') + '</p>' +
-        '<a href="/features/mercado/index.html" class="btn-ir">🛍️ Ir al Mercado</a>' +
+        '<a href="/features/mercado/index.html" class="btn-ir"><span class="simbolo">◆</span> Ir al Mercado</a>' +
     '</div>';
 }
 
-// ================================================================
-// CÁLCULOS
-// ================================================================
 function calcularSubtotal() {
     var sub = 0;
     itemsCarrito.forEach(function (it) {
@@ -807,7 +825,6 @@ function calcularEnvio() {
     };
 }
 
-// Comisión de servicio: $5 por CADA pedido (cada tienda = un pedido)
 function calcularComisionServicio() {
     var totalTiendas = Object.keys(gruposTiendas).length;
     return COMISION_COMPRADOR * totalTiendas;
@@ -817,36 +834,31 @@ function calcularTotal() {
     return calcularSubtotal() + calcularEnvio().app + calcularComisionServicio();
 }
 
-// ================================================================
-// RENDER CHECKOUT
-// ================================================================
 function renderCheckout(aceptaDelivery, aceptaPickup) {
     var container = document.getElementById('checkoutContainer');
     if (!container) return;
 
     var html = '';
 
-    // ============ TIPO DE ENTREGA ============
     html += '<div class="seccion-card">' +
-        '<h2>🛵 <span data-clave="mercado_tipo_entrega">Tipo de entrega</span></h2>' +
+        '<h2><span class="simbolo">◈</span> <span data-clave="mercado_tipo_entrega">Tipo de entrega</span></h2>' +
         '<div class="tipo-entrega-toggle">' +
             '<div class="tipo-opcion ' + (tipoEntrega === 'delivery' ? 'activo' : '') + (aceptaDelivery ? '' : ' deshabilitado') + '" onclick="' + (aceptaDelivery ? 'cambiarTipoEntrega(\'delivery\')' : '') + '">' +
-                '<div class="icono">🛵</div>' +
+                '<div class="icono">◆</div>' +
                 '<div class="nombre">Delivery</div>' +
                 '<div class="precio">' + obtenerTextoEnvio() + '</div>' +
             '</div>' +
             '<div class="tipo-opcion ' + (tipoEntrega === 'pickup' ? 'activo' : '') + (aceptaPickup ? '' : ' deshabilitado') + '" onclick="' + (aceptaPickup ? 'cambiarTipoEntrega(\'pickup\')' : '') + '">' +
-                '<div class="icono">🏪</div>' +
+                '<div class="icono">◇</div>' +
                 '<div class="nombre">Recoger en tienda</div>' +
                 '<div class="precio">Sin costo</div>' +
             '</div>' +
         '</div>' +
     '</div>';
 
-    // ============ DIRECCIÓN + GPS ============
     if (tipoEntrega === 'delivery') {
         html += '<div class="seccion-card">' +
-            '<h2>📍 <span data-clave="mercado_direccion_entrega">Dirección de entrega</span></h2>' +
+            '<h2><span class="simbolo">◈</span> <span data-clave="mercado_direccion_entrega">Dirección de entrega</span></h2>' +
 
             '<div class="form-group">' +
                 '<label><span data-clave="mercado_direccion">Dirección escrita</span> <span class="required">*</span></label>' +
@@ -859,7 +871,7 @@ function renderCheckout(aceptaDelivery, aceptaPickup) {
 
                 '<div class="gps-bloque" id="gpsBloque">' +
                     '<div class="gps-header">' +
-                        '<span class="gps-icono" id="gpsIcono">📡</span>' +
+                        '<span class="gps-icono" id="gpsIcono">◈</span>' +
                         '<span class="gps-titulo" id="gpsTitulo">Activa tu ubicación GPS</span>' +
                     '</div>' +
 
@@ -869,7 +881,7 @@ function renderCheckout(aceptaDelivery, aceptaPickup) {
                     '</div>' +
 
                     '<button type="button" class="btn-gps-grande" id="btnGPS" onclick="capturarUbicacion()">' +
-                        '📡 <span data-clave="mercado_activar_gps">Activar mi ubicación GPS</span>' +
+                        '<span class="simbolo">◈</span> <span data-clave="mercado_activar_gps">Activar mi ubicación GPS</span>' +
                     '</button>' +
 
                     '<div id="gpsCoordsBox" style="display:none; margin-top:10px;">' +
@@ -877,12 +889,12 @@ function renderCheckout(aceptaDelivery, aceptaPickup) {
                             '—<span class="precision" id="gpsPrecision"></span>' +
                         '</div>' +
                         '<button type="button" class="btn-gps-actualizar" onclick="capturarUbicacion()">' +
-                            '🔄 Actualizar ubicación' +
+                            '<span class="simbolo">✧</span> Actualizar ubicación' +
                         '</button>' +
                     '</div>' +
 
                     '<div class="gps-instrucciones" id="gpsInstrucciones" style="display:none;">' +
-                        '<strong>⚠️ No pudimos acceder a tu ubicación</strong>' +
+                        '<strong>No pudimos acceder a tu ubicación</strong>' +
                         '<ol>' +
                             '<li>Revisa que el GPS del teléfono esté encendido</li>' +
                             '<li>Acepta el permiso de ubicación cuando el navegador pregunte</li>' +
@@ -901,7 +913,7 @@ function renderCheckout(aceptaDelivery, aceptaPickup) {
         '</div>';
     } else {
         html += '<div class="seccion-card">' +
-            '<h2>📞 <span data-clave="mercado_contacto">Contacto</span></h2>' +
+            '<h2><span class="simbolo">◈</span> <span data-clave="mercado_contacto">Contacto</span></h2>' +
             '<div class="form-group">' +
                 '<label><span data-clave="mercado_telefono_contacto">Teléfono de contacto</span> <span class="required">*</span></label>' +
                 '<input type="tel" id="inputTelefono" maxlength="20" placeholder="+52 123 456 7890" />' +
@@ -909,29 +921,27 @@ function renderCheckout(aceptaDelivery, aceptaPickup) {
         '</div>';
     }
 
-    // ============ NOTAS ============
     html += '<div class="seccion-card">' +
-        '<h2>📝 <span data-clave="mercado_notas">Notas para el vendedor</span></h2>' +
+        '<h2><span class="simbolo">◈</span> <span data-clave="mercado_notas">Notas para el vendedor</span></h2>' +
         '<div class="form-group" style="margin-bottom:0;">' +
             '<textarea id="inputNotas" maxlength="300" placeholder="Instrucciones especiales, alergias, referencias..."></textarea>' +
             '<div class="helper">Opcional · máx 300 caracteres</div>' +
         '</div>' +
     '</div>';
 
-    // ============ MÉTODO DE PAGO (3 OPCIONES) ============
     html += '<div class="seccion-card">' +
-        '<h2>💵 <span data-clave="mercado_metodo_pago">Método de pago</span></h2>' +
+        '<h2><span class="simbolo">◈</span> <span data-clave="mercado_metodo_pago">Método de pago</span></h2>' +
         '<div class="pago-opciones">' +
             '<div class="pago-opcion ' + (metodoPago === 'efectivo' ? 'activo' : '') + '" onclick="cambiarMetodoPago(\'efectivo\')">' +
-                '<span class="icono">💵</span>' +
+                '<span class="icono">◆</span>' +
                 '<span class="texto">Efectivo</span>' +
             '</div>' +
             '<div class="pago-opcion ' + (metodoPago === 'transferencia' ? 'activo' : '') + '" onclick="cambiarMetodoPago(\'transferencia\')">' +
-                '<span class="icono">🏦</span>' +
+                '<span class="icono">◇</span>' +
                 '<span class="texto">Transferencia</span>' +
             '</div>' +
             '<div class="pago-opcion ' + (metodoPago === 'cripto' ? 'activo' : '') + '" onclick="cambiarMetodoPago(\'cripto\')">' +
-                '<span class="icono">💎</span>' +
+                '<span class="icono">✦</span>' +
                 '<span class="texto">Cripto</span>' +
             '</div>' +
         '</div>' +
@@ -939,17 +949,16 @@ function renderCheckout(aceptaDelivery, aceptaPickup) {
             '<div class="form-group" style="margin-top:14px; margin-bottom:0;">' +
                 '<label>Criptomoneda <span class="required">*</span></label>' +
                 '<select id="inputCripto">' +
-                    '<option value="usdttrc20">💵 USDT (TRC20) — Recomendado</option>' +
-                    '<option value="usdc">💎 USDC (ERC20)</option>' +
-                    '<option value="btc">₿ Bitcoin (BTC)</option>' +
-                    '<option value="eth">Ξ Ethereum (ETH)</option>' +
+                    '<option value="usdttrc20">◆ USDT (TRC20) — Recomendado</option>' +
+                    '<option value="usdc">◇ USDC (ERC20)</option>' +
+                    '<option value="btc">◆ Bitcoin (BTC)</option>' +
+                    '<option value="eth">◇ Ethereum (ETH)</option>' +
                 '</select>' +
                 '<div class="helper">Serás redirigido a una pasarela de pago al confirmar</div>' +
             '</div>' : ''
         ) +
     '</div>';
 
-    // ============ RESUMEN ============
     html += renderResumen();
 
     container.innerHTML = html;
@@ -977,7 +986,7 @@ function renderResumen() {
     var numTiendas = Object.keys(gruposTiendas).length;
 
     var html = '<div class="seccion-card">' +
-        '<h2>📦 <span data-clave="mercado_resumen_pedido">Resumen del pedido</span></h2>' +
+        '<h2><span class="simbolo">◈</span> <span data-clave="mercado_resumen_pedido">Resumen del pedido</span></h2>' +
         '<div class="resumen-items">';
 
     Object.keys(gruposTiendas).forEach(function (tid) {
@@ -985,7 +994,7 @@ function renderResumen() {
         var items = gruposTiendas[tid];
 
         html += '<div class="resumen-grupo">' +
-            '<div class="tienda-nombre">🏪 ' + escapeHTML(t.nombre_negocio || 'Tienda') + '</div>';
+            '<div class="tienda-nombre"><span class="simbolo">◈</span> ' + escapeHTML(t.nombre_negocio || 'Tienda') + '</div>';
 
         items.forEach(function (it) {
             html += '<div class="resumen-item">' +
@@ -1004,30 +1013,28 @@ function renderResumen() {
                 '<span>' + formatearPrecio(subtotal) + '</span>' +
             '</div>';
 
-    // Envío
     if (tipoEntrega === 'pickup') {
         html += '<div class="fila envio">' +
-            '<span>🏪 Recoger en tienda</span>' +
+            '<span><span class="lbl-simbolo">◇</span> Recoger en tienda</span>' +
             '<span style="color:var(--success);">Sin costo</span>' +
         '</div>';
     } else {
         if (envio.app > 0) {
             html += '<div class="fila envio">' +
-                '<span>🛵 Envío (por app)</span>' +
+                '<span><span class="lbl-simbolo">◆</span> Envío (por app)</span>' +
                 '<span style="color:var(--gold); font-weight:600;">' + formatearPrecio(envio.app) + '</span>' +
             '</div>';
         }
         if (envio.coordinar) {
             html += '<div class="fila envio">' +
-                '<span>🛵 Envío (al repartidor)</span>' +
+                '<span><span class="lbl-simbolo">◆</span> Envío (al repartidor)</span>' +
                 '<span style="color:var(--cyan); font-weight:600;">En efectivo</span>' +
             '</div>';
         }
     }
 
-    // Servicio de plataforma
     html += '<div class="fila servicio">' +
-        '<span>✨ Servicio de plataforma' +
+        '<span><span class="lbl-simbolo">✦</span> Servicio de plataforma' +
         (numTiendas > 1 ? ' (' + numTiendas + ' tiendas)' : '') +
         '</span>' +
         '<span class="val">' + formatearPrecio(comisionServicio) + '</span>' +
@@ -1039,10 +1046,9 @@ function renderResumen() {
     '</div>' +
     '</div>';
 
-    // Aviso envío efectivo
     if (tipoEntrega === 'delivery' && envio.coordinar) {
         html += '<div class="aviso-envio">' +
-            '<span class="icono">💵</span>' +
+            '<span class="icono">◆</span>' +
             '<div>' +
                 'El <strong>envío</strong> se paga en efectivo directamente al repartidor al recibir tu pedido. ' +
                 'El monto lo coordinas con él.' +
@@ -1050,9 +1056,8 @@ function renderResumen() {
         '</div>';
     }
 
-    // Aviso comisión de servicio
     html += '<div class="aviso-servicio">' +
-        '<span class="icono">✨</span>' +
+        '<span class="icono">✦</span>' +
         '<div>' +
             'El <strong>servicio de plataforma</strong> (' + formatearPrecio(COMISION_COMPRADOR) + ' por tienda) ' +
             'cubre verificación, seguimiento en vivo y soporte 24/7.' +
@@ -1060,11 +1065,11 @@ function renderResumen() {
     '</div>';
 
     html += '<button class="btn-confirmar" id="btnConfirmar" onclick="confirmarPedido()" disabled>' +
-        '✓ <span data-clave="mercado_confirmar_pedido">Confirmar pedido</span>' +
+        '<span class="simbolo">◆</span> <span data-clave="mercado_confirmar_pedido">Confirmar pedido</span>' +
     '</button>';
 
     html += '<div class="aviso-bloqueo" id="avisoBloqueo">' +
-        '⚠️ <span id="textoBloqueo">Completa todos los datos para continuar</span>' +
+        '<span class="simbolo">✶</span> <span id="textoBloqueo">Completa todos los datos para continuar</span>' +
     '</div>';
 
     html += '</div>';
@@ -1072,9 +1077,6 @@ function renderResumen() {
     return html;
 }
 
-// ================================================================
-// VALIDAR ESTADO
-// ================================================================
 function actualizarEstadoBotonConfirmar() {
     var btn = document.getElementById('btnConfirmar');
     var textoBloqueo = document.getElementById('textoBloqueo');
@@ -1114,9 +1116,6 @@ function actualizarEstadoBotonConfirmar() {
     }
 }
 
-// ================================================================
-// AUTOCOMPLETAR
-// ================================================================
 async function autocompletarDatosUsuario() {
     if (!sessionUser) return;
     try {
@@ -1141,9 +1140,6 @@ async function autocompletarDatosUsuario() {
     } catch (e) { /* silencioso */ }
 }
 
-// ================================================================
-// CAMBIOS
-// ================================================================
 function cambiarTipoEntrega(tipo) {
     tipoEntrega = tipo;
     var aceptaDelivery = Object.keys(gruposTiendas).every(function (tid) {
@@ -1157,7 +1153,6 @@ function cambiarTipoEntrega(tipo) {
 
 function cambiarMetodoPago(metodo) {
     metodoPago = metodo;
-    // Re-render para mostrar/ocultar el selector de cripto
     var aceptaDelivery = Object.keys(gruposTiendas).every(function (tid) {
         return tiendasCache[tid] && tiendasCache[tid].acepta_delivery;
     });
@@ -1167,9 +1162,6 @@ function cambiarMetodoPago(metodo) {
     renderCheckout(aceptaDelivery, aceptaPickup);
 }
 
-// ================================================================
-// GPS
-// ================================================================
 function capturarUbicacion() {
     var btn = document.getElementById('btnGPS');
     var btnActualizar = document.querySelector('.btn-gps-actualizar');
@@ -1182,18 +1174,18 @@ function capturarUbicacion() {
     var coords = document.getElementById('gpsCoords');
 
     if (!navigator.geolocation) {
-        showToast('❌ Tu navegador no soporta GPS', 'error');
+        showToast('✶ Tu navegador no soporta GPS', 'error');
         if (bloque) bloque.classList.add('error');
         if (instrucciones) instrucciones.style.display = 'block';
         return;
     }
 
-    if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Obteniendo ubicación...'; }
-    if (btnActualizar) { btnActualizar.disabled = true; btnActualizar.innerHTML = '⏳...'; }
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="simbolo">◈</span> Obteniendo ubicación...'; }
+    if (btnActualizar) { btnActualizar.disabled = true; btnActualizar.innerHTML = '<span class="simbolo">◈</span>...'; }
     if (bloque) { bloque.classList.remove('capturado', 'error'); }
     if (instrucciones) instrucciones.style.display = 'none';
     if (titulo) titulo.textContent = 'Buscando tu ubicación...';
-    if (icono) icono.textContent = '📡';
+    if (icono) icono.textContent = '◈';
 
     if (gpsTimeoutId) clearTimeout(gpsTimeoutId);
     gpsTimeoutId = setTimeout(function () {
@@ -1214,7 +1206,7 @@ function capturarUbicacion() {
                 bloque.classList.remove('error');
                 bloque.classList.add('capturado');
             }
-            if (icono) icono.textContent = '✅';
+            if (icono) icono.textContent = '●';
             if (titulo) titulo.textContent = '¡Ubicación capturada!';
             if (aviso) aviso.style.display = 'none';
             if (coordsBox) coordsBox.style.display = 'block';
@@ -1225,10 +1217,10 @@ function capturarUbicacion() {
             if (btn) btn.style.display = 'none';
             if (btnActualizar) {
                 btnActualizar.disabled = false;
-                btnActualizar.innerHTML = '🔄 Actualizar ubicación';
+                btnActualizar.innerHTML = '<span class="simbolo">✧</span> Actualizar ubicación';
             }
 
-            showToast('📍 Ubicación capturada (±' + coordenadas.precision + 'm)', 'success');
+            showToast('◈ Ubicación capturada (±' + coordenadas.precision + 'm)', 'success');
             actualizarEstadoBotonConfirmar();
         },
         function (err) {
@@ -1254,41 +1246,38 @@ function onGPSError(err) {
         bloque.classList.remove('capturado');
         bloque.classList.add('error');
     }
-    if (icono) icono.textContent = '⚠️';
+    if (icono) icono.textContent = '✶';
     if (titulo) titulo.textContent = 'No pudimos acceder a tu ubicación';
     if (aviso) aviso.style.display = 'none';
     if (instrucciones) instrucciones.style.display = 'block';
 
     if (btn) {
         btn.disabled = false;
-        btn.innerHTML = '📡 Reintentar captura';
+        btn.innerHTML = '<span class="simbolo">◈</span> Reintentar captura';
         btn.style.display = 'inline-flex';
     }
     if (btnActualizar) {
         btnActualizar.disabled = false;
-        btnActualizar.innerHTML = '🔄 Reintentar';
+        btnActualizar.innerHTML = '<span class="simbolo">✧</span> Reintentar';
     }
 
     var msg = 'Error de GPS';
-    if (err && err.code === 1) msg = '❌ Permiso denegado. Revisa las instrucciones';
-    else if (err && err.code === 2) msg = '❌ Ubicación no disponible';
-    else if (err && err.code === 3) msg = '❌ Tiempo agotado. Intenta de nuevo';
+    if (err && err.code === 1) msg = '✶ Permiso denegado. Revisa las instrucciones';
+    else if (err && err.code === 2) msg = '✶ Ubicación no disponible';
+    else if (err && err.code === 3) msg = '✶ Tiempo agotado. Intenta de nuevo';
 
     showToast(msg, 'error');
     actualizarEstadoBotonConfirmar();
 }
 
-// ================================================================
-// CONFIRMAR PEDIDO
-// ================================================================
 async function confirmarPedido() {
     if (procesando) return;
-    if (!sessionUser) { showToast('⚠️ Inicia sesión primero', 'warning'); return; }
+    if (!sessionUser) { showToast('✶ Inicia sesión primero', 'warning'); return; }
 
     var telefono = (document.getElementById('inputTelefono') || {}).value || '';
     telefono = telefono.trim();
     if (!telefono || telefono.length < 8) {
-        showToast('⚠️ Ingresa tu teléfono de contacto', 'warning');
+        showToast('✶ Ingresa tu teléfono de contacto', 'warning');
         document.getElementById('inputTelefono').focus();
         return;
     }
@@ -1298,12 +1287,12 @@ async function confirmarPedido() {
         direccion = (document.getElementById('inputDireccion') || {}).value || '';
         direccion = direccion.trim();
         if (!direccion || direccion.length < 5) {
-            showToast('⚠️ Ingresa tu dirección completa', 'warning');
+            showToast('✶ Ingresa tu dirección completa', 'warning');
             document.getElementById('inputDireccion').focus();
             return;
         }
         if (coordenadas.lat === null || coordenadas.lng === null) {
-            showToast('⚠️ Activa tu ubicación GPS para continuar', 'warning');
+            showToast('✶ Activa tu ubicación GPS para continuar', 'warning');
             var btnGps = document.getElementById('btnGPS');
             if (btnGps) btnGps.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return;
@@ -1313,7 +1302,6 @@ async function confirmarPedido() {
     var notas = (document.getElementById('inputNotas') || {}).value || '';
     notas = notas.trim();
 
-    // Validar cripto si aplica
     var criptoSeleccionada = null;
     if (metodoPago === 'cripto') {
         var sel = document.getElementById('inputCripto');
@@ -1322,7 +1310,7 @@ async function confirmarPedido() {
 
     procesando = true;
     var btn = document.getElementById('btnConfirmar');
-    if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Procesando...'; }
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="simbolo">◈</span> Procesando...'; }
 
     try {
         var tiendasIds = Object.keys(gruposTiendas);
@@ -1347,10 +1335,7 @@ async function confirmarPedido() {
                 }
             }
 
-            // Comisión de servicio por tienda
             var comisionServicio = COMISION_COMPRADOR;
-
-            // Total a pagar por el comprador en esta tienda
             var totalTienda = subtotalTienda + envioTienda + comisionServicio;
             var codigo = generarCodigoPedido();
 
@@ -1371,7 +1356,6 @@ async function confirmarPedido() {
                 notas: notas || null,
                 forma_pago: metodoPago,
                 envio_cobrado_en_app: envioCobradoEnApp,
-                // NUEVOS CAMPOS DE COMISIÓN
                 comision_comprador_mxn: comisionServicio,
                 comision_total_plataforma_mxn: comisionServicio,
                 metodo_pago_comprador: metodoPago,
@@ -1412,7 +1396,6 @@ async function confirmarPedido() {
                 throw new Error('Error al guardar items: ' + insItems.error.message);
             }
 
-            // Descontar stock
             for (var j = 0; j < items.length; j++) {
                 var it = items[j];
                 try {
@@ -1434,7 +1417,6 @@ async function confirmarPedido() {
                 }
             }
 
-            // Actualizar contadores de tienda
             try {
                 var tiendaActual = await supabase
                     .from('mercado_tiendas')
@@ -1457,7 +1439,7 @@ async function confirmarPedido() {
         }
 
         guardarCarrito([]);
-        showToast('🎉 ¡Pedido' + (pedidosCreados.length > 1 ? 's' : '') + ' confirmado' + (pedidosCreados.length > 1 ? 's' : '') + '!', 'success');
+        showToast('✦ ¡Pedido' + (pedidosCreados.length > 1 ? 's' : '') + ' confirmado' + (pedidosCreados.length > 1 ? 's' : '') + '!', 'success');
 
         setTimeout(function () {
             if (pedidosCreados.length === 1) {
@@ -1469,23 +1451,17 @@ async function confirmarPedido() {
 
     } catch (e) {
         console.error('Error confirmando pedido:', e);
-        showToast('❌ ' + (e.message || 'Error al confirmar'), 'error');
+        showToast('✶ ' + (e.message || 'Error al confirmar'), 'error');
         if (btn) {
             btn.disabled = false;
-            btn.innerHTML = '✓ Confirmar pedido';
+            btn.innerHTML = '<span class="simbolo">◆</span> Confirmar pedido';
         }
         procesando = false;
     }
 }
 
-// ================================================================
-// VER TOKENS
-// ================================================================
 function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
 
-// ================================================================
-// INICIALIZACIÓN
-// ================================================================
 document.addEventListener('DOMContentLoaded', async function () {
     await cargarUsuarioActual();
 
@@ -1493,10 +1469,10 @@ document.addEventListener('DOMContentLoaded', async function () {
         var container = document.getElementById('checkoutContainer');
         if (container) {
             container.innerHTML = '<div class="empty-state">' +
-                '<span class="icon">🔒</span>' +
+                '<span class="icon">●</span>' +
                 '<h3>Inicia sesión</h3>' +
                 '<p>Necesitas iniciar sesión para confirmar tu pedido.</p>' +
-                '<a href="/" class="btn-ir">← Volver al inicio</a>' +
+                '<a href="/" class="btn-ir"><span class="simbolo">◈</span> Volver al inicio</a>' +
             '</div>';
         }
         return;
@@ -1508,15 +1484,11 @@ document.addEventListener('DOMContentLoaded', async function () {
         try {
             if (typeof window.inicializarIdiomas === 'function') {
                 await window.inicializarIdiomas();
-                console.log('✅ Idiomas aplicados al checkout');
             }
         } catch (e) { console.warn('Error idiomas:', e); }
     }, 400);
 });
 
-// ================================================================
-// EXPOSICIÓN GLOBAL
-// ================================================================
 window.verTokens = verTokens;
 window.showToast = showToast;
 window.cambiarTipoEntrega = cambiarTipoEntrega;
@@ -1525,5 +1497,3 @@ window.capturarUbicacion = capturarUbicacion;
 window.confirmarPedido = confirmarPedido;
 window.CONFIG_LEGAL = CONFIG_LEGAL;
 </script>
-</body>
-</html>
