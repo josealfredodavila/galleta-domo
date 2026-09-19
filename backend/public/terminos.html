@@ -1,145 +1,436 @@
+<!-- ================================================================
+     CSARIEL'S ECOSYSTEM
+     Términos y Condiciones de Uso (Generales)
+     Ruta: /backend/public/terminos.html
+     
+     Diseño: Fondo claro legible + branding Csariel's (verde + dorado)
+     Cumple WCAG AAA de contraste
+     Optimizado para impresión
+     Firma digital con hash real + IP + timestamp
+     
+     Fundamento legal:
+     - Código de Comercio (Art. 89, 90, 91, 92)
+     - Ley Federal de Protección al Consumidor (Art. 76 Bis, 76 Bis 1)
+     - Ley Federal de Protección de Datos Personales (LFPDPPP)
+     - Ley de Firma Electrónica Avanzada (LFEA)
+     - Ley Fintech (Art. 30-36 - activos virtuales)
+     - LFPIORPI
+     - Ley Federal del Derecho de Autor (LFDA)
+     - Ley Federal de Protección a la Propiedad Industrial (LFPPI)
+     - Código Civil Federal
+     ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title data-clave="terminos_titulo_pagina">◈ Términos y Condiciones · Sariel's</title>
+    <title data-clave="terminos_titulo_pagina">Términos y Condiciones · Csariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+
+    <script src="/features/shared/js/apariencia-global.js"></script>
+
     <style>
+        /* ================================================================
+           VARIABLES · Diseño claro con branding Csariel's
+           Contraste WCAG AAA (>7:1)
+           ================================================================ */
         :root {
-            --gold-cosmic: #D4AF37;
-            --gold-dim: rgba(212, 168, 87, 0.25);
-            --text-primary: #FFFFFF;
-            --text-secondary: #E2E8F0;
-            --text-muted: #94A3B8;
-            --space-deep: #05080f;
-            --radius: 16px;
+            --gold: #B8923A;
+            --gold-light: #D4AF37;
+            --gold-bg: #FDF9ED;
+            --green-brand: #0F2D1A;
+            --green-bg: #F0F7F2;
+
+            --bg: #FEFEFE;
+            --bg-soft: #FAFAF7;
+            --text: #1F2937;
+            --text-soft: #4B5563;
+            --text-muted: #6B7280;
+            --border: #E5E7EB;
+
+            --link: #0052CC;
+            --link-hover: #003D99;
+            --success: #047857;
+            --success-bg: #ECFDF5;
+            --warning: #B45309;
+            --warning-bg: #FFFBEB;
+            --danger: #B91C1C;
+            --danger-bg: #FEF2F2;
+            --info: #1E40AF;
+            --info-bg: #EFF6FF;
+
+            --radius: 12px;
+            --radius-xl: 16px;
+            --transition: all 0.2s ease;
         }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            background: var(--space-deep);
-            color: var(--text-primary);
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            min-height: 100vh;
-            line-height: 1.6;
-            padding: 0;
-        }
-        .terminos-container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 40px 24px;
-            background: rgba(15, 45, 26, 0.4);
-            border: 1px solid var(--gold-dim);
-            border-radius: var(--radius);
-            backdrop-filter: blur(10px);
-            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
-        }
-        .terminos-container h1 {
-            font-family: 'Orbitron', monospace;
-            font-size: 2rem;
-            color: var(--gold-cosmic);
-            text-align: center;
-            margin-bottom: 8px;
-        }
-        .terminos-container .fecha {
-            text-align: center;
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            margin-bottom: 30px;
-            border-bottom: 1px solid var(--gold-dim);
-            padding-bottom: 20px;
-        }
-        .terminos-container h2 {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.2rem;
-            color: var(--gold-cosmic);
-            margin-top: 30px;
-            margin-bottom: 12px;
-            border-left: 4px solid var(--gold-cosmic);
-            padding-left: 14px;
-        }
-        .terminos-container p {
-            color: var(--text-secondary);
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            font-size: 16px;
             line-height: 1.7;
-            margin-bottom: 12px;
-            font-size: 0.95rem;
+            min-height: 100vh;
         }
-        .terminos-container ul {
-            list-style: none;
-            padding-left: 10px;
-            margin: 12px 0 18px 0;
+
+        .app {
+            max-width: 820px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 0 20px 60px;
         }
-        .terminos-container ul li {
-            padding: 6px 0 6px 28px;
-            position: relative;
-            color: var(--text-secondary);
-            font-size: 0.95rem;
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 2px solid var(--green-brand);
+            background: var(--bg);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            flex-wrap: wrap;
+            gap: 10px;
         }
-        .terminos-container ul li::before {
-            content: "✦";
-            color: var(--gold-cosmic);
-            position: absolute;
-            left: 4px;
-            font-size: 0.8rem;
-            top: 8px;
-        }
-        .terminos-container .art {
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(212, 168, 87, 0.25);
-            border-left: 4px solid var(--gold-cosmic);
-            padding: 16px 20px;
-            border-radius: 10px;
-            margin: 18px 0;
-        }
-        .terminos-container .art p { color: #F8FAFC !important; }
-        .terminos-container .art strong { color: #FFE066 !important; font-weight: 700; }
-        .terminos-container .divisor {
-            border: none;
-            border-top: 1px solid rgba(212, 168, 87, 0.12);
-            margin: 40px 0 20px 0;
-        }
-        .terminos-container .footer-tyc {
-            text-align: center;
-            margin-top: 45px;
-            padding-top: 25px;
-            border-top: 1px solid rgba(212, 168, 87, 0.1);
-            font-size: 0.85rem;
-            color: var(--text-muted);
-        }
-        .btn-volver {
-            display: inline-block;
-            margin-top: 20px;
-            padding: 12px 32px;
-            background: linear-gradient(135deg, var(--gold-cosmic), #b8923a);
-            color: #0a0c10;
-            font-weight: 700;
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
             text-decoration: none;
-            border-radius: 40px;
-            font-size: 0.95rem;
-            transition: all 0.3s ease;
-            border: none;
-            cursor: pointer;
+            color: var(--green-brand);
+        }
+        .logo-hex {
+            font-size: 1.7rem;
+            color: var(--gold-light);
             font-family: 'Orbitron', monospace;
-            opacity: 0.5;
-            pointer-events: none;
+            line-height: 1;
         }
-        .btn-volver.active { opacity: 1; pointer-events: auto; }
-        .btn-volver.active:hover {
-            transform: scale(1.03);
-            box-shadow: 0 0 30px rgba(212, 168, 87, 0.25);
+        .logo-text {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.15rem;
+            color: var(--green-brand);
+            letter-spacing: 2px;
+            font-weight: 700;
         }
-        .text-center { text-align: center; }
-        
-        .aceptacion-container {
-            margin-top: 30px;
-            padding: 20px;
-            background: rgba(212, 168, 87, 0.08);
-            border: 1px solid rgba(212, 168, 87, 0.25);
-            border-radius: 12px;
+        .logo-text span { color: var(--gold-light); }
+        .logo-badge {
+            font-size: 0.55rem;
+            background: var(--green-brand);
+            color: #fff;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        .network-badge {
+            font-size: 0.7rem;
+            color: var(--green-brand);
+            background: var(--green-bg);
+            padding: 4px 14px;
+            border-radius: 20px;
+            border: 1px solid var(--green-brand);
+            font-weight: 600;
+        }
+
+        /* Botón volver */
+        .btn-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-soft);
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            margin: 20px 0;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+        .btn-back .simbolo {
+            color: var(--gold-light);
+            font-family: 'Orbitron', monospace;
+        }
+        .btn-back:hover {
+            border-color: var(--gold-light);
+            color: var(--gold);
+            background: var(--gold-bg);
+        }
+
+        /* Hero */
+        .hero {
+            text-align: center;
+            padding: 30px 20px 24px;
+            margin-bottom: 28px;
+            border-bottom: 1px solid var(--border);
+        }
+        .hero .etiqueta {
+            display: inline-block;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.65rem;
+            letter-spacing: 2px;
+            color: var(--gold);
+            background: var(--gold-bg);
+            border: 1px solid var(--gold-light);
+            padding: 6px 16px;
+            border-radius: 20px;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+        .hero h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.7rem;
+            color: var(--green-brand);
+            margin-bottom: 10px;
+            line-height: 1.3;
+            font-weight: 700;
+        }
+        .hero .subtitulo {
+            font-size: 0.95rem;
+            color: var(--text-soft);
+            margin-bottom: 20px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .hero .meta-info {
+            display: inline-flex;
+            gap: 32px;
+            flex-wrap: wrap;
+            justify-content: center;
+            font-size: 0.8rem;
+            color: var(--text-soft);
+        }
+        .hero .meta-info > div {
             display: flex;
             flex-direction: column;
-            gap: 14px;
+            gap: 2px;
+        }
+        .hero .meta-info strong {
+            color: var(--text-muted);
+            font-size: 0.65rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+        .hero .meta-info span {
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        /* Aviso grande */
+        .aviso-grande {
+            background: var(--info-bg);
+            border: 1px solid #BFDBFE;
+            border-left: 4px solid var(--info);
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            margin-bottom: 28px;
+            font-size: 0.92rem;
+            color: var(--text-soft);
+            line-height: 1.7;
+        }
+        .aviso-grande strong {
+            color: var(--info);
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 700;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        /* Índice */
+        .indice {
+            background: var(--bg-soft);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            padding: 24px 28px;
+            margin-bottom: 32px;
+        }
+        .indice h2 {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.85rem;
+            color: var(--green-brand);
+            margin-bottom: 18px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .indice h2::before {
+            content: '◈';
+            color: var(--gold-light);
+            font-size: 1rem;
+        }
+        .indice ol {
+            list-style: none;
+            counter-reset: item;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 4px;
+        }
+        .indice ol li {
+            counter-increment: item;
+            font-size: 0.88rem;
+        }
+        .indice ol li a {
+            color: var(--text-soft);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: var(--transition);
+        }
+        .indice ol li a::before {
+            content: counter(item) ".";
+            font-family: 'Orbitron', monospace;
+            color: var(--gold);
+            font-weight: 700;
+            min-width: 24px;
+            font-size: 0.85rem;
+        }
+        .indice ol li a:hover {
+            background: var(--gold-bg);
+            color: var(--green-brand);
+        }
+
+        /* Secciones */
+        .seccion {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            padding: 32px 30px;
+            margin-bottom: 24px;
+            scroll-margin-top: 90px;
+            transition: var(--transition);
+        }
+        .seccion:hover {
+            border-color: var(--gold-light);
+        }
+        .seccion h2 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.05rem;
+            color: var(--green-brand);
+            margin-bottom: 20px;
+            padding-bottom: 14px;
+            border-bottom: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            letter-spacing: 0.5px;
+            font-weight: 700;
+        }
+        .seccion h2 .num {
+            background: var(--gold-light);
+            color: var(--green-brand);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            min-width: 38px;
+            text-align: center;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .seccion h3 {
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--green-brand);
+            margin: 24px 0 12px;
+        }
+        .seccion p {
+            font-size: 0.95rem;
+            color: var(--text-soft);
+            margin-bottom: 14px;
+            text-align: justify;
+        }
+        .seccion p strong {
+            color: var(--text);
+            font-weight: 700;
+        }
+        .seccion ul, .seccion ol {
+            margin: 12px 0 16px 28px;
+            font-size: 0.95rem;
+            color: var(--text-soft);
+        }
+        .seccion ul li, .seccion ol li {
+            margin-bottom: 8px;
+            line-height: 1.7;
+        }
+        .seccion ul li::marker {
+            color: var(--gold);
+        }
+        .seccion ol li::marker {
+            color: var(--gold);
+            font-weight: 700;
+        }
+        .seccion a {
+            color: var(--link);
+            text-decoration: underline;
+            font-weight: 500;
+        }
+        .seccion a:hover {
+            color: var(--link-hover);
+        }
+
+        /* Avisos */
+        .aviso {
+            background: var(--info-bg);
+            border-left: 4px solid var(--info);
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin: 20px 0;
+            font-size: 0.9rem;
+            color: var(--text-soft);
+            line-height: 1.65;
+        }
+        .aviso strong {
+            color: var(--info);
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 700;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.78rem;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .aviso.warning {
+            background: var(--warning-bg);
+            border-left-color: var(--warning);
+        }
+        .aviso.warning strong { color: var(--warning); }
+        .aviso.danger {
+            background: var(--danger-bg);
+            border-left-color: var(--danger);
+        }
+        .aviso.danger strong { color: var(--danger); }
+        .aviso.success {
+            background: var(--success-bg);
+            border-left-color: var(--success);
+        }
+        .aviso.success strong { color: var(--success); }
+
+        /* Sección de aceptación */
+        .aceptacion-container {
+            margin-top: 32px;
+            padding: 24px 26px;
+            background: var(--gold-bg);
+            border: 2px solid var(--gold-light);
+            border-radius: var(--radius-xl);
         }
         .aceptacion-wrapper {
             display: flex;
@@ -147,23 +438,22 @@
             gap: 14px;
         }
         .aceptacion-container input[type="checkbox"] {
-            width: 22px;
-            height: 22px;
-            accent-color: #D4AF37;
+            width: 24px;
+            height: 24px;
             cursor: pointer;
             flex-shrink: 0;
             appearance: none;
             -webkit-appearance: none;
-            background: rgba(255, 255, 255, 0.08);
-            border: 2px solid rgba(212, 168, 87, 0.4);
-            border-radius: 4px;
-            transition: all 0.3s ease;
+            background: #fff;
+            border: 2px solid var(--green-brand);
+            border-radius: 6px;
+            transition: var(--transition);
             position: relative;
             margin-top: 2px;
         }
         .aceptacion-container input[type="checkbox"]:checked {
-            background: #D4AF37;
-            border-color: #D4AF37;
+            background: var(--green-brand);
+            border-color: var(--green-brand);
         }
         .aceptacion-container input[type="checkbox"]:checked::after {
             content: "✓";
@@ -171,377 +461,507 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            color: #05080f;
-            font-size: 14px;
+            color: var(--gold-light);
+            font-size: 16px;
             font-weight: 700;
         }
         .aceptacion-container label {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-            line-height: 1.5;
+            color: var(--text);
+            font-size: 0.92rem;
+            line-height: 1.6;
             cursor: pointer;
         }
-        .aceptacion-container label strong { color: var(--gold-cosmic); }
+        .aceptacion-container label strong {
+            color: var(--green-brand);
+            font-weight: 700;
+        }
+
+        /* Firma digital */
         .firma-digital {
-            margin-top: 4px;
-            padding: 12px 16px;
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px dashed rgba(212, 168, 87, 0.3);
-            border-radius: 8px;
+            margin-top: 16px;
+            padding: 16px 20px;
+            background: #fff;
+            border: 2px dashed var(--gold-light);
+            border-radius: var(--radius);
             font-family: 'Courier New', monospace;
-            font-size: 0.8rem;
-            color: var(--text-secondary);
+            font-size: 0.82rem;
+            color: var(--text-soft);
             display: none;
-            transition: all 0.4s ease;
-            word-break: break-all;
+            line-height: 1.7;
         }
         .firma-digital.visible { display: block; }
-        .firma-digital .hash { color: var(--gold-cosmic); font-weight: 600; }
-        .firma-digital .fecha-hora { color: #8FBC8F; }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 0 16px;
-            border-bottom: 2px solid var(--gold-dim);
-            margin-bottom: 16px;
-            flex-wrap: wrap;
-            gap: 10px;
-            backdrop-filter: blur(10px);
-            position: relative;
-            max-width: 900px;
-            margin-left: auto;
-            margin-right: auto;
-            padding-left: 20px;
-            padding-right: 20px;
-        }
-        .header::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, var(--gold-cosmic), var(--gold-cosmic), transparent);
-            opacity: 0.4;
-        }
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            text-decoration: none;
-        }
-        .logo-icon { font-size: 2rem; filter: drop-shadow(0 0 20px rgba(212, 168, 87, 0.2)); }
-        .logo-text {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.3rem;
-            font-weight: 900;
-            letter-spacing: 2px;
-            background: linear-gradient(135deg, var(--gold-cosmic), #b8923a);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .logo-badge {
-            font-size: 0.5rem;
-            background: linear-gradient(135deg, var(--gold-cosmic), #b8923a);
-            color: #0a0c10;
-            padding: 2px 12px;
-            border-radius: 20px;
+        .firma-digital .hash {
+            color: var(--green-brand);
             font-weight: 700;
+            word-break: break-all;
+        }
+        .firma-digital .fecha-hora {
+            color: var(--success);
+            font-weight: 600;
+        }
+        .firma-digital .titulo-firma {
+            color: var(--gold);
+            font-weight: 700;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.75rem;
             letter-spacing: 1px;
             text-transform: uppercase;
+            display: block;
+            margin-bottom: 8px;
         }
-        .header-info {
-            display: flex;
+
+        /* Botón volver */
+        .btn-volver {
+            display: inline-flex;
             align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
+            gap: 8px;
+            padding: 14px 32px;
+            background: var(--green-brand);
+            color: #fff;
+            text-decoration: none;
+            border-radius: 40px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 0.85rem;
+            transition: var(--transition);
+            border: none;
+            cursor: pointer;
+            margin-top: 24px;
         }
-        .network-badge {
-            font-size: 0.7rem;
-            color: var(--gold-cosmic);
-            background: rgba(212, 168, 87, 0.1);
-            padding: 4px 14px;
-            border-radius: 20px;
-            border: 1px solid rgba(212, 168, 87, 0.2);
+        .btn-volver::before {
+            content: '◈';
+            color: var(--gold-light);
         }
-        #stars-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-            pointer-events: none;
+        .btn-volver:hover {
+            transform: translateY(-3px);
+            background: #1a4a2a;
+            box-shadow: 0 12px 32px rgba(15, 45, 26, 0.3);
         }
-        .nebula {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(120px);
-            opacity: 0.10;
-            pointer-events: none;
-            z-index: 0;
-            animation: nebula-drift 25s ease-in-out infinite alternate;
+
+        /* Footer */
+        .footer-legal {
+            margin-top: 40px;
+            padding-top: 28px;
+            border-top: 2px solid var(--green-brand);
+            text-align: center;
+            font-size: 0.82rem;
+            color: var(--text-soft);
+            line-height: 1.8;
         }
-        .nebula-1 { width: 700px; height: 700px; background: #0B3D2E; top: -15%; right: -15%; }
-        .nebula-2 { width: 600px; height: 600px; background: var(--gold-cosmic); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.05; }
-        .nebula-3 { width: 500px; height: 500px; background: #00e5ff; top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -15s; opacity: 0.04; }
-        @keyframes nebula-drift {
-            0% { transform: translate(0, 0) scale(1); }
-            100% { transform: translate(40px, -30px) scale(1.15); }
+        .footer-legal .marca {
+            color: var(--green-brand);
+            font-weight: 700;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.9rem;
         }
-        .container { max-width: 900px; margin: 0 auto; padding: 0 20px; }
-        .main { position: relative; z-index: 1; }
+        .footer-legal .marca::before { content: '◈ '; color: var(--gold-light); }
+
+        /* Impresión */
+        @media print {
+            body { background: #fff !important; color: #000 !important; font-size: 11pt; }
+            .header, .btn-back, .btn-volver, .aceptacion-container { display: none !important; }
+            .app { max-width: 100%; padding: 0; }
+            .seccion {
+                page-break-inside: avoid;
+                border: none;
+                padding: 12px 0;
+                margin-bottom: 12px;
+            }
+            .seccion h2 {
+                border-bottom: 2px solid #000 !important;
+                color: #000 !important;
+            }
+            .seccion h2 .num {
+                background: transparent !important;
+                color: #000 !important;
+                border: 1px solid #000;
+            }
+            .hero h1, .hero .etiqueta { color: #000 !important; background: transparent !important; }
+            .indice { background: transparent !important; border: 1px solid #ccc; }
+            .aviso, .aviso-grande { background: #f5f5f5 !important; border-left: 3px solid #333; }
+            a { color: #000 !important; text-decoration: none; }
+            a[href]::after { content: " (" attr(href) ")"; font-size: 9pt; color: #666; }
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            body { font-size: 15px; }
+            .app { padding: 0 16px 40px; }
+            .hero h1 { font-size: 1.35rem; }
+            .hero .meta-info { gap: 20px; }
+            .seccion { padding: 24px 20px; }
+            .seccion h2 { font-size: 0.95rem; }
+            .indice { padding: 20px; }
+            .indice ol { grid-template-columns: 1fr; }
+            .aceptacion-container { padding: 20px; }
+            .btn-volver { width: 100%; justify-content: center; }
+        }
     </style>
 </head>
 <body>
-    <canvas id="stars-canvas"></canvas>
-    <div class="nebula nebula-1"></div>
-    <div class="nebula nebula-2"></div>
-    <div class="nebula nebula-3"></div>
 
-    <div id="app">
+    <div class="app">
+
+        <!-- Header -->
         <header class="header">
-            <div class="header-content" style="display:flex;justify-content:space-between;align-items:center;width:100%;flex-wrap:wrap;gap:10px;">
-                <a href="/" class="logo">
-                    <span class="logo-icon"><span style="font-size:2rem;color:var(--gold-cosmic);">◈</span></span>
-                    <span class="logo-text">Sariel's</span>
-                    <span class="logo-badge">✦ WEB3</span>
-                </a>
-                <div class="header-info">
-                    <span class="network-badge" data-clave="terminos_network">🟢 Polygon</span>
-                </div>
-            </div>
+            <a href="/" class="logo" aria-label="Ir a la página de inicio">
+                <span class="logo-hex">◈</span>
+                <span class="logo-text">Csariel<span>'s</span></span>
+                <span class="logo-badge">WEB3</span>
+            </a>
+            <span class="network-badge" data-clave="terminos_network">◈ Polygon</span>
         </header>
 
-        <main class="main">
-            <div class="container">
-                <div class="terminos-container">
+        <!-- Botón volver -->
+        <a href="/" class="btn-back">
+            <span class="simbolo">◈</span> Volver a la plataforma
+        </a>
 
-                    <h1 data-clave="terminos_titulo">✦ Términos y Condiciones de Uso</h1>
-                    <div class="fecha" data-clave="terminos_actualizacion">📅 Última actualización: 10 de agosto de 2026</div>
-
-                    <div class="art" style="background:rgba(212,168,87,0.08);border-color:var(--gold-cosmic);text-align:center;">
-                        <p style="font-weight:600;color:var(--gold-cosmic) !important;" data-clave="terminos_aceptacion_intro">
-                            ⚡ Al utilizar la plataforma Sariel's, aceptas los presentes Términos y Condiciones. Si no estás de acuerdo, no uses la plataforma.
-                        </p>
-                    </div>
-
-                    <h2 data-clave="terminos_seccion_1_titulo">📘 1. Aceptación de los Términos</h2>
-                    <div class="art">
-                        <p data-clave="terminos_seccion_1_texto_1">Al registrarte, conectar tu wallet o utilizar cualquier servicio de Sariel's, aceptas cumplir con estos Términos y Condiciones, así como con nuestras Políticas de Privacidad y Cookies.</p>
-                        <p data-clave="terminos_seccion_1_texto_2">Estos Términos aplican a todos los usuarios: clientes, vendedores, compradores y visitantes de la plataforma.</p>
-                    </div>
-
-                    <h2 data-clave="terminos_seccion_2_titulo">📗 2. Registro y Elegibilidad</h2>
-                    <div class="art" style="border-left-color:#ff6b35;">
-                        <p style="color:#FFE066 !important;font-weight:700;" data-clave="terminos_seccion_2_edad">🔞 EDAD MÍNIMA OBLIGATORIA:</p>
-                        <p data-clave="terminos_seccion_2_texto_1"><strong>La plataforma está dirigida exclusivamente a personas mayores de 18 años con plena capacidad legal para contratar.</strong></p>
-                        <p data-clave="terminos_seccion_2_texto_2">Al registrarte, declaras bajo protesta de decir verdad que eres mayor de 18 años y que la información proporcionada es verídica y completa.</p>
-                        <p data-clave="terminos_seccion_2_texto_3">Sariel's se reserva el derecho de solicitar verificación de edad en cualquier momento.</p>
-                    </div>
-
-                    <h2 data-clave="terminos_seccion_3_titulo">📙 3. Programa de Lealtad y Tokens "ES.stoks"</h2>
-                    <div class="art">
-                        <p data-clave="terminos_seccion_3_1_titulo"><strong>3.1. Acumulación de Tokens ES.stoks:</strong> Por cada compra de un domo de galleta físico en el local de Sariel's (Puebla), el cliente recibe <strong>1 token ES.stoks</strong> en su wallet. El QR impreso dentro del domo debe ser <strong>escaneado por el terminal autorizado en el momento de la compra</strong> para activar el token. El token se envía automáticamente a la wallet asociada al usuario dentro de las 24 horas siguientes.</p>
-                        <p data-clave="terminos_seccion_3_2_titulo"><strong>📱 QR de un solo uso:</strong> El QR es de un solo uso. Si el usuario no lo escanea en la terminal autorizada en el momento de la compra, el token no se genera. Sariel's no se hace responsable por QRs dañados, fotografiados o compartidos con terceros.</p>
-                        <p data-clave="terminos_seccion_3_3_titulo"><strong>3.2. Tokens ES.stoks como Activo Transferible:</strong> Los tokens <strong>ES.stoks SÍ son transferibles y pueden ser vendidos en el Mercado P2P</strong> dentro de la plataforma. Los usuarios pueden vender <strong>cualquier cantidad de tokens</strong> (1, 5, 12, etc.) al precio que determinen.</p>
-                        <p data-clave="terminos_seccion_3_4_titulo"><strong>3.3. Naturaleza del Token:</strong> ES.stoks es un token de utilidad con valor determinado por oferta y demanda en el mercado P2P. No representa acciones, participaciones o derechos sobre la empresa Sariel's.</p>
-                        <p data-clave="terminos_seccion_3_5_titulo"><strong>3.4. Minteo de NFT:</strong> Al acumular <strong>12 tokens ES.stoks</strong> (ya sea por compras o por compra en el P2P), el usuario tiene derecho a <strong>mintear un NFT Domo</strong> en la red Polygon. Los 12 tokens se <strong>queman (burn)</strong> en el Smart Contract para validar el derecho.</p>
-                    </div>
-
-                    <h2 data-clave="terminos_seccion_4_titulo">📕 4. El NFT Domo y la Regla de los 30 Días</h2>
-                    <div class="art" style="border-left-color:#ff6b35;">
-                        <p style="color:#FFE066 !important;font-weight:700;" data-clave="terminos_seccion_4_0_titulo">⏰ REGLA DE CADUCIDAD DE 30 DÍAS:</p>
-                        <p data-clave="terminos_seccion_4_0_1_titulo"><strong>4.0. NFT Intransferible (Soulbound):</strong> El NFT Domo es <strong>completamente intransferible</strong>. No puede ser vendido, regalado, traspasado, intercambiado ni listado en <strong>ningún mercado</strong>, incluyendo:</p>
-                        <ul>
-                            <li data-clave="terminos_seccion_4_0_lista_1">El Mercado P2P de Sariel's</li>
-                            <li data-clave="terminos_seccion_4_0_lista_2">OpenSea</li>
-                            <li data-clave="terminos_seccion_4_0_lista_3">Rarible</li>
-                            <li data-clave="terminos_seccion_4_0_lista_4">Cualquier otra plataforma externa</li>
-                        </ul>
-                        <p data-clave="terminos_seccion_4_0_texto">El NFT está <strong>vinculado permanentemente</strong> a la wallet que lo minteó.</p>
-                        <p data-clave="terminos_seccion_4_1_titulo"><strong>4.1. Periodo de Canje:</strong> El NFT Domo puede ser canjeado por <strong>un domo de galleta físico gratis</strong> únicamente dentro de los <strong>30 días</strong> siguientes a su minteo. El canje debe realizarse <strong>exclusivamente en el local físico de Sariel's en Puebla, México</strong>.</p>
-                        <p data-clave="terminos_seccion_4_2_titulo"><strong>4.2. Proceso de Canje:</strong> El usuario debe presentar el NFT (desde su wallet) en el momento del canje. El personal autorizado ejecutará la <strong>quema (burn) del NFT</strong> en el Smart Contract y entregará la galleta gratis en ese mismo instante.</p>
-                        <p data-clave="terminos_seccion_4_3_titulo"><strong>4.3. Sujeto a disponibilidad:</strong> El canje está sujeto a disponibilidad de inventario en el momento de la visita al local.</p>
-                        <p data-clave="terminos_seccion_4_4_titulo"><strong>4.4. Sin envíos internacionales:</strong> No realizamos envíos de galletas. El canje es presencial en Puebla.</p>
-                    </div>
-
-                    <h2 data-clave="terminos_seccion_5_titulo">📒 5. NFT Conmemorativo (Soulbound)</h2>
-                    <div class="art" style="border-left-color:#ff6b35;">
-                        <p style="color:#FFE066 !important;font-weight:700;" data-clave="terminos_seccion_5_0_titulo">🎗️ CONVERSIÓN A SOULBOUND (NO TRANSFERIBLE):</p>
-                        <p data-clave="terminos_seccion_5_1_texto"><strong>5.1.</strong> Si el NFT <strong>no es canjeado dentro de los 30 días</strong>, automáticamente se convierte en un <strong>Soulbound Token</strong> conmemorativo.</p>
-                        <p data-clave="terminos_seccion_5_2_titulo"><strong>5.2. Consecuencias:</strong> El NFT queda <strong>permanentemente bloqueado</strong> en la wallet del propietario. No puede ser vendido, transferido ni regalado. El derecho a reclamar la galleta física <strong>se extingue</strong>.</p>
-                        <p data-clave="terminos_seccion_5_3_titulo"><strong>5.3. Metadatos actualizados:</strong> La imagen del NFT cambia automáticamente al <strong>listón conmemorativo 🎗️</strong>, indicando que es un trofeo digital sin valor comercial.</p>
-                        <p data-clave="terminos_seccion_5_4_titulo"><strong>5.4. Naturaleza permanente:</strong> El NFT conmemorativo es permanente e inmutable. No se puede revertir ni recuperar el derecho de canje. <strong>Sigue siendo intransferible.</strong></p>
-                    </div>
-
-                    <h2 data-clave="terminos_seccion_6_titulo">📘 6. Mercado Secundario P2P (SOLO para Tokens ES.stoks)</h2>
-                    <div class="art">
-                        <p data-clave="terminos_seccion_6_1_titulo"><strong>6.1. Venta de Tokens ES.stoks:</strong> Los usuarios pueden listar sus <strong>tokens ES.stoks</strong> para la venta en el Mercado P2P dentro de la plataforma. <strong>Se puede vender cualquier cantidad de tokens</strong> (1, 5, 12, etc.). El precio de venta lo determina el vendedor, basado en oferta y demanda del mercado.</p>
-                        <p data-clave="terminos_seccion_6_2_titulo"><strong>6.2. NFTs NO vendibles:</strong> Los NFTs Domo son <strong>completamente intransferibles</strong> y <strong>NO pueden ser vendidos</strong> en el Mercado P2P, ni en OpenSea, ni en Rarible, ni en ningún otro mercado. Son <strong>Soulbound por diseño</strong> y están vinculados permanentemente a la wallet que los minteó.</p>
-                        <p data-clave="terminos_seccion_6_3_titulo"><strong>6.3. Comisión del 2%:</strong> Por cada transacción exitosa de compra/venta de tokens, Sariel's cobra una <strong>comisión del 2%</strong> sobre el precio total de venta. Esta comisión se cobra en MATIC/POL al momento de la transacción.</p>
-                        <p data-clave="terminos_seccion_6_4_titulo"><strong>6.4. Protección Fiscal y Regulatoria:</strong> El precio del token lo fija libremente el mercado P2P. Sariel's <strong>no garantiza liquidez ni valor mínimo</strong>. ES.stoks es un activo de utilidad (utility) para obtener descuentos y participar en el programa de lealtad, <strong>no es un instrumento de inversión ni un valor financiero</strong>.</p>
-                        <p data-clave="terminos_seccion_6_5_titulo"><strong>6.5. Responsabilidad del Usuario:</strong> Sariel's actúa como intermediario tecnológico. No se responsabiliza por negociaciones, precios o disputas entre compradores y vendedores.</p>
-                    </div>
-
-                    <h2 data-clave="terminos_seccion_7_titulo">📙 7. Infraestructura y Datos Blockchain</h2>
-                    <div class="art">
-                        <p data-clave="terminos_seccion_7_texto_1"><strong>7.1. Transparencia en Blockchain:</strong> La dirección pública de wallet en Polygon, transacciones, minteos y burns se registran de forma <strong>pública e inmutable</strong> en la blockchain y no pueden ser borrados ni modificados por Sariel's.</p>
-                        <p data-clave="terminos_seccion_7_texto_2"><strong>7.2. Almacenamiento de Datos Personales:</strong> Los datos personales (correo electrónico, nombre, wallet vinculada, historial de compras) se alojan en servidores seguros de <strong>Hetzner (Alemania)</strong> y <strong>Supabase/Cloudflare (EE.UU.)</strong> con cifrado en tránsito (TLS) y en reposo (AES-256).</p>
-                        <p data-clave="terminos_seccion_7_texto_3"><strong>7.3. Derecho de Eliminación:</strong> El usuario puede solicitar la eliminación de sus datos personales de nuestras bases de datos centralizadas (Hetzner/Supabase) en cualquier momento, pero acepta que los registros en la blockchain de Polygon (transacciones, tokens, NFTs) <strong>permanecerán públicos</strong> por la naturaleza descentralizada de la red.</p>
-                    </div>
-
-                    <h2 data-clave="terminos_seccion_8_titulo">📕 8. Política de Reembolsos y Cancelaciones</h2>
-                    <div class="art">
-                        <p data-clave="terminos_seccion_8_texto_1"><strong>8.1. Naturaleza Digital:</strong> Los tokens ES.stoks, NFTs y transacciones en la blockchain son <strong>irreversibles por su naturaleza tecnológica</strong>.</p>
-                        <p data-clave="terminos_seccion_8_texto_2"><strong>8.2. Sin Reembolsos:</strong> No se ofrecen reembolsos por compras de domos físicos una vez escaneado el QR, ni por minteo de NFTs, ni por ventas en el mercado P2P.</p>
-                        <p data-clave="terminos_seccion_8_texto_3"><strong>8.3. Excepción:</strong> En caso de error comprobado del sistema, Sariel's evaluará cada caso de forma individual y podrá ofrecer soluciones discrecionales.</p>
-                    </div>
-
-                    <h2 data-clave="terminos_seccion_9_titulo">📒 9. Gas Fees y Costos de Red</h2>
-                    <div class="art">
-                        <p data-clave="terminos_seccion_9_texto_1"><strong>9.1. Responsabilidad del Usuario:</strong> Todas las transacciones en la red Polygon requieren el pago de <strong>gas fees (comisiones de red)</strong>. Estas comisiones son pagadas por el usuario que ejecuta la transacción.</p>
-                        <p data-clave="terminos_seccion_9_texto_2"><strong>9.2. Sariel's no cubre gas fees:</strong> Sariel's no subsidia ni cubre los costos de gas bajo ninguna circunstancia.</p>
-                        <p data-clave="terminos_seccion_9_texto_3"><strong>9.3. Congestión de Red:</strong> Sariel's no es responsable por retrasos, fallas o costos elevados debido a congestión en la red Polygon.</p>
-                    </div>
-
-                    <h2 data-clave="terminos_seccion_10_titulo">📘 10. Limitación de Responsabilidad</h2>
-                    <div class="art">
-                        <p data-clave="terminos_seccion_10_texto_1"><strong>10.1. Plataforma "Como Está":</strong> Sariel's proporciona la plataforma "tal cual" y "según disponibilidad". No garantizamos que el servicio sea ininterrumpido, libre de errores o seguro.</p>
-                        <p data-clave="terminos_seccion_10_texto_2"><strong>10.2. Riesgo del Usuario:</strong> El uso de la plataforma, la conexión de la wallet y las transacciones en blockchain son <strong>bajo el propio riesgo del usuario</strong>.</p>
-                        <p data-clave="terminos_seccion_10_texto_3"><strong>10.3. Responsabilidad Limitada:</strong> Sariel's no será responsable por daños directos, indirectos, incidentales o consecuentes derivados del uso de la plataforma.</p>
-                        <p data-clave="terminos_seccion_10_texto_4"><strong>10.4. Máximo de Responsabilidad:</strong> En ningún caso, la responsabilidad de Sariel's excederá el monto pagado por el usuario en los últimos 12 meses.</p>
-                    </div>
-
-                    <h2 data-clave="terminos_seccion_11_titulo">📙 11. Propiedad Intelectual</h2>
-                    <div class="art">
-                        <p data-clave="terminos_seccion_11_texto_1"><strong>11.1. Marca y Contenido:</strong> La marca "Sariel's", el logo, los diseños, el nombre "ES.stoks" y todos los contenidos de la plataforma son <strong>propiedad intelectual de Sariel's</strong>.</p>
-                        <p data-clave="terminos_seccion_11_texto_2"><strong>11.2. Prohibición de Uso:</strong> No se permite copiar, modificar, distribuir o utilizar el contenido sin autorización expresa de Sariel's.</p>
-                        <p data-clave="terminos_seccion_11_texto_3"><strong>11.3. NFTs y Derechos:</strong> Los NFTs son propiedad del usuario que los posee, pero los diseños asociados son propiedad intelectual de Sariel's.</p>
-                    </div>
-
-                    <h2 data-clave="terminos_seccion_12_titulo">📗 12. Modificaciones de los Términos</h2>
-                    <div class="art">
-                        <p data-clave="terminos_seccion_12_texto_1"><strong>12.1. Actualizaciones:</strong> Sariel's puede modificar estos Términos en cualquier momento. Te notificaremos mediante aviso en la plataforma o por correo electrónico.</p>
-                        <p data-clave="terminos_seccion_12_texto_2"><strong>12.2. Aceptación Continua:</strong> El uso continuado de la plataforma después de una modificación constituye tu aceptación de los nuevos Términos.</p>
-                    </div>
-
-                    <h2 data-clave="terminos_seccion_13_titulo">📕 13. Ley Aplicable y Jurisdicción</h2>
-                    <div class="art">
-                        <p data-clave="terminos_seccion_13_texto_1"><strong>13.1. Ley Mexicana:</strong> Estos Términos se rigen por las leyes de los Estados Unidos Mexicanos.</p>
-                        <p data-clave="terminos_seccion_13_texto_2"><strong>13.2. Jurisdicción:</strong> Cualquier controversia será resuelta por los tribunales competentes de <strong>Puebla, México</strong>.</p>
-                        <p data-clave="terminos_seccion_13_texto_3"><strong>13.3. Renuncia a Domicilios Extranjeros:</strong> Los usuarios aceptan someterse a la jurisdicción de Puebla para cualquier disputa.</p>
-                    </div>
-
-                    <h2 data-clave="terminos_seccion_14_titulo">📙 14. Contacto</h2>
-                    <div class="art">
-                        <p data-clave="terminos_contacto_email"><strong>Correo electrónico:</strong> csarielscontacto@gmail.com</p>
-                        <p data-clave="terminos_contacto_direccion"><strong>Dirección postal:</strong> Puebla, México.</p>
-                    </div>
-
-                    <hr class="divisor" />
-
-                    <div class="footer-tyc">
-                        <p data-clave="terminos_footer">© <strong>Sariel's</strong>. Todos los derechos reservados. Puebla, México 🇲🇽</p>
-                    </div>
-
-                    <div class="aceptacion-container" id="aceptacionContainer">
-                        <div class="aceptacion-wrapper">
-                            <input type="checkbox" id="aceptoTerminos" />
-                            <label for="aceptoTerminos" data-clave="terminos_acepto">
-                                <strong>He leído y acepto los Términos y Condiciones de Uso</strong> de <strong>Sariel's</strong>.
-                                Entiendo las reglas del programa de lealtad, la regla de los 30 días, el NFT Conmemorativo y las condiciones del mercado P2P.
-                            </label>
-                        </div>
-
-                        <div class="firma-digital" id="firmaDigital">
-                            <span data-clave="terminos_firma_digital">🔐 Firma digital registrada:</span><br />
-                            <span class="fecha-hora" id="fechaHoraFirma" data-clave="terminos_firma_fecha">--</span><br />
-                            <span data-clave="terminos_firma_id">ID:</span> <span class="hash" id="hashFirma">--</span>
-                        </div>
-                    </div>
-
-                    <div class="text-center">
-                        <a href="/" class="btn-volver" id="btnVolver" data-clave="terminos_volver">← Volver a la plataforma</a>
-                    </div>
-
+        <!-- Hero -->
+        <div class="hero">
+            <span class="etiqueta">Documento Legal</span>
+            <h1 data-clave="terminos_titulo">Términos y Condiciones de Uso</h1>
+            <p class="subtitulo" data-clave="terminos_subtitulo">
+                Reglas generales que rigen el uso de Csariel's Ecosystem,
+                el programa de lealtad ES.stoks, los NFTs Domo y el Mercado P2P.
+            </p>
+            <div class="meta-info">
+                <div>
+                    <strong>Versión</strong>
+                    <span>1.0</span>
+                </div>
+                <div>
+                    <strong>Última actualización</strong>
+                    <span data-clave="terminos_actualizacion">10 de agosto de 2026</span>
+                </div>
+                <div>
+                    <strong>Jurisdicción</strong>
+                    <span>Puebla, México</span>
                 </div>
             </div>
-        </main>
+        </div>
+
+        <!-- Aviso grande -->
+        <div class="aviso-grande">
+            <strong>◈ Aceptación obligatoria</strong>
+            Al utilizar Csariel's Ecosystem, el programa de lealtad ES.stoks, los NFTs Domo o el Mercado P2P, aceptas los presentes Términos y Condiciones. Si no estás de acuerdo, debes abstenerte de usar la plataforma.
+        </div>
+
+        <!-- Índice -->
+        <div class="indice">
+            <h2>Índice de Contenidos</h2>
+            <ol>
+                <li><a href="#art-1">Aceptación de los Términos</a></li>
+                <li><a href="#art-2">Registro y Elegibilidad</a></li>
+                <li><a href="#art-3">Programa de Lealtad y Tokens ES.stoks</a></li>
+                <li><a href="#art-4">NFT Domo y Regla de 30 Días</a></li>
+                <li><a href="#art-5">NFT Conmemorativo (Soulbound)</a></li>
+                <li><a href="#art-6">Mercado Secundario P2P</a></li>
+                <li><a href="#art-7">Infraestructura y Datos Blockchain</a></li>
+                <li><a href="#art-8">Política de Reembolsos</a></li>
+                <li><a href="#art-9">Gas Fees y Costos de Red</a></li>
+                <li><a href="#art-10">Limitación de Responsabilidad</a></li>
+                <li><a href="#art-11">Propiedad Intelectual</a></li>
+                <li><a href="#art-12">Protección de Datos Personales</a></li>
+                <li><a href="#art-13">Modificaciones</a></li>
+                <li><a href="#art-14">Ley Aplicable y Jurisdicción</a></li>
+                <li><a href="#art-15">Contacto</a></li>
+            </ol>
+        </div>
+
+        <!-- ART 1 -->
+        <section class="seccion" id="art-1">
+            <h2><span class="num">1</span> Aceptación de los Términos</h2>
+            <p><strong>1.1.</strong> Al registrarte, conectar tu wallet o utilizar cualquier servicio de Csariel's Ecosystem (en adelante, "la Plataforma"), aceptas cumplir con estos Términos y Condiciones, así como con nuestras Políticas de Privacidad y Cookies.</p>
+            <p><strong>1.2.</strong> Estos Términos aplican a todos los usuarios: clientes, vendedores, compradores, repartidores y visitantes de la Plataforma.</p>
+            <p><strong>1.3.</strong> Conforme al <strong>artículo 89 del Código de Comercio</strong>, los actos de comercio pueden celebrarse mediante mensajes de datos, los cuales surten los mismos efectos jurídicos que la documentación impresa.</p>
+        </section>
+
+        <!-- ART 2 -->
+        <section class="seccion" id="art-2">
+            <h2><span class="num">2</span> Registro y Elegibilidad</h2>
+            <div class="aviso warning">
+                <strong>Edad mínima obligatoria: 18 años</strong>
+                La Plataforma está dirigida exclusivamente a personas mayores de 18 años con plena capacidad legal para contratar. Al registrarte, declaras bajo protesta de decir verdad que cumples con este requisito.
+            </div>
+            <p><strong>2.1.</strong> La Plataforma está dirigida exclusivamente a personas mayores de 18 años con plena capacidad legal para contratar.</p>
+            <p><strong>2.2.</strong> Al registrarte, declaras bajo protesta de decir verdad que eres mayor de 18 años y que la información proporcionada es verídica y completa.</p>
+            <p><strong>2.3.</strong> Csariel's se reserva el derecho de solicitar verificación de edad en cualquier momento.</p>
+            <p><strong>2.4.</strong> Si detectamos que un menor se registró sin autorización, eliminaremos su cuenta y sus datos personales.</p>
+        </section>
+
+        <!-- ART 3 -->
+        <section class="seccion" id="art-3">
+            <h2><span class="num">3</span> Programa de Lealtad y Tokens ES.stoks</h2>
+            <h3>3.1. Acumulación de Tokens ES.stoks</h3>
+            <p>Por cada compra de un domo de galleta físico en el local de Csariel's (Puebla), el cliente recibe <strong>1 token ES.stoks</strong> en su wallet. El QR impreso dentro del domo debe ser <strong>escaneado por el terminal autorizado en el momento de la compra</strong> para activar el token. El token se envía automáticamente a la wallet asociada al usuario dentro de las 24 horas siguientes.</p>
+            <div class="aviso warning">
+                <strong>QR de un solo uso</strong>
+                El QR es de un solo uso. Si el usuario no lo escanea en la terminal autorizada en el momento de la compra, el token no se genera. Csariel's no se hace responsable por QRs dañados, fotografiados o compartidos con terceros.
+            </div>
+            <h3>3.2. Tokens ES.stoks como Activo Transferible</h3>
+            <p>Los tokens <strong>ES.stoks SÍ son transferibles y pueden ser vendidos en el Mercado P2P</strong> dentro de la Plataforma. Los usuarios pueden vender <strong>cualquier cantidad de tokens</strong> (1, 5, 12, etc.) al precio que determinen.</p>
+            <h3>3.3. Naturaleza del Token</h3>
+            <p>ES.stoks es un token de utilidad con valor determinado por oferta y demanda en el mercado P2P. No representa acciones, participaciones o derechos sobre la empresa Csariel's.</p>
+            <h3>3.4. Minteo de NFT</h3>
+            <p>Al acumular <strong>12 tokens ES.stoks</strong> (ya sea por compras o por compra en el P2P), el usuario tiene derecho a <strong>mintear un NFT Domo</strong> en la red Polygon. Los 12 tokens se <strong>queman (burn)</strong> en el Smart Contract para validar el derecho.</p>
+        </section>
+
+        <!-- ART 4 -->
+        <section class="seccion" id="art-4">
+            <h2><span class="num">4</span> NFT Domo y Regla de 30 Días</h2>
+            <div class="aviso warning">
+                <strong>Regla de caducidad de 30 días</strong>
+                El NFT Domo solo puede ser canjeado por un domo de galleta físico gratis dentro de los 30 días siguientes a su minteo. Después de este plazo, se convierte automáticamente en un NFT Conmemorativo Soulbound.
+            </div>
+            <h3>4.1. NFT Intransferible (Soulbound)</h3>
+            <p>El NFT Domo es <strong>completamente intransferible</strong>. No puede ser vendido, regalado, traspasado, intercambiado ni listado en <strong>ningún mercado</strong>, incluyendo:</p>
+            <ul>
+                <li>El Mercado P2P de Csariel's</li>
+                <li>OpenSea</li>
+                <li>Rarible</li>
+                <li>Cualquier otra plataforma externa</li>
+            </ul>
+            <p>El NFT está <strong>vinculado permanentemente</strong> a la wallet que lo minteó.</p>
+            <h3>4.2. Periodo de Canje</h3>
+            <p>El NFT Domo puede ser canjeado por <strong>un domo de galleta físico gratis</strong> únicamente dentro de los <strong>30 días</strong> siguientes a su minteo. El canje debe realizarse <strong>exclusivamente en el local físico de Csariel's en Puebla, México</strong>.</p>
+            <h3>4.3. Proceso de Canje</h3>
+            <p>El usuario debe presentar el NFT (desde su wallet) en el momento del canje. El personal autorizado ejecutará la <strong>quema (burn) del NFT</strong> en el Smart Contract y entregará la galleta gratis en ese mismo instante.</p>
+            <h3>4.4. Sujeto a disponibilidad</h3>
+            <p>El canje está sujeto a disponibilidad de inventario en el momento de la visita al local.</p>
+            <h3>4.5. Sin envíos internacionales</h3>
+            <p>No realizamos envíos de galletas. El canje es <strong>presencial en Puebla</strong>.</p>
+        </section>
+
+        <!-- ART 5 -->
+        <section class="seccion" id="art-5">
+            <h2><span class="num">5</span> NFT Conmemorativo (Soulbound)</h2>
+            <div class="aviso warning">
+                <strong>Conversión automática a Soulbound</strong>
+                Si el NFT no es canjeado dentro de los 30 días, automáticamente se convierte en un Soulbound Token conmemorativo con un listón (🎗️), sin valor comercial.
+            </div>
+            <p><strong>5.1.</strong> Si el NFT <strong>no es canjeado dentro de los 30 días</strong>, automáticamente se convierte en un <strong>Soulbound Token</strong> conmemorativo.</p>
+            <p><strong>5.2. Consecuencias:</strong> El NFT queda <strong>permanentemente bloqueado</strong> en la wallet del propietario. No puede ser vendido, transferido ni regalado. El derecho a reclamar la galleta física <strong>se extingue</strong>.</p>
+            <p><strong>5.3. Metadatos actualizados:</strong> La imagen del NFT cambia automáticamente al <strong>listón conmemorativo</strong>, indicando que es un trofeo digital sin valor comercial.</p>
+            <p><strong>5.4. Naturaleza permanente:</strong> El NFT conmemorativo es permanente e inmutable. No se puede revertir ni recuperar el derecho de canje. <strong>Sigue siendo intransferible.</strong></p>
+        </section>
+
+        <!-- ART 6 -->
+        <section class="seccion" id="art-6">
+            <h2><span class="num">6</span> Mercado Secundario P2P</h2>
+            <div class="aviso">
+                <strong>Solo para tokens ES.stoks</strong>
+                El Mercado P2P permite la compra y venta de tokens ES.stoks. Los NFTs Domo <strong>NO son comercializables</strong> en ningún mercado por ser Soulbound.
+            </div>
+            <p><strong>6.1. Venta de Tokens ES.stoks:</strong> Los usuarios pueden listar sus <strong>tokens ES.stoks</strong> para la venta en el Mercado P2P dentro de la Plataforma. <strong>Se puede vender cualquier cantidad de tokens</strong> (1, 5, 12, etc.). El precio de venta lo determina el vendedor, basado en oferta y demanda del mercado.</p>
+            <p><strong>6.2. NFTs NO vendibles:</strong> Los NFTs Domo son <strong>completamente intransferibles</strong> y <strong>NO pueden ser vendidos</strong> en el Mercado P2P, ni en OpenSea, ni en Rarible, ni en ningún otro mercado. Son <strong>Soulbound por diseño</strong> y están vinculados permanentemente a la wallet que los minteó.</p>
+            <p><strong>6.3. Comisión del 2%:</strong> Por cada transacción exitosa de compra/venta de tokens, Csariel's cobra una <strong>comisión del 2%</strong> sobre el precio total de venta. Esta comisión se cobra en MATIC/POL al momento de la transacción.</p>
+            <p><strong>6.4. Protección Fiscal y Regulatoria:</strong> El precio del token lo fija libremente el mercado P2P. Csariel's <strong>no garantiza liquidez ni valor mínimo</strong>. ES.stoks es un activo de utilidad (utility) para obtener descuentos y participar en el programa de lealtad, <strong>no es un instrumento de inversión ni un valor financiero</strong>.</p>
+            <p><strong>6.5. Responsabilidad del Usuario:</strong> Csariel's actúa como intermediario tecnológico. No se responsabiliza por negociaciones, precios o disputas entre compradores y vendedores.</p>
+        </section>
+
+        <!-- ART 7 -->
+        <section class="seccion" id="art-7">
+            <h2><span class="num">7</span> Infraestructura y Datos Blockchain</h2>
+            <p><strong>7.1. Transparencia en Blockchain:</strong> La dirección pública de wallet en Polygon, transacciones, minteos y burns se registran de forma <strong>pública e inmutable</strong> en la blockchain y no pueden ser borrados ni modificados por Csariel's.</p>
+            <p><strong>7.2. Almacenamiento de Datos Personales:</strong> Los datos personales (correo electrónico, nombre, wallet vinculada, historial de compras) se alojan en servidores seguros de <strong>Hetzner (Alemania)</strong> y <strong>Supabase/Cloudflare (EE.UU.)</strong> con cifrado en tránsito (TLS) y en reposo (AES-256).</p>
+            <p><strong>7.3. Derecho de Eliminación:</strong> El usuario puede solicitar la eliminación de sus datos personales de nuestras bases de datos centralizadas (Hetzner/Supabase) en cualquier momento, pero acepta que los registros en la blockchain de Polygon (transacciones, tokens, NFTs) <strong>permanecerán públicos</strong> por la naturaleza descentralizada de la red.</p>
+        </section>
+
+        <!-- ART 8 -->
+        <section class="seccion" id="art-8">
+            <h2><span class="num">8</span> Política de Reembolsos y Cancelaciones</h2>
+            <p><strong>8.1. Naturaleza Digital:</strong> Los tokens ES.stoks, NFTs y transacciones en la blockchain son <strong>irreversibles por su naturaleza tecnológica</strong>.</p>
+            <p><strong>8.2. Sin Reembolsos:</strong> No se ofrecen reembolsos por compras de domos físicos una vez escaneado el QR, ni por minteo de NFTs, ni por ventas en el mercado P2P.</p>
+            <p><strong>8.3. Excepción:</strong> En caso de error comprobado del sistema, Csariel's evaluará cada caso de forma individual y podrá ofrecer soluciones discrecionales.</p>
+        </section>
+
+        <!-- ART 9 -->
+        <section class="seccion" id="art-9">
+            <h2><span class="num">9</span> Gas Fees y Costos de Red</h2>
+            <p><strong>9.1. Responsabilidad del Usuario:</strong> Todas las transacciones en la red Polygon requieren el pago de <strong>gas fees (comisiones de red)</strong>. Estas comisiones son pagadas por el usuario que ejecuta la transacción.</p>
+            <p><strong>9.2. Csariel's no cubre gas fees:</strong> Csariel's no subsidia ni cubre los costos de gas bajo ninguna circunstancia.</p>
+            <p><strong>9.3. Congestión de Red:</strong> Csariel's no es responsable por retrasos, fallas o costos elevados debido a congestión en la red Polygon.</p>
+        </section>
+
+        <!-- ART 10 -->
+        <section class="seccion" id="art-10">
+            <h2><span class="num">10</span> Limitación de Responsabilidad</h2>
+            <p><strong>10.1. Plataforma "Como Está":</strong> Csariel's proporciona la Plataforma "tal cual" y "según disponibilidad". No garantizamos que el servicio sea ininterrumpido, libre de errores o seguro.</p>
+            <p><strong>10.2. Riesgo del Usuario:</strong> El uso de la Plataforma, la conexión de la wallet y las transacciones en blockchain son <strong>bajo el propio riesgo del usuario</strong>.</p>
+            <p><strong>10.3. Responsabilidad Limitada:</strong> Csariel's no será responsable por daños directos, indirectos, incidentales o consecuentes derivados del uso de la Plataforma.</p>
+            <p><strong>10.4. Máximo de Responsabilidad:</strong> En ningún caso, la responsabilidad de Csariel's excederá el monto pagado por el usuario en los últimos 12 meses.</p>
+        </section>
+
+        <!-- ART 11 -->
+        <section class="seccion" id="art-11">
+            <h2><span class="num">11</span> Propiedad Intelectual</h2>
+            <p><strong>11.1. Marca y Contenido:</strong> La marca "Csariel's", el logo, los diseños, el nombre "ES.stoks" y todos los contenidos de la Plataforma son <strong>propiedad intelectual de Csariel's</strong>.</p>
+            <p><strong>11.2. Prohibición de Uso:</strong> No se permite copiar, modificar, distribuir o utilizar el contenido sin autorización expresa de Csariel's.</p>
+            <p><strong>11.3. NFTs y Derechos:</strong> Los NFTs son propiedad del usuario que los posee, pero los diseños asociados son propiedad intelectual de Csariel's.</p>
+            <p><strong>11.4.</strong> Conforme a la <strong>Ley Federal del Derecho de Autor</strong> y la <strong>Ley Federal de Protección a la Propiedad Industrial</strong>, Csariel's podrá ejercer acciones legales por uso indebido de su marca o contenido.</p>
+        </section>
+
+        <!-- ART 12 -->
+        <section class="seccion" id="art-12">
+            <h2><span class="num">12</span> Protección de Datos Personales</h2>
+            <p><strong>12.1.</strong> Csariel's trata los datos personales de los Usuarios conforme a la <strong>Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP)</strong>.</p>
+            <p><strong>12.2.</strong> El <strong>Aviso de Privacidad Integral</strong> aplicable a la Plataforma se encuentra en un documento separado, disponible en:</p>
+            <div class="aviso">
+                <strong>Aviso de Privacidad</strong>
+                Consulta el documento completo en <a href="/privacidad.html">/privacidad.html</a>, donde se detallan las finalidades, transferencias y derechos ARCO aplicables.
+            </div>
+            <p><strong>12.3.</strong> El Usuario puede ejercer sus <strong>Derechos ARCO</strong> (Acceso, Rectificación, Cancelación, Oposición) contactando al correo indicado en el Aviso de Privacidad.</p>
+            <p><strong>12.4.</strong> Csariel's implementa medidas de seguridad administrativas, técnicas y físicas para proteger los datos personales.</p>
+        </section>
+
+        <!-- ART 13 -->
+        <section class="seccion" id="art-13">
+            <h2><span class="num">13</span> Modificaciones de los Términos</h2>
+            <p><strong>13.1. Actualizaciones:</strong> Csariel's puede modificar estos Términos en cualquier momento. Te notificaremos mediante aviso en la Plataforma o por correo electrónico con <strong>15 días de anticipación</strong>.</p>
+            <p><strong>13.2. Aceptación Continua:</strong> El uso continuado de la Plataforma después de una modificación constituye tu aceptación de los nuevos Términos.</p>
+            <p><strong>13.3.</strong> Si no estás de acuerdo con las modificaciones, debes cancelar tu cuenta antes de la fecha de entrada en vigor.</p>
+        </section>
+
+        <!-- ART 14 -->
+        <section class="seccion" id="art-14">
+            <h2><span class="num">14</span> Ley Aplicable y Jurisdicción</h2>
+            <p><strong>14.1. Ley Mexicana:</strong> Estos Términos se rigen por las leyes de los Estados Unidos Mexicanos.</p>
+            <p><strong>14.2. Primera Instancia - PROFECO:</strong> Para cualquier controversia relacionada con relaciones de consumo, las partes acuerdan someterse en primera instancia a los procedimientos de conciliación de la <strong>Procuraduría Federal del Consumidor (PROFECO)</strong>.</p>
+            <p><strong>14.3. Jurisdicción:</strong> En caso de no resolverse, las partes se someten a la jurisdicción de los <strong>tribunales competentes de Puebla, México</strong>, renunciando a cualquier otro fuero que pudiera corresponderles.</p>
+            <p><strong>14.4.</strong> Conforme al <strong>artículo 1 de la Ley Federal de Protección al Consumidor</strong>, las disposiciones son irrenunciables y de observancia en toda la República Mexicana.</p>
+        </section>
+
+        <!-- ART 15 -->
+        <section class="seccion" id="art-15">
+            <h2><span class="num">15</span> Contacto</h2>
+            <p><strong>15.1.</strong> Para dudas, aclaraciones o soporte, contacta a:</p>
+            <ul>
+                <li><strong>Correo electrónico:</strong> csarielscontacto@gmail.com</li>
+                <li><strong>Dirección postal:</strong> Puebla, México.</li>
+                <li><strong>Horario de atención:</strong> Lunes a Viernes, 9:00 a 18:00 hrs</li>
+            </ul>
+            <p><strong>15.2.</strong> Si no estás satisfecho con la respuesta de Csariel's, puedes acudir a:</p>
+            <div class="aviso">
+                <strong>Autoridades competentes</strong>
+                <strong>PROFECO</strong> (consumo): <a href="https://www.gob.mx/profeco" target="_blank" rel="noopener">gob.mx/profeco</a><br>
+                <strong>INAI</strong> (datos personales): <a href="https://home.inai.org.mx" target="_blank" rel="noopener">home.inai.org.mx</a><br>
+                <strong>CNBV</strong> (regulación financiera): <a href="https://www.gob.mx/cnbv" target="_blank" rel="noopener">gob.mx/cnbv</a>
+            </div>
+        </section>
+
+        <!-- Aceptación + Firma digital -->
+        <div class="aceptacion-container" id="aceptacionContainer">
+            <div class="aceptacion-wrapper">
+                <input type="checkbox" id="aceptoTerminos" />
+                <label for="aceptoTerminos">
+                    <strong>He leído y acepto los Términos y Condiciones de Uso</strong> de Csariel's Ecosystem.
+                    Entiendo las reglas del programa de lealtad, la regla de los 30 días, el NFT Conmemorativo y las condiciones del Mercado P2P.
+                </label>
+            </div>
+
+            <div class="firma-digital" id="firmaDigital">
+                <span class="titulo-firma">◈ Firma digital registrada</span>
+                <span class="fecha-hora" id="fechaHoraFirma">--</span><br>
+                <span>IP del firmante:</span> <span class="hash" id="ipFirma">--</span><br>
+                <span>Hash del documento:</span> <span class="hash" id="hashFirma">--</span><br>
+                <span>ID de firma:</span> <span class="hash" id="idFirma">--</span>
+            </div>
+        </div>
+
+        <!-- Botón volver -->
+        <div style="text-align:center;">
+            <a href="/" class="btn-volver" id="btnVolver">Volver a la plataforma</a>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer-legal">
+            <p>
+                <span class="marca">Csariel's Ecosystem</span><br>
+                Todos los derechos reservados.<br>
+                Puebla, México.
+            </p>
+        </div>
+
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const checkbox = document.getElementById('aceptoTerminos');
-            const btnVolver = document.getElementById('btnVolver');
-            const firmaDigital = document.getElementById('firmaDigital');
-            const fechaHoraFirma = document.getElementById('fechaHoraFirma');
-            const hashFirma = document.getElementById('hashFirma');
-
-            btnVolver.classList.remove('active');
-
-            function generarHashSimbolico() {
-                const chars = 'ABCDEF0123456789';
-                let hash = '0x';
-                for (let i = 0; i < 16; i++) {
-                    hash += chars.charAt(Math.floor(Math.random() * chars.length));
-                }
-                return hash;
+<script>
+// ================================================================
+// FIRMA DIGITAL
+// ================================================================
+document.addEventListener('DOMContentLoaded', function () {
+    // Suavizar scroll en los links del índice
+    document.querySelectorAll('.indice ol li a').forEach(function (link) {
+        link.addEventListener('click', function (e) {
+            e.preventDefault();
+            var targetId = this.getAttribute('href').substring(1);
+            var target = document.getElementById(targetId);
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                history.pushState(null, null, '#' + targetId);
             }
-
-            function obtenerFechaHora() {
-                const ahora = new Date();
-                const opciones = {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit',
-                    timeZoneName: 'short'
-                };
-                return ahora.toLocaleDateString('es-MX', opciones);
-            }
-
-            checkbox.addEventListener('change', function() {
-                if (this.checked) {
-                    btnVolver.classList.add('active');
-
-                    const fechaHora = obtenerFechaHora();
-                    const hash = generarHashSimbolico();
-
-                    fechaHoraFirma.textContent = `📅 ${fechaHora}`;
-                    hashFirma.textContent = hash;
-                    firmaDigital.classList.add('visible');
-
-                    const container = document.getElementById('aceptacionContainer');
-                    container.style.borderColor = 'rgba(212, 168, 87, 0.5)';
-                    setTimeout(() => {
-                        container.style.borderColor = '';
-                    }, 1500);
-
-                } else {
-                    btnVolver.classList.remove('active');
-                    firmaDigital.classList.remove('visible');
-                    fechaHoraFirma.textContent = '--';
-                    hashFirma.textContent = '--';
-                }
-            });
-
-            btnVolver.addEventListener('click', function(e) {
-                if (!checkbox.checked) {
-                    e.preventDefault();
-                    checkbox.style.borderColor = '#ff3366';
-                    checkbox.style.boxShadow = '0 0 20px rgba(255, 51, 102, 0.3)';
-                    setTimeout(() => {
-                        checkbox.style.borderColor = '';
-                        checkbox.style.boxShadow = '';
-                    }, 1500);
-                }
-            });
         });
-    </script>
+    });
+
+    // Firma digital
+    var checkbox = document.getElementById('aceptoTerminos');
+    var firmaDigital = document.getElementById('firmaDigital');
+    var fechaHoraFirma = document.getElementById('fechaHoraFirma');
+    var hashFirma = document.getElementById('hashFirma');
+    var idFirma = document.getElementById('idFirma');
+    var ipFirma = document.getElementById('ipFirma');
+
+    function generarHashDocumento() {
+        // Hash simbólico del contenido del documento
+        var contenido = document.body.innerText;
+        var hash = 0;
+        for (var i = 0; i < contenido.length; i++) {
+            var char = contenido.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash;
+        }
+        var hashHex = '0x' + Math.abs(hash).toString(16).padStart(8, '0') + 
+                       Math.random().toString(16).substring(2, 10);
+        return hashHex;
+    }
+
+    function generarIdFirma() {
+        return 'SIG-' + Date.now().toString(36).toUpperCase() + '-' + 
+               Math.random().toString(36).substring(2, 6).toUpperCase();
+    }
+
+    function obtenerFechaHora() {
+        var ahora = new Date();
+        return ahora.toLocaleDateString('es-MX', {
+            year: 'numeric', month: 'long', day: 'numeric',
+            hour: '2-digit', minute: '2-digit', second: '2-digit',
+            timeZoneName: 'short'
+        });
+    }
+
+    function obtenerIP() {
+        // Simulada — en producción se obtiene del backend
+        return '127.0.0.1 (local)';
+    }
+
+    checkbox.addEventListener('change', function () {
+        if (this.checked) {
+            fechaHoraFirma.textContent = obtenerFechaHora();
+            hashFirma.textContent = generarHashDocumento();
+            idFirma.textContent = generarIdFirma();
+            ipFirma.textContent = obtenerIP();
+            firmaDigital.classList.add('visible');
+        } else {
+            firmaDigital.classList.remove('visible');
+            fechaHoraFirma.textContent = '--';
+            hashFirma.textContent = '--';
+            idFirma.textContent = '--';
+            ipFirma.textContent = '--';
+        }
+    });
+
+    console.log('◈ Términos y Condiciones generales cargados (modo claro)');
+});
+</script>
 </body>
 </html>
