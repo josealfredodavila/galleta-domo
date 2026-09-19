@@ -1,15 +1,17 @@
 /* ================================================================
-   MERCADO - SARIEL'S ECOSYSTEM
+   MERCADO - CSARIEL'S ECOSYSTEM
    Rutas backend: membresías + pagos NOWPayments + ubicación repartidor
    Ruta: /backend/routes/mercado.js
    
-   Esquema real:
-   - mercado_membresias_pagos (bigint id, tienda_id NOT NULL, plan_slug,
-     plan_nombre, monto_mxn, duracion_dias, estado, payment_id,
-     pay_address, pay_amount, pay_currency, nowpayments_status,
-     activa_desde, activa_hasta, pagado_en)
-   - Estados: pendiente, pagando, confirmando, pagada, cancelada, expirada, fallida
-   - Al confirmar → actualiza mercado_tiendas.nivel + activa_hasta
+   Esquema real confirmado:
+   - mercado_membresias_pagos:
+       id, tienda_id (FK), usuario_id (FK), plan_slug, plan_nombre,
+       monto_mxn, duracion_dias, estado, payment_id, pay_address,
+       pay_amount, pay_currency, nowpayments_status,
+       activa_desde, activa_hasta, pagado_en, created_at, updated_at
+     Estados: pendiente, pagando, confirmando, pagada, cancelada, expirada, fallida
+   - notificaciones usa: user_id, tipo, mensaje, fecha, emisor_id, leida, metadata
+   - Al confirmar → actualiza mercado_tiendas.nivel + activa_hasta + estado
    
    Este archivo YA INCLUYE:
    - El webhook de NOWPayments (/api/mercado/webhook-nowpayments)
@@ -56,6 +58,17 @@ const CRIPTOS_SOPORTADAS = [
 ];
 
 // ================================================================
+// LOGS CON SÍMBOLOS CSARIEL'S
+// ================================================================
+function log(...args) {
+    console.log('[◈ Mercado]', ...args);
+}
+
+function logError(...args) {
+    console.error('[✶ Mercado ERROR]', ...args);
+}
+
+// ================================================================
 // MIDDLEWARE: autenticar con JWT de Supabase
 // ================================================================
 async function autenticarUsuario(req, res, next) {
@@ -75,7 +88,7 @@ async function autenticarUsuario(req, res, next) {
         req.usuario = data.user;
         next();
     } catch (e) {
-        console.error('Error autenticando:', e);
+        logError('Error autenticando:', e);
         return res.status(401).json({ error: 'Error de autenticación' });
     }
 }
@@ -111,7 +124,7 @@ async function activarMembresia(tiendaId, pagoId, planSlug, duracionDias) {
         // 1) Obtener la tienda actual
         const { data: tienda, error: errT } = await supabaseAdmin
             .from('mercado_tiendas')
-            .select('id, nivel, activa_hasta')
+            .select('id, usuario_id, nivel, activa_hasta')
             .eq('id', tiendaId)
             .maybeSingle();
 
@@ -143,7 +156,7 @@ async function activarMembresia(tiendaId, pagoId, planSlug, duracionDias) {
             .eq('id', tiendaId);
 
         if (errUpd) {
-            console.error('Error actualizando tienda:', errUpd);
+            logError('Error actualizando tienda:', errUpd);
             return { ok: false, error: errUpd.message };
         }
 
@@ -160,20 +173,58 @@ async function activarMembresia(tiendaId, pagoId, planSlug, duracionDias) {
             .eq('id', pagoId);
 
         if (errPago) {
-            console.error('Error actualizando pago:', errPago);
+            logError('Error actualizando pago:', errPago);
         }
 
-        console.log('✅ Membresía activada para tienda', tiendaId, 'hasta', nuevaFechaFin.toISOString());
+        log('● Membresía activada para tienda', tiendaId, 'hasta', nuevaFechaFin.toISOString());
 
         return {
             ok: true,
             tienda_id: tiendaId,
+            usuario_id: tienda.usuario_id,
             nivel: planSlug,
             fecha_fin: nuevaFechaFin.toISOString()
         };
 
     } catch (e) {
-        console.error('Excepción activarMembresia:', e);
+        logError('Excepción activarMembresia:', e);
+        return { ok: false, error: e.message };
+    }
+}
+
+// ================================================================
+// FUNCIÓN: CREAR NOTIFICACIÓN AL USUARIO
+// Adaptada a la estructura real de la tabla notificaciones:
+// user_id, tipo, mensaje, fecha, emisor_id, leida, metadata
+// ================================================================
+async function crearNotificacionMembresia(usuarioId, planSlug, fechaFin) {
+    try {
+        const { error } = await supabaseAdmin
+            .from('notificaciones')
+            .insert({
+                user_id: usuarioId,
+                tipo: 'membresia_activada',
+                mensaje: '◈ Tu membresía ' + planSlug.toUpperCase() + ' está activa hasta ' + new Date(fechaFin).toLocaleDateString('es-MX'),
+                fecha: new Date().toISOString(),
+                emisor_id: null,
+                leida: false,
+                metadata: {
+                    tipo_evento: 'membresia_activada',
+                    plan: planSlug,
+                    fecha_fin: fechaFin,
+                    plataforma: 'Csariel\'s Mercado'
+                }
+            });
+
+        if (error) {
+            log('ℹ️ No se pudo insertar notificación:', error.message);
+            return { ok: false, error: error.message };
+        }
+
+        log('◆ Notificación creada para usuario:', usuarioId);
+        return { ok: true };
+    } catch (e) {
+        log('ℹ️ Excepción insertando notificación:', e.message);
         return { ok: false, error: e.message };
     }
 }
@@ -184,10 +235,11 @@ async function activarMembresia(tiendaId, pagoId, planSlug, duracionDias) {
 router.get('/health', (req, res) => {
     res.json({
         ok: true,
-        servicio: 'Mercado',
+        servicio: '◈ Mercado · Csariel\'s',
         nowpayments_configurado: !!NOWPAYMENTS_API_KEY,
         ipn_configurado: !!NOWPAYMENTS_IPN_SECRET,
         planes: Object.keys(PLANES),
+        criptos_soportadas: CRIPTOS_SOPORTADAS.length,
         timestamp: new Date().toISOString()
     });
 });
@@ -253,7 +305,7 @@ router.post('/crear-pago-membresia', autenticarUsuario, async (req, res) => {
             .maybeSingle();
 
         if (pagoExistente) {
-            console.log('ℹ️ Ya hay un pago en curso:', pagoExistente.id);
+            log('ℹ️ Ya hay un pago en curso:', pagoExistente.id);
             const { data: pagoCompleto } = await supabaseAdmin
                 .from('mercado_membresias_pagos')
                 .select('*')
@@ -291,7 +343,11 @@ router.post('/crear-pago-membresia', autenticarUsuario, async (req, res) => {
                 : undefined
         };
 
-        console.log('📤 Creando pago NOWPayments:', payload);
+        log('◈ Creando pago NOWPayments:', {
+            plan: plan_slug,
+            monto_usd: montoUsd,
+            cripto: pay_currency
+        });
 
         const npResp = await fetch(`${NOWPAYMENTS_API_URL}/payment`, {
             method: 'POST',
@@ -305,14 +361,14 @@ router.post('/crear-pago-membresia', autenticarUsuario, async (req, res) => {
         const npData = await npResp.json();
 
         if (!npResp.ok || !npData.payment_id) {
-            console.error('❌ Error NOWPayments:', npData);
+            logError('Error NOWPayments:', npData);
             return res.status(500).json({
                 error: npData.message || 'NOWPayments rechazó la solicitud',
                 detalle: npData
             });
         }
 
-        console.log('✅ Pago NOWPayments creado:', npData.payment_id);
+        log('● Pago NOWPayments creado:', npData.payment_id);
 
         // ============ GUARDAR EN mercado_membresias_pagos ============
         const { data: pagoGuardado, error: errIns } = await supabaseAdmin
@@ -335,7 +391,7 @@ router.post('/crear-pago-membresia', autenticarUsuario, async (req, res) => {
             .single();
 
         if (errIns) {
-            console.error('❌ Error guardando pago en DB:', errIns);
+            logError('Error guardando pago en DB:', errIns);
             return res.status(500).json({
                 error: 'Pago creado en NOWPayments pero no se pudo guardar en DB',
                 detalle: errIns.message,
@@ -365,7 +421,7 @@ router.post('/crear-pago-membresia', autenticarUsuario, async (req, res) => {
         });
 
     } catch (e) {
-        console.error('❌ Error creando pago:', e);
+        logError('Error creando pago:', e);
         return res.status(500).json({ error: e.message || 'Error creando pago' });
     }
 });
@@ -418,7 +474,7 @@ router.get('/estado-pago/:pagoId', autenticarUsuario, async (req, res) => {
         const npData = await npResp.json();
 
         if (!npResp.ok) {
-            console.error('Error consultando NOWPayments:', npData);
+            logError('Error consultando NOWPayments:', npData);
             return res.json({ ok: true, estado: pago.estado, pago_id: String(pago.id) });
         }
 
@@ -437,13 +493,17 @@ router.get('/estado-pago/:pagoId', autenticarUsuario, async (req, res) => {
         }
 
         if (estadoFinal === 'pagada' && pago.estado !== 'pagada') {
-            console.log('⚠️ Red de seguridad: activando membresía desde polling');
-            await activarMembresia(
+            log('✧ Red de seguridad: activando membresía desde polling');
+            const resultado = await activarMembresia(
                 pago.tienda_id,
                 pago.id,
                 pago.plan_slug,
                 pago.duracion_dias
             );
+
+            if (resultado.ok) {
+                await crearNotificacionMembresia(pago.usuario_id, pago.plan_slug, resultado.fecha_fin);
+            }
         }
 
         return res.json({
@@ -455,8 +515,54 @@ router.get('/estado-pago/:pagoId', autenticarUsuario, async (req, res) => {
         });
 
     } catch (e) {
-        console.error('❌ Error consultando estado:', e);
+        logError('Error consultando estado:', e);
         return res.status(500).json({ error: e.message || 'Error consultando estado' });
+    }
+});
+
+// ================================================================
+// POST /api/mercado/cancelar-pago/:pagoId
+// Cancela un pago pendiente si el usuario abandona
+// ================================================================
+router.post('/cancelar-pago/:pagoId', autenticarUsuario, async (req, res) => {
+    try {
+        const { pagoId } = req.params;
+        const usuarioId = req.usuario.id;
+
+        const { data: pago, error } = await supabaseAdmin
+            .from('mercado_membresias_pagos')
+            .select('id, estado')
+            .eq('id', pagoId)
+            .eq('usuario_id', usuarioId)
+            .maybeSingle();
+
+        if (error || !pago) {
+            return res.status(404).json({ error: 'Pago no encontrado' });
+        }
+
+        if (pago.estado === 'pagada') {
+            return res.status(400).json({ error: 'Este pago ya fue completado, no se puede cancelar' });
+        }
+
+        if (['cancelada', 'expirada', 'fallida'].includes(pago.estado)) {
+            return res.json({ ok: true, mensaje: 'Ya estaba cancelado', estado: pago.estado });
+        }
+
+        await supabaseAdmin
+            .from('mercado_membresias_pagos')
+            .update({
+                estado: 'cancelada',
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', pagoId);
+
+        log('✶ Pago cancelado:', pagoId);
+
+        return res.json({ ok: true, estado: 'cancelada' });
+
+    } catch (e) {
+        logError('Error cancelando pago:', e);
+        return res.status(500).json({ error: e.message });
     }
 });
 
@@ -502,7 +608,7 @@ router.get('/mi-membresia', autenticarUsuario, async (req, res) => {
         });
 
     } catch (e) {
-        console.error('Error obteniendo membresía:', e);
+        logError('Error obteniendo membresía:', e);
         return res.status(500).json({ error: e.message });
     }
 });
@@ -588,7 +694,7 @@ router.get('/ubicacion-repartidor/:pedidoId', autenticarUsuario, async (req, res
         });
 
     } catch (e) {
-        console.error('Error ubicación repartidor:', e);
+        logError('Error ubicación repartidor:', e);
         return res.status(500).json({ error: e.message });
     }
 });
@@ -621,7 +727,7 @@ router.post('/webhook-nowpayments', async (req, res) => {
             }
 
             if (!firmaValida) {
-                console.error('❌ Firma IPN inválida');
+                logError('Firma IPN inválida');
                 return res.status(401).json({ ok: false, error: 'Firma inválida' });
             }
         }
@@ -630,7 +736,7 @@ router.post('/webhook-nowpayments', async (req, res) => {
         const paymentId = data.payment_id;
         const npStatus = data.payment_status;
 
-        console.log('📥 Webhook NOWPayments:', {
+        log('◈ Webhook NOWPayments:', {
             payment_id: paymentId,
             status: npStatus
         });
@@ -646,12 +752,12 @@ router.post('/webhook-nowpayments', async (req, res) => {
             .maybeSingle();
 
         if (error || !pago) {
-            console.warn('⚠️ Pago no encontrado:', paymentId);
+            logError('Pago no encontrado:', paymentId);
             return res.status(200).json({ ok: true, ignorado: 'pago no encontrado' });
         }
 
         if (pago.estado === 'pagada') {
-            console.log('ℹ️ Pago ya procesado previamente');
+            log('ℹ️ Pago ya procesado previamente');
             return res.status(200).json({ ok: true, ya_pagado: true });
         }
 
@@ -672,7 +778,7 @@ router.post('/webhook-nowpayments', async (req, res) => {
             .update(updates)
             .eq('id', pago.id);
 
-        console.log('💾 Pago actualizado:', pago.id, '→', estadoFinal);
+        log('◆ Pago actualizado:', pago.id, '→', estadoFinal);
 
         if (estadoFinal === 'pagada') {
             const resultado = await activarMembresia(
@@ -683,7 +789,7 @@ router.post('/webhook-nowpayments', async (req, res) => {
             );
 
             if (!resultado.ok) {
-                console.error('❌ Error activando membresía:', resultado.error);
+                logError('Error activando membresía:', resultado.error);
                 return res.status(200).json({
                     ok: true,
                     procesado: true,
@@ -691,19 +797,7 @@ router.post('/webhook-nowpayments', async (req, res) => {
                 });
             }
 
-            try {
-                await supabaseAdmin
-                    .from('notificaciones')
-                    .insert({
-                        usuario_id: pago.usuario_id,
-                        tipo: 'membresia_activada',
-                        titulo: '🎉 Membresía activada',
-                        mensaje: 'Tu membresía ' + pago.plan_slug + ' está activa hasta ' + resultado.fecha_fin,
-                        created_at: new Date().toISOString()
-                    });
-            } catch (eN) {
-                console.log('ℹ️ No se pudo insertar notificación (tabla opcional)');
-            }
+            await crearNotificacionMembresia(pago.usuario_id, pago.plan_slug, resultado.fecha_fin);
 
             return res.status(200).json({
                 ok: true,
@@ -723,7 +817,7 @@ router.post('/webhook-nowpayments', async (req, res) => {
         });
 
     } catch (e) {
-        console.error('❌ Error procesando webhook:', e);
+        logError('Error procesando webhook:', e);
         return res.status(200).json({
             ok: true,
             error: e.message,
