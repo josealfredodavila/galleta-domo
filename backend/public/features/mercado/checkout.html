@@ -1,17 +1,19 @@
 <!-- ================================================================
-     MERCADO - SARIEL'S ECOSYSTEM
+     CSARIEL'S ECOSYSTEM
      Checkout / Confirmar pedido
      Ruta: /features/mercado/checkout.html
      
-     GPS obligatorio para seguridad del comprador y del repartidor
-     Dirección escrita + coordenadas GPS ambas requeridas
+     - GPS obligatorio (seguridad comprador + repartidor)
+     - Comisión de servicio: $5 MXN
+     - Pago: efectivo, transferencia, cripto
+     - Guarda comisiones en DB para cobro automático
      ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>◈ Confirmar pedido · Sariel's</title>
+    <title>◈ Confirmar pedido · Csariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
@@ -106,21 +108,14 @@
             font-family: 'Orbitron', monospace;
         }
 
-        /* Pasos visuales */
         .pasos {
-            display: flex;
-            justify-content: center;
-            gap: 6px;
-            margin-bottom: 20px;
-            font-size: 0.6rem;
-            color: var(--text-muted);
+            display: flex; justify-content: center; gap: 6px;
+            margin-bottom: 20px; font-size: 0.6rem; color: var(--text-muted);
         }
         .pasos .paso-item { display: flex; align-items: center; gap: 4px; }
         .pasos .paso-num {
-            width: 18px; height: 18px;
-            border-radius: 50%;
-            background: rgba(0,0,0,0.4);
-            border: 1px solid var(--glass-border);
+            width: 18px; height: 18px; border-radius: 50%;
+            background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border);
             display: flex; align-items: center; justify-content: center;
             font-size: 0.55rem; font-weight: 700;
         }
@@ -130,7 +125,6 @@
         .pasos .paso-item.actual { color: var(--text-primary); }
         .pasos .linea { width: 14px; height: 1px; background: var(--glass-border); align-self: center; }
 
-        /* Sección */
         .seccion-card {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
@@ -148,292 +142,189 @@
             gap: 8px;
         }
 
-        /* Selector de tipo de entrega */
         .tipo-entrega-toggle {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 14px;
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 10px; margin-bottom: 14px;
         }
         .tipo-opcion {
-            padding: 14px 12px;
-            background: rgba(0,0,0,0.3);
-            border: 2px solid var(--glass-border);
-            border-radius: 14px;
-            cursor: pointer;
-            transition: var(--transition);
-            text-align: center;
+            padding: 14px 12px; background: rgba(0,0,0,0.3);
+            border: 2px solid var(--glass-border); border-radius: 14px;
+            cursor: pointer; transition: var(--transition); text-align: center;
         }
         .tipo-opcion:hover { border-color: var(--gold); }
-        .tipo-opcion.activo {
-            border-color: var(--gold);
-            background: rgba(212,175,55,0.1);
-        }
+        .tipo-opcion.activo { border-color: var(--gold); background: rgba(212,175,55,0.1); }
         .tipo-opcion.deshabilitado { opacity: 0.3; cursor: not-allowed; }
         .tipo-opcion .icono { font-size: 1.4rem; margin-bottom: 4px; }
-        .tipo-opcion .nombre {
-            font-size: 0.72rem; font-weight: 600;
-            color: var(--text-primary); margin-bottom: 2px;
-        }
+        .tipo-opcion .nombre { font-size: 0.72rem; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
         .tipo-opcion .precio { font-size: 0.62rem; color: var(--text-muted); }
         .tipo-opcion.activo .precio { color: var(--gold); }
 
-        /* Formularios */
         .form-group { margin-bottom: 14px; }
         .form-group label {
-            display: block;
-            font-size: 0.72rem;
-            color: var(--text-muted);
-            margin-bottom: 6px;
-            font-weight: 600;
+            display: block; font-size: 0.72rem;
+            color: var(--text-muted); margin-bottom: 6px; font-weight: 600;
         }
         .form-group label .required { color: var(--danger); }
         .form-group input,
         .form-group textarea,
         .form-group select {
-            width: 100%;
-            padding: 12px 14px;
+            width: 100%; padding: 12px 14px;
             background: rgba(0,0,0,0.35);
             border: 1px solid var(--glass-border);
             border-radius: 10px;
             color: var(--text-primary);
-            font-size: 0.85rem;
-            outline: none;
+            font-size: 0.85rem; outline: none;
             font-family: 'Inter', sans-serif;
             transition: var(--transition);
         }
         .form-group input:focus,
         .form-group textarea:focus {
-            border-color: var(--gold);
-            background: rgba(0,0,0,0.5);
+            border-color: var(--gold); background: rgba(0,0,0,0.5);
         }
         .form-group textarea { resize: vertical; min-height: 70px; }
-        .form-group .helper {
-            font-size: 0.6rem;
-            color: var(--text-muted);
-            margin-top: 4px;
-        }
+        .form-group .helper { font-size: 0.6rem; color: var(--text-muted); margin-top: 4px; }
 
         .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
         }
         @media (max-width: 480px) {
             .form-row { grid-template-columns: 1fr; }
             .tipo-entrega-toggle { grid-template-columns: 1fr; }
         }
 
-        /* NUEVO: Bloque GPS obligatorio */
         .gps-bloque {
             background: rgba(0,229,255,0.05);
             border: 1px solid rgba(0,229,255,0.2);
-            border-radius: 14px;
-            padding: 14px;
-            margin-top: 6px;
+            border-radius: 14px; padding: 14px; margin-top: 6px;
             transition: var(--transition);
         }
-        .gps-bloque.capturado {
-            background: rgba(0,214,143,0.08);
-            border-color: rgba(0,214,143,0.4);
-        }
-        .gps-bloque.error {
-            background: rgba(255,51,102,0.08);
-            border-color: rgba(255,51,102,0.3);
-        }
-        .gps-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 10px;
-        }
-        .gps-header .gps-icono {
-            font-size: 1.2rem;
-        }
-        .gps-header .gps-titulo {
-            font-size: 0.78rem;
-            font-weight: 700;
-            color: var(--cyan);
-            flex: 1;
-        }
+        .gps-bloque.capturado { background: rgba(0,214,143,0.08); border-color: rgba(0,214,143,0.4); }
+        .gps-bloque.error { background: rgba(255,51,102,0.08); border-color: rgba(255,51,102,0.3); }
+        .gps-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+        .gps-header .gps-icono { font-size: 1.2rem; }
+        .gps-header .gps-titulo { font-size: 0.78rem; font-weight: 700; color: var(--cyan); flex: 1; }
         .gps-bloque.capturado .gps-header .gps-titulo { color: var(--success); }
         .gps-bloque.error .gps-header .gps-titulo { color: var(--danger); }
-
-        .gps-aviso {
-            font-size: 0.68rem;
-            color: var(--text-secondary);
-            line-height: 1.5;
-            margin-bottom: 12px;
-        }
+        .gps-aviso { font-size: 0.68rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 12px; }
         .gps-aviso strong { color: var(--warning); }
 
         .btn-gps-grande {
-            width: 100%;
-            padding: 14px;
+            width: 100%; padding: 14px;
             background: linear-gradient(135deg, var(--cyan), #00b3cc);
-            color: var(--space);
-            border: none;
-            border-radius: 30px;
-            font-family: 'Orbitron', monospace;
-            font-weight: 700;
-            font-size: 0.78rem;
-            cursor: pointer;
-            transition: var(--transition);
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
+            color: var(--space); border: none; border-radius: 30px;
+            font-family: 'Orbitron', monospace; font-weight: 700;
+            font-size: 0.78rem; cursor: pointer; transition: var(--transition);
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
         }
-        .btn-gps-grande:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0,229,255,0.3);
-        }
+        .btn-gps-grande:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,229,255,0.3); }
         .btn-gps-grande:disabled { opacity: 0.5; cursor: not-allowed; }
 
         .btn-gps-actualizar {
-            width: 100%;
-            padding: 10px;
-            background: transparent;
-            border: 1px solid var(--success);
-            color: var(--success);
-            border-radius: 20px;
-            font-family: 'Orbitron', monospace;
-            font-weight: 700;
-            font-size: 0.7rem;
-            cursor: pointer;
-            transition: var(--transition);
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
+            width: 100%; padding: 10px;
+            background: transparent; border: 1px solid var(--success);
+            color: var(--success); border-radius: 20px;
+            font-family: 'Orbitron', monospace; font-weight: 700;
+            font-size: 0.7rem; cursor: pointer; transition: var(--transition);
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
             margin-top: 8px;
         }
         .btn-gps-actualizar:hover { background: rgba(0,214,143,0.1); }
 
         .gps-coords {
-            background: rgba(0,0,0,0.4);
-            border-radius: 10px;
-            padding: 10px;
-            font-family: 'Orbitron', monospace;
-            font-size: 0.7rem;
-            color: var(--success);
-            text-align: center;
-            margin-bottom: 8px;
-            word-break: break-all;
+            background: rgba(0,0,0,0.4); border-radius: 10px;
+            padding: 10px; font-family: 'Orbitron', monospace;
+            font-size: 0.7rem; color: var(--success);
+            text-align: center; margin-bottom: 8px; word-break: break-all;
         }
         .gps-coords .precision {
-            display: block;
-            font-size: 0.6rem;
-            color: var(--text-muted);
-            margin-top: 4px;
-            font-family: 'Inter', sans-serif;
+            display: block; font-size: 0.6rem; color: var(--text-muted);
+            margin-top: 4px; font-family: 'Inter', sans-serif;
         }
-
         .gps-instrucciones {
-            font-size: 0.68rem;
-            color: var(--text-secondary);
-            line-height: 1.6;
-            padding: 10px;
-            background: rgba(255,51,102,0.08);
-            border-radius: 10px;
-            margin-top: 8px;
+            font-size: 0.68rem; color: var(--text-secondary);
+            line-height: 1.6; padding: 10px;
+            background: rgba(255,51,102,0.08); border-radius: 10px; margin-top: 8px;
         }
-        .gps-instrucciones ol {
-            padding-left: 18px;
-            margin-top: 6px;
-        }
-        .gps-instrucciones li { margin-bottom: 4px; }        /* Botón GPS pequeño (fallback) */
-        .btn-gps-mini {
-            margin-top: 8px;
-            padding: 9px 14px;
-            background: rgba(0,229,255,0.08);
-            border: 1px solid rgba(0,229,255,0.3);
-            color: var(--cyan);
-            border-radius: 20px;
-            font-size: 0.7rem;
-            cursor: pointer;
-            transition: var(--transition);
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .btn-gps-mini:hover { background: rgba(0,229,255,0.15); }
-        .btn-gps-mini:disabled { opacity: 0.5; cursor: not-allowed; }
+        .gps-instrucciones ol { padding-left: 18px; margin-top: 6px; }
+        .gps-instrucciones li { margin-bottom: 4px; }
 
-        /* Métodos de pago */
+        /* MÉTODOS DE PAGO - AHORA 3 OPCIONES */
         .pago-opciones {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1fr;
             gap: 10px;
         }
         .pago-opcion {
-            padding: 12px;
+            padding: 12px 8px;
             background: rgba(0,0,0,0.3);
             border: 2px solid var(--glass-border);
             border-radius: 12px;
             cursor: pointer;
             transition: var(--transition);
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 10px;
+            gap: 4px;
+            text-align: center;
         }
         .pago-opcion:hover { border-color: var(--gold); }
         .pago-opcion.activo { border-color: var(--gold); background: rgba(212,175,55,0.1); }
         .pago-opcion .icono { font-size: 1.3rem; }
         .pago-opcion .texto {
-            font-size: 0.72rem;
+            font-size: 0.68rem;
             font-weight: 600;
             color: var(--text-primary);
         }
+        @media (max-width: 480px) {
+            .pago-opciones { grid-template-columns: 1fr; }
+            .pago-opcion { flex-direction: row; justify-content: center; }
+        }
 
-        /* Aviso envío en efectivo */
         .aviso-envio {
             background: rgba(0,229,255,0.08);
             border: 1px solid rgba(0,229,255,0.3);
-            border-radius: 12px;
-            padding: 12px 14px;
-            font-size: 0.72rem;
-            color: var(--cyan);
-            line-height: 1.5;
-            margin-top: 12px;
-            display: flex;
-            gap: 10px;
-            align-items: flex-start;
+            border-radius: 12px; padding: 12px 14px;
+            font-size: 0.72rem; color: var(--cyan);
+            line-height: 1.5; margin-top: 12px;
+            display: flex; gap: 10px; align-items: flex-start;
         }
         .aviso-envio .icono { font-size: 1.2rem; flex-shrink: 0; }
 
-        /* Resumen */
+        .aviso-servicio {
+            background: rgba(212,175,55,0.08);
+            border: 1px solid rgba(212,175,55,0.3);
+            border-radius: 12px; padding: 12px 14px;
+            font-size: 0.7rem; color: var(--text-secondary);
+            line-height: 1.5; margin-top: 12px;
+            display: flex; gap: 10px; align-items: flex-start;
+        }
+        .aviso-servicio .icono { font-size: 1.2rem; flex-shrink: 0; color: var(--gold); }
+        .aviso-servicio strong { color: var(--gold); }
+
         .resumen-items {
-            display: flex; flex-direction: column;
-            gap: 10px; margin-bottom: 14px;
+            display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px;
         }
         .resumen-grupo {
             background: rgba(0,0,0,0.2);
-            border-radius: 12px;
-            padding: 10px 12px;
+            border-radius: 12px; padding: 10px 12px;
         }
         .resumen-grupo .tienda-nombre {
             font-size: 0.7rem; color: var(--gold);
             font-weight: 600; margin-bottom: 8px;
-            padding-bottom: 6px;
-            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 6px; border-bottom: 1px solid var(--glass-border);
             font-family: 'Orbitron', monospace;
         }
         .resumen-item {
             display: flex; justify-content: space-between;
             gap: 8px; font-size: 0.72rem;
-            padding: 4px 0;
-            color: var(--text-secondary);
+            padding: 4px 0; color: var(--text-secondary);
         }
         .resumen-item .cant { color: var(--text-muted); margin-right: 6px; }
         .resumen-item .subtotal {
-            color: var(--gold);
-            font-weight: 600;
-            font-family: 'Orbitron', monospace;
-            white-space: nowrap;
+            color: var(--gold); font-weight: 600;
+            font-family: 'Orbitron', monospace; white-space: nowrap;
         }
 
-        /* Totales */
         .totales {
             padding-top: 12px;
             border-top: 1px solid var(--glass-border);
@@ -445,70 +336,49 @@
             color: var(--text-secondary);
         }
         .totales .fila.envio .val { font-size: 0.72rem; }
+        .totales .fila.servicio {
+            color: var(--text-secondary);
+            border-top: 1px dashed var(--glass-border);
+            margin-top: 6px; padding-top: 10px;
+        }
+        .totales .fila.servicio .val {
+            color: var(--gold); font-weight: 600;
+        }
         .totales .fila.total {
             border-top: 2px solid var(--glass-border);
-            margin-top: 8px;
-            padding-top: 14px;
+            margin-top: 8px; padding-top: 14px;
         }
         .totales .fila.total .lbl {
             font-family: 'Orbitron', monospace;
-            font-size: 0.85rem;
-            color: var(--text-primary);
-            font-weight: 700;
-            text-transform: uppercase;
+            font-size: 0.85rem; color: var(--text-primary);
+            font-weight: 700; text-transform: uppercase;
         }
         .totales .fila.total .val {
             font-family: 'Orbitron', monospace;
-            font-size: 1.3rem;
-            color: var(--gold);
-            font-weight: 700;
+            font-size: 1.3rem; color: var(--gold); font-weight: 700;
         }
 
-        /* Botón confirmar */
         .btn-confirmar {
-            width: 100%;
-            padding: 15px;
-            margin-top: 14px;
+            width: 100%; padding: 15px; margin-top: 14px;
             border-radius: 30px;
             background: linear-gradient(135deg, var(--gold), var(--gold-dark));
-            color: var(--space);
-            border: none;
+            color: var(--space); border: none;
             font-family: 'Orbitron', monospace;
-            font-weight: 700;
-            font-size: 0.85rem;
-            cursor: pointer;
+            font-weight: 700; font-size: 0.85rem; cursor: pointer;
             transition: var(--transition);
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
         }
-        .btn-confirmar:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-gold);
-        }
-        .btn-confirmar:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-            filter: grayscale(0.5);
-        }
+        .btn-confirmar:hover:not(:disabled) { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
+        .btn-confirmar:disabled { opacity: 0.4; cursor: not-allowed; filter: grayscale(0.5); }
 
         .aviso-bloqueo {
-            text-align: center;
-            font-size: 0.68rem;
-            color: var(--warning);
-            margin-top: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
+            text-align: center; font-size: 0.68rem;
+            color: var(--warning); margin-top: 8px;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
         }
         .aviso-bloqueo.hidden { display: none; }
 
-        /* Loading / empty */
-        .loading-state {
-            text-align: center; padding: 60px 20px; color: var(--text-muted);
-        }
+        .loading-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
         .loading-state .spinner {
             width: 40px; height: 40px;
             border: 3px solid rgba(212, 175, 55, 0.15);
@@ -524,14 +394,8 @@
             border: 1px solid var(--glass-border);
             border-radius: var(--radius-xl);
         }
-        .empty-state .icon {
-            font-size: 3.5rem; display: block; margin-bottom: 16px;
-            color: var(--gold); opacity: 0.4;
-        }
-        .empty-state h3 {
-            font-family: 'Orbitron', monospace;
-            color: var(--text-secondary); font-size: 1rem; margin-bottom: 8px;
-        }
+        .empty-state .icon { font-size: 3.5rem; display: block; margin-bottom: 16px; color: var(--gold); opacity: 0.4; }
+        .empty-state h3 { font-family: 'Orbitron', monospace; color: var(--text-secondary); font-size: 1rem; margin-bottom: 8px; }
         .empty-state p { font-size: 0.85rem; margin-bottom: 20px; }
         .empty-state .btn-ir {
             display: inline-flex; align-items: center; gap: 8px;
@@ -543,7 +407,6 @@
             transition: var(--transition);
         }
 
-        /* Toast */
         .toast {
             position: fixed; bottom: 30px; right: 20px;
             background: var(--green-deep); border: 1px solid var(--gold);
@@ -593,7 +456,6 @@
 
         @media (max-width: 480px) {
             .titulo h1 { font-size: 1.05rem; }
-            .pago-opciones { grid-template-columns: 1fr; }
             .gps-coords { font-size: 0.62rem; }
         }
     </style>
@@ -609,7 +471,7 @@
         <header class="header">
             <a href="/" class="logo" aria-label="Ir a la página de inicio">
                 <span class="logo-hex">◈</span>
-                <span class="logo-text">Sariel<span>'s</span></span>
+                <span class="logo-text">Csariel<span>'s</span></span>
                 <span class="logo-badge">✦ WEB3</span>
             </a>
             <div class="header-actions">
@@ -640,7 +502,6 @@
             <span class="paso">Paso 3/3</span>
         </div>
 
-        <!-- Pasos visuales -->
         <div class="pasos">
             <div class="paso-item completado">
                 <span class="paso-num">✓</span>
@@ -666,7 +527,7 @@
         </div>
 
         <footer class="footer">
-            <span><span class="brand">◈ Sariel's</span> · <span data-clave="mercado_footer">Sabor al Paladar · WEB3</span></span>
+            <span><span class="brand">© Csariel's</span> · <span data-clave="mercado_footer">Sabor al Paladar · WEB3</span></span>
             <div class="footer-links">
                 <a href="/terminos" data-clave="footer_terminos">📜 Términos</a>
                 <a href="/privacidad" data-clave="footer_privacidad">🔒 Privacidad</a>
@@ -691,12 +552,34 @@
             style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">
             Cerrar
         </button>
-    </div><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/features/shared/js/idiomas.js"></script>
 
 <script>
 // ================================================================
-// CONFIGURACIÓN
+// ⚙️ CONFIGURACIÓN LEGAL — Csariel's Ecosystem
+// ================================================================
+// 👉 EDITA ESTE BLOQUE cuando tengas los datos legales listos
+// ================================================================
+var CONFIG_LEGAL = {
+    nombre_comercial: 'Csariel\'s',
+    nombre_ecosistema: 'Csariel\'s Ecosystem',
+    slogan: 'Sabor al Paladar · Repostería Fina · Web3',
+    razon_social: '',
+    rfc: '',
+    email_contacto: '',
+    sitio_web: '',
+    pais_operacion: 'México',
+    ciudad_operacion: 'Puebla'
+};
+// ================================================================
+// FIN DE CONFIGURACIÓN LEGAL
+// ================================================================
+
+// ================================================================
+// CONFIGURACIÓN APP
 // ================================================================
 var supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
 var supabaseKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
@@ -705,6 +588,7 @@ window.supabaseClient = supabaseClient;
 var supabase = supabaseClient;
 
 var CARRITO_KEY = 'mercado_carrito_v1';
+var COMISION_COMPRADOR = 5.00; // $5 MXN fijos por servicio de plataforma
 
 // ================================================================
 // ESTADO
@@ -822,7 +706,6 @@ async function prepararCheckout() {
         return;
     }
 
-    // Cargar tiendas
     var tiendaIds = [];
     itemsCarrito.forEach(function (it) {
         if (it.tienda_id && tiendaIds.indexOf(it.tienda_id) === -1) {
@@ -844,7 +727,6 @@ async function prepararCheckout() {
         } catch (e) { console.error('Error tiendas:', e); }
     }
 
-    // Verificar que todas estén activas
     var tiendaInactiva = null;
     tiendaIds.forEach(function (tid) {
         var t = tiendasCache[tid];
@@ -856,7 +738,6 @@ async function prepararCheckout() {
         return;
     }
 
-    // Verificar delivery/pickup
     var todasAceptanDelivery = tiendaIds.every(function (tid) {
         var t = tiendasCache[tid];
         return t && t.acepta_delivery;
@@ -870,7 +751,6 @@ async function prepararCheckout() {
     else if (todasAceptanPickup) tipoEntrega = 'pickup';
     else tipoEntrega = 'delivery';
 
-    // Agrupar items
     gruposTiendas = {};
     itemsCarrito.forEach(function (it) {
         if (!gruposTiendas[it.tienda_id]) {
@@ -927,8 +807,14 @@ function calcularEnvio() {
     };
 }
 
+// Comisión de servicio: $5 por CADA pedido (cada tienda = un pedido)
+function calcularComisionServicio() {
+    var totalTiendas = Object.keys(gruposTiendas).length;
+    return COMISION_COMPRADOR * totalTiendas;
+}
+
 function calcularTotal() {
-    return calcularSubtotal() + calcularEnvio().app;
+    return calcularSubtotal() + calcularEnvio().app + calcularComisionServicio();
 }
 
 // ================================================================
@@ -957,19 +843,17 @@ function renderCheckout(aceptaDelivery, aceptaPickup) {
         '</div>' +
     '</div>';
 
-    // ============ DIRECCIÓN + GPS (solo si delivery) ============
+    // ============ DIRECCIÓN + GPS ============
     if (tipoEntrega === 'delivery') {
         html += '<div class="seccion-card">' +
             '<h2>📍 <span data-clave="mercado_direccion_entrega">Dirección de entrega</span></h2>' +
 
-            // Dirección escrita
             '<div class="form-group">' +
                 '<label><span data-clave="mercado_direccion">Dirección escrita</span> <span class="required">*</span></label>' +
                 '<input type="text" id="inputDireccion" maxlength="200" placeholder="Calle, número, colonia, referencias, depto, color de fachada..." />' +
                 '<div class="helper">Sé lo más específico posible: el repartidor debe encontrarte rápido</div>' +
             '</div>' +
 
-            // GPS obligatorio
             '<div class="form-group" style="margin-bottom:0;">' +
                 '<label><span data-clave="mercado_ubicacion_gps">Ubicación GPS</span> <span class="required">*</span></label>' +
 
@@ -1009,7 +893,6 @@ function renderCheckout(aceptaDelivery, aceptaPickup) {
                 '</div>' +
             '</div>' +
 
-            // Teléfono
             '<div class="form-group" style="margin-top:14px; margin-bottom:0;">' +
                 '<label><span data-clave="mercado_telefono_contacto">Teléfono de contacto</span> <span class="required">*</span></label>' +
                 '<input type="tel" id="inputTelefono" maxlength="20" placeholder="+52 123 456 7890" />' +
@@ -1017,7 +900,6 @@ function renderCheckout(aceptaDelivery, aceptaPickup) {
             '</div>' +
         '</div>';
     } else {
-        // Pickup: solo teléfono
         html += '<div class="seccion-card">' +
             '<h2>📞 <span data-clave="mercado_contacto">Contacto</span></h2>' +
             '<div class="form-group">' +
@@ -1036,7 +918,7 @@ function renderCheckout(aceptaDelivery, aceptaPickup) {
         '</div>' +
     '</div>';
 
-    // ============ MÉTODO DE PAGO ============
+    // ============ MÉTODO DE PAGO (3 OPCIONES) ============
     html += '<div class="seccion-card">' +
         '<h2>💵 <span data-clave="mercado_metodo_pago">Método de pago</span></h2>' +
         '<div class="pago-opciones">' +
@@ -1048,7 +930,23 @@ function renderCheckout(aceptaDelivery, aceptaPickup) {
                 '<span class="icono">🏦</span>' +
                 '<span class="texto">Transferencia</span>' +
             '</div>' +
+            '<div class="pago-opcion ' + (metodoPago === 'cripto' ? 'activo' : '') + '" onclick="cambiarMetodoPago(\'cripto\')">' +
+                '<span class="icono">💎</span>' +
+                '<span class="texto">Cripto</span>' +
+            '</div>' +
         '</div>' +
+        (metodoPago === 'cripto' ? 
+            '<div class="form-group" style="margin-top:14px; margin-bottom:0;">' +
+                '<label>Criptomoneda <span class="required">*</span></label>' +
+                '<select id="inputCripto">' +
+                    '<option value="usdttrc20">💵 USDT (TRC20) — Recomendado</option>' +
+                    '<option value="usdc">💎 USDC (ERC20)</option>' +
+                    '<option value="btc">₿ Bitcoin (BTC)</option>' +
+                    '<option value="eth">Ξ Ethereum (ETH)</option>' +
+                '</select>' +
+                '<div class="helper">Serás redirigido a una pasarela de pago al confirmar</div>' +
+            '</div>' : ''
+        ) +
     '</div>';
 
     // ============ RESUMEN ============
@@ -1060,7 +958,6 @@ function renderCheckout(aceptaDelivery, aceptaPickup) {
 
     if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
 
-    // Actualizar estado del botón confirmar
     actualizarEstadoBotonConfirmar();
 }
 
@@ -1075,7 +972,9 @@ function obtenerTextoEnvio() {
 function renderResumen() {
     var subtotal = calcularSubtotal();
     var envio = calcularEnvio();
+    var comisionServicio = calcularComisionServicio();
     var total = calcularTotal();
+    var numTiendas = Object.keys(gruposTiendas).length;
 
     var html = '<div class="seccion-card">' +
         '<h2>📦 <span data-clave="mercado_resumen_pedido">Resumen del pedido</span></h2>' +
@@ -1105,6 +1004,7 @@ function renderResumen() {
                 '<span>' + formatearPrecio(subtotal) + '</span>' +
             '</div>';
 
+    // Envío
     if (tipoEntrega === 'pickup') {
         html += '<div class="fila envio">' +
             '<span>🏪 Recoger en tienda</span>' +
@@ -1125,12 +1025,21 @@ function renderResumen() {
         }
     }
 
+    // Servicio de plataforma
+    html += '<div class="fila servicio">' +
+        '<span>✨ Servicio de plataforma' +
+        (numTiendas > 1 ? ' (' + numTiendas + ' tiendas)' : '') +
+        '</span>' +
+        '<span class="val">' + formatearPrecio(comisionServicio) + '</span>' +
+    '</div>';
+
     html += '<div class="fila total">' +
         '<span class="lbl">Total a pagar ahora</span>' +
         '<span class="val">' + formatearPrecio(total) + '</span>' +
     '</div>' +
     '</div>';
 
+    // Aviso envío efectivo
     if (tipoEntrega === 'delivery' && envio.coordinar) {
         html += '<div class="aviso-envio">' +
             '<span class="icono">💵</span>' +
@@ -1140,6 +1049,15 @@ function renderResumen() {
             '</div>' +
         '</div>';
     }
+
+    // Aviso comisión de servicio
+    html += '<div class="aviso-servicio">' +
+        '<span class="icono">✨</span>' +
+        '<div>' +
+            'El <strong>servicio de plataforma</strong> (' + formatearPrecio(COMISION_COMPRADOR) + ' por tienda) ' +
+            'cubre verificación, seguimiento en vivo y soporte 24/7.' +
+        '</div>' +
+    '</div>';
 
     html += '<button class="btn-confirmar" id="btnConfirmar" onclick="confirmarPedido()" disabled>' +
         '✓ <span data-clave="mercado_confirmar_pedido">Confirmar pedido</span>' +
@@ -1155,7 +1073,7 @@ function renderResumen() {
 }
 
 // ================================================================
-// VALIDAR ESTADO DEL FORMULARIO
+// VALIDAR ESTADO
 // ================================================================
 function actualizarEstadoBotonConfirmar() {
     var btn = document.getElementById('btnConfirmar');
@@ -1185,7 +1103,6 @@ function actualizarEstadoBotonConfirmar() {
         btn.disabled = true;
         if (avisoBloqueo) avisoBloqueo.classList.remove('hidden');
 
-        // Mensaje dinámico
         var faltantes = [];
         if (!tieneDireccion && tipoEntrega === 'delivery') faltantes.push('dirección');
         if (!tieneGPS && tipoEntrega === 'delivery') faltantes.push('GPS');
@@ -1198,11 +1115,10 @@ function actualizarEstadoBotonConfirmar() {
 }
 
 // ================================================================
-// AUTOCOMPLETAR DATOS
+// AUTOCOMPLETAR
 // ================================================================
 async function autocompletarDatosUsuario() {
     if (!sessionUser) return;
-
     try {
         var u = await supabase
             .from('usuarios')
@@ -1212,16 +1128,11 @@ async function autocompletarDatosUsuario() {
 
         if (!u.error && u.data) {
             var tel = document.getElementById('inputTelefono');
-            if (tel && u.data.telefono && !tel.value) {
-                tel.value = u.data.telefono;
-            }
+            if (tel && u.data.telefono && !tel.value) tel.value = u.data.telefono;
 
             var dir = document.getElementById('inputDireccion');
-            if (dir && u.data.direccion && !dir.value) {
-                dir.value = u.data.direccion;
-            }
+            if (dir && u.data.direccion && !dir.value) dir.value = u.data.direccion;
 
-            // Enganchar eventos
             if (tel) tel.addEventListener('input', actualizarEstadoBotonConfirmar);
             if (dir) dir.addEventListener('input', actualizarEstadoBotonConfirmar);
 
@@ -1246,13 +1157,18 @@ function cambiarTipoEntrega(tipo) {
 
 function cambiarMetodoPago(metodo) {
     metodoPago = metodo;
-    document.querySelectorAll('.pago-opcion').forEach(function (op) {
-        op.classList.toggle('activo', op.getAttribute('onclick').indexOf(metodo) !== -1);
+    // Re-render para mostrar/ocultar el selector de cripto
+    var aceptaDelivery = Object.keys(gruposTiendas).every(function (tid) {
+        return tiendasCache[tid] && tiendasCache[tid].acepta_delivery;
     });
+    var aceptaPickup = Object.keys(gruposTiendas).every(function (tid) {
+        return tiendasCache[tid] && tiendasCache[tid].acepta_pickup;
+    });
+    renderCheckout(aceptaDelivery, aceptaPickup);
 }
 
 // ================================================================
-// GPS - CAPTURA DE UBICACIÓN
+// GPS
 // ================================================================
 function capturarUbicacion() {
     var btn = document.getElementById('btnGPS');
@@ -1264,7 +1180,6 @@ function capturarUbicacion() {
     var instrucciones = document.getElementById('gpsInstrucciones');
     var coordsBox = document.getElementById('gpsCoordsBox');
     var coords = document.getElementById('gpsCoords');
-    var precision = document.getElementById('gpsPrecision');
 
     if (!navigator.geolocation) {
         showToast('❌ Tu navegador no soporta GPS', 'error');
@@ -1273,7 +1188,6 @@ function capturarUbicacion() {
         return;
     }
 
-    // Estado "cargando"
     if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Obteniendo ubicación...'; }
     if (btnActualizar) { btnActualizar.disabled = true; btnActualizar.innerHTML = '⏳...'; }
     if (bloque) { bloque.classList.remove('capturado', 'error'); }
@@ -1281,7 +1195,6 @@ function capturarUbicacion() {
     if (titulo) titulo.textContent = 'Buscando tu ubicación...';
     if (icono) icono.textContent = '📡';
 
-    // Timeout de seguridad (15s)
     if (gpsTimeoutId) clearTimeout(gpsTimeoutId);
     gpsTimeoutId = setTimeout(function () {
         if (coordenadas.lat === null) {
@@ -1297,7 +1210,6 @@ function capturarUbicacion() {
             coordenadas.lng = pos.coords.longitude;
             coordenadas.precision = Math.round(pos.coords.accuracy || 0);
 
-            // UI éxito
             if (bloque) {
                 bloque.classList.remove('error');
                 bloque.classList.add('capturado');
@@ -1308,11 +1220,9 @@ function capturarUbicacion() {
             if (coordsBox) coordsBox.style.display = 'block';
             if (coords) {
                 coords.innerHTML = pos.coords.latitude.toFixed(6) + ', ' + pos.coords.longitude.toFixed(6) +
-                    '<span class="precision" id="gpsPrecision">Precisión: ±' + coordenadas.precision + 'm</span>';
+                    '<span class="precision">Precisión: ±' + coordenadas.precision + 'm</span>';
             }
-            if (btn) {
-                btn.style.display = 'none';
-            }
+            if (btn) btn.style.display = 'none';
             if (btnActualizar) {
                 btnActualizar.disabled = false;
                 btnActualizar.innerHTML = '🔄 Actualizar ubicación';
@@ -1325,11 +1235,7 @@ function capturarUbicacion() {
             if (gpsTimeoutId) clearTimeout(gpsTimeoutId);
             onGPSError(err);
         },
-        {
-            enableHighAccuracy: true,
-            timeout: 12000,
-            maximumAge: 0
-        }
+        { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
     );
 }
 
@@ -1377,13 +1283,8 @@ function onGPSError(err) {
 // ================================================================
 async function confirmarPedido() {
     if (procesando) return;
+    if (!sessionUser) { showToast('⚠️ Inicia sesión primero', 'warning'); return; }
 
-    if (!sessionUser) {
-        showToast('⚠️ Inicia sesión primero', 'warning');
-        return;
-    }
-
-    // Validaciones finales
     var telefono = (document.getElementById('inputTelefono') || {}).value || '';
     telefono = telefono.trim();
     if (!telefono || telefono.length < 8) {
@@ -1401,7 +1302,6 @@ async function confirmarPedido() {
             document.getElementById('inputDireccion').focus();
             return;
         }
-
         if (coordenadas.lat === null || coordenadas.lng === null) {
             showToast('⚠️ Activa tu ubicación GPS para continuar', 'warning');
             var btnGps = document.getElementById('btnGPS');
@@ -1412,6 +1312,13 @@ async function confirmarPedido() {
 
     var notas = (document.getElementById('inputNotas') || {}).value || '';
     notas = notas.trim();
+
+    // Validar cripto si aplica
+    var criptoSeleccionada = null;
+    if (metodoPago === 'cripto') {
+        var sel = document.getElementById('inputCripto');
+        criptoSeleccionada = sel ? sel.value : 'usdttrc20';
+    }
 
     procesando = true;
     var btn = document.getElementById('btnConfirmar');
@@ -1440,7 +1347,11 @@ async function confirmarPedido() {
                 }
             }
 
-            var totalTienda = subtotalTienda + envioTienda;
+            // Comisión de servicio por tienda
+            var comisionServicio = COMISION_COMPRADOR;
+
+            // Total a pagar por el comprador en esta tienda
+            var totalTienda = subtotalTienda + envioTienda + comisionServicio;
             var codigo = generarCodigoPedido();
 
             var payloadPedido = {
@@ -1459,7 +1370,12 @@ async function confirmarPedido() {
                 telefono_contacto: telefono,
                 notas: notas || null,
                 forma_pago: metodoPago,
-                envio_cobrado_en_app: envioCobradoEnApp
+                envio_cobrado_en_app: envioCobradoEnApp,
+                // NUEVOS CAMPOS DE COMISIÓN
+                comision_comprador_mxn: comisionServicio,
+                comision_total_plataforma_mxn: comisionServicio,
+                metodo_pago_comprador: metodoPago,
+                cripto_usada: criptoSeleccionada || null
             };
 
             var insPedido = await supabase
@@ -1607,6 +1523,7 @@ window.cambiarTipoEntrega = cambiarTipoEntrega;
 window.cambiarMetodoPago = cambiarMetodoPago;
 window.capturarUbicacion = capturarUbicacion;
 window.confirmarPedido = confirmarPedido;
+window.CONFIG_LEGAL = CONFIG_LEGAL;
 </script>
 </body>
 </html>
