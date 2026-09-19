@@ -7,9 +7,9 @@
     <title>Membresía Pro · Sariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
-    
+
     <link rel="stylesheet" href="../../../shared/config-layout.css" />
-    
+
     <style>
         .cfg-pro-hero {
             margin: 16px;
@@ -254,12 +254,12 @@
                 <span class="cfg-pro-crown">👑</span>
                 <div class="cfg-pro-name">Sariel's Pro</div>
                 <div class="cfg-pro-price-hero">
-                    $60 <span style="font-size: 0.6em;">MXN</span>
-                    <span class="period">/ 30 días</span>
+                    <span id="precioProHero">—</span> <span style="font-size: 0.6em;">MXN</span>
+                    <span class="period" id="periodoPro">/ 30 días</span>
                 </div>
                 <div class="cfg-pro-subtitle">Desbloquea todo el potencial de Sariel's</div>
-                <button class="cfg-pro-btn-hero" onclick="window.onContratarPro()" id="btnContratarPro">
-                    🚀 Contratar Pro por $60 MXN
+                <button class="cfg-pro-btn-hero" onclick="window.onContratarPro()" id="btnContratarPro" disabled>
+                    🚀 Contratar Pro
                 </button>
             </div>
 
@@ -318,10 +318,10 @@
                 <span class="cfg-pro-active-icon">✅</span>
                 <div class="cfg-pro-active-title">Sariel's Pro Activo</div>
                 <div class="cfg-pro-active-expira" id="proExpira">
-                    Expira el 30 de diciembre de 2026
+                    —
                 </div>
                 <div class="cfg-pro-active-dias" id="proDias">
-                    ◉ 30 días restantes
+                    ◉ —
                 </div>
             </div>
 
@@ -375,7 +375,7 @@
         </div>
 
         <div class="cfg-aviso cfg-aviso-info">
-            ℹ️ La suscripción se renueva automáticamente cada 30 días.
+            ℹ️ Es un pago único en cripto (USDT) que activa Pro por 30 días. No se renueva automáticamente: puedes pagar de nuevo antes de que venza y los días se suman.
         </div>
 
         <div class="cfg-footer">
@@ -393,6 +393,16 @@
 
         const $ = (sel) => document.querySelector(sel);
 
+        const SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
+        const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+
+        // Precio y duración reales: vienen de planes_membresia (misma
+        // fuente que usa el backend para cobrar). Nunca se escriben a mano.
+        let precioPro = null;
+        let duracionDias = 30;
+        let esProActivo = false;
+        let clienteCache = null;
+
         cfgInitPage({
             title: 'Membresía Pro',
             subtitle: 'Sariel\'s Pro',
@@ -400,72 +410,136 @@
         });
 
         // ============================================================
+        // HELPERS
+        // ============================================================
+        function getClient() {
+            if (clienteCache) return clienteCache;
+            clienteCache = window.supabaseClient ||
+                (window.supabase && window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY));
+            return clienteCache;
+        }
+
+        function formatoMxn(n) {
+            return '$' + Number(n).toLocaleString('es-MX', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2
+            }) + ' MXN';
+        }
+
+        const dormir = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        // ============================================================
+        // PRECIO DEL PLAN
+        // ============================================================
+        async function cargarPrecio(client) {
+            try {
+                const { data, error } = await client
+                    .from('planes_membresia')
+                    .select('precio_mxn, intervalo_dias')
+                    .eq('id', 'pro')
+                    .eq('activo', true)
+                    .maybeSingle();
+
+                if (!error && data) {
+                    precioPro = Number(data.precio_mxn);
+                    duracionDias = data.intervalo_dias || 30;
+                }
+            } catch (e) {
+                console.error('Error cargando precio Pro:', e);
+            }
+            pintarPrecio();
+        }
+
+        function pintarPrecio() {
+            const hero = $('#precioProHero');
+            const periodo = $('#periodoPro');
+            const btn = $('#btnContratarPro');
+
+            if (precioPro === null) {
+                hero.textContent = '—';
+                btn.textContent = '🚀 Contratar Pro';
+                btn.disabled = true;
+                return;
+            }
+
+            hero.textContent = '$' + precioPro.toLocaleString('es-MX', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2
+            });
+            periodo.textContent = '/ ' + duracionDias + ' días';
+            btn.textContent = '🚀 Contratar Pro por ' + formatoMxn(precioPro);
+            btn.disabled = false;
+        }
+
+        // ============================================================
         // CARGAR ESTADO DE PRO
+        // Fuente de verdad: RPC obtener_membresia_usuario
+        // (lee membresias_usuarios, que es donde el backend activa Pro).
+        // Devuelve true si Pro está activo.
         // ============================================================
         async function cargarEstadoPro() {
             try {
-                const client = window.supabaseClient || 
-                    (window.supabase && window.supabase.createClient(
-                        'https://zultnlogdoajehbswlih.supabase.co',
-                        'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
-                    ));
+                const client = getClient();
                 if (!client) {
                     mostrarNoPro();
-                    return;
+                    return false;
                 }
+
+                await cargarPrecio(client);
 
                 const { data: sessionData } = await client.auth.getSession();
                 const session = sessionData.session;
                 if (!session) {
                     mostrarNoPro();
-                    return;
+                    return false;
                 }
 
-                const { data: usuario } = await client
-                    .from('usuarios')
-                    .select('plan, plan_expira_at, plan_meta')
-                    .eq('id', session.user.id)
-                    .maybeSingle();
+                const { data, error } = await client.rpc('obtener_membresia_usuario', {
+                    p_usuario_id: session.user.id
+                });
 
-                if (!usuario) {
+                if (error) {
+                    console.error('Error obteniendo membresía:', error);
                     mostrarNoPro();
-                    return;
+                    return false;
                 }
 
-                const esPro = usuario.plan && usuario.plan.toLowerCase().includes('pro');
+                const m = Array.isArray(data) ? data[0] : data;
 
-                if (esPro && usuario.plan_expira_at) {
-                    const expira = new Date(usuario.plan_expira_at);
-                    const ahora = new Date();
-                    const diasRestantes = Math.max(0, Math.ceil((expira - ahora) / (1000 * 60 * 60 * 24)));
+                if (m && m.activa && m.vence_at) {
+                    const expira = new Date(m.vence_at);
+                    const dias = Number(m.dias_restantes) || 0;
 
                     $('#proExpira').textContent = 'Expira el ' + expira.toLocaleDateString('es-MX', {
                         day: 'numeric', month: 'long', year: 'numeric'
                     });
 
-                    $('#proDias').innerHTML = `◉ ${diasRestantes} ${diasRestantes === 1 ? 'día restante' : 'días restantes'}`;
+                    $('#proDias').textContent = '◉ ' + dias + ' ' + (dias === 1 ? 'día restante' : 'días restantes');
 
-                    // Renderizar acciones
                     renderAccionesPro();
-
                     mostrarProActivo();
-                } else {
-                    mostrarNoPro();
+                    return true;
                 }
+
+                mostrarNoPro();
+                return false;
 
             } catch (error) {
                 console.error('Error cargando estado Pro:', error);
                 mostrarNoPro();
+                return false;
             }
         }
 
         function mostrarNoPro() {
+            esProActivo = false;
             $('#estadoCargando').style.display = 'none';
             $('#estadoNoPro').style.display = 'block';
             $('#estadoProActivo').style.display = 'none';
         }
 
         function mostrarProActivo() {
+            esProActivo = true;
             $('#estadoCargando').style.display = 'none';
             $('#estadoNoPro').style.display = 'none';
             $('#estadoProActivo').style.display = 'block';
@@ -473,40 +547,67 @@
 
         // ============================================================
         // ACCIONES PARA PRO ACTIVO
+        // (Se quitaron "Gestionar método de pago" y "Cancelar renovación":
+        //  el pago es único en cripto, no hay método guardado ni renovación.)
         // ============================================================
         function renderAccionesPro() {
             $('#seccionAcciones').innerHTML = [
                 cfgRenderItem({
-                    icon: 'info',
-                    title: 'Historial de pagos',
-                    desc: 'Consulta todos tus pagos de membresía',
-                    onclick: 'window.onVerPagos()',
-                }),
-                cfgRenderItem({
                     icon: 'check',
-                    title: 'Gestionar método de pago',
-                    desc: 'Actualiza tu método de pago guardado',
-                    onclick: 'window.onGestionarPago()',
-                }),
-                cfgRenderItem({
-                    icon: 'ban',
-                    title: 'Cancelar renovación automática',
-                    desc: 'Mantén el Pro hasta que expire, sin renovación',
-                    onclick: 'window.onCancelarRenovacion()',
-                    class: 'cfg-item-plain',
-                    style: 'color: var(--cfg-warning, #f7d44a);',
+                    title: 'Extender ' + duracionDias + ' días más',
+                    desc: 'Paga otro periodo y se suma al tiempo que te queda',
+                    onclick: 'window.onContratarPro()',
                 }),
             ].join('');
+        }
+
+        // ============================================================
+        // CREAR PAGO EN EL BACKEND Y REDIRIGIR AL INVOICE
+        // ============================================================
+        async function crearPagoPro() {
+            const client = getClient();
+            const { data: sessionData } = await client.auth.getSession();
+            const session = sessionData.session;
+
+            if (!session) {
+                throw new Error('Inicia sesión para contratar Pro');
+            }
+
+            const resp = await fetch('/api/payments/membresia/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + session.access_token
+                },
+                body: JSON.stringify({ privacy_version: '1.0' })
+            });
+
+            const data = await resp.json().catch(() => ({}));
+
+            if (!resp.ok || !data.success || !data.payment_url) {
+                throw new Error(data.error || 'No se pudo crear el pago');
+            }
+
+            // Se abre en la misma pestaña (mejor en móvil)
+            window.location.href = data.payment_url;
         }
 
         // ============================================================
         // CALLBACKS
         // ============================================================
         window.onContratarPro = async () => {
+            if (precioPro === null) {
+                cfgToast('⚠️ No se pudo cargar el precio. Recarga la página.', 'warning', 5000);
+                return;
+            }
+
+            const extendiendo = esProActivo;
+
             const ok = await cfgConfirm({
-                title: '¿Contratar Sariel\'s Pro?',
-                text: 'Se activará por 30 días por $60 MXN. Incluye 5 GB de almacenamiento, prioridad y soporte prioritario.',
-                confirmText: 'Contratar Pro',
+                title: extendiendo ? '¿Extender Sariel\'s Pro?' : '¿Contratar Sariel\'s Pro?',
+                text: 'Pago único de ' + formatoMxn(precioPro) + ' en USDT (cripto) por ' + duracionDias +
+                      ' días. No se renueva automáticamente. Te llevaremos a la página de pago.',
+                confirmText: extendiendo ? 'Extender' : 'Contratar Pro',
                 cancelText: 'Cancelar',
                 danger: false,
             });
@@ -519,55 +620,49 @@
                 btn.textContent = '⏳ Procesando...';
             }
 
-            cfgToast('⏳ Iniciando contratación...', '', 4000);
+            cfgToast('⏳ Creando tu pago...', '', 4000);
 
             try {
-                // Intentar usar la función del perfil
-                if (window.contratarPro && typeof window.contratarPro === 'function') {
-                    await window.contratarPro();
-                } else {
-                    // Fallback: mostrar mensaje
-                    cfgToast('⚠️ Ve a tu perfil para contratar Pro', 'warning', 5000);
-                }
+                await crearPagoPro();
             } catch (e) {
                 console.error('Error contratando Pro:', e);
-                cfgToast('❌ Error: ' + e.message, 'error');
-            } finally {
+                cfgToast('❌ ' + e.message, 'error');
                 if (btn) {
-                    btn.disabled = false;
-                    btn.textContent = '🚀 Contratar Pro por $60 MXN';
+                    pintarPrecio();
                 }
             }
         };
 
-        window.onVerPagos = () => {
-            cfgToast('⏳ Historial de pagos próximamente', 'warning');
-        };
+        // ============================================================
+        // VOLVER DEL PAGO: esperar a que llegue la confirmación (webhook)
+        // Se activa si la URL trae ?payment=success
+        // ============================================================
+        async function esperarActivacion() {
+            cfgToast('⏳ Confirmando tu pago...', '', 5000);
 
-        window.onGestionarPago = () => {
-            cfgToast('⏳ Gestión de pago próximamente', 'warning');
-        };
+            for (let intento = 0; intento < 24; intento++) {
+                await dormir(5000);
+                const activo = await cargarEstadoPro();
+                if (activo) {
+                    cfgToast('✅ ¡Sariel\'s Pro activado!', '', 6000);
+                    return;
+                }
+            }
 
-        window.onCancelarRenovacion = async () => {
-            const ok = await cfgConfirm({
-                title: '¿Cancelar renovación automática?',
-                text: 'Mantendrás Sariel\'s Pro hasta que expire. Después de eso, tu cuenta volverá al plan gratuito.',
-                confirmText: 'Cancelar renovación',
-                cancelText: 'Mantener',
-                danger: true,
-            });
-
-            if (!ok) return;
-
-            cfgToast('⏳ Cancelación próximamente', 'warning');
-        };
+            cfgToast('El pago puede tardar unos minutos en confirmarse. Vuelve a revisar en un rato.', 'warning', 8000);
+        }
 
         // ============================================================
         // INICIALIZAR
         // ============================================================
         window.addEventListener('DOMContentLoaded', async () => {
-            await new Promise(resolve => setTimeout(resolve, 400));
-            await cargarEstadoPro();
+            await dormir(400);
+            const activo = await cargarEstadoPro();
+
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('payment') === 'success' && !activo) {
+                esperarActivacion();
+            }
         });
 
     })();
