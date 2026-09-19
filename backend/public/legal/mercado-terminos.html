@@ -1,0 +1,989 @@
+<!-- ================================================================
+     CSARIEL'S ECOSYSTEM
+     Términos y Condiciones del Mercado
+     Ruta: /backend/public/legal/mercado-terminos.html
+     
+     Documento legal específico para el módulo Mercado.
+     Cumple con:
+     - Código de Comercio (Art. 89, 90, 91 - Comercio electrónico)
+     - Ley Federal de Protección al Consumidor (Art. 76 Bis, 76 Bis 1)
+     - Ley Federal de Protección de Datos Personales (LFPDPPP)
+     - Ley de Firma Electrónica Avanzada (LFEA)
+     - Ley Fintech
+     - LFPIORPI
+     - NOM-024-SCFI-2013
+     - Ley Federal de Protección a la Propiedad Industrial (LFPPI)
+     - Ley Federal del Derecho de Autor (LFDA)
+     ================================================================ -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Términos del Mercado · Csariel's</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+
+    <script src="/features/shared/js/apariencia-global.js"></script>
+
+    <style>
+        :root {
+            --gold: #D4AF37;
+            --gold-dark: #b8923a;
+            --gold-light: #e8c84a;
+            --green-deep: #0F2D1A;
+            --green-mid: #1a4a2a;
+            --green-bright: #2a6a3a;
+            --space: #05080f;
+            --text-primary: #f0f4f8;
+            --text-secondary: #c0d8e8;
+            --text-muted: #8aa8b8;
+            --glass-bg: rgba(15, 45, 26, 0.55);
+            --glass-border: rgba(212, 175, 55, 0.15);
+            --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
+            --radius: 16px;
+            --radius-xl: 24px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --success: #00d68f;
+            --danger: #ff3366;
+            --warning: #f7d44a;
+            --cyan: #00e5ff;
+            --purple: #a855f7;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--space);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            line-height: 1.7;
+            background-image: radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
+        }
+
+        .nebula { position: fixed; border-radius: 50%; filter: blur(120px); opacity: 0.12; pointer-events: none; z-index: 0; animation: nebula-drift 25s ease-in-out infinite alternate; }
+        .nebula-1 { width: 700px; height: 700px; background: var(--green-bright); top: -15%; right: -15%; }
+        .nebula-2 { width: 600px; height: 600px; background: var(--gold-light); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.06; }
+        .nebula-3 { width: 500px; height: 500px; background: var(--purple); top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -15s; opacity: 0.04; }
+        @keyframes nebula-drift { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(40px,-30px) scale(1.15); } }
+
+        .app { position: relative; z-index: 1; max-width: 900px; width: 100%; margin: 0 auto; padding: 12px 20px 40px; }
+
+        /* Header */
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0 14px; border-bottom: 1px solid var(--glass-border);
+            background: rgba(5, 8, 15, 0.92); position: sticky; top: 0; z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .logo-hex { font-size: 1.8rem; color: var(--gold); font-family: 'Orbitron', monospace; }
+        .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--text-primary); letter-spacing: 2px; }
+        .logo-text span { color: var(--gold); }
+        .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; }
+
+        /* Botón volver */
+        .btn-back {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border);
+            color: var(--text-muted); padding: 10px 20px; border-radius: 30px;
+            font-size: 0.75rem; text-decoration: none; margin: 20px 0;
+            transition: var(--transition); cursor: pointer;
+            font-weight: 600;
+        }
+        .btn-back .simbolo { color: var(--gold); font-family: 'Orbitron', monospace; }
+        .btn-back:hover { border-color: var(--gold); color: var(--gold); }
+
+        /* Hero */
+        .hero {
+            text-align: center;
+            padding: 30px 20px 24px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        .hero .etiqueta {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.6rem;
+            letter-spacing: 2px;
+            color: var(--gold);
+            background: rgba(212,175,55,0.1);
+            border: 1px solid rgba(212,175,55,0.3);
+            padding: 6px 16px; border-radius: 20px;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+        .hero h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.6rem;
+            color: var(--gold);
+            margin-bottom: 10px;
+            line-height: 1.3;
+        }
+        .hero .subtitulo {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+        .hero .meta-info {
+            display: inline-flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-family: 'Orbitron', monospace;
+        }
+        .hero .meta-info strong {
+            color: var(--gold);
+            display: block;
+            font-size: 0.6rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }
+
+        /* Índice */
+        .indice {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+            padding: 24px;
+            margin-bottom: 28px;
+        }
+        .indice h2 {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.9rem;
+            color: var(--gold);
+            margin-bottom: 16px;
+            display: flex; align-items: center; gap: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .indice ol {
+            list-style: none;
+            counter-reset: item;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 8px;
+        }
+        .indice ol li {
+            counter-increment: item;
+            font-size: 0.82rem;
+        }
+        .indice ol li a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            border-radius: 8px;
+            transition: var(--transition);
+        }
+        .indice ol li a::before {
+            content: counter(item) ".";
+            font-family: 'Orbitron', monospace;
+            color: var(--gold);
+            font-weight: 700;
+            min-width: 24px;
+        }
+        .indice ol li a:hover {
+            background: rgba(212,175,55,0.08);
+            color: var(--gold);
+        }
+
+        /* Secciones */
+        .seccion {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+            padding: 28px 26px;
+            margin-bottom: 20px;
+            scroll-margin-top: 80px;
+        }
+        .seccion h2 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1rem;
+            color: var(--gold);
+            margin-bottom: 18px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex; align-items: center; gap: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .seccion h2 .num {
+            background: rgba(212,175,55,0.15);
+            color: var(--gold);
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            min-width: 32px;
+            text-align: center;
+        }
+        .seccion h3 {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 20px 0 10px;
+        }
+        .seccion p {
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            text-align: justify;
+        }
+        .seccion p strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+        .seccion ul, .seccion ol {
+            margin: 10px 0 14px 24px;
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+        }
+        .seccion ul li, .seccion ol li {
+            margin-bottom: 8px;
+            line-height: 1.7;
+        }
+        .seccion ul li::marker {
+            color: var(--gold);
+        }
+        .seccion ol li::marker {
+            color: var(--gold);
+            font-weight: 700;
+        }
+        .seccion a {
+            color: var(--gold);
+            text-decoration: underline;
+        }
+
+        /* Tabla */
+        .tabla-legal {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            font-size: 0.82rem;
+            background: rgba(0,0,0,0.25);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .tabla-legal th {
+            background: rgba(212,175,55,0.12);
+            color: var(--gold);
+            padding: 12px;
+            text-align: left;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+        }
+        .tabla-legal td {
+            padding: 12px;
+            border-top: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+            vertical-align: top;
+        }
+        .tabla-legal td strong {
+            color: var(--text-primary);
+        }
+
+        /* Caja de destacado */
+        .aviso {
+            background: rgba(0,229,255,0.06);
+            border-left: 4px solid var(--cyan);
+            border-radius: 8px;
+            padding: 14px 18px;
+            margin: 16px 0;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+        .aviso strong {
+            color: var(--cyan);
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 700;
+        }
+        .aviso.warning {
+            background: rgba(247,212,74,0.06);
+            border-left-color: var(--warning);
+        }
+        .aviso.warning strong { color: var(--warning); }
+        .aviso.danger {
+            background: rgba(255,51,102,0.06);
+            border-left-color: var(--danger);
+        }
+        .aviso.danger strong { color: var(--danger); }
+
+        /* Contacto */
+        .contacto {
+            background: linear-gradient(135deg, rgba(212,175,55,0.08), rgba(15,45,26,0.4));
+            border: 1px solid rgba(212,175,55,0.3);
+            border-radius: var(--radius-xl);
+            padding: 24px;
+            margin-top: 28px;
+            text-align: center;
+        }
+        .contacto h3 {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.9rem;
+            color: var(--gold);
+            margin-bottom: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .contacto .fila {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            font-size: 0.85rem;
+            border-bottom: 1px solid rgba(212,175,55,0.1);
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .contacto .fila:last-child { border-bottom: none; }
+        .contacto .lbl { color: var(--text-muted); }
+        .contacto .val {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+        .contacto .val.pendiente {
+            color: var(--warning);
+            font-style: italic;
+            font-size: 0.78rem;
+        }
+
+        /* Footer */
+        .footer-legal {
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid var(--glass-border);
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            line-height: 1.8;
+        }
+        .footer-legal .marca {
+            color: var(--gold);
+            font-weight: 700;
+            font-family: 'Orbitron', monospace;
+        }
+
+        /* Botón flotante volver */
+        .btn-volver-flotante {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 14px 22px;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space);
+            border: none;
+            border-radius: 30px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 0.72rem;
+            cursor: pointer;
+            text-decoration: none;
+            box-shadow: 0 8px 32px rgba(212,175,55,0.4);
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 500;
+        }
+        .btn-volver-flotante:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 40px rgba(212,175,55,0.6);
+        }
+
+        /* Tema día */
+        html.tema-dia, html[data-tema="dia"] {
+            --space: #f5f7fa;
+            --text-primary: #1a2332;
+            --text-secondary: #4a5568;
+            --text-muted: #718096;
+            --glass-bg: rgba(255, 255, 255, 0.95);
+            --glass-border: rgba(0, 0, 0, 0.1);
+        }
+        html.tema-dia body, html[data-tema="dia"] body {
+            background: #f5f7fa !important;
+            background-image: radial-gradient(ellipse at 20% 50%, rgba(212, 175, 55, 0.05) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(42, 106, 58, 0.05) 0%, transparent 60%) !important;
+            color: var(--text-primary) !important;
+        }
+        html.tema-dia .nebula, html[data-tema="dia"] .nebula { display: none !important; }
+        html.tema-dia .header, html[data-tema="dia"] .header { background: rgba(255, 255, 255, 0.95) !important; border-bottom-color: rgba(0, 0, 0, 0.1) !important; }
+        html.tema-dia .logo-text, html[data-tema="dia"] .logo-text { color: var(--text-primary) !important; }
+        html.tema-dia .seccion p, html[data-tema="dia"] .seccion p { color: var(--text-secondary) !important; }
+        html.tema-dia .tabla-legal, html[data-tema="dia"] .tabla-legal { background: rgba(0,0,0,0.03) !important; }
+
+        @media (max-width: 480px) {
+            .hero h1 { font-size: 1.25rem; }
+            .seccion { padding: 20px 18px; }
+            .indice ol { grid-template-columns: 1fr; }
+            .contacto .fila { flex-direction: column; gap: 4px; text-align: center; }
+            .btn-volver-flotante { bottom: 16px; right: 16px; padding: 12px 18px; font-size: 0.68rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="nebula nebula-1" aria-hidden="true"></div>
+    <div class="nebula nebula-2" aria-hidden="true"></div>
+    <div class="nebula nebula-3" aria-hidden="true"></div>
+
+    <div class="app">
+
+        <!-- Header -->
+        <header class="header">
+            <a href="/" class="logo" aria-label="Ir a la página de inicio">
+                <span class="logo-hex">◈</span>
+                <span class="logo-text">Csariel<span>'s</span></span>
+                <span class="logo-badge">✦ WEB3</span>
+            </a>
+        </header>
+
+        <!-- Botón volver -->
+        <a href="/features/mercado/index.html" class="btn-back">
+            <span class="simbolo">◈</span> Volver al Mercado
+        </a>
+
+        <!-- Hero -->
+        <div class="hero">
+            <span class="etiqueta">◈ Documento Legal</span>
+            <h1>Términos y Condiciones del Mercado</h1>
+            <p class="subtitulo">
+                Documento que rige el uso del módulo Mercado dentro de Csariel's Ecosystem,
+                incluyendo la relación entre Compradores, Vendedores y Repartidores.
+            </p>
+            <div class="meta-info">
+                <div>
+                    <strong>Versión</strong>
+                    1.0
+                </div>
+                <div>
+                    <strong>Vigente desde</strong>
+                    [Pendiente de configuración]
+                </div>
+                <div>
+                    <strong>Jurisdicción</strong>
+                    Puebla, México
+                </div>
+            </div>
+        </div>
+
+        <!-- Índice -->
+        <div class="indice">
+            <h2>◈ Índice de Contenidos</h2>
+            <ol>
+                <li><a href="#art-1">Aceptación de los Términos</a></li>
+                <li><a href="#art-2">Definiciones</a></li>
+                <li><a href="#art-3">Descripción del Servicio</a></li>
+                <li><a href="#art-4">Registro y Cuentas</a></li>
+                <li><a href="#art-5">Rol de Csariel's Ecosystem</a></li>
+                <li><a href="#art-6">Obligaciones del Comprador</a></li>
+                <li><a href="#art-7">Obligaciones del Vendedor</a></li>
+                <li><a href="#art-8">Obligaciones del Repartidor</a></li>
+                <li><a href="#art-9">Comisiones y Pagos</a></li>
+                <li><a href="#art-10">Membresías</a></li>
+                <li><a href="#art-11">Cancelaciones y Devoluciones</a></li>
+                <li><a href="#art-12">Criptomonedas y Retiros</a></li>
+                <li><a href="#art-13">Prohibiciones</a></li>
+                <li><a href="#art-14">Propiedad Intelectual</a></li>
+                <li><a href="#art-15">Limitación de Responsabilidad</a></li>
+                <li><a href="#art-16">Protección de Datos Personales</a></li>
+                <li><a href="#art-17">Resolución de Conflictos</a></li>
+                <li><a href="#art-18">Modificaciones</a></li>
+                <li><a href="#art-19">Ley Aplicable y Jurisdicción</a></li>
+            </ol>
+        </div>
+
+        <!-- ART 1 -->
+        <section class="seccion" id="art-1">
+            <h2><span class="num">1</span> Aceptación de los Términos</h2>
+            <p><strong>1.1.</strong> El acceso, uso y permanencia en el módulo <strong>Mercado</strong> dentro de la plataforma Csariel's Ecosystem (en adelante, "el Mercado") implica la aceptación plena, expresa, voluntaria e informada de los presentes Términos y Condiciones (en adelante, "los Términos"), por parte de cualquier persona física o moral (en adelante, "el Usuario").</p>
+            <p><strong>1.2.</strong> La aceptación se perfecciona mediante:</p>
+            <ul>
+                <li>El registro de una cuenta en el Mercado;</li>
+                <li>El uso de cualquier funcionalidad del Mercado;</li>
+                <li>La publicación de productos, tiendas o servicios;</li>
+                <li>La realización de pedidos;</li>
+                <li>La solicitud de membresías o retiros.</li>
+            </ul>
+            <p><strong>1.3.</strong> Conforme al <strong>artículo 89 del Código de Comercio</strong>, los actos de comercio podrán emplearse mediante mensajes de datos, los cuales surtirán los mismos efectos jurídicos que la documentación impresa. El Usuario reconoce que la aceptación electrónica de los presentes Términos tiene plena validez legal.</p>
+            <p><strong>1.4.</strong> Si el Usuario no está de acuerdo con los Términos, deberá abstenerse de usar el Mercado.</p>
+        </section>
+
+        <!-- ART 2 -->
+        <section class="seccion" id="art-2">
+            <h2><span class="num">2</span> Definiciones</h2>
+            <p><strong>2.1.</strong> Para los efectos de los presentes Términos, se entenderá por:</p>
+            <ul>
+                <li><strong>Plataforma:</strong> El ecosistema digital Csariel's Ecosystem, incluyendo el Mercado, Muro, Perfil, Live, Internet, Videos, Grupos, Mensajes y cualquier otro módulo.</li>
+                <li><strong>Mercado:</strong> El módulo de comercio electrónico dentro de la Plataforma que conecta Compradores, Vendedores y Repartidores.</li>
+                <li><strong>Comprador:</strong> Persona física o moral que adquiere productos o servicios a través del Mercado.</li>
+                <li><strong>Vendedor:</strong> Persona física o moral que publica y ofrece productos o servicios a través del Mercado.</li>
+                <li><strong>Repartidor:</strong> Persona física que entrega pedidos a los Compradores.</li>
+                <li><strong>Producto:</strong> Bien tangible o intangible ofrecido por un Vendedor.</li>
+                <li><strong>Pedido:</strong> Solicitud de compra realizada por un Comprador.</li>
+                <li><strong>Membresía:</strong> Plan de suscripción que habilita funcionalidades avanzadas para Vendedores.</li>
+                <li><strong>Comisión:</strong> Porcentaje del monto de la venta que Csariel's retiene por el uso del Mercado.</li>
+                <li><strong>Criptomoneda:</strong> Activos virtuales aceptados como medio de pago (USDT, USDC, BTC, ETH, etc.).</li>
+                <li><strong>NOWPayments:</strong> Procesador de pagos con criptomonedas autorizado.</li>
+                <li><strong>Csariel's:</strong> Csariel's Ecosystem, nombre comercial de la Plataforma.</li>
+            </ul>
+            <p><strong>2.2.</strong> Conforme al <strong>artículo 2 de la Ley Federal de Protección al Consumidor</strong>, se entiende por Consumidor la persona física o moral que adquiere, realiza o disfruta como destinatario final bienes, productos o servicios.</p>
+        </section>
+
+        <!-- ART 3 -->
+        <section class="seccion" id="art-3">
+            <h2><span class="num">3</span> Descripción del Servicio</h2>
+            <p><strong>3.1.</strong> Csariel's Ecosystem es una <strong>plataforma tecnológica de intermediación</strong> que facilita:</p>
+            <ul>
+                <li>La publicación de tiendas y productos por parte de Vendedores;</li>
+                <li>La realización de pedidos por parte de Compradores;</li>
+                <li>La asignación de Repartidores para la entrega;</li>
+                <li>El procesamiento de pagos en MXN y criptomonedas;</li>
+                <li>La gestión de membresías para Vendedores.</li>
+            </ul>
+            <p><strong>3.2.</strong> Csariel's <strong>NO es un Vendedor directo</strong>, <strong>NO es un Repartidor</strong>, <strong>NO es una casa de cambio</strong>, <strong>NO es un exchange de criptomonedas</strong>, <strong>NO es una institución financiera</strong>. La Plataforma únicamente actúa como facilitador tecnológico entre las partes.</p>
+            <p><strong>3.3.</strong> Csariel's no garantiza la disponibilidad ininterrumpida del servicio. Podrá suspender, modificar o discontinuar funcionalidades por mantenimiento, actualización o causas de fuerza mayor.</p>
+        </section>
+
+        <!-- ART 4 -->
+        <section class="seccion" id="art-4">
+            <h2><span class="num">4</span> Registro y Cuentas</h2>
+            <p><strong>4.1.</strong> El Usuario deberá ser mayor de <strong>18 años</strong> para registrarse en el Mercado. En caso de ser menor, requerirá autorización de su tutor legal.</p>
+            <p><strong>4.2.</strong> El Usuario se compromete a proporcionar información veraz, exacta, completa y actualizada. La falsedad en los datos constituye causa de cancelación inmediata de la cuenta.</p>
+            <p><strong>4.3.</strong> El Usuario es responsable de la <strong>confidencialidad</strong> de sus credenciales de acceso. Csariel's no se hace responsable por accesos no autorizados derivados de negligencia del Usuario.</p>
+            <p><strong>4.4.</strong> Conforme a la <strong>Ley de Firma Electrónica Avanzada</strong>, la firma electrónica avanzada tiene la misma validez jurídica que la firma autógrafa. El Usuario acepta que cualquier acto realizado con su firma electrónica tendrá plenos efectos legales.</p>
+        </section>
+
+        <!-- ART 5 -->
+        <section class="seccion" id="art-5">
+            <h2><span class="num">5</span> Rol de Csariel's Ecosystem</h2>
+            <p><strong>5.1.</strong> Csariel's actúa como <strong>intermediario tecnológico</strong> y <strong>no es parte</strong> de la relación jurídica entre Comprador, Vendedor y Repartidor.</p>
+            <p><strong>5.2.</strong> Csariel's <strong>no es responsable</strong> de:</p>
+            <ul>
+                <li>La calidad, seguridad, legalidad o disponibilidad de los productos;</li>
+                <li>La veracidad de la información publicada por los Vendedores;</li>
+                <li>El cumplimiento de las obligaciones de los Vendedores, Compradores o Repartidores;</li>
+                <li>Daños o perjuicios derivados de la relación entre las partes.</li>
+            </ul>
+            <p><strong>5.3.</strong> Csariel's <strong>sí es responsable</strong> de:</p>
+            <ul>
+                <li>Mantener la Plataforma operativa;</li>
+                <li>Procesar pagos de forma segura;</li>
+                <li>Gestionar las membresías de Vendedores;</li>
+                <li>Proporcionar soporte técnico básico;</li>
+                <li>Proteger los datos personales conforme a la ley.</li>
+            </ul>
+            <p><strong>5.4.</strong> Conforme al <strong>artículo 76 Bis 1 de la Ley Federal de Protección al Consumidor</strong>, Csariel's cumple con las obligaciones de transparencia en precios, políticas de devolución y mecanismos de reclamación para proveedores que utilicen medios electrónicos.</p>
+        </section>
+
+        <!-- ART 6 -->
+        <section class="seccion" id="art-6">
+            <h2><span class="num">6</span> Obligaciones del Comprador</h2>
+            <p><strong>6.1.</strong> El Comprador se compromete a:</p>
+            <ul>
+                <li>Proporcionar información de entrega veraz (dirección, GPS, teléfono);</li>
+                <li>Estar disponible en el lugar acordado a la hora señalada;</li>
+                <li>Pagar el monto total del pedido (producto + envío + servicio) según el método elegido;</li>
+                <li>Pagar el envío en efectivo al Repartidor cuando aplique;</li>
+                <li>Tratar con respeto al Vendedor y al Repartidor;</li>
+                <li>Reportar cualquier problema dentro de las primeras <strong>2 horas</strong> posteriores a la entrega.</li>
+            </ul>
+            <p><strong>6.2.</strong> El Comprador reconoce que la entrega del producto se realiza a través de un Repartidor independiente, no empleado de Csariel's.</p>
+            <p><strong>6.3.</strong> El Comprador acepta que <strong>los pagos con criptomonedas son irreversibles</strong> una vez confirmados en la red blockchain. Los reembolsos, cuando apliquen, se acreditarán al <strong>balance interno en MXN</strong>, no en criptomoneda.</p>
+            <p><strong>6.4.</strong> <strong>Alimentos perecederos:</strong> Los alimentos preparados y productos perecederos no tienen derecho a devolución, salvo que lleguen en mal estado comprobable mediante fotografía enviada dentro de los primeros <strong>15 minutos</strong> posteriores a la entrega. Pasado ese plazo, no procederá reclamación alguna por este concepto.</p>
+        </section>
+
+        <!-- ART 7 -->
+        <section class="seccion" id="art-7">
+            <h2><span class="num">7</span> Obligaciones del Vendedor</h2>
+            <p><strong>7.1.</strong> El Vendedor se compromete a:</p>
+            <ul>
+                <li>Mantener una <strong>membresía activa</strong> para operar en el Mercado;</li>
+                <li>Publicar información veraz sobre sus productos (precio, stock, descripción, fotos);</li>
+                <li>Cumplir con los pedidos aceptados;</li>
+                <li>Mantener stock actualizado;</li>
+                <li>Respetar los horarios de apertura y cierre configurados;</li>
+                <li>Tratar con respeto al Comprador y al Repartidor;</li>
+                <li>Pagar las comisiones correspondientes a Csariel's;</li>
+                <li>Cumplir con las obligaciones fiscales aplicables;</li>
+                <li>Contar con los permisos sanitarios y comerciales necesarios para operar.</li>
+            </ul>
+            <p><strong>7.2.</strong> El Vendedor reconoce que Csariel's no es responsable de la calidad, legalidad o seguridad de sus productos.</p>
+            <p><strong>7.3.</strong> El Vendedor acepta que las <strong>comisiones se calculan sobre el subtotal del producto</strong> (no sobre el envío ni el servicio).</p>
+            <p><strong>7.4.</strong> El Vendedor acepta que Csariel's podrá <strong>suspender o cancelar</strong> su cuenta por incumplimiento, fraude o prácticas desleales.</p>
+        </section>
+
+        <!-- ART 8 -->
+        <section class="seccion" id="art-8">
+            <h2><span class="num">8</span> Obligaciones del Repartidor</h2>
+            <p><strong>8.1.</strong> El Repartidor se compromete a:</p>
+            <ul>
+                <li>Mantener su <strong>verificación activa</strong> (documentos, selfie, vehículo);</li>
+                <li>Activar su disponibilidad para recibir pedidos;</li>
+                <li>Recoger el pedido en la tienda en el tiempo acordado;</li>
+                <li>Entregar el pedido en la dirección proporcionada;</li>
+                <li>Cobrar el envío en efectivo cuando aplique;</li>
+                <li>Compartir su ubicación GPS mientras tenga pedidos activos;</li>
+                <li>Tratar con respeto al Comprador y al Vendedor;</li>
+                <li>Cumplir con las normas de tránsito aplicables;</li>
+                <li>No operar bajo el influjo de alcohol o drogas.</li>
+            </ul>
+            <p><strong>8.2.</strong> El Repartidor reconoce que es un <strong>prestador independiente</strong>, no empleado de Csariel's. No existe relación laboral entre Csariel's y el Repartidor.</p>
+            <p><strong>8.3.</strong> El Repartidor acepta que Csariel's podrá <strong>suspender o cancelar</strong> su cuenta por incumplimiento, fraude o conducta inapropiada.</p>
+        </section>
+
+        <!-- ART 9 -->
+        <section class="seccion" id="art-9">
+            <h2><span class="num">9</span> Comisiones y Pagos</h2>
+            <p><strong>9.1.</strong> Csariel's cobra las siguientes comisiones:</p>
+            <table class="tabla-legal">
+                <thead>
+                    <tr>
+                        <th>Concepto</th>
+                        <th>Porcentaje / Monto</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Comisión al Vendedor</strong></td>
+                        <td>7% sobre el subtotal del producto</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Comisión cripto extra</strong></td>
+                        <td>+0.5% si el pago es en criptomoneda</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Comisión al Repartidor</strong></td>
+                        <td>12% sobre el envío</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Servicio al Comprador</strong></td>
+                        <td>$5 MXN fijos por pedido</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p><strong>9.2.</strong> Las comisiones se descuentan <strong>automáticamente</strong> del monto que recibe el Vendedor.</p>
+            <p><strong>9.3.</strong> El Vendedor recibirá el monto neto (<em>subtotal − comisión vendedor − comisión cripto</em>) en su balance interno.</p>
+            <p><strong>9.4.</strong> El Repartidor recibirá su ganancia neta (<em>envío − comisión repartidor</em>) en su balance interno.</p>
+            <p><strong>9.5.</strong> Csariel's se reserva el derecho de modificar las comisiones con <strong>30 días de aviso previo</strong> a los Usuarios.</p>
+            <p><strong>9.6.</strong> Conforme al <strong>Código de Comercio</strong>, los pagos electrónicos tienen la misma validez que los pagos físicos.</p>
+        </section>
+
+        <!-- ART 10 -->
+        <section class="seccion" id="art-10">
+            <h2><span class="num">10</span> Membresías</h2>
+            <p><strong>10.1.</strong> Csariel's ofrece 3 niveles de membresía para Vendedores:</p>
+            <table class="tabla-legal">
+                <thead>
+                    <tr>
+                        <th>Plan</th>
+                        <th>Precio</th>
+                        <th>Duración</th>
+                        <th>Productos</th>
+                        <th>Storage</th>
+                        <th>Destacados</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Básico</strong></td>
+                        <td>$99 MXN</td>
+                        <td>30 días</td>
+                        <td>20</td>
+                        <td>200 MB</td>
+                        <td>0</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Pro</strong></td>
+                        <td>$299 MXN</td>
+                        <td>30 días</td>
+                        <td>200</td>
+                        <td>2 GB</td>
+                        <td>10</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Max</strong></td>
+                        <td>$599 MXN</td>
+                        <td>30 días</td>
+                        <td>2,000</td>
+                        <td>10 GB</td>
+                        <td>50</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p><strong>10.2.</strong> Las membresías se pagan con <strong>criptomonedas</strong> a través de NOWPayments.</p>
+            <p><strong>10.3.</strong> La membresía se activa <strong>al confirmarse el pago</strong> en la red blockchain.</p>
+            <p><strong>10.4.</strong> Si el Vendedor renueva antes del vencimiento, <strong>los días se acumulan</strong>. No se pierden días.</p>
+            <div class="aviso">
+                <strong>Renovación NO automática</strong>
+                La renovación de la membresía NO es automática. El Vendedor deberá renovar manualmente a través del panel del Mercado cada 30 días. Csariel's no realizará cobros recurrentes sin la confirmación expresa del Vendedor.
+            </div>
+            <p><strong>10.5.</strong> El Vendedor podrá <strong>cancelar su membresía</strong> en cualquier momento desde su panel. Al cancelar:</p>
+            <ul>
+                <li>No se generarán nuevos cobros;</li>
+                <li>La tienda se pausará automáticamente;</li>
+                <li>Los productos se conservarán por <strong>90 días</strong>;</li>
+                <li>Después de 90 días, se eliminarán definitivamente;</li>
+                <li>El balance acumulado se mantendrá disponible por <strong>1 año</strong>.</li>
+            </ul>
+            <p><strong>10.6.</strong> Conforme al <strong>artículo 76 Bis de la Ley Federal de Protección al Consumidor</strong> (reformado en 2025), los proveedores deben facilitar la <strong>cancelación de suscripciones y membresías</strong> con cobro recurrente, con un mecanismo visible y accesible en el mismo lugar donde se contrató el servicio.</p>
+        </section>
+
+        <!-- ART 11 -->
+        <section class="seccion" id="art-11">
+            <h2><span class="num">11</span> Cancelaciones y Devoluciones</h2>
+            <p><strong>11.1.</strong> <strong>Cancelación de pedido por parte del Comprador:</strong></p>
+            <ul>
+                <li><strong>Antes de que el Vendedor acepte el pedido:</strong> Reembolso total (producto + servicio). El envío no aplica.</li>
+                <li><strong>Después de que el Vendedor acepte el pedido:</strong> Sin reembolso. El producto ya está en preparación.</li>
+                <li><strong>Cuando el Repartidor ya salió a entregar:</strong> Sin reembolso. El envío se cobra al Comprador.</li>
+            </ul>
+            <p><strong>11.2.</strong> <strong>Cancelación de pedido por parte del Vendedor:</strong></p>
+            <ul>
+                <li>El Vendedor podrá rechazar un pedido antes de aceptarlo.</li>
+                <li>Si el Vendedor cancela después de aceptar, Csariel's podrá sancionar su cuenta.</li>
+                <li>El Comprador recibirá reembolso total cuando el Vendedor cancele.</li>
+            </ul>
+            <p><strong>11.3.</strong> <strong>Devoluciones por productos dañados o incorrectos:</strong></p>
+            <ul>
+                <li><strong>Alimentos perecederos:</strong> Solo procede devolución si el producto llega en mal estado comprobable mediante fotografía enviada dentro de los primeros <strong>15 minutos</strong> posteriores a la entrega.</li>
+                <li><strong>Productos no perecederos (ropa, tecnología, etc.):</strong> Se acepta devolución dentro de las primeras <strong>24 horas</strong>, siempre que el producto esté sin usar y en su empaque original.</li>
+                <li><strong>Productos faltantes:</strong> Reembolso parcial por el producto no entregado, previa verificación.</li>
+                <li><strong>Cobros duplicados:</strong> Reembolso del monto cobrado por error, previa verificación.</li>
+            </ul>
+            <p><strong>11.4.</strong> <strong>Devoluciones NO aplicables:</strong></p>
+            <ul>
+                <li>Cuando el Comprador no se encontraba en la dirección de entrega;</li>
+                <li>Cuando el Comprador rechazó el pedido al momento de la entrega sin causa justificada;</li>
+                <li>Cuando hayan transcurrido más de 2 horas desde la entrega sin reporte;</li>
+                <li>Cuando no exista evidencia fotográfica del problema.</li>
+            </ul>
+            <p><strong>11.5.</strong> <strong>Plazos del proceso:</strong></p>
+            <ul>
+                <li>El Comprador deberá reportar el problema en un plazo máximo de <strong>2 horas</strong>.</li>
+                <li>Csariel's resolverá la reclamación en un plazo máximo de <strong>48 horas</strong>.</li>
+                <li>El reembolso, cuando proceda, se procesará en un plazo de <strong>5 días hábiles</strong>.</li>
+            </ul>
+            <p><strong>11.6.</strong> Conforme a la <strong>NOM-024-SCFI-2013</strong> y al <strong>artículo 76 Bis de la Ley Federal de Protección al Consumidor</strong>, Csariel's pone a disposición de los Compradores la información completa sobre precios, costos de envío, tiempo de entrega y políticas de devolución en cada transacción.</p>
+        </section>
+
+        <!-- ART 12 -->
+        <section class="seccion" id="art-12">
+            <h2><span class="num">12</span> Criptomonedas y Retiros</h2>
+            <p><strong>12.1.</strong> Csariel's <strong>NO es una casa de cambio</strong>, <strong>NO es un exchange</strong>, <strong>NO custodia criptomonedas</strong> en nombre del Usuario. NOWPayments es el procesador autorizado.</p>
+            <p><strong>12.2.</strong> Csariel's <strong>NO se hace responsable</strong> de fluctuaciones del tipo de cambio cripto/MXN.</p>
+            <p><strong>12.3.</strong> El Usuario acepta que la <strong>red blockchain es irreversible e inalterable</strong>. Una vez confirmada una transacción, no puede revertirse.</p>
+            <p><strong>12.4.</strong> Los retiros se realizan en <strong>MXN</strong> al balance interno del Usuario, <strong>no en la misma criptomoneda</strong>.</p>
+            <p><strong>12.5.</strong> Los retiros tienen los siguientes mínimos:</p>
+            <table class="tabla-legal">
+                <thead>
+                    <tr>
+                        <th>Método</th>
+                        <th>Mínimo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Cartera interna Csariel's</td>
+                        <td>$0 MXN (sin mínimo)</td>
+                    </tr>
+                    <tr>
+                        <td>SPEI</td>
+                        <td>$500 MXN</td>
+                    </tr>
+                    <tr>
+                        <td>OXXO</td>
+                        <td>$500 MXN</td>
+                    </tr>
+                    <tr>
+                        <td>Efectivo</td>
+                        <td>$500 MXN</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p><strong>12.6.</strong> El plazo de procesamiento es de <strong>1 a 3 días hábiles</strong> para retiros externos.</p>
+            <p><strong>12.7.</strong> Conforme a la <strong>Ley para Regular las Instituciones de Tecnología Financiera</strong>, Csariel's no realiza actividades reservadas a las ITF. Conforme a la <strong>LFPIORPI</strong>, Csariel's no realiza Actividades Vulnerables según el artículo 17 de dicha ley.</p>
+        </section>
+
+        <!-- ART 13 -->
+        <section class="seccion" id="art-13">
+            <h2><span class="num">13</span> Prohibiciones</h2>
+            <p><strong>13.1.</strong> Queda estrictamente prohibido:</p>
+            <ul>
+                <li>Publicar productos ilegales, peligrosos, falsificados o regulados sin permiso;</li>
+                <li>Realizar fraudes, estafas o cobros indebidos;</li>
+                <li>Usar la Plataforma para lavado de dinero o financiamiento al terrorismo;</li>
+                <li>Acosar, amenazar o discriminar a otros Usuarios;</li>
+                <li>Intentar hackear, vulnerar o sobrecargar la Plataforma;</li>
+                <li>Crear cuentas falsas o suplantar identidades;</li>
+                <li>Manipular reseñas, calificaciones o estadísticas;</li>
+                <li>Usar bots, scrapers o automatizaciones no autorizadas.</li>
+            </ul>
+            <p><strong>13.2.</strong> El incumplimiento de estas prohibiciones causará <strong>cancelación inmediata</strong> de la cuenta, sin reembolso de membresías, y podrá dar lugar a <strong>acciones legales</strong>.</p>
+            <p><strong>13.3.</strong> Conforme a la <strong>Ley Federal de Protección a la Propiedad Industrial</strong>, Csariel's podrá ejercer acciones por competencia desleal o uso indebido de su marca.</p>
+        </section>
+
+        <!-- ART 14 -->
+        <section class="seccion" id="art-14">
+            <h2><span class="num">14</span> Propiedad Intelectual</h2>
+            <p><strong>14.1.</strong> El nombre <strong>"Csariel's"</strong>, el logotipo, el diseño, el código fuente y la estructura de la Plataforma son propiedad exclusiva de Csariel's Ecosystem.</p>
+            <p><strong>14.2.</strong> El Usuario <strong>no adquiere ningún derecho</strong> sobre la marca, el software o los elementos visuales.</p>
+            <p><strong>14.3.</strong> Conforme a la <strong>Ley Federal del Derecho de Autor</strong>, las obras, imágenes y contenido publicado por los Usuarios son propiedad de sus respectivos autores.</p>
+            <p><strong>14.4.</strong> Csariel's podrá usar el contenido publicado por los Usuarios para <strong>promoción</strong>, <strong>marketing</strong> o <strong>mejora del servicio</strong>, sin compensación adicional.</p>
+        </section>
+
+        <!-- ART 15 -->
+        <section class="seccion" id="art-15">
+            <h2><span class="num">15</span> Limitación de Responsabilidad</h2>
+            <p><strong>15.1.</strong> Csariel's <strong>no será responsable</strong> por:</p>
+            <ul>
+                <li>Daños indirectos, incidentales, especiales o consecuentes;</li>
+                <li>Pérdida de datos, ganancias u oportunidades de negocio;</li>
+                <li>Interrupciones del servicio por mantenimiento o causas de fuerza mayor;</li>
+                <li>Conducta de los Usuarios (fraude, incumplimiento, negligencia);</li>
+                <li>Productos defectuosos, peligrosos o ilegales publicados por Vendedores;</li>
+                <li>Retrasos o fallos en entregas por causas ajenas a Csariel's.</li>
+            </ul>
+            <p><strong>15.2.</strong> La responsabilidad total de Csariel's, en cualquier caso, no excederá el monto de las comisiones generadas por el Usuario en los <strong>últimos 30 días</strong>.</p>
+            <p><strong>15.3.</strong> Csariel's no garantiza la veracidad de la información publicada por los Vendedores ni la calidad de los productos.</p>
+        </section>
+
+        <!-- ART 16 -->
+        <section class="seccion" id="art-16">
+            <h2><span class="num">16</span> Protección de Datos Personales</h2>
+            <p><strong>16.1.</strong> Csariel's tratará los datos personales de los Usuarios conforme a la <strong>Ley Federal de Protección de Datos Personales en Posesión de los Particulares</strong> (LFPDPPP).</p>
+            <p><strong>16.2.</strong> El <strong>Aviso de Privacidad Integral</strong> aplicable al Mercado se encuentra en un documento separado, disponible en:</p>
+            <div class="aviso">
+                <strong>Aviso de Privacidad</strong>
+                Consulta el documento completo en <a href="/legal/mercado-privacidad.html">/legal/mercado-privacidad.html</a>, donde se detallan las finalidades, transferencias y derechos ARCO aplicables.
+            </div>
+            <p><strong>16.3.</strong> El Usuario podrá ejercer sus <strong>Derechos ARCO</strong> (Acceso, Rectificación, Cancelación, Oposición) contactando al correo indicado en el Aviso de Privacidad.</p>
+            <p><strong>16.4.</strong> Csariel's implementará medidas de <strong>seguridad administrativas, técnicas y físicas</strong> para proteger los datos personales.</p>
+        </section>
+
+        <!-- ART 17 -->
+        <section class="seccion" id="art-17">
+            <h2><span class="num">17</span> Resolución de Conflictos</h2>
+            <p><strong>17.1.</strong> <strong>Disputa entre Comprador y Vendedor:</strong></p>
+            <ul>
+                <li>Csariel's mediará en un plazo de <strong>48 horas</strong>;</li>
+                <li>Revisará evidencia (fotos, mensajes, GPS);</li>
+                <li>Emitirá una decisión final.</li>
+            </ul>
+            <p><strong>17.2.</strong> <strong>Disputa entre Comprador y Repartidor:</strong></p>
+            <ul>
+                <li>Csariel's mediará en un plazo de <strong>24 horas</strong>;</li>
+                <li>Revisará evidencia (GPS, fotos, mensajes);</li>
+                <li>Emitirá una decisión final.</li>
+            </ul>
+            <p><strong>17.3.</strong> Conforme a la <strong>Ley Federal de Protección al Consumidor</strong>, el Comprador podrá acudir a la <strong>Procuraduría Federal del Consumidor (PROFECO)</strong> si no está satisfecho con la resolución de Csariel's.</p>
+            <p><strong>17.4.</strong> Csariel's se reserva el derecho de <strong>bloquear cuentas</strong> que realicen reclamos abusivos o fraudulentos.</p>
+        </section>
+
+        <!-- ART 18 -->
+        <section class="seccion" id="art-18">
+            <h2><span class="num">18</span> Modificaciones</h2>
+            <p><strong>18.1.</strong> Csariel's podrá modificar los presentes Términos en cualquier momento.</p>
+            <p><strong>18.2.</strong> Las modificaciones serán notificadas a los Usuarios con <strong>15 días de anticipación</strong> vía correo electrónico o notificación en la Plataforma.</p>
+            <p><strong>18.3.</strong> El uso continuado de la Plataforma después de la fecha de entrada en vigor de las modificaciones implica la <strong>aceptación</strong> de las nuevas condiciones.</p>
+            <p><strong>18.4.</strong> Si el Usuario no está de acuerdo con las modificaciones, deberá <strong>cancelar su cuenta</strong> antes de la fecha de entrada en vigor.</p>
+        </section>
+
+        <!-- ART 19 -->
+        <section class="seccion" id="art-19">
+            <h2><span class="num">19</span> Ley Aplicable y Jurisdicción</h2>
+            <p><strong>19.1.</strong> Los presentes Términos se rigen por las <strong>leyes de los Estados Unidos Mexicanos</strong>.</p>
+            <p><strong>19.2.</strong> Para cualquier controversia relacionada con relaciones de consumo, las partes acuerdan someterse en primera instancia a los procedimientos de conciliación de la <strong>Procuraduría Federal del Consumidor (PROFECO)</strong>, y en caso de no resolverse, a la jurisdicción de los <strong>tribunales competentes de Puebla, México</strong>, renunciando a cualquier otro fuero que pudiera corresponderles por razón de sus domicilios presentes o futuros.</p>
+            <p><strong>19.3.</strong> Conforme al <strong>artículo 1 de la Ley Federal de Protección al Consumidor</strong>, las disposiciones son irrenunciables y de observancia en toda la República Mexicana.</p>
+        </section>
+
+        <!-- Contacto -->
+        <div class="contacto">
+            <h3>◈ Contacto Legal</h3>
+            <div class="fila">
+                <span class="lbl">Razón social</span>
+                <span class="val pendiente">[Pendiente de configuración]</span>
+            </div>
+            <div class="fila">
+                <span class="lbl">RFC</span>
+                <span class="val pendiente">[Pendiente de configuración]</span>
+            </div>
+            <div class="fila">
+                <span class="lbl">Correo legal</span>
+                <span class="val pendiente">[Pendiente de configuración]</span>
+            </div>
+            <div class="fila">
+                <span class="lbl">Domicilio</span>
+                <span class="val">Puebla, México</span>
+            </div>
+            <div class="fila">
+                <span class="lbl">Horario de atención</span>
+                <span class="val">Lunes a Viernes, 9:00 a 18:00 hrs</span>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer-legal">
+            <p>
+                <span class="marca">© Csariel's Ecosystem</span><br>
+                Todos los derechos reservados.<br>
+                Puebla, México.
+            </p>
+            <p style="margin-top: 12px; font-size: 0.7rem;">
+                Última actualización: <strong style="color: var(--warning);">[Pendiente de configuración]</strong>
+            </p>
+        </div>
+
+    </div>
+
+    <!-- Botón flotante volver -->
+    <a href="/features/mercado/index.html" class="btn-volver-flotante">
+        ◈ Volver al Mercado
+    </a>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/features/shared/js/idiomas.js"></script>
+
+<script>
+// ================================================================
+// INICIALIZACIÓN
+// ================================================================
+document.addEventListener('DOMContentLoaded', function () {
+    // Suavizar scroll en los links del índice
+    document.querySelectorAll('.indice ol li a').forEach(function (link) {
+        link.addEventListener('click', function (e) {
+            e.preventDefault();
+            var targetId = this.getAttribute('href').substring(1);
+            var target = document.getElementById(targetId);
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                history.pushState(null, null, '#' + targetId);
+            }
+        });
+    });
+
+    // Idiomas
+    setTimeout(async function () {
+        try {
+            if (typeof window.inicializarIdiomas === 'function') {
+                await window.inicializarIdiomas();
+            }
+        } catch (e) { console.warn('Error idiomas:', e); }
+    }, 400);
+
+    console.log('◈ Términos del Mercado cargados');
+});
+</script>
+</body>
+</html>
