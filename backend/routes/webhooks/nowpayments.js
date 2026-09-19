@@ -1,18 +1,20 @@
 /* ================================================================
-   MERCADO - SARIEL'S ECOSYSTEM
+   MERCADO - CSARIEL'S ECOSYSTEM
    Webhook dedicado: NOTIFICACIONES IPN DE NOWPAYMENTS
    Ruta: /backend/routes/webhooks/nowpayments.js
    
    Este archivo maneja EXCLUSIVAMENTE las notificaciones IPN
    que NOWPayments envía cuando un pago cambia de estado.
    
-   Esquema real:
-   - mercado_membresias_pagos (bigint id, tienda_id NOT NULL, plan_slug,
-     plan_nombre, monto_mxn, duracion_dias, estado, payment_id,
-     pay_address, pay_amount, pay_currency, nowpayments_status,
-     activa_desde, activa_hasta, pagado_en)
-   - Estados: pendiente, pagando, confirmando, pagada, cancelada, expirada, fallida
-   - Al confirmar → actualiza mercado_tiendas.nivel + activa_hasta
+   Esquema real confirmado:
+   - mercado_membresias_pagos:
+       id, tienda_id (FK), usuario_id (FK), plan_slug, plan_nombre,
+       monto_mxn, duracion_dias, estado, payment_id, pay_address,
+       pay_amount, pay_currency, nowpayments_status,
+       activa_desde, activa_hasta, pagado_en, created_at, updated_at
+     Estados: pendiente, pagando, confirmando, pagada, cancelada, expirada, fallida
+   - Al confirmar → actualiza mercado_tiendas.nivel + activa_hasta + estado
+   - notificaciones usa: user_id, tipo, mensaje, fecha, emisor_id, leida, metadata
    ================================================================ */
 
 const express = require('express');
@@ -41,14 +43,14 @@ const PLANES = {
 };
 
 // ================================================================
-// LOGS
+// LOGS CON SÍMBOLOS CSARIEL'S
 // ================================================================
 function log(...args) {
-    console.log('[NOWPayments Webhook]', ...args);
+    console.log('[◈ NOWPayments Webhook]', ...args);
 }
 
 function logError(...args) {
-    console.error('[NOWPayments Webhook ERROR]', ...args);
+    console.error('[✶ NOWPayments Webhook ERROR]', ...args);
 }
 
 // ================================================================
@@ -114,7 +116,7 @@ async function activarMembresia(tiendaId, pagoId, planSlug, duracionDias) {
         // 1) Obtener tienda actual
         const { data: tienda, error: errT } = await supabaseAdmin
             .from('mercado_tiendas')
-            .select('id, nivel, activa_hasta')
+            .select('id, nivel, activa_hasta, usuario_id')
             .eq('id', tiendaId)
             .maybeSingle();
 
@@ -169,11 +171,12 @@ async function activarMembresia(tiendaId, pagoId, planSlug, duracionDias) {
             // No fallamos porque la tienda ya está activada
         }
 
-        log('✅ Membresía activada:', tiendaId, '→ nivel', planSlug, '→ hasta', nuevaFechaFin.toISOString());
+        log('● Membresía activada:', tiendaId, '→ nivel', planSlug, '→ hasta', nuevaFechaFin.toISOString());
 
         return {
             ok: true,
             tienda_id: tiendaId,
+            usuario_id: tienda.usuario_id,
             nivel: planSlug,
             fecha_fin: nuevaFechaFin.toISOString(),
             extendida: !!tienda.activa_hasta && new Date(tienda.activa_hasta) > ahora
@@ -181,6 +184,43 @@ async function activarMembresia(tiendaId, pagoId, planSlug, duracionDias) {
 
     } catch (e) {
         logError('Excepción activarMembresia:', e);
+        return { ok: false, error: e.message };
+    }
+}
+
+// ================================================================
+// CREAR NOTIFICACIÓN PARA EL USUARIO
+// Adaptado a la estructura real de la tabla notificaciones:
+// user_id, tipo, mensaje, fecha, emisor_id, leida, metadata
+// ================================================================
+async function crearNotificacionMembresia(usuarioId, planSlug, fechaFin) {
+    try {
+        const { error } = await supabaseAdmin
+            .from('notificaciones')
+            .insert({
+                user_id: usuarioId,
+                tipo: 'membresia_activada',
+                mensaje: '◈ Tu membresía ' + planSlug.toUpperCase() + ' está activa hasta ' + new Date(fechaFin).toLocaleDateString('es-MX'),
+                fecha: new Date().toISOString(),
+                emisor_id: null,
+                leida: false,
+                metadata: {
+                    tipo_evento: 'membresia_activada',
+                    plan: planSlug,
+                    fecha_fin: fechaFin,
+                    plataforma: 'Csariel\'s Mercado'
+                }
+            });
+
+        if (error) {
+            log('ℹ️ No se pudo insertar notificación:', error.message);
+            return { ok: false, error: error.message };
+        }
+
+        log('◆ Notificación creada para usuario:', usuarioId);
+        return { ok: true };
+    } catch (e) {
+        log('ℹ️ Excepción insertando notificación:', e.message);
         return { ok: false, error: e.message };
     }
 }
@@ -201,31 +241,33 @@ router.post('/', async (req, res) => {
         const firmaValida = verificarFirma(bodyString, firmaRecibida);
 
         if (!firmaValida) {
-            logError('❌ Firma inválida — solicitud rechazada');
+            logError('✶ Firma inválida — solicitud rechazada');
             return res.status(401).json({ ok: false, error: 'Firma inválida' });
         }
 
-        log('✅ Firma verificada');
+        log('● Firma verificada');
 
         // ============ 2) EXTRAER DATOS ============
         const data = req.body;
         const paymentId = data.payment_id;
         const npStatus = data.payment_status;
+        const payCurrency = data.pay_currency;
+        const actuallyPaid = data.actually_paid;
         const payinHash = data.payin_hash;
         const outcomeHash = data.outcome_hash;
-        const actuallyPaid = data.actually_paid;
-        const payCurrency = data.pay_currency;
 
-        log('📥 IPN:', {
+        log('◈ IPN:', {
             payment_id: paymentId,
             status: npStatus,
             pay_currency: payCurrency,
-            actually_paid: actuallyPaid
+            actually_paid: actuallyPaid,
+            payin_hash: payinHash ? payinHash.substring(0, 16) + '...' : null,
+            outcome_hash: outcomeHash ? outcomeHash.substring(0, 16) + '...' : null
         });
 
         // ============ 3) VALIDAR ============
         if (!paymentId) {
-            logError('⚠️ Sin payment_id — ignorando');
+            logError('✶ Sin payment_id — ignorando');
             return res.status(200).json({ ok: true, ignorado: 'sin payment_id' });
         }
 
@@ -237,7 +279,7 @@ router.post('/', async (req, res) => {
             .maybeSingle();
 
         if (errBuscar || !pago) {
-            logError('⚠️ Pago no encontrado en DB:', paymentId);
+            logError('✶ Pago no encontrado en DB:', paymentId);
             // Devolvemos 200 para que NOWPayments no reintente infinitamente
             return res.status(200).json({ ok: true, ignorado: 'pago no encontrado' });
         }
@@ -252,6 +294,8 @@ router.post('/', async (req, res) => {
         const estadoFinal = mapearEstado(npStatus);
 
         // ============ 7) ACTUALIZAR PAGO EN DB ============
+        // Nota: payin_hash, outcome_hash y actually_paid NO existen como
+        // columnas en la tabla. Los dejamos en logs para auditoría.
         const updates = {
             estado: estadoFinal,
             nowpayments_status: npStatus,
@@ -268,10 +312,10 @@ router.post('/', async (req, res) => {
             .eq('id', pago.id);
 
         if (errUpd) {
-            logError('Error actualizando pago:', errUpd);
+            logError('✶ Error actualizando pago:', errUpd);
         }
 
-        log('💾 Pago actualizado:', pago.id, '→', estadoFinal);
+        log('◆ Pago actualizado:', pago.id, '→', estadoFinal);
 
         // ============ 8) ACTIVAR MEMBRESÍA SI PAGADA ============
         if (estadoFinal === 'pagada') {
@@ -283,7 +327,7 @@ router.post('/', async (req, res) => {
             );
 
             if (!resultado.ok) {
-                logError('❌ Error activando membresía:', resultado.error);
+                logError('✶ Error activando membresía:', resultado.error);
                 return res.status(200).json({
                     ok: true,
                     procesado: true,
@@ -291,22 +335,14 @@ router.post('/', async (req, res) => {
                 });
             }
 
-            log('🎉 Membresía activada para tienda:', pago.tienda_id);
+            log('✦ Membresía activada para tienda:', pago.tienda_id);
 
-            // Notificación opcional (silenciosa si la tabla no existe)
-            try {
-                await supabaseAdmin
-                    .from('notificaciones')
-                    .insert({
-                        usuario_id: pago.usuario_id,
-                        tipo: 'membresia_activada',
-                        titulo: '🎉 Membresía activada',
-                        mensaje: 'Tu membresía ' + pago.plan_slug + ' está activa hasta ' + resultado.fecha_fin,
-                        created_at: new Date().toISOString()
-                    });
-            } catch (eN) {
-                log('ℹ️ No se pudo insertar notificación (tabla opcional)');
-            }
+            // Notificación al usuario (usa el campo usuario_id del pago)
+            await crearNotificacionMembresia(
+                pago.usuario_id,
+                pago.plan_slug,
+                resultado.fecha_fin
+            );
 
             return res.status(200).json({
                 ok: true,
@@ -329,7 +365,7 @@ router.post('/', async (req, res) => {
         });
 
     } catch (e) {
-        logError('❌ Excepción procesando webhook:', e);
+        logError('✶ Excepción procesando webhook:', e);
         // Siempre 200 para evitar reintentos masivos
         return res.status(200).json({
             ok: true,
@@ -346,13 +382,14 @@ router.post('/', async (req, res) => {
 router.get('/test', (req, res) => {
     res.json({
         ok: true,
-        servicio: 'Webhook NOWPayments',
+        servicio: '◈ Webhook NOWPayments · Csariel\'s',
         configurado: !!NOWPAYMENTS_IPN_SECRET,
         ipn_secret_presente: !!NOWPAYMENTS_IPN_SECRET,
         url_esperada_ipn: process.env.PUBLIC_URL
             ? `${process.env.PUBLIC_URL}/api/mercado/webhook-nowpayments`
             : '(configura PUBLIC_URL en env)',
         planes: Object.keys(PLANES),
+        estados_validos: ['pendiente', 'pagando', 'confirmando', 'pagada', 'cancelada', 'expirada', 'fallida'],
         timestamp: new Date().toISOString()
     });
 });
