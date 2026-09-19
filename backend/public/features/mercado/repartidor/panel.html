@@ -79,10 +79,11 @@
             display: flex; gap: 4px; background: rgba(15,45,26,0.3); border-radius: var(--radius);
             padding: 4px; border: 1px solid var(--glass-border); margin: 16px 0 20px; overflow-x: auto;
         }
-        .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; white-space: nowrap; transition: var(--transition); }
+        .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; white-space: nowrap; transition: var(--transition); display: flex; align-items: center; gap: 6px; }
         .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212,175,55,0.05); }
         .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); }
         .main-nav .nav-link.live { color: var(--danger); }
+        .main-nav .nav-link .nav-simbolo { color: var(--gold); opacity: 0.7; }
 
         .btn-back {
             display: inline-flex; align-items: center; gap: 6px;
@@ -91,6 +92,7 @@
             font-size: 0.72rem; text-decoration: none; margin-bottom: 16px;
             transition: var(--transition); cursor: pointer;
         }
+        .btn-back .simbolo { color: var(--gold); font-family: 'Orbitron', monospace; }
         .btn-back:hover { border-color: var(--gold); color: var(--gold); }
 
         .titulo {
@@ -102,6 +104,7 @@
             font-weight: 700; color: var(--gold);
             display: flex; align-items: center; gap: 8px;
         }
+        .titulo h1 .simbolo { color: var(--gold); }
         .rol-badge {
             font-size: 0.55rem; padding: 4px 12px; border-radius: 20px;
             font-family: 'Orbitron', monospace; font-weight: 700;
@@ -110,7 +113,6 @@
             color: #fff;
         }
 
-        /* Estado del repartidor (online/offline) */
         .estado-toggle {
             display: flex; align-items: center; gap: 10px;
             background: var(--glass-bg); border: 1px solid var(--glass-border);
@@ -135,6 +137,10 @@
         .estado-toggle .txt-estado { flex: 1; font-size: 0.78rem; }
         .estado-toggle .txt-estado .t1 {
             font-weight: 700; color: var(--text-primary);
+            display: flex; align-items: center; gap: 6px;
+        }
+        .estado-toggle .txt-estado .t1 .simbolo {
+            font-family: 'Orbitron', monospace;
         }
         .estado-toggle .txt-estado .t2 {
             font-size: 0.65rem; color: var(--text-muted); margin-top: 2px;
@@ -158,7 +164,6 @@
             transform: translateX(18px);
         }
 
-        /* Indicador GPS */
         .gps-indicator {
             display: flex; align-items: center; gap: 8px;
             padding: 8px 14px;
@@ -202,9 +207,14 @@
             flex: 1;
         }
         .gps-indicator .gps-info strong {
-            display: block;
+            display: flex;
+            align-items: center;
+            gap: 6px;
             font-weight: 700;
             font-size: 0.7rem;
+        }
+        .gps-indicator .gps-info strong .simbolo {
+            font-family: 'Orbitron', monospace;
         }
         .gps-indicator .gps-info .gps-detalle {
             font-size: 0.6rem;
@@ -212,7 +222,6 @@
             margin-top: 2px;
         }
 
-        /* Resumen de ganancias */
         .resumen-ganancias {
             display: grid; grid-template-columns: 1fr 1fr;
             gap: 12px; margin-bottom: 16px;
@@ -226,6 +235,11 @@
             font-size: 0.6rem; color: var(--text-muted);
             text-transform: uppercase; letter-spacing: 0.5px;
             margin-bottom: 4px;
+            display: flex; align-items: center; gap: 5px;
+        }
+        .stat-card .lbl .simbolo {
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
         }
         .stat-card .val {
             font-family: 'Orbitron', monospace;
@@ -236,7 +250,6 @@
             font-size: 0.62rem; color: var(--text-muted); margin-top: 2px;
         }
 
-        /* Tabs */
         .tabs {
             display: flex; gap: 6px; background: var(--glass-bg);
             border: 1px solid var(--glass-border); border-radius: var(--radius);
@@ -252,6 +265,10 @@
             transition: var(--transition); white-space: nowrap;
             display: flex; align-items: center; gap: 6px;
         }
+        .tab-btn .simbolo {
+            font-family: 'Orbitron', monospace;
+            color: var(--gold);
+        }
         .tab-btn.active { background: rgba(212,175,55,0.12); color: var(--gold); }
         .tab-btn:hover:not(.active) { color: var(--text-primary); background: rgba(212,175,55,0.05); }
         .tab-btn .badge-count {
@@ -259,6 +276,7 @@
             padding: 1px 7px; border-radius: 10px;
             font-size: 0.6rem; font-weight: 700;
             margin-left: 2px;
+            font-family: 'Orbitron', monospace;
         }
         .tab-btn .badge-count.verde { background: rgba(0,214,143,0.2); color: var(--success); }
 
@@ -269,7 +287,6 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Pedidos */
         .pedidos-lista { display: flex; flex-direction: column; gap: 12px; }
 
         .pedido-card {
@@ -306,6 +323,11 @@
             font-family: 'Orbitron', monospace;
             font-size: 0.95rem; font-weight: 700;
             color: var(--gold); letter-spacing: 1px;
+            display: flex; align-items: center; gap: 5px;
+        }
+        .pedido-card .header-p .codigo .simbolo {
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
         }
         .pedido-card .header-p .fecha {
             font-size: 0.62rem; color: var(--text-muted); margin-top: 2px;
@@ -319,7 +341,9 @@
             border: 1px solid var(--glass-border);
             background: rgba(0,0,0,0.3);
             white-space: nowrap;
+            display: inline-flex; align-items: center; gap: 4px;
         }
+        .estado-badge .simbolo { font-family: 'Orbitron', monospace; }
         .estado-badge.listo { color: var(--gold); border-color: var(--gold); }
         .estado-badge.asignado { color: var(--purple); border-color: var(--purple); }
         .estado-badge.en_camino { color: var(--cyan); border-color: var(--cyan); }
@@ -343,6 +367,7 @@
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
             font-size: 0.75rem; flex-shrink: 0;
+            font-family: 'Orbitron', monospace;
         }
         .ruta-info .punto.origen .icono-p {
             background: rgba(212,175,55,0.2); color: var(--gold);
@@ -368,6 +393,10 @@
         .meta-info .meta {
             display: flex; align-items: center; gap: 4px;
         }
+        .meta-info .meta .simbolo {
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
+        }
         .meta-info .meta strong {
             color: var(--gold);
             font-family: 'Orbitron', monospace;
@@ -384,19 +413,24 @@
             background: rgba(0,0,0,0.3);
             border: 1px solid var(--glass-border);
             color: var(--text-muted);
+            display: inline-flex; align-items: center; gap: 3px;
         }
+        .chip-mini .simbolo { font-family: 'Orbitron', monospace; }
         .chip-mini.cobrar {
             color: var(--warning); border-color: rgba(247,212,74,0.3);
             background: rgba(247,212,74,0.08);
         }
+        .chip-mini.cobrar .simbolo { color: var(--warning); }
         .chip-mini.pagado {
             color: var(--success); border-color: rgba(0,214,143,0.3);
             background: rgba(0,214,143,0.08);
         }
+        .chip-mini.pagado .simbolo { color: var(--success); }
         .chip-mini.gps-ok {
             color: var(--cyan); border-color: rgba(0,229,255,0.3);
             background: rgba(0,229,255,0.08);
         }
+        .chip-mini.gps-ok .simbolo { color: var(--cyan); }
 
         .footer-p {
             display: flex; justify-content: space-between; align-items: center;
@@ -420,6 +454,12 @@
         .footer-p .pago-metodo {
             font-size: 0.65rem; color: var(--text-muted);
             text-align: right;
+            display: flex; align-items: center; gap: 5px;
+            justify-content: flex-end;
+        }
+        .footer-p .pago-metodo .simbolo {
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
         }
 
         .acciones-p {
@@ -434,7 +474,9 @@
             cursor: pointer; transition: var(--transition);
             display: inline-flex; align-items: center; justify-content: center;
             gap: 6px; border: none;
+            text-decoration: none;
         }
+        .btn-accion-p .simbolo { font-family: 'Orbitron', monospace; }
         .btn-accion-p:disabled { opacity: 0.4; cursor: not-allowed; }
         .btn-tomar {
             background: linear-gradient(135deg, var(--purple), #7c3aed);
@@ -463,7 +505,6 @@
         }
         .btn-whats:hover:not(:disabled) { transform: translateY(-2px); }
 
-        /* Modal */
         .modal-overlay {
             position: fixed; inset: 0;
             background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
@@ -493,7 +534,9 @@
         .modal h2 {
             font-family: 'Orbitron', monospace;
             color: var(--gold); font-size: 1rem; margin-bottom: 16px;
+            display: flex; align-items: center; gap: 8px;
         }
+        .modal h2 .simbolo { font-family: 'Orbitron', monospace; }
 
         .detalle-seccion { margin-bottom: 16px; }
         .detalle-seccion h3 {
@@ -502,6 +545,7 @@
             margin-bottom: 8px;
             display: flex; align-items: center; gap: 6px;
         }
+        .detalle-seccion h3 .simbolo { font-family: 'Orbitron', monospace; }
         .dato-fila {
             display: flex; gap: 10px;
             padding: 6px 0; font-size: 0.75rem;
@@ -511,7 +555,6 @@
         .dato-fila .lbl { color: var(--text-muted); min-width: 90px; }
         .dato-fila .val { color: var(--text-primary); flex: 1; word-break: break-word; }
 
-        /* Loading / empty */
         .loading-state {
             text-align: center; padding: 60px 20px; color: var(--text-muted);
         }
@@ -533,6 +576,7 @@
         .empty-state .icon {
             font-size: 3.5rem; display: block; margin-bottom: 16px;
             color: var(--gold); opacity: 0.4;
+            font-family: 'Orbitron', monospace;
         }
         .empty-state h3 {
             font-family: 'Orbitron', monospace;
@@ -540,7 +584,6 @@
         }
         .empty-state p { font-size: 0.85rem; }
 
-        /* Pantalla de estado (para no verificados) */
         .pantalla-estado {
             text-align: center;
             padding: 50px 20px;
@@ -553,12 +596,16 @@
             font-size: 4rem;
             display: block;
             margin-bottom: 20px;
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
         }
         .pantalla-estado h2 {
             font-family: 'Orbitron', monospace;
             font-size: 1.15rem;
             margin-bottom: 12px;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
         }
+        .pantalla-estado h2 .simbolo { font-family: 'Orbitron', monospace; }
         .pantalla-estado p {
             font-size: 0.82rem;
             color: var(--text-secondary);
@@ -584,6 +631,7 @@
             text-decoration: none;
             transition: var(--transition);
         }
+        .pantalla-estado .btn-primario .simbolo { font-family: 'Orbitron', monospace; }
         .pantalla-estado .btn-primario:hover {
             transform: translateY(-2px);
             box-shadow: var(--shadow-gold);
@@ -612,7 +660,8 @@
         }
         .footer .brand { color: var(--gold); font-weight: 600; }
         .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
-        .footer-links a { color: var(--text-muted); text-decoration: none; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; display: flex; align-items: center; gap: 4px; }
+        .footer-links a .simbolo { font-family: 'Orbitron', monospace; color: var(--gold); opacity: 0.7; }
         .footer-links a:hover { color: var(--gold); }
 
         html.tema-dia, html[data-tema="dia"] {
@@ -667,80 +716,74 @@
         </header>
 
         <nav class="main-nav" aria-label="Navegación principal">
-            <a href="/" class="nav-link">⌂ Inicio</a>
-            <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
-            <a href="/features/perfil/perfil.html" class="nav-link">◆ Perfil</a>
-            <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
-            <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
-            <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
-            <a href="/features/videos/videos.html" class="nav-link">🎬 Videos</a>
-            <a href="/features/grupos/grupos.html" class="nav-link">👥 Grupos</a>
-            <a href="/features/mercado/index.html" class="nav-link active">🛒 Mercado</a>
+            <a href="/" class="nav-link"><span class="nav-simbolo">◈</span> Inicio</a>
+            <a href="/features/muro/muro.html" class="nav-link"><span class="nav-simbolo">◆</span> Muro</a>
+            <a href="/features/perfil/perfil.html" class="nav-link"><span class="nav-simbolo">◇</span> Perfil</a>
+            <a href="/features/mensajes/contactos.html" class="nav-link"><span class="nav-simbolo">●</span> Contactos</a>
+            <a href="/features/live/live.html" class="nav-link live"><span class="nav-simbolo">◉</span> Live</a>
+            <a href="/features/internet/internet.html" class="nav-link"><span class="nav-simbolo">◆</span> Internet</a>
+            <a href="/features/videos/videos.html" class="nav-link"><span class="nav-simbolo">◇</span> Videos</a>
+            <a href="/features/grupos/grupos.html" class="nav-link"><span class="nav-simbolo">◆</span> Grupos</a>
+            <a href="/features/mercado/index.html" class="nav-link active"><span class="nav-simbolo">◈</span> Mercado</a>
         </nav>
 
         <a href="/features/mercado/index.html" class="btn-back">
-            ← <span data-clave="mercado_volver">Volver al Mercado</span>
+            <span class="simbolo">◈</span> <span data-clave="mercado_volver">Volver al Mercado</span>
         </a>
 
-        <!-- Loader inicial (mientras verifica estado) -->
         <div id="loaderEstado" class="loading-state">
             <div class="spinner"></div>
             <p>Verificando tu cuenta...</p>
         </div>
 
-        <!-- Contenido del panel (solo si verificado) -->
         <div id="contenidoPanel" style="display:none;">
 
             <div class="titulo">
-                <h1>🛵 <span data-clave="repartidor_mi_panel">Panel Repartidor</span></h1>
+                <h1><span class="simbolo">◈</span> <span data-clave="repartidor_mi_panel">Panel Repartidor</span></h1>
                 <span class="rol-badge" data-clave="repartidor_rol">Repartidor</span>
             </div>
 
-            <!-- Toggle online/offline -->
             <div class="estado-toggle" id="toggleOnline" onclick="toggleEstadoRepartidor()">
                 <span class="dot-estado"></span>
                 <div class="txt-estado">
-                    <div class="t1" id="txtEstadoRep">Cargando...</div>
+                    <div class="t1" id="txtEstadoRep"><span class="simbolo">○</span> Cargando...</div>
                     <div class="t2" data-clave="repartidor_toggle_hint">Toca para cambiar tu disponibilidad</div>
                 </div>
                 <div class="switch"></div>
             </div>
 
-            <!-- Indicador GPS -->
             <div class="gps-indicator" id="gpsIndicator">
                 <span class="dot-gps"></span>
                 <div class="gps-info">
-                    <strong id="gpsTitulo">📍 Ubicación GPS inactiva</strong>
+                    <strong id="gpsTitulo"><span class="simbolo">◈</span> Ubicación GPS inactiva</strong>
                     <div class="gps-detalle" id="gpsDetalle">Actívate online para compartir tu ubicación</div>
                 </div>
             </div>
 
-            <!-- Resumen de ganancias -->
             <div class="resumen-ganancias">
                 <div class="stat-card">
-                    <div class="lbl" data-clave="repartidor_ganancias_hoy">Ganancias hoy</div>
+                    <div class="lbl"><span class="simbolo">✦</span> <span data-clave="repartidor_ganancias_hoy">Ganancias hoy</span></div>
                     <div class="val" id="gananciasHoy">$0.00</div>
                     <div class="sub" id="entregasHoy">0 entregas</div>
                 </div>
                 <div class="stat-card">
-                    <div class="lbl" data-clave="repartidor_ganancias_total">Total acumulado</div>
+                    <div class="lbl"><span class="simbolo">✧</span> <span data-clave="repartidor_ganancias_total">Total acumulado</span></div>
                     <div class="val" id="gananciasTotal">$0.00</div>
                     <div class="sub" id="entregasTotal">0 entregas</div>
                 </div>
             </div>
 
-            <!-- Tabs -->
             <div class="tabs">
                 <button class="tab-btn active" data-tab="disponibles" onclick="cambiarTab('disponibles', this)">
-                    📦 <span data-clave="repartidor_tab_disponibles">Disponibles</span>
+                    <span class="simbolo">◈</span> <span data-clave="repartidor_tab_disponibles">Disponibles</span>
                     <span class="badge-count" id="badgeDisponibles" style="display:none;">0</span>
                 </button>
                 <button class="tab-btn" data-tab="mios" onclick="cambiarTab('mios', this)">
-                    🛵 <span data-clave="repartidor_tab_mios">Mis entregas</span>
+                    <span class="simbolo">✦</span> <span data-clave="repartidor_tab_mios">Mis entregas</span>
                     <span class="badge-count verde" id="badgeMios" style="display:none;">0</span>
                 </button>
                 <button class="tab-btn" data-tab="historial" onclick="cambiarTab('historial', this)">
-                    📜 <span data-clave="repartidor_tab_historial">Historial</span>
+                    <span class="simbolo">◆</span> <span data-clave="repartidor_tab_historial">Historial</span>
                 </button>
             </div>
 
@@ -773,27 +816,25 @@
 
         </div>
 
-        <!-- Pantalla de estado (si NO está verificado) -->
         <div id="pantallaEstado" style="display:none;"></div>
 
         <footer class="footer">
             <span><span class="brand">© Csariel's</span> · <span data-clave="mercado_footer">Sabor al Paladar · WEB3</span></span>
             <div class="footer-links">
-                <a href="/terminos" data-clave="footer_terminos">📜 Términos</a>
-                <a href="/privacidad" data-clave="footer_privacidad">🔒 Privacidad</a>
-                <a href="/cookies" data-clave="footer_cookies">🍪 Cookies</a>
-                <a href="/live-terminos" data-clave="footer_terminos_live">📡 Términos de Live</a>
+                <a href="/terminos" data-clave="footer_terminos"><span class="simbolo">◇</span> Términos</a>
+                <a href="/privacidad" data-clave="footer_privacidad"><span class="simbolo">◆</span> Privacidad</a>
+                <a href="/cookies" data-clave="footer_cookies"><span class="simbolo">◇</span> Cookies</a>
+                <a href="/live-terminos" data-clave="footer_terminos_live"><span class="simbolo">◆</span> Términos de Live</a>
                 <span style="opacity:0.3;">⚡ Polygon</span>
             </div>
         </footer>
 
     </div>
 
-    <!-- Modal detalle -->
     <div class="modal-overlay" id="modalDetalle">
         <div class="modal">
             <button class="close-btn" onclick="cerrarModalDetalle()">×</button>
-            <h2 id="modalDetalleTitulo">📦 Detalle del pedido</h2>
+            <h2><span class="simbolo">◈</span> <span id="modalDetalleTitulo">Detalle del pedido</span></h2>
             <div id="modalDetalleContenido"></div>
         </div>
     </div>
@@ -805,7 +846,7 @@
         background:#ff3366; color:#fff; padding:12px 16px; font-family:monospace;
         font-size:0.75rem; word-break:break-word; box-shadow:0 4px 20px rgba(0,0,0,0.4);
     ">
-        <strong>⚠️ Error detectado:</strong>
+        <strong><span style="font-family:Orbitron,monospace;">✶</span> Error detectado:</strong>
         <span id="errorBannerText"></span>
         <button onclick="document.getElementById('errorBanner').style.display='none'"
             style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">
@@ -815,50 +856,28 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/features/shared/js/idiomas.js"></script>
-
-<script>
-// ================================================================
-// ⚙️ CONFIGURACIÓN LEGAL — Csariel's Ecosystem
-// ================================================================
-// 👉 EDITA ESTE BLOQUE cuando tengas los datos legales listos
-// 👉 Solo cambia los valores entre comillas (no borres las comillas)
-// 👉 Deja en blanco ('') los que aún no tengas
-// ================================================================
+</body>
+</html><script>
 var CONFIG_LEGAL = {
-    // Identidad de la marca
     nombre_comercial: 'Csariel\'s',
     nombre_ecosistema: 'Csariel\'s Ecosystem',
     slogan: 'Sabor al Paladar · Repostería Fina · Web3',
-
-    // Datos fiscales (EDITAR cuando estén listos)
-    razon_social: '',              // Ej: 'Csariel\'s Repostería Fina S.A. de C.V.'
-    rfc: '',                        // Ej: 'CSR250101ABC'
-    regimen_fiscal: '',             // Ej: 'Régimen Simplificado de Confianza (RESICO)'
-    domicilio_fiscal: '',           // Ej: 'Av. Juárez #123, Centro, Puebla, Pue., CP 72000'
+    razon_social: '',
+    rfc: '',
+    regimen_fiscal: '',
+    domicilio_fiscal: '',
     pais_operacion: 'México',
     ciudad_operacion: 'Puebla',
-
-    // Contacto (EDITAR cuando tengas dominio)
-    email_contacto: '',             // Ej: 'contacto@csariels.com'
-    email_legal: '',                // Ej: 'legal@csariels.com'
-    email_soporte: '',              // Ej: 'soporte@csariels.com'
-    sitio_web: '',                  // Ej: 'https://csariels.com'
-
-    // Legal
+    email_contacto: '',
+    email_legal: '',
+    email_soporte: '',
+    sitio_web: '',
     version_terminos: 'v1.0',
     fecha_actualizacion: '2026-01-01',
-
-    // Blockchain
     red_blockchain: 'Polygon',
     token_nombre: 'Es.stoks'
 };
-// ================================================================
-// FIN DE CONFIGURACIÓN LEGAL
-// ================================================================
 
-// ================================================================
-// CONFIGURACIÓN APP
-// ================================================================
 var supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
 var supabaseKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
 var supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
@@ -867,15 +886,11 @@ var supabase = supabaseClient;
 
 var GANANCIA_POR_ENTREGA_DEFAULT = 25.00;
 
-// Config de GPS
 var GPS_INTERVALO_ACTIVO = 15000;
 var GPS_INTERVALO_IDLE = 60000;
 var GPS_MIN_DISTANCIA_M = 10;
 var GPS_TIMEOUT = 10000;
 
-// ================================================================
-// ESTADO
-// ================================================================
 var sessionUser = null;
 var repartidorData = null;
 var disponible = false;
@@ -889,7 +904,6 @@ var pedidosVistos = {};
 var autoRefreshTimer = null;
 var AUTO_REFRESH_MS = 15000;
 
-// Estado GPS
 var gpsWatchId = null;
 var gpsUltimaPosicion = null;
 var gpsUltimaEnviada = null;
@@ -898,9 +912,6 @@ var gpsTimerEnvio = null;
 var gpsEstado = 'inactivo';
 var gpsContadorEnvios = 0;
 
-// ================================================================
-// BANNER DE ERRORES
-// ================================================================
 function mostrarErrorEnPantalla(mensaje) {
     var banner = document.getElementById('errorBanner');
     var texto = document.getElementById('errorBannerText');
@@ -913,9 +924,6 @@ window.addEventListener('unhandledrejection', function (event) {
     mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason && event.reason.message ? event.reason.message : event.reason));
 });
 
-// ================================================================
-// TOAST
-// ================================================================
 function showToast(mensaje, tipo) {
     try {
         var toastEl = document.getElementById('toast');
@@ -930,9 +938,6 @@ function showToast(mensaje, tipo) {
     } catch (e) { console.warn('Toast error:', e); }
 }
 
-// ================================================================
-// HELPERS
-// ================================================================
 function escapeHTML(texto) {
     if (!texto) return '';
     var div = document.createElement('div');
@@ -961,10 +966,10 @@ function formatearFecha(fecha) {
 
 function traducirEstado(estado) {
     var mapa = {
-        'listo': '📦 Listo para recoger',
-        'asignado': '🛵 Asignado a ti',
-        'en_camino': '🚀 En camino',
-        'entregado': '✅ Entregado'
+        'listo': '<span class="simbolo">✦</span> Listo para recoger',
+        'asignado': '<span class="simbolo">✧</span> Asignado a ti',
+        'en_camino': '<span class="simbolo">◆</span> En camino',
+        'entregado': '<span class="simbolo">●</span> Entregado'
     };
     return mapa[estado] || estado;
 }
@@ -987,9 +992,6 @@ function distanciaMetros(lat1, lng1, lat2, lng2) {
     return R * c;
 }
 
-// ================================================================
-// VERIFICAR ESTADO DE VERIFICACIÓN DEL REPARTIDOR
-// ================================================================
 async function verificarEstadoVerificacion() {
     try {
         var result = await supabase
@@ -1000,7 +1002,6 @@ async function verificarEstadoVerificacion() {
 
         if (result.error && result.error.code !== 'PGRST116') throw result.error;
 
-        // No existe registro → redirigir a registro
         if (!result.data) {
             redirigirARegistro();
             return { verificado: false, redirigido: true };
@@ -1008,30 +1009,25 @@ async function verificarEstadoVerificacion() {
 
         var estado = result.data.estado_verificacion;
 
-        // Activo → mostrar panel
         if (estado === 'activo') {
             return { verificado: true, estado: estado };
         }
 
-        // Rechazado → mostrar pantalla con opción reintentar
         if (estado === 'rechazado') {
             mostrarPantallaRechazado(result.data);
             return { verificado: false, estado: estado };
         }
 
-        // En revisión o procesando → mostrar pantalla de espera
         if (estado === 'revision_manual' || estado === 'procesando') {
             mostrarPantallaEnRevision(estado);
             return { verificado: false, estado: estado };
         }
 
-        // Pendiente de registro → redirigir
         if (estado === 'pendiente_registro') {
             redirigirARegistro();
             return { verificado: false, redirigido: true };
         }
 
-        // Cualquier otro estado → redirigir
         redirigirARegistro();
         return { verificado: false, redirigido: true };
 
@@ -1043,15 +1039,12 @@ async function verificarEstadoVerificacion() {
 }
 
 function redirigirARegistro() {
-    showToast('📝 Necesitas registrarte como repartidor primero', 'warning');
+    showToast('◆ Necesitas registrarte como repartidor primero', 'warning');
     setTimeout(function () {
         window.location.href = '/features/mercado/repartidor/registro.html';
     }, 1200);
 }
 
-// ================================================================
-// PANTALLAS DE ESTADO (para no verificados)
-// ================================================================
 function mostrarPantallaEnRevision(estado) {
     document.getElementById('loaderEstado').style.display = 'none';
     document.getElementById('contenidoPanel').style.display = 'none';
@@ -1063,15 +1056,15 @@ function mostrarPantallaEnRevision(estado) {
 
     cont.innerHTML = '' +
         '<div class="pantalla-estado">' +
-            '<span class="icono-grande">⏳</span>' +
-            '<h2 style="color: var(--warning);">Verificación en proceso</h2>' +
+            '<span class="icono-grande">✧</span>' +
+            '<h2 style="color: var(--warning);"><span class="simbolo">✧</span> Verificación en proceso</h2>' +
             '<p>' +
                 (esRevisionManual
                     ? 'Tu registro requiere una revisión adicional de nuestro equipo. Te notificaremos cuando termine. Esto puede tomar hasta 24 horas.'
                     : 'Estamos verificando tus documentos. Este proceso toma unos minutos. Vuelve en un rato o espera la notificación.') +
             '</p>' +
             '<a href="/features/mercado/index.html" class="btn-primario">' +
-                '🛒 Volver al Mercado' +
+                '<span class="simbolo">◆</span> Volver al Mercado' +
             '</a>' +
         '</div>';
 }
@@ -1092,8 +1085,8 @@ function mostrarPantallaRechazado(data) {
 
     cont.innerHTML = '' +
         '<div class="pantalla-estado">' +
-            '<span class="icono-grande">❌</span>' +
-            '<h2 style="color: var(--danger);">Verificación rechazada</h2>' +
+            '<span class="icono-grande">✶</span>' +
+            '<h2 style="color: var(--danger);"><span class="simbolo">✶</span> Verificación rechazada</h2>' +
             '<p>' +
                 '<strong style="color: var(--text-primary);">Motivo:</strong> ' + escapeHTML(motivo) +
                 '<br><br>' +
@@ -1103,12 +1096,12 @@ function mostrarPantallaRechazado(data) {
             '</p>' +
             (puedeReintentar
                 ? '<button class="btn-primario" onclick="reintentarRegistro()" id="btnReintentar">' +
-                    '🔄 Volver a intentar' +
+                    '<span class="simbolo">✧</span> Volver a intentar' +
                   '</button>'
                 : '') +
             '<div style="margin-top: 14px;">' +
                 '<a href="/features/mercado/index.html" class="btn-primario" style="background: transparent; border: 1px solid var(--glass-border); color: var(--text-secondary);">' +
-                    '🛒 Volver al Mercado' +
+                    '<span class="simbolo">◆</span> Volver al Mercado' +
                 '</a>' +
             '</div>' +
         '</div>';
@@ -1136,21 +1129,18 @@ async function reintentarRegistro() {
             throw new Error(errData.error || 'No se pudo iniciar el reintento');
         }
 
-        showToast('✅ Puedes volver a intentar', 'success');
+        showToast('● Puedes volver a intentar', 'success');
         setTimeout(function () {
             window.location.href = '/features/mercado/repartidor/registro.html';
         }, 1200);
 
     } catch (e) {
         console.error('Error reintentando:', e);
-        showToast('❌ ' + e.message, 'error');
-        if (btn) { btn.disabled = false; btn.textContent = '🔄 Volver a intentar'; }
+        showToast('✶ ' + e.message, 'error');
+        if (btn) { btn.disabled = false; btn.textContent = '✧ Volver a intentar'; }
     }
 }
 
-// ================================================================
-// CARGAR USUARIO
-// ================================================================
 async function cargarUsuarioActual() {
     try {
         var result = await supabase.auth.getSession();
@@ -1170,9 +1160,6 @@ async function cargarUsuarioActual() {
     } catch (e) { console.error('Error usuario:', e); return null; }
 }
 
-// ================================================================
-// CARGAR DATOS DEL REPARTIDOR
-// ================================================================
 async function cargarDatosRepartidor() {
     try {
         var result = await supabase
@@ -1195,9 +1182,6 @@ async function cargarDatosRepartidor() {
     }
 }
 
-// ================================================================
-// TOGGLE DISPONIBLE
-// ================================================================
 async function toggleEstadoRepartidor() {
     disponible = !disponible;
 
@@ -1213,10 +1197,10 @@ async function toggleEstadoRepartidor() {
         actualizarToggleEstado();
 
         if (disponible) {
-            showToast('🟢 Estás disponible para entregas', 'success');
+            showToast('● Estás disponible para entregas', 'success');
             iniciarGPS();
         } else {
-            showToast('🔴 Ya no recibirás pedidos', 'warning');
+            showToast('○ Ya no recibirás pedidos', 'warning');
             detenerGPS();
         }
 
@@ -1225,7 +1209,7 @@ async function toggleEstadoRepartidor() {
         console.error('Error toggle:', e);
         disponible = !disponible;
         actualizarToggleEstado();
-        showToast('❌ No se pudo cambiar el estado', 'error');
+        showToast('✶ No se pudo cambiar el estado', 'error');
     }
 }
 
@@ -1236,16 +1220,13 @@ function actualizarToggleEstado() {
 
     if (disponible) {
         toggle.classList.add('online');
-        txt.innerHTML = '🟢 Disponible · Recibiendo pedidos';
+        txt.innerHTML = '<span class="simbolo">●</span> Disponible · Recibiendo pedidos';
     } else {
         toggle.classList.remove('online');
-        txt.innerHTML = '🔴 Fuera de línea · Toca para activar';
+        txt.innerHTML = '<span class="simbolo">○</span> Fuera de línea · Toca para activar';
     }
 }
 
-// ================================================================
-// GANANCIAS
-// ================================================================
 function actualizarGanancias() {
     var totalGanado = repartidorData ? parseFloat(repartidorData.total_ganado || 0) : 0;
     var totalEntregas = repartidorData ? parseInt(repartidorData.pedidos_completados || 0) : 0;
@@ -1275,9 +1256,6 @@ function actualizarGanancias() {
     if (elET) elET.textContent = totalEntregas + (totalEntregas === 1 ? ' entrega' : ' entregas');
 }
 
-// ================================================================
-// 🎯 SISTEMA GPS
-// ================================================================
 function actualizarIndicadorGPS(estado, titulo, detalle) {
     var el = document.getElementById('gpsIndicator');
     var elTitulo = document.getElementById('gpsTitulo');
@@ -1289,7 +1267,7 @@ function actualizarIndicadorGPS(estado, titulo, detalle) {
     if (estado === 'activo') el.classList.add('activo');
     else if (estado === 'error' || estado === 'sin_permiso') el.classList.add('error');
 
-    if (elTitulo) elTitulo.textContent = titulo || '📍 Ubicación GPS';
+    if (elTitulo) elTitulo.innerHTML = '<span class="simbolo">◈</span> ' + (titulo || 'Ubicación GPS');
     if (elDetalle) elDetalle.textContent = detalle || '';
 
     gpsEstado = estado;
@@ -1298,11 +1276,11 @@ function actualizarIndicadorGPS(estado, titulo, detalle) {
 function iniciarGPS() {
     if (gpsWatchId !== null) return;
     if (!navigator.geolocation) {
-        actualizarIndicadorGPS('error', '📍 GPS no disponible', 'Este navegador no soporta geolocalización');
+        actualizarIndicadorGPS('error', 'GPS no disponible', 'Este navegador no soporta geolocalización');
         return;
     }
 
-    actualizarIndicadorGPS('activo', '📍 GPS inicializando...', 'Pidiendo permiso de ubicación...');
+    actualizarIndicadorGPS('activo', 'GPS inicializando...', 'Pidiendo permiso de ubicación...');
 
     try {
         gpsWatchId = navigator.geolocation.watchPosition(
@@ -1317,16 +1295,16 @@ function iniciarGPS() {
             function (err) {
                 console.error('Error GPS:', err);
                 if (err.code === 1) {
-                    actualizarIndicadorGPS('sin_permiso', '⚠️ Permiso denegado', 'Acepta el permiso de ubicación en tu navegador');
+                    actualizarIndicadorGPS('sin_permiso', 'Permiso denegado', 'Acepta el permiso de ubicación en tu navegador');
                 } else {
-                    actualizarIndicadorGPS('error', '⚠️ Error GPS', err.message || 'No se pudo obtener ubicación');
+                    actualizarIndicadorGPS('error', 'Error GPS', err.message || 'No se pudo obtener ubicación');
                 }
             },
             { enableHighAccuracy: true, timeout: GPS_TIMEOUT, maximumAge: 5000 }
         );
     } catch (e) {
         console.error('Error iniciando GPS:', e);
-        actualizarIndicadorGPS('error', '⚠️ Error GPS', e.message);
+        actualizarIndicadorGPS('error', 'Error GPS', e.message);
     }
 }
 
@@ -1341,7 +1319,7 @@ function detenerGPS() {
     }
     gpsUltimaPosicion = null;
     gpsUltimaEnviada = null;
-    actualizarIndicadorGPS('inactivo', '📍 Ubicación GPS inactiva', 'Actívate online para compartir tu ubicación');
+    actualizarIndicadorGPS('inactivo', 'Ubicación GPS inactiva', 'Actívate online para compartir tu ubicación');
 }
 
 function iniciarEnvioPeriodico() {
@@ -1372,7 +1350,7 @@ async function enviarUbicacion() {
     if (!repartidorData || !repartidorData.id) return;
     if (!disponible) return;
     if (!gpsUltimaPosicion) {
-        actualizarIndicadorGPS('activo', '📍 Esperando GPS...', 'Aún no tenemos tu ubicación');
+        actualizarIndicadorGPS('activo', 'Esperando GPS...', 'Aún no tenemos tu ubicación');
         return;
     }
 
@@ -1383,7 +1361,7 @@ async function enviarUbicacion() {
         var dist = distanciaMetros(gpsUltimaEnviada.lat, gpsUltimaEnviada.lng, lat, lng);
         if (dist < GPS_MIN_DISTANCIA_M) {
             var minAtras = Math.floor((Date.now() - (gpsUltimaVez || Date.now())) / 60000);
-            actualizarIndicadorGPS('activo', '📍 Ubicación sin cambios', 'Último envío: ' + (minAtras < 1 ? 'ahora' : 'hace ' + minAtras + ' min'));
+            actualizarIndicadorGPS('activo', 'Ubicación sin cambios', 'Último envío: ' + (minAtras < 1 ? 'ahora' : 'hace ' + minAtras + ' min'));
             return;
         }
     }
@@ -1408,12 +1386,12 @@ async function enviarUbicacion() {
         var haceSeg = Math.floor((Date.now() - gpsUltimaVez) / 1000);
         actualizarIndicadorGPS(
             'activo',
-            '📍 Enviando ubicación',
+            'Enviando ubicación',
             'Última actualización: hace ' + (haceSeg < 5 ? 'instantes' : haceSeg + 's') + ' · ' + gpsContadorEnvios + ' envíos'
         );
     } catch (e) {
         console.error('Error enviando ubicación:', e);
-        actualizarIndicadorGPS('error', '⚠️ Error enviando ubicación', e.message);
+        actualizarIndicadorGPS('error', 'Error enviando ubicación', e.message);
     }
 }
 
@@ -1430,9 +1408,6 @@ document.addEventListener('visibilitychange', function () {
     }
 });
 
-// ================================================================
-// CARGAR DISPONIBLES
-// ================================================================
 async function cargarDisponibles(silencioso) {
     var container = document.getElementById('disponiblesContainer');
     if (!container) return;
@@ -1443,7 +1418,7 @@ async function cargarDisponibles(silencioso) {
 
     if (!disponible) {
         container.innerHTML = '<div class="empty-state">' +
-            '<span class="icon">🔴</span>' +
+            '<span class="icon">○</span>' +
             '<h3 data-clave="repartidor_offline_titulo">Estás fuera de línea</h3>' +
             '<p data-clave="repartidor_offline_desc">Actívate como disponible para ver pedidos.</p>' +
         '</div>';
@@ -1477,19 +1452,16 @@ async function cargarDisponibles(silencioso) {
         actualizarBadgeDisponibles(pedidosDisponibles.length);
 
         if (silencioso && hayNuevos && pedidosDisponibles.length > 0) {
-            showToast('🔔 ¡Nuevo pedido disponible!', 'success');
+            showToast('◈ ¡Nuevo pedido disponible!', 'success');
         }
     } catch (e) {
         console.error('Error disponibles:', e);
         if (!silencioso) {
-            container.innerHTML = '<div class="empty-state"><span class="icon">⚠️</span><h3>Error al cargar</h3><p>' + escapeHTML(e.message) + '</p></div>';
+            container.innerHTML = '<div class="empty-state"><span class="icon">✶</span><h3>Error al cargar</h3><p>' + escapeHTML(e.message) + '</p></div>';
         }
     }
 }
 
-// ================================================================
-// CARGAR MIS ENTREGAS
-// ================================================================
 async function cargarMisEntregas(silencioso) {
     var container = document.getElementById('miosContainer');
     if (!container) return;
@@ -1520,14 +1492,11 @@ async function cargarMisEntregas(silencioso) {
     } catch (e) {
         console.error('Error mis entregas:', e);
         if (!silencioso) {
-            container.innerHTML = '<div class="empty-state"><span class="icon">⚠️</span><h3>Error al cargar</h3><p>' + escapeHTML(e.message) + '</p></div>';
+            container.innerHTML = '<div class="empty-state"><span class="icon">✶</span><h3>Error al cargar</h3><p>' + escapeHTML(e.message) + '</p></div>';
         }
     }
 }
 
-// ================================================================
-// CARGAR HISTORIAL
-// ================================================================
 async function cargarHistorial(silencioso) {
     var container = document.getElementById('historialContainer');
     if (!container) return;
@@ -1554,14 +1523,11 @@ async function cargarHistorial(silencioso) {
     } catch (e) {
         console.error('Error historial:', e);
         if (!silencioso) {
-            container.innerHTML = '<div class="empty-state"><span class="icon">⚠️</span><h3>Error al cargar</h3><p>' + escapeHTML(e.message) + '</p></div>';
+            container.innerHTML = '<div class="empty-state"><span class="icon">✶</span><h3>Error al cargar</h3><p>' + escapeHTML(e.message) + '</p></div>';
         }
     }
 }
 
-// ================================================================
-// CARGAR DATOS RELACIONADOS
-// ================================================================
 async function cargarDatosRelacionados(pedidos) {
     if (!pedidos || pedidos.length === 0) return;
 
@@ -1613,9 +1579,6 @@ async function cargarDatosRelacionados(pedidos) {
     }
 }
 
-// ================================================================
-// BADGES
-// ================================================================
 function actualizarBadgeDisponibles(n) {
     var el = document.getElementById('badgeDisponibles');
     if (!el) return;
@@ -1630,16 +1593,13 @@ function actualizarBadgeMios(n) {
     else { el.style.display = 'none'; }
 }
 
-// ================================================================
-// RENDER: DISPONIBLES
-// ================================================================
 function renderizarDisponibles() {
     var container = document.getElementById('disponiblesContainer');
     if (!container) return;
 
     if (pedidosDisponibles.length === 0) {
         container.innerHTML = '<div class="empty-state">' +
-            '<span class="icon">📭</span>' +
+            '<span class="icon">◈</span>' +
             '<h3 data-clave="repartidor_sin_disponibles">Sin pedidos disponibles</h3>' +
             '<p data-clave="repartidor_sin_disponibles_desc">Cuando un vendedor marque un pedido como listo, aparecerá aquí.</p>' +
         '</div>';
@@ -1667,25 +1627,25 @@ function renderCardDisponible(p) {
     var chipCobro = '';
     if (p.tipo_entrega === 'delivery' && !p.envio_cobrado_en_app && parseFloat(p.envio_mxn || 0) >= 0) {
         if (parseFloat(p.envio_mxn || 0) === 0) {
-            chipCobro = '<span class="chip-mini cobrar">💵 Cobrar envío en efectivo</span>';
+            chipCobro = '<span class="chip-mini cobrar"><span class="simbolo">◆</span> Cobrar envío en efectivo</span>';
         } else {
-            chipCobro = '<span class="chip-mini cobrar">💵 Cobrar ' + formatearPrecio(p.envio_mxn) + ' en efectivo</span>';
+            chipCobro = '<span class="chip-mini cobrar"><span class="simbolo">◆</span> Cobrar ' + formatearPrecio(p.envio_mxn) + ' en efectivo</span>';
         }
     } else if (p.envio_cobrado_en_app) {
-        chipCobro = '<span class="chip-mini pagado">✓ Envío ya pagado por app</span>';
+        chipCobro = '<span class="chip-mini pagado"><span class="simbolo">●</span> Envío ya pagado por app</span>';
     }
 
     return '<div class="pedido-card listo ' + (pedidosVistos[p.id] ? '' : 'nuevo') + '">' +
         '<div class="header-p">' +
             '<div>' +
-                '<div class="codigo">' + escapeHTML(p.codigo || '—') + '</div>' +
+                '<div class="codigo"><span class="simbolo">✦</span> ' + escapeHTML(p.codigo || '—') + '</div>' +
                 '<div class="fecha">' + formatearFecha(p.listo_en || p.created_at) + '</div>' +
             '</div>' +
             '<span class="estado-badge listo">' + traducirEstado('listo') + '</span>' +
         '</div>' +
         '<div class="ruta-info">' +
             '<div class="punto origen">' +
-                '<div class="icono-p">🏪</div>' +
+                '<div class="icono-p">◈</div>' +
                 '<div class="info-p">' +
                     '<div class="lbl-p">Recoger en</div>' +
                     '<div class="val-p"><strong>' + escapeHTML(origenNombre) + '</strong></div>' +
@@ -1693,7 +1653,7 @@ function renderCardDisponible(p) {
                 '</div>' +
             '</div>' +
             '<div class="punto destino">' +
-                '<div class="icono-p">📍</div>' +
+                '<div class="icono-p">●</div>' +
                 '<div class="info-p">' +
                     '<div class="lbl-p">Entregar a</div>' +
                     '<div class="val-p"><strong>' + escapeHTML(destinoNombre) + '</strong></div>' +
@@ -1702,8 +1662,8 @@ function renderCardDisponible(p) {
             '</div>' +
         '</div>' +
         '<div class="meta-info">' +
-            '<span class="meta">📦 <strong>' + totalItems + '</strong> items</span>' +
-            '<span class="meta">' + (p.tipo_entrega === 'pickup' ? '🏪 Recoger' : '🛵 Delivery') + '</span>' +
+            '<span class="meta"><span class="simbolo">✧</span> <strong>' + totalItems + '</strong> items</span>' +
+            '<span class="meta">' + (p.tipo_entrega === 'pickup' ? '<span class="simbolo">◇</span> Recoger' : '<span class="simbolo">◆</span> Delivery') + '</span>' +
         '</div>' +
         (chipCobro ? '<div class="chips-info">' + chipCobro + '</div>' : '') +
         '<div class="footer-p">' +
@@ -1711,29 +1671,26 @@ function renderCardDisponible(p) {
                 '<div class="lbl-g">Tu ganancia</div>' +
                 '<div class="val-g">' + formatearPrecio(gananciaRepartidor()) + '</div>' +
             '</div>' +
-            '<div class="pago-metodo">💵 Envío cobrado en efectivo<br>al entregar</div>' +
+            '<div class="pago-metodo"><span class="simbolo">◆</span> Envío cobrado en efectivo<br>al entregar</div>' +
         '</div>' +
         '<div class="acciones-p">' +
             '<button class="btn-accion-p btn-tomar" onclick="tomarPedido(' + p.id + ', this)">' +
-                '🛵 <span data-clave="repartidor_tomar">Tomar pedido</span>' +
+                '<span class="simbolo">✦</span> <span data-clave="repartidor_tomar">Tomar pedido</span>' +
             '</button>' +
             '<button class="btn-accion-p btn-ver" onclick="verDetalle(' + p.id + ', \'disponible\')">' +
-                '👁️ Ver' +
+                '<span class="simbolo">◈</span> Ver' +
             '</button>' +
         '</div>' +
     '</div>';
 }
 
-// ================================================================
-// RENDER: MIS ENTREGAS
-// ================================================================
 function renderizarMisEntregas() {
     var container = document.getElementById('miosContainer');
     if (!container) return;
 
     if (misEntregas.length === 0) {
         container.innerHTML = '<div class="empty-state">' +
-            '<span class="icon">🛵</span>' +
+            '<span class="icon">✦</span>' +
             '<h3 data-clave="repartidor_sin_mios">Sin entregas activas</h3>' +
             '<p data-clave="repartidor_sin_mios_desc">Cuando tomes un pedido aparecerá aquí.</p>' +
         '</div>';
@@ -1760,46 +1717,46 @@ function renderCardMia(p) {
     var botones = '';
     if (estado === 'asignado') {
         botones = '<button class="btn-accion-p btn-camino" onclick="marcarEnCamino(' + p.id + ', this)">' +
-            '🚀 <span data-clave="repartidor_en_camino">Salir en camino</span>' +
+            '<span class="simbolo">◆</span> <span data-clave="repartidor_en_camino">Salir en camino</span>' +
         '</button>';
     } else if (estado === 'en_camino') {
         botones = '<button class="btn-accion-p btn-entregado" onclick="marcarEntregado(' + p.id + ', this)">' +
-            '✅ <span data-clave="repartidor_entregado">Marcar entregado</span>' +
+            '<span class="simbolo">●</span> <span data-clave="repartidor_entregado">Marcar entregado</span>' +
         '</button>';
     }
 
     var telCli = comprador && comprador.telefono ? String(comprador.telefono).replace(/\D/g, '') : '';
     var btnWhats = telCli ? '<a href="https://wa.me/' + telCli + '?text=' + encodeURIComponent('Hola, soy tu repartidor. Voy en camino con tu pedido ' + (p.codigo || '')) + '" target="_blank" rel="noopener" class="btn-accion-p btn-whats">' +
-        '💬 WhatsApp' +
+        '<span class="simbolo">◆</span> WhatsApp' +
     '</a>' : '';
 
     var chipCobro = '';
     if (p.tipo_entrega === 'delivery' && !p.envio_cobrado_en_app) {
         if (parseFloat(p.envio_mxn || 0) > 0) {
-            chipCobro = '<span class="chip-mini cobrar">💵 Cobrar ' + formatearPrecio(p.envio_mxn) + ' en efectivo</span>';
+            chipCobro = '<span class="chip-mini cobrar"><span class="simbolo">◆</span> Cobrar ' + formatearPrecio(p.envio_mxn) + ' en efectivo</span>';
         } else {
-            chipCobro = '<span class="chip-mini cobrar">💵 Cobrar envío en efectivo (monto a coordinar)</span>';
+            chipCobro = '<span class="chip-mini cobrar"><span class="simbolo">◆</span> Cobrar envío en efectivo (monto a coordinar)</span>';
         }
     } else if (p.envio_cobrado_en_app) {
-        chipCobro = '<span class="chip-mini pagado">✓ Envío ya pagado por app</span>';
+        chipCobro = '<span class="chip-mini pagado"><span class="simbolo">●</span> Envío ya pagado por app</span>';
     }
 
     var chipGps = '';
     if (estado === 'en_camino' && gpsEstado === 'activo') {
-        chipGps = '<span class="chip-mini gps-ok">📍 Compartiendo ubicación</span>';
+        chipGps = '<span class="chip-mini gps-ok"><span class="simbolo">◈</span> Compartiendo ubicación</span>';
     }
 
     return '<div class="pedido-card ' + estado + '">' +
         '<div class="header-p">' +
             '<div>' +
-                '<div class="codigo">' + escapeHTML(p.codigo || '—') + '</div>' +
+                '<div class="codigo"><span class="simbolo">✦</span> ' + escapeHTML(p.codigo || '—') + '</div>' +
                 '<div class="fecha">' + formatearFecha(p.asignado_en || p.created_at) + '</div>' +
             '</div>' +
             '<span class="estado-badge ' + estado + '">' + traducirEstado(estado) + '</span>' +
         '</div>' +
         '<div class="ruta-info">' +
             '<div class="punto origen">' +
-                '<div class="icono-p">🏪</div>' +
+                '<div class="icono-p">◈</div>' +
                 '<div class="info-p">' +
                     '<div class="lbl-p">Recoger en</div>' +
                     '<div class="val-p"><strong>' + escapeHTML(origenNombre) + '</strong></div>' +
@@ -1807,7 +1764,7 @@ function renderCardMia(p) {
                 '</div>' +
             '</div>' +
             '<div class="punto destino">' +
-                '<div class="icono-p">📍</div>' +
+                '<div class="icono-p">●</div>' +
                 '<div class="info-p">' +
                     '<div class="lbl-p">Entregar a</div>' +
                     '<div class="val-p"><strong>' + escapeHTML(destinoNombre) + '</strong></div>' +
@@ -1824,22 +1781,19 @@ function renderCardMia(p) {
         '</div>' +
         '<div class="acciones-p">' + botones + btnWhats +
             '<button class="btn-accion-p btn-ver" onclick="verDetalle(' + p.id + ', \'mio\')">' +
-                '👁️ Ver' +
+                '<span class="simbolo">◈</span> Ver' +
             '</button>' +
         '</div>' +
     '</div>';
 }
 
-// ================================================================
-// RENDER: HISTORIAL
-// ================================================================
 function renderizarHistorial() {
     var container = document.getElementById('historialContainer');
     if (!container) return;
 
     if (historial.length === 0) {
         container.innerHTML = '<div class="empty-state">' +
-            '<span class="icon">📜</span>' +
+            '<span class="icon">◆</span>' +
             '<h3 data-clave="repartidor_sin_historial">Sin historial</h3>' +
             '<p data-clave="repartidor_sin_historial_desc">Aquí verás tus entregas completadas.</p>' +
         '</div>';
@@ -1855,13 +1809,13 @@ function renderizarHistorial() {
         html += '<div class="pedido-card entregado">' +
             '<div class="header-p">' +
                 '<div>' +
-                    '<div class="codigo">' + escapeHTML(p.codigo || '—') + '</div>' +
+                    '<div class="codigo"><span class="simbolo">✦</span> ' + escapeHTML(p.codigo || '—') + '</div>' +
                     '<div class="fecha">' + formatearFecha(p.entregado_en) + '</div>' +
                 '</div>' +
-                '<span class="estado-badge entregado">✅ Entregado</span>' +
+                '<span class="estado-badge entregado"><span class="simbolo">●</span> Entregado</span>' +
             '</div>' +
             '<div class="meta-info">' +
-                '<span class="meta">🏪 ' + escapeHTML(tienda ? tienda.nombre_negocio : '—') + '</span>' +
+                '<span class="meta"><span class="simbolo">◈</span> ' + escapeHTML(tienda ? tienda.nombre_negocio : '—') + '</span>' +
             '</div>' +
             '<div class="footer-p">' +
                 '<div class="ganancia">' +
@@ -1876,15 +1830,12 @@ function renderizarHistorial() {
     if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
 }
 
-// ================================================================
-// TOMAR PEDIDO
-// ================================================================
 async function tomarPedido(pedidoId, btn) {
     if (!disponible) {
-        showToast('⚠️ Actívate como disponible primero', 'warning');
+        showToast('✶ Actívate como disponible primero', 'warning');
         return;
     }
-    if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Tomando...'; }
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="simbolo">◈</span> Tomando...'; }
 
     try {
         var result = await supabase
@@ -1902,7 +1853,7 @@ async function tomarPedido(pedidoId, btn) {
 
         if (result.error) throw result.error;
 
-        showToast('🛵 ¡Pedido tomado! Ve a la tienda a recogerlo.', 'success');
+        showToast('✦ ¡Pedido tomado! Ve a la tienda a recogerlo.', 'success');
         await Promise.all([cargarDisponibles(true), cargarMisEntregas(true)]);
 
         if (gpsWatchId !== null) {
@@ -1911,17 +1862,14 @@ async function tomarPedido(pedidoId, btn) {
         }
     } catch (e) {
         console.error('Error tomando pedido:', e);
-        showToast('❌ ' + (e.message || 'No se pudo tomar el pedido'), 'error');
+        showToast('✶ ' + (e.message || 'No se pudo tomar el pedido'), 'error');
         if (btn) { btn.disabled = false; }
         await cargarDisponibles(true);
     }
 }
 
-// ================================================================
-// MARCAR EN CAMINO
-// ================================================================
 async function marcarEnCamino(pedidoId, btn) {
-    if (btn) { btn.disabled = true; btn.innerHTML = '⏳...'; }
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="simbolo">◈</span>...'; }
 
     try {
         var result = await supabase
@@ -1937,22 +1885,19 @@ async function marcarEnCamino(pedidoId, btn) {
             .single();
 
         if (result.error) throw result.error;
-        showToast('🚀 ¡En camino! El cliente puede ver tu ubicación', 'success');
+        showToast('◆ ¡En camino! El cliente puede ver tu ubicación', 'success');
         enviarUbicacion();
         await cargarMisEntregas(true);
     } catch (e) {
         console.error('Error en camino:', e);
-        showToast('❌ ' + e.message, 'error');
+        showToast('✶ ' + e.message, 'error');
         if (btn) { btn.disabled = false; }
     }
 }
 
-// ================================================================
-// MARCAR ENTREGADO
-// ================================================================
 async function marcarEntregado(pedidoId, btn) {
     if (!confirm('¿Confirmas que ya entregaste el pedido y cobraste el envío en efectivo?')) return;
-    if (btn) { btn.disabled = true; btn.innerHTML = '⏳...'; }
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="simbolo">◈</span>...'; }
 
     try {
         var ganancia = gananciaRepartidor();
@@ -1989,7 +1934,7 @@ async function marcarEntregado(pedidoId, btn) {
             repartidorData.total_ganado = totalGanado;
         }
 
-        showToast('✅ ¡Entrega completada! +' + formatearPrecio(ganancia), 'success');
+        showToast('● ¡Entrega completada! +' + formatearPrecio(ganancia), 'success');
         await Promise.all([cargarMisEntregas(true), cargarHistorial(true)]);
 
         if (misEntregas.length === 0 && gpsWatchId !== null) {
@@ -1997,14 +1942,11 @@ async function marcarEntregado(pedidoId, btn) {
         }
     } catch (e) {
         console.error('Error marcando entregado:', e);
-        showToast('❌ ' + e.message, 'error');
+        showToast('✶ ' + e.message, 'error');
         if (btn) { btn.disabled = false; }
     }
 }
 
-// ================================================================
-// VER DETALLE
-// ================================================================
 function verDetalle(pedidoId, origen) {
     var lista = origen === 'mio' ? misEntregas : (origen === 'historial' ? historial : pedidosDisponibles);
     var p = lista.find(function (x) { return x.id === pedidoId; });
@@ -2015,7 +1957,7 @@ function verDetalle(pedidoId, origen) {
     var items = itemsPorPedido[p.id] || [];
 
     var titulo = document.getElementById('modalDetalleTitulo');
-    if (titulo) titulo.innerHTML = '📦 ' + escapeHTML(p.codigo || 'Pedido');
+    if (titulo) titulo.innerHTML = escapeHTML(p.codigo || 'Pedido');
 
     var html = '';
 
@@ -2024,14 +1966,14 @@ function verDetalle(pedidoId, origen) {
     '</div>';
 
     html += '<div class="detalle-seccion">' +
-        '<h3>🏪 Origen</h3>' +
+        '<h3><span class="simbolo">◈</span> Origen</h3>' +
         '<div class="dato-fila"><span class="lbl">Tienda</span><span class="val">' + escapeHTML(tienda ? tienda.nombre_negocio : '—') + '</span></div>' +
         '<div class="dato-fila"><span class="lbl">Dirección</span><span class="val">' + escapeHTML(tienda ? (tienda.direccion || '—') : '—') + '</span></div>' +
         (tienda && tienda.telefono ? '<div class="dato-fila"><span class="lbl">Teléfono</span><span class="val">' + escapeHTML(tienda.telefono) + '</span></div>' : '') +
     '</div>';
 
     html += '<div class="detalle-seccion">' +
-        '<h3>📍 Destino</h3>' +
+        '<h3><span class="simbolo">●</span> Destino</h3>' +
         '<div class="dato-fila"><span class="lbl">Cliente</span><span class="val">' + escapeHTML(comprador ? (comprador.nombre || comprador.handle) : '—') + '</span></div>' +
         (comprador && comprador.telefono ? '<div class="dato-fila"><span class="lbl">Teléfono</span><span class="val">' + escapeHTML(comprador.telefono) + '</span></div>' : '') +
         '<div class="dato-fila"><span class="lbl">Dirección</span><span class="val">' + escapeHTML(p.direccion_entrega || '—') + '</span></div>' +
@@ -2039,7 +1981,7 @@ function verDetalle(pedidoId, origen) {
     '</div>';
 
     html += '<div class="detalle-seccion">' +
-        '<h3>📦 Productos</h3>';
+        '<h3><span class="simbolo">✧</span> Productos</h3>';
     items.forEach(function (it) {
         html += '<div class="dato-fila">' +
             '<span class="lbl">' + it.cantidad + '×</span>' +
@@ -2049,7 +1991,7 @@ function verDetalle(pedidoId, origen) {
     html += '</div>';
 
     html += '<div class="detalle-seccion">' +
-        '<h3>💵 Pago</h3>' +
+        '<h3><span class="simbolo">◆</span> Pago</h3>' +
         '<div class="dato-fila"><span class="lbl">Productos</span><span class="val">Pagados en app</span></div>';
 
     if (p.tipo_entrega === 'delivery' && !p.envio_cobrado_en_app) {
@@ -2057,7 +1999,7 @@ function verDetalle(pedidoId, origen) {
         var txtCobrar = montoCobrar > 0 ? formatearPrecio(montoCobrar) : 'A coordinar';
         html += '<div class="dato-fila"><span class="lbl">Envío</span><span class="val" style="color:var(--warning);font-weight:700;">Cobrar ' + txtCobrar + ' en efectivo</span></div>';
     } else if (p.envio_cobrado_en_app) {
-        html += '<div class="dato-fila"><span class="lbl">Envío</span><span class="val" style="color:var(--success);">✓ Ya pagado por app</span></div>';
+        html += '<div class="dato-fila"><span class="lbl">Envío</span><span class="val" style="color:var(--success);"><span class="simbolo">●</span> Ya pagado por app</span></div>';
     }
 
     html += '<div class="dato-fila"><span class="lbl">Tu ganancia</span><span class="val" style="color:var(--success);font-weight:700;">' + formatearPrecio(gananciaRepartidor()) + '</span></div>' +
@@ -2077,9 +2019,6 @@ function cerrarModalDetalle() {
     if (modal) modal.classList.remove('show');
 }
 
-// ================================================================
-// TABS
-// ================================================================
 function cambiarTab(tab, btn) {
     document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
     document.querySelectorAll('.tab-content').forEach(function (c) { c.classList.remove('active'); });
@@ -2092,9 +2031,6 @@ function cambiarTab(tab, btn) {
     else if (tab === 'historial') cargarHistorial(true);
 }
 
-// ================================================================
-// AUTO REFRESH
-// ================================================================
 function iniciarAutoRefresh() {
     detenerAutoRefresh();
     autoRefreshTimer = setInterval(function () {
@@ -2121,14 +2057,8 @@ document.addEventListener('visibilitychange', function () {
     }
 });
 
-// ================================================================
-// VER TOKENS
-// ================================================================
 function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
 
-// ================================================================
-// INICIALIZACIÓN
-// ================================================================
 document.addEventListener('DOMContentLoaded', async function () {
     await cargarUsuarioActual();
 
@@ -2137,15 +2067,12 @@ document.addEventListener('DOMContentLoaded', async function () {
         return;
     }
 
-    // 🔍 VERIFICAR SI ESTÁ VERIFICADO COMO REPARTIDOR
     var estadoCheck = await verificarEstadoVerificacion();
 
-    // Si NO está verificado, ya se redirigió o se mostró pantalla
     if (!estadoCheck.verificado) {
         return;
     }
 
-    // ✅ Está verificado → cargar el panel normal
     document.getElementById('loaderEstado').style.display = 'none';
     document.getElementById('contenidoPanel').style.display = 'block';
 
@@ -2177,9 +2104,6 @@ window.addEventListener('beforeunload', function () {
     detenerGPS();
 });
 
-// ================================================================
-// EXPOSICIÓN GLOBAL
-// ================================================================
 window.verTokens = verTokens;
 window.showToast = showToast;
 window.cambiarTab = cambiarTab;
