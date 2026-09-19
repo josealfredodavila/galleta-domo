@@ -75,10 +75,11 @@
             display: flex; gap: 4px; background: rgba(15,45,26,0.3); border-radius: var(--radius);
             padding: 4px; border: 1px solid var(--glass-border); margin: 16px 0 20px; overflow-x: auto;
         }
-        .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; white-space: nowrap; transition: var(--transition); }
+        .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; white-space: nowrap; transition: var(--transition); display: flex; align-items: center; gap: 6px; }
         .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212,175,55,0.05); }
         .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); }
         .main-nav .nav-link.live { color: var(--danger); }
+        .main-nav .nav-link .nav-simbolo { color: var(--gold); opacity: 0.7; }
 
         /* Encabezado del mercado */
         .mercado-header {
@@ -90,6 +91,11 @@
             font-size: 1.6rem;
             color: var(--text-primary);
             margin-bottom: 6px;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .mercado-header h1 .simbolo {
+            color: var(--gold);
+            font-size: 1.5rem;
         }
         .mercado-header h1 span { color: var(--gold); }
         .mercado-header p {
@@ -127,6 +133,8 @@
             color: var(--space);
             border: none;
             font-size: 1.1rem;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
             cursor: pointer;
             transition: var(--transition);
             display: flex; align-items: center; justify-content: center;
@@ -166,6 +174,7 @@
             color: var(--gold);
             font-weight: 600;
         }
+        .cat-btn .simbolo { color: var(--gold); }
 
         /* Grid de tiendas */
         .tiendas-grid {
@@ -203,6 +212,8 @@
         }
         .tienda-card .portada .emoji-fallback {
             font-size: 2.5rem; color: var(--gold);
+            font-family: 'Orbitron', monospace;
+            opacity: 0.5;
         }
         .tienda-card .portada .badge-nivel {
             position: absolute; top: 10px; right: 10px;
@@ -213,6 +224,7 @@
             font-weight: 700;
             letter-spacing: 1px;
             text-transform: uppercase;
+            display: flex; align-items: center; gap: 4px;
         }
         .badge-nivel.max {
             background: linear-gradient(135deg, #a855f7, #7c3aed);
@@ -236,6 +248,7 @@
             font-weight: 700;
             display: flex; align-items: center; gap: 4px;
             letter-spacing: 0.5px;
+            font-family: 'Orbitron', monospace;
         }
         .badge-horario.abierto {
             background: rgba(0,214,143,0.9);
@@ -265,6 +278,8 @@
             overflow: hidden;
             display: flex; align-items: center; justify-content: center;
             font-size: 1.5rem;
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
             box-shadow: 0 4px 16px rgba(0,0,0,0.4);
         }
         .tienda-card .logo-wrap .logo img {
@@ -292,6 +307,8 @@
         }
         .tienda-card .info .categoria .icono-cat {
             font-size: 0.85rem;
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
         }
 
         .tienda-card .info .meta-row {
@@ -312,8 +329,13 @@
             color: var(--text-muted);
             font-weight: 400;
         }
+        .tienda-card .info .meta-row .rating .simbolo {
+            font-family: 'Orbitron', monospace;
+        }
         .tienda-card .info .meta-row .pedidos {
             color: var(--text-muted);
+            font-family: 'Orbitron', monospace;
+            display: flex; align-items: center; gap: 3px;
         }
 
         .tienda-card .info .chips {
@@ -326,9 +348,11 @@
             border-radius: 10px;
             font-weight: 600;
             letter-spacing: 0.3px;
+            display: flex; align-items: center; gap: 4px;
         }
         .chip.delivery { background: rgba(0,229,255,0.12); color: var(--cyan); }
         .chip.pickup { background: rgba(168,85,247,0.12); color: var(--purple); }
+        .chip .simbolo { font-family: 'Orbitron', monospace; }
 
         .tienda-card .info .envio-info {
             font-size: 0.65rem;
@@ -338,6 +362,10 @@
             gap: 4px;
             padding-top: 8px;
             border-top: 1px solid var(--glass-border);
+        }
+        .tienda-card .info .envio-info .simbolo {
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
         }
         .tienda-card .info .envio-info .gratis {
             color: var(--success);
@@ -370,11 +398,17 @@
             cursor: pointer;
             font-family: 'Inter', sans-serif;
         }
+        .quick-btn .simbolo {
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
+            font-size: 0.85rem;
+        }
         .quick-btn:hover { border-color: var(--gold); color: var(--gold); }
         .quick-btn.repartidor {
             border-color: rgba(168,85,247,0.4);
             color: var(--purple);
         }
+        .quick-btn.repartidor .simbolo { color: var(--purple); }
         .quick-btn.repartidor:hover {
             background: rgba(168,85,247,0.1);
             border-color: var(--purple);
@@ -384,6 +418,7 @@
             border-color: var(--success);
             color: var(--success);
         }
+        .quick-btn.repartidor.verificado .simbolo { color: var(--success); }
 
         /* Loading / empty */
         .loading-state {
@@ -417,6 +452,7 @@
             margin-bottom: 16px;
             color: var(--gold);
             opacity: 0.4;
+            font-family: 'Orbitron', monospace;
         }
         .empty-state h3 {
             font-family: 'Orbitron', monospace;
@@ -472,6 +508,10 @@
             color: var(--gold);
             font-weight: 700;
             margin-bottom: 4px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .cta-vendedor .texto .titulo .simbolo {
+            font-size: 1rem;
         }
         .cta-vendedor .texto .subtitulo {
             font-size: 0.72rem;
@@ -523,6 +563,11 @@
             color: var(--purple);
             font-weight: 700;
             margin-bottom: 4px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .cta-repartidor .texto .titulo .simbolo {
+            font-size: 1rem;
+            color: var(--gold);
         }
         .cta-repartidor .texto .subtitulo {
             font-size: 0.72rem;
@@ -575,7 +620,8 @@
         }
         .footer .brand { color: var(--gold); font-weight: 600; }
         .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
-        .footer-links a { color: var(--text-muted); text-decoration: none; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; display: flex; align-items: center; gap: 4px; }
+        .footer-links a .simbolo { font-family: 'Orbitron', monospace; color: var(--gold); opacity: 0.7; }
         .footer-links a:hover { color: var(--gold); }
 
         html.tema-dia, html[data-tema="dia"] {
@@ -630,37 +676,34 @@
         </header>
 
         <nav class="main-nav" aria-label="Navegación principal">
-            <a href="/" class="nav-link">⌂ Inicio</a>
-            <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
-            <a href="/features/perfil/perfil.html" class="nav-link">◆ Perfil</a>
-            <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
-            <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
-            <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
-            <a href="/features/videos/videos.html" class="nav-link">🎬 Videos</a>
-            <a href="/features/grupos/grupos.html" class="nav-link">👥 Grupos</a>
-            <a href="/features/mercado/index.html" class="nav-link active">🛒 Mercado</a>
+            <a href="/" class="nav-link"><span class="nav-simbolo">◈</span> Inicio</a>
+            <a href="/features/muro/muro.html" class="nav-link"><span class="nav-simbolo">◆</span> Muro</a>
+            <a href="/features/perfil/perfil.html" class="nav-link"><span class="nav-simbolo">◇</span> Perfil</a>
+            <a href="/features/mensajes/contactos.html" class="nav-link"><span class="nav-simbolo">●</span> Contactos</a>
+            <a href="/features/live/live.html" class="nav-link live"><span class="nav-simbolo">◉</span> Live</a>
+            <a href="/features/internet/internet.html" class="nav-link"><span class="nav-simbolo">◆</span> Internet</a>
+            <a href="/features/videos/videos.html" class="nav-link"><span class="nav-simbolo">◇</span> Videos</a>
+            <a href="/features/grupos/grupos.html" class="nav-link"><span class="nav-simbolo">◆</span> Grupos</a>
+            <a href="/features/mercado/index.html" class="nav-link active"><span class="nav-simbolo">◈</span> Mercado</a>
         </nav>
 
-        <!-- Botones rápidos del comprador -->
         <div class="quick-buttons">
             <a href="/features/mercado/mis-pedidos.html" class="quick-btn">
-                📋 <span data-clave="mercado_mis_pedidos">Mis pedidos</span>
+                <span class="simbolo">◇</span> <span data-clave="mercado_mis_pedidos">Mis pedidos</span>
             </a>
             <a href="/features/mercado/vendedor/panel.html" class="quick-btn">
-                🏪 <span data-clave="mercado_mi_tienda">Mi tienda</span>
+                <span class="simbolo">◆</span> <span data-clave="mercado_mi_tienda">Mi tienda</span>
             </a>
             <button class="quick-btn repartidor" id="btnSoyRepartidor" onclick="irARepartidor()">
-                🛵 <span id="txtBtnRepartidor" data-clave="mercado_soy_repartidor">Ser repartidor</span>
+                <span class="simbolo">✦</span> <span id="txtBtnRepartidor" data-clave="mercado_soy_repartidor">Ser repartidor</span>
             </button>
         </div>
 
-        <!-- Header del mercado -->
         <div class="mercado-header">
-            <h1>🛒 <span data-clave="mercado_titulo">Mercado</span></h1>
+            <h1><span class="simbolo">◈</span> <span data-clave="mercado_titulo">Mercado</span></h1>
             <p data-clave="mercado_subtitulo">Descubre tiendas y productos cerca de ti</p>
         </div>
 
-        <!-- Buscador -->
         <div class="buscador-box">
             <input
                 type="text"
@@ -669,15 +712,12 @@
                 data-placeholder="mercado_buscar_placeholder"
                 onkeypress="if(event.key==='Enter') buscar()"
             />
-            <button class="btn-buscar" onclick="buscar()" aria-label="Buscar">🔍</button>
+            <button class="btn-buscar" onclick="buscar()" aria-label="Buscar">◆</button>
         </div>
 
-        <!-- Filtro por categorías -->
         <div class="categorias-scroll" id="categoriasScroll">
-            <!-- Se llena desde JS -->
         </div>
 
-        <!-- Grid de tiendas -->
         <div class="tiendas-grid" id="tiendasGrid">
             <div class="loading-state">
                 <div class="spinner"></div>
@@ -685,39 +725,37 @@
             </div>
         </div>
 
-        <!-- CTA vendedor -->
         <div class="cta-vendedor">
             <div class="texto">
-                <div class="titulo">💼 ¿Tienes un negocio?</div>
+                <div class="titulo"><span class="simbolo">◆</span> ¿Tienes un negocio?</div>
                 <div class="subtitulo" data-clave="mercado_cta_vendedor">
                     Abre tu tienda en el Mercado y empieza a vender con cripto.
                 </div>
             </div>
             <a href="/features/mercado/vendedor/panel.html" class="btn-vender">
-                ✨ <span data-clave="mercado_abrir_tienda">Abrir mi tienda</span>
+                <span class="simbolo">✦</span> <span data-clave="mercado_abrir_tienda">Abrir mi tienda</span>
             </a>
         </div>
 
-        <!-- CTA repartidor -->
         <div class="cta-repartidor">
             <div class="texto">
-                <div class="titulo">🛵 ¿Quieres ganar dinero?</div>
+                <div class="titulo"><span class="simbolo">✦</span> ¿Quieres ganar dinero?</div>
                 <div class="subtitulo">
                     Regístrate como repartidor y empieza a ganar entregando pedidos en tu ciudad.
                 </div>
             </div>
             <button class="btn-repartidor" onclick="irARepartidor()" id="btnCtaRepartidor">
-                ✨ Registrarme como repartidor
+                <span class="simbolo">✦</span> Registrarme como repartidor
             </button>
         </div>
 
         <footer class="footer">
             <span><span class="brand">© Csariel's</span> · <span data-clave="mercado_footer">Sabor al Paladar · WEB3</span></span>
             <div class="footer-links">
-                <a href="/terminos" data-clave="footer_terminos">📜 Términos</a>
-                <a href="/privacidad" data-clave="footer_privacidad">🔒 Privacidad</a>
-                <a href="/cookies" data-clave="footer_cookies">🍪 Cookies</a>
-                <a href="/live-terminos" data-clave="footer_terminos_live">📡 Términos de Live</a>
+                <a href="/terminos" data-clave="footer_terminos"><span class="simbolo">◇</span> Términos</a>
+                <a href="/privacidad" data-clave="footer_privacidad"><span class="simbolo">◆</span> Privacidad</a>
+                <a href="/cookies" data-clave="footer_cookies"><span class="simbolo">◇</span> Cookies</a>
+                <a href="/live-terminos" data-clave="footer_terminos_live"><span class="simbolo">◆</span> Términos de Live</a>
                 <span style="opacity:0.3;">⚡ Polygon</span>
             </div>
         </footer>
@@ -731,7 +769,7 @@
         background:#ff3366; color:#fff; padding:12px 16px; font-family:monospace;
         font-size:0.75rem; word-break:break-word; box-shadow:0 4px 20px rgba(0,0,0,0.4);
     ">
-        <strong>⚠️ Error detectado:</strong>
+        <strong><span style="font-family:Orbitron,monospace;">✶</span> Error detectado:</strong>
         <span id="errorBannerText"></span>
         <button onclick="document.getElementById('errorBanner').style.display='none'"
             style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">
@@ -741,13 +779,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/features/shared/js/idiomas.js"></script>
-
-<script>
-// ================================================================
-// ⚙️ CONFIGURACIÓN LEGAL — Csariel's Ecosystem
-// ================================================================
-// 👉 EDITA ESTE BLOQUE cuando tengas los datos legales listos
-// ================================================================
+</body>
+</html><script>
 var CONFIG_LEGAL = {
     nombre_comercial: 'Csariel\'s',
     nombre_ecosistema: 'Csariel\'s Ecosystem',
@@ -759,32 +792,20 @@ var CONFIG_LEGAL = {
     pais_operacion: 'México',
     ciudad_operacion: 'Puebla'
 };
-// ================================================================
-// FIN DE CONFIGURACIÓN LEGAL
-// ================================================================
 
-// ================================================================
-// CONFIGURACIÓN APP
-// ================================================================
 var supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
 var supabaseKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
 var supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 window.supabaseClient = supabaseClient;
 var supabase = supabaseClient;
 
-// ================================================================
-// ESTADO
-// ================================================================
 var sessionUser = null;
 var tiendasCache = [];
 var categoriasCache = [];
 var filtroCategoria = null;
 var filtroBusqueda = '';
-var estadoRepartidor = null; // null | 'no_logueado' | 'no_registrado' | 'activo' | 'rechazado' | 'procesando' | 'revision_manual' | 'suspendido'
+var estadoRepartidor = null;
 
-// ================================================================
-// BANNER DE ERRORES
-// ================================================================
 function mostrarErrorEnPantalla(mensaje) {
     var banner = document.getElementById('errorBanner');
     var texto = document.getElementById('errorBannerText');
@@ -797,9 +818,6 @@ window.addEventListener('unhandledrejection', function (event) {
     mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason && event.reason.message ? event.reason.message : event.reason));
 });
 
-// ================================================================
-// TOAST
-// ================================================================
 function showToast(mensaje, tipo) {
     try {
         var toastEl = document.getElementById('toast');
@@ -814,9 +832,6 @@ function showToast(mensaje, tipo) {
     } catch (e) { console.warn('Toast error:', e); }
 }
 
-// ================================================================
-// HELPERS
-// ================================================================
 function escapeHTML(texto) {
     if (!texto) return '';
     var div = document.createElement('div');
@@ -828,7 +843,6 @@ function formatearPrecio(n) {
     return '$' + parseFloat(n || 0).toFixed(2);
 }
 
-// Determina si la tienda está abierta ahora
 function tiendaEstaAbierta(tienda) {
     if (!tienda.horario_apertura || !tienda.horario_cierre) return null;
     try {
@@ -847,7 +861,6 @@ function tiendaEstaAbierta(tienda) {
     } catch (e) { return null; }
 }
 
-// Info del envío de una tienda
 function infoEnvio(tienda) {
     var envio = parseFloat(tienda.envio_mxn || 0);
     if (envio > 0) {
@@ -856,9 +869,6 @@ function infoEnvio(tienda) {
     return { tipo: 'efectivo', texto: 'Envío: a coordinar', clase: '' };
 }
 
-// ================================================================
-// CARGAR USUARIO
-// ================================================================
 async function cargarUsuarioActual() {
     try {
         var result = await supabase.auth.getSession();
@@ -878,9 +888,6 @@ async function cargarUsuarioActual() {
     } catch (e) { console.error('Error cargando usuario:', e); return null; }
 }
 
-// ================================================================
-// VERIFICAR ESTADO DEL REPARTIDOR
-// ================================================================
 async function verificarEstadoRepartidor() {
     if (!sessionUser) {
         estadoRepartidor = 'no_logueado';
@@ -911,9 +918,6 @@ async function verificarEstadoRepartidor() {
     }
 }
 
-// ================================================================
-// ACTUALIZAR BOTÓN "SER REPARTIDOR"
-// ================================================================
 function actualizarBotonRepartidor() {
     var btn = document.getElementById('btnSoyRepartidor');
     var btnCta = document.getElementById('btnCtaRepartidor');
@@ -922,72 +926,52 @@ function actualizarBotonRepartidor() {
     if (!btn || !txt) return;
 
     if (estadoRepartidor === 'activo') {
-        // Ya verificado → mostrar "Panel Repartidor"
         txt.textContent = 'Mi panel';
         btn.classList.add('verificado');
         if (btnCta) {
-            btnCta.innerHTML = '🛵 Ir a mi panel de repartidor';
+            btnCta.innerHTML = '<span class="simbolo" style="color:inherit;">✦</span> Ir a mi panel de repartidor';
         }
     } else if (estadoRepartidor === 'procesando' || estadoRepartidor === 'revision_manual') {
-        // En revisión → mostrar "Ver estado"
         txt.textContent = 'Ver estado';
         if (btnCta) {
-            btnCta.innerHTML = '⏳ Ver estado de verificación';
+            btnCta.innerHTML = '<span class="simbolo" style="color:inherit;">✧</span> Ver estado de verificación';
         }
     } else if (estadoRepartidor === 'rechazado') {
-        // Rechazado → mostrar "Reintentar"
         txt.textContent = 'Reintentar registro';
         if (btnCta) {
-            btnCta.innerHTML = '🔄 Reintentar registro como repartidor';
+            btnCta.innerHTML = '<span class="simbolo" style="color:inherit;">✶</span> Reintentar registro como repartidor';
         }
     } else {
-        // No registrado o pendiente → mostrar "Ser repartidor"
         txt.textContent = 'Ser repartidor';
         if (btnCta) {
-            btnCta.innerHTML = '✨ Registrarme como repartidor';
+            btnCta.innerHTML = '<span class="simbolo" style="color:inherit;">✦</span> Registrarme como repartidor';
         }
     }
 }
 
-// ================================================================
-// IR A REPARTIDOR (función inteligente)
-// ================================================================
 async function irARepartidor() {
-    // 1. Verificar sesión
     if (!sessionUser) {
-        showToast('⚠️ Inicia sesión para ser repartidor', 'warning');
+        showToast('◆ Inicia sesión para ser repartidor', 'warning');
         setTimeout(function () {
             window.location.href = '/';
         }, 1500);
         return;
     }
 
-    // 2. Re-verificar estado (por si cambió)
     await verificarEstadoRepartidor();
     actualizarBotonRepartidor();
 
-    // 3. Decidir a dónde ir
     if (estadoRepartidor === 'activo') {
-        // Ya verificado → al panel
         window.location.href = '/features/mercado/repartidor/panel.html';
-
     } else if (estadoRepartidor === 'procesando' || estadoRepartidor === 'revision_manual') {
-        // En proceso → a ver estado
         window.location.href = '/features/mercado/repartidor/estado-verificacion.html';
-
     } else if (estadoRepartidor === 'rechazado') {
-        // Rechazado → a ver estado con opción de reintentar
         window.location.href = '/features/mercado/repartidor/estado-verificacion.html';
-
     } else {
-        // No registrado o pendiente → al registro
         window.location.href = '/features/mercado/repartidor/registro.html';
     }
 }
 
-// ================================================================
-// CARGAR CATEGORÍAS
-// ================================================================
 async function cargarCategorias() {
     try {
         var result = await supabase
@@ -1006,20 +990,18 @@ async function cargarCategorias() {
     }
 }
 
-// ================================================================
-// RENDER CATEGORÍAS
-// ================================================================
 function renderCategorias() {
     var scroll = document.getElementById('categoriasScroll');
     if (!scroll) return;
 
     var html = '<button class="cat-btn active" onclick="filtrarCategoria(null, this)">' +
-        '<span>◈</span> <span data-clave="mercado_todas">Todas</span>' +
+        '<span class="simbolo">◈</span> <span data-clave="mercado_todas">Todas</span>' +
     '</button>';
 
     categoriasCache.forEach(function (c) {
+        var icono = c.icono && c.icono.length <= 2 ? c.icono : '◆';
         html += '<button class="cat-btn" onclick="filtrarCategoria(' + c.id + ', this)">' +
-            '<span>' + (c.icono || '◈') + '</span> ' +
+            '<span class="simbolo">' + icono + '</span> ' +
             escapeHTML(c.nombre) +
         '</button>';
     });
@@ -1028,9 +1010,6 @@ function renderCategorias() {
     if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(scroll);
 }
 
-// ================================================================
-// CARGAR TIENDAS
-// ================================================================
 async function cargarTiendas() {
     var grid = document.getElementById('tiendasGrid');
     if (!grid) return;
@@ -1068,27 +1047,24 @@ async function cargarTiendas() {
     } catch (e) {
         console.error('Error cargando tiendas:', e);
         grid.innerHTML = '<div class="empty-state">' +
-            '<span class="icon">⚠️</span>' +
+            '<span class="icon">✶</span>' +
             '<h3>Error al cargar</h3>' +
             '<p>' + escapeHTML(e.message) + '</p>' +
         '</div>';
     }
 }
 
-// ================================================================
-// RENDER TIENDAS
-// ================================================================
 function renderTiendas() {
     var grid = document.getElementById('tiendasGrid');
     if (!grid) return;
 
     if (tiendasCache.length === 0) {
         grid.innerHTML = '<div class="empty-state">' +
-            '<span class="icon">🏪</span>' +
+            '<span class="icon">◈</span>' +
             '<h3 data-clave="mercado_sin_tiendas">No hay tiendas por aquí</h3>' +
             '<p data-clave="mercado_sin_tiendas_desc">Prueba con otra categoría o búsqueda.</p>' +
             '<a href="/features/mercado/vendedor/panel.html" class="btn-cta">' +
-                '✨ <span data-clave="mercado_se_el_primero">Sé el primero en abrir una tienda</span>' +
+                '<span class="simbolo">✦</span> <span data-clave="mercado_se_el_primero">Sé el primero en abrir una tienda</span>' +
             '</a>' +
         '</div>';
         if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(grid);
@@ -1108,36 +1084,43 @@ function renderTiendas() {
         var logoUrl = t.logo_url || null;
 
         var portadaHTML = portadaUrl
-            ? '<img src="' + escapeHTML(portadaUrl) + '" alt="" onerror="this.style.display=\'none\';this.parentElement.innerHTML=\'<span class=&quot;emoji-fallback&quot;>🏪</span>\';" />'
-            : '<span class="emoji-fallback">🏪</span>';
+            ? '<img src="' + escapeHTML(portadaUrl) + '" alt="" onerror="this.style.display=\'none\';this.parentElement.innerHTML=\'<span class=&quot;emoji-fallback&quot;>◈</span>\';" />'
+            : '<span class="emoji-fallback">◈</span>';
 
         var horarioHTML = '';
         if (abierta === true) {
             horarioHTML = '<span class="badge-horario abierto">● Abierto</span>';
         } else if (abierta === false) {
-            horarioHTML = '<span class="badge-horario cerrado">● Cerrado</span>';
+            horarioHTML = '<span class="badge-horario cerrado">○ Cerrado</span>';
         }
 
         var logoHTML = logoUrl
-            ? '<img src="' + escapeHTML(logoUrl) + '" alt="" onerror="this.style.display=\'none\';this.parentElement.textContent=\'🏪\';" />'
-            : '🏪';
+            ? '<img src="' + escapeHTML(logoUrl) + '" alt="" onerror="this.style.display=\'none\';this.parentElement.textContent=\'◈\';" />'
+            : '◈';
+
+        var nivelHTML = '';
+        if (nivel === 'max') nivelHTML = '<span class="badge-nivel max">✪ MAX</span>';
+        else if (nivel === 'pro') nivelHTML = '<span class="badge-nivel pro">✦ PRO</span>';
+        else nivelHTML = '<span class="badge-nivel basico">● BÁSICO</span>';
 
         var chips = '';
-        if (t.acepta_delivery) chips += '<span class="chip delivery">🛵 Delivery</span>';
-        if (t.acepta_pickup) chips += '<span class="chip pickup">🏪 Recoger</span>';
+        if (t.acepta_delivery) chips += '<span class="chip delivery"><span class="simbolo">◆</span> Delivery</span>';
+        if (t.acepta_pickup) chips += '<span class="chip pickup"><span class="simbolo">◇</span> Recoger</span>';
 
         var ratingHTML = totalResenas > 0
-            ? '<span class="rating">★ ' + rating.toFixed(1) + ' <span style="opacity:0.6;">(' + totalResenas + ')</span></span>'
-            : '<span class="rating sin-rating">★ Sin reseñas</span>';
+            ? '<span class="rating"><span class="simbolo">★</span> ' + rating.toFixed(1) + ' <span style="opacity:0.6;">(' + totalResenas + ')</span></span>'
+            : '<span class="rating sin-rating"><span class="simbolo">☆</span> Sin reseñas</span>';
 
         var envioHTML = envio.tipo === 'app'
-            ? '<span class="costo">🛵 ' + envio.texto + '</span>'
-            : '<span>🛵 Envío a coordinar</span>';
+            ? '<span class="simbolo">◆</span> <span class="costo">' + envio.texto + '</span>'
+            : '<span class="simbolo">◈</span> <span>Envío a coordinar</span>';
+
+        var catIcono = categoria && categoria.icono && categoria.icono.length <= 2 ? categoria.icono : '◈';
 
         html += '<a href="/features/mercado/tienda.html?id=' + t.id + '" class="tienda-card">' +
             '<div class="portada">' +
                 portadaHTML +
-                '<span class="badge-nivel ' + nivel + '">' + nivel + '</span>' +
+                nivelHTML +
                 horarioHTML +
             '</div>' +
             '<div class="logo-wrap">' +
@@ -1146,12 +1129,12 @@ function renderTiendas() {
             '<div class="info">' +
                 '<div class="nombre">' + escapeHTML(t.nombre_negocio) + '</div>' +
                 '<div class="categoria">' +
-                    '<span class="icono-cat">' + (categoria ? (categoria.icono || '◈') : '◈') + '</span> ' +
+                    '<span class="icono-cat">' + catIcono + '</span> ' +
                     escapeHTML(categoria ? categoria.nombre : 'General') +
                 '</div>' +
                 '<div class="meta-row">' +
                     ratingHTML +
-                    '<span class="pedidos">📦 ' + (t.total_pedidos || 0) + '</span>' +
+                    '<span class="pedidos"><span class="simbolo">✩</span> ' + (t.total_pedidos || 0) + '</span>' +
                 '</div>' +
                 (chips ? '<div class="chips">' + chips + '</div>' : '') +
                 '<div class="envio-info">' + envioHTML + '</div>' +
@@ -1163,9 +1146,6 @@ function renderTiendas() {
     if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(grid);
 }
 
-// ================================================================
-// FILTROS
-// ================================================================
 function filtrarCategoria(categoriaId, btn) {
     filtroCategoria = categoriaId;
     document.querySelectorAll('.cat-btn').forEach(function (b) { b.classList.remove('active'); });
@@ -1180,45 +1160,30 @@ function buscar() {
     cargarTiendas();
 }
 
-// ================================================================
-// VER TOKENS
-// ================================================================
 function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
 
-// ================================================================
-// INICIALIZACIÓN
-// ================================================================
 document.addEventListener('DOMContentLoaded', async function () {
-    // 1. Cargar usuario
     await cargarUsuarioActual();
 
-    // 2. Verificar estado del repartidor (si está logueado)
     if (sessionUser) {
         await verificarEstadoRepartidor();
         actualizarBotonRepartidor();
     }
 
-    // 3. Cargar categorías
     await cargarCategorias();
     renderCategorias();
 
-    // 4. Cargar tiendas
     await cargarTiendas();
 
-    // 5. Idiomas
     setTimeout(async function () {
         try {
             if (typeof window.inicializarIdiomas === 'function') {
                 await window.inicializarIdiomas();
-                console.log('✅ Idiomas aplicados al catálogo');
             }
         } catch (e) { console.warn('Error idiomas:', e); }
     }, 400);
 });
 
-// ================================================================
-// EXPOSICIÓN GLOBAL
-// ================================================================
 window.verTokens = verTokens;
 window.showToast = showToast;
 window.filtrarCategoria = filtrarCategoria;
@@ -1226,5 +1191,3 @@ window.buscar = buscar;
 window.cargarTiendas = cargarTiendas;
 window.irARepartidor = irARepartidor;
 </script>
-</body>
-</html>
