@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#000000" />
-    <title>Configuración · Sariel's</title>
+    <title>Configuración · Csariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     
@@ -31,7 +31,7 @@
         <h2 class="cfg-section-title">Accesibilidad, pantalla e idiomas</h2>
         <div class="cfg-list" id="seccionAccesibilidad"></div>
 
-        <h2 class="cfg-section-title">Sariel's</h2>
+        <h2 class="cfg-section-title">Csariel's</h2>
         <div class="cfg-list" id="seccionSariels"></div>
 
         <h2 class="cfg-section-title">Recursos adicionales</h2>
@@ -41,8 +41,8 @@
         <div class="cfg-list" id="seccionSesion"></div>
 
         <div class="cfg-footer">
-            <strong>◈ Sariel's</strong> · Csariels.s ecosystem · WEB3<br>
-            Versión de configuración 1.0
+            <strong>© Csariel's</strong> · Csariel's Ecosystem · WEB3<br>
+            Versión de configuración 1.1
         </div>
     </main>
 
@@ -54,6 +54,26 @@
     <script src="../../shared/config-layout.js"></script>
 
     <script>
+// ================================================================
+// ⚙️ CONFIGURACIÓN LEGAL — Csariel's Ecosystem
+// ================================================================
+// 👉 EDITA ESTE BLOQUE cuando tengas los datos legales listos
+// ================================================================
+var CONFIG_LEGAL = {
+    nombre_comercial: 'Csariel\'s',
+    nombre_ecosistema: 'Csariel\'s Ecosystem',
+    slogan: 'Sabor al Paladar · Repostería Fina · Web3',
+    razon_social: '',
+    rfc: '',
+    email_contacto: '',
+    sitio_web: '',
+    pais_operacion: 'México',
+    ciudad_operacion: 'Puebla'
+};
+// ================================================================
+// FIN DE CONFIGURACIÓN LEGAL
+// ================================================================
+
     (function () {
         'use strict';
 
@@ -127,7 +147,7 @@
             cfgRenderItem({
                 icon: 'eye',
                 title: 'Contenido que ves',
-                desc: 'Decide qué ver en Sariel\'s en función de tus preferencias',
+                desc: 'Decide qué ver en Csariel\'s en función de tus preferencias',
                 href: baseConfig + '/privacidad/contenido.html',
             }),
             cfgRenderItem({
@@ -205,8 +225,7 @@
         ].join('');
 
         // ============================================================
-        // SARIEL'S
-        // ❌ "Generador QR" eliminado - es herramienta administrativa
+        // CSARIEL'S
         // ============================================================
         $('#seccionSariels').innerHTML = [
             cfgRenderItem({
@@ -224,8 +243,15 @@
             cfgRenderItem({
                 icon: 'crown',
                 title: 'Membresía Pro',
-                desc: 'Administra tu suscripción Sariel\'s Pro',
+                desc: 'Administra tu suscripción Csariel\'s Pro',
                 href: baseConfig + '/sariels/membresia.html',
+            }),
+            cfgRenderItem({
+                icon: 'scooter',
+                title: 'Panel Repartidor',
+                desc: 'Accede a tu panel de entregas y gestiona tu disponibilidad',
+                href: '#',
+                onClick: 'irARepartidorConfig()',
             }),
         ].join('');
 
@@ -236,7 +262,7 @@
             cfgRenderItem({
                 icon: 'info',
                 title: 'Términos y condiciones',
-                desc: 'Consulta los términos de uso de Sariel\'s',
+                desc: 'Consulta los términos de uso de Csariel\'s',
                 href: '/terminos',
             }),
             cfgRenderItem({
@@ -319,6 +345,66 @@
         })();
 
     })();
+
+// ================================================================
+// REDIRECCIÓN INTELIGENTE AL PANEL DEL REPARTIDOR
+// ================================================================
+async function irARepartidorConfig() {
+    try {
+        const client = window.supabaseClient || (window.supabase && window.supabase.createClient(
+            'https://zultnlogdoajehbswlih.supabase.co',
+            'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
+        ));
+
+        if (!client) {
+            window.location.href = '/features/mercado/repartidor/registro.html';
+            return;
+        }
+
+        const { data } = await client.auth.getSession();
+        const session = data && data.session;
+
+        if (!session) {
+            if (typeof cfgToast === 'function') cfgToast('Inicia sesión primero', 'warning');
+            setTimeout(() => { window.location.href = '/'; }, 1200);
+            return;
+        }
+
+        // Consultar estado de verificación
+        const result = await client
+            .from('mercado_repartidores')
+            .select('estado_verificacion')
+            .eq('usuario_id', session.user.id)
+            .maybeSingle();
+
+        if (result.error || !result.data) {
+            // No registrado → al registro
+            window.location.href = '/features/mercado/repartidor/registro.html';
+            return;
+        }
+
+        const estado = result.data.estado_verificacion;
+
+        if (estado === 'activo') {
+            // Verificado → al panel
+            window.location.href = '/features/mercado/repartidor/panel.html';
+        } else if (estado === 'rechazado' || estado === 'procesando' || estado === 'revision_manual') {
+            // Rechazado o en revisión → al estado de verificación
+            window.location.href = '/features/mercado/repartidor/estado-verificacion.html';
+        } else {
+            // pendiente_registro u otro → al registro
+            window.location.href = '/features/mercado/repartidor/registro.html';
+        }
+
+    } catch (e) {
+        console.error('Error redirigiendo a repartidor:', e);
+        window.location.href = '/features/mercado/repartidor/registro.html';
+    }
+}
+
+// Exponer globalmente
+window.irARepartidorConfig = irARepartidorConfig;
+window.CONFIG_LEGAL = CONFIG_LEGAL;
     </script>
 </body>
 </html>
