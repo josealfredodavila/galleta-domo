@@ -1,5 +1,5 @@
 <!-- ================================================================
-     MERCADO - SARIEL'S ECOSYSTEM
+     MERCADO - CSARIEL'S ECOSYSTEM
      Carrito de compras (vista del comprador)
      Ruta: /features/mercado/carrito.html
      Esquema real: lee carrito de localStorage, valida stock con DB
@@ -10,7 +10,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>◈ Carrito · Sariel's</title>
+    <title>◈ Carrito · Csariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
@@ -75,10 +75,11 @@
             display: flex; gap: 4px; background: rgba(15,45,26,0.3); border-radius: var(--radius);
             padding: 4px; border: 1px solid var(--glass-border); margin: 16px 0 20px; overflow-x: auto;
         }
-        .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; white-space: nowrap; transition: var(--transition); }
+        .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; white-space: nowrap; transition: var(--transition); display: flex; align-items: center; gap: 6px; }
         .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212,175,55,0.05); }
         .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); }
         .main-nav .nav-link.live { color: var(--danger); }
+        .main-nav .nav-link .nav-simbolo { color: var(--gold); opacity: 0.7; }
 
         .btn-back {
             display: inline-flex; align-items: center; gap: 6px;
@@ -87,6 +88,7 @@
             font-size: 0.72rem; text-decoration: none; margin-bottom: 16px;
             transition: var(--transition); cursor: pointer;
         }
+        .btn-back .simbolo { color: var(--gold); font-family: 'Orbitron', monospace; }
         .btn-back:hover { border-color: var(--gold); color: var(--gold); }
 
         .titulo {
@@ -98,13 +100,13 @@
             font-weight: 700; color: var(--gold);
             display: flex; align-items: center; gap: 8px;
         }
+        .titulo h1 .simbolo { color: var(--gold); }
         .titulo .count {
             font-size: 0.65rem; color: var(--text-muted);
             background: rgba(0,0,0,0.35); padding: 4px 12px;
             border-radius: 20px; border: 1px solid var(--glass-border);
         }
 
-        /* Card de tienda con productos */
         .tienda-grupo {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
@@ -131,6 +133,7 @@
             align-items: center;
             gap: 6px;
         }
+        .tienda-grupo .header-tienda .nombre-t .simbolo { color: var(--gold); }
         .tienda-grupo .header-tienda .btn-vaciar {
             font-size: 0.62rem;
             color: var(--danger);
@@ -140,12 +143,13 @@
             border-radius: 16px;
             cursor: pointer;
             transition: var(--transition);
+            display: flex; align-items: center; gap: 4px;
         }
+        .tienda-grupo .header-tienda .btn-vaciar .simbolo { font-family: 'Orbitron', monospace; }
         .tienda-grupo .header-tienda .btn-vaciar:hover {
             background: rgba(255,51,102,0.1);
         }
 
-        /* Item del carrito */
         .item-carrito {
             display: flex;
             gap: 12px;
@@ -165,6 +169,8 @@
             background: linear-gradient(135deg, var(--green-deep), var(--green-mid));
             display: flex; align-items: center; justify-content: center;
             font-size: 1.8rem;
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
             flex-shrink: 0;
         }
         .item-carrito .foto img {
@@ -191,7 +197,9 @@
             font-family: 'Orbitron', monospace;
         }
         .item-carrito .info .badge-promo {
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
             background: linear-gradient(135deg, var(--danger), #dc2626);
             color: #fff;
             font-size: 0.5rem;
@@ -200,6 +208,7 @@
             border-radius: 8px;
             margin-left: 6px;
             letter-spacing: 0.3px;
+            font-family: 'Orbitron', monospace;
         }
         .item-carrito .info .aviso-stock {
             font-size: 0.62rem;
@@ -208,12 +217,12 @@
             display: flex;
             align-items: center;
             gap: 4px;
+            font-family: 'Orbitron', monospace;
         }
         .item-carrito .info .aviso-stock.agotado {
             color: var(--danger);
         }
 
-        /* Controles de cantidad */
         .cantidad-ctrl {
             display: flex;
             align-items: center;
@@ -250,7 +259,6 @@
             color: var(--text-primary);
         }
 
-        /* Subtotal por item */
         .item-carrito .subtotal {
             font-family: 'Orbitron', monospace;
             font-size: 0.85rem;
@@ -261,7 +269,6 @@
             text-align: right;
         }
 
-        /* Botón eliminar */
         .item-carrito .btn-eliminar {
             position: absolute;
             top: 10px;
@@ -274,13 +281,13 @@
             transition: var(--transition);
             padding: 2px 6px;
             border-radius: 8px;
+            font-family: 'Orbitron', monospace;
         }
         .item-carrito .btn-eliminar:hover {
             color: var(--danger);
             background: rgba(255,51,102,0.1);
         }
 
-        /* Resumen de compra */
         .resumen-carrito {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
@@ -372,7 +379,6 @@
             line-height: 1.4;
         }
 
-        /* Botón seguir comprando */
         .btn-seguir {
             width: 100%;
             padding: 12px;
@@ -392,12 +398,12 @@
             gap: 8px;
             text-decoration: none;
         }
+        .btn-seguir .simbolo { color: var(--gold); }
         .btn-seguir:hover {
             border-color: var(--gold);
             color: var(--gold);
         }
 
-        /* Estado vacío */
         .empty-state {
             text-align: center;
             padding: 60px 20px;
@@ -412,6 +418,7 @@
             margin-bottom: 16px;
             color: var(--gold);
             opacity: 0.4;
+            font-family: 'Orbitron', monospace;
         }
         .empty-state h3 {
             font-family: 'Orbitron', monospace;
@@ -439,12 +446,12 @@
             text-decoration: none;
             transition: var(--transition);
         }
+        .empty-state .btn-ir .simbolo { color: var(--space); }
         .empty-state .btn-ir:hover {
             transform: translateY(-2px);
             box-shadow: var(--shadow-gold);
         }
 
-        /* Toast */
         .toast {
             position: fixed; bottom: 30px; right: 20px;
             background: var(--green-deep); border: 1px solid var(--gold);
@@ -468,7 +475,8 @@
         }
         .footer .brand { color: var(--gold); font-weight: 600; }
         .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
-        .footer-links a { color: var(--text-muted); text-decoration: none; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; display: flex; align-items: center; gap: 4px; }
+        .footer-links a .simbolo { font-family: 'Orbitron', monospace; color: var(--gold); opacity: 0.7; }
         .footer-links a:hover { color: var(--gold); }
 
         html.tema-dia, html[data-tema="dia"] {
@@ -511,7 +519,7 @@
         <header class="header">
             <a href="/" class="logo" aria-label="Ir a la página de inicio">
                 <span class="logo-hex">◈</span>
-                <span class="logo-text">Sariel<span>'s</span></span>
+                <span class="logo-text">Csariel<span>'s</span></span>
                 <span class="logo-badge">✦ WEB3</span>
             </a>
             <div class="header-actions">
@@ -522,44 +530,44 @@
         </header>
 
         <nav class="main-nav" aria-label="Navegación principal">
-            <a href="/" class="nav-link">⌂ Inicio</a>
-            <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
-            <a href="/features/perfil/perfil.html" class="nav-link">◆ Perfil</a>
-            <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
-            <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
-            <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
-            <a href="/features/videos/videos.html" class="nav-link">🎬 Videos</a>
-            <a href="/features/grupos/grupos.html" class="nav-link">👥 Grupos</a>
-            <a href="/features/mercado/index.html" class="nav-link active">🛒 Mercado</a>
+            <a href="/" class="nav-link"><span class="nav-simbolo">◈</span> Inicio</a>
+            <a href="/features/muro/muro.html" class="nav-link"><span class="nav-simbolo">◆</span> Muro</a>
+            <a href="/features/perfil/perfil.html" class="nav-link"><span class="nav-simbolo">◇</span> Perfil</a>
+            <a href="/features/mensajes/contactos.html" class="nav-link"><span class="nav-simbolo">●</span> Contactos</a>
+            <a href="/features/live/live.html" class="nav-link live"><span class="nav-simbolo">◉</span> Live</a>
+            <a href="/features/internet/internet.html" class="nav-link"><span class="nav-simbolo">◆</span> Internet</a>
+            <a href="/features/videos/videos.html" class="nav-link"><span class="nav-simbolo">◇</span> Videos</a>
+            <a href="/features/grupos/grupos.html" class="nav-link"><span class="nav-simbolo">◆</span> Grupos</a>
+            <a href="/features/mercado/index.html" class="nav-link active"><span class="nav-simbolo">◈</span> Mercado</a>
         </nav>
 
         <a href="/features/mercado/index.html" class="btn-back">
-            ← <span data-clave="mercado_volver_mercado">Seguir comprando</span>
+            <span class="simbolo">◈</span> <span data-clave="mercado_volver_mercado">Seguir comprando</span>
         </a>
 
         <div class="titulo">
-            <h1>🛒 <span data-clave="mercado_mi_carrito">Mi carrito</span></h1>
+            <h1><span class="simbolo">◈</span> <span data-clave="mercado_mi_carrito">Mi carrito</span></h1>
             <span class="count" id="contadorItems">0 items</span>
         </div>
 
         <div id="carritoContainer">
             <div class="empty-state">
-                <span class="icon">🛒</span>
+                <span class="icon">◈</span>
                 <h3 data-clave="mercado_carrito_vacio">Tu carrito está vacío</h3>
                 <p data-clave="mercado_carrito_vacio_desc">Agrega productos de tus tiendas favoritas.</p>
                 <a href="/features/mercado/index.html" class="btn-ir">
-                    🛍️ <span data-clave="mercado_ir_comprar">Ir a comprar</span>
+                    <span class="simbolo">◆</span> <span data-clave="mercado_ir_comprar">Ir a comprar</span>
                 </a>
             </div>
         </div>
 
         <footer class="footer">
-            <span><span class="brand">◈ Sariel's</span> · <span data-clave="mercado_footer">Sabor al Paladar · WEB3</span></span>
+            <span><span class="brand">© Csariel's</span> · <span data-clave="mercado_footer">Sabor al Paladar · WEB3</span></span>
             <div class="footer-links">
-                <a href="/terminos" data-clave="footer_terminos">📜 Términos</a>
-                <a href="/privacidad" data-clave="footer_privacidad">🔒 Privacidad</a>
-                <a href="/cookies" data-clave="footer_cookies">🍪 Cookies</a>
-                <a href="/live-terminos" data-clave="footer_terminos_live">📡 Términos de Live</a>
+                <a href="/terminos" data-clave="footer_terminos"><span class="simbolo">◇</span> Términos</a>
+                <a href="/privacidad" data-clave="footer_privacidad"><span class="simbolo">◆</span> Privacidad</a>
+                <a href="/cookies" data-clave="footer_cookies"><span class="simbolo">◇</span> Cookies</a>
+                <a href="/live-terminos" data-clave="footer_terminos_live"><span class="simbolo">◆</span> Términos de Live</a>
                 <span style="opacity:0.3;">⚡ Polygon</span>
             </div>
         </footer>
@@ -573,7 +581,7 @@
         background:#ff3366; color:#fff; padding:12px 16px; font-family:monospace;
         font-size:0.75rem; word-break:break-word; box-shadow:0 4px 20px rgba(0,0,0,0.4);
     ">
-        <strong>⚠️ Error detectado:</strong>
+        <strong><span style="font-family:Orbitron,monospace;">✶</span> Error detectado:</strong>
         <span id="errorBannerText"></span>
         <button onclick="document.getElementById('errorBanner').style.display='none'"
             style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">
@@ -583,11 +591,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/features/shared/js/idiomas.js"></script>
-
-<script>
-// ================================================================
-// CONFIGURACIÓN
-// ================================================================
+</body>
+</html><script>
 var supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
 var supabaseKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
 var supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
@@ -596,17 +601,11 @@ var supabase = supabaseClient;
 
 var CARRITO_KEY = 'mercado_carrito_v1';
 
-// ================================================================
-// ESTADO
-// ================================================================
 var sessionUser = null;
 var itemsCarrito = [];
 var tiendasCache = {};
-var productosStock = {}; // id -> {stock, stock_ilimitado, activo, precio_mxn, precio_promocion}
+var productosStock = {};
 
-// ================================================================
-// BANNER DE ERRORES
-// ================================================================
 function mostrarErrorEnPantalla(mensaje) {
     var banner = document.getElementById('errorBanner');
     var texto = document.getElementById('errorBannerText');
@@ -619,9 +618,6 @@ window.addEventListener('unhandledrejection', function (event) {
     mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason && event.reason.message ? event.reason.message : event.reason));
 });
 
-// ================================================================
-// TOAST
-// ================================================================
 function showToast(mensaje, tipo) {
     try {
         var toastEl = document.getElementById('toast');
@@ -636,9 +632,6 @@ function showToast(mensaje, tipo) {
     } catch (e) { console.warn('Toast error:', e); }
 }
 
-// ================================================================
-// HELPERS
-// ================================================================
 function escapeHTML(texto) {
     if (!texto) return '';
     var div = document.createElement('div');
@@ -650,9 +643,6 @@ function formatearPrecio(n) {
     return '$' + parseFloat(n || 0).toFixed(2);
 }
 
-// ================================================================
-// CARRITO (localStorage)
-// ================================================================
 function leerCarrito() {
     try {
         var raw = localStorage.getItem(CARRITO_KEY);
@@ -668,9 +658,6 @@ function guardarCarrito(items) {
     } catch (e) { console.warn('Error guardando carrito:', e); }
 }
 
-// ================================================================
-// CARGAR USUARIO (opcional, para badge tokens)
-// ================================================================
 async function cargarUsuarioActual() {
     try {
         var result = await supabase.auth.getSession();
@@ -690,9 +677,6 @@ async function cargarUsuarioActual() {
     } catch (e) { console.error('Error cargando usuario:', e); return null; }
 }
 
-// ================================================================
-// CARGAR TIENDAS Y PRODUCTOS DEL CARRITO (para validar)
-// ================================================================
 async function validarCarritoConDB() {
     itemsCarrito = leerCarrito();
 
@@ -701,7 +685,6 @@ async function validarCarritoConDB() {
         return;
     }
 
-    // 1) Cargar tiendas de los productos del carrito
     var tiendaIds = [];
     itemsCarrito.forEach(function (it) {
         if (it.tienda_id && tiendaIds.indexOf(it.tienda_id) === -1) {
@@ -725,7 +708,6 @@ async function validarCarritoConDB() {
         }
     }
 
-    // 2) Cargar productos actuales para verificar stock, precio, activo
     var productoIds = itemsCarrito.map(function (it) { return it.producto_id; }).filter(function (id) { return !!id; });
 
     if (productoIds.length > 0) {
@@ -744,11 +726,9 @@ async function validarCarritoConDB() {
         }
     }
 
-    // 3) Actualizar items con precios actuales y verificar stock
     var itemsActualizados = itemsCarrito.map(function (it) {
         var p = productosStock[it.producto_id];
         if (!p) {
-            // Producto eliminado
             it._eliminado = true;
             it._aviso = 'Este producto ya no está disponible';
             return it;
@@ -760,21 +740,18 @@ async function validarCarritoConDB() {
 
         var stock = p.stock_ilimitado ? Infinity : parseInt(p.stock || 0);
 
-        // Actualizar precio si cambió
         if (it.precio_unitario !== precioActual) {
             it.precio_unitario = precioActual;
             it.subtotal = precioActual * it.cantidad;
             it._precio_cambio = true;
         }
 
-        // Ajustar cantidad si supera el stock disponible
         if (stock !== Infinity && it.cantidad > stock) {
             it.cantidad = Math.max(1, stock);
             it.subtotal = it.precio_unitario * it.cantidad;
             it._stock_ajustado = true;
         }
 
-        // Verificar disponibilidad
         if (!p.activo || (stock !== Infinity && stock <= 0)) {
             it._agotado = true;
         }
@@ -792,9 +769,6 @@ async function validarCarritoConDB() {
     renderCarrito();
 }
 
-// ================================================================
-// CÁLCULOS
-// ================================================================
 function calcularSubtotal() {
     var sub = 0;
     itemsCarrito.forEach(function (it) {
@@ -804,9 +778,6 @@ function calcularSubtotal() {
     return sub;
 }
 
-// Devuelve la info del envío de TODO el carrito
-// Si todo es de la misma tienda, usa su envio_mxn
-// Si hay varias tiendas, mostramos "por tienda"
 function calcularEnvio() {
     var tiendasIds = [];
     itemsCarrito.forEach(function (it) {
@@ -829,7 +800,7 @@ function calcularEnvio() {
         } else if (t.acepta_delivery) {
             envioCoordinar = true;
         } else {
-            tiendasConEnvioCero++; // pickup únicamente
+            tiendasConEnvioCero++;
         }
     });
 
@@ -855,9 +826,6 @@ function contarItems() {
     return total;
 }
 
-// ================================================================
-// AGRUPAR ITEMS POR TIENDA
-// ================================================================
 function agruparPorTienda() {
     var grupos = {};
     itemsCarrito.forEach(function (it) {
@@ -874,42 +842,35 @@ function agruparPorTienda() {
     return grupos;
 }
 
-// ================================================================
-// RENDER CARRITO
-// ================================================================
 function renderCarrito() {
     var container = document.getElementById('carritoContainer');
     if (!container) return;
 
     var totalItems = contarItems();
 
-    // Actualizar contador
     var contador = document.getElementById('contadorItems');
     if (contador) {
         contador.textContent = totalItems + ' item' + (totalItems === 1 ? '' : 's');
     }
 
-    // Carrito vacío
     if (itemsCarrito.length === 0) {
         container.innerHTML = '<div class="empty-state">' +
-            '<span class="icon">🛒</span>' +
+            '<span class="icon">◈</span>' +
             '<h3 data-clave="mercado_carrito_vacio">Tu carrito está vacío</h3>' +
             '<p data-clave="mercado_carrito_vacio_desc">Agrega productos de tus tiendas favoritas.</p>' +
             '<a href="/features/mercado/index.html" class="btn-ir">' +
-                '🛍️ <span data-clave="mercado_ir_comprar">Ir a comprar</span>' +
+                '<span class="simbolo">◆</span> <span data-clave="mercado_ir_comprar">Ir a comprar</span>' +
             '</a>' +
         '</div>';
         if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
         return;
     }
 
-    // ¿Hay algún item agotado o eliminado? Verificar si podemos continuar
     var hayItemsInvalidos = itemsCarrito.some(function (it) { return it._agotado || it._eliminado; });
     var hayItemsValidos = itemsCarrito.some(function (it) { return !it._agotado && !it._eliminado; });
 
     var html = '';
 
-    // Agrupar por tienda
     var grupos = agruparPorTienda();
 
     Object.keys(grupos).forEach(function (tid) {
@@ -919,9 +880,9 @@ function renderCarrito() {
 
         html += '<div class="tienda-grupo">' +
             '<div class="header-tienda">' +
-                '<div class="nombre-t">🏪 ' + escapeHTML(nombreTienda) + '</div>' +
+                '<div class="nombre-t"><span class="simbolo">◈</span> ' + escapeHTML(nombreTienda) + '</div>' +
                 '<button class="btn-vaciar" onclick="vaciarTienda(' + g.tienda_id + ')">' +
-                    '🗑️ Vaciar tienda' +
+                    '<span class="simbolo">✶</span> Vaciar tienda' +
                 '</button>' +
             '</div>';
 
@@ -932,7 +893,6 @@ function renderCarrito() {
         html += '</div>';
     });
 
-    // Resumen
     html += renderResumen(hayItemsInvalidos, hayItemsValidos);
 
     container.innerHTML = html;
@@ -940,31 +900,27 @@ function renderCarrito() {
     if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
 }
 
-// ================================================================
-// RENDER: ITEM
-// ================================================================
 function renderItemCarrito(it) {
     var foto = it.foto_url
-        ? '<img src="' + escapeHTML(it.foto_url) + '" alt="" onerror="this.style.display=\'none\';this.parentElement.textContent=\'🍽️\';" />'
-        : '🍽️';
+        ? '<img src="' + escapeHTML(it.foto_url) + '" alt="" onerror="this.style.display=\'none\';this.parentElement.textContent=\'◈\';" />'
+        : '◈';
 
     var promo = it.tiene_promo && it.precio_original && it.precio_original > it.precio_unitario;
-    var badgePromo = promo ? '<span class="badge-promo">PROMO</span>' : '';
+    var badgePromo = promo ? '<span class="badge-promo"><span class="simbolo">✦</span> PROMO</span>' : '';
 
-    // Avisos de stock
     var avisoStock = '';
     if (it._eliminado) {
-        avisoStock = '<div class="aviso-stock agotado">❌ Producto no disponible</div>';
+        avisoStock = '<div class="aviso-stock agotado"><span class="simbolo">✶</span> Producto no disponible</div>';
     } else if (it._agotado) {
-        avisoStock = '<div class="aviso-stock agotado">❌ Agotado</div>';
+        avisoStock = '<div class="aviso-stock agotado"><span class="simbolo">✶</span> Agotado</div>';
     } else if (it._stock_ajustado) {
-        avisoStock = '<div class="aviso-stock">⚠️ Cantidad ajustada al stock disponible</div>';
+        avisoStock = '<div class="aviso-stock"><span class="simbolo">✧</span> Cantidad ajustada al stock disponible</div>';
     }
 
     var maxCantidad = it._stock_ilimitado ? 99 : (it._stock_disponible || 99);
 
     return '<div class="item-carrito">' +
-        '<button class="btn-eliminar" onclick="eliminarItem(' + it.producto_id + ')" title="Eliminar">✕</button>' +
+        '<button class="btn-eliminar" onclick="eliminarItem(' + it.producto_id + ')" title="Eliminar"><span>✶</span></button>' +
 
         '<div class="foto">' + foto + '</div>' +
 
@@ -987,9 +943,6 @@ function renderItemCarrito(it) {
     '</div>';
 }
 
-// ================================================================
-// RENDER: RESUMEN
-// ================================================================
 function renderResumen(hayItemsInvalidos, hayItemsValidos) {
     var subtotal = calcularSubtotal();
     var envio = calcularEnvio();
@@ -997,7 +950,6 @@ function renderResumen(hayItemsInvalidos, hayItemsValidos) {
 
     var envioHTML = '';
     if (envio.envio_app > 0 && envio.hay_envio_coordinar) {
-        // Mixto: algunos se cobran por app y otros se coordinan
         envioHTML = '<span class="val info-gold">' + formatearPrecio(envio.envio_app) + '</span>' +
             '<span style="display:block; font-size:0.62rem; color:var(--cyan); margin-top:2px;">+ envío en efectivo al repartidor</span>';
     } else if (envio.envio_app > 0) {
@@ -1014,7 +966,7 @@ function renderResumen(hayItemsInvalidos, hayItemsValidos) {
             '<span class="val">' + formatearPrecio(subtotal) + '</span>' +
         '</div>' +
         '<div class="fila envio">' +
-            '<span class="lbl">🛵 Envío</span>' +
+            '<span class="lbl"><span style="font-family:Orbitron,monospace; color:var(--gold);">◆</span> Envío</span>' +
             envioHTML +
         '</div>' +
         '<div class="fila total">' +
@@ -1022,24 +974,22 @@ function renderResumen(hayItemsInvalidos, hayItemsValidos) {
             '<span class="val">' + formatearPrecio(total) + '</span>' +
         '</div>';
 
-    // Nota sobre el envío en efectivo
     if (envio.hay_envio_coordinar) {
         html += '<div class="nota-envio">' +
-            '🛵 El envío de algunas tiendas se paga en efectivo directamente al repartidor al momento de la entrega.' +
+            '<span style="font-family:Orbitron,monospace; color:var(--gold);">◆</span> El envío de algunas tiendas se paga en efectivo directamente al repartidor al momento de la entrega.' +
         '</div>';
     }
 
-    // Botón de checkout
     var puedeContinuar = hayItemsValidos && !hayItemsInvalidos;
 
     html += '<button class="btn-checkout" ' + (puedeContinuar ? '' : 'disabled') + ' onclick="irACheckout()">' +
         (puedeContinuar
-            ? '✓ <span data-clave="mercado_confirmar_pedido">Confirmar pedido</span>'
-            : '⚠️ <span data-clave="mercado_resuelve_problemas">Resuelve los problemas primero</span>') +
+            ? '<span class="simbolo">◆</span> <span data-clave="mercado_confirmar_pedido">Confirmar pedido</span>'
+            : '<span class="simbolo">✶</span> <span data-clave="mercado_resuelve_problemas">Resuelve los problemas primero</span>') +
     '</button>';
 
     html += '<a href="/features/mercado/index.html" class="btn-seguir" style="margin-top:12px; margin-bottom:0;">' +
-        '← <span data-clave="mercado_seguir_comprando">Seguir comprando</span>' +
+        '<span class="simbolo">◈</span> <span data-clave="mercado_seguir_comprando">Seguir comprando</span>' +
     '</a>';
 
     html += '</div>';
@@ -1047,9 +997,6 @@ function renderResumen(hayItemsInvalidos, hayItemsValidos) {
     return html;
 }
 
-// ================================================================
-// ACCIONES: CANTIDAD
-// ================================================================
 function cambiarCantidad(productoId, delta) {
     var idx = itemsCarrito.findIndex(function (it) { return it.producto_id === productoId; });
     if (idx === -1) return;
@@ -1061,7 +1008,7 @@ function cambiarCantidad(productoId, delta) {
     if (nueva < 1) nueva = 1;
     if (nueva > maxCantidad) {
         nueva = maxCantidad;
-        showToast('⚠️ Solo hay ' + maxCantidad + ' disponibles', 'warning');
+        showToast('✧ Solo hay ' + maxCantidad + ' disponibles', 'warning');
     }
 
     it.cantidad = nueva;
@@ -1071,15 +1018,12 @@ function cambiarCantidad(productoId, delta) {
     renderCarrito();
 }
 
-// ================================================================
-// ACCIONES: ELIMINAR
-// ================================================================
 function eliminarItem(productoId) {
     itemsCarrito = itemsCarrito.filter(function (it) {
         return it.producto_id !== productoId;
     });
     guardarCarrito(itemsCarrito);
-    showToast('Producto eliminado', 'warning');
+    showToast('◆ Producto eliminado', 'warning');
     renderCarrito();
 }
 
@@ -1089,41 +1033,30 @@ function vaciarTienda(tiendaId) {
         return it.tienda_id !== tiendaId;
     });
     guardarCarrito(itemsCarrito);
-    showToast('Tienda vaciada del carrito', 'warning');
+    showToast('◆ Tienda vaciada del carrito', 'warning');
     renderCarrito();
 }
 
-// ================================================================
-// IR A CHECKOUT
-// ================================================================
 function irACheckout() {
-    // Verificar que haya session
     if (!sessionUser) {
-        showToast('Inicia sesión para continuar', 'warning');
+        showToast('◆ Inicia sesión para continuar', 'warning');
         setTimeout(function () {
             window.location.href = '/';
         }, 1200);
         return;
     }
 
-    // Validar que todos los items sean válidos
     var hayInvalidos = itemsCarrito.some(function (it) { return it._agotado || it._eliminado; });
     if (hayInvalidos) {
-        showToast('⚠️ Elimina los productos no disponibles primero', 'warning');
+        showToast('✶ Elimina los productos no disponibles primero', 'warning');
         return;
     }
 
     window.location.href = '/features/mercado/checkout.html';
 }
 
-// ================================================================
-// VER TOKENS
-// ================================================================
 function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
 
-// ================================================================
-// INICIALIZACIÓN
-// ================================================================
 document.addEventListener('DOMContentLoaded', async function () {
     await cargarUsuarioActual();
     await validarCarritoConDB();
@@ -1132,15 +1065,11 @@ document.addEventListener('DOMContentLoaded', async function () {
         try {
             if (typeof window.inicializarIdiomas === 'function') {
                 await window.inicializarIdiomas();
-                console.log('✅ Idiomas aplicados al carrito');
             }
         } catch (e) { console.warn('Error idiomas:', e); }
     }, 400);
 });
 
-// ================================================================
-// EXPOSICIÓN GLOBAL
-// ================================================================
 window.verTokens = verTokens;
 window.showToast = showToast;
 window.cambiarCantidad = cambiarCantidad;
@@ -1149,5 +1078,3 @@ window.vaciarTienda = vaciarTienda;
 window.irACheckout = irACheckout;
 window.validarCarritoConDB = validarCarritoConDB;
 </script>
-</body>
-</html>
