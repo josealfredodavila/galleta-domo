@@ -1,5 +1,5 @@
 <!-- ================================================================
-     MERCADO - SARIEL'S ECOSYSTEM
+     MERCADO - CSARIEL'S ECOSYSTEM
      Pedidos entrantes del vendedor
      Ruta: /features/mercado/vendedor/pedidos.html
      Esquema real: bigint IDs, envio_cobrado_en_app, forma_pago,
@@ -10,7 +10,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>◈ Pedidos entrantes · Sariel's</title>
+    <title>◈ Pedidos entrantes · Csariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
@@ -75,10 +75,11 @@
             display: flex; gap: 4px; background: rgba(15,45,26,0.3); border-radius: var(--radius);
             padding: 4px; border: 1px solid var(--glass-border); margin: 16px 0 20px; overflow-x: auto;
         }
-        .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; white-space: nowrap; transition: var(--transition); }
+        .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; white-space: nowrap; transition: var(--transition); display: flex; align-items: center; gap: 6px; }
         .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212,175,55,0.05); }
         .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); }
         .main-nav .nav-link.live { color: var(--danger); }
+        .main-nav .nav-link .nav-simbolo { color: var(--gold); opacity: 0.7; }
 
         .btn-back {
             display: inline-flex; align-items: center; gap: 6px;
@@ -87,6 +88,7 @@
             font-size: 0.72rem; text-decoration: none; margin-bottom: 16px;
             transition: var(--transition); cursor: pointer;
         }
+        .btn-back .simbolo { color: var(--gold); font-family: 'Orbitron', monospace; }
         .btn-back:hover { border-color: var(--gold); color: var(--gold); }
 
         .titulo {
@@ -98,6 +100,7 @@
             font-weight: 700; color: var(--gold);
             display: flex; align-items: center; gap: 8px;
         }
+        .titulo h1 .simbolo { color: var(--gold); }
         .titulo .contador-badge {
             font-size: 0.65rem; padding: 4px 12px; border-radius: 20px;
             background: rgba(0,0,0,0.35); color: var(--text-muted);
@@ -114,7 +117,6 @@
             50% { box-shadow: 0 0 0 6px rgba(255,51,102,0); }
         }
 
-        /* Filtros */
         .filtros {
             display: flex; gap: 8px; margin-bottom: 16px;
             overflow-x: auto; padding: 4px 0;
@@ -130,6 +132,10 @@
             display: flex; align-items: center; gap: 6px;
             white-space: nowrap;
         }
+        .filtro-btn .simbolo {
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
+        }
         .filtro-btn:hover { border-color: var(--gold); color: var(--gold); }
         .filtro-btn.active {
             background: rgba(212,175,55,0.15);
@@ -138,7 +144,6 @@
             font-weight: 600;
         }
 
-        /* Pedidos */
         .pedidos-lista {
             display: flex; flex-direction: column; gap: 12px;
         }
@@ -194,6 +199,11 @@
             font-weight: 700;
             color: var(--gold);
             letter-spacing: 1px;
+            display: flex; align-items: center; gap: 5px;
+        }
+        .pedido-card .header-pedido .codigo .simbolo {
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
         }
         .pedido-card .header-pedido .fecha {
             font-size: 0.62rem;
@@ -215,7 +225,9 @@
             border: 1px solid var(--glass-border);
             background: rgba(0,0,0,0.3);
             white-space: nowrap;
+            display: inline-flex; align-items: center; gap: 4px;
         }
+        .pedido-card .estado-badge .simbolo { font-family: 'Orbitron', monospace; }
         .pedido-card .estado-badge.pendiente { color: var(--warning); border-color: var(--warning); }
         .pedido-card .estado-badge.aceptado { color: var(--cyan); border-color: var(--cyan); }
         .pedido-card .estado-badge.preparando { color: var(--cyan); border-color: var(--cyan); }
@@ -235,9 +247,14 @@
             font-size: 0.72rem;
             color: var(--text-secondary);
         }
-        .pedido-card .cliente-info .icono-cli { font-size: 1rem; }
+        .pedido-card .cliente-info .icono-cli {
+            font-size: 0.85rem;
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
+        }
         .pedido-card .cliente-info .nombre-cli { font-weight: 600; color: var(--text-primary); }
-        .pedido-card .cliente-info .tel-cli { color: var(--text-muted); font-size: 0.65rem; }
+        .pedido-card .cliente-info .tel-cli { color: var(--text-muted); font-size: 0.65rem; display: flex; align-items: center; gap: 4px; }
+        .pedido-card .cliente-info .tel-cli .simbolo { color: var(--gold); font-family: 'Orbitron', monospace; }
 
         .pedido-card .items-resumen {
             font-size: 0.72rem;
@@ -267,19 +284,25 @@
             background: rgba(0,0,0,0.3);
             border: 1px solid var(--glass-border);
             color: var(--text-muted);
+            display: inline-flex; align-items: center; gap: 3px;
         }
+        .pedido-card .chips-info .chip-mini .simbolo { font-family: 'Orbitron', monospace; }
         .pedido-card .chips-info .chip-mini.envio-app {
             color: var(--gold); border-color: rgba(212,175,55,0.3); background: rgba(212,175,55,0.08);
         }
+        .pedido-card .chips-info .chip-mini.envio-app .simbolo { color: var(--gold); }
         .pedido-card .chips-info .chip-mini.envio-efectivo {
             color: var(--cyan); border-color: rgba(0,229,255,0.3); background: rgba(0,229,255,0.08);
         }
+        .pedido-card .chips-info .chip-mini.envio-efectivo .simbolo { color: var(--cyan); }
         .pedido-card .chips-info .chip-mini.pickup {
             color: var(--purple); border-color: rgba(168,85,247,0.3); background: rgba(168,85,247,0.08);
         }
+        .pedido-card .chips-info .chip-mini.pickup .simbolo { color: var(--purple); }
         .pedido-card .chips-info .chip-mini.urgente {
             color: var(--warning); border-color: rgba(247,212,74,0.3); background: rgba(247,212,74,0.08);
         }
+        .pedido-card .chips-info .chip-mini.urgente .simbolo { color: var(--warning); }
 
         .pedido-card .footer-pedido {
             display: flex;
@@ -295,6 +318,7 @@
             color: var(--text-muted);
             display: flex; flex-direction: column; gap: 2px;
         }
+        .pedido-card .footer-pedido .info-extra .simbolo { color: var(--gold); font-family: 'Orbitron', monospace; }
         .pedido-card .footer-pedido .total {
             font-family: 'Orbitron', monospace;
             font-size: 1rem;
@@ -324,6 +348,7 @@
             gap: 6px;
             border: none;
         }
+        .btn-accion-p .simbolo { font-family: 'Orbitron', monospace; }
         .btn-accion-p:disabled {
             opacity: 0.4; cursor: not-allowed;
         }
@@ -359,7 +384,6 @@
         }
         .btn-ver:hover:not(:disabled) { border-color: var(--gold) !important; color: var(--gold); }
 
-        /* Loading / empty */
         .loading-state {
             text-align: center; padding: 60px 20px; color: var(--text-muted);
         }
@@ -381,6 +405,7 @@
         .empty-state .icon {
             font-size: 3.5rem; display: block; margin-bottom: 16px;
             color: var(--gold); opacity: 0.4;
+            font-family: 'Orbitron', monospace;
         }
         .empty-state h3 {
             font-family: 'Orbitron', monospace;
@@ -396,9 +421,9 @@
             font-size: 0.8rem; cursor: pointer; text-decoration: none;
             transition: var(--transition);
         }
+        .empty-state .btn-ir .simbolo { font-family: 'Orbitron', monospace; }
         .empty-state .btn-ir:hover { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
 
-        /* Modal */
         .modal-overlay {
             position: fixed; inset: 0;
             background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
@@ -428,7 +453,9 @@
         .modal h2 {
             font-family: 'Orbitron', monospace;
             color: var(--gold); font-size: 1rem; margin-bottom: 16px;
+            display: flex; align-items: center; gap: 8px;
         }
+        .modal h2 .simbolo { font-family: 'Orbitron', monospace; }
 
         .detalle-seccion { margin-bottom: 16px; }
         .detalle-seccion h3 {
@@ -437,6 +464,7 @@
             margin-bottom: 8px;
             display: flex; align-items: center; gap: 6px;
         }
+        .detalle-seccion h3 .simbolo { font-family: 'Orbitron', monospace; }
         .detalle-item {
             display: flex; gap: 10px;
             align-items: center; padding: 8px;
@@ -449,6 +477,8 @@
             background: linear-gradient(135deg, var(--green-deep), var(--green-mid));
             display: flex; align-items: center; justify-content: center;
             font-size: 1.2rem; flex-shrink: 0;
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
         }
         .detalle-item .foto img { width: 100%; height: 100%; object-fit: cover; }
         .detalle-item .info { flex: 1; min-width: 0; }
@@ -534,7 +564,8 @@
         }
         .footer .brand { color: var(--gold); font-weight: 600; }
         .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
-        .footer-links a { color: var(--text-muted); text-decoration: none; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; display: flex; align-items: center; gap: 4px; }
+        .footer-links a .simbolo { font-family: 'Orbitron', monospace; color: var(--gold); opacity: 0.7; }
         .footer-links a:hover { color: var(--gold); }
 
         html.tema-dia, html[data-tema="dia"] {
@@ -579,7 +610,7 @@
         <header class="header">
             <a href="/" class="logo" aria-label="Ir a la página de inicio">
                 <span class="logo-hex">◈</span>
-                <span class="logo-text">Sariel<span>'s</span></span>
+                <span class="logo-text">Csariel<span>'s</span></span>
                 <span class="logo-badge">✦ WEB3</span>
             </a>
             <div class="header-actions">
@@ -590,38 +621,38 @@
         </header>
 
         <nav class="main-nav" aria-label="Navegación principal">
-            <a href="/" class="nav-link">⌂ Inicio</a>
-            <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
-            <a href="/features/perfil/perfil.html" class="nav-link">◆ Perfil</a>
-            <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
-            <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
-            <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
-            <a href="/features/videos/videos.html" class="nav-link">🎬 Videos</a>
-            <a href="/features/grupos/grupos.html" class="nav-link">👥 Grupos</a>
-            <a href="/features/mercado/index.html" class="nav-link active">🛒 Mercado</a>
+            <a href="/" class="nav-link"><span class="nav-simbolo">◈</span> Inicio</a>
+            <a href="/features/muro/muro.html" class="nav-link"><span class="nav-simbolo">◆</span> Muro</a>
+            <a href="/features/perfil/perfil.html" class="nav-link"><span class="nav-simbolo">◇</span> Perfil</a>
+            <a href="/features/mensajes/contactos.html" class="nav-link"><span class="nav-simbolo">●</span> Contactos</a>
+            <a href="/features/live/live.html" class="nav-link live"><span class="nav-simbolo">◉</span> Live</a>
+            <a href="/features/internet/internet.html" class="nav-link"><span class="nav-simbolo">◆</span> Internet</a>
+            <a href="/features/videos/videos.html" class="nav-link"><span class="nav-simbolo">◇</span> Videos</a>
+            <a href="/features/grupos/grupos.html" class="nav-link"><span class="nav-simbolo">◆</span> Grupos</a>
+            <a href="/features/mercado/index.html" class="nav-link active"><span class="nav-simbolo">◈</span> Mercado</a>
         </nav>
 
         <a href="/features/mercado/vendedor/panel.html" class="btn-back">
-            ← <span data-clave="vendedor_volver_panel">Volver al panel</span>
+            <span class="simbolo">◈</span> <span data-clave="vendedor_volver_panel">Volver al panel</span>
         </a>
 
         <div class="titulo">
-            <h1>📥 <span data-clave="vendedor_pedidos_entrantes">Pedidos entrantes</span></h1>
+            <h1><span class="simbolo">◈</span> <span data-clave="vendedor_pedidos_entrantes">Pedidos entrantes</span></h1>
             <span class="contador-badge" id="contadorPendientes">0</span>
         </div>
 
         <div class="filtros" id="filtrosContainer">
             <button class="filtro-btn active" data-filtro="pendientes" onclick="filtrarPedidos('pendientes', this)">
-                <span>⏳</span> <span data-clave="vendedor_filtro_pendientes">Pendientes</span>
+                <span class="simbolo">✶</span> <span data-clave="vendedor_filtro_pendientes">Pendientes</span>
             </button>
             <button class="filtro-btn" data-filtro="activos" onclick="filtrarPedidos('activos', this)">
-                <span>🔥</span> <span data-clave="vendedor_filtro_activos">En curso</span>
+                <span class="simbolo">✧</span> <span data-clave="vendedor_filtro_activos">En curso</span>
             </button>
             <button class="filtro-btn" data-filtro="completados" onclick="filtrarPedidos('completados', this)">
-                <span>✅</span> <span data-clave="vendedor_filtro_completados">Completados</span>
+                <span class="simbolo">●</span> <span data-clave="vendedor_filtro_completados">Completados</span>
             </button>
             <button class="filtro-btn" data-filtro="todos" onclick="filtrarPedidos('todos', this)">
-                <span>◈</span> <span data-clave="vendedor_filtro_todos">Todos</span>
+                <span class="simbolo">◈</span> <span data-clave="vendedor_filtro_todos">Todos</span>
             </button>
         </div>
 
@@ -633,32 +664,30 @@
         </div>
 
         <footer class="footer">
-            <span><span class="brand">◈ Sariel's</span> · <span data-clave="mercado_footer">Sabor al Paladar · WEB3</span></span>
+            <span><span class="brand">© Csariel's</span> · <span data-clave="mercado_footer">Sabor al Paladar · WEB3</span></span>
             <div class="footer-links">
-                <a href="/terminos" data-clave="footer_terminos">📜 Términos</a>
-                <a href="/privacidad" data-clave="footer_privacidad">🔒 Privacidad</a>
-                <a href="/cookies" data-clave="footer_cookies">🍪 Cookies</a>
-                <a href="/live-terminos" data-clave="footer_terminos_live">📡 Términos de Live</a>
+                <a href="/terminos" data-clave="footer_terminos"><span class="simbolo">◇</span> Términos</a>
+                <a href="/privacidad" data-clave="footer_privacidad"><span class="simbolo">◆</span> Privacidad</a>
+                <a href="/cookies" data-clave="footer_cookies"><span class="simbolo">◇</span> Cookies</a>
+                <a href="/live-terminos" data-clave="footer_terminos_live"><span class="simbolo">◆</span> Términos de Live</a>
                 <span style="opacity:0.3;">⚡ Polygon</span>
             </div>
         </footer>
 
     </div>
 
-    <!-- Modal detalle -->
     <div class="modal-overlay" id="modalDetalle">
         <div class="modal">
             <button class="close-btn" onclick="cerrarModalDetalle()">×</button>
-            <h2 id="modalDetalleTitulo">📦 Detalle del pedido</h2>
+            <h2><span class="simbolo">◈</span> <span id="modalDetalleTitulo">Detalle del pedido</span></h2>
             <div id="modalDetalleContenido"></div>
         </div>
     </div>
 
-    <!-- Modal rechazar -->
     <div class="modal-overlay" id="modalRechazar">
         <div class="modal" style="border-color: var(--danger); max-width: 400px;">
             <button class="close-btn" onclick="cerrarModalRechazar()">×</button>
-            <h2 style="color: var(--danger);">⚠️ Rechazar pedido</h2>
+            <h2 style="color: var(--danger);"><span class="simbolo">✶</span> Rechazar pedido</h2>
             <p style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:14px; text-align:center; line-height:1.5;">
                 <span data-clave="vendedor_rechazar_desc">¿Seguro que quieres rechazar este pedido? El comprador será notificado.</span>
             </p>
@@ -668,10 +697,10 @@
             </div>
             <div style="display:flex; gap:10px;">
                 <button class="btn-accion-p btn-ver" onclick="cerrarModalRechazar()" style="flex:1;">
-                    <span data-clave="vendedor_no_volver">No, volver</span>
+                    <span class="simbolo">◈</span> <span data-clave="vendedor_no_volver">No, volver</span>
                 </button>
                 <button class="btn-accion-p btn-rechazar" id="btnConfirmarRechazo" onclick="confirmarRechazo()" style="flex:1;">
-                    <span data-clave="vendedor_si_rechazar">Sí, rechazar</span>
+                    <span class="simbolo">✶</span> <span data-clave="vendedor_si_rechazar">Sí, rechazar</span>
                 </button>
             </div>
         </div>
@@ -684,7 +713,7 @@
         background:#ff3366; color:#fff; padding:12px 16px; font-family:monospace;
         font-size:0.75rem; word-break:break-word; box-shadow:0 4px 20px rgba(0,0,0,0.4);
     ">
-        <strong>⚠️ Error detectado:</strong>
+        <strong><span style="font-family:Orbitron,monospace;">✶</span> Error detectado:</strong>
         <span id="errorBannerText"></span>
         <button onclick="document.getElementById('errorBanner').style.display='none'"
             style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">
@@ -694,20 +723,14 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/features/shared/js/idiomas.js"></script>
-
-<script>
-// ================================================================
-// CONFIGURACIÓN
-// ================================================================
+</body>
+</html><script>
 var supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
 var supabaseKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
 var supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 window.supabaseClient = supabaseClient;
 var supabase = supabaseClient;
 
-// ================================================================
-// ESTADO
-// ================================================================
 var sessionUser = null;
 var tiendaActual = null;
 var pedidosCache = [];
@@ -722,9 +745,6 @@ var AUTO_REFRESH_MS = 15000;
 var F_ACTIVOS = ['aceptado', 'preparando', 'listo', 'asignado', 'en_camino'];
 var F_COMPLETADOS = ['entregado', 'cancelado', 'rechazado'];
 
-// ================================================================
-// BANNER DE ERRORES
-// ================================================================
 function mostrarErrorEnPantalla(mensaje) {
     var banner = document.getElementById('errorBanner');
     var texto = document.getElementById('errorBannerText');
@@ -737,9 +757,6 @@ window.addEventListener('unhandledrejection', function (event) {
     mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason && event.reason.message ? event.reason.message : event.reason));
 });
 
-// ================================================================
-// TOAST
-// ================================================================
 function showToast(mensaje, tipo) {
     try {
         var toastEl = document.getElementById('toast');
@@ -754,9 +771,6 @@ function showToast(mensaje, tipo) {
     } catch (e) { console.warn('Toast error:', e); }
 }
 
-// ================================================================
-// HELPERS
-// ================================================================
 function escapeHTML(texto) {
     if (!texto) return '';
     var div = document.createElement('div');
@@ -785,22 +799,19 @@ function formatearFecha(fecha) {
 
 function traducirEstado(estado) {
     var mapa = {
-        'pendiente': '⏳ Pendiente',
-        'aceptado': '✓ Aceptado',
-        'preparando': '🍳 Preparando',
-        'listo': '📦 Listo',
-        'asignado': '🛵 Asignado',
-        'en_camino': '🛵 En camino',
-        'entregado': '✅ Entregado',
-        'cancelado': '❌ Cancelado',
-        'rechazado': '❌ Rechazado'
+        'pendiente': '<span class="simbolo">◈</span> Pendiente',
+        'aceptado': '<span class="simbolo">●</span> Aceptado',
+        'preparando': '<span class="simbolo">◆</span> Preparando',
+        'listo': '<span class="simbolo">✦</span> Listo',
+        'asignado': '<span class="simbolo">◆</span> Asignado',
+        'en_camino': '<span class="simbolo">✧</span> En camino',
+        'entregado': '<span class="simbolo">●</span> Entregado',
+        'cancelado': '<span class="simbolo">✶</span> Cancelado',
+        'rechazado': '<span class="simbolo">✶</span> Rechazado'
     };
     return mapa[estado] || estado;
 }
 
-// ================================================================
-// CARGAR USUARIO
-// ================================================================
 async function cargarUsuarioActual() {
     try {
         var result = await supabase.auth.getSession();
@@ -820,9 +831,6 @@ async function cargarUsuarioActual() {
     } catch (e) { console.error('Error usuario:', e); return null; }
 }
 
-// ================================================================
-// CARGAR TIENDA
-// ================================================================
 async function cargarTienda() {
     try {
         var result = await supabase
@@ -841,9 +849,6 @@ async function cargarTienda() {
     }
 }
 
-// ================================================================
-// CARGAR PEDIDOS DE LA TIENDA
-// ================================================================
 async function cargarPedidos(silencioso) {
     var container = document.getElementById('pedidosContainer');
     if (!container) return;
@@ -863,7 +868,6 @@ async function cargarPedidos(silencioso) {
         if (result.error) throw result.error;
         var nuevos = result.data || [];
 
-        // Detectar nuevos
         var idsPrevios = Object.keys(pedidosVistos);
         var hayNuevos = false;
         nuevos.forEach(function (p) {
@@ -884,20 +888,17 @@ async function cargarPedidos(silencioso) {
         renderizarPedidos();
 
         if (silencioso && hayNuevos) {
-            showToast('🔔 ¡Tienes pedido(s) nuevo(s)!', 'success');
+            showToast('◈ ¡Tienes pedido(s) nuevo(s)!', 'success');
         }
 
     } catch (e) {
         console.error('Error pedidos:', e);
         if (!silencioso) {
-            container.innerHTML = '<div class="empty-state"><span class="icon">⚠️</span><h3>Error al cargar</h3><p>' + escapeHTML(e.message) + '</p></div>';
+            container.innerHTML = '<div class="empty-state"><span class="icon">✶</span><h3>Error al cargar</h3><p>' + escapeHTML(e.message) + '</p></div>';
         }
     }
 }
 
-// ================================================================
-// CARGAR ITEMS Y COMPRADORES EN BATCH
-// ================================================================
 async function cargarItemsBatch(pedidos) {
     if (!pedidos || pedidos.length === 0) return;
     var ids = pedidos.map(function (p) { return p.id; });
@@ -946,9 +947,6 @@ async function cargarCompradoresBatch(pedidos) {
     }
 }
 
-// ================================================================
-// CONTADOR
-// ================================================================
 function actualizarContadorPendientes() {
     var pendientes = pedidosCache.filter(function (p) { return p.estado === 'pendiente'; }).length;
     var el = document.getElementById('contadorPendientes');
@@ -958,9 +956,6 @@ function actualizarContadorPendientes() {
     else el.classList.remove('urgente');
 }
 
-// ================================================================
-// FILTRAR
-// ================================================================
 function filtrarPedidos(filtro, btn) {
     filtroActual = filtro;
     document.querySelectorAll('.filtro-btn').forEach(function (b) { b.classList.remove('active'); });
@@ -968,9 +963,6 @@ function filtrarPedidos(filtro, btn) {
     renderizarPedidos();
 }
 
-// ================================================================
-// RENDER
-// ================================================================
 function renderizarPedidos() {
     var container = document.getElementById('pedidosContainer');
     if (!container) return;
@@ -991,9 +983,9 @@ function renderizarPedidos() {
             : '<h3 data-clave="vendedor_sin_pedidos_filtro">Sin pedidos en este filtro</h3><p data-clave="vendedor_sin_pedidos_filtro_desc">Prueba con otro filtro.</p>';
 
         container.innerHTML = '<div class="empty-state">' +
-            '<span class="icon">📥</span>' +
+            '<span class="icon">◈</span>' +
             mensajeVacio +
-            '<a href="/features/mercado/vendedor/panel.html" class="btn-ir">🏪 <span data-clave="vendedor_ir_panel">Ir al panel</span></a>' +
+            '<a href="/features/mercado/vendedor/panel.html" class="btn-ir"><span class="simbolo">◆</span> <span data-clave="vendedor_ir_panel">Ir al panel</span></a>' +
         '</div>';
         if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
         return;
@@ -1029,63 +1021,62 @@ function renderPedidoCard(p) {
         itemsHtml += '<div class="mas-items">+' + (items.length - 3) + ' producto(s) más</div>';
     }
 
-    // Chips de info
     var chips = '';
     if (p.tipo_entrega === 'pickup') {
-        chips += '<span class="chip-mini pickup">🏪 Recoger</span>';
+        chips += '<span class="chip-mini pickup"><span class="simbolo">◇</span> Recoger</span>';
     } else {
-        chips += '<span class="chip-mini">🛵 Delivery</span>';
+        chips += '<span class="chip-mini"><span class="simbolo">◆</span> Delivery</span>';
         if (p.envio_cobrado_en_app) {
-            chips += '<span class="chip-mini envio-app">💳 Envío ' + formatearPrecio(p.envio_mxn) + '</span>';
+            chips += '<span class="chip-mini envio-app"><span class="simbolo">◆</span> Envío ' + formatearPrecio(p.envio_mxn) + '</span>';
         } else {
-            chips += '<span class="chip-mini envio-efectivo">💵 Envío al repartidor</span>';
+            chips += '<span class="chip-mini envio-efectivo"><span class="simbolo">◇</span> Envío al repartidor</span>';
         }
     }
     if (p.forma_pago) {
-        var iconPago = p.forma_pago === 'transferencia' ? '🏦' : '💵';
+        var iconPago = p.forma_pago === 'transferencia' ? '<span class="simbolo">◇</span>' : '<span class="simbolo">◆</span>';
         chips += '<span class="chip-mini">' + iconPago + ' ' + escapeHTML(p.forma_pago) + '</span>';
     }
 
-    // Alerta si lleva mucho tiempo pendiente (>15 min)
     if (estado === 'pendiente' && p.created_at) {
         var minEspera = Math.floor((new Date() - new Date(p.created_at)) / 60000);
         if (minEspera > 15) {
-            chips += '<span class="chip-mini urgente">⚠️ Esperando ' + minEspera + ' min</span>';
+            chips += '<span class="chip-mini urgente"><span class="simbolo">✶</span> Esperando ' + minEspera + ' min</span>';
         }
     }
 
-    // Botones según estado
     var botones = '';
     if (estado === 'pendiente') {
         botones =
             '<button class="btn-accion-p btn-aceptar" onclick="cambiarEstadoPedido(' + p.id + ', \'aceptado\', this)">' +
-                '✓ <span data-clave="vendedor_aceptar">Aceptar</span>' +
+                '<span class="simbolo">●</span> <span data-clave="vendedor_aceptar">Aceptar</span>' +
             '</button>' +
             '<button class="btn-accion-p btn-rechazar" onclick="abrirModalRechazar(' + p.id + ')">' +
-                '❌ <span data-clave="vendedor_rechazar">Rechazar</span>' +
+                '<span class="simbolo">✶</span> <span data-clave="vendedor_rechazar">Rechazar</span>' +
             '</button>';
     } else if (estado === 'aceptado') {
         botones =
             '<button class="btn-accion-p btn-preparar" onclick="cambiarEstadoPedido(' + p.id + ', \'preparando\', this)">' +
-                '🍳 <span data-clave="vendedor_preparar">Empezar a preparar</span>' +
+                '<span class="simbolo">◆</span> <span data-clave="vendedor_preparar">Empezar a preparar</span>' +
             '</button>';
     } else if (estado === 'preparando') {
         botones =
             '<button class="btn-accion-p btn-listo" onclick="cambiarEstadoPedido(' + p.id + ', \'listo\', this)">' +
-                '📦 <span data-clave="vendedor_marcar_listo">Marcar listo</span>' +
+                '<span class="simbolo">✦</span> <span data-clave="vendedor_marcar_listo">Marcar listo</span>' +
             '</button>';
     }
 
     botones += '<button class="btn-accion-p btn-ver" onclick="verDetalle(' + p.id + ')">' +
-        '👁️ <span data-clave="vendedor_ver">Ver</span>' +
+        '<span class="simbolo">◈</span> <span data-clave="vendedor_ver">Ver</span>' +
     '</button>';
 
-    var extra = p.tipo_entrega === 'pickup' ? '🏪 Recoger en tienda' : '🛵 Delivery';
+    var extra = p.tipo_entrega === 'pickup' 
+        ? '<span><span class="simbolo">◇</span> Recoger en tienda</span>' 
+        : '<span><span class="simbolo">◆</span> Delivery</span>';
 
     return '<div class="pedido-card ' + estado + (pedidosVistos[p.id] === 'nuevo' ? ' nuevo' : '') + '" data-pedido-id="' + p.id + '">' +
         '<div class="header-pedido">' +
             '<div>' +
-                '<div class="codigo">' + escapeHTML(p.codigo || '—') + '</div>' +
+                '<div class="codigo"><span class="simbolo">✦</span> ' + escapeHTML(p.codigo || '—') + '</div>' +
                 '<div class="fecha">' + formatearFecha(p.created_at) + '</div>' +
             '</div>' +
             '<div class="derecha">' +
@@ -1094,10 +1085,10 @@ function renderPedidoCard(p) {
         '</div>' +
 
         '<div class="cliente-info">' +
-            '<span class="icono-cli">👤</span>' +
+            '<span class="icono-cli">●</span>' +
             '<div style="flex:1;min-width:0;">' +
                 '<div class="nombre-cli">' + escapeHTML(nombreCli) + '</div>' +
-                (telCli ? '<div class="tel-cli">📞 ' + escapeHTML(telCli) + '</div>' : '') +
+                (telCli ? '<div class="tel-cli"><span class="simbolo">◆</span> ' + escapeHTML(telCli) + '</div>' : '') +
             '</div>' +
         '</div>' +
 
@@ -1106,7 +1097,7 @@ function renderPedidoCard(p) {
 
         '<div class="footer-pedido">' +
             '<div class="info-extra">' +
-                '<span>' + extra + '</span>' +
+                extra +
                 '<span>' + (p.total_items || items.length) + ' item(s)</span>' +
             '</div>' +
             '<div class="total">' + formatearPrecio(p.total_mxn) + '</div>' +
@@ -1116,11 +1107,8 @@ function renderPedidoCard(p) {
     '</div>';
 }
 
-// ================================================================
-// CAMBIAR ESTADO
-// ================================================================
 async function cambiarEstadoPedido(pedidoId, nuevoEstado, btn) {
-    if (btn) { btn.disabled = true; btn.innerHTML = '⏳...'; }
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="simbolo">◈</span>...'; }
 
     try {
         var update = { estado: nuevoEstado };
@@ -1143,10 +1131,10 @@ async function cambiarEstadoPedido(pedidoId, nuevoEstado, btn) {
         if (idx !== -1) pedidosCache[idx] = result.data;
 
         var mensajes = {
-            'aceptado': '✓ Pedido aceptado',
-            'preparando': '🍳 Preparando pedido',
-            'listo': '📦 Pedido listo para repartidor',
-            'entregado': '✅ Pedido entregado'
+            'aceptado': '● Pedido aceptado',
+            'preparando': '◆ Preparando pedido',
+            'listo': '✦ Pedido listo para repartidor',
+            'entregado': '● Pedido entregado'
         };
         showToast(mensajes[nuevoEstado] || 'Estado actualizado', 'success');
 
@@ -1155,14 +1143,11 @@ async function cambiarEstadoPedido(pedidoId, nuevoEstado, btn) {
 
     } catch (e) {
         console.error('Error cambiando estado:', e);
-        showToast('❌ ' + e.message, 'error');
+        showToast('✶ ' + e.message, 'error');
         if (btn) { btn.disabled = false; }
     }
 }
 
-// ================================================================
-// RECHAZAR
-// ================================================================
 function abrirModalRechazar(pedidoId) {
     pedidoARechazar = pedidoId;
     var ta = document.getElementById('motivoRechazo');
@@ -1181,7 +1166,7 @@ async function confirmarRechazo() {
     if (!pedidoARechazar) return;
 
     var btn = document.getElementById('btnConfirmarRechazo');
-    if (btn) { btn.disabled = true; btn.innerHTML = 'Rechazando...'; }
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="simbolo">◈</span> Rechazando...'; }
 
     var motivo = (document.getElementById('motivoRechazo') || {}).value || '';
 
@@ -1206,20 +1191,17 @@ async function confirmarRechazo() {
         if (idx !== -1) pedidosCache[idx] = result.data;
 
         cerrarModalRechazar();
-        showToast('Pedido rechazado', 'warning');
+        showToast('✶ Pedido rechazado', 'warning');
         actualizarContadorPendientes();
         renderizarPedidos();
 
     } catch (e) {
         console.error('Error rechazando:', e);
-        showToast('❌ ' + e.message, 'error');
-        if (btn) { btn.disabled = false; btn.innerHTML = '<span data-clave="vendedor_si_rechazar">Sí, rechazar</span>'; }
+        showToast('✶ ' + e.message, 'error');
+        if (btn) { btn.disabled = false; btn.innerHTML = '<span class="simbolo">✶</span> <span data-clave="vendedor_si_rechazar">Sí, rechazar</span>'; }
     }
 }
 
-// ================================================================
-// VER DETALLE
-// ================================================================
 function verDetalle(pedidoId) {
     var p = pedidosCache.find(function (x) { return x.id === pedidoId; });
     if (!p) return;
@@ -1229,7 +1211,7 @@ function verDetalle(pedidoId) {
     var estado = (p.estado || 'pendiente').toLowerCase();
 
     var titulo = document.getElementById('modalDetalleTitulo');
-    if (titulo) titulo.innerHTML = '📦 ' + escapeHTML(p.codigo || 'Pedido');
+    if (titulo) titulo.innerHTML = escapeHTML(p.codigo || 'Pedido');
 
     var html = '';
 
@@ -1237,21 +1219,19 @@ function verDetalle(pedidoId) {
         '<span class="estado-badge ' + estado + '" style="display:inline-block;">' + traducirEstado(estado) + '</span>' +
     '</div>';
 
-    // Datos del comprador
     html += '<div class="detalle-seccion">' +
-        '<h3>👤 <span data-clave="vendedor_cliente">Cliente</span></h3>' +
+        '<h3><span class="simbolo">●</span> <span data-clave="vendedor_cliente">Cliente</span></h3>' +
         '<div class="dato-fila"><span class="lbl">Nombre</span><span class="val">' + escapeHTML(comprador ? (comprador.nombre || comprador.handle) : '—') + '</span></div>' +
         (comprador && comprador.telefono ? '<div class="dato-fila"><span class="lbl">Teléfono</span><span class="val">' + escapeHTML(comprador.telefono) + '</span></div>' : '') +
         '<div class="dato-fila"><span class="lbl">Fecha</span><span class="val">' + formatearFecha(p.created_at) + '</span></div>' +
     '</div>';
 
-    // Productos
     html += '<div class="detalle-seccion">' +
-        '<h3>🛒 <span data-clave="vendedor_productos">Productos</span></h3>';
+        '<h3><span class="simbolo">◈</span> <span data-clave="vendedor_productos">Productos</span></h3>';
     items.forEach(function (it) {
         var fotoHtml = it.foto_url
-            ? '<img src="' + escapeHTML(it.foto_url) + '" alt="" onerror="this.style.display=\'none\';this.parentElement.textContent=\'📦\';" />'
-            : '📦';
+            ? '<img src="' + escapeHTML(it.foto_url) + '" alt="" onerror="this.style.display=\'none\';this.parentElement.textContent=\'◈\';" />'
+            : '◈';
         html += '<div class="detalle-item">' +
             '<div class="foto">' + fotoHtml + '</div>' +
             '<div class="info">' +
@@ -1263,16 +1243,14 @@ function verDetalle(pedidoId) {
     });
     html += '</div>';
 
-    // Entrega
     html += '<div class="detalle-seccion">' +
-        '<h3>🚚 <span data-clave="vendedor_entrega">Entrega</span></h3>' +
-        '<div class="dato-fila"><span class="lbl">Tipo</span><span class="val">' + (p.tipo_entrega === 'pickup' ? '🏪 Recoger' : '🛵 Delivery') + '</span></div>' +
+        '<h3><span class="simbolo">◆</span> <span data-clave="vendedor_entrega">Entrega</span></h3>' +
+        '<div class="dato-fila"><span class="lbl">Tipo</span><span class="val">' + (p.tipo_entrega === 'pickup' ? '◇ Recoger' : '◆ Delivery') + '</span></div>' +
         (p.direccion_entrega ? '<div class="dato-fila"><span class="lbl">Dirección</span><span class="val">' + escapeHTML(p.direccion_entrega) + '</span></div>' : '') +
         (p.telefono_contacto ? '<div class="dato-fila"><span class="lbl">Contacto</span><span class="val">' + escapeHTML(p.telefono_contacto) + '</span></div>' : '') +
         (p.notas ? '<div class="dato-fila"><span class="lbl">Notas</span><span class="val">' + escapeHTML(p.notas) + '</span></div>' : '') +
     '</div>';
 
-    // Totales
     html += '<div class="total-resumen">' +
         '<div class="fila"><span>Subtotal</span><span>' + formatearPrecio(p.subtotal_mxn) + '</span></div>';
 
@@ -1298,9 +1276,6 @@ function cerrarModalDetalle() {
     if (modal) modal.classList.remove('show');
 }
 
-// ================================================================
-// AUTO REFRESH
-// ================================================================
 function iniciarAutoRefresh() {
     detenerAutoRefresh();
     autoRefreshTimer = setInterval(function () {
@@ -1325,14 +1300,8 @@ document.addEventListener('visibilitychange', function () {
     }
 });
 
-// ================================================================
-// VER TOKENS
-// ================================================================
 function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
 
-// ================================================================
-// INICIALIZACIÓN
-// ================================================================
 document.addEventListener('DOMContentLoaded', async function () {
     await cargarUsuarioActual();
 
@@ -1347,10 +1316,10 @@ document.addEventListener('DOMContentLoaded', async function () {
         var container = document.getElementById('pedidosContainer');
         if (container) {
             container.innerHTML = '<div class="empty-state">' +
-                '<span class="icon">🏪</span>' +
+                '<span class="icon">◈</span>' +
                 '<h3 data-clave="vendedor_sin_tienda_todavia">Aún no tienes tienda</h3>' +
                 '<p data-clave="vendedor_sin_tienda_desc">Crea tu tienda primero para ver pedidos.</p>' +
-                '<a href="/features/mercado/vendedor/panel.html" class="btn-ir">🏪 <span data-clave="vendedor_crear_tienda">Crear mi tienda</span></a>' +
+                '<a href="/features/mercado/vendedor/panel.html" class="btn-ir"><span class="simbolo">◆</span> <span data-clave="vendedor_crear_tienda">Crear mi tienda</span></a>' +
             '</div>';
         }
         return;
@@ -1363,13 +1332,11 @@ document.addEventListener('DOMContentLoaded', async function () {
         try {
             if (typeof window.inicializarIdiomas === 'function') {
                 await window.inicializarIdiomas();
-                console.log('✅ Idiomas aplicados a pedidos del vendedor');
             }
         } catch (e) { console.warn('Error idiomas:', e); }
     }, 400);
 });
 
-// Cerrar modales con click fuera
 document.addEventListener('click', function (e) {
     var modalDet = document.getElementById('modalDetalle');
     var modalRech = document.getElementById('modalRechazar');
@@ -1377,9 +1344,6 @@ document.addEventListener('click', function (e) {
     if (e.target === modalRech) cerrarModalRechazar();
 });
 
-// ================================================================
-// EXPOSICIÓN GLOBAL
-// ================================================================
 window.verTokens = verTokens;
 window.showToast = showToast;
 window.filtrarPedidos = filtrarPedidos;
@@ -1391,5 +1355,3 @@ window.verDetalle = verDetalle;
 window.cerrarModalDetalle = cerrarModalDetalle;
 window.cargarPedidos = cargarPedidos;
 </script>
-</body>
-</html>
