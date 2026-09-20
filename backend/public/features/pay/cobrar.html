@@ -1,0 +1,1182 @@
+<!-- ================================================================
+     CSARIEL'S ECOSYSTEM
+     Csariel's Pay - Cobrar con QR
+     Ruta: /features/pay/cobrar.html
+     ================================================================ -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>◈ Cobrar con QR · Csariel's Pay</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+
+    <script src="/features/shared/js/apariencia-global.js"></script>
+
+    <style>
+        :root {
+            --gold: #D4AF37;
+            --gold-dark: #b8923a;
+            --gold-light: #e8c84a;
+            --green-deep: #0F2D1A;
+            --green-mid: #1a4a2a;
+            --green-bright: #2a6a3a;
+            --space: #05080f;
+            --text-primary: #f0f4f8;
+            --text-secondary: #c0d8e8;
+            --text-muted: #8aa8b8;
+            --glass-bg: rgba(15, 45, 26, 0.55);
+            --glass-border: rgba(212, 175, 55, 0.15);
+            --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
+            --radius: 16px;
+            --radius-xl: 24px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --success: #00d68f;
+            --danger: #ff3366;
+            --warning: #f7d44a;
+            --cyan: #00e5ff;
+            --purple: #a855f7;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--space);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            background-image: radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
+        }
+
+        .nebula { position: fixed; border-radius: 50%; filter: blur(120px); opacity: 0.12; pointer-events: none; z-index: 0; animation: nebula-drift 25s ease-in-out infinite alternate; }
+        .nebula-1 { width: 700px; height: 700px; background: var(--green-bright); top: -15%; right: -15%; }
+        .nebula-2 { width: 600px; height: 600px; background: var(--gold-light); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.06; }
+        @keyframes nebula-drift { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(40px,-30px) scale(1.15); } }
+
+        .app { position: relative; z-index: 1; max-width: 640px; width: 100%; margin: 0 auto; padding: 12px 16px 30px; }
+
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0 14px; border-bottom: 1px solid var(--glass-border);
+            background: rgba(5, 8, 15, 0.92); position: sticky; top: 0; z-index: 100;
+        }
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .logo-hex { font-size: 1.8rem; color: var(--gold); font-family: 'Orbitron', monospace; }
+        .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--text-primary); letter-spacing: 2px; }
+        .logo-text span { color: var(--gold); }
+        .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; }
+        .token-badge { display: flex; align-items: center; gap: 6px; background: rgba(212,175,55,0.1); border: 1px solid rgba(212,175,55,0.15); padding: 4px 14px; border-radius: 20px; font-size: 0.7rem; color: var(--gold); font-family: 'Orbitron', monospace; cursor: pointer; }
+
+        .main-nav {
+            display: flex; gap: 4px; background: rgba(15,45,26,0.3); border-radius: var(--radius);
+            padding: 4px; border: 1px solid var(--glass-border); margin: 16px 0 20px; overflow-x: auto;
+        }
+        .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; white-space: nowrap; transition: var(--transition); display: flex; align-items: center; gap: 6px; }
+        .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212,175,55,0.05); }
+        .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); }
+        .main-nav .nav-link .nav-simbolo { color: var(--gold); opacity: 0.7; }
+
+        .pay-header {
+            text-align: center; padding: 8px 0 20px;
+        }
+        .pay-header h1 {
+            font-family: 'Orbitron', monospace; font-size: 1.4rem;
+            color: var(--text-primary); margin-bottom: 6px;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .pay-header h1 .simbolo { color: var(--gold); }
+        .pay-header h1 span { color: var(--gold); }
+        .pay-header p { font-size: 0.75rem; color: var(--text-muted); }
+
+        .card {
+            background: var(--glass-bg); border: 1px solid var(--glass-border);
+            border-radius: var(--radius); padding: 20px; margin-bottom: 16px;
+        }
+
+        .form-group { margin-bottom: 16px; }
+        .form-group label {
+            display: block; font-size: 0.72rem;
+            color: var(--text-muted); margin-bottom: 6px; font-weight: 600;
+        }
+        .form-group label .required { color: var(--danger); }
+        .form-group input,
+        .form-group textarea {
+            width: 100%; padding: 14px 16px;
+            background: rgba(0,0,0,0.35);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px; color: var(--text-primary);
+            font-size: 0.9rem; outline: none;
+            font-family: 'Inter', sans-serif;
+            transition: var(--transition);
+        }
+        .form-group input:focus,
+        .form-group textarea:focus {
+            border-color: var(--gold);
+            background: rgba(0,0,0,0.5);
+        }
+        .form-group .input-monto {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.6rem;
+            text-align: center;
+            letter-spacing: 2px;
+            padding: 18px;
+        }
+        .form-group .helper {
+            font-size: 0.62rem; color: var(--text-muted); margin-top: 4px;
+        }
+        .form-group .helper.error { color: var(--danger); }
+        .form-group .helper.success { color: var(--success); }
+
+        .metodos-grid {
+            display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;
+        }
+        @media (max-width: 480px) {
+            .metodos-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        .metodo-opcion {
+            display: flex; flex-direction: column; align-items: center;
+            padding: 10px 6px; border-radius: 10px;
+            border: 1px solid var(--glass-border);
+            background: rgba(0,0,0,0.25);
+            cursor: pointer; transition: var(--transition);
+            gap: 4px;
+        }
+        .metodo-opcion:hover { border-color: var(--gold); }
+        .metodo-opcion.activo {
+            background: rgba(212,175,55,0.15);
+            border-color: var(--gold);
+        }
+        .metodo-opcion .icono {
+            font-size: 1.2rem; color: var(--gold);
+            font-family: 'Orbitron', monospace;
+        }
+        .metodo-opcion .nombre {
+            font-size: 0.6rem; text-align: center;
+            color: var(--text-muted); font-weight: 600;
+        }
+        .metodo-opcion.activo .nombre { color: var(--gold); }
+        .metodo-opcion input { display: none; }
+
+        .btn-primario {
+            width: 100%;
+            padding: 16px; border-radius: 30px;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space); border: none;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700; font-size: 0.85rem;
+            cursor: pointer; transition: var(--transition);
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn-primario:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-gold);
+        }
+        .btn-primario:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .btn-secundario {
+            padding: 12px 20px; border-radius: 20px;
+            background: transparent;
+            border: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+            font-family: 'Inter', sans-serif;
+            font-weight: 600; font-size: 0.78rem;
+            cursor: pointer; transition: var(--transition);
+            display: inline-flex; align-items: center; gap: 6px;
+        }
+        .btn-secundario:hover { border-color: var(--gold); color: var(--gold); }
+
+        /* QR CARD */
+        #qrCard {
+            display: none;
+            text-align: center;
+        }
+        #qrCard.activo { display: block; }
+
+        .qr-info {
+            background: linear-gradient(135deg, rgba(212,175,55,0.15), rgba(15,45,26,0.6));
+            border: 1px solid rgba(212,175,55,0.3);
+            border-radius: var(--radius);
+            padding: 16px; margin-bottom: 18px;
+            text-align: center;
+        }
+        .qr-info .monto {
+            font-family: 'Orbitron', monospace;
+            font-size: 2rem; color: var(--gold);
+            font-weight: 700; line-height: 1;
+            margin-bottom: 6px; letter-spacing: 2px;
+        }
+        .qr-info .monto .moneda {
+            font-size: 0.9rem; color: var(--text-muted); margin-left: 6px;
+        }
+        .qr-info .concepto {
+            font-size: 0.78rem; color: var(--text-secondary);
+        }
+        .qr-info .estado-badge {
+            display: inline-block; margin-top: 10px;
+            padding: 4px 12px; border-radius: 20px;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.65rem; font-weight: 700;
+            letter-spacing: 1px; text-transform: uppercase;
+        }
+        .estado-badge.pending {
+            background: rgba(247,212,74,0.15); color: var(--warning);
+        }
+        .estado-badge.paid {
+            background: rgba(0,214,143,0.2); color: var(--success);
+        }
+        .estado-badge.expired,
+        .estado-badge.cancelled,
+        .estado-badge.failed {
+            background: rgba(255,51,102,0.15); color: var(--danger);
+        }
+
+        .qr-canvas-wrap {
+            display: flex; justify-content: center; align-items: center;
+            padding: 20px; background: #fff;
+            border-radius: 16px; margin-bottom: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            position: relative;
+        }
+        .qr-canvas-wrap canvas {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+        .qr-canvas-wrap .qr-logo {
+            position: absolute;
+            background: #fff;
+            padding: 6px;
+            border-radius: 8px;
+            font-family: 'Orbitron', monospace;
+            font-size: 1.4rem;
+            color: var(--gold);
+            border: 2px solid var(--gold);
+        }
+        .qr-canvas-wrap .qr-logo::before {
+            content: '◈';
+        }
+
+        .link-copiable {
+            display: flex; gap: 8px; margin-bottom: 12px;
+        }
+        .link-copiable input {
+            flex: 1; padding: 12px 14px;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            font-family: 'monospace';
+            outline: none;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .link-copiable .btn-copiar {
+            padding: 12px 16px;
+            background: rgba(212,175,55,0.15);
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            border-radius: 10px;
+            font-size: 0.7rem;
+            cursor: pointer; transition: var(--transition);
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .link-copiable .btn-copiar:hover {
+            background: rgba(212,175,55,0.3);
+        }
+
+        .qr-acciones {
+            display: flex; gap: 8px; flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .pago-recibido-banner {
+            display: none;
+            background: rgba(0,214,143,0.15);
+            border: 2px solid var(--success);
+            border-radius: var(--radius);
+            padding: 20px; margin-bottom: 16px;
+            text-align: center;
+            animation: pulsoVerde 2s ease-in-out infinite;
+        }
+        .pago-recibido-banner.activo { display: block; }
+        .pago-recibido-banner .icono-check {
+            font-size: 2.4rem; color: var(--success);
+            font-family: 'Orbitron', monospace;
+            display: block; margin-bottom: 8px;
+        }
+        .pago-recibido-banner .texto {
+            font-family: 'Orbitron', monospace;
+            font-size: 1rem; color: var(--success);
+            font-weight: 700; letter-spacing: 1px;
+        }
+        .pago-recibido-banner .monto-recibido {
+            font-size: 1.4rem; margin-top: 6px;
+            color: var(--text-primary); font-weight: 700;
+        }
+        @keyframes pulsoVerde {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(0,214,143,0.4); }
+            50% { box-shadow: 0 0 0 12px rgba(0,214,143,0.05); }
+        }
+
+        .historial-hoy {
+            margin-top: 20px;
+        }
+        .historial-hoy .titulo-seccion {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.75rem; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 1px;
+            margin-bottom: 10px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .historial-hoy .titulo-seccion .simbolo { color: var(--gold); }
+        .intencion-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 12px; border-radius: 10px;
+            background: rgba(0,0,0,0.25);
+            margin-bottom: 6px;
+            border: 1px solid transparent;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+        .intencion-item:hover {
+            border-color: var(--gold);
+        }
+        .intencion-item .info { flex: 1; min-width: 0; }
+        .intencion-item .info .monto {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.85rem; color: var(--gold);
+            font-weight: 700;
+        }
+        .intencion-item .info .concepto {
+            font-size: 0.65rem; color: var(--text-muted);
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .intencion-item .estado-mini {
+            font-size: 0.55rem; padding: 3px 8px;
+            border-radius: 10px; font-weight: 600;
+            text-transform: uppercase;
+        }
+        .intencion-item .estado-mini.paid { background: rgba(0,214,143,0.15); color: var(--success); }
+        .intencion-item .estado-mini.pending { background: rgba(247,212,74,0.15); color: var(--warning); }
+        .intencion-item .estado-mini.expired,
+        .intencion-item .estado-mini.failed,
+        .intencion-item .estado-mini.cancelled { background: rgba(255,51,102,0.15); color: var(--danger); }
+
+        .toast {
+            position: fixed; bottom: 30px; right: 20px;
+            background: var(--green-deep); border: 1px solid var(--gold);
+            color: var(--gold); padding: 14px 24px;
+            border-radius: 12px; font-size: 0.8rem;
+            transform: translateY(100px); opacity: 0;
+            transition: all 0.4s ease; z-index: 99999;
+            max-width: 320px; pointer-events: none;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { border-color: var(--danger); color: var(--danger); }
+        .toast.warning { border-color: var(--warning); color: var(--warning); }
+        .toast.success { border-color: var(--success); color: var(--success); }
+
+        .footer {
+            margin-top: 30px; padding-top: 16px;
+            border-top: 1px solid var(--glass-border);
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 0.7rem; color: var(--text-muted);
+            flex-wrap: wrap; gap: 10px;
+        }
+        .footer .brand { color: var(--gold); font-weight: 600; }
+        .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; }
+        .footer-links a:hover { color: var(--gold); }
+
+        .loading-state {
+            text-align: center; padding: 40px 20px;
+            color: var(--text-muted);
+        }
+        .loading-state .spinner {
+            width: 40px; height: 40px;
+            border: 3px solid rgba(212,175,55,0.15);
+            border-top-color: var(--gold);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 12px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        html.tema-dia, html[data-tema="dia"] {
+            --space: #f5f7fa;
+            --text-primary: #1a2332;
+            --text-secondary: #4a5568;
+            --text-muted: #718096;
+            --glass-bg: rgba(255, 255, 255, 0.9);
+            --glass-border: rgba(0, 0, 0, 0.1);
+        }
+        html.tema-dia body, html[data-tema="dia"] body {
+            background: #f5f7fa !important;
+            color: var(--text-primary) !important;
+        }
+        html.tema-dia .nebula, html[data-tema="dia"] .nebula { display: none !important; }
+        html.tema-dia .header, html[data-tema="dia"] .header { background: rgba(255, 255, 255, 0.95) !important; border-bottom-color: rgba(0, 0, 0, 0.1) !important; }
+        html.tema-dia .logo-text, html[data-tema="dia"] .logo-text { color: var(--text-primary) !important; }
+    </style>
+</head>
+<body>
+
+    <div class="nebula nebula-1" aria-hidden="true"></div>
+    <div class="nebula nebula-2" aria-hidden="true"></div>
+
+    <div class="app">
+
+        <header class="header">
+            <a href="/features/pay/panel.html" class="logo" aria-label="Ir al panel">
+                <span class="logo-hex">◈</span>
+                <span class="logo-text">Csariel<span>'s</span></span>
+                <span class="logo-badge">✦ PAY</span>
+            </a>
+            <div class="header-actions">
+                <span class="token-badge" onclick="verTokens()">
+                    ◈ <span id="tokenBadgeCantidad">0</span> Es.stoks
+                </span>
+            </div>
+        </header>
+
+        <nav class="main-nav" aria-label="Navegación principal">
+            <a href="/features/pay/panel.html" class="nav-link"><span class="nav-simbolo">◈</span> Mi Pay</a>
+            <a href="/features/pay/cobrar.html" class="nav-link active"><span class="nav-simbolo">◆</span> Cobrar</a>
+            <a href="/features/pay/retirar.html" class="nav-link"><span class="nav-simbolo">◇</span> Retirar</a>
+            <a href="/features/mercado/index.html" class="nav-link"><span class="nav-simbolo">◈</span> Mercado</a>
+        </nav>
+
+        <div class="pay-header">
+            <h1><span class="simbolo">◆</span> Cobrar con <span>QR</span></h1>
+            <p>Genera un QR para que tu cliente pague al instante.</p>
+        </div>
+
+        <!-- FORMULARIO -->
+        <div class="card" id="cardFormulario">
+            <div class="form-group">
+                <label for="inpMonto">Monto a cobrar <span class="required">*</span></label>
+                <input
+                    type="number"
+                    id="inpMonto"
+                    class="input-monto"
+                    placeholder="$0.00"
+                    min="1"
+                    step="0.01"
+                    inputmode="decimal"
+                    autocomplete="off"
+                />
+                <div class="helper" id="helperMonto">Mínimo $1 MXN</div>
+            </div>
+
+            <div class="form-group">
+                <label for="inpDescripcion">Concepto <span style="color:var(--text-muted);font-weight:400;">(opcional)</span></label>
+                <input
+                    type="text"
+                    id="inpDescripcion"
+                    placeholder="Ej: Pedido #5831"
+                    maxlength="200"
+                    autocomplete="off"
+                />
+                <div class="helper">Aparecerá en el QR y en el recibo.</div>
+            </div>
+
+            <div class="form-group">
+                <label>Método preferido <span style="color:var(--text-muted);font-weight:400;">(opcional)</span></label>
+                <div class="metodos-grid" id="metodosGrid">
+                    <label class="metodo-opcion activo" data-metodo="cualquiera">
+                        <input type="radio" name="metodo" value="cualquiera" checked />
+                        <span class="icono">◈</span>
+                        <span class="nombre">Cualquiera</span>
+                    </label>
+                    <label class="metodo-opcion" data-metodo="tarjeta">
+                        <input type="radio" name="metodo" value="tarjeta" />
+                        <span class="icono">💳</span>
+                        <span class="nombre">Tarjeta</span>
+                    </label>
+                    <label class="metodo-opcion" data-metodo="spei">
+                        <input type="radio" name="metodo" value="spei" />
+                        <span class="icono">🏦</span>
+                        <span class="nombre">SPEI</span>
+                    </label>
+                    <label class="metodo-opcion" data-metodo="usdt">
+                        <input type="radio" name="metodo" value="usdt" />
+                        <span class="icono">₿</span>
+                        <span class="nombre">USDT</span>
+                    </label>
+                    <label class="metodo-opcion" data-metodo="usdc">
+                        <input type="radio" name="metodo" value="usdc" />
+                        <span class="icono">₮</span>
+                        <span class="nombre">USDC</span>
+                    </label>
+                </div>
+                <div class="helper">Solo es una sugerencia. Tu cliente puede elegir otro método si está disponible.</div>
+            </div>
+
+            <button class="btn-primario" id="btnGenerar" onclick="generarQR()" disabled>
+                <span class="simbolo">◆</span> Generar QR
+            </button>
+        </div>
+
+        <!-- ÁREA DEL QR -->
+        <div class="card" id="qrCard">
+            <div class="pago-recibido-banner" id="pagoRecibido">
+                <span class="icono-check">✔</span>
+                <div class="texto">PAGO RECIBIDO</div>
+                <div class="monto-recibido" id="montoRecibido"></div>
+            </div>
+
+            <div class="qr-info">
+                <div class="monto">
+                    <span id="qrMonto">$0.00</span>
+                    <span class="moneda">MXN</span>
+                </div>
+                <div class="concepto" id="qrConcepto">—</div>
+                <div class="estado-badge pending" id="qrEstado">Pendiente</div>
+            </div>
+
+            <div class="qr-canvas-wrap">
+                <canvas id="qrCanvas" width="280" height="280"></canvas>
+                <span class="qr-logo"></span>
+            </div>
+
+            <div class="link-copiable">
+                <input type="text" id="linkInput" readonly value="" />
+                <button class="btn-copiar" onclick="copiarLink()">Copiar</button>
+            </div>
+
+            <div class="qr-acciones">
+                <button class="btn-secundario" id="btnCompartir" onclick="compartir()" style="display:none;">
+                    <span class="simbolo">✦</span> Compartir
+                </button>
+                <button class="btn-secundario" onclick="nuevoCobro()">
+                    <span class="simbolo">✧</span> Nuevo cobro
+                </button>
+            </div>
+        </div>
+
+        <!-- HISTORIAL DE HOY -->
+        <div class="card historial-hoy" id="cardHistorial" style="display:none;">
+            <div class="titulo-seccion">
+                <span class="simbolo">◇</span> Cobros recientes
+            </div>
+            <div id="listaHistorial"></div>
+        </div>
+
+        <footer class="footer">
+            <span><span class="brand">© Csariel's</span> · Csariel's Pay</span>
+            <div class="footer-links">
+                <a href="/features/pay/panel.html">Mi Pay</a>
+                <a href="/features/pay/retirar.html">Retirar</a>
+                <a href="/terminos">Términos</a>
+            </div>
+        </footer>
+
+    </div>
+
+    <div class="toast" id="toast" role="alert" aria-live="polite"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="/features/shared/js/idiomas.js"></script>
+<script>
+// ================================================================
+// CSARIEL'S PAY - COBRAR CON QR
+// ================================================================
+
+var supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
+var supabaseKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+var supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+window.supabaseClient = supabaseClient;
+
+var sessionUser = null;
+var intencionActual = null;
+var pollingInterval = null;
+var pollingInicio = 0;
+var POLLING_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutos máximo de polling activo
+var POLLING_INTERVAL_MS = 5000; // consultar cada 5 segundos
+
+var STORAGE_KEY_INTENCION = 'csariels_pay_intencion_actual';
+
+// ================================================================
+// UTILIDADES
+// ================================================================
+
+function showToast(mensaje, tipo) {
+    try {
+        var toastEl = document.getElementById('toast');
+        if (!toastEl) { console.warn(mensaje); return; }
+        toastEl.textContent = mensaje;
+        toastEl.className = 'toast show';
+        if (tipo === 'error') toastEl.classList.add('error');
+        else if (tipo === 'warning') toastEl.classList.add('warning');
+        else if (tipo === 'success') toastEl.classList.add('success');
+        clearTimeout(toastEl._timeout);
+        toastEl._timeout = setTimeout(function () { toastEl.classList.remove('show'); }, 3500);
+    } catch (e) { console.warn('Toast error:', e); }
+}
+
+function escapeHTML(texto) {
+    if (!texto) return '';
+    var div = document.createElement('div');
+    div.textContent = texto;
+    return div.innerHTML;
+}
+
+function formatearMonto(monto) {
+    var n = Number(monto) || 0;
+    return '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+function verTokens() {
+    window.location.href = '/features/perfil/perfil.html';
+}
+
+// ================================================================
+// FETCH AUTENTICADO
+// ================================================================
+
+async function fetchAutenticado(url, opciones) {
+    var opts = opciones || {};
+    var session = await supabaseClient.auth.getSession();
+    var token = session.data.session ? session.data.session.access_token : null;
+
+    if (!token) {
+        throw new Error('No autenticado');
+    }
+
+    var headers = Object.assign(
+        {
+            'Authorization': 'Bearer ' + token,
+            'Accept': 'application/json'
+        },
+        opts.headers || {}
+    );
+
+    if (opts.body && typeof opts.body === 'object') {
+        headers['Content-Type'] = 'application/json';
+        opts.body = JSON.stringify(opts.body);
+    }
+
+    opts.headers = headers;
+
+    var resp = await fetch(url, opts);
+    var data = await resp.json().catch(function () { return {}; });
+
+    if (!resp.ok) {
+        var err = new Error(data.error || 'Error HTTP ' + resp.status);
+        err.status = resp.status;
+        err.data = data;
+        throw err;
+    }
+
+    return data;
+}
+
+// ================================================================
+// CARGAR USUARIO
+// ================================================================
+
+async function cargarUsuario() {
+    try {
+        var result = await supabaseClient.auth.getSession();
+        var session = result.data.session;
+        if (!session) { sessionUser = null; return null; }
+        sessionUser = session.user;
+
+        var u = await supabaseClient
+            .from('usuarios')
+            .select('tokens')
+            .eq('id', session.user.id)
+            .single();
+
+        if (!u.error && u.data) {
+            var badge = document.getElementById('tokenBadgeCantidad');
+            if (badge) badge.textContent = u.data.tokens || 0;
+        }
+        return sessionUser;
+    } catch (e) {
+        console.error('Error usuario:', e);
+        return null;
+    }
+}
+
+// ================================================================
+// FORMULARIO REACTIVO
+// ================================================================
+
+function configurarFormulario() {
+    var inpMonto = document.getElementById('inpMonto');
+    var helperMonto = document.getElementById('helperMonto');
+
+    function validarMonto() {
+        var v = parseFloat(inpMonto.value);
+        var btn = document.getElementById('btnGenerar');
+
+        if (!inpMonto.value || isNaN(v)) {
+            helperMonto.textContent = 'Mínimo $1 MXN';
+            helperMonto.className = 'helper';
+            btn.disabled = true;
+            return;
+        }
+
+        if (v < 1) {
+            helperMonto.textContent = 'El monto mínimo es $1 MXN';
+            helperMonto.className = 'helper error';
+            btn.disabled = true;
+            return;
+        }
+
+        if (v > 500000) {
+            helperMonto.textContent = 'El monto máximo es $500,000 MXN';
+            helperMonto.className = 'helper error';
+            btn.disabled = true;
+            return;
+        }
+
+        helperMonto.textContent = '✓ Monto válido';
+        helperMonto.className = 'helper success';
+        btn.disabled = false;
+    }
+
+    inpMonto.addEventListener('input', validarMonto);
+    inpMonto.addEventListener('blur', function () {
+        if (inpMonto.value) {
+            var v = parseFloat(inpMonto.value);
+            if (!isNaN(v) && v > 0) {
+                inpMonto.value = v.toFixed(2);
+            }
+        }
+    });
+
+    // Toggle de métodos
+    document.querySelectorAll('.metodo-opcion').forEach(function (el) {
+        el.addEventListener('click', function () {
+            document.querySelectorAll('.metodo-opcion').forEach(function (o) {
+                o.classList.remove('activo');
+            });
+            el.classList.add('activo');
+            var radio = el.querySelector('input[type="radio"]');
+            if (radio) radio.checked = true;
+        });
+    });
+}
+
+function obtenerMetodoSeleccionado() {
+    var activo = document.querySelector('.metodo-opcion.activo');
+    return activo ? activo.getAttribute('data-metodo') : 'cualquiera';
+}
+
+// ================================================================
+// GENERAR QR
+// ================================================================
+
+async function generarQR() {
+    var btn = document.getElementById('btnGenerar');
+    var inpMonto = document.getElementById('inpMonto');
+    var inpDesc = document.getElementById('inpDescripcion');
+
+    var monto = parseFloat(inpMonto.value);
+    if (isNaN(monto) || monto < 1) {
+        showToast('Ingresa un monto válido', 'warning');
+        return;
+    }
+
+    var metodo = obtenerMetodoSeleccionado();
+    var descripcion = inpDesc.value ? inpDesc.value.trim() : '';
+
+    // Si es "cualquiera", el método por defecto es 'tarjeta' (el comprador
+    // podrá cambiarlo en la página de pago si el método no está bloqueado).
+    var metodoParaBackend = (metodo === 'cualquiera') ? 'tarjeta' : metodo;
+
+    // Generar idempotency key única por click
+    var idempotencyKey = 'qrcobro_' + Date.now() + '_' +
+        Math.random().toString(36).substring(2, 10);
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="simbolo">◈</span> Generando...';
+
+    try {
+        var resp = await fetchAutenticado('/api/pay/intenciones', {
+            method: 'POST',
+            body: {
+                monto: monto,
+                metodo: metodoParaBackend,
+                descripcion: descripcion,
+                idempotencyKey: idempotencyKey
+            }
+        });
+
+        if (!resp.success || !resp.data) {
+            throw new Error('Respuesta inválida del servidor');
+        }
+
+        intencionActual = resp.data;
+
+        // Guardar en localStorage por si recargan
+        try {
+            localStorage.setItem(STORAGE_KEY_INTENCION, JSON.stringify(intencionActual));
+        } catch (e) { /* silencioso */ }
+
+        // Mostrar QR
+        mostrarQR(intencionActual);
+
+        // Iniciar polling
+        iniciarPolling();
+
+        // Cargar historial
+        cargarHistorial();
+
+    } catch (err) {
+        console.error('Error generando QR:', err);
+        if (err.status === 400 && err.data && err.data.error) {
+            showToast(err.data.error, 'error');
+        } else if (err.status === 401) {
+            showToast('Debes iniciar sesión', 'warning');
+            setTimeout(function () { window.location.href = '/'; }, 1500);
+        } else {
+            showToast('Error generando el QR: ' + err.message, 'error');
+        }
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span class="simbolo">◆</span> Generar QR';
+    }
+}
+
+// ================================================================
+// MOSTRAR QR
+// ================================================================
+
+async function mostrarQR(intencion) {
+    // Ocultar formulario
+    document.getElementById('cardFormulario').style.display = 'none';
+
+    // Actualizar info
+    document.getElementById('qrMonto').textContent = formatearMonto(intencion.monto);
+    document.getElementById('qrConcepto').textContent = intencion.descripcion || 'Sin concepto';
+    document.getElementById('qrEstado').textContent = 'Pendiente';
+    document.getElementById('qrEstado').className = 'estado-badge pending';
+
+    // URL pública
+    var urlPago = intencion.url_pago || (window.location.origin + '/features/pay/pagar.html?t=' + intencion.public_token);
+    document.getElementById('linkInput').value = urlPago;
+
+    // Generar QR en canvas
+    var canvas = document.getElementById('qrCanvas');
+    try {
+        await QRCode.toCanvas(canvas, urlPago, {
+            width: 280,
+            margin: 1,
+            color: {
+                dark: '#0F2D1A',
+                light: '#ffffff'
+            },
+            errorCorrectionLevel: 'M'
+        });
+    } catch (err) {
+        console.error('Error generando QR:', err);
+        showToast('Error visualizando el QR', 'error');
+    }
+
+    // Mostrar card
+    document.getElementById('qrCard').classList.add('activo');
+
+    // Mostrar botón compartir si está disponible
+    if (navigator.share) {
+        document.getElementById('btnCompartir').style.display = 'inline-flex';
+    }
+}
+
+// ================================================================
+// POLLING DE ESTADO
+// ================================================================
+
+function iniciarPolling() {
+    detenerPolling();
+    pollingInicio = Date.now();
+
+    pollingInterval = setInterval(async function () {
+        if (!intencionActual) {
+            detenerPolling();
+            return;
+        }
+
+        // Timeout total del polling activo
+        if (Date.now() - pollingInicio > POLLING_TIMEOUT_MS) {
+            detenerPolling();
+            return;
+        }
+
+        // Pausar si la pestaña está oculta (ahorra recursos)
+        if (document.visibilityState !== 'visible') {
+            return;
+        }
+
+        try {
+            var resp = await fetch('/api/pay/intenciones/' + intencionActual.public_token);
+            var data = await resp.json();
+
+            if (!data.success || !data.data) return;
+
+            var estado = data.data.estado;
+
+            // Actualizar badge de estado
+            actualizarEstadoBadge(estado);
+
+            if (estado === 'paid') {
+                mostrarPagoRecibido(data.data);
+                detenerPolling();
+                return;
+            }
+
+            if (estado === 'expired' || estado === 'cancelled' || estado === 'failed') {
+                detenerPolling();
+                // Actualizar badge (ya está hecho arriba)
+            }
+
+        } catch (err) {
+            // Silencioso: no interrumpir al usuario por un fallo de red
+            console.warn('Error en polling:', err.message);
+        }
+
+    }, POLLING_INTERVAL_MS);
+}
+
+function detenerPolling() {
+    if (pollingInterval) {
+        clearInterval(pollingInterval);
+        pollingInterval = null;
+    }
+}
+
+function actualizarEstadoBadge(estado) {
+    var badge = document.getElementById('qrEstado');
+    var textos = {
+        'pending': 'Pendiente',
+        'processing': 'Procesando',
+        'paid': 'Pagado',
+        'expired': 'Expirado',
+        'cancelled': 'Cancelado',
+        'failed': 'Falló',
+        'refunded': 'Reembolsado'
+    };
+    badge.textContent = textos[estado] || estado;
+    badge.className = 'estado-badge ' + estado;
+}
+
+function mostrarPagoRecibido(intencion) {
+    document.getElementById('montoRecibido').textContent = formatearMonto(intencion.monto) + ' MXN';
+    document.getElementById('pagoRecibido').classList.add('activo');
+
+    // Scroll hacia arriba suave
+    document.getElementById('qrCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    showToast('✔ Pago recibido: ' + formatearMonto(intencion.monto) + ' MXN', 'success');
+}
+
+// ================================================================
+// COPIAR / COMPARTIR
+// ================================================================
+
+function copiarLink() {
+    var input = document.getElementById('linkInput');
+    input.select();
+    input.setSelectionRange(0, 99999);
+
+    try {
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(input.value).then(function () {
+                showToast('✔ Link copiado', 'success');
+            }).catch(function () {
+                document.execCommand('copy');
+                showToast('✔ Link copiado', 'success');
+            });
+        } else {
+            document.execCommand('copy');
+            showToast('✔ Link copiado', 'success');
+        }
+    } catch (e) {
+        showToast('No se pudo copiar. Selecciona y copia manualmente.', 'warning');
+    }
+}
+
+async function compartir() {
+    if (!navigator.share) return;
+
+    try {
+        await navigator.share({
+            title: 'Csariel\'s Pay',
+            text: 'Págame ' + formatearMonto(intencionActual.monto) + ' MXN con Csariel\'s Pay',
+            url: document.getElementById('linkInput').value
+        });
+    } catch (err) {
+        // El usuario canceló
+    }
+}
+
+// ================================================================
+// NUEVO COBRO
+// ================================================================
+
+function nuevoCobro() {
+    detenerPolling();
+    intencionActual = null;
+
+    try {
+        localStorage.removeItem(STORAGE_KEY_INTENCION);
+    } catch (e) { /* silencioso */ }
+
+    // Resetear UI
+    document.getElementById('qrCard').classList.remove('activo');
+    document.getElementById('pagoRecibido').classList.remove('activo');
+    document.getElementById('cardFormulario').style.display = 'block';
+    document.getElementById('inpMonto').value = '';
+    document.getElementById('inpDescripcion').value = '';
+    document.getElementById('btnGenerar').disabled = true;
+    document.getElementById('helperMonto').textContent = 'Mínimo $1 MXN';
+    document.getElementById('helperMonto').className = 'helper';
+
+    // Scroll al formulario
+    document.getElementById('cardFormulario').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ================================================================
+// HISTORIAL DE HOY
+// ================================================================
+
+async function cargarHistorial() {
+    try {
+        var resp = await fetchAutenticado('/api/pay/mis-intenciones?limite=5');
+        if (!resp.success || !resp.data) return;
+
+        var intenciones = resp.data.intenciones || [];
+        var card = document.getElementById('cardHistorial');
+        var cont = document.getElementById('listaHistorial');
+
+        if (intenciones.length === 0) {
+            card.style.display = 'none';
+            return;
+        }
+
+        card.style.display = 'block';
+
+        var html = '';
+        intenciones.forEach(function (i) {
+            var fecha = '';
+            try {
+                var d = new Date(i.created_at);
+                var hh = String(d.getHours()).padStart(2, '0');
+                var mm = String(d.getMinutes()).padStart(2, '0');
+                fecha = hh + ':' + mm;
+            } catch (e) { /* silencioso */ }
+
+            html +=
+                '<div class="intencion-item" onclick="verIntencion(\'' + i.public_token + '\')">' +
+                    '<div class="info">' +
+                        '<div class="monto">' + formatearMonto(i.monto) + ' ' + escapeHTML(i.moneda) + '</div>' +
+                        '<div class="concepto">' +
+                            escapeHTML(i.descripcion || 'Sin concepto') +
+                            ' · ' + fecha +
+                        '</div>' +
+                    '</div>' +
+                    '<span class="estado-mini ' + (i.estado || 'pending') + '">' +
+                        escapeHTML(i.estado || 'pending') +
+                    '</span>' +
+                '</div>';
+        });
+
+        cont.innerHTML = html;
+
+    } catch (err) {
+        console.error('Error cargando historial:', err);
+    }
+}
+
+function verIntencion(token) {
+    // Abrir el link público en nueva pestaña
+    window.open('/features/pay/pagar.html?t=' + token, '_blank');
+}
+
+// ================================================================
+// RESTAURAR INTENCIÓN GUARDADA
+// ================================================================
+
+async function restaurarIntencionGuardada() {
+    try {
+        var guardada = localStorage.getItem(STORAGE_KEY_INTENCION);
+        if (!guardada) return;
+
+        var intencion = JSON.parse(guardada);
+        if (!intencion || !intencion.public_token) return;
+
+        // Verificar que aún siga pendiente
+        var resp = await fetch('/api/pay/intenciones/' + intencion.public_token);
+        var data = await resp.json();
+
+        if (!data.success || !data.data) {
+            localStorage.removeItem(STORAGE_KEY_INTENCION);
+            return;
+        }
+
+        var estado = data.data.estado;
+
+        if (estado === 'pending' || estado === 'processing') {
+            intencionActual = intencion;
+            await mostrarQR(intencion);
+            iniciarPolling();
+        } else {
+            localStorage.removeItem(STORAGE_KEY_INTENCION);
+        }
+
+    } catch (e) {
+        // Silencioso
+    }
+}
+
+// ================================================================
+// INICIALIZACIÓN
+// ================================================================
+
+document.addEventListener('DOMContentLoaded', async function () {
+    await cargarUsuario();
+
+    if (!sessionUser) {
+        document.getElementById('cardFormulario').innerHTML =
+            '<div class="loading-state">' +
+                '<p style="color: var(--danger);">Debes iniciar sesión para cobrar</p>' +
+                '<a href="/" style="color: var(--gold); text-decoration: underline; display: inline-block; margin-top: 12px;">Volver al inicio</a>' +
+            '</div>';
+        return;
+    }
+
+    configurarFormulario();
+    await restaurarIntencionGuardada();
+    await cargarHistorial();
+
+    setTimeout(async function () {
+        try {
+            if (typeof window.inicializarIdiomas === 'function') {
+                await window.inicializarIdiomas();
+            }
+        } catch (e) { /* silencioso */ }
+    }, 400);
+});
+
+window.addEventListener('beforeunload', function () {
+    detenerPolling();
+});
+
+// Exponer globales
+window.verTokens = verTokens;
+window.generarQR = generarQR;
+window.nuevoCobro = nuevoCobro;
+window.copiarLink = copiarLink;
+window.compartir = compartir;
+window.verIntencion = verIntencion;
+window.showToast = showToast;
+window.escapeHTML = escapeHTML;
+</script>
+</body>
+</html>
