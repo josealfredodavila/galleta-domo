@@ -1,0 +1,1143 @@
+<!-- ================================================================
+     CSARIEL'S ECOSYSTEM
+     Csariel's Pay - Panel de vendedor / repartidor
+     Ruta: /features/pay/panel.html
+     ================================================================ -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>◈ Csariel's Pay · Csariel's</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+
+    <script src="/features/shared/js/apariencia-global.js"></script>
+
+    <style>
+        :root {
+            --gold: #D4AF37;
+            --gold-dark: #b8923a;
+            --gold-light: #e8c84a;
+            --green-deep: #0F2D1A;
+            --green-mid: #1a4a2a;
+            --green-bright: #2a6a3a;
+            --space: #05080f;
+            --text-primary: #f0f4f8;
+            --text-secondary: #c0d8e8;
+            --text-muted: #8aa8b8;
+            --glass-bg: rgba(15, 45, 26, 0.55);
+            --glass-border: rgba(212, 175, 55, 0.15);
+            --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
+            --radius: 16px;
+            --radius-xl: 24px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --success: #00d68f;
+            --danger: #ff3366;
+            --warning: #f7d44a;
+            --cyan: #00e5ff;
+            --purple: #a855f7;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--space);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            background-image: radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
+        }
+
+        .nebula { position: fixed; border-radius: 50%; filter: blur(120px); opacity: 0.12; pointer-events: none; z-index: 0; animation: nebula-drift 25s ease-in-out infinite alternate; }
+        .nebula-1 { width: 700px; height: 700px; background: var(--green-bright); top: -15%; right: -15%; }
+        .nebula-2 { width: 600px; height: 600px; background: var(--gold-light); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.06; }
+        @keyframes nebula-drift { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(40px,-30px) scale(1.15); } }
+
+        .app { position: relative; z-index: 1; max-width: 900px; width: 100%; margin: 0 auto; padding: 12px 16px 30px; }
+
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0 14px; border-bottom: 1px solid var(--glass-border);
+            background: rgba(5, 8, 15, 0.92); position: sticky; top: 0; z-index: 100;
+        }
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .logo-hex { font-size: 1.8rem; color: var(--gold); font-family: 'Orbitron', monospace; }
+        .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--text-primary); letter-spacing: 2px; }
+        .logo-text span { color: var(--gold); }
+        .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; }
+        .token-badge { display: flex; align-items: center; gap: 6px; background: rgba(212,175,55,0.1); border: 1px solid rgba(212,175,55,0.15); padding: 4px 14px; border-radius: 20px; font-size: 0.7rem; color: var(--gold); font-family: 'Orbitron', monospace; cursor: pointer; }
+
+        .main-nav {
+            display: flex; gap: 4px; background: rgba(15,45,26,0.3); border-radius: var(--radius);
+            padding: 4px; border: 1px solid var(--glass-border); margin: 16px 0 20px; overflow-x: auto;
+        }
+        .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; white-space: nowrap; transition: var(--transition); display: flex; align-items: center; gap: 6px; }
+        .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212,175,55,0.05); }
+        .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); }
+        .main-nav .nav-link .nav-simbolo { color: var(--gold); opacity: 0.7; }
+
+        .pay-header {
+            text-align: center; padding: 16px 0 24px;
+        }
+        .pay-header h1 {
+            font-family: 'Orbitron', monospace; font-size: 1.6rem;
+            color: var(--text-primary); margin-bottom: 6px;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .pay-header h1 .simbolo { color: var(--gold); }
+        .pay-header h1 span { color: var(--gold); }
+        .pay-header p { font-size: 0.78rem; color: var(--text-muted); }
+        .pay-header .tipo-cuenta {
+            display: inline-block; margin-top: 8px; padding: 4px 12px;
+            border-radius: 20px; font-size: 0.65rem;
+            background: rgba(212,175,55,0.1); color: var(--gold);
+            font-family: 'Orbitron', monospace; font-weight: 700;
+            letter-spacing: 1px; text-transform: uppercase;
+        }
+
+        .saldo-card {
+            background: linear-gradient(135deg, rgba(212,175,55,0.15), rgba(15,45,26,0.7));
+            border: 1px solid rgba(212,175,55,0.3);
+            border-radius: var(--radius-xl);
+            padding: 32px 24px; margin-bottom: 20px;
+            text-align: center; position: relative; overflow: hidden;
+        }
+        .saldo-card::before {
+            content: ''; position: absolute; top: -50%; right: -20%;
+            width: 300px; height: 300px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(212,175,55,0.1), transparent);
+            pointer-events: none;
+        }
+        .saldo-card .label {
+            font-size: 0.72rem; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 2px;
+            margin-bottom: 12px; font-family: 'Orbitron', monospace;
+        }
+        .saldo-card .monto {
+            font-family: 'Orbitron', monospace; font-size: 2.8rem;
+            font-weight: 700; color: var(--gold); line-height: 1;
+            margin-bottom: 4px; letter-spacing: 1px;
+        }
+        .saldo-card .monto .moneda {
+            font-size: 1rem; color: var(--text-muted); margin-left: 6px;
+        }
+        .saldo-card .pendiente {
+            font-size: 0.75rem; color: var(--text-muted);
+            margin-top: 12px;
+        }
+        .saldo-card .pendiente strong {
+            color: var(--warning);
+        }
+
+        .acciones {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 12px; margin-bottom: 24px;
+        }
+        @media (max-width: 480px) {
+            .acciones { grid-template-columns: 1fr; }
+            .saldo-card .monto { font-size: 2rem; }
+        }
+
+        .btn-accion {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 20px 16px; border-radius: var(--radius);
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg);
+            color: var(--text-primary); text-decoration: none;
+            transition: var(--transition); cursor: pointer;
+            text-align: center; gap: 8px;
+            font-family: 'Inter', sans-serif;
+        }
+        .btn-accion:hover {
+            border-color: var(--gold);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-gold);
+        }
+        .btn-accion .icono {
+            font-size: 1.6rem; color: var(--gold);
+            font-family: 'Orbitron', monospace;
+        }
+        .btn-accion .titulo {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.8rem; font-weight: 700;
+            letter-spacing: 1px;
+        }
+        .btn-accion .desc {
+            font-size: 0.65rem; color: var(--text-muted);
+        }
+        .btn-accion.primario {
+            background: linear-gradient(135deg, rgba(212,175,55,0.2), rgba(15,45,26,0.7));
+            border-color: rgba(212,175,55,0.5);
+        }
+        .btn-accion:disabled {
+            opacity: 0.4; cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .seccion {
+            background: var(--glass-bg); border: 1px solid var(--glass-border);
+            border-radius: var(--radius); padding: 18px;
+            margin-bottom: 16px;
+        }
+        .seccion .seccion-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 14px; padding-bottom: 10px;
+            border-bottom: 1px solid var(--glass-border);
+            flex-wrap: wrap; gap: 8px;
+        }
+        .seccion .seccion-header .titulo {
+            font-family: 'Orbitron', monospace; font-size: 0.85rem;
+            color: var(--text-primary); font-weight: 700;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .seccion .seccion-header .titulo .simbolo { color: var(--gold); }
+        .seccion .seccion-header .acciones-header {
+            display: flex; gap: 6px; flex-wrap: wrap;
+        }
+
+        .filtro-btn {
+            padding: 5px 12px; border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            background: rgba(0,0,0,0.3);
+            color: var(--text-muted);
+            font-size: 0.65rem; cursor: pointer;
+            transition: var(--transition);
+            font-family: 'Inter', sans-serif;
+        }
+        .filtro-btn:hover { border-color: var(--gold); color: var(--gold); }
+        .filtro-btn.activo {
+            background: rgba(212,175,55,0.15);
+            border-color: var(--gold); color: var(--gold);
+            font-weight: 600;
+        }
+
+        .movimiento {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 0; border-bottom: 1px solid rgba(212,175,55,0.08);
+            gap: 12px;
+        }
+        .movimiento:last-child { border-bottom: none; }
+        .movimiento .info { flex: 1; min-width: 0; }
+        .movimiento .info .tipo {
+            font-size: 0.78rem; font-weight: 600;
+            color: var(--text-primary); margin-bottom: 2px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .movimiento .info .tipo .icono-tipo {
+            font-size: 1rem; color: var(--gold);
+            font-family: 'Orbitron', monospace; flex-shrink: 0;
+        }
+        .movimiento .info .detalle {
+            font-size: 0.65rem; color: var(--text-muted);
+            overflow: hidden; text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .movimiento .info .fecha {
+            font-size: 0.6rem; color: var(--text-muted);
+            margin-top: 2px;
+        }
+        .movimiento .monto-col {
+            text-align: right; flex-shrink: 0;
+        }
+        .movimiento .monto-col .monto {
+            font-family: 'Orbitron', monospace; font-size: 0.9rem;
+            font-weight: 700;
+        }
+        .movimiento .monto-col .monto.positivo { color: var(--success); }
+        .movimiento .monto-col .monto.negativo { color: var(--danger); }
+        .movimiento .monto-col .estado {
+            font-size: 0.55rem; padding: 2px 8px;
+            border-radius: 10px; margin-top: 4px;
+            display: inline-block; font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+        .estado.pendiente { background: rgba(247,212,74,0.15); color: var(--warning); }
+        .estado.confirmado { background: rgba(0,214,143,0.15); color: var(--success); }
+        .estado.reversado { background: rgba(255,51,102,0.15); color: var(--danger); }
+
+        .retiro-card {
+            background: rgba(0,229,255,0.08);
+            border: 1px solid rgba(0,229,255,0.3);
+            border-radius: var(--radius); padding: 14px;
+            margin-bottom: 12px;
+        }
+        .retiro-card .retiro-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 8px; gap: 8px;
+        }
+        .retiro-card .retiro-header .monto {
+            font-family: 'Orbitron', monospace;
+            font-size: 1rem; color: var(--cyan); font-weight: 700;
+        }
+        .retiro-card .retiro-header .estado-retiro {
+            font-size: 0.6rem; padding: 3px 10px;
+            border-radius: 12px; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .retiro-card .retiro-header .estado-retiro.pending { background: rgba(247,212,74,0.2); color: var(--warning); }
+        .retiro-card .retiro-header .estado-retiro.processing { background: rgba(0,229,255,0.2); color: var(--cyan); }
+        .retiro-card .retiro-header .estado-retiro.completed { background: rgba(0,214,143,0.2); color: var(--success); }
+        .retiro-card .retiro-header .estado-retiro.failed { background: rgba(255,51,102,0.2); color: var(--danger); }
+        .retiro-card .retiro-header .estado-retiro.cancelled { background: rgba(138,168,184,0.2); color: var(--text-muted); }
+        .retiro-card .detalle {
+            font-size: 0.68rem; color: var(--text-muted);
+        }
+
+        .estado-vacio {
+            text-align: center; padding: 40px 20px;
+            color: var(--text-muted);
+        }
+        .estado-vacio .icono-grande {
+            font-size: 3rem; display: block; margin-bottom: 12px;
+            color: var(--gold); opacity: 0.4;
+            font-family: 'Orbitron', monospace;
+        }
+        .estado-vacio h3 {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.95rem; color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+        .estado-vacio p {
+            font-size: 0.75rem; margin-bottom: 18px;
+            line-height: 1.5;
+        }
+        .estado-vacio .btn-cta {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 10px 22px;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space); border: none; border-radius: 30px;
+            font-family: 'Orbitron', monospace; font-weight: 700;
+            font-size: 0.72rem; cursor: pointer;
+            text-decoration: none; transition: var(--transition);
+        }
+        .estado-vacio .btn-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-gold);
+        }
+
+        .loading-state {
+            text-align: center; padding: 60px 20px;
+            color: var(--text-muted);
+        }
+        .loading-state .spinner {
+            width: 40px; height: 40px;
+            border: 3px solid rgba(212,175,55,0.15);
+            border-top-color: var(--gold);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 12px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .btn-ver-mas {
+            display: block; width: 100%; padding: 10px;
+            margin-top: 12px;
+            background: rgba(212,175,55,0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: var(--text-muted);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.72rem; cursor: pointer;
+            transition: var(--transition);
+        }
+        .btn-ver-mas:hover {
+            border-color: var(--gold); color: var(--gold);
+        }
+
+        .toast {
+            position: fixed; bottom: 30px; right: 20px;
+            background: var(--green-deep); border: 1px solid var(--gold);
+            color: var(--gold); padding: 14px 24px;
+            border-radius: 12px; font-size: 0.8rem;
+            transform: translateY(100px); opacity: 0;
+            transition: all 0.4s ease; z-index: 99999;
+            max-width: 320px; pointer-events: none;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { border-color: var(--danger); color: var(--danger); }
+        .toast.warning { border-color: var(--warning); color: var(--warning); }
+        .toast.success { border-color: var(--success); color: var(--success); }
+
+        .footer {
+            margin-top: 30px; padding-top: 16px;
+            border-top: 1px solid var(--glass-border);
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 0.7rem; color: var(--text-muted);
+            flex-wrap: wrap; gap: 10px;
+        }
+        .footer .brand { color: var(--gold); font-weight: 600; }
+        .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; }
+        .footer-links a:hover { color: var(--gold); }
+
+        html.tema-dia, html[data-tema="dia"] {
+            --space: #f5f7fa;
+            --text-primary: #1a2332;
+            --text-secondary: #4a5568;
+            --text-muted: #718096;
+            --glass-bg: rgba(255, 255, 255, 0.9);
+            --glass-border: rgba(0, 0, 0, 0.1);
+        }
+        html.tema-dia body, html[data-tema="dia"] body {
+            background: #f5f7fa !important;
+            color: var(--text-primary) !important;
+        }
+        html.tema-dia .nebula, html[data-tema="dia"] .nebula { display: none !important; }
+        html.tema-dia .header, html[data-tema="dia"] .header { background: rgba(255, 255, 255, 0.95) !important; border-bottom-color: rgba(0, 0, 0, 0.1) !important; }
+        html.tema-dia .logo-text, html[data-tema="dia"] .logo-text { color: var(--text-primary) !important; }
+        html.tema-dia .saldo-card, html[data-tema="dia"] .saldo-card {
+            background: linear-gradient(135deg, rgba(212,175,55,0.2), rgba(255,255,255,0.95)) !important;
+        }
+        html.tema-dia .saldo-card .monto, html[data-tema="dia"] .saldo-card .monto { color: var(--gold); }
+    </style>
+</head>
+<body>
+
+    <div class="nebula nebula-1" aria-hidden="true"></div>
+    <div class="nebula nebula-2" aria-hidden="true"></div>
+
+    <div class="app">
+
+        <header class="header">
+            <a href="/" class="logo" aria-label="Ir a la página de inicio">
+                <span class="logo-hex">◈</span>
+                <span class="logo-text">Csariel<span>'s</span></span>
+                <span class="logo-badge">✦ PAY</span>
+            </a>
+            <div class="header-actions">
+                <span class="token-badge" onclick="verTokens()">
+                    ◈ <span id="tokenBadgeCantidad">0</span> Es.stoks
+                </span>
+            </div>
+        </header>
+
+        <nav class="main-nav" aria-label="Navegación principal">
+            <a href="/" class="nav-link"><span class="nav-simbolo">◈</span> Inicio</a>
+            <a href="/features/muro/muro.html" class="nav-link"><span class="nav-simbolo">◆</span> Muro</a>
+            <a href="/features/mercado/index.html" class="nav-link"><span class="nav-simbolo">◈</span> Mercado</a>
+            <a href="/features/pay/panel.html" class="nav-link active"><span class="nav-simbolo">●</span> Csariel's Pay</a>
+        </nav>
+
+        <div id="loaderInicial" class="loading-state">
+            <div class="spinner"></div>
+            <p>Cargando tu panel de Csariel's Pay...</p>
+        </div>
+
+        <div id="contenidoPrincipal" style="display:none;">
+
+            <div class="pay-header">
+                <h1><span class="simbolo">◈</span> Csariel's <span>Pay</span></h1>
+                <p>Tus ganancias, en un solo lugar.</p>
+                <span class="tipo-cuenta" id="tipoCuentaBadge" style="display:none;">—</span>
+            </div>
+
+            <!-- CARD DE SALDO -->
+            <div class="saldo-card">
+                <div class="label">Ganancias disponibles</div>
+                <div class="monto">
+                    <span id="saldoDisponible">$0.00</span>
+                    <span class="moneda">MXN</span>
+                </div>
+                <div class="pendiente">
+                    Saldo pendiente: <strong id="saldoPendiente">$0.00</strong> MXN
+                </div>
+            </div>
+
+            <!-- ACCIONES -->
+            <div class="acciones">
+                <a href="/features/pay/cobrar.html" class="btn-accion primario">
+                    <span class="icono">◆</span>
+                    <span class="titulo">Cobrar con QR</span>
+                    <span class="desc">Genera un QR para recibir pagos</span>
+                </a>
+                <button id="btnRetirar" class="btn-accion" onclick="irARetirar()">
+                    <span class="icono">✦</span>
+                    <span class="titulo">Retirar ganancias</span>
+                    <span class="desc" id="descRetirar">Envía a tu banco o wallet</span>
+                </button>
+            </div>
+
+            <!-- RETIROS EN PROCESO -->
+            <div id="seccionRetirosActivos" class="seccion" style="display:none;">
+                <div class="seccion-header">
+                    <div class="titulo"><span class="simbolo">◇</span> Retiros en proceso</div>
+                </div>
+                <div id="listaRetirosActivos"></div>
+            </div>
+
+            <!-- HISTORIAL DE MOVIMIENTOS -->
+            <div class="seccion">
+                <div class="seccion-header">
+                    <div class="titulo"><span class="simbolo">◈</span> Historial de movimientos</div>
+                    <div class="acciones-header">
+                        <button class="filtro-btn activo" data-filtro="todos" onclick="filtrarMovimientos('todos', this)">Todos</button>
+                        <button class="filtro-btn" data-filtro="credito_pago" onclick="filtrarMovimientos('credito_pago', this)">Pagos</button>
+                        <button class="filtro-btn" data-filtro="retiro" onclick="filtrarMovimientos('retiro', this)">Retiros</button>
+                        <button class="filtro-btn" data-filtro="ajuste" onclick="filtrarMovimientos('ajuste', this)">Ajustes</button>
+                    </div>
+                </div>
+                <div id="listaMovimientos">
+                    <div class="loading-state">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+                <button id="btnVerMas" class="btn-ver-mas" style="display:none;" onclick="cargarMasMovimientos()">
+                    Ver más movimientos
+                </button>
+            </div>
+
+            <!-- ESTADO VACÍO -->
+            <div id="estadoVacioCuenta" class="seccion" style="display:none;">
+                <div class="estado-vacio">
+                    <span class="icono-grande">◈</span>
+                    <h3>Aún no tienes Csariel's Pay</h3>
+                    <p>Abre tu tienda en el Mercado o regístrate como repartidor para activar tu cuenta de pagos.</p>
+                    <a href="/features/mercado/vendedor/panel.html" class="btn-cta">
+                        <span class="simbolo">✦</span> Abrir mi tienda
+                    </a>
+                </div>
+            </div>
+
+        </div>
+
+        <footer class="footer">
+            <span><span class="brand">© Csariel's</span> · Csariel's Pay</span>
+            <div class="footer-links">
+                <a href="/terminos">Términos</a>
+                <a href="/privacidad">Privacidad</a>
+                <a href="/cookies">Cookies</a>
+            </div>
+        </footer>
+
+    </div>
+
+    <div class="toast" id="toast" role="alert" aria-live="polite"></div>
+
+    <div id="errorBanner" style="
+        display:none; position:fixed; top:0; left:0; right:0; z-index:99999;
+        background:#ff3366; color:#fff; padding:12px 16px; font-family:monospace;
+        font-size:0.75rem; word-break:break-word; box-shadow:0 4px 20px rgba(0,0,0,0.4);
+    ">
+        <strong>✶ Error:</strong>
+        <span id="errorBannerText"></span>
+        <button onclick="document.getElementById('errorBanner').style.display='none'"
+            style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">
+            Cerrar
+        </button>
+    </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/features/shared/js/idiomas.js"></script>
+<script>
+// ================================================================
+// CSARIEL'S PAY - PANEL PRINCIPAL
+// ================================================================
+
+var supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
+var supabaseKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+var supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+window.supabaseClient = supabaseClient;
+
+var sessionUser = null;
+var cuentaActual = null;
+var filtroActual = 'todos';
+var movimientosCargados = 0;
+var limiteMovs = 20;
+var pollingInterval = null;
+var mostrarVerMas = false;
+
+// ================================================================
+// UTILIDADES
+// ================================================================
+
+function mostrarErrorEnPantalla(mensaje) {
+    var banner = document.getElementById('errorBanner');
+    var texto = document.getElementById('errorBannerText');
+    if (banner && texto) { texto.textContent = mensaje; banner.style.display = 'block'; }
+}
+window.addEventListener('error', function (event) {
+    mostrarErrorEnPantalla((event.message || 'Error') + ' — línea ' + event.lineno);
+});
+
+function showToast(mensaje, tipo) {
+    try {
+        var toastEl = document.getElementById('toast');
+        if (!toastEl) { console.warn(mensaje); return; }
+        toastEl.textContent = mensaje;
+        toastEl.className = 'toast show';
+        if (tipo === 'error') toastEl.classList.add('error');
+        else if (tipo === 'warning') toastEl.classList.add('warning');
+        else if (tipo === 'success') toastEl.classList.add('success');
+        clearTimeout(toastEl._timeout);
+        toastEl._timeout = setTimeout(function () { toastEl.classList.remove('show'); }, 3500);
+    } catch (e) { console.warn('Toast error:', e); }
+}
+
+function escapeHTML(texto) {
+    if (!texto) return '';
+    var div = document.createElement('div');
+    div.textContent = texto;
+    return div.innerHTML;
+}
+
+function formatearMonto(monto) {
+    var n = Number(monto) || 0;
+    return '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+function formatearFecha(iso) {
+    if (!iso) return '';
+    try {
+        var fecha = new Date(iso);
+        var ahora = new Date();
+        var diffMs = ahora - fecha;
+        var diffMin = Math.floor(diffMs / 60000);
+        var diffHor = Math.floor(diffMin / 60);
+        var diffDia = Math.floor(diffHor / 24);
+
+        if (diffMin < 1) return 'Hace un momento';
+        if (diffMin < 60) return 'Hace ' + diffMin + ' min';
+        if (diffHor < 24) return 'Hace ' + diffHor + ' h';
+        if (diffDia < 7) return 'Hace ' + diffDia + ' días';
+
+        var dia = String(fecha.getDate()).padStart(2, '0');
+        var mes = String(fecha.getMonth() + 1).padStart(2, '0');
+        var anio = fecha.getFullYear();
+        return dia + '/' + mes + '/' + anio;
+    } catch (e) { return ''; }
+}
+
+function verTokens() {
+    window.location.href = '/features/perfil/perfil.html';
+}
+
+// ================================================================
+// ETIQUETAS LEGIBLES
+// ================================================================
+
+function etiquetaTipo(tipo) {
+    var mapa = {
+        'credito_pago': 'Pago recibido',
+        'liberacion': 'Ganancia liberada',
+        'retiro': 'Retiro',
+        'reembolso': 'Reembolso',
+        'ajuste': 'Ajuste'
+    };
+    return mapa[tipo] || tipo;
+}
+
+function iconoTipo(tipo) {
+    var mapa = {
+        'credito_pago': '◆',
+        'liberacion': '✦',
+        'retiro': '◇',
+        'reembolso': '✶',
+        'ajuste': '◈'
+    };
+    return mapa[tipo] || '●';
+}
+
+function etiquetaEstadoRetiro(estado) {
+    var mapa = {
+        'pending': 'En proceso',
+        'processing': 'Procesando',
+        'completed': 'Completado',
+        'failed': 'Falló',
+        'cancelled': 'Cancelado'
+    };
+    return mapa[estado] || estado;
+}
+
+// ================================================================
+// CARGAR USUARIO
+// ================================================================
+
+async function cargarUsuario() {
+    try {
+        var result = await supabaseClient.auth.getSession();
+        var session = result.data.session;
+        if (!session) { sessionUser = null; return null; }
+        sessionUser = session.user;
+
+        var u = await supabaseClient
+            .from('usuarios')
+            .select('nombre, tokens')
+            .eq('id', session.user.id)
+            .single();
+
+        if (!u.error && u.data) {
+            var badge = document.getElementById('tokenBadgeCantidad');
+            if (badge) badge.textContent = u.data.tokens || 0;
+        }
+        return sessionUser;
+    } catch (e) {
+        console.error('Error usuario:', e);
+        return null;
+    }
+}
+
+// ================================================================
+// FETCH AUTENTICADO
+// ================================================================
+
+async function fetchAutenticado(url, opciones) {
+    var opts = opciones || {};
+    var session = await supabaseClient.auth.getSession();
+    var token = session.data.session ? session.data.session.access_token : null;
+
+    if (!token) {
+        throw new Error('No autenticado');
+    }
+
+    var headers = Object.assign(
+        {
+            'Authorization': 'Bearer ' + token,
+            'Accept': 'application/json'
+        },
+        opts.headers || {}
+    );
+
+    if (opts.body && typeof opts.body === 'object') {
+        headers['Content-Type'] = 'application/json';
+        opts.body = JSON.stringify(opts.body);
+    }
+
+    opts.headers = headers;
+
+    var resp = await fetch(url, opts);
+    var data = await resp.json().catch(function () { return {}; });
+
+    if (!resp.ok) {
+        var err = new Error(data.error || 'Error HTTP ' + resp.status);
+        err.status = resp.status;
+        err.data = data;
+        throw err;
+    }
+
+    return data;
+}
+
+// ================================================================
+// CARGAR RESUMEN
+// ================================================================
+
+async function cargarResumen() {
+    try {
+        var resp = await fetchAutenticado('/api/pay/cuentas/mi-cuenta/resumen');
+
+        if (!resp.success || !resp.data) {
+            throw new Error('Respuesta inválida');
+        }
+
+        var data = resp.data;
+
+        if (!data.tiene_cuenta) {
+            // Mostrar estado vacío
+            document.getElementById('loaderInicial').style.display = 'none';
+            document.getElementById('contenidoPrincipal').style.display = 'none';
+            document.getElementById('estadoVacioCuenta').style.display = 'block';
+
+            var vacio = document.getElementById('estadoVacioCuenta');
+            if (vacio) vacio.style.display = 'block';
+            // Reocultar saldo, acciones, etc.
+            document.querySelector('.pay-header').style.display = 'none';
+            document.querySelector('.saldo-card').style.display = 'none';
+            document.querySelector('.acciones').style.display = 'none';
+            document.getElementById('seccionRetirosActivos').style.display = 'none';
+            // Mostrar sección de historial vacía o dejar solo el vacío
+            document.querySelector('.seccion:not(#seccionRetirosActivos):not(#estadoVacioCuenta)').style.display = 'none';
+            return;
+        }
+
+        cuentaActual = data.cuenta;
+
+        // Actualizar badge de tipo
+        var badge = document.getElementById('tipoCuentaBadge');
+        if (badge && cuentaActual.tipo) {
+            badge.textContent = cuentaActual.tipo === 'vendedor' ? 'Vendedor' : 'Repartidor';
+            badge.style.display = 'inline-block';
+        }
+
+        // Actualizar saldos
+        var saldo = data.saldos || {};
+        document.getElementById('saldoDisponible').textContent = formatearMonto(saldo.disponible_mxn);
+        document.getElementById('saldoPendiente').textContent = formatearMonto(saldo.pendiente_mxn);
+
+        // Actualizar descripción del botón retirar
+        var descR = document.getElementById('descRetirar');
+        if (descR) {
+            var disponible = Number(saldo.disponible_mxn) || 0;
+            if (disponible <= 0) {
+                descR.textContent = 'No tienes saldo disponible';
+                document.getElementById('btnRetirar').disabled = true;
+            } else {
+                descR.textContent = 'Disponible: ' + formatearMonto(disponible);
+                document.getElementById('btnRetirar').disabled = false;
+            }
+        }
+
+        // Renderizar movimientos recientes
+        movimientosCargados = (data.movimientos_recientes || []).length;
+        renderizarMovimientos(data.movimientos_recientes || []);
+
+        // Mostrar botón ver más si hay más
+        var btnVerMas = document.getElementById('btnVerMas');
+        if (btnVerMas) {
+            var total = (data.totales && data.totales.movimientos_totales) || 0;
+            if (total > movimientosCargados) {
+                btnVerMas.style.display = 'block';
+                mostrarVerMas = true;
+            } else {
+                btnVerMas.style.display = 'none';
+                mostrarVerMas = false;
+            }
+        }
+
+        // Cargar retiros activos
+        cargarRetirosActivos();
+
+        // Mostrar todo
+        document.getElementById('loaderInicial').style.display = 'none';
+        document.getElementById('contenidoPrincipal').style.display = 'block';
+
+        // Si hay saldo pendiente > 0 y no hay movimientos del todo, mensaje especial
+        if (movimientosCargados === 0 && (data.totales && data.totales.movimientos_totales === 0)) {
+            mostrarMovimientosVacios();
+        }
+
+    } catch (err) {
+        console.error('Error cargando resumen:', err);
+        if (err.status === 401) {
+            showToast('Debes iniciar sesión', 'warning');
+            setTimeout(function () { window.location.href = '/'; }, 1500);
+            return;
+        }
+        showToast('Error cargando tu panel: ' + err.message, 'error');
+        document.getElementById('loaderInicial').innerHTML =
+            '<p style="color: var(--danger);">Error cargando el panel. Intenta recargar la página.</p>';
+    }
+}
+
+// ================================================================
+// RENDERIZAR MOVIMIENTOS
+// ================================================================
+
+function renderizarMovimientos(movs) {
+    var cont = document.getElementById('listaMovimientos');
+    if (!cont) return;
+
+    if (!movs || movs.length === 0) {
+        cont.innerHTML =
+            '<div class="estado-vacio">' +
+                '<span class="icono-grande">◇</span>' +
+                '<h3>Sin movimientos aún</h3>' +
+                '<p>Cuando recibas pagos o hagas retiros, aparecerán aquí.</p>' +
+            '</div>';
+        return;
+    }
+
+    var html = '';
+
+    movs.forEach(function (m) {
+        var signo = Number(m.signo) || 0;
+        var monto = Number(m.monto_mxn) || 0;
+        var esPositivo = signo > 0;
+        var claseMonto = esPositivo ? 'positivo' : 'negativo';
+        var prefijo = esPositivo ? '+' : '−';
+
+        var fecha = formatearFecha(m.created_at);
+        var estadoClase = m.estado || 'pendiente';
+
+        var detalle = '';
+        if (m.tipo === 'credito_pago' && m.referencia) {
+            detalle = 'Ref: ' + escapeHTML(String(m.referencia).slice(0, 20));
+        } else if (m.tipo === 'retiro' && m.metadata && m.metadata.metodo) {
+            detalle = 'Método: ' + escapeHTML(m.metadata.metodo);
+        } else if (m.intencion_id) {
+            detalle = 'Intención: ' + String(m.intencion_id).slice(0, 8) + '...';
+        } else if (m.retiro_id) {
+            detalle = 'Retiro: ' + String(m.retiro_id).slice(0, 8) + '...';
+        }
+
+        html +=
+            '<div class="movimiento">' +
+                '<div class="info">' +
+                    '<div class="tipo">' +
+                        '<span class="icono-tipo">' + iconoTipo(m.tipo) + '</span>' +
+                        escapeHTML(etiquetaTipo(m.tipo)) +
+                    '</div>' +
+                    (detalle ? '<div class="detalle">' + detalle + '</div>' : '') +
+                    '<div class="fecha">' + escapeHTML(fecha) + '</div>' +
+                '</div>' +
+                '<div class="monto-col">' +
+                    '<div class="monto ' + claseMonto + '">' +
+                        prefijo + formatearMonto(monto) +
+                    '</div>' +
+                    '<div class="estado ' + estadoClase + '">' +
+                        escapeHTML(m.estado || 'pendiente') +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+    });
+
+    cont.innerHTML = html;
+}
+
+function mostrarMovimientosVacios() {
+    var cont = document.getElementById('listaMovimientos');
+    if (cont) {
+        cont.innerHTML =
+            '<div class="estado-vacio">' +
+                '<span class="icono-grande">◇</span>' +
+                '<h3>Sin movimientos aún</h3>' +
+                '<p>Cuando recibas pagos o hagas retiros, aparecerán aquí.</p>' +
+            '</div>';
+    }
+}
+
+// ================================================================
+// CARGAR MÁS MOVIMIENTOS
+// ================================================================
+
+async function cargarMasMovimientos() {
+    if (!cuentaActual) return;
+
+    var btn = document.getElementById('btnVerMas');
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Cargando...';
+    }
+
+    try {
+        var url = '/api/pay/cuentas/mi-cuenta/movimientos?limite=' + limiteMovs + '&offset=' + movimientosCargados;
+        if (filtroActual !== 'todos') {
+            url += '&tipo=' + filtroActual;
+        }
+
+        var resp = await fetchAutenticado(url);
+
+        if (!resp.success || !resp.data) throw new Error('Respuesta inválida');
+
+        var nuevos = resp.data.movimientos || [];
+        var total = resp.data.total || 0;
+
+        if (nuevos.length > 0) {
+            var cont = document.getElementById('listaMovimientos');
+            var htmlActual = cont.innerHTML;
+
+            // Remover el estado vacío si existía
+            if (htmlActual.indexOf('estado-vacio') !== -1) {
+                htmlActual = '';
+            }
+
+            var htmlNuevo = '';
+            nuevos.forEach(function (m) {
+                var signo = Number(m.signo) || 0;
+                var monto = Number(m.monto_mxn) || 0;
+                var esPositivo = signo > 0;
+                var claseMonto = esPositivo ? 'positivo' : 'negativo';
+                var prefijo = esPositivo ? '+' : '−';
+
+                var fecha = formatearFecha(m.created_at);
+                var estadoClase = m.estado || 'pendiente';
+
+                var detalle = '';
+                if (m.tipo === 'credito_pago' && m.referencia) {
+                    detalle = 'Ref: ' + escapeHTML(String(m.referencia).slice(0, 20));
+                } else if (m.tipo === 'retiro' && m.metadata && m.metadata.metodo) {
+                    detalle = 'Método: ' + escapeHTML(m.metadata.metodo);
+                }
+
+                htmlNuevo +=
+                    '<div class="movimiento">' +
+                        '<div class="info">' +
+                            '<div class="tipo">' +
+                                '<span class="icono-tipo">' + iconoTipo(m.tipo) + '</span>' +
+                                escapeHTML(etiquetaTipo(m.tipo)) +
+                            '</div>' +
+                            (detalle ? '<div class="detalle">' + detalle + '</div>' : '') +
+                            '<div class="fecha">' + escapeHTML(fecha) + '</div>' +
+                        '</div>' +
+                        '<div class="monto-col">' +
+                            '<div class="monto ' + claseMonto + '">' +
+                                prefijo + formatearMonto(monto) +
+                            '</div>' +
+                            '<div class="estado ' + estadoClase + '">' +
+                                escapeHTML(m.estado || 'pendiente') +
+                            '</div>' +
+                        '</div>' +
+                    '</div>';
+            });
+
+            cont.innerHTML = htmlActual + htmlNuevo;
+            movimientosCargados += nuevos.length;
+        }
+
+        if (movimientosCargados >= total) {
+            if (btn) btn.style.display = 'none';
+        } else {
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = 'Ver más movimientos';
+            }
+        }
+
+    } catch (err) {
+        console.error('Error cargando más:', err);
+        showToast('Error cargando más movimientos', 'error');
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Ver más movimientos';
+        }
+    }
+}
+
+// ================================================================
+// FILTRAR MOVIMIENTOS
+// ================================================================
+
+async function filtrarMovimientos(filtro, btn) {
+    filtroActual = filtro;
+
+    document.querySelectorAll('.filtro-btn').forEach(function (b) {
+        b.classList.remove('activo');
+    });
+    if (btn) btn.classList.add('activo');
+
+    // Resetear paginación
+    movimientosCargados = 0;
+
+    // Mostrar loading
+    var cont = document.getElementById('listaMovimientos');
+    cont.innerHTML = '<div class="loading-state"><div class="spinner"></div></div>';
+
+    // Recargar desde cero
+    await cargarMasMovimientos();
+}
+
+// ================================================================
+// RETIROS ACTIVOS
+// ================================================================
+
+async function cargarRetirosActivos() {
+    try {
+        var resp = await fetchAutenticado('/api/pay/retiros?estado=pending,processing&limite=5');
+
+        if (!resp.success || !resp.data) return;
+
+        var retiros = resp.data.retiros || [];
+        var seccion = document.getElementById('seccionRetirosActivos');
+        var cont = document.getElementById('listaRetirosActivos');
+
+        if (retiros.length === 0) {
+            seccion.style.display = 'none';
+            return;
+        }
+
+        seccion.style.display = 'block';
+
+        var html = '';
+        retiros.forEach(function (r) {
+            var estado = r.estado || 'pending';
+            var monto = formatearMonto(r.monto_mxn);
+            var estadoTexto = etiquetaEstadoRetiro(estado);
+            var detalle = '';
+            if (r.metodo === 'spei') detalle = 'Envío por SPEI a ****' + (r.destino_ultimos4 || '');
+            else if (r.metodo === 'crypto') detalle = 'Envío ' + (r.moneda_destino || '') + ' a wallet';
+            else if (r.metodo === 'tarjeta') detalle = 'Envío a tarjeta ****' + (r.destino_ultimos4 || '');
+            else detalle = 'Retiro en proceso';
+
+            html +=
+                '<div class="retiro-card">' +
+                    '<div class="retiro-header">' +
+                        '<span class="monto">' + monto + ' MXN</span>' +
+                        '<span class="estado-retiro ' + estado + '">' + estadoTexto + '</span>' +
+                    '</div>' +
+                    '<div class="detalle">' + escapeHTML(detalle) + '</div>' +
+                '</div>';
+        });
+
+        cont.innerHTML = html;
+
+    } catch (err) {
+        console.error('Error cargando retiros activos:', err);
+    }
+}
+
+// ================================================================
+// NAVEGAR A RETIRAR
+// ================================================================
+
+function irARetirar() {
+    if (!cuentaActual) {
+        showToast('Necesitas una cuenta Pay activa', 'warning');
+        return;
+    }
+    window.location.href = '/features/pay/retirar.html';
+}
+
+// ================================================================
+// POLLING SUAVE
+// ================================================================
+
+function iniciarPolling() {
+    if (pollingInterval) clearInterval(pollingInterval);
+    pollingInterval = setInterval(function () {
+        if (document.visibilityState === 'visible' && cuentaActual) {
+            // Refrescar solo saldos, no todo el panel (para no interrumpir al usuario)
+            fetchAutenticado('/api/pay/cuentas/mi-cuenta/saldos')
+                .then(function (resp) {
+                    if (resp.success && resp.data) {
+                        document.getElementById('saldoDisponible').textContent =
+                            formatearMonto(resp.data.disponible_mxn);
+                        document.getElementById('saldoPendiente').textContent =
+                            formatearMonto(resp.data.pendiente_mxn);
+                    }
+                })
+                .catch(function () { /* silencioso */ });
+        }
+    }, 30000);
+}
+
+// ================================================================
+// INICIALIZACIÓN
+// ================================================================
+
+document.addEventListener('DOMContentLoaded', async function () {
+    await cargarUsuario();
+
+    if (!sessionUser) {
+        document.getElementById('loaderInicial').innerHTML =
+            '<p style="color: var(--danger);">Debes iniciar sesión para ver tu Csariel\'s Pay</p>' +
+            '<a href="/" style="color: var(--gold); text-decoration: underline; display: inline-block; margin-top: 12px;">Volver al inicio</a>';
+        return;
+    }
+
+    await cargarResumen();
+    iniciarPolling();
+
+    setTimeout(async function () {
+        try {
+            if (typeof window.inicializarIdiomas === 'function') {
+                await window.inicializarIdiomas();
+            }
+        } catch (e) { /* silencioso */ }
+    }, 400);
+});
+
+window.addEventListener('beforeunload', function () {
+    if (pollingInterval) clearInterval(pollingInterval);
+});
+
+// Exponer globales
+window.verTokens = verTokens;
+window.showToast = showToast;
+window.escapeHTML = escapeHTML;
+window.filtrarMovimientos = filtrarMovimientos;
+window.cargarMasMovimientos = cargarMasMovimientos;
+window.irARetirar = irARetirar;
+</script>
+</body>
+</html>
