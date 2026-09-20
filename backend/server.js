@@ -26,6 +26,7 @@
    ✅ AI Voice (Marquinhos - Groq + Kimi K3 + LiveKit TTS)
    ✅ Content-Type correcto para JS
    ✅ Middleware en orden correcto
+   ✅ Csariel's Pay (intenciones, cuentas, retiros, webhooks)
    ================================================================ */
 
 const express = require('express');
@@ -509,6 +510,16 @@ app.use(
         ) {
             return next();
         }
+
+        // ▼▼▼ NUEVO: exceptuar webhooks de Csariel's Pay ▼▼▼
+        // Stripe/Fintoc/NOWPayments pueden mandar más peticiones
+        // que el límite global y no deben ser bloqueadas.
+        if (
+            req.path.includes('/pay/webhooks/')
+        ) {
+            return next();
+        }
+        // ▲▲▲ FIN NUEVO ▲▲▲
 
         if (
             req.path === '/livekit/token'
@@ -2419,6 +2430,16 @@ app.use(
     membresiaRoutes
 );
 
+// ▼▼▼ NUEVO: Csariel's Pay ▼▼▼
+const payRoutes =
+    require('./routes/pay');
+
+app.use(
+    '/api/pay',
+    payRoutes
+);
+// ▲▲▲ FIN NUEVO ▲▲▲
+
 /* ================================================================
    MENSAJERÍA
 ================================================================ */
@@ -2840,7 +2861,24 @@ app.get(
                             'POST /api/ai/voice/chat'
                     }
                 }
+            },
+
+            // ▼▼▼ NUEVO: Csariel's Pay ▼▼▼
+            csariels_pay: {
+                enabled: true,
+                endpoint_base: '/api/pay',
+                proveedores_configurados: {
+                    stripe: Boolean(process.env.STRIPE_SECRET_KEY),
+                    fintoc: Boolean(process.env.FINTOC_SECRET_KEY),
+                    nowpayments: Boolean(process.env.NOWPAYMENTS_API_KEY)
+                },
+                webhooks: {
+                    stripe: '/api/pay/webhooks/stripe',
+                    fintoc: '/api/pay/webhooks/fintoc',
+                    nowpayments: '/api/pay/webhooks/nowpayments'
+                }
             }
+            // ▲▲▲ FIN NUEVO ▲▲▲
         });
     }
 );
@@ -2991,6 +3029,10 @@ app.listen(
         );
 
         console.log(
+            '💰 Csariel\'s Pay router: ✅ /api/pay'
+        );
+
+        console.log(
             '💬 Mensajería router: ✅ /api/mensajes'
         );
 
@@ -3041,6 +3083,22 @@ app.listen(
         console.log(
             `💳 NOWPayments: ${
                 process.env.NOWPAYMENTS_API_KEY
+                    ? '✅ Configurado'
+                    : '❌ No configurado'
+            }`
+        );
+
+        console.log(
+            `💳 Stripe (Pay): ${
+                process.env.STRIPE_SECRET_KEY
+                    ? '✅ Configurado'
+                    : '❌ No configurado'
+            }`
+        );
+
+        console.log(
+            `🏦 Fintoc (Pay): ${
+                process.env.FINTOC_SECRET_KEY
                     ? '✅ Configurado'
                     : '❌ No configurado'
             }`
