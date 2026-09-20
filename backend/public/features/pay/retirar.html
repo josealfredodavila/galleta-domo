@@ -1,0 +1,1330 @@
+<!-- ================================================================
+     CSARIEL'S ECOSYSTEM
+     Csariel's Pay - Retirar ganancias
+     Ruta: /features/pay/retirar.html
+     ================================================================ -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>◈ Retirar ganancias · Csariel's Pay</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+
+    <script src="/features/shared/js/apariencia-global.js"></script>
+
+    <style>
+        :root {
+            --gold: #D4AF37;
+            --gold-dark: #b8923a;
+            --gold-light: #e8c84a;
+            --green-deep: #0F2D1A;
+            --green-mid: #1a4a2a;
+            --green-bright: #2a6a3a;
+            --space: #05080f;
+            --text-primary: #f0f4f8;
+            --text-secondary: #c0d8e8;
+            --text-muted: #8aa8b8;
+            --glass-bg: rgba(15, 45, 26, 0.55);
+            --glass-border: rgba(212, 175, 55, 0.15);
+            --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
+            --radius: 16px;
+            --radius-xl: 24px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --success: #00d68f;
+            --danger: #ff3366;
+            --warning: #f7d44a;
+            --cyan: #00e5ff;
+            --purple: #a855f7;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--space);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            background-image: radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
+        }
+
+        .nebula { position: fixed; border-radius: 50%; filter: blur(120px); opacity: 0.12; pointer-events: none; z-index: 0; animation: nebula-drift 25s ease-in-out infinite alternate; }
+        .nebula-1 { width: 700px; height: 700px; background: var(--green-bright); top: -15%; right: -15%; }
+        .nebula-2 { width: 600px; height: 600px; background: var(--gold-light); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.06; }
+        @keyframes nebula-drift { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(40px,-30px) scale(1.15); } }
+
+        .app { position: relative; z-index: 1; max-width: 640px; width: 100%; margin: 0 auto; padding: 12px 16px 30px; }
+
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0 14px; border-bottom: 1px solid var(--glass-border);
+            background: rgba(5, 8, 15, 0.92); position: sticky; top: 0; z-index: 100;
+        }
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .logo-hex { font-size: 1.8rem; color: var(--gold); font-family: 'Orbitron', monospace; }
+        .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--text-primary); letter-spacing: 2px; }
+        .logo-text span { color: var(--gold); }
+        .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; }
+        .token-badge { display: flex; align-items: center; gap: 6px; background: rgba(212,175,55,0.1); border: 1px solid rgba(212,175,55,0.15); padding: 4px 14px; border-radius: 20px; font-size: 0.7rem; color: var(--gold); font-family: 'Orbitron', monospace; cursor: pointer; }
+
+        .main-nav {
+            display: flex; gap: 4px; background: rgba(15,45,26,0.3); border-radius: var(--radius);
+            padding: 4px; border: 1px solid var(--glass-border); margin: 16px 0 20px; overflow-x: auto;
+        }
+        .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; white-space: nowrap; transition: var(--transition); display: flex; align-items: center; gap: 6px; }
+        .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212,175,55,0.05); }
+        .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); }
+        .main-nav .nav-link .nav-simbolo { color: var(--gold); opacity: 0.7; }
+
+        .pay-header {
+            text-align: center; padding: 8px 0 20px;
+        }
+        .pay-header h1 {
+            font-family: 'Orbitron', monospace; font-size: 1.4rem;
+            color: var(--text-primary); margin-bottom: 6px;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .pay-header h1 .simbolo { color: var(--gold); }
+        .pay-header h1 span { color: var(--gold); }
+        .pay-header p { font-size: 0.75rem; color: var(--text-muted); }
+
+        .saldo-card {
+            background: linear-gradient(135deg, rgba(212,175,55,0.15), rgba(15,45,26,0.7));
+            border: 1px solid rgba(212,175,55,0.3);
+            border-radius: var(--radius-xl);
+            padding: 24px 20px; margin-bottom: 20px;
+            text-align: center;
+        }
+        .saldo-card .label {
+            font-size: 0.68rem; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 2px;
+            margin-bottom: 8px; font-family: 'Orbitron', monospace;
+        }
+        .saldo-card .monto {
+            font-family: 'Orbitron', monospace; font-size: 2.2rem;
+            font-weight: 700; color: var(--gold);
+            line-height: 1; letter-spacing: 1px;
+        }
+        .saldo-card .monto .moneda {
+            font-size: 0.9rem; color: var(--text-muted); margin-left: 6px;
+        }
+
+        .card {
+            background: var(--glass-bg); border: 1px solid var(--glass-border);
+            border-radius: var(--radius); padding: 20px; margin-bottom: 16px;
+        }
+
+        .form-group { margin-bottom: 16px; }
+        .form-group label {
+            display: block; font-size: 0.72rem;
+            color: var(--text-muted); margin-bottom: 6px; font-weight: 600;
+        }
+        .form-group label .required { color: var(--danger); }
+        .form-group input,
+        .form-group select {
+            width: 100%; padding: 14px 16px;
+            background: rgba(0,0,0,0.35);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px; color: var(--text-primary);
+            font-size: 0.9rem; outline: none;
+            font-family: 'Inter', sans-serif;
+            transition: var(--transition);
+        }
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: var(--gold);
+            background: rgba(0,0,0,0.5);
+        }
+        .form-group .input-monto {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.5rem;
+            text-align: center;
+            padding: 16px;
+            letter-spacing: 2px;
+        }
+        .form-group .helper {
+            font-size: 0.62rem; color: var(--text-muted); margin-top: 4px;
+        }
+        .form-group .helper.error { color: var(--danger); }
+        .form-group .helper.success { color: var(--success); }
+        .form-group .helper.warning { color: var(--warning); }
+
+        .monto-wrap {
+            position: relative;
+        }
+        .monto-wrap .btn-todo {
+            position: absolute;
+            right: 12px; top: 50%; transform: translateY(-50%);
+            padding: 6px 12px;
+            background: rgba(212,175,55,0.15);
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            border-radius: 20px;
+            font-size: 0.65rem; font-weight: 700;
+            cursor: pointer; transition: var(--transition);
+            font-family: 'Inter', sans-serif;
+        }
+        .monto-wrap .btn-todo:hover {
+            background: rgba(212,175,55,0.3);
+        }
+
+        .metodos-grid {
+            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;
+        }
+        @media (max-width: 480px) {
+            .metodos-grid { grid-template-columns: 1fr 1fr; }
+        }
+
+        .metodo-opcion {
+            display: flex; flex-direction: column; align-items: center;
+            padding: 14px 8px; border-radius: var(--radius);
+            border: 1px solid var(--glass-border);
+            background: rgba(0,0,0,0.25);
+            cursor: pointer; transition: var(--transition);
+            gap: 4px; text-align: center;
+        }
+        .metodo-opcion:hover { border-color: var(--gold); }
+        .metodo-opcion.activo {
+            background: rgba(212,175,55,0.15);
+            border-color: var(--gold);
+        }
+        .metodo-opcion .icono {
+            font-size: 1.4rem; color: var(--gold);
+            font-family: 'Orbitron', monospace;
+        }
+        .metodo-opcion .nombre {
+            font-size: 0.7rem; font-weight: 700;
+            color: var(--text-muted);
+            font-family: 'Orbitron', monospace;
+            letter-spacing: 0.5px;
+        }
+        .metodo-opcion.activo .nombre { color: var(--gold); }
+        .metodo-opcion .tiempo {
+            font-size: 0.55rem; color: var(--text-muted);
+        }
+
+        .btn-primario {
+            width: 100%;
+            padding: 16px; border-radius: 30px;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space); border: none;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700; font-size: 0.85rem;
+            cursor: pointer; transition: var(--transition);
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn-primario:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-gold);
+        }
+        .btn-primario:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .btn-secundario {
+            padding: 12px 20px; border-radius: 20px;
+            background: transparent;
+            border: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+            font-family: 'Inter', sans-serif;
+            font-weight: 600; font-size: 0.78rem;
+            cursor: pointer; transition: var(--transition);
+            display: inline-flex; align-items: center; gap: 6px;
+        }
+        .btn-secundario:hover { border-color: var(--gold); color: var(--gold); }
+
+        /* Retiro item */
+        .retiro-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px; border-radius: 12px;
+            background: rgba(0,0,0,0.25);
+            margin-bottom: 8px;
+            gap: 10px;
+            border: 1px solid transparent;
+        }
+        .retiro-item .info { flex: 1; min-width: 0; }
+        .retiro-item .info .monto {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.9rem; color: var(--text-primary);
+            font-weight: 700;
+        }
+        .retiro-item .info .detalle {
+            font-size: 0.65rem; color: var(--text-muted);
+            margin-top: 2px;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .retiro-item .info .fecha {
+            font-size: 0.6rem; color: var(--text-muted);
+            margin-top: 2px;
+        }
+        .retiro-item .estado-badge {
+            font-size: 0.6rem; padding: 4px 10px;
+            border-radius: 12px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            flex-shrink: 0;
+        }
+        .estado-badge.pending { background: rgba(247,212,74,0.15); color: var(--warning); }
+        .estado-badge.processing { background: rgba(0,229,255,0.15); color: var(--cyan); }
+        .estado-badge.completed { background: rgba(0,214,143,0.15); color: var(--success); }
+        .estado-badge.failed { background: rgba(255,51,102,0.15); color: var(--danger); }
+        .estado-badge.cancelled { background: rgba(138,168,184,0.15); color: var(--text-muted); }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.75);
+            z-index: 9998;
+            align-items: center; justify-content: center;
+            padding: 16px;
+        }
+        .modal-overlay.activo { display: flex; }
+        .modal {
+            background: var(--green-deep);
+            border: 1px solid var(--gold);
+            border-radius: var(--radius-xl);
+            max-width: 420px; width: 100%;
+            padding: 24px;
+            text-align: center;
+            animation: modalIn 0.3s ease;
+        }
+        @keyframes modalIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .modal .icono-modal {
+            font-size: 2.5rem; color: var(--gold);
+            font-family: 'Orbitron', monospace;
+            display: block; margin-bottom: 12px;
+        }
+        .modal h3 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1rem; color: var(--gold);
+            margin-bottom: 12px;
+        }
+        .modal .resumen {
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 16px;
+            text-align: left;
+        }
+        .modal .resumen .fila {
+            display: flex; justify-content: space-between;
+            padding: 6px 0;
+            font-size: 0.78rem;
+        }
+        .modal .resumen .fila .label { color: var(--text-muted); }
+        .modal .resumen .fila .valor { color: var(--text-primary); font-weight: 600; }
+        .modal .resumen .fila .valor.destacado {
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
+            font-size: 0.95rem;
+        }
+        .modal .aviso {
+            font-size: 0.68rem; color: var(--text-muted);
+            line-height: 1.5; margin-bottom: 16px;
+        }
+        .modal .botones {
+            display: flex; gap: 8px;
+        }
+        .modal .botones button {
+            flex: 1;
+        }
+
+        .estado-vacio {
+            text-align: center; padding: 40px 20px;
+            color: var(--text-muted);
+        }
+        .estado-vacio .icono-grande {
+            font-size: 3rem; display: block; margin-bottom: 12px;
+            color: var(--gold); opacity: 0.4;
+            font-family: 'Orbitron', monospace;
+        }
+        .estado-vacio h3 {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.95rem; color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+        .estado-vacio p {
+            font-size: 0.75rem; line-height: 1.5;
+        }
+
+        .loading-state {
+            text-align: center; padding: 40px 20px;
+            color: var(--text-muted);
+        }
+        .loading-state .spinner {
+            width: 40px; height: 40px;
+            border: 3px solid rgba(212,175,55,0.15);
+            border-top-color: var(--gold);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 12px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .info-box {
+            background: rgba(0,229,255,0.06);
+            border: 1px solid rgba(0,229,255,0.25);
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-size: 0.72rem; color: var(--cyan);
+            line-height: 1.5; margin-bottom: 14px;
+        }
+        .info-box.warning {
+            background: rgba(247,212,74,0.08);
+            border-color: rgba(247,212,74,0.3);
+            color: var(--warning);
+        }
+        .info-box.success {
+            background: rgba(0,214,143,0.08);
+            border-color: rgba(0,214,143,0.3);
+            color: var(--success);
+        }
+
+        .toast {
+            position: fixed; bottom: 30px; right: 20px;
+            background: var(--green-deep); border: 1px solid var(--gold);
+            color: var(--gold); padding: 14px 24px;
+            border-radius: 12px; font-size: 0.8rem;
+            transform: translateY(100px); opacity: 0;
+            transition: all 0.4s ease; z-index: 99999;
+            max-width: 320px; pointer-events: none;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { border-color: var(--danger); color: var(--danger); }
+        .toast.warning { border-color: var(--warning); color: var(--warning); }
+        .toast.success { border-color: var(--success); color: var(--success); }
+
+        .footer {
+            margin-top: 30px; padding-top: 16px;
+            border-top: 1px solid var(--glass-border);
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 0.7rem; color: var(--text-muted);
+            flex-wrap: wrap; gap: 10px;
+        }
+        .footer .brand { color: var(--gold); font-weight: 600; }
+        .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; }
+        .footer-links a:hover { color: var(--gold); }
+
+        html.tema-dia, html[data-tema="dia"] {
+            --space: #f5f7fa;
+            --text-primary: #1a2332;
+            --text-secondary: #4a5568;
+            --text-muted: #718096;
+            --glass-bg: rgba(255, 255, 255, 0.9);
+            --glass-border: rgba(0, 0, 0, 0.1);
+        }
+        html.tema-dia body, html[data-tema="dia"] body {
+            background: #f5f7fa !important;
+            color: var(--text-primary) !important;
+        }
+        html.tema-dia .nebula, html[data-tema="dia"] .nebula { display: none !important; }
+        html.tema-dia .header, html[data-tema="dia"] .header { background: rgba(255, 255, 255, 0.95) !important; border-bottom-color: rgba(0, 0, 0, 0.1) !important; }
+        html.tema-dia .logo-text, html[data-tema="dia"] .logo-text { color: var(--text-primary) !important; }
+        html.tema-dia .modal, html[data-tema="dia"] .modal {
+            background: #ffffff;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="nebula nebula-1" aria-hidden="true"></div>
+    <div class="nebula nebula-2" aria-hidden="true"></div>
+
+    <div class="app">
+
+        <header class="header">
+            <a href="/features/pay/panel.html" class="logo" aria-label="Ir al panel">
+                <span class="logo-hex">◈</span>
+                <span class="logo-text">Csariel<span>'s</span></span>
+                <span class="logo-badge">✦ PAY</span>
+            </a>
+            <div class="header-actions">
+                <span class="token-badge" onclick="verTokens()">
+                    ◈ <span id="tokenBadgeCantidad">0</span> Es.stoks
+                </span>
+            </div>
+        </header>
+
+        <nav class="main-nav" aria-label="Navegación principal">
+            <a href="/features/pay/panel.html" class="nav-link"><span class="nav-simbolo">◈</span> Mi Pay</a>
+            <a href="/features/pay/cobrar.html" class="nav-link"><span class="nav-simbolo">◆</span> Cobrar</a>
+            <a href="/features/pay/retirar.html" class="nav-link active"><span class="nav-simbolo">◇</span> Retirar</a>
+            <a href="/features/mercado/index.html" class="nav-link"><span class="nav-simbolo">◈</span> Mercado</a>
+        </nav>
+
+        <div id="loaderInicial" class="loading-state">
+            <div class="spinner"></div>
+            <p>Cargando...</p>
+        </div>
+
+        <div id="contenidoPrincipal" style="display:none;">
+
+            <div class="pay-header">
+                <h1><span class="simbolo">◇</span> Retirar <span>ganancias</span></h1>
+                <p>Envía tu saldo disponible a tu banco o wallet.</p>
+            </div>
+
+            <div class="saldo-card">
+                <div class="label">Disponible para retirar</div>
+                <div class="monto">
+                    <span id="saldoDisponible">$0.00</span>
+                    <span class="moneda">MXN</span>
+                </div>
+            </div>
+
+            <!-- ESTADO SIN MÉTODOS DISPONIBLES -->
+            <div id="cardSinMetodos" class="card" style="display:none;">
+                <div class="estado-vacio">
+                    <span class="icono-grande">⏳</span>
+                    <h3>Retiros disponibles próximamente</h3>
+                    <p>Estamos activando los proveedores de retiro. Mientras tanto, tus ganancias están seguras en tu cuenta de Csariel's Pay.</p>
+                </div>
+            </div>
+
+            <!-- FORMULARIO -->
+            <div id="cardFormulario" class="card">
+                <div class="form-group">
+                    <label for="inpMonto">Monto a retirar <span class="required">*</span></label>
+                    <div class="monto-wrap">
+                        <input
+                            type="number"
+                            id="inpMonto"
+                            class="input-monto"
+                            placeholder="$0.00"
+                            min="50"
+                            step="0.01"
+                            inputmode="decimal"
+                            autocomplete="off"
+                        />
+                        <button class="btn-todo" type="button" onclick="retirarTodo()">Todo</button>
+                    </div>
+                    <div class="helper" id="helperMonto">Mínimo $50 MXN</div>
+                </div>
+
+                <div class="form-group">
+                    <label>Método de retiro <span class="required">*</span></label>
+                    <div class="metodos-grid" id="metodosGrid">
+                        <!-- Se llena dinámicamente -->
+                    </div>
+                </div>
+
+                <!-- CAMPOS DINÁMICOS SEGÚN MÉTODO -->
+                <div id="camposSpei" style="display:none;">
+                    <div class="form-group">
+                        <label for="inpClabe">CLABE interbancaria (18 dígitos) <span class="required">*</span></label>
+                        <input
+                            type="text"
+                            id="inpClabe"
+                            placeholder="646180123456789012"
+                            maxlength="18"
+                            inputmode="numeric"
+                            autocomplete="off"
+                            style="font-family:monospace; letter-spacing:1px;"
+                        />
+                        <div class="helper" id="helperClabe"></div>
+                    </div>
+                </div>
+
+                <div id="camposCrypto" style="display:none;">
+                    <div class="form-group">
+                        <label>Moneda destino <span class="required">*</span></label>
+                        <select id="selCryptoMoneda">
+                            <option value="USDT">USDT</option>
+                            <option value="USDC">USDC</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Red <span class="required">*</span></label>
+                        <select id="selCryptoRed">
+                            <!-- Se llena dinámicamente según moneda -->
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="inpWallet">Dirección de wallet <span class="required">*</span></label>
+                        <input
+                            type="text"
+                            id="inpWallet"
+                            placeholder="TX..."
+                            maxlength="120"
+                            autocomplete="off"
+                            style="font-family:monospace; font-size:0.8rem;"
+                        />
+                        <div class="helper" id="helperWallet">Verifica que la dirección sea correcta.</div>
+                    </div>
+                </div>
+
+                <div id="camposTarjeta" style="display:none;">
+                    <div class="form-group">
+                        <label for="inpUltimos4">Últimos 4 dígitos de la tarjeta <span class="required">*</span></label>
+                        <input
+                            type="text"
+                            id="inpUltimos4"
+                            placeholder="1234"
+                            maxlength="4"
+                            inputmode="numeric"
+                            autocomplete="off"
+                            style="font-family:monospace; letter-spacing:2px; text-align:center;"
+                        />
+                        <div class="helper">Se enviará a la cuenta registrada en Stripe Connect.</div>
+                    </div>
+                </div>
+
+                <button class="btn-primario" id="btnSolicitar" onclick="abrirConfirmacion()" disabled>
+                    <span class="simbolo">◈</span> Solicitar retiro
+                </button>
+            </div>
+
+            <!-- HISTORIAL DE RETIROS -->
+            <div class="card">
+                <div class="seccion-titulo" style="
+                    font-family: 'Orbitron', monospace;
+                    font-size: 0.8rem;
+                    color: var(--text-primary);
+                    font-weight: 700;
+                    display: flex; align-items: center; gap: 8px;
+                    margin-bottom: 14px;
+                ">
+                    <span style="color: var(--gold);">◈</span> Retiros recientes
+                </div>
+                <div id="listaRetiros">
+                    <div class="loading-state"><div class="spinner"></div></div>
+                </div>
+            </div>
+
+        </div>
+
+        <footer class="footer">
+            <span><span class="brand">© Csariel's</span> · Csariel's Pay</span>
+            <div class="footer-links">
+                <a href="/features/pay/panel.html">Mi Pay</a>
+                <a href="/features/pay/cobrar.html">Cobrar</a>
+                <a href="/terminos">Términos</a>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- MODAL DE CONFIRMACIÓN -->
+    <div class="modal-overlay" id="modalConfirmacion">
+        <div class="modal">
+            <span class="icono-modal">◇</span>
+            <h3>Confirmar retiro</h3>
+            <div class="resumen" id="resumenModal"></div>
+            <div class="aviso" id="avisoModal"></div>
+            <div class="botones">
+                <button class="btn-secundario" onclick="cerrarModal()">Cancelar</button>
+                <button class="btn-primario" id="btnConfirmar" onclick="confirmarRetiro()">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast" role="alert" aria-live="polite"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/features/shared/js/idiomas.js"></script>
+<script>
+// ================================================================
+// CSARIEL'S PAY - RETIRAR GANANCIAS
+// ================================================================
+
+var supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
+var supabaseKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+var supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+window.supabaseClient = supabaseClient;
+
+var sessionUser = null;
+var saldoDisponible = 0;
+var metodosDisponibles = [];
+var metodoElegido = null;
+var cargandoRetiro = false;
+
+// Config de redes por moneda
+var REDES_POR_MONEDA = {
+    'USDT': [
+        { valor: 'usdttrc20', texto: 'TRON (TRC20)' },
+        { valor: 'usdtbsc', texto: 'BSC (BEP20)' },
+        { valor: 'usdtmatic', texto: 'Polygon' },
+        { valor: 'usdtsol', texto: 'Solana' },
+        { valor: 'usdterc20', texto: 'Ethereum (ERC20)' }
+    ],
+    'USDC': [
+        { valor: 'usdcmatic', texto: 'Polygon' },
+        { valor: 'usdcsol', texto: 'Solana' },
+        { valor: 'usdcbsc', texto: 'BSC (BEP20)' },
+        { valor: 'usdc', texto: 'Ethereum (ERC20)' }
+    ]
+};
+
+var TIEMPO_ESTIMADO = {
+    'spei': '1-2 días hábiles',
+    'crypto': '15 min a 2 horas',
+    'tarjeta': '3-5 días hábiles'
+};
+
+var MIN_RETIRO = 50;
+
+// ================================================================
+// UTILIDADES
+// ================================================================
+
+function showToast(mensaje, tipo) {
+    try {
+        var toastEl = document.getElementById('toast');
+        if (!toastEl) { console.warn(mensaje); return; }
+        toastEl.textContent = mensaje;
+        toastEl.className = 'toast show';
+        if (tipo === 'error') toastEl.classList.add('error');
+        else if (tipo === 'warning') toastEl.classList.add('warning');
+        else if (tipo === 'success') toastEl.classList.add('success');
+        clearTimeout(toastEl._timeout);
+        toastEl._timeout = setTimeout(function () { toastEl.classList.remove('show'); }, 3500);
+    } catch (e) { console.warn('Toast error:', e); }
+}
+
+function escapeHTML(texto) {
+    if (!texto) return '';
+    var div = document.createElement('div');
+    div.textContent = texto;
+    return div.innerHTML;
+}
+
+function formatearMonto(monto) {
+    var n = Number(monto) || 0;
+    return '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+function formatearFecha(iso) {
+    if (!iso) return '';
+    try {
+        var fecha = new Date(iso);
+        var dia = String(fecha.getDate()).padStart(2, '0');
+        var mes = String(fecha.getMonth() + 1).padStart(2, '0');
+        var anio = fecha.getFullYear();
+        var hh = String(fecha.getHours()).padStart(2, '0');
+        var mm = String(fecha.getMinutes()).padStart(2, '0');
+        return dia + '/' + mes + '/' + anio + ' ' + hh + ':' + mm;
+    } catch (e) { return ''; }
+}
+
+function verTokens() {
+    window.location.href = '/features/perfil/perfil.html';
+}
+
+// ================================================================
+// FETCH AUTENTICADO
+// ================================================================
+
+async function fetchAutenticado(url, opciones) {
+    var opts = opciones || {};
+    var session = await supabaseClient.auth.getSession();
+    var token = session.data.session ? session.data.session.access_token : null;
+
+    if (!token) throw new Error('No autenticado');
+
+    var headers = Object.assign(
+        {
+            'Authorization': 'Bearer ' + token,
+            'Accept': 'application/json'
+        },
+        opts.headers || {}
+    );
+
+    if (opts.body && typeof opts.body === 'object') {
+        headers['Content-Type'] = 'application/json';
+        opts.body = JSON.stringify(opts.body);
+    }
+
+    opts.headers = headers;
+
+    var resp = await fetch(url, opts);
+    var data = await resp.json().catch(function () { return {}; });
+
+    if (!resp.ok) {
+        var err = new Error(data.error || 'Error HTTP ' + resp.status);
+        err.status = resp.status;
+        err.data = data;
+        throw err;
+    }
+
+    return data;
+}
+
+// ================================================================
+// CARGAR USUARIO
+// ================================================================
+
+async function cargarUsuario() {
+    try {
+        var result = await supabaseClient.auth.getSession();
+        var session = result.data.session;
+        if (!session) return null;
+        sessionUser = session.user;
+
+        var u = await supabaseClient
+            .from('usuarios')
+            .select('tokens')
+            .eq('id', session.user.id)
+            .single();
+
+        if (!u.error && u.data) {
+            var badge = document.getElementById('tokenBadgeCantidad');
+            if (badge) badge.textContent = u.data.tokens || 0;
+        }
+        return sessionUser;
+    } catch (e) {
+        console.error('Error usuario:', e);
+        return null;
+    }
+}
+
+// ================================================================
+// CARGAR SALDO
+// ================================================================
+
+async function cargarSaldo() {
+    try {
+        var resp = await fetchAutenticado('/api/pay/cuentas/mi-cuenta/saldos');
+        if (!resp.success || !resp.data) return;
+
+        saldoDisponible = Number(resp.data.disponible_mxn) || 0;
+        document.getElementById('saldoDisponible').textContent = formatearMonto(saldoDisponible);
+    } catch (err) {
+        console.error('Error cargando saldo:', err);
+    }
+}
+
+// ================================================================
+// CARGAR MÉTODOS DISPONIBLES
+// ================================================================
+
+async function cargarMetodos() {
+    try {
+        var resp = await fetchAutenticado('/api/pay/retiros/metodos-disponibles');
+        if (!resp.success || !resp.data) throw new Error('Respuesta inválida');
+
+        metodosDisponibles = (resp.data.metodos || []).filter(function (m) {
+            return m.disponible === true;
+        });
+
+        renderizarMetodos();
+
+    } catch (err) {
+        console.error('Error cargando métodos:', err);
+        document.getElementById('cardFormulario').style.display = 'none';
+        document.getElementById('cardSinMetodos').style.display = 'block';
+    }
+}
+
+function renderizarMetodos() {
+    var grid = document.getElementById('metodosGrid');
+    var cardFormulario = document.getElementById('cardFormulario');
+    var cardSinMetodos = document.getElementById('cardSinMetodos');
+
+    if (!metodosDisponibles || metodosDisponibles.length === 0) {
+        cardFormulario.style.display = 'none';
+        cardSinMetodos.style.display = 'block';
+        return;
+    }
+
+    cardFormulario.style.display = 'block';
+    cardSinMetodos.style.display = 'none';
+
+    var iconos = {
+        'spei': '🏦',
+        'crypto': '₿',
+        'tarjeta': '💳'
+    };
+    var nombres = {
+        'spei': 'SPEI',
+        'crypto': 'Crypto',
+        'tarjeta': 'Tarjeta'
+    };
+
+    var html = '';
+    metodosDisponibles.forEach(function (m) {
+        var icono = iconos[m.metodo] || '◆';
+        var nombre = nombres[m.metodo] || m.metodo;
+        var tiempo = TIEMPO_ESTIMADO[m.metodo] || '';
+
+        html +=
+            '<div class="metodo-opcion" data-metodo="' + m.metodo + '" onclick="elegirMetodo(this)">' +
+                '<span class="icono">' + icono + '</span>' +
+                '<span class="nombre">' + nombre + '</span>' +
+                '<span class="tiempo">' + tiempo + '</span>' +
+            '</div>';
+    });
+
+    grid.innerHTML = html;
+
+    // Seleccionar el primero automáticamente
+    var primero = grid.querySelector('.metodo-opcion');
+    if (primero) elegirMetodo(primero);
+}
+
+// ================================================================
+// ELEGIR MÉTODO
+// ================================================================
+
+function elegirMetodo(el) {
+    document.querySelectorAll('.metodo-opcion').forEach(function (op) {
+        op.classList.remove('activo');
+    });
+    el.classList.add('activo');
+    metodoElegido = el.getAttribute('data-metodo');
+
+    // Ocultar todos los campos
+    document.getElementById('camposSpei').style.display = 'none';
+    document.getElementById('camposCrypto').style.display = 'none';
+    document.getElementById('camposTarjeta').style.display = 'none';
+
+    // Mostrar los del método elegido
+    if (metodoElegido === 'spei') {
+        document.getElementById('camposSpei').style.display = 'block';
+        // Restaurar CLABE guardada
+        try {
+            var clabeGuardada = localStorage.getItem('csariels_pay_clabe_ultima');
+            if (clabeGuardada) document.getElementById('inpClabe').value = clabeGuardada;
+        } catch (e) { /* silencioso */ }
+    } else if (metodoElegido === 'crypto') {
+        document.getElementById('camposCrypto').style.display = 'block';
+        actualizarRedesCrypto();
+        // Restaurar wallet guardada
+        try {
+            var walletGuardada = localStorage.getItem('csariels_pay_wallet_ultima');
+            if (walletGuardada) document.getElementById('inpWallet').value = walletGuardada;
+            var monedaGuardada = localStorage.getItem('csariels_pay_moneda_ultima');
+            if (monedaGuardada && ['USDT', 'USDC'].includes(monedaGuardada)) {
+                document.getElementById('selCryptoMoneda').value = monedaGuardada;
+                actualizarRedesCrypto();
+            }
+        } catch (e) { /* silencioso */ }
+    } else if (metodoElegido === 'tarjeta') {
+        document.getElementById('camposTarjeta').style.display = 'block';
+    }
+
+    validarFormulario();
+}
+
+function actualizarRedesCrypto() {
+    var moneda = document.getElementById('selCryptoMoneda').value;
+    var selRed = document.getElementById('selCryptoRed');
+    var redes = REDES_POR_MONEDA[moneda] || [];
+
+    var html = '';
+    redes.forEach(function (r) {
+        html += '<option value="' + r.valor + '">' + escapeHTML(r.texto) + '</option>';
+    });
+    selRed.innerHTML = html;
+}
+
+// ================================================================
+// VALIDACIONES
+// ================================================================
+
+function validarFormulario() {
+    var inpMonto = document.getElementById('inpMonto');
+    var monto = parseFloat(inpMonto.value);
+    var helper = document.getElementById('helperMonto');
+    var btn = document.getElementById('btnSolicitar');
+
+    // Validar monto
+    if (!inpMonto.value || isNaN(monto)) {
+        helper.textContent = 'Mínimo $50 MXN';
+        helper.className = 'helper';
+        btn.disabled = true;
+        return;
+    }
+
+    if (monto < MIN_RETIRO) {
+        helper.textContent = 'El monto mínimo es ' + formatearMonto(MIN_RETIRO) + ' MXN';
+        helper.className = 'helper error';
+        btn.disabled = true;
+        return;
+    }
+
+    if (monto > saldoDisponible) {
+        helper.textContent = 'Solo tienes ' + formatearMonto(saldoDisponible) + ' disponibles';
+        helper.className = 'helper error';
+        btn.disabled = true;
+        return;
+    }
+
+    helper.textContent = '✓ Monto válido';
+    helper.className = 'helper success';
+
+    // Validar destino según método
+    if (metodoElegido === 'spei') {
+        var clabe = document.getElementById('inpClabe').value.trim();
+        if (!/^\d{18}$/.test(clabe)) {
+            btn.disabled = true;
+            return;
+        }
+    } else if (metodoElegido === 'crypto') {
+        var wallet = document.getElementById('inpWallet').value.trim();
+        if (!wallet || wallet.length < 20) {
+            btn.disabled = true;
+            return;
+        }
+    } else if (metodoElegido === 'tarjeta') {
+        var u4 = document.getElementById('inpUltimos4').value.trim();
+        if (!/^\d{4}$/.test(u4)) {
+            btn.disabled = true;
+            return;
+        }
+    } else {
+        btn.disabled = true;
+        return;
+    }
+
+    btn.disabled = false;
+}
+
+// ================================================================
+// RETIRAR TODO
+// ================================================================
+
+function retirarTodo() {
+    var inp = document.getElementById('inpMonto');
+    inp.value = saldoDisponible.toFixed(2);
+    validarFormulario();
+}
+
+// ================================================================
+// MODAL DE CONFIRMACIÓN
+// ================================================================
+
+function abrirConfirmacion() {
+    var monto = parseFloat(document.getElementById('inpMonto').value);
+
+    if (isNaN(monto) || monto < MIN_RETIRO || monto > saldoDisponible) {
+        showToast('Monto inválido', 'warning');
+        return;
+    }
+
+    var resumen = document.getElementById('resumenModal');
+    var aviso = document.getElementById('avisoModal');
+    var filasHTML = '';
+
+    filasHTML +=
+        '<div class="fila">' +
+            '<span class="label">Monto:</span>' +
+            '<span class="valor destacado">' + formatearMonto(monto) + ' MXN</span>' +
+        '</div>';
+
+    filasHTML +=
+        '<div class="fila">' +
+            '<span class="label">Método:</span>' +
+            '<span class="valor">' + escapeHTML(etiquetaMetodo(metodoElegido)) + '</span>' +
+        '</div>';
+
+    if (metodoElegido === 'spei') {
+        var clabe = document.getElementById('inpClabe').value.trim();
+        filasHTML +=
+            '<div class="fila">' +
+                '<span class="label">CLABE destino:</span>' +
+                '<span class="valor">****' + clabe.slice(-4) + '</span>' +
+            '</div>';
+    } else if (metodoElegido === 'crypto') {
+        var wallet = document.getElementById('inpWallet').value.trim();
+        var red = document.getElementById('selCryptoRed');
+        var redTexto = red.options[red.selectedIndex] ? red.options[red.selectedIndex].text : '';
+        var moneda = document.getElementById('selCryptoMoneda').value;
+
+        filasHTML +=
+            '<div class="fila">' +
+                '<span class="label">Moneda:</span>' +
+                '<span class="valor">' + moneda + '</span>' +
+            '</div>';
+        filasHTML +=
+            '<div class="fila">' +
+                '<span class="label">Red:</span>' +
+                '<span class="valor">' + escapeHTML(redTexto) + '</span>' +
+            '</div>';
+        filasHTML +=
+            '<div class="fila">' +
+                '<span class="label">Wallet:</span>' +
+                '<span class="valor" style="font-size:0.7rem; font-family:monospace;">' +
+                    escapeHTML(wallet.slice(0, 8)) + '...' + escapeHTML(wallet.slice(-6)) +
+                '</span>' +
+            '</div>';
+    } else if (metodoElegido === 'tarjeta') {
+        var u4 = document.getElementById('inpUltimos4').value.trim();
+        filasHTML +=
+            '<div class="fila">' +
+                '<span class="label">Tarjeta destino:</span>' +
+                '<span class="valor">****' + u4 + '</span>' +
+            '</div>';
+    }
+
+    resumen.innerHTML = filasHTML;
+
+    var tiempo = TIEMPO_ESTIMADO[metodoElegido] || '';
+    aviso.innerHTML =
+        '<strong style="color: var(--warning);">⏱ Tiempo estimado: ' + escapeHTML(tiempo) + '</strong><br>' +
+        'No podrás cancelar este retiro una vez procesado. Verifica bien los datos de destino.';
+
+    document.getElementById('modalConfirmacion').classList.add('activo');
+}
+
+function cerrarModal() {
+    document.getElementById('modalConfirmacion').classList.remove('activo');
+}
+
+function etiquetaMetodo(metodo) {
+    var mapa = {
+        'spei': 'SPEI (transferencia bancaria)',
+        'crypto': 'Crypto (USDT/USDC)',
+        'tarjeta': 'Tarjeta (Stripe)'
+    };
+    return mapa[metodo] || metodo;
+}
+
+// ================================================================
+// CONFIRMAR RETIRO
+// ================================================================
+
+async function confirmarRetiro() {
+    if (cargandoRetiro) return;
+    cargandoRetiro = true;
+
+    var btn = document.getElementById('btnConfirmar');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="simbolo">◈</span> Procesando...';
+
+    var monto = parseFloat(document.getElementById('inpMonto').value);
+    var idempotencyKey = 'retiro_' + Date.now() + '_' + Math.random().toString(36).substring(2, 10);
+
+    var payload = {
+        montoMxn: monto,
+        metodo: metodoElegido,
+        idempotencyKey: idempotencyKey
+    };
+
+    if (metodoElegido === 'spei') {
+        var clabe = document.getElementById('inpClabe').value.trim();
+        payload.destinoUltimos4 = clabe.slice(-4);
+        // También mandamos la CLABE completa como dato extra (para retiro real)
+        payload.datosExtra = { clabe_destino: clabe };
+    } else if (metodoElegido === 'crypto') {
+        payload.monedaDestino = document.getElementById('selCryptoMoneda').value;
+        payload.redCrypto = document.getElementById('selCryptoRed').value;
+        payload.walletDestino = document.getElementById('inpWallet').value.trim();
+    } else if (metodoElegido === 'tarjeta') {
+        payload.destinoUltimos4 = document.getElementById('inpUltimos4').value.trim();
+    }
+
+    try {
+        var resp = await fetchAutenticado('/api/pay/retiros', {
+            method: 'POST',
+            body: payload
+        });
+
+        if (!resp.success || !resp.data) {
+            throw new Error('Respuesta inválida');
+        }
+
+        // Guardar destino en localStorage para próxima vez
+        try {
+            if (metodoElegido === 'spei') {
+                localStorage.setItem('csariels_pay_clabe_ultima', document.getElementById('inpClabe').value.trim());
+            } else if (metodoElegido === 'crypto') {
+                localStorage.setItem('csariels_pay_wallet_ultima', document.getElementById('inpWallet').value.trim());
+                localStorage.setItem('csariels_pay_moneda_ultima', document.getElementById('selCryptoMoneda').value);
+            }
+        } catch (e) { /* silencioso */ }
+
+        cerrarModal();
+        showToast('✔ Retiro solicitado: ' + formatearMonto(monto) + ' MXN', 'success');
+
+        // Recargar saldo e historial
+        await cargarSaldo();
+        await cargarRetiros();
+
+        // Limpiar formulario
+        document.getElementById('inpMonto').value = '';
+        validarFormulario();
+
+        // Si el saldo quedó en 0, mostrar aviso
+        if (saldoDisponible <= 0) {
+            var helper = document.getElementById('helperMonto');
+            helper.textContent = 'No tienes saldo disponible actualmente';
+            helper.className = 'helper warning';
+        }
+
+    } catch (err) {
+        console.error('Error solicitando retiro:', err);
+
+        var mensaje = err.message || 'Error al solicitar el retiro';
+
+        if (err.status === 400 && err.data && err.data.error) {
+            mensaje = err.data.error;
+        } else if (err.status === 409) {
+            mensaje = 'Saldo insuficiente o conflicto de estado';
+        }
+
+        showToast('✶ ' + mensaje, 'error');
+
+        btn.disabled = false;
+        btn.innerHTML = 'Confirmar';
+
+    } finally {
+        cargandoRetiro = false;
+    }
+}
+
+// ================================================================
+// HISTORIAL DE RETIROS
+// ================================================================
+
+async function cargarRetiros() {
+    try {
+        var resp = await fetchAutenticado('/api/pay/retiros?limite=20');
+        if (!resp.success || !resp.data) throw new Error('Respuesta inválida');
+
+        var retiros = resp.data.retiros || [];
+        var cont = document.getElementById('listaRetiros');
+
+        if (retiros.length === 0) {
+            cont.innerHTML =
+                '<div class="estado-vacio">' +
+                    '<span class="icono-grande">◇</span>' +
+                    '<h3>Sin retiros aún</h3>' +
+                    '<p>Tus retiros aparecerán aquí con su estado.</p>' +
+                '</div>';
+            return;
+        }
+
+        var html = '';
+        retiros.forEach(function (r) {
+            var monto = formatearMonto(r.monto_mxn);
+            var estado = r.estado || 'pending';
+            var etiqueta = etiquetaEstado(estado);
+            var detalle = detalleRetiro(r);
+            var fecha = formatearFecha(r.created_at);
+
+            html +=
+                '<div class="retiro-item">' +
+                    '<div class="info">' +
+                        '<div class="monto">' + monto + ' MXN</div>' +
+                        '<div class="detalle">' + escapeHTML(detalle) + '</div>' +
+                        '<div class="fecha">' + escapeHTML(fecha) + '</div>' +
+                    '</div>' +
+                    '<span class="estado-badge ' + estado + '">' + etiqueta + '</span>' +
+                '</div>';
+        });
+
+        cont.innerHTML = html;
+
+    } catch (err) {
+        console.error('Error cargando retiros:', err);
+    }
+}
+
+function etiquetaEstado(estado) {
+    var mapa = {
+        'pending': 'Pendiente',
+        'processing': 'Procesando',
+        'completed': 'Completado',
+        'failed': 'Falló',
+        'cancelled': 'Cancelado'
+    };
+    return mapa[estado] || estado;
+}
+
+function detalleRetiro(r) {
+    if (r.metodo === 'spei') {
+        return 'SPEI a ****' + (r.destino_ultimos4 || '');
+    }
+    if (r.metodo === 'crypto') {
+        var wallet = r.wallet_destino ? String(r.wallet_destino).slice(-6) : '';
+        return r.moneda_destino + ' en ' + (r.red_crypto || '') + (wallet ? ' a ...' + wallet : '');
+    }
+    if (r.metodo === 'tarjeta') {
+        return 'Tarjeta ****' + (r.destino_ultimos4 || '');
+    }
+    return r.metodo || '';
+}
+
+// ================================================================
+// CONFIGURAR FORMULARIO
+// ================================================================
+
+function configurarFormulario() {
+    document.getElementById('inpMonto').addEventListener('input', validarFormulario);
+
+    document.getElementById('inpClabe').addEventListener('input', function () {
+        this.value = this.value.replace(/\D/g, '').substring(0, 18);
+        var helper = document.getElementById('helperClabe');
+        if (this.value.length === 0) {
+            helper.textContent = '';
+            helper.className = 'helper';
+        } else if (this.value.length < 18) {
+            helper.textContent = 'Faltan ' + (18 - this.value.length) + ' dígitos';
+            helper.className = 'helper warning';
+        } else {
+            helper.textContent = '✓ CLABE completa';
+            helper.className = 'helper success';
+        }
+        validarFormulario();
+    });
+
+    document.getElementById('inpWallet').addEventListener('input', validarFormulario);
+    document.getElementById('inpUltimos4').addEventListener('input', function () {
+        this.value = this.value.replace(/\D/g, '').substring(0, 4);
+        validarFormulario();
+    });
+
+    document.getElementById('selCryptoMoneda').addEventListener('change', function () {
+        actualizarRedesCrypto();
+        validarFormulario();
+    });
+    document.getElementById('selCryptoRed').addEventListener('change', validarFormulario);
+}
+
+// ================================================================
+// INICIALIZACIÓN
+// ================================================================
+
+document.addEventListener('DOMContentLoaded', async function () {
+    await cargarUsuario();
+
+    if (!sessionUser) {
+        document.getElementById('loaderInicial').innerHTML =
+            '<p style="color: var(--danger);">Debes iniciar sesión para retirar</p>' +
+            '<a href="/" style="color: var(--gold); text-decoration: underline; display: inline-block; margin-top: 12px;">Volver al inicio</a>';
+        return;
+    }
+
+    configurarFormulario();
+    await cargarSaldo();
+    await cargarMetodos();
+    await cargarRetiros();
+
+    document.getElementById('loaderInicial').style.display = 'none';
+    document.getElementById('contenidoPrincipal').style.display = 'block';
+
+    setTimeout(async function () {
+        try {
+            if (typeof window.inicializarIdiomas === 'function') {
+                await window.inicializarIdiomas();
+            }
+        } catch (e) { /* silencioso */ }
+    }, 400);
+});
+
+// Exponer globales
+window.verTokens = verTokens;
+window.retirarTodo = retirarTodo;
+window.elegirMetodo = elegirMetodo;
+window.abrirConfirmacion = abrirConfirmacion;
+window.cerrarModal = cerrarModal;
+window.confirmarRetiro = confirmarRetiro;
+window.showToast = showToast;
+</script>
+</body>
+</html>
