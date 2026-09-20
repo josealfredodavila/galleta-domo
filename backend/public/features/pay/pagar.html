@@ -1,0 +1,1126 @@
+<!-- ================================================================
+     CSARIEL'S ECOSYSTEM
+     Csariel's Pay - Página pública de pago (QR)
+     Ruta: /features/pay/pagar.html?t=<public_token>
+     También acepta: /pay/cobrar/<public_token>
+     ================================================================ -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>◈ Pagar · Csariel's Pay</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+
+    <script src="/features/shared/js/apariencia-global.js"></script>
+    <!-- Stripe.js - cargado dinámicamente cuando se elige tarjeta -->
+
+    <style>
+        :root {
+            --gold: #D4AF37;
+            --gold-dark: #b8923a;
+            --gold-light: #e8c84a;
+            --green-deep: #0F2D1A;
+            --green-mid: #1a4a2a;
+            --green-bright: #2a6a3a;
+            --space: #05080f;
+            --text-primary: #f0f4f8;
+            --text-secondary: #c0d8e8;
+            --text-muted: #8aa8b8;
+            --glass-bg: rgba(15, 45, 26, 0.55);
+            --glass-border: rgba(212, 175, 55, 0.15);
+            --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
+            --radius: 16px;
+            --radius-xl: 24px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --success: #00d68f;
+            --danger: #ff3366;
+            --warning: #f7d44a;
+            --cyan: #00e5ff;
+            --purple: #a855f7;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--space);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            background-image: radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
+        }
+
+        .nebula { position: fixed; border-radius: 50%; filter: blur(120px); opacity: 0.12; pointer-events: none; z-index: 0; animation: nebula-drift 25s ease-in-out infinite alternate; }
+        .nebula-1 { width: 700px; height: 700px; background: var(--green-bright); top: -15%; right: -15%; }
+        .nebula-2 { width: 600px; height: 600px; background: var(--gold-light); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.06; }
+        @keyframes nebula-drift { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(40px,-30px) scale(1.15); } }
+
+        .app { position: relative; z-index: 1; max-width: 520px; width: 100%; margin: 0 auto; padding: 12px 16px 30px; }
+
+        .header {
+            display: flex; justify-content: center; align-items: center;
+            padding: 16px 0; margin-bottom: 12px;
+        }
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .logo-hex { font-size: 1.8rem; color: var(--gold); font-family: 'Orbitron', monospace; }
+        .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--text-primary); letter-spacing: 2px; }
+        .logo-text span { color: var(--gold); }
+        .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; }
+
+        .card {
+            background: var(--glass-bg); border: 1px solid var(--glass-border);
+            border-radius: var(--radius); padding: 20px; margin-bottom: 16px;
+        }
+
+        .qr-info {
+            background: linear-gradient(135deg, rgba(212,175,55,0.15), rgba(15,45,26,0.6));
+            border: 1px solid rgba(212,175,55,0.3);
+            border-radius: var(--radius-xl);
+            padding: 28px 20px; margin-bottom: 18px;
+            text-align: center;
+        }
+        .qr-info .label {
+            font-size: 0.65rem; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 2px;
+            margin-bottom: 10px; font-family: 'Orbitron', monospace;
+        }
+        .qr-info .monto {
+            font-family: 'Orbitron', monospace;
+            font-size: 2.6rem; color: var(--gold);
+            font-weight: 700; line-height: 1;
+            margin-bottom: 8px; letter-spacing: 1px;
+        }
+        .qr-info .monto .moneda {
+            font-size: 1rem; color: var(--text-muted); margin-left: 4px;
+        }
+        .qr-info .concepto {
+            font-size: 0.85rem; color: var(--text-secondary);
+            margin-top: 10px;
+        }
+        @media (max-width: 480px) {
+            .qr-info .monto { font-size: 2rem; }
+        }
+
+        .estado-badge {
+            display: inline-block; margin-top: 14px;
+            padding: 6px 16px; border-radius: 20px;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.68rem; font-weight: 700;
+            letter-spacing: 1px; text-transform: uppercase;
+        }
+        .estado-badge.pending { background: rgba(247,212,74,0.15); color: var(--warning); }
+        .estado-badge.processing { background: rgba(0,229,255,0.15); color: var(--cyan); }
+        .estado-badge.paid { background: rgba(0,214,143,0.2); color: var(--success); }
+        .estado-badge.expired,
+        .estado-badge.cancelled,
+        .estado-badge.failed { background: rgba(255,51,102,0.15); color: var(--danger); }
+
+        .titulo-seccion {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.75rem; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 1px;
+            margin-bottom: 12px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .titulo-seccion .simbolo { color: var(--gold); }
+
+        .metodos-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+        }
+        @media (min-width: 520px) {
+            .metodos-grid { grid-template-columns: 1fr 1fr 1fr 1fr; }
+        }
+
+        .metodo-btn {
+            display: flex; flex-direction: column; align-items: center;
+            padding: 16px 8px; border-radius: var(--radius);
+            border: 1px solid var(--glass-border);
+            background: rgba(0,0,0,0.3);
+            cursor: pointer; transition: var(--transition);
+            gap: 6px;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+        }
+        .metodo-btn:hover {
+            border-color: var(--gold);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-gold);
+        }
+        .metodo-btn .icono {
+            font-size: 1.5rem; color: var(--gold);
+            font-family: 'Orbitron', monospace;
+        }
+        .metodo-btn .nombre {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.7rem; font-weight: 700;
+            letter-spacing: 1px;
+        }
+        .metodo-btn .sub {
+            font-size: 0.6rem; color: var(--text-muted);
+        }
+
+        .btn-primario {
+            width: 100%;
+            padding: 16px; border-radius: 30px;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space); border: none;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700; font-size: 0.85rem;
+            cursor: pointer; transition: var(--transition);
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn-primario:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-gold);
+        }
+        .btn-primario:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .btn-secundario {
+            padding: 10px 18px; border-radius: 20px;
+            background: transparent;
+            border: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+            font-family: 'Inter', sans-serif;
+            font-weight: 600; font-size: 0.72rem;
+            cursor: pointer; transition: var(--transition);
+            display: inline-flex; align-items: center; gap: 6px;
+        }
+        .btn-secundario:hover { border-color: var(--gold); color: var(--gold); }
+
+        /* Stripe Elements */
+        .stripe-form {
+            margin-bottom: 12px;
+        }
+        #stripe-element-container {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 12px;
+        }
+
+        /* CLABE / Wallet */
+        .dato-copiable {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 10px;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .dato-copiable .info {
+            flex: 1; min-width: 0;
+        }
+        .dato-copiable .info .label {
+            font-size: 0.6rem; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 1px;
+            margin-bottom: 2px;
+        }
+        .dato-copiable .info .valor {
+            font-family: 'monospace';
+            font-size: 0.85rem; color: var(--gold);
+            font-weight: 700; word-break: break-all;
+            line-height: 1.3;
+        }
+        .dato-copiable .btn-copiar {
+            padding: 10px 14px;
+            background: rgba(212,175,55,0.15);
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            border-radius: 10px;
+            font-size: 0.7rem;
+            cursor: pointer; transition: var(--transition);
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .dato-copiable .btn-copiar:hover {
+            background: rgba(212,175,55,0.3);
+        }
+
+        .crypto-qr-wrap {
+            display: flex; justify-content: center; align-items: center;
+            padding: 16px; background: #fff;
+            border-radius: 12px; margin-bottom: 14px;
+        }
+        .crypto-qr-wrap canvas {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+
+        .instrucciones {
+            background: rgba(0,229,255,0.06);
+            border: 1px solid rgba(0,229,255,0.2);
+            border-radius: 12px;
+            padding: 14px;
+            font-size: 0.72rem; color: var(--text-secondary);
+            line-height: 1.6;
+        }
+        .instrucciones strong {
+            color: var(--text-primary);
+            display: block; margin-bottom: 6px;
+        }
+        .instrucciones ol {
+            padding-left: 20px;
+        }
+        .instrucciones ol li {
+            margin-bottom: 4px;
+        }
+
+        .banner-final {
+            display: none;
+            text-align: center; padding: 40px 20px;
+        }
+        .banner-final.activo { display: block; }
+        .banner-final .icono-grande {
+            font-size: 4rem; display: block; margin-bottom: 16px;
+            font-family: 'Orbitron', monospace;
+        }
+        .banner-final.exito .icono-grande { color: var(--success); }
+        .banner-final.fallo .icono-grande { color: var(--danger); }
+        .banner-final.aviso .icono-grande { color: var(--warning); }
+        .banner-final h2 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.3rem; margin-bottom: 10px;
+        }
+        .banner-final.exito h2 { color: var(--success); }
+        .banner-final.fallo h2 { color: var(--danger); }
+        .banner-final.aviso h2 { color: var(--warning); }
+        .banner-final p {
+            font-size: 0.85rem; color: var(--text-secondary);
+            line-height: 1.6; margin-bottom: 20px;
+        }
+
+        .loading-state {
+            text-align: center; padding: 60px 20px;
+            color: var(--text-muted);
+        }
+        .loading-state .spinner {
+            width: 40px; height: 40px;
+            border: 3px solid rgba(212,175,55,0.15);
+            border-top-color: var(--gold);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 12px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .info-box {
+            background: rgba(0,229,255,0.06);
+            border: 1px solid rgba(0,229,255,0.25);
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-size: 0.72rem; color: var(--cyan);
+            line-height: 1.5; margin-bottom: 14px;
+        }
+        .info-box.warning {
+            background: rgba(247,212,74,0.08);
+            border-color: rgba(247,212,74,0.3);
+            color: var(--warning);
+        }
+
+        .toast {
+            position: fixed; bottom: 30px; right: 20px;
+            background: var(--green-deep); border: 1px solid var(--gold);
+            color: var(--gold); padding: 14px 24px;
+            border-radius: 12px; font-size: 0.8rem;
+            transform: translateY(100px); opacity: 0;
+            transition: all 0.4s ease; z-index: 99999;
+            max-width: 320px; pointer-events: none;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { border-color: var(--danger); color: var(--danger); }
+        .toast.warning { border-color: var(--warning); color: var(--warning); }
+        .toast.success { border-color: var(--success); color: var(--success); }
+
+        .footer {
+            margin-top: 20px; padding-top: 16px;
+            border-top: 1px solid var(--glass-border);
+            text-align: center;
+            font-size: 0.68rem; color: var(--text-muted);
+        }
+        .footer .brand { color: var(--gold); font-weight: 600; }
+
+        html.tema-dia, html[data-tema="dia"] {
+            --space: #f5f7fa;
+            --text-primary: #1a2332;
+            --text-secondary: #4a5568;
+            --text-muted: #718096;
+            --glass-bg: rgba(255, 255, 255, 0.9);
+            --glass-border: rgba(0, 0, 0, 0.1);
+        }
+        html.tema-dia body, html[data-tema="dia"] body {
+            background: #f5f7fa !important;
+            color: var(--text-primary) !important;
+        }
+        html.tema-dia .nebula, html[data-tema="dia"] .nebula { display: none !important; }
+        html.tema-dia .logo-text, html[data-tema="dia"] .logo-text { color: var(--text-primary) !important; }
+    </style>
+</head>
+<body>
+
+    <div class="nebula nebula-1" aria-hidden="true"></div>
+    <div class="nebula nebula-2" aria-hidden="true"></div>
+
+    <div class="app">
+
+        <header class="header">
+            <a href="/" class="logo">
+                <span class="logo-hex">◈</span>
+                <span class="logo-text">Csariel<span>'s</span></span>
+                <span class="logo-badge">✦ PAY</span>
+            </a>
+        </header>
+
+        <div id="loaderInicial" class="loading-state">
+            <div class="spinner"></div>
+            <p>Cargando...</p>
+        </div>
+
+        <div id="contenidoPrincipal" style="display:none;">
+
+            <!-- INFO DE LA INTENCIÓN -->
+            <div class="qr-info">
+                <div class="label">Total a pagar</div>
+                <div class="monto">
+                    <span id="montoTexto">$0.00</span>
+                    <span class="moneda" id="monedaTexto">MXN</span>
+                </div>
+                <div class="concepto" id="conceptoTexto">—</div>
+                <div class="estado-badge pending" id="estadoBadge">Pendiente</div>
+            </div>
+
+            <!-- SELECCIÓN DE MÉTODO -->
+            <div class="card" id="cardMetodos">
+                <div class="titulo-seccion">
+                    <span class="simbolo">◆</span> Elige cómo pagar
+                </div>
+                <div class="metodos-grid" id="metodosGrid">
+                    <!-- Se llena dinámicamente -->
+                </div>
+            </div>
+
+            <!-- UI STRIPE -->
+            <div class="card" id="cardStripe" style="display:none;">
+                <div class="titulo-seccion">
+                    <span class="simbolo">💳</span> Pago con tarjeta
+                </div>
+                <div class="info-box">
+                    El pago lo procesa Stripe. Tus datos de tarjeta nunca pasan por Csariel's.
+                </div>
+                <div id="stripe-element-container">
+                    <!-- Stripe Elements se monta aquí -->
+                </div>
+                <div id="stripe-errores" style="
+                    display:none; padding:10px; margin-bottom:12px;
+                    background:rgba(255,51,102,0.1);
+                    border:1px solid rgba(255,51,102,0.4);
+                    border-radius:8px; font-size:0.72rem; color:#ff6b8a;
+                "></div>
+                <button class="btn-primario" id="btnPagarStripe" onclick="pagarConStripe()" disabled>
+                    <span class="simbolo">◆</span> Pagar <span id="btnMontoStripe"></span>
+                </button>
+                <button class="btn-secundario" style="margin-top:10px; width:100%; justify-content:center;" onclick="volverASeleccion()">
+                    ◈ Elegir otro método
+                </button>
+            </div>
+
+            <!-- UI SPEI (Fintoc) -->
+            <div class="card" id="cardSpei" style="display:none;">
+                <div class="titulo-seccion">
+                    <span class="simbolo">🏦</span> Pago por SPEI
+                </div>
+                <div class="info-box">
+                    Transfiere desde tu app bancaria a esta CLABE. El pago se confirma automáticamente en segundos.
+                </div>
+                <div class="dato-copiable">
+                    <div class="info">
+                        <div class="label">CLABE interbancaria</div>
+                        <div class="valor" id="clabeValor">—</div>
+                    </div>
+                    <button class="btn-copiar" onclick="copiarDato('clabeValor')">Copiar</button>
+                </div>
+                <div class="instrucciones">
+                    <strong>¿Cómo pagar?</strong>
+                    <ol>
+                        <li>Copia la CLABE</li>
+                        <li>Abre tu app bancaria</li>
+                        <li>Selecciona "Transferencia SPEI"</li>
+                        <li>Pega la CLABE y el monto exacto: <b id="montoSpeiRecordatorio">$0.00 MXN</b></li>
+                        <li>Confirma la transferencia</li>
+                    </ol>
+                </div>
+                <button class="btn-secundario" style="margin-top:14px; width:100%; justify-content:center;" onclick="volverASeleccion()">
+                    ◈ Elegir otro método
+                </button>
+            </div>
+
+            <!-- UI CRYPTO (NOWPayments) -->
+            <div class="card" id="cardCrypto" style="display:none;">
+                <div class="titulo-seccion">
+                    <span class="simbolo" id="iconoCrypto">₿</span> Pago con <span id="nombreCrypto">USDT</span>
+                </div>
+                <div class="info-box warning">
+                    Envía el monto exacto a la dirección de abajo. Si envías menos, el pago quedará en espera.
+                </div>
+                <div class="crypto-qr-wrap">
+                    <canvas id="cryptoQrCanvas" width="200" height="200"></canvas>
+                </div>
+                <div class="dato-copiable">
+                    <div class="info">
+                        <div class="label">Dirección de depósito</div>
+                        <div class="valor" id="walletValor">—</div>
+                    </div>
+                    <button class="btn-copiar" onclick="copiarDato('walletValor')">Copiar</button>
+                </div>
+                <div class="dato-copiable">
+                    <div class="info">
+                        <div class="label">Monto exacto a enviar</div>
+                        <div class="valor" id="montoCryptoValor">—</div>
+                    </div>
+                    <button class="btn-copiar" onclick="copiarDato('montoCryptoValor')">Copiar</button>
+                </div>
+                <div class="instrucciones">
+                    <strong>Importante</strong>
+                    <ol>
+                        <li>Copia la dirección de depósito</li>
+                        <li>Envía desde tu wallet el monto exacto</li>
+                        <li>El pago se confirma en la red (puede tomar minutos)</li>
+                        <li>No cierres esta página hasta que veas la confirmación</li>
+                    </ol>
+                </div>
+                <button class="btn-secundario" style="margin-top:14px; width:100%; justify-content:center;" onclick="volverASeleccion()">
+                    ◈ Elegir otro método
+                </button>
+            </div>
+
+            <!-- BANNER FINAL -->
+            <div class="banner-final" id="bannerFinal">
+                <span class="icono-grande" id="bannerIcono"></span>
+                <h2 id="bannerTitulo"></h2>
+                <p id="bannerTexto"></p>
+                <a href="/" class="btn-primario" style="text-decoration:none; display:inline-flex; padding:14px 40px;">
+                    <span class="simbolo">◈</span> Volver al inicio
+                </a>
+            </div>
+
+        </div>
+
+        <footer class="footer">
+            <span class="brand">© Csariel's</span> · Csariel's Pay
+            <br>
+            <span style="opacity:0.6; font-size:0.6rem;">Pago seguro procesado por proveedores certificados</span>
+        </footer>
+
+    </div>
+
+    <div class="toast" id="toast" role="alert" aria-live="polite"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script>
+// ================================================================
+// CSARIEL'S PAY - PÁGINA PÚBLICA DE PAGO
+// ================================================================
+// PÚBLICA: no requiere autenticación.
+// El estado 'paid' SOLO viene por webhook del proveedor.
+// Esta página nunca marca un pago como confirmado por sí misma.
+// ================================================================
+
+var supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
+var supabaseKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+var supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+var publicToken = null;
+var intencion = null;
+var metodoElegido = null;
+var stripeInstance = null;
+var stripeElements = null;
+var stripePaymentElement = null;
+var stripeClientSecret = null;
+var pollingInterval = null;
+var pollingInicio = 0;
+var POLLING_TIMEOUT_MS = 15 * 60 * 1000;
+var POLLING_INTERVAL_MS = 4000;
+
+// ================================================================
+// UTILIDADES
+// ================================================================
+
+function showToast(mensaje, tipo) {
+    try {
+        var toastEl = document.getElementById('toast');
+        if (!toastEl) { console.warn(mensaje); return; }
+        toastEl.textContent = mensaje;
+        toastEl.className = 'toast show';
+        if (tipo === 'error') toastEl.classList.add('error');
+        else if (tipo === 'warning') toastEl.classList.add('warning');
+        else if (tipo === 'success') toastEl.classList.add('success');
+        clearTimeout(toastEl._timeout);
+        toastEl._timeout = setTimeout(function () { toastEl.classList.remove('show'); }, 3500);
+    } catch (e) { console.warn('Toast error:', e); }
+}
+
+function escapeHTML(texto) {
+    if (!texto) return '';
+    var div = document.createElement('div');
+    div.textContent = texto;
+    return div.innerHTML;
+}
+
+function formatearMonto(monto) {
+    var n = Number(monto) || 0;
+    return '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+// ================================================================
+// LEER EL public_token DE LA URL
+// ================================================================
+
+function obtenerPublicToken() {
+    // Forma 1: ?t=<token>
+    var params = new URLSearchParams(window.location.search);
+    var t = params.get('t');
+    if (t) return t.trim();
+
+    // Forma 2: /pay/cobrar/<token>
+    var pathMatch = window.location.pathname.match(/\/pay\/cobrar\/([A-Za-z0-9_-]+)/);
+    if (pathMatch && pathMatch[1]) return pathMatch[1];
+
+    // Forma 3: /features/pay/pagar.html?token=<token>
+    var t2 = params.get('token');
+    if (t2) return t2.trim();
+
+    return null;
+}
+
+// ================================================================
+// CARGAR INTENCIÓN PÚBLICA
+// ================================================================
+
+async function cargarIntencion() {
+    try {
+        var resp = await fetch('/api/pay/intenciones/' + encodeURIComponent(publicToken));
+        var data = await resp.json();
+
+        if (!resp.ok || !data.success || !data.data) {
+            throw new Error((data && data.error) || 'Intención no encontrada');
+        }
+
+        intencion = data.data;
+
+        // Actualizar UI
+        document.getElementById('montoTexto').textContent = formatearMonto(intencion.monto);
+        document.getElementById('monedaTexto').textContent = intencion.moneda || 'MXN';
+        document.getElementById('conceptoTexto').textContent = intencion.descripcion || 'Sin concepto';
+        document.getElementById('montoSpeiRecordatorio').textContent = formatearMonto(intencion.monto) + ' ' + (intencion.moneda || 'MXN');
+        document.getElementById('btnMontoStripe').textContent = formatearMonto(intencion.monto) + ' ' + (intencion.moneda || 'MXN');
+
+        actualizarEstadoBadge(intencion.estado);
+
+        document.getElementById('loaderInicial').style.display = 'none';
+        document.getElementById('contenidoPrincipal').style.display = 'block';
+
+        // Decidir qué mostrar según el estado
+        if (intencion.estado === 'paid') {
+            mostrarBannerFinal('exito', '✔', 'Pago confirmado',
+                'Tu pago de ' + formatearMonto(intencion.monto) + ' ' + intencion.moneda + ' fue recibido correctamente.');
+            return;
+        }
+
+        if (intencion.estado === 'expired') {
+            mostrarBannerFinal('aviso', '⏱', 'Esta solicitud expiró',
+                'El tiempo para completar este pago terminó. Pídele al vendedor que genere uno nuevo.');
+            return;
+        }
+
+        if (intencion.estado === 'cancelled' || intencion.estado === 'failed') {
+            mostrarBannerFinal('fallo', '✶', 'Pago no disponible',
+                'Esta solicitud de pago fue cancelada o falló. Contacta al vendedor.');
+            return;
+        }
+
+        // Estado pendiente o processing: mostrar métodos
+        renderizarMetodos(intencion.metodos_disponibles || []);
+
+        // Si ya está en processing, arrancar polling directo
+        if (intencion.estado === 'processing') {
+            iniciarPolling();
+        }
+
+    } catch (err) {
+        console.error('Error cargando intención:', err);
+        document.getElementById('loaderInicial').innerHTML =
+            '<div style="text-align:center; padding:60px 20px;">' +
+                '<span style="font-size:3rem; color:var(--danger); font-family:Orbitron,monospace; display:block; margin-bottom:16px;">✶</span>' +
+                '<h2 style="font-family:Orbitron,monospace; color:var(--danger); font-size:1.1rem; margin-bottom:10px;">Solicitud no válida</h2>' +
+                '<p style="color:var(--text-muted); font-size:0.8rem; margin-bottom:20px;">' + escapeHTML(err.message) + '</p>' +
+                '<a href="/" style="color:var(--gold); text-decoration:underline; font-size:0.8rem;">Volver al inicio</a>' +
+            '</div>';
+    }
+}
+
+// ================================================================
+// RENDERIZAR MÉTODOS
+// ================================================================
+
+function renderizarMetodos(metodos) {
+    var cont = document.getElementById('metodosGrid');
+    var cardMetodos = document.getElementById('cardMetodos');
+
+    if (!metodos || metodos.length === 0) {
+        cardMetodos.innerHTML =
+            '<div class="info-box warning">' +
+                '<strong>No hay métodos disponibles</strong><br>' +
+                'Este pago no puede procesarse con los proveedores configurados actualmente.' +
+            '</div>';
+        return;
+    }
+
+    var infoMetodos = {
+        'tarjeta': { icono: '💳', nombre: 'Tarjeta', sub: 'Visa, Mastercard' },
+        'spei': { icono: '🏦', nombre: 'SPEI', sub: 'Transferencia' },
+        'usdt': { icono: '₿', nombre: 'USDT', sub: 'Crypto' },
+        'usdc': { icono: '₮', nombre: 'USDC', sub: 'Crypto' }
+    };
+
+    var html = '';
+    metodos.forEach(function (m) {
+        var info = infoMetodos[m.metodo] || { icono: '◆', nombre: m.metodo, sub: '' };
+        html +=
+            '<button class="metodo-btn" onclick="elegirMetodo(\'' + m.metodo + '\')">' +
+                '<span class="icono">' + info.icono + '</span>' +
+                '<span class="nombre">' + info.nombre + '</span>' +
+                '<span class="sub">' + info.sub + '</span>' +
+            '</button>';
+    });
+
+    cont.innerHTML = html;
+}
+
+// ================================================================
+// ELEGIR MÉTODO
+// ================================================================
+
+async function elegirMetodo(metodo) {
+    metodoElegido = metodo;
+
+    // Ocultar selección
+    document.getElementById('cardMetodos').style.display = 'none';
+
+    // Mostrar spinner mientras se crea el pago
+    var cardsTodas = ['cardStripe', 'cardSpei', 'cardCrypto'];
+    cardsTodas.forEach(function (id) {
+        document.getElementById(id).style.display = 'none';
+    });
+
+    try {
+        // Llamar al backend
+        var resp = await fetch('/api/pay/intenciones/' + encodeURIComponent(publicToken) + '/pagar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ metodo: metodo })
+        });
+
+        var data = await resp.json();
+
+        if (!resp.ok || !data.success || !data.data) {
+            var err = new Error((data && data.error) || 'No se pudo iniciar el pago');
+            err.status = resp.status;
+            throw err;
+        }
+
+        var resultado = data.data;
+
+        // Según el proveedor, mostrar UI correspondiente
+        if (resultado.proveedor === 'stripe') {
+            await mostrarUIStripe(resultado.stripe);
+        } else if (resultado.proveedor === 'fintoc') {
+            mostrarUISpei(resultado.fintoc);
+        } else if (resultado.proveedor === 'nowpayments') {
+            await mostrarUICrypto(resultado.nowpayments, metodo);
+        } else {
+            throw new Error('Proveedor no soportado');
+        }
+
+        // Iniciar polling para detectar la confirmación
+        iniciarPolling();
+
+    } catch (err) {
+        console.error('Error iniciando pago:', err);
+        showToast(err.message, 'error');
+        volverASeleccion();
+    }
+}
+
+function volverASeleccion() {
+    document.getElementById('cardStripe').style.display = 'none';
+    document.getElementById('cardSpei').style.display = 'none';
+    document.getElementById('cardCrypto').style.display = 'none';
+    document.getElementById('cardMetodos').style.display = 'block';
+    metodoElegido = null;
+}
+
+// ================================================================
+// UI STRIPE
+// ================================================================
+
+async function mostrarUIStripe(datosStripe) {
+    var card = document.getElementById('cardStripe');
+    card.style.display = 'block';
+
+    if (!datosStripe || !datosStripe.client_secret) {
+        card.innerHTML =
+            '<div class="info-box warning">' +
+                'Stripe no está configurado en este entorno. Por favor elige otro método.' +
+            '</div>' +
+            '<button class="btn-secundario" style="margin-top:12px; width:100%; justify-content:center;" onclick="volverASeleccion()">◈ Elegir otro método</button>';
+        return;
+    }
+
+    if (!datosStripe.publishable_key) {
+        card.innerHTML =
+            '<div class="info-box warning">' +
+                'Falta la publishable_key de Stripe. Contacta al vendedor.' +
+            '</div>' +
+            '<button class="btn-secundario" style="margin-top:12px; width:100%; justify-content:center;" onclick="volverASeleccion()">◈ Elegir otro método</button>';
+        return;
+    }
+
+    stripeClientSecret = datosStripe.client_secret;
+
+    // Cargar Stripe.js si no está cargado
+    if (typeof Stripe === 'undefined') {
+        await cargarScript('https://js.stripe.com/v3/');
+    }
+
+    try {
+        stripeInstance = Stripe(datosStripe.publishable_key);
+        stripeElements = stripeInstance.elements({
+            clientSecret: stripeClientSecret,
+            appearance: {
+                theme: 'night',
+                variables: {
+                    colorPrimary: '#D4AF37',
+                    colorBackground: '#0F2D1A',
+                    colorText: '#f0f4f8',
+                    colorDanger: '#ff3366',
+                    fontFamily: 'Inter, sans-serif',
+                    borderRadius: '10px'
+                }
+            }
+        });
+
+        stripePaymentElement = stripeElements.create('payment', {
+            layout: 'tabs'
+        });
+        stripePaymentElement.mount('#stripe-element-container');
+        stripePaymentElement.on('ready', function () {
+            document.getElementById('btnPagarStripe').disabled = false;
+        });
+        stripePaymentElement.on('change', function (event) {
+            var errCont = document.getElementById('stripe-errores');
+            if (event.error) {
+                errCont.textContent = event.error.message;
+                errCont.style.display = 'block';
+            } else {
+                errCont.style.display = 'none';
+            }
+        });
+    } catch (err) {
+        console.error('Error montando Stripe Elements:', err);
+        card.innerHTML =
+            '<div class="info-box warning">' +
+                'Error cargando el formulario de pago. Intenta de nuevo.' +
+            '</div>' +
+            '<button class="btn-secundario" style="margin-top:12px; width:100%; justify-content:center;" onclick="volverASeleccion()">◈ Elegir otro método</button>';
+    }
+}
+
+async function pagarConStripe() {
+    if (!stripeInstance || !stripeElements) return;
+
+    var btn = document.getElementById('btnPagarStripe');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="simbolo">◈</span> Procesando...';
+
+    var errCont = document.getElementById('stripe-errores');
+    errCont.style.display = 'none';
+
+    try {
+        var result = await stripeInstance.confirmPayment({
+            elements: stripeElements,
+            confirmParams: {
+                return_url: window.location.href
+            },
+            redirect: 'if_required'
+        });
+
+        if (result.error) {
+            errCont.textContent = result.error.message;
+            errCont.style.display = 'block';
+            btn.disabled = false;
+            btn.innerHTML = '<span class="simbolo">◆</span> Pagar <span id="btnMontoStripe">' + formatearMonto(intencion.monto) + ' ' + intencion.moneda + '</span>';
+            return;
+        }
+
+        // Pago aceptado por Stripe: esperar webhook para confirmar
+        showToast('Procesando pago...', 'success');
+        btn.innerHTML = '<span class="simbolo">◈</span> Confirmando...';
+        // El polling ya está corriendo y detectará el estado paid
+
+    } catch (err) {
+        console.error('Error en confirmPayment:', err);
+        errCont.textContent = err.message || 'Error procesando el pago';
+        errCont.style.display = 'block';
+        btn.disabled = false;
+        btn.innerHTML = '<span class="simbolo">◆</span> Pagar';
+    }
+}
+
+// ================================================================
+// UI SPEI (FINTOC)
+// ================================================================
+
+function mostrarUISpei(datosFintoc) {
+    var card = document.getElementById('cardSpei');
+    card.style.display = 'block';
+
+    if (!datosFintoc || !datosFintoc.clabe) {
+        card.innerHTML =
+            '<div class="info-box warning">' +
+                'SPEI no está disponible en este momento. Por favor elige otro método.' +
+            '</div>' +
+            '<button class="btn-secundario" style="margin-top:12px; width:100%; justify-content:center;" onclick="volverASeleccion()">◈ Elegir otro método</button>';
+        return;
+    }
+
+    document.getElementById('clabeValor').textContent = datosFintoc.clabe;
+}
+
+// ================================================================
+// UI CRYPTO (NOWPAYMENTS)
+// ================================================================
+
+async function mostrarUICrypto(datosCrypto, metodo) {
+    var card = document.getElementById('cardCrypto');
+    card.style.display = 'block';
+
+    if (!datosCrypto || !datosCrypto.pay_address) {
+        card.innerHTML =
+            '<div class="info-box warning">' +
+                'Crypto no está disponible en este momento. Por favor elige otro método.' +
+            '</div>' +
+            '<button class="btn-secundario" style="margin-top:12px; width:100%; justify-content:center;" onclick="volverASeleccion()">◈ Elegir otro método</button>';
+        return;
+    }
+
+    var nombreCrypto = metodo === 'usdc' ? 'USDC' : 'USDT';
+    document.getElementById('nombreCrypto').textContent = nombreCrypto;
+    document.getElementById('iconoCrypto').textContent = metodo === 'usdc' ? '₮' : '₿';
+    document.getElementById('walletValor').textContent = datosCrypto.pay_address;
+    document.getElementById('montoCryptoValor').textContent = datosCrypto.pay_amount + ' ' + (datosCrypto.pay_currency || nombreCrypto);
+
+    // Generar QR con la dirección de wallet
+    var canvas = document.getElementById('cryptoQrCanvas');
+    try {
+        await QRCode.toCanvas(canvas, datosCrypto.pay_address, {
+            width: 200,
+            margin: 1,
+            color: { dark: '#0F2D1A', light: '#ffffff' }
+        });
+    } catch (err) {
+        console.warn('Error generando QR de wallet:', err);
+    }
+}
+
+// ================================================================
+// COPIAR DATO
+// ================================================================
+
+function copiarDato(idElemento) {
+    var el = document.getElementById(idElemento);
+    if (!el) return;
+
+    var texto = el.textContent.trim();
+
+    try {
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(texto).then(function () {
+                showToast('✔ Copiado', 'success');
+            }).catch(function () {
+                copiarFallback(texto);
+            });
+        } else {
+            copiarFallback(texto);
+        }
+    } catch (e) {
+        copiarFallback(texto);
+    }
+}
+
+function copiarFallback(texto) {
+    var ta = document.createElement('textarea');
+    ta.value = texto;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+        document.execCommand('copy');
+        showToast('✔ Copiado', 'success');
+    } catch (e) {
+        showToast('No se pudo copiar. Selecciona manualmente.', 'warning');
+    }
+    document.body.removeChild(ta);
+}
+
+// ================================================================
+// POLLING DEL ESTADO
+// ================================================================
+
+function iniciarPolling() {
+    detenerPolling();
+    pollingInicio = Date.now();
+
+    pollingInterval = setInterval(async function () {
+        if (Date.now() - pollingInicio > POLLING_TIMEOUT_MS) {
+            detenerPolling();
+            return;
+        }
+
+        if (document.visibilityState !== 'visible') return;
+
+        try {
+            var resp = await fetch('/api/pay/intenciones/' + encodeURIComponent(publicToken));
+            var data = await resp.json();
+
+            if (!data.success || !data.data) return;
+
+            var estado = data.data.estado;
+            actualizarEstadoBadge(estado);
+
+            if (estado === 'paid') {
+                detenerPolling();
+                mostrarBannerFinal('exito', '✔', 'Pago confirmado',
+                    'Tu pago de ' + formatearMonto(data.data.monto) + ' ' + data.data.moneda + ' fue recibido correctamente.');
+                return;
+            }
+
+            if (estado === 'expired') {
+                detenerPolling();
+                mostrarBannerFinal('aviso', '⏱', 'Solicitud expirada',
+                    'El tiempo para completar este pago terminó.');
+                return;
+            }
+
+            if (estado === 'cancelled' || estado === 'failed') {
+                detenerPolling();
+                mostrarBannerFinal('fallo', '✶', 'Pago no completado',
+                    'Esta solicitud fue cancelada o falló.');
+                return;
+            }
+
+        } catch (err) {
+            console.warn('Error en polling:', err.message);
+        }
+
+    }, POLLING_INTERVAL_MS);
+}
+
+function detenerPolling() {
+    if (pollingInterval) {
+        clearInterval(pollingInterval);
+        pollingInterval = null;
+    }
+}
+
+function actualizarEstadoBadge(estado) {
+    var badge = document.getElementById('estadoBadge');
+    var textos = {
+        'pending': 'Pendiente',
+        'processing': 'Procesando',
+        'paid': 'Pagado',
+        'expired': 'Expirado',
+        'cancelled': 'Cancelado',
+        'failed': 'Falló',
+        'refunded': 'Reembolsado'
+    };
+    badge.textContent = textos[estado] || estado;
+    badge.className = 'estado-badge ' + estado;
+}
+
+// ================================================================
+// BANNER FINAL
+// ================================================================
+
+function mostrarBannerFinal(tipo, icono, titulo, texto) {
+    // Ocultar todo lo demás
+    document.getElementById('cardMetodos').style.display = 'none';
+    document.getElementById('cardStripe').style.display = 'none';
+    document.getElementById('cardSpei').style.display = 'none';
+    document.getElementById('cardCrypto').style.display = 'none';
+
+    var banner = document.getElementById('bannerFinal');
+    banner.className = 'banner-final activo ' + tipo;
+    document.getElementById('bannerIcono').textContent = icono;
+    document.getElementById('bannerTitulo').textContent = titulo;
+    document.getElementById('bannerTexto').textContent = texto;
+
+    // Actualizar badge también
+    actualizarEstadoBadge(tipo === 'exito' ? 'paid' : (tipo === 'aviso' ? 'expired' : 'failed'));
+}
+
+// ================================================================
+// CARGAR SCRIPT DINÁMICAMENTE
+// ================================================================
+
+function cargarScript(url) {
+    return new Promise(function (resolve, reject) {
+        // Si ya está cargado, resolver
+        var existentes = document.querySelectorAll('script[src="' + url + '"]');
+        if (existentes.length > 0) { resolve(); return; }
+
+        var script = document.createElement('script');
+        script.src = url;
+        script.async = true;
+        script.onload = resolve;
+        script.onerror = function () { reject(new Error('No se pudo cargar ' + url)); };
+        document.head.appendChild(script);
+    });
+}
+
+// ================================================================
+// INICIALIZACIÓN
+// ================================================================
+
+document.addEventListener('DOMContentLoaded', async function () {
+    publicToken = obtenerPublicToken();
+
+    if (!publicToken) {
+        document.getElementById('loaderInicial').innerHTML =
+            '<div style="text-align:center; padding:60px 20px;">' +
+                '<span style="font-size:3rem; color:var(--danger); font-family:Orbitron,monospace; display:block; margin-bottom:16px;">✶</span>' +
+                '<h2 style="font-family:Orbitron,monospace; color:var(--danger); font-size:1.1rem; margin-bottom:10px;">Solicitud no encontrada</h2>' +
+                '<p style="color:var(--text-muted); font-size:0.8rem;">El link no contiene un identificador válido.</p>' +
+            '</div>';
+        return;
+    }
+
+    await cargarIntencion();
+});
+
+window.addEventListener('beforeunload', function () {
+    detenerPolling();
+});
+
+// Exponer globales
+window.elegirMetodo = elegirMetodo;
+window.volverASeleccion = volverASeleccion;
+window.pagarConStripe = pagarConStripe;
+window.copiarDato = copiarDato;
+window.showToast = showToast;
+</script>
+</body>
+</html>
