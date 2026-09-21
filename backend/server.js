@@ -27,6 +27,7 @@
    ✅ Content-Type correcto para JS
    ✅ Middleware en orden correcto
    ✅ Csariel's Pay (intenciones, cuentas, retiros, webhooks)
+   ✅ Rutas amigables de Csariel's Pay
    ================================================================ */
 
 const express = require('express');
@@ -511,15 +512,11 @@ app.use(
             return next();
         }
 
-        // ▼▼▼ NUEVO: exceptuar webhooks de Csariel's Pay ▼▼▼
-        // Stripe/Fintoc/NOWPayments pueden mandar más peticiones
-        // que el límite global y no deben ser bloqueadas.
         if (
             req.path.includes('/pay/webhooks/')
         ) {
             return next();
         }
-        // ▲▲▲ FIN NUEVO ▲▲▲
 
         if (
             req.path === '/livekit/token'
@@ -1644,9 +1641,6 @@ app.post(
                 canUpdateOwnMetadata: true
             });
 
-            // ✅ FIX CRÍTICO: LiveKit SDK v2 requiere await en toJwt()
-            // Sin await, se devolvía una Promise en lugar del JWT real,
-            // causando "invalid authorization token" en LiveKit Cloud.
             const jwt =
                 await token.toJwt();
 
@@ -2430,7 +2424,6 @@ app.use(
     membresiaRoutes
 );
 
-// ▼▼▼ NUEVO: Csariel's Pay ▼▼▼
 const payRoutes =
     require('./routes/pay');
 
@@ -2438,7 +2431,6 @@ app.use(
     '/api/pay',
     payRoutes
 );
-// ▲▲▲ FIN NUEVO ▲▲▲
 
 /* ================================================================
    MENSAJERÍA
@@ -2654,6 +2646,48 @@ app.get(
 );
 
 /* ================================================================
+   RUTAS AMIGABLES - CSARIEL'S PAY
+   ================================================================
+   Rutas cortas para Csariel's Pay:
+     /pay                    -> panel principal
+     /pay/panel              -> panel principal (alias)
+     /pay/cobrar             -> generar QR
+     /pay/cobrar/:publicToken -> página pública de pago (QR)
+     /pay/retirar            -> solicitar retiro
+
+   IMPORTANTE: las rutas largas siguen funcionando también:
+     /features/pay/panel.html
+     /features/pay/cobrar.html
+     /features/pay/pagar.html?t=<token>
+     /features/pay/retirar.html
+   ================================================================ */
+
+app.get(
+    '/pay',
+    enviarHTML('features/pay/panel.html')
+);
+
+app.get(
+    '/pay/panel',
+    enviarHTML('features/pay/panel.html')
+);
+
+app.get(
+    '/pay/cobrar',
+    enviarHTML('features/pay/cobrar.html')
+);
+
+app.get(
+    '/pay/cobrar/:publicToken',
+    enviarHTML('features/pay/pagar.html')
+);
+
+app.get(
+    '/pay/retirar',
+    enviarHTML('features/pay/retirar.html')
+);
+
+/* ================================================================
    OTRAS PÁGINAS
 ================================================================ */
 
@@ -2863,22 +2897,44 @@ app.get(
                 }
             },
 
-            // ▼▼▼ NUEVO: Csariel's Pay ▼▼▼
             csariels_pay: {
+
                 enabled: true,
+
                 endpoint_base: '/api/pay',
+
+                rutas_amigables: {
+
+                    panel: '/pay',
+
+                    cobrar: '/pay/cobrar',
+
+                    pagar_por_token: '/pay/cobrar/:publicToken',
+
+                    retirar: '/pay/retirar'
+                },
+
                 proveedores_configurados: {
+
                     stripe: Boolean(process.env.STRIPE_SECRET_KEY),
+
                     fintoc: Boolean(process.env.FINTOC_SECRET_KEY),
+
                     nowpayments: Boolean(process.env.NOWPAYMENTS_API_KEY)
                 },
+
                 webhooks: {
-                    stripe: '/api/pay/webhooks/stripe',
-                    fintoc: '/api/pay/webhooks/fintoc',
-                    nowpayments: '/api/pay/webhooks/nowpayments'
+
+                    stripe:
+                        '/api/pay/webhooks/stripe',
+
+                    fintoc:
+                        '/api/pay/webhooks/fintoc',
+
+                    nowpayments:
+                        '/api/pay/webhooks/nowpayments'
                 }
             }
-            // ▲▲▲ FIN NUEVO ▲▲▲
         });
     }
 );
@@ -3030,6 +3086,10 @@ app.listen(
 
         console.log(
             '💰 Csariel\'s Pay router: ✅ /api/pay'
+        );
+
+        console.log(
+            '🌐 Csariel\'s Pay UI: ✅ /pay, /pay/cobrar, /pay/retirar'
         );
 
         console.log(
