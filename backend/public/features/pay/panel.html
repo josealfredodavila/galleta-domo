@@ -130,11 +130,12 @@
             color: var(--warning);
         }
 
+        /* ═══ ACCIONES: ahora 3 columnas en desktop ═══ */
         .acciones {
-            display: grid; grid-template-columns: 1fr 1fr;
+            display: grid; grid-template-columns: repeat(3, 1fr);
             gap: 12px; margin-bottom: 24px;
         }
-        @media (max-width: 480px) {
+        @media (max-width: 640px) {
             .acciones { grid-template-columns: 1fr; }
             .saldo-card .monto { font-size: 2rem; }
         }
@@ -175,6 +176,37 @@
             transform: none !important;
             box-shadow: none !important;
         }
+
+        /* ═══ VARIANTES DEL BOTÓN VINCULAR STRIPE ═══ */
+        .btn-accion.stripe-vinculado {
+            background: linear-gradient(135deg, rgba(0,214,143,0.15), rgba(15,45,26,0.7));
+            border-color: rgba(0,214,143,0.4);
+            cursor: default;
+        }
+        .btn-accion.stripe-vinculado .icono { color: var(--success); }
+        .btn-accion.stripe-vinculado:hover {
+            transform: none;
+            box-shadow: none;
+            border-color: rgba(0,214,143,0.4);
+        }
+        .btn-accion.stripe-vinculado .titulo { color: var(--success); }
+
+        .btn-accion.stripe-pendiente {
+            background: linear-gradient(135deg, rgba(247,212,74,0.15), rgba(15,45,26,0.7));
+            border-color: rgba(247,212,74,0.4);
+        }
+        .btn-accion.stripe-pendiente .icono { color: var(--warning); }
+        .btn-accion.stripe-pendiente .titulo { color: var(--warning); }
+
+        /* ═══ CARGA INICIAL DEL BOTÓN STRIPE ═══ */
+        .btn-accion.stripe-loading {
+            pointer-events: none;
+            opacity: 0.6;
+        }
+        .btn-accion.stripe-loading .icono {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
         .seccion {
             background: var(--glass-bg); border: 1px solid var(--glass-border);
@@ -329,7 +361,6 @@
             animation: spin 0.8s linear infinite;
             margin: 0 auto 12px;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
 
         .btn-ver-mas {
             display: block; width: 100%; padding: 10px;
@@ -445,18 +476,26 @@
                 </div>
             </div>
 
-            <!-- ACCIONES -->
+            <!-- ACCIONES (3 botones) -->
             <div class="acciones">
                 <a href="/features/pay/cobrar.html" class="btn-accion primario">
                     <span class="icono">◆</span>
                     <span class="titulo">Cobrar con QR</span>
                     <span class="desc">Genera un QR para recibir pagos</span>
                 </a>
+
                 <button id="btnRetirar" class="btn-accion" onclick="irARetirar()">
                     <span class="icono">✦</span>
                     <span class="titulo">Retirar ganancias</span>
                     <span class="desc" id="descRetirar">Envía a tu banco o wallet</span>
                 </button>
+
+                <!-- ═══ BOTÓN STRIPE (se auto-configura por JS) ═══ -->
+                <a id="btnStripe" href="/features/pay/vincular-stripe.html" class="btn-accion stripe-loading">
+                    <span class="icono">◈</span>
+                    <span class="titulo">Stripe</span>
+                    <span class="desc">Verificando...</span>
+                </a>
             </div>
 
             <!-- RETIROS EN PROCESO -->
@@ -720,6 +759,66 @@ async function fetchAutenticado(url, opciones) {
 }
 
 // ================================================================
+// CARGAR ESTADO DE STRIPE (para el botón)
+// ================================================================
+
+async function cargarEstadoStripe() {
+    var btn = document.getElementById('btnStripe');
+    if (!btn) return;
+
+    // Estado visual inicial: loading
+    btn.className = 'btn-accion stripe-loading';
+    btn.innerHTML =
+        '<span class="icono">◈</span>' +
+        '<span class="titulo">Stripe</span>' +
+        '<span class="desc">Verificando...</span>';
+
+    try {
+        var resp = await fetchAutenticado('/api/pay/stripe-connect/estado');
+        var data = resp.data || {};
+
+        if (data.habilitada) {
+            // Vinculado y habilitado
+            btn.className = 'btn-accion stripe-vinculado';
+            btn.href = '/features/pay/vincular-stripe.html';
+            btn.innerHTML =
+                '<span class="icono">✔</span>' +
+                '<span class="titulo">Stripe</span>' +
+                '<span class="desc">Cuenta vinculada</span>';
+
+        } else if (data.vinculada) {
+            // Vinculado pero falta completar
+            btn.className = 'btn-accion stripe-pendiente';
+            btn.href = '/features/pay/vincular-stripe.html';
+            btn.innerHTML =
+                '<span class="icono">⏳</span>' +
+                '<span class="titulo">Continuar</span>' +
+                '<span class="desc">Falta información</span>';
+
+        } else {
+            // No vinculado
+            btn.className = 'btn-accion';
+            btn.href = '/features/pay/vincular-stripe.html';
+            btn.innerHTML =
+                '<span class="icono">◈</span>' +
+                '<span class="titulo">Vincular Stripe</span>' +
+                '<span class="desc">Retiros por tarjeta</span>';
+        }
+
+    } catch (err) {
+        console.warn('Error consultando estado Stripe:', err.message);
+
+        // Estado de fallback: botón normal para vincular
+        btn.className = 'btn-accion';
+        btn.href = '/features/pay/vincular-stripe.html';
+        btn.innerHTML =
+            '<span class="icono">◈</span>' +
+            '<span class="titulo">Vincular Stripe</span>' +
+            '<span class="desc">Retiros por tarjeta</span>';
+    }
+}
+
+// ================================================================
 // CARGAR RESUMEN
 // ================================================================
 
@@ -734,38 +833,32 @@ async function cargarResumen() {
         var data = resp.data;
 
         if (!data.tiene_cuenta) {
-            // Mostrar estado vacío
             document.getElementById('loaderInicial').style.display = 'none';
             document.getElementById('contenidoPrincipal').style.display = 'none';
             document.getElementById('estadoVacioCuenta').style.display = 'block';
 
             var vacio = document.getElementById('estadoVacioCuenta');
             if (vacio) vacio.style.display = 'block';
-            // Reocultar saldo, acciones, etc.
             document.querySelector('.pay-header').style.display = 'none';
             document.querySelector('.saldo-card').style.display = 'none';
             document.querySelector('.acciones').style.display = 'none';
             document.getElementById('seccionRetirosActivos').style.display = 'none';
-            // Mostrar sección de historial vacía o dejar solo el vacío
             document.querySelector('.seccion:not(#seccionRetirosActivos):not(#estadoVacioCuenta)').style.display = 'none';
             return;
         }
 
         cuentaActual = data.cuenta;
 
-        // Actualizar badge de tipo
         var badge = document.getElementById('tipoCuentaBadge');
         if (badge && cuentaActual.tipo) {
             badge.textContent = cuentaActual.tipo === 'vendedor' ? 'Vendedor' : 'Repartidor';
             badge.style.display = 'inline-block';
         }
 
-        // Actualizar saldos
         var saldo = data.saldos || {};
         document.getElementById('saldoDisponible').textContent = formatearMonto(saldo.disponible_mxn);
         document.getElementById('saldoPendiente').textContent = formatearMonto(saldo.pendiente_mxn);
 
-        // Actualizar descripción del botón retirar
         var descR = document.getElementById('descRetirar');
         if (descR) {
             var disponible = Number(saldo.disponible_mxn) || 0;
@@ -778,11 +871,9 @@ async function cargarResumen() {
             }
         }
 
-        // Renderizar movimientos recientes
         movimientosCargados = (data.movimientos_recientes || []).length;
         renderizarMovimientos(data.movimientos_recientes || []);
 
-        // Mostrar botón ver más si hay más
         var btnVerMas = document.getElementById('btnVerMas');
         if (btnVerMas) {
             var total = (data.totales && data.totales.movimientos_totales) || 0;
@@ -795,14 +886,12 @@ async function cargarResumen() {
             }
         }
 
-        // Cargar retiros activos
         cargarRetirosActivos();
+        cargarEstadoStripe();  // ═══ NUEVO: cargar estado del botón Stripe
 
-        // Mostrar todo
         document.getElementById('loaderInicial').style.display = 'none';
         document.getElementById('contenidoPrincipal').style.display = 'block';
 
-        // Si hay saldo pendiente > 0 y no hay movimientos del todo, mensaje especial
         if (movimientosCargados === 0 && (data.totales && data.totales.movimientos_totales === 0)) {
             mostrarMovimientosVacios();
         }
@@ -927,7 +1016,6 @@ async function cargarMasMovimientos() {
             var cont = document.getElementById('listaMovimientos');
             var htmlActual = cont.innerHTML;
 
-            // Remover el estado vacío si existía
             if (htmlActual.indexOf('estado-vacio') !== -1) {
                 htmlActual = '';
             }
@@ -1006,14 +1094,11 @@ async function filtrarMovimientos(filtro, btn) {
     });
     if (btn) btn.classList.add('activo');
 
-    // Resetear paginación
     movimientosCargados = 0;
 
-    // Mostrar loading
     var cont = document.getElementById('listaMovimientos');
     cont.innerHTML = '<div class="loading-state"><div class="spinner"></div></div>';
 
-    // Recargar desde cero
     await cargarMasMovimientos();
 }
 
@@ -1086,7 +1171,6 @@ function iniciarPolling() {
     if (pollingInterval) clearInterval(pollingInterval);
     pollingInterval = setInterval(function () {
         if (document.visibilityState === 'visible' && cuentaActual) {
-            // Refrescar solo saldos, no todo el panel (para no interrumpir al usuario)
             fetchAutenticado('/api/pay/cuentas/mi-cuenta/saldos')
                 .then(function (resp) {
                     if (resp.success && resp.data) {
