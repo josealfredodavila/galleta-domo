@@ -3,26 +3,12 @@
 // CSARIEL'S PAY - ADAPTER DE FINTOC (SPEI, SOLO MÉXICO)
 // ================================================================
 // Encapsula toda la comunicación con Fintoc.
+// - Cobros: crearPago(intencion) -> Account Number (CLABE)
+// - Payouts: crearPayout(retiro) viene de fintoc-payout.js
+// - Webhooks: procesarWebhook(req)
 //
-// Fintoc solo opera en México. Cobros vía SPEI.
-// Los payouts (transferencias salientes) se manejan en retiros.js.
-//
-// El Core llama:
-//   - crearPago(intencion)    -> crea Account Number (CLABE) único
-//   - procesarWebhook(req)    -> verifica firma + extrae datos
-//
-// No hay SDK oficial de Node maduro. Usamos fetch directo.
-//
-// Endpoints usados (API v2):
-//   POST /v2/account_numbers   -> crea CLABE para recibir transferencias
-//   GET  /v2/account_numbers/:id
-//
-// Webhook:
-//   Header: Fintoc-Signature: t=<timestamp>,v1=<hmac_hex>
-//   Firma:  HMAC-SHA256(secret, "<timestamp>.<rawBody>")
-//   Tolerancia: 5 minutos contra replay
-//
-// Documentación: https://fintoc.com/docs
+// Webhook: Fintoc-Signature: t=<timestamp>,v1=<hmac_hex>
+// Firma:  HMAC-SHA256(secret, "<timestamp>.<rawBody>")
 // ================================================================
 
 'use strict';
@@ -43,9 +29,9 @@ const FINTOC_WEBHOOK_SECRET = process.env.FINTOC_WEBHOOK_SECRET;
 const FINTOC_API_BASE = 'https://api.fintoc.com';
 const FINTOC_API_VERSION = 'v2';
 const FINTOC_TIMEOUT_MS = 20000;
-const FINTOC_TOLERANCIA_WEBHOOK_SEG = 300; // 5 minutos
+const FINTOC_TOLERANCIA_WEBHOOK_SEG = 300;
 
-// Eventos de Fintoc que nos importan
+// Eventos que nos interesan (cobros + payouts)
 const EVENTOS_RELEVANTES = [
     'transfer.inbound.succeeded',
     'transfer.inbound.failed',
@@ -96,7 +82,6 @@ async function llamarFintoc(metodo, ruta, cuerpo) {
     } catch (errFetch) {
         logger.error(`[Fintoc] Error de red en ${metodo} ${ruta}: ${errFetch.message}`);
 
-        // Timeout o red caída → reintentable
         if (errFetch.name === 'TimeoutError' || errFetch.name === 'AbortError') {
             throw errors.errorProveedorTimeout('fintoc');
         }
@@ -120,8 +105,6 @@ async function llamarFintoc(metodo, ruta, cuerpo) {
     }
 
     if (!respuesta.ok) {
-        // 4xx → error de validación del proveedor (permanente)
-        // 5xx → error del proveedor (reintentable)
         const esTemporal = respuesta.status >= 500;
         const motivo = data && (data.message || data.error) ? (data.message || data.error) : `HTTP ${respuesta.status}`;
 
@@ -144,25 +127,7 @@ async function llamarFintoc(metodo, ruta, cuerpo) {
 }
 
 // ================================================================
-// CREAR PAGO (Account Number / CLABE)
-// ================================================================
-// Se llama desde el Core cuando un comprador elige 'spei'.
-// Crea una CLABE única en Fintoc para esta intención.
-//
-// Conciliación: cuando llega una transferencia, Fintoc incluye el
-// metadata que pusimos al crear el Account Number. Ahí va el
-// csariels_intencion_id para saber a qué intención pertenece.
-//
-// Args:
-//   intencion -> fila de pay_intenciones
-//
-// Devuelve:
-//   {
-//     provider_payment_id: 'acc_...',
-//     provider_reference: '646180123456789012',
-//     clabe: '646180123456789012',
-//     banco: 'STP'
-//   }
+// CREAR PAGO (Account Number / CLABE) — cobros
 // ================================================================
 
 async function crearPago(intencion) {
@@ -173,7 +138,6 @@ async function crearPago(intencion) {
         throw errors.errorParametroRequerido('intencion');
     }
 
-    // ---------- Idempotencia: si ya hay CLABE, la reusamos ----------
     if (intencion.provider_payment_id && intencion.provider_reference) {
         logger.info(`[Fintoc] Reusando CLABE existente para intención ${intencion.id}`);
 
@@ -185,7 +149,6 @@ async function crearPago(intencion) {
         };
     }
 
-    // ---------- Metadata para conciliación ----------
     const metadataFintoc = {
         csariels_intencion_id: intencion.id,
         csariels_public_token: intencion.public_token,
@@ -193,10 +156,6 @@ async function crearPago(intencion) {
         csariels_descripcion: (intencion.descripcion || '').slice(0, 100)
     };
 
-    // ---------- Crear Account Number ----------
-    // La API de Fintoc para crear una CLABE de recepción:
-    //   POST /v2/account_numbers
-    //   { currency: 'MXN', metadata: {...} }
     const cuerpo = {
         currency: 'MXN',
         metadata: metadataFintoc
@@ -220,7 +179,6 @@ async function crearPago(intencion) {
     const accountId = respuesta.id;
     const clabe = respuesta.number;
 
-    // ---------- Guardar en la intención ----------
     const { error: errUpdate } = await supabaseAdmin
         .from('pay_intenciones')
         .update({
@@ -232,8 +190,6 @@ async function crearPago(intencion) {
 
     if (errUpdate) {
         logger.error(`[Fintoc] Error guardando CLABE en intención: ${errUpdate.message}`);
-        // No lanzamos: la CLABE ya existe en Fintoc. El webhook la
-        // reconciliará por metadata.
     }
 
     logger.info(
@@ -253,30 +209,18 @@ async function crearPago(intencion) {
 // ================================================================
 // VERIFICAR FIRMA DE WEBHOOK
 // ================================================================
-// Header: Fintoc-Signature: t=<timestamp>,v1=<hmac_hex>
-// Firma:  HMAC-SHA256(secret, "<timestamp>.<rawBody>")
-//
-// Devuelve { valida, timestamp } o { valida: false, motivo }.
-// ================================================================
 
 function verificarFirmaWebhook(req) {
     if (!FINTOC_WEBHOOK_SECRET) {
-        return {
-            valida: false,
-            motivo: 'FINTOC_WEBHOOK_SECRET_no_configurado'
-        };
+        return { valida: false, motivo: 'FINTOC_WEBHOOK_SECRET_no_configurado' };
     }
 
     const headerFirma = req.headers['fintoc-signature'] || req.headers['Fintoc-Signature'];
 
     if (!headerFirma || typeof headerFirma !== 'string') {
-        return {
-            valida: false,
-            motivo: 'header_firma_ausente'
-        };
+        return { valida: false, motivo: 'header_firma_ausente' };
     }
 
-    // Parsear "t=1234567890,v1=abcdef..."
     const partes = headerFirma.split(',').reduce(function (acc, item) {
         const idx = item.indexOf('=');
         if (idx > 0) {
@@ -291,19 +235,12 @@ function verificarFirmaWebhook(req) {
     const firmaRecibida = partes.v1;
 
     if (!timestamp || !firmaRecibida) {
-        return {
-            valida: false,
-            motivo: 'formato_firma_invalido'
-        };
+        return { valida: false, motivo: 'formato_firma_invalido' };
     }
 
-    // Validar tolerancia de tiempo (5 minutos)
     const tsNum = Number(timestamp);
     if (!Number.isFinite(tsNum)) {
-        return {
-            valida: false,
-            motivo: 'timestamp_no_numerico'
-        };
+        return { valida: false, motivo: 'timestamp_no_numerico' };
     }
 
     const ahoraSeg = Math.floor(Date.now() / 1000);
@@ -317,17 +254,11 @@ function verificarFirmaWebhook(req) {
         };
     }
 
-    // rawBody es lo que capturó express.json({ verify }) en server.js
     const rawBody = req.rawBody;
-
     if (!rawBody) {
-        return {
-            valida: false,
-            motivo: 'rawBody_ausente'
-        };
+        return { valida: false, motivo: 'rawBody_ausente' };
     }
 
-    // Fintoc firma: "<timestamp>.<rawBody>"
     const cuerpoAFirmar = `${timestamp}.${rawBody.toString('utf8')}`;
 
     const firmaCalculada = crypto
@@ -335,7 +266,6 @@ function verificarFirmaWebhook(req) {
         .update(cuerpoAFirmar, 'utf8')
         .digest('hex');
 
-    // Comparación timing-safe
     let firmaValida = false;
     try {
         const bufRecibida = Buffer.from(firmaRecibida, 'hex');
@@ -356,22 +286,37 @@ function verificarFirmaWebhook(req) {
 }
 
 // ================================================================
+// EXTRAER RETIRO_ID DE UN WEBHOOK DE PAYOUT
+// ================================================================
+// Los payouts salientes tienen en su metadata el csariels_retiro_id
+// que pusimos en fintoc-payout.js al crear la transferencia.
+// ================================================================
+
+function extraerRetiroIdDeWebhook(objeto, body) {
+    // 1) Directo en objeto.metadata
+    if (objeto && objeto.metadata && objeto.metadata.csariels_retiro_id) {
+        return objeto.metadata.csariels_retiro_id;
+    }
+
+    // 2) En body.metadata
+    if (body && body.metadata && body.metadata.csariels_retiro_id) {
+        return body.metadata.csariels_retiro_id;
+    }
+
+    // 3) En objeto.transfer.metadata
+    if (objeto && objeto.transfer && objeto.transfer.metadata && objeto.transfer.metadata.csariels_retiro_id) {
+        return objeto.transfer.metadata.csariels_retiro_id;
+    }
+
+    return null;
+}
+
+// ================================================================
 // PROCESAR WEBHOOK
 // ================================================================
-// Se llama desde el Core cuando llega un webhook de Fintoc.
-//
-// Args:
-//   req -> request completo con:
-//     - req.body     (ya parseado por express.json)
-//     - req.rawBody  (capturado por el verify de express.json)
-//     - req.headers  (incluye 'fintoc-signature')
-//
-// Devuelve:
-//   {
-//     firma_valida, event_id, tipo_evento, accion,
-//     intencion_id, provider_transaction_id, provider_status,
-//     provider_fee_mxn, network_fee_mxn, metadata, payload_crudo
-//   }
+// Ahora detecta si es un webhook de cobro o de payout:
+//   - transfer.inbound.*  -> confirmar_intencion (cobro)
+//   - transfer.outbound.* -> cerrar_retiro (payout)
 // ================================================================
 
 async function procesarWebhook(req) {
@@ -391,6 +336,7 @@ async function procesarWebhook(req) {
             tipo_evento: null,
             accion: 'ignorar',
             intencion_id: null,
+            retiro_id: null,
             provider_transaction_id: null,
             provider_status: null,
             provider_fee_mxn: 0,
@@ -401,15 +347,8 @@ async function procesarWebhook(req) {
     }
 
     // ---------- Identificar tipo de evento ----------
-    // Fintoc manda el tipo en `type` (o `event` en algunas versiones).
     const tipoEvento = body.type || body.event || null;
-
-    // ---------- Identificar el objeto afectado ----------
-    // Puede venir en `data`, `object`, o directo en el body.
     const objeto = body.data || body.object || body;
-
-    // ---------- Extraer event_id ----------
-    // Fintoc manda un id de evento en `id` o en `data.id`.
     const eventId = body.id || (objeto && objeto.id) || null;
 
     if (!tipoEvento || !eventId) {
@@ -421,6 +360,7 @@ async function procesarWebhook(req) {
             tipo_evento: tipoEvento || 'desconocido',
             accion: 'ignorar',
             intencion_id: null,
+            retiro_id: null,
             provider_transaction_id: null,
             provider_status: null,
             provider_fee_mxn: 0,
@@ -438,6 +378,7 @@ async function procesarWebhook(req) {
             tipo_evento: tipoEvento,
             accion: 'ignorar',
             intencion_id: null,
+            retiro_id: null,
             provider_transaction_id: null,
             provider_status: null,
             provider_fee_mxn: 0,
@@ -448,41 +389,48 @@ async function procesarWebhook(req) {
     }
 
     // ---------- Extraer metadata de conciliación ----------
-    // Fintoc manda el metadata que pasamos al crear el Account Number
-    // en `objeto.metadata` (o `objeto.account_number.metadata`).
     const metadataObjeto = objeto.metadata ||
         (objeto.account_number && objeto.account_number.metadata) ||
         {};
 
-    const intencionId = metadataObjeto.csariels_intencion_id || null;
-
-    // ---------- Determinar acción ----------
+    // ---------- Determinar si es COBRO o PAYOUT ----------
     let accion = 'ignorar';
     let providerStatus = null;
+    let intencionId = null;
+    let retiroId = null;
 
-    if (tipoEvento === 'transfer.inbound.succeeded') {
-        accion = 'confirmar_intencion';
-        providerStatus = 'succeeded';
-    } else if (tipoEvento === 'transfer.inbound.failed' ||
-               tipoEvento === 'transfer.inbound.returned') {
-        // No confirmamos como pagada. El Core registrará el evento
-        // pero no marcará la intención como paid.
-        accion = 'ignorar';
-        providerStatus = tipoEvento === 'transfer.inbound.returned' ? 'returned' : 'failed';
+    if (tipoEvento.startsWith('transfer.inbound.')) {
+        // ─── Es un COBRO (dinero entrando a la cuenta Fintoc) ───
+        intencionId = metadataObjeto.csariels_intencion_id || null;
+
+        if (tipoEvento === 'transfer.inbound.succeeded') {
+            accion = 'confirmar_intencion';
+            providerStatus = 'succeeded';
+        } else if (tipoEvento === 'transfer.inbound.failed' ||
+                   tipoEvento === 'transfer.inbound.returned') {
+            accion = 'ignorar';
+            providerStatus = tipoEvento === 'transfer.inbound.returned' ? 'returned' : 'failed';
+        }
+
     } else if (tipoEvento.startsWith('transfer.outbound.')) {
-        // Payouts: se manejarán desde retiros.js (Fase posterior).
-        // Por ahora marcamos para que el Core lo sepa.
-        accion = 'cerrar_retiro';
-        providerStatus = tipoEvento.split('.').pop();
+        // ─── Es un PAYOUT (dinero saliendo de la cuenta Fintoc) ───
+        retiroId = extraerRetiroIdDeWebhook(objeto, body);
+
+        if (tipoEvento === 'transfer.outbound.succeeded') {
+            accion = 'cerrar_retiro';
+            providerStatus = 'succeeded';
+        } else if (tipoEvento === 'transfer.outbound.failed') {
+            accion = 'cerrar_retiro';
+            providerStatus = 'failed';
+        } else if (tipoEvento === 'transfer.outbound.rejected') {
+            accion = 'cerrar_retiro';
+            providerStatus = 'rejected';
+        }
     }
 
     // ---------- Comisiones ----------
-    // Fintoc no nos manda la comisión en el evento base. Se
-    // reconcilia después consultando el detalle. Por ahora 0.
     const providerFeeMxn = 0;
     const networkFeeMxn = 0;
-
-    // ---------- Monto transferido (para auditoría) ----------
     const montoTransferido = objeto.amount || objeto.amount_mxn || null;
 
     return {
@@ -491,7 +439,7 @@ async function procesarWebhook(req) {
         tipo_evento: tipoEvento,
         accion: accion,
         intencion_id: intencionId,
-        retiro_id: metadataObjeto.csariels_retiro_id || null,
+        retiro_id: retiroId,
         provider_transaction_id: objeto.id || null,
         provider_status: providerStatus,
         provider_fee_mxn: providerFeeMxn,
@@ -501,21 +449,25 @@ async function procesarWebhook(req) {
             fintoc_transfer_id: objeto.id || null,
             fintoc_amount: montoTransferido,
             fintoc_currency: objeto.currency || 'MXN',
-            fintoc_status: objeto.status || null
+            fintoc_status: objeto.status || null,
+            fintoc_direction: tipoEvento.startsWith('transfer.outbound.') ? 'outbound' : 'inbound'
         },
         payload_crudo: body
     };
 }
 
 // ================================================================
-// EXPORTACIONES
+// RE-EXPORTAR crearPayout desde fintoc-payout.js
+// ================================================================
+// Para que retiros.js lo encuentre como adapter.crearPayout()
 // ================================================================
 
+const payoutModule = require('./fintoc-payout');
 module.exports = {
     crearPago: crearPago,
     procesarWebhook: procesarWebhook,
-
-    // Expuesto para testing y para uso desde retiros.js
     verificarFirmaWebhook: verificarFirmaWebhook,
-    llamarFintoc: llamarFintoc
+    llamarFintoc: llamarFintoc,
+    crearPayout: payoutModule.crearPayout,
+    consultarTransfer: payoutModule.consultarTransfer
 };
