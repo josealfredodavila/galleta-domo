@@ -6,23 +6,27 @@
 //   app.use('/api/pay', require('./routes/pay'));
 //
 // Agrupa los sub-routers:
-//   /intenciones -> intenciones.js
-//   /cuentas     -> cuentas.js
-//   /retiros     -> retiros.js
-//   /webhooks    -> webhooks.js
+//   /intenciones     -> intenciones.js
+//   /cuentas         -> cuentas.js
+//   /retiros         -> retiros.js
+//   /stripe-connect  -> stripe-connect.js (onboarding Connect)
+//   /webhooks        -> webhooks.js
 //
 // Rutas resultantes:
 //   POST   /api/pay/intenciones
 //   GET    /api/pay/intenciones/:publicToken  (pública)
 //   GET    /api/pay/mis-intenciones
 //   POST   /api/pay/intenciones/:id/cancelar
-//   GET    /api/pay/cuenta
-//   GET    /api/pay/cuenta/saldos
-//   GET    /api/pay/cuenta/movimientos
+//   GET    /api/pay/cuentas/mi-cuenta
+//   GET    /api/pay/cuentas/mi-cuenta/saldos
+//   GET    /api/pay/cuentas/mi-cuenta/movimientos
+//   GET    /api/pay/cuentas/mi-cuenta/resumen
 //   GET    /api/pay/metodos-disponibles
 //   POST   /api/pay/retiros
 //   GET    /api/pay/retiros
 //   GET    /api/pay/retiros/:id
+//   GET    /api/pay/stripe-connect/estado
+//   POST   /api/pay/stripe-connect/onboarding
 //   POST   /api/pay/webhooks/stripe
 //   POST   /api/pay/webhooks/fintoc
 //   POST   /api/pay/webhooks/nowpayments
@@ -42,6 +46,7 @@ const logger = require('../../utils/logger');
 const intencionesRouter = require('./intenciones');
 const cuentasRouter = require('./cuentas');
 const retirosRouter = require('./retiros');
+const stripeConnectRouter = require('./stripe-connect');
 const webhooksRouter = require('./webhooks');
 
 // ================================================================
@@ -78,6 +83,7 @@ router.get('/health', function (req, res) {
 router.use('/intenciones', intencionesRouter);
 router.use('/cuentas', cuentasRouter);
 router.use('/retiros', retirosRouter);
+router.use('/stripe-connect', stripeConnectRouter);
 
 // Rutas amigables (sin necesidad de /cuentas/... para lo más común)
 const { verificarToken } = require('../../middleware/auth');
