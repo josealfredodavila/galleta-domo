@@ -5,22 +5,9 @@
 // Endpoints:
 //   GET  /api/pay/stripe-connect/estado    (privado)
 //   POST /api/pay/stripe-connect/onboarding (privado)
-//   GET  /api/pay/stripe-connect/retorno    (privado, recibe al user
-//                                             de vuelta de Stripe)
 //
-// Flujo:
-//   1. Vendedor pide iniciar onboarding -> POST /onboarding
-//   2. Backend crea (o reusa) cuenta Connect Express
-//   3. Backend genera Account Link de Stripe
-//   4. Frontend redirige al vendedor a la URL de Stripe
-//   5. Vendedor completa datos en Stripe
-//   6. Stripe redirige a /features/pay/vincular-stripe.html
-//   7. Frontend consulta /estado para ver si está listo
-//
-// Cómo se guarda el stripe_account_id:
-//   No tocamos el esquema de Supabase. El stripe_account_id se
-//   resuelve por email del usuario contra la API de Stripe.
-//   Si cambia el email, se crea una nueva cuenta. Es un caso raro.
+// El stripe_account_id se persiste en usuarios.stripe_account_id
+// cuando el onboarding se completa por primera vez.
 // ================================================================
 
 'use strict';
@@ -34,16 +21,8 @@ const logger = require('../../utils/logger');
 const { verificarToken } = require('../../middleware/auth');
 const errors = require('../../services/pay/errors');
 
-// ================================================================
-// CONFIGURACIÓN
-// ================================================================
-
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const PUBLIC_URL = process.env.PUBLIC_URL || '';
-
-// ================================================================
-// CLIENTE STRIPE
-// ================================================================
 
 let stripeClient = null;
 
@@ -56,10 +35,7 @@ function obtenerCliente() {
         stripeClient = new Stripe(STRIPE_SECRET_KEY, {
             timeout: 20000,
             maxNetworkRetries: 2,
-            appInfo: {
-                name: 'Csariels Pay',
-                version: '1.0.0'
-            }
+            appInfo: { name: 'Csariels Pay', version: '1.0.0' }
         });
     }
 
@@ -67,10 +43,42 @@ function obtenerCliente() {
 }
 
 // ================================================================
-// RESOLVER CUENTA CONNECT DEL USUARIO
+// PERSISTIR stripe_account_id EN usuarios
 // ================================================================
-// Busca una cuenta Connect asociada al email del usuario.
-// Si no existe, la crea.
+
+async function persistirStripeAccountId(usuarioId, stripeAccountId, cuentaConnect) {
+    try {
+        // Verificar si ya está guardado el mismo
+        const { data: usuarioActual } = await supabaseAdmin
+            .from('usuarios')
+            .select('stripe_account_id')
+            .eq('id', usuarioId)
+            .maybeSingle();
+
+        if (usuarioActual && usuarioActual.stripe_account_id === stripeAccountId) {
+            return; // Ya está guardado
+        }
+
+        const { error: errUpd } = await supabaseAdmin
+            .from('usuarios')
+            .update({ stripe_account_id: stripeAccountId })
+            .eq('id', usuarioId);
+
+        if (errUpd) {
+            logger.error(`[Stripe Connect] Error guardando stripe_account_id: ${errUpd.message}`);
+            return;
+        }
+
+        logger.info(
+            `[Stripe Connect] stripe_account_id guardado para usuario ${usuarioId}: ${stripeAccountId}`
+        );
+    } catch (err) {
+        logger.error(`[Stripe Connect] Excepción guardando stripe_account_id: ${err.message}`);
+    }
+}
+
+// ================================================================
+// RESOLVER CUENTA CONNECT DEL USUARIO
 // ================================================================
 
 async function resolverOCrearCuentaConnect(usuario) {
@@ -81,7 +89,7 @@ async function resolverOCrearCuentaConnect(usuario) {
         throw errors.errorParametroRequerido('email del usuario');
     }
 
-    // ---------- 1) Buscar por email ----------
+    // 1) Buscar por email en Stripe
     let cuentaExistente = null;
 
     try {
@@ -95,14 +103,15 @@ async function resolverOCrearCuentaConnect(usuario) {
         }
     } catch (errList) {
         logger.warning(`[Stripe Connect] Error buscando cuenta por email: ${errList.message}`);
-        // Continuar: quizá no existe y hay que crearla
     }
 
     if (cuentaExistente) {
+        // Guardar el acct_ en Supabase si no estaba
+        await persistirStripeAccountId(usuario.id, cuentaExistente.id, cuentaExistente);
         return cuentaExistente;
     }
 
-    // ---------- 2) Crear cuenta Connect Express ----------
+    // 2) Crear cuenta Connect Express
     let nuevaCuenta;
 
     try {
@@ -117,9 +126,7 @@ async function resolverOCrearCuentaConnect(usuario) {
             },
             settings: {
                 payouts: {
-                    schedule: {
-                        interval: 'manual'
-                    }
+                    schedule: { interval: 'manual' }
                 }
             },
             metadata: {
@@ -143,12 +150,14 @@ async function resolverOCrearCuentaConnect(usuario) {
 
     logger.info(`[Stripe Connect] Cuenta Connect creada: ${nuevaCuenta.id} (${email})`);
 
+    // Guardar el acct_ en Supabase
+    await persistirStripeAccountId(usuario.id, nuevaCuenta.id, nuevaCuenta);
+
     return nuevaCuenta;
 }
 
 // ================================================================
 // GET /api/pay/stripe-connect/estado
-// PRIVADO - ¿Está el vendedor habilitado para retirar por tarjeta?
 // ================================================================
 
 router.get(
@@ -158,24 +167,40 @@ router.get(
         try {
             const usuario = req.usuario;
 
-            // Buscar cuenta Connect por email
-            const stripe = obtenerCliente();
+            // 1) Buscar primero en Supabase (fuente de verdad local)
+            let stripeAccountId = null;
 
-            let cuenta = null;
-            try {
-                const lista = await stripe.accounts.list({
-                    email: usuario.email,
-                    limit: 1
-                });
+            const { data: usuarioDB } = await supabaseAdmin
+                .from('usuarios')
+                .select('stripe_account_id')
+                .eq('id', usuario.id)
+                .maybeSingle();
 
-                if (lista && lista.data && lista.data.length > 0) {
-                    cuenta = lista.data[0];
-                }
-            } catch (errList) {
-                logger.warning(`[Stripe Connect] Error consultando cuenta: ${errList.message}`);
+            if (usuarioDB && usuarioDB.stripe_account_id) {
+                stripeAccountId = usuarioDB.stripe_account_id;
             }
 
-            if (!cuenta) {
+            // 2) Si no está en Supabase, buscar en Stripe por email
+            const stripe = obtenerCliente();
+
+            if (!stripeAccountId) {
+                try {
+                    const lista = await stripe.accounts.list({
+                        email: usuario.email,
+                        limit: 1
+                    });
+
+                    if (lista && lista.data && lista.data.length > 0) {
+                        stripeAccountId = lista.data[0].id;
+                        // Guardar en Supabase para futuras consultas
+                        await persistirStripeAccountId(usuario.id, stripeAccountId, lista.data[0]);
+                    }
+                } catch (errList) {
+                    logger.warning(`[Stripe Connect] Error consultando por email: ${errList.message}`);
+                }
+            }
+
+            if (!stripeAccountId) {
                 return res.status(200).json({
                     success: true,
                     data: {
@@ -186,13 +211,21 @@ router.get(
                 });
             }
 
-            // Consultar estado completo (por si cambió desde el último list)
+            // 3) Consultar estado completo
             let cuentaCompleta;
             try {
-                cuentaCompleta = await stripe.accounts.retrieve(cuenta.id);
+                cuentaCompleta = await stripe.accounts.retrieve(stripeAccountId);
             } catch (errRetrieve) {
-                logger.warning(`[Stripe Connect] Error obteniendo cuenta ${cuenta.id}: ${errRetrieve.message}`);
-                cuentaCompleta = cuenta;
+                logger.warning(`[Stripe Connect] Error obteniendo cuenta ${stripeAccountId}: ${errRetrieve.message}`);
+                return res.status(200).json({
+                    success: true,
+                    data: {
+                        vinculada: true,
+                        habilitada: false,
+                        stripe_account_id: stripeAccountId,
+                        mensaje: 'No se pudo consultar el estado de tu cuenta. Reintenta en un momento.'
+                    }
+                });
             }
 
             return res.status(200).json({
@@ -206,6 +239,7 @@ router.get(
                     details_submitted: cuentaCompleta.details_submitted === true,
                     pais: cuentaCompleta.country,
                     moneda_default: cuentaCompleta.default_currency,
+                    stripe_account_id: stripeAccountId,
                     requirements_pendientes: cuentaCompleta.requirements && cuentaCompleta.requirements.currently_due
                         ? cuentaCompleta.requirements.currently_due
                         : [],
@@ -224,7 +258,6 @@ router.get(
 
 // ================================================================
 // POST /api/pay/stripe-connect/onboarding
-// PRIVADO - Genera una URL de onboarding de Stripe.
 // ================================================================
 
 router.post(
@@ -234,10 +267,8 @@ router.post(
         try {
             const usuario = req.usuario;
 
-            // ---------- 1) Obtener (o crear) cuenta Connect ----------
             const cuenta = await resolverOCrearCuentaConnect(usuario);
 
-            // ---------- 2) Generar Account Link ----------
             const stripe = obtenerCliente();
 
             const returnUrlBase = PUBLIC_URL || '';
@@ -281,9 +312,5 @@ router.post(
         }
     }
 );
-
-// ================================================================
-// EXPORTAR
-// ================================================================
 
 module.exports = router;
