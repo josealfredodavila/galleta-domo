@@ -4,8 +4,9 @@
 // ================================================================
 // Maneja el ciclo completo de un retiro:
 //   1. Solicitud del usuario (validaciones + pay_reservar_retiro)
-//   2. Envío al proveedor (crearPayout en el adapter)
-//   3. Cierre por webhook (pay_cerrar_retiro)
+//   2. Guardar metadata sensible (CLABE completa, wallet) post-RPC
+//   3. Envío al proveedor (crearPayout en el adapter)
+//   4. Cierre por webhook (pay_cerrar_retiro)
 //
 // La RPC pay_reservar_retiro es la ÚNICA que toca pay_saldos.
 // Desde Node nunca modificamos saldos directamente.
@@ -31,20 +32,18 @@ const errors = require('./errors');
 
 const ESTADOS_RETIRO_FINALES = ['completed', 'failed', 'cancelled'];
 const ESTADOS_RETIRO_ACTIVOS = ['pending', 'processing'];
-const MONTO_MINIMO_RETIRO_MXN = 50;      // Mínimo operativo (ajustable)
-const MONTO_MAXIMO_RETIRO_MXN = 500000;  // Máximo por operación (ajustable)
+const MONTO_MINIMO_RETIRO_MXN = 50;
+const MONTO_MAXIMO_RETIRO_MXN = 500000;
 
-// Método -> proveedor
 const METODO_A_PROVEEDOR = {
     spei: 'fintoc',
     crypto: 'nowpayments',
     tarjeta: 'stripe'
 };
 
-// Moneda destino válida por método
 const MONEDA_DESTINO_POR_METODO = {
     spei: 'MXN',
-    crypto: null,   // Se define por redCrypto (USDT o USDC)
+    crypto: null,
     tarjeta: 'MXN'
 };
 
@@ -80,15 +79,21 @@ function validarIdempotencyKey(key) {
 // ================================================================
 // VALIDAR DESTINO SEGÚN MÉTODO
 // ================================================================
-// SPEI        -> requiere CLABE de 18 dígitos (destinoUltimos4 = últimos 4)
-// crypto      -> requiere wallet_destino + red_crypto
-// tarjeta     -> se define con Stripe Connect (destino_ultimos4)
-// ================================================================
 
 function validarDestino(datos) {
     const metodo = datos.metodo;
 
     if (metodo === 'spei') {
+        // Para SPEI necesitamos la CLABE completa (18 dígitos)
+        const clabe = datos.clabeDestino || (datos.datosExtra && datos.datosExtra.clabe_destino);
+
+        if (!clabe || !/^\d{18}$/.test(String(clabe))) {
+            throw errors.errorDestinoRetiroInvalido({
+                motivo: 'SPEI requiere CLABE completa de 18 dígitos (datosExtra.clabe_destino)'
+            });
+        }
+
+        // Y los últimos 4 dígitos (para mostrar en historial)
         if (!datos.destinoUltimos4 || !/^\d{4}$/.test(String(datos.destinoUltimos4))) {
             throw errors.errorDestinoRetiroInvalido({
                 motivo: 'SPEI requiere destino_ultimos4 (4 dígitos)'
@@ -136,7 +141,6 @@ function validarDestino(datos) {
 
 function cargarAdapterPayout(proveedor) {
     if (proveedor === 'stripe') {
-        // Stripe Connect no implementado aún. Falla controladamente.
         try {
             const adapter = require('./providers/stripe-connect');
             if (typeof adapter.crearPayout !== 'function') {
@@ -165,8 +169,6 @@ function cargarAdapterPayout(proveedor) {
 // ================================================================
 // CERRAR RETIRO CON RESULTADO DEL PROVEEDOR
 // ================================================================
-// Envuelve pay_cerrar_retiro para tener un único punto de cierre.
-// ================================================================
 
 async function cerrarRetiroConProveedor(retiroId, estado, providerData) {
     verificarSupabaseAdmin();
@@ -175,7 +177,7 @@ async function cerrarRetiroConProveedor(retiroId, estado, providerData) {
 
     const { data, error } = await supabaseAdmin.rpc('pay_cerrar_retiro', {
         p_retiro_id: retiroId,
-        p_estado: estado,                              // 'completed' | 'failed' | 'cancelled'
+        p_estado: estado,
         p_provider_transfer_id: pd.provider_transfer_id || null,
         p_provider_status: pd.provider_status || null,
         p_error_code: pd.error_code || null,
@@ -192,22 +194,55 @@ async function cerrarRetiroConProveedor(retiroId, estado, providerData) {
 }
 
 // ================================================================
-// SOLICITAR RETIRO
+// GUARDAR METADATA SENSIBLE POST-RESERVA
 // ================================================================
-// Args:
-//   datos:
-//     usuarioId        -> uuid (para ownership)
-//     cuentaId         -> uuid de pay_cuentas
-//     montoMxn         -> number
-//     metodo           -> 'spei' | 'crypto' | 'tarjeta'
-//     monedaDestino    -> 'MXN' | 'USDT' | 'USDC'
-//     destinoUltimos4  -> string (4 dígitos) para SPEI y tarjeta
-//     redCrypto        -> string (ej 'usdttrc20') para crypto
-//     walletDestino    -> string (dirección) para crypto
-//     idempotencyKey   -> string único
-//     datosExtra       -> objeto opcional (metadata adicional)
+// La RPC pay_reservar_retiro guarda los campos básicos en pay_retiros
+// pero no la CLABE completa (por seguridad, para no guardar datos
+// bancarios completos en la tabla principal).
 //
-// Devuelve: la fila del retiro creado (con datos de pay_retiros).
+// Aquí guardamos la CLABE completa en metadata.clabe_destino.
+// El adapter de Fintoc payouts la lee para crear el SPEI.
+//
+// NOTA de seguridad: la CLABE se guarda en un campo jsonb
+// que solo el backend con service_role puede leer.
+// ================================================================
+
+async function guardarMetadataSensible(retiroId, metodo, datosExtra) {
+    const de = datosExtra || {};
+    const metadata = {};
+
+    if (metodo === 'spei' && de.clabe_destino) {
+        metadata.clabe_destino = String(de.clabe_destino);
+    }
+
+    if (metodo === 'crypto' && de.wallet_destino) {
+        // La wallet ya se guarda en la columna wallet_destino
+        // pero también la dejamos en metadata por consistencia
+        metadata.wallet_destino_completa = String(de.wallet_destino);
+    }
+
+    if (Object.keys(metadata).length === 0) {
+        return;
+    }
+
+    const { error } = await supabaseAdmin
+        .from('pay_retiros')
+        .update({
+            metadata: metadata,
+            updated_at: new Date().toISOString()
+        })
+        .eq('id', retiroId);
+
+    if (error) {
+        logger.warning(`[Pay Retiros] No se pudo guardar metadata sensible: ${error.message}`);
+        // No lanzamos: si falla, el payout del adapter fallará con un
+        // mensaje claro ("falta CLABE destino") y el usuario podrá
+        // reintentar. El saldo se devuelve automáticamente.
+    }
+}
+
+// ================================================================
+// SOLICITAR RETIRO
 // ================================================================
 
 async function solicitarRetiro(datos) {
@@ -253,13 +288,15 @@ async function solicitarRetiro(datos) {
         throw errors.errorIdempotencyKeyFaltante();
     }
 
-    // Validar destino según método
+    // Validar destino según método (incluye CLABE completa para SPEI)
     validarDestino({
         metodo: metodo,
         destinoUltimos4: d.destinoUltimos4,
         redCrypto: d.redCrypto,
         walletDestino: d.walletDestino,
-        monedaDestino: d.monedaDestino
+        monedaDestino: d.monedaDestino,
+        clabeDestino: d.clabeDestino,
+        datosExtra: d.datosExtra
     });
 
     // ---------- Verificar ownership de la cuenta ----------
@@ -286,9 +323,6 @@ async function solicitarRetiro(datos) {
         throw errors.errorCuentaNoActiva(cuenta.estado);
     }
 
-    // ---------- Verificar país (por metadata del pedido, o MX por defecto) ----------
-    // El país se resuelve por el país del usuario. Asumimos MX si no hay dato.
-    // A futuro, cuando tengas `usuarios.pais`, se lee de ahí.
     const codigoPais = (d.datosExtra && d.datosExtra.pais) || 'MX';
 
     if (!paises.esPaisSoportado(codigoPais)) {
@@ -297,7 +331,7 @@ async function solicitarRetiro(datos) {
 
     const proveedor = METODO_A_PROVEEDOR[metodo];
 
-    // ---------- Verificar saldo antes de intentar reservar ----------
+    // ---------- Verificar saldo ----------
     const { data: saldos, error: errSaldos } = await supabaseAdmin
         .from('pay_saldos')
         .select('disponible_mxn, pendiente_mxn')
@@ -316,8 +350,6 @@ async function solicitarRetiro(datos) {
     }
 
     // ---------- Reservar el retiro (RPC) ----------
-    // pay_reservar_retiro hace: idempotencia + lock + verificación +
-    // descuento de saldo + INSERT en pay_retiros + movimiento.
     const { data: retiroId, error: errReserva } = await supabaseAdmin.rpc(
         'pay_reservar_retiro',
         {
@@ -336,7 +368,6 @@ async function solicitarRetiro(datos) {
     if (errReserva) {
         logger.error(`[Pay Retiros] Error reservando retiro: ${errReserva.message}`);
 
-        // Errores conocidos de la RPC
         const msg = errReserva.message || '';
         if (msg.includes('INSUFFICIENT_AVAILABLE_BALANCE')) {
             throw errors.errorSaldoInsuficiente(disponible, monto);
@@ -352,6 +383,11 @@ async function solicitarRetiro(datos) {
         throw new errors.ErrorInterno('ERROR_RESERVANDO_RETIRO', 'sin retiro_id');
     }
 
+    // ---------- GUARDAR METADATA SENSIBLE (NUEVO) ----------
+    // Guardamos la CLABE completa en metadata.clabe_destino
+    // para que fintoc-payout.js pueda crear el SPEI saliente.
+    await guardarMetadataSensible(retiroId, metodo, d.datosExtra);
+
     // ---------- Cargar el retiro recién creado ----------
     const { data: retiro, error: errGet } = await supabaseAdmin
         .from('pay_retiros')
@@ -365,7 +401,6 @@ async function solicitarRetiro(datos) {
     }
 
     // ---------- Si el retiro ya estaba en estado final, devolverlo ----------
-    // (idempotencia: otra llamada con la misma key ya lo cerró)
     if (ESTADOS_RETIRO_FINALES.includes(retiro.estado)) {
         logger.info(`[Pay Retiros] Retiro ${retiroId} ya en estado final (${retiro.estado})`);
         return retiro;
@@ -376,8 +411,6 @@ async function solicitarRetiro(datos) {
     try {
         adapter = cargarAdapterPayout(proveedor);
     } catch (errAdapter) {
-        // No podemos cerrar aquí sin más, porque el retiro ya se reservó.
-        // Cerramos como failed para devolver el saldo.
         logger.error(`[Pay Retiros] Sin adapter para ${proveedor}: ${errAdapter.message}`);
 
         try {
@@ -403,9 +436,6 @@ async function solicitarRetiro(datos) {
         const reintentable = errors.esErrorReintentable(errPayout);
 
         if (reintentable) {
-            // El retiro queda en 'pending' (o 'processing' si el adapter
-            // alcanzó a registrar algo). No cerramos: esperamos webhook
-            // o job de reconciliación.
             logger.warning(
                 `[Pay Retiros] Retiro ${retiroId} queda pendiente por error reintentable de ${proveedor}`
             );
@@ -423,7 +453,6 @@ async function solicitarRetiro(datos) {
             throw errPayout;
         }
 
-        // Error permanente: cerrar como failed (devuelve saldo).
         try {
             await cerrarRetiroConProveedor(retiroId, 'failed', {
                 provider_transfer_id: errPayout.detalles && errPayout.detalles.provider_transfer_id,
@@ -459,7 +488,6 @@ async function solicitarRetiro(datos) {
 
     if (errUpdate) {
         logger.error(`[Pay Retiros] Error actualizando retiro tras payout: ${errUpdate.message}`);
-        // El payout ya se hizo. Devolvemos el retiro tal cual lo teníamos.
         return retiro;
     }
 
@@ -474,9 +502,6 @@ async function solicitarRetiro(datos) {
 // ================================================================
 // PROCESAR WEBHOOK DE RETIRO
 // ================================================================
-// Se llama desde routes/pay/webhooks.js cuando llega un webhook
-// marcado como 'retiro'.
-// ================================================================
 
 async function procesarWebhookRetiro(proveedor, req) {
     verificarSupabaseAdmin();
@@ -485,7 +510,6 @@ async function procesarWebhookRetiro(proveedor, req) {
         throw errors.errorWebhookPayloadInvalido(proveedor, 'proveedor desconocido');
     }
 
-    // Cargar adapter
     let adapter;
     try {
         adapter = require(`./providers/${proveedor}`);
@@ -507,7 +531,6 @@ async function procesarWebhookRetiro(proveedor, req) {
         throw errors.errorFirmaInvalida(proveedor);
     }
 
-    // ---------- Registrar evento ----------
     const { data: registro, error: errReg } = await supabaseAdmin.rpc(
         'pay_registrar_webhook_evento',
         {
@@ -528,18 +551,15 @@ async function procesarWebhookRetiro(proveedor, req) {
         return { status: 'duplicado', event_id: resultado.event_id };
     }
 
-    // ---------- Determinar estado final ----------
     if (resultado.accion !== 'cerrar_retiro' || !resultado.retiro_id) {
-        // No es un evento de payout que nos interese cerrar.
         await marcarEventoProcesado(proveedor, resultado.event_id, null, true);
         return { status: 'ignorado', event_id: resultado.event_id };
     }
 
-    // Traducir provider_status a estado interno
     const ps = (resultado.provider_status || '').toLowerCase();
     let estadoFinal = null;
 
-    if (['succeeded', 'completed', 'success', 'finished'].includes(ps)) {
+    if (['succeeded', 'completed', 'success', 'finished', 'paid'].includes(ps)) {
         estadoFinal = 'completed';
     } else if (['failed', 'rejected', 'returned', 'return_pending'].includes(ps)) {
         estadoFinal = 'failed';
@@ -548,7 +568,6 @@ async function procesarWebhookRetiro(proveedor, req) {
     }
 
     if (!estadoFinal) {
-        // No es estado final: solo registrar y salir
         await marcarEventoProcesado(proveedor, resultado.event_id, null, true);
         return {
             status: 'ok',
@@ -557,7 +576,6 @@ async function procesarWebhookRetiro(proveedor, req) {
         };
     }
 
-    // ---------- Cerrar retiro con pay_cerrar_retiro ----------
     const cierre = await cerrarRetiroConProveedor(resultado.retiro_id, estadoFinal, {
         provider_transfer_id: resultado.provider_transaction_id || null,
         provider_status: resultado.provider_status || null,
@@ -692,7 +710,6 @@ module.exports = {
     listarRetiros: listarRetiros,
     obtenerRetiro: obtenerRetiro,
 
-    // Constantes exportadas
     ESTADOS_RETIRO_FINALES: ESTADOS_RETIRO_FINALES,
     ESTADOS_RETIRO_ACTIVOS: ESTADOS_RETIRO_ACTIVOS,
     METODO_A_PROVEEDOR: METODO_A_PROVEEDOR,
