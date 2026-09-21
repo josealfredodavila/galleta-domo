@@ -9,8 +9,10 @@
 //   GET    /api/pay/mis-intenciones                    (privado)
 //   POST   /api/pay/intenciones/:id/cancelar           (privado)
 //
-// Privado -> requiere Bearer token de Supabase.
-// Público -> sin auth (el comprador puede ser anónimo).
+// AUTO-CREACIÓN:
+//   Si el usuario no tiene cuenta Pay pero es vendedor o repartidor
+//   en Mercado, la cuenta se crea automáticamente al crear la
+//   primera intención.
 //
 // El estado 'paid' SOLO se marca por webhook del proveedor.
 // Este router NUNCA marca una intención como pagada.
@@ -31,21 +33,165 @@ const paises = require('../../services/pay/geo/paises');
 const errors = require('../../services/pay/errors');
 
 // ================================================================
+// AUTO-CREACIÓN DE CUENTA PAY
+// ================================================================
+// Si el usuario no tiene cuenta Pay pero es vendedor (tiene tienda
+// en mercado_tiendas) o repartidor (tiene fila en mercado_repartidores),
+// la crea en ese momento. Esto reemplaza los triggers que se revirtieron.
+// ================================================================
+
+async function intentarCrearCuentaPay(usuarioId) {
+    if (!usuarioId) return null;
+
+    try {
+        // 1) ¿Es vendedor?
+        const { data: tienda } = await supabaseAdmin
+            .from('mercado_tiendas')
+            .select('id, usuario_id, nombre_negocio')
+            .eq('usuario_id', usuarioId)
+            .order('created_at', { ascending: true })
+            .limit(1)
+            .maybeSingle();
+
+        if (tienda) {
+            const { data: existente } = await supabaseAdmin
+                .from('pay_cuentas')
+                .select('*')
+                .eq('usuario_id', usuarioId)
+                .eq('tienda_id', tienda.id)
+                .maybeSingle();
+
+            if (existente) return existente;
+
+            const { data: nueva, error: errIns } = await supabaseAdmin
+                .from('pay_cuentas')
+                .insert({
+                    usuario_id: usuarioId,
+                    tipo: 'vendedor',
+                    estado: 'activa',
+                    moneda_principal: 'MXN',
+                    tienda_id: tienda.id,
+                    repartidor_id: null
+                })
+                .select()
+                .single();
+
+            if (errIns) {
+                if (errIns.code === '23505') {
+                    const { data: reintento } = await supabaseAdmin
+                        .from('pay_cuentas')
+                        .select('*')
+                        .eq('usuario_id', usuarioId)
+                        .eq('tienda_id', tienda.id)
+                        .maybeSingle();
+                    return reintento || null;
+                }
+                logger.error(`[Pay Intenciones] Error creando cuenta vendedor: ${errIns.message}`);
+                return null;
+            }
+
+            await supabaseAdmin
+                .from('pay_saldos')
+                .insert({
+                    cuenta_id: nueva.id,
+                    disponible_mxn: 0,
+                    pendiente_mxn: 0
+                })
+                .then(function (r) {
+                    if (r.error && r.error.code !== '23505') {
+                        logger.warning(`[Pay Intenciones] Error creando saldos: ${r.error.message}`);
+                    }
+                });
+
+            logger.info(`[Pay Intenciones] Cuenta Pay creada automáticamente (vendedor): ${nueva.id}`);
+            return nueva;
+        }
+
+        // 2) ¿Es repartidor?
+        const { data: repartidor } = await supabaseAdmin
+            .from('mercado_repartidores')
+            .select('id, usuario_id, nombre_completo')
+            .eq('usuario_id', usuarioId)
+            .order('created_at', { ascending: true })
+            .limit(1)
+            .maybeSingle();
+
+        if (repartidor) {
+            const { data: existente } = await supabaseAdmin
+                .from('pay_cuentas')
+                .select('*')
+                .eq('usuario_id', usuarioId)
+                .eq('repartidor_id', repartidor.id)
+                .maybeSingle();
+
+            if (existente) return existente;
+
+            const { data: nueva, error: errIns } = await supabaseAdmin
+                .from('pay_cuentas')
+                .insert({
+                    usuario_id: usuarioId,
+                    tipo: 'repartidor',
+                    estado: 'activa',
+                    moneda_principal: 'MXN',
+                    tienda_id: null,
+                    repartidor_id: repartidor.id
+                })
+                .select()
+                .single();
+
+            if (errIns) {
+                if (errIns.code === '23505') {
+                    const { data: reintento } = await supabaseAdmin
+                        .from('pay_cuentas')
+                        .select('*')
+                        .eq('usuario_id', usuarioId)
+                        .eq('repartidor_id', repartidor.id)
+                        .maybeSingle();
+                    return reintento || null;
+                }
+                logger.error(`[Pay Intenciones] Error creando cuenta repartidor: ${errIns.message}`);
+                return null;
+            }
+
+            await supabaseAdmin
+                .from('pay_saldos')
+                .insert({
+                    cuenta_id: nueva.id,
+                    disponible_mxn: 0,
+                    pendiente_mxn: 0
+                })
+                .then(function (r) {
+                    if (r.error && r.error.code !== '23505') {
+                        logger.warning(`[Pay Intenciones] Error creando saldos: ${r.error.message}`);
+                    }
+                });
+
+            logger.info(`[Pay Intenciones] Cuenta Pay creada automáticamente (repartidor): ${nueva.id}`);
+            return nueva;
+        }
+
+        return null;
+
+    } catch (err) {
+        logger.error(`[Pay Intenciones] Error en intentarCrearCuentaPay: ${err.message}`);
+        return null;
+    }
+}
+
+// ================================================================
 // HELPERS INTERNOS
 // ================================================================
 
-const PUBLIC_URL = process.env.PUBLIC_URL || '';
-
 /**
- * Busca la cuenta Pay activa de un usuario autenticado.
- * Prioriza vendedor, pero acepta repartidor si no hay vendedor.
+ * Resuelve la cuenta Pay del usuario.
+ * Si no existe, intenta crearla consultando si es vendedor/repartidor.
  */
 async function resolverCuentaDelUsuario(usuarioId) {
     const { data, error } = await supabaseAdmin
         .from('pay_cuentas')
         .select('id, tipo, tienda_id, repartidor_id, estado, moneda_principal')
         .eq('usuario_id', usuarioId)
-        .in('estado', ['activa'])
+        .eq('estado', 'activa')
         .order('created_at', { ascending: true })
         .limit(1)
         .maybeSingle();
@@ -55,22 +201,18 @@ async function resolverCuentaDelUsuario(usuarioId) {
         throw new errors.ErrorInterno('ERROR_DB', error.message);
     }
 
-    return data || null;
+    if (data) return data;
+
+    // Intentar auto-crear
+    const creada = await intentarCrearCuentaPay(usuarioId);
+    return creada || null;
 }
 
-/**
- * Determina el código de país del vendedor.
- * Por ahora MX por defecto (hasta que tengas `usuarios.pais`).
- */
 async function resolverPaisDelUsuario(usuarioId) {
     // TODO futuro: leer de usuarios.pais si existe
     return 'MX';
 }
 
-/**
- * Genera una idempotency_key si el cliente no la mandó.
- * Formato: <usuarioId>-<timestamp>-<random>
- */
 function generarIdempotencyKey(usuarioId) {
     const random = crypto.randomBytes(8).toString('hex');
     return `${usuarioId}-${Date.now()}-${random}`;
@@ -89,7 +231,6 @@ router.post(
             const usuarioId = req.usuario.id;
             const body = req.body || {};
 
-            // ---------- Validaciones de entrada ----------
             if (!body.monto) {
                 return res.status(400).json({
                     success: false,
@@ -104,7 +245,7 @@ router.post(
                 });
             }
 
-            // ---------- Resolver cuenta receptora ----------
+            // ---------- Resolver cuenta receptora (con auto-creación) ----------
             const cuenta = await resolverCuentaDelUsuario(usuarioId);
 
             if (!cuenta) {
@@ -115,16 +256,12 @@ router.post(
                 });
             }
 
-            // ---------- Resolver país ----------
             const codigoPais = body.codigoPais || await resolverPaisDelUsuario(usuarioId);
-
-            // ---------- Idempotency key ----------
             const idempotencyKey = body.idempotencyKey || generarIdempotencyKey(usuarioId);
 
-            // ---------- Crear la intención ----------
             const intencion = await core.crearIntencion({
                 cuentaReceptoraId: cuenta.id,
-                compradorId: null,          // El comprador aún no se conoce
+                compradorId: null,
                 monto: body.monto,
                 metodo: body.metodo,
                 codigoPais: codigoPais,
@@ -135,7 +272,7 @@ router.post(
                 datosExtra: body.datosExtra || {}
             });
 
-            // ---------- URL de pago (para QR) ----------
+            const PUBLIC_URL = process.env.PUBLIC_URL || '';
             const urlPago = PUBLIC_URL
                 ? `${PUBLIC_URL}/pay/cobrar/${intencion.public_token}`
                 : `/pay/cobrar/${intencion.public_token}`;
@@ -203,8 +340,6 @@ router.get(
 // POST /api/pay/intenciones/:publicToken/pagar
 // PÚBLICO - El comprador elige método y crea el pago en el proveedor.
 // Este endpoint NO marca la intención como pagada.
-// Solo genera la orden en Stripe/Fintoc/NOWPayments.
-// El estado 'paid' viene exclusivamente del webhook.
 // ================================================================
 
 router.post(
@@ -229,7 +364,6 @@ router.post(
                 });
             }
 
-            // ---------- Cargar intención completa desde Supabase ----------
             const { data: intencion, error: errInt } = await supabaseAdmin
                 .from('pay_intenciones')
                 .select('*')
@@ -251,7 +385,6 @@ router.post(
                 });
             }
 
-            // ---------- Validar estado ----------
             if (intencion.estado === 'paid') {
                 return res.status(409).json({
                     success: false,
@@ -287,9 +420,7 @@ router.post(
                 });
             }
 
-            // ---------- Validar expiración ----------
             if (intencion.expires_at && new Date(intencion.expires_at) < new Date()) {
-                // Marcar como expirada en la base (best effort)
                 await supabaseAdmin
                     .from('pay_intenciones')
                     .update({
@@ -305,7 +436,6 @@ router.post(
                 });
             }
 
-            // ---------- Validar método ----------
             const metodoNorm = String(metodoElegido).trim().toLowerCase();
 
             if (!paises.METODOS_VALIDOS_GLOBAL.includes(metodoNorm)) {
@@ -324,9 +454,6 @@ router.post(
                 });
             }
 
-            // ---------- Si el método cambia, actualizar intención ----------
-            // (El vendedor pudo haber creado la intención sin método o con otro,
-            //  y el comprador elige ahora.)
             let proveedor = paises.proveedorParaMetodo(codigoPais, metodoNorm);
 
             if (!proveedor) {
@@ -358,7 +485,6 @@ router.post(
                 intencion.proveedor = proveedor;
             }
 
-            // ---------- Delegar al adapter ----------
             let adapter;
             try {
                 adapter = require(`../../services/pay/providers/${proveedor}`);
@@ -386,7 +512,6 @@ router.post(
                 return errors.responderError(res, errPago);
             }
 
-            // ---------- Respuesta específica por proveedor ----------
             const respuesta = {
                 intencion_id: intencion.id,
                 public_token: intencion.public_token,
@@ -439,10 +564,6 @@ router.post(
 // ================================================================
 // GET /api/pay/mis-intenciones
 // PRIVADO - El vendedor ve sus intenciones (cobros recibidos).
-// Query params:
-//   estado  -> filtra por estado (opcional, ej: 'paid')
-//   limite  -> 1..200, default 50
-//   offset  -> default 0
 // ================================================================
 
 router.get(
@@ -533,7 +654,6 @@ router.post(
                 });
             }
 
-            // Buscar la intención y verificar ownership vía cuenta
             const { data: intencion, error: errGet } = await supabaseAdmin
                 .from('pay_intenciones')
                 .select(`
@@ -560,7 +680,6 @@ router.post(
                 });
             }
 
-            // Verificar ownership
             const duenoId = intencion.pay_cuentas && intencion.pay_cuentas.usuario_id;
             if (duenoId !== usuarioId) {
                 return res.status(403).json({
@@ -569,7 +688,6 @@ router.post(
                 });
             }
 
-            // Solo se puede cancelar si está pending
             if (intencion.estado === 'paid') {
                 return res.status(409).json({
                     success: false,
