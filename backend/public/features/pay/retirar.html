@@ -232,7 +232,6 @@
         }
         .btn-secundario:hover { border-color: var(--gold); color: var(--gold); }
 
-        /* Retiro item */
         .retiro-item {
             display: flex; justify-content: space-between; align-items: center;
             padding: 12px; border-radius: 12px;
@@ -268,7 +267,6 @@
         .estado-badge.failed { background: rgba(255,51,102,0.15); color: var(--danger); }
         .estado-badge.cancelled { background: rgba(138,168,184,0.15); color: var(--text-muted); }
 
-        /* Modal */
         .modal-overlay {
             display: none;
             position: fixed; inset: 0;
@@ -331,6 +329,7 @@
             flex: 1;
         }
 
+        /* ═══ NUEVO: ESTADO SIN MÉTODOS + CTA VINCULAR STRIPE ═══ */
         .estado-vacio {
             text-align: center; padding: 40px 20px;
             color: var(--text-muted);
@@ -347,6 +346,31 @@
         }
         .estado-vacio p {
             font-size: 0.75rem; line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        .cta-vincular {
+            display: flex; flex-direction: column; gap: 10px;
+            margin-top: 16px;
+        }
+        .cta-vincular .boton-vincular {
+            display: inline-flex; align-items: center; justify-content: center;
+            gap: 8px;
+            padding: 14px 22px;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space); border: none;
+            border-radius: 30px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700; font-size: 0.78rem;
+            text-decoration: none; cursor: pointer;
+            transition: var(--transition);
+        }
+        .cta-vincular .boton-vincular:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-gold);
+        }
+        .cta-vincular .boton-vincular .simbolo {
+            font-family: 'Orbitron', monospace;
         }
 
         .loading-state {
@@ -452,7 +476,7 @@
             <a href="/features/pay/panel.html" class="nav-link"><span class="nav-simbolo">◈</span> Mi Pay</a>
             <a href="/features/pay/cobrar.html" class="nav-link"><span class="nav-simbolo">◆</span> Cobrar</a>
             <a href="/features/pay/retirar.html" class="nav-link active"><span class="nav-simbolo">◇</span> Retirar</a>
-            <a href="/features/mercado/index.html" class="nav-link"><span class="nav-simbolo">◈</span> Mercado</a>
+            <a href="/features/pay/vincular-stripe.html" class="nav-link"><span class="nav-simbolo">●</span> Vincular Stripe</a>
         </nav>
 
         <div id="loaderInicial" class="loading-state">
@@ -475,12 +499,23 @@
                 </div>
             </div>
 
-            <!-- ESTADO SIN MÉTODOS DISPONIBLES -->
+            <!-- ═══ NUEVO: ESTADO SIN MÉTODOS CON CTA A VINCULAR STRIPE ═══ -->
             <div id="cardSinMetodos" class="card" style="display:none;">
                 <div class="estado-vacio">
                     <span class="icono-grande">⏳</span>
-                    <h3>Retiros disponibles próximamente</h3>
-                    <p>Estamos activando los proveedores de retiro. Mientras tanto, tus ganancias están seguras en tu cuenta de Csariel's Pay.</p>
+                    <h3 id="tituloSinMetodos">Sin métodos de retiro</h3>
+                    <p id="textoSinMetodos">Estamos activando los proveedores de retiro. Vuelve pronto.</p>
+
+                    <!-- CTA dinámico: solo se muestra cuando aplica -->
+                    <div class="cta-vincular" id="ctaVincularStripe" style="display:none;">
+                        <p style="font-size:0.78rem; color:var(--text-secondary); line-height:1.5; margin-bottom:8px;">
+                            💡 <strong style="color:var(--gold);">Activa retiros por tarjeta</strong><br>
+                            Vincula tu cuenta de Stripe en 5 minutos y podrás retirar tus ganancias directamente a tu banco.
+                        </p>
+                        <a href="/features/pay/vincular-stripe.html" class="boton-vincular">
+                            <span class="simbolo">◈</span> Vincular Stripe
+                        </a>
+                    </div>
                 </div>
             </div>
 
@@ -511,7 +546,7 @@
                     </div>
                 </div>
 
-                <!-- CAMPOS DINÁMICOS SEGÚN MÉTODO -->
+                <!-- CAMPOS SPEI -->
                 <div id="camposSpei" style="display:none;">
                     <div class="form-group">
                         <label for="inpClabe">CLABE interbancaria (18 dígitos) <span class="required">*</span></label>
@@ -528,6 +563,7 @@
                     </div>
                 </div>
 
+                <!-- CAMPOS CRYPTO -->
                 <div id="camposCrypto" style="display:none;">
                     <div class="form-group">
                         <label>Moneda destino <span class="required">*</span></label>
@@ -539,9 +575,7 @@
 
                     <div class="form-group">
                         <label>Red <span class="required">*</span></label>
-                        <select id="selCryptoRed">
-                            <!-- Se llena dinámicamente según moneda -->
-                        </select>
+                        <select id="selCryptoRed"></select>
                     </div>
 
                     <div class="form-group">
@@ -558,7 +592,12 @@
                     </div>
                 </div>
 
+                <!-- CAMPOS TARJETA (STRIPE CONNECT) -->
                 <div id="camposTarjeta" style="display:none;">
+                    <div class="info-box">
+                        <strong>Retiro por tarjeta</strong><br>
+                        El dinero se enviará a la cuenta bancaria que registraste en Stripe. Verifica que tu cuenta esté vinculada.
+                    </div>
                     <div class="form-group">
                         <label for="inpUltimos4">Últimos 4 dígitos de la tarjeta <span class="required">*</span></label>
                         <input
@@ -570,7 +609,7 @@
                             autocomplete="off"
                             style="font-family:monospace; letter-spacing:2px; text-align:center;"
                         />
-                        <div class="helper">Se enviará a la cuenta registrada en Stripe Connect.</div>
+                        <div class="helper">Se enviará a la cuenta bancaria vinculada en Stripe.</div>
                     </div>
                 </div>
 
@@ -642,8 +681,8 @@ var saldoDisponible = 0;
 var metodosDisponibles = [];
 var metodoElegido = null;
 var cargandoRetiro = false;
+var stripeVinculado = false;
 
-// Config de redes por moneda
 var REDES_POR_MONEDA = {
     'USDT': [
         { valor: 'usdttrc20', texto: 'TRON (TRC20)' },
@@ -799,6 +838,22 @@ async function cargarSaldo() {
 }
 
 // ================================================================
+// CARGAR ESTADO DE STRIPE (para saber si sugerir vincular)
+// ================================================================
+
+async function cargarEstadoStripe() {
+    try {
+        var resp = await fetchAutenticado('/api/pay/stripe-connect/estado');
+        if (resp.success && resp.data) {
+            stripeVinculado = resp.data.habilitada === true;
+        }
+    } catch (err) {
+        console.warn('Error consultando estado Stripe:', err.message);
+        stripeVinculado = false;
+    }
+}
+
+// ================================================================
 // CARGAR MÉTODOS DISPONIBLES
 // ================================================================
 
@@ -815,8 +870,7 @@ async function cargarMetodos() {
 
     } catch (err) {
         console.error('Error cargando métodos:', err);
-        document.getElementById('cardFormulario').style.display = 'none';
-        document.getElementById('cardSinMetodos').style.display = 'block';
+        mostrarSinMetodos('Error cargando métodos', 'Intenta recargar la página.');
     }
 }
 
@@ -826,6 +880,25 @@ function renderizarMetodos() {
     var cardSinMetodos = document.getElementById('cardSinMetodos');
 
     if (!metodosDisponibles || metodosDisponibles.length === 0) {
+        // ═══ NUEVO: si no hay métodos, mostrar mensaje inteligente ═══
+        var mensajeTitulo = 'Sin métodos de retiro';
+        var mensajeTexto = 'Estamos activando los proveedores de retiro. Vuelve pronto.';
+
+        // Si Stripe no está vinculado, sugerir vincularlo
+        if (!stripeVinculado) {
+            mensajeTitulo = 'Activa retiros por tarjeta';
+            mensajeTexto = 'Vincula tu cuenta de Stripe para poder retirar tus ganancias a tu banco.';
+            document.getElementById('ctaVincularStripe').style.display = 'flex';
+        } else {
+            // Stripe sí está vinculado pero no hay métodos: algo más pasa
+            mensajeTitulo = 'Sin métodos disponibles';
+            mensajeTexto = 'Los proveedores de retiro no están configurados. Contacta a soporte.';
+            document.getElementById('ctaVincularStripe').style.display = 'none';
+        }
+
+        document.getElementById('tituloSinMetodos').textContent = mensajeTitulo;
+        document.getElementById('textoSinMetodos').textContent = mensajeTexto;
+
         cardFormulario.style.display = 'none';
         cardSinMetodos.style.display = 'block';
         return;
@@ -861,9 +934,19 @@ function renderizarMetodos() {
 
     grid.innerHTML = html;
 
-    // Seleccionar el primero automáticamente
     var primero = grid.querySelector('.metodo-opcion');
     if (primero) elegirMetodo(primero);
+}
+
+function mostrarSinMetodos(titulo, texto) {
+    document.getElementById('tituloSinMetodos').textContent = titulo;
+    document.getElementById('textoSinMetodos').textContent = texto;
+    document.getElementById('cardFormulario').style.display = 'none';
+    document.getElementById('cardSinMetodos').style.display = 'block';
+
+    if (!stripeVinculado) {
+        document.getElementById('ctaVincularStripe').style.display = 'flex';
+    }
 }
 
 // ================================================================
@@ -877,15 +960,12 @@ function elegirMetodo(el) {
     el.classList.add('activo');
     metodoElegido = el.getAttribute('data-metodo');
 
-    // Ocultar todos los campos
     document.getElementById('camposSpei').style.display = 'none';
     document.getElementById('camposCrypto').style.display = 'none';
     document.getElementById('camposTarjeta').style.display = 'none';
 
-    // Mostrar los del método elegido
     if (metodoElegido === 'spei') {
         document.getElementById('camposSpei').style.display = 'block';
-        // Restaurar CLABE guardada
         try {
             var clabeGuardada = localStorage.getItem('csariels_pay_clabe_ultima');
             if (clabeGuardada) document.getElementById('inpClabe').value = clabeGuardada;
@@ -893,7 +973,6 @@ function elegirMetodo(el) {
     } else if (metodoElegido === 'crypto') {
         document.getElementById('camposCrypto').style.display = 'block';
         actualizarRedesCrypto();
-        // Restaurar wallet guardada
         try {
             var walletGuardada = localStorage.getItem('csariels_pay_wallet_ultima');
             if (walletGuardada) document.getElementById('inpWallet').value = walletGuardada;
@@ -932,7 +1011,6 @@ function validarFormulario() {
     var helper = document.getElementById('helperMonto');
     var btn = document.getElementById('btnSolicitar');
 
-    // Validar monto
     if (!inpMonto.value || isNaN(monto)) {
         helper.textContent = 'Mínimo $50 MXN';
         helper.className = 'helper';
@@ -957,7 +1035,6 @@ function validarFormulario() {
     helper.textContent = '✓ Monto válido';
     helper.className = 'helper success';
 
-    // Validar destino según método
     if (metodoElegido === 'spei') {
         var clabe = document.getElementById('inpClabe').value.trim();
         if (!/^\d{18}$/.test(clabe)) {
@@ -1108,7 +1185,6 @@ async function confirmarRetiro() {
     if (metodoElegido === 'spei') {
         var clabe = document.getElementById('inpClabe').value.trim();
         payload.destinoUltimos4 = clabe.slice(-4);
-        // También mandamos la CLABE completa como dato extra (para retiro real)
         payload.datosExtra = { clabe_destino: clabe };
     } else if (metodoElegido === 'crypto') {
         payload.monedaDestino = document.getElementById('selCryptoMoneda').value;
@@ -1128,7 +1204,6 @@ async function confirmarRetiro() {
             throw new Error('Respuesta inválida');
         }
 
-        // Guardar destino en localStorage para próxima vez
         try {
             if (metodoElegido === 'spei') {
                 localStorage.setItem('csariels_pay_clabe_ultima', document.getElementById('inpClabe').value.trim());
@@ -1141,15 +1216,12 @@ async function confirmarRetiro() {
         cerrarModal();
         showToast('✔ Retiro solicitado: ' + formatearMonto(monto) + ' MXN', 'success');
 
-        // Recargar saldo e historial
         await cargarSaldo();
         await cargarRetiros();
 
-        // Limpiar formulario
         document.getElementById('inpMonto').value = '';
         validarFormulario();
 
-        // Si el saldo quedó en 0, mostrar aviso
         if (saldoDisponible <= 0) {
             var helper = document.getElementById('helperMonto');
             helper.textContent = 'No tienes saldo disponible actualmente';
@@ -1301,6 +1373,9 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
     configurarFormulario();
+
+    // Cargar en orden: primero Stripe, luego saldo, luego métodos
+    await cargarEstadoStripe();
     await cargarSaldo();
     await cargarMetodos();
     await cargarRetiros();
