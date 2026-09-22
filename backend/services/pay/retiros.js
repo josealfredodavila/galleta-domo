@@ -1,22 +1,23 @@
 // ================================================================
 // SERVICES/PAY/RETIROS.JS
-// CSARIEL'S PAY - SERVICIO DE RETIROS
+// CSARIEL'S PAY - SERVICIO DE RETIROS CON MISMO RIEL
 // ================================================================
 // Maneja el ciclo completo de un retiro:
 //   1. Solicitud del usuario (validaciones + pay_reservar_retiro)
-//   2. Guardar metadata sensible (CLABE completa, wallet) post-RPC
-//   3. Envío al proveedor (crearPayout en el adapter)
-//   4. Cierre por webhook (pay_cerrar_retiro)
+//   2. Validación de mismo riel (el saldo debe venir del mismo método)
+//   3. Guardar metadata sensible (CLABE completa, wallet)
+//   4. Envío al proveedor (crearPayout en el adapter)
+//   5. Cierre por webhook (pay_cerrar_retiro)
+//
+// REGLAS:
+//   - Mismo riel: solo se puede retirar por el riel donde se cobró.
+//   - SPEI: cobros por SPEI se retiran por SPEI.
+//   - Crypto: cobros por crypto se retiran por crypto.
+//   - Tarjeta: cobros por tarjeta quedan BLOQUEADOS hasta que se
+//     habilite retiro por tarjeta (Stripe Connect).
 //
 // La RPC pay_reservar_retiro es la ÚNICA que toca pay_saldos.
 // Desde Node nunca modificamos saldos directamente.
-//
-// Estados del retiro (pay_retiros.estado):
-//   pending     -> reservado, aún no enviado al proveedor
-//   processing  -> enviado al proveedor, esperando confirmación
-//   completed   -> pagado por el proveedor
-//   failed      -> rechazado o falló (saldo devuelto)
-//   cancelled   -> cancelado (saldo devuelto)
 // ================================================================
 
 'use strict';
@@ -35,17 +36,22 @@ const ESTADOS_RETIRO_ACTIVOS = ['pending', 'processing'];
 const MONTO_MINIMO_RETIRO_MXN = 50;
 const MONTO_MAXIMO_RETIRO_MXN = 500000;
 
+// Mapeo de método -> proveedor
 const METODO_A_PROVEEDOR = {
     spei: 'fintoc',
     crypto: 'nowpayments',
     tarjeta: 'stripe'
 };
 
+// Moneda destino por método
 const MONEDA_DESTINO_POR_METODO = {
     spei: 'MXN',
     crypto: null,
     tarjeta: 'MXN'
 };
+
+// Rieles habilitados para RETIRO (tarjeta no está habilitado aún)
+const RIELES_RETIRABLES = ['spei', 'crypto'];
 
 // ================================================================
 // HELPERS INTERNOS
@@ -77,6 +83,142 @@ function validarIdempotencyKey(key) {
 }
 
 // ================================================================
+// CALCULAR SALDO POR RIEL
+// ================================================================
+// Calcula cuánto saldo disponible tiene el usuario en un riel específico.
+//
+// Lógica:
+//   1. Consulta las intenciones pagadas del usuario (pay_intenciones).
+//   2. Suma los montos agrupados por método de pago.
+//   3. Resta los retiros ya completados/procesados por ese método.
+//   4. Devuelve el saldo disponible por riel.
+// ================================================================
+
+async function calcularSaldoPorRiel(cuentaId) {
+    verificarSupabaseAdmin();
+
+    // 1) Traer todas las intenciones pagadas de la cuenta
+    const { data: intenciones, error: errInt } = await supabaseAdmin
+        .from('pay_intenciones')
+        .select('id, monto, metodo_pago, estado, paid_at')
+        .eq('cuenta_receptora_id', cuentaId)
+        .eq('estado', 'paid');
+
+    if (errInt) {
+        logger.error(`[Pay Retiros] Error consultando intenciones: ${errInt.message}`);
+        throw new errors.ErrorInterno('ERROR_DB', errInt.message);
+    }
+
+    // 2) Traer todos los retiros activos o completados de la cuenta
+    const { data: retiros, error: errRet } = await supabaseAdmin
+        .from('pay_retiros')
+        .select('id, monto_mxn, metodo, estado')
+        .eq('cuenta_id', cuentaId)
+        .in('estado', ['pending', 'processing', 'completed']);
+
+    if (errRet) {
+        logger.error(`[Pay Retiros] Error consultando retiros: ${errRet.message}`);
+        throw new errors.ErrorInterno('ERROR_DB', errRet.message);
+    }
+
+    // 3) Sumar cobros por riel
+    const cobrosPorRiel = {
+        spei: 0,
+        crypto: 0,
+        tarjeta: 0
+    };
+
+    for (const intencion of intenciones || []) {
+        const metodo = intencion.metodo_pago;
+        const monto = Number(intencion.monto) || 0;
+
+        if (metodo === 'spei') {
+            cobrosPorRiel.spei += monto;
+        } else if (metodo === 'usdt' || metodo === 'usdc') {
+            cobrosPorRiel.crypto += monto;
+        } else if (metodo === 'tarjeta') {
+            cobrosPorRiel.tarjeta += monto;
+        }
+    }
+
+    // 4) Sumar retiros por riel (ya sea pending, processing o completed)
+    const retirosPorRiel = {
+        spei: 0,
+        crypto: 0,
+        tarjeta: 0
+    };
+
+    for (const retiro of retiros || []) {
+        const metodo = retiro.metodo;
+        const monto = Number(retiro.monto_mxn) || 0;
+
+        if (metodo === 'spei') {
+            retirosPorRiel.spei += monto;
+        } else if (metodo === 'crypto') {
+            retirosPorRiel.crypto += monto;
+        } else if (metodo === 'tarjeta') {
+            retirosPorRiel.tarjeta += monto;
+        }
+    }
+
+    // 5) Calcular saldo disponible por riel
+    const saldoPorRiel = {
+        spei: Math.max(0, Math.round((cobrosPorRiel.spei - retirosPorRiel.spei) * 100) / 100),
+        crypto: Math.max(0, Math.round((cobrosPorRiel.crypto - retirosPorRiel.crypto) * 100) / 100),
+        tarjeta: Math.max(0, Math.round((cobrosPorRiel.tarjeta - retirosPorRiel.tarjeta) * 100) / 100)
+    };
+
+    return {
+        cobros: cobrosPorRiel,
+        retiros: retirosPorRiel,
+        disponible: saldoPorRiel
+    };
+}
+
+// ================================================================
+// VALIDAR MISMO RIEL
+// ================================================================
+// Verifica que el usuario tenga saldo suficiente en el riel elegido.
+// ================================================================
+
+async function validarMismoRiel(cuentaId, metodo, monto) {
+    // Si el riel no está habilitado para retiro, rechazar
+    if (!RIELES_RETIRABLES.includes(metodo)) {
+        throw new errors.ErrorAutorizacion(
+            'RIEL_NO_HABILITADO',
+            `El retiro por ${metodo} no está disponible todavía. ` +
+            `Los cobros por ${metodo} se acumulan en tu saldo y podrán retirarse cuando se habilite.`
+        );
+    }
+
+    const saldos = await calcularSaldoPorRiel(cuentaId);
+
+    const saldoRiel = saldos.disponible[metodo] || 0;
+
+    if (saldoRiel < monto) {
+        const saldoTotal = Object.values(saldos.disponible).reduce(function (acc, v) { return acc + v; }, 0);
+
+        // Mensaje inteligente: si tiene saldo total suficiente pero no en ese riel
+        if (saldoTotal >= monto) {
+            throw new errors.ErrorAutorizacion(
+                'SALDO_RIEL_INSUFICIENTE',
+                `Solo tienes $${saldoRiel.toFixed(2)} MXN disponibles en ${metodo.toUpperCase()}. ` +
+                `Puedes retirar hasta ese monto por este método. ` +
+                `Si quieres retirar más, cobra por ${metodo.toUpperCase()}.`
+            );
+        }
+
+        throw errors.errorSaldoInsuficiente(saldoRiel, monto);
+    }
+
+    return {
+        saldo_riel: saldoRiel,
+        saldo_total: Object.values(saldos.disponible).reduce(function (acc, v) { return acc + v; }, 0),
+        saldos_detalle: saldos.disponible
+    };
+}
+
+// ================================================================
 // VALIDAR DESTINO SEGÚN MÉTODO
 // ================================================================
 
@@ -84,7 +226,6 @@ function validarDestino(datos) {
     const metodo = datos.metodo;
 
     if (metodo === 'spei') {
-        // Para SPEI necesitamos la CLABE completa (18 dígitos)
         const clabe = datos.clabeDestino || (datos.datosExtra && datos.datosExtra.clabe_destino);
 
         if (!clabe || !/^\d{18}$/.test(String(clabe))) {
@@ -93,7 +234,6 @@ function validarDestino(datos) {
             });
         }
 
-        // Y los últimos 4 dígitos (para mostrar en historial)
         if (!datos.destinoUltimos4 || !/^\d{4}$/.test(String(datos.destinoUltimos4))) {
             throw errors.errorDestinoRetiroInvalido({
                 motivo: 'SPEI requiere destino_ultimos4 (4 dígitos)'
@@ -123,15 +263,6 @@ function validarDestino(datos) {
         return;
     }
 
-    if (metodo === 'tarjeta') {
-        if (!datos.destinoUltimos4 || !/^\d{4}$/.test(String(datos.destinoUltimos4))) {
-            throw errors.errorDestinoRetiroInvalido({
-                motivo: 'Tarjeta requiere destino_ultimos4 (4 dígitos)'
-            });
-        }
-        return;
-    }
-
     throw errors.errorMetodoInvalido(metodo);
 }
 
@@ -149,7 +280,7 @@ function cargarAdapterPayout(proveedor) {
             return adapter;
         } catch (errCarga) {
             throw errors.errorProveedorNoConfigurado(
-                'stripe-connect (payouts no implementados todavía)'
+                'stripe-connect (retiros por tarjeta no habilitados todavía)'
             );
         }
     }
@@ -196,16 +327,6 @@ async function cerrarRetiroConProveedor(retiroId, estado, providerData) {
 // ================================================================
 // GUARDAR METADATA SENSIBLE POST-RESERVA
 // ================================================================
-// La RPC pay_reservar_retiro guarda los campos básicos en pay_retiros
-// pero no la CLABE completa (por seguridad, para no guardar datos
-// bancarios completos en la tabla principal).
-//
-// Aquí guardamos la CLABE completa en metadata.clabe_destino.
-// El adapter de Fintoc payouts la lee para crear el SPEI.
-//
-// NOTA de seguridad: la CLABE se guarda en un campo jsonb
-// que solo el backend con service_role puede leer.
-// ================================================================
 
 async function guardarMetadataSensible(retiroId, metodo, datosExtra) {
     const de = datosExtra || {};
@@ -216,8 +337,6 @@ async function guardarMetadataSensible(retiroId, metodo, datosExtra) {
     }
 
     if (metodo === 'crypto' && de.wallet_destino) {
-        // La wallet ya se guarda en la columna wallet_destino
-        // pero también la dejamos en metadata por consistencia
         metadata.wallet_destino_completa = String(de.wallet_destino);
     }
 
@@ -235,9 +354,6 @@ async function guardarMetadataSensible(retiroId, metodo, datosExtra) {
 
     if (error) {
         logger.warning(`[Pay Retiros] No se pudo guardar metadata sensible: ${error.message}`);
-        // No lanzamos: si falla, el payout del adapter fallará con un
-        // mensaje claro ("falta CLABE destino") y el usuario podrá
-        // reintentar. El saldo se devuelve automáticamente.
     }
 }
 
@@ -288,7 +404,7 @@ async function solicitarRetiro(datos) {
         throw errors.errorIdempotencyKeyFaltante();
     }
 
-    // Validar destino según método (incluye CLABE completa para SPEI)
+    // Validar destino según método
     validarDestino({
         metodo: metodo,
         destinoUltimos4: d.destinoUltimos4,
@@ -329,25 +445,12 @@ async function solicitarRetiro(datos) {
         throw errors.errorPaisNoSoportado(codigoPais);
     }
 
+    // ---------- VALIDAR MISMO RIEL ----------
+    // Verifica que el usuario tenga saldo suficiente en el riel elegido.
+    // Si no lo tiene, rechaza el retiro con mensaje claro.
+    await validarMismoRiel(d.cuentaId, metodo, monto);
+
     const proveedor = METODO_A_PROVEEDOR[metodo];
-
-    // ---------- Verificar saldo ----------
-    const { data: saldos, error: errSaldos } = await supabaseAdmin
-        .from('pay_saldos')
-        .select('disponible_mxn, pendiente_mxn')
-        .eq('cuenta_id', d.cuentaId)
-        .maybeSingle();
-
-    if (errSaldos) {
-        logger.error(`[Pay Retiros] Error consultando saldos: ${errSaldos.message}`);
-        throw new errors.ErrorInterno('ERROR_DB', errSaldos.message);
-    }
-
-    const disponible = saldos ? Number(saldos.disponible_mxn) || 0 : 0;
-
-    if (disponible < monto) {
-        throw errors.errorSaldoInsuficiente(disponible, monto);
-    }
 
     // ---------- Reservar el retiro (RPC) ----------
     const { data: retiroId, error: errReserva } = await supabaseAdmin.rpc(
@@ -370,7 +473,10 @@ async function solicitarRetiro(datos) {
 
         const msg = errReserva.message || '';
         if (msg.includes('INSUFFICIENT_AVAILABLE_BALANCE')) {
-            throw errors.errorSaldoInsuficiente(disponible, monto);
+            // Mensaje claro: el saldo total alcanza pero el riel no
+            const saldos = await calcularSaldoPorRiel(d.cuentaId).catch(function () { return null; });
+            const saldoRiel = saldos && saldos.disponible ? (saldos.disponible[metodo] || 0) : 0;
+            throw errors.errorSaldoInsuficiente(saldoRiel, monto);
         }
         if (msg.includes('PARAMETRO_REQUERIDO') || msg.includes('PARAMETRO_INVALIDO')) {
             throw errors.errorParametroRequerido(msg);
@@ -383,9 +489,7 @@ async function solicitarRetiro(datos) {
         throw new errors.ErrorInterno('ERROR_RESERVANDO_RETIRO', 'sin retiro_id');
     }
 
-    // ---------- GUARDAR METADATA SENSIBLE (NUEVO) ----------
-    // Guardamos la CLABE completa en metadata.clabe_destino
-    // para que fintoc-payout.js pueda crear el SPEI saliente.
+    // ---------- GUARDAR METADATA SENSIBLE ----------
     await guardarMetadataSensible(retiroId, metodo, d.datosExtra);
 
     // ---------- Cargar el retiro recién creado ----------
@@ -400,7 +504,7 @@ async function solicitarRetiro(datos) {
         throw new errors.ErrorInterno('ERROR_CARGANDO_RETIRO', errGet ? errGet.message : 'sin datos');
     }
 
-    // ---------- Si el retiro ya estaba en estado final, devolverlo ----------
+    // ---------- Si ya estaba en estado final, devolverlo ----------
     if (ESTADOS_RETIRO_FINALES.includes(retiro.estado)) {
         logger.info(`[Pay Retiros] Retiro ${retiroId} ya en estado final (${retiro.estado})`);
         return retiro;
@@ -426,7 +530,7 @@ async function solicitarRetiro(datos) {
         throw errAdapter;
     }
 
-    // ---------- Crear el payout en el proveedor ----------
+    // ---------- Crear el payout ----------
     let resultadoPayout;
     try {
         resultadoPayout = await adapter.crearPayout(retiro);
@@ -468,7 +572,7 @@ async function solicitarRetiro(datos) {
         throw errPayout;
     }
 
-    // ---------- Actualizar el retiro con los datos del proveedor ----------
+    // ---------- Actualizar el retiro con datos del proveedor ----------
     const actualizacion = {
         estado: resultadoPayout.estado_inmediato || 'processing',
         provider_transfer_id: resultadoPayout.provider_transfer_id || null,
@@ -664,7 +768,7 @@ async function listarRetiros(opciones) {
 }
 
 // ================================================================
-// OBTENER UN RETIRO (con verificación de ownership)
+// OBTENER UN RETIRO
 // ================================================================
 
 async function obtenerRetiro(opciones) {
@@ -709,10 +813,13 @@ module.exports = {
     cerrarRetiroConProveedor: cerrarRetiroConProveedor,
     listarRetiros: listarRetiros,
     obtenerRetiro: obtenerRetiro,
+    calcularSaldoPorRiel: calcularSaldoPorRiel,
+    validarMismoRiel: validarMismoRiel,
 
     ESTADOS_RETIRO_FINALES: ESTADOS_RETIRO_FINALES,
     ESTADOS_RETIRO_ACTIVOS: ESTADOS_RETIRO_ACTIVOS,
     METODO_A_PROVEEDOR: METODO_A_PROVEEDOR,
+    RIELES_RETIRABLES: RIELES_RETIRABLES,
     MONTO_MINIMO_RETIRO_MXN: MONTO_MINIMO_RETIRO_MXN,
     MONTO_MAXIMO_RETIRO_MXN: MONTO_MAXIMO_RETIRO_MXN
 };
