@@ -1,0 +1,818 @@
+<!-- ================================================================
+     CSARIEL'S ECOSYSTEM
+     Csariel's Pay - Registrar selfie de verificación
+     Ruta: /features/pay/verificar-selfie.html
+     ================================================================ -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>◈ Verificar selfie · Csariel's Pay</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+
+    <script src="/features/shared/js/apariencia-global.js"></script>
+
+    <style>
+        :root {
+            --gold: #D4AF37;
+            --gold-dark: #b8923a;
+            --gold-light: #e8c84a;
+            --green-deep: #0F2D1A;
+            --green-mid: #1a4a2a;
+            --green-bright: #2a6a3a;
+            --space: #05080f;
+            --text-primary: #f0f4f8;
+            --text-secondary: #c0d8e8;
+            --text-muted: #8aa8b8;
+            --glass-bg: rgba(15, 45, 26, 0.55);
+            --glass-border: rgba(212, 175, 55, 0.15);
+            --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
+            --radius: 16px;
+            --radius-xl: 24px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --success: #00d68f;
+            --danger: #ff3366;
+            --warning: #f7d44a;
+            --cyan: #00e5ff;
+            --purple: #a855f7;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--space);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            background-image: radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
+        }
+
+        .nebula { position: fixed; border-radius: 50%; filter: blur(120px); opacity: 0.12; pointer-events: none; z-index: 0; animation: nebula-drift 25s ease-in-out infinite alternate; }
+        .nebula-1 { width: 700px; height: 700px; background: var(--green-bright); top: -15%; right: -15%; }
+        .nebula-2 { width: 600px; height: 600px; background: var(--gold-light); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.06; }
+        @keyframes nebula-drift { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(40px,-30px) scale(1.15); } }
+
+        .app { position: relative; z-index: 1; max-width: 520px; width: 100%; margin: 0 auto; padding: 12px 16px 30px; }
+
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0 14px; border-bottom: 1px solid var(--glass-border);
+            background: rgba(5, 8, 15, 0.92); position: sticky; top: 0; z-index: 100;
+        }
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .logo-hex { font-size: 1.8rem; color: var(--gold); font-family: 'Orbitron', monospace; }
+        .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--text-primary); letter-spacing: 2px; }
+        .logo-text span { color: var(--gold); }
+        .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; }
+
+        .main-nav {
+            display: flex; gap: 4px; background: rgba(15,45,26,0.3); border-radius: var(--radius);
+            padding: 4px; border: 1px solid var(--glass-border); margin: 16px 0 20px; overflow-x: auto;
+        }
+        .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; white-space: nowrap; transition: var(--transition); display: flex; align-items: center; gap: 6px; }
+        .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212,175,55,0.05); }
+        .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); }
+        .main-nav .nav-link .nav-simbolo { color: var(--gold); opacity: 0.7; }
+
+        .pay-header {
+            text-align: center; padding: 20px 0 24px;
+        }
+        .pay-header h1 {
+            font-family: 'Orbitron', monospace; font-size: 1.4rem;
+            color: var(--text-primary); margin-bottom: 8px;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .pay-header h1 .simbolo { color: var(--gold); }
+        .pay-header p { font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; }
+
+        .card {
+            background: var(--glass-bg); border: 1px solid var(--glass-border);
+            border-radius: var(--radius); padding: 24px 20px; margin-bottom: 16px;
+        }
+
+        .info-box {
+            background: rgba(0,229,255,0.06);
+            border: 1px solid rgba(0,229,255,0.25);
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-size: 0.72rem; color: var(--cyan);
+            line-height: 1.6; margin-bottom: 18px;
+        }
+        .info-box.warning {
+            background: rgba(247,212,74,0.08);
+            border-color: rgba(247,212,74,0.3);
+            color: var(--warning);
+        }
+        .info-box.success {
+            background: rgba(0,214,143,0.08);
+            border-color: rgba(0,214,143,0.3);
+            color: var(--success);
+        }
+        .info-box.danger {
+            background: rgba(255,51,102,0.08);
+            border-color: rgba(255,51,102,0.3);
+            color: var(--danger);
+        }
+
+        .camara-wrap {
+            position: relative;
+            width: 100%;
+            max-width: 320px;
+            margin: 0 auto 20px;
+            aspect-ratio: 1;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 3px solid var(--gold);
+            background: #000;
+            box-shadow: var(--shadow-gold);
+        }
+        .camara-wrap video {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+        }
+        .camara-wrap .overlay-circulo {
+            position: absolute; inset: 0;
+            border-radius: 50%;
+            border: 2px dashed rgba(212,175,55,0.5);
+            pointer-events: none;
+        }
+        .camara-wrap .overlay-estado {
+            position: absolute;
+            bottom: 12px; left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.75);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.65rem;
+            font-family: 'Orbitron', monospace;
+            color: var(--text-primary);
+            display: flex; align-items: center; gap: 6px;
+            white-space: nowrap;
+        }
+        .camara-wrap .overlay-estado.ok { color: var(--success); }
+        .camara-wrap .overlay-estado.warn { color: var(--warning); }
+        .camara-wrap .overlay-estado.err { color: var(--danger); }
+
+        .instrucciones {
+            background: rgba(212,175,55,0.06);
+            border: 1px solid rgba(212,175,55,0.2);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 18px;
+        }
+        .instrucciones .titulo {
+            font-size: 0.72rem; font-weight: 700;
+            color: var(--gold); margin-bottom: 8px;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .instrucciones ul {
+            list-style: none; padding: 0;
+        }
+        .instrucciones ul li {
+            font-size: 0.72rem; color: var(--text-secondary);
+            padding: 4px 0; padding-left: 20px;
+            position: relative; line-height: 1.5;
+        }
+        .instrucciones ul li::before {
+            content: '◆';
+            position: absolute; left: 0;
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
+            font-size: 0.65rem;
+        }
+
+        .btn-primario {
+            width: 100%;
+            padding: 16px; border-radius: 30px;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space); border: none;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700; font-size: 0.85rem;
+            cursor: pointer; transition: var(--transition);
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            text-decoration: none;
+        }
+        .btn-primario:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-gold);
+        }
+        .btn-primario:disabled {
+            opacity: 0.4; cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secundario {
+            width: 100%; padding: 14px; border-radius: 30px;
+            background: transparent;
+            border: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+            font-family: 'Inter', sans-serif;
+            font-weight: 600; font-size: 0.78rem;
+            cursor: pointer; transition: var(--transition);
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+            text-decoration: none;
+            margin-top: 10px;
+        }
+        .btn-secundario:hover { border-color: var(--gold); color: var(--gold); }
+
+        .loading-state {
+            text-align: center; padding: 60px 20px;
+            color: var(--text-muted);
+        }
+        .loading-state .spinner {
+            width: 40px; height: 40px;
+            border: 3px solid rgba(212,175,55,0.15);
+            border-top-color: var(--gold);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 12px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .estado-vacio {
+            text-align: center; padding: 40px 20px;
+        }
+        .estado-vacio .icono-grande {
+            font-size: 4rem; display: block; margin-bottom: 16px;
+            color: var(--success);
+            font-family: 'Orbitron', monospace;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        .estado-vacio h2 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.1rem; color: var(--success);
+            margin-bottom: 10px;
+        }
+        .estado-vacio p {
+            font-size: 0.82rem; color: var(--text-secondary);
+            line-height: 1.6; margin-bottom: 22px;
+        }
+
+        .toast {
+            position: fixed; bottom: 30px; right: 20px;
+            background: var(--green-deep); border: 1px solid var(--gold);
+            color: var(--gold); padding: 14px 24px;
+            border-radius: 12px; font-size: 0.8rem;
+            transform: translateY(100px); opacity: 0;
+            transition: all 0.4s ease; z-index: 99999;
+            max-width: 320px; pointer-events: none;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { border-color: var(--danger); color: var(--danger); }
+        .toast.warning { border-color: var(--warning); color: var(--warning); }
+        .toast.success { border-color: var(--success); color: var(--success); }
+
+        .footer {
+            margin-top: 30px; padding-top: 16px;
+            border-top: 1px solid var(--glass-border);
+            text-align: center;
+            font-size: 0.68rem; color: var(--text-muted);
+        }
+        .footer .brand { color: var(--gold); font-weight: 600; }
+
+        html.tema-dia, html[data-tema="dia"] {
+            --space: #f5f7fa;
+            --text-primary: #1a2332;
+            --text-secondary: #4a5568;
+            --text-muted: #718096;
+            --glass-bg: rgba(255, 255, 255, 0.9);
+            --glass-border: rgba(0, 0, 0, 0.1);
+        }
+        html.tema-dia body, html[data-tema="dia"] body {
+            background: #f5f7fa !important;
+            color: var(--text-primary) !important;
+        }
+        html.tema-dia .nebula, html[data-tema="dia"] .nebula { display: none !important; }
+        html.tema-dia .header, html[data-tema="dia"] .header { background: rgba(255, 255, 255, 0.95) !important; }
+        html.tema-dia .logo-text, html[data-tema="dia"] .logo-text { color: var(--text-primary) !important; }
+    </style>
+</head>
+<body>
+
+    <div class="nebula nebula-1" aria-hidden="true"></div>
+    <div class="nebula nebula-2" aria-hidden="true"></div>
+
+    <div class="app">
+
+        <header class="header">
+            <a href="/features/pay/panel.html" class="logo">
+                <span class="logo-hex">◈</span>
+                <span class="logo-text">Csariel<span>'s</span></span>
+                <span class="logo-badge">✦ PAY</span>
+            </a>
+        </header>
+
+        <nav class="main-nav">
+            <a href="/features/pay/panel.html" class="nav-link"><span class="nav-simbolo">◈</span> Mi Pay</a>
+            <a href="/features/pay/cobrar.html" class="nav-link"><span class="nav-simbolo">◆</span> Cobrar</a>
+            <a href="/features/pay/retirar.html" class="nav-link"><span class="nav-simbolo">◇</span> Retirar</a>
+            <a href="/features/pay/verificar-selfie.html" class="nav-link active"><span class="nav-simbolo">😊</span> Selfie</a>
+        </nav>
+
+        <div class="pay-header">
+            <h1><span class="simbolo">😊</span> Verificar <span>selfie</span></h1>
+            <p>Registra una selfie clara para habilitar el reconocimiento facial en tus retiros.</p>
+        </div>
+
+        <div id="loaderInicial" class="loading-state">
+            <div class="spinner"></div>
+            <p>Cargando...</p>
+        </div>
+
+        <!-- PANTALLA: Registro de selfie -->
+        <div id="pantallaRegistro" style="display:none;">
+            <div class="card">
+
+                <div class="info-box">
+                    <strong>📸 ¿Cómo funciona?</strong><br>
+                    Tu selfie se usará <strong>solo</strong> para verificar tu identidad cuando retires dinero. Nunca se muestra a otros usuarios ni se comparte con terceros.
+                </div>
+
+                <div class="instrucciones">
+                    <div class="titulo"><span>◈</span> Instrucciones para una buena selfie</div>
+                    <ul>
+                        <li>Buena iluminación (luz natural o de frente)</li>
+                        <li>Sin gorra, sin lentes de sol, sin cubrebocas</li>
+                        <li>Rostro completo visible en el círculo</li>
+                        <li>Sin filtros ni efectos</li>
+                        <li>Mira directo a la cámara</li>
+                    </ul>
+                </div>
+
+                <div class="camara-wrap">
+                    <video id="videoSelfie" autoplay playsinline muted></video>
+                    <div class="overlay-circulo"></div>
+                    <div class="overlay-estado" id="estadoDeteccion">
+                        <span>⏳</span> <span>Iniciando cámara...</span>
+                    </div>
+                </div>
+
+                <div id="errorCamara" class="info-box danger" style="display:none;"></div>
+
+                <button class="btn-primario" id="btnCapturar" onclick="capturarYGuardar()" disabled>
+                    <span>📸</span> Capturar selfie
+                </button>
+
+                <a href="/features/pay/retirar.html" class="btn-secundario">
+                    Cancelar y volver
+                </a>
+
+            </div>
+        </div>
+
+        <!-- PANTALLA: Éxito -->
+        <div id="pantallaExito" style="display:none;">
+            <div class="card">
+                <div class="estado-vacio">
+                    <span class="icono-grande">✔</span>
+                    <h2>¡Selfie registrada!</h2>
+                    <p>
+                        Ya puedes usar el <strong>reconocimiento facial</strong> para verificar tu identidad en los retiros.
+                    </p>
+                    <a href="/features/pay/retirar.html" class="btn-primario" style="width:100%;">
+                        <span>◈</span> Ir a retirar
+                    </a>
+                    <a href="/features/pay/panel.html" class="btn-secundario">
+                        Volver al panel
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <span class="brand">© Csariel's</span> · Csariel's Pay
+        </footer>
+
+    </div>
+
+    <div class="toast" id="toast" role="alert" aria-live="polite"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.min.js"></script>
+<script src="/features/shared/js/idiomas.js"></script>
+<script>
+// ================================================================
+// CSARIEL'S PAY - REGISTRAR SELFIE DE VERIFICACIÓN
+// ================================================================
+
+var supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
+var supabaseKey = 'sb_publishable_S3jONAz3mRO4JKhUdI1A_-nsyVhKu';
+var supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+var sessionUser = null;
+var streamCamara = null;
+var faceApiCargado = false;
+var ultimoEstadoDeteccion = null;
+
+// ================================================================
+// UTILIDADES
+// ================================================================
+
+function showToast(mensaje, tipo) {
+    try {
+        var toastEl = document.getElementById('toast');
+        if (!toastEl) { console.warn(mensaje); return; }
+        toastEl.textContent = mensaje;
+        toastEl.className = 'toast show';
+        if (tipo === 'error') toastEl.classList.add('error');
+        else if (tipo === 'warning') toastEl.classList.add('warning');
+        else if (tipo === 'success') toastEl.classList.add('success');
+        clearTimeout(toastEl._timeout);
+        toastEl._timeout = setTimeout(function () { toastEl.classList.remove('show'); }, 4000);
+    } catch (e) { console.warn('Toast error:', e); }
+}
+
+function escapeHTML(texto) {
+    if (!texto) return '';
+    var div = document.createElement('div');
+    div.textContent = texto;
+    return div.innerHTML;
+}
+
+// ================================================================
+// FETCH AUTENTICADO
+// ================================================================
+
+async function fetchAutenticado(url, opciones) {
+    var opts = opciones || {};
+    var session = await supabaseClient.auth.getSession();
+    var token = session.data.session ? session.data.session.access_token : null;
+
+    if (!token) throw new Error('No autenticado');
+
+    var headers = Object.assign(
+        {
+            'Authorization': 'Bearer ' + token,
+            'Accept': 'application/json'
+        },
+        opts.headers || {}
+    );
+
+    if (opts.body && typeof opts.body === 'object') {
+        headers['Content-Type'] = 'application/json';
+        opts.body = JSON.stringify(opts.body);
+    }
+
+    opts.headers = headers;
+
+    var resp = await fetch(url, opts);
+    var data = await resp.json().catch(function () { return {}; });
+
+    if (!resp.ok) {
+        var err = new Error(data.error || 'Error HTTP ' + resp.status);
+        err.status = resp.status;
+        err.data = data;
+        throw err;
+    }
+
+    return data;
+}
+
+// ================================================================
+// CARGAR USUARIO
+// ================================================================
+
+async function cargarUsuario() {
+    try {
+        var result = await supabaseClient.auth.getSession();
+        var session = result.data.session;
+        if (!session) return null;
+        sessionUser = session.user;
+        return sessionUser;
+    } catch (e) {
+        console.error('Error usuario:', e);
+        return null;
+    }
+}
+
+// ================================================================
+// CARGAR FACE-API
+// ================================================================
+
+async function cargarFaceApi() {
+    if (faceApiCargado) return true;
+
+    try {
+        var MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
+
+        await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+        await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+
+        faceApiCargado = true;
+        return true;
+    } catch (err) {
+        console.error('Error cargando face-api:', err);
+        throw new Error('No se pudieron cargar los modelos de detección facial');
+    }
+}
+
+// ================================================================
+// ABRIR CÁMARA
+// ================================================================
+
+async function abrirCamara() {
+    try {
+        streamCamara = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: 'user',
+                width: { ideal: 640 },
+                height: { ideal: 640 }
+            }
+        });
+
+        var video = document.getElementById('videoSelfie');
+        video.srcObject = streamCamara;
+
+        await new Promise(function (r) { setTimeout(r, 800); });
+
+        return true;
+    } catch (err) {
+        console.error('Error abriendo cámara:', err);
+
+        var errorEl = document.getElementById('errorCamara');
+        errorEl.style.display = 'block';
+
+        var msg = 'No se pudo acceder a la cámara.';
+        if (err.name === 'NotAllowedError') {
+            msg = 'Permiso de cámara denegado. Habilita la cámara en la configuración de tu navegador.';
+        } else if (err.name === 'NotFoundError') {
+            msg = 'No se encontró ninguna cámara en tu dispositivo.';
+        } else if (err.name === 'NotReadableError') {
+            msg = 'La cámara está siendo usada por otra aplicación.';
+        } else {
+            msg = 'Error al acceder a la cámara: ' + err.message;
+        }
+
+        errorEl.innerHTML = '<strong>✶ ' + escapeHTML(msg) + '</strong>';
+        return false;
+    }
+}
+
+function cerrarCamara() {
+    if (streamCamara) {
+        streamCamara.getTracks().forEach(function (t) { t.stop(); });
+        streamCamara = null;
+    }
+}
+
+// ================================================================
+// MONITOR DE DETECCIÓN
+// ================================================================
+
+async function iniciarMonitorDeteccion() {
+    var video = document.getElementById('videoSelfie');
+    var estadoEl = document.getElementById('estadoDeteccion');
+    var btnCapturar = document.getElementById('btnCapturar');
+
+    var ultimoReporte = 0;
+
+    async function loop() {
+        if (!streamCamara) return;
+
+        try {
+            var ahora = Date.now();
+
+            // Solo procesar cada 300ms
+            if (ahora - ultimoReporte > 300) {
+                ultimoReporte = ahora;
+
+                var deteccion = await faceapi.detectSingleFace(
+                    video,
+                    new faceapi.TinyFaceDetectorOptions()
+                );
+
+                if (deteccion) {
+                    // Detectar landmarks para validar ojos/nariz visibles
+                    var landmarks = await faceapi.detectSingleFace(
+                        video,
+                        new faceapi.TinyFaceDetectorOptions()
+                    ).withFaceLandmarks();
+
+                    if (landmarks) {
+                        var score = deteccion.score;
+                        var box = deteccion.box;
+
+                        // Verificar que el rostro esté centrado y del tamaño adecuado
+                        var ancho = video.videoWidth;
+                        var alto = video.videoHeight;
+                        var centroX = box.x + box.width / 2;
+                        var centroY = box.y + box.height / 2;
+
+                        var centrado = Math.abs(centroX - ancho / 2) < ancho * 0.25 &&
+                                       Math.abs(centroY - alto / 2) < alto * 0.25;
+
+                        var tamanoAdecuado = box.width > ancho * 0.3 && box.width < ancho * 0.9;
+
+                        if (!centrado) {
+                            setEstadoDeteccion('warn', '✧', 'Centra tu rostro en el círculo');
+                            btnCapturar.disabled = true;
+                        } else if (!tamanoAdecuado) {
+                            if (box.width < ancho * 0.3) {
+                                setEstadoDeteccion('warn', '✧', 'Acércate un poco más');
+                            } else {
+                                setEstadoDeteccion('warn', '✧', 'Aléjate un poco');
+                            }
+                            btnCapturar.disabled = true;
+                        } else if (score < 0.5) {
+                            setEstadoDeteccion('warn', '✧', 'Mejora la iluminación');
+                            btnCapturar.disabled = true;
+                        } else {
+                            setEstadoDeteccion('ok', '●', 'Perfecto, puedes capturar');
+                            btnCapturar.disabled = false;
+                        }
+
+                        ultimoEstadoDeteccion = {
+                            detectado: true,
+                            centrado: centrado,
+                            tamano_adecuado: tamanoAdecuado,
+                            score: score
+                        };
+                    } else {
+                        setEstadoDeteccion('warn', '✧', 'No se detecta bien tu rostro');
+                        btnCapturar.disabled = true;
+                    }
+                } else {
+                    setEstadoDeteccion('warn', '◈', 'Coloca tu rostro frente a la cámara');
+                    btnCapturar.disabled = true;
+                }
+            }
+        } catch (err) {
+            // Silencioso
+        }
+
+        if (streamCamara) {
+            setTimeout(loop, 300);
+        }
+    }
+
+    loop();
+}
+
+function setEstadoDeteccion(tipo, icono, texto) {
+    var estadoEl = document.getElementById('estadoDeteccion');
+    if (!estadoEl) return;
+
+    estadoEl.className = 'overlay-estado ' + tipo;
+    estadoEl.innerHTML = '<span>' + icono + '</span> <span>' + escapeHTML(texto) + '</span>';
+}
+
+// ================================================================
+// CAPTURAR Y GUARDAR SELFIE
+// ================================================================
+
+async function capturarYGuardar() {
+    var btn = document.getElementById('btnCapturar');
+    btn.disabled = true;
+    btn.innerHTML = '<span>⏳</span> Procesando...';
+
+    try {
+        var video = document.getElementById('videoSelfie');
+
+        if (!video.videoWidth || !video.videoHeight) {
+            throw new Error('La cámara no está lista');
+        }
+
+        // 1) Capturar frame en canvas
+        var canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+
+        var ctx = canvas.getContext('2d');
+
+        // Espejo horizontal para que se vea natural
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        // 2) Convertir a blob
+        var blob = await new Promise(function (resolve) {
+            canvas.toBlob(resolve, 'image/jpeg', 0.92);
+        });
+
+        if (!blob) {
+            throw new Error('No se pudo procesar la imagen');
+        }
+
+        // 3) Subir a Supabase Storage
+        var nombreArchivo = 'pay_selfies/' + sessionUser.id + '.jpg';
+
+        // Eliminar la anterior si existe (para reemplazar)
+        try {
+            await supabaseClient.storage.from('mercado_docs').remove([nombreArchivo]);
+        } catch (e) { /* silencioso */ }
+
+        var { data: subida, error: errSubida } = await supabaseClient
+            .storage
+            .from('mercado_docs')
+            .upload(nombreArchivo, blob, {
+                contentType: 'image/jpeg',
+                upsert: true,
+                cacheControl: '3600'
+            });
+
+        if (errSubida) {
+            throw new Error('No se pudo subir la selfie: ' + errSubida.message);
+        }
+
+        // 4) Obtener URL pública (o firmada)
+        var { data: urlData } = supabaseClient
+            .storage
+            .from('mercado_docs')
+            .getPublicUrl(nombreArchivo);
+
+        var urlSelfie = urlData.publicUrl;
+
+        // 5) Guardar URL en el backend
+        var respGuardar = await fetchAutenticado('/api/pay/retiros/registrar-selfie', {
+            method: 'POST',
+            body: { url_selfie: urlSelfie }
+        });
+
+        if (!respGuardar.success) {
+            throw new Error('No se pudo guardar la selfie en el sistema');
+        }
+
+        // 6) Éxito
+        cerrarCamara();
+        mostrarExito();
+
+    } catch (err) {
+        console.error('Error capturando selfie:', err);
+        showToast('✶ ' + (err.message || 'Error al capturar la selfie'), 'error');
+
+        btn.disabled = false;
+        btn.innerHTML = '<span>📸</span> Capturar selfie';
+    }
+}
+
+// ================================================================
+// MOSTRAR ÉXITO
+// ================================================================
+
+function mostrarExito() {
+    document.getElementById('pantallaRegistro').style.display = 'none';
+    document.getElementById('pantallaExito').style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ================================================================
+// INICIALIZACIÓN
+// ================================================================
+
+document.addEventListener('DOMContentLoaded', async function () {
+    await cargarUsuario();
+
+    if (!sessionUser) {
+        document.getElementById('loaderInicial').innerHTML =
+            '<p style="color: var(--danger);">Debes iniciar sesión</p>' +
+            '<a href="/" style="color: var(--gold); text-decoration: underline; display: inline-block; margin-top: 12px;">Volver al inicio</a>';
+        return;
+    }
+
+    try {
+        // Cargar face-api
+        await cargarFaceApi();
+
+        // Abrir cámara
+        var ok = await abrirCamara();
+
+        document.getElementById('loaderInicial').style.display = 'none';
+        document.getElementById('pantallaRegistro').style.display = 'block';
+
+        if (ok) {
+            await iniciarMonitorDeteccion();
+        }
+
+    } catch (err) {
+        console.error('Error inicialización:', err);
+        document.getElementById('loaderInicial').innerHTML =
+            '<div style="text-align:center; padding:40px 20px;">' +
+                '<p style="color: var(--danger); font-size:0.9rem;">' + escapeHTML(err.message) + '</p>' +
+                '<a href="/features/pay/retirar.html" style="color: var(--gold); text-decoration: underline; display: inline-block; margin-top: 12px;">Volver</a>' +
+            '</div>';
+    }
+
+    setTimeout(async function () {
+        try {
+            if (typeof window.inicializarIdiomas === 'function') {
+                await window.inicializarIdiomas();
+            }
+        } catch (e) { /* silencioso */ }
+    }, 400);
+});
+
+window.addEventListener('beforeunload', cerrarCamara);
+
+// Exponer globales
+window.capturarYGuardar = capturarYGuardar;
+window.showToast = showToast;
+</script>
+</body>
+</html>
