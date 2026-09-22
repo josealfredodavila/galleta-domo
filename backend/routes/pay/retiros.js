@@ -7,6 +7,7 @@
 //   POST /api/pay/retiros                          (privado, requiere token_verificacion)
 //   GET  /api/pay/retiros/metodos-disponibles      (privado)
 //   GET  /api/pay/retiros/metodos-verificacion     (privado)
+//   POST /api/pay/retiros/registrar-selfie         (privado, NUEVO)
 //   GET  /api/pay/retiros/:id                      (privado)
 //
 //   POST /api/pay/retiros/liveness/challenge       (privado)
@@ -45,9 +46,6 @@ const errors = require('../../services/pay/errors');
 // HELPERS INTERNOS
 // ================================================================
 
-/**
- * Resuelve la cuenta Pay del usuario autenticado.
- */
 async function resolverCuentaDelUsuario(usuarioId) {
     const { data, error } = await supabaseAdmin
         .from('pay_cuentas')
@@ -113,9 +111,7 @@ router.get(
                     rostro_disponible: metodos.rostro_disponible,
                     selfie_registrada: metodos.selfie_registrada,
                     total_dispositivos: metodos.total_dispositivos,
-                    // Configuración de liveness para el frontend
                     liveness: liveness.obtenerConfiguracion(),
-                    // Si NO tiene ningún método, hay que registrar alguno
                     necesita_registrar: !metodos.huella_disponible && !metodos.rostro_disponible
                 }
             });
@@ -128,8 +124,115 @@ router.get(
 );
 
 // ================================================================
+// POST /api/pay/retiros/registrar-selfie (NUEVO)
+// PRIVADO - Guarda la URL de la selfie de verificación del usuario.
+// ================================================================
+
+router.post(
+    '/registrar-selfie',
+    verificarToken,
+    async function (req, res) {
+        try {
+            const usuarioId = req.usuario.id;
+            const body = req.body || {};
+
+            if (!body.url_selfie || typeof body.url_selfie !== 'string') {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Falta la URL de la selfie'
+                });
+            }
+
+            const url = body.url_selfie.trim();
+
+            // Validaciones básicas de la URL
+            if (url.length < 20) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'La URL de la selfie es demasiado corta'
+                });
+            }
+
+            if (url.indexOf('http') !== 0) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'La URL de la selfie debe comenzar con http o https'
+                });
+            }
+
+            // Validación suave: que sea de un bucket de Supabase Storage
+            if (url.indexOf('supabase') === -1) {
+                logger.warning(`[Pay Retiros] URL de selfie no parece de Supabase: ${url.slice(0, 50)}...`);
+                // No bloqueamos, pero logueamos
+            }
+
+            // Guardar en biometria
+            const resultado = await biometria.registrarSelfieVerificacion(usuarioId, url);
+
+            logger.info(`[Pay Retiros] Selfie registrada para usuario ${usuarioId}`);
+
+            return res.status(200).json({
+                success: true,
+                data: {
+                    mensaje: 'Selfie registrada correctamente',
+                    rostro_disponible: true
+                }
+            });
+
+        } catch (err) {
+            logger.error(`[Pay Retiros] Error en registrar-selfie: ${err.message}`);
+            return errors.responderError(res, err);
+        }
+    }
+);
+
+// ================================================================
+// POST /api/pay/retiros/registrar-huella (NUEVO)
+// PRIVADO - Registra una credencial WebAuthn del dispositivo.
+// ================================================================
+
+router.post(
+    '/registrar-huella',
+    verificarToken,
+    async function (req, res) {
+        try {
+            const usuarioId = req.usuario.id;
+            const body = req.body || {};
+
+            if (!body.credential_id) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Falta la credencial WebAuthn'
+                });
+            }
+
+            const credencial = {
+                id: body.credential_id,
+                publicKey: body.public_key || null,
+                transports: body.transports || ['internal']
+            };
+
+            const resultado = await biometria.registrarCredencialWebAuthn(usuarioId, credencial);
+
+            logger.info(`[Pay Retiros] Credencial WebAuthn registrada para usuario ${usuarioId}`);
+
+            return res.status(200).json({
+                success: true,
+                data: {
+                    mensaje: 'Credencial registrada correctamente',
+                    huella_disponible: true
+                }
+            });
+
+        } catch (err) {
+            logger.error(`[Pay Retiros] Error en registrar-huella: ${err.message}`);
+            return errors.responderError(res, err);
+        }
+    }
+);
+
+// ================================================================
 // POST /api/pay/retiros/liveness/challenge
-// PRIVADO - Genera un challenge de liveness.
 // ================================================================
 
 router.post(
@@ -138,7 +241,6 @@ router.post(
     async function (req, res) {
         try {
             const usuarioId = req.usuario.id;
-
             const challenge = liveness.generarChallengeLiveness(usuarioId);
 
             return res.status(200).json({
@@ -155,7 +257,6 @@ router.post(
 
 // ================================================================
 // POST /api/pay/retiros/liveness/validar
-// PRIVADO - Valida el resultado de liveness.
 // ================================================================
 
 router.post(
@@ -197,7 +298,6 @@ router.post(
 
 // ================================================================
 // POST /api/pay/retiros/webauthn/challenge
-// PRIVADO - Genera un challenge de WebAuthn (huella / Face ID).
 // ================================================================
 
 router.post(
@@ -206,7 +306,6 @@ router.post(
     async function (req, res) {
         try {
             const usuarioId = req.usuario.id;
-
             const challenge = await biometria.generarChallengeWebAuthn(usuarioId);
 
             return res.status(200).json({
@@ -223,7 +322,6 @@ router.post(
 
 // ================================================================
 // POST /api/pay/retiros/webauthn/validar
-// PRIVADO - Valida la respuesta de WebAuthn.
 // ================================================================
 
 router.post(
@@ -250,9 +348,6 @@ router.post(
                 user_handle: body.user_handle
             });
 
-            // Después de WebAuthn exitoso, generamos token de verificación
-            // Necesitamos saber qué monto y qué método se quieren usar.
-            // El frontend los manda aquí.
             const monto = Number(body.monto_autorizado);
             const metodo = body.metodo_autorizado;
 
@@ -303,7 +398,6 @@ router.post(
 
 // ================================================================
 // POST /api/pay/retiros/facial/challenge
-// PRIVADO - Genera un challenge facial.
 // ================================================================
 
 router.post(
@@ -312,7 +406,6 @@ router.post(
     async function (req, res) {
         try {
             const usuarioId = req.usuario.id;
-
             const challenge = await biometria.generarChallengeFacial(usuarioId);
 
             return res.status(200).json({
@@ -329,7 +422,6 @@ router.post(
 
 // ================================================================
 // POST /api/pay/retiros/facial/validar
-// PRIVADO - Valida el resultado facial.
 // ================================================================
 
 router.post(
@@ -353,7 +445,6 @@ router.post(
                 liveness_score: body.liveness_score
             });
 
-            // Después de facial exitoso, generamos token de verificación
             const monto = Number(body.monto_autorizado);
             const metodo = body.metodo_autorizado;
 
@@ -404,7 +495,6 @@ router.post(
 
 // ================================================================
 // GET /api/pay/retiros/metodos-disponibles
-// PRIVADO - ¿Qué rieles puede usar el usuario para retirar?
 // ================================================================
 
 router.get(
@@ -535,7 +625,6 @@ router.post(
             const usuarioId = req.usuario.id;
             const body = req.body || {};
 
-            // ---------- Validaciones de entrada ----------
             if (!body.montoMxn) {
                 return res.status(400).json({
                     success: false,
@@ -559,7 +648,6 @@ router.post(
                 });
             }
 
-            // ---------- VALIDAR TOKEN DE VERIFICACIÓN (obligatorio) ----------
             if (!body.token_verificacion) {
                 return res.status(401).json({
                     success: false,
@@ -583,7 +671,6 @@ router.post(
                 return errors.responderError(res, errToken);
             }
 
-            // ---------- Resolver cuenta del usuario ----------
             const cuenta = await resolverCuentaDelUsuario(usuarioId);
 
             if (!cuenta) {
@@ -593,10 +680,8 @@ router.post(
                 });
             }
 
-            // ---------- Idempotency key ----------
             const idempotencyKey = body.idempotencyKey || generarIdempotencyKey(usuarioId);
 
-            // ---------- Delegar al servicio ----------
             const retiro = await retirosService.solicitarRetiro({
                 usuarioId: usuarioId,
                 cuentaId: cuenta.id,
@@ -648,7 +733,6 @@ router.post(
 
 // ================================================================
 // GET /api/pay/retiros
-// PRIVADO - Listar retiros del usuario.
 // ================================================================
 
 router.get(
@@ -722,7 +806,6 @@ router.get(
 
 // ================================================================
 // GET /api/pay/retiros/:id
-// PRIVADO - Consultar un retiro específico.
 // ================================================================
 
 router.get(
