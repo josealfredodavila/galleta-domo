@@ -17,7 +17,7 @@
 // NO hace:
 //   - Verificar autenticación (eso lo hace el router)
 //   - Hablar con proveedores directamente (eso lo hacen los adapters)
-//   - Hacer payouts (eso lo hará retiros.js cuando lo escribamos)
+//   - Hacer payouts (eso lo hace retiros.js)
 // ================================================================
 
 'use strict';
@@ -56,7 +56,6 @@ function verificarSupabaseAdmin() {
 }
 
 function generarPublicToken() {
-    // 24 bytes -> 32 caracteres base64url (URL-safe)
     return crypto.randomBytes(24).toString('base64url');
 }
 
@@ -65,7 +64,6 @@ function normalizarMonto(monto) {
     if (!Number.isFinite(n) || n <= 0) {
         return null;
     }
-    // Redondear a 2 decimales (precisión de numeric en Postgres)
     return Math.round(n * 100) / 100;
 }
 
@@ -95,21 +93,6 @@ function validarIdempotencyKey(key) {
 // ================================================================
 // ASEGURAR CUENTA PAY
 // ================================================================
-// Crea la cuenta Pay de un usuario si no existe. Idempotente.
-// Se llama desde:
-//   - routes/mercado.js cuando se crea una tienda
-//   - routes/mercado-repartidor.js cuando se crea un repartidor
-//   - Cualquier lugar que necesite asegurar la cuenta.
-//
-// Args:
-//   usuarioId:      uuid del usuario
-//   opciones:
-//     tipo:         'vendedor' | 'repartidor'
-//     tiendaId:     bigint (solo si tipo = 'vendedor')
-//     repartidorId: bigint (solo si tipo = 'repartidor')
-//
-// Devuelve: la fila de pay_cuentas (existente o nueva).
-// ================================================================
 
 async function asegurarCuentaPay(usuarioId, opciones) {
     verificarSupabaseAdmin();
@@ -135,8 +118,6 @@ async function asegurarCuentaPay(usuarioId, opciones) {
         throw errors.errorParametroRequerido('repartidorId (obligatorio para repartidor)');
     }
 
-    // 1) Buscar si ya existe por el identificador natural
-    //    (tienda_id o repartidor_id, según tipo)
     let query = supabaseAdmin
         .from('pay_cuentas')
         .select('*')
@@ -153,14 +134,13 @@ async function asegurarCuentaPay(usuarioId, opciones) {
 
     if (errBuscar) {
         logger.error(`[Pay Core] Error buscando cuenta: ${errBuscar.message}`);
-        throw errors.errorInterno ? errors.errorInterno('ERROR_DB', errBuscar.message) : errBuscar;
+        throw new errors.ErrorInterno('ERROR_DB', errBuscar.message);
     }
 
     if (existente) {
         return existente;
     }
 
-    // 2) Crear la cuenta
     const nuevaCuenta = {
         usuario_id: usuarioId,
         tipo: tipo,
@@ -177,8 +157,6 @@ async function asegurarCuentaPay(usuarioId, opciones) {
         .single();
 
     if (errInsert) {
-        // Si falló por UNIQUE constraint (race condition con otro request),
-        // reintentamos la búsqueda una vez.
         if (errInsert.code === '23505') {
             const { data: reintento } = await query.maybeSingle();
             if (reintento) {
@@ -190,7 +168,6 @@ async function asegurarCuentaPay(usuarioId, opciones) {
         throw new errors.ErrorInterno('ERROR_CREANDO_CUENTA', errInsert.message);
     }
 
-    // 3) Crear la fila de saldos (0 / 0) si no existe
     const { error: errSaldo } = await supabaseAdmin
         .from('pay_saldos')
         .insert({
@@ -200,7 +177,6 @@ async function asegurarCuentaPay(usuarioId, opciones) {
         });
 
     if (errSaldo && errSaldo.code !== '23505') {
-        // 23505 = unique_violation: otro proceso lo creó. OK.
         logger.warning(`[Pay Core] No se pudo crear fila de saldos: ${errSaldo.message}`);
     }
 
@@ -259,7 +235,6 @@ async function obtenerSaldos(cuentaId) {
     }
 
     if (!data) {
-        // Devolver ceros si aún no existe la fila
         return {
             disponible_mxn: 0,
             pendiente_mxn: 0,
@@ -285,30 +260,12 @@ function listarMetodosDisponibles(codigoPais) {
 // ================================================================
 // CREAR INTENCIÓN DE COBRO
 // ================================================================
-// Crea una intención en pay_intenciones y devuelve la fila.
-//
-// Args:
-//   datos:
-//     cuentaReceptoraId -> uuid de pay_cuentas del vendedor/repartidor
-//     compradorId       -> uuid del usuario comprador (nullable)
-//     monto             -> número
-//     metodo            -> 'tarjeta' | 'spei' | 'usdt' | 'usdc'
-//     codigoPais        -> 'MX' | 'CO' | ...
-//     moneda            -> opcional. Si no, se deriva del método.
-//     pedidoId          -> opcional. bigint.
-//     descripcion       -> opcional. string.
-//     idempotencyKey    -> string único del cliente.
-//     datosExtra        -> opcional. Objeto que se guarda en metadata.
-//
-// Devuelve: la fila creada de pay_intenciones.
-// ================================================================
 
 async function crearIntencion(datos) {
     verificarSupabaseAdmin();
 
     const d = datos || {};
 
-    // ---------- Validaciones básicas ----------
     if (!d.cuentaReceptoraId) {
         throw errors.errorParametroRequerido('cuentaReceptoraId');
     }
@@ -348,7 +305,6 @@ async function crearIntencion(datos) {
         throw errors.errorIdempotencyKeyFaltante();
     }
 
-    // ---------- Verificar cuenta receptora ----------
     const { data: cuenta, error: errCuenta } = await supabaseAdmin
         .from('pay_cuentas')
         .select('id, usuario_id, tipo, estado, tienda_id, repartidor_id')
@@ -368,7 +324,6 @@ async function crearIntencion(datos) {
         throw errors.errorCuentaNoActiva(cuenta.estado);
     }
 
-    // ---------- Idempotencia: verificar si ya existe ----------
     const { data: existente, error: errIdem } = await supabaseAdmin
         .from('pay_intenciones')
         .select('*')
@@ -381,8 +336,6 @@ async function crearIntencion(datos) {
     }
 
     if (existente) {
-        // Verificar que coincida con la petición actual
-        // (mismo monto, misma cuenta, mismo método)
         const coincide =
             Number(existente.monto) === monto &&
             existente.cuenta_receptora_id === d.cuentaReceptoraId &&
@@ -398,7 +351,6 @@ async function crearIntencion(datos) {
         return existente;
     }
 
-    // ---------- Crear la intención ----------
     const publicToken = generarPublicToken();
     const ahora = new Date();
     const expira = new Date(ahora.getTime() + EXPIRACION_INTENCION_MS);
@@ -438,8 +390,6 @@ async function crearIntencion(datos) {
         .single();
 
     if (errInsert) {
-        // Si falló por UNIQUE (race condition con otro request que
-        // usó la misma idempotency_key), devolvemos la que ya existe.
         if (errInsert.code === '23505') {
             const { data: reintento } = await supabaseAdmin
                 .from('pay_intenciones')
@@ -466,10 +416,6 @@ async function crearIntencion(datos) {
 
 // ================================================================
 // OBTENER INTENCIÓN POR TOKEN PÚBLICO
-// ================================================================
-// Se usa en la página pública del QR. Devuelve SOLO datos no
-// sensibles. NUNCA expone cuenta_receptora_id, comprador_id, ni
-// datos de proveedor.
 // ================================================================
 
 async function obtenerIntencionPorTokenPublico(publicToken) {
@@ -508,7 +454,6 @@ async function obtenerIntencionPorTokenPublico(publicToken) {
         throw errors.errorIntencionNoEncontrada({ public_token: publicToken });
     }
 
-    // Verificar expiración en runtime (aunque el cron la marque)
     const expiradaPorTiempo =
         data.expires_at &&
         new Date(data.expires_at) < new Date() &&
@@ -516,7 +461,6 @@ async function obtenerIntencionPorTokenPublico(publicToken) {
 
     const pais = (data.metadata && data.metadata.pais) || paises.PAIS_POR_DEFECTO;
 
-    // Respuesta pública sanitizada
     return {
         public_token: data.public_token,
         monto: Number(data.monto) || 0,
@@ -528,7 +472,6 @@ async function obtenerIntencionPorTokenPublico(publicToken) {
         pedido_id: data.pedido_id,
         pais: pais,
         metodos_disponibles: listarMetodosDisponibles(pais),
-        // El comprador elige el método en la página pública si aún no hay uno fijo.
         metodo_pago_actual: data.metodo_pago,
         creada_en: data.created_at
     };
@@ -539,17 +482,16 @@ async function obtenerIntencionPorTokenPublico(publicToken) {
 // ================================================================
 // Punto de entrada único para todos los webhooks de proveedor.
 //
-// Args:
-//   proveedor -> 'stripe' | 'fintoc' | 'nowpayments'
-//   req       -> request completo (body, rawBody, headers)
-//
-// Devuelve: { status, ...datos }
-//   status = 'ok'         -> procesado correctamente
-//   status = 'duplicado'  -> evento ya procesado (idempotente)
-//   status = 'ignorado'   -> evento no relevante para nuestro flujo
-//   status = 'error'      -> error; reintentable si err.reintentable
-//
-// El router decide el HTTP status basándose en estos valores.
+// Devuelve:
+//   {
+//     status: 'ok' | 'duplicado' | 'ignorado',
+//     accion: 'intencion_confirmada' | 'retiro_pendiente_de_implementar' | 'ignorada' | 'ninguna',
+//     event_id,
+//     intencion_id,           ← si accion = intencion_confirmada
+//     cuenta_receptora_id,    ← NUEVO: para que el webhook libere saldo
+//     monto_confirmado,       ← NUEVO: para que el webhook libere saldo
+//     retiro_id
+//   }
 // ================================================================
 
 async function procesarWebhook(proveedor, req) {
@@ -559,7 +501,6 @@ async function procesarWebhook(proveedor, req) {
         throw errors.errorWebhookPayloadInvalido(proveedor, 'proveedor desconocido');
     }
 
-    // Cargar el adapter correspondiente
     let adapter;
     try {
         adapter = require(`./providers/${proveedor}`);
@@ -572,21 +513,6 @@ async function procesarWebhook(proveedor, req) {
         throw errors.errorProveedorNoConfigurado(proveedor);
     }
 
-    // El adapter hace todo el trabajo específico del proveedor.
-    // Devuelve un objeto con esta forma:
-    //   {
-    //     firma_valida: boolean,
-    //     event_id: string,
-    //     tipo_evento: string,
-    //     accion: 'confirmar_intencion' | 'cerrar_retiro' | 'ignorar',
-    //     intencion_id: uuid (si accion = confirmar_intencion),
-    //     retiro_id: uuid (si accion = cerrar_retiro),
-    //     provider_transaction_id: string,
-    //     provider_status: string,
-    //     provider_fee_mxn: number,
-    //     network_fee_mxn: number,
-    //     metadata: object
-    //   }
     const resultado = await adapter.procesarWebhook(req);
 
     if (!resultado || typeof resultado !== 'object') {
@@ -619,7 +545,6 @@ async function procesarWebhook(proveedor, req) {
         throw new errors.ErrorInterno('ERROR_REGISTRANDO_WEBHOOK', errReg.message);
     }
 
-    // Si el evento ya existe Y ya fue procesado, devolvemos duplicado.
     if (registro && registro.insertado === false && registro.duplicado === true && registro.procesado === true) {
         logger.info(`[Pay Core] Webhook duplicado ignorado: ${proveedor}/${resultado.event_id}`);
         return {
@@ -629,18 +554,17 @@ async function procesarWebhook(proveedor, req) {
         };
     }
 
-    // A partir de aquí, sabemos que es un evento nuevo o uno que
-    // quedó sin procesar. Vamos a procesarlo.
-
     // ---------- 3) Ejecutar la acción ----------
     let accionEjecutada = 'ninguna';
+    let intencionConfirmada = null;
+    let cuentaReceptoraId = null;
+    let montoConfirmado = null;
 
     try {
         if (resultado.accion === 'confirmar_intencion' && resultado.intencion_id) {
-            // Verificar que la intención exista y no esté ya pagada
             const { data: intencion, error: errInt } = await supabaseAdmin
                 .from('pay_intenciones')
-                .select('id, estado, proveedor')
+                .select('id, estado, proveedor, cuenta_receptora_id, monto')
                 .eq('id', resultado.intencion_id)
                 .maybeSingle();
 
@@ -688,14 +612,32 @@ async function procesarWebhook(proveedor, req) {
             }
 
             accionEjecutada = 'intencion_confirmada';
+
+            // Recuperar datos para la liberación de saldo
+            // (intención actualizada + cuenta receptora + monto)
+            const { data: intencionActualizada } = await supabaseAdmin
+                .from('pay_intenciones')
+                .select('id, cuenta_receptora_id, monto, paid_at')
+                .eq('id', resultado.intencion_id)
+                .maybeSingle();
+
+            if (intencionActualizada) {
+                intencionConfirmada = intencionActualizada;
+                cuentaReceptoraId = intencionActualizada.cuenta_receptora_id;
+                montoConfirmado = Number(intencionActualizada.monto) || null;
+            } else {
+                // Fallback: usar los datos que ya teníamos de la intención
+                cuentaReceptoraId = intencion.cuenta_receptora_id;
+                montoConfirmado = Number(intencion.monto) || null;
+            }
+
             logger.info(
                 `[Pay Core] Intención confirmada: ${resultado.intencion_id} ` +
-                `(${proveedor}/${resultado.provider_transaction_id || 'sin_tx_id'})`
+                `(${proveedor}/${resultado.provider_transaction_id || 'sin_tx_id'}) ` +
+                `cuenta=${cuentaReceptoraId} monto=${montoConfirmado}`
             );
 
         } else if (resultado.accion === 'cerrar_retiro' && resultado.retiro_id) {
-            // Se procesará cuando escribamos retiros.js. Por ahora
-            // solo marcamos como procesado y dejamos log.
             logger.info(`[Pay Core] Webhook de retiro recibido: ${resultado.retiro_id}`);
             accionEjecutada = 'retiro_pendiente_de_implementar';
 
@@ -711,11 +653,12 @@ async function procesarWebhook(proveedor, req) {
             accion: accionEjecutada,
             event_id: resultado.event_id,
             intencion_id: resultado.intencion_id || null,
+            cuenta_receptora_id: cuentaReceptoraId,
+            monto_confirmado: montoConfirmado,
             retiro_id: resultado.retiro_id || null
         };
 
     } catch (errProceso) {
-        // Marcar el error en el evento para auditoría
         await marcarWebhookProcesado(
             proveedor,
             resultado.event_id,
@@ -723,7 +666,6 @@ async function procesarWebhook(proveedor, req) {
             false
         );
 
-        // Re-lanzar para que el router decida HTTP status
         throw errProceso;
     }
 }
@@ -755,22 +697,13 @@ async function marcarWebhookProcesado(proveedor, eventId, errorMensaje, marcarEx
 // ================================================================
 
 module.exports = {
-    // Cuentas
     asegurarCuentaPay: asegurarCuentaPay,
     obtenerCuentaPayDeUsuario: obtenerCuentaPayDeUsuario,
     obtenerSaldos: obtenerSaldos,
-
-    // Métodos
     listarMetodosDisponibles: listarMetodosDisponibles,
-
-    // Intenciones
     crearIntencion: crearIntencion,
     obtenerIntencionPorTokenPublico: obtenerIntencionPorTokenPublico,
-
-    // Webhooks
     procesarWebhook: procesarWebhook,
-
-    // Constantes por si las necesita algún router
     MONEDA_POR_METODO: MONEDA_POR_METODO,
     EXPIRACION_INTENCION_MS: EXPIRACION_INTENCION_MS
 };
