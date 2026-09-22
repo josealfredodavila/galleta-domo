@@ -14,8 +14,16 @@
 //   en Mercado, la cuenta se crea automáticamente al crear la
 //   primera intención.
 //
+// METADATA:
+//   Al crear la intención se agrega:
+//     metadata.tipo: 'digital' | 'fisico'
+//     metadata.liberar_al: '24h' | 'entregado'
+//   Reglas:
+//     - Si la intención tiene pedidoId → 'fisico' + 'entregado'
+//     - Si NO tiene pedidoId → 'digital' + '24h'
+//   Esto permite que el sistema sepa cómo liberar el saldo en el futuro.
+//
 // El estado 'paid' SOLO se marca por webhook del proveedor.
-// Este router NUNCA marca una intención como pagada.
 // ================================================================
 
 'use strict';
@@ -34,10 +42,6 @@ const errors = require('../../services/pay/errors');
 
 // ================================================================
 // AUTO-CREACIÓN DE CUENTA PAY
-// ================================================================
-// Si el usuario no tiene cuenta Pay pero es vendedor (tiene tienda
-// en mercado_tiendas) o repartidor (tiene fila en mercado_repartidores),
-// la crea en ese momento. Esto reemplaza los triggers que se revirtieron.
 // ================================================================
 
 async function intentarCrearCuentaPay(usuarioId) {
@@ -182,10 +186,6 @@ async function intentarCrearCuentaPay(usuarioId) {
 // HELPERS INTERNOS
 // ================================================================
 
-/**
- * Resuelve la cuenta Pay del usuario.
- * Si no existe, intenta crearla consultando si es vendedor/repartidor.
- */
 async function resolverCuentaDelUsuario(usuarioId) {
     const { data, error } = await supabaseAdmin
         .from('pay_cuentas')
@@ -203,7 +203,6 @@ async function resolverCuentaDelUsuario(usuarioId) {
 
     if (data) return data;
 
-    // Intentar auto-crear
     const creada = await intentarCrearCuentaPay(usuarioId);
     return creada || null;
 }
@@ -216,6 +215,29 @@ async function resolverPaisDelUsuario(usuarioId) {
 function generarIdempotencyKey(usuarioId) {
     const random = crypto.randomBytes(8).toString('hex');
     return `${usuarioId}-${Date.now()}-${random}`;
+}
+
+/**
+ * Determina el tipo y modo de liberación de una intención.
+ *
+ * Reglas:
+ *   - Si tiene pedidoId → tipo 'fisico', liberar_al 'entregado'
+ *   - Si NO tiene pedidoId → tipo 'digital', liberar_al '24h'
+ *
+ * Esto se guarda en metadata para que el sistema (actual o futuro)
+ * sepa cómo manejar la liberación del saldo.
+ */
+function determinarTipoYLiberacion(pedidoId) {
+    if (pedidoId) {
+        return {
+            tipo: 'fisico',
+            liberar_al: 'entregado'
+        };
+    }
+    return {
+        tipo: 'digital',
+        liberar_al: '24h'
+    };
 }
 
 // ================================================================
@@ -259,6 +281,23 @@ router.post(
             const codigoPais = body.codigoPais || await resolverPaisDelUsuario(usuarioId);
             const idempotencyKey = body.idempotencyKey || generarIdempotencyKey(usuarioId);
 
+            // ---------- Determinar tipo + liberación ----------
+            const tipoYLiberacion = determinarTipoYLiberacion(body.pedidoId || null);
+
+            // ---------- Combinar datosExtra del body con la metadata del sistema ----------
+            const datosExtraDelCliente = (body.datosExtra && typeof body.datosExtra === 'object')
+                ? body.datosExtra
+                : {};
+
+            const datosExtraFinal = Object.assign(
+                {
+                    tipo: tipoYLiberacion.tipo,
+                    liberar_al: tipoYLiberacion.liberar_al
+                },
+                datosExtraDelCliente
+            );
+
+            // ---------- Crear la intención ----------
             const intencion = await core.crearIntencion({
                 cuentaReceptoraId: cuenta.id,
                 compradorId: null,
@@ -269,7 +308,7 @@ router.post(
                 pedidoId: body.pedidoId || null,
                 descripcion: body.descripcion || null,
                 idempotencyKey: idempotencyKey,
-                datosExtra: body.datosExtra || {}
+                datosExtra: datosExtraFinal
             });
 
             const PUBLIC_URL = process.env.PUBLIC_URL || '';
@@ -279,7 +318,8 @@ router.post(
 
             logger.info(
                 `[Pay Intenciones] Creada ${intencion.id} por usuario ${usuarioId} ` +
-                `(${body.metodo}, $${intencion.monto} ${intencion.moneda})`
+                `(${body.metodo}, $${intencion.monto} ${intencion.moneda}, ` +
+                `tipo=${tipoYLiberacion.tipo}, liberar_al=${tipoYLiberacion.liberar_al})`
             );
 
             return res.status(201).json({
@@ -293,7 +333,9 @@ router.post(
                     estado: intencion.estado,
                     descripcion: intencion.descripcion,
                     expires_at: intencion.expires_at,
-                    url_pago: urlPago
+                    url_pago: urlPago,
+                    tipo: tipoYLiberacion.tipo,
+                    liberar_al: tipoYLiberacion.liberar_al
                 }
             });
 
@@ -339,7 +381,6 @@ router.get(
 // ================================================================
 // POST /api/pay/intenciones/:publicToken/pagar
 // PÚBLICO - El comprador elige método y crea el pago en el proveedor.
-// Este endpoint NO marca la intención como pagada.
 // ================================================================
 
 router.post(
@@ -593,7 +634,7 @@ router.get(
             let query = supabaseAdmin
                 .from('pay_intenciones')
                 .select(
-                    'id, public_token, pedido_id, monto, moneda, metodo_pago, proveedor, estado, descripcion, expires_at, paid_at, created_at',
+                    'id, public_token, pedido_id, monto, moneda, metodo_pago, proveedor, estado, descripcion, expires_at, paid_at, metadata, created_at',
                     { count: 'exact' }
                 )
                 .eq('cuenta_receptora_id', cuenta.id)
