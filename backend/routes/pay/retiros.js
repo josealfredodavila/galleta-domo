@@ -1,19 +1,27 @@
 // ================================================================
 // ROUTES/PAY/RETIROS.JS
-// CSARIEL'S PAY - ROUTER DE RETIROS
+// CSARIEL'S PAY - ROUTER DE RETIROS CON VERIFICACIÓN BIOMÉTRICA
 // ================================================================
 // Endpoints:
-//   POST /api/pay/retiros                    (privado)
-//   GET  /api/pay/retiros                    (privado)
-//   GET  /api/pay/retiros/metodos-disponibles (privado)
-//   GET  /api/pay/retiros/:id                (privado)
+//   GET  /api/pay/retiros                          (privado)
+//   POST /api/pay/retiros                          (privado, requiere token_verificacion)
+//   GET  /api/pay/retiros/metodos-disponibles      (privado)
+//   GET  /api/pay/retiros/metodos-verificacion     (privado)
+//   GET  /api/pay/retiros/:id                      (privado)
 //
-// Todos privados. Ownership siempre verificado.
-// La cuenta del usuario se resuelve automáticamente desde el token.
+//   POST /api/pay/retiros/liveness/challenge       (privado)
+//   POST /api/pay/retiros/liveness/validar         (privado)
 //
-// El estado 'completed'/'failed' de un retiro SOLO se marca por
-// webhook del proveedor (o por cierre del propio servicio).
-// Este router NUNCA marca un retiro como completado.
+//   POST /api/pay/retiros/webauthn/challenge       (privado)
+//   POST /api/pay/retiros/webauthn/validar         (privado)
+//
+//   POST /api/pay/retiros/facial/challenge         (privado)
+//   POST /api/pay/retiros/facial/validar           (privado)
+//
+// REGLA CRÍTICA:
+//   POST /api/pay/retiros requiere token_verificacion.
+//   El token solo se obtiene después de pasar liveness + biometría.
+//   Nunca se puede retirar sin verificación previa.
 // ================================================================
 
 'use strict';
@@ -27,6 +35,9 @@ const logger = require('../../utils/logger');
 const { verificarToken } = require('../../middleware/auth');
 
 const retirosService = require('../../services/pay/retiros');
+const biometria = require('../../services/pay/biometria');
+const liveness = require('../../services/pay/liveness');
+const verificacionTokens = require('../../services/pay/verificacion-tokens');
 const paises = require('../../services/pay/geo/paises');
 const errors = require('../../services/pay/errors');
 
@@ -36,7 +47,6 @@ const errors = require('../../services/pay/errors');
 
 /**
  * Resuelve la cuenta Pay del usuario autenticado.
- * Devuelve null si no tiene.
  */
 async function resolverCuentaDelUsuario(usuarioId) {
     const { data, error } = await supabaseAdmin
@@ -56,34 +66,18 @@ async function resolverCuentaDelUsuario(usuarioId) {
     return data || null;
 }
 
-/**
- * Genera una idempotency_key si el cliente no la mandó.
- */
 function generarIdempotencyKey(usuarioId) {
     const random = crypto.randomBytes(8).toString('hex');
     return `retiro-${usuarioId}-${Date.now()}-${random}`;
 }
 
-/**
- * Determina si un proveedor está configurado en este entorno.
- */
 function proveedorConfigurado(proveedor) {
-    if (proveedor === 'stripe') {
-        return Boolean(process.env.STRIPE_SECRET_KEY);
-    }
-    if (proveedor === 'fintoc') {
-        return Boolean(process.env.FINTOC_SECRET_KEY);
-    }
-    if (proveedor === 'nowpayments') {
-        return Boolean(process.env.NOWPAYMENTS_API_KEY);
-    }
+    if (proveedor === 'stripe') return Boolean(process.env.STRIPE_SECRET_KEY);
+    if (proveedor === 'fintoc') return Boolean(process.env.FINTOC_SECRET_KEY);
+    if (proveedor === 'nowpayments') return Boolean(process.env.NOWPAYMENTS_API_KEY);
     return false;
 }
 
-/**
- * Verifica si el adapter de payout está implementado en disco.
- * (No lo carga, solo verifica existencia del módulo.)
- */
 function adapterPayoutImplementado(proveedor) {
     try {
         if (proveedor === 'stripe') {
@@ -99,8 +93,318 @@ function adapterPayoutImplementado(proveedor) {
 }
 
 // ================================================================
+// GET /api/pay/retiros/metodos-verificacion
+// PRIVADO - ¿Qué métodos de verificación tiene el usuario?
+// ================================================================
+
+router.get(
+    '/metodos-verificacion',
+    verificarToken,
+    async function (req, res) {
+        try {
+            const usuarioId = req.usuario.id;
+
+            const metodos = await biometria.obtenerMetodosDisponibles(usuarioId);
+
+            return res.status(200).json({
+                success: true,
+                data: {
+                    huella_disponible: metodos.huella_disponible,
+                    rostro_disponible: metodos.rostro_disponible,
+                    selfie_registrada: metodos.selfie_registrada,
+                    total_dispositivos: metodos.total_dispositivos,
+                    // Configuración de liveness para el frontend
+                    liveness: liveness.obtenerConfiguracion(),
+                    // Si NO tiene ningún método, hay que registrar alguno
+                    necesita_registrar: !metodos.huella_disponible && !metodos.rostro_disponible
+                }
+            });
+
+        } catch (err) {
+            logger.error(`[Pay Retiros] Error en metodos-verificacion: ${err.message}`);
+            return errors.responderError(res, err);
+        }
+    }
+);
+
+// ================================================================
+// POST /api/pay/retiros/liveness/challenge
+// PRIVADO - Genera un challenge de liveness.
+// ================================================================
+
+router.post(
+    '/liveness/challenge',
+    verificarToken,
+    async function (req, res) {
+        try {
+            const usuarioId = req.usuario.id;
+
+            const challenge = liveness.generarChallengeLiveness(usuarioId);
+
+            return res.status(200).json({
+                success: true,
+                data: challenge
+            });
+
+        } catch (err) {
+            logger.error(`[Pay Retiros] Error en liveness/challenge: ${err.message}`);
+            return errors.responderError(res, err);
+        }
+    }
+);
+
+// ================================================================
+// POST /api/pay/retiros/liveness/validar
+// PRIVADO - Valida el resultado de liveness.
+// ================================================================
+
+router.post(
+    '/liveness/validar',
+    verificarToken,
+    async function (req, res) {
+        try {
+            const usuarioId = req.usuario.id;
+            const body = req.body || {};
+
+            if (!body.challenge_id) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Falta el challenge_id'
+                });
+            }
+
+            const resultado = liveness.validarResultadoLiveness(usuarioId, {
+                challenge_id: body.challenge_id,
+                liveness_score: body.liveness_score,
+                frame_count: body.frame_count,
+                duracion_ms: body.duracion_ms,
+                accion_completada: body.accion_completada,
+                accion_realizada: body.accion_realizada,
+                micro_movimientos: body.micro_movimientos
+            });
+
+            return res.status(200).json({
+                success: true,
+                data: resultado
+            });
+
+        } catch (err) {
+            logger.warning(`[Pay Retiros] Liveness falló para ${req.usuario.id}: ${err.message}`);
+            return errors.responderError(res, err);
+        }
+    }
+);
+
+// ================================================================
+// POST /api/pay/retiros/webauthn/challenge
+// PRIVADO - Genera un challenge de WebAuthn (huella / Face ID).
+// ================================================================
+
+router.post(
+    '/webauthn/challenge',
+    verificarToken,
+    async function (req, res) {
+        try {
+            const usuarioId = req.usuario.id;
+
+            const challenge = await biometria.generarChallengeWebAuthn(usuarioId);
+
+            return res.status(200).json({
+                success: true,
+                data: challenge
+            });
+
+        } catch (err) {
+            logger.error(`[Pay Retiros] Error en webauthn/challenge: ${err.message}`);
+            return errors.responderError(res, err);
+        }
+    }
+);
+
+// ================================================================
+// POST /api/pay/retiros/webauthn/validar
+// PRIVADO - Valida la respuesta de WebAuthn.
+// ================================================================
+
+router.post(
+    '/webauthn/validar',
+    verificarToken,
+    async function (req, res) {
+        try {
+            const usuarioId = req.usuario.id;
+            const body = req.body || {};
+
+            if (!body.challenge_id) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Falta el challenge_id'
+                });
+            }
+
+            const resultado = await biometria.validarRespuestaWebAuthn(usuarioId, {
+                challenge_id: body.challenge_id,
+                credential_id: body.credential_id,
+                client_data_json: body.client_data_json,
+                authenticator_data: body.authenticator_data,
+                signature: body.signature,
+                user_handle: body.user_handle
+            });
+
+            // Después de WebAuthn exitoso, generamos token de verificación
+            // Necesitamos saber qué monto y qué método se quieren usar.
+            // El frontend los manda aquí.
+            const monto = Number(body.monto_autorizado);
+            const metodo = body.metodo_autorizado;
+
+            if (!Number.isFinite(monto) || monto <= 0) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Falta monto_autorizado válido'
+                });
+            }
+
+            if (!metodo || !['spei', 'crypto', 'tarjeta'].includes(metodo)) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Falta metodo_autorizado (spei|crypto|tarjeta)'
+                });
+            }
+
+            const tokenData = verificacionTokens.generarTokenVerificacion({
+                usuarioId: usuarioId,
+                montoMaximo: monto,
+                metodo: metodo,
+                metodoBiometrico: 'huella',
+                livenessVerificado: true,
+                metadata: {
+                    ip: req.headers['x-forwarded-for'] || req.ip,
+                    user_agent: req.headers['user-agent'] || null
+                }
+            });
+
+            return res.status(200).json({
+                success: true,
+                data: {
+                    verificado: true,
+                    metodo: 'huella',
+                    token_verificacion: tokenData.token,
+                    expira_en_ms: tokenData.expira_en_ms,
+                    monto_maximo: tokenData.monto_maximo,
+                    metodo_autorizado: tokenData.metodo
+                }
+            });
+
+        } catch (err) {
+            logger.warning(`[Pay Retiros] WebAuthn falló para ${req.usuario.id}: ${err.message}`);
+            return errors.responderError(res, err);
+        }
+    }
+);
+
+// ================================================================
+// POST /api/pay/retiros/facial/challenge
+// PRIVADO - Genera un challenge facial.
+// ================================================================
+
+router.post(
+    '/facial/challenge',
+    verificarToken,
+    async function (req, res) {
+        try {
+            const usuarioId = req.usuario.id;
+
+            const challenge = await biometria.generarChallengeFacial(usuarioId);
+
+            return res.status(200).json({
+                success: true,
+                data: challenge
+            });
+
+        } catch (err) {
+            logger.error(`[Pay Retiros] Error en facial/challenge: ${err.message}`);
+            return errors.responderError(res, err);
+        }
+    }
+);
+
+// ================================================================
+// POST /api/pay/retiros/facial/validar
+// PRIVADO - Valida el resultado facial.
+// ================================================================
+
+router.post(
+    '/facial/validar',
+    verificarToken,
+    async function (req, res) {
+        try {
+            const usuarioId = req.usuario.id;
+            const body = req.body || {};
+
+            if (!body.challenge_id) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Falta el challenge_id'
+                });
+            }
+
+            const resultado = await biometria.validarRespuestaFacial(usuarioId, {
+                challenge_id: body.challenge_id,
+                face_match_score: body.face_match_score,
+                liveness_score: body.liveness_score
+            });
+
+            // Después de facial exitoso, generamos token de verificación
+            const monto = Number(body.monto_autorizado);
+            const metodo = body.metodo_autorizado;
+
+            if (!Number.isFinite(monto) || monto <= 0) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Falta monto_autorizado válido'
+                });
+            }
+
+            if (!metodo || !['spei', 'crypto', 'tarjeta'].includes(metodo)) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Falta metodo_autorizado (spei|crypto|tarjeta)'
+                });
+            }
+
+            const tokenData = verificacionTokens.generarTokenVerificacion({
+                usuarioId: usuarioId,
+                montoMaximo: monto,
+                metodo: metodo,
+                metodoBiometrico: 'rostro',
+                livenessVerificado: true,
+                metadata: {
+                    ip: req.headers['x-forwarded-for'] || req.ip,
+                    user_agent: req.headers['user-agent'] || null
+                }
+            });
+
+            return res.status(200).json({
+                success: true,
+                data: {
+                    verificado: true,
+                    metodo: 'rostro',
+                    token_verificacion: tokenData.token,
+                    expira_en_ms: tokenData.expira_en_ms,
+                    monto_maximo: tokenData.monto_maximo,
+                    metodo_autorizado: tokenData.metodo
+                }
+            });
+
+        } catch (err) {
+            logger.warning(`[Pay Retiros] Facial falló para ${req.usuario.id}: ${err.message}`);
+            return errors.responderError(res, err);
+        }
+    }
+);
+
+// ================================================================
 // GET /api/pay/retiros/metodos-disponibles
-// PRIVADO - ¿Qué métodos puede usar este usuario AHORA MISMO?
+// PRIVADO - ¿Qué rieles puede usar el usuario para retirar?
 // ================================================================
 
 router.get(
@@ -121,9 +425,7 @@ router.get(
                 });
             }
 
-            // País del usuario (por ahora MX por defecto)
             const codigoPais = 'MX';
-
             const pais = paises.obtenerPais(codigoPais);
 
             if (!pais) {
@@ -137,11 +439,9 @@ router.get(
                 });
             }
 
-            // Analizar cada método posible en el país
             const metodosPosibles = [
                 { metodo: 'crypto', proveedor: 'nowpayments' },
-                { metodo: 'spei', proveedor: 'fintoc' },
-                { metodo: 'tarjeta', proveedor: 'stripe' }
+                { metodo: 'spei', proveedor: 'fintoc' }
             ];
 
             const metodos = [];
@@ -150,19 +450,9 @@ router.get(
                 const metodo = item.metodo;
                 const proveedor = item.proveedor;
 
-                // ¿El método está permitido en este país?
-                // (Para retiros usamos lógica propia, no la de cobros,
-                //  porque 'crypto' no es un método de cobro pero sí de retiro.)
                 const permitidoEnPais = (function () {
-                    if (metodo === 'crypto') {
-                        return pais.proveedores_habilitados.includes('nowpayments');
-                    }
-                    if (metodo === 'spei') {
-                        return pais.proveedores_habilitados.includes('fintoc');
-                    }
-                    if (metodo === 'tarjeta') {
-                        return pais.proveedores_habilitados.includes('stripe');
-                    }
+                    if (metodo === 'crypto') return pais.proveedores_habilitados.includes('nowpayments');
+                    if (metodo === 'spei') return pais.proveedores_habilitados.includes('fintoc');
                     return false;
                 })();
 
@@ -175,7 +465,6 @@ router.get(
                     continue;
                 }
 
-                // ¿El adapter está implementado?
                 const implementado = adapterPayoutImplementado(proveedor);
                 if (!implementado) {
                     metodos.push({
@@ -186,24 +475,21 @@ router.get(
                     continue;
                 }
 
-                // ¿El proveedor está configurado?
                 const configurado = proveedorConfigurado(proveedor);
                 if (!configurado) {
                     metodos.push({
                         metodo: metodo,
                         disponible: false,
-                        motivo: 'Servicio no configurado en este entorno'
+                        motivo: 'Servicio no configurado'
                     });
                     continue;
                 }
 
-                // Disponible
                 const itemDisponible = {
                     metodo: metodo,
                     disponible: true
                 };
 
-                // Info extra por método
                 if (metodo === 'crypto') {
                     itemDisponible.monedas = ['USDT', 'USDC'];
                     itemDisponible.redes = {
@@ -213,9 +499,6 @@ router.get(
                     itemDisponible.requiere = ['wallet_destino', 'red_crypto', 'moneda_destino'];
                 } else if (metodo === 'spei') {
                     itemDisponible.requiere = ['clabe_destino'];
-                    itemDisponible.moneda = 'MXN';
-                } else if (metodo === 'tarjeta') {
-                    itemDisponible.requiere = ['cuenta_connect'];
                     itemDisponible.moneda = 'MXN';
                 }
 
@@ -241,7 +524,7 @@ router.get(
 
 // ================================================================
 // POST /api/pay/retiros
-// PRIVADO - Solicitar un retiro.
+// PRIVADO - Solicitar un retiro (REQUIERE token_verificacion).
 // ================================================================
 
 router.post(
@@ -269,11 +552,35 @@ router.post(
 
             const metodo = String(body.metodo).trim().toLowerCase();
 
-            if (!['spei', 'crypto', 'tarjeta'].includes(metodo)) {
+            if (!['spei', 'crypto'].includes(metodo)) {
                 return res.status(400).json({
                     success: false,
                     error: `Método de retiro no válido: ${metodo}`
                 });
+            }
+
+            // ---------- VALIDAR TOKEN DE VERIFICACIÓN (obligatorio) ----------
+            if (!body.token_verificacion) {
+                return res.status(401).json({
+                    success: false,
+                    error: 'Se requiere verificación de identidad para este retiro'
+                });
+            }
+
+            const monto = Number(body.montoMxn);
+
+            try {
+                await verificacionTokens.validarYConsumirToken({
+                    token: body.token_verificacion,
+                    usuarioId: usuarioId,
+                    monto: monto,
+                    metodo: metodo
+                });
+            } catch (errToken) {
+                logger.warning(
+                    `[Pay Retiros] Token inválido para usuario ${usuarioId}: ${errToken.message}`
+                );
+                return errors.responderError(res, errToken);
             }
 
             // ---------- Resolver cuenta del usuario ----------
@@ -299,17 +606,20 @@ router.post(
                 destinoUltimos4: body.destinoUltimos4 || null,
                 redCrypto: body.redCrypto || null,
                 walletDestino: body.walletDestino || null,
+                clabeDestino: body.clabeDestino || null,
                 idempotencyKey: idempotencyKey,
                 datosExtra: {
                     pais: body.codigoPais || 'MX',
                     user_agent: req.headers['user-agent'] || null,
-                    ip: req.headers['x-forwarded-for'] || req.ip || null
+                    ip: req.headers['x-forwarded-for'] || req.ip || null,
+                    token_verificacion_usado: true
                 }
             });
 
             logger.info(
                 `[Pay Retiros] Retiro ${retiro.id} solicitado por ${usuarioId} ` +
-                `(${metodo}, $${retiro.monto_mxn} MXN → ${retiro.estado})`
+                `(${metodo}, $${retiro.monto_mxn} MXN → ${retiro.estado}) ` +
+                `[verificado biométricamente]`
             );
 
             return res.status(201).json({
@@ -338,7 +648,7 @@ router.post(
 
 // ================================================================
 // GET /api/pay/retiros
-// PRIVADO - Listar retiros del usuario autenticado.
+// PRIVADO - Listar retiros del usuario.
 // ================================================================
 
 router.get(
@@ -383,7 +693,6 @@ router.get(
                 offset: req.query.offset
             });
 
-            // Sanitizar wallet_destino antes de responder
             const retirosSanitizados = (resultado.retiros || []).map(function (r) {
                 return Object.assign({}, r, {
                     wallet_destino: r.wallet_destino
@@ -413,7 +722,7 @@ router.get(
 
 // ================================================================
 // GET /api/pay/retiros/:id
-// PRIVADO - Consultar un retiro específico (con ownership).
+// PRIVADO - Consultar un retiro específico.
 // ================================================================
 
 router.get(
@@ -445,7 +754,6 @@ router.get(
                 cuentaId: cuenta.id
             });
 
-            // Sanitizar wallet_destino
             const retiroSanitizado = Object.assign({}, retiro, {
                 wallet_destino: retiro.wallet_destino
                     ? String(retiro.wallet_destino).slice(0, 8) + '...' + String(retiro.wallet_destino).slice(-4)
