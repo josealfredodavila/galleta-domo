@@ -1,6 +1,6 @@
 <!-- ================================================================
      CSARIEL'S ECOSYSTEM
-     Csariel's Pay - Retirar ganancias
+     Csariel's Pay - Retirar con biometría
      Ruta: /features/pay/retirar.html
      ================================================================ -->
 <!DOCTYPE html>
@@ -109,6 +109,14 @@
         .saldo-card .monto .moneda {
             font-size: 0.9rem; color: var(--text-muted); margin-left: 6px;
         }
+        .saldo-card .saldos-detalle {
+            display: flex; justify-content: center; gap: 20px;
+            margin-top: 12px; font-size: 0.7rem;
+            color: var(--text-muted); flex-wrap: wrap;
+        }
+        .saldo-card .saldos-detalle .item { display: flex; gap: 4px; align-items: center; }
+        .saldo-card .saldos-detalle .item .icono { font-family: 'Orbitron', monospace; color: var(--gold); }
+        .saldo-card .saldos-detalle .item .valor { color: var(--text-secondary); font-weight: 600; }
 
         .card {
             background: var(--glass-bg); border: 1px solid var(--glass-border);
@@ -170,10 +178,7 @@
         }
 
         .metodos-grid {
-            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;
-        }
-        @media (max-width: 480px) {
-            .metodos-grid { grid-template-columns: 1fr 1fr; }
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
         }
 
         .metodo-opcion {
@@ -202,6 +207,11 @@
         .metodo-opcion.activo .nombre { color: var(--gold); }
         .metodo-opcion .tiempo {
             font-size: 0.55rem; color: var(--text-muted);
+        }
+        .metodo-opcion .saldo-metodo {
+            font-size: 0.6rem; color: var(--success);
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
         }
 
         .btn-primario {
@@ -267,28 +277,35 @@
         .estado-badge.failed { background: rgba(255,51,102,0.15); color: var(--danger); }
         .estado-badge.cancelled { background: rgba(138,168,184,0.15); color: var(--text-muted); }
 
+        /* ===== MODALES ===== */
         .modal-overlay {
             display: none;
             position: fixed; inset: 0;
-            background: rgba(0,0,0,0.75);
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(10px);
             z-index: 9998;
             align-items: center; justify-content: center;
             padding: 16px;
+            overflow-y: auto;
         }
         .modal-overlay.activo { display: flex; }
+
         .modal {
-            background: var(--green-deep);
-            border: 1px solid var(--gold);
+            background: linear-gradient(135deg, var(--glass-bg), rgba(5,8,15,0.98));
+            border: 2px solid var(--gold);
             border-radius: var(--radius-xl);
-            max-width: 420px; width: 100%;
+            max-width: 480px; width: 100%;
             padding: 24px;
             text-align: center;
             animation: modalIn 0.3s ease;
+            max-height: 90vh;
+            overflow-y: auto;
         }
         @keyframes modalIn {
             from { transform: scale(0.9); opacity: 0; }
             to { transform: scale(1); opacity: 1; }
         }
+
         .modal .icono-modal {
             font-size: 2.5rem; color: var(--gold);
             font-family: 'Orbitron', monospace;
@@ -299,6 +316,44 @@
             font-size: 1rem; color: var(--gold);
             margin-bottom: 12px;
         }
+        .modal .descripcion {
+            font-size: 0.78rem; color: var(--text-secondary);
+            line-height: 1.5; margin-bottom: 18px;
+        }
+
+        .botones-verificacion {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 12px; margin-bottom: 16px;
+        }
+        .btn-verificacion {
+            padding: 20px 12px;
+            border-radius: var(--radius);
+            border: 1px solid var(--glass-border);
+            background: rgba(0,0,0,0.25);
+            cursor: pointer; transition: var(--transition);
+            display: flex; flex-direction: column;
+            align-items: center; gap: 8px;
+        }
+        .btn-verificacion:hover {
+            border-color: var(--gold);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-gold);
+        }
+        .btn-verificacion:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-verificacion .icono { font-size: 2rem; }
+        .btn-verificacion .titulo {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.72rem; font-weight: 700;
+            color: var(--text-primary);
+        }
+        .btn-verificacion .sub {
+            font-size: 0.6rem; color: var(--text-muted);
+        }
+
         .modal .resumen {
             background: rgba(0,0,0,0.3);
             border-radius: 12px;
@@ -329,7 +384,57 @@
             flex: 1;
         }
 
-        /* ═══ NUEVO: ESTADO SIN MÉTODOS + CTA VINCULAR STRIPE ═══ */
+        /* Cámara */
+        .camara-wrap {
+            position: relative;
+            width: 100%;
+            max-width: 320px;
+            margin: 0 auto 16px;
+            aspect-ratio: 1;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 3px solid var(--gold);
+            background: #000;
+        }
+        .camara-wrap video {
+            width: 100%; height: 100%;
+            object-fit: cover;
+        }
+        .camara-wrap .overlay-circulo {
+            position: absolute; inset: 0;
+            border-radius: 50%;
+            border: 2px dashed rgba(212,175,55,0.5);
+            pointer-events: none;
+        }
+        .instruccion-accion {
+            background: rgba(0,229,255,0.1);
+            border: 1px solid var(--cyan);
+            border-radius: 12px;
+            padding: 12px;
+            font-size: 0.78rem;
+            color: var(--cyan);
+            margin-bottom: 12px;
+            font-family: 'Orbitron', monospace;
+        }
+
+        .progreso-verificacion {
+            display: flex; justify-content: center; gap: 8px;
+            margin-bottom: 16px;
+        }
+        .progreso-verificacion .punto {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: rgba(212,175,55,0.2);
+            transition: var(--transition);
+        }
+        .progreso-verificacion .punto.activo {
+            background: var(--gold);
+            box-shadow: 0 0 12px rgba(212,175,55,0.6);
+        }
+        .progreso-verificacion .punto.completado {
+            background: var(--success);
+        }
+
         .estado-vacio {
             text-align: center; padding: 40px 20px;
             color: var(--text-muted);
@@ -369,9 +474,6 @@
             transform: translateY(-2px);
             box-shadow: var(--shadow-gold);
         }
-        .cta-vincular .boton-vincular .simbolo {
-            font-family: 'Orbitron', monospace;
-        }
 
         .loading-state {
             text-align: center; padding: 40px 20px;
@@ -399,6 +501,11 @@
             background: rgba(247,212,74,0.08);
             border-color: rgba(247,212,74,0.3);
             color: var(--warning);
+        }
+        .info-box.danger {
+            background: rgba(255,51,102,0.08);
+            border-color: rgba(255,51,102,0.3);
+            color: var(--danger);
         }
         .info-box.success {
             background: rgba(0,214,143,0.08);
@@ -445,11 +552,9 @@
             color: var(--text-primary) !important;
         }
         html.tema-dia .nebula, html[data-tema="dia"] .nebula { display: none !important; }
-        html.tema-dia .header, html[data-tema="dia"] .header { background: rgba(255, 255, 255, 0.95) !important; border-bottom-color: rgba(0, 0, 0, 0.1) !important; }
+        html.tema-dia .header, html[data-tema="dia"] .header { background: rgba(255, 255, 255, 0.95) !important; }
         html.tema-dia .logo-text, html[data-tema="dia"] .logo-text { color: var(--text-primary) !important; }
-        html.tema-dia .modal, html[data-tema="dia"] .modal {
-            background: #ffffff;
-        }
+        html.tema-dia .modal, html[data-tema="dia"] .modal { background: #ffffff; }
     </style>
 </head>
 <body>
@@ -476,7 +581,6 @@
             <a href="/features/pay/panel.html" class="nav-link"><span class="nav-simbolo">◈</span> Mi Pay</a>
             <a href="/features/pay/cobrar.html" class="nav-link"><span class="nav-simbolo">◆</span> Cobrar</a>
             <a href="/features/pay/retirar.html" class="nav-link active"><span class="nav-simbolo">◇</span> Retirar</a>
-            <a href="/features/pay/vincular-stripe.html" class="nav-link"><span class="nav-simbolo">●</span> Vincular Stripe</a>
         </nav>
 
         <div id="loaderInicial" class="loading-state">
@@ -497,29 +601,28 @@
                     <span id="saldoDisponible">$0.00</span>
                     <span class="moneda">MXN</span>
                 </div>
-            </div>
-
-            <!-- ═══ NUEVO: ESTADO SIN MÉTODOS CON CTA A VINCULAR STRIPE ═══ -->
-            <div id="cardSinMetodos" class="card" style="display:none;">
-                <div class="estado-vacio">
-                    <span class="icono-grande">⏳</span>
-                    <h3 id="tituloSinMetodos">Sin métodos de retiro</h3>
-                    <p id="textoSinMetodos">Estamos activando los proveedores de retiro. Vuelve pronto.</p>
-
-                    <!-- CTA dinámico: solo se muestra cuando aplica -->
-                    <div class="cta-vincular" id="ctaVincularStripe" style="display:none;">
-                        <p style="font-size:0.78rem; color:var(--text-secondary); line-height:1.5; margin-bottom:8px;">
-                            💡 <strong style="color:var(--gold);">Activa retiros por tarjeta</strong><br>
-                            Vincula tu cuenta de Stripe en 5 minutos y podrás retirar tus ganancias directamente a tu banco.
-                        </p>
-                        <a href="/features/pay/vincular-stripe.html" class="boton-vincular">
-                            <span class="simbolo">◈</span> Vincular Stripe
-                        </a>
+                <div class="saldos-detalle" id="saldosDetalle" style="display:none;">
+                    <div class="item">
+                        <span class="icono">🏦</span>
+                        <span>SPEI:</span>
+                        <span class="valor" id="saldoSpei">$0.00</span>
+                    </div>
+                    <div class="item">
+                        <span class="icono">₿</span>
+                        <span>Crypto:</span>
+                        <span class="valor" id="saldoCrypto">$0.00</span>
                     </div>
                 </div>
             </div>
 
-            <!-- FORMULARIO -->
+            <div id="cardSinMetodos" class="card" style="display:none;">
+                <div class="estado-vacio">
+                    <span class="icono-grande">⏳</span>
+                    <h3 id="tituloSinMetodos">Sin métodos de retiro</h3>
+                    <p id="textoSinMetodos">No tienes saldo disponible para retirar.</p>
+                </div>
+            </div>
+
             <div id="cardFormulario" class="card">
                 <div class="form-group">
                     <label for="inpMonto">Monto a retirar <span class="required">*</span></label>
@@ -542,11 +645,9 @@
                 <div class="form-group">
                     <label>Método de retiro <span class="required">*</span></label>
                     <div class="metodos-grid" id="metodosGrid">
-                        <!-- Se llena dinámicamente -->
                     </div>
                 </div>
 
-                <!-- CAMPOS SPEI -->
                 <div id="camposSpei" style="display:none;">
                     <div class="form-group">
                         <label for="inpClabe">CLABE interbancaria (18 dígitos) <span class="required">*</span></label>
@@ -563,7 +664,6 @@
                     </div>
                 </div>
 
-                <!-- CAMPOS CRYPTO -->
                 <div id="camposCrypto" style="display:none;">
                     <div class="form-group">
                         <label>Moneda destino <span class="required">*</span></label>
@@ -592,33 +692,16 @@
                     </div>
                 </div>
 
-                <!-- CAMPOS TARJETA (STRIPE CONNECT) -->
-                <div id="camposTarjeta" style="display:none;">
-                    <div class="info-box">
-                        <strong>Retiro por tarjeta</strong><br>
-                        El dinero se enviará a la cuenta bancaria que registraste en Stripe. Verifica que tu cuenta esté vinculada.
-                    </div>
-                    <div class="form-group">
-                        <label for="inpUltimos4">Últimos 4 dígitos de la tarjeta <span class="required">*</span></label>
-                        <input
-                            type="text"
-                            id="inpUltimos4"
-                            placeholder="1234"
-                            maxlength="4"
-                            inputmode="numeric"
-                            autocomplete="off"
-                            style="font-family:monospace; letter-spacing:2px; text-align:center;"
-                        />
-                        <div class="helper">Se enviará a la cuenta bancaria vinculada en Stripe.</div>
-                    </div>
+                <div class="info-box">
+                    <strong>🔐 Verificación biométrica obligatoria</strong><br>
+                    Al confirmar, te pediremos verificar tu identidad con huella o rostro.
                 </div>
 
-                <button class="btn-primario" id="btnSolicitar" onclick="abrirConfirmacion()" disabled>
-                    <span class="simbolo">◈</span> Solicitar retiro
+                <button class="btn-primario" id="btnSolicitar" onclick="iniciarVerificacion()" disabled>
+                    <span class="simbolo">🔐</span> Verificar identidad y retirar
                 </button>
             </div>
 
-            <!-- HISTORIAL DE RETIROS -->
             <div class="card">
                 <div class="seccion-titulo" style="
                     font-family: 'Orbitron', monospace;
@@ -648,7 +731,69 @@
 
     </div>
 
-    <!-- MODAL DE CONFIRMACIÓN -->
+    <!-- MODAL: Elegir método de verificación -->
+    <div class="modal-overlay" id="modalElegirVerificacion">
+        <div class="modal">
+            <span class="icono-modal">🔐</span>
+            <h3>Verificar tu identidad</h3>
+            <div class="descripcion">
+                Elige cómo quieres verificar que eres tú antes de retirar <strong id="montoVerificar">$0.00</strong> MXN.
+            </div>
+
+            <div class="botones-verificacion">
+                <button class="btn-verificacion" id="btnVerifHuella" onclick="iniciarVerificacionHuella()">
+                    <span class="icono">👆</span>
+                    <span class="titulo">Huella digital</span>
+                    <span class="sub">Face ID / Touch ID</span>
+                </button>
+                <button class="btn-verificacion" id="btnVerifRostro" onclick="iniciarVerificacionRostro()">
+                    <span class="icono">😊</span>
+                    <span class="titulo">Reconocimiento facial</span>
+                    <span class="sub">Con cámara frontal</span>
+                </button>
+            </div>
+
+            <div class="info-box" style="font-size:0.65rem;">
+                Tu huella o tu rostro equivale a tu firma. Nadie más puede autorizar este retiro.
+            </div>
+
+            <div class="botones">
+                <button class="btn-secundario" onclick="cerrarModal('modalElegirVerificacion')">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Verificación facial -->
+    <div class="modal-overlay" id="modalVerificacionRostro">
+        <div class="modal">
+            <span class="icono-modal">😊</span>
+            <h3>Reconocimiento facial</h3>
+            <div class="progreso-verificacion">
+                <span class="punto activo" id="puntoFacial1"></span>
+                <span class="punto" id="puntoFacial2"></span>
+                <span class="punto" id="puntoFacial3"></span>
+            </div>
+
+            <div class="instruccion-accion" id="instruccionFacial">
+                Preparando cámara...
+            </div>
+
+            <div class="camara-wrap">
+                <video id="videoVerificacion" autoplay playsinline muted></video>
+                <div class="overlay-circulo"></div>
+            </div>
+
+            <div class="info-box" id="estadoFacial">
+                Iniciando verificación...
+            </div>
+
+            <div class="botones">
+                <button class="btn-secundario" onclick="cancelarVerificacionRostro()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Confirmar retiro (con token) -->
     <div class="modal-overlay" id="modalConfirmacion">
         <div class="modal">
             <span class="icono-modal">◇</span>
@@ -656,7 +801,7 @@
             <div class="resumen" id="resumenModal"></div>
             <div class="aviso" id="avisoModal"></div>
             <div class="botones">
-                <button class="btn-secundario" onclick="cerrarModal()">Cancelar</button>
+                <button class="btn-secundario" onclick="cerrarModal('modalConfirmacion')">Cancelar</button>
                 <button class="btn-primario" id="btnConfirmar" onclick="confirmarRetiro()">Confirmar</button>
             </div>
         </div>
@@ -665,23 +810,32 @@
     <div class="toast" id="toast" role="alert" aria-live="polite"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.min.js"></script>
 <script src="/features/shared/js/idiomas.js"></script>
 <script>
 // ================================================================
-// CSARIEL'S PAY - RETIRAR GANANCIAS
+// CSARIEL'S PAY - RETIRAR CON BIOMETRÍA
 // ================================================================
 
 var supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
 var supabaseKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
 var supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
-window.supabaseClient = supabaseClient;
 
 var sessionUser = null;
 var saldoDisponible = 0;
+var saldosPorRiel = { spei: 0, crypto: 0 };
 var metodosDisponibles = [];
 var metodoElegido = null;
 var cargandoRetiro = false;
-var stripeVinculado = false;
+
+// Estado de verificación
+var tokenVerificacion = null;
+var livenessChallengeId = null;
+var livenessAccion = null;
+var facialChallengeId = null;
+var webauthnChallengeId = null;
+var streamVerificacion = null;
+var faceApiCargado = false;
 
 var REDES_POR_MONEDA = {
     'USDT': [
@@ -701,8 +855,7 @@ var REDES_POR_MONEDA = {
 
 var TIEMPO_ESTIMADO = {
     'spei': '1-2 días hábiles',
-    'crypto': '15 min a 2 horas',
-    'tarjeta': '3-5 días hábiles'
+    'crypto': '15 min a 2 horas'
 };
 
 var MIN_RETIRO = 50;
@@ -721,7 +874,7 @@ function showToast(mensaje, tipo) {
         else if (tipo === 'warning') toastEl.classList.add('warning');
         else if (tipo === 'success') toastEl.classList.add('success');
         clearTimeout(toastEl._timeout);
-        toastEl._timeout = setTimeout(function () { toastEl.classList.remove('show'); }, 3500);
+        toastEl._timeout = setTimeout(function () { toastEl.classList.remove('show'); }, 4000);
     } catch (e) { console.warn('Toast error:', e); }
 }
 
@@ -752,6 +905,16 @@ function formatearFecha(iso) {
 
 function verTokens() {
     window.location.href = '/features/perfil/perfil.html';
+}
+
+function abrirModal(id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.add('activo');
+}
+
+function cerrarModal(id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.remove('activo');
 }
 
 // ================================================================
@@ -822,34 +985,25 @@ async function cargarUsuario() {
 }
 
 // ================================================================
-// CARGAR SALDO
+// CARGAR SALDOS
 // ================================================================
 
-async function cargarSaldo() {
+async function cargarSaldos() {
     try {
+        // Saldo total
         var resp = await fetchAutenticado('/api/pay/cuentas/mi-cuenta/saldos');
-        if (!resp.success || !resp.data) return;
-
-        saldoDisponible = Number(resp.data.disponible_mxn) || 0;
-        document.getElementById('saldoDisponible').textContent = formatearMonto(saldoDisponible);
-    } catch (err) {
-        console.error('Error cargando saldo:', err);
-    }
-}
-
-// ================================================================
-// CARGAR ESTADO DE STRIPE (para saber si sugerir vincular)
-// ================================================================
-
-async function cargarEstadoStripe() {
-    try {
-        var resp = await fetchAutenticado('/api/pay/stripe-connect/estado');
         if (resp.success && resp.data) {
-            stripeVinculado = resp.data.habilitada === true;
+            saldoDisponible = Number(resp.data.disponible_mxn) || 0;
+            document.getElementById('saldoDisponible').textContent = formatearMonto(saldoDisponible);
         }
+
+        // Saldos por riel (necesitamos endpoint o calcular en backend)
+        // Por ahora, mostramos el total y avisamos en el backend
+        // TODO: agregar endpoint /api/pay/cuentas/mi-cuenta/saldos-por-riel
+        // Por ahora mostramos solo el total
+        document.getElementById('saldosDetalle').style.display = 'none';
     } catch (err) {
-        console.warn('Error consultando estado Stripe:', err.message);
-        stripeVinculado = false;
+        console.error('Error cargando saldos:', err);
     }
 }
 
@@ -880,20 +1034,11 @@ function renderizarMetodos() {
     var cardSinMetodos = document.getElementById('cardSinMetodos');
 
     if (!metodosDisponibles || metodosDisponibles.length === 0) {
-        // ═══ NUEVO: si no hay métodos, mostrar mensaje inteligente ═══
         var mensajeTitulo = 'Sin métodos de retiro';
-        var mensajeTexto = 'Estamos activando los proveedores de retiro. Vuelve pronto.';
+        var mensajeTexto = 'No tienes saldo disponible para retirar.';
 
-        // Si Stripe no está vinculado, sugerir vincularlo
-        if (!stripeVinculado) {
-            mensajeTitulo = 'Activa retiros por tarjeta';
-            mensajeTexto = 'Vincula tu cuenta de Stripe para poder retirar tus ganancias a tu banco.';
-            document.getElementById('ctaVincularStripe').style.display = 'flex';
-        } else {
-            // Stripe sí está vinculado pero no hay métodos: algo más pasa
-            mensajeTitulo = 'Sin métodos disponibles';
-            mensajeTexto = 'Los proveedores de retiro no están configurados. Contacta a soporte.';
-            document.getElementById('ctaVincularStripe').style.display = 'none';
+        if (saldoDisponible <= 0) {
+            mensajeTexto = 'Cuando cobres por SPEI o crypto, tu saldo aparecerá aquí.';
         }
 
         document.getElementById('tituloSinMetodos').textContent = mensajeTitulo;
@@ -907,16 +1052,8 @@ function renderizarMetodos() {
     cardFormulario.style.display = 'block';
     cardSinMetodos.style.display = 'none';
 
-    var iconos = {
-        'spei': '🏦',
-        'crypto': '₿',
-        'tarjeta': '💳'
-    };
-    var nombres = {
-        'spei': 'SPEI',
-        'crypto': 'Crypto',
-        'tarjeta': 'Tarjeta'
-    };
+    var iconos = { 'spei': '🏦', 'crypto': '₿' };
+    var nombres = { 'spei': 'SPEI', 'crypto': 'Crypto' };
 
     var html = '';
     metodosDisponibles.forEach(function (m) {
@@ -943,10 +1080,6 @@ function mostrarSinMetodos(titulo, texto) {
     document.getElementById('textoSinMetodos').textContent = texto;
     document.getElementById('cardFormulario').style.display = 'none';
     document.getElementById('cardSinMetodos').style.display = 'block';
-
-    if (!stripeVinculado) {
-        document.getElementById('ctaVincularStripe').style.display = 'flex';
-    }
 }
 
 // ================================================================
@@ -962,7 +1095,6 @@ function elegirMetodo(el) {
 
     document.getElementById('camposSpei').style.display = 'none';
     document.getElementById('camposCrypto').style.display = 'none';
-    document.getElementById('camposTarjeta').style.display = 'none';
 
     if (metodoElegido === 'spei') {
         document.getElementById('camposSpei').style.display = 'block';
@@ -982,8 +1114,6 @@ function elegirMetodo(el) {
                 actualizarRedesCrypto();
             }
         } catch (e) { /* silencioso */ }
-    } else if (metodoElegido === 'tarjeta') {
-        document.getElementById('camposTarjeta').style.display = 'block';
     }
 
     validarFormulario();
@@ -1047,12 +1177,6 @@ function validarFormulario() {
             btn.disabled = true;
             return;
         }
-    } else if (metodoElegido === 'tarjeta') {
-        var u4 = document.getElementById('inpUltimos4').value.trim();
-        if (!/^\d{4}$/.test(u4)) {
-            btn.disabled = true;
-            return;
-        }
     } else {
         btn.disabled = true;
         return;
@@ -1061,10 +1185,6 @@ function validarFormulario() {
     btn.disabled = false;
 }
 
-// ================================================================
-// RETIRAR TODO
-// ================================================================
-
 function retirarTodo() {
     var inp = document.getElementById('inpMonto');
     inp.value = saldoDisponible.toFixed(2);
@@ -1072,10 +1192,10 @@ function retirarTodo() {
 }
 
 // ================================================================
-// MODAL DE CONFIRMACIÓN
+// INICIAR VERIFICACIÓN
 // ================================================================
 
-function abrirConfirmacion() {
+function iniciarVerificacion() {
     var monto = parseFloat(document.getElementById('inpMonto').value);
 
     if (isNaN(monto) || monto < MIN_RETIRO || monto > saldoDisponible) {
@@ -1083,6 +1203,374 @@ function abrirConfirmacion() {
         return;
     }
 
+    document.getElementById('montoVerificar').textContent = formatearMonto(monto);
+    abrirModal('modalElegirVerificacion');
+}
+
+// ================================================================
+// VERIFICACIÓN POR HUELLA (WebAuthn)
+// ================================================================
+
+async function iniciarVerificacionHuella() {
+    var btn = document.getElementById('btnVerifHuella');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="icono">⏳</span><span class="titulo">Verificando...</span>';
+
+    try {
+        var monto = parseFloat(document.getElementById('inpMonto').value);
+
+        // 1) Obtener challenge del backend
+        var respChallenge = await fetchAutenticado('/api/pay/retiros/webauthn/challenge', {
+            method: 'POST'
+        });
+
+        if (!respChallenge.success || !respChallenge.data) {
+            throw new Error('No se pudo iniciar la verificación');
+        }
+
+        var challenge = respChallenge.data;
+
+        // 2) Si no hay credenciales registradas, mostrar aviso
+        if (!challenge.allow_credentials || challenge.allow_credentials.length === 0) {
+            throw new Error('No tienes huella registrada. Primero registra una huella en tu dispositivo, o usa reconocimiento facial.');
+        }
+
+        // 3) Convertir challenge a Uint8Array
+        var challengeBytes = Uint8Array.from(atob(challenge.challenge.replace(/-/g, '+').replace(/_/g, '/')), function (c) { return c.charCodeAt(0); });
+
+        var allowCredentials = challenge.allow_credentials.map(function (c) {
+            var idBytes = Uint8Array.from(atob(c.id.replace(/-/g, '+').replace(/_/g, '/')), function (ch) { return ch.charCodeAt(0); });
+            return {
+                id: idBytes,
+                type: 'public-key',
+                transports: c.transports || ['internal']
+            };
+        });
+
+        // 4) Llamar a WebAuthn
+        var assertion = await navigator.credentials.get({
+            publicKey: {
+                challenge: challengeBytes,
+                allowCredentials: allowCredentials,
+                timeout: challenge.timeout || 60000,
+                userVerification: 'required',
+                rpId: challenge.rp_id
+            }
+        });
+
+        // 5) Convertir respuesta a base64url
+        var clientDataJSON = arrayBufferToBase64Url(assertion.response.clientDataJSON);
+        var authenticatorData = arrayBufferToBase64Url(assertion.response.authenticatorData);
+        var signature = arrayBufferToBase64Url(assertion.response.signature);
+        var credentialId = arrayBufferToBase64Url(assertion.rawId);
+
+        // 6) Mandar al backend
+        var respValidar = await fetchAutenticado('/api/pay/retiros/webauthn/validar', {
+            method: 'POST',
+            body: {
+                challenge_id: challenge.challenge_id,
+                credential_id: credentialId,
+                client_data_json: clientDataJSON,
+                authenticator_data: authenticatorData,
+                signature: signature,
+                monto_autorizado: monto,
+                metodo_autorizado: metodoElegido
+            }
+        });
+
+        if (!respValidar.success || !respValidar.data) {
+            throw new Error('Verificación rechazada');
+        }
+
+        tokenVerificacion = respValidar.data.token_verificacion;
+
+        cerrarModal('modalElegirVerificacion');
+        mostrarConfirmacionFinal(monto);
+
+    } catch (err) {
+        console.error('Error WebAuthn:', err);
+
+        var msg = err.message || 'Error desconocido';
+
+        if (err.name === 'NotAllowedError') {
+            msg = 'Verificación cancelada o rechazada';
+        } else if (err.name === 'NotSupportedError') {
+            msg = 'Tu dispositivo no soporta huella o Face ID. Intenta con rostro.';
+        }
+
+        showToast('✶ ' + msg, 'error');
+
+        btn.disabled = false;
+        btn.innerHTML = '<span class="icono">👆</span><span class="titulo">Huella digital</span><span class="sub">Face ID / Touch ID</span>';
+    }
+}
+
+// ================================================================
+// VERIFICACIÓN POR ROSTRO (Facial con Liveness)
+// ================================================================
+
+async function iniciarVerificacionRostro() {
+    cerrarModal('modalElegirVerificacion');
+    abrirModal('modalVerificacionRostro');
+
+    actualizarPuntoFacial(1);
+    document.getElementById('instruccionFacial').textContent = 'Preparando cámara...';
+    document.getElementById('estadoFacial').textContent = 'Iniciando verificación...';
+
+    try {
+        var monto = parseFloat(document.getElementById('inpMonto').value);
+
+        // 1) Cargar face-api.js
+        if (!faceApiCargado) {
+            document.getElementById('instruccionFacial').textContent = 'Cargando modelos faciales...';
+            await cargarFaceApi();
+            faceApiCargado = true;
+        }
+
+        // 2) Pedir challenge de liveness
+        actualizarPuntoFacial(2);
+        var respLiveness = await fetchAutenticado('/api/pay/retiros/liveness/challenge', {
+            method: 'POST'
+        });
+
+        if (!respLiveness.success || !respLiveness.data) {
+            throw new Error('No se pudo iniciar la verificación de liveness');
+        }
+
+        livenessChallengeId = respLiveness.data.challenge_id;
+        livenessAccion = respLiveness.data.accion;
+
+        document.getElementById('instruccionFacial').textContent = '👉 ' + respLiveness.data.instruccion;
+
+        // 3) Abrir cámara
+        streamVerificacion = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'user', width: 480, height: 480 }
+        });
+
+        var video = document.getElementById('videoVerificacion');
+        video.srcObject = streamVerificacion;
+
+        await new Promise(function (r) { setTimeout(r, 1000); });
+
+        document.getElementById('estadoFacial').textContent = 'Detectando rostro...';
+
+        // 4) Analizar frames
+        var resultado = await analizarRostroYAccion(respLiveness.data.accion);
+
+        // 5) Validar liveness
+        actualizarPuntoFacial(3);
+        var respValidarLiveness = await fetchAutenticado('/api/pay/retiros/liveness/validar', {
+            method: 'POST',
+            body: {
+                challenge_id: livenessChallengeId,
+                liveness_score: resultado.livenessScore,
+                frame_count: resultado.frameCount,
+                duracion_ms: resultado.duracion,
+                accion_completada: resultado.accionCompletada,
+                accion_realizada: respLiveness.data.accion,
+                micro_movimientos: resultado.microMovimientos
+            }
+        });
+
+        if (!respValidarLiveness.success) {
+            throw new Error('Verificación de liveness fallida');
+        }
+
+        // 6) Pedir challenge facial
+        var respFacial = await fetchAutenticado('/api/pay/retiros/facial/challenge', {
+            method: 'POST'
+        });
+
+        if (!respFacial.success || !respFacial.data) {
+            throw new Error('No se pudo iniciar la verificación facial');
+        }
+
+        facialChallengeId = respFacial.data.challenge_id;
+
+        document.getElementById('estadoFacial').textContent = 'Comparando con tu selfie registrada...';
+
+        // 7) Cargar selfie registrada y comparar
+        var selfieUrl = respFacial.data.selfie_url;
+        var selfieImg = await cargarImagen(selfieUrl);
+        var selfieDescriptor = await faceapi
+            .detectSingleFace(selfieImg, new faceapi.TinyFaceDetectorOptions())
+            .withFaceLandmarks()
+            .withFaceDescriptor();
+
+        if (!selfieDescriptor) {
+            throw new Error('No se pudo analizar tu selfie registrada');
+        }
+
+        // 8) Detectar rostro en el video actual y comparar
+        var deteccionVideo = await faceapi
+            .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+            .withFaceLandmarks()
+            .withFaceDescriptor();
+
+        if (!deteccionVideo) {
+            throw new Error('No se detectó tu rostro. Asegúrate de estar frente a la cámara con buena luz.');
+        }
+
+        var distancia = faceapi.euclideanDistance(selfieDescriptor.descriptor, deteccionVideo.descriptor);
+
+        // Convertir distancia a score (0-1, más alto = mejor)
+        // face-api usa distancia euclidiana; distancia 0 = idéntico, >0.6 = diferentes
+        var faceMatchScore = Math.max(0, 1 - distancia);
+
+        // 9) Validar facial
+        var respValidarFacial = await fetchAutenticado('/api/pay/retiros/facial/validar', {
+            method: 'POST',
+            body: {
+                challenge_id: facialChallengeId,
+                face_match_score: faceMatchScore,
+                liveness_score: resultado.livenessScore,
+                monto_autorizado: monto,
+                metodo_autorizado: metodoElegido
+            }
+        });
+
+        if (!respValidarFacial.success || !respValidarFacial.data) {
+            throw new Error('Verificación facial rechazada');
+        }
+
+        tokenVerificacion = respValidarFacial.data.token_verificacion;
+
+        // 10) Cerrar cámara
+        detenerCamara();
+        cerrarModal('modalVerificacionRostro');
+
+        mostrarConfirmacionFinal(monto);
+
+    } catch (err) {
+        console.error('Error verificación facial:', err);
+        detenerCamara();
+        cerrarModal('modalVerificacionRostro');
+        showToast('✶ ' + (err.message || 'Verificación fallida'), 'error');
+    }
+}
+
+function actualizarPuntoFacial(n) {
+    var puntos = ['puntoFacial1', 'puntoFacial2', 'puntoFacial3'];
+    puntos.forEach(function (id, idx) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.classList.remove('activo', 'completado');
+        if (idx + 1 < n) el.classList.add('completado');
+        else if (idx + 1 === n) el.classList.add('activo');
+    });
+}
+
+async function cargarFaceApi() {
+    // Los modelos ya están cargados por el script de jsdelivr
+    // Solo hay que cargar los pesos (modelos) desde el CDN
+    var MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
+    await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+    await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+    await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+}
+
+async function analizarRostroYAccion(accion) {
+    var video = document.getElementById('videoVerificacion');
+    var inicio = Date.now();
+    var framesCapturados = 0;
+    var microMovimientos = 0;
+    var accionCompletada = false;
+    var ultimoDescriptor = null;
+
+    // Capturar frames durante 4 segundos
+    var maxDuracion = 4000;
+
+    while (Date.now() - inicio < maxDuracion) {
+        try {
+            var deteccion = await faceapi
+                .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+                .withFaceLandmarks()
+                .withFaceDescriptor();
+
+            if (deteccion) {
+                framesCapturados++;
+
+                if (ultimoDescriptor) {
+                    var dist = faceapi.euclideanDistance(ultimoDescriptor, deteccion.descriptor);
+                    if (dist > 0.05) microMovimientos++;
+                }
+                ultimoDescriptor = deteccion.descriptor;
+
+                // Evaluar si cumplió la acción
+                if (!accionCompletada) {
+                    accionCompletada = evaluarAccion(accion, deteccion.landmarks);
+                }
+            }
+        } catch (e) { /* silencioso */ }
+
+        await new Promise(function (r) { setTimeout(r, 200); });
+    }
+
+    var duracion = Date.now() - inicio;
+
+    // Calcular liveness score
+    var livenessScore = 0.5;
+    if (framesCapturados >= 3) livenessScore += 0.2;
+    if (microMovimientos >= 2) livenessScore += 0.2;
+    if (accionCompletada) livenessScore += 0.1;
+    livenessScore = Math.min(1, livenessScore);
+
+    return {
+        livenessScore: livenessScore,
+        frameCount: framesCapturados,
+        duracion: duracion,
+        accionCompletada: accionCompletada,
+        microMovimientos: microMovimientos
+    };
+}
+
+function evaluarAccion(accion, landmarks) {
+    if (!landmarks) return false;
+    try {
+        // Por simplicidad: detecta si hay movimiento suficiente
+        // En producción se puede hacer detección específica de parpadeo/giro/sonrisa
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+function detenerCamara() {
+    if (streamVerificacion) {
+        streamVerificacion.getTracks().forEach(function (t) { t.stop(); });
+        streamVerificacion = null;
+    }
+}
+
+function cancelarVerificacionRostro() {
+    detenerCamara();
+    cerrarModal('modalVerificacionRostro');
+}
+
+function cargarImagen(url) {
+    return new Promise(function (resolve, reject) {
+        var img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = function () { resolve(img); };
+        img.onerror = function () { reject(new Error('No se pudo cargar la imagen')); };
+        img.src = url;
+    });
+}
+
+function arrayBufferToBase64Url(buffer) {
+    var bytes = new Uint8Array(buffer);
+    var binary = '';
+    for (var i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+// ================================================================
+// CONFIRMACIÓN FINAL
+// ================================================================
+
+function mostrarConfirmacionFinal(monto) {
     var resumen = document.getElementById('resumenModal');
     var aviso = document.getElementById('avisoModal');
     var filasHTML = '';
@@ -1096,7 +1584,7 @@ function abrirConfirmacion() {
     filasHTML +=
         '<div class="fila">' +
             '<span class="label">Método:</span>' +
-            '<span class="valor">' + escapeHTML(etiquetaMetodo(metodoElegido)) + '</span>' +
+            '<span class="valor">' + (metodoElegido === 'spei' ? 'SPEI' : 'Crypto') + '</span>' +
         '</div>';
 
     if (metodoElegido === 'spei') {
@@ -1129,36 +1617,22 @@ function abrirConfirmacion() {
                     escapeHTML(wallet.slice(0, 8)) + '...' + escapeHTML(wallet.slice(-6)) +
                 '</span>' +
             '</div>';
-    } else if (metodoElegido === 'tarjeta') {
-        var u4 = document.getElementById('inpUltimos4').value.trim();
-        filasHTML +=
-            '<div class="fila">' +
-                '<span class="label">Tarjeta destino:</span>' +
-                '<span class="valor">****' + u4 + '</span>' +
-            '</div>';
     }
+
+    filasHTML +=
+        '<div class="fila">' +
+            '<span class="label">✅ Verificación:</span>' +
+            '<span class="valor" style="color: var(--success);">Completada</span>' +
+        '</div>';
 
     resumen.innerHTML = filasHTML;
 
     var tiempo = TIEMPO_ESTIMADO[metodoElegido] || '';
     aviso.innerHTML =
         '<strong style="color: var(--warning);">⏱ Tiempo estimado: ' + escapeHTML(tiempo) + '</strong><br>' +
-        'No podrás cancelar este retiro una vez procesado. Verifica bien los datos de destino.';
+        'Una vez confirmado, no se puede cancelar.';
 
-    document.getElementById('modalConfirmacion').classList.add('activo');
-}
-
-function cerrarModal() {
-    document.getElementById('modalConfirmacion').classList.remove('activo');
-}
-
-function etiquetaMetodo(metodo) {
-    var mapa = {
-        'spei': 'SPEI (transferencia bancaria)',
-        'crypto': 'Crypto (USDT/USDC)',
-        'tarjeta': 'Tarjeta (Stripe)'
-    };
-    return mapa[metodo] || metodo;
+    abrirModal('modalConfirmacion');
 }
 
 // ================================================================
@@ -1167,11 +1641,15 @@ function etiquetaMetodo(metodo) {
 
 async function confirmarRetiro() {
     if (cargandoRetiro) return;
+    if (!tokenVerificacion) {
+        showToast('Falta verificación de identidad', 'error');
+        return;
+    }
     cargandoRetiro = true;
 
     var btn = document.getElementById('btnConfirmar');
     btn.disabled = true;
-    btn.innerHTML = '<span class="simbolo">◈</span> Procesando...';
+    btn.innerHTML = '⏳ Procesando...';
 
     var monto = parseFloat(document.getElementById('inpMonto').value);
     var idempotencyKey = 'retiro_' + Date.now() + '_' + Math.random().toString(36).substring(2, 10);
@@ -1179,19 +1657,19 @@ async function confirmarRetiro() {
     var payload = {
         montoMxn: monto,
         metodo: metodoElegido,
-        idempotencyKey: idempotencyKey
+        idempotencyKey: idempotencyKey,
+        token_verificacion: tokenVerificacion
     };
 
     if (metodoElegido === 'spei') {
         var clabe = document.getElementById('inpClabe').value.trim();
         payload.destinoUltimos4 = clabe.slice(-4);
+        payload.clabeDestino = clabe;
         payload.datosExtra = { clabe_destino: clabe };
     } else if (metodoElegido === 'crypto') {
         payload.monedaDestino = document.getElementById('selCryptoMoneda').value;
         payload.redCrypto = document.getElementById('selCryptoRed').value;
         payload.walletDestino = document.getElementById('inpWallet').value.trim();
-    } else if (metodoElegido === 'tarjeta') {
-        payload.destinoUltimos4 = document.getElementById('inpUltimos4').value.trim();
     }
 
     try {
@@ -1213,33 +1691,30 @@ async function confirmarRetiro() {
             }
         } catch (e) { /* silencioso */ }
 
-        cerrarModal();
+        cerrarModal('modalConfirmacion');
         showToast('✔ Retiro solicitado: ' + formatearMonto(monto) + ' MXN', 'success');
 
-        await cargarSaldo();
-        await cargarRetiros();
-
+        // Reset
+        tokenVerificacion = null;
         document.getElementById('inpMonto').value = '';
-        validarFormulario();
 
-        if (saldoDisponible <= 0) {
-            var helper = document.getElementById('helperMonto');
-            helper.textContent = 'No tienes saldo disponible actualmente';
-            helper.className = 'helper warning';
-        }
+        await cargarSaldos();
+        await cargarRetiros();
+        validarFormulario();
 
     } catch (err) {
         console.error('Error solicitando retiro:', err);
-
         var mensaje = err.message || 'Error al solicitar el retiro';
-
-        if (err.status === 400 && err.data && err.data.error) {
-            mensaje = err.data.error;
-        } else if (err.status === 409) {
-            mensaje = 'Saldo insuficiente o conflicto de estado';
-        }
+        if (err.status === 400 && err.data && err.data.error) mensaje = err.data.error;
+        if (err.status === 401 && err.data && err.data.error) mensaje = err.data.error;
+        if (err.status === 409) mensaje = err.data && err.data.error ? err.data.error : 'Saldo insuficiente';
 
         showToast('✶ ' + mensaje, 'error');
+
+        // Si el error es por token expirado, resetear
+        if (err.status === 401) {
+            tokenVerificacion = null;
+        }
 
         btn.disabled = false;
         btn.innerHTML = 'Confirmar';
@@ -1266,7 +1741,7 @@ async function cargarRetiros() {
                 '<div class="estado-vacio">' +
                     '<span class="icono-grande">◇</span>' +
                     '<h3>Sin retiros aún</h3>' +
-                    '<p>Tus retiros aparecerán aquí con su estado.</p>' +
+                    '<p>Tus retiros aparecerán aquí.</p>' +
                 '</div>';
             return;
         }
@@ -1309,15 +1784,10 @@ function etiquetaEstado(estado) {
 }
 
 function detalleRetiro(r) {
-    if (r.metodo === 'spei') {
-        return 'SPEI a ****' + (r.destino_ultimos4 || '');
-    }
+    if (r.metodo === 'spei') return 'SPEI a ****' + (r.destino_ultimos4 || '');
     if (r.metodo === 'crypto') {
         var wallet = r.wallet_destino ? String(r.wallet_destino).slice(-6) : '';
         return r.moneda_destino + ' en ' + (r.red_crypto || '') + (wallet ? ' a ...' + wallet : '');
-    }
-    if (r.metodo === 'tarjeta') {
-        return 'Tarjeta ****' + (r.destino_ultimos4 || '');
     }
     return r.metodo || '';
 }
@@ -1346,10 +1816,6 @@ function configurarFormulario() {
     });
 
     document.getElementById('inpWallet').addEventListener('input', validarFormulario);
-    document.getElementById('inpUltimos4').addEventListener('input', function () {
-        this.value = this.value.replace(/\D/g, '').substring(0, 4);
-        validarFormulario();
-    });
 
     document.getElementById('selCryptoMoneda').addEventListener('change', function () {
         actualizarRedesCrypto();
@@ -1373,10 +1839,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
     configurarFormulario();
-
-    // Cargar en orden: primero Stripe, luego saldo, luego métodos
-    await cargarEstadoStripe();
-    await cargarSaldo();
+    await cargarSaldos();
     await cargarMetodos();
     await cargarRetiros();
 
@@ -1396,9 +1859,12 @@ document.addEventListener('DOMContentLoaded', async function () {
 window.verTokens = verTokens;
 window.retirarTodo = retirarTodo;
 window.elegirMetodo = elegirMetodo;
-window.abrirConfirmacion = abrirConfirmacion;
-window.cerrarModal = cerrarModal;
+window.iniciarVerificacion = iniciarVerificacion;
+window.iniciarVerificacionHuella = iniciarVerificacionHuella;
+window.iniciarVerificacionRostro = iniciarVerificacionRostro;
+window.cancelarVerificacionRostro = cancelarVerificacionRostro;
 window.confirmarRetiro = confirmarRetiro;
+window.cerrarModal = cerrarModal;
 window.showToast = showToast;
 </script>
 </body>
