@@ -1,0 +1,2367 @@
+<!-- ================================================================
+     CSARIEL'S ECOSYSTEM
+     Csariel's Pay - Términos y Condiciones
+     Ruta: /features/pay/terminos-csariels-pay.html
+     ================================================================ -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>◈ Términos y Condiciones · Csariel's Pay</title>
+    <meta name="description" content="Términos y Condiciones de Csariel's Pay, el sistema de pagos digitales de Csariel's Ecosystem." />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+
+    <script src="/features/shared/js/apariencia-global.js"></script>
+
+    <style>
+        :root {
+            --gold: #D4AF37;
+            --gold-dark: #b8923a;
+            --gold-light: #e8c84a;
+            --green-deep: #0F2D1A;
+            --green-mid: #1a4a2a;
+            --green-bright: #2a6a3a;
+            --space: #05080f;
+            --text-primary: #f0f4f8;
+            --text-secondary: #c0d8e8;
+            --text-muted: #8aa8b8;
+            --glass-bg: rgba(15, 45, 26, 0.55);
+            --glass-border: rgba(212, 175, 55, 0.15);
+            --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
+            --radius: 16px;
+            --radius-xl: 24px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --success: #00d68f;
+            --danger: #ff3366;
+            --warning: #f7d44a;
+            --cyan: #00e5ff;
+            --purple: #a855f7;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--space);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            background-image: radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
+        }
+
+        .nebula { position: fixed; border-radius: 50%; filter: blur(120px); opacity: 0.12; pointer-events: none; z-index: 0; animation: nebula-drift 25s ease-in-out infinite alternate; }
+        .nebula-1 { width: 700px; height: 700px; background: var(--green-bright); top: -15%; right: -15%; }
+        .nebula-2 { width: 600px; height: 600px; background: var(--gold-light); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.06; }
+        @keyframes nebula-drift { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(40px,-30px) scale(1.15); } }
+
+        .app { position: relative; z-index: 1; max-width: 780px; width: 100%; margin: 0 auto; padding: 12px 16px 60px; }
+
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0 14px; border-bottom: 1px solid var(--glass-border);
+            background: rgba(5, 8, 15, 0.92); position: sticky; top: 0; z-index: 100;
+        }
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .logo-hex { font-size: 1.8rem; color: var(--gold); font-family: 'Orbitron', monospace; }
+        .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--text-primary); letter-spacing: 2px; }
+        .logo-text span { color: var(--gold); }
+        .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; }
+
+        .volver-link {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 6px 14px; background: rgba(0,0,0,0.4);
+            border: 1px solid var(--glass-border);
+            color: var(--text-muted); border-radius: 20px;
+            text-decoration: none; font-size: 0.7rem;
+            transition: var(--transition);
+        }
+        .volver-link:hover { border-color: var(--gold); color: var(--gold); }
+        .volver-link .simbolo { font-family: 'Orbitron', monospace; }
+
+        .portada {
+            text-align: center;
+            padding: 40px 20px 30px;
+            border-bottom: 1px solid var(--glass-border);
+            margin-bottom: 30px;
+        }
+        .portada .escudo {
+            font-size: 4rem;
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
+            display: block;
+            margin-bottom: 16px;
+            filter: drop-shadow(0 0 20px rgba(212,175,55,0.4));
+        }
+        .portada h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.8rem;
+            color: var(--gold);
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+            line-height: 1.3;
+        }
+        .portada h2 {
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            color: var(--text-primary);
+            font-weight: 500;
+            margin-bottom: 20px;
+            letter-spacing: 1px;
+        }
+        .portada .meta {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            flex-wrap: wrap;
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            margin-top: 20px;
+        }
+        .portada .meta .item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .portada .meta .item .icono {
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
+        }
+
+        .indice {
+            background: rgba(0,0,0,0.25);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            margin-bottom: 40px;
+        }
+        .indice .titulo-indice {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.85rem;
+            color: var(--gold);
+            margin-bottom: 16px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .indice ul {
+            list-style: none;
+            padding: 0;
+        }
+        .indice > ul > li {
+            margin-bottom: 10px;
+            font-size: 0.8rem;
+        }
+        .indice > ul > li > a {
+            color: var(--text-primary);
+            text-decoration: none;
+            font-weight: 700;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .indice > ul > li > a:hover { color: var(--gold); }
+        .indice > ul > li > a .num {
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
+            font-size: 0.72rem;
+            min-width: 28px;
+        }
+        .indice ul ul {
+            margin-top: 6px;
+            margin-left: 34px;
+        }
+        .indice ul ul li {
+            margin-bottom: 4px;
+            font-size: 0.72rem;
+        }
+        .indice ul ul li a {
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .indice ul ul li a:hover { color: var(--gold); }
+        .indice ul ul li a .num { color: var(--gold); opacity: 0.6; font-family: 'Orbitron', monospace; font-size: 0.65rem; min-width: 24px; }
+
+        .libro {
+            margin-bottom: 40px;
+            scroll-margin-top: 80px;
+        }
+        .libro-header {
+            background: linear-gradient(135deg, rgba(212,175,55,0.15), rgba(15,45,26,0.7));
+            border: 1px solid rgba(212,175,55,0.3);
+            border-left: 4px solid var(--gold);
+            border-radius: var(--radius);
+            padding: 18px 22px;
+            margin-bottom: 22px;
+        }
+        .libro-header .libro-num {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.65rem;
+            color: var(--gold);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+        .libro-header h2 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.2rem;
+            color: var(--text-primary);
+            letter-spacing: 1px;
+            line-height: 1.3;
+        }
+
+        .capitulo {
+            margin-bottom: 28px;
+            scroll-margin-top: 80px;
+        }
+        .capitulo-header {
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 10px;
+            margin-bottom: 16px;
+        }
+        .capitulo-header .capitulo-num {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }
+        .capitulo-header h3 {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.95rem;
+            color: var(--gold);
+            letter-spacing: 0.5px;
+            line-height: 1.4;
+        }
+
+        .seccion {
+            margin-bottom: 20px;
+            padding-left: 4px;
+            scroll-margin-top: 80px;
+        }
+        .seccion .seccion-num {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.65rem;
+            color: var(--gold);
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+            font-weight: 700;
+        }
+        .seccion h4 {
+            font-size: 0.88rem;
+            color: var(--text-primary);
+            font-weight: 700;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .clausula {
+            margin-bottom: 14px;
+            padding-left: 16px;
+            border-left: 1px solid rgba(212,175,55,0.2);
+        }
+        .clausula .clausula-num {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.68rem;
+            color: var(--gold);
+            font-weight: 700;
+            margin-right: 6px;
+        }
+        .clausula p {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-top: 4px;
+        }
+
+        .cita-legal {
+            background: rgba(0,229,255,0.05);
+            border-left: 3px solid var(--cyan);
+            padding: 10px 14px;
+            margin: 12px 0 12px 16px;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.74rem;
+            color: var(--cyan);
+            font-style: italic;
+            line-height: 1.6;
+        }
+
+        .destacado {
+            background: rgba(247,212,74,0.08);
+            border: 1px solid rgba(247,212,74,0.3);
+            border-radius: 10px;
+            padding: 12px 14px;
+            margin: 12px 0 12px 16px;
+            font-size: 0.76rem;
+            color: var(--warning);
+            line-height: 1.6;
+        }
+        .destacado strong { color: var(--gold); }
+
+        .aviso-importante {
+            background: rgba(255,51,102,0.08);
+            border: 1px solid rgba(255,51,102,0.3);
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin: 20px 0;
+            font-size: 0.78rem;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+        .aviso-importante .titulo-aviso {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.72rem;
+            color: var(--danger);
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .tabla-comisiones {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            font-size: 0.76rem;
+        }
+        .tabla-comisiones th,
+        .tabla-comisiones td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        .tabla-comisiones th {
+            background: rgba(212,175,55,0.08);
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .tabla-comisiones td { color: var(--text-secondary); }
+        .tabla-comisiones tr:last-child td { border-bottom: none; }
+
+        .anexo {
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 2px solid var(--glass-border);
+        }
+
+        .contacto-box {
+            background: rgba(0,229,255,0.05);
+            border: 1px solid rgba(0,229,255,0.25);
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            margin: 20px 0;
+        }
+        .contacto-box .titulo-contacto {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.85rem;
+            color: var(--cyan);
+            margin-bottom: 12px;
+            letter-spacing: 1px;
+        }
+        .contacto-box p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-bottom: 6px;
+        }
+        .contacto-box a { color: var(--gold); }
+
+        .footer-legal {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid var(--glass-border);
+            text-align: center;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            line-height: 1.7;
+        }
+        .footer-legal .brand { color: var(--gold); font-weight: 600; }
+        .footer-legal .versiones {
+            margin-top: 12px;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            opacity: 0.7;
+        }
+
+        .btn-aceptar {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space);
+            border: none;
+            border-radius: 30px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 0.78rem;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: var(--shadow-gold);
+            z-index: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+        .btn-aceptar:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(212,175,55,0.6);
+        }
+
+        .toast {
+            position: fixed; bottom: 90px; right: 20px;
+            background: var(--green-deep); border: 1px solid var(--gold);
+            color: var(--gold); padding: 14px 24px;
+            border-radius: 12px; font-size: 0.8rem;
+            transform: translateY(100px); opacity: 0;
+            transition: all 0.4s ease; z-index: 99999;
+            max-width: 320px; pointer-events: none;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { border-color: var(--danger); color: var(--danger); }
+        .toast.warning { border-color: var(--warning); color: var(--warning); }
+        .toast.success { border-color: var(--success); color: var(--success); }
+
+        html.tema-dia, html[data-tema="dia"] {
+            --space: #f5f7fa;
+            --text-primary: #1a2332;
+            --text-secondary: #2d3748;
+            --text-muted: #718096;
+            --glass-bg: rgba(255, 255, 255, 0.9);
+            --glass-border: rgba(0, 0, 0, 0.1);
+        }
+        html.tema-dia body, html[data-tema="dia"] body {
+            background: #f5f7fa !important;
+            color: var(--text-primary) !important;
+        }
+        html.tema-dia .nebula, html[data-tema="dia"] .nebula { display: none !important; }
+        html.tema-dia .header, html[data-tema="dia"] .header { background: rgba(255, 255, 255, 0.95) !important; }
+        html.tema-dia .logo-text, html[data-tema="dia"] .logo-text { color: var(--text-primary) !important; }
+
+        @media (max-width: 640px) {
+            .portada h1 { font-size: 1.3rem; }
+            .portada .escudo { font-size: 3rem; }
+            .indice { padding: 16px; }
+            .libro-header { padding: 14px 16px; }
+            .libro-header h2 { font-size: 1rem; }
+            .capitulo-header h3 { font-size: 0.85rem; }
+            .clausula { padding-left: 10px; }
+            .btn-aceptar { bottom: 12px; right: 12px; padding: 10px 18px; font-size: 0.72rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="nebula nebula-1" aria-hidden="true"></div>
+    <div class="nebula nebula-2" aria-hidden="true"></div>
+
+    <div class="app">
+
+        <header class="header">
+            <a href="/features/pay/panel.html" class="logo">
+                <span class="logo-hex">◈</span>
+                <span class="logo-text">Csariel<span>'s</span></span>
+                <span class="logo-badge">✦ PAY</span>
+            </a>
+            <a href="/features/pay/panel.html" class="volver-link">
+                <span class="simbolo">◈</span> Volver
+            </a>
+        </header>
+
+        <!-- PORTADA -->
+        <section class="portada">
+            <span class="escudo">◈</span>
+            <h1>TÉRMINOS Y CONDICIONES</h1>
+            <h2>Csariel's Pay · Sistema de Pagos Digitales</h2>
+            <div class="meta">
+                <div class="item"><span class="icono">◆</span> Versión 1.0</div>
+                <div class="item"><span class="icono">◆</span> Vigente desde: 24 de septiembre de 2026</div>
+                <div class="item"><span class="icono">◆</span> Jurisdicción: México</div>
+            </div>
+        </section>
+
+        <!-- AVISO IMPORTANTE -->
+        <div class="aviso-importante">
+            <div class="titulo-aviso"><span>⚠</span> AVISO IMPORTANTE</div>
+            <p>
+                Al utilizar Csariel's Pay, usted acepta íntegramente estos Términos y Condiciones. Si no está de acuerdo con alguna de las cláusulas aquí establecidas, debe abstenerse de utilizar el servicio. El uso de Csariel's Pay implica la aceptación expresa, plena y sin reservas de cada una de las disposiciones contenidas en este documento.
+            </p>
+        </div>
+
+        <!-- ÍNDICE -->
+        <nav class="indice" aria-label="Índice de contenido">
+            <div class="titulo-indice"><span>◈</span> Índice General</div>
+            <ul>
+                <li>
+                    <a href="#libro1"><span class="num">I.</span> Disposiciones Generales</a>
+                    <ul>
+                        <li><a href="#cap1-1"><span class="num">1.1</span> Definiciones</a></li>
+                        <li><a href="#cap1-2"><span class="num">1.2</span> Aceptación de los Términos</a></li>
+                        <li><a href="#cap1-3"><span class="num">1.3</span> Capacidad Legal</a></li>
+                        <li><a href="#cap1-4"><span class="num">1.4</span> Modificaciones</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#libro2"><span class="num">II.</span> Descripción del Servicio</a>
+                    <ul>
+                        <li><a href="#cap2-1"><span class="num">2.1</span> Naturaleza de Csariel's Pay</a></li>
+                        <li><a href="#cap2-2"><span class="num">2.2</span> Relación con Proveedores Externos</a></li>
+                        <li><a href="#cap2-3"><span class="num">2.3</span> Métodos de Cobro y Retiro</a></li>
+                        <li><a href="#cap2-4"><span class="num">2.4</span> Principio de Mismo Riel</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#libro3"><span class="num">III.</span> Cuenta y Acceso</a>
+                    <ul>
+                        <li><a href="#cap3-1"><span class="num">3.1</span> Creación de Cuenta Pay</a></li>
+                        <li><a href="#cap3-2"><span class="num">3.2</span> Seguridad de la Cuenta</a></li>
+                        <li><a href="#cap3-3"><span class="num">3.3</span> Verificación Biométrica</a></li>
+                        <li><a href="#cap3-4"><span class="num">3.4</span> Métodos Alternativos de Verificación</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#libro4"><span class="num">IV.</span> Cobros y Saldos</a>
+                    <ul>
+                        <li><a href="#cap4-1"><span class="num">4.1</span> Creación de Intenciones de Cobro</a></li>
+                        <li><a href="#cap4-2"><span class="num">4.2</span> Confirmación de Pagos</a></li>
+                        <li><a href="#cap4-3"><span class="num">4.3</span> Acreditación de Saldo</a></li>
+                        <li><a href="#cap4-4"><span class="num">4.4</span> Liberación del Saldo</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#libro5"><span class="num">V.</span> Retiros</a>
+                    <ul>
+                        <li><a href="#cap5-1"><span class="num">5.1</span> Solicitud de Retiro</a></li>
+                        <li><a href="#cap5-2"><span class="num">5.2</span> Verificación Biométrica Obligatoria</a></li>
+                        <li><a href="#cap5-3"><span class="num">5.3</span> Tiempos de Acreditación</a></li>
+                        <li><a href="#cap5-4"><span class="num">5.4</span> Retiros Fallidos y Reversos</a></li>
+                        <li><a href="#cap5-5"><span class="num">5.5</span> Límites Operativos</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#libro6"><span class="num">VI.</span> Comisiones y Costos</a>
+                    <ul>
+                        <li><a href="#cap6-1"><span class="num">6.1</span> Comisiones de Proveedores</a></li>
+                        <li><a href="#cap6-2"><span class="num">6.2</span> Comisiones de la Plataforma</a></li>
+                        <li><a href="#cap6-3"><span class="num">6.3</span> Fondo de Reserva contra Contracargos</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#libro7"><span class="num">VII.</span> Protección de Datos Personales</a>
+                    <ul>
+                        <li><a href="#cap7-1"><span class="num">7.1</span> Datos Recopilados</a></li>
+                        <li><a href="#cap7-2"><span class="num">7.2</span> Uso de Datos Biométricos</a></li>
+                        <li><a href="#cap7-3"><span class="num">7.3</span> Derechos ARCO</a></li>
+                        <li><a href="#cap7-4"><span class="num">7.4</span> Retención y Eliminación</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#libro8"><span class="num">VIII.</span> Responsabilidades y Limitaciones</a>
+                    <ul>
+                        <li><a href="#cap8-1"><span class="num">8.1</span> Responsabilidad del Usuario</a></li>
+                        <li><a href="#cap8-2"><span class="num">8.2</span> Responsabilidad de la Plataforma</a></li>
+                        <li><a href="#cap8-3"><span class="num">8.3</span> Limitación de Responsabilidad</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#libro9"><span class="num">IX.</span> Uso Aceptable y Prohibiciones</a>
+                    <ul>
+                        <li><a href="#cap9-1"><span class="num">9.1</span> Actividades Prohibidas</a></li>
+                        <li><a href="#cap9-2"><span class="num">9.2</span> Consecuencias del Incumplimiento</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#libro10"><span class="num">X.</span> Terminación</a>
+                    <ul>
+                        <li><a href="#cap10-1"><span class="num">10.1</span> Terminación por el Usuario</a></li>
+                        <li><a href="#cap10-2"><span class="num">10.2</span> Terminación por la Plataforma</a></li>
+                        <li><a href="#cap10-3"><span class="num">10.3</span> Efectos de la Terminación</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#libro11"><span class="num">XI.</span> Legislación y Jurisdicción</a>
+                    <ul>
+                        <li><a href="#cap11-1"><span class="num">11.1</span> Ley Aplicable</a></li>
+                        <li><a href="#cap11-2"><span class="num">11.2</span> Resolución de Conflictos</a></li>
+                        <li><a href="#cap11-3"><span class="num">11.3</span> Jurisdicción Competente</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#anexos"><span class="num">—</span> Anexos</a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- ================================================================
+             LIBRO I — DISPOSICIONES GENERALES
+             ================================================================ -->
+        <section class="libro" id="libro1">
+            <div class="libro-header">
+                <div class="libro-num">Libro Primero</div>
+                <h2>Disposiciones Generales</h2>
+            </div>
+
+            <div class="capitulo" id="cap1-1">
+                <div class="capitulo-header">
+                    <div class="capitulo-num">Capítulo 1.1</div>
+                    <h3>Definiciones</h3>
+                </div>
+
+                <div class="seccion">
+                    <div class="seccion-num">1.1.1</div>
+                    <h4>Definiciones Generales</h4>
+                    <p style="font-size:0.82rem; color:var(--text-secondary); line-height:1.7; margin-bottom:12px;">
+                        Para efectos de los presentes Términos y Condiciones, los términos que se indican a continuación tendrán los significados que a cada uno se atribuye, aplicables tanto en singular como en plural:
+                    </p>
+
+                    <div class="clausula">
+                        <span class="clausula-num">1.1.1.1</span>
+                        <strong>Plataforma:</strong>
+                        <p>El ecosistema digital Csariel's Ecosystem, accesible a través del sitio web <em>galleta-domo-production.up.railway.app</em> y sus módulos integrados.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">1.1.1.2</span>
+                        <strong>Csariel's Pay:</strong>
+                        <p>El módulo de pagos digitales integrado en la Plataforma, que permite a los Usuarios recibir cobros, administrar saldos internos y solicitar retiros, mediante la articulación de proveedores financieros externos.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">1.1.1.3</span>
+                        <strong>Usuario:</strong>
+                        <p>Toda persona física mayor de edad que acceda, utilice o se registre en Csariel's Pay, en su calidad de vendedor, repartidor, creador de contenido u otra categoría habilitada.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">1.1.1.4</span>
+                        <strong>Cuenta Pay:</strong>
+                        <p>El registro digital asociado a un Usuario dentro de Csariel's Pay, que le permite recibir, administrar y retirar fondos. Se crea automáticamente al activar una tienda en el Módulo Mercado o al registrarse como repartidor.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">1.1.1.5</span>
+                        <strong>Saldo Disponible:</strong>
+                        <p>El monto de dinero que el Usuario tiene derecho a retirar de su Cuenta Pay, conforme a los registros internos de Csariel's Pay.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">1.1.1.6</span>
+                        <strong>Riel:</strong>
+                        <p>Cada uno de los canales de cobro o retiro disponibles en Csariel's Pay, específicamente: (i) transferencia bancaria SPEI; (ii) criptomonedas USDT; (iii) criptomonedas USDC; y (iv) tarjeta de crédito o débito.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">1.1.1.7</span>
+                        <strong>Proveedor Externo:</strong>
+                        <p>Tercero autorizado que procesa operaciones financieras en nombre de la Plataforma, incluyendo, de manera enunciativa mas no limitativa: Stripe Inc. (para cobros con tarjeta), Fintoc (para transferencias SPEI), y NOWPayments (para cobros y retiros con criptomonedas).</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">1.1.1.8</span>
+                        <strong>Verificación Biométrica:</strong>
+                        <p>El proceso mediante el cual el Usuario acredita su identidad utilizando datos biométricos (huella digital, reconocimiento facial) o factores de autenticación reconocidos.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">1.1.1.9</span>
+                        <strong>Mismo Riel:</strong>
+                        <p>El principio operativo de Csariel's Pay conforme al cual los fondos cobrados por un determinado Riel solo pueden ser retirados por ese mismo Riel, garantizando trazabilidad fiscal y eficiencia operativa.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="capitulo" id="cap1-2">
+                <div class="capitulo-header">
+                    <div class="capitulo-num">Capítulo 1.2</div>
+                    <h3>Aceptación de los Términos</h3>
+                </div>
+
+                <div class="seccion">
+                    <div class="clausula">
+                        <span class="clausula-num">1.2.1</span>
+                        <p>El uso de Csariel's Pay en cualquiera de sus funcionalidades implica la aceptación expresa, plena y sin reservas de los presentes Términos y Condiciones por parte del Usuario.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">1.2.2</span>
+                        <p>La aceptación puede manifestarse de forma expresa (mediante marcado de casilla de aceptación al momento del registro) o de forma tácita (mediante el uso continuado del servicio tras la publicación de una versión actualizada).</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">1.2.3</span>
+                        <p>La Plataforma registrará, para efectos de auditoría, la fecha, hora y versión de los Términos y Condiciones aceptados por cada Usuario, mediante mecanismos criptográficos de integridad (hash SHA-256).</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">1.2.4</span>
+                        <p>Si el Usuario no acepta los presentes Términos y Condiciones, deberá abstenerse de utilizar Csariel's Pay.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="capitulo" id="cap1-3">
+                <div class="capitulo-header">
+                    <div class="capitulo-num">Capítulo 1.3</div>
+                    <h3>Capacidad Legal</h3>
+                </div>
+
+                <div class="seccion">
+                    <div class="clausula">
+                        <span class="clausula-num">1.3.1</span>
+                        <p>Para utilizar Csariel's Pay, el Usuario debe ser mayor de dieciocho (18) años de edad y contar con plena capacidad legal para contratar conforme a la legislación mexicana aplicable.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">1.3.2</span>
+                        <p>Al aceptar los presentes Términos, el Usuario manifiesta y garantiza que cumple con los requisitos de edad y capacidad señalados, eximiendo a la Plataforma de cualquier responsabilidad derivada del incumplimiento de esta cláusula.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">1.3.3</span>
+                        <p>La Plataforma podrá solicitar documentación adicional para verificar la identidad, edad y capacidad del Usuario cuando lo considere necesario para cumplir con obligaciones legales o de prevención de fraude.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="capitulo" id="cap1-4">
+                <div class="capitulo-header">
+                    <div class="capitulo-num">Capítulo 1.4</div>
+                    <h3>Modificaciones</h3>
+                </div>
+
+                <div class="seccion">
+                    <div class="clausula">
+                        <span class="clausula-num">1.4.1</span>
+                        <p>La Plataforma se reserva el derecho de modificar los presentes Términos y Condiciones en cualquier momento, notificando al Usuario mediante aviso en la Plataforma o correo electrónico registrado.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">1.4.2</span>
+                        <p>Las modificaciones entrarán en vigor a partir de su publicación. El uso continuado de Csariel's Pay tras la publicación de una modificación implica la aceptación de los nuevos Términos.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">1.4.3</span>
+                        <p>Si el Usuario no está de acuerdo con las modificaciones, deberá abstenerse de continuar utilizando Csariel's Pay y, en su caso, proceder a la terminación de su cuenta conforme al Libro X.</p>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ================================================================
+             LIBRO II — DESCRIPCIÓN DEL SERVICIO
+             ================================================================ -->
+        <section class="libro" id="libro2">
+            <div class="libro-header">
+                <div class="libro-num">Libro Segundo</div>
+                <h2>Descripción del Servicio</h2>
+            </div>
+
+            <div class="capitulo" id="cap2-1">
+                <div class="capitulo-header">
+                    <div class="capitulo-num">Capítulo 2.1</div>
+                    <h3>Naturaleza de Csariel's Pay</h3>
+                </div>
+
+                <div class="seccion">
+                    <div class="clausula">
+                        <span class="clausula-num">2.1.1</span>
+                        <p>Csariel's Pay es un <strong>sistema de saldos internos</strong> que permite a los Usuarios de Csariel's Ecosystem recibir cobros, administrar saldos y solicitar retiros.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">2.1.2</span>
+                        <p>La Plataforma <strong>no es una institución financiera</strong>, ni un banco, ni una entidad de tecnología financiera regulada por la Ley Fintech, salvo en lo relativo a la articulación con proveedores financieros externos debidamente autorizados.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">2.1.3</span>
+                        <p>La Plataforma <strong>no presta servicios de intermediación financiera, no capta recursos del público, no otorga créditos y no ofrece rendimientos sobre saldos</strong>. Los saldos registrados en Csariel's Pay no generan intereses.</p>
+                    </div>
+
+                    <div class="destacado">
+                        <strong>◈ Naturaleza del saldo:</strong> Los saldos registrados en la tabla interna <em>pay_saldos</em> representan un <strong>derecho de cobro</strong> del Usuario frente a la Plataforma, correspondiente a los fondos que los compradores han pagado y que la Plataforma ha recibido en sus cuentas con los Proveedores Externos. El dinero físicamente reside en las cuentas de los Proveedores Externos.
+                    </div>
+                </div>
+            </div>
+
+            <div class="capitulo" id="cap2-2">
+                <div class="capitulo-header">
+                    <div class="capitulo-num">Capítulo 2.2</div>
+                    <h3>Relación con Proveedores Externos</h3>
+                </div>
+
+                <div class="seccion">
+                    <div class="clausula">
+                        <span class="clausula-num">2.2.1</span>
+                        <p>Csariel's Pay articula su operación con los siguientes Proveedores Externos:</p>
+                    </div>
+
+                    <table class="tabla-comisiones">
+                        <thead>
+                            <tr>
+                                <th>Proveedor</th>
+                                <th>Servicios Prestados</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Stripe Inc.</strong></td>
+                                <td>Procesamiento de pagos con tarjeta de crédito/débito.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Fintoc</strong></td>
+                                <td>Transferencias SPEI entrantes y salientes (retiros).</td>
+                            </tr>
+                            <tr>
+                                <td><strong>NOWPayments</strong></td>
+                                <td>Procesamiento de cobros y retiros con criptomonedas (USDT, USDC).</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="clausula">
+                        <span class="clausula-num">2.2.2</span>
+                        <p>Cada Proveedor Externo cuenta con sus propios Términos y Condiciones, Políticas de Privacidad y mecanismos de resolución de conflictos, los cuales son aplicables a las operaciones que cada uno procesa.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">2.2.3</span>
+                        <p>La Plataforma no es responsable por la interrupción, suspensión, modificación o terminación de los servicios prestados por los Proveedores Externos, ni por cambios en sus políticas operativas, comisiones o tiempos de procesamiento.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">2.2.4</span>
+                        <p>Los datos personales y financieros que el Usuario proporcione directamente a los Proveedores Externos se rigen por las políticas de privacidad de cada uno de ellos. La Plataforma no tiene acceso a dichos datos, salvo en lo estrictamente necesario para la operación (por ejemplo, tokens de referencia, últimos cuatro dígitos de cuenta bancaria, etc.).</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="capitulo" id="cap2-3">
+                <div class="capitulo-header">
+                    <div class="capitulo-num">Capítulo 2.3</div>
+                    <h3>Métodos de Cobro y Retiro</h3>
+                </div>
+
+                <div class="seccion">
+                    <div class="clausula">
+                        <span class="clausula-num">2.3.1</span>
+                        <p>Csariel's Pay habilita los siguientes Rieles:</p>
+                    </div>
+
+                    <table class="tabla-comisiones">
+                        <thead>
+                            <tr>
+                                <th>Riel</th>
+                                <th>Cobro</th>
+                                <th>Retiro</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>SPEI</strong></td>
+                                <td>✅ Sí</td>
+                                <td>✅ Sí</td>
+                            </tr>
+                            <tr>
+                                <td><strong>USDT (TRC20, BSC, Polygon, Solana, Ethereum)</strong></td>
+                                <td>✅ Sí</td>
+                                <td>✅ Sí</td>
+                            </tr>
+                            <tr>
+                                <td><strong>USDC (Polygon, Solana, BSC, Ethereum)</strong></td>
+                                <td>✅ Sí</td>
+                                <td>✅ Sí</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Tarjeta (Visa, Mastercard)</strong></td>
+                                <td>✅ Sí</td>
+                                <td>❌ No por ahora</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="clausula">
+                        <span class="clausula-num">2.3.2</span>
+                        <p>La disponibilidad de cada Riel puede variar según el país de residencia del Usuario, la configuración de la cuenta del Usuario, y las políticas de los Proveedores Externos.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">2.3.3</span>
+                        <p>La Plataforma se reserva el derecho de agregar, modificar o eliminar Rieles disponibles, notificando al Usuario con antelación razonable.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="capitulo" id="cap2-4">
+                <div class="capitulo-header">
+                    <div class="capitulo-num">Capítulo 2.4</div>
+                    <h3>Principio de Mismo Riel</h3>
+                </div>
+
+                <div class="seccion">
+                    <div class="clausula">
+                        <span class="clausula-num">2.4.1</span>
+                        <p>Csariel's Pay opera bajo el <strong>Principio de Mismo Riel</strong>, conforme al cual <strong>los fondos cobrados por un Riel solo pueden ser retirados por ese mismo Riel</strong>.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">2.4.2</span>
+                        <p>En consecuencia:</p>
+                        <ul style="list-style:none; padding:0; margin:8px 0 8px 16px;">
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Los cobros por <strong>SPEI</strong> solo pueden retirarse por SPEI.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Los cobros por <strong>criptomonedas</strong> solo pueden retirarse en criptomonedas.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Los cobros por <strong>tarjeta</strong> se acumulan en el saldo del Usuario y podrán retirarse por SPEI o criptomonedas cuando el Usuario lo solicite.
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">2.4.3</span>
+                        <p>El Principio de Mismo Riel tiene como finalidad garantizar la trazabilidad fiscal, evitar comisiones dobles, y asegurar la sostenibilidad operativa del sistema.</p>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ================================================================
+             LIBRO III — CUENTA Y ACCESO
+             ================================================================ -->
+        <section class="libro" id="libro3">
+            <div class="libro-header">
+                <div class="libro-num">Libro Tercero</div>
+                <h2>Cuenta y Acceso</h2>
+            </div>
+
+            <div class="capitulo" id="cap3-1">
+                <div class="capitulo-header">
+                    <div class="capitulo-num">Capítulo 3.1</div>
+                    <h3>Creación de Cuenta Pay</h3>
+                </div>
+
+                <div class="seccion">
+                    <div class="clausula">
+                        <span class="clausula-num">3.1.1</span>
+                        <p>La Cuenta Pay se crea <strong>automáticamente</strong> cuando el Usuario:</p>
+                        <ul style="list-style:none; padding:0; margin:8px 0 8px 16px;">
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Activa una tienda en el Módulo Mercado (tipo: <em>vendedor</em>), o
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Completa su registro como repartidor (tipo: <em>repartidor</em>).
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">3.1.2</span>
+                        <p>El Usuario no requiere un registro adicional ni separado para acceder a Csariel's Pay. La Cuenta Pay hereda la identidad del Usuario registrado en Csariel's Ecosystem.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">3.1.3</span>
+                        <p>Cada Usuario puede tener una sola Cuenta Pay activa por rol. En caso de que el Usuario tenga simultáneamente el rol de vendedor y repartidor, podrá contar con dos Cuentas Pay (una por cada rol), gestionadas bajo la misma identidad.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="capitulo" id="cap3-2">
+                <div class="capitulo-header">
+                    <div class="capitulo-num">Capítulo 3.2</div>
+                    <h3>Seguridad de la Cuenta</h3>
+                </div>
+
+                <div class="seccion">
+                    <div class="clausula">
+                        <span class="clausula-num">3.2.1</span>
+                        <p>El Usuario es el único responsable de:</p>
+                        <ul style="list-style:none; padding:0; margin:8px 0 8px 16px;">
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Mantener la confidencialidad de sus credenciales de acceso (correo, contraseña, código de verificación).
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                La configuración de seguridad de sus dispositivos (bloqueo de pantalla, huella digital, Face ID, PIN).
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                La custodia de sus dispositivos y la prevención de accesos no autorizados.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Notificar de inmediato a la Plataforma en caso de robo, extravío o compromiso de su dispositivo.
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">3.2.2</span>
+                        <p>La Plataforma no será responsable por accesos no autorizados a la Cuenta Pay cuando éstos deriven de:</p>
+                        <ul style="list-style:none; padding:0; margin:8px 0 8px 16px;">
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                El préstamo, extravío o robo del dispositivo del Usuario.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                La falta de configuración de mecanismos de seguridad en el dispositivo.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                La falta de notificación oportuna a la Plataforma sobre robo, extravío o compromiso.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                La instalación de software malicioso, la apertura de enlaces fraudulentos, o cualquier otro descuido del Usuario.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="capitulo" id="cap3-3">
+                <div class="capitulo-header">
+                    <div class="capitulo-num">Capítulo 3.3</div>
+                    <h3>Verificación Biométrica</h3>
+                </div>
+
+                <div class="seccion">
+                    <div class="seccion-num">3.3.1</div>
+                    <h4>Obligatoriedad de la Verificación Biométrica</h4>
+
+                    <div class="clausula">
+                        <span class="clausula-num">3.3.1.1</span>
+                        <p>Todo retiro de fondos desde Csariel's Pay requiere <strong>verificación biométrica obligatoria</strong> del Usuario, la cual puede realizarse mediante:</p>
+                        <ul style="list-style:none; padding:0; margin:8px 0 8px 16px;">
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                <strong>Huella digital o Face ID</strong>, mediante el estándar WebAuthn del navegador.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                <strong>Reconocimiento facial</strong>, mediante captura de selfie en vivo con detección de liveness.
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">3.3.1.2</span>
+                        <p>El Usuario podrá elegir el método de verificación que prefiera en cada operación. La Plataforma podrá ofrecer métodos adicionales conforme los desarrolle.</p>
+                    </div>
+                </div>
+
+                <div class="seccion">
+                    <div class="seccion-num">3.3.2</div>
+                    <h4>Valor Legal de la Biometría</h4>
+
+                    <div class="clausula">
+                        <span class="clausula-num">3.3.2.1</span>
+                        <p>El Usuario reconoce y acepta expresamente que <strong>cada Factor de Autenticación (huella digital, reconocimiento facial, contraseña, código SMS) se entiende como sustituto de su firma autógrafa</strong>, y por lo tanto:</p>
+                    </div>
+
+                    <div class="cita-legal">
+                        "Cada uno de los Factores de Autenticación, en lo individual, se entenderán como sustitutos de la firma autógrafa del Cliente, por lo que producirán todos los efectos jurídicos y tendrán el mismo valor probatorio. El uso de los Factores de Autenticación obligará legalmente al Cliente."
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">3.3.2.2</span>
+                        <p>En consecuencia, cualquier operación realizada mediante verificación biométrica se presume realizada por el Usuario titular de la cuenta, salvo prueba en contrario que demuestre la falla del sistema de la Plataforma.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">3.3.2.3</span>
+                        <p>Esta disposición es consistente con la regulación aplicable en México a instituciones de crédito y entidades financieras, particularmente con las disposiciones de la Comisión Nacional Bancaria y de Valores (CNBV) y la Comisión Nacional para la Protección y Defensa de los Usuarios de Servicios Financieros (CONDUSEF), que reconocen la validez jurídica de los mecanismos biométricos de autenticación.</p>
+                    </div>
+                </div>
+
+                <div class="seccion">
+                    <div class="seccion-num">3.3.3</div>
+                    <h4>Registro de Auditoría</h4>
+
+                    <div class="clausula">
+                        <span class="clausula-num">3.3.3.1</span>
+                        <p>La Plataforma registrará, para cada operación verificada biométricamente, los siguientes datos:</p>
+                        <ul style="list-style:none; padding:0; margin:8px 0 8px 16px;">
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Fecha y hora exacta de la verificación.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Método de verificación utilizado (huella, rostro, SMS).
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Dirección IP desde la cual se realizó la operación.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Identificador del dispositivo (User-Agent del navegador).
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Resultado de la verificación (éxito o fallo).
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">3.3.3.2</span>
+                        <p>Estos registros se conservarán por un plazo mínimo de cinco (5) años y podrán ser utilizados como evidencia en caso de disputa, conforme a la legislación aplicable.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="capitulo" id="cap3-4">
+                <div class="capitulo-header">
+                    <div class="capitulo-num">Capítulo 3.4</div>
+                    <h3>Métodos Alternativos de Verificación</h3>
+                </div>
+
+                <div class="seccion">
+                    <div class="clausula">
+                        <span class="clausula-num">3.4.1</span>
+                        <p>En caso de que el Usuario no pueda utilizar huella digital ni reconocimiento facial (por ejemplo, por no contar con sensor biométrico, por falla del mismo, o por decisión del Usuario), la Plataforma ofrecerá un método alternativo consistente en <strong>verificación por código SMS enviado al número de teléfono registrado, combinado con la contraseña de la cuenta</strong>.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">3.4.2</span>
+                        <p>Los retiros realizados mediante verificación SMS+contraseña estarán sujetos a un <strong>límite de retiro de $2,000.00 MXN (dos mil pesos 00/100 M.N.) por operación</strong>, con el fin de reducir el riesgo de accesos no autorizados.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">3.4.3</span>
+                        <p>La Plataforma podrá agregar métodos adicionales de verificación conforme los desarrolle, notificando al Usuario con antelación razonable.</p>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ================================================================
+             LIBRO IV — COBROS Y SALDOS
+             ================================================================ -->
+        <section class="libro" id="libro4">
+            <div class="libro-header">
+                <div class="libro-num">Libro Cuarto</div>
+                <h2>Cobros y Saldos</h2>
+            </div>
+
+            <div class="capitulo" id="cap4-1">
+                <div class="capitulo-header">
+                    <div class="capitulo-num">Capítulo 4.1</div>
+                    <h3>Creación de Intenciones de Cobro</h3>
+                </div>
+
+                <div class="seccion">
+                    <div class="clausula">
+                        <span class="clausula-num">4.1.1</span>
+                        <p>El Usuario podrá generar intenciones de cobro mediante la Plataforma, las cuales se registran en el sistema interno de Csariel's Pay y generan un token público seguro (QR o enlace) para que el comprador realice el pago.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">4.1.2</span>
+                        <p>Cada intención de cobro tiene una vigencia predeterminada, tras la cual expira y no puede ser pagada. El Usuario podrá cancelar una intención antes de que sea pagada.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">4.1.3</span>
+                        <p>Las intenciones de cobro se procesan con idempotencia garantizada, lo que impide la duplicación de cobros por reintentos del sistema o del comprador.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="capitulo" id="cap4-2">
+                <div class="capitulo-header">
+                    <div class="capitulo-num">Capítulo 4.2</div>
+                    <h3>Confirmación de Pagos</h3>
+                </div>
+
+                <div class="seccion">
+                    <div class="clausula">
+                        <span class="clausula-num">4.2.1</span>
+                        <p>Un pago se considera <strong>confirmado</strong> únicamente cuando el Proveedor Externo correspondiente envía una notificación firmada (webhook) que la Plataforma valida criptográficamente.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">4.2.2</span>
+                        <p>La Plataforma <strong>no confirma pagos por confirmación visual en el navegador, ni por redirecciones desde el proveedor, ni por respuestas exitosas del frontend</strong>. La única fuente de verdad es el webhook firmado del Proveedor Externo.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">4.2.3</span>
+                        <p>En caso de que un pago sea revertido por el Proveedor Externo (por ejemplo, por contracargo en tarjeta, reverso de SPEI, o cancelación de transacción cripto), la Plataforma ajustará el Saldo Disponible del Usuario en consecuencia, pudiendo resultar en saldo negativo si los fondos ya fueron retirados.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="capitulo" id="cap4-3">
+                <div class="capitulo-header">
+                    <div class="capitulo-num">Capítulo 4.3</div>
+                    <h3>Acreditación de Saldo</h3>
+                </div>
+
+                <div class="seccion">
+                    <div class="clausula">
+                        <span class="clausula-num">4.3.1</span>
+                        <p>Una vez confirmado un pago, la Plataforma acredita el monto correspondiente al Saldo Disponible del Usuario, quedando inmediatamente disponible para retiro.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">4.3.2</span>
+                        <p>El Saldo Disponible se calcula por Riel, conforme al Principio de Mismo Riel establecido en el Capítulo 2.4.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">4.3.3</span>
+                        <p>La Plataforma podrá implementar, a su discreción, mecanismos de retención temporal de saldo (conforme al Capítulo 4.4) para protegerse contra contracargos y reversos.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="capitulo" id="cap4-4">
+                <div class="capitulo-header">
+                    <div class="capitulo-num">Capítulo 4.4</div>
+                    <h3>Liberación del Saldo</h3>
+                </div>
+
+                <div class="seccion">
+                    <div class="clausula">
+                        <span class="clausula-num">4.4.1</span>
+                        <p>La Plataforma opera bajo un modelo de <strong>liberación diferida</strong>, conforme al cual el saldo se acredita como <em>pendiente</em> al confirmarse el pago, y se libera como <em>disponible</em> tras los siguientes plazos:</p>
+                    </div>
+
+                    <table class="tabla-comisiones">
+                        <thead>
+                            <tr>
+                                <th>Tipo de cobro</th>
+                                <th>Plazo de liberación</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Ventas digitales (Muro, Tips, Live, Videos, Suscripciones)</td>
+                                <td>24 horas después de confirmado el pago</td>
+                            </tr>
+                            <tr>
+                                <td>Ventas físicas en Mercado</td>
+                                <td>Al marcarse el pedido como <em>entregado</em> + 1 hora</td>
+                            </tr>
+                            <tr>
+                                <td>Servicios de repartidor</td>
+                                <td>Al marcarse el pedido como <em>entregado</em> + 1 hora</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="clausula">
+                        <span class="clausula-num">4.4.2</span>
+                        <p>El plazo de liberación tiene como finalidad proteger tanto a la Plataforma como al Usuario contra fraudes, contracargos y reversos, así como permitir que el comprador confirme la recepción del producto o servicio adquirido.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">4.4.3</span>
+                        <p>La Plataforma se reserva el derecho de modificar los plazos de liberación, notificando al Usuario con antelación razonable, en función del comportamiento del mercado, las políticas de los Proveedores Externos, o requerimientos regulatorios.</p>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ================================================================
+             LIBRO V — RETIROS
+             ================================================================ -->
+        <section class="libro" id="libro5">
+            <div class="libro-header">
+                <div class="libro-num">Libro Quinto</div>
+                <h2>Retiros</h2>
+            </div>
+
+            <div class="capitulo" id="cap5-1">
+                <div class="capitulo-header">
+                    <div class="capitulo-num">Capítulo 5.1</div>
+                    <h3>Solicitud de Retiro</h3>
+                </div>
+
+                <div class="seccion">
+                    <div class="clausula">
+                        <span class="clausula-num">5.1.1</span>
+                        <p>El Usuario podrá solicitar el retiro de su Saldo Disponible desde el panel de Csariel's Pay, indicando el monto, el Riel de retiro, y los datos de destino correspondientes.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">5.1.2</span>
+                        <p>El monto mínimo de retiro es de <strong>$50.00 MXN (cincuenta pesos 00/100 M.N.)</strong>, salvo que la Plataforma establezca un monto distinto conforme a cada Riel.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">5.1.3</span>
+                        <p>El monto máximo de retiro por operación es de <strong>$500,000.00 MXN (quinientos mil pesos 00/100 M.N.)</strong>, pudiendo variar según el Riel y las políticas del Proveedor Externo correspondiente.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="capitulo" id="cap5-2">
+                <div class="capitulo-header">
+                    <div class="capitulo-num">Capítulo 5.2</div>
+                    <h3>Verificación Biométrica Obligatoria</h3>
+                </div>
+
+                <div class="seccion">
+                    <div class="clausula">
+                        <span class="clausula-num">5.2.1</span>
+                        <p>Todo retiro requiere <strong>verificación biométrica obligatoria</strong> conforme al Capítulo 3.3 de los presentes Términos.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">5.2.2</span>
+                        <p>La verificación biométrica tiene una validez de <strong>cinco (5) minutos</strong> a partir de su realización exitosa. Transcurrido ese plazo, el Usuario deberá verificar nuevamente.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">5.2.3</span>
+                        <p>La verificación biométrica está vinculada al monto y al Riel de retiro específicos. Si el Usuario desea cambiar el monto o el Riel, deberá realizar una nueva verificación.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="capitulo" id="cap5-3">
+                <div class="capitulo-header">
+                    <div class="capitulo-num">Capítulo 5.3</div>
+                    <h3>Tiempos de Acreditación</h3>
+                </div>
+
+                <div class="seccion">
+                    <div class="clausula">
+                        <span class="clausula-num">5.3.1</span>
+                        <p>Los tiempos estimados de acreditación del retiro en el destino del Usuario son los siguientes:</p>
+                    </div>
+
+                    <table class="tabla-comisiones">
+                        <thead>
+                            <tr>
+                                <th>Riel</th>
+                                <th>Tiempo estimado de acreditación</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>SPEI</strong></td>
+                                <td>1 a 2 días hábiles</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Criptomonedas</strong></td>
+                                <td>15 minutos a 2 horas (según la red utilizada)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="clausula">
+                        <span class="clausula-num">5.3.2</span>
+                        <p>Los tiempos indicados son estimaciones y pueden variar según las condiciones de los Proveedores Externos y de las redes bancarias o de blockchain correspondientes. La Plataforma no garantiza tiempos exactos.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="capitulo" id="cap5-4">
+                <div class="capitulo-header">
+                    <div class="capitulo-num">Capítulo 5.4</div>
+                    <h3>Retiros Fallidos y Reversos</h3>
+                </div>
+
+                <div class="seccion">
+                    <div class="clausula">
+                        <span class="clausula-num">5.4.1</span>
+                        <p>En caso de que un retiro falle por causas atribuibles al Proveedor Externo (por ejemplo, datos de destino incorrectos, cuenta bancaria inválida, rechazo de la transferencia), la Plataforma <strong>revertirá el monto reservado al Saldo Disponible del Usuario</strong>.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">5.4.2</span>
+                        <p>La Plataforma notificará al Usuario sobre el fallo del retiro y las causas correspondientes, conforme a la información disponible.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">5.4.3</span>
+                        <p>El Usuario podrá reintentar el retiro con datos de destino corregidos. Cada reintento genera una nueva solicitud y una nueva verificación biométrica.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="capitulo" id="cap5-5">
+                <div class="capitulo-header">
+                    <div class="capitulo-num">Capítulo 5.5</div>
+                    <h3>Límites Operativos</h3>
+                </div>
+
+                <div class="seccion">
+                    <div class="clausula">
+                        <span class="clausula-num">5.5.1</span>
+                        <p>La Plataforma podrá establecer límites operativos diarios, semanales o mensuales de retiro, en función de:</p>
+                        <ul style="list-style:none; padding:0; margin:8px 0 8px 16px;">
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                El nivel de verificación del Usuario.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                El historial de operaciones.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Las políticas de los Proveedores Externos.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Requerimientos regulatorios aplicables.
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">5.5.2</span>
+                        <p>Los límites vigentes serán informados al Usuario mediante el panel de Csariel's Pay o mediante notificación directa.</p>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ================================================================
+             LIBRO VI — COMISIONES Y COSTOS
+             ================================================================ -->
+        <section class="libro" id="libro6">
+            <div class="libro-header">
+                <div class="libro-num">Libro Sexto</div>
+                <h2>Comisiones y Costos</h2>
+            </div>
+
+            <div class="capitulo" id="cap6-1">
+                <div class="capitulo-header">
+                    <div class="capitulo-num">Capítulo 6.1</div>
+                    <h3>Comisiones de Proveedores Externos</h3>
+                </div>
+
+                <div class="seccion">
+                    <div class="clausula">
+                        <span class="clausula-num">6.1.1</span>
+                        <p>Las operaciones procesadas por los Proveedores Externos están sujetas a las comisiones que cada uno establece, las cuales son retenidas directamente por el Proveedor correspondiente.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">6.1.2</span>
+                        <p>La Plataforma no controla las comisiones de los Proveedores Externos, las cuales pueden variar sin previo aviso conforme a sus propias políticas.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="capitulo" id="cap6-2">
+                <div class="capitulo-header">
+                    <div class="capitulo-num">Capítulo 6.2</div>
+                    <h3>Comisiones de la Plataforma</h3>
+                </div>
+
+                <div class="seccion">
+                    <div class="clausula">
+                        <span class="clausula-num">6.2.1</span>
+                        <p>Actualmente, la Plataforma <strong>no aplica comisiones adicionales</strong> sobre los cobros o retiros procesados por Csariel's Pay, salvo las comisiones propias de los Proveedores Externos.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">6.2.2</span>
+                        <p>La Plataforma se reserva el derecho de implementar comisiones en el futuro, notificando al Usuario con antelación razonable de al menos treinta (30) días naturales.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="capitulo" id="cap6-3">
+                <div class="capitulo-header">
+                    <div class="capitulo-num">Capítulo 6.3</div>
+                    <h3>Fondo de Reserva contra Contracargos</h3>
+                </div>
+
+                <div class="seccion">
+                    <div class="clausula">
+                        <span class="clausula-num">6.3.1</span>
+                        <p>Con el fin de proteger tanto a la Plataforma como al Usuario contra contracargos, reversos y fraudes, la Plataforma podrá retener <strong>hasta un 7% (siete por ciento) de cada retiro</strong> como <strong>Fondo de Reserva</strong>.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">6.3.2</span>
+                        <p>El Fondo de Reserva se conservará por un plazo de <strong>hasta treinta (30) días naturales</strong> a partir de la fecha del retiro, tras lo cual será liberado al Saldo Disponible del Usuario, salvo que exista una disputa activa.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">6.3.3</span>
+                        <p>En caso de que se presente un contracargo o reverso sobre una operación cuya reserva aún esté vigente, la Plataforma podrá utilizar el Fondo de Reserva para cubrir el monto correspondiente.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">6.3.4</span>
+                        <p>Si el contracargo o reverso excede el monto de la reserva correspondiente a la operación, la Plataforma podrá debitar el saldo remanente de otras operaciones del Usuario o, en su defecto, requerir el pago directo del adeudo.</p>
+                    </div>
+
+                    <div class="destacado">
+                        <strong>◈ Nota:</strong> La Plataforma podrá ajustar el porcentaje del Fondo de Reserva y el plazo de retención conforme a su evaluación de riesgo, el historial del Usuario, y las políticas de los Proveedores Externos. Los ajustes serán notificados al Usuario.
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ================================================================
+             LIBRO VII — PROTECCIÓN DE DATOS PERSONALES
+             ================================================================ -->
+        <section class="libro" id="libro7">
+            <div class="libro-header">
+                <div class="libro-num">Libro Séptimo</div>
+                <h2>Protección de Datos Personales</h2>
+            </div>
+
+            <div class="capitulo" id="cap7-1">
+                <div class="capitulo-header">
+                    <div class="capitulo-num">Capítulo 7.1</div>
+                    <h3>Datos Recopilados</h3>
+                </div>
+
+                <div class="seccion">
+                    <div class="clausula">
+                        <span class="clausula-num">7.1.1</span>
+                        <p>La Plataforma recopila, para el funcionamiento de Csariel's Pay, los siguientes datos personales:</p>
+                    </div>
+
+                    <table class="tabla-comisiones">
+                        <thead>
+                            <tr>
+                                <th>Categoría</th>
+                                <th>Datos</th>
+                                <th>Finalidad</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Identificación</td>
+                                <td>Nombre, correo, teléfono, identificación oficial.</td>
+                                <td>Verificación de identidad, prevención de fraude.</td>
+                            </tr>
+                            <tr>
+                                <td>Biométricos</td>
+                                <td>Huella digital, rostro (selfie).</td>
+                                <td>Verificación de identidad en retiros.</td>
+                            </tr>
+                            <tr>
+                                <td>Financieros</td>
+                                <td>CLABE, wallet, últimos 4 dígitos de cuenta.</td>
+                                <td>Procesamiento de retiros.</td>
+                            </tr>
+                            <tr>
+                                <td>Operativos</td>
+                                <td>IP, dispositivo, hora, método de verificación.</td>
+                                <td>Auditoría, seguridad, prevención de fraude.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="capitulo" id="cap7-2">
+                <div class="capitulo-header">
+                    <div class="capitulo-num">Capítulo 7.2</div>
+                    <h3>Uso de Datos Biométricos</h3>
+                </div>
+
+                <div class="seccion">
+                    <div class="clausula">
+                        <span class="clausula-num">7.2.1</span>
+                        <p>Los datos biométricos del Usuario se utilizarán <strong>exclusivamente</strong> para:</p>
+                        <ul style="list-style:none; padding:0; margin:8px 0 8px 16px;">
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Verificar la identidad del Usuario en operaciones de retiro.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Prevenir accesos no autorizados y fraudes.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Cumplir con obligaciones legales y regulatorias aplicables.
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">7.2.2</span>
+                        <p><strong>Los datos biométricos no se compartirán con terceros no relacionados con la operación de Csariel's Pay</strong>, salvo requerimiento de autoridad competente conforme a la legislación aplicable.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">7.2.3</span>
+                        <p>Los datos biométricos se consideran <strong>datos personales sensibles</strong> conforme a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP), y por tanto requieren el consentimiento expreso y por escrito del Usuario para su tratamiento, el cual se otorga mediante la aceptación de los presentes Términos y la realización de la verificación biométrica.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="capitulo" id="cap7-3">
+                <div class="capitulo-header">
+                    <div class="capitulo-num">Capítulo 7.3</div>
+                    <h3>Derechos ARCO</h3>
+                </div>
+
+                <div class="seccion">
+                    <div class="clausula">
+                        <span class="clausula-num">7.3.1</span>
+                        <p>El Usuario tiene derecho a:</p>
+                        <ul style="list-style:none; padding:0; margin:8px 0 8px 16px;">
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                <strong>Acceder</strong> a sus datos personales en posesión de la Plataforma.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                <strong>Rectificar</strong> sus datos cuando sean inexactos o incompletos.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                <strong>Cancelar</strong> sus datos cuando ya no sean necesarios para las finalidades previstas.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                <strong>Oponerse</strong> al tratamiento de sus datos para finalidades específicas.
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">7.3.2</span>
+                        <p>Para ejercer los Derechos ARCO, el Usuario podrá solicitarlo mediante el correo de contacto legal indicado en el Anexo C, cumpliendo con los requisitos de la LFPDPPP y su Reglamento.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">7.3.3</span>
+                        <p>La Plataforma responderá a las solicitudes ARCO en un plazo máximo de veinte (20) días hábiles, conforme a lo establecido en la LFPDPPP.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="capitulo" id="cap7-4">
+                <div class="capitulo-header">
+                    <div class="capitulo-num">Capítulo 7.4</div>
+                    <h3>Retención y Eliminación</h3>
+                </div>
+
+                <div class="seccion">
+                    <div class="clausula">
+                        <span class="clausula-num">7.4.1</span>
+                        <p>La Plataforma conservará los datos personales del Usuario durante el tiempo necesario para cumplir con las finalidades previstas en los presentes Términos y con las obligaciones legales aplicables.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">7.4.2</span>
+                        <p>En particular, los registros de auditoría de operaciones (Capítulo 3.3.3) se conservarán por un plazo mínimo de cinco (5) años, conforme a las disposiciones aplicables en materia de prevención de lavado de dinero y financiamiento al terrorismo.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">7.4.3</span>
+                        <p>Al término del plazo de retención, o al ejercerse el Derecho de Cancelación, los datos personales serán eliminados conforme a los procedimientos internos de la Plataforma y a las disposiciones de la LFPDPPP.</p>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ================================================================
+             LIBRO VIII — RESPONSABILIDADES Y LIMITACIONES
+             ================================================================ -->
+        <section class="libro" id="libro8">
+            <div class="libro-header">
+                <div class="libro-num">Libro Octavo</div>
+                <h2>Responsabilidades y Limitaciones</h2>
+            </div>
+
+            <div class="capitulo" id="cap8-1">
+                <div class="capitulo-header">
+                    <div class="capitulo-num">Capítulo 8.1</div>
+                    <h3>Responsabilidad del Usuario</h3>
+                </div>
+
+                <div class="seccion">
+                    <div class="clausula">
+                        <span class="clausula-num">8.1.1</span>
+                        <p>El Usuario es el único responsable de:</p>
+                        <ul style="list-style:none; padding:0; margin:8px 0 8px 16px;">
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                La veracidad de los datos que proporciona a la Plataforma y a los Proveedores Externos.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                La legalidad de las operaciones que realiza a través de Csariel's Pay.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                El cumplimiento de sus obligaciones fiscales derivadas de los cobros realizados.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                La custodia y seguridad de sus dispositivos y credenciales.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                La veracidad de los datos de destino de retiros (CLABE, wallet, etc.).
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">8.1.2</span>
+                        <p>El Usuario se compromete a indemnizar y sacar en paz y a salvo a la Plataforma de cualquier reclamación, demanda, daño o perjuicio derivado del uso indebido de Csariel's Pay.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="capitulo" id="cap8-2">
+                <div class="capitulo-header">
+                    <div class="capitulo-num">Capítulo 8.2</div>
+                    <h3>Responsabilidad de la Plataforma</h3>
+                </div>
+
+                <div class="seccion">
+                    <div class="clausula">
+                        <span class="clausula-num">8.2.1</span>
+                        <p>La Plataforma se compromete a:</p>
+                        <ul style="list-style:none; padding:0; margin:8px 0 8px 16px;">
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Mantener la operación de Csariel's Pay conforme a los presentes Términos y a la legislación aplicable.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Implementar medidas razonables de seguridad para proteger la información y los fondos del Usuario.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Registrar de manera íntegra y auditable las operaciones realizadas.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Notificar al Usuario sobre cualquier cambio relevante en las condiciones del servicio.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="capitulo" id="cap8-3">
+                <div class="capitulo-header">
+                    <div class="capitulo-num">Capítulo 8.3</div>
+                    <h3>Limitación de Responsabilidad</h3>
+                </div>
+
+                <div class="seccion">
+                    <div class="clausula">
+                        <span class="clausula-num">8.3.1</span>
+                        <p>La Plataforma no será responsable por:</p>
+                        <ul style="list-style:none; padding:0; margin:8px 0 8px 16px;">
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Interrupciones, suspensiones o fallas de los Proveedores Externos.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Fallas de conexión a internet o de dispositivos del Usuario.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Accesos no autorizados cuando el Usuario no haya protegido adecuadamente sus credenciales o dispositivos.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Datos de destino de retiro incorrectos proporcionados por el Usuario.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Daños indirectos, incidentales, especiales o consecuentes.
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">8.3.2</span>
+                        <p>La responsabilidad total de la Plataforma, en cualquier caso, se limitará al monto de las operaciones efectivamente procesadas en los últimos doce (12) meses.</p>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ================================================================
+             LIBRO IX — USO ACEPTABLE Y PROHIBICIONES
+             ================================================================ -->
+        <section class="libro" id="libro9">
+            <div class="libro-header">
+                <div class="libro-num">Libro Noveno</div>
+                <h2>Uso Aceptable y Prohibiciones</h2>
+            </div>
+
+            <div class="capitulo" id="cap9-1">
+                <div class="capitulo-header">
+                    <div class="capitulo-num">Capítulo 9.1</div>
+                    <h3>Actividades Prohibidas</h3>
+                </div>
+
+                <div class="seccion">
+                    <div class="clausula">
+                        <span class="clausula-num">9.1.1</span>
+                        <p>El Usuario se compromete a <strong>no utilizar Csariel's Pay</strong> para:</p>
+                        <ul style="list-style:none; padding:0; margin:8px 0 8px 16px;">
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Actividades ilícitas, incluyendo lavado de dinero, financiamiento al terrorismo, defraudación fiscal, o cualquier delito previsto en la legislación mexicana.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Venta de productos o servicios prohibidos por la ley mexicana (drogas, armas, personas, etc.).
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Suplantación de identidad o falsificación de documentos.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Fraudes electrónicos o ingeniería social.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Manipulación del sistema, incluyendo ataques informáticos, ingeniería inversa, o explotación de vulnerabilidades.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Creación de cuentas falsas o duplicadas.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Cualquier actividad que viole los Términos y Condiciones de los Proveedores Externos.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="capitulo" id="cap9-2">
+                <div class="capitulo-header">
+                    <div class="capitulo-num">Capítulo 9.2</div>
+                    <h3>Consecuencias del Incumplimiento</h3>
+                </div>
+
+                <div class="seccion">
+                    <div class="clausula">
+                        <span class="clausula-num">9.2.1</span>
+                        <p>En caso de incumplimiento de los presentes Términos, la Plataforma podrá, sin previo aviso y según la gravedad de la falta:</p>
+                        <ul style="list-style:none; padding:0; margin:8px 0 8px 16px;">
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Suspender temporalmente la Cuenta Pay del Usuario.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Cancelar definitivamente la Cuenta Pay.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Retener fondos sospechosos conforme a la legislación aplicable.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Reportar las actividades a las autoridades competentes.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Ejercer las acciones legales correspondientes.
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">9.2.2</span>
+                        <p>Las consecuencias señaladas se aplicarán sin perjuicio de las responsabilidades civiles, penales o administrativas que correspondan al Usuario.</p>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ================================================================
+             LIBRO X — TERMINACIÓN
+             ================================================================ -->
+        <section class="libro" id="libro10">
+            <div class="libro-header">
+                <div class="libro-num">Libro Décimo</div>
+                <h2>Terminación</h2>
+            </div>
+
+            <div class="capitulo" id="cap10-1">
+                <div class="capitulo-header">
+                    <div class="capitulo-num">Capítulo 10.1</div>
+                    <h3>Terminación por el Usuario</h3>
+                </div>
+
+                <div class="seccion">
+                    <div class="clausula">
+                        <span class="clausula-num">10.1.1</span>
+                        <p>El Usuario podrá dar por terminada su relación con Csariel's Pay en cualquier momento mediante la eliminación de su cuenta conforme al procedimiento establecido en la Plataforma.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">10.1.2</span>
+                        <p>Antes de la eliminación de la cuenta, el Usuario deberá retirar la totalidad de su Saldo Disponible. Los saldos no retirados podrán ser conservados por la Plataforma durante el plazo legalmente establecido para su reclamación.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">10.1.3</span>
+                        <p>La terminación no exime al Usuario del cumplimiento de las obligaciones contraídas previamente a la fecha de terminación.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="capitulo" id="cap10-2">
+                <div class="capitulo-header">
+                    <div class="capitulo-num">Capítulo 10.2</div>
+                    <h3>Terminación por la Plataforma</h3>
+                </div>
+
+                <div class="seccion">
+                    <div class="clausula">
+                        <span class="clausula-num">10.2.1</span>
+                        <p>La Plataforma podrá dar por terminada la relación con el Usuario, con o sin causa, mediante notificación previa de al menos treinta (30) días naturales.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">10.2.2</span>
+                        <p>La terminación por causa grave (incumplimiento de los Términos, actividades ilícitas, fraude comprobado) podrá realizarse de manera inmediata, sin necesidad de aviso previo.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">10.2.3</span>
+                        <p>En caso de terminación por parte de la Plataforma sin causa imputable al Usuario, la Plataforma liberará el Saldo Disponible del Usuario conforme a los procedimientos establecidos.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="capitulo" id="cap10-3">
+                <div class="capitulo-header">
+                    <div class="capitulo-num">Capítulo 10.3</div>
+                    <h3>Efectos de la Terminación</h3>
+                </div>
+
+                <div class="seccion">
+                    <div class="clausula">
+                        <span class="clausula-num">10.3.1</span>
+                        <p>Tras la terminación de la relación:</p>
+                        <ul style="list-style:none; padding:0; margin:8px 0 8px 16px;">
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                La Cuenta Pay del Usuario será desactivada.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Los saldos pendientes de retiro se conservarán conforme a la legislación aplicable.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Los registros de auditoría se conservarán por el plazo legalmente establecido.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                Las obligaciones pendientes entre las partes subsistirán hasta su total cumplimiento.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ================================================================
+             LIBRO XI — LEGISLACIÓN Y JURISDICCIÓN
+             ================================================================ -->
+        <section class="libro" id="libro11">
+            <div class="libro-header">
+                <div class="libro-num">Libro Décimo Primero</div>
+                <h2>Legislación y Jurisdicción</h2>
+            </div>
+
+            <div class="capitulo" id="cap11-1">
+                <div class="capitulo-header">
+                    <div class="capitulo-num">Capítulo 11.1</div>
+                    <h3>Ley Aplicable</h3>
+                </div>
+
+                <div class="seccion">
+                    <div class="clausula">
+                        <span class="clausula-num">11.1.1</span>
+                        <p>Los presentes Términos y Condiciones se rigen por las leyes de los <strong>Estados Unidos Mexicanos</strong>, incluyendo, de manera enunciativa mas no limitativa:</p>
+                        <ul style="list-style:none; padding:0; margin:8px 0 8px 16px;">
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                <strong>Ley Federal de Protección al Consumidor (LFPC).</strong>
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                <strong>Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP)</strong> y su Reglamento.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                <strong>Código de Comercio</strong>, en lo relativo a operaciones electrónicas.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                <strong>Ley para Regular las Instituciones de Tecnología Financiera (Ley Fintech)</strong>, en lo aplicable.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                <strong>Disposiciones de la Comisión Nacional para la Protección y Defensa de los Usuarios de Servicios Financieros (CONDUSEF)</strong>.
+                            </li>
+                            <li style="padding:4px 0 4px 20px; position:relative; font-size:0.8rem; color:var(--text-secondary);">
+                                <span style="position:absolute; left:0; color:var(--gold);">◆</span>
+                                <strong>Código Civil Federal</strong> y demás disposiciones aplicables en materia civil.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="capitulo" id="cap11-2">
+                <div class="capitulo-header">
+                    <div class="capitulo-num">Capítulo 11.2</div>
+                    <h3>Resolución de Conflictos</h3>
+                </div>
+
+                <div class="seccion">
+                    <div class="clausula">
+                        <span class="clausula-num">11.2.1</span>
+                        <p>En caso de controversia derivada de la interpretación o cumplimiento de los presentes Términos, las partes se comprometen a intentar resolver la disputa mediante <strong>negociación directa y de buena fe</strong>.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">11.2.2</span>
+                        <p>Si la negociación directa no prospera en un plazo de treinta (30) días naturales, las partes podrán someterse a <strong>mediación o conciliación</strong> ante la Procuraduría Federal del Consumidor (PROFECO), u otra institución competente.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">11.2.3</span>
+                        <p>Como último recurso, las partes podrán someterse a la <strong>jurisdicción de los tribunales competentes</strong> conforme al Capítulo 11.3.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="capitulo" id="cap11-3">
+                <div class="capitulo-header">
+                    <div class="capitulo-num">Capítulo 11.3</div>
+                    <h3>Jurisdicción Competente</h3>
+                </div>
+
+                <div class="seccion">
+                    <div class="clausula">
+                        <span class="clausula-num">11.3.1</span>
+                        <p>Para cualquier controversia que no pueda resolverse conforme al Capítulo 11.2, las partes se someten expresamente a la jurisdicción de los <strong>tribunales competentes de la ciudad de Puebla, Puebla, México</strong>, renunciando a cualquier otro fuero que pudiera corresponderles en razón de sus domicilios presentes o futuros.</p>
+                    </div>
+
+                    <div class="clausula">
+                        <span class="clausula-num">11.3.2</span>
+                        <p>Para las controversias en materia de consumo, serán competentes los tribunales federales conforme a la Ley Federal de Protección al Consumidor.</p>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ================================================================
+             ANEXOS
+             ================================================================ -->
+        <section class="libro anexo" id="anexos">
+            <div class="libro-header">
+                <div class="libro-num">Anexos</div>
+                <h2>Anexo A · Glosario</h2>
+            </div>
+
+            <div class="seccion">
+                <p style="font-size:0.82rem; color:var(--text-secondary); line-height:1.7; margin-bottom:14px;">
+                    Los términos definidos en el Capítulo 1.1 son los aplicables a los presentes Términos. A continuación se listan términos técnicos adicionales que el Usuario puede encontrar:
+                </p>
+
+                <table class="tabla-comisiones">
+                    <thead>
+                        <tr>
+                            <th>Término</th>
+                            <th>Definición</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>WebAuthn</strong></td>
+                            <td>Estándar del W3C que permite la autenticación mediante llaves criptográficas en lugar de contraseñas. Es el mecanismo que usan Face ID, Touch ID, Windows Hello, etc.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Liveness</strong></td>
+                            <td>Proceso de detección que verifica que el rostro capturado corresponde a una persona real, no a una fotografía, video o máscara.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Webhook</strong></td>
+                            <td>Notificación automática que un sistema envía a otro cuando ocurre un evento. En Csariel's Pay, los webhooks de los Proveedores Externos confirman pagos y retiros.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Idempotencia</strong></td>
+                            <td>Propiedad de un sistema que garantiza que una operación repetida no genere efectos duplicados. En Csariel's Pay, evita que un mismo pago se cobre dos veces.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>SPEI</strong></td>
+                            <td>Sistema de Pagos Electrónicos Interbancarios, administrado por el Banco de México. Permite transferencias entre bancos mexicanos en segundos.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>CLABE</strong></td>
+                            <td>Clave Bancaria Estandarizada de 18 dígitos que identifica cuentas bancarias en México.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>USDT</strong></td>
+                            <td>Tether USD, criptomoneda estable anclada al dólar estadounidense.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>USDC</strong></td>
+                            <td>USD Coin, criptomoneda estable anclada al dólar estadounidense, emitida por Circle.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Contracargo</strong></td>
+                            <td>(Chargeback) Reverso de una transacción con tarjeta, iniciado por el comprador ante su banco emisor.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Hash SHA-256</strong></td>
+                            <td>Función criptográfica que genera una huella digital única e irreversible de un contenido, usada para verificar integridad.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="libro-header" style="margin-top:40px;">
+                <div class="libro-num">Anexo B</div>
+                <h2>Tabla de Comisiones y Tiempos</h2>
+            </div>
+
+            <div class="seccion">
+                <table class="tabla-comisiones">
+                    <thead>
+                        <tr>
+                            <th>Operación</th>
+                            <th>Proveedor</th>
+                            <th>Comisión estimada</th>
+                            <th>Tiempo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Cobro con tarjeta</td>
+                            <td>Stripe</td>
+                            <td>~3.6% + IVA</td>
+                            <td>Instantáneo</td>
+                        </tr>
+                        <tr>
+                            <td>Cobro por SPEI</td>
+                            <td>Fintoc</td>
+                            <td>Variable (según contrato)</td>
+                            <td>Instantáneo</td>
+                        </tr>
+                        <tr>
+                            <td>Cobro con crypto</td>
+                            <td>NOWPayments</td>
+                            <td>~0.5% - 1%</td>
+                            <td>Minutos</td>
+                        </tr>
+                        <tr>
+                            <td>Retiro por SPEI</td>
+                            <td>Fintoc</td>
+                            <td>Variable (según contrato)</td>
+                            <td>1-2 días hábiles</td>
+                        </tr>
+                        <tr>
+                            <td>Retiro con crypto</td>
+                            <td>NOWPayments</td>
+                            <td>~1 USD + fee de red</td>
+                            <td>15 min - 2 horas</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="destacado">
+                    <strong>◈ Nota importante:</strong> Las comisiones indicadas son estimaciones. Las comisiones reales pueden variar según el contrato específico con cada Proveedor Externo, el país, el volumen, y las condiciones de mercado. La Plataforma publicará actualizaciones conforme reciba información de los Proveedores.
+                </div>
+            </div>
+
+            <div class="libro-header" style="margin-top:40px;">
+                <div class="libro-num">Anexo C</div>
+                <h2>Contacto y Soporte</h2>
+            </div>
+
+            <div class="contacto-box">
+                <div class="titulo-contacto">◈ Contacto Legal</div>
+                <p><strong>Razón Social:</strong> <span style="color:var(--warning);">[EN TRÁMITE — Csariel's S.A.S. de C.V.]</span></p>
+                <p><strong>RFC:</strong> <span style="color:var(--warning);">[PENDIENTE]</span></p>
+                <p><strong>Domicilio Fiscal:</strong> Puebla, Puebla, México</p>
+                <p><strong>Correo Legal:</strong> <a href="mailto:legal@csariels.com">legal@csariels.com</a> <span style="color:var(--warning);">[AJUSTAR]</span></p>
+                <p><strong>Correo de Soporte:</strong> <a href="mailto:soporte@csariels.com">soporte@csariels.com</a> <span style="color:var(--warning);">[AJUSTAR]</span></p>
+                <p><strong>Sitio Web:</strong> galleta-domo-production.up.railway.app</p>
+            </div>
+
+            <div class="contacto-box" style="border-color:rgba(255,51,102,0.25); background:rgba(255,51,102,0.04);">
+                <div class="titulo-contacto" style="color:var(--danger);">✶ Reporte de Fraude o Incidentes de Seguridad</div>
+                <p>Si el Usuario detecta un acceso no autorizado, robo de dispositivo, o cualquier incidente de seguridad, debe notificarlo de inmediato a:</p>
+                <p><strong>Correo:</strong> <a href="mailto:seguridad@csariels.com">seguridad@csariels.com</a> <span style="color:var(--warning);">[AJUSTAR]</span></p>
+                <p style="color:var(--text-muted); font-size:0.72rem;">Tiempo de respuesta objetivo: menos de 24 horas.</p>
+            </div>
+
+            <div class="libro-header" style="margin-top:40px;">
+                <div class="libro-num">Anexo D</div>
+                <h2>Historial de Versiones</h2>
+            </div>
+
+            <div class="seccion">
+                <table class="tabla-comisiones">
+                    <thead>
+                        <tr>
+                            <th>Versión</th>
+                            <th>Fecha</th>
+                            <th>Cambios</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>1.0</strong></td>
+                            <td>24 de septiembre de 2026</td>
+                            <td>Versión inicial de los Términos y Condiciones de Csariel's Pay.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- FOOTER LEGAL -->
+        <footer class="footer-legal">
+            <p>
+                <span class="brand">© Csariel's Ecosystem</span> · Términos y Condiciones de Csariel's Pay
+            </p>
+            <p>
+                Al utilizar Csariel's Pay, el Usuario declara haber leído, entendido y aceptado íntegramente los presentes Términos y Condiciones.
+            </p>
+            <div class="versiones">
+                Versión 1.0 · Vigente desde el 24 de septiembre de 2026 · Jurisdicción: Puebla, México
+            </div>
+        </footer>
+
+    </div>
+
+    <a href="/features/pay/panel.html" class="btn-aceptar">
+        ◈ Aceptar y volver
+    </a>
+
+    <div class="toast" id="toast" role="alert" aria-live="polite"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/features/shared/js/idiomas.js"></script>
+<script>
+// ================================================================
+// CSARIEL'S PAY - TÉRMINOS Y CONDICIONES
+// Funcionalidad: smooth scroll, registro de lectura, copiar link
+// ================================================================
+
+var supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
+var supabaseKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+var supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+// Smooth scroll para enlaces internos
+document.querySelectorAll('a[href^="#"]').forEach(function (link) {
+    link.addEventListener('click', function (e) {
+        var target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+            e.preventDefault();
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            history.replaceState(null, null, this.getAttribute('href'));
+        }
+    });
+});
+
+// Resaltar el libro actual al hacer scroll
+var libros = document.querySelectorAll('.libro');
+if ('IntersectionObserver' in window) {
+    var observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+                // Opcional: actualizar algún indicador visual
+            }
+        });
+    }, { threshold: 0.3 });
+
+    libros.forEach(function (libro) {
+        observer.observe(libro);
+    });
+}
+
+// Copiar URL al portapapeles al compartir
+function copiarLink() {
+    try {
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(window.location.href).then(function () {
+                console.log('Link copiado');
+            });
+        }
+    } catch (e) { /* silencioso */ }
+}
+
+// Log de lectura (opcional, si el usuario está autenticado)
+async function registrarLectura() {
+    try {
+        var result = await supabaseClient.auth.getSession();
+        if (!result.data.session) return;
+
+        // Aquí se podría registrar en Supabase que el usuario leyó los términos
+        console.log('[Términos] Leídos por usuario autenticado');
+    } catch (e) { /* silencioso */ }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    registrarLectura();
+
+    setTimeout(async function () {
+        try {
+            if (typeof window.inicializarIdiomas === 'function') {
+                await window.inicializarIdiomas();
+            }
+        } catch (e) { /* silencioso */ }
+    }, 400);
+});
+
+window.copiarLink = copiarLink;
+</script>
+</body>
+</html>
