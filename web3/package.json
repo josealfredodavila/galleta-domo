@@ -1,0 +1,35 @@
+{
+  "name": "csariels-web3",
+  "version": "1.0.0",
+  "description": "Contratos inteligentes de Csariel's Ecosystem (ES.TOKS + NFTs)",
+  "private": true,
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "test:gas": "REPORT_GAS=true hardhat test",
+    "coverage": "hardhat coverage",
+    "deploy:amoy": "hardhat run scripts/deploy.js --network amoy",
+    "deploy:polygon": "hardhat run scripts/deploy.js --network polygon",
+    "upgrade:amoy": "hardhat run scripts/upgrade.js --network amoy",
+    "upgrade:polygon": "hardhat run scripts/upgrade.js --network polygon",
+    "verify:amoy": "hardhat run scripts/verify.js --network amoy",
+    "verify:polygon": "hardhat run scripts/verify.js --network polygon",
+    "node": "hardhat node",
+    "clean": "hardhat clean"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@openzeppelin/hardhat-upgrades": "^3.0.0",
+    "hardhat": "^2.22.0",
+    "hardhat-gas-reporter": "^2.0.0",
+    "solidity-coverage": "^0.8.0"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.0.0",
+    "@openzeppelin/contracts-upgradeable": "^5.0.0",
+    "dotenv": "^16.4.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
