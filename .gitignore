@@ -1,23 +1,116 @@
+# ================================================================
+# CSARIEL'S WEB3 - .gitignore
+# ================================================================
+# Qué se ignora (NO se sube a GitHub):
+#   - node_modules/         (dependencias, se bajan con npm install)
+#   - .env                  (secretos, solo tú los tienes)
+#   - cache/                (cache de Hardhat, se regenera)
+#   - artifacts/            (bytecode compilado, se regenera)
+#   - coverage/             (reporte de cobertura, se regenera)
+#
+# Qué SÍ se sube a GitHub:
+#   - contracts/            (el código fuente de los contratos)
+#   - scripts/              (los scripts de deploy)
+#   - test/                 (los tests)
+#   - hardhat.config.js     (configuración de Hardhat)
+#   - package.json          (dependencias)
+#   - package-lock.json     (versiones exactas) ← MUY IMPORTANTE
+#   - .env.example          (plantilla de variables, sin secretos)
+#   - .gitignore            (este archivo)
+#   - README.md             (documentación)
+# ================================================================
+
+# ----------------------------------------------------------------
 # Node
+# ----------------------------------------------------------------
 node_modules/
 npm-debug.log*
-package-lock.json
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
 
-# Environment
+# NO ignorar package-lock.json (fija versiones exactas)
+# package-lock.json  ← NO PONER ESTA LÍNEA
+
+# ----------------------------------------------------------------
+# Environment (SECRETOS)
+# ----------------------------------------------------------------
 .env
 .env.local
 .env.*.local
+.env.development
+.env.production
+.env.test
 
-# SQLite
-*.db
-*.db-journal
+# ----------------------------------------------------------------
+# Hardhat
+# ----------------------------------------------------------------
+cache/
+artifacts/
+typechain-types/
+coverage/
+coverage.json
 
-# OS
-.DS_Store
-Thumbs.db
+# ----------------------------------------------------------------
+# NPM / Yarn
+# ----------------------------------------------------------------
+.npm/
+.yarn/
+.pnp.*
+.yarn-integrity
 
+# ----------------------------------------------------------------
 # IDE
+# ----------------------------------------------------------------
 .vscode/
 .idea/
 *.swp
 *.swo
+
+# ----------------------------------------------------------------
+# OS
+# ----------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ----------------------------------------------------------------
+# Logs
+# ----------------------------------------------------------------
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ----------------------------------------------------------------
+# Build
+# ----------------------------------------------------------------
+dist/
+build/
+out/
+
+# ----------------------------------------------------------------
+# Testing
+# ----------------------------------------------------------------
+.mocharc.json
+
+# ----------------------------------------------------------------
+# Hardhat Network
+# ----------------------------------------------------------------
+# Persistencia local del nodo de Hardhat (no se sube)
+.hardhat/
+
+# ----------------------------------------------------------------
+# Archivos temporales
+# ----------------------------------------------------------------
+*.tmp
+*.temp
+*.bak
+*.cache
+
+# ----------------------------------------------------------------
+# PolygonScan API Key (por si acaso)
+# ----------------------------------------------------------------
+.polygonscan
