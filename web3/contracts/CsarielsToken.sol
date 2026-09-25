@@ -8,12 +8,19 @@ pragma solidity ^0.8.20;
 //
 // REGLAS DE NEGOCIO:
 // - Supply máximo: 1,000,000 ES.TOKS (cap duro, no modificable)
-// - Minteo solo con firma EIP-712 del backend
+// - Minteo solo con firma EIP-712 del backend (gas pagado por el backend)
 // - 1 QR físico = 1 ES.TOKS (un QR solo se canjea una vez)
 // - Comisión 3% solo en el Muro P2P (transferencias normales son libres)
 // - Compatible con MetaMask, DEX, exchanges (ERC-20 estándar)
 // - Modificable vía proxy UUPS
 // - Pausable para emergencias
+//
+// MODELO DE GAS:
+// - reclamarTokens: el BACKEND (MINTER_ROLE) paga el gas y mintea a
+//   la wallet del usuario indicada en `usuarioReceptor`. El usuario
+//   no necesita MATIC ni firmar nada.
+// - venderEnMuro: el VENDEDOR interactúa directo desde su wallet
+//   (msg.sender) y paga su propio gas. Sin firma EIP-712, sin relay.
 //
 // INTEGRACIÓN CON NFT:
 // - El contrato del NFT puede llamar a `quemarPorCanje()`
@@ -40,14 +47,11 @@ contract CsarielsToken is
     // ROLES
     // ================================================================
 
-    /// @notice Rol para mintear tokens (backend con firma)
+    /// @notice Rol para mintear tokens (backend que paga el gas del reclamo QR)
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
     /// @notice Rol para pausar en emergencias
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
-
-    /// @notice Rol para vender en el Muro P2P
-    bytes32 public constant MURO_ROLE = keccak256("MURO_ROLE");
 
     /// @notice Rol para quemar ES.TOKS en nombre de un usuario (contrato NFT)
     bytes32 public constant NFT_ROLE = keccak256("NFT_ROLE");
@@ -85,7 +89,7 @@ contract CsarielsToken is
     /// @notice Registro de QRs usados (1 QR = 1 ES.TOKS)
     mapping(uint256 => bool) public qrUsado;
 
-    /// @notice Nonces usados por usuario (anti-replay de firmas de reclamo y venta)
+    /// @notice Nonces usados por usuario (anti-replay de firmas de reclamo)
     mapping(address => uint256) public nonces;
 
     /// @notice Total de QRs canjeados (estadística)
@@ -153,19 +157,14 @@ contract CsarielsToken is
     );
 
     // ================================================================
-    // TIPOS EIP-712
+    // TIPO EIP-712
     // ================================================================
 
-    /// @notice Hash del tipo EIP-712 para el reclamo de tokens
+    /// @notice Hash del tipo EIP-712 para el reclamo de tokens.
+    /// El backend firma: (usuarioReceptor, qrId, cantidad, nonce, deadline).
+    /// El `nonce` es el del `usuarioReceptor`, no el del backend.
     bytes32 public constant CLAIM_TYPEHASH = keccak256(
         "Claim(address usuario,uint256 qrId,uint256 cantidad,uint256 nonce,uint256 deadline)"
-    );
-
-    // ✅ CORRECCIÓN SEGURIDAD: nuevo tipo EIP-712 para autorizar ventas del Muro.
-    // El vendedor firma esta autorización, no el backend.
-    /// @notice Hash del tipo EIP-712 para autorizar una venta en el Muro P2P
-    bytes32 public constant VENTA_TYPEHASH = keccak256(
-        "Venta(address vendedor,address comprador,uint256 monto,uint256 nonce,uint256 deadline)"
     );
 
     // ================================================================
@@ -203,10 +202,8 @@ contract CsarielsToken is
         _grantRole(PAUSER_ROLE, admin_);
         _grantRole(MINTER_ROLE, admin_);
 
-        // El backend tiene los roles operativos
+        // El backend tiene MINTER_ROLE (paga el gas de los reclamos QR)
         _grantRole(MINTER_ROLE, backendSigner_);
-        _grantRole(MURO_ROLE, backendSigner_);
-        _grantRole(MURO_ROLE, admin_);
 
         backendSigner = backendSigner_;
         walletComisiones = walletComisiones_;
@@ -214,24 +211,30 @@ contract CsarielsToken is
     }
 
     // ================================================================
-    // FUNCIÓN PRINCIPAL: RECLAMAR ES.TOKS CON QR
+    // FUNCIÓN PRINCIPAL: RECLAMAR ES.TOKS CON QR (BACKEND PAGA GAS)
     // ================================================================
 
     /**
-     * @notice El usuario reclama 1 ES.TOKS escaneando un QR físico.
-     * @dev Requiere firma EIP-712 del backend.
+     * @notice El backend mintea 1 ES.TOKS a la wallet del usuario tras
+     * escanear un QR físico.
+     * @dev El BACKEND (MINTER_ROLE) paga el gas. El usuario no necesita
+     * MATIC ni firmar nada. La firma EIP-712 del backend garantiza que
+     * el QR fue validado off-chain antes de mintear.
      *
-     * @param qrId      ID del QR físico (único, 1 QR = 1 ES.TOKS)
-     * @param cantidad  Cantidad de tokens a mintear (siempre 1 * 10^18)
-     * @param deadline  Timestamp máximo de validez de la firma
-     * @param firma     Firma EIP-712 del backend
+     * @param usuarioReceptor  Dirección que recibe los tokens (wallet del usuario)
+     * @param qrId             ID del QR físico (único, 1 QR = 1 ES.TOKS)
+     * @param cantidad         Cantidad de tokens a mintear
+     * @param deadline         Timestamp máximo de validez de la firma
+     * @param firma            Firma EIP-712 del backend autorizando el claim
      */
     function reclamarTokens(
+        address usuarioReceptor,
         uint256 qrId,
         uint256 cantidad,
         uint256 deadline,
         bytes calldata firma
-    ) external nonReentrant whenNotPaused {
+    ) external nonReentrant whenNotPaused onlyRole(MINTER_ROLE) {
+        require(usuarioReceptor != address(0), "Usuario receptor invalido");
         require(cantidad > 0, "Cantidad debe ser mayor a 0");
         require(block.timestamp <= deadline, "Firma expirada");
         require(!qrUsado[qrId], "QR ya usado");
@@ -239,63 +242,49 @@ contract CsarielsToken is
         // Validar que no exceda el cap
         require(totalSupply() + cantidad <= MAX_SUPPLY, "Cap maximo alcanzado");
 
-        // Validar firma del backend
-        _validarFirma(msg.sender, qrId, cantidad, deadline, firma);
+        // Validar firma del backend para el usuario receptor
+        _validarFirma(usuarioReceptor, qrId, cantidad, deadline, firma);
 
         // Marcar QR como usado
         qrUsado[qrId] = true;
         totalQrCanjeados += 1;
 
-        // Incrementar nonce del usuario
-        nonces[msg.sender] += 1;
+        // Incrementar nonce del receptor (anti-replay)
+        nonces[usuarioReceptor] += 1;
 
-        // Mintear tokens al usuario
-        _mint(msg.sender, cantidad);
+        // Mintear tokens al usuario receptor
+        _mint(usuarioReceptor, cantidad);
 
-        emit QRUsado(qrId, msg.sender, block.timestamp);
-        emit TokensMinteados(msg.sender, qrId, cantidad, block.timestamp);
+        emit QRUsado(qrId, usuarioReceptor, block.timestamp);
+        emit TokensMinteados(usuarioReceptor, qrId, cantidad, block.timestamp);
     }
 
     // ================================================================
-    // FUNCIÓN: VENDER EN MURO P2P
+    // FUNCIÓN: VENDER EN MURO P2P (VENDEDOR PAGA GAS)
     // ================================================================
 
     /**
-     * @notice Ejecuta una venta de ES.TOKS en el Muro P2P.
-     * @dev Aplica comisión del 3% al vendedor.
-     *      ✅ CORRECCIÓN SEGURIDAD: requiere firma EIP-712 del VENDEDOR
-     *      autorizando esta venta específica (vendedor, comprador, monto,
-     *      nonce, deadline). El backend (MURO_ROLE) solo puede relayar
-     *      una venta que el vendedor ya autorizó criptográficamente.
+     * @notice El vendedor ejecuta una venta directa desde su wallet.
+     * @dev Aplica comisión del 3% al vendedor. El vendedor (msg.sender)
+     * paga su propio gas. Sin firma EIP-712 ni relay.
      *
-     * @param vendedor   Dirección del vendedor
+     * ⚠️ Aviso: esta función asume que el vendedor ya coordinó off-chain
+     * el pago con el comprador. La transferencia de tokens y la comisión
+     * son inmediatas e irreversibles en el momento de la llamada.
+     *
      * @param comprador  Dirección del comprador
      * @param monto      Monto total de ES.TOKS a transferir
-     * @param deadline   Timestamp máximo de validez de la firma del vendedor
-     * @param firma      Firma EIP-712 del vendedor autorizando la venta
      */
     function venderEnMuro(
-        address vendedor,
         address comprador,
-        uint256 monto,
-        uint256 deadline,
-        bytes calldata firma
-    ) external nonReentrant whenNotPaused onlyRole(MURO_ROLE) {
-        require(vendedor != address(0), "Vendedor invalido");
+        uint256 monto
+    ) external nonReentrant whenNotPaused {
+        address vendedor = msg.sender;
+
         require(comprador != address(0), "Comprador invalido");
         require(vendedor != comprador, "No puedes venderte a ti mismo");
         require(monto > 0, "Monto debe ser mayor a 0");
-        require(block.timestamp <= deadline, "Firma expirada");
         require(balanceOf(vendedor) >= monto, "Vendedor sin saldo");
-
-        // ✅ CORRECCIÓN SEGURIDAD: validar firma del VENDEDOR (no del backend)
-        // antes de mover cualquier fondo. Esto impide que el backend mueva
-        // saldos de un usuario sin su autorización explícita por venta.
-        _validarFirmaVenta(vendedor, comprador, monto, deadline, firma);
-
-        // ✅ CORRECCIÓN SEGURIDAD: incrementar el nonce del vendedor para
-        // invalidar la firma y prevenir ataques de replay.
-        nonces[vendedor] += 1;
 
         // Calcular comisión
         uint256 comision = (monto * COMISION_MURO_BPS) / BPS_DENOMINATOR;
@@ -324,6 +313,7 @@ contract CsarielsToken is
     // ================================================================
     // FUNCIÓN: QUEMAR TOKENS POR CANJE DE NFT
     // ================================================================
+
     /**
      * @notice Quema ES.TOKS del usuario cuando canjea por un NFT.
      * @dev Solo el contrato de NFT (NFT_ROLE) puede llamar.
@@ -378,11 +368,9 @@ contract CsarielsToken is
 
         if (anterior != address(0)) {
             _revokeRole(MINTER_ROLE, anterior);
-            _revokeRole(MURO_ROLE, anterior);
         }
 
         _grantRole(MINTER_ROLE, nuevo);
-        _grantRole(MURO_ROLE, nuevo);
 
         backendSigner = nuevo;
 
@@ -452,12 +440,6 @@ contract CsarielsToken is
         return CLAIM_TYPEHASH;
     }
 
-    // ✅ CORRECCIÓN SEGURIDAD: getter público del nuevo typehash,
-    // para que el frontend/backend pueda construir la firma del vendedor.
-    function ventaTypehash() external pure returns (bytes32) {
-        return VENTA_TYPEHASH;
-    }
-
     // ================================================================
     // HELPERS INTERNOS
     // ================================================================
@@ -489,41 +471,6 @@ contract CsarielsToken is
         require(
             firmante == backendSigner,
             "Firma invalida o firmante incorrecto"
-        );
-    }
-
-    /**
-     * @dev ✅ CORRECCIÓN SEGURIDAD: valida que la firma EIP-712 corresponda
-     * al VENDEDOR (no al backend). Sigue el mismo patrón que _validarFirma
-     * pero comparando contra `vendedor` en vez de `backendSigner`.
-     */
-    function _validarFirmaVenta(
-        address vendedor,
-        address comprador,
-        uint256 monto,
-        uint256 deadline,
-        bytes calldata firma
-    ) internal view {
-        uint256 nonceActual_ = nonces[vendedor];
-
-        bytes32 structHash = keccak256(
-            abi.encode(
-                VENTA_TYPEHASH,
-                vendedor,
-                comprador,
-                monto,
-                nonceActual_,
-                deadline
-            )
-        );
-
-        bytes32 digest = _hashTypedDataV4(structHash);
-
-        address firmante = ECDSA.recover(digest, firma);
-
-        require(
-            firmante == vendedor,
-            "Firma invalida: no autorizada por el vendedor"
         );
     }
 
