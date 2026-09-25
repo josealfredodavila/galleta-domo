@@ -6,7 +6,6 @@ const { expect } = require('chai');
 const { ethers, upgrades } = require('hardhat');
 const {
     firmarClaim,
-    firmarVenta,          // <- NUEVO: helper para firmar ventas del Muro
     deployToken,
     avanzarTiempo,
     obtenerTimestamp,
@@ -56,16 +55,14 @@ describe("CsarielsToken", function () {
             expect(await token.BPS_DENOMINATOR()).to.equal(10000);
         });
 
-        it("Admin tiene DEFAULT_ADMIN_ROLE, PAUSER_ROLE, MINTER_ROLE, MURO_ROLE", async function () {
+        it("Admin tiene DEFAULT_ADMIN_ROLE, PAUSER_ROLE, MINTER_ROLE", async function () {
             expect(await token.hasRole(await token.DEFAULT_ADMIN_ROLE(), admin.address)).to.equal(true);
             expect(await token.hasRole(await token.PAUSER_ROLE(), admin.address)).to.equal(true);
             expect(await token.hasRole(await token.MINTER_ROLE(), admin.address)).to.equal(true);
-            expect(await token.hasRole(await token.MURO_ROLE(), admin.address)).to.equal(true);
         });
 
-        it("Backend tiene MINTER_ROLE y MURO_ROLE", async function () {
+        it("Backend tiene MINTER_ROLE", async function () {
             expect(await token.hasRole(await token.MINTER_ROLE(), backendSigner.address)).to.equal(true);
-            expect(await token.hasRole(await token.MURO_ROLE(), backendSigner.address)).to.equal(true);
         });
 
         it("Backend NO tiene DEFAULT_ADMIN_ROLE", async function () {
@@ -82,11 +79,14 @@ describe("CsarielsToken", function () {
     });
 
     // ============================================================
-    // RECLAMAR TOKENS CON QR
+    // RECLAMAR TOKENS CON QR (BACKEND PAGA GAS)
+    // ============================================================
+    // ⚠️ CAMBIO DE MODELO: el backend (MINTER_ROLE) llama a la función
+    // y paga el gas. El usuario solo recibe los tokens en su wallet.
     // ============================================================
 
     describe("reclamarTokens", function () {
-        it("Mintea 1 ES.TOKS con firma válida", async function () {
+        it("Backend mintea 1 ES.TOKS a la wallet del usuario con firma válida", async function () {
             const qrId = 1001;
             const cantidad = TOKEN_INICIAL;
             const deadline = await deadlinePorDefecto();
@@ -102,18 +102,54 @@ describe("CsarielsToken", function () {
                 deadline
             });
 
+            // El BACKEND llama, no el usuario
             await expect(
-                token.connect(usuario1).reclamarTokens(qrId, cantidad, deadline, firma)
+                token.connect(backendSigner).reclamarTokens(
+                    usuario1.address,
+                    qrId,
+                    cantidad,
+                    deadline,
+                    firma
+                )
             ).to.emit(token, 'TokensMinteados')
              .withArgs(usuario1.address, qrId, cantidad, anyValue);
 
+            // Los tokens van a usuario1, no al backend
             expect(await token.balanceOf(usuario1.address)).to.equal(cantidad);
+            expect(await token.balanceOf(backendSigner.address)).to.equal(0);
             expect(await token.totalSupply()).to.equal(cantidad);
             expect(await token.qrUsado(qrId)).to.equal(true);
         });
 
-        it("Rechaza QR ya usado", async function () {
+        it("Rechaza si un no-MINTER intenta llamar", async function () {
             const qrId = 1002;
+            const cantidad = TOKEN_INICIAL;
+            const deadline = await deadlinePorDefecto();
+
+            const firma = await firmarClaim(backendSigner, {
+                chainId,
+                verifyingContract: await token.getAddress(),
+                usuario: usuario1.address,
+                qrId,
+                cantidad,
+                nonce: 0,
+                deadline
+            });
+
+            // usuario1 (no tiene MINTER_ROLE) intenta llamar
+            await expect(
+                token.connect(usuario1).reclamarTokens(
+                    usuario1.address,
+                    qrId,
+                    cantidad,
+                    deadline,
+                    firma
+                )
+            ).to.be.revertedWithCustomError(token, 'AccessControlUnauthorizedAccount');
+        });
+
+        it("Rechaza QR ya usado", async function () {
+            const qrId = 1003;
             const cantidad = TOKEN_INICIAL;
             const deadline = await deadlinePorDefecto();
 
@@ -127,9 +163,15 @@ describe("CsarielsToken", function () {
                 deadline
             });
 
-            await token.connect(usuario1).reclamarTokens(qrId, cantidad, deadline, firma1);
+            await token.connect(backendSigner).reclamarTokens(
+                usuario1.address,
+                qrId,
+                cantidad,
+                deadline,
+                firma1
+            );
 
-            // Intento 2 con mismo QR
+            // Intento 2 con mismo QR (nonce ya avanzó a 1)
             const firma2 = await firmarClaim(backendSigner, {
                 chainId,
                 verifyingContract: await token.getAddress(),
@@ -141,12 +183,18 @@ describe("CsarielsToken", function () {
             });
 
             await expect(
-                token.connect(usuario1).reclamarTokens(qrId, cantidad, deadline, firma2)
+                token.connect(backendSigner).reclamarTokens(
+                    usuario1.address,
+                    qrId,
+                    cantidad,
+                    deadline,
+                    firma2
+                )
             ).to.be.revertedWith('QR ya usado');
         });
 
         it("Rechaza firma expirada", async function () {
-            const qrId = 1003;
+            const qrId = 1004;
             const cantidad = TOKEN_INICIAL;
             const deadline = await obtenerTimestamp() - 1;
 
@@ -161,15 +209,22 @@ describe("CsarielsToken", function () {
             });
 
             await expect(
-                token.connect(usuario1).reclamarTokens(qrId, cantidad, deadline, firma)
+                token.connect(backendSigner).reclamarTokens(
+                    usuario1.address,
+                    qrId,
+                    cantidad,
+                    deadline,
+                    firma
+                )
             ).to.be.revertedWith('Firma expirada');
         });
 
         it("Rechaza firma inválida (firmante incorrecto)", async function () {
-            const qrId = 1004;
+            const qrId = 1005;
             const cantidad = TOKEN_INICIAL;
             const deadline = await deadlinePorDefecto();
 
+            // El atacante firma, no el backend
             const firma = await firmarClaim(atacante, {
                 chainId,
                 verifyingContract: await token.getAddress(),
@@ -181,7 +236,13 @@ describe("CsarielsToken", function () {
             });
 
             await expect(
-                token.connect(usuario1).reclamarTokens(qrId, cantidad, deadline, firma)
+                token.connect(backendSigner).reclamarTokens(
+                    usuario1.address,
+                    qrId,
+                    cantidad,
+                    deadline,
+                    firma
+                )
             ).to.be.revertedWith('Firma invalida o firmante incorrecto');
         });
 
@@ -191,19 +252,48 @@ describe("CsarielsToken", function () {
                 chainId,
                 verifyingContract: await token.getAddress(),
                 usuario: usuario1.address,
-                qrId: 1005,
+                qrId: 1006,
                 cantidad: 0,
                 nonce: 0,
                 deadline
             });
 
             await expect(
-                token.connect(usuario1).reclamarTokens(1005, 0, deadline, firma)
+                token.connect(backendSigner).reclamarTokens(
+                    usuario1.address,
+                    1006,
+                    0,
+                    deadline,
+                    firma
+                )
             ).to.be.revertedWith('Cantidad debe ser mayor a 0');
         });
 
-        it("Incrementa nonce después de reclamar", async function () {
-            const qrId = 1006;
+        it("Rechaza usuarioReceptor = address(0)", async function () {
+            const deadline = await deadlinePorDefecto();
+            const firma = await firmarClaim(backendSigner, {
+                chainId,
+                verifyingContract: await token.getAddress(),
+                usuario: ethers.ZeroAddress,
+                qrId: 1007,
+                cantidad: TOKEN_INICIAL,
+                nonce: 0,
+                deadline
+            });
+
+            await expect(
+                token.connect(backendSigner).reclamarTokens(
+                    ethers.ZeroAddress,
+                    1007,
+                    TOKEN_INICIAL,
+                    deadline,
+                    firma
+                )
+            ).to.be.revertedWith('Usuario receptor invalido');
+        });
+
+        it("Incrementa nonce del receptor después de reclamar", async function () {
+            const qrId = 1008;
             const cantidad = TOKEN_INICIAL;
             const deadline = await deadlinePorDefecto();
 
@@ -219,23 +309,28 @@ describe("CsarielsToken", function () {
                 deadline
             });
 
-            await token.connect(usuario1).reclamarTokens(qrId, cantidad, deadline, firma);
+            await token.connect(backendSigner).reclamarTokens(
+                usuario1.address,
+                qrId,
+                cantidad,
+                deadline,
+                firma
+            );
 
             expect(await token.nonceActual(usuario1.address)).to.equal(1);
         });
     });
 
     // ============================================================
-    // VENDER EN MURO P2P
+    // VENDER EN MURO P2P (VENDEDOR PAGA GAS)
     // ============================================================
-    // ⚠️  CAMBIO DE SEGURIDAD: `venderEnMuro` ahora recibe `deadline` y
-    // `firma` del VENDEDOR (no del backend). Todos los tests de este
-    // bloque generan la firma del vendedor antes de llamar a la función.
+    // ⚠️ CAMBIO DE MODELO: sin firma EIP-712, sin MURO_ROLE.
+    // El vendedor (msg.sender) llama directo y paga su gas.
     // ============================================================
 
     describe("venderEnMuro", function () {
         beforeEach(async function () {
-            // Mintear 100 tokens a usuario1
+            // Mintear 100 tokens a usuario1 (usando el backend como relayer)
             const cantidad = ethers.parseEther('100');
             const deadline = await deadlinePorDefecto();
             const firma = await firmarClaim(backendSigner, {
@@ -247,7 +342,13 @@ describe("CsarielsToken", function () {
                 nonce: 0,
                 deadline
             });
-            await token.connect(usuario1).reclamarTokens(2001, cantidad, deadline, firma);
+            await token.connect(backendSigner).reclamarTokens(
+                usuario1.address,
+                2001,
+                cantidad,
+                deadline,
+                firma
+            );
         });
 
         it("Aplica 3% de comisión", async function () {
@@ -255,234 +356,94 @@ describe("CsarielsToken", function () {
             const comision = (monto * 300n) / 10000n;       // 0.3
             const netoComprador = monto - comision;          // 9.7
 
-            // El VENDEDOR (usuario1) firma autorizando la venta
-            const deadline = await deadlinePorDefecto();
-            const nonce = await token.nonceActual(usuario1.address);
-            const firma = await firmarVenta(usuario1, {
-                chainId,
-                verifyingContract: await token.getAddress(),
-                vendedor: usuario1.address,
-                comprador: usuario2.address,
-                monto,
-                nonce,
-                deadline
-            });
-
-            await token.connect(backendSigner).venderEnMuro(
-                usuario1.address,
+            // usuario1 (vendedor) llama directo
+            await token.connect(usuario1).venderEnMuro(
                 usuario2.address,
-                monto,
-                deadline,
-                firma
+                monto
             );
 
             expect(await token.balanceOf(usuario2.address)).to.equal(netoComprador);
             expect(await token.balanceOf(walletComisiones.address)).to.equal(comision);
+            // usuario1 perdió 10 tokens
+            expect(await token.balanceOf(usuario1.address)).to.equal(ethers.parseEther('90'));
         });
 
-        it("Incrementa el nonce del vendedor tras la venta", async function () {
+        it("Cualquiera con saldo puede vender (no requiere rol)", async function () {
             const monto = ethers.parseEther('5');
 
-            expect(await token.nonceActual(usuario1.address)).to.equal(1);
-
+            // usuario2 no tiene rol, pero tampoco saldo aquí,
+            // así que le minteamos primero para probar que puede vender.
             const deadline = await deadlinePorDefecto();
-            const nonce = await token.nonceActual(usuario1.address);
-            const firma = await firmarVenta(usuario1, {
+            const firma = await firmarClaim(backendSigner, {
                 chainId,
                 verifyingContract: await token.getAddress(),
-                vendedor: usuario1.address,
-                comprador: usuario2.address,
-                monto,
-                nonce,
+                usuario: usuario2.address,
+                qrId: 2002,
+                cantidad: ethers.parseEther('10'),
+                nonce: 0,
                 deadline
             });
-
-            await token.connect(backendSigner).venderEnMuro(
-                usuario1.address,
+            await token.connect(backendSigner).reclamarTokens(
                 usuario2.address,
-                monto,
+                2002,
+                ethers.parseEther('10'),
                 deadline,
                 firma
             );
 
-            expect(await token.nonceActual(usuario1.address)).to.equal(2);
-        });
-
-        it("Rechaza si no es MURO_ROLE", async function () {
-            const monto = ethers.parseEther('1');
-
-            const deadline = await deadlinePorDefecto();
-            const nonce = await token.nonceActual(usuario1.address);
-            const firma = await firmarVenta(usuario1, {
-                chainId,
-                verifyingContract: await token.getAddress(),
-                vendedor: usuario1.address,
-                comprador: usuario2.address,
-                monto,
-                nonce,
-                deadline
-            });
-
+            // usuario2 vende sin tener ningún rol especial
             await expect(
-                token.connect(atacante).venderEnMuro(
-                    usuario1.address,
-                    usuario2.address,
-                    monto,
-                    deadline,
-                    firma
-                )
-            ).to.be.revertedWithCustomError(token, 'AccessControlUnauthorizedAccount');
+                token.connect(usuario2).venderEnMuro(usuario1.address, monto)
+            ).to.emit(token, 'VentaMuro');
         });
 
         it("Rechaza si vendedor sin saldo", async function () {
             const monto = ethers.parseEther('1');
 
-            // El vendedor es usuario2 (sin saldo). Igual firma.
-            const deadline = await deadlinePorDefecto();
-            const nonce = await token.nonceActual(usuario2.address);
-            const firma = await firmarVenta(usuario2, {
-                chainId,
-                verifyingContract: await token.getAddress(),
-                vendedor: usuario2.address,
-                comprador: usuario1.address,
-                monto,
-                nonce,
-                deadline
-            });
-
+            // usuario2 no tiene tokens
             await expect(
-                token.connect(backendSigner).venderEnMuro(
-                    usuario2.address,
-                    usuario1.address,
-                    monto,
-                    deadline,
-                    firma
-                )
+                token.connect(usuario2).venderEnMuro(usuario1.address, monto)
             ).to.be.revertedWith('Vendedor sin saldo');
         });
 
         it("Rechaza vendedor == comprador", async function () {
             const monto = ethers.parseEther('1');
 
-            const deadline = await deadlinePorDefecto();
-            const nonce = await token.nonceActual(usuario1.address);
-            const firma = await firmarVenta(usuario1, {
-                chainId,
-                verifyingContract: await token.getAddress(),
-                vendedor: usuario1.address,
-                comprador: usuario1.address,
-                monto,
-                nonce,
-                deadline
-            });
-
             await expect(
-                token.connect(backendSigner).venderEnMuro(
-                    usuario1.address,
-                    usuario1.address,
-                    monto,
-                    deadline,
-                    firma
-                )
+                token.connect(usuario1).venderEnMuro(usuario1.address, monto)
             ).to.be.revertedWith('No puedes venderte a ti mismo');
         });
 
-        // --------------------------------------------------------
-        // NUEVOS TESTS DE SEGURIDAD
-        // --------------------------------------------------------
-
-        it("Rechaza si la firma no es del vendedor", async function () {
+        it("Rechaza comprador address(0)", async function () {
             const monto = ethers.parseEther('1');
-
-            const deadline = await deadlinePorDefecto();
-            const nonce = await token.nonceActual(usuario1.address);
-
-            // ⚠️  atacante firma un mensaje que dice que usuario1 vende,
-            // pero la firma NO corresponde a usuario1 → debe revertir.
-            const firma = await firmarVenta(atacante, {
-                chainId,
-                verifyingContract: await token.getAddress(),
-                vendedor: usuario1.address,
-                comprador: usuario2.address,
-                monto,
-                nonce,
-                deadline
-            });
 
             await expect(
-                token.connect(backendSigner).venderEnMuro(
-                    usuario1.address,
-                    usuario2.address,
-                    monto,
-                    deadline,
-                    firma
-                )
-            ).to.be.revertedWith('Firma invalida: no autorizada por el vendedor');
+                token.connect(usuario1).venderEnMuro(ethers.ZeroAddress, monto)
+            ).to.be.revertedWith('Comprador invalido');
         });
 
-        it("Rechaza firma expirada", async function () {
-            const monto = ethers.parseEther('1');
+        it("Rechaza monto 0", async function () {
+            await expect(
+                token.connect(usuario1).venderEnMuro(usuario2.address, 0)
+            ).to.be.revertedWith('Monto debe ser mayor a 0');
+        });
 
-            // Deadline en el pasado
-            const deadline = (await obtenerTimestamp()) - 1;
-            const nonce = await token.nonceActual(usuario1.address);
-
-            const firma = await firmarVenta(usuario1, {
-                chainId,
-                verifyingContract: await token.getAddress(),
-                vendedor: usuario1.address,
-                comprador: usuario2.address,
-                monto,
-                nonce,
-                deadline
-            });
+        it("Emite evento VentaMuro con datos correctos", async function () {
+            const monto = ethers.parseEther('10');
+            const comision = (monto * 300n) / 10000n;
+            const netoComprador = monto - comision;
 
             await expect(
-                token.connect(backendSigner).venderEnMuro(
-                    usuario1.address,
-                    usuario2.address,
-                    monto,
-                    deadline,
-                    firma
-                )
-            ).to.be.revertedWith('Firma expirada');
-        });
-
-        it("No permite reusar la misma firma (anti-replay)", async function () {
-            const monto = ethers.parseEther('1');
-
-            const deadline = await deadlinePorDefecto();
-            const nonce = await token.nonceActual(usuario1.address);
-            const firma = await firmarVenta(usuario1, {
-                chainId,
-                verifyingContract: await token.getAddress(),
-                vendedor: usuario1.address,
-                comprador: usuario2.address,
-                monto,
-                nonce,
-                deadline
-            });
-
-            // 1ra venta: OK
-            await token.connect(backendSigner).venderEnMuro(
+                token.connect(usuario1).venderEnMuro(usuario2.address, monto)
+            ).to.emit(token, 'VentaMuro')
+             .withArgs(
                 usuario1.address,
                 usuario2.address,
                 monto,
-                deadline,
-                firma
-            );
-
-            // 2da venta con la MISMA firma: debe revertir porque
-            // nonces[vendedor] ya se incrementó a 2.
-            await expect(
-                token.connect(backendSigner).venderEnMuro(
-                    usuario1.address,
-                    usuario2.address,
-                    monto,
-                    deadline,
-                    firma
-                )
-            ).to.be.revertedWith('Firma invalida: no autorizada por el vendedor');
+                netoComprador,
+                comision,
+                anyValue
+             );
         });
     });
 
@@ -498,7 +459,7 @@ describe("CsarielsToken", function () {
         });
 
         it("NFT_ROLE configurado vía setContratoNFT puede quemar", async function () {
-            // Mintear 12 tokens a usuario1
+            // Mintear 12 tokens a usuario1 (usando el backend)
             const deadline = await deadlinePorDefecto();
             const firma = await firmarClaim(backendSigner, {
                 chainId,
@@ -509,7 +470,13 @@ describe("CsarielsToken", function () {
                 nonce: 0,
                 deadline
             });
-            await token.connect(usuario1).reclamarTokens(3001, DOCE_TOKENS, deadline, firma);
+            await token.connect(backendSigner).reclamarTokens(
+                usuario1.address,
+                3001,
+                DOCE_TOKENS,
+                deadline,
+                firma
+            );
 
             // Simular que `atacante` es el contrato NFT
             await token.connect(admin).setContratoNFT(atacante.address);
@@ -540,7 +507,7 @@ describe("CsarielsToken", function () {
 
             expect(await token.backendSigner()).to.equal(atacante.address);
             expect(await token.hasRole(await token.MINTER_ROLE(), atacante.address)).to.equal(true);
-            // El anterior pierde roles
+            // El anterior pierde MINTER_ROLE
             expect(await token.hasRole(await token.MINTER_ROLE(), backendSigner.address)).to.equal(false);
         });
 
@@ -594,7 +561,40 @@ describe("CsarielsToken", function () {
             });
 
             await expect(
-                token.connect(usuario1).reclamarTokens(4001, TOKEN_INICIAL, deadline, firma)
+                token.connect(backendSigner).reclamarTokens(
+                    usuario1.address,
+                    4001,
+                    TOKEN_INICIAL,
+                    deadline,
+                    firma
+                )
+            ).to.be.revertedWithCustomError(token, 'EnforcedPause');
+        });
+
+        it("venderEnMuro falla si está pausado", async function () {
+            // Primero minteamos 10 tokens a usuario1
+            const deadline = await deadlinePorDefecto();
+            const firma = await firmarClaim(backendSigner, {
+                chainId,
+                verifyingContract: await token.getAddress(),
+                usuario: usuario1.address,
+                qrId: 4002,
+                cantidad: ethers.parseEther('10'),
+                nonce: 0,
+                deadline
+            });
+            await token.connect(backendSigner).reclamarTokens(
+                usuario1.address,
+                4002,
+                ethers.parseEther('10'),
+                deadline,
+                firma
+            );
+
+            await token.connect(admin).pause();
+
+            await expect(
+                token.connect(usuario1).venderEnMuro(usuario2.address, ethers.parseEther('1'))
             ).to.be.revertedWithCustomError(token, 'EnforcedPause');
         });
     });
@@ -634,14 +634,6 @@ describe("CsarielsToken", function () {
             expect(await token.claimTypehash()).to.equal(
                 ethers.keccak256(ethers.toUtf8Bytes(
                     'Claim(address usuario,uint256 qrId,uint256 cantidad,uint256 nonce,uint256 deadline)'
-                ))
-            );
-        });
-
-        it("ventaTypehash devuelve el hash correcto", async function () {
-            expect(await token.ventaTypehash()).to.equal(
-                ethers.keccak256(ethers.toUtf8Bytes(
-                    'Venta(address vendedor,address comprador,uint256 monto,uint256 nonce,uint256 deadline)'
                 ))
             );
         });
