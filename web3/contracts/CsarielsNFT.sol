@@ -211,10 +211,13 @@ contract CsarielsNFT is
         totalNFTsMinteados += 1;
         uint256 nuevoTokenId = totalNFTsMinteados;
 
-        // 4. Mintear el NFT
-        _safeMint(usuario, nuevoTokenId);
-
-        // 5. Guardar metadata
+        // 4. Guardar metadata ANTES de mintear, para que `_update`
+        //    (hook de soulbound) ya tenga los datos cuando se ejecute el mint.
+        // 🔴 CORRECCIÓN CRÍTICA: en el orden original, `_safeMint` se llamaba
+        // antes de poblar `infoNFT[nuevoTokenId]`. Al llegar a `_update`, la
+        // condición `infoNFT[tokenId].fechaCanje > 0` era falsa, y por lo tanto
+        // cualquier transferencia del NFT recién minteado habría pasado el
+        // chequeo de soulbound sin problema. Ahora la metadata se escribe primero.
         uint256 ahora = block.timestamp;
         uint256 expiracion = ahora + SEGUNDOS_VALIDEZ;
 
@@ -224,6 +227,9 @@ contract CsarielsNFT is
             fechaExpiracion: expiracion,
             quemadoPorDomo: false
         });
+
+        // 5. Mintear el NFT
+        _safeMint(usuario, nuevoTokenId);
 
         emit NFTCanjeado(usuario, nuevoTokenId, ahora, expiracion);
 
