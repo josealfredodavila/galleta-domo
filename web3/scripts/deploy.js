@@ -13,6 +13,28 @@
 //   - BACKEND_SIGNER_ADDRESS
 //   - WALLET_COMISIONES_ADDRESS
 //   - BASE_URI_NFT
+//
+// ⚠️  IMPORTANTE SOBRE ADMIN_ADDRESS (SEGURIDAD):
+// En PRODUCCIÓN (mainnet Polygon), ADMIN_ADDRESS debe ser una wallet
+// MULTISIG (por ejemplo, una Safe de https://safe.global) y NO una
+// wallet de una sola clave privada.
+//
+// Motivo: ADMIN_ADDRESS recibe el rol DEFAULT_ADMIN_ROLE en ambos
+// contratos (CsarielsToken y CsarielsNFT), lo que le otorga control
+// TOTAL del sistema:
+//   - Pausar / reanudar los contratos en emergencias (PAUSER_ROLE).
+//   - Cambiar el backend signer (setBackendSigner), lo que permite
+//     autorizar minteos, ventas del Muro y quemas de NFT.
+//   - Actualizar la lógica de los contratos vía upgrade UUPS
+//     (_authorizeUpgrade), es decir, reemplazar el código en producción.
+//
+// Si esa dirección es una sola clave privada y se ve comprometida,
+// un atacante podría drenar el sistema completo. Con un multisig
+// (ej. 2-de-3 o 3-de-5), ninguna acción crítica puede ejecutarse sin
+// la aprobación de varias claves independientes.
+//
+// En TESTNET (amoy) puedes usar una wallet normal para agilizar las
+// pruebas, pero NUNCA reutilices esa misma wallet como admin en mainnet.
 // ================================================================
 
 const { ethers, upgrades, network } = require('hardhat');
@@ -48,6 +70,16 @@ function header(title) {
 
 // ================================================================
 // VALIDACIÓN DE VARIABLES DE ENTORNO
+// ================================================================
+// ⚠️  SEGURIDAD (PRODUCCIÓN / MAINNET POLYGON):
+// ADMIN_ADDRESS debe apuntar a una wallet MULTISIG (por ejemplo una
+// Safe de https://safe.global), NO a una wallet de una sola clave
+// privada. Esa dirección recibe DEFAULT_ADMIN_ROLE en CsarielsToken
+// y CsarielsNFT, lo que le da control total del sistema: pausar los
+// contratos, cambiar el backend signer, y actualizar la lógica vía
+// upgrade UUPS. Si esa clave se compromete, se compromete todo el
+// sistema. Un multisig (ej. 2-de-3) exige varias firmas para
+// ejecutar cualquiera de esas acciones críticas.
 // ================================================================
 
 function validarEntorno() {
