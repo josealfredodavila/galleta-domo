@@ -85,7 +85,7 @@ contract CsarielsToken is
     /// @notice Registro de QRs usados (1 QR = 1 ES.TOKS)
     mapping(uint256 => bool) public qrUsado;
 
-    /// @notice Nonces usados por usuario (anti-replay de firmas de reclamo)
+    /// @notice Nonces usados por usuario (anti-replay de firmas de reclamo y venta)
     mapping(address => uint256) public nonces;
 
     /// @notice Total de QRs canjeados (estadística)
@@ -153,12 +153,19 @@ contract CsarielsToken is
     );
 
     // ================================================================
-    // TIPO EIP-712
+    // TIPOS EIP-712
     // ================================================================
 
     /// @notice Hash del tipo EIP-712 para el reclamo de tokens
     bytes32 public constant CLAIM_TYPEHASH = keccak256(
         "Claim(address usuario,uint256 qrId,uint256 cantidad,uint256 nonce,uint256 deadline)"
+    );
+
+    // ✅ CORRECCIÓN SEGURIDAD: nuevo tipo EIP-712 para autorizar ventas del Muro.
+    // El vendedor firma esta autorización, no el backend.
+    /// @notice Hash del tipo EIP-712 para autorizar una venta en el Muro P2P
+    bytes32 public constant VENTA_TYPEHASH = keccak256(
+        "Venta(address vendedor,address comprador,uint256 monto,uint256 nonce,uint256 deadline)"
     );
 
     // ================================================================
@@ -255,22 +262,40 @@ contract CsarielsToken is
 
     /**
      * @notice Ejecuta una venta de ES.TOKS en el Muro P2P.
-     * @dev Aplica comisión del 3% al vendedor. Solo el backend (MURO_ROLE) puede llamar.
+     * @dev Aplica comisión del 3% al vendedor.
+     *      ✅ CORRECCIÓN SEGURIDAD: requiere firma EIP-712 del VENDEDOR
+     *      autorizando esta venta específica (vendedor, comprador, monto,
+     *      nonce, deadline). El backend (MURO_ROLE) solo puede relayar
+     *      una venta que el vendedor ya autorizó criptográficamente.
      *
      * @param vendedor   Dirección del vendedor
      * @param comprador  Dirección del comprador
      * @param monto      Monto total de ES.TOKS a transferir
+     * @param deadline   Timestamp máximo de validez de la firma del vendedor
+     * @param firma      Firma EIP-712 del vendedor autorizando la venta
      */
     function venderEnMuro(
         address vendedor,
         address comprador,
-        uint256 monto
+        uint256 monto,
+        uint256 deadline,
+        bytes calldata firma
     ) external nonReentrant whenNotPaused onlyRole(MURO_ROLE) {
         require(vendedor != address(0), "Vendedor invalido");
         require(comprador != address(0), "Comprador invalido");
         require(vendedor != comprador, "No puedes venderte a ti mismo");
         require(monto > 0, "Monto debe ser mayor a 0");
+        require(block.timestamp <= deadline, "Firma expirada");
         require(balanceOf(vendedor) >= monto, "Vendedor sin saldo");
+
+        // ✅ CORRECCIÓN SEGURIDAD: validar firma del VENDEDOR (no del backend)
+        // antes de mover cualquier fondo. Esto impide que el backend mueva
+        // saldos de un usuario sin su autorización explícita por venta.
+        _validarFirmaVenta(vendedor, comprador, monto, deadline, firma);
+
+        // ✅ CORRECCIÓN SEGURIDAD: incrementar el nonce del vendedor para
+        // invalidar la firma y prevenir ataques de replay.
+        nonces[vendedor] += 1;
 
         // Calcular comisión
         uint256 comision = (monto * COMISION_MURO_BPS) / BPS_DENOMINATOR;
@@ -427,6 +452,12 @@ contract CsarielsToken is
         return CLAIM_TYPEHASH;
     }
 
+    // ✅ CORRECCIÓN SEGURIDAD: getter público del nuevo typehash,
+    // para que el frontend/backend pueda construir la firma del vendedor.
+    function ventaTypehash() external pure returns (bytes32) {
+        return VENTA_TYPEHASH;
+    }
+
     // ================================================================
     // HELPERS INTERNOS
     // ================================================================
@@ -458,6 +489,41 @@ contract CsarielsToken is
         require(
             firmante == backendSigner,
             "Firma invalida o firmante incorrecto"
+        );
+    }
+
+    /**
+     * @dev ✅ CORRECCIÓN SEGURIDAD: valida que la firma EIP-712 corresponda
+     * al VENDEDOR (no al backend). Sigue el mismo patrón que _validarFirma
+     * pero comparando contra `vendedor` en vez de `backendSigner`.
+     */
+    function _validarFirmaVenta(
+        address vendedor,
+        address comprador,
+        uint256 monto,
+        uint256 deadline,
+        bytes calldata firma
+    ) internal view {
+        uint256 nonceActual_ = nonces[vendedor];
+
+        bytes32 structHash = keccak256(
+            abi.encode(
+                VENTA_TYPEHASH,
+                vendedor,
+                comprador,
+                monto,
+                nonceActual_,
+                deadline
+            )
+        );
+
+        bytes32 digest = _hashTypedDataV4(structHash);
+
+        address firmante = ECDSA.recover(digest, firma);
+
+        require(
+            firmante == vendedor,
+            "Firma invalida: no autorizada por el vendedor"
         );
     }
 
