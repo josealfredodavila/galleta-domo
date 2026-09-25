@@ -37,6 +37,27 @@ const CLAIM_TYPE = {
     ]
 };
 
+// ================================================================
+// TIPO EIP-712 PARA VENTAS DEL MURO P2P
+// ================================================================
+// Debe coincidir EXACTAMENTE con VENTA_TYPEHASH del contrato:
+//   "Venta(address vendedor,address comprador,uint256 monto,uint256 nonce,uint256 deadline)"
+//
+// ⚠️  A diferencia de Claim/Quemar, esta firma la genera el VENDEDOR
+// (no el backend). Por eso firmarVenta recibirá como `signer` al
+// vendedor, y el contrato validará `firmante == vendedor`.
+// ================================================================
+
+const VENTA_TYPE = {
+    Venta: [
+        { name: 'vendedor',  type: 'address' },
+        { name: 'comprador', type: 'address' },
+        { name: 'monto',     type: 'uint256' },
+        { name: 'nonce',     type: 'uint256' },
+        { name: 'deadline',  type: 'uint256' }
+    ]
+};
+
 const QUEMAR_TYPE = {
     Quemar: [
         { name: 'usuario', type: 'address' },
@@ -67,6 +88,31 @@ async function firmarClaim(signer, { chainId, verifyingContract, usuario, qrId, 
 
     // signTypedData firma EIP-712
     return await signer.signTypedData(domain, CLAIM_TYPE, value);
+}
+
+// ================================================================
+// FIRMAR VENTA (para venderEnMuro)
+// ================================================================
+// ⚠️  El `signer` que se pasa DEBE ser el VENDEDOR, no el backend.
+// El contrato valida que `firmante == vendedor`.
+// ================================================================
+
+async function firmarVenta(signer, { chainId, verifyingContract, vendedor, comprador, monto, nonce, deadline }) {
+    const domain = {
+        ...DOMAIN_TOKEN,
+        chainId,
+        verifyingContract
+    };
+
+    const value = {
+        vendedor,
+        comprador,
+        monto,
+        nonce,
+        deadline
+    };
+
+    return await signer.signTypedData(domain, VENTA_TYPE, value);
 }
 
 // ================================================================
@@ -153,8 +199,10 @@ module.exports = {
     DOMAIN_TOKEN,
     DOMAIN_NFT,
     CLAIM_TYPE,
+    VENTA_TYPE,
     QUEMAR_TYPE,
     firmarClaim,
+    firmarVenta,
     firmarQuemar,
     deployToken,
     deployNFT,
