@@ -1,712 +1,2802 @@
-<!DOCTYPE html>
-<html lang="es">
+<!DOCTYPE html><html lang="es">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>◈ Sariel's · Ecosistema WEB3</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet" />
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <title>◈ Sariel's · Ecosistema WEB3</title><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet" />
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script>
-        (function () {
-            'use strict';
-            window.__sarielsAuthenticated = false;
-            var GUARD_SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
-            var GUARD_SUPABASE_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
-            try {
-                if (typeof window.supabase === 'undefined') { return; }
-                var guardClient = window.supabase.createClient(GUARD_SUPABASE_URL, GUARD_SUPABASE_KEY);
-                guardClient.auth.getSession().then(function (resultado) {
-                    var session = resultado && resultado.data ? resultado.data.session : null;
+<link
+    rel="icon"
+    type="image/svg+xml"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>"
+/>
+
+<!-- =========================================================
+     SUPABASE
+     Se carga UNA sola vez.
+========================================================== -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+<script>
+    (function () {
+        'use strict';
+
+        window.__sarielsAuthenticated = false;
+
+        var GUARD_SUPABASE_URL =
+            'https://zultnlogdoajehbswlih.supabase.co';
+
+        var GUARD_SUPABASE_KEY =
+            'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+
+        try {
+            if (typeof window.supabase === 'undefined') {
+                return;
+            }
+
+            var guardClient = window.supabase.createClient(
+                GUARD_SUPABASE_URL,
+                GUARD_SUPABASE_KEY
+            );
+
+            guardClient.auth.getSession()
+                .then(function (resultado) {
+                    var session =
+                        resultado &&
+                        resultado.data
+                            ? resultado.data.session
+                            : null;
+
                     window.__sarielsAuthenticated = !!session;
-                }).catch(function () { window.__sarielsAuthenticated = false; });
-                guardClient.auth.onAuthStateChange(function (_event, session) {
-                    window.__sarielsAuthenticated = !!session;
+                })
+                .catch(function () {
+                    window.__sarielsAuthenticated = false;
                 });
-            } catch (e) { window.__sarielsAuthenticated = false; }
-        })();
-    </script>
 
-    <style>
-        :root {
-            --gold: #D4AF37;
-            --gold-dark: #b8923a;
-            --gold-light: #e8c84a;
-            --gold-bright: #f0d060;
-            --green-deep: #0F2D1A;
-            --green-mid: #1a4a2a;
-            --green-bright: #2a6a3a;
-            --space: #05080f;
-            --text-primary: #f0f4f8;
-            --text-secondary: #c0d8e8;
-            --text-muted: #8aa8b8;
-            --glass-bg: rgba(15, 45, 26, 0.55);
-            --glass-border: rgba(212, 175, 55, 0.2);
-            --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
-            --shadow-gold-strong: 0 0 60px rgba(212, 175, 55, 0.15);
-            --radius: 16px;
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            --success: #00d68f;
-            --danger: #ff3366;
-            --warning: #f7d44a;
-            --live-red: #ff0044;
+            guardClient.auth.onAuthStateChange(function (_event, session) {
+                window.__sarielsAuthenticated = !!session;
+            });
+
+        } catch (e) {
+            console.error('Error inicializando guardia Supabase:', e);
+            window.__sarielsAuthenticated = false;
+        }
+    })();
+</script>
+
+<style>
+    :root {
+        --gold: #D4AF37;
+        --gold-dark: #b8923a;
+        --gold-light: #e8c84a;
+        --gold-bright: #f0d060;
+
+        --green-deep: #0F2D1A;
+        --green-mid: #1a4a2a;
+        --green-bright: #2a6a3a;
+
+        --space: #05080f;
+
+        --text-primary: #f0f4f8;
+        --text-secondary: #c0d8e8;
+        --text-muted: #8aa8b8;
+
+        --glass-bg: rgba(15, 45, 26, 0.55);
+        --glass-border: rgba(212, 175, 55, 0.2);
+
+        --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
+        --shadow-gold-strong: 0 0 60px rgba(212, 175, 55, 0.15);
+
+        --radius: 16px;
+
+        --transition:
+            all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+        --success: #00d68f;
+        --danger: #ff3366;
+        --warning: #f7d44a;
+        --live-red: #ff0044;
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        background: var(--space);
+        color: var(--text-primary);
+        font-family: 'Inter', sans-serif;
+        min-height: 100vh;
+
+        background-image:
+            radial-gradient(
+                ellipse at 20% 50%,
+                rgba(26, 74, 42, 0.4) 0%,
+                transparent 60%
+            ),
+            radial-gradient(
+                ellipse at 80% 50%,
+                rgba(212, 175, 55, 0.08) 0%,
+                transparent 60%
+            );
+    }
+
+    #stars-canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+        pointer-events: none;
+    }
+
+    .app {
+        position: relative;
+        z-index: 1;
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 20px 24px 30px;
+    }
+
+    /* =========================================================
+       HEADER
+    ========================================================== */
+
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        padding: 12px 0 16px;
+
+        border-bottom: 2px solid var(--glass-border);
+
+        background: rgba(5, 8, 15, 0.9);
+
+        position: sticky;
+        top: 0;
+        z-index: 100;
+
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+
+        border-radius:
+            var(--radius)
+            var(--radius)
+            0
+            0;
+    }
+
+    /*
+     * IMPORTANTE:
+     * El logo ya NO contiene otro <a>.
+     */
+    .logo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .logo-main {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-decoration: none;
+    }
+
+    .logo-hex {
+        font-size: 2rem;
+        color: var(--gold);
+        font-family: 'Orbitron', monospace;
+        text-shadow:
+            0 0 30px rgba(212, 175, 55, 0.3);
+    }
+
+    .logo-text {
+        font-family: 'Orbitron', monospace;
+        font-size: 1.3rem;
+        color: var(--text-primary);
+        letter-spacing: 2px;
+    }
+
+    .logo-text span {
+        color: var(--gold);
+    }
+
+    .logo-badge {
+        font-size: 0.5rem;
+        background:
+            linear-gradient(
+                135deg,
+                var(--gold),
+                var(--gold-light)
+            );
+        color: var(--space);
+        padding: 2px 12px;
+        border-radius: 20px;
+        font-weight: 700;
+        text-decoration: none;
+        cursor: pointer;
+        transition: var(--transition);
+    }
+
+    .logo-badge:hover {
+        transform: scale(1.05);
+        box-shadow:
+            0 0 20px rgba(212, 175, 55, 0.3);
+    }
+
+    .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .network-badge {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+
+        font-size: 0.65rem;
+        color: var(--gold);
+
+        background: rgba(212, 175, 55, 0.1);
+
+        padding: 4px 14px;
+
+        border-radius: 20px;
+
+        text-decoration: none;
+        cursor: pointer;
+
+        transition: var(--transition);
+    }
+
+    .network-badge:hover {
+        background: rgba(212, 175, 55, 0.2);
+        transform: scale(1.02);
+    }
+
+    .network-badge .dot {
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        background: var(--gold);
+        border-radius: 50%;
+    }
+
+    /* =========================================================
+       BUTTONS
+    ========================================================== */
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+
+        padding: 8px 20px;
+
+        border-radius: 30px;
+
+        font-size: 0.7rem;
+        font-weight: 600;
+
+        border: none;
+        cursor: pointer;
+
+        transition: var(--transition);
+
+        font-family: 'Inter', sans-serif;
+
+        text-decoration: none;
+    }
+
+    .btn-gold {
+        background:
+            linear-gradient(
+                135deg,
+                var(--gold),
+                var(--gold-dark)
+            );
+
+        color: var(--space);
+
+        box-shadow:
+            0 4px 20px rgba(212, 175, 55, 0.2);
+    }
+
+    .btn-gold:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-gold);
+    }
+
+    .btn-outline {
+        background: transparent;
+        color: var(--text-secondary);
+        border: 1px solid var(--glass-border);
+    }
+
+    .btn-outline:hover {
+        border-color: var(--gold);
+        color: var(--gold);
+    }
+
+    .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    /* =========================================================
+       HERO
+    ========================================================== */
+
+    .hero {
+        text-align: center;
+
+        padding: 40px 20px 30px;
+
+        background: var(--glass-bg);
+
+        border: 1px solid var(--glass-border);
+
+        border-radius: var(--radius);
+
+        margin-bottom: 20px;
+    }
+
+    .hero h1 {
+        font-family: 'Orbitron', monospace;
+        font-size: 2.2rem;
+        color: var(--gold);
+        margin-bottom: 8px;
+    }
+
+    .hero p {
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+        max-width: 600px;
+        margin: 0 auto 16px;
+    }
+
+    .hero .btn {
+        margin-top: 10px;
+    }
+
+    /* =========================================================
+       CARRUSEL
+    ========================================================== */
+
+    .carrusel-wrapper {
+        width: 100%;
+        overflow: hidden;
+        position: relative;
+
+        padding: 20px 0;
+        margin-bottom: 30px;
+
+        background: var(--glass-bg);
+
+        border: 1px solid var(--glass-border);
+
+        border-radius: var(--radius);
+
+        mask-image:
+            linear-gradient(
+                to right,
+                transparent,
+                black 10%,
+                black 90%,
+                transparent
+            );
+
+        -webkit-mask-image:
+            linear-gradient(
+                to right,
+                transparent,
+                black 10%,
+                black 90%,
+                transparent
+            );
+    }
+
+    .carrusel-titulo {
+        font-family: 'Orbitron', monospace;
+        color: var(--gold);
+
+        font-size: 0.9rem;
+
+        padding: 0 20px;
+        margin-bottom: 12px;
+
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .carrusel-titulo .dot {
+        width: 8px;
+        height: 8px;
+
+        border-radius: 50%;
+
+        background: var(--live-red);
+
+        animation: pulse-live 1s infinite;
+    }
+
+    @keyframes pulse-live {
+        0%, 100% {
+            opacity: 1;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        50% {
+            opacity: 0.4;
+        }
+    }
 
-        body {
-            background: var(--space);
-            color: var(--text-primary);
-            font-family: 'Inter', sans-serif;
-            min-height: 100vh;
-            background-image: radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
+    .carrusel-fila {
+        display: flex;
+        gap: 16px;
+
+        width: max-content;
+
+        margin-bottom: 16px;
+    }
+
+    .carrusel-fila:last-child {
+        margin-bottom: 0;
+    }
+
+    @keyframes scroll-derecha {
+        0% {
+            transform: translateX(0);
         }
 
-        #stars-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
-        .app { position: relative; z-index: 1; max-width: 1280px; margin: 0 auto; padding: 20px 24px 30px; }
-
-        .header {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 12px 0 16px; border-bottom: 2px solid var(--glass-border);
-            background: rgba(5, 8, 15, 0.9); position: sticky; top: 0; z-index: 100;
-            box-shadow: 0 4px 30px rgba(0,0,0,0.3); border-radius: var(--radius) var(--radius) 0 0;
+        100% {
+            transform: translateX(-50%);
         }
-        .logo { display: flex; align-items: center; gap: 12px; text-decoration: none; }
-        .logo-hex { font-size: 2rem; color: var(--gold); font-family: 'Orbitron', monospace; text-shadow: 0 0 30px rgba(212, 175, 55, 0.3); }
-        .logo-text { font-family: 'Orbitron', monospace; font-size: 1.3rem; color: var(--text-primary); letter-spacing: 2px; }
-        .logo-text span { color: var(--gold); }
-        .logo-badge { font-size: 0.5rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 12px; border-radius: 20px; font-weight: 700; text-decoration: none; cursor: pointer; transition: var(--transition); }
-        .logo-badge:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(212, 175, 55, 0.3); }
-        .header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-        .network-badge { display: flex; align-items: center; gap: 6px; font-size: 0.65rem; color: var(--gold); background: rgba(212, 175, 55, 0.1); padding: 4px 14px; border-radius: 20px; text-decoration: none; cursor: pointer; transition: var(--transition); }
-        .network-badge:hover { background: rgba(212, 175, 55, 0.2); transform: scale(1.02); }
-        .network-badge .dot { display: inline-block; width: 6px; height: 6px; background: var(--gold); border-radius: 50%; }
+    }
 
-        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 20px; border-radius: 30px; font-size: 0.7rem; font-weight: 600; border: none; cursor: pointer; transition: var(--transition); font-family: 'Inter', sans-serif; text-decoration: none; }
-        .btn-gold { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); box-shadow: 0 4px 20px rgba(212, 175, 55, 0.2); }
-        .btn-gold:hover { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
-        .btn-outline { background: transparent; color: var(--text-secondary); border: 1px solid var(--glass-border); }
-        .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-        .hero { text-align: center; padding: 40px 20px 30px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius); margin-bottom: 20px; }
-        .hero h1 { font-family: 'Orbitron', monospace; font-size: 2.2rem; color: var(--gold); margin-bottom: 8px; }
-        .hero p { color: var(--text-secondary); font-size: 0.95rem; max-width: 600px; margin: 0 auto 16px; }
-        .hero .btn { margin-top: 10px; }
-
-        .carrusel-wrapper {
-            width: 100%;
-            overflow: hidden;
-            position: relative;
-            padding: 20px 0;
-            margin-bottom: 30px;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius);
-            mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
-            -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+    @keyframes scroll-izquierda {
+        0% {
+            transform: translateX(-50%);
         }
 
-        .carrusel-titulo {
-            font-family: 'Orbitron', monospace;
-            color: var(--gold);
-            font-size: 0.9rem;
-            padding: 0 20px;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+        100% {
+            transform: translateX(0);
         }
-        .carrusel-titulo .dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--live-red);
-            animation: pulse-live 1s infinite;
-        }
-        @keyframes pulse-live { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+    }
 
-        .carrusel-fila {
-            display: flex;
-            gap: 16px;
-            width: max-content;
-            margin-bottom: 16px;
-        }
-        .carrusel-fila:last-child { margin-bottom: 0; }
+    .carrusel-fila.derecha {
+        animation:
+            scroll-derecha 60s linear infinite;
+    }
 
-        @keyframes scroll-derecha {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
-        }
-        @keyframes scroll-izquierda {
-            0% { transform: translateX(-50%); }
-            100% { transform: translateX(0); }
-        }
+    .carrusel-fila.izquierda {
+        animation:
+            scroll-izquierda 60s linear infinite;
+    }
 
-        .carrusel-fila.derecha { animation: scroll-derecha 60s linear infinite; }
-        .carrusel-fila.izquierda { animation: scroll-izquierda 60s linear infinite; }
-        .carrusel-wrapper:hover .carrusel-fila { animation-play-state: paused; }
+    .carrusel-wrapper:hover .carrusel-fila {
+        animation-play-state: paused;
+    }
 
+    .carrusel-item {
+        width: 220px;
+        height: 130px;
+
+        border-radius: 12px;
+
+        overflow: hidden;
+
+        flex-shrink: 0;
+
+        border: 1px solid var(--glass-border);
+
+        position: relative;
+
+        cursor: pointer;
+
+        transition: var(--transition);
+
+        background: #000;
+    }
+
+    .carrusel-item:hover {
+        transform: scale(1.05);
+
+        border-color: var(--gold);
+
+        box-shadow:
+            0 8px 30px rgba(212, 175, 55, 0.3);
+
+        z-index: 10;
+    }
+
+    .carrusel-item img,
+    .carrusel-item video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .carrusel-item .live-tag {
+        position: absolute;
+
+        top: 8px;
+        left: 8px;
+
+        background: var(--live-red);
+        color: #fff;
+
+        font-size: 0.5rem;
+        font-weight: 700;
+
+        padding: 2px 8px;
+
+        border-radius: 10px;
+
+        font-family: 'Orbitron', monospace;
+
+        animation: pulse-live 1s infinite;
+
+        z-index: 2;
+    }
+
+    .carrusel-item .etiqueta {
+        position: absolute;
+
+        bottom: 0;
+        left: 0;
+        right: 0;
+
+        background:
+            linear-gradient(
+                to top,
+                rgba(0,0,0,0.95),
+                transparent
+            );
+
+        color: #fff;
+
+        font-size: 0.65rem;
+        font-weight: 600;
+
+        padding: 25px 10px 8px;
+
+        font-family: 'Inter', sans-serif;
+
+        z-index: 2;
+    }
+
+    .carrusel-item .etiqueta .canal {
+        color: var(--gold);
+        font-weight: 700;
+
+        display: block;
+        margin-bottom: 2px;
+    }
+
+    .carrusel-item .etiqueta .titulo {
+        color: #fff;
+
+        display: block;
+
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .carrusel-vacio {
+        width: 100%;
+        text-align: center;
+
+        padding: 30px 20px;
+
+        color: var(--text-muted);
+    }
+
+    .carrusel-vacio .icon {
+        font-size: 2rem;
+        display: block;
+        margin-bottom: 10px;
+        color: var(--gold);
+        opacity: 0.5;
+    }
+
+    @media (max-width: 480px) {
         .carrusel-item {
-            width: 220px;
-            height: 130px;
-            border-radius: 12px;
-            overflow: hidden;
-            flex-shrink: 0;
-            border: 1px solid var(--glass-border);
-            position: relative;
-            cursor: pointer;
-            transition: var(--transition);
-            background: #000;
+            width: 160px;
+            height: 95px;
         }
-        .carrusel-item:hover {
-            transform: scale(1.05);
-            border-color: var(--gold);
-            box-shadow: 0 8px 30px rgba(212, 175, 55, 0.3);
-            z-index: 10;
-        }
-        .carrusel-item img,
-        .carrusel-item video {
-            width: 100%; height: 100%; object-fit: cover; display: block;
+    }
+
+    /* =========================================================
+       PERFIL
+    ========================================================== */
+
+    .ir-perfil-btn {
+        background: rgba(212, 175, 55, 0.15);
+
+        border: 1px solid var(--gold);
+
+        color: var(--gold);
+
+        padding: 8px 20px;
+
+        border-radius: 30px;
+
+        font-size: 0.7rem;
+        font-weight: 600;
+
+        cursor: pointer;
+
+        transition: var(--transition);
+
+        text-decoration: none;
+
+        font-family: 'Inter', sans-serif;
+
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .ir-perfil-btn:hover {
+        background: rgba(212, 175, 55, 0.25);
+        transform: translateY(-2px);
+    }
+
+    /* =========================================================
+       IDIOMA
+    ========================================================== */
+
+    .idioma-selector {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+
+        font-size: 0.65rem;
+
+        color: var(--text-secondary);
+
+        background: rgba(0,0,0,0.2);
+
+        padding: 4px 10px;
+
+        border-radius: 20px;
+
+        border: 1px solid var(--glass-border);
+    }
+
+    .idioma-selector select {
+        background: transparent;
+        border: none;
+
+        color: var(--gold);
+
+        font-size: 0.65rem;
+
+        outline: none;
+        cursor: pointer;
+
+        font-family: 'Inter', sans-serif;
+
+        padding: 2px 4px;
+    }
+
+    .idioma-selector select option {
+        background: var(--space);
+        color: var(--text-primary);
+    }
+
+    /* =========================================================
+       TABS
+    ========================================================== */
+
+    .tabs-container {
+        margin-bottom: 20px;
+    }
+
+    .tabs {
+        display: flex;
+        gap: 4px;
+
+        background: var(--glass-bg);
+
+        border-radius: var(--radius);
+
+        padding: 4px;
+
+        border: 1px solid var(--glass-border);
+
+        flex-wrap: wrap;
+    }
+
+    .tab-btn {
+        flex: 1;
+
+        padding: 10px 16px;
+
+        border: none;
+
+        background: transparent;
+
+        color: var(--text-muted);
+
+        font-size: 0.75rem;
+        font-weight: 600;
+
+        border-radius: 10px;
+
+        cursor: pointer;
+
+        min-width: 80px;
+    }
+
+    .tab-btn.active {
+        background: rgba(212, 175, 55, 0.15);
+        color: var(--gold);
+    }
+
+    .tab-content {
+        display: none;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
         }
 
-        .carrusel-item .live-tag {
-            position: absolute; top: 8px; left: 8px;
-            background: var(--live-red); color: #fff;
-            font-size: 0.5rem; font-weight: 700;
-            padding: 2px 8px; border-radius: 10px;
-            font-family: 'Orbitron', monospace;
-            animation: pulse-live 1s infinite;
-            z-index: 2;
+        to {
+            opacity: 1;
+            transform: translateY(0);
         }
-        .carrusel-item .etiqueta {
-            position: absolute; bottom: 0; left: 0; right: 0;
-            background: linear-gradient(to top, rgba(0,0,0,0.95), transparent);
-            color: #fff; font-size: 0.65rem; font-weight: 600;
-            padding: 25px 10px 8px;
-            font-family: 'Inter', sans-serif;
-            z-index: 2;
+    }
+
+    /* =========================================================
+       AUTH
+    ========================================================== */
+
+    .auth-section {
+        display: grid;
+
+        grid-template-columns: 1fr 1fr;
+
+        gap: 20px;
+
+        margin-bottom: 30px;
+    }
+
+    @media (max-width: 768px) {
+        .auth-section {
+            grid-template-columns: 1fr;
         }
-        .carrusel-item .etiqueta .canal {
-            color: var(--gold); font-weight: 700;
-            display: block; margin-bottom: 2px;
-        }
-        .carrusel-item .etiqueta .titulo {
-            color: #fff; display: block;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .auth-card {
+        background: var(--glass-bg);
+
+        border: 1px solid var(--glass-border);
+
+        border-radius: var(--radius);
+
+        padding: 24px;
+    }
+
+    .auth-card h3 {
+        font-family: 'Orbitron', monospace;
+
+        color: var(--gold);
+
+        font-size: 0.95rem;
+
+        margin-bottom: 12px;
+    }
+
+    .auth-card .sub {
+        font-size: 0.7rem;
+
+        color: var(--text-muted);
+
+        margin-bottom: 12px;
+    }
+
+    .auth-card input {
+        width: 100%;
+
+        padding: 10px 14px;
+
+        background: rgba(0,0,0,0.4);
+
+        border: 1px solid var(--glass-border);
+
+        border-radius: 10px;
+
+        color: var(--text-primary);
+
+        font-size: 0.85rem;
+
+        margin-bottom: 10px;
+    }
+
+    .auth-card input:focus {
+        outline: none;
+        border-color: var(--gold);
+    }
+
+    .auth-card .btn {
+        width: 100%;
+        justify-content: center;
+        padding: 10px;
+    }
+
+    /* =========================================================
+       INTERNET
+    ========================================================== */
+
+    .internet-grid-cards {
+        display: grid;
+
+        grid-template-columns:
+            repeat(
+                auto-fill,
+                minmax(180px, 1fr)
+            );
+
+        gap: 12px;
+
+        margin-top: 12px;
+    }
+
+    .internet-card {
+        background: rgba(0,0,0,0.3);
+
+        border: 1px solid var(--glass-border);
+
+        border-radius: 12px;
+
+        padding: 16px;
+
+        text-align: center;
+    }
+
+    .internet-card .name {
+        font-family: 'Orbitron', monospace;
+
+        font-size: 0.8rem;
+
+        color: var(--gold);
+    }
+
+    .internet-card .data {
+        font-size: 1.2rem;
+
+        font-weight: 700;
+
+        color: white;
+    }
+
+    .internet-card .price {
+        color: var(--gold);
+
+        font-size: 0.9rem;
+    }
+
+    .internet-card .btn {
+        margin-top: 8px;
+
+        width: 100%;
+
+        justify-content: center;
+
+        padding: 6px;
+
+        font-size: 0.6rem;
+    }
+
+    .panel {
+        background: var(--glass-bg);
+
+        border: 1px solid var(--glass-border);
+
+        border-radius: var(--radius);
+
+        padding: 20px;
+    }
+
+    /* =========================================================
+       FOOTER
+    ========================================================== */
+
+    .footer {
+        margin-top: 30px;
+
+        padding-top: 16px;
+
+        border-top: 1px solid var(--glass-border);
+
+        display: flex;
+
+        justify-content: space-between;
+
+        font-size: 0.7rem;
+
+        color: var(--text-muted);
+
+        flex-wrap: wrap;
+
+        gap: 10px;
+    }
+
+    .footer .brand {
+        color: var(--gold);
+        font-weight: 600;
+    }
+
+    .footer-links {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .footer-links a {
+        color: var(--text-muted);
+
+        text-decoration: none;
+
+        transition: var(--transition);
+    }
+
+    .footer-links a:hover {
+        color: var(--gold);
+    }
+
+    /* =========================================================
+       TOAST
+    ========================================================== */
+
+    .toast {
+        position: fixed;
+
+        bottom: 20px;
+        left: 50%;
+
+        transform:
+            translateX(-50%)
+            translateY(80px);
+
+        background: rgba(5,8,15,0.95);
+
+        border: 1px solid var(--glass-border);
+
+        padding: 12px 24px;
+
+        border-radius: 30px;
+
+        color: var(--text-primary);
+
+        font-size: 0.85rem;
+
+        box-shadow:
+            0 8px 40px rgba(0,0,0,0.5);
+
+        backdrop-filter: blur(12px);
+
+        transition:
+            all 0.4s
+            cubic-bezier(0.4,0,0.2,1);
+
+        z-index: 999;
+
+        opacity: 0;
+
+        pointer-events: none;
+    }
+
+    .toast.show {
+        opacity: 1;
+
+        transform:
+            translateX(-50%)
+            translateY(0);
+    }
+
+    .toast.error {
+        border-color: var(--danger);
+        color: var(--danger);
+    }
+
+    .toast.warning {
+        border-color: var(--warning);
+        color: var(--warning);
+    }
+
+    /* =========================================================
+       SESIÓN
+    ========================================================== */
+
+    #sessionInfo {
+        background: rgba(0,0,0,0.2);
+
+        padding: 8px 16px;
+
+        border-radius: 20px;
+
+        font-size: 0.7rem;
+
+        color: var(--text-muted);
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 10px;
+    }
+
+    #sessionInfo .email {
+        color: var(--gold);
+    }
+
+    .logout-btn {
+        background: transparent;
+
+        border: 1px solid var(--danger);
+
+        color: var(--danger);
+
+        padding: 2px 12px;
+
+        border-radius: 12px;
+
+        cursor: pointer;
+
+        font-size: 0.6rem;
+    }
+
+    .logout-btn:hover {
+        background: rgba(255, 51, 102, 0.1);
+    }
+
+    .admin-link {
+        color: var(--gold);
+
+        text-decoration: none;
+
+        font-size: 0.6rem;
+
+        border-bottom:
+            1px dotted
+            rgba(212, 175, 55, 0.2);
+    }
+
+    .admin-link:hover {
+        border-bottom-color: var(--gold);
+    }
+
+    /* =========================================================
+       ESTRELLAS / NEBULOSA
+    ========================================================== */
+
+    .stars-canvas {
+        position: fixed;
+
+        top: 0;
+        left: 0;
+
+        width: 100%;
+        height: 100%;
+
+        z-index: 0;
+
+        pointer-events: none;
+    }
+
+    .nebula {
+        position: fixed;
+
+        border-radius: 50%;
+
+        filter: blur(120px);
+
+        pointer-events: none;
+
+        z-index: 0;
+
+        animation:
+            nebula-drift
+            25s
+            ease-in-out
+            infinite
+            alternate;
+    }
+
+    .nebula-1 {
+        width: 700px;
+        height: 700px;
+
+        background: #0B3D2E;
+
+        top: -15%;
+        right: -15%;
+
+        opacity: .10;
+    }
+
+    .nebula-2 {
+        width: 600px;
+        height: 600px;
+
+        background: var(--gold);
+
+        bottom: -15%;
+        left: -15%;
+
+        opacity: .05;
+
+        animation-delay: -8s;
+    }
+
+    .nebula-3 {
+        width: 500px;
+        height: 500px;
+
+        background: #00e5ff;
+
+        top: 50%;
+        left: 50%;
+
+        transform:
+            translate(-50%, -50%);
+
+        opacity: .04;
+
+        animation-delay: -15s;
+    }
+
+    @keyframes nebula-drift {
+        0% {
+            transform:
+                translate(0, 0)
+                scale(1);
         }
 
-        .carrusel-vacio {
-            width: 100%; text-align: center;
-            padding: 30px 20px; color: var(--text-muted);
+        100% {
+            transform:
+                translate(40px, -30px)
+                scale(1.15);
         }
-        .carrusel-vacio .icon { font-size: 2rem; display: block; margin-bottom: 10px; color: var(--gold); opacity: 0.5; }
+    }
 
-        @media (max-width: 480px) {
-            .carrusel-item { width: 160px; height: 95px; }
-        }
-
-        .ir-perfil-btn {
-            background: rgba(212, 175, 55, 0.15);
-            border: 1px solid var(--gold);
-            color: var(--gold);
-            padding: 8px 20px;
-            border-radius: 30px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: var(--transition);
-            text-decoration: none;
-            font-family: 'Inter', sans-serif;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .ir-perfil-btn:hover { background: rgba(212, 175, 55, 0.25); transform: translateY(-2px); }
-
-        .idioma-selector {
-            display: flex; align-items: center; gap: 6px;
-            font-size: 0.65rem; color: var(--text-secondary);
-            background: rgba(0,0,0,0.2); padding: 4px 10px;
-            border-radius: 20px; border: 1px solid var(--glass-border);
-        }
-        .idioma-selector select {
-            background: transparent; border: none;
-            color: var(--gold); font-size: 0.65rem;
-            outline: none; cursor: pointer;
-            font-family: 'Inter', sans-serif; padding: 2px 4px;
-        }
-        .idioma-selector select option { background: var(--space); color: var(--text-primary); }
-
-        .tabs-container { margin-bottom: 20px; }
-        .tabs { display: flex; gap: 4px; background: var(--glass-bg); border-radius: var(--radius); padding: 4px; border: 1px solid var(--glass-border); flex-wrap: wrap; }
-        .tab-btn { flex: 1; padding: 10px 16px; border: none; background: transparent; color: var(--text-muted); font-size: 0.75rem; font-weight: 600; border-radius: 10px; cursor: pointer; min-width: 80px; }
-        .tab-btn.active { background: rgba(212, 175, 55, 0.15); color: var(--gold); }
-        .tab-content { display: none; animation: fadeIn 0.3s ease; }
-        .tab-content.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        .auth-section { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
-        @media (max-width: 768px) { .auth-section { grid-template-columns: 1fr; } }
-        .auth-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 24px; }
-        .auth-card h3 { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 0.95rem; margin-bottom: 12px; }
-        .auth-card .sub { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 12px; }
-        .auth-card input { width: 100%; padding: 10px 14px; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--text-primary); font-size: 0.85rem; margin-bottom: 10px; }
-        .auth-card input:focus { outline: none; border-color: var(--gold); }
-        .auth-card .btn { width: 100%; justify-content: center; padding: 10px; }
-
-        .internet-grid-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 12px;
-            margin-top: 12px;
-        }
-        .internet-card {
-            background: rgba(0,0,0,0.3);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            padding: 16px;
-            text-align: center;
-        }
-        .internet-card .name { font-family: 'Orbitron', monospace; font-size: 0.8rem; color: var(--gold); }
-        .internet-card .data { font-size: 1.2rem; font-weight: 700; color: white; }
-        .internet-card .price { color: var(--gold); font-size: 0.9rem; }
-        .internet-card .btn { margin-top: 8px; width: 100%; justify-content: center; padding: 6px; font-size: 0.6rem; }
-
-        .panel { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 20px; }
-
-        .footer {
-            margin-top: 30px;
-            padding-top: 16px;
-            border-top: 1px solid var(--glass-border);
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        .footer .brand { color: var(--gold); font-weight: 600; }
-        .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
-        .footer-links a { color: var(--text-muted); text-decoration: none; transition: var(--transition); }
-        .footer-links a:hover { color: var(--gold); }
-
-        .toast {
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(80px);
-            background: rgba(5,8,15,0.95); border: 1px solid var(--glass-border);
-            padding: 12px 24px; border-radius: 30px; color: var(--text-primary);
-            font-size: 0.85rem; box-shadow: 0 8px 40px rgba(0,0,0,0.5);
-            backdrop-filter: blur(12px); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 999; opacity: 0; pointer-events: none;
-        }
-        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-        .toast.error { border-color: var(--danger); color: var(--danger); }
-        .toast.warning { border-color: var(--warning); color: var(--warning); }
-
-        #sessionInfo { 
-            background: rgba(0,0,0,0.2); 
-            padding: 8px 16px; 
-            border-radius: 20px; 
-            font-size: 0.7rem; 
-            color: var(--text-muted);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        #sessionInfo .email { color: var(--gold); }
-        .logout-btn { 
-            background: transparent; 
-            border: 1px solid var(--danger); 
-            color: var(--danger); 
-            padding: 2px 12px; 
-            border-radius: 12px; 
-            cursor: pointer; 
-            font-size: 0.6rem;
-        }
-        .logout-btn:hover { background: rgba(255, 51, 102, 0.1); }
-
-        .admin-link {
-            color: var(--gold);
-            text-decoration: none;
-            font-size: 0.6rem;
-            border-bottom: 1px dotted rgba(212, 175, 55, 0.2);
-        }
-        .admin-link:hover { border-bottom-color: var(--gold); }
-
-        .stars-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-            pointer-events: none;
+    @media (max-width: 768px) {
+        #stars-canvas {
+            display: none;
         }
 
         .nebula {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(120px);
-            pointer-events: none;
-            z-index: 0;
-            animation: nebula-drift 25s ease-in-out infinite alternate;
+            display: none;
         }
 
-        .nebula-1 {
-            width: 700px;
-            height: 700px;
-            background: #0B3D2E;
-            top: -15%;
-            right: -15%;
-            opacity: .10;
+        .tabs {
+            flex-direction: column;
         }
 
-        .nebula-2 {
-            width: 600px;
-            height: 600px;
-            background: var(--gold);
-            bottom: -15%;
-            left: -15%;
-            opacity: .05;
-            animation-delay: -8s;
+        .tab-btn {
+            flex: none;
         }
 
-        .nebula-3 {
-            width: 500px;
-            height: 500px;
-            background: #00e5ff;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            opacity: .04;
-            animation-delay: -15s;
+        .header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
         }
 
-        @keyframes nebula-drift {
-            0% { transform: translate(0, 0) scale(1); }
-            100% { transform: translate(40px, -30px) scale(1.15); }
+        .header-actions {
+            width: 100%;
+            flex-wrap: wrap;
         }
 
-        @media (max-width: 768px) {
-            #stars-canvas { display: none; }
-            .nebula { display: none; }
-            .tabs { flex-direction: column; }
-            .tab-btn { flex: none; }
-            .header { flex-direction: column; align-items: flex-start; gap: 10px; }
-            .header-actions { width: 100%; flex-wrap: wrap; }
-            #sessionInfo { flex-wrap: wrap; }
+        #sessionInfo {
+            flex-wrap: wrap;
         }
-    </style>
-</head>
-<body>
+    }
+</style>
 
-    <canvas id="stars-canvas" class="stars-canvas"></canvas>
-    <div class="nebula nebula-1"></div>
-    <div class="nebula nebula-2"></div>
-    <div class="nebula nebula-3"></div>
+</head><body><canvas
+    id="stars-canvas"
+    class="stars-canvas"
+></canvas>
 
-    <div class="app">
-        <header class="header">
-            <a href="/" class="logo">
+<div class="nebula nebula-1"></div>
+<div class="nebula nebula-2"></div>
+<div class="nebula nebula-3"></div>
+
+<div class="app">
+
+    <!-- =====================================================
+         HEADER
+    ====================================================== -->
+
+    <header class="header">
+
+        <div class="logo">
+
+            <a
+                href="/"
+                class="logo-main"
+                aria-label="Ir al inicio"
+            >
                 <span class="logo-hex">◈</span>
-                <span class="logo-text">Sariel<span>'s</span></span>
-                <a href="/info/web3.html" class="logo-badge" target="_blank" rel="noopener noreferrer">✦ WEB3</a>
+
+                <span class="logo-text">
+                    Sariel<span>'s</span>
+                </span>
             </a>
-            <div class="header-actions">
-                <a href="https://polygon.technology/" target="_blank" rel="noopener noreferrer" class="network-badge"><span class="dot"></span> Polygon</a>
-                
-                <div class="idioma-selector">
-                    <span>🌐</span>
-                    <select id="selectorIdioma" onchange="cambiarIdiomaGlobal(this.value)">
-                        <option value="">Cargando idiomas...</option>
-                    </select>
-                </div>
-                
-                <div id="sessionInfo">
-                    <span>🔐</span>
-                    <span class="email" id="userEmail" data-clave="no_autenticado">No autenticado</span>
-                    <button class="logout-btn" onclick="cerrarSesionGlobal()" id="logoutBtn" style="display:none;" data-clave="cerrar">Cerrar</button>
-                </div>
-            </div>
-        </header>
 
-        <section class="hero">
-            <h1 data-clave="bienvenido_titulo">◈ Bienvenido a Sariel's</h1>
-            <p data-clave="bienvenido_descripcion">Compra domos físicos, acumula <strong>Es.stoks</strong>, canjea NFTs y conecta con tu comunidad en un ecosistema Web3 sin custodia.</p>
-            <a href="/features/perfil/perfil.html" class="ir-perfil-btn protected-link" onclick="return protegerYNavegar(event, this.href)" data-clave="ir_perfil">◆ Ir a mi perfil</a>
-        </section>
+            <!--
+                Se mantiene como enlace independiente.
+                Evita <a> dentro de <a>.
+            -->
+            <a
+                href="/info/web3.html"
+                class="logo-badge"
+                target="_blank"
+                rel="noopener noreferrer"
+            >
+                ✦ WEB3
+            </a>
 
-        <div class="carrusel-wrapper" id="carruselEnVivo">
-            <div class="carrusel-titulo">
+        </div>
+
+        <div class="header-actions">
+
+            <a
+                href="https://polygon.technology/"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="network-badge"
+            >
                 <span class="dot"></span>
-                <span>EN VIVO AHORA</span>
+                Polygon
+            </a>
+
+            <div class="idioma-selector">
+
+                <span>🌐</span>
+
+                <select
+                    id="selectorIdioma"
+                    onchange="cambiarIdiomaGlobal(this.value)"
+                >
+                    <option value="">
+                        Cargando idiomas...
+                    </option>
+                </select>
+
             </div>
-            <div class="carrusel-vacio">
-                <span class="icon">◈</span>
-                <p>Cargando lo que está al aire...</p>
+
+            <div id="sessionInfo">
+
+                <span>🔐</span>
+
+                <span
+                    class="email"
+                    id="userEmail"
+                    data-clave="no_autenticado"
+                >
+                    No autenticado
+                </span>
+
+                <button
+                    class="logout-btn"
+                    onclick="cerrarSesionGlobal()"
+                    id="logoutBtn"
+                    style="display:none;"
+                    data-clave="cerrar"
+                >
+                    Cerrar
+                </button>
+
             </div>
+
         </div>
 
-        <div class="tabs-container">
-            <div class="tabs">
-                <button class="tab-btn active" onclick="cambiarTab('inicio')" data-clave="tab_tienda">⌂ Tienda</button>
-                <button class="tab-btn" onclick="cambiarTab('internet')" data-clave="tab_internet">◈ Internet</button>
-                <button class="tab-btn admin" onclick="cambiarTab('admin')" data-clave="tab_admin">◈ Admin QR</button>
-            </div>
+    </header>
+
+    <!-- =====================================================
+         HERO
+    ====================================================== -->
+
+    <section class="hero">
+
+        <h1 data-clave="bienvenido_titulo">
+            ◈ Bienvenido a Sariel's
+        </h1>
+
+        <p data-clave="bienvenido_descripcion">
+            Compra domos físicos, acumula
+            <strong>Es.stoks</strong>,
+            canjea NFTs y conecta con tu comunidad
+            en un ecosistema Web3 sin custodia.
+        </p>
+
+        <a
+            href="/features/perfil/perfil.html"
+            class="ir-perfil-btn protected-link"
+            onclick="return protegerYNavegar(event, this.href)"
+            data-clave="ir_perfil"
+        >
+            ◆ Ir a mi perfil
+        </a>
+
+    </section>
+
+    <!-- =====================================================
+         CARRUSEL EN VIVO
+    ====================================================== -->
+
+    <div
+        class="carrusel-wrapper"
+        id="carruselEnVivo"
+    >
+
+        <div class="carrusel-titulo">
+
+            <span class="dot"></span>
+
+            <span>
+                EN VIVO AHORA
+            </span>
+
         </div>
 
-        <div id="tab-inicio" class="tab-content active">
-            <div class="auth-section">
-                <div class="auth-card" id="registerCard">
-                    <h3 data-clave="registro_titulo">◈ Regístrate gratis</h3>
-                    <div class="sub" data-clave="registro_sub">Crea tu cuenta con email</div>
-                    <input type="email" id="regEmail" data-placeholder="registro_email" placeholder="Correo electrónico" />
-                    <input type="password" id="regPassword" data-placeholder="registro_password" placeholder="Contraseña" />
-                    <input type="text" id="regName" data-placeholder="registro_nombre" placeholder="Nombre (opcional)" />
-                    <button class="btn btn-gold" id="registerBtn" onclick="registrarUsuarioGlobal()" data-clave="registro_btn">⟡ Crear cuenta</button>
-                    <p style="font-size:0.6rem;color:var(--text-muted);margin-top:8px;text-align:center;">
-                        <span data-clave="registro_tienes_cuenta">¿Ya tienes cuenta?</span> <a href="#" onclick="mostrarLogin();return false;" style="color:var(--gold);" data-clave="registro_iniciar_sesion">Inicia sesión</a>
-                    </p>
-                </div>
+        <div class="carrusel-vacio">
 
-                <div class="auth-card" id="loginCard" style="display:none;">
-                    <h3 data-clave="login_titulo">◈ Iniciar sesión</h3>
-                    <div class="sub" data-clave="login_sub">Entra con tu email</div>
-                    <input type="email" id="loginEmail" data-placeholder="login_email" placeholder="Correo electrónico" />
-                    <input type="password" id="loginPassword" data-placeholder="login_password" placeholder="Contraseña" />
-                    <button class="btn btn-gold" id="loginBtn" onclick="iniciarSesionGlobal()" data-clave="login_btn">◈ Iniciar sesión</button>
-                    <p style="font-size:0.6rem;color:var(--text-muted);margin-top:8px;text-align:center;">
-                        <span data-clave="login_no_tienes_cuenta">¿No tienes cuenta?</span> <a href="#" onclick="mostrarRegistro();return false;" style="color:var(--gold);" data-clave="login_registrate">Regístrate</a>
-                    </p>
-                </div>
-            </div>
+            <span class="icon">
+                ◈
+            </span>
+
+            <p>
+                Cargando lo que está al aire...
+            </p>
+
         </div>
 
-        <div id="tab-internet" class="tab-content">
-            <div class="panel">
-                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-                    <h2 style="color:var(--gold); font-family:'Orbitron',monospace; font-size:1rem;" data-clave="internet_titulo">◈ Internet de alta velocidad</h2>
-                    <span style="font-size:0.6rem; background:rgba(0,214,143,0.15); color:#00d68f; padding:2px 12px; border-radius:20px;" data-clave="internet_badge">4G/5G</span>
-                </div>
-                <p style="color:var(--text-secondary); font-size:0.8rem; margin-top:4px;" data-clave="internet_descripcion">Paquetes de datos móviles · Activación en 2 minutos · Paga en MXN o USDT</p>
-                
-                <div class="internet-grid-cards" id="internetPreview">
-                    <div class="internet-card">
-                        <div class="name" data-clave="internet_basico">Básico</div>
-                        <div class="data">3 GB</div>
-                        <div style="font-size:0.6rem;color:var(--text-muted);" data-clave="internet_7dias">7 días</div>
-                        <div class="price">$79 MXN</div>
-                        <a href="/internet" class="btn btn-gold" style="text-decoration:none;" data-clave="internet_ver">Ver</a>
-                    </div>
-                    <div class="internet-card" style="border-color:var(--gold);">
-                        <div class="name" style="color:var(--gold);" data-clave="internet_chido">Chido</div>
-                        <div class="data">10 GB</div>
-                        <div style="font-size:0.6rem;color:var(--text-muted);" data-clave="internet_15dias">15 días</div>
-                        <div class="price">$169 MXN</div>
-                        <a href="/internet" class="btn btn-gold" style="text-decoration:none;" data-clave="internet_ver">Ver</a>
-                    </div>
-                    <div class="internet-card">
-                        <div class="name" data-clave="internet_pro">Pro</div>
-                        <div class="data">30 GB</div>
-                        <div style="font-size:0.6rem;color:var(--text-muted);" data-clave="internet_30dias">30 días</div>
-                        <div class="price">$299 MXN</div>
-                        <a href="/internet" class="btn btn-gold" style="text-decoration:none;" data-clave="internet_ver">Ver</a>
-                    </div>
-                    <div class="internet-card">
-                        <div class="name" data-clave="internet_ilimitado">Ilimitado</div>
-                        <div class="data">∞</div>
-                        <div style="font-size:0.6rem;color:var(--text-muted);" data-clave="internet_30dias">30 días</div>
-                        <div class="price">$549 MXN</div>
-                        <a href="/internet" class="btn btn-gold" style="text-decoration:none;" data-clave="internet_ver">Ver</a>
-                    </div>
-                </div>
-                
-                <div style="margin-top:16px; display:flex; gap:12px; flex-wrap:wrap; justify-content:center;">
-                    <a href="/internet" class="btn btn-gold" style="text-decoration:none; padding:10px 32px;" data-clave="internet_ver_todos">⟡ Ver todos los paquetes</a>
-                    <a href="/admin-internet" class="btn btn-outline" style="text-decoration:none; padding:10px 24px;" data-clave="internet_admin">⚙️ Admin</a>
-                </div>
-                <p style="font-size:0.55rem;color:var(--text-muted);text-align:center;margin-top:8px;" data-clave="internet_cobertura">◈ Cobertura: Puebla, CDMX, Edomex · Tethering incluido</p>
-            </div>
-        </div>
-
-        <div id="tab-admin" class="tab-content">
-            <div class="panel">
-                <h2 data-clave="admin_qr_titulo">◈ Admin QR</h2>
-                <div style="display:flex; gap: 10px; flex-wrap:wrap; margin-top:10px;">
-                    <input type="text" id="qrData" data-placeholder="admin_qr_placeholder" placeholder="Datos para QR" value="https://sariels.com" style="flex:1; padding:10px; background:rgba(0,0,0,0.4); border:1px solid var(--glass-border); border-radius:10px; color:white;" />
-                    <button class="btn btn-gold" onclick="generarQR()" data-clave="admin_qr_generar">Generar QR</button>
-                </div>
-                <div id="qrContainer" style="margin-top:20px; display:flex; justify-content:center; background:white; padding:20px; border-radius:10px;"></div>
-            </div>
-        </div>
-
-        <footer class="footer">
-            <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
-            <div class="footer-links">
-                <a href="/terminos.html" data-clave="footer_terminos">◈ Términos</a>
-                <a href="/privacidad.html" data-clave="footer_privacidad">◈ Privacidad</a>
-                <a href="/cookies.html" data-clave="footer_cookies">◈ Cookies</a>
-                <a href="/eliminar-cuenta.html" data-clave="footer_eliminar_cuenta">◈ Eliminar cuenta</a>
-                <a href="/live-terminos.html" data-clave="footer_live_terminos">◉ Live Términos</a>
-                <span style="opacity:0.3;">⚡ Polygon</span>
-            </div>
-        </footer>
     </div>
 
-    <div class="toast" id="toast"></div>
+    <!-- =====================================================
+         TABS
+    ====================================================== -->
 
-    <div id="errorBanner" style="
-        display:none; position:fixed; top:0; left:0; right:0; z-index:99999;
-        background:#ff3366; color:#fff; padding:12px 16px; font-family:monospace;
-        font-size:0.75rem; word-break:break-word; box-shadow:0 4px 20px rgba(0,0,0,0.4);
-    ">
-        <strong>⚠️ Error detectado:</strong>
-        <span id="errorBannerText"></span>
-        <button onclick="document.getElementById('errorBanner').style.display='none'"
-            style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">
-            Cerrar
-        </button>
+    <div class="tabs-container">
+
+        <div class="tabs">
+
+            <button
+                class="tab-btn active"
+                onclick="cambiarTab('inicio')"
+                data-clave="tab_tienda"
+            >
+                ⌂ Tienda
+            </button>
+
+            <button
+                class="tab-btn"
+                onclick="cambiarTab('internet')"
+                data-clave="tab_internet"
+            >
+                ◈ Internet
+            </button>
+
+            <button
+                class="tab-btn admin"
+                onclick="cambiarTab('admin')"
+                data-clave="tab_admin"
+            >
+                ◈ Admin QR
+            </button>
+
+        </div>
+
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-    <script src="/app.js"></script>
-    <script src="/features/shared/js/idiomas.js"></script>
+    <!-- =====================================================
+         TAB TIENDA
+    ====================================================== -->
 
-    <script>
-        (function initStars() {
-            const canvas = document.getElementById('stars-canvas');
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            let stars = [];
-            function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; createStars(); }
-            function createStars() {
-                const amount = Math.min(180, Math.floor(window.innerWidth * window.innerHeight / 9000));
-                stars = [];
-                for (let i = 0; i < amount; i++) {
-                    stars.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, radius: Math.random() * 1.4 + 0.2, opacity: Math.random() * 0.7 + 0.15, speed: Math.random() * 0.004 + 0.001 });
-                }
-            }
-            function drawStars(time) {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                stars.forEach(function(star) {
-                    const pulse = star.opacity + Math.sin(time * star.speed) * 0.12;
-                    ctx.beginPath();
-                    ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
-                    ctx.globalAlpha = Math.max(0.05, Math.min(1, pulse));
-                    ctx.fillStyle = '#D4AF37';
-                    ctx.fill();
+    <div
+        id="tab-inicio"
+        class="tab-content active"
+    >
+
+        <div class="auth-section">
+
+            <!-- REGISTRO -->
+
+            <div
+                class="auth-card"
+                id="registerCard"
+            >
+
+                <h3 data-clave="registro_titulo">
+                    ◈ Regístrate gratis
+                </h3>
+
+                <div
+                    class="sub"
+                    data-clave="registro_sub"
+                >
+                    Crea tu cuenta con email
+                </div>
+
+                <input
+                    type="email"
+                    id="regEmail"
+                    data-placeholder="registro_email"
+                    placeholder="Correo electrónico"
+                    autocomplete="email"
+                />
+
+                <input
+                    type="password"
+                    id="regPassword"
+                    data-placeholder="registro_password"
+                    placeholder="Contraseña"
+                    autocomplete="new-password"
+                />
+
+                <input
+                    type="text"
+                    id="regName"
+                    data-placeholder="registro_nombre"
+                    placeholder="Nombre (opcional)"
+                    autocomplete="name"
+                />
+
+                <button
+                    class="btn btn-gold"
+                    id="registerBtn"
+                    onclick="registrarUsuarioGlobal()"
+                    data-clave="registro_btn"
+                >
+                    ⟡ Crear cuenta
+                </button>
+
+                <p
+                    style="
+                        font-size:0.6rem;
+                        color:var(--text-muted);
+                        margin-top:8px;
+                        text-align:center;
+                    "
+                >
+
+                    <span data-clave="registro_tienes_cuenta">
+                        ¿Ya tienes cuenta?
+                    </span>
+
+                    <a
+                        href="#"
+                        onclick="mostrarLogin();return false;"
+                        style="color:var(--gold);"
+                        data-clave="registro_iniciar_sesion"
+                    >
+                        Inicia sesión
+                    </a>
+
+                </p>
+
+            </div>
+
+            <!-- LOGIN -->
+
+            <div
+                class="auth-card"
+                id="loginCard"
+                style="display:none;"
+            >
+
+                <h3 data-clave="login_titulo">
+                    ◈ Iniciar sesión
+                </h3>
+
+                <div
+                    class="sub"
+                    data-clave="login_sub"
+                >
+                    Entra con tu email
+                </div>
+
+                <input
+                    type="email"
+                    id="loginEmail"
+                    data-placeholder="login_email"
+                    placeholder="Correo electrónico"
+                    autocomplete="email"
+                />
+
+                <input
+                    type="password"
+                    id="loginPassword"
+                    data-placeholder="login_password"
+                    placeholder="Contraseña"
+                    autocomplete="current-password"
+                />
+
+                <button
+                    class="btn btn-gold"
+                    id="loginBtn"
+                    onclick="iniciarSesionGlobal()"
+                    data-clave="login_btn"
+                >
+                    ◈ Iniciar sesión
+                </button>
+
+                <p
+                    style="
+                        font-size:0.6rem;
+                        color:var(--text-muted);
+                        margin-top:8px;
+                        text-align:center;
+                    "
+                >
+
+                    <span data-clave="login_no_tienes_cuenta">
+                        ¿No tienes cuenta?
+                    </span>
+
+                    <a
+                        href="#"
+                        onclick="mostrarRegistro();return false;"
+                        style="color:var(--gold);"
+                        data-clave="login_registrate"
+                    >
+                        Regístrate
+                    </a>
+
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- =====================================================
+         TAB INTERNET
+    ====================================================== -->
+
+    <div
+        id="tab-internet"
+        class="tab-content"
+    >
+
+        <div class="panel">
+
+            <div
+                style="
+                    display:flex;
+                    justify-content:space-between;
+                    align-items:center;
+                    flex-wrap:wrap;
+                    gap:10px;
+                "
+            >
+
+                <h2
+                    style="
+                        color:var(--gold);
+                        font-family:'Orbitron',monospace;
+                        font-size:1rem;
+                    "
+                    data-clave="internet_titulo"
+                >
+                    ◈ Internet de alta velocidad
+                </h2>
+
+                <span
+                    style="
+                        font-size:0.6rem;
+                        background:rgba(0,214,143,0.15);
+                        color:#00d68f;
+                        padding:2px 12px;
+                        border-radius:20px;
+                    "
+                    data-clave="internet_badge"
+                >
+                    4G/5G
+                </span>
+
+            </div>
+
+            <p
+                style="
+                    color:var(--text-secondary);
+                    font-size:0.8rem;
+                    margin-top:4px;
+                "
+                data-clave="internet_descripcion"
+            >
+                Paquetes de datos móviles · Activación en 2 minutos ·
+                Paga en MXN o USDT
+            </p>
+
+            <div
+                class="internet-grid-cards"
+                id="internetPreview"
+            >
+
+                <div class="internet-card">
+
+                    <div
+                        class="name"
+                        data-clave="internet_basico"
+                    >
+                        Básico
+                    </div>
+
+                    <div class="data">
+                        3 GB
+                    </div>
+
+                    <div
+                        style="
+                            font-size:0.6rem;
+                            color:var(--text-muted);
+                        "
+                        data-clave="internet_7dias"
+                    >
+                        7 días
+                    </div>
+
+                    <div class="price">
+                        $79 MXN
+                    </div>
+
+                    <a
+                        href="/internet"
+                        class="btn btn-gold"
+                        style="text-decoration:none;"
+                        data-clave="internet_ver"
+                    >
+                        Ver
+                    </a>
+
+                </div>
+
+                <div
+                    class="internet-card"
+                    style="border-color:var(--gold);"
+                >
+
+                    <div
+                        class="name"
+                        style="color:var(--gold);"
+                        data-clave="internet_chido"
+                    >
+                        Chido
+                    </div>
+
+                    <div class="data">
+                        10 GB
+                    </div>
+
+                    <div
+                        style="
+                            font-size:0.6rem;
+                            color:var(--text-muted);
+                        "
+                        data-clave="internet_15dias"
+                    >
+                        15 días
+                    </div>
+
+                    <div class="price">
+                        $169 MXN
+                    </div>
+
+                    <a
+                        href="/internet"
+                        class="btn btn-gold"
+                        style="text-decoration:none;"
+                        data-clave="internet_ver"
+                    >
+                        Ver
+                    </a>
+
+                </div>
+
+                <div class="internet-card">
+
+                    <div
+                        class="name"
+                        data-clave="internet_pro"
+                    >
+                        Pro
+                    </div>
+
+                    <div class="data">
+                        30 GB
+                    </div>
+
+                    <div
+                        style="
+                            font-size:0.6rem;
+                            color:var(--text-muted);
+                        "
+                        data-clave="internet_30dias"
+                    >
+                        30 días
+                    </div>
+
+                    <div class="price">
+                        $299 MXN
+                    </div>
+
+                    <a
+                        href="/internet"
+                        class="btn btn-gold"
+                        style="text-decoration:none;"
+                        data-clave="internet_ver"
+                    >
+                        Ver
+                    </a>
+
+                </div>
+
+                <div class="internet-card">
+
+                    <div
+                        class="name"
+                        data-clave="internet_ilimitado"
+                    >
+                        Ilimitado
+                    </div>
+
+                    <div class="data">
+                        ∞
+                    </div>
+
+                    <div
+                        style="
+                            font-size:0.6rem;
+                            color:var(--text-muted);
+                        "
+                        data-clave="internet_30dias"
+                    >
+                        30 días
+                    </div>
+
+                    <div class="price">
+                        $549 MXN
+                    </div>
+
+                    <a
+                        href="/internet"
+                        class="btn btn-gold"
+                        style="text-decoration:none;"
+                        data-clave="internet_ver"
+                    >
+                        Ver
+                    </a>
+
+                </div>
+
+            </div>
+
+            <div
+                style="
+                    margin-top:16px;
+                    display:flex;
+                    gap:12px;
+                    flex-wrap:wrap;
+                    justify-content:center;
+                "
+            >
+
+                <a
+                    href="/internet"
+                    class="btn btn-gold"
+                    style="
+                        text-decoration:none;
+                        padding:10px 32px;
+                    "
+                    data-clave="internet_ver_todos"
+                >
+                    ⟡ Ver todos los paquetes
+                </a>
+
+                <!--
+                    Esta ruta se mantiene porque el botón existía
+                    originalmente. Si el backend no expone esta ruta,
+                    debe eliminarse o sustituirse por la ruta admin real.
+                -->
+                <a
+                    href="/admin-internet"
+                    class="btn btn-outline"
+                    style="
+                        text-decoration:none;
+                        padding:10px 24px;
+                    "
+                    data-clave="internet_admin"
+                >
+                    ⚙️ Admin
+                </a>
+
+            </div>
+
+            <p
+                style="
+                    font-size:0.55rem;
+                    color:var(--text-muted);
+                    text-align:center;
+                    margin-top:8px;
+                "
+                data-clave="internet_cobertura"
+            >
+                ◈ Cobertura: Puebla, CDMX, Edomex ·
+                Tethering incluido
+            </p>
+
+        </div>
+
+    </div>
+
+    <!-- =====================================================
+         TAB ADMIN QR
+    ====================================================== -->
+
+    <div
+        id="tab-admin"
+        class="tab-content"
+    >
+
+        <div class="panel">
+
+            <h2 data-clave="admin_qr_titulo">
+                ◈ Admin QR
+            </h2>
+
+            <div
+                style="
+                    display:flex;
+                    gap:10px;
+                    flex-wrap:wrap;
+                    margin-top:10px;
+                "
+            >
+
+                <input
+                    type="text"
+                    id="qrData"
+                    data-placeholder="admin_qr_placeholder"
+                    placeholder="Datos para QR"
+                    value="https://sariels.com"
+                    style="
+                        flex:1;
+                        padding:10px;
+                        background:rgba(0,0,0,0.4);
+                        border:1px solid var(--glass-border);
+                        border-radius:10px;
+                        color:white;
+                    "
+                />
+
+                <button
+                    class="btn btn-gold"
+                    onclick="generarQR()"
+                    data-clave="admin_qr_generar"
+                >
+                    Generar QR
+                </button>
+
+            </div>
+
+            <div
+                id="qrContainer"
+                style="
+                    margin-top:20px;
+                    display:flex;
+                    justify-content:center;
+                    background:white;
+                    padding:20px;
+                    border-radius:10px;
+                "
+            ></div>
+
+        </div>
+
+    </div>
+
+    <!-- =====================================================
+         FOOTER
+    ====================================================== -->
+
+    <footer class="footer">
+
+        <span>
+            <span class="brand">
+                ◈ Sariel's
+            </span>
+            · Sabor al Paladar · WEB3
+        </span>
+
+        <div class="footer-links">
+
+            <!--
+                Se utilizan las rutas amigables del servidor.
+            -->
+
+            <a
+                href="/terminos"
+                data-clave="footer_terminos"
+            >
+                ◈ Términos
+            </a>
+
+            <a
+                href="/privacidad"
+                data-clave="footer_privacidad"
+            >
+                ◈ Privacidad
+            </a>
+
+            <a
+                href="/cookies"
+                data-clave="footer_cookies"
+            >
+                ◈ Cookies
+            </a>
+
+            <a
+                href="/eliminar-cuenta.html"
+                data-clave="footer_eliminar_cuenta"
+            >
+                ◈ Eliminar cuenta
+            </a>
+
+            <a
+                href="/live-terminos"
+                data-clave="footer_live_terminos"
+            >
+                ◉ Live Términos
+            </a>
+
+            <span style="opacity:0.3;">
+                ⚡ Polygon
+            </span>
+
+        </div>
+
+    </footer>
+
+</div>
+
+<!-- =========================================================
+     TOAST
+========================================================== -->
+
+<div
+    class="toast"
+    id="toast"
+></div>
+
+<!-- =========================================================
+     ERROR BANNER
+========================================================== -->
+
+<div
+    id="errorBanner"
+    style="
+        display:none;
+        position:fixed;
+        top:0;
+        left:0;
+        right:0;
+        z-index:99999;
+        background:#ff3366;
+        color:#fff;
+        padding:12px 16px;
+        font-family:monospace;
+        font-size:0.75rem;
+        word-break:break-word;
+        box-shadow:0 4px 20px rgba(0,0,0,0.4);
+    "
+>
+
+    <strong>
+        ⚠️ Error detectado:
+    </strong>
+
+    <span id="errorBannerText"></span>
+
+    <button
+        onclick="
+            document.getElementById('errorBanner').style.display='none'
+        "
+        style="
+            float:right;
+            background:none;
+            border:1px solid #fff;
+            color:#fff;
+            border-radius:6px;
+            padding:2px 10px;
+            cursor:pointer;
+        "
+    >
+        Cerrar
+    </button>
+
+</div>
+
+<!-- =========================================================
+     LIBRERÍAS
+     Supabase NO se vuelve a cargar aquí.
+========================================================== -->
+
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
+<script src="/app.js"></script>
+
+<script src="/features/shared/js/idiomas.js"></script>
+
+<!-- =========================================================
+     FUNCIONES DE LA PÁGINA
+========================================================== -->
+
+<script>
+
+    /* ========================================================
+       ESTRELLAS
+    ========================================================= */
+
+    (function initStars() {
+
+        const canvas =
+            document.getElementById('stars-canvas');
+
+        if (!canvas) {
+            return;
+        }
+
+        const ctx =
+            canvas.getContext('2d');
+
+        let stars = [];
+
+        function resizeCanvas() {
+
+            canvas.width =
+                window.innerWidth;
+
+            canvas.height =
+                window.innerHeight;
+
+            createStars();
+        }
+
+        function createStars() {
+
+            const amount =
+                Math.min(
+                    180,
+                    Math.floor(
+                        window.innerWidth *
+                        window.innerHeight /
+                        9000
+                    )
+                );
+
+            stars = [];
+
+            for (
+                let i = 0;
+                i < amount;
+                i++
+            ) {
+
+                stars.push({
+
+                    x:
+                        Math.random() *
+                        canvas.width,
+
+                    y:
+                        Math.random() *
+                        canvas.height,
+
+                    radius:
+                        Math.random() *
+                        1.4 +
+                        0.2,
+
+                    opacity:
+                        Math.random() *
+                        0.7 +
+                        0.15,
+
+                    speed:
+                        Math.random() *
+                        0.004 +
+                        0.001
+
                 });
-                ctx.globalAlpha = 1;
-                requestAnimationFrame(drawStars);
-            }
-            window.addEventListener('resize', resizeCanvas);
-            resizeCanvas();
-            requestAnimationFrame(drawStars);
-        })();
 
-        function mostrarErrorEnPantalla(mensaje) {
-            const banner = document.getElementById('errorBanner');
-            const texto = document.getElementById('errorBannerText');
-            if (banner && texto) { texto.textContent = mensaje; banner.style.display = 'block'; }
-        }
-        window.addEventListener('error', function (event) { mostrarErrorEnPantalla((event.message || 'Error desconocido') + ' — línea ' + event.lineno); });
-        window.addEventListener('unhandledrejection', function (event) { mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason?.message || event.reason)); });
-
-        function protegerYNavegar(event, url) {
-            if (!window.__sarielsAuthenticated) {
-                if (event && event.preventDefault) event.preventDefault();
-                if (window.showToast) { window.showToast('⚠️ Regístrate o inicia sesión para entrar a tu perfil', 'warning'); }
-                mostrarRegistro();
-                var authSection = document.querySelector('.auth-section');
-                if (authSection) authSection.scrollIntoView({ behavior: 'smooth' });
-                return false;
             }
-            return true;
+
         }
 
-        async function cambiarIdiomaGlobal(codigo) {
-            if (!codigo) return;
-            try {
-                if (typeof window.cambiarIdioma === 'function') { await window.cambiarIdioma(codigo); }
-                if (typeof window.inicializarIdiomas === 'function') { await window.inicializarIdiomas(); }
-                else { window.location.reload(); }
-            } catch (e) {
-                console.error('Error cambiando idioma:', e);
+        function drawStars(time) {
+
+            ctx.clearRect(
+                0,
+                0,
+                canvas.width,
+                canvas.height
+            );
+
+            stars.forEach(function (star) {
+
+                const pulse =
+                    star.opacity +
+                    Math.sin(
+                        time *
+                        star.speed
+                    ) *
+                    0.12;
+
+                ctx.beginPath();
+
+                ctx.arc(
+                    star.x,
+                    star.y,
+                    star.radius,
+                    0,
+                    Math.PI * 2
+                );
+
+                ctx.globalAlpha =
+                    Math.max(
+                        0.05,
+                        Math.min(
+                            1,
+                            pulse
+                        )
+                    );
+
+                ctx.fillStyle =
+                    '#D4AF37';
+
+                ctx.fill();
+
+            });
+
+            ctx.globalAlpha = 1;
+
+            requestAnimationFrame(
+                drawStars
+            );
+        }
+
+        window.addEventListener(
+            'resize',
+            resizeCanvas
+        );
+
+        resizeCanvas();
+
+        requestAnimationFrame(
+            drawStars
+        );
+
+    })();
+
+
+    /* ========================================================
+       ERRORES
+    ======================================================== */
+
+    function mostrarErrorEnPantalla(mensaje) {
+
+        const banner =
+            document.getElementById(
+                'errorBanner'
+            );
+
+        const texto =
+            document.getElementById(
+                'errorBannerText'
+            );
+
+        if (
+            banner &&
+            texto
+        ) {
+
+            texto.textContent =
+                mensaje;
+
+            banner.style.display =
+                'block';
+
+        }
+
+    }
+
+    window.addEventListener(
+        'error',
+        function (event) {
+
+            mostrarErrorEnPantalla(
+                (
+                    event.message ||
+                    'Error desconocido'
+                ) +
+                ' — línea ' +
+                event.lineno
+            );
+
+        }
+    );
+
+    window.addEventListener(
+        'unhandledrejection',
+        function (event) {
+
+            mostrarErrorEnPantalla(
+                'Promesa rechazada: ' +
+                (
+                    event.reason?.message ||
+                    event.reason
+                )
+            );
+
+        }
+    );
+
+
+    /* ========================================================
+       PROTECCIÓN DE PERFIL
+    ======================================================== */
+
+    function protegerYNavegar(
+        event,
+        url
+    ) {
+
+        if (
+            !window.__sarielsAuthenticated
+        ) {
+
+            if (
+                event &&
+                event.preventDefault
+            ) {
+                event.preventDefault();
+            }
+
+            if (
+                window.showToast
+            ) {
+
+                window.showToast(
+                    '⚠️ Regístrate o inicia sesión para entrar a tu perfil',
+                    'warning'
+                );
+
+            }
+
+            mostrarRegistro();
+
+            const authSection =
+                document.querySelector(
+                    '.auth-section'
+                );
+
+            if (authSection) {
+
+                authSection.scrollIntoView({
+                    behavior: 'smooth'
+                });
+
+            }
+
+            return false;
+        }
+
+        return true;
+    }
+
+
+    /* ========================================================
+       IDIOMAS
+    ======================================================== */
+
+    async function cambiarIdiomaGlobal(
+        codigo
+    ) {
+
+        if (!codigo) {
+            return;
+        }
+
+        try {
+
+            if (
+                typeof window.cambiarIdioma ===
+                'function'
+            ) {
+
+                await window.cambiarIdioma(
+                    codigo
+                );
+
+            }
+
+            if (
+                typeof window.inicializarIdiomas ===
+                'function'
+            ) {
+
+                await window.inicializarIdiomas();
+
+            } else {
+
                 window.location.reload();
+
             }
+
+        } catch (e) {
+
+            console.error(
+                'Error cambiando idioma:',
+                e
+            );
+
+            window.location.reload();
+        }
+    }
+
+
+    /* ========================================================
+       TABS
+    ======================================================== */
+
+    function cambiarTab(tab) {
+
+        document
+            .querySelectorAll(
+                '.tab-content'
+            )
+            .forEach(function (el) {
+
+                el.classList.remove(
+                    'active'
+                );
+
+            });
+
+        document
+            .querySelectorAll(
+                '.tab-btn'
+            )
+            .forEach(function (el) {
+
+                el.classList.remove(
+                    'active'
+                );
+
+            });
+
+        const tabContent =
+            document.getElementById(
+                'tab-' + tab
+            );
+
+        if (tabContent) {
+
+            tabContent.classList.add(
+                'active'
+            );
+
         }
 
-        function cambiarTab(tab) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-            const tabContent = document.getElementById('tab-' + tab);
-            if (tabContent) tabContent.classList.add('active');
-            const tabBtn = document.querySelector(`.tab-btn[onclick="cambiarTab('${tab}')"]`);
-            if (tabBtn) tabBtn.classList.add('active');
+        const tabBtn =
+            document.querySelector(
+                `.tab-btn[onclick="cambiarTab('${tab}')"]`
+            );
+
+        if (tabBtn) {
+
+            tabBtn.classList.add(
+                'active'
+            );
+
         }
 
-        function mostrarLogin() {
-            document.getElementById('registerCard').style.display = 'none';
-            document.getElementById('loginCard').style.display = 'block';
-        }
-        function mostrarRegistro() {
-            document.getElementById('registerCard').style.display = 'block';
-            document.getElementById('loginCard').style.display = 'none';
-        }
+    }
 
-        async function registrarUsuarioGlobal() {
-            const email = document.getElementById('regEmail').value.trim();
-            const password = document.getElementById('regPassword').value;
-            const name = document.getElementById('regName').value.trim();
-            const btn = document.getElementById('registerBtn');
-            if (!window.app || typeof window.app.registrarUsuario !== 'function') { console.error('❌ app.registrarUsuario no está disponible'); return; }
-            if (btn) { btn.disabled = true; btn.textContent = '⏳ Creando...'; }
-            try {
-                await window.app.registrarUsuario(email, password, name);
-                document.getElementById('regEmail').value = '';
-                document.getElementById('regPassword').value = '';
-                document.getElementById('regName').value = '';
-            } catch (e) { console.error('Error en registrarUsuarioGlobal:', e); }
-            finally { if (btn) { btn.disabled = false; btn.textContent = '⟡ Crear cuenta'; } }
-        }
 
-        async function iniciarSesionGlobal() {
-            const email = document.getElementById('loginEmail').value.trim();
-            const password = document.getElementById('loginPassword').value;
-            const btn = document.getElementById('loginBtn');
-            if (!window.app || typeof window.app.iniciarSesion !== 'function') { console.error('❌ app.iniciarSesion no está disponible'); return; }
-            if (btn) { btn.disabled = true; btn.textContent = '⏳ Entrando...'; }
-            try {
-                await window.app.iniciarSesion(email, password);
-                document.getElementById('loginEmail').value = '';
-                document.getElementById('loginPassword').value = '';
-            } catch (e) { console.error('Error en iniciarSesionGlobal:', e); }
-            finally { if (btn) { btn.disabled = false; btn.textContent = '◈ Iniciar sesión'; } }
+    /* ========================================================
+       LOGIN / REGISTRO
+    ======================================================== */
+
+    function mostrarLogin() {
+
+        const registerCard =
+            document.getElementById(
+                'registerCard'
+            );
+
+        const loginCard =
+            document.getElementById(
+                'loginCard'
+            );
+
+        if (registerCard) {
+            registerCard.style.display =
+                'none';
         }
 
-        async function cerrarSesionGlobal() {
-            if (window.app && typeof window.app.cerrarSesion === 'function') { await window.app.cerrarSesion(); }
+        if (loginCard) {
+            loginCard.style.display =
+                'block';
         }
 
-        function generarQR() {
-            const data = document.getElementById('qrData').value.trim();
-            const container = document.getElementById('qrContainer');
-            container.innerHTML = '';
-            if (!data) { if (window.showToast) window.showToast('⚠️ Introduce datos para el QR', 'warning'); return; }
-            try {
-                new QRCode(container, { text: data, width: 200, height: 200, colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.H });
-                if (window.showToast) window.showToast('✅ QR generado correctamente');
-            } catch (error) { if (window.showToast) window.showToast('❌ Error generando QR', 'error'); }
+    }
+
+
+    function mostrarRegistro() {
+
+        const registerCard =
+            document.getElementById(
+                'registerCard'
+            );
+
+        const loginCard =
+            document.getElementById(
+                'loginCard'
+            );
+
+        if (registerCard) {
+            registerCard.style.display =
+                'block';
         }
 
-        async function cargarCarruselEnVivo() {
-            const wrapper = document.getElementById('carruselEnVivo');
-            if (!wrapper) return;
+        if (loginCard) {
+            loginCard.style.display =
+                'none';
+        }
 
-            try {
-                const { data: transmisiones, error } = await window.supabase
+    }
+
+
+    /* ========================================================
+       REGISTRO
+    ======================================================== */
+
+    async function registrarUsuarioGlobal() {
+
+        const email =
+            document
+                .getElementById('regEmail')
+                .value
+                .trim();
+
+        const password =
+            document
+                .getElementById('regPassword')
+                .value;
+
+        const name =
+            document
+                .getElementById('regName')
+                .value
+                .trim();
+
+        const btn =
+            document.getElementById(
+                'registerBtn'
+            );
+
+        if (
+            !window.app ||
+            typeof window.app.registrarUsuario !==
+            'function'
+        ) {
+
+            console.error(
+                '❌ app.registrarUsuario no está disponible'
+            );
+
+            return;
+        }
+
+        if (btn) {
+
+            btn.disabled = true;
+
+            btn.textContent =
+                '⏳ Creando...';
+
+        }
+
+        try {
+
+            await window.app.registrarUsuario(
+                email,
+                password,
+                name
+            );
+
+            document.getElementById(
+                'regEmail'
+            ).value = '';
+
+            document.getElementById(
+                'regPassword'
+            ).value = '';
+
+            document.getElementById(
+                'regName'
+            ).value = '';
+
+        } catch (e) {
+
+            console.error(
+                'Error en registrarUsuarioGlobal:',
+                e
+            );
+
+        } finally {
+
+            if (btn) {
+
+                btn.disabled = false;
+
+                btn.textContent =
+                    '⟡ Crear cuenta';
+
+            }
+
+        }
+
+    }
+
+
+    /* ========================================================
+       LOGIN
+    ======================================================== */
+
+    async function iniciarSesionGlobal() {
+
+        const email =
+            document
+                .getElementById('loginEmail')
+                .value
+                .trim();
+
+        const password =
+            document
+                .getElementById('loginPassword')
+                .value;
+
+        const btn =
+            document.getElementById(
+                'loginBtn'
+            );
+
+        if (
+            !window.app ||
+            typeof window.app.iniciarSesion !==
+            'function'
+        ) {
+
+            console.error(
+                '❌ app.iniciarSesion no está disponible'
+            );
+
+            return;
+        }
+
+        if (btn) {
+
+            btn.disabled = true;
+
+            btn.textContent =
+                '⏳ Entrando...';
+
+        }
+
+        try {
+
+            await window.app.iniciarSesion(
+                email,
+                password
+            );
+
+            document.getElementById(
+                'loginEmail'
+            ).value = '';
+
+            document.getElementById(
+                'loginPassword'
+            ).value = '';
+
+        } catch (e) {
+
+            console.error(
+                'Error en iniciarSesionGlobal:',
+                e
+            );
+
+        } finally {
+
+            if (btn) {
+
+                btn.disabled = false;
+
+                btn.textContent =
+                    '◈ Iniciar sesión';
+
+            }
+
+        }
+
+    }
+
+
+    /* ========================================================
+       LOGOUT
+    ======================================================== */
+
+    async function cerrarSesionGlobal() {
+
+        if (
+            window.app &&
+            typeof window.app.cerrarSesion ===
+            'function'
+        ) {
+
+            await window.app.cerrarSesion();
+
+        }
+
+    }
+
+
+    /* ========================================================
+       QR
+    ======================================================== */
+
+    function generarQR() {
+
+        const input =
+            document.getElementById(
+                'qrData'
+            );
+
+        const container =
+            document.getElementById(
+                'qrContainer'
+            );
+
+        if (!input || !container) {
+            return;
+        }
+
+        const data =
+            input.value.trim();
+
+        container.innerHTML = '';
+
+        if (!data) {
+
+            if (window.showToast) {
+
+                window.showToast(
+                    '⚠️ Introduce datos para el QR',
+                    'warning'
+                );
+
+            }
+
+            return;
+        }
+
+        try {
+
+            new QRCode(
+                container,
+                {
+                    text: data,
+
+                    width: 200,
+                    height: 200,
+
+                    colorDark:
+                        '#000000',
+
+                    colorLight:
+                        '#ffffff',
+
+                    correctLevel:
+                        QRCode.CorrectLevel.H
+                }
+            );
+
+            if (window.showToast) {
+
+                window.showToast(
+                    '✅ QR generado correctamente'
+                );
+
+            }
+
+        } catch (error) {
+
+            console.error(
+                'Error generando QR:',
+                error
+            );
+
+            if (window.showToast) {
+
+                window.showToast(
+                    '❌ Error generando QR',
+                    'error'
+                );
+
+            }
+
+        }
+
+    }
+
+
+    /* ========================================================
+       CARRUSEL EN VIVO
+    ======================================================== */
+
+    async function cargarCarruselEnVivo() {
+
+        const wrapper =
+            document.getElementById(
+                'carruselEnVivo'
+            );
+
+        if (!wrapper) {
+            return;
+        }
+
+        try {
+
+            if (
+                !window.supabase ||
+                typeof window.supabase
+                    .from !== 'function'
+            ) {
+
+                throw new Error(
+                    'Cliente Supabase no disponible'
+                );
+
+            }
+
+            const {
+                data: transmisiones,
+                error
+            } =
+                await window.supabase
                     .from('transmisiones')
                     .select(`
                         id,
@@ -722,113 +2812,433 @@
                             ciudad
                         )
                     `)
-                    .eq('estado', 'en_vivo')
-                    .eq('is_live', true)
-                    .order('created_at', { ascending: false })
+                    .eq(
+                        'estado',
+                        'en_vivo'
+                    )
+                    .eq(
+                        'is_live',
+                        true
+                    )
+                    .order(
+                        'created_at',
+                        {
+                            ascending: false
+                        }
+                    )
                     .limit(10);
 
-                if (error) throw error;
+            if (error) {
+                throw error;
+            }
 
-                if (!transmisiones || transmisiones.length === 0) {
-                    wrapper.innerHTML = `
-                        <div class="carrusel-titulo">
-                            <span class="dot" style="background:#8aa8b8;animation:none;"></span>
-                            <span>EN VIVO AHORA</span>
-                        </div>
-                        <div class="carrusel-vacio">
-                            <span class="icon">◈</span>
-                            <p>Nadie al aire por ahora... sé el primero en transmitir</p>
-                        </div>
-                    `;
-                    return;
-                }
+            if (
+                !transmisiones ||
+                transmisiones.length === 0
+            ) {
 
-                const generarItemHTML = (t) => {
-                    const g = t.grupo || {};
-                    const avatar = g.avatar_url || '';
-                    const nombre = g.nombre || 'Canal';
-                    const titulo = t.titulo || 'Transmisión en vivo';
-                    const espectadores = t.espectadores || 0;
+                wrapper.innerHTML = `
 
-                    const fondoHTML = avatar
-                        ? `<img src="${avatar}" alt="${nombre}" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; opacity:0.6;">`
-                        : `<div style="position:absolute; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:3rem; color:var(--gold); opacity:0.3;">◈</div>`;
+                    <div class="carrusel-titulo">
+
+                        <span
+                            class="dot"
+                            style="
+                                background:#8aa8b8;
+                                animation:none;
+                            "
+                        ></span>
+
+                        <span>
+                            EN VIVO AHORA
+                        </span>
+
+                    </div>
+
+                    <div class="carrusel-vacio">
+
+                        <span class="icon">
+                            ◈
+                        </span>
+
+                        <p>
+                            Nadie al aire por ahora...
+                            sé el primero en transmitir
+                        </p>
+
+                    </div>
+                `;
+
+                return;
+            }
+
+
+            const escaparHTML =
+                function (valor) {
+
+                    return String(
+                        valor ?? ''
+                    )
+                        .replace(
+                            /&/g,
+                            '&amp;'
+                        )
+                        .replace(
+                            /</g,
+                            '&lt;'
+                        )
+                        .replace(
+                            />/g,
+                            '&gt;'
+                        )
+                        .replace(
+                            /"/g,
+                            '&quot;'
+                        )
+                        .replace(
+                            /'/g,
+                            '&#039;'
+                        );
+                };
+
+
+            const generarItemHTML =
+                function (t) {
+
+                    const g =
+                        t.grupo || {};
+
+                    const avatar =
+                        g.avatar_url || '';
+
+                    const nombre =
+                        escaparHTML(
+                            g.nombre ||
+                            'Canal'
+                        );
+
+                    const titulo =
+                        escaparHTML(
+                            t.titulo ||
+                            'Transmisión en vivo'
+                        );
+
+                    const grupoId =
+                        encodeURIComponent(
+                            g.id || ''
+                        );
+
+                    const fondoHTML =
+                        avatar
+
+                            ? `
+                                <img
+                                    src="${escaparHTML(avatar)}"
+                                    alt="${nombre}"
+                                    loading="lazy"
+                                    style="
+                                        position:absolute;
+                                        top:0;
+                                        left:0;
+                                        width:100%;
+                                        height:100%;
+                                        object-fit:cover;
+                                        opacity:0.6;
+                                    "
+                                >
+                            `
+
+                            : `
+                                <div
+                                    style="
+                                        position:absolute;
+                                        top:0;
+                                        left:0;
+                                        width:100%;
+                                        height:100%;
+                                        display:flex;
+                                        align-items:center;
+                                        justify-content:center;
+                                        font-size:3rem;
+                                        color:var(--gold);
+                                        opacity:0.3;
+                                    "
+                                >
+                                    ◈
+                                </div>
+                            `;
 
                     return `
-                        <div class="carrusel-item" onclick="abrirCanalDesdeCarrusel('${g.id}')">
-                            <div class="live-tag">🔴 EN VIVO</div>
-                            ${fondoHTML}
-                            <div class="etiqueta">
-                                <span class="canal">◈ ${nombre}</span>
-                                <span class="titulo">${titulo}</span>
+
+                        <div
+                            class="carrusel-item"
+                            onclick="
+                                abrirCanalDesdeCarrusel(
+                                    '${grupoId}'
+                                )
+                            "
+                        >
+
+                            <div class="live-tag">
+                                🔴 EN VIVO
                             </div>
+
+                            ${fondoHTML}
+
+                            <div class="etiqueta">
+
+                                <span class="canal">
+                                    ◈ ${nombre}
+                                </span>
+
+                                <span class="titulo">
+                                    ${titulo}
+                                </span>
+
+                            </div>
+
+                        </div>
+
+                    `;
+                };
+
+
+            const mitad =
+                Math.ceil(
+                    transmisiones.length / 2
+                );
+
+            const fila1 =
+                transmisiones.slice(
+                    0,
+                    mitad
+                );
+
+            const fila2 =
+                transmisiones.slice(
+                    mitad
+                );
+
+
+            const construirFila =
+                function (
+                    items,
+                    clase
+                ) {
+
+                    const itemsFila =
+                        items.length > 0
+                            ? items
+                            : transmisiones;
+
+                    const itemsHTML =
+                        itemsFila
+                            .map(
+                                generarItemHTML
+                            )
+                            .join('');
+
+                    const itemsDuplicados =
+                        itemsFila
+                            .map(
+                                generarItemHTML
+                            )
+                            .join('');
+
+                    return `
+                        <div
+                            class="carrusel-fila ${clase}"
+                        >
+                            ${itemsHTML}
+                            ${itemsDuplicados}
                         </div>
                     `;
                 };
 
-                const mitad = Math.ceil(transmisiones.length / 2);
-                const fila1 = transmisiones.slice(0, mitad);
-                const fila2 = transmisiones.slice(mitad);
 
-                const construirFila = (items, clase) => {
-                    const itemsFila = items.length > 0 ? items : transmisiones;
-                    const itemsHTML = itemsFila.map(generarItemHTML).join('');
-                    const itemsDuplicados = itemsFila.map(generarItemHTML).join('');
-                    return `<div class="carrusel-fila ${clase}">${itemsHTML}${itemsDuplicados}</div>`;
-                };
+            wrapper.innerHTML = `
 
-                wrapper.innerHTML = `
-                    <div class="carrusel-titulo">
-                        <span class="dot"></span>
-                        <span>EN VIVO AHORA</span>
-                    </div>
-                    ${construirFila(fila1, 'derecha')}
-                    ${construirFila(fila2, 'izquierda')}
-                `;
+                <div class="carrusel-titulo">
 
-            } catch (e) {
-                console.error('Error cargando carrusel en vivo:', e);
-                wrapper.innerHTML = `
-                    <div class="carrusel-titulo">
-                        <span class="dot" style="background:#8aa8b8;animation:none;"></span>
-                        <span>EN VIVO AHORA</span>
-                    </div>
-                    <div class="carrusel-vacio">
-                        <span class="icon">◈</span>
-                        <p>Error al cargar transmisiones. Reintentando...</p>
-                    </div>
-                `;
-            }
+                    <span class="dot"></span>
+
+                    <span>
+                        EN VIVO AHORA
+                    </span>
+
+                </div>
+
+                ${construirFila(
+                    fila1,
+                    'derecha'
+                )}
+
+                ${construirFila(
+                    fila2,
+                    'izquierda'
+                )}
+
+            `;
+
+        } catch (e) {
+
+            console.error(
+                'Error cargando carrusel en vivo:',
+                e
+            );
+
+            wrapper.innerHTML = `
+
+                <div class="carrusel-titulo">
+
+                    <span
+                        class="dot"
+                        style="
+                            background:#8aa8b8;
+                            animation:none;
+                        "
+                    ></span>
+
+                    <span>
+                        EN VIVO AHORA
+                    </span>
+
+                </div>
+
+                <div class="carrusel-vacio">
+
+                    <span class="icon">
+                        ◈
+                    </span>
+
+                    <p>
+                        Error al cargar transmisiones.
+                        Reintentando...
+                    </p>
+
+                </div>
+
+            `;
+
         }
 
-        function abrirCanalDesdeCarrusel(grupoId) {
-            window.location.href = `/features/grupos/grupos.html?grupo=${grupoId}`;
+    }
+
+
+    /* ========================================================
+       ABRIR CANAL
+    ======================================================== */
+
+    function abrirCanalDesdeCarrusel(
+        grupoId
+    ) {
+
+        if (!grupoId) {
+            return;
         }
 
-        window.cambiarTab = cambiarTab;
-        window.mostrarLogin = mostrarLogin;
-        window.mostrarRegistro = mostrarRegistro;
-        window.registrarUsuarioGlobal = registrarUsuarioGlobal;
-        window.iniciarSesionGlobal = iniciarSesionGlobal;
-        window.cerrarSesionGlobal = cerrarSesionGlobal;
-        window.generarQR = generarQR;
-        window.mostrarErrorEnPantalla = mostrarErrorEnPantalla;
-        window.protegerYNavegar = protegerYNavegar;
-        window.cambiarIdiomaGlobal = cambiarIdiomaGlobal;
-        window.abrirCanalDesdeCarrusel = abrirCanalDesdeCarrusel;
-        window.cargarCarruselEnVivo = cargarCarruselEnVivo;
+        window.location.href =
+            '/features/grupos/grupos.html?grupo=' +
+            encodeURIComponent(
+                grupoId
+            );
+    }
 
-        document.addEventListener('DOMContentLoaded', function() {
+
+    /* ========================================================
+       EXPONER FUNCIONES
+    ======================================================== */
+
+    window.cambiarTab =
+        cambiarTab;
+
+    window.mostrarLogin =
+        mostrarLogin;
+
+    window.mostrarRegistro =
+        mostrarRegistro;
+
+    window.registrarUsuarioGlobal =
+        registrarUsuarioGlobal;
+
+    window.iniciarSesionGlobal =
+        iniciarSesionGlobal;
+
+    window.cerrarSesionGlobal =
+        cerrarSesionGlobal;
+
+    window.generarQR =
+        generarQR;
+
+    window.mostrarErrorEnPantalla =
+        mostrarErrorEnPantalla;
+
+    window.protegerYNavegar =
+        protegerYNavegar;
+
+    window.cambiarIdiomaGlobal =
+        cambiarIdiomaGlobal;
+
+    window.abrirCanalDesdeCarrusel =
+        abrirCanalDesdeCarrusel;
+
+    window.cargarCarruselEnVivo =
+        cargarCarruselEnVivo;
+
+
+    /* ========================================================
+       DOM READY
+    ======================================================== */
+
+    document.addEventListener(
+        'DOMContentLoaded',
+        function () {
+
             cargarCarruselEnVivo();
-            setInterval(cargarCarruselEnVivo, 30000);
 
-            setTimeout(async () => {
-                try {
-                    if (typeof window.inicializarIdiomas === 'function') { await window.inicializarIdiomas(); }
-                    else if (typeof window.cargarSelectorIdiomas === 'function') { await window.cargarSelectorIdiomas(); }
-                } catch (error) { console.error('Error inicializando idiomas:', error); }
-            }, 300);
-        });
-    </script>
+            setInterval(
+                cargarCarruselEnVivo,
+                30000
+            );
+
+            setTimeout(
+                async function () {
+
+                    try {
+
+                        if (
+                            typeof window.inicializarIdiomas ===
+                            'function'
+                        ) {
+
+                            await window.inicializarIdiomas();
+
+                        } else if (
+                            typeof window.cargarSelectorIdiomas ===
+                            'function'
+                        ) {
+
+                            await window.cargarSelectorIdiomas();
+
+                        }
+
+                    } catch (error) {
+
+                        console.error(
+                            'Error inicializando idiomas:',
+                            error
+                        );
+
+                    }
+
+                },
+                300
+            );
+
+        }
+    );
+
+</script>
+
 </body>
 </html>
