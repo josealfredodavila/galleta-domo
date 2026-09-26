@@ -434,7 +434,9 @@ app.use(
             'Authorization',
             'apikey',
             'x-client-info',
-            'x-requested-with'
+            'x-requested-with',
+            'x-nowpayments-sig',
+            'x-signature'
         ]
     })
 );
@@ -466,9 +468,24 @@ app.use(
 // BODY PARSERS
 // ================================================================
 
+/*
+ * Guardamos también el cuerpo JSON original.
+ *
+ * NOWPayments utiliza el JSON recibido para verificar
+ * la firma HMAC-SHA512.
+ *
+ * El handler de membresía utiliza:
+ *
+ *     req.rawBody
+ */
+
 app.use(
     express.json({
-        limit: '10mb'
+        limit: '10mb',
+        verify: (req, res, buf) => {
+            req.rawBody =
+                buf.toString('utf8');
+        }
     })
 );
 
@@ -1024,44 +1041,44 @@ try {
 }
 
 // ================================================================
+// WEBHOOKS
+// ================================================================
 
 try {
 
     const webhookRoutes =
-        require('./routes/webhook');
+        require('./routes/webhooks');
 
     app.use(
         '/api/webhook',
         webhookRoutes
     );
 
+    console.log(
+        '✅ routes/webhooks cargado'
+    );
+
 } catch (error) {
 
     console.error(
-        '❌ Error cargando routes/webhook:',
+        '❌ Error cargando routes/webhooks:',
         error
     );
 }
 
 // ================================================================
-
-try {
-
-    const membresiaRoutes =
-        require('./routes/payments/membresia');
-
-    app.use(
-        '/api/payments/membresia',
-        membresiaRoutes
-    );
-
-} catch (error) {
-
-    console.error(
-        '❌ Error cargando routes/payments/membresia:',
-        error
-    );
-}
+// NOTA:
+//
+// NO se carga:
+//     ./routes/payments/membresia
+//
+// El handler de membresía se encuentra en:
+//     ./routes/membresia-webhook-handler.js
+//
+// Ese archivo exporta funciones y no un Express Router.
+// La integración del webhook se realiza mediante
+// routes/webhooks.js.
+// ================================================================
 
 // ================================================================
 
@@ -1124,45 +1141,59 @@ try {
 }
 
 // ================================================================
+// VIDEO PROCESSOR
+// ================================================================
 
 try {
 
     const videoRoutes =
-        require('./routes/video');
+        require('./routes/video-processor');
 
     app.use(
         '/api/video',
         videoRoutes
     );
 
+    console.log(
+        '✅ routes/video-processor cargado'
+    );
+
 } catch (error) {
 
     console.error(
-        '❌ Error cargando routes/video:',
+        '❌ Error cargando routes/video-processor:',
         error
     );
 }
 
 // ================================================================
+// AI CHAT
+// ================================================================
 
 try {
 
-    const aiRoutes =
-        require('./routes/ai');
+    const aiChatRoutes =
+        require('./routes/ai-chat');
 
     app.use(
         '/api/ai',
-        aiRoutes
+        aiChatRoutes
+    );
+
+    console.log(
+        '✅ routes/ai-chat cargado'
     );
 
 } catch (error) {
 
     console.error(
-        '❌ Error cargando routes/ai:',
+        '❌ Error cargando routes/ai-chat:',
         error
     );
 }
 
+// ================================================================
+// AI VOICE
 // ================================================================
 
 try {
@@ -1173,6 +1204,10 @@ try {
     app.use(
         '/api/ai/voice',
         aiVoiceRoutes
+    );
+
+    console.log(
+        '✅ routes/ai-voice cargado'
     );
 
 } catch (error) {
@@ -1349,80 +1384,96 @@ app.get(
 // HEALTH CHECK
 // ================================================================
 
+async function healthCheck(req, res) {
+
+    let supabaseStatus =
+        'unknown';
+
+    try {
+
+        const {
+            error
+        } = await supabaseAdmin
+            .from('idiomas_sistema')
+            .select('codigo')
+            .limit(1);
+
+        supabaseStatus =
+            error
+                ? 'error'
+                : 'ok';
+
+    } catch (error) {
+
+        supabaseStatus =
+            'error';
+    }
+
+    return res.status(200).json({
+
+        status: 'ok',
+
+        service:
+            'galleta-domo',
+
+        environment:
+            process.env.NODE_ENV ||
+            'development',
+
+        timestamp:
+            new Date().toISOString(),
+
+        supabase:
+            supabaseStatus,
+
+        livekit: {
+            configured:
+                Boolean(
+                    LIVEKIT_API_KEY &&
+                    LIVEKIT_API_SECRET &&
+                    (
+                        LIVEKIT_URL ||
+                        LIVEKIT_WS_URL
+                    )
+                )
+        },
+
+        web3: {
+
+            walletconnect_configured:
+                Boolean(
+                    WALLETCONNECT_PROJECT_ID
+                ),
+
+            public_url:
+                PUBLIC_APP_URL,
+
+            polygon_chain_id:
+                WEB3_CHAIN_ID,
+
+            endpoint:
+                '/api/config/web3'
+        }
+    });
+}
+
+/*
+ * Se mantienen ambas rutas:
+ *
+ * /health
+ * /api/health
+ *
+ * Railway puede utilizar /api/health.
+ */
+
 app.get(
     '/health',
-    async (req, res) => {
+    healthCheck
+);
 
-        let supabaseStatus =
-            'unknown';
-
-        try {
-
-            const {
-                error
-            } = await supabaseAdmin
-                .from('idiomas_sistema')
-                .select('codigo')
-                .limit(1);
-
-            supabaseStatus =
-                error
-                    ? 'error'
-                    : 'ok';
-
-        } catch (error) {
-
-            supabaseStatus =
-                'error';
-        }
-
-        return res.status(200).json({
-
-            status: 'ok',
-
-            service:
-                'galleta-domo',
-
-            environment:
-                process.env.NODE_ENV ||
-                'development',
-
-            timestamp:
-                new Date().toISOString(),
-
-            supabase:
-                supabaseStatus,
-
-            livekit: {
-                configured:
-                    Boolean(
-                        LIVEKIT_API_KEY &&
-                        LIVEKIT_API_SECRET &&
-                        (
-                            LIVEKIT_URL ||
-                            LIVEKIT_WS_URL
-                        )
-                    )
-            },
-
-            web3: {
-
-                walletconnect_configured:
-                    Boolean(
-                        WALLETCONNECT_PROJECT_ID
-                    ),
-
-                public_url:
-                    PUBLIC_APP_URL,
-
-                polygon_chain_id:
-                    WEB3_CHAIN_ID,
-
-                endpoint:
-                    '/api/config/web3'
-            }
-        });
-    }
+app.get(
+    '/api/health',
+    healthCheck
 );
 
 // ================================================================
