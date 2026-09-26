@@ -20,9 +20,12 @@ var SUPABASE_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
 
 var supabaseClient = null;
 var intentosSupabase = 0;
-var MAX_INTENTOS_SUPABASE = 50; // 10 segundos máximo
+var MAX_INTENTOS_SUPABASE = 100; // 20 segundos máximo
+var moduloInicializado = false;
 
 function inicializarSupabase() {
+    if (moduloInicializado) return;
+
     // 1. Si ya existe window.supabaseClient (creado por el guardián), reutilizarlo
     if (window.supabaseClient) {
         supabaseClient = window.supabaseClient;
@@ -3036,6 +3039,9 @@ function iniciarNotificacionesRealtime() {
 // INICIALIZACIÓN DEL MÓDULO (se ejecuta cuando Supabase está listo)
 // ================================================================
 function inicializarModuloPerfil() {
+    if (moduloInicializado) return;
+    moduloInicializado = true;
+
     console.log('[Perfil] 🚀 Inicializando módulo...');
 
     // Exponer funciones globales AHORA que supabaseClient existe
