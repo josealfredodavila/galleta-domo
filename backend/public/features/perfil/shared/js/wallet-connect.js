@@ -3,9 +3,9 @@
 // ================================================================
 // Conexión universal de wallet compatible con:
 // - Desktop con extensión MetaMask (window.ethereum)
-// - Desktop con Coinbase Wallet, Rainbow, etc.
-// - Móvil Chrome SIN extensión → usa WalletConnect v2
-// - Móvil dentro del navegador de MetaMask/Coinbase → window.ethereum
+// - Móvil dentro del navegador de MetaMask (window.ethereum)
+// - Móvil Chrome/Safari SIN extensión → usa deep link a MetaMask
+// - Fallback: WalletConnect v2 para otras wallets (Rainbow, Coinbase, etc.)
 //
 // USO:
 //   window.SarWallet.conectar() → abre modal y conecta
@@ -21,6 +21,9 @@
     // CONFIGURACIÓN
     // ================================================================
     const WALLETCONNECT_PROJECT_ID = 'd080c5ef5c0e7109fd12f714d4ca25d5';
+
+    // Dominio de tu dApp (SIN https://) para el deep link de MetaMask
+    const DAPP_DOMAIN = 'galleta-domo-production.up.railway.app';
 
     // Red objetivo: 137 = Polygon Mainnet, 80002 = Amoy Testnet
     const CHAIN_ID_OBJETIVO = 137;
@@ -59,18 +62,68 @@
         return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     }
 
-    function esNavegadorDeWallet() {
-        if (!tieneInjectedProvider()) return false;
-        return Boolean(
-            window.ethereum.isMetaMask ||
-            window.ethereum.isCoinbaseWallet ||
-            window.ethereum.isTrust ||
-            window.ethereum.isRainbow
-        );
+    function esAndroid() {
+        return /Android/i.test(navigator.userAgent);
     }
 
-    function esChromeMovilSinWallet() {
+    function esIOS() {
+        return /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    }
+
+    /**
+     * Detecta si estamos dentro del navegador INTERNO de MetaMask
+     * (cuando el usuario abrió la dApp desde la propia app MetaMask).
+     * En ese caso window.ethereum existe Y tiene el flag isMetaMask.
+     */
+    function esNavegadorDeMetaMask() {
+        if (!tieneInjectedProvider()) return false;
+        return Boolean(window.ethereum.isMetaMask);
+    }
+
+    function esNavegadorDeCoinbase() {
+        if (!tieneInjectedProvider()) return false;
+        return Boolean(window.ethereum.isCoinbaseWallet);
+    }
+
+    /**
+     * Chrome/Safari móvil SIN wallet inyectada.
+     * Este es el caso problemático.
+     */
+    function esNavegadorMovilSinWallet() {
         return esMovil() && !tieneInjectedProvider();
+    }
+
+    // ================================================================
+    // DEEP LINKS
+    // ================================================================
+
+    /**
+     * Construye el deep link universal de MetaMask que abre la app
+     * nativa con la dApp cargada dentro de su navegador interno.
+     * Formato oficial: https://metamask.app.link/dapp/<dominio><path>
+     */
+    function construirDeepLinkMetaMask() {
+        const pathActual = window.location.pathname + window.location.search;
+        return 'https://metamask.app.link/dapp/' + DAPP_DOMAIN + pathActual;
+    }
+
+    /**
+     * Abre la app de MetaMask en móvil usando el deep link universal.
+     */
+    function abrirMetaMaskApp() {
+        const deepLink = construirDeepLinkMetaMask();
+        console.log('🔗 Abriendo MetaMask con deep link:', deepLink);
+        window.location.href = deepLink;
+    }
+
+    /**
+     * Abre Rainbow wallet (útil para móvil, mejor UX que MetaMask).
+     */
+    function abrirRainbowApp() {
+        const url = encodeURIComponent(window.location.href);
+        const deepLink = 'https://rnbwapp.com/dapp?url=' + url;
+        console.log('🔗 Abriendo Rainbow con deep link:', deepLink);
+        window.location.href = deepLink;
     }
 
     // ================================================================
@@ -112,7 +165,7 @@
     }
 
     // ================================================================
-    // CONEXIÓN INJECTED
+    // CONEXIÓN VÍA window.ethereum
     // ================================================================
 
     async function conectarConInjected() {
@@ -188,7 +241,133 @@
     }
 
     // ================================================================
-    // CONEXIÓN WALLETCONNECT
+    // MODAL DE ELECCIÓN DE WALLET (para móvil)
+    // ================================================================
+
+    /**
+     * Muestra un modal con las 3 opciones principales:
+     * 1. MetaMask → usa deep link nativo
+     * 2. Rainbow → usa deep link nativo
+     * 3. WalletConnect → abre el modal de WalletConnect para el resto
+     */
+    function mostrarModalMovil() {
+        return new Promise((resolve, reject) => {
+            const modal = document.createElement('div');
+            modal.id = 'sar-wallet-modal';
+            modal.style.cssText = `
+                position: fixed; inset: 0; z-index: 99998;
+                background: rgba(5,8,15,0.95); backdrop-filter: blur(12px);
+                display: flex; align-items: center; justify-content: center;
+                padding: 20px;
+            `;
+
+            modal.innerHTML = `
+                <div style="
+                    background: linear-gradient(135deg, #0F2D1A, #05080f);
+                    border: 2px solid #D4AF37; border-radius: 20px;
+                    padding: 28px; max-width: 420px; width: 100%;
+                    box-shadow: 0 0 60px rgba(212,175,55,0.3);
+                ">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                        <h2 style="font-family: Orbitron, monospace; color:#D4AF37; font-size:1.1rem; margin:0;">Conectar Wallet</h2>
+                        <button id="sar-modal-cerrar" style="background:none; border:none; color:#8aa8b8; font-size:1.5rem; cursor:pointer;">✕</button>
+                    </div>
+
+                    <p style="color:#c0d8e8; font-size:0.85rem; margin-bottom:20px;">
+                        Elige tu wallet preferida:
+                    </p>
+
+                    <button id="sar-btn-mm" style="
+                        width:100%; padding:14px; margin-bottom:10px;
+                        background: linear-gradient(135deg, #f6851b, #e2761b);
+                        color:white; border:none; border-radius:12px;
+                        font-weight:600; font-size:0.9rem; cursor:pointer;
+                        display:flex; align-items:center; justify-content:center; gap:10px;
+                    ">
+                        🦊 MetaMask
+                    </button>
+
+                    <button id="sar-btn-rainbow" style="
+                        width:100%; padding:14px; margin-bottom:10px;
+                        background: linear-gradient(135deg, #001E59, #174299);
+                        color:white; border:none; border-radius:12px;
+                        font-weight:600; font-size:0.9rem; cursor:pointer;
+                        display:flex; align-items:center; justify-content:center; gap:10px;
+                    ">
+                        🌈 Rainbow
+                    </button>
+
+                    <button id="sar-btn-wc" style="
+                        width:100%; padding:14px;
+                        background: linear-gradient(135deg, #3b99fc, #2b7cd3);
+                        color:white; border:none; border-radius:12px;
+                        font-weight:600; font-size:0.9rem; cursor:pointer;
+                        display:flex; align-items:center; justify-content:center; gap:10px;
+                    ">
+                        🔗 Otra wallet (WalletConnect)
+                    </button>
+
+                    <p style="color:#8aa8b8; font-size:0.7rem; margin-top:16px; text-align:center;">
+                        Se abrirá la app de tu wallet para que autorices la conexión.
+                    </p>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            const cerrar = () => {
+                modal.remove();
+                reject(new Error('USER_CANCELLED'));
+            };
+
+            modal.querySelector('#sar-modal-cerrar').onclick = cerrar;
+            modal.onclick = (e) => { if (e.target === modal) cerrar(); };
+
+            // --- Botón MetaMask ---
+            modal.querySelector('#sar-btn-mm').onclick = async () => {
+                try {
+                    modal.querySelector('#sar-btn-mm').textContent = '⏳ Abriendo MetaMask...';
+                    // Si estamos dentro del navegador de MetaMask, conexión directa
+                    if (esNavegadorDeMetaMask()) {
+                        const result = await conectarConInjected();
+                        modal.remove();
+                        resolve(result);
+                        return;
+                    }
+                    // Si estamos en Chrome/Safari móvil, usar deep link
+                    abrirMetaMaskApp();
+                    // El modal queda abierto esperando que el usuario vuelva
+                    setTimeout(() => modal.remove(), 500);
+                } catch (e) {
+                    modal.remove();
+                    reject(e);
+                }
+            };
+
+            // --- Botón Rainbow ---
+            modal.querySelector('#sar-btn-rainbow').onclick = () => {
+                modal.querySelector('#sar-btn-rainbow').textContent = '⏳ Abriendo Rainbow...';
+                abrirRainbowApp();
+                setTimeout(() => modal.remove(), 500);
+            };
+
+            // --- Botón WalletConnect ---
+            modal.querySelector('#sar-btn-wc').onclick = async () => {
+                try {
+                    modal.querySelector('#sar-btn-wc').textContent = '⏳ Abriendo WalletConnect...';
+                    const result = await conectarConWalletConnect();
+                    modal.remove();
+                    resolve(result);
+                } catch (e) {
+                    modal.remove();
+                    reject(e);
+                }
+            };
+        });
+    }
+
+    // ================================================================
+    // CONEXIÓN WALLETCONNECT (fallback para otras wallets)
     // ================================================================
 
     async function conectarConWalletConnect() {
@@ -268,104 +447,11 @@
     }
 
     // ================================================================
-    // MODAL DE OPCIONES
-    // ================================================================
-
-    function mostrarModalOpciones() {
-        return new Promise((resolve, reject) => {
-            const modal = document.createElement('div');
-            modal.id = 'sar-wallet-modal';
-            modal.style.cssText = `
-                position: fixed; inset: 0; z-index: 99998;
-                background: rgba(5,8,15,0.95); backdrop-filter: blur(12px);
-                display: flex; align-items: center; justify-content: center;
-                padding: 20px;
-            `;
-
-            modal.innerHTML = `
-                <div style="
-                    background: linear-gradient(135deg, #0F2D1A, #05080f);
-                    border: 2px solid #D4AF37; border-radius: 20px;
-                    padding: 28px; max-width: 420px; width: 100%;
-                    box-shadow: 0 0 60px rgba(212,175,55,0.3);
-                ">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                        <h2 style="font-family: Orbitron, monospace; color:#D4AF37; font-size:1.1rem; margin:0;">Conectar Wallet</h2>
-                        <button id="sar-modal-cerrar" style="background:none; border:none; color:#8aa8b8; font-size:1.5rem; cursor:pointer;">✕</button>
-                    </div>
-
-                    <p style="color:#c0d8e8; font-size:0.85rem; margin-bottom:20px;">
-                        Elige cómo conectar tu wallet:
-                    </p>
-
-                    <button id="sar-btn-walletconnect" style="
-                        width:100%; padding:14px; margin-bottom:10px;
-                        background: linear-gradient(135deg, #3b99fc, #2b7cd3);
-                        color:white; border:none; border-radius:12px;
-                        font-weight:600; font-size:0.9rem; cursor:pointer;
-                    ">
-                        🔗 WalletConnect (recomendado)
-                    </button>
-
-                    <button id="sar-btn-metamask" style="
-                        width:100%; padding:14px;
-                        background: linear-gradient(135deg, #f6851b, #e2761b);
-                        color:white; border:none; border-radius:12px;
-                        font-weight:600; font-size:0.9rem; cursor:pointer;
-                    ">
-                        🦊 MetaMask (extensión de escritorio)
-                    </button>
-
-                    <p style="color:#8aa8b8; font-size:0.7rem; margin-top:16px; text-align:center;">
-                        ¿En móvil? Usa WalletConnect para abrir MetaMask, Coinbase o Rainbow.
-                    </p>
-                </div>
-            `;
-
-            document.body.appendChild(modal);
-
-            const cerrar = () => {
-                modal.remove();
-                reject(new Error('USER_CANCELLED'));
-            };
-
-            modal.querySelector('#sar-modal-cerrar').onclick = cerrar;
-            modal.onclick = (e) => { if (e.target === modal) cerrar(); };
-
-            modal.querySelector('#sar-btn-walletconnect').onclick = async () => {
-                try {
-                    modal.querySelector('#sar-btn-walletconnect').textContent = '⏳ Abriendo WalletConnect...';
-                    const result = await conectarConWalletConnect();
-                    modal.remove();
-                    resolve(result);
-                } catch (e) {
-                    modal.remove();
-                    reject(e);
-                }
-            };
-
-            modal.querySelector('#sar-btn-metamask').onclick = async () => {
-                try {
-                    if (!tieneInjectedProvider()) {
-                        alert('MetaMask no está instalado como extensión. En móvil, usa WalletConnect.');
-                        return;
-                    }
-                    const result = await conectarConInjected();
-                    modal.remove();
-                    resolve(result);
-                } catch (e) {
-                    modal.remove();
-                    reject(e);
-                }
-            };
-        });
-    }
-
-    // ================================================================
     // FUNCIÓN PRINCIPAL
     // ================================================================
 
     async function conectar() {
+        // 1. Si ya hay sesión, retornarla
         const sesion = leerSesion();
         if (sesion && sesion.address) {
             currentAccount = sesion.address;
@@ -378,19 +464,23 @@
             };
         }
 
-        if (esChromeMovilSinWallet()) {
-            return await conectarConWalletConnect();
-        }
-
+        // 2. Desktop con extensión → conexión directa
         if (tieneInjectedProvider() && !esMovil()) {
             return await conectarConInjected();
         }
 
-        if (esNavegadorDeWallet()) {
+        // 3. Navegador de MetaMask o Coinbase (móvil o desktop) → conexión directa
+        if (esNavegadorDeMetaMask() || esNavegadorDeCoinbase()) {
             return await conectarConInjected();
         }
 
-        return await mostrarModalOpciones();
+        // 4. Chrome/Safari móvil SIN wallet → mostrar modal de opciones
+        if (esNavegadorMovilSinWallet()) {
+            return await mostrarModalMovil();
+        }
+
+        // 5. Fallback general → modal
+        return await mostrarModalMovil();
     }
 
     async function desconectar() {
@@ -430,9 +520,14 @@
         obtenerCuenta,
         tieneInjectedProvider,
         esMovil,
-        esNavegadorDeWallet,
-        esChromeMovilSinWallet
+        esAndroid,
+        esIOS,
+        esNavegadorDeMetaMask,
+        esNavegadorDeCoinbase,
+        esNavegadorMovilSinWallet,
+        abrirMetaMaskApp,
+        abrirRainbowApp
     };
 
-    console.log('✅ SarWallet cargado');
+    console.log('✅ SarWallet cargado (con deep links)');
 })();
