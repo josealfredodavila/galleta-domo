@@ -233,17 +233,13 @@
 
     <main class="cfg-content">
 
-        <!-- ============================================================ -->
-        <!-- ESTADO: CARGANDO                                             -->
-        <!-- ============================================================ -->
+        <!-- ESTADO: CARGANDO -->
         <div id="estadoCargando" style="text-align: center; padding: 60px 20px; color: var(--cfg-text-muted);">
             <div style="font-size: 2rem; margin-bottom: 12px;">◈</div>
             <div style="font-size: 0.85rem;">Cargando tu wallet...</div>
         </div>
 
-        <!-- ============================================================ -->
-        <!-- ESTADO: SIN WALLET CONECTADA                                 -->
-        <!-- ============================================================ -->
+        <!-- ESTADO: SIN WALLET -->
         <div id="estadoSinWallet" style="display: none;">
 
             <div class="cfg-wallet-hero">
@@ -263,9 +259,7 @@
 
         </div>
 
-        <!-- ============================================================ -->
-        <!-- ESTADO: WALLET CONECTADA                                     -->
-        <!-- ============================================================ -->
+        <!-- ESTADO: WALLET CONECTADA -->
         <div id="estadoWalletConectada" style="display: none;">
 
             <div class="cfg-wallet-connected">
@@ -279,18 +273,18 @@
 
                 <div class="cfg-wallet-network">
                     <span class="dot"></span>
-                    Polygon Amoy Testnet
+                    <span id="walletNetwork">Polygon Mainnet</span>
                 </div>
             </div>
 
             <div class="cfg-wallet-stats">
                 <div class="cfg-wallet-stat">
                     <div class="label">Red</div>
-                    <div class="value">Polygon</div>
+                    <div class="value" id="walletRed">Polygon</div>
                 </div>
                 <div class="cfg-wallet-stat">
                     <div class="label">Chain ID</div>
-                    <div class="value">0x13882</div>
+                    <div class="value" id="walletChainId">137</div>
                 </div>
             </div>
 
@@ -307,13 +301,14 @@
         </div>
 
         <div class="cfg-footer">
-            <strong>◈ Sariel's</strong> · Sariel's · Wallet y Polygon
+            <strong>◈ Sariel's</strong> · Wallet y Polygon
         </div>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="../../../shared/config-icons.js"></script>
     <script src="../../../shared/config-layout.js"></script>
+    <script src="../../shared/js/wallet-connect.js"></script>
 
     <script>
     (function () {
@@ -383,14 +378,8 @@
 
             $('#walletAddress').textContent = address.slice(0, 6) + '...' + address.slice(-4);
             $('#walletAddress').setAttribute('data-full', address);
-
-            renderAcciones();
-            renderInfo();
         }
 
-        // ============================================================
-        // RENDER SECCIONES - SIN WALLET
-        // ============================================================
         function renderBeneficios() {
             $('#seccionBeneficios').innerHTML = [
                 cfgRenderItem({
@@ -415,40 +404,35 @@
         }
 
         function renderWallets() {
+            // ⚠️ Ya NO redirigimos a metamask.io. Solo mostramos info.
             $('#seccionWallets').innerHTML = [
                 cfgRenderItem({
                     icon: 'wallet',
                     title: '🦊 MetaMask',
-                    desc: 'La wallet más popular · Requerida',
-                    href: 'https://metamask.io/es/download',
-                    noChevron: false,
+                    desc: 'Extensión para desktop · También app móvil vía WalletConnect',
+                    noChevron: true,
                 }),
                 cfgRenderItem({
                     icon: 'wallet',
                     title: '🔷 Coinbase Wallet',
-                    desc: 'Compatible con Polygon',
-                    href: 'https://www.coinbase.com/wallet',
-                    noChevron: false,
+                    desc: 'Compatible con Polygon vía WalletConnect',
+                    noChevron: true,
                 }),
                 cfgRenderItem({
                     icon: 'wallet',
                     title: '🌈 Rainbow Wallet',
-                    desc: 'Ideal para móvil',
-                    href: 'https://rainbow.me/',
-                    noChevron: false,
+                    desc: 'Ideal para móvil vía WalletConnect',
+                    noChevron: true,
                 }),
             ].join('');
         }
 
-        // ============================================================
-        // RENDER SECCIONES - CON WALLET
-        // ============================================================
         function renderAcciones() {
             $('#seccionAcciones').innerHTML = [
                 cfgRenderItem({
                     icon: 'info',
                     title: 'Ver en Polygon Explorer',
-                    desc: 'Consulta tu wallet en el explorador de Polygon',
+                    desc: 'Consulta tu wallet en el explorador',
                     onclick: 'window.onVerExplorer()',
                 }),
                 cfgRenderItem({
@@ -460,7 +444,7 @@
                 cfgRenderItem({
                     icon: 'logout',
                     title: 'Desconectar wallet',
-                    desc: 'Desvincula tu wallet de tu cuenta de Sariel\'s',
+                    desc: 'Desvincula tu wallet de tu cuenta',
                     onclick: 'window.onDesconectarWallet()',
                     class: 'cfg-item-plain',
                     style: 'color: var(--cfg-danger, #ff3366);',
@@ -486,7 +470,7 @@
         }
 
         // ============================================================
-        // CALLBACKS
+        // CONECTAR WALLET (nuevo flujo)
         // ============================================================
         window.onConectarWallet = async () => {
             const btn = $('#btnConectar');
@@ -495,99 +479,19 @@
                 btn.textContent = '⏳ Conectando...';
             }
 
-            cfgToast('🦊 Abriendo MetaMask...', '', 3000);
-
             try {
-                // Usar la función del perfil
-                if (window.conectarWallet && typeof window.conectarWallet === 'function') {
-                    await window.conectarWallet();
-                    
-                    // Esperar un momento y recargar
-                    setTimeout(async () => {
-                        await cargarEstadoWallet();
-                    }, 1000);
-                } else {
-                    cfgToast('⚠️ Función no disponible. Abre MetaMask manualmente.', 'warning', 5000);
+                if (!window.SarWallet) {
+                    cfgToast('❌ Módulo de wallet no cargado. Recarga la página.', 'error', 5000);
+                    return;
                 }
-            } catch (e) {
-                console.error('Error conectando wallet:', e);
-                cfgToast('❌ Error: ' + e.message, 'error');
-            } finally {
-                if (btn) {
-                    btn.disabled = false;
-                    btn.textContent = '◈ Conectar Wallet';
-                }
-            }
-        };
 
-        window.onDesconectarWallet = async () => {
-            const ok = await cfgConfirm({
-                title: '¿Desconectar wallet?',
-                text: 'Tu wallet ya no estará vinculada a tu cuenta de Sariel\'s. Puedes volver a conectarla cuando quieras.',
-                confirmText: 'Desconectar',
-                cancelText: 'Cancelar',
-                danger: true,
-            });
+                cfgToast('🔗 Abriendo conexión...', '', 3000);
 
-            if (!ok) return;
+                const result = await window.SarWallet.conectar();
 
-            cfgToast('⏳ Desconectando wallet...', '', 3000);
+                console.log('✅ Wallet conectada:', result);
 
-            try {
-                if (window.desconectarWallet && typeof window.desconectarWallet === 'function') {
-                    await window.desconectarWallet();
-                    setTimeout(async () => {
-                        await cargarEstadoWallet();
-                    }, 1000);
-                } else {
-                    cfgToast('⚠️ Función no disponible', 'warning');
-                }
-            } catch (e) {
-                console.error('Error desconectando wallet:', e);
-                cfgToast('❌ Error: ' + e.message, 'error');
-            }
-        };
+                // Guardar en Supabase
+                await guardarWalletEnSupabase(result.address);
 
-        window.onCopiarDireccion = () => {
-            const el = $('#walletAddress');
-            const address = el.getAttribute('data-full') || el.textContent;
-            
-            if (navigator.clipboard) {
-                navigator.clipboard.writeText(address).then(() => {
-                    cfgToast('📋 Dirección copiada al portapapeles', 'success');
-                }).catch(() => {
-                    cfgToast('⚠️ No se pudo copiar', 'warning');
-                });
-            } else {
-                cfgToast('📋 ' + address, 'success', 5000);
-            }
-        };
-
-        window.onVerExplorer = () => {
-            const el = $('#walletAddress');
-            const address = el.getAttribute('data-full');
-            if (address) {
-                window.open('https://www.oklink.com/amoy/address/' + address, '_blank', 'noopener');
-            }
-        };
-
-        window.onComoFunciona = () => {
-            cfgToast('ℹ️ Tu wallet se vincula solo para lectura. Sariel\'s NUNCA mueve tus fondos.', 'success', 5000);
-        };
-
-        window.onSeguridadInfo = () => {
-            cfgToast('🔒 NUNCA compartas tu frase semilla. Nadie de Sariel\'s te la pedirá.', 'warning', 6000);
-        };
-
-        // ============================================================
-        // INICIALIZAR
-        // ============================================================
-        window.addEventListener('DOMContentLoaded', async () => {
-            await new Promise(resolve => setTimeout(resolve, 400));
-            await cargarEstadoWallet();
-        });
-
-    })();
-    </script>
-</body>
-</html>
+                cfgToast('✅ Wallet conectada',
