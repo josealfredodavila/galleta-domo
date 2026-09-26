@@ -7,29 +7,80 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
-    <script src="/features/shared/js/apariencia-global.js"></script>
+    <!-- ═══════════════════════════════════════════════════════════
+         ORDEN CORREGIDO DE DEPENDENCIAS:
+         1. Supabase CDN PRIMERO (para que window.supabase exista)
+         2. apariencia-global.js (puede usar Supabase si lo necesita)
+         3. Estilo de protección
+         4. Guardián de sesión
+         ═══════════════════════════════════════════════════════════ -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="/features/shared/js/apariencia-global.js" defer></script>
 
     <style>
         html:not(.auth-ready) .app { display: none !important; }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
     <script>
         (function () {
             'use strict';
             var GUARD_SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
             var GUARD_SUPABASE_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
-            function revelarPagina() { document.documentElement.classList.add('auth-ready'); }
-            function irAInicio() { window.location.replace('/'); }
-            var salvaguarda = setTimeout(revelarPagina, 4000);
-            try {
-                if (typeof window.supabase === 'undefined') { return; }
-                var guardClient = window.supabase.createClient(GUARD_SUPABASE_URL, GUARD_SUPABASE_KEY);
-                guardClient.auth.getSession().then(function (resultado) {
+
+            function revelarPagina() {
+                document.documentElement.classList.add('auth-ready');
+            }
+            function irAInicio() {
+                window.location.replace('/');
+            }
+
+            // Salvaguarda: si en 4s no se resolvió, revelamos para no dejar la pantalla en negro
+            var salvaguarda = setTimeout(function () {
+                console.warn('[Perfil] Salvaguarda activada: revelando página sin confirmar sesión.');
+                revelarPagina();
+            }, 4000);
+
+            function inicializarGuardian() {
+                try {
+                    if (typeof window.supabase === 'undefined') {
+                        console.warn('[Perfil] Supabase CDN no disponible todavía. Reintentando...');
+                        setTimeout(inicializarGuardian, 200);
+                        return;
+                    }
+
+                    // Reutilizar cliente existente si ya fue creado
+                    if (!window.supabaseClient) {
+                        window.supabaseClient = window.supabase.createClient(
+                            GUARD_SUPABASE_URL,
+                            GUARD_SUPABASE_KEY
+                        );
+                    }
+
+                    window.supabaseClient.auth.getSession().then(function (resultado) {
+                        clearTimeout(salvaguarda);
+                        var session = resultado && resultado.data ? resultado.data.session : null;
+                        if (!session) {
+                            irAInicio();
+                        } else {
+                            revelarPagina();
+                        }
+                    }).catch(function (err) {
+                        console.warn('[Perfil] Error verificando sesión:', err);
+                        clearTimeout(salvaguarda);
+                        revelarPagina();
+                    });
+                } catch (e) {
+                    console.warn('[Perfil] Error en guardián:', e);
                     clearTimeout(salvaguarda);
-                    var session = resultado && resultado.data ? resultado.data.session : null;
-                    if (!session) { irAInicio(); } else { revelarPagina(); }
-                }).catch(function () { clearTimeout(salvaguarda); revelarPagina(); });
-            } catch (e) { clearTimeout(salvaguarda); revelarPagina(); }
+                    revelarPagina();
+                }
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', inicializarGuardian);
+            } else {
+                inicializarGuardian();
+            }
         })();
     </script>
 
@@ -1119,8 +1170,8 @@
 
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 
-    <script src="/features/shared/js/idiomas.js"></script>
-    <script src="/features/perfil/perfil.js"></script>
+    <script src="/features/shared/js/idiomas.js" defer></script>
+    <script src="/features/perfil/perfil.js" defer></script>
 
     <script>
 // ================================================================
@@ -1152,14 +1203,20 @@ async function verificarEstadoRepartidorPerfil() {
         
         if (!section) return;
 
-        // Obtener usuario
-        var session = await window.supabaseClient.auth.getSession();
+        // Obtener usuario (usa window.supabaseClient que ya fue creado)
+        var client = window.supabaseClient || window.supabase?.createClient(
+            'https://zultnlogdoajehbswlih.supabase.co',
+            'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
+        );
+        if (!client) return;
+
+        var session = await client.auth.getSession();
         if (!session.data.session) return;
 
         var usuarioId = session.data.session.user.id;
 
         // Consultar estado
-        var result = await window.supabaseClient
+        var result = await client
             .from('mercado_repartidores')
             .select('estado_verificacion, score_confianza, motivo_rechazo')
             .eq('usuario_id', usuarioId)
@@ -1221,7 +1278,13 @@ async function verificarEstadoRepartidorPerfil() {
 // ================================================================
 async function irARepartidorDesdePerfil() {
     try {
-        var session = await window.supabaseClient.auth.getSession();
+        var client = window.supabaseClient || window.supabase?.createClient(
+            'https://zultnlogdoajehbswlih.supabase.co',
+            'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
+        );
+        if (!client) return;
+
+        var session = await client.auth.getSession();
         if (!session.data.session) {
             if (window.showToast) window.showToast('⚠️ Inicia sesión', 'warning');
             return;
@@ -1229,7 +1292,7 @@ async function irARepartidorDesdePerfil() {
 
         var usuarioId = session.data.session.user.id;
 
-        var result = await window.supabaseClient
+        var result = await client
             .from('mercado_repartidores')
             .select('estado_verificacion')
             .eq('usuario_id', usuarioId)
@@ -2029,13 +2092,21 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        recargarPerfil(true);
+        // Exponer la función globalmente
+        window.recargarPerfil = recargarPerfil;
 
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', function() { recargarPerfil(true); }, { once: true });
-        } else {
-            recargarPerfil(true);
+        // Esperar a que Supabase esté listo
+        function iniciarRecarga() {
+            if (window.supabaseClient) {
+                recargarPerfil(true);
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', function() { recargarPerfil(true); }, { once: true });
+                }
+            } else {
+                setTimeout(iniciarRecarga, 200);
+            }
         }
+        iniciarRecarga();
 
         setTimeout(function() { recargarPerfil(true); }, 800);
         setTimeout(function() { recargarPerfil(true); }, 1600);
@@ -2119,7 +2190,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var target = document.getElementById('tab-' + tab);
         if (target) target.classList.add('active');
         document.querySelectorAll('.perfil-tabs .tab-btn').forEach(function(b) { b.classList.remove('active'); });
-        event.target.classList.add('active');
+        if (window.event && window.event.target) window.event.target.classList.add('active');
     };
     window.cambiarConexion = window.cambiarConexion || function(tipo) { /* placeholder */ };
     window.contratarPro = window.contratarPro || function() { /* placeholder */ };
