@@ -16,15 +16,41 @@
    ================================================================ */
 
 // ================================================================
-// CONFIGURACIÓN SUPABASE
+// CONFIGURACIÓN SUPABASE (ESPERA A QUE window.supabase EXISTA)
 // ================================================================
-const supabaseClient = window.supabase.createClient(
-    'https://zultnlogdoajehbswlih.supabase.co',
-    'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
-);
+var SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
+var SUPABASE_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
 
-window.supabaseClient = supabaseClient;
-const supabase = supabaseClient;
+var supabaseClient;
+
+function inicializarSupabase() {
+    if (typeof window.supabase === 'undefined') {
+        console.warn('[Perfil] window.supabase no disponible todavía, reintentando...');
+        setTimeout(inicializarSupabase, 200);
+        return;
+    }
+
+    // Reutilizar cliente existente si ya fue creado (por ejemplo, por el guardián en perfil.html)
+    if (window.supabaseClient) {
+        supabaseClient = window.supabaseClient;
+    } else {
+        try {
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            window.supabaseClient = supabaseClient;
+        } catch (e) {
+            console.error('[Perfil] Error creando cliente Supabase:', e);
+            setTimeout(inicializarSupabase, 500);
+            return;
+        }
+    }
+
+    // Exponer también para otros módulos
+    window.supabase = window.supabase;
+    window.supabaseClient = supabaseClient;
+
+    console.log('[Perfil] ✅ Supabase inicializado correctamente.');
+    inicializarModuloPerfil();
+}
 
 // ================================================================
 // I18N HELPERS (delegan al sistema central)
@@ -128,11 +154,11 @@ async function cargarEstadoPro() {
         const session = await getSession();
         if (!session) return;
 
-        const { data, error } = await supabase.rpc('obtener_estado_pro');
+        const { data, error } = await supabaseClient.rpc('obtener_estado_pro');
 
         if (error) {
             console.warn('RPC obtener_estado_pro no disponible:', error.message);
-            const { data: usuario } = await supabase
+            const { data: usuario } = await supabaseClient
                 .from('usuarios')
                 .select('plan, plan_expira_at, plan_meta')
                 .eq('id', session.user.id)
@@ -173,7 +199,6 @@ function aplicarEstadoProUI(usuario) {
     const esPro = planActual.toLowerCase().includes('pro');
 
     if (planActualEl) planActualEl.textContent = planActual;
-    // I18N: traducir solo la unidad "días" sin alterar el dato persistido
     if (planMetaEl) planMetaEl.textContent = traducirPlanMeta(planMeta);
 
     if (esPro) {
@@ -206,7 +231,7 @@ async function contratarPro() {
             return;
         }
 
-        const { data: usuario } = await supabase
+        const { data: usuario } = await supabaseClient
             .from('usuarios')
             .select('plan, plan_expira_at')
             .eq('id', session.user.id)
@@ -225,7 +250,7 @@ async function contratarPro() {
 
         showToast('⏳ ' + t('perfil_pro_activando', 'Iniciando contratación...'), '', 4000);
 
-        const { data: pago, error: pagoError } = await supabase
+        const { data: pago, error: pagoError } = await supabaseClient
             .from('pagos_pro')
             .insert({
                 usuario_id: session.user.id,
@@ -292,7 +317,7 @@ async function activarProDirecto(usuarioId, pagoProId) {
     try {
         showToast('⏳ ' + t('perfil_pro_activando', 'Activando Sariel\'s Pro...'), '', 4000);
 
-        const { data, error } = await supabase.rpc('activar_pro', {
+        const { data, error } = await supabaseClient.rpc('activar_pro', {
             p_usuario_id: usuarioId,
             p_plan_id: PRO_PLAN_ID
         });
@@ -304,7 +329,7 @@ async function activarProDirecto(usuarioId, pagoProId) {
         }
 
         if (pagoProId) {
-            await supabase
+            await supabaseClient
                 .from('pagos_pro')
                 .update({ estado: 'completado', metodo_pago: 'manual_prueba' })
                 .eq('id', pagoProId);
@@ -334,7 +359,7 @@ function iniciarPollingPagoPro(pagoProId) {
         intentos++;
 
         try {
-            const { data: pago } = await supabase
+            const { data: pago } = await supabaseClient
                 .from('pagos_pro')
                 .select('estado')
                 .eq('id', pagoProId)
@@ -377,7 +402,8 @@ function cambiarTab(tab) {
 }
 
 async function getSession() {
-    const { data: { session } } = await supabase.auth.getSession();
+    if (!supabaseClient) return null;
+    const { data: { session } } = await supabaseClient.auth.getSession();
     return session;
 }
 
@@ -423,7 +449,7 @@ async function cargarPerfil(forzarActualizacion = false) {
             return;
         }
 
-        const { data, error } = await supabase.rpc('obtener_mi_perfil');
+        const { data, error } = await supabaseClient.rpc('obtener_mi_perfil');
 
         if (error) throw error;
 
@@ -469,7 +495,6 @@ async function cargarPerfil(forzarActualizacion = false) {
             actualizarUI(defaultData);
             await cargarEstadoPro();
         }
-        // I18N: aplicar traducciones después de cargar datos
         await aplicarI18NPerfil();
     } catch (error) {
         console.error('Error cargando perfil:', error);
@@ -520,7 +545,6 @@ function actualizarUIEstado(online) {
     }
     
     if (estadoTexto) {
-        // I18N: usar claves. Se quita data-clave previo para que mostrar dinámico no se sobreescriba.
         estadoTexto.removeAttribute('data-clave');
         estadoTexto.textContent = online
             ? t('perfil_activo_ahora', 'Activo ahora')
@@ -585,11 +609,12 @@ async function cambiarEstado(online) {
 let canalAmigos = null;
 
 function iniciarEscuchaAmigos() {
+    if (!supabaseClient) return;
     if (canalAmigos) {
-        supabase.removeChannel(canalAmigos);
+        supabaseClient.removeChannel(canalAmigos);
     }
 
-    canalAmigos = supabase
+    canalAmigos = supabaseClient
         .channel('amigos_online')
         .on('postgres_changes', {
             event: 'UPDATE',
@@ -635,7 +660,7 @@ async function cargarAmigosEnLinea() {
         let todosContactos = [];
 
         try {
-            const { data: enLineaData, error: enLineaError } = await supabase
+            const { data: enLineaData, error: enLineaError } = await supabaseClient
                 .from('perfiles_publicos')
                 .select('id, nombre, handle, avatar_url, online, ultima_conexion')
                 .in('id', idsContactos)
@@ -644,7 +669,7 @@ async function cargarAmigosEnLinea() {
             if (enLineaError) throw enLineaError;
             enLinea = enLineaData || [];
 
-            const { data: todosData, error: todosError } = await supabase
+            const { data: todosData, error: todosError } = await supabaseClient
                 .from('perfiles_publicos')
                 .select('id, nombre, handle, avatar_url, online, ultima_conexion')
                 .in('id', idsContactos);
@@ -654,7 +679,7 @@ async function cargarAmigosEnLinea() {
 
         } catch (e) {
             console.warn('perfiles_publicos no disponible, usando usuarios:', e.message);
-            const { data: usuarios } = await supabase
+            const { data: usuarios } = await supabaseClient
                 .from('usuarios')
                 .select('id, nombre, handle, avatar_url, online, ultima_conexion')
                 .in('id', idsContactos);
@@ -731,7 +756,7 @@ async function notificarCambioEstado(online) {
         const session = await getSession();
         if (!session) return;
 
-        const { data: contactos, error } = await supabase
+        const { data: contactos, error } = await supabaseClient
             .from('contactos')
             .select('contacto_id')
             .eq('usuario_id', session.user.id)
@@ -752,7 +777,7 @@ async function notificarCambioEstado(online) {
         }));
 
         for (let i = 0; i < notifs.length; i += 50) {
-            await supabase.from('notificaciones').insert(notifs.slice(i, i + 50));
+            await supabaseClient.from('notificaciones').insert(notifs.slice(i, i + 50));
         }
 
     } catch (error) {
@@ -866,7 +891,7 @@ async function cambiarConexion(tipo) {
             }
         }
 
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('usuarios')
             .update({
                 conexion_tipo: tipo,
@@ -909,7 +934,7 @@ async function guardarEstadoConexion(estado) {
         const session = await getSession();
         if (!session) return;
 
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('usuarios')
             .update({
                 conexion_tipo: estado.tipo,
@@ -1145,7 +1170,7 @@ async function cargarDatosESIMLocal(iccid) {
         const session = await getSession();
         if (!session) return;
 
-        const { data: usuario, error } = await supabase
+        const { data: usuario, error } = await supabaseClient
             .from('usuarios')
             .select('esim_iccid, esim_status, esim_data_used, esim_data_limit, esim_apn')
             .eq('id', session.user.id)
@@ -1210,7 +1235,7 @@ async function comprarESIM(planId) {
             return;
         }
 
-        const { data: plan, error } = await supabase
+        const { data: plan, error } = await supabaseClient
             .from('planes_esim')
             .select('*')
             .eq('id', planId)
@@ -1373,7 +1398,7 @@ async function obtenerEstadoESIM() {
 
 async function obtenerPlanesESIM() {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('planes_esim')
             .select('*')
             .eq('activo', true)
@@ -1708,7 +1733,7 @@ async function procesarQR(codigo) {
         if (status) status.textContent = '⏳ Validando QR...';
         showToast('⏳ Verificando QR...', '', 5000);
 
-        const { data, error } = await supabase.rpc('reclamar_qr_domo', {
+        const { data, error } = await supabaseClient.rpc('reclamar_qr_domo', {
             p_codigo: codigo
         });
 
@@ -1771,7 +1796,7 @@ async function cargarHistorialQR() {
         const session = await getSession();
         if (!session) return;
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('qr_historial')
             .select('*')
             .eq('user_id', session.user.id)
@@ -2044,10 +2069,10 @@ async function conectarWallet() {
             }
         }
 
-        const { error } = await supabase.rpc('vincular_wallet', { p_wallet_address: cuenta });
+        const { error } = await supabaseClient.rpc('vincular_wallet', { p_wallet_address: cuenta });
         if (error) {
             console.warn('RPC vincular_wallet falló, intentando update directo:', error.message);
-            const { error: updateError } = await supabase
+            const { error: updateError } = await supabaseClient
                 .from('usuarios')
                 .update({ wallet_address: cuenta })
                 .eq('id', session.user.id);
@@ -2086,10 +2111,10 @@ async function desconectarWallet() {
             return;
         }
 
-        const { error: rpcError } = await supabase.rpc('desvincular_wallet');
+        const { error: rpcError } = await supabaseClient.rpc('desvincular_wallet');
         if (rpcError) {
             console.warn('RPC desvincular_wallet no encontrada, usando update directo:', rpcError.message);
-            const { error: updateError } = await supabase
+            const { error: updateError } = await supabaseClient
                 .from('usuarios')
                 .update({ wallet_address: null })
                 .eq('id', session.user.id);
@@ -2135,7 +2160,7 @@ async function comprarDomo(cantidad = 1) {
 
         showToast('⏳ Procesando compra de ' + cantidad + ' domo(s)...', '', 5000);
 
-        const { data, error } = await supabase.rpc('comprar_domo', { p_cantidad: cantidad });
+        const { data, error } = await supabaseClient.rpc('comprar_domo', { p_cantidad: cantidad });
 
         if (error) {
             if (error.message.includes('insufficient')) {
@@ -2314,7 +2339,7 @@ async function canjearNFT() {
 
         showToast('⏳ Verificando tokens para canje...', '', 4000);
 
-        const { data, error } = await supabase.rpc('canjear_nft');
+        const { data, error } = await supabaseClient.rpc('canjear_nft');
 
         if (error) {
             if (error.message.includes('insufficient tokens')) {
@@ -2670,7 +2695,7 @@ async function subirFoto(event) {
     try {
         showToast('⏳ Subiendo foto...', '', 5000);
 
-        const { error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabaseClient.storage
             .from('sariels-avatars')
             .upload(filePath, file, { upsert: true, contentType: file.type });
 
@@ -2686,13 +2711,13 @@ async function subirFoto(event) {
             return;
         }
 
-        const { data: urlData } = supabase.storage
+        const { data: urlData } = supabaseClient.storage
             .from('sariels-avatars')
             .getPublicUrl(filePath);
 
         const publicUrl = urlData.publicUrl + '?t=' + Date.now();
 
-        const { error: updateError } = await supabase
+        const { error: updateError } = await supabaseClient
             .from('usuarios')
             .update({ avatar_url: publicUrl })
             .eq('id', session.user.id);
@@ -2720,7 +2745,7 @@ async function reaccionarPublicacion(postId, tipoReaccion) {
             return;
         }
 
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('reacciones')
             .upsert({
                 post_id: postId,
@@ -2756,7 +2781,7 @@ async function comentarPublicacion(postId, contenido) {
 
         const textoFormateado = formatearTexto(contenido);
 
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('muro_comentarios')
             .insert({
                 post_id: postId,
@@ -2790,7 +2815,7 @@ async function agregarAmigo(amigoId) {
             return;
         }
 
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('contactos')
             .insert({
                 usuario_id: session.user.id,
@@ -2882,7 +2907,7 @@ async function obtenerEstadisticas() {
         const session = await getSession();
         if (!session) return;
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('estadisticas_usuarios')
             .select('*')
             .eq('user_id', session.user.id)
@@ -2922,7 +2947,7 @@ async function subirVideo(event) {
         const fileExt = file.name.split('.').pop();
         const filePath = `${session.user.id}/video_${Date.now()}.${fileExt}`;
 
-        const { error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabaseClient.storage
             .from('posts')
             .upload(filePath, file, {
                 cacheControl: '3600',
@@ -2942,7 +2967,7 @@ async function subirVideo(event) {
             return;
         }
 
-        const { data: urlData } = supabase.storage
+        const { data: urlData } = supabaseClient.storage
             .from('posts')
             .getPublicUrl(filePath);
 
@@ -2964,7 +2989,7 @@ async function cerrarSesion() {
     
     try {
         await actualizarEstadoEnLinea(false);
-        await supabase.auth.signOut();
+        await supabaseClient.auth.signOut();
         window.location.href = '/';
     } catch (error) {
         console.error('Error cerrando sesión:', error);
@@ -2976,7 +3001,8 @@ async function cerrarSesion() {
 // NOTIFICACIONES EN TIEMPO REAL
 // ================================================================
 function iniciarNotificacionesRealtime() {
-    const channel = supabase
+    if (!supabaseClient) return;
+    const channel = supabaseClient
         .channel('notificaciones')
         .on('postgres_changes', {
             event: 'INSERT',
@@ -2999,9 +3025,87 @@ function iniciarNotificacionesRealtime() {
 }
 
 // ================================================================
-// INICIALIZACIÓN
+// INICIALIZACIÓN DEL MÓDULO (se ejecuta cuando Supabase está listo)
 // ================================================================
-document.addEventListener('DOMContentLoaded', async function() {
+function inicializarModuloPerfil() {
+    console.log('[Perfil] 🚀 Inicializando módulo...');
+
+    // Exponer funciones globales AHORA que supabaseClient existe
+    window.cambiarTab = cambiarTab;
+    window.cargarPerfil = cargarPerfil;
+    window.guardarPerfil = guardarPerfil;
+    window.abrirSelectorArchivo = abrirSelectorArchivo;
+    window.expandirAvatar = expandirAvatar;
+    window.expandirFotoPublicacion = expandirFotoPublicacion;
+    window.subirFoto = subirFoto;
+    window.subirVideo = subirVideo;
+    window.editarPerfil = editarPerfil;
+    window.compartirPerfil = compartirPerfil;
+    window.conectarWallet = conectarWallet;
+    window.desconectarWallet = desconectarWallet;
+    window.comprarDomo = comprarDomo;
+    window.canjearNFT = canjearNFT;
+    window.reaccionarPublicacion = reaccionarPublicacion;
+    window.comentarPublicacion = comentarPublicacion;
+    window.agregarAmigo = agregarAmigo;
+    window.cerrarSesion = cerrarSesion;
+    window.irAMuro = irAMuro;
+    window.showToast = showToast;
+    window.generarQRPerfil = generarQRPerfil;
+    window.calcularNivel = calcularNivel;
+    window.compartirLogro = compartirLogro;
+
+    window.comprarESIM = comprarESIM;
+    window.cargarDatosESIM = cargarDatosESIM;
+    window.activarESIM = activarESIM;
+    window.desactivarESIM = desactivarESIM;
+    window.generarQRESIM = generarQRESIM;
+    window.obtenerEstadoESIM = obtenerEstadoESIM;
+    window.obtenerPlanesESIM = obtenerPlanesESIM;
+    window.verificarPago = verificarPago;
+    window.sincronizarESIM = sincronizarESIM;
+
+    window.comprarConCripto = comprarConCripto;
+    window.verificarPagoCrypto = verificarPagoCrypto;
+    window.copiarDireccion = copiarDireccion;
+    window.cerrarModalPago = cerrarModalPago;
+
+    window.cambiarConexion = cambiarConexion;
+    window.cargarEstadoConexion = cargarEstadoConexion;
+    window.getPerfilActual = getPerfilActual;
+
+    window.actualizarEstadoEnLinea = actualizarEstadoEnLinea;
+    window.cambiarEstado = cambiarEstado;
+    window.cargarAmigosEnLinea = cargarAmigosEnLinea;
+    window.actualizarListaAmigos = actualizarListaAmigos;
+
+    window.escanearQR = escanearQR;
+    window.abrirCamaraQR = abrirCamaraQR;
+    window.cerrarCamaraQR = cerrarCamaraQR;
+    window.cargarHistorialQR = cargarHistorialQR;
+    window.actualizarUIHistorialQR = actualizarUIHistorialQR;
+    window.procesarQR = procesarQR;
+
+    window.cargarEstadoPro = cargarEstadoPro;
+    window.contratarPro = contratarPro;
+    window.activarProDirecto = activarProDirecto;
+
+    // Exponer helpers I18N locales por si el HTML los necesita
+    window.perfilT = t;
+    window.aplicarI18NPerfil = aplicarI18NPerfil;
+    window.traducirPlanMeta = traducirPlanMeta;
+
+    // Iniciar la lógica del perfil
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', iniciarPerfil);
+    } else {
+        iniciarPerfil();
+    }
+}
+
+async function iniciarPerfil() {
+    console.log('[Perfil] 🎬 Cargando datos del perfil...');
+
     if (typeof jsQR === 'undefined') {
         const script = document.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
@@ -3069,138 +3173,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     actualizarCryptoTotal();
-});
+
+    console.log('[Perfil] ✅ Módulo inicializado completamente.');
+}
 
 // ================================================================
-// ESTILOS CSS INYECTADOS
+// ARRANCAR: Esperar a que Supabase CDN esté disponible
 // ================================================================
-const estilosAnimacion = document.createElement('style');
-estilosAnimacion.textContent = `
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes fadeOut {
-        from { opacity: 1; }
-        to { opacity: 0; }
-    }
-    @keyframes scaleIn {
-        from { transform: scale(0.8); opacity: 0; }
-        to { transform: scale(1); opacity: 1; }
-    }
-    @keyframes slideInRight {
-        from { transform: translateX(100px); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-    }
-    @keyframes slideOutRight {
-        from { transform: translateX(0); opacity: 1; }
-        to { transform: translateX(100px); opacity: 0; }
-    }
-    @keyframes confetiFall {
-        from { transform: translateY(0) rotate(0deg); opacity: 1; }
-        to { transform: translateY(100vh) rotate(720deg); opacity: 0; }
-    }
-    .toast {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        padding: 15px 25px;
-        border-radius: 12px;
-        background: var(--bg-card);
-        color: var(--text-primary);
-        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        border: 1px solid var(--border-color);
-        z-index: 9999;
-        transform: translateX(100px);
-        opacity: 0;
-        transition: all 0.3s ease;
-        max-width: 400px;
-        backdrop-filter: blur(10px);
-    }
-    .toast.show {
-        transform: translateX(0);
-        opacity: 1;
-    }
-    .toast.error {
-        border-color: #ff6b6b;
-        background: rgba(255, 107, 107, 0.1);
-    }
-    .toast.warning {
-        border-color: #feca57;
-        background: rgba(254, 202, 87, 0.1);
-    }
-    .toast.success {
-        border-color: #2ecc71;
-        background: rgba(46, 204, 113, 0.1);
-    }
-`;
-document.head.appendChild(estilosAnimacion);
-
-// ================================================================
-// EXPOSICIÓN DE FUNCIONES GLOBALES
-// ================================================================
-window.cambiarTab = cambiarTab;
-window.cargarPerfil = cargarPerfil;
-window.guardarPerfil = guardarPerfil;
-window.abrirSelectorArchivo = abrirSelectorArchivo;
-window.expandirAvatar = expandirAvatar;
-window.expandirFotoPublicacion = expandirFotoPublicacion;
-window.subirFoto = subirFoto;
-window.subirVideo = subirVideo;
-window.editarPerfil = editarPerfil;
-window.compartirPerfil = compartirPerfil;
-window.conectarWallet = conectarWallet;
-window.desconectarWallet = desconectarWallet;
-window.comprarDomo = comprarDomo;
-window.canjearNFT = canjearNFT;
-window.reaccionarPublicacion = reaccionarPublicacion;
-window.comentarPublicacion = comentarPublicacion;
-window.agregarAmigo = agregarAmigo;
-window.cerrarSesion = cerrarSesion;
-window.irAMuro = irAMuro;
-window.showToast = showToast;
-window.generarQRPerfil = generarQRPerfil;
-window.calcularNivel = calcularNivel;
-window.compartirLogro = compartirLogro;
-
-window.comprarESIM = comprarESIM;
-window.cargarDatosESIM = cargarDatosESIM;
-window.activarESIM = activarESIM;
-window.desactivarESIM = desactivarESIM;
-window.generarQRESIM = generarQRESIM;
-window.obtenerEstadoESIM = obtenerEstadoESIM;
-window.obtenerPlanesESIM = obtenerPlanesESIM;
-window.verificarPago = verificarPago;
-window.sincronizarESIM = sincronizarESIM;
-
-window.comprarConCripto = comprarConCripto;
-window.verificarPagoCrypto = verificarPagoCrypto;
-window.copiarDireccion = copiarDireccion;
-window.cerrarModalPago = cerrarModalPago;
-
-window.cambiarConexion = cambiarConexion;
-window.cargarEstadoConexion = cargarEstadoConexion;
-window.getPerfilActual = getPerfilActual;
-
-window.actualizarEstadoEnLinea = actualizarEstadoEnLinea;
-window.cambiarEstado = cambiarEstado;
-window.cargarAmigosEnLinea = cargarAmigosEnLinea;
-window.actualizarListaAmigos = actualizarListaAmigos;
-
-window.escanearQR = escanearQR;
-window.abrirCamaraQR = abrirCamaraQR;
-window.cerrarCamaraQR = cerrarCamaraQR;
-window.cargarHistorialQR = cargarHistorialQR;
-window.actualizarUIHistorialQR = actualizarUIHistorialQR;
-window.procesarQR = procesarQR;
-
-window.cargarEstadoPro = cargarEstadoPro;
-window.contratarPro = contratarPro;
-window.activarProDirecto = activarProDirecto;
-
-// Exponer helpers I18N locales por si el HTML los necesita
-window.perfilT = t;
-window.aplicarI18NPerfil = aplicarI18NPerfil;
-window.traducirPlanMeta = traducirPlanMeta;
+inicializarSupabase();
 
 })();
