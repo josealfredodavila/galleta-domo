@@ -365,6 +365,7 @@
                     class="cfg-wallet-btn"
                     onclick="window.onConectarWallet()"
                     id="btnConectar"
+                    type="button"
                 >
                     ◈ Conectar Wallet
                 </button>
@@ -416,6 +417,7 @@
 
                 <button
                     class="cfg-wallet-btn"
+                    type="button"
                     onclick="
                         window.location.href =
                         '/features/perfil/login.html'
@@ -486,6 +488,8 @@
                     class="cfg-wallet-address"
                     onclick="window.onCopiarDireccion()"
                     title="Toca para copiar"
+                    role="button"
+                    tabindex="0"
                 >
                     <span>📋</span>
 
@@ -581,10 +585,16 @@
 
     <script src="../../../shared/config-layout.js"></script>
 
-    <!-- IMPORTANTE:
-         Desde configuracion/sariels/ hasta perfil/shared/js/
-         son DOS niveles:
-         ../../shared/js/wallet-connect.js
+    <!--
+        Ruta desde:
+
+        /features/perfil/configuracion/sariels/wallet.html
+
+        hasta:
+
+        /features/perfil/shared/js/wallet-connect.js
+
+        son dos niveles hacia arriba.
     -->
     <script src="../../shared/js/wallet-connect.js"></script>
 
@@ -1370,6 +1380,78 @@
                     }
 
                     if (
+                        e?.message ===
+                        'WALLETCONNECT_CONFIG_FAILED'
+                    ) {
+
+                        cfgToast(
+                            '❌ No se pudo cargar la configuración Web3 del servidor.',
+                            'error',
+                            6000
+                        );
+
+                        return;
+                    }
+
+                    if (
+                        e?.message ===
+                        'WALLETCONNECT_CONFIG_INVALID'
+                    ) {
+
+                        cfgToast(
+                            '❌ La configuración de WalletConnect es inválida.',
+                            'error',
+                            6000
+                        );
+
+                        return;
+                    }
+
+                    if (
+                        e?.message ===
+                        'WRONG_NETWORK'
+                    ) {
+
+                        cfgToast(
+                            '⚠️ Debes conectar la wallet a Polygon Amoy.',
+                            'warning',
+                            6000
+                        );
+
+                        return;
+                    }
+
+                    if (
+                        e?.message ===
+                        'NO_ACCOUNTS_RETURNED' ||
+                        e?.message ===
+                        'WALLETCONNECT_NO_ACCOUNTS'
+                    ) {
+
+                        cfgToast(
+                            '⚠️ La wallet no devolvió ninguna cuenta.',
+                            'warning',
+                            5000
+                        );
+
+                        return;
+                    }
+
+                    if (
+                        e?.message ===
+                        'SESSION_EXPIRED'
+                    ) {
+
+                        cfgToast(
+                            '⚠️ Tu sesión de Sariel's expiró. Inicia sesión nuevamente.',
+                            'warning',
+                            5000
+                        );
+
+                        return;
+                    }
+
+                    if (
                         esErrorDeRed(e)
                     ) {
 
@@ -1391,6 +1473,20 @@
                             '⚠️ Supabase tardó demasiado en responder.',
                             'error',
                             5000
+                        );
+
+                        return;
+                    }
+
+                    if (
+                        e?.message ===
+                        'SUPABASE_SAVE_WALLET_TIMEOUT'
+                    ) {
+
+                        cfgToast(
+                            '⚠️ La wallet se conectó, pero Supabase tardó demasiado en guardar la vinculación.',
+                            'error',
+                            6000
                         );
 
                         return;
