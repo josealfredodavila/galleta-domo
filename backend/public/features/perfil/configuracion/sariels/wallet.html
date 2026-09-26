@@ -339,12 +339,12 @@
         }
 
         .cfg-wallet-diagnostic-ok {
-            color: #71dc91;
+            color: #00ff88;
             font-weight: 700;
         }
 
         .cfg-wallet-diagnostic-bad {
-            color: #ff8888;
+            color: #ff4444;
             font-weight: 700;
         }
 
@@ -382,6 +382,9 @@
                     false,
 
                 supabaseClientObject:
+                    false,
+
+                supabaseLibraryLoaded:
                     false,
 
                 online:
@@ -426,7 +429,11 @@
             window.__sarWalletDiag =
                 window.__sarWalletDiag || {};
 
-            window.__sarWalletDiag.supabaseLibraryLoaded = true;
+            window.__sarWalletDiag.supabaseLibraryLoaded =
+                !!(
+                    window.supabaseClient ||
+                    (window.supabase && window.supabase.auth)
+                );
         "
         onerror="
             window.__sarWalletDiag =
@@ -458,7 +465,7 @@
          ============================================================ -->
 
     <script
-        src="../../shared/js/wallet-connect.js?v=sarwallet-20260926"
+        src="../../shared/js/wallet-connect.js?v=20260513_3"
         defer
     ></script>
 
@@ -775,21 +782,23 @@
                 /*
                  * CORRECCIÓN:
                  *
-                 * La aplicación puede utilizar el cliente
-                 * expuesto como window.supabaseClient aunque
-                 * el detector anterior no reconociera la
-                 * librería UMD directamente.
-                 *
-                 * Si existe supabaseClient o existe
-                 * window.supabase.auth, Supabase está
-                 * disponible para esta página.
+                 * Supabase se considera disponible
+                 * cuando existe el cliente real que
+                 * utiliza la aplicación o cuando la
+                 * librería expone window.supabase.auth.
                  */
 
-                diag.supabaseLibraryLoaded =
+                const supabaseLibraryOk =
                     !!(
                         window.supabaseClient ||
-                        window.supabase?.auth
+                        (
+                            window.supabase &&
+                            window.supabase.auth
+                        )
                     );
+
+                diag.supabaseLibraryLoaded =
+                    supabaseLibraryOk;
 
                 diag.online =
                     navigator.onLine;
@@ -968,8 +977,8 @@
             function obtenerSupabase() {
 
                 /*
-                 * Preferimos el cliente global ya creado
-                 * por la aplicación.
+                 * Usamos exclusivamente el cliente global
+                 * que ya creó la aplicación.
                  */
 
                 if (
@@ -981,47 +990,9 @@
                 }
 
                 /*
-                 * Compatibilidad con la librería UMD.
+                 * No se crea un segundo cliente Supabase
+                 * desde esta página.
                  */
-
-                if (
-                    window.supabase &&
-                    typeof window.supabase.createClient ===
-                    'function'
-                ) {
-
-                    try {
-
-                        const client =
-                            window.supabase.createClient(
-
-                                'https://zultnlogdoajehbswlih.supabase.co',
-
-                                'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
-
-                            );
-
-                        window.supabaseClient =
-                            client;
-
-                        return client;
-
-                    } catch (error) {
-
-                        console.error(
-                            'Error creando cliente Supabase:',
-                            error
-                        );
-
-                        marcarError(
-                            error
-                        );
-
-                        return null;
-
-                    }
-
-                }
 
                 return null;
 
@@ -1643,9 +1614,7 @@
 
                 }
 
-            }
-
-            // ========================================================
+            }            // ========================================================
             // COPIAR DIRECCIÓN
             // ========================================================
 
