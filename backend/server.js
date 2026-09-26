@@ -344,6 +344,10 @@ async function adminMiddleware(req, res, next) {
  *   - API de NOWPayments
  *   - API de Telnyx (eSIM)
  *   - WebSocket de LiveKit (transmisiones en vivo y videollamadas)
+ *   - SDK de WalletConnect en esm.sh
+ *   - Relay de WalletConnect (wss://relay.walletconnect.com)
+ *   - Web3Modal API
+ *   - RPCs de Polygon (Amoy y Mainnet)
  *
  * Si la CSP por defecto bloquea los scripts inline, la clase
  * .auth-ready nunca se agrega y las páginas que dependen de
@@ -368,6 +372,7 @@ app.use(
                     "'unsafe-eval'",
                     "https://cdn.jsdelivr.net",
                     "https://unpkg.com",
+                    "https://esm.sh",
                     "https://challenges.cloudflare.com",
                     "https://www.youtube.com",
                     "https://s.ytimg.com"
@@ -421,14 +426,64 @@ app.use(
 
                     /* LiveKit (transmisiones y videollamadas) */
                     "https://csariels-domo-57ujk04t.livekit.cloud",
-                    "wss://csariels-domo-57ujk04t.livekit.cloud"
+                    "wss://csariels-domo-57ujk04t.livekit.cloud",
+
+                    /* WalletConnect (relay, explorer, rpc, verify, keys) */
+                    "https://esm.sh",
+                    "https://api.web3modal.com",
+                    "https://api.web3modal.org",
+                    "https://explorer-api.walletconnect.com",
+                    "https://explorer-api.walletconnect.org",
+                    "https://relay.walletconnect.com",
+                    "wss://relay.walletconnect.com",
+                    "wss://relay.walletconnect.org",
+                    "https://pulse.walletconnect.com",
+                    "https://pulse.walletconnect.org",
+                    "https://verify.walletconnect.com",
+                    "https://verify.walletconnect.org",
+                    "https://rpc.walletconnect.com",
+                    "wss://rpc.walletconnect.com",
+                    "https://keys.walletconnect.com",
+
+                    /* RPCs de Polygon (Amoy y Mainnet) */
+                    "https://rpc-amoy.polygon.technology",
+                    "https://polygon-rpc.com",
+                    "https://polygon.llamarpc.com",
+                    "https://polygon-bor-rpc.publicnode.com",
+                    "https://1rpc.io",
+                    "https://rpc.ankr.com",
+
+                    /* Explorers públicos */
+                    "https://amoy.polygonscan.com",
+                    "https://polygonscan.com",
+                    "https://api.polygonscan.com",
+                    "https://api-amoy.polygonscan.com",
+
+                    /* Coinbase Wallet */
+                    "https://api.wallet.coinbase.com",
+                    "https://mainnet.optimism.io",
+                    "wss://www.walletlink.org",
+
+                    /* Rainbow */
+                    "https://rnbwapp.com",
+                    "https://api.rainbow.me",
+
+                    /* MetaMask */
+                    "https://metamask.app.link",
+                    "https://api.metamask.io",
+
+                    /* RPCs de fallback */
+                    "https://cloudflare-eth.com",
+                    "https://eth.llamarpc.com"
                 ],
 
                 frameSrc: [
                     "'self'",
                     "https://challenges.cloudflare.com",
                     "https://www.youtube.com",
-                    "https://player.vimeo.com"
+                    "https://player.vimeo.com",
+                    "https://verify.walletconnect.com",
+                    "https://verify.walletconnect.org"
                 ],
 
                 workerSrc: [
