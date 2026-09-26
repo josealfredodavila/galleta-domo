@@ -16,123 +16,225 @@ const router = express.Router();
 // ================================================================
 // HANDLER DE MEMBRESÍA PRO
 // ================================================================
+// IMPORTANTE:
+// - handleWebhookMembresia() valida la firma de NOWPayments.
+// - procesarWebhookMembresia() procesa directamente el payload.
+//
+// Las peticiones HTTP públicas deben utilizar
+// handleWebhookMembresia() para no saltarse la validación
+// criptográfica del webhook.
+// ================================================================
 const {
-    procesarWebhookMembresia
+    handleWebhookMembresia
 } = require('./membresia-webhook-handler');
 
 // ================================================================
 // HANDLER DE NOWPAYMENTS PARA EL MURO
-// (puede venir de routes/webhooks/nowpayments.js si existe)
+// ================================================================
+// Puede venir de:
+// routes/webhooks/nowpayments.js
+//
+// Se mantiene compatible con dos posibles formas de exportación:
+//   module.exports = function...
+// o
+//   module.exports = { procesarWebhookMuro: function... }
 // ================================================================
 let procesarWebhookMuro = null;
+
 try {
     const nowpaymentsHandler = require('./webhooks/nowpayments');
+
     if (typeof nowpaymentsHandler === 'function') {
         procesarWebhookMuro = nowpaymentsHandler;
-    } else if (nowpaymentsHandler && typeof nowpaymentsHandler.procesarWebhookMuro === 'function') {
+    } else if (
+        nowpaymentsHandler &&
+        typeof nowpaymentsHandler.procesarWebhookMuro === 'function'
+    ) {
         procesarWebhookMuro = nowpaymentsHandler.procesarWebhookMuro;
     }
 } catch (e) {
-    // El archivo puede no existir o tener otra forma. No es crítico.
-    console.log('ℹ️ routes/webhooks/nowpayments.js no disponible o sin export compatible');
+    console.log(
+        'ℹ️ routes/webhooks/nowpayments.js no disponible o sin export compatible'
+    );
 }
 
 // ================================================================
 // POST /api/webhook/nowpayments
 // ================================================================
-// Recibe los IPN de NOWPayments. Según el `order_id`, decide a qué
-// handler enrutar:
-//   - order_id empieza con "pro_" → membresía Pro
-//   - en cualquier otro caso → Muro (si el handler existe)
+// Recibe los IPN de NOWPayments.
+//
+// Según order_id:
+//   - order_id empieza con "pro_" → Membresía Pro
+//   - cualquier otro order_id → Muro P2P
+//
+// IMPORTANTE:
+// Para membresía Pro se utiliza handleWebhookMembresia()
+// y NO procesarWebhookMembresia() directamente.
+//
+// Esto garantiza que se compruebe:
+//   x-nowpayments-sig
+//   x-signature
+//   NOWPAYMENTS_IPN_SECRET
+//   rawBody
 // ================================================================
 router.post('/nowpayments', async (req, res) => {
     try {
         const payload = req.body || {};
-        const orderId = payload.order_id || '';
+        const orderId = String(payload.order_id || '');
 
-        console.log('📩 Webhook recibido en /api/webhook/nowpayments:', {
-            order_id: orderId,
-            payment_status: payload.payment_status,
-            payment_id: payload.payment_id
-        });
-
-        // 1) Membresía Pro
-        if (orderId.startsWith('pro_')) {
-            const result = await procesarWebhookMembresia(payload);
-            if (result.success) {
-                return res.status(200).json({ status: 'ok' });
+        console.log(
+            '📩 Webhook recibido en /api/webhook/nowpayments:',
+            {
+                order_id: orderId,
+                payment_status: payload.payment_status,
+                payment_id: payload.payment_id
             }
-            return res
-                .status(result.noRetry ? 200 : 500)
-                .json({ status: 'error', error: result.error });
+        );
+
+        // ============================================================
+        // 1) MEMBRESÍA PRO
+        // ============================================================
+        if (orderId.startsWith('pro_')) {
+            console.log(
+                '💳 Webhook identificado como membresía Pro:',
+                orderId
+            );
+
+            // IMPORTANTE:
+            // Este handler valida la firma de NOWPayments antes
+            // de permitir el procesamiento del pago.
+            return await handleWebhookMembresia(req, res);
         }
 
-        // 2) Muro P2P (si el handler existe)
+        // ============================================================
+        // 2) MURO P2P
+        // ============================================================
         if (procesarWebhookMuro) {
             try {
                 const result = await procesarWebhookMuro(payload);
+
                 if (result && result.success === false) {
-                    return res.status(result.noRetry ? 200 : 500).json({
-                        status: 'error',
-                        error: result.error
-                    });
+                    return res
+                        .status(result.noRetry ? 200 : 500)
+                        .json({
+                            status: 'error',
+                            error: result.error
+                        });
                 }
-                return res.status(200).json({ status: 'ok' });
+
+                return res.status(200).json({
+                    status: 'ok'
+                });
+
             } catch (e) {
-                console.error('❌ Error procesando webhook del Muro:', e);
-                return res.status(500).json({ status: 'error', error: e.message });
+                console.error(
+                    '❌ Error procesando webhook del Muro:',
+                    e
+                );
+
+                return res.status(500).json({
+                    status: 'error',
+                    error: 'Error procesando webhook del Muro'
+                });
             }
         }
 
-        // 3) Fallback: no hay handler específico
-        console.warn('⚠️ Webhook sin handler específico:', { order_id: orderId });
-        return res.status(200).json({ status: 'ok', message: 'Recibido (sin handler)' });
+        // ============================================================
+        // 3) FALLBACK
+        // ============================================================
+        console.warn(
+            '⚠️ Webhook sin handler específico:',
+            {
+                order_id: orderId
+            }
+        );
+
+        // Se devuelve 200 para evitar reintentos innecesarios
+        // cuando el pedido no pertenece a ningún handler conocido.
+        return res.status(200).json({
+            status: 'ok',
+            message: 'Recibido (sin handler)'
+        });
 
     } catch (error) {
-        console.error('❌ Error en /api/webhook/nowpayments:', error);
-        return res.status(500).json({ status: 'error', error: 'Error interno' });
+        console.error(
+            '❌ Error en /api/webhook/nowpayments:',
+            error
+        );
+
+        return res.status(500).json({
+            status: 'error',
+            error: 'Error interno'
+        });
     }
 });
 
 // ================================================================
-// POST /api/webhook/membresia (alias)
+// POST /api/webhook/membresia
+// ================================================================
+// Alias para recibir directamente el webhook de membresía.
+//
+// IMPORTANTE:
+// También utiliza handleWebhookMembresia() para que la firma
+// de NOWPayments sea obligatoria.
 // ================================================================
 router.post('/membresia', async (req, res) => {
     try {
-        const payload = req.body || {};
-        const result = await procesarWebhookMembresia(payload);
+        console.log(
+            '📩 Webhook de membresía recibido en /api/webhook/membresia'
+        );
 
-        if (result.success) {
-            return res.status(200).json({ status: 'ok' });
-        }
-        return res
-            .status(result.noRetry ? 200 : 500)
-            .json({ status: 'error', error: result.error });
+        return await handleWebhookMembresia(req, res);
 
     } catch (error) {
-        console.error('❌ Error en /api/webhook/membresia:', error);
-        return res.status(500).json({ status: 'error', error: 'Error interno' });
+        console.error(
+            '❌ Error en /api/webhook/membresia:',
+            error
+        );
+
+        return res.status(500).json({
+            status: 'error',
+            error: 'Error interno'
+        });
     }
 });
 
 // ================================================================
-// POST /api/webhook/stripe (placeholder)
+// POST /api/webhook/stripe
+// ================================================================
+// Placeholder.
+// No procesa pagos todavía.
 // ================================================================
 router.post('/stripe', (req, res) => {
-    console.log('📩 Webhook Stripe recibido (no implementado)');
-    return res.status(200).json({ received: true });
+    console.log(
+        '📩 Webhook Stripe recibido (no implementado)'
+    );
+
+    return res.status(200).json({
+        received: true
+    });
 });
 
 // ================================================================
-// POST /api/webhook/fintoc (placeholder)
+// POST /api/webhook/fintoc
+// ================================================================
+// Placeholder.
+// No procesa pagos todavía.
 // ================================================================
 router.post('/fintoc', (req, res) => {
-    console.log('📩 Webhook Fintoc recibido (no implementado)');
-    return res.status(200).json({ received: true });
+    console.log(
+        '📩 Webhook Fintoc recibido (no implementado)'
+    );
+
+    return res.status(200).json({
+        received: true
+    });
 });
 
 // ================================================================
-// GET /api/webhook/health (útil para verificar que el router vive)
+// GET /api/webhook/health
+// ================================================================
+// Útil para verificar que el router de webhooks está montado.
 // ================================================================
 router.get('/health', (req, res) => {
     return res.status(200).json({
@@ -145,5 +247,18 @@ router.get('/health', (req, res) => {
 // ================================================================
 // EXPORT
 // ================================================================
-// ⚠️ CRÍTICO: debe exportar el router, NO un objeto
+// CRÍTICO:
+// server.js hace:
+//
+// const webhookRoutes = require('./routes/webhooks');
+// app.use('/api/webhook', webhookRoutes);
+//
+// Por eso este archivo DEBE exportar directamente el Router.
+//
+// NO cambiar a:
+// module.exports = { router };
+//
+// NO cambiar a:
+// module.exports = { webhookRoutes };
+// ================================================================
 module.exports = router;
