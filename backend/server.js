@@ -342,6 +342,8 @@ async function adminMiddleware(req, res, next) {
  *   - API de QR (api.qrserver.com)
  *   - Cloudflare Turnstile
  *   - API de NOWPayments
+ *   - API de Telnyx (eSIM)
+ *   - WebSocket de LiveKit (transmisiones en vivo y videollamadas)
  *
  * Si la CSP por defecto bloquea los scripts inline, la clase
  * .auth-ready nunca se agrega y las páginas que dependen de
@@ -365,6 +367,7 @@ app.use(
                     "'unsafe-inline'",
                     "'unsafe-eval'",
                     "https://cdn.jsdelivr.net",
+                    "https://unpkg.com",
                     "https://challenges.cloudflare.com",
                     "https://www.youtube.com",
                     "https://s.ytimg.com"
@@ -391,19 +394,34 @@ app.use(
 
                 mediaSrc: [
                     "'self'",
+                    "data:",
                     "blob:",
                     "https:"
                 ],
 
                 connectSrc: [
                     "'self'",
+
+                    /* Supabase (REST + Realtime) */
                     "https://zultnlogdoajehbswlih.supabase.co",
                     "wss://zultnlogdoajehbswlih.supabase.co",
+
+                    /* QR dinámico */
                     "https://api.qrserver.com",
+
+                    /* Cloudflare Turnstile */
                     "https://challenges.cloudflare.com",
+
+                    /* NOWPayments */
                     "https://api.nowpayments.io",
                     "https://api-sandbox.nowpayments.io",
-                    "https://api.telnyx.com"
+
+                    /* Telnyx (eSIM) */
+                    "https://api.telnyx.com",
+
+                    /* LiveKit (transmisiones y videollamadas) */
+                    "https://csariels-domo-57ujk04t.livekit.cloud",
+                    "wss://csariels-domo-57ujk04t.livekit.cloud"
                 ],
 
                 frameSrc: [
