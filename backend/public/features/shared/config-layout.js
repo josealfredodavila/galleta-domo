@@ -12,7 +12,6 @@
     function getSupabase() {
         if (window.supabaseClient) return window.supabaseClient;
         if (window.supabase && window.supabase.createClient) {
-            // Fallback: crear cliente si no existe
             window.supabaseClient = window.supabase.createClient(
                 'https://zultnlogdoajehbswlih.supabase.co',
                 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
@@ -80,6 +79,9 @@
     // ================================================================
     // ITEM de lista
     // ================================================================
+    // ✅ FIX: Si NO tiene href ni onclick, se renderiza como <div> no clickeable
+    // Esto evita que items informativos disparen links por accidente en móvil.
+    // ================================================================
     function cfgRenderItem(opts) {
         opts = opts || {};
         const icon = opts.icon ? `<div class="cfg-item-icon">${window.cfgIcon(opts.icon)}</div>` : '';
@@ -92,20 +94,47 @@
         const extraClass = opts.class || '';
         const extraStyle = opts.style ? `style="${opts.style}"` : '';
 
-        const tag = href ? 'a' : 'button';
-        const attr = href 
-            ? `href="${href}"` 
-            : `type="button"${onclick ? ` onclick="${onclick}"` : ''}`;
+        // ✅ DETECCIÓN: item informativo (sin acción)
+        const esInformativo = !href && !onclick;
 
+        if (esInformativo) {
+            // Renderizar como div no clickeable
+            return `
+                <div class="cfg-item ${extraClass}" ${id} ${extraStyle} style="cursor: default; pointer-events: none; ${opts.style || ''}">
+                    ${icon}
+                    <div class="cfg-item-content">
+                        <div class="cfg-item-title">${title}</div>
+                        ${desc}
+                    </div>
+                    ${chevron}
+                </div>
+            `;
+        }
+
+        // Item con href → <a>
+        if (href) {
+            return `
+                <a href="${href}" class="cfg-item ${extraClass}" ${id} ${extraStyle}>
+                    ${icon}
+                    <div class="cfg-item-content">
+                        <div class="cfg-item-title">${title}</div>
+                        ${desc}
+                    </div>
+                    ${chevron}
+                </a>
+            `;
+        }
+
+        // Item con onclick → <button>
         return `
-            <${tag} ${attr} class="cfg-item ${extraClass}" ${id} ${extraStyle}>
+            <button type="button" onclick="${onclick}" class="cfg-item ${extraClass}" ${id} ${extraStyle}>
                 ${icon}
                 <div class="cfg-item-content">
                     <div class="cfg-item-title">${title}</div>
                     ${desc}
                 </div>
                 ${chevron}
-            </${tag}>
+            </button>
         `;
     }
 
@@ -219,7 +248,6 @@
                 });
             }
 
-            // 🔄 Cargar preferencias desde Supabase al iniciar
             await cfgCargarPreferencias();
 
             if (typeof opts.onReady === 'function') {
@@ -244,7 +272,6 @@
     let prefsCache = null;
     let supabaseReady = false;
 
-    // Cargar de localStorage (rápido, síncrono)
     function cfgGetPrefsLocal() {
         try {
             return JSON.parse(localStorage.getItem(CFG_STORAGE_KEY) || '{}');
@@ -253,7 +280,6 @@
         }
     }
 
-    // Guardar en localStorage (rápido, síncrono)
     function cfgSavePrefsLocal(prefs) {
         try {
             localStorage.setItem(CFG_STORAGE_KEY, JSON.stringify(prefs));
@@ -262,12 +288,9 @@
         }
     }
 
-    // Cargar desde Supabase (async) + fallback a localStorage
     async function cfgCargarPreferencias() {
-        // 1. Cargar rápido desde localStorage
         prefsCache = cfgGetPrefsLocal();
 
-        // 2. Intentar sincronizar con Supabase
         const client = getSupabase();
         if (!client) {
             console.warn('⚠️ Supabase no disponible. Usando solo localStorage.');
@@ -278,7 +301,6 @@
             const { data, error } = await client.rpc('obtener_mis_preferencias');
 
             if (error) {
-                // Si el usuario no está autenticado, no es error crítico
                 if (error.message && error.message.includes('Usuario no autenticado')) {
                     console.log('ℹ️ Usuario no autenticado. Usando localStorage.');
                     return prefsCache;
@@ -286,7 +308,6 @@
                 throw error;
             }
 
-            // Supabase es la fuente de verdad
             if (data && typeof data === 'object') {
                 prefsCache = data;
                 cfgSavePrefsLocal(data);
@@ -302,7 +323,6 @@
         }
     }
 
-    // Guardar TODAS las preferencias
     async function cfgSetPrefs(prefs) {
         prefsCache = prefs;
         cfgSavePrefsLocal(prefs);
@@ -321,13 +341,11 @@
         }
     }
 
-    // Obtener UNA preferencia
     function cfgGetPref(key, defaultVal) {
         if (!prefsCache) prefsCache = cfgGetPrefsLocal();
         return prefsCache[key] !== undefined ? prefsCache[key] : defaultVal;
     }
 
-    // Guardar UNA preferencia (la más usada por los toggles)
     async function cfgSetPref(key, value) {
         if (!prefsCache) prefsCache = cfgGetPrefsLocal();
         prefsCache[key] = value;
@@ -354,7 +372,6 @@
         }
     }
 
-    // Sincronizar manualmente (útil cuando el usuario vuelve online)
     async function cfgSincronizar() {
         await cfgCargarPreferencias();
         return prefsCache;
