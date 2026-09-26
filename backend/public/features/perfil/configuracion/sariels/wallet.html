@@ -582,7 +582,7 @@
     <script src="../../../shared/config-layout.js"></script>
 
     <!-- RUTA CORRECTA -->
-    <script src="../../../shared/js/wallet-connect.js"></script>
+    <script src="../../shared/js/wallet-connect.js"></script>
 
     <!-- ==========================================================
          WALLET PAGE
@@ -595,19 +595,6 @@
 
         const $ = (sel) =>
             document.querySelector(sel);
-
-        /*
-         * Timeout máximo para operaciones de Supabase.
-         *
-         * Antes:
-         *
-         * await client.auth.getSession()
-         *
-         * podía quedarse esperando indefinidamente.
-         *
-         * Ahora nunca permitimos que la pantalla quede
-         * congelada para siempre.
-         */
 
         const SUPABASE_TIMEOUT_MS = 10000;
 
@@ -769,11 +756,6 @@
 
         async function cargarEstadoWallet() {
 
-            /*
-             * Evita que varios eventos simultáneos
-             * ejecuten consultas duplicadas.
-             */
-
             if (cargandoWallet) {
                 return;
             }
@@ -814,10 +796,6 @@
                     Boolean(session)
                 );
 
-                /*
-                 * Usuario no autenticado.
-                 */
-
                 if (!session) {
 
                     mostrarEstado(
@@ -826,11 +804,6 @@
 
                     return;
                 }
-
-                /*
-                 * Usuario autenticado.
-                 * Consultamos solamente su wallet.
-                 */
 
                 const resultadoUsuario =
                     await conTimeout(
@@ -861,21 +834,12 @@
                         error
                     );
 
-                    /*
-                     * Un error de consulta no debe
-                     * dejar la pantalla congelada.
-                     */
-
                     mostrarError(
                         'No fue posible consultar tu wallet. Intenta nuevamente.'
                     );
 
                     return;
                 }
-
-                /*
-                 * Wallet encontrada.
-                 */
 
                 if (
                     usuario &&
@@ -888,10 +852,6 @@
 
                     return;
                 }
-
-                /*
-                 * Usuario autenticado pero sin wallet.
-                 */
 
                 mostrarEstado(
                     '#estadoSinWallet'
@@ -1408,7 +1368,7 @@
         }
 
         // ========================================================
-        // DESCONectar WALLET
+        // DESCONECTAR WALLET
         // ========================================================
 
         window.onDesconectarWallet =
@@ -1662,12 +1622,6 @@
 
         async function iniciarWalletPage() {
 
-            /*
-             * Esperamos brevemente para permitir
-             * que los scripts anteriores terminen
-             * de inicializarse.
-             */
-
             await new Promise(
                 resolve =>
                     setTimeout(
@@ -1678,14 +1632,6 @@
 
             await cargarEstadoWallet();
         }
-
-        /*
-         * El script está al final del body.
-         * Si DOMContentLoaded todavía no ocurrió,
-         * esperamos el evento.
-         *
-         * Si ya ocurrió, iniciamos directamente.
-         */
 
         if (
             document.readyState ===
