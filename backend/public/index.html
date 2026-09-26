@@ -277,19 +277,81 @@
         .panel-header h2 { font-size: 0.85rem; color: var(--gold); }
         .panel-badge { font-size: 0.6rem; background: rgba(212, 175, 55, 0.15); color: var(--gold); padding: 2px 12px; border-radius: 20px; }
 
-        .domo-card { text-align: center; }
-        .domo-price { font-size: 1.5rem; font-weight: 700; color: var(--gold); font-family: 'Orbitron', monospace; }
-        .qty-control { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 12px 0; }
-        .qty-btn { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--glass-border); background: transparent; color: var(--text-primary); font-size: 1rem; cursor: pointer; }
-        .qty-btn:hover { border-color: var(--gold); color: var(--gold); }
-        .qty-value { font-size: 1.1rem; font-weight: 600; color: var(--gold); }
+        /* =========================================
+           CÓMO OBTENER ES.STOKS (NUEVO)
+           ========================================= */
+        .pasos-flujo {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            margin-top: 14px;
+        }
 
-        .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .status-item { background: rgba(0,0,0,0.2); padding: 10px; border-radius: 10px; text-align: center; }
-        .status-label { font-size: 0.7rem; color: var(--text-muted); }
-        .status-value { font-size: 1.1rem; font-weight: 700; color: var(--gold); }
-        .progress-bar { width: 100%; height: 4px; background: rgba(212, 175, 55, 0.1); border-radius: 2px; margin: 4px 0; }
-        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-light)); border-radius: 2px; }
+        .paso-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            padding: 12px 14px;
+            background: rgba(0,0,0,0.25);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            transition: var(--transition);
+        }
+
+        .paso-item:hover {
+            border-color: rgba(212, 175, 55, 0.4);
+            background: rgba(0,0,0,0.35);
+        }
+
+        .paso-numero {
+            flex-shrink: 0;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', monospace;
+            font-weight: 900;
+            font-size: 0.85rem;
+            box-shadow: 0 4px 12px rgba(212, 175, 55, 0.25);
+        }
+
+        .paso-texto {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .paso-texto .titulo {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 3px;
+        }
+
+        .paso-texto .desc {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .aviso-presencial {
+            margin-top: 16px;
+            padding: 12px 16px;
+            background: rgba(0, 214, 143, 0.05);
+            border: 1px solid rgba(0, 214, 143, 0.2);
+            border-left: 3px solid var(--success);
+            border-radius: 10px;
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .aviso-presencial strong {
+            color: var(--success);
+        }
 
         .internet-grid-cards {
             display: grid;
@@ -518,41 +580,66 @@
                 </div>
             </div>
 
-            <div class="grid-2">
-                <section class="panel">
-                    <div class="panel-header"><h2 data-clave="comprar_domo_titulo">◈ Comprar Domo</h2><span class="panel-badge" data-clave="comprar_domo_badge">Nuevo</span></div>
-                    <div class="panel-body">
-                        <div class="domo-card">
-                            <span class="domo-price">75 MXN</span>
-                            <div class="qty-control">
-                                <button class="qty-btn" id="decreaseQty">−</button>
-                                <span class="qty-value" id="domoQuantity">1</span>
-                                <button class="qty-btn" id="increaseQty">+</button>
-                            </div>
-                            <button class="btn btn-gold" style="width:100%;" id="buyDomo" onclick="comprarDomo()" data-clave="comprar_domo_btn">Comprar Domo</button>
-                            
-                            <p style="font-size:0.55rem;color:var(--text-muted);margin-top:8px;line-height:1.5;">
-                                <span data-clave="comprar_domo_disclaimer_1">◈ Recibes</span> <strong style="color:var(--gold);">1 ES.stoks</strong> <span data-clave="comprar_domo_disclaimer_2">por domo · ES.stoks es</span> <strong style="color:var(--gold);" data-clave="comprar_domo_disclaimer_3">transferible en P2P</strong> <span data-clave="comprar_domo_disclaimer_4">· NFT Domo</span> <strong style="color:var(--gold);" data-clave="comprar_domo_disclaimer_5">intransferible</strong> <span data-clave="comprar_domo_disclaimer_6">· Canje en Puebla</span> <strong style="color:var(--gold);" data-clave="comprar_domo_disclaimer_7">30 días</strong>
-                            </p>
-                            <p style="font-size:0.5rem;color:var(--text-muted);margin-top:4px;" data-clave="comprar_domo_disclaimer_8">◈ Venta física en Puebla · Sin envíos</p>
-                            
-                            <p style="font-size:0.55rem;color:var(--text-muted);margin-top:6px;" data-clave="comprar_domo_wallet">◈ Conecta tu wallet en tu <a href="/features/perfil/perfil.html" style="color:var(--gold);" class="protected-link" onclick="return protegerYNavegar(event, this.href)">perfil</a></p>
-                        </div>
-                    </div>
-                </section>
+            <!-- =========================================
+                 CÓMO OBTENER ES.STOKS (VENTA PRESENCIAL)
+                 ========================================= -->
+            <div class="panel" style="margin-bottom: 30px;">
+                <div class="panel-header">
+                    <h2 data-clave="como_obtener_titulo">◈ Cómo obtener Es.stoks</h2>
+                    <span class="panel-badge" data-clave="como_obtener_badge">Venta presencial</span>
+                </div>
+                <div class="panel-body">
+                    <p style="font-size:0.78rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 8px;" data-clave="como_obtener_intro">
+                        En Sariel's <strong>no vendemos domos en línea</strong>. Todo es <strong>presencial</strong>, en nuestra tienda física en Puebla. Así de simple:
+                    </p>
 
-                <section class="panel">
-                    <div class="panel-header"><h2 data-clave="tu_estado_titulo">◈ Tu Estado</h2><span class="panel-badge" data-clave="tu_estado_badge">Actualizado</span></div>
-                    <div class="panel-body">
-                        <div class="status-grid">
-                            <div class="status-item"><div class="status-label" data-clave="estado_domos">◈ Domos</div><div class="status-value" id="domosCount">0</div></div>
-                            <div class="status-item"><div class="status-label" data-clave="estado_tokens">◈ Es.stoks</div><div class="status-value" id="tokensCount">0</div></div>
-                            <div class="status-item" style="grid-column: span 2;"><div class="status-label" data-clave="estado_progreso">◈ Progreso NFT</div><div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%;"></div></div><span id="progressText">0 / 12</span></div>
-                            <div class="status-item" style="grid-column: span 2;"><div class="status-label" data-clave="estado_nft">◈ NFT</div><div class="status-value" id="haCanjeado">No</div></div>
+                    <div class="pasos-flujo">
+                        <div class="paso-item">
+                            <div class="paso-numero">1</div>
+                            <div class="paso-texto">
+                                <div class="titulo" data-clave="paso_1_titulo">◈ Visítanos en Puebla</div>
+                                <div class="desc" data-clave="paso_1_desc">Ven a nuestra tienda física. Sin envíos, sin intermediarios.</div>
+                            </div>
                         </div>
-                        <div style="font-size:0.6rem;color:var(--text-muted);text-align:center;margin-top:8px;" data-clave="estado_canjea">Canjea tu NFT desde tu <a href="/features/perfil/perfil.html" style="color:var(--gold);" class="protected-link" onclick="return protegerYNavegar(event, this.href)">perfil</a></div>
+
+                        <div class="paso-item">
+                            <div class="paso-numero">2</div>
+                            <div class="paso-texto">
+                                <div class="titulo" data-clave="paso_2_titulo">◈ Compra tus domos en efectivo</div>
+                                <div class="desc" data-clave="paso_2_desc">Paga en persona. Cada domo cuesta 75 MXN.</div>
+                            </div>
+                        </div>
+
+                        <div class="paso-item">
+                            <div class="paso-numero">3</div>
+                            <div class="paso-texto">
+                                <div class="titulo" data-clave="paso_3_titulo">◈ Recibe tu QR único</div>
+                                <div class="desc" data-clave="paso_3_desc">Te entregamos un QR impreso exclusivo para ti. 1 QR = 1 ES.TOKS.</div>
+                            </div>
+                        </div>
+
+                        <div class="paso-item">
+                            <div class="paso-numero">4</div>
+                            <div class="paso-texto">
+                                <div class="titulo" data-clave="paso_4_titulo">◈ Escanéalo desde tu perfil</div>
+                                <div class="desc" data-clave="paso_4_desc">Entra a tu perfil y escanea el QR. Se te acreditan 1 ES.TOKS automáticamente.</div>
+                            </div>
+                        </div>
+
+                        <div class="paso-item">
+                            <div class="paso-numero">5</div>
+                            <div class="paso-texto">
+                                <div class="titulo" data-clave="paso_5_titulo">◈ Junta 12 y canjea tu NFT Domo</div>
+                                <div class="desc" data-clave="paso_5_desc">Al llegar a 12 ES.TOKS puedes canjear tu NFT Domo exclusivo.</div>
+                            </div>
+                        </div>
                     </div>
-                </section>
+
+                    <div class="aviso-presencial">
+                        <strong data-clave="aviso_presencial_titulo">ℹ️ Importante:</strong>
+                        <span data-clave="aviso_presencial_desc">No vendemos en línea. Toda la venta es <strong>presencial en Puebla</strong>, y los pagos se realizan <strong>en efectivo</strong>. Si tienes dudas, contáctanos desde tu perfil.</span>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -776,33 +863,6 @@
             } catch (error) { if (window.showToast) window.showToast('❌ Error generando QR', 'error'); }
         }
 
-        async function comprarDomo() {
-            const qtyEl = document.getElementById('domoQuantity');
-            const qty = parseInt(qtyEl.textContent, 10) || 1;
-            const btn = document.getElementById('buyDomo');
-            if (!window.app || !window.app.usuario) { if (window.showToast) window.showToast('⚠️ Inicia sesión para comprar', 'error'); return; }
-            btn.disabled = true;
-            btn.textContent = '⏳ Creando pago...';
-            try {
-                const { data: sessionData, error: sessionError } = await window.supabase.auth.getSession();
-                if (sessionError) throw sessionError;
-                const accessToken = sessionData.session?.access_token;
-                if (!accessToken) throw new Error('Sesión no disponible');
-                const idempotencyKey = 'domo_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
-                const response = await fetch('/api/domos/comprar', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + accessToken, 'Idempotency-Key': idempotencyKey },
-                    body: JSON.stringify({ cantidad: qty })
-                });
-                const result = await response.json().catch(() => ({}));
-                if (!response.ok || !result.success) { throw new Error(result.error || 'No se pudo crear el pago'); }
-                const paymentUrl = result.data?.payment_url;
-                if (paymentUrl) { window.location.href = paymentUrl; return; }
-                throw new Error('NOWPayments no devolvió un enlace de pago');
-            } catch (e) { console.error('Error comprando domo:', e); if (window.showToast) window.showToast('❌ ' + (e.message || 'No se pudo crear el pago'), 'error'); }
-            finally { btn.disabled = false; btn.textContent = 'Comprar Domo'; }
-        }
-
         // =========================================
         // CARRUSEL EN VIVO - CONECTADO A SUPABASE
         // =========================================
@@ -811,7 +871,6 @@
             if (!wrapper) return;
 
             try {
-                // 1. Consultar transmisiones activas + datos del canal
                 const { data: transmisiones, error } = await window.supabase
                     .from('transmisiones')
                     .select(`
@@ -835,7 +894,6 @@
 
                 if (error) throw error;
 
-                // 2. Si no hay nadie en vivo, mostrar empty state
                 if (!transmisiones || transmisiones.length === 0) {
                     wrapper.innerHTML = `
                         <div class="carrusel-titulo">
@@ -850,7 +908,6 @@
                     return;
                 }
 
-                // 3. Generar el HTML de cada item
                 const generarItemHTML = (t) => {
                     const g = t.grupo || {};
                     const avatar = g.avatar_url || '';
@@ -874,12 +931,10 @@
                     `;
                 };
 
-                // 4. Separar en dos filas
                 const mitad = Math.ceil(transmisiones.length / 2);
                 const fila1 = transmisiones.slice(0, mitad);
                 const fila2 = transmisiones.slice(mitad);
 
-                // 5. Función para construir una fila (con duplicado para scroll infinito)
                 const construirFila = (items, clase) => {
                     const itemsFila = items.length > 0 ? items : transmisiones;
                     const itemsHTML = itemsFila.map(generarItemHTML).join('');
@@ -887,7 +942,6 @@
                     return `<div class="carrusel-fila ${clase}">${itemsHTML}${itemsDuplicados}</div>`;
                 };
 
-                // 6. Inyectar ambas filas manteniendo el título
                 wrapper.innerHTML = `
                     <div class="carrusel-titulo">
                         <span class="dot"></span>
@@ -912,7 +966,6 @@
             }
         }
 
-        // Función auxiliar para cuando el usuario le da clic a un item del carrusel
         function abrirCanalDesdeCarrusel(grupoId) {
             window.location.href = `/features/grupos/grupos.html?grupo=${grupoId}`;
         }
@@ -924,7 +977,6 @@
         window.iniciarSesionGlobal = iniciarSesionGlobal;
         window.cerrarSesionGlobal = cerrarSesionGlobal;
         window.generarQR = generarQR;
-        window.comprarDomo = comprarDomo;
         window.mostrarErrorEnPantalla = mostrarErrorEnPantalla;
         window.protegerYNavegar = protegerYNavegar;
         window.cambiarIdiomaGlobal = cambiarIdiomaGlobal;
@@ -932,16 +984,9 @@
         window.cargarCarruselEnVivo = cargarCarruselEnVivo;
 
         document.addEventListener('DOMContentLoaded', function() {
-            // Inicializar carrusel en vivo
             cargarCarruselEnVivo();
-            // Refrescar cada 30 segundos
             setInterval(cargarCarruselEnVivo, 30000);
 
-            const qtyDisplay = document.getElementById('domoQuantity');
-            const decreaseBtn = document.getElementById('decreaseQty');
-            const increaseBtn = document.getElementById('increaseQty');
-            if (decreaseBtn) { decreaseBtn.addEventListener('click', () => { let val = parseInt(qtyDisplay.textContent, 10) || 1; if (val > 1) qtyDisplay.textContent = val - 1; }); }
-            if (increaseBtn) { increaseBtn.addEventListener('click', () => { let val = parseInt(qtyDisplay.textContent, 10) || 1; if (val < 10) qtyDisplay.textContent = val + 1; }); }
             setTimeout(async () => {
                 try {
                     if (typeof window.inicializarIdiomas === 'function') { await window.inicializarIdiomas(); }
