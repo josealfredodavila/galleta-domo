@@ -494,4 +494,130 @@
                 // Guardar en Supabase
                 await guardarWalletEnSupabase(result.address);
 
-                cfgToast('✅ Wallet conectada',
+                cfgToast('✅ Wallet conectada', 'success', 3000);
+
+                // Recargar UI
+                setTimeout(async () => {
+                    await cargarEstadoWallet();
+                }, 500);
+
+            } catch (e) {
+                console.error('Error conectando wallet:', e);
+
+                if (e.message === 'USER_CANCELLED') {
+                    cfgToast('Cancelaste la conexión', 'warning');
+                    return;
+                }
+
+                if (e.message === 'WALLETCONNECT_PROJECT_ID_NOT_CONFIGURED') {
+                    cfgToast('⚠️ WalletConnect no está configurado. Contacta al admin.', 'error', 6000);
+                    return;
+                }
+
+                cfgToast('❌ Error: ' + (e.message || 'Desconocido'), 'error', 5000);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = '◈ Conectar Wallet';
+                }
+            }
+        };
+
+        async function guardarWalletEnSupabase(address) {
+            const client = window.supabaseClient || 
+                (window.supabase && window.supabase.createClient(
+                    'https://zultnlogdoajehbswlih.supabase.co',
+                    'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
+                ));
+
+            const { error } = await client.rpc('vincular_wallet', {
+                p_wallet_address: address,
+                p_chain_id: '137',
+                p_network_name: 'polygon'
+            });
+
+            if (error) throw new Error('Error guardando wallet: ' + error.message);
+        }
+
+        window.onDesconectarWallet = async () => {
+            const ok = await cfgConfirm({
+                title: '¿Desconectar wallet?',
+                text: 'Tu wallet ya no estará vinculada a tu cuenta.',
+                confirmText: 'Desconectar',
+                cancelText: 'Cancelar',
+                danger: true,
+            });
+
+            if (!ok) return;
+
+            cfgToast('⏳ Desconectando...', '', 3000);
+
+            try {
+                // Desconectar SarWallet
+                if (window.SarWallet) {
+                    await window.SarWallet.desconectar();
+                }
+
+                // Desvincular de Supabase
+                const client = window.supabaseClient || 
+                    (window.supabase && window.supabase.createClient(
+                        'https://zultnlogdoajehbswlih.supabase.co',
+                        'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
+                    ));
+
+                const { error } = await client.rpc('desvincular_wallet');
+                if (error) console.warn('Error desvinculando:', error);
+
+                cfgToast('✅ Wallet desconectada', 'success');
+
+                setTimeout(async () => {
+                    await cargarEstadoWallet();
+                }, 500);
+
+            } catch (e) {
+                console.error('Error desconectando:', e);
+                cfgToast('❌ Error: ' + e.message, 'error');
+            }
+        };
+
+        window.onCopiarDireccion = () => {
+            const el = $('#walletAddress');
+            const address = el.getAttribute('data-full') || el.textContent;
+            
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(address).then(() => {
+                    cfgToast('📋 Dirección copiada', 'success');
+                }).catch(() => {
+                    cfgToast('⚠️ No se pudo copiar', 'warning');
+                });
+            }
+        };
+
+        window.onVerExplorer = () => {
+            const el = $('#walletAddress');
+            const address = el.getAttribute('data-full');
+            if (address) {
+                window.open('https://polygonscan.com/address/' + address, '_blank', 'noopener');
+            }
+        };
+
+        window.onComoFunciona = () => {
+            cfgToast('ℹ️ Tu wallet se vincula solo para lectura. Sariel\'s NUNCA mueve tus fondos.', 'success', 5000);
+        };
+
+        window.onSeguridadInfo = () => {
+            cfgToast('🔒 NUNCA compartas tu frase semilla.', 'warning', 6000);
+        };
+
+        // ============================================================
+        // INICIALIZAR
+        // ============================================================
+        window.addEventListener('DOMContentLoaded', async () => {
+            await new Promise(resolve => setTimeout(resolve, 400));
+            await cargarEstadoWallet();
+        });
+
+    })();
+    </script>
+</body>
+</html>
