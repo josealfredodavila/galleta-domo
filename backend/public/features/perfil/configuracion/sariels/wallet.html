@@ -581,7 +581,11 @@
 
     <script src="../../../shared/config-layout.js"></script>
 
-    <!-- RUTA CORRECTA -->
+    <!-- IMPORTANTE:
+         Desde configuracion/sariels/ hasta perfil/shared/js/
+         son DOS niveles:
+         ../../shared/js/wallet-connect.js
+    -->
     <script src="../../shared/js/wallet-connect.js"></script>
 
     <!-- ==========================================================
@@ -640,35 +644,75 @@
         }
 
         // ========================================================
+        // DETECTAR ERROR DE RED
+        // ========================================================
+
+        function esErrorDeRed(error) {
+
+            if (!error) {
+                return !navigator.onLine;
+            }
+
+            const mensaje =
+                String(
+                    error.message ||
+                    error.name ||
+                    error ||
+                    ''
+                ).toLowerCase();
+
+            return (
+                !navigator.onLine ||
+                error instanceof TypeError ||
+                mensaje.includes('failed to fetch') ||
+                mensaje.includes('networkerror') ||
+                mensaje.includes('network error') ||
+                mensaje.includes('fetch failed') ||
+                mensaje.includes('load failed') ||
+                mensaje.includes('connection')
+            );
+        }
+
+        // ========================================================
         // TIMEOUT
         // ========================================================
 
-        function conTimeout(promise, timeoutMs, mensaje) {
+        function conTimeout(
+            promise,
+            timeoutMs,
+            mensaje
+        ) {
 
             let timeoutId;
+
+            const operacion =
+                Promise.resolve(promise);
 
             const timeoutPromise =
                 new Promise((_, reject) => {
 
-                    timeoutId = setTimeout(() => {
+                    timeoutId =
+                        setTimeout(() => {
 
-                        reject(
-                            new Error(
-                                mensaje ||
-                                'La operación tardó demasiado.'
-                            )
-                        );
+                            reject(
+                                new Error(
+                                    mensaje ||
+                                    'La operación tardó demasiado.'
+                                )
+                            );
 
-                    }, timeoutMs);
+                        }, timeoutMs);
 
                 });
 
             return Promise.race([
-                promise.finally(() => {
-                    clearTimeout(timeoutId);
-                }),
+                operacion,
                 timeoutPromise
-            ]);
+            ]).finally(() => {
+
+                clearTimeout(timeoutId);
+
+            });
         }
 
         // ========================================================
@@ -678,6 +722,7 @@
         async function obtenerSesionSegura(client) {
 
             if (!client) {
+
                 throw new Error(
                     'SUPABASE_NOT_AVAILABLE'
                 );
@@ -691,12 +736,14 @@
                 );
 
             if (!resultado) {
+
                 throw new Error(
                     'SUPABASE_EMPTY_RESPONSE'
                 );
             }
 
             if (resultado.error) {
+
                 throw resultado.error;
             }
 
@@ -742,6 +789,7 @@
                 $('#textoEstadoError');
 
             if (texto) {
+
                 texto.textContent =
                     mensaje ||
                     'No fue posible consultar tu sesión. Intenta nuevamente.';
@@ -764,6 +812,13 @@
 
             mostrarEstado('#estadoCargando');
 
+            if ($('#textoEstadoCargando')) {
+
+                $('#textoEstadoCargando')
+                    .textContent =
+                    'Cargando tu wallet...';
+            }
+
             try {
 
                 const client =
@@ -776,7 +831,7 @@
                     );
 
                     mostrarError(
-                        'Supabase no está disponible en este momento.'
+                        'Supabase no está disponible en este momento. Recarga la página e inténtalo nuevamente.'
                     );
 
                     return;
@@ -804,6 +859,10 @@
 
                     return;
                 }
+
+                console.log(
+                    '🔎 Consultando wallet del usuario...'
+                );
 
                 const resultadoUsuario =
                     await conTimeout(
@@ -834,9 +893,20 @@
                         error
                     );
 
-                    mostrarError(
-                        'No fue posible consultar tu wallet. Intenta nuevamente.'
-                    );
+                    if (
+                        esErrorDeRed(error)
+                    ) {
+
+                        mostrarError(
+                            'No hay una conexión estable con internet. Verifica tu conexión e inténtalo nuevamente.'
+                        );
+
+                    } else {
+
+                        mostrarError(
+                            'No fue posible consultar tu wallet. Intenta nuevamente.'
+                        );
+                    }
 
                     return;
                 }
@@ -868,6 +938,14 @@
                 );
 
                 if (
+                    esErrorDeRed(error)
+                ) {
+
+                    mostrarError(
+                        'No hay una conexión estable con internet. Verifica tu conexión e inténtalo nuevamente.'
+                    );
+
+                } else if (
                     error &&
                     error.message ===
                         'SUPABASE_SESSION_TIMEOUT'
@@ -887,10 +965,20 @@
                         'La consulta de tu wallet tardó demasiado. Inténtalo nuevamente.'
                     );
 
+                } else if (
+                    error &&
+                    error.message ===
+                        'SUPABASE_NOT_AVAILABLE'
+                ) {
+
+                    mostrarError(
+                        'Supabase no está disponible en este momento. Recarga la página e inténtalo nuevamente.'
+                    );
+
                 } else {
 
                     mostrarError(
-                        'No fue posible cargar el estado de tu wallet.'
+                        'No fue posible cargar el estado de tu wallet. Intenta nuevamente.'
                     );
                 }
 
@@ -904,7 +992,9 @@
         // MOSTRAR WALLET CONECTADA
         // ========================================================
 
-        function mostrarWalletConectada(address) {
+        function mostrarWalletConectada(
+            address
+        ) {
 
             mostrarEstado(
                 '#estadoWalletConectada'
@@ -937,21 +1027,27 @@
                 if (red) {
 
                     if ($('#walletNetwork')) {
+
                         $('#walletNetwork')
                             .textContent =
-                            red.info.name;
+                            red.info?.name ||
+                            'Polygon Amoy';
                     }
 
                     if ($('#walletRed')) {
+
                         $('#walletRed')
                             .textContent =
-                            red.nombre;
+                            red.nombre ||
+                            'Amoy';
                     }
 
                     if ($('#walletChainId')) {
+
                         $('#walletChainId')
                             .textContent =
-                            red.chainId;
+                            red.chainId ||
+                            80002;
                     }
                 }
             }
@@ -1233,7 +1329,7 @@
                     );
 
                     if (
-                        e.message ===
+                        e?.message ===
                         'USER_CANCELLED'
                     ) {
 
@@ -1246,7 +1342,7 @@
                     }
 
                     if (
-                        e.message ===
+                        e?.message ===
                         'WALLETCONNECT_PROJECT_ID_NOT_CONFIGURED'
                     ) {
 
@@ -1260,7 +1356,7 @@
                     }
 
                     if (
-                        e.message ===
+                        e?.message ===
                         'WALLET_MODULE_NOT_LOADED'
                     ) {
 
@@ -1274,7 +1370,20 @@
                     }
 
                     if (
-                        e.message ===
+                        esErrorDeRed(e)
+                    ) {
+
+                        cfgToast(
+                            '📶 No hay una conexión estable con internet. Inténtalo nuevamente.',
+                            'error',
+                            6000
+                        );
+
+                        return;
+                    }
+
+                    if (
+                        e?.message ===
                         'SUPABASE_SESSION_TIMEOUT'
                     ) {
 
@@ -1287,10 +1396,24 @@
                         return;
                     }
 
+                    if (
+                        e?.message ===
+                        'SUPABASE_NOT_AVAILABLE'
+                    ) {
+
+                        cfgToast(
+                            '❌ Supabase no está disponible. Recarga la página.',
+                            'error',
+                            5000
+                        );
+
+                        return;
+                    }
+
                     cfgToast(
                         '❌ Error: ' +
                         (
-                            e.message ||
+                            e?.message ||
                             'Desconocido'
                         ),
                         'error',
@@ -1340,29 +1463,33 @@
                 );
             }
 
-            const { error } =
-                await client.rpc(
-                    'vincular_wallet',
-                    {
-                        p_wallet_address:
-                            address,
+            const resultado =
+                await conTimeout(
+                    client.rpc(
+                        'vincular_wallet',
+                        {
+                            p_wallet_address:
+                                address,
 
-                        p_chain_id:
-                            String(
-                                chainId ||
-                                80002
-                            ),
+                            p_chain_id:
+                                String(
+                                    chainId ||
+                                    80002
+                                ),
 
-                        p_network_name:
-                            'polygon-amoy'
-                    }
+                            p_network_name:
+                                'polygon-amoy'
+                        }
+                    ),
+                    SUPABASE_TIMEOUT_MS,
+                    'SUPABASE_SAVE_WALLET_TIMEOUT'
                 );
 
-            if (error) {
+            if (resultado?.error) {
 
                 throw new Error(
                     'Error guardando wallet: ' +
-                    error.message
+                    resultado.error.message
                 );
             }
         }
@@ -1415,7 +1542,7 @@
 
                     if (client) {
 
-                        const { error } =
+                        const resultado =
                             await conTimeout(
                                 client.rpc(
                                     'desvincular_wallet'
@@ -1424,11 +1551,11 @@
                                 'SUPABASE_DISCONNECT_TIMEOUT'
                             );
 
-                        if (error) {
+                        if (resultado?.error) {
 
                             throw new Error(
                                 'Error desvinculando wallet: ' +
-                                error.message
+                                resultado.error.message
                             );
                         }
                     }
@@ -1447,14 +1574,38 @@
                         e
                     );
 
-                    cfgToast(
-                        '❌ Error: ' +
-                        (
-                            e.message ||
-                            'Desconocido'
-                        ),
-                        'error'
-                    );
+                    if (
+                        esErrorDeRed(e)
+                    ) {
+
+                        cfgToast(
+                            '📶 No hay una conexión estable con internet.',
+                            'error',
+                            5000
+                        );
+
+                    } else if (
+                        e?.message ===
+                        'SUPABASE_DISCONNECT_TIMEOUT'
+                    ) {
+
+                        cfgToast(
+                            '⚠️ Supabase tardó demasiado en responder.',
+                            'error',
+                            5000
+                        );
+
+                    } else {
+
+                        cfgToast(
+                            '❌ Error: ' +
+                            (
+                                e?.message ||
+                                'Desconocido'
+                            ),
+                            'error'
+                        );
+                    }
                 }
             };
 
@@ -1578,12 +1729,55 @@
         window.onReintentarWallet =
             async function () {
 
+                if (cargandoWallet) {
+                    return;
+                }
+
                 mostrarEstado(
                     '#estadoCargando'
                 );
 
+                if ($('#textoEstadoCargando')) {
+
+                    $('#textoEstadoCargando')
+                        .textContent =
+                        'Reintentando conexión...';
+                }
+
                 await cargarEstadoWallet();
             };
+
+        // ========================================================
+        // EVENTO OFFLINE
+        // ========================================================
+
+        window.addEventListener(
+            'offline',
+            function () {
+
+                if (cargandoWallet) {
+
+                    mostrarError(
+                        '📶 Se perdió la conexión a internet. Verifica tu conexión y pulsa Reintentar.'
+                    );
+                }
+            }
+        );
+
+        // ========================================================
+        // EVENTO ONLINE
+        // ========================================================
+
+        window.addEventListener(
+            'online',
+            function () {
+
+                console.log(
+                    '📶 Conexión a internet restaurada.'
+                );
+
+            }
+        );
 
         // ========================================================
         // EVENTOS DE WALLET
