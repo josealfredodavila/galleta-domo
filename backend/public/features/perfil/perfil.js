@@ -5,51 +5,58 @@
    PERFIL.JS - SARIEL'S ECOSYSTEM
    VERSIÓN FUNCIONAL - INTEGRACIÓN COMPLETA CON SERVER.JS + SUPABASE + TELNYX
 
-   I18N: todo pasa por el sistema central definido en
-   /features/shared/js/idiomas.js:
-   - window.t()              → traducción (fallback: clave humanizada)
-   - window.tConFallback()   → traducción con fallback explícito
-   - window.aplicarTraducciones(raiz) → aplica al DOM con data-clave
-
-   v3: agrega expandirFotoPublicacion() para agrandar imágenes
-   publicadas en el perfil.
+   CORRECCIÓN CRÍTICA:
+   - Espera a que window.supabaseClient exista (creado por el guardián de perfil.html)
+   - Si no existe, lo crea después de N reintentos
+   - NUNCA sobrescribe un cliente existente
+   - Asegura que inicializarModuloPerfil() se ejecute SIEMPRE
    ================================================================ */
 
 // ================================================================
-// CONFIGURACIÓN SUPABASE (ESPERA A QUE window.supabase EXISTA)
+// CONFIGURACIÓN SUPABASE
 // ================================================================
 var SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
 var SUPABASE_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
 
-var supabaseClient;
+var supabaseClient = null;
+var intentosSupabase = 0;
+var MAX_INTENTOS_SUPABASE = 50; // 10 segundos máximo
 
 function inicializarSupabase() {
-    if (typeof window.supabase === 'undefined') {
-        console.warn('[Perfil] window.supabase no disponible todavía, reintentando...');
-        setTimeout(inicializarSupabase, 200);
+    // 1. Si ya existe window.supabaseClient (creado por el guardián), reutilizarlo
+    if (window.supabaseClient) {
+        supabaseClient = window.supabaseClient;
+        console.log('[Perfil] ✅ Reutilizando supabaseClient existente.');
+        inicializarModuloPerfil();
         return;
     }
 
-    // Reutilizar cliente existente si ya fue creado (por ejemplo, por el guardián en perfil.html)
-    if (window.supabaseClient) {
-        supabaseClient = window.supabaseClient;
-    } else {
+    // 2. Si existe window.supabase, crear el cliente
+    if (typeof window.supabase !== 'undefined') {
         try {
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
             window.supabaseClient = supabaseClient;
+            console.log('[Perfil] ✅ supabaseClient creado por perfil.js.');
+            inicializarModuloPerfil();
+            return;
         } catch (e) {
             console.error('[Perfil] Error creando cliente Supabase:', e);
-            setTimeout(inicializarSupabase, 500);
+            setTimeout(inicializarSupabase, 200);
             return;
         }
     }
 
-    // Exponer también para otros módulos
-    window.supabase = window.supabase;
-    window.supabaseClient = supabaseClient;
+    // 3. Reintentar hasta MAX_INTENTOS_SUPABASE
+    intentosSupabase++;
+    if (intentosSupabase >= MAX_INTENTOS_SUPABASE) {
+        console.error('[Perfil] ❌ No se pudo inicializar Supabase después de ' + MAX_INTENTOS_SUPABASE + ' intentos.');
+        // Aún así intentamos inicializar el módulo para que no quede en blanco
+        inicializarModuloPerfil();
+        return;
+    }
 
-    console.log('[Perfil] ✅ Supabase inicializado correctamente.');
-    inicializarModuloPerfil();
+    console.warn('[Perfil] ⏳ Esperando a que Supabase esté disponible... intento ' + intentosSupabase);
+    setTimeout(inicializarSupabase, 200);
 }
 
 // ================================================================
@@ -151,6 +158,7 @@ function showToast(msg, type = '', duration = 3500) {
 // ================================================================
 async function cargarEstadoPro() {
     try {
+        if (!supabaseClient) return;
         const session = await getSession();
         if (!session) return;
 
@@ -428,7 +436,6 @@ let perfilCache = null;
 let ultimaActualizacion = 0;
 const CACHE_DURATION = 30000;
 
-// Exponer perfilCache al window para que el HTML (avatar en publicaciones) lo pueda leer.
 Object.defineProperty(window, 'perfilCache', {
     get: function () { return perfilCache; },
     set: function (v) { perfilCache = v; },
@@ -437,9 +444,14 @@ Object.defineProperty(window, 'perfilCache', {
 
 async function cargarPerfil(forzarActualizacion = false) {
     try {
+        if (!supabaseClient) {
+            console.warn('[Perfil] supabaseClient no disponible para cargarPerfil');
+            return;
+        }
+
         const session = await getSession();
         if (!session) {
-            window.location.href = '/';
+            console.warn('[Perfil] Sin sesión, no se puede cargar perfil');
             return;
         }
 
@@ -2601,10 +2613,6 @@ function expandirAvatar() {
 // ================================================================
 // EXPANDIR FOTO DE PUBLICACIÓN
 // ================================================================
-// Reutiliza la misma lógica que expandirAvatar() pero acepta
-// cualquier src. Se usa cuando el usuario pica una imagen
-// publicada en su perfil.
-// ================================================================
 function expandirFotoPublicacion(src) {
     if (!src) return;
 
@@ -3178,7 +3186,7 @@ async function iniciarPerfil() {
 }
 
 // ================================================================
-// ARRANCAR: Esperar a que Supabase CDN esté disponible
+// ARRANCAR
 // ================================================================
 inicializarSupabase();
 
