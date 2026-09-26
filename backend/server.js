@@ -327,9 +327,103 @@ async function adminMiddleware(req, res, next) {
 // SEGURIDAD / HEADERS
 // ================================================================
 
+/*
+ * IMPORTANTE — Content Security Policy (CSP)
+ *
+ * Se configura explícitamente porque la política por defecto
+ * de helmet() bloquea:
+ *
+ *   - Scripts inline (guardián auth-ready, banner de error, etc.)
+ *   - CDN de Supabase (cdn.jsdelivr.net)
+ *   - CDN de jsQR (cdn.jsdelivr.net)
+ *   - CDN de qrcodejs (cdn.jsdelivr.net)
+ *   - Google Fonts (fonts.googleapis.com y fonts.gstatic.com)
+ *   - Conexiones REST y WebSocket a *.supabase.co
+ *   - API de QR (api.qrserver.com)
+ *   - Cloudflare Turnstile
+ *   - API de NOWPayments
+ *
+ * Si la CSP por defecto bloquea los scripts inline, la clase
+ * .auth-ready nunca se agrega y las páginas que dependen de
+ * `html:not(.auth-ready) .app { display: none; }` se quedan en
+ * blanco permanentemente.
+ *
+ * NO dejar la CSP por defecto.
+ * NO poner contentSecurityPolicy: false (pierdes protección XSS).
+ */
+
 app.use(
     helmet({
-        crossOriginResourcePolicy: false
+        crossOriginResourcePolicy: false,
+
+        contentSecurityPolicy: {
+            directives: {
+                defaultSrc: ["'self'"],
+
+                scriptSrc: [
+                    "'self'",
+                    "'unsafe-inline'",
+                    "'unsafe-eval'",
+                    "https://cdn.jsdelivr.net",
+                    "https://challenges.cloudflare.com",
+                    "https://www.youtube.com",
+                    "https://s.ytimg.com"
+                ],
+
+                styleSrc: [
+                    "'self'",
+                    "'unsafe-inline'",
+                    "https://fonts.googleapis.com"
+                ],
+
+                fontSrc: [
+                    "'self'",
+                    "https://fonts.gstatic.com",
+                    "data:"
+                ],
+
+                imgSrc: [
+                    "'self'",
+                    "data:",
+                    "blob:",
+                    "https:"
+                ],
+
+                mediaSrc: [
+                    "'self'",
+                    "blob:",
+                    "https:"
+                ],
+
+                connectSrc: [
+                    "'self'",
+                    "https://zultnlogdoajehbswlih.supabase.co",
+                    "wss://zultnlogdoajehbswlih.supabase.co",
+                    "https://api.qrserver.com",
+                    "https://challenges.cloudflare.com",
+                    "https://api.nowpayments.io",
+                    "https://api-sandbox.nowpayments.io",
+                    "https://api.telnyx.com"
+                ],
+
+                frameSrc: [
+                    "'self'",
+                    "https://challenges.cloudflare.com",
+                    "https://www.youtube.com",
+                    "https://player.vimeo.com"
+                ],
+
+                workerSrc: [
+                    "'self'",
+                    "blob:"
+                ],
+
+                objectSrc: ["'none'"],
+                baseUri: ["'self'"],
+                formAction: ["'self'"],
+                frameAncestors: ["'self'"]
+            }
+        }
     })
 );
 
