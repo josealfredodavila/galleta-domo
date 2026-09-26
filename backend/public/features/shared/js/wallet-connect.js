@@ -20,12 +20,11 @@
     // ================================================================
     // CONFIGURACIÓN
     // ================================================================
-    // ⚠️ REEMPLAZA con tu Project ID de https://cloud.walletconnect.com
-    const WALLETCONNECT_PROJECT_ID = 'TU_PROJECT_ID_AQUI';
+    const WALLETCONNECT_PROJECT_ID = 'd080c5ef5c0e7109fd12f714d4ca25d5';
 
-    // Red objetivo (137 = Polygon Mainnet, 80002 = Amoy Testnet)
-    // Cambia esto según el entorno donde vas a trabajar
-    const CHAIN_ID_OBJETIVO = 137; // ← Polygon Mainnet
+    // Red objetivo: 137 = Polygon Mainnet, 80002 = Amoy Testnet
+    // Actualmente en Mainnet. Cambia si necesitas testnet.
+    const CHAIN_ID_OBJETIVO = 137;
 
     const NETWORK_INFO = {
         137: {
@@ -47,7 +46,7 @@
     // ================================================================
     let wcProvider = null;
     let currentAccount = null;
-    let currentProviderType = null; // 'injected' | 'walletconnect'
+    let currentProviderType = null;
 
     // ================================================================
     // DETECCIÓN DE ENTORNO
@@ -76,7 +75,7 @@
     }
 
     // ================================================================
-    // GUARDAR / LEER SESIÓN
+    // SESIÓN
     // ================================================================
 
     function guardarSesion(data) {
@@ -97,7 +96,6 @@
             const raw = localStorage.getItem('sar_wallet_session');
             if (!raw) return null;
             const data = JSON.parse(raw);
-            // Expira en 24h
             if (Date.now() - data.timestamp > 24 * 60 * 60 * 1000) {
                 localStorage.removeItem('sar_wallet_session');
                 return null;
@@ -115,7 +113,7 @@
     }
 
     // ================================================================
-    // CONEXIÓN INJECTED (desktop o navegador de wallet)
+    // CONEXIÓN INJECTED
     // ================================================================
 
     async function conectarConInjected() {
@@ -133,7 +131,6 @@
 
         const account = accounts[0];
 
-        // Verificar red
         const chainIdHex = await window.ethereum.request({ method: 'eth_chainId' });
         const chainId = parseInt(chainIdHex, 16);
 
@@ -192,15 +189,14 @@
     }
 
     // ================================================================
-    // CONEXIÓN WALLETCONNECT (móvil sin extensión)
+    // CONEXIÓN WALLETCONNECT
     // ================================================================
 
     async function conectarConWalletConnect() {
-        if (!WALLETCONNECT_PROJECT_ID || WALLETCONNECT_PROJECT_ID === 'TU_PROJECT_ID_AQUI') {
+        if (!WALLETCONNECT_PROJECT_ID) {
             throw new Error('WALLETCONNECT_PROJECT_ID_NOT_CONFIGURED');
         }
 
-        // Importar dinámicamente desde CDN ESM
         const { EthereumProvider } = await import(
             'https://esm.sh/@walletconnect/ethereum-provider@2.17.0'
         );
@@ -243,7 +239,6 @@
             chainId: chainId
         });
 
-        // Eventos
         wcProvider.on('accountsChanged', (accs) => {
             if (accs.length === 0) {
                 desconectar();
@@ -274,7 +269,7 @@
     }
 
     // ================================================================
-    // MODAL DE SELECCIÓN DE WALLET (solo si es necesario)
+    // MODAL DE OPCIONES
     // ================================================================
 
     function mostrarModalOpciones() {
@@ -372,7 +367,6 @@
     // ================================================================
 
     async function conectar() {
-        // Si ya hay sesión, retornarla
         const sesion = leerSesion();
         if (sesion && sesion.address) {
             currentAccount = sesion.address;
@@ -385,22 +379,18 @@
             };
         }
 
-        // Chrome móvil SIN extensión → WalletConnect directo
         if (esChromeMovilSinWallet()) {
             return await conectarConWalletConnect();
         }
 
-        // Desktop con extensión → conexión directa
         if (tieneInjectedProvider() && !esMovil()) {
             return await conectarConInjected();
         }
 
-        // Navegador de wallet (MetaMask inyectado, Coinbase, etc.)
         if (esNavegadorDeWallet()) {
             return await conectarConInjected();
         }
 
-        // Cualquier otro caso → mostrar modal con opciones
         return await mostrarModalOpciones();
     }
 
