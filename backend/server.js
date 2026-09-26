@@ -6,6 +6,7 @@
 require('dotenv').config();
 
 const express = require('express');
+
 const {
     AccessToken,
     RoomServiceClient
@@ -17,6 +18,7 @@ const helmet = require('helmet');
 const compression = require('compression');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
+
 const {
     createClient
 } = require('@supabase/supabase-js');
@@ -33,40 +35,53 @@ const app = express();
 
 app.disable('x-powered-by');
 
-const PORT = process.env.PORT || 8080;
+const PORT =
+    process.env.PORT || 8080;
 
 // ================================================================
 // SUPABASE
 // ================================================================
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+const SUPABASE_URL =
+    process.env.SUPABASE_URL;
+
+const SUPABASE_ANON_KEY =
+    process.env.SUPABASE_ANON_KEY;
+
 const SUPABASE_SERVICE_ROLE_KEY =
     process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!SUPABASE_URL) {
-    console.warn('⚠️ Falta SUPABASE_URL');
+    console.warn(
+        '⚠️ Falta SUPABASE_URL'
+    );
 }
 
 if (!SUPABASE_ANON_KEY) {
-    console.warn('⚠️ Falta SUPABASE_ANON_KEY');
+    console.warn(
+        '⚠️ Falta SUPABASE_ANON_KEY'
+    );
 }
 
 if (!SUPABASE_SERVICE_ROLE_KEY) {
-    console.warn('⚠️ Falta SUPABASE_SERVICE_ROLE_KEY');
+    console.warn(
+        '⚠️ Falta SUPABASE_SERVICE_ROLE_KEY'
+    );
 }
 
 // Cliente público
-const supabase = createClient(
-    SUPABASE_URL,
-    SUPABASE_ANON_KEY
-);
+const supabase =
+    createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY
+    );
 
 // Cliente administrativo
-const supabaseAdmin = createClient(
-    SUPABASE_URL,
-    SUPABASE_SERVICE_ROLE_KEY
-);
+const supabaseAdmin =
+    createClient(
+        SUPABASE_URL,
+        SUPABASE_SERVICE_ROLE_KEY
+    );
 
 // ================================================================
 // LIVEKIT
@@ -85,51 +100,32 @@ const LIVEKIT_WS_URL =
     process.env.LIVEKIT_WS_URL || '';
 
 if (!LIVEKIT_API_KEY) {
-    console.warn('⚠️ Falta LIVEKIT_API_KEY');
+    console.warn(
+        '⚠️ Falta LIVEKIT_API_KEY'
+    );
 }
 
 if (!LIVEKIT_API_SECRET) {
-    console.warn('⚠️ Falta LIVEKIT_API_SECRET');
+    console.warn(
+        '⚠️ Falta LIVEKIT_API_SECRET'
+    );
 }
 
 if (!LIVEKIT_URL) {
-    console.warn('⚠️ Falta LIVEKIT_URL');
+    console.warn(
+        '⚠️ Falta LIVEKIT_URL'
+    );
 }
 
 // ================================================================
 // WEB3 / WALLETCONNECT
 // ================================================================
 
-/*
- * URL pública/canónica de la aplicación.
- *
- * IMPORTANTE:
- * No usamos automáticamente PUBLIC_URL porque podría contener
- * el dominio generado de Railway.
- *
- * La aplicación que utiliza el usuario es:
- * https://auction.up.railway.app
- */
-
 const PUBLIC_APP_URL =
     'https://auction.up.railway.app';
 
-/*
- * WalletConnect / Reown Project ID.
- *
- * Este valor NO es un secreto de servidor.
- * Es configuración pública utilizada por el cliente Web3.
- */
-
 const WALLETCONNECT_PROJECT_ID =
     process.env.WALLETCONNECT_PROJECT_ID || '';
-
-/*
- * Red utilizada actualmente por el flujo Web3.
- *
- * Polygon Amoy:
- * Chain ID: 80002
- */
 
 const WEB3_CHAIN_ID = 80002;
 
@@ -149,21 +145,19 @@ const TURNSTILE_SECRET_KEY =
 const TURNSTILE_SITE_KEY =
     process.env.TURNSTILE_SITE_KEY || '';
 
-/*
- * NO MODIFICAR:
- * Este hostname corresponde a la configuración actual
- * de Turnstile existente en el proyecto.
- */
-
 const TURNSTILE_EXPECTED_HOSTNAME =
     'galleta-domo-production.up.railway.app';
 
 if (!TURNSTILE_SECRET_KEY) {
-    console.warn('⚠️ Falta TURNSTILE_SECRET_KEY');
+    console.warn(
+        '⚠️ Falta TURNSTILE_SECRET_KEY'
+    );
 }
 
 if (!TURNSTILE_SITE_KEY) {
-    console.warn('⚠️ Falta TURNSTILE_SITE_KEY');
+    console.warn(
+        '⚠️ Falta TURNSTILE_SITE_KEY'
+    );
 }
 
 // ================================================================
@@ -191,15 +185,22 @@ if (!process.env.NODE_ENV) {
 // ================================================================
 
 function clienteDelUsuario(req) {
+
     const authHeader =
         req.headers.authorization || '';
 
-    if (!authHeader.startsWith('Bearer ')) {
+    if (
+        !authHeader.startsWith(
+            'Bearer '
+        )
+    ) {
         return null;
     }
 
     const token =
-        authHeader.substring(7).trim();
+        authHeader
+            .substring(7)
+            .trim();
 
     if (!token) {
         return null;
@@ -223,50 +224,78 @@ function clienteDelUsuario(req) {
 // AUTH MIDDLEWARE
 // ================================================================
 
-async function authMiddleware(req, res, next) {
+async function authMiddleware(
+    req,
+    res,
+    next
+) {
+
     try {
+
         const authHeader =
             req.headers.authorization || '';
 
-        if (!authHeader.startsWith('Bearer ')) {
+        if (
+            !authHeader.startsWith(
+                'Bearer '
+            )
+        ) {
             return res.status(401).json({
-                error: 'No autenticado'
+                error:
+                    'No autenticado'
             });
         }
 
         const token =
-            authHeader.substring(7).trim();
+            authHeader
+                .substring(7)
+                .trim();
 
         if (!token) {
             return res.status(401).json({
-                error: 'Token no proporcionado'
+                error:
+                    'Token no proporcionado'
             });
         }
 
         const {
             data,
             error
-        } = await supabaseAdmin.auth.getUser(token);
+        } =
+            await supabaseAdmin
+                .auth
+                .getUser(token);
 
-        if (error || !data || !data.user) {
+        if (
+            error ||
+            !data ||
+            !data.user
+        ) {
+
             return res.status(401).json({
-                error: 'Token inválido o expirado'
+                error:
+                    'Token inválido o expirado'
             });
         }
 
-        req.user = data.user;
-        req.accessToken = token;
+        req.user =
+            data.user;
+
+        req.accessToken =
+            token;
 
         next();
 
     } catch (error) {
+
         console.error(
             '❌ Error authMiddleware:',
             error
         );
 
         return res.status(401).json({
-            error: 'No autenticado'
+            error:
+                'No autenticado'
         });
     }
 }
@@ -275,50 +304,70 @@ async function authMiddleware(req, res, next) {
 // ADMIN MIDDLEWARE
 // ================================================================
 
-async function adminMiddleware(req, res, next) {
+async function adminMiddleware(
+    req,
+    res,
+    next
+) {
+
     try {
+
         if (!req.user) {
             return res.status(401).json({
-                error: 'No autenticado'
+                error:
+                    'No autenticado'
             });
         }
 
         const {
             data,
             error
-        } = await supabaseAdmin
-            .from('perfiles')
-            .select('rol')
-            .eq('id', req.user.id)
-            .maybeSingle();
+        } =
+            await supabaseAdmin
+                .from('perfiles')
+                .select('rol')
+                .eq(
+                    'id',
+                    req.user.id
+                )
+                .maybeSingle();
 
         if (error) {
+
             console.error(
                 '❌ Error verificando rol:',
                 error
             );
 
             return res.status(500).json({
-                error: 'Error verificando permisos'
+                error:
+                    'Error verificando permisos'
             });
         }
 
-        if (!data || data.rol !== 'admin') {
+        if (
+            !data ||
+            data.rol !== 'admin'
+        ) {
+
             return res.status(403).json({
-                error: 'Acceso restringido'
+                error:
+                    'Acceso restringido'
             });
         }
 
         next();
 
     } catch (error) {
+
         console.error(
             '❌ Error adminMiddleware:',
             error
         );
 
         return res.status(500).json({
-            error: 'Error verificando permisos'
+            error:
+                'Error verificando permisos'
         });
     }
 }
@@ -327,53 +376,30 @@ async function adminMiddleware(req, res, next) {
 // SEGURIDAD / HEADERS
 // ================================================================
 
-/*
- * IMPORTANTE — Content Security Policy (CSP)
- *
- * Se configura explícitamente porque la política por defecto
- * de helmet() bloquea:
- *
- *   - Scripts inline (guardián auth-ready, banner de error, etc.)
- *   - CDN de Supabase (cdn.jsdelivr.net)
- *   - CDN de jsQR (cdn.jsdelivr.net)
- *   - CDN de qrcodejs (cdn.jsdelivr.net)
- *   - Google Fonts (fonts.googleapis.com y fonts.gstatic.com)
- *   - Conexiones REST y WebSocket a *.supabase.co
- *   - API de QR (api.qrserver.com)
- *   - Cloudflare Turnstile
- *   - API de NOWPayments
- *   - API de Telnyx (eSIM)
- *   - WebSocket de LiveKit (transmisiones en vivo y videollamadas)
- *   - SDK de WalletConnect en esm.sh
- *   - Relay de WalletConnect (wss://relay.walletconnect.com)
- *   - Web3Modal API
- *   - RPCs de Polygon (Amoy y Mainnet)
- *
- * Si la CSP por defecto bloquea los scripts inline, la clase
- * .auth-ready nunca se agrega y las páginas que dependen de
- * `html:not(.auth-ready) .app { display: none; }` se quedan en
- * blanco permanentemente.
- *
- * NO dejar la CSP por defecto.
- * NO poner contentSecurityPolicy: false (pierdes protección XSS).
- */
-
 app.use(
     helmet({
-        crossOriginResourcePolicy: false,
+        crossOriginResourcePolicy:
+            false,
 
         contentSecurityPolicy: {
+
             directives: {
-                defaultSrc: ["'self'"],
+
+                defaultSrc: [
+                    "'self'"
+                ],
 
                 scriptSrc: [
                     "'self'",
                     "'unsafe-inline'",
                     "'unsafe-eval'",
+
                     "https://cdn.jsdelivr.net",
                     "https://unpkg.com",
                     "https://esm.sh",
+
                     "https://challenges.cloudflare.com",
+
                     "https://www.youtube.com",
                     "https://s.ytimg.com"
                 ],
@@ -405,47 +431,55 @@ app.use(
                 ],
 
                 connectSrc: [
+
                     "'self'",
 
-                    /* Supabase (REST + Realtime) */
+                    // Supabase
                     "https://zultnlogdoajehbswlih.supabase.co",
                     "wss://zultnlogdoajehbswlih.supabase.co",
 
-                    /* QR dinámico */
+                    // QR
                     "https://api.qrserver.com",
 
-                    /* Cloudflare Turnstile */
+                    // Cloudflare
                     "https://challenges.cloudflare.com",
 
-                    /* NOWPayments */
+                    // NOWPayments
                     "https://api.nowpayments.io",
                     "https://api-sandbox.nowpayments.io",
 
-                    /* Telnyx (eSIM) */
+                    // Telnyx
                     "https://api.telnyx.com",
 
-                    /* LiveKit (transmisiones y videollamadas) */
+                    // LiveKit
                     "https://csariels-domo-57ujk04t.livekit.cloud",
                     "wss://csariels-domo-57ujk04t.livekit.cloud",
 
-                    /* WalletConnect (relay, explorer, rpc, verify, keys) */
+                    // WalletConnect
                     "https://esm.sh",
                     "https://api.web3modal.com",
                     "https://api.web3modal.org",
+
                     "https://explorer-api.walletconnect.com",
                     "https://explorer-api.walletconnect.org",
+
                     "https://relay.walletconnect.com",
                     "wss://relay.walletconnect.com",
+
                     "wss://relay.walletconnect.org",
+
                     "https://pulse.walletconnect.com",
                     "https://pulse.walletconnect.org",
+
                     "https://verify.walletconnect.com",
                     "https://verify.walletconnect.org",
+
                     "https://rpc.walletconnect.com",
                     "wss://rpc.walletconnect.com",
+
                     "https://keys.walletconnect.com",
 
-                    /* RPCs de Polygon (Amoy y Mainnet) */
+                    // Polygon
                     "https://rpc-amoy.polygon.technology",
                     "https://polygon-rpc.com",
                     "https://polygon.llamarpc.com",
@@ -453,26 +487,26 @@ app.use(
                     "https://1rpc.io",
                     "https://rpc.ankr.com",
 
-                    /* Explorers públicos */
+                    // Explorers
                     "https://amoy.polygonscan.com",
                     "https://polygonscan.com",
                     "https://api.polygonscan.com",
                     "https://api-amoy.polygonscan.com",
 
-                    /* Coinbase Wallet */
+                    // Coinbase
                     "https://api.wallet.coinbase.com",
                     "https://mainnet.optimism.io",
                     "wss://www.walletlink.org",
 
-                    /* Rainbow */
+                    // Rainbow
                     "https://rnbwapp.com",
                     "https://api.rainbow.me",
 
-                    /* MetaMask */
+                    // MetaMask
                     "https://metamask.app.link",
                     "https://api.metamask.io",
 
-                    /* RPCs de fallback */
+                    // RPC fallback
                     "https://cloudflare-eth.com",
                     "https://eth.llamarpc.com"
                 ],
@@ -491,10 +525,21 @@ app.use(
                     "blob:"
                 ],
 
-                objectSrc: ["'none'"],
-                baseUri: ["'self'"],
-                formAction: ["'self'"],
-                frameAncestors: ["'self'"]
+                objectSrc: [
+                    "'none'"
+                ],
+
+                baseUri: [
+                    "'self'"
+                ],
+
+                formAction: [
+                    "'self'"
+                ],
+
+                frameAncestors: [
+                    "'self'"
+                ]
             }
         }
     })
@@ -509,12 +554,20 @@ app.use(
 // ================================================================
 
 const isProduction =
-    process.env.NODE_ENV === 'production';
+    process.env.NODE_ENV ===
+    'production';
 
 if (!isProduction) {
-    app.use(morgan('dev'));
+
+    app.use(
+        morgan('dev')
+    );
+
 } else {
-    app.use(morgan('combined'));
+
+    app.use(
+        morgan('combined')
+    );
 }
 
 // ================================================================
@@ -524,26 +577,16 @@ if (!isProduction) {
 const corsOrigins =
     (process.env.CORS_ORIGINS || '')
         .split(',')
-        .map(origin => origin.trim())
+        .map(
+            origin =>
+                origin.trim()
+        )
         .filter(Boolean);
 
-/*
- * Dominios oficiales de producción.
- *
- * Se mantienen ambos:
- *
- * 1. auction.up.railway.app
- *    → dominio público/canónico de Sariel's
- *
- * 2. galleta-domo-production.up.railway.app
- *    → dominio generado por Railway
- *
- * No se eliminan porque algunos recursos existentes
- * pueden seguir utilizando el dominio de Railway.
- */
-
 const DEFAULT_PRODUCTION_ORIGINS = [
+
     'https://auction.up.railway.app',
+
     'https://galleta-domo-production.up.railway.app'
 ];
 
@@ -557,35 +600,44 @@ const allowedCorsOrigins =
 
 app.use(
     cors({
-        origin: function (origin, callback) {
 
-            /*
-             * Permitir peticiones sin Origin:
-             * curl, Postman, health checks, etc.
-             */
-
-            if (!origin) {
-                return callback(null, true);
-            }
-
-            if (
-                allowedCorsOrigins.includes(origin)
+        origin:
+            function (
+                origin,
+                callback
             ) {
-                return callback(null, true);
-            }
 
-            console.warn(
-                `⚠️ CORS bloqueado: ${origin}`
-            );
+                if (!origin) {
+                    return callback(
+                        null,
+                        true
+                    );
+                }
 
-            return callback(
-                new Error(
-                    'Origen no permitido por CORS'
-                )
-            );
-        },
+                if (
+                    allowedCorsOrigins
+                        .includes(origin)
+                ) {
 
-        credentials: true,
+                    return callback(
+                        null,
+                        true
+                    );
+                }
+
+                console.warn(
+                    `⚠️ CORS bloqueado: ${origin}`
+                );
+
+                return callback(
+                    new Error(
+                        'Origen no permitido por CORS'
+                    )
+                );
+            },
+
+        credentials:
+            true,
 
         methods: [
             'GET',
@@ -614,11 +666,18 @@ app.use(
 
 const apiLimiter =
     rateLimit({
-        windowMs: 15 * 60 * 1000,
-        max: 300,
 
-        standardHeaders: true,
-        legacyHeaders: false,
+        windowMs:
+            15 * 60 * 1000,
+
+        max:
+            300,
+
+        standardHeaders:
+            true,
+
+        legacyHeaders:
+            false,
 
         message: {
             error:
@@ -635,31 +694,35 @@ app.use(
 // BODY PARSERS
 // ================================================================
 
-/*
- * Guardamos también el cuerpo JSON original.
- *
- * NOWPayments utiliza el JSON recibido para verificar
- * la firma HMAC-SHA512.
- *
- * El handler de membresía utiliza:
- *
- *     req.rawBody
- */
-
 app.use(
     express.json({
-        limit: '10mb',
-        verify: (req, res, buf) => {
-            req.rawBody =
-                buf.toString('utf8');
-        }
+
+        limit:
+            '10mb',
+
+        verify:
+            (
+                req,
+                res,
+                buf
+            ) => {
+
+                req.rawBody =
+                    buf.toString(
+                        'utf8'
+                    );
+            }
     })
 );
 
 app.use(
     express.urlencoded({
-        extended: true,
-        limit: '10mb'
+
+        extended:
+            true,
+
+        limit:
+            '10mb'
     })
 );
 
@@ -667,29 +730,14 @@ app.use(
 // WEB3 PUBLIC CONFIG
 // ================================================================
 
-/*
- * Endpoint público para que el frontend obtenga
- * la configuración Web3 sin hardcodear valores sensibles
- * ni depender de variables de entorno del navegador.
- *
- * NO devuelve:
- * - SUPABASE_SERVICE_ROLE_KEY
- * - claves privadas
- * - secretos
- * - API keys privadas
- *
- * Sí devuelve:
- * - URL pública de la aplicación
- * - WalletConnect Project ID
- * - Polygon Amoy Chain ID
- */
-
 app.get(
     '/api/config/web3',
     (req, res) => {
 
         return res.status(200).json({
-            success: true,
+
+            success:
+                true,
 
             publicUrl:
                 PUBLIC_APP_URL,
@@ -707,8 +755,12 @@ app.get(
 // I18N
 // ================================================================
 
-async function obtenerIdiomaUsuario(req) {
+async function obtenerIdiomaUsuario(
+    req
+) {
+
     try {
+
         if (!req.user) {
             return 'es-MX';
         }
@@ -716,13 +768,18 @@ async function obtenerIdiomaUsuario(req) {
         const {
             data,
             error
-        } = await supabaseAdmin
-            .from('perfiles')
-            .select('idioma')
-            .eq('id', req.user.id)
-            .maybeSingle();
+        } =
+            await supabaseAdmin
+                .from('perfiles')
+                .select('idioma')
+                .eq(
+                    'id',
+                    req.user.id
+                )
+                .maybeSingle();
 
         if (error) {
+
             console.error(
                 '❌ Error obteniendo idioma:',
                 error
@@ -737,6 +794,7 @@ async function obtenerIdiomaUsuario(req) {
         );
 
     } catch (error) {
+
         console.error(
             '❌ Error obtenerIdiomaUsuario:',
             error
@@ -752,7 +810,10 @@ async function obtenerIdiomaUsuario(req) {
 
 app.get(
     '/api/i18n',
-    async (req, res) => {
+    async (
+        req,
+        res
+    ) => {
 
         try {
 
@@ -763,17 +824,19 @@ app.get(
             const {
                 data,
                 error
-            } = await supabaseAdmin
-                .from('traducciones')
-                .select(
-                    'clave, valor'
-                )
-                .eq(
-                    'idioma',
-                    idioma
-                );
+            } =
+                await supabaseAdmin
+                    .from('traducciones')
+                    .select(
+                        'clave, valor'
+                    )
+                    .eq(
+                        'idioma',
+                        idioma
+                    );
 
             if (error) {
+
                 console.error(
                     '❌ Error I18N:',
                     error
@@ -787,14 +850,24 @@ app.get(
 
             const traducciones = {};
 
-            for (const row of data || []) {
-                traducciones[row.clave] =
+            for (
+                const row
+                of data || []
+            ) {
+
+                traducciones[
+                    row.clave
+                ] =
                     row.valor;
             }
 
             return res.json({
-                success: true,
+
+                success:
+                    true,
+
                 idioma,
+
                 traducciones
             });
 
@@ -820,7 +893,10 @@ app.get(
 app.post(
     '/api/livekit/token',
     authMiddleware,
-    async (req, res) => {
+    async (
+        req,
+        res
+    ) => {
 
         try {
 
@@ -828,9 +904,11 @@ app.post(
                 roomName,
                 participantName,
                 identity
-            } = req.body;
+            } =
+                req.body;
 
             if (!roomName) {
+
                 return res.status(400).json({
                     error:
                         'roomName es requerido'
@@ -848,32 +926,49 @@ app.post(
 
             const token =
                 new AccessToken(
+
                     LIVEKIT_API_KEY,
+
                     LIVEKIT_API_SECRET,
+
                     {
                         identity:
                             participantIdentity,
+
                         name:
                             displayName,
+
                         ttl:
                             '3h'
                     }
                 );
 
             token.addGrant({
-                roomJoin: true,
+
+                roomJoin:
+                    true,
+
                 room:
                     roomName,
-                canPublish: true,
-                canSubscribe: true
+
+                canPublish:
+                    true,
+
+                canSubscribe:
+                    true
             });
 
             const jwt =
                 await token.toJwt();
 
             return res.json({
-                success: true,
-                token: jwt,
+
+                success:
+                    true,
+
+                token:
+                    jwt,
+
                 url:
                     LIVEKIT_WS_URL ||
                     LIVEKIT_URL
@@ -904,16 +999,22 @@ async function verificarTurnstile(
 ) {
 
     if (!TURNSTILE_SECRET_KEY) {
+
         return {
-            success: false,
+            success:
+                false,
+
             error:
                 'Turnstile no configurado'
         };
     }
 
     if (!token) {
+
         return {
-            success: false,
+            success:
+                false,
+
             error:
                 'Token Turnstile requerido'
         };
@@ -935,6 +1036,7 @@ async function verificarTurnstile(
         );
 
         if (remoteip) {
+
             params.append(
                 'remoteip',
                 remoteip
@@ -943,8 +1045,11 @@ async function verificarTurnstile(
 
         const response =
             await axios.post(
+
                 'https://challenges.cloudflare.com/turnstile/v0/siteverify',
+
                 params.toString(),
+
                 {
                     headers: {
                         'Content-Type':
@@ -956,27 +1061,19 @@ async function verificarTurnstile(
         const result =
             response.data || {};
 
-        /*
-         * Verificación adicional del hostname.
-         *
-         * Se mantiene el hostname existente.
-         */
-
         if (
             result.success &&
-            Array.isArray(
-                result.hostname
-                    ? [result.hostname]
-                    : []
-            )
+            result.hostname
         ) {
 
             if (
-                result.hostname &&
+
                 result.hostname !==
                     TURNSTILE_EXPECTED_HOSTNAME &&
+
                 result.hostname !==
                     'auction.up.railway.app'
+
             ) {
 
                 console.warn(
@@ -985,7 +1082,10 @@ async function verificarTurnstile(
                 );
 
                 return {
-                    success: false,
+
+                    success:
+                        false,
+
                     error:
                         'Hostname Turnstile no permitido'
                 };
@@ -1002,7 +1102,10 @@ async function verificarTurnstile(
         );
 
         return {
-            success: false,
+
+            success:
+                false,
+
             error:
                 'Error verificando Turnstile'
         };
@@ -1016,13 +1119,17 @@ async function verificarTurnstile(
 app.post(
     '/api/account/delete',
     authMiddleware,
-    async (req, res) => {
+    async (
+        req,
+        res
+    ) => {
 
         try {
 
             const {
                 turnstileToken
-            } = req.body;
+            } =
+                req.body;
 
             const turnstile =
                 await verificarTurnstile(
@@ -1030,7 +1137,9 @@ app.post(
                     req.ip
                 );
 
-            if (!turnstile.success) {
+            if (
+                !turnstile.success
+            ) {
 
                 return res.status(400).json({
                     error:
@@ -1041,16 +1150,15 @@ app.post(
             const userId =
                 req.user.id;
 
-            /*
-             * Aquí se conserva la lógica existente
-             * de eliminación de cuenta.
-             */
-
             const {
                 error
-            } = await supabaseAdmin.auth.admin.deleteUser(
-                userId
-            );
+            } =
+                await supabaseAdmin
+                    .auth
+                    .admin
+                    .deleteUser(
+                        userId
+                    );
 
             if (error) {
 
@@ -1066,7 +1174,10 @@ app.post(
             }
 
             return res.json({
-                success: true,
+
+                success:
+                    true,
+
                 message:
                     'Cuenta eliminada correctamente'
             });
@@ -1100,11 +1211,17 @@ app.use(
     express.static(
         publicPath,
         {
-            index: false,
+
+            index:
+                false,
+
             maxAge:
                 isProduction
                     ? '1h'
-                    : 0
+                    : 0,
+
+            fallthrough:
+                true
         }
     )
 );
@@ -1124,13 +1241,138 @@ app.use(
     express.static(
         featuresPath,
         {
-            index: false,
+
+            index:
+                false,
+
             maxAge:
                 isProduction
                     ? '1h'
-                    : 0
+                    : 0,
+
+            fallthrough:
+                true
         }
     )
+);
+
+// ================================================================
+// RUTAS HTML CRÍTICAS
+// ================================================================
+
+function enviarArchivoPublico(
+    relativePath,
+    req,
+    res,
+    next
+) {
+
+    const filePath =
+        path.join(
+            publicPath,
+            relativePath
+        );
+
+    if (
+        !fs.existsSync(
+            filePath
+        )
+    ) {
+
+        console.error(
+            `❌ Archivo no encontrado: ${filePath}`
+        );
+
+        return next();
+    }
+
+    return res.sendFile(
+        filePath
+    );
+}
+
+// Perfil
+app.get(
+    '/features/perfil/perfil.html',
+    (req, res, next) => {
+
+        enviarArchivoPublico(
+            'features/perfil/perfil.html',
+            req,
+            res,
+            next
+        );
+    }
+);
+
+// Wallet
+app.get(
+    '/features/perfil/configuracion/sariels/wallet.html',
+    (req, res, next) => {
+
+        enviarArchivoPublico(
+            'features/perfil/configuracion/sariels/wallet.html',
+            req,
+            res,
+            next
+        );
+    }
+);
+
+// Configuración
+app.get(
+    '/features/perfil/configuracion/index.html',
+    (req, res, next) => {
+
+        enviarArchivoPublico(
+            'features/perfil/configuracion/index.html',
+            req,
+            res,
+            next
+        );
+    }
+);
+
+// Wallet Connect JS
+app.get(
+    '/features/perfil/shared/js/wallet-connect.js',
+    (req, res, next) => {
+
+        enviarArchivoPublico(
+            'features/perfil/shared/js/wallet-connect.js',
+            req,
+            res,
+            next
+        );
+    }
+);
+
+// Config layout
+app.get(
+    '/features/shared/config-layout.js',
+    (req, res, next) => {
+
+        enviarArchivoPublico(
+            'features/shared/config-layout.js',
+            req,
+            res,
+            next
+        );
+    }
+);
+
+// Config icons
+app.get(
+    '/features/shared/config-icons.js',
+    (req, res, next) => {
+
+        enviarArchivoPublico(
+            'features/shared/config-icons.js',
+            req,
+            res,
+            next
+        );
+    }
 );
 
 // ================================================================
@@ -1151,7 +1393,9 @@ app.get(
             );
 
         if (
-            !fs.existsSync(filePath)
+            !fs.existsSync(
+                filePath
+            )
         ) {
 
             return res.status(404).send(
@@ -1166,72 +1410,129 @@ app.get(
 );
 
 // ================================================================
+// HELPERS PARA ROUTERS
+// ================================================================
+
+function normalizarRouter(
+    modulo,
+    nombre
+) {
+
+    if (
+        typeof modulo ===
+        'function'
+    ) {
+
+        return modulo;
+    }
+
+    if (
+        modulo &&
+        typeof modulo.router ===
+        'function'
+    ) {
+
+        console.log(
+            `ℹ️ ${nombre}: usando export .router`
+        );
+
+        return modulo.router;
+    }
+
+    if (
+        modulo &&
+        typeof modulo.default ===
+        'function'
+    ) {
+
+        console.log(
+            `ℹ️ ${nombre}: usando export .default`
+        );
+
+        return modulo.default;
+    }
+
+    console.error(
+        `❌ ${nombre} no exporta un Express Router válido`
+    );
+
+    return null;
+}
+
+function montarRouter(
+    mountPath,
+    requirePath,
+    nombre
+) {
+
+    try {
+
+        const modulo =
+            require(
+                requirePath
+            );
+
+        const router =
+            normalizarRouter(
+                modulo,
+                nombre
+            );
+
+        if (
+            typeof router !==
+            'function'
+        ) {
+
+            console.error(
+                `❌ ${nombre}: router inválido. Ruta no montada: ${mountPath}`
+            );
+
+            return false;
+        }
+
+        app.use(
+            mountPath,
+            router
+        );
+
+        console.log(
+            `✅ ${nombre} cargado en ${mountPath}`
+        );
+
+        return true;
+
+    } catch (error) {
+
+        console.error(
+            `❌ Error cargando ${nombre}:`,
+            error
+        );
+
+        return false;
+    }
+}
+
+// ================================================================
 // ROUTERS
 // ================================================================
 
-try {
+montarRouter(
+    '/api/auth',
+    './routes/auth',
+    'routes/auth'
+);
 
-    const authRoutes =
-        require('./routes/auth');
+montarRouter(
+    '/api/payments',
+    './routes/payments',
+    'routes/payments'
+);
 
-    app.use(
-        '/api/auth',
-        authRoutes
-    );
-
-} catch (error) {
-
-    console.error(
-        '❌ Error cargando routes/auth:',
-        error
-    );
-}
-
-// ================================================================
-
-try {
-
-    const paymentRoutes =
-        require('./routes/payments');
-
-    app.use(
-        '/api/payments',
-        paymentRoutes
-    );
-
-} catch (error) {
-
-    console.error(
-        '❌ Error cargando routes/payments:',
-        error
-    );
-}
-
-// ================================================================
-// WEBHOOKS
-// ================================================================
-
-try {
-
-    const webhookRoutes =
-        require('./routes/webhooks');
-
-    app.use(
-        '/api/webhook',
-        webhookRoutes
-    );
-
-    console.log(
-        '✅ routes/webhooks cargado'
-    );
-
-} catch (error) {
-
-    console.error(
-        '❌ Error cargando routes/webhooks:',
-        error
-    );
-}
+montarRouter(
+    '/api/webhook',
+    './routes/webhooks',
+    'routes/webhooks'
+);
 
 // ================================================================
 // NOTA:
@@ -1247,143 +1548,53 @@ try {
 // routes/webhooks.js.
 // ================================================================
 
-// ================================================================
+montarRouter(
+    '/api/pay',
+    './routes/pay',
+    'routes/pay'
+);
 
-try {
+montarRouter(
+    '/api/mensajes',
+    './routes/mensajes',
+    'routes/mensajes'
+);
 
-    const payRoutes =
-        require('./routes/pay');
-
-    app.use(
-        '/api/pay',
-        payRoutes
-    );
-
-} catch (error) {
-
-    console.error(
-        '❌ Error cargando routes/pay:',
-        error
-    );
-}
-
-// ================================================================
-
-try {
-
-    const mensajesRoutes =
-        require('./routes/mensajes');
-
-    app.use(
-        '/api/mensajes',
-        mensajesRoutes
-    );
-
-} catch (error) {
-
-    console.error(
-        '❌ Error cargando routes/mensajes:',
-        error
-    );
-}
-
-// ================================================================
-
-try {
-
-    const marketingRoutes =
-        require('./routes/marketing');
-
-    app.use(
-        '/api/marketing',
-        marketingRoutes
-    );
-
-} catch (error) {
-
-    console.error(
-        '❌ Error cargando routes/marketing:',
-        error
-    );
-}
+montarRouter(
+    '/api/marketing',
+    './routes/marketing',
+    'routes/marketing'
+);
 
 // ================================================================
 // VIDEO PROCESSOR
 // ================================================================
 
-try {
-
-    const videoRoutes =
-        require('./routes/video-processor');
-
-    app.use(
-        '/api/video',
-        videoRoutes
-    );
-
-    console.log(
-        '✅ routes/video-processor cargado'
-    );
-
-} catch (error) {
-
-    console.error(
-        '❌ Error cargando routes/video-processor:',
-        error
-    );
-}
+montarRouter(
+    '/api/video',
+    './routes/video-processor',
+    'routes/video-processor'
+);
 
 // ================================================================
 // AI CHAT
 // ================================================================
 
-try {
-
-    const aiChatRoutes =
-        require('./routes/ai-chat');
-
-    app.use(
-        '/api/ai',
-        aiChatRoutes
-    );
-
-    console.log(
-        '✅ routes/ai-chat cargado'
-    );
-
-} catch (error) {
-
-    console.error(
-        '❌ Error cargando routes/ai-chat:',
-        error
-    );
-}
+montarRouter(
+    '/api/ai',
+    './routes/ai-chat',
+    'routes/ai-chat'
+);
 
 // ================================================================
 // AI VOICE
 // ================================================================
 
-try {
-
-    const aiVoiceRoutes =
-        require('./routes/ai-voice');
-
-    app.use(
-        '/api/ai/voice',
-        aiVoiceRoutes
-    );
-
-    console.log(
-        '✅ routes/ai-voice cargado'
-    );
-
-} catch (error) {
-
-    console.error(
-        '❌ Error cargando routes/ai-voice:',
-        error
-    );
-}
+montarRouter(
+    '/api/ai/voice',
+    './routes/ai-voice',
+    'routes/ai-voice'
+);
 
 // ================================================================
 // HTML ROUTES
@@ -1393,7 +1604,7 @@ app.get(
     '/',
     (req, res) => {
 
-        res.sendFile(
+        return res.sendFile(
             path.join(
                 publicPath,
                 'index.html'
@@ -1402,13 +1613,11 @@ app.get(
     }
 );
 
-// ================================================================
-
 app.get(
     '/index.html',
     (req, res) => {
 
-        res.sendFile(
+        return res.sendFile(
             path.join(
                 publicPath,
                 'index.html'
@@ -1455,7 +1664,8 @@ for (
     const [
         route,
         file
-    ] of Object.entries(
+    ]
+    of Object.entries(
         friendlyRoutes
     )
 ) {
@@ -1464,11 +1674,27 @@ for (
         route,
         (req, res) => {
 
-            res.sendFile(
+            const filePath =
                 path.join(
                     publicPath,
                     file
+                );
+
+            if (
+                !fs.existsSync(
+                    filePath
                 )
+            ) {
+
+                return res.status(
+                    404
+                ).send(
+                    'Página no encontrada'
+                );
+            }
+
+            return res.sendFile(
+                filePath
             );
         }
     );
@@ -1482,7 +1708,7 @@ app.get(
     '/pay',
     (req, res) => {
 
-        res.sendFile(
+        return res.sendFile(
             path.join(
                 publicPath,
                 'pay.html'
@@ -1495,7 +1721,7 @@ app.get(
     '/csariel-pay',
     (req, res) => {
 
-        res.sendFile(
+        return res.sendFile(
             path.join(
                 publicPath,
                 'pay.html'
@@ -1512,7 +1738,7 @@ app.get(
     '/terminos',
     (req, res) => {
 
-        res.sendFile(
+        return res.sendFile(
             path.join(
                 publicPath,
                 'terminos.html'
@@ -1525,7 +1751,7 @@ app.get(
     '/privacidad',
     (req, res) => {
 
-        res.sendFile(
+        return res.sendFile(
             path.join(
                 publicPath,
                 'privacidad.html'
@@ -1538,7 +1764,7 @@ app.get(
     '/eliminar-cuenta',
     (req, res) => {
 
-        res.sendFile(
+        return res.sendFile(
             path.join(
                 publicPath,
                 'eliminar-cuenta.html'
@@ -1551,7 +1777,10 @@ app.get(
 // HEALTH CHECK
 // ================================================================
 
-async function healthCheck(req, res) {
+async function healthCheck(
+    req,
+    res
+) {
 
     let supabaseStatus =
         'unknown';
@@ -1560,10 +1789,11 @@ async function healthCheck(req, res) {
 
         const {
             error
-        } = await supabaseAdmin
-            .from('idiomas_sistema')
-            .select('codigo')
-            .limit(1);
+        } =
+            await supabaseAdmin
+                .from('idiomas_sistema')
+                .select('codigo')
+                .limit(1);
 
         supabaseStatus =
             error
@@ -1578,7 +1808,8 @@ async function healthCheck(req, res) {
 
     return res.status(200).json({
 
-        status: 'ok',
+        status:
+            'ok',
 
         service:
             'galleta-domo',
@@ -1594,6 +1825,7 @@ async function healthCheck(req, res) {
             supabaseStatus,
 
         livekit: {
+
             configured:
                 Boolean(
                     LIVEKIT_API_KEY &&
@@ -1624,15 +1856,6 @@ async function healthCheck(req, res) {
     });
 }
 
-/*
- * Se mantienen ambas rutas:
- *
- * /health
- * /api/health
- *
- * Railway puede utilizar /api/health.
- */
-
 app.get(
     '/health',
     healthCheck
@@ -1652,8 +1875,10 @@ app.use(
     (req, res) => {
 
         return res.status(404).json({
+
             error:
                 'Endpoint no encontrado',
+
             path:
                 req.originalUrl
         });
@@ -1663,31 +1888,85 @@ app.use(
 // ================================================================
 // SPA FALLBACK
 // ================================================================
+//
+// IMPORTANTE:
+//
+// NO utilizamos:
+//     app.get('*', ...)
+//
+// porque dependiendo de la versión de Express/path-to-regexp
+// puede producir errores de enrutamiento.
+//
+// Este middleware únicamente sirve index.html para rutas
+// sin extensión que no hayan sido atendidas anteriormente.
+//
+// Los archivos .html, .js, .css, imágenes, etc. NO se convierten
+// en index.html.
+// ================================================================
 
-app.get(
-    '*',
+app.use(
     (req, res, next) => {
 
-        /*
-         * No convertir rutas de archivos inexistentes
-         * en index.html.
-         */
+        // Solo GET/HEAD
+        if (
+            req.method !== 'GET' &&
+            req.method !== 'HEAD'
+        ) {
+            return next();
+        }
 
+        // No tocar API
+        if (
+            req.path === '/api' ||
+            req.path.startsWith('/api/')
+        ) {
+            return next();
+        }
+
+        // No tocar archivos
         if (
             path.extname(
                 req.path
             )
         ) {
+            return next();
+        }
 
+        const indexPath =
+            path.join(
+                publicPath,
+                'index.html'
+            );
+
+        if (
+            !fs.existsSync(
+                indexPath
+            )
+        ) {
             return next();
         }
 
         return res.sendFile(
-            path.join(
-                publicPath,
-                'index.html'
-            )
+            indexPath
         );
+    }
+);
+
+// ================================================================
+// 404 FINAL
+// ================================================================
+
+app.use(
+    (req, res) => {
+
+        return res.status(404).json({
+
+            error:
+                'Recurso no encontrado',
+
+            path:
+                req.originalUrl
+        });
     }
 );
 
@@ -1739,12 +2018,15 @@ app.listen(
     () => {
 
         console.log('');
+
         console.log(
             '================================================'
         );
+
         console.log(
             "🚀 Sariel's Ecosystem"
         );
+
         console.log(
             '================================================'
         );
@@ -1776,10 +2058,6 @@ app.listen(
                     : '❌ No configurado'
             }`
         );
-
-        /*
-         * Diagnóstico Web3
-         */
 
         console.log(
             `🌐 Web3 URL canónica: ${
