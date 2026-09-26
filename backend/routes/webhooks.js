@@ -1,91 +1,149 @@
-/* ================================================================
-   UTILS/NOWPAYMENTS-SIG.JS - SARIEL'S ECOSYSTEM
-   Verificación de firma IPN de NOWPayments
+// ================================================================
+// ROUTES/WEBHOOKS.JS - SARIEL'S ECOSYSTEM
+// ================================================================
+// Router principal de webhooks. server.js lo monta en /api/webhook
+//
+// Webhooks soportados:
+// - POST /api/webhook/nowpayments → IPN de NOWPayments
+// - POST /api/webhook/membresia   → Membresía Pro (alias)
+// - POST /api/webhook/stripe      → Placeholder
+// - POST /api/webhook/fintoc      → Placeholder
+// ================================================================
 
-   Reglas de NOWPayments:
-   - Algoritmo: HMAC-SHA512 con el IPN secret
-   - Se firma el JSON del body con las llaves ordenadas
-     alfabéticamente (de forma recursiva)
-   - La firma llega en el header x-nowpayments-sig
+const express = require('express');
+const router = express.Router();
 
-   Se acepta también la firma sobre el body crudo (rawBody) como
-   respaldo, porque si NOWPayments ya lo manda ordenado, el JSON
-   re-serializado puede diferir en formato de números.
-   ================================================================ */
+// ================================================================
+// HANDLER DE MEMBRESÍA PRO
+// ================================================================
+const {
+    procesarWebhookMembresia
+} = require('./membresia-webhook-handler');
 
-const crypto = require('crypto');
-
-function ordenarLlaves(valor) {
-    if (Array.isArray(valor)) {
-        return valor.map(ordenarLlaves);
+// ================================================================
+// HANDLER DE NOWPAYMENTS PARA EL MURO
+// (puede venir de routes/webhooks/nowpayments.js si existe)
+// ================================================================
+let procesarWebhookMuro = null;
+try {
+    const nowpaymentsHandler = require('./webhooks/nowpayments');
+    if (typeof nowpaymentsHandler === 'function') {
+        procesarWebhookMuro = nowpaymentsHandler;
+    } else if (nowpaymentsHandler && typeof nowpaymentsHandler.procesarWebhookMuro === 'function') {
+        procesarWebhookMuro = nowpaymentsHandler.procesarWebhookMuro;
     }
-
-    if (valor && typeof valor === 'object') {
-        return Object.keys(valor)
-            .sort()
-            .reduce((acc, llave) => {
-                acc[llave] = ordenarLlaves(valor[llave]);
-                return acc;
-            }, {});
-    }
-
-    return valor;
+} catch (e) {
+    // El archivo puede no existir o tener otra forma. No es crítico.
+    console.log('ℹ️ routes/webhooks/nowpayments.js no disponible o sin export compatible');
 }
 
-function firmaHex(contenido, secret) {
-    return crypto
-        .createHmac('sha512', secret)
-        .update(contenido)
-        .digest('hex');
-}
+// ================================================================
+// POST /api/webhook/nowpayments
+// ================================================================
+// Recibe los IPN de NOWPayments. Según el `order_id`, decide a qué
+// handler enrutar:
+//   - order_id empieza con "pro_" → membresía Pro
+//   - en cualquier otro caso → Muro (si el handler existe)
+// ================================================================
+router.post('/nowpayments', async (req, res) => {
+    try {
+        const payload = req.body || {};
+        const orderId = payload.order_id || '';
 
-function compararSeguro(esperadaHex, recibida) {
-    if (typeof recibida !== 'string' || !/^[0-9a-f]+$/i.test(recibida)) {
-        return false;
+        console.log('📩 Webhook recibido en /api/webhook/nowpayments:', {
+            order_id: orderId,
+            payment_status: payload.payment_status,
+            payment_id: payload.payment_id
+        });
+
+        // 1) Membresía Pro
+        if (orderId.startsWith('pro_')) {
+            const result = await procesarWebhookMembresia(payload);
+            if (result.success) {
+                return res.status(200).json({ status: 'ok' });
+            }
+            return res
+                .status(result.noRetry ? 200 : 500)
+                .json({ status: 'error', error: result.error });
+        }
+
+        // 2) Muro P2P (si el handler existe)
+        if (procesarWebhookMuro) {
+            try {
+                const result = await procesarWebhookMuro(payload);
+                if (result && result.success === false) {
+                    return res.status(result.noRetry ? 200 : 500).json({
+                        status: 'error',
+                        error: result.error
+                    });
+                }
+                return res.status(200).json({ status: 'ok' });
+            } catch (e) {
+                console.error('❌ Error procesando webhook del Muro:', e);
+                return res.status(500).json({ status: 'error', error: e.message });
+            }
+        }
+
+        // 3) Fallback: no hay handler específico
+        console.warn('⚠️ Webhook sin handler específico:', { order_id: orderId });
+        return res.status(200).json({ status: 'ok', message: 'Recibido (sin handler)' });
+
+    } catch (error) {
+        console.error('❌ Error en /api/webhook/nowpayments:', error);
+        return res.status(500).json({ status: 'error', error: 'Error interno' });
     }
+});
 
-    const a = Buffer.from(esperadaHex, 'hex');
-    const b = Buffer.from(recibida.toLowerCase(), 'hex');
+// ================================================================
+// POST /api/webhook/membresia (alias)
+// ================================================================
+router.post('/membresia', async (req, res) => {
+    try {
+        const payload = req.body || {};
+        const result = await procesarWebhookMembresia(payload);
 
-    if (a.length !== b.length) {
-        return false;
+        if (result.success) {
+            return res.status(200).json({ status: 'ok' });
+        }
+        return res
+            .status(result.noRetry ? 200 : 500)
+            .json({ status: 'error', error: result.error });
+
+    } catch (error) {
+        console.error('❌ Error en /api/webhook/membresia:', error);
+        return res.status(500).json({ status: 'error', error: 'Error interno' });
     }
+});
 
-    return crypto.timingSafeEqual(a, b);
-}
+// ================================================================
+// POST /api/webhook/stripe (placeholder)
+// ================================================================
+router.post('/stripe', (req, res) => {
+    console.log('📩 Webhook Stripe recibido (no implementado)');
+    return res.status(200).json({ received: true });
+});
 
-/**
- * @param {object} body          req.body (ya parseado)
- * @param {Buffer|string} rawBody req.rawBody (opcional, respaldo)
- * @param {string} firmaRecibida header x-nowpayments-sig
- * @param {string} secret        NOWPAYMENTS_IPN_SECRET
- * @returns {boolean}
- */
-function verificarFirmaNowPayments(body, rawBody, firmaRecibida, secret) {
-    if (!secret || !firmaRecibida || !body || typeof body !== 'object') {
-        return false;
-    }
+// ================================================================
+// POST /api/webhook/fintoc (placeholder)
+// ================================================================
+router.post('/fintoc', (req, res) => {
+    console.log('📩 Webhook Fintoc recibido (no implementado)');
+    return res.status(200).json({ received: true });
+});
 
-    // 1) Método oficial: JSON con llaves ordenadas
-    const ordenado = JSON.stringify(ordenarLlaves(body));
+// ================================================================
+// GET /api/webhook/health (útil para verificar que el router vive)
+// ================================================================
+router.get('/health', (req, res) => {
+    return res.status(200).json({
+        status: 'ok',
+        router: 'webhooks',
+        timestamp: new Date().toISOString()
+    });
+});
 
-    if (compararSeguro(firmaHex(ordenado, secret), firmaRecibida)) {
-        return true;
-    }
-
-    // 2) Respaldo: body crudo tal como llegó
-    if (rawBody) {
-        const crudo = Buffer.isBuffer(rawBody)
-            ? rawBody
-            : Buffer.from(String(rawBody));
-
-        return compararSeguro(firmaHex(crudo, secret), firmaRecibida);
-    }
-
-    return false;
-}
-
-module.exports = {
-    verificarFirmaNowPayments,
-    ordenarLlaves
-};
+// ================================================================
+// EXPORT
+// ================================================================
+// ⚠️ CRÍTICO: debe exportar el router, NO un objeto
+module.exports = router;
