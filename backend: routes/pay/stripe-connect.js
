@@ -3,11 +3,10 @@
 // CSARIEL'S PAY - ONBOARDING DE STRIPE CONNECT
 // ================================================================
 // Endpoints:
-//   GET  /api/pay/stripe-connect/estado    (privado)
-//   POST /api/pay/stripe-connect/onboarding (privado)
+//   GET  /api/pay/stripe-connect/estado
+//   POST /api/pay/stripe-connect/onboarding
 //
-// El stripe_account_id se persiste en usuarios.stripe_account_id
-// cuando el onboarding se completa por primera vez.
+// El stripe_account_id se persiste en usuarios.stripe_account_id.
 // ================================================================
 
 'use strict';
@@ -26,16 +25,25 @@ const PUBLIC_URL = process.env.PUBLIC_URL || '';
 
 let stripeClient = null;
 
+// ================================================================
+// CLIENTE STRIPE
+// ================================================================
+
 function obtenerCliente() {
     if (!STRIPE_SECRET_KEY) {
-        throw errors.errorProveedorNoConfigurado('stripe (falta STRIPE_SECRET_KEY)');
+        throw errors.errorProveedorNoConfigurado(
+            'stripe (falta STRIPE_SECRET_KEY)'
+        );
     }
 
     if (!stripeClient) {
         stripeClient = new Stripe(STRIPE_SECRET_KEY, {
             timeout: 20000,
             maxNetworkRetries: 2,
-            appInfo: { name: 'Csariels Pay', version: '1.0.0' }
+            appInfo: {
+                name: 'Csariels Pay',
+                version: '1.0.0'
+            }
         });
     }
 
@@ -46,26 +54,48 @@ function obtenerCliente() {
 // PERSISTIR stripe_account_id EN usuarios
 // ================================================================
 
-async function persistirStripeAccountId(usuarioId, stripeAccountId, cuentaConnect) {
-    try {
-        // Verificar si ya está guardado el mismo
-        const { data: usuarioActual } = await supabaseAdmin
-            .from('usuarios')
-            .select('stripe_account_id')
-            .eq('id', usuarioId)
-            .maybeSingle();
+async function persistirStripeAccountId(
+    usuarioId,
+    stripeAccountId
+) {
+    if (!usuarioId || !stripeAccountId) {
+        return;
+    }
 
-        if (usuarioActual && usuarioActual.stripe_account_id === stripeAccountId) {
-            return; // Ya está guardado
+    try {
+        const { data: usuarioActual, error: errSelect } =
+            await supabaseAdmin
+                .from('usuarios')
+                .select('stripe_account_id')
+                .eq('id', usuarioId)
+                .maybeSingle();
+
+        if (errSelect) {
+            logger.error(
+                `[Stripe Connect] Error consultando stripe_account_id: ${errSelect.message}`
+            );
+            return;
         }
 
-        const { error: errUpd } = await supabaseAdmin
-            .from('usuarios')
-            .update({ stripe_account_id: stripeAccountId })
-            .eq('id', usuarioId);
+        if (
+            usuarioActual &&
+            usuarioActual.stripe_account_id === stripeAccountId
+        ) {
+            return;
+        }
+
+        const { error: errUpd } =
+            await supabaseAdmin
+                .from('usuarios')
+                .update({
+                    stripe_account_id: stripeAccountId
+                })
+                .eq('id', usuarioId);
 
         if (errUpd) {
-            logger.error(`[Stripe Connect] Error guardando stripe_account_id: ${errUpd.message}`);
+            logger.error(
+                `[Stripe Connect] Error guardando stripe_account_id: ${errUpd.message}`
+            );
             return;
         }
 
@@ -73,8 +103,34 @@ async function persistirStripeAccountId(usuarioId, stripeAccountId, cuentaConnec
             `[Stripe Connect] stripe_account_id guardado para usuario ${usuarioId}: ${stripeAccountId}`
         );
     } catch (err) {
-        logger.error(`[Stripe Connect] Excepción guardando stripe_account_id: ${err.message}`);
+        logger.error(
+            `[Stripe Connect] Excepción guardando stripe_account_id: ${err.message}`
+        );
     }
+}
+
+// ================================================================
+// OBTENER stripe_account_id GUARDADO
+// ================================================================
+
+async function obtenerStripeAccountIdGuardado(usuarioId) {
+    const { data, error } =
+        await supabaseAdmin
+            .from('usuarios')
+            .select('stripe_account_id')
+            .eq('id', usuarioId)
+            .maybeSingle();
+
+    if (error) {
+        logger.error(
+            `[Stripe Connect] Error obteniendo cuenta guardada: ${error.message}`
+        );
+        return null;
+    }
+
+    return data && data.stripe_account_id
+        ? data.stripe_account_id
+        : null;
 }
 
 // ================================================================
@@ -84,12 +140,48 @@ async function persistirStripeAccountId(usuarioId, stripeAccountId, cuentaConnec
 async function resolverOCrearCuentaConnect(usuario) {
     const stripe = obtenerCliente();
 
-    const email = usuario.email;
-    if (!email) {
-        throw errors.errorParametroRequerido('email del usuario');
+    if (!usuario || !usuario.id) {
+        throw errors.errorParametroRequerido('usuario');
     }
 
-    // 1) Buscar por email en Stripe
+    const email = usuario.email;
+
+    if (!email) {
+        throw errors.errorParametroRequerido(
+            'email del usuario'
+        );
+    }
+
+    // ------------------------------------------------------------
+    // 1) PRIORIDAD ABSOLUTA: stripe_account_id GUARDADO
+    // ------------------------------------------------------------
+
+    const stripeAccountIdGuardado =
+        await obtenerStripeAccountIdGuardado(usuario.id);
+
+    if (stripeAccountIdGuardado) {
+        try {
+            const cuentaGuardada =
+                await stripe.accounts.retrieve(
+                    stripeAccountIdGuardado
+                );
+
+            return cuentaGuardada;
+        } catch (errRetrieve) {
+            logger.warning(
+                `[Stripe Connect] La cuenta guardada ${stripeAccountIdGuardado} ` +
+                `no pudo recuperarse: ${errRetrieve.message}`
+            );
+
+            // No sobrescribimos automáticamente el ID.
+            // Continuamos con la recuperación por email.
+        }
+    }
+
+    // ------------------------------------------------------------
+    // 2) RECUPERACIÓN POR EMAIL
+    // ------------------------------------------------------------
+
     let cuentaExistente = null;
 
     try {
@@ -98,20 +190,32 @@ async function resolverOCrearCuentaConnect(usuario) {
             limit: 1
         });
 
-        if (lista && lista.data && lista.data.length > 0) {
+        if (
+            lista &&
+            Array.isArray(lista.data) &&
+            lista.data.length > 0
+        ) {
             cuentaExistente = lista.data[0];
         }
     } catch (errList) {
-        logger.warning(`[Stripe Connect] Error buscando cuenta por email: ${errList.message}`);
+        logger.warning(
+            `[Stripe Connect] Error buscando cuenta por email: ${errList.message}`
+        );
     }
 
     if (cuentaExistente) {
-        // Guardar el acct_ en Supabase si no estaba
-        await persistirStripeAccountId(usuario.id, cuentaExistente.id, cuentaExistente);
+        await persistirStripeAccountId(
+            usuario.id,
+            cuentaExistente.id
+        );
+
         return cuentaExistente;
     }
 
-    // 2) Crear cuenta Connect Express
+    // ------------------------------------------------------------
+    // 3) CREAR NUEVA CUENTA CONNECT EXPRESS
+    // ------------------------------------------------------------
+
     let nuevaCuenta;
 
     try {
@@ -120,40 +224,109 @@ async function resolverOCrearCuentaConnect(usuario) {
             email: email,
             country: 'MX',
             business_type: 'individual',
+
             capabilities: {
-                transfers: { requested: true },
-                card_payments: { requested: true }
-            },
-            settings: {
-                payouts: {
-                    schedule: { interval: 'manual' }
+                transfers: {
+                    requested: true
+                },
+                card_payments: {
+                    requested: true
                 }
             },
+
+            settings: {
+                payouts: {
+                    schedule: {
+                        interval: 'manual'
+                    }
+                }
+            },
+
             metadata: {
-                csariels_usuario_id: usuario.id,
-                csariels_created_from: 'csariels_pay_onboarding'
+                csariels_usuario_id: String(usuario.id),
+                csariels_created_from:
+                    'csariels_pay_onboarding'
             }
         });
     } catch (errCreate) {
-        logger.error(`[Stripe Connect] Error creando cuenta Connect: ${errCreate.message}`);
+        logger.error(
+            `[Stripe Connect] Error creando cuenta Connect: ${errCreate.message}`
+        );
 
-        if (errCreate.type === 'StripeInvalidRequestError') {
-            throw errors.errorProveedorRechazo('stripe', errCreate.message, {
-                codigo: errCreate.code || null
-            });
+        if (
+            errCreate.type ===
+            'StripeInvalidRequestError'
+        ) {
+            throw errors.errorProveedorRechazo(
+                'stripe',
+                errCreate.message,
+                {
+                    codigo: errCreate.code || null
+                }
+            );
         }
 
-        throw errors.errorProveedorErrorTemporal('stripe', {
-            motivo: errCreate.message
-        });
+        throw errors.errorProveedorErrorTemporal(
+            'stripe',
+            {
+                motivo: errCreate.message
+            }
+        );
     }
 
-    logger.info(`[Stripe Connect] Cuenta Connect creada: ${nuevaCuenta.id} (${email})`);
+    logger.info(
+        `[Stripe Connect] Cuenta Connect creada: ${nuevaCuenta.id} (${email})`
+    );
 
-    // Guardar el acct_ en Supabase
-    await persistirStripeAccountId(usuario.id, nuevaCuenta.id, nuevaCuenta);
+    // Guardar inmediatamente el acct_.
+    await persistirStripeAccountId(
+        usuario.id,
+        nuevaCuenta.id
+    );
 
     return nuevaCuenta;
+}
+
+// ================================================================
+// VALIDAR PUBLIC_URL PARA STRIPE
+// ================================================================
+
+function obtenerUrlsOnboarding() {
+    if (!PUBLIC_URL) {
+        throw errors.errorProveedorNoConfigurado(
+            'stripe (falta PUBLIC_URL)'
+        );
+    }
+
+    let base;
+
+    try {
+        base = new URL(PUBLIC_URL);
+    } catch (err) {
+        throw errors.errorProveedorNoConfigurado(
+            'stripe (PUBLIC_URL inválida)'
+        );
+    }
+
+    if (
+        base.protocol !== 'http:' &&
+        base.protocol !== 'https:'
+    ) {
+        throw errors.errorProveedorNoConfigurado(
+            'stripe (PUBLIC_URL debe usar http o https)'
+        );
+    }
+
+    const baseLimpia =
+        PUBLIC_URL.replace(/\/+$/, '');
+
+    return {
+        refreshUrl:
+            `${baseLimpia}/features/pay/vincular-stripe.html?estado=refrescar`,
+
+        returnUrl:
+            `${baseLimpia}/features/pay/vincular-stripe.html?estado=listo`
+    };
 }
 
 // ================================================================
@@ -167,38 +340,52 @@ router.get(
         try {
             const usuario = req.usuario;
 
-            // 1) Buscar primero en Supabase (fuente de verdad local)
-            let stripeAccountId = null;
+            // ----------------------------------------------------
+            // 1) Buscar primero en Supabase
+            // ----------------------------------------------------
 
-            const { data: usuarioDB } = await supabaseAdmin
-                .from('usuarios')
-                .select('stripe_account_id')
-                .eq('id', usuario.id)
-                .maybeSingle();
+            let stripeAccountId =
+                await obtenerStripeAccountIdGuardado(
+                    usuario.id
+                );
 
-            if (usuarioDB && usuarioDB.stripe_account_id) {
-                stripeAccountId = usuarioDB.stripe_account_id;
-            }
+            // ----------------------------------------------------
+            // 2) Recuperación por email si falta el ID
+            // ----------------------------------------------------
 
-            // 2) Si no está en Supabase, buscar en Stripe por email
             const stripe = obtenerCliente();
 
-            if (!stripeAccountId) {
+            if (!stripeAccountId && usuario.email) {
                 try {
-                    const lista = await stripe.accounts.list({
-                        email: usuario.email,
-                        limit: 1
-                    });
+                    const lista =
+                        await stripe.accounts.list({
+                            email: usuario.email,
+                            limit: 1
+                        });
 
-                    if (lista && lista.data && lista.data.length > 0) {
-                        stripeAccountId = lista.data[0].id;
-                        // Guardar en Supabase para futuras consultas
-                        await persistirStripeAccountId(usuario.id, stripeAccountId, lista.data[0]);
+                    if (
+                        lista &&
+                        Array.isArray(lista.data) &&
+                        lista.data.length > 0
+                    ) {
+                        stripeAccountId =
+                            lista.data[0].id;
+
+                        await persistirStripeAccountId(
+                            usuario.id,
+                            stripeAccountId
+                        );
                     }
                 } catch (errList) {
-                    logger.warning(`[Stripe Connect] Error consultando por email: ${errList.message}`);
+                    logger.warning(
+                        `[Stripe Connect] Error consultando por email: ${errList.message}`
+                    );
                 }
             }
+
+            // ----------------------------------------------------
+            // 3) No existe cuenta vinculada
+            // ----------------------------------------------------
 
             if (!stripeAccountId) {
                 return res.status(200).json({
@@ -206,52 +393,102 @@ router.get(
                     data: {
                         vinculada: false,
                         habilitada: false,
-                        mensaje: 'Aún no has vinculado tu cuenta de Stripe para retiros por tarjeta.'
+                        mensaje:
+                            'Aún no has vinculado tu cuenta de Stripe para retiros por tarjeta.'
                     }
                 });
             }
 
-            // 3) Consultar estado completo
+            // ----------------------------------------------------
+            // 4) Consultar estado real en Stripe
+            // ----------------------------------------------------
+
             let cuentaCompleta;
+
             try {
-                cuentaCompleta = await stripe.accounts.retrieve(stripeAccountId);
+                cuentaCompleta =
+                    await stripe.accounts.retrieve(
+                        stripeAccountId
+                    );
             } catch (errRetrieve) {
-                logger.warning(`[Stripe Connect] Error obteniendo cuenta ${stripeAccountId}: ${errRetrieve.message}`);
+                logger.warning(
+                    `[Stripe Connect] Error obteniendo cuenta ${stripeAccountId}: ${errRetrieve.message}`
+                );
+
                 return res.status(200).json({
                     success: true,
                     data: {
                         vinculada: true,
                         habilitada: false,
-                        stripe_account_id: stripeAccountId,
-                        mensaje: 'No se pudo consultar el estado de tu cuenta. Reintenta en un momento.'
+                        stripe_account_id:
+                            stripeAccountId,
+                        mensaje:
+                            'No se pudo consultar el estado de tu cuenta. Reintenta en un momento.'
                     }
                 });
             }
+
+            const payoutsEnabled =
+                cuentaCompleta.payouts_enabled === true;
+
+            const chargesEnabled =
+                cuentaCompleta.charges_enabled === true;
+
+            const habilitada =
+                payoutsEnabled &&
+                chargesEnabled;
+
+            const requirementsPendientes =
+                cuentaCompleta.requirements &&
+                Array.isArray(
+                    cuentaCompleta.requirements.currently_due
+                )
+                    ? cuentaCompleta.requirements.currently_due
+                    : [];
 
             return res.status(200).json({
                 success: true,
                 data: {
                     vinculada: true,
-                    habilitada: cuentaCompleta.payouts_enabled === true &&
-                                cuentaCompleta.charges_enabled === true,
-                    payouts_enabled: cuentaCompleta.payouts_enabled === true,
-                    charges_enabled: cuentaCompleta.charges_enabled === true,
-                    details_submitted: cuentaCompleta.details_submitted === true,
-                    pais: cuentaCompleta.country,
-                    moneda_default: cuentaCompleta.default_currency,
-                    stripe_account_id: stripeAccountId,
-                    requirements_pendientes: cuentaCompleta.requirements && cuentaCompleta.requirements.currently_due
-                        ? cuentaCompleta.requirements.currently_due
-                        : [],
-                    mensaje: cuentaCompleta.payouts_enabled
+                    habilitada: habilitada,
+
+                    payouts_enabled:
+                        payoutsEnabled,
+
+                    charges_enabled:
+                        chargesEnabled,
+
+                    details_submitted:
+                        cuentaCompleta.details_submitted === true,
+
+                    pais:
+                        cuentaCompleta.country || null,
+
+                    moneda_default:
+                        cuentaCompleta.default_currency ||
+                        null,
+
+                    stripe_account_id:
+                        stripeAccountId,
+
+                    requirements_pendientes:
+                        requirementsPendientes,
+
+                    mensaje: habilitada
                         ? 'Tu cuenta de Stripe está lista para recibir retiros por tarjeta.'
-                        : 'Tu cuenta de Stripe aún necesita información. Continúa el proceso.'
+                        : 'Tu cuenta de Stripe aún necesita información. Continúa el proceso de verificación.'
                 }
             });
 
         } catch (err) {
-            logger.error(`[Stripe Connect] Error en estado: ${err.message}`);
-            return errors.responderError(res, err);
+            logger.error(
+                `[Stripe Connect] Error en estado: ${err.message}`
+            );
+
+            return errors.responderError(
+                res,
+                err
+            );
         }
     }
 );
@@ -267,50 +504,73 @@ router.post(
         try {
             const usuario = req.usuario;
 
-            const cuenta = await resolverOCrearCuentaConnect(usuario);
+            const cuenta =
+                await resolverOCrearCuentaConnect(
+                    usuario
+                );
 
-            const stripe = obtenerCliente();
+            const stripe =
+                obtenerCliente();
 
-            const returnUrlBase = PUBLIC_URL || '';
-            const refreshUrl = returnUrlBase
-                ? `${returnUrlBase}/features/pay/vincular-stripe.html?estado=refrescar`
-                : `/features/pay/vincular-stripe.html?estado=refrescar`;
-            const returnUrl = returnUrlBase
-                ? `${returnUrlBase}/features/pay/vincular-stripe.html?estado=listo`
-                : `/features/pay/vincular-stripe.html?estado=listo`;
+            const {
+                refreshUrl,
+                returnUrl
+            } = obtenerUrlsOnboarding();
 
             let accountLink;
+
             try {
-                accountLink = await stripe.accountLinks.create({
-                    account: cuenta.id,
-                    refresh_url: refreshUrl,
-                    return_url: returnUrl,
-                    type: 'account_onboarding',
-                    collect: 'currently_due'
-                });
+                accountLink =
+                    await stripe.accountLinks.create({
+                        account: cuenta.id,
+                        refresh_url: refreshUrl,
+                        return_url: returnUrl,
+                        type: 'account_onboarding',
+                        collect: 'currently_due'
+                    });
             } catch (errLink) {
-                logger.error(`[Stripe Connect] Error creando Account Link: ${errLink.message}`);
-                throw errors.errorProveedorErrorTemporal('stripe', {
-                    motivo: errLink.message
-                });
+                logger.error(
+                    `[Stripe Connect] Error creando Account Link: ${errLink.message}`
+                );
+
+                throw errors.errorProveedorErrorTemporal(
+                    'stripe',
+                    {
+                        motivo: errLink.message
+                    }
+                );
             }
 
-            logger.info(`[Stripe Connect] Account Link generado para ${usuario.email}`);
+            logger.info(
+                `[Stripe Connect] Account Link generado para ${usuario.email}`
+            );
 
             return res.status(200).json({
                 success: true,
                 data: {
                     url: accountLink.url,
-                    expires_at: accountLink.expires_at,
-                    account_id: cuenta.id
+                    expires_at:
+                        accountLink.expires_at,
+                    account_id:
+                        cuenta.id
                 }
             });
 
         } catch (err) {
-            logger.error(`[Stripe Connect] Error en onboarding: ${err.message}`);
-            return errors.responderError(res, err);
+            logger.error(
+                `[Stripe Connect] Error en onboarding: ${err.message}`
+            );
+
+            return errors.responderError(
+                res,
+                err
+            );
         }
     }
 );
+
+// ================================================================
+// EXPORTAR
+// ================================================================
 
 module.exports = router;
