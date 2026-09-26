@@ -300,7 +300,221 @@
             line-height: 1.5;
             margin-bottom: 14px;
         }
+
+        /* ======================================================
+           DIAGNÓSTICO VISIBLE
+           ====================================================== */
+
+        .sar-wallet-diagnostic {
+            margin: 16px;
+            padding: 14px;
+            border: 1px solid rgba(0, 229, 255, 0.25);
+            border-radius: 14px;
+            background: rgba(0, 0, 0, 0.25);
+            font-family:
+                'JetBrains Mono',
+                'Fira Code',
+                monospace;
+            font-size: 0.68rem;
+            color: var(--cfg-text-muted);
+            overflow-wrap: anywhere;
+        }
+
+        .sar-wallet-diagnostic summary {
+            cursor: pointer;
+            color: var(--cfg-text);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.76rem;
+            font-weight: 700;
+            padding: 2px 0;
+        }
+
+        .sar-wallet-diagnostic-grid {
+            display: grid;
+            grid-template-columns: minmax(130px, 1fr) minmax(90px, auto);
+            gap: 6px 10px;
+            margin-top: 12px;
+        }
+
+        .sar-wallet-diag-label {
+            opacity: 0.8;
+        }
+
+        .sar-wallet-diag-value {
+            text-align: right;
+            word-break: break-word;
+        }
+
+        .sar-wallet-diag-ok {
+            color: var(--cfg-success, #00d68f);
+        }
+
+        .sar-wallet-diag-error {
+            color: var(--cfg-danger, #ff3366);
+        }
+
+        .sar-wallet-diag-warn {
+            color: var(--cfg-gold, #d4af37);
+        }
+
+        #sarWalletDiagError {
+            margin-top: 10px;
+            line-height: 1.45;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
     </style>
+
+    <!-- ==========================================================
+         DIAGNÓSTICO TEMPRANO
+         Este script NO depende de Supabase ni de ningún módulo.
+         ========================================================== -->
+
+    <script>
+    (function () {
+
+        'use strict';
+
+        window.__sarWalletDiag =
+            window.__sarWalletDiag || {
+                jsExecuted: true,
+                walletConnectLoaded: false,
+                cfgInitPageLoaded: false,
+                supabaseObject: false,
+                supabaseClientObject: false,
+                online: navigator.onLine,
+                domContentLoaded: false,
+                iniciarWalletPage: false,
+                cargarEstadoWallet: false,
+                getSessionStarted: false,
+                getSessionFinished: false,
+                lastStep: 'diagnostic-start',
+                lastError: '',
+                startedAt: Date.now()
+            };
+
+        function registrarError(tipo, detalle) {
+
+            const mensaje =
+                '[' +
+                tipo +
+                '] ' +
+                String(
+                    detalle?.message ||
+                    detalle ||
+                    'Error desconocido'
+                );
+
+            window.__sarWalletDiag.lastError =
+                mensaje;
+
+            window.__sarWalletLastError =
+                mensaje;
+
+            window.__sarWalletDiag.lastStep =
+                'error:' + tipo;
+
+            try {
+                console.error(
+                    'Sariel Wallet diagnostic:',
+                    mensaje
+                );
+            } catch (_) {}
+
+            if (
+                typeof window.__sarWalletActualizarDiagnostico ===
+                'function'
+            ) {
+                window.__sarWalletActualizarDiagnostico();
+            }
+        }
+
+        window.addEventListener(
+            'error',
+            function (event) {
+
+                registrarError(
+                    'window.error',
+                    event.error ||
+                    event.message ||
+                    'Error JavaScript'
+                );
+
+            }
+        );
+
+        window.addEventListener(
+            'unhandledrejection',
+            function (event) {
+
+                registrarError(
+                    'unhandledrejection',
+                    event.reason ||
+                    'Promesa rechazada sin manejar'
+                );
+
+            }
+        );
+
+        window.addEventListener(
+            'online',
+            function () {
+
+                window.__sarWalletDiag.online =
+                    true;
+
+                if (
+                    typeof window.__sarWalletActualizarDiagnostico ===
+                    'function'
+                ) {
+                    window.__sarWalletActualizarDiagnostico();
+                }
+
+            }
+        );
+
+        window.addEventListener(
+            'offline',
+            function () {
+
+                window.__sarWalletDiag.online =
+                    false;
+
+                if (
+                    typeof window.__sarWalletActualizarDiagnostico ===
+                    'function'
+                ) {
+                    window.__sarWalletActualizarDiagnostico();
+                }
+
+            }
+        );
+
+        window.addEventListener(
+            'DOMContentLoaded',
+            function () {
+
+                window.__sarWalletDiag.domContentLoaded =
+                    true;
+
+                window.__sarWalletDiag.lastStep =
+                    'DOMContentLoaded';
+
+                if (
+                    typeof window.__sarWalletActualizarDiagnostico ===
+                    'function'
+                ) {
+                    window.__sarWalletActualizarDiagnostico();
+                }
+
+            },
+            {
+                once: true
+            }
+        );
+
+    })();
+    </script>
 </head>
 
 <body class="cfg-page">
@@ -573,17 +787,103 @@
             · Wallet y Polygon
         </div>
 
+        <!-- ======================================================
+             DIAGNÓSTICO VISIBLE
+             ====================================================== -->
+
+        <details
+            class="sar-wallet-diagnostic"
+            id="sarWalletDiagnostic"
+        >
+            <summary>
+                🔧 Diagnóstico de Wallet
+            </summary>
+
+            <div
+                class="sar-wallet-diagnostic-grid"
+                id="sarWalletDiagnosticGrid"
+            ></div>
+
+            <div
+                id="sarWalletDiagError"
+                class="sar-wallet-diag-error"
+            ></div>
+        </details>
+
     </main>
 
     <!-- ==========================================================
          LIBRERÍAS
+         
+         IMPORTANTE:
+         Se utiliza defer para que un recurso externo lento no
+         impida que el navegador llegue a la lógica de diagnóstico
+         y de inicialización de esta página.
          ========================================================== -->
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script
+        src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js?v=sarwallet-20260926"
+        defer
+        onload="
+            window.__sarWalletDiag =
+                window.__sarWalletDiag || {};
+            window.__sarWalletDiag.supabaseLibraryLoaded = true;
+            window.__sarWalletDiag.lastStep = 'supabase-library-loaded';
+        "
+        onerror="
+            window.__sarWalletDiag =
+                window.__sarWalletDiag || {};
+            window.__sarWalletDiag.supabaseLibraryLoaded = false;
+            window.__sarWalletDiag.lastError =
+                'No se pudo cargar la librería de Supabase desde jsDelivr.';
+            window.__sarWalletLastError =
+                window.__sarWalletDiag.lastError;
+        "
+    ></script>
 
-    <script src="../../../shared/config-icons.js"></script>
+    <script
+        src="../../../shared/config-icons.js?v=sarwallet-20260926"
+        defer
+        onload="
+            window.__sarWalletDiag =
+                window.__sarWalletDiag || {};
+            window.__sarWalletDiag.configIconsLoaded = true;
+            window.__sarWalletDiag.lastStep = 'config-icons-loaded';
+        "
+        onerror="
+            window.__sarWalletDiag =
+                window.__sarWalletDiag || {};
+            window.__sarWalletDiag.configIconsLoaded = false;
+            window.__sarWalletDiag.lastError =
+                'No se pudo cargar config-icons.js.';
+            window.__sarWalletLastError =
+                window.__sarWalletDiag.lastError;
+        "
+    ></script>
 
-    <script src="../../../shared/config-layout.js"></script>
+    <script
+        src="../../../shared/config-layout.js?v=sarwallet-20260926"
+        defer
+        onload="
+            window.__sarWalletDiag =
+                window.__sarWalletDiag || {};
+            window.__sarWalletDiag.configLayoutLoaded = true;
+            window.__sarWalletDiag.cfgInitPageLoaded =
+                typeof window.cfgInitPage === 'function';
+            window.__sarWalletDiag.lastStep =
+                'config-layout-loaded';
+        "
+        onerror="
+            window.__sarWalletDiag =
+                window.__sarWalletDiag || {};
+            window.__sarWalletDiag.configLayoutLoaded = false;
+            window.__sarWalletDiag.cfgInitPageLoaded = false;
+            window.__sarWalletDiag.lastError =
+                'No se pudo cargar config-layout.js.';
+            window.__sarWalletLastError =
+                window.__sarWalletDiag.lastError;
+        "
+    ></script>
 
     <!--
         Ruta desde:
@@ -596,7 +896,26 @@
 
         son dos niveles hacia arriba.
     -->
-    <script src="../../shared/js/wallet-connect.js"></script>
+    <script
+        src="../../shared/js/wallet-connect.js?v=sarwallet-20260926"
+        defer
+        onload="
+            window.__sarWalletDiag =
+                window.__sarWalletDiag || {};
+            window.__sarWalletDiag.walletConnectLoaded = true;
+            window.__sarWalletDiag.lastStep =
+                'wallet-connect-loaded';
+        "
+        onerror="
+            window.__sarWalletDiag =
+                window.__sarWalletDiag || {};
+            window.__sarWalletDiag.walletConnectLoaded = false;
+            window.__sarWalletDiag.lastError =
+                'No se pudo cargar wallet-connect.js.';
+            window.__sarWalletLastError =
+                window.__sarWalletDiag.lastError;
+        "
+    ></script>
 
     <!-- ==========================================================
          WALLET PAGE
@@ -612,18 +931,297 @@
 
         const SUPABASE_TIMEOUT_MS = 10000;
 
+        /*
+         * Timeout absoluto de inicialización.
+         *
+         * Si por cualquier motivo una parte del flujo se queda
+         * esperando, la pantalla jamás permanecerá indefinidamente
+         * en "Cargando tu wallet...".
+         */
+        const PAGE_INIT_TIMEOUT_MS = 15000;
+
         let cargandoWallet = false;
+        let inicializacionCompletada = false;
+        let initTimer = null;
+
+        window.__sarWalletDiag =
+            window.__sarWalletDiag || {};
+
+        window.__sarWalletDiag.jsExecuted =
+            true;
 
         // ========================================================
-        // INICIALIZACIÓN
+        // DIAGNÓSTICO
         // ========================================================
 
-        cfgInitPage({
-            title: 'Wallet y Polygon',
-            subtitle: 'Gestiona tu wallet',
-            backUrl:
-                '/features/perfil/configuracion/index.html',
-        });
+        function diagStep(step) {
+
+            window.__sarWalletDiag.lastStep =
+                String(step);
+
+            actualizarDiagnostico();
+        }
+
+        function diagError(error, tipo) {
+
+            const mensaje =
+                '[' +
+                String(tipo || 'error') +
+                '] ' +
+                String(
+                    error?.message ||
+                    error ||
+                    'Error desconocido'
+                );
+
+            window.__sarWalletDiag.lastError =
+                mensaje;
+
+            window.__sarWalletLastError =
+                mensaje;
+
+            try {
+                console.error(
+                    'Sariel Wallet:',
+                    mensaje
+                );
+            } catch (_) {}
+
+            actualizarDiagnostico();
+        }
+
+        function actualizarDiagnostico() {
+
+            const diag =
+                window.__sarWalletDiag || {};
+
+            diag.walletConnectLoaded =
+                typeof window.SarWallet !==
+                'undefined';
+
+            diag.cfgInitPageLoaded =
+                typeof window.cfgInitPage ===
+                'function';
+
+            diag.supabaseObject =
+                Boolean(
+                    window.supabase
+                );
+
+            diag.supabaseClientObject =
+                Boolean(
+                    window.supabaseClient
+                );
+
+            diag.online =
+                navigator.onLine;
+
+            const grid =
+                document.getElementById(
+                    'sarWalletDiagnosticGrid'
+                );
+
+            if (!grid) {
+                return;
+            }
+
+            const filas = [
+                [
+                    'JS ejecutado',
+                    diag.jsExecuted
+                        ? 'SI'
+                        : 'NO',
+                    diag.jsExecuted
+                ],
+
+                [
+                    'Supabase library',
+                    diag.supabaseLibraryLoaded
+                        ? 'SI'
+                        : 'NO',
+                    diag.supabaseLibraryLoaded
+                ],
+
+                [
+                    'wallet-connect.js',
+                    diag.walletConnectLoaded
+                        ? 'SI'
+                        : 'NO',
+                    diag.walletConnectLoaded
+                ],
+
+                [
+                    'cfgInitPage',
+                    diag.cfgInitPageLoaded
+                        ? 'SI'
+                        : 'NO',
+                    diag.cfgInitPageLoaded
+                ],
+
+                [
+                    'window.supabase',
+                    diag.supabaseObject
+                        ? 'object'
+                        : 'null',
+                    diag.supabaseObject
+                ],
+
+                [
+                    'window.supabaseClient',
+                    diag.supabaseClientObject
+                        ? 'object'
+                        : 'null',
+                    diag.supabaseClientObject
+                ],
+
+                [
+                    'navigator.onLine',
+                    diag.online
+                        ? 'SI'
+                        : 'NO',
+                    diag.online
+                ],
+
+                [
+                    'DOMContentLoaded',
+                    diag.domContentLoaded
+                        ? 'SI'
+                        : 'NO',
+                    diag.domContentLoaded
+                ],
+
+                [
+                    'iniciarWalletPage',
+                    diag.iniciarWalletPage
+                        ? 'SI'
+                        : 'NO',
+                    diag.iniciarWalletPage
+                ],
+
+                [
+                    'cargarEstadoWallet',
+                    diag.cargarEstadoWallet
+                        ? 'SI'
+                        : 'NO',
+                    diag.cargarEstadoWallet
+                ],
+
+                [
+                    'getSession iniciado',
+                    diag.getSessionStarted
+                        ? 'SI'
+                        : 'NO',
+                    diag.getSessionStarted
+                ],
+
+                [
+                    'getSession terminado',
+                    diag.getSessionFinished
+                        ? 'SI'
+                        : 'NO',
+                    diag.getSessionFinished
+                ],
+
+                [
+                    'Último paso',
+                    diag.lastStep ||
+                        'ninguno',
+                    true
+                ]
+            ];
+
+            grid.innerHTML =
+                filas.map(
+                    fila => {
+
+                        const clase =
+                            fila[2]
+                                ? 'sar-wallet-diag-ok'
+                                : (
+                                    fila[0] ===
+                                    'Último paso'
+                                        ? 'sar-wallet-diag-warn'
+                                        : 'sar-wallet-diag-error'
+                                );
+
+                        return (
+                            '<div class="sar-wallet-diag-label">' +
+                                escaparHTML(fila[0]) +
+                            '</div>' +
+
+                            '<div class="sar-wallet-diag-value ' +
+                                clase +
+                            '">' +
+                                escaparHTML(String(fila[1])) +
+                            '</div>'
+                        );
+
+                    }
+                ).join('');
+
+            const errorEl =
+                document.getElementById(
+                    'sarWalletDiagError'
+                );
+
+            if (errorEl) {
+
+                errorEl.textContent =
+                    diag.lastError
+                        ? 'Último error: ' +
+                          diag.lastError
+                        : 'Último error: ninguno';
+            }
+        }
+
+        function escaparHTML(valor) {
+
+            return String(valor)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(
+                    /'/g,
+                    '&#039;'
+                );
+        }
+
+        window.__sarWalletActualizarDiagnostico =
+            actualizarDiagnostico;
+
+        actualizarDiagnostico();
+
+        // ========================================================
+        // CAPTURA GLOBAL DE ERRORES
+        // ========================================================
+
+        window.addEventListener(
+            'error',
+            function (event) {
+
+                diagError(
+                    event.error ||
+                    event.message ||
+                    'Error JavaScript',
+                    'window.error'
+                );
+
+            }
+        );
+
+        window.addEventListener(
+            'unhandledrejection',
+            function (event) {
+
+                diagError(
+                    event.reason ||
+                    'Promesa rechazada',
+                    'unhandledrejection'
+                );
+
+            }
+        );
 
         // ========================================================
         // SUPABASE
@@ -631,7 +1229,16 @@
 
         function obtenerSupabase() {
 
+            diagStep(
+                'obtenerSupabase'
+            );
+
             if (window.supabaseClient) {
+
+                window.__sarWalletDiag
+                    .supabaseClientObject =
+                    true;
+
                 return window.supabaseClient;
             }
 
@@ -641,13 +1248,40 @@
                     'function'
             ) {
 
-                window.supabaseClient =
-                    window.supabase.createClient(
-                        'https://zultnlogdoajehbswlih.supabase.co',
-                        'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
+                /*
+                 * Compatibilidad con el proyecto actual.
+                 *
+                 * No se crea otro sistema de autenticación.
+                 * Si ya existe supabaseClient se reutiliza.
+                 */
+
+                try {
+
+                    window.supabaseClient =
+                        window.supabase.createClient(
+                            'https://zultnlogdoajehbswlih.supabase.co',
+                            'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
+                        );
+
+                    window.__sarWalletDiag
+                        .supabaseClientObject =
+                        true;
+
+                    diagStep(
+                        'supabaseClient-creado'
                     );
 
-                return window.supabaseClient;
+                    return window.supabaseClient;
+
+                } catch (error) {
+
+                    diagError(
+                        error,
+                        'createClient'
+                    );
+
+                    throw error;
+                }
             }
 
             return null;
@@ -674,12 +1308,24 @@
             return (
                 !navigator.onLine ||
                 error instanceof TypeError ||
-                mensaje.includes('failed to fetch') ||
-                mensaje.includes('networkerror') ||
-                mensaje.includes('network error') ||
-                mensaje.includes('fetch failed') ||
-                mensaje.includes('load failed') ||
-                mensaje.includes('connection')
+                mensaje.includes(
+                    'failed to fetch'
+                ) ||
+                mensaje.includes(
+                    'networkerror'
+                ) ||
+                mensaje.includes(
+                    'network error'
+                ) ||
+                mensaje.includes(
+                    'fetch failed'
+                ) ||
+                mensaje.includes(
+                    'load failed'
+                ) ||
+                mensaje.includes(
+                    'connection'
+                )
             );
         }
 
@@ -699,21 +1345,26 @@
                 Promise.resolve(promise);
 
             const timeoutPromise =
-                new Promise((_, reject) => {
+                new Promise(
+                    (_, reject) => {
 
-                    timeoutId =
-                        setTimeout(() => {
+                        timeoutId =
+                            setTimeout(
+                                () => {
 
-                            reject(
-                                new Error(
-                                    mensaje ||
-                                    'La operación tardó demasiado.'
-                                )
+                                    reject(
+                                        new Error(
+                                            mensaje ||
+                                            'La operación tardó demasiado.'
+                                        )
+                                    );
+
+                                },
+                                timeoutMs
                             );
 
-                        }, timeoutMs);
-
-                });
+                    }
+                );
 
             return Promise.race([
                 operacion,
@@ -729,7 +1380,9 @@
         // OBTENER SESIÓN CON TIMEOUT
         // ========================================================
 
-        async function obtenerSesionSegura(client) {
+        async function obtenerSesionSegura(
+            client
+        ) {
 
             if (!client) {
 
@@ -738,26 +1391,63 @@
                 );
             }
 
-            const resultado =
-                await conTimeout(
-                    client.auth.getSession(),
-                    SUPABASE_TIMEOUT_MS,
-                    'SUPABASE_SESSION_TIMEOUT'
+            diagStep(
+                'getSession iniciado'
+            );
+
+            window.__sarWalletDiag
+                .getSessionStarted =
+                true;
+
+            actualizarDiagnostico();
+
+            try {
+
+                const resultado =
+                    await conTimeout(
+                        client.auth.getSession(),
+                        SUPABASE_TIMEOUT_MS,
+                        'SUPABASE_SESSION_TIMEOUT'
+                    );
+
+                window.__sarWalletDiag
+                    .getSessionFinished =
+                    true;
+
+                diagStep(
+                    'getSession terminado'
                 );
 
-            if (!resultado) {
+                if (!resultado) {
 
-                throw new Error(
-                    'SUPABASE_EMPTY_RESPONSE'
+                    throw new Error(
+                        'SUPABASE_EMPTY_RESPONSE'
+                    );
+                }
+
+                if (resultado.error) {
+
+                    throw resultado.error;
+                }
+
+                return (
+                    resultado.data?.session ||
+                    null
                 );
+
+            } catch (error) {
+
+                window.__sarWalletDiag
+                    .getSessionFinished =
+                    false;
+
+                diagError(
+                    error,
+                    'getSession'
+                );
+
+                throw error;
             }
-
-            if (resultado.error) {
-
-                throw resultado.error;
-            }
-
-            return resultado.data?.session || null;
         }
 
         // ========================================================
@@ -772,20 +1462,27 @@
                 '#estadoNoAutenticado',
                 '#estadoError',
                 '#estadoWalletConectada'
-            ].forEach(selector => {
+            ].forEach(
+                selector => {
 
-                const el = $(selector);
+                    const el =
+                        $(selector);
 
-                if (el) {
-                    el.style.display = 'none';
+                    if (el) {
+                        el.style.display =
+                            'none';
+                    }
+
                 }
+            );
 
-            });
-
-            const destino = $(id);
+            const destino =
+                $(id);
 
             if (destino) {
-                destino.style.display = 'block';
+
+                destino.style.display =
+                    'block';
             }
         }
 
@@ -793,7 +1490,9 @@
         // ERROR
         // ========================================================
 
-        function mostrarError(mensaje) {
+        function mostrarError(
+            mensaje
+        ) {
 
             const texto =
                 $('#textoEstadoError');
@@ -805,7 +1504,11 @@
                     'No fue posible consultar tu sesión. Intenta nuevamente.';
             }
 
-            mostrarEstado('#estadoError');
+            mostrarEstado(
+                '#estadoError'
+            );
+
+            actualizarDiagnostico();
         }
 
         // ========================================================
@@ -820,9 +1523,21 @@
 
             cargandoWallet = true;
 
-            mostrarEstado('#estadoCargando');
+            window.__sarWalletDiag
+                .cargarEstadoWallet =
+                true;
 
-            if ($('#textoEstadoCargando')) {
+            diagStep(
+                'cargarEstadoWallet iniciado'
+            );
+
+            mostrarEstado(
+                '#estadoCargando'
+            );
+
+            if (
+                $('#textoEstadoCargando')
+            ) {
 
                 $('#textoEstadoCargando')
                     .textContent =
@@ -836,8 +1551,14 @@
 
                 if (!client) {
 
-                    console.error(
-                        'Supabase no disponible'
+                    const error =
+                        new Error(
+                            'SUPABASE_NOT_AVAILABLE'
+                        );
+
+                    diagError(
+                        error,
+                        'supabase'
                     );
 
                     mostrarError(
@@ -847,8 +1568,8 @@
                     return;
                 }
 
-                console.log(
-                    '🔎 Consultando sesión de Supabase...'
+                diagStep(
+                    'consultando-sesion'
                 );
 
                 const session =
@@ -856,12 +1577,11 @@
                         client
                     );
 
-                console.log(
-                    '🔎 Sesión obtenida:',
-                    Boolean(session)
-                );
-
                 if (!session) {
+
+                    diagStep(
+                        'sesion-no-activa'
+                    );
 
                     mostrarEstado(
                         '#estadoNoAutenticado'
@@ -870,8 +1590,12 @@
                     return;
                 }
 
-                console.log(
-                    '🔎 Consultando wallet del usuario...'
+                diagStep(
+                    'sesion-activa'
+                );
+
+                diagStep(
+                    'consultando-wallet-usuario'
                 );
 
                 const resultadoUsuario =
@@ -898,13 +1622,15 @@
 
                 if (error) {
 
-                    console.error(
-                        'Error consultando wallet:',
-                        error
+                    diagError(
+                        error,
+                        'consulta-wallet'
                     );
 
                     if (
-                        esErrorDeRed(error)
+                        esErrorDeRed(
+                            error
+                        )
                     ) {
 
                         mostrarError(
@@ -926,6 +1652,10 @@
                     usuario.wallet_address
                 ) {
 
+                    diagStep(
+                        'wallet-encontrada'
+                    );
+
                     mostrarWalletConectada(
                         usuario.wallet_address
                     );
@@ -933,18 +1663,37 @@
                     return;
                 }
 
+                diagStep(
+                    'usuario-sin-wallet'
+                );
+
                 mostrarEstado(
                     '#estadoSinWallet'
                 );
 
-                renderBeneficios();
-                renderWallets();
+                try {
+
+                    renderBeneficios();
+                    renderWallets();
+
+                } catch (renderError) {
+
+                    /*
+                     * Un problema visual de config-icons/layout
+                     * no debe volver a dejar la página en loading.
+                     */
+                    diagError(
+                        renderError,
+                        'render-sin-wallet'
+                    );
+
+                }
 
             } catch (error) {
 
-                console.error(
-                    'Error cargando estado wallet:',
-                    error
+                diagError(
+                    error,
+                    'cargarEstadoWallet'
                 );
 
                 if (
@@ -995,6 +1744,10 @@
             } finally {
 
                 cargandoWallet = false;
+
+                diagStep(
+                    'cargarEstadoWallet finalizado'
+                );
             }
         }
 
@@ -1031,39 +1784,68 @@
 
             if (window.SarWallet) {
 
-                const red =
-                    window.SarWallet.redActual();
+                try {
 
-                if (red) {
+                    const red =
+                        window.SarWallet
+                            .redActual();
 
-                    if ($('#walletNetwork')) {
+                    if (red) {
 
-                        $('#walletNetwork')
-                            .textContent =
-                            red.info?.name ||
-                            'Polygon Amoy';
+                        if (
+                            $('#walletNetwork')
+                        ) {
+
+                            $('#walletNetwork')
+                                .textContent =
+                                red.info?.name ||
+                                'Polygon Amoy';
+                        }
+
+                        if (
+                            $('#walletRed')
+                        ) {
+
+                            $('#walletRed')
+                                .textContent =
+                                red.nombre ||
+                                'Amoy';
+                        }
+
+                        if (
+                            $('#walletChainId')
+                        ) {
+
+                            $('#walletChainId')
+                                .textContent =
+                                red.chainId ||
+                                80002;
+                        }
                     }
 
-                    if ($('#walletRed')) {
+                } catch (error) {
 
-                        $('#walletRed')
-                            .textContent =
-                            red.nombre ||
-                            'Amoy';
-                    }
+                    diagError(
+                        error,
+                        'redActual'
+                    );
 
-                    if ($('#walletChainId')) {
-
-                        $('#walletChainId')
-                            .textContent =
-                            red.chainId ||
-                            80002;
-                    }
                 }
             }
 
-            renderAcciones();
-            renderInfo();
+            try {
+
+                renderAcciones();
+                renderInfo();
+
+            } catch (error) {
+
+                diagError(
+                    error,
+                    'render-wallet-conectada'
+                );
+
+            }
         }
 
         // ========================================================
@@ -1076,6 +1858,27 @@
                 $('#seccionBeneficios');
 
             if (!container) {
+                return;
+            }
+
+            if (
+                typeof window.cfgRenderItem !==
+                'function'
+            ) {
+
+                container.innerHTML =
+                    '<div class="cfg-item-plain">' +
+                        '<strong>Gestiona tus Es.stoks</strong>' +
+                        '<br>' +
+                        '<small>Tus tokens estarán vinculados a tu wallet.</small>' +
+                    '</div>' +
+
+                    '<div class="cfg-item-plain">' +
+                        '<strong>Seguridad</strong>' +
+                        '<br>' +
+                        '<small>Sariel\'s no obtiene tus claves privadas.</small>' +
+                    '</div>';
+
                 return;
             }
 
@@ -1124,6 +1927,33 @@
                 return;
             }
 
+            if (
+                typeof window.cfgRenderItem !==
+                'function'
+            ) {
+
+                container.innerHTML =
+                    '<div class="cfg-item-plain">' +
+                        '<strong>🦊 MetaMask</strong>' +
+                        '<br>' +
+                        '<small>Desktop · App móvil · WalletConnect</small>' +
+                    '</div>' +
+
+                    '<div class="cfg-item-plain">' +
+                        '<strong>🔷 Coinbase Wallet</strong>' +
+                        '<br>' +
+                        '<small>Compatible mediante WalletConnect</small>' +
+                    '</div>' +
+
+                    '<div class="cfg-item-plain">' +
+                        '<strong>🌈 Rainbow Wallet</strong>' +
+                        '<br>' +
+                        '<small>Compatible mediante WalletConnect</small>' +
+                    '</div>';
+
+                return;
+            }
+
             container.innerHTML = [
 
                 cfgRenderItem({
@@ -1165,6 +1995,19 @@
                 $('#seccionAcciones');
 
             if (!container) {
+                return;
+            }
+
+            if (
+                typeof window.cfgRenderItem !==
+                'function'
+            ) {
+
+                container.innerHTML =
+                    '<div class="cfg-item-plain">' +
+                        'Ver en Polygon Explorer' +
+                    '</div>';
+
                 return;
             }
 
@@ -1220,6 +2063,21 @@
                 return;
             }
 
+            if (
+                typeof window.cfgRenderItem !==
+                'function'
+            ) {
+
+                container.innerHTML =
+                    '<div class="cfg-item-plain">' +
+                        '<strong>Seguridad</strong>' +
+                        '<br>' +
+                        '<small>Nunca compartas tu frase semilla.</small>' +
+                    '</div>';
+
+                return;
+            }
+
             container.innerHTML = [
 
                 cfgRenderItem({
@@ -1263,6 +2121,10 @@
                         '⏳ Conectando...';
                 }
 
+                diagStep(
+                    'boton-conectar'
+                );
+
                 try {
 
                     if (!window.SarWallet) {
@@ -1302,6 +2164,10 @@
                         3000
                     );
 
+                    diagStep(
+                        'SarWallet.conectar'
+                    );
+
                     const result =
                         await window.SarWallet
                             .conectar();
@@ -1333,9 +2199,9 @@
 
                 } catch (e) {
 
-                    console.error(
-                        'Error conectando wallet:',
-                        e
+                    diagError(
+                        e,
+                        'conectar-wallet'
                     );
 
                     if (
@@ -1443,7 +2309,7 @@
                     ) {
 
                         cfgToast(
-                            '⚠️ Tu sesión de Sariel's expiró. Inicia sesión nuevamente.',
+                            "⚠️ Tu sesión de Sariel's expiró. Inicia sesión nuevamente.",
                             'warning',
                             5000
                         );
@@ -1525,6 +2391,8 @@
                         btn.textContent =
                             '◈ Conectar Wallet';
                     }
+
+                    actualizarDiagnostico();
                 }
             };
 
@@ -1558,6 +2426,10 @@
                     'SESSION_EXPIRED'
                 );
             }
+
+            diagStep(
+                'vincular_wallet'
+            );
 
             const resultado =
                 await conTimeout(
@@ -1638,6 +2510,10 @@
 
                     if (client) {
 
+                        diagStep(
+                            'desvincular_wallet'
+                        );
+
                         const resultado =
                             await conTimeout(
                                 client.rpc(
@@ -1665,9 +2541,9 @@
 
                 } catch (e) {
 
-                    console.error(
-                        'Error desconectando:',
-                        e
+                    diagError(
+                        e,
+                        'desconectar-wallet'
                     );
 
                     if (
@@ -1833,12 +2709,18 @@
                     '#estadoCargando'
                 );
 
-                if ($('#textoEstadoCargando')) {
+                if (
+                    $('#textoEstadoCargando')
+                ) {
 
                     $('#textoEstadoCargando')
                         .textContent =
                         'Reintentando conexión...';
                 }
+
+                diagStep(
+                    'reintento-manual'
+                );
 
                 await cargarEstadoWallet();
             };
@@ -1857,6 +2739,7 @@
                         '📶 Se perdió la conexión a internet. Verifica tu conexión y pulsa Reintentar.'
                     );
                 }
+
             }
         );
 
@@ -1867,6 +2750,10 @@
         window.addEventListener(
             'online',
             function () {
+
+                diagStep(
+                    'conexion-restaurada'
+                );
 
                 console.log(
                     '📶 Conexión a internet restaurada.'
@@ -1883,6 +2770,10 @@
             'sar:wallet:accountsChanged',
             function () {
 
+                diagStep(
+                    'wallet-accountsChanged'
+                );
+
                 cargarEstadoWallet();
 
             }
@@ -1891,6 +2782,10 @@
         window.addEventListener(
             'sar:wallet:chainChanged',
             function () {
+
+                diagStep(
+                    'wallet-chainChanged'
+                );
 
                 cargarEstadoWallet();
 
@@ -1901,10 +2796,61 @@
             'sar:wallet:disconnected',
             function () {
 
+                diagStep(
+                    'wallet-disconnected'
+                );
+
                 cargarEstadoWallet();
 
             }
         );
+
+        // ========================================================
+        // TIMEOUT ABSOLUTO DE PÁGINA
+        // ========================================================
+
+        function iniciarTimeoutAbsoluto() {
+
+            if (initTimer) {
+                clearTimeout(initTimer);
+            }
+
+            initTimer =
+                setTimeout(
+                    function () {
+
+                        if (
+                            inicializacionCompletada
+                        ) {
+                            return;
+                        }
+
+                        cargandoWallet =
+                            false;
+
+                        diagStep(
+                            'PAGE_INIT_TIMEOUT'
+                        );
+
+                        const mensaje =
+                            'La inicialización de la wallet tardó demasiado. ' +
+                            'Pulsa Reintentar.';
+
+                        diagError(
+                            new Error(
+                                mensaje
+                            ),
+                            'PAGE_INIT_TIMEOUT'
+                        );
+
+                        mostrarError(
+                            mensaje
+                        );
+
+                    },
+                    PAGE_INIT_TIMEOUT_MS
+                );
+        }
 
         // ========================================================
         // INICIO
@@ -1912,16 +2858,146 @@
 
         async function iniciarWalletPage() {
 
-            await new Promise(
-                resolve =>
-                    setTimeout(
-                        resolve,
-                        300
-                    )
+            window.__sarWalletDiag
+                .iniciarWalletPage =
+                true;
+
+            diagStep(
+                'iniciarWalletPage'
             );
 
-            await cargarEstadoWallet();
+            iniciarTimeoutAbsoluto();
+
+            try {
+
+                /*
+                 * Espera mínima para permitir que todos los scripts
+                 * defer terminen de inicializarse antes de consultar
+                 * el estado.
+                 */
+                await new Promise(
+                    resolve =>
+                        setTimeout(
+                            resolve,
+                            100
+                        )
+                );
+
+                diagStep(
+                    'scripts-inicializados'
+                );
+
+                /*
+                 * cfgInitPage es visual/layout.
+                 *
+                 * NO debe bloquear la comprobación de la wallet.
+                 */
+                if (
+                    typeof window.cfgInitPage ===
+                    'function'
+                ) {
+
+                    window.__sarWalletDiag
+                        .cfgInitPageLoaded =
+                        true;
+
+                    try {
+
+                        diagStep(
+                            'cfgInitPage-inicio'
+                        );
+
+                        window.cfgInitPage({
+                            title:
+                                'Wallet y Polygon',
+
+                            subtitle:
+                                'Gestiona tu wallet',
+
+                            backUrl:
+                                '/features/perfil/configuracion/index.html',
+                        });
+
+                    } catch (layoutError) {
+
+                        /*
+                         * Un fallo del layout NO bloquea la wallet.
+                         */
+                        diagError(
+                            layoutError,
+                            'cfgInitPage'
+                        );
+
+                    }
+
+                } else {
+
+                    window.__sarWalletDiag
+                        .cfgInitPageLoaded =
+                        false;
+
+                    diagStep(
+                        'cfgInitPage-no-disponible'
+                    );
+                }
+
+                /*
+                 * La comprobación de Supabase se ejecuta
+                 * independientemente de cfgInitPage.
+                 */
+                await cargarEstadoWallet();
+
+                inicializacionCompletada =
+                    true;
+
+                if (initTimer) {
+
+                    clearTimeout(
+                        initTimer
+                    );
+
+                    initTimer = null;
+                }
+
+                diagStep(
+                    'INICIALIZACION_COMPLETADA'
+                );
+
+            } catch (error) {
+
+                inicializacionCompletada =
+                    true;
+
+                if (initTimer) {
+
+                    clearTimeout(
+                        initTimer
+                    );
+
+                    initTimer = null;
+                }
+
+                diagError(
+                    error,
+                    'iniciarWalletPage'
+                );
+
+                cargandoWallet =
+                    false;
+
+                mostrarError(
+                    'No fue posible iniciar la página de wallet. Pulsa Reintentar.'
+                );
+
+            } finally {
+
+                actualizarDiagnostico();
+            }
         }
+
+        // ========================================================
+        // ARRANQUE DOM
+        // ========================================================
 
         if (
             document.readyState ===
@@ -1930,7 +3006,15 @@
 
             window.addEventListener(
                 'DOMContentLoaded',
-                iniciarWalletPage,
+                function () {
+
+                    window.__sarWalletDiag
+                        .domContentLoaded =
+                        true;
+
+                    iniciarWalletPage();
+
+                },
                 {
                     once: true
                 }
