@@ -1,4 +1,4 @@
-🍪 Sariel's Ecosistema WEB3
+ 🍪 Sariel's Ecosistema WEB3
 
 Plataforma Web3 integral que combina comercio físico, activos digitales, red social, marketplace, transmisiones en vivo, mensajería, pagos cripto, pagos con tarjeta, pagos SPEI y servicios digitales en un mismo ecosistema.
 
