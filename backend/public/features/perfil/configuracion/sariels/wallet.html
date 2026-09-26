@@ -255,18 +255,18 @@
 
                 <div class="cfg-wallet-network">
                     <span class="dot"></span>
-                    <span id="walletNetwork">Polygon Mainnet</span>
+                    <span id="walletNetwork">Polygon Amoy</span>
                 </div>
             </div>
 
             <div class="cfg-wallet-stats">
                 <div class="cfg-wallet-stat">
                     <div class="label">Red</div>
-                    <div class="value" id="walletRed">Polygon</div>
+                    <div class="value" id="walletRed">Amoy</div>
                 </div>
                 <div class="cfg-wallet-stat">
                     <div class="label">Chain ID</div>
-                    <div class="value" id="walletChainId">137</div>
+                    <div class="value" id="walletChainId">80002</div>
                 </div>
             </div>
 
@@ -383,6 +383,9 @@
         }
 
         function renderWallets() {
+            // ⚠️ IMPORTANTE: Estas tarjetas son SOLO INFORMATIVAS.
+            // NO tienen href ni onclick. El cfgRenderItem las renderiza
+            // como div no clickeable.
             $('#seccionWallets').innerHTML = [
                 cfgRenderItem({
                     icon: 'wallet',
@@ -505,8 +508,8 @@
 
             const { error } = await client.rpc('vincular_wallet', {
                 p_wallet_address: address,
-                p_chain_id: '137',
-                p_network_name: 'polygon'
+                p_chain_id: '80002',
+                p_network_name: 'polygon-amoy'
             });
 
             if (error) throw new Error('Error guardando wallet: ' + error.message);
@@ -568,7 +571,7 @@
             const el = $('#walletAddress');
             const address = el.getAttribute('data-full');
             if (address) {
-                window.open('https://polygonscan.com/address/' + address, '_blank', 'noopener');
+                window.open('https://amoy.polygonscan.com/address/' + address, '_blank', 'noopener');
             }
         };
 
