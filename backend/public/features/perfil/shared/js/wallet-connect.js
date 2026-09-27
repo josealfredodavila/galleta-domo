@@ -1,103 +1,248 @@
 /* ================================================================
  * WALLET CONNECT - Sariel's Ecosystem
- * Versión corregida: 2026-09-26
+ * ================================================================
+ * Conexión Web3 universal:
+ *
+ * Desktop:
+ *   - MetaMask / injected
+ *   - WalletConnect
+ *
+ * Android / iOS:
+ *   - MetaMask Browser / Coinbase Browser → injected
+ *   - Chrome / Safari → WalletConnect
+ *   - MetaMask → deep link
+ *   - Rainbow → deep link
+ *
+ * Red activa:
+ *   Polygon Amoy
+ *   Chain ID 80002
+ *
  * ================================================================ */
+
 (function () {
+
     'use strict';
 
-    const PUBLIC_APP_URL = 'https://auction.up.railway.app';
-    const WEB3_CONFIG_ENDPOINT = '/api/config/web3';
+    /* ============================================================
+     * CONFIGURACIÓN
+     * ============================================================ */
 
-    const RED_ACTIVA = 'AMOY';
+    const PUBLIC_APP_URL =
+        'https://auction.up.railway.app';
+
+    const WEB3_CONFIG_ENDPOINT =
+        '/api/config/web3';
+
+    const RED_ACTIVA =
+        'AMOY';
 
     const REDES = {
+
         MAINNET: {
-            chainId: 137,
-            chainIdHex: '0x89',
-            name: 'Polygon Mainnet',
-            rpcUrl: 'https://polygon-rpc.com',
-            explorer: 'https://polygonscan.com',
-            symbol: 'POL'
+
+            chainId:
+                137,
+
+            chainIdHex:
+                '0x89',
+
+            name:
+                'Polygon Mainnet',
+
+            rpcUrl:
+                'https://polygon-rpc.com',
+
+            explorer:
+                'https://polygonscan.com',
+
+            symbol:
+                'POL'
+
         },
 
         AMOY: {
-            chainId: 80002,
-            chainIdHex: '0x13882',
-            name: 'Polygon Amoy',
-            rpcUrl: 'https://rpc-amoy.polygon.technology/',
-            explorer: 'https://amoy.polygonscan.com',
-            symbol: 'POL'
+
+            chainId:
+                80002,
+
+            chainIdHex:
+                '0x13882',
+
+            name:
+                'Polygon Amoy',
+
+            rpcUrl:
+                'https://rpc-amoy.polygon.technology/',
+
+            explorer:
+                'https://amoy.polygonscan.com',
+
+            symbol:
+                'POL'
+
         }
+
     };
 
-    const RED = REDES[RED_ACTIVA];
-    const CHAIN_ID_OBJETIVO = RED.chainId;
-    const CHAIN_ID_HEX = RED.chainIdHex;
+    const RED =
+        REDES[RED_ACTIVA];
 
-    let WALLETCONNECT_PROJECT_ID = null;
-    let web3ConfigPromise = null;
-    let wcProvider = null;
-    let currentAccount = null;
-    let currentProviderType = null;
-    let desconectando = false;
-    let eventosInjectedRegistrados = false;
-    let eventosWcRegistrados = false;
+    const CHAIN_ID_OBJETIVO =
+        RED.chainId;
+
+    const CHAIN_ID_HEX =
+        RED.chainIdHex;
+
+
+    /* ============================================================
+     * ESTADO
+     * ============================================================ */
+
+    let WALLETCONNECT_PROJECT_ID =
+        null;
+
+    let web3ConfigPromise =
+        null;
+
+    let wcProvider =
+        null;
+
+    let currentAccount =
+        null;
+
+    let currentProviderType =
+        null;
+
+    let desconectando =
+        false;
+
+    let eventosInjectedRegistrados =
+        false;
+
+    let eventosWcRegistrados =
+        false;
+
+
+    /* ============================================================
+     * DETECCIÓN DE PROVIDER
+     * ============================================================ */
 
     function tieneInjectedProvider() {
-        return !!(
+
+        return Boolean(
+
             window.ethereum &&
-            typeof window.ethereum.request === 'function'
+
+            typeof window.ethereum.request ===
+            'function'
+
         );
+
     }
+
 
     function esMovil() {
+
         return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i
-            .test(navigator.userAgent || '');
+            .test(
+                navigator.userAgent || ''
+            );
+
     }
+
 
     function esAndroid() {
-        return /Android/i.test(navigator.userAgent || '');
+
+        return /Android/i.test(
+            navigator.userAgent || ''
+        );
+
     }
+
 
     function esIOS() {
-        return /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+
+        return /iPhone|iPad|iPod/i.test(
+            navigator.userAgent || ''
+        );
+
     }
+
 
     function esNavegadorDeMetaMask() {
+
         return (
+
             tieneInjectedProvider() &&
-            window.ethereum.isMetaMask === true
+
+            window.ethereum.isMetaMask ===
+            true
+
         );
+
     }
+
 
     function esNavegadorDeCoinbase() {
+
         return (
+
             tieneInjectedProvider() &&
-            window.ethereum.isCoinbaseWallet === true
+
+            window.ethereum.isCoinbaseWallet ===
+            true
+
         );
+
     }
+
 
     function esNavegadorWalletInterno() {
+
         return (
+
             esNavegadorDeMetaMask() ||
+
             esNavegadorDeCoinbase()
+
         );
+
     }
+
 
     function debeUsarInjected() {
-        if (!tieneInjectedProvider()) {
+
+        if (
+            !tieneInjectedProvider()
+        ) {
+
             return false;
+
         }
 
         return (
+
             !esMovil() ||
+
             esNavegadorWalletInterno()
+
         );
+
     }
+
+
+    /* ============================================================
+     * CONFIGURACIÓN WEB3
+     * ============================================================ */
 
     async function cargarConfiguracionWeb3() {
-        if (WALLETCONNECT_PROJECT_ID) {
+
+        if (
+            WALLETCONNECT_PROJECT_ID
+        ) {
+
             return {
+
                 walletConnectProjectId:
                     WALLETCONNECT_PROJECT_ID,
 
@@ -106,133 +251,165 @@
 
                 polygonChainId:
                     CHAIN_ID_OBJETIVO
+
             };
+
         }
 
-        if (web3ConfigPromise) {
+
+        if (
+            web3ConfigPromise
+        ) {
+
             return web3ConfigPromise;
+
         }
 
-        web3ConfigPromise = (async () => {
 
-            let response;
+        web3ConfigPromise =
+            (async function () {
 
-            try {
+                let response;
 
-                response = await fetch(
-                    WEB3_CONFIG_ENDPOINT,
-                    {
-                        method: 'GET',
-                        headers: {
-                            Accept:
-                                'application/json'
-                        },
-                        credentials:
-                            'same-origin',
-                        cache:
-                            'no-store'
-                    }
-                );
+                try {
 
-            } catch (error) {
+                    response =
+                        await fetch(
+                            WEB3_CONFIG_ENDPOINT,
+                            {
 
-                const e =
-                    new Error(
-                        'WEB3_CONFIG_NETWORK_ERROR'
+                                method:
+                                    'GET',
+
+                                headers: {
+
+                                    Accept:
+                                        'application/json'
+
+                                },
+
+                                credentials:
+                                    'same-origin',
+
+                                cache:
+                                    'no-store'
+
+                            }
+                        );
+
+                } catch (error) {
+
+                    const e =
+                        new Error(
+                            'WEB3_CONFIG_NETWORK_ERROR'
+                        );
+
+                    e.cause =
+                        error;
+
+                    throw e;
+
+                }
+
+
+                if (
+                    !response.ok
+                ) {
+
+                    throw new Error(
+                        'WEB3_CONFIG_HTTP_' +
+                        response.status
                     );
 
-                e.cause = error;
+                }
 
-                throw e;
-            }
 
-            if (!response.ok) {
-                throw new Error(
-                    'WEB3_CONFIG_HTTP_' +
-                    response.status
-                );
-            }
+                let config;
 
-            let config;
+                try {
 
-            try {
+                    config =
+                        await response.json();
 
-                config =
-                    await response.json();
+                } catch (error) {
 
-            } catch (error) {
+                    throw new Error(
+                        'WEB3_CONFIG_INVALID_JSON'
+                    );
 
-                throw new Error(
-                    'WEB3_CONFIG_INVALID_JSON'
-                );
+                }
 
-            }
 
-            if (
-                !config ||
-                config.success !== true
-            ) {
-                throw new Error(
-                    'WEB3_CONFIG_INVALID'
-                );
-            }
+                if (
+                    !config ||
+                    config.success !== true
+                ) {
 
-            const projectId =
-                String(
-                    config.walletConnectProjectId ||
-                    ''
-                ).trim();
+                    throw new Error(
+                        'WEB3_CONFIG_INVALID'
+                    );
 
-            if (!projectId) {
-                throw new Error(
-                    'WALLETCONNECT_PROJECT_ID_NOT_CONFIGURED'
-                );
-            }
+                }
 
-            WALLETCONNECT_PROJECT_ID =
-                projectId;
 
-            if (
-                config.polygonChainId != null &&
-                Number(
-                    config.polygonChainId
-                ) !== CHAIN_ID_OBJETIVO
-            ) {
+                const projectId =
+                    String(
+                        config.walletConnectProjectId ||
+                        ''
+                    ).trim();
 
-                console.warn(
-                    '[SarWallet] Chain ID del backend:',
-                    config.polygonChainId,
-                    '| esperado:',
-                    CHAIN_ID_OBJETIVO
-                );
 
-            }
+                if (
+                    !projectId
+                ) {
 
-            return {
-                walletConnectProjectId:
-                    WALLETCONNECT_PROJECT_ID,
+                    throw new Error(
+                        'WALLETCONNECT_PROJECT_ID_NOT_CONFIGURED'
+                    );
 
-                publicUrl:
-                    PUBLIC_APP_URL,
+                }
 
-                polygonChainId:
-                    Number(
-                        config.polygonChainId
-                    ) ||
-                    CHAIN_ID_OBJETIVO
-            };
 
-        })().catch((error) => {
+                WALLETCONNECT_PROJECT_ID =
+                    projectId;
 
-            web3ConfigPromise =
-                null;
 
-            throw error;
+                return {
 
-        });
+                    walletConnectProjectId:
+                        WALLETCONNECT_PROJECT_ID,
+
+                    publicUrl:
+                        PUBLIC_APP_URL,
+
+                    polygonChainId:
+                        Number(
+                            config.polygonChainId
+                        ) ||
+                        CHAIN_ID_OBJETIVO
+
+                };
+
+            })().catch(
+                function (error) {
+
+                    web3ConfigPromise =
+                        null;
+
+                    throw error;
+
+                }
+            );
+
 
         return web3ConfigPromise;
+
     }
+
+
+    /* ============================================================
+     * DEEP LINKS
+     * ============================================================ */
 
     function construirDeepLinkMetaMask() {
 
@@ -240,9 +417,16 @@
             window.location.pathname +
             window.location.search;
 
-        if (!path) {
-            path = '/';
+
+        if (
+            !path
+        ) {
+
+            path =
+                '/';
+
         }
+
 
         let canonicalUrl;
 
@@ -264,39 +448,55 @@
 
         }
 
+
         return (
+
             'https://metamask.app.link/dapp/' +
+
             canonicalUrl.host +
+
             canonicalUrl.pathname +
+
             canonicalUrl.search
+
         );
+
     }
+
 
     function abrirMetaMaskApp() {
 
         const deepLink =
             construirDeepLinkMetaMask();
 
+
         console.log(
-            '[SarWallet] Abriendo MetaMask:',
+            '[SarWallet] MetaMask:',
             deepLink
         );
 
+
         window.location.href =
             deepLink;
+
     }
+
 
     function abrirRainbowApp() {
 
         let urlActual;
 
+
         try {
 
             urlActual =
                 new URL(
+
                     window.location.pathname +
                     window.location.search,
+
                     PUBLIC_APP_URL
+
                 ).toString();
 
         } catch (_) {
@@ -306,27 +506,40 @@
 
         }
 
+
         const deepLink =
+
             'https://rnbwapp.com/dapp?url=' +
+
             encodeURIComponent(
                 urlActual
             );
 
+
         console.log(
-            '[SarWallet] Abriendo Rainbow:',
+            '[SarWallet] Rainbow:',
             deepLink
         );
 
+
         window.location.href =
             deepLink;
+
     }
+
+
+    /* ============================================================
+     * SESIÓN LOCAL
+     * ============================================================ */
 
     function guardarSesion(data) {
 
         try {
 
             localStorage.setItem(
+
                 'sar_wallet_session',
+
                 JSON.stringify({
 
                     tipo:
@@ -342,17 +555,20 @@
                         Date.now()
 
                 })
+
             );
 
         } catch (error) {
 
             console.warn(
-                '[SarWallet] No se pudo guardar sesión local:',
+                '[SarWallet] No se pudo guardar sesión:',
                 error
             );
 
         }
+
     }
+
 
     function leerSesion() {
 
@@ -363,19 +579,32 @@
                     'sar_wallet_session'
                 );
 
-            if (!raw) {
+
+            if (
+                !raw
+            ) {
+
                 return null;
+
             }
+
 
             const data =
                 JSON.parse(raw);
 
+
             if (
+
                 !data ||
+
                 !data.timestamp ||
-                Date.now() -
-                    data.timestamp >
-                    24 * 60 * 60 * 1000
+
+                (
+                    Date.now() -
+                    data.timestamp
+                ) >
+                24 * 60 * 60 * 1000
+
             ) {
 
                 localStorage.removeItem(
@@ -383,7 +612,9 @@
                 );
 
                 return null;
+
             }
+
 
             return data;
 
@@ -392,7 +623,9 @@
             return null;
 
         }
+
     }
+
 
     function limpiarSesion() {
 
@@ -406,15 +639,23 @@
 
     }
 
+
+    /* ============================================================
+     * CAMBIAR RED
+     * ============================================================ */
+
     async function cambiarRedInjected() {
 
-        if (!tieneInjectedProvider()) {
+        if (
+            !tieneInjectedProvider()
+        ) {
 
             throw new Error(
                 'INJECTED_NOT_AVAILABLE'
             );
 
         }
+
 
         try {
 
@@ -423,18 +664,28 @@
                 method:
                     'wallet_switchEthereumChain',
 
-                params: [{
-                    chainId:
-                        CHAIN_ID_HEX
-                }]
+                params: [
 
-            });
+                    {
+
+                        chainId:
+                            CHAIN_ID_HEX
+
+                    }
+
+                ]
+
+            );
 
         } catch (switchError) {
 
             if (
+
                 switchError &&
-                switchError.code === 4902
+
+                switchError.code ===
+                4902
+
             ) {
 
                 await window.ethereum.request({
@@ -442,36 +693,44 @@
                     method:
                         'wallet_addEthereumChain',
 
-                    params: [{
+                    params: [
 
-                        chainId:
-                            CHAIN_ID_HEX,
+                        {
 
-                        chainName:
-                            RED.name,
+                            chainId:
+                                CHAIN_ID_HEX,
 
-                        nativeCurrency: {
+                            chainName:
+                                RED.name,
 
-                            name:
-                                RED.symbol,
+                            nativeCurrency: {
 
-                            symbol:
-                                RED.symbol,
+                                name:
+                                    RED.symbol,
 
-                            decimals:
-                                18
+                                symbol:
+                                    RED.symbol,
 
-                        },
+                                decimals:
+                                    18
 
-                        rpcUrls: [
-                            RED.rpcUrl
-                        ],
+                            },
 
-                        blockExplorerUrls: [
-                            RED.explorer
-                        ]
+                            rpcUrls: [
 
-                    }]
+                                RED.rpcUrl
+
+                            ],
+
+                            blockExplorerUrls: [
+
+                                RED.explorer
+
+                            ]
+
+                        }
+
+                    ]
 
                 });
 
@@ -480,18 +739,28 @@
                 throw switchError;
 
             }
+
         }
+
     }
+
+
+    /* ============================================================
+     * CONEXIÓN INJECTED
+     * ============================================================ */
 
     async function conectarConInjected() {
 
-        if (!tieneInjectedProvider()) {
+        if (
+            !tieneInjectedProvider()
+        ) {
 
             throw new Error(
                 'INJECTED_NOT_AVAILABLE'
             );
 
         }
+
 
         const accounts =
             await window.ethereum.request({
@@ -501,9 +770,13 @@
 
             });
 
+
         if (
+
             !accounts ||
+
             accounts.length === 0
+
         ) {
 
             throw new Error(
@@ -512,8 +785,10 @@
 
         }
 
+
         const account =
             accounts[0];
+
 
         let chainIdHexActual =
             await window.ethereum.request({
@@ -523,11 +798,13 @@
 
             });
 
+
         let chainIdActual =
             parseInt(
                 chainIdHexActual,
                 16
             );
+
 
         if (
             chainIdActual !==
@@ -535,6 +812,7 @@
         ) {
 
             await cambiarRedInjected();
+
 
             chainIdHexActual =
                 await window.ethereum.request({
@@ -544,11 +822,13 @@
 
                 });
 
+
             chainIdActual =
                 parseInt(
                     chainIdHexActual,
                     16
                 );
+
 
             if (
                 chainIdActual !==
@@ -560,13 +840,16 @@
                 );
 
             }
+
         }
+
 
         currentAccount =
             account;
 
         currentProviderType =
             'injected';
+
 
         guardarSesion({
 
@@ -581,7 +864,9 @@
 
         });
 
+
         registrarEventosInjected();
+
 
         return {
 
@@ -598,27 +883,134 @@
                 window.ethereum
 
         };
+
     }
+
+
+    /* ============================================================
+     * VALIDAR INJECTED
+     * ============================================================ */
+
+    async function validarSesionInjected() {
+
+        if (
+            !tieneInjectedProvider()
+        ) {
+
+            return null;
+
+        }
+
+
+        try {
+
+            const accounts =
+                await window.ethereum.request({
+
+                    method:
+                        'eth_accounts'
+
+                });
+
+
+            if (
+
+                !accounts ||
+
+                accounts.length === 0
+
+            ) {
+
+                return null;
+
+            }
+
+
+            const chainIdHex =
+                await window.ethereum.request({
+
+                    method:
+                        'eth_chainId'
+
+                });
+
+
+            const chainId =
+                parseInt(
+                    chainIdHex,
+                    16
+                );
+
+
+            if (
+                chainId !==
+                CHAIN_ID_OBJETIVO
+            ) {
+
+                return null;
+
+            }
+
+
+            return {
+
+                address:
+                    accounts[0],
+
+                chainId:
+                    chainId
+
+            };
+
+        } catch (error) {
+
+            console.warn(
+                '[SarWallet] Error validando injected:',
+                error
+            );
+
+            return null;
+
+        }
+
+    }
+
+
+    /* ============================================================
+     * EVENTOS INJECTED
+     * ============================================================ */
 
     function registrarEventosInjected() {
 
         if (
+
             eventosInjectedRegistrados ||
+
             !tieneInjectedProvider()
+
         ) {
+
             return;
+
         }
+
 
         eventosInjectedRegistrados =
             true;
 
+
         window.ethereum.on(
+
             'accountsChanged',
-            (accounts) => {
+
+            function (accounts) {
 
                 if (
+
                     !accounts ||
+
                     accounts.length === 0
+
                 ) {
 
                     currentAccount =
@@ -629,17 +1021,23 @@
 
                     limpiarSesion();
 
+
                     window.dispatchEvent(
+
                         new CustomEvent(
                             'sar:wallet:disconnected'
                         )
+
                     );
 
                     return;
+
                 }
+
 
                 currentAccount =
                     accounts[0];
+
 
                 guardarSesion({
 
@@ -654,23 +1052,38 @@
 
                 });
 
+
                 window.dispatchEvent(
+
                     new CustomEvent(
+
                         'sar:wallet:accountsChanged',
+
                         {
+
                             detail: {
+
                                 address:
                                     accounts[0]
+
                             }
+
                         }
+
                     )
+
                 );
+
             }
+
         );
 
+
         window.ethereum.on(
+
             'chainChanged',
-            (chainIdHex) => {
+
+            function (chainIdHex) {
 
                 const chainId =
                     parseInt(
@@ -678,113 +1091,76 @@
                         16
                     );
 
+
+                window.dispatchEvent(
+
+                    new CustomEvent(
+
+                        'sar:wallet:chainChanged',
+
+                        {
+
+                            detail: {
+
+                                chainId:
+                                    chainId
+
+                            }
+
+                        }
+
+                    )
+
+                );
+
+
                 if (
                     chainId !==
                     CHAIN_ID_OBJETIVO
                 ) {
 
                     window.dispatchEvent(
+
                         new CustomEvent(
+
                             'sar:wallet:wrongNetwork',
+
                             {
+
                                 detail: {
-                                    chainId,
+
+                                    chainId:
+                                        chainId,
+
                                     expectedChainId:
                                         CHAIN_ID_OBJETIVO
+
                                 }
+
                             }
+
                         )
+
                     );
 
                 }
 
-                window.dispatchEvent(
-                    new CustomEvent(
-                        'sar:wallet:chainChanged',
-                        {
-                            detail: {
-                                chainId
-                            }
-                        }
-                    )
-                );
             }
+
         );
+
     }
 
-    async function validarSesionInjected() {
 
-        if (!tieneInjectedProvider()) {
-            return null;
-        }
-
-        try {
-
-            const accounts =
-                await window.ethereum.request({
-
-                    method:
-                        'eth_accounts'
-
-                });
-
-            if (
-                !accounts ||
-                accounts.length === 0
-            ) {
-
-                return null;
-
-            }
-
-            const chainIdHex =
-                await window.ethereum.request({
-
-                    method:
-                        'eth_chainId'
-
-                });
-
-            const chainId =
-                parseInt(
-                    chainIdHex,
-                    16
-                );
-
-            if (
-                chainId !==
-                CHAIN_ID_OBJETIVO
-            ) {
-
-                return null;
-
-            }
-
-            return {
-
-                address:
-                    accounts[0],
-
-                chainId
-
-            };
-
-        } catch (error) {
-
-            console.warn(
-                '[SarWallet] No se pudo validar injected:',
-                error
-            );
-
-            return null;
-
-        }
-    }
+    /* ============================================================
+     * WALLETCONNECT
+     * ============================================================ */
 
     async function conectarConWalletConnect() {
 
         const config =
             await cargarConfiguracionWeb3();
+
 
         if (
             !config.walletConnectProjectId
@@ -796,63 +1172,66 @@
 
         }
 
-        if (wcProvider) {
+
+        if (
+            wcProvider
+        ) {
 
             try {
 
                 if (
+
                     typeof wcProvider.disconnect ===
                     'function'
+
                 ) {
 
                     await wcProvider.disconnect();
 
                 }
 
-            } catch (error) {
+            } catch (_) {}
 
-                console.warn(
-                    '[SarWallet] No se pudo limpiar WalletConnect anterior:',
-                    error
-                );
-
-            }
-
-            wcProvider =
-                null;
-
-            eventosWcRegistrados =
-                false;
         }
 
+
+        wcProvider =
+            null;
+
+        eventosWcRegistrados =
+            false;
+
+
         let EthereumProvider;
+
 
         try {
 
             const modulo =
                 await import(
+
                     'https://esm.sh/@walletconnect/ethereum-provider@2.17.0'
+
                 );
+
 
             EthereumProvider =
                 modulo.EthereumProvider;
 
         } catch (error) {
 
-            console.error(
-                '[SarWallet] Error cargando WalletConnect SDK:',
-                error
-            );
-
             const e =
                 new Error(
                     'WALLETCONNECT_SDK_LOAD_FAILED'
                 );
 
-            e.cause = error;
+            e.cause =
+                error;
 
             throw e;
+
         }
+
 
         if (
             typeof EthereumProvider !==
@@ -862,7 +1241,9 @@
             throw new Error(
                 'WALLETCONNECT_SDK_INVALID'
             );
+
         }
+
 
         wcProvider =
             await EthereumProvider.init({
@@ -871,11 +1252,15 @@
                     config.walletConnectProjectId,
 
                 chains: [
+
                     CHAIN_ID_OBJETIVO
+
                 ],
 
                 optionalChains: [
+
                     CHAIN_ID_OBJETIVO
+
                 ],
 
                 showQrModal:
@@ -907,29 +1292,41 @@
                         PUBLIC_APP_URL,
 
                     icons: [
+
                         PUBLIC_APP_URL +
                         '/favicon.ico'
+
                     ]
 
                 }
 
             });
 
-        if (!wcProvider) {
+
+        if (
+            !wcProvider
+        ) {
 
             throw new Error(
                 'WALLETCONNECT_PROVIDER_INIT_FAILED'
             );
+
         }
 
+
         await wcProvider.connect();
+
 
         const accounts =
             wcProvider.accounts;
 
+
         if (
+
             !accounts ||
+
             accounts.length === 0
+
         ) {
 
             throw new Error(
@@ -938,13 +1335,16 @@
 
         }
 
+
         const account =
             accounts[0];
+
 
         const chainId =
             Number(
                 wcProvider.chainId
             );
+
 
         if (
             chainId !==
@@ -957,11 +1357,13 @@
 
         }
 
+
         currentAccount =
             account;
 
         currentProviderType =
             'walletconnect';
+
 
         guardarSesion({
 
@@ -971,11 +1373,14 @@
             address:
                 account,
 
-            chainId
+            chainId:
+                chainId
 
         });
 
+
         registrarEventosWalletConnect();
+
 
         return {
 
@@ -985,48 +1390,73 @@
             address:
                 account,
 
-            chainId,
+            chainId:
+                chainId,
 
             provider:
                 wcProvider
 
         };
+
     }
+
+
+    /* ============================================================
+     * EVENTOS WALLETCONNECT
+     * ============================================================ */
 
     function registrarEventosWalletConnect() {
 
         if (
+
             !wcProvider ||
+
             eventosWcRegistrados
+
         ) {
+
             return;
+
         }
+
 
         eventosWcRegistrados =
             true;
 
+
         wcProvider.on(
+
             'accountsChanged',
-            (accounts) => {
+
+            function (accounts) {
 
                 if (
+
                     !accounts ||
+
                     accounts.length === 0
+
                 ) {
 
                     limpiarEstadoLocal();
 
+
                     window.dispatchEvent(
+
                         new CustomEvent(
                             'sar:wallet:disconnected'
                         )
+
                     );
 
                     return;
+
                 }
+
 
                 currentAccount =
                     accounts[0];
+
 
                 guardarSesion({
 
@@ -1044,38 +1474,66 @@
 
                 });
 
+
                 window.dispatchEvent(
+
                     new CustomEvent(
+
                         'sar:wallet:accountsChanged',
+
                         {
+
                             detail: {
+
                                 address:
                                     accounts[0]
+
                             }
+
                         }
+
                     )
+
                 );
+
             }
+
         );
 
+
         wcProvider.on(
+
             'chainChanged',
-            (chainId) => {
+
+            function (chainId) {
 
                 const numericChainId =
-                    Number(chainId);
+                    Number(
+                        chainId
+                    );
+
 
                 window.dispatchEvent(
+
                     new CustomEvent(
+
                         'sar:wallet:chainChanged',
+
                         {
+
                             detail: {
+
                                 chainId:
                                     numericChainId
+
                             }
+
                         }
+
                     )
+
                 );
+
 
                 if (
                     numericChainId !==
@@ -1083,26 +1541,41 @@
                 ) {
 
                     window.dispatchEvent(
+
                         new CustomEvent(
+
                             'sar:wallet:wrongNetwork',
+
                             {
+
                                 detail: {
+
                                     chainId:
                                         numericChainId,
 
                                     expectedChainId:
                                         CHAIN_ID_OBJETIVO
+
                                 }
+
                             }
+
                         )
+
                     );
+
                 }
+
             }
+
         );
 
+
         wcProvider.on(
+
             'disconnect',
-            () => {
+
+            function () {
 
                 wcProvider =
                     null;
@@ -1118,161 +1591,706 @@
 
                 limpiarSesion();
 
+
                 window.dispatchEvent(
+
                     new CustomEvent(
                         'sar:wallet:disconnected'
                     )
+
                 );
+
             }
+
         );
-    }
-
-    function limpiarEstadoLocal() {
-
-        currentAccount =
-            null;
-
-        currentProviderType =
-            null;
-
-        limpiarSesion();
 
     }
 
-    async function desconectar() {
 
-        if (desconectando) {
-            return;
+    /* ============================================================
+     * MODAL DE SELECCIÓN
+     * ============================================================ */
+
+    function cerrarSelectorWallet(
+        modal,
+        reject
+    ) {
+
+        if (
+            modal &&
+            modal.parentNode
+        ) {
+
+            modal.remove();
+
         }
 
-        desconectando =
-            true;
 
-        const provider =
-            wcProvider;
+        if (
+            reject
+        ) {
 
-        wcProvider =
-            null;
-
-        eventosWcRegistrados =
-            false;
-
-        try {
-
-            if (
-                provider &&
-                typeof provider.disconnect ===
-                'function'
-            ) {
-
-                await provider.disconnect();
-
-            }
-
-        } catch (error) {
-
-            console.warn(
-                '[SarWallet] Error desconectando WalletConnect:',
-                error
+            reject(
+                new Error(
+                    'USER_CANCELLED'
+                )
             );
 
         }
 
-        currentAccount =
-            null;
+    }
 
-        currentProviderType =
-            null;
 
-        limpiarSesion();
+    function seleccionarConexion() {
 
-        window.dispatchEvent(
-            new CustomEvent(
-                'sar:wallet:disconnected'
-            )
+        return new Promise(
+
+            function (resolve, reject) {
+
+                const modal =
+                    document.createElement(
+                        'div'
+                    );
+
+
+                modal.id =
+                    'sar-wallet-selector';
+
+
+                modal.style.cssText = `
+
+                    position:fixed;
+                    inset:0;
+                    z-index:2147483647;
+                    background:rgba(3,7,15,.94);
+                    backdrop-filter:blur(14px);
+                    display:flex;
+                    align-items:center;
+                    justify-content:center;
+                    padding:18px;
+                    box-sizing:border-box;
+
+                `;
+
+
+                modal.innerHTML = `
+
+                    <div style="
+
+                        width:min(430px,100%);
+                        max-height:90vh;
+                        overflow:auto;
+                        background:
+                            linear-gradient(
+                                145deg,
+                                #0b1625,
+                                #07110e
+                            );
+                        border:
+                            1px solid rgba(0,229,255,.35);
+                        border-radius:24px;
+                        padding:22px;
+                        box-shadow:
+                            0 25px 80px
+                            rgba(0,0,0,.65);
+
+                    ">
+
+                        <div style="
+                            display:flex;
+                            align-items:center;
+                            justify-content:space-between;
+                            gap:12px;
+                            margin-bottom:18px;
+                        ">
+
+                            <div>
+
+                                <div style="
+                                    color:#00e5ff;
+                                    font-family:Orbitron,monospace;
+                                    font-size:1rem;
+                                    font-weight:900;
+                                ">
+                                    CONECTAR WALLET
+                                </div>
+
+                                <div style="
+                                    color:#8ca3b8;
+                                    font-size:.72rem;
+                                    margin-top:5px;
+                                ">
+                                    Polygon Amoy · Chain 80002
+                                </div>
+
+                            </div>
+
+                            <button
+                                type="button"
+                                id="sar-wallet-selector-close"
+                                style="
+                                    border:0;
+                                    background:rgba(255,255,255,.06);
+                                    color:#fff;
+                                    width:38px;
+                                    height:38px;
+                                    border-radius:50%;
+                                    font-size:1.2rem;
+                                    cursor:pointer;
+                                "
+                            >
+                                ×
+                            </button>
+
+                        </div>
+
+
+                        <button
+                            type="button"
+                            id="sar-connect-metamask"
+                            style="
+                                width:100%;
+                                border:0;
+                                border-radius:15px;
+                                padding:15px;
+                                margin:6px 0;
+                                background:
+                                    linear-gradient(
+                                        135deg,
+                                        #f6851b,
+                                        #d85f00
+                                    );
+                                color:#fff;
+                                font-weight:800;
+                                font-size:.9rem;
+                                cursor:pointer;
+                            "
+                        >
+                            🦊 MetaMask
+                        </button>
+
+
+                        <button
+                            type="button"
+                            id="sar-connect-walletconnect"
+                            style="
+                                width:100%;
+                                border:0;
+                                border-radius:15px;
+                                padding:15px;
+                                margin:6px 0;
+                                background:
+                                    linear-gradient(
+                                        135deg,
+                                        #3b99fc,
+                                        #246ac4
+                                    );
+                                color:#fff;
+                                font-weight:800;
+                                font-size:.9rem;
+                                cursor:pointer;
+                            "
+                        >
+                            🔗 WalletConnect
+                        </button>
+
+
+                        <button
+                            type="button"
+                            id="sar-connect-coinbase"
+                            style="
+                                width:100%;
+                                border:0;
+                                border-radius:15px;
+                                padding:15px;
+                                margin:6px 0;
+                                background:
+                                    linear-gradient(
+                                        135deg,
+                                        #2457ff,
+                                        #173aa7
+                                    );
+                                color:#fff;
+                                font-weight:800;
+                                font-size:.9rem;
+                                cursor:pointer;
+                            "
+                        >
+                            🔷 Coinbase Wallet
+                        </button>
+
+
+                        <button
+                            type="button"
+                            id="sar-connect-rainbow"
+                            style="
+                                width:100%;
+                                border:0;
+                                border-radius:15px;
+                                padding:15px;
+                                margin:6px 0;
+                                background:
+                                    linear-gradient(
+                                        135deg,
+                                        #7c3aed,
+                                        #ec4899
+                                    );
+                                color:#fff;
+                                font-weight:800;
+                                font-size:.9rem;
+                                cursor:pointer;
+                            "
+                        >
+                            🌈 Rainbow
+                        </button>
+
+
+                        <div style="
+                            margin-top:16px;
+                            padding:12px;
+                            border-radius:12px;
+                            background:rgba(255,255,255,.04);
+                            color:#7f96ab;
+                            font-size:.68rem;
+                            line-height:1.5;
+                            text-align:center;
+                        ">
+                            En Android Chrome puedes usar
+                            WalletConnect o abrir directamente
+                            MetaMask.
+                        </div>
+
+                    </div>
+
+                `;
+
+
+                document.body.appendChild(
+                    modal
+                );
+
+
+                const cerrar =
+                    function () {
+
+                        cerrarSelectorWallet(
+                            modal,
+                            reject
+                        );
+
+                    };
+
+
+                modal.querySelector(
+                    '#sar-wallet-selector-close'
+                ).onclick =
+                    cerrar;
+
+
+                modal.addEventListener(
+                    'click',
+                    function (event) {
+
+                        if (
+                            event.target ===
+                            modal
+                        ) {
+
+                            cerrar();
+
+                        }
+
+                    }
+                );
+
+
+                /* =================================================
+                 * METAMASK
+                 * ================================================= */
+
+                modal.querySelector(
+                    '#sar-connect-metamask'
+                ).onclick =
+
+                    async function () {
+
+                        const btn =
+                            this;
+
+                        try {
+
+                            btn.disabled =
+                                true;
+
+                            btn.textContent =
+                                '⏳ Abriendo MetaMask...';
+
+
+                            if (
+                                esNavegadorDeMetaMask()
+                            ) {
+
+                                const result =
+                                    await conectarConInjected();
+
+
+                                modal.remove();
+
+                                resolve(
+                                    result
+                                );
+
+                                return;
+
+                            }
+
+
+                            /*
+                             * Desktop con MetaMask.
+                             */
+
+                            if (
+
+                                !esMovil() &&
+
+                                tieneInjectedProvider()
+
+                            ) {
+
+                                const result =
+                                    await conectarConInjected();
+
+
+                                modal.remove();
+
+                                resolve(
+                                    result
+                                );
+
+                                return;
+
+                            }
+
+
+                            /*
+                             * Chrome/Safari móvil:
+                             * abrir MetaMask.
+                             */
+
+                            abrirMetaMaskApp();
+
+                            modal.remove();
+
+
+                            resolve({
+
+                                openedApp:
+                                    true,
+
+                                tipo:
+                                    'metamask-deeplink'
+
+                            });
+
+                        } catch (error) {
+
+                            btn.disabled =
+                                false;
+
+                            btn.textContent =
+                                '🦊 MetaMask';
+
+                            alert(
+                                obtenerMensajeError(
+                                    error
+                                )
+                            );
+
+                        }
+
+                    };
+
+
+                /* =================================================
+                 * WALLETCONNECT
+                 * ================================================= */
+
+                modal.querySelector(
+                    '#sar-connect-walletconnect'
+                ).onclick =
+
+                    async function () {
+
+                        const btn =
+                            this;
+
+                        try {
+
+                            btn.disabled =
+                                true;
+
+                            btn.textContent =
+                                '⏳ Abriendo WalletConnect...';
+
+
+                            const result =
+                                await conectarConWalletConnect();
+
+
+                            modal.remove();
+
+                            resolve(
+                                result
+                            );
+
+                        } catch (error) {
+
+                            btn.disabled =
+                                false;
+
+                            btn.textContent =
+                                '🔗 WalletConnect';
+
+
+                            if (
+                                error?.message ===
+                                'USER_CANCELLED'
+                            ) {
+
+                                return;
+
+                            }
+
+
+                            alert(
+                                obtenerMensajeError(
+                                    error
+                                )
+                            );
+
+                        }
+
+                    };
+
+
+                /* =================================================
+                 * COINBASE
+                 * ================================================= */
+
+                modal.querySelector(
+                    '#sar-connect-coinbase'
+                ).onclick =
+
+                    async function () {
+
+                        const btn =
+                            this;
+
+                        try {
+
+                            btn.disabled =
+                                true;
+
+                            btn.textContent =
+                                '⏳ Abriendo Coinbase...';
+
+
+                            if (
+                                esNavegadorDeCoinbase()
+                            ) {
+
+                                const result =
+                                    await conectarConInjected();
+
+
+                                modal.remove();
+
+                                resolve(
+                                    result
+                                );
+
+                                return;
+
+                            }
+
+
+                            /*
+                             * WalletConnect permite seleccionar
+                             * Coinbase Wallet.
+                             */
+
+                            const result =
+                                await conectarConWalletConnect();
+
+
+                            modal.remove();
+
+                            resolve(
+                                result
+                            );
+
+                        } catch (error) {
+
+                            btn.disabled =
+                                false;
+
+                            btn.textContent =
+                                '🔷 Coinbase Wallet';
+
+
+                            alert(
+                                obtenerMensajeError(
+                                    error
+                                )
+                            );
+
+                        }
+
+                    };
+
+
+                /* =================================================
+                 * RAINBOW
+                 * ================================================= */
+
+                modal.querySelector(
+                    '#sar-connect-rainbow'
+                ).onclick =
+
+                    function () {
+
+                        try {
+
+                            abrirRainbowApp();
+
+                            modal.remove();
+
+                            resolve({
+
+                                openedApp:
+                                    true,
+
+                                tipo:
+                                    'rainbow-deeplink'
+
+                            });
+
+                        } catch (error) {
+
+                            alert(
+                                obtenerMensajeError(
+                                    error
+                                )
+                            );
+
+                        }
+
+                    };
+
+            }
+
         );
 
-        desconectando =
-            false;
     }
+
+
+    /* ============================================================
+     * MENSAJES DE ERROR
+     * ============================================================ */
+
+    function obtenerMensajeError(error) {
+
+        const code =
+            error?.message ||
+            '';
+
+
+        const mensajes = {
+
+            WEB3_CONFIG_NETWORK_ERROR:
+                'No se pudo contactar el servidor para cargar WalletConnect.',
+
+            WEB3_CONFIG_HTTP_404:
+                'El endpoint /api/config/web3 no está disponible.',
+
+            WEB3_CONFIG_HTTP_500:
+                'El servidor devolvió un error de configuración Web3.',
+
+            WEB3_CONFIG_INVALID:
+                'La configuración Web3 del servidor no es válida.',
+
+            WEB3_CONFIG_INVALID_JSON:
+                'El servidor devolvió una configuración Web3 inválida.',
+
+            WALLETCONNECT_PROJECT_ID_NOT_CONFIGURED:
+                'WalletConnect no está configurado en el servidor.',
+
+            WALLETCONNECT_SDK_LOAD_FAILED:
+                'No se pudo cargar WalletConnect. Comprueba tu conexión.',
+
+            WALLETCONNECT_SDK_INVALID:
+                'WalletConnect devolvió una respuesta inválida.',
+
+            WALLETCONNECT_PROVIDER_INIT_FAILED:
+                'No se pudo inicializar WalletConnect.',
+
+            WALLETCONNECT_NO_ACCOUNTS:
+                'La wallet no devolvió ninguna cuenta.',
+
+            NO_ACCOUNTS_RETURNED:
+                'La wallet no devolvió ninguna cuenta.',
+
+            INJECTED_NOT_AVAILABLE:
+                'No se encontró una wallet instalada en este navegador.',
+
+            WRONG_NETWORK:
+                'La wallet debe estar conectada a Polygon Amoy.',
+
+            USER_REJECTED:
+                'Cancelaste la solicitud desde la wallet.',
+
+            USER_CANCELLED:
+                'Cancelaste la conexión.'
+
+        };
+
+
+        return (
+
+            mensajes[code] ||
+
+            error?.message ||
+
+            'No se pudo conectar la wallet.'
+
+        );
+
+    }
+
+
+    /* ============================================================
+     * CONEXIÓN PRINCIPAL
+     * ============================================================ */
 
     async function conectar() {
 
-        if (esMovil()) {
+        /*
+         * Si estamos dentro de una wallet móvil,
+         * usamos directamente el provider injected.
+         */
 
-            if (
-                esNavegadorWalletInterno()
-            ) {
-
-                console.log(
-                    '[SarWallet] Móvil dentro de wallet → injected'
-                );
-
-                const estado =
-                    await validarSesionInjected();
-
-                if (estado) {
-
-                    currentAccount =
-                        estado.address;
-
-                    currentProviderType =
-                        'injected';
-
-                    guardarSesion({
-
-                        tipo:
-                            'injected',
-
-                        address:
-                            estado.address,
-
-                        chainId:
-                            estado.chainId
-
-                    });
-
-                    registrarEventosInjected();
-
-                    return {
-
-                        tipo:
-                            'injected',
-
-                        address:
-                            estado.address,
-
-                        chainId:
-                            estado.chainId,
-
-                        provider:
-                            window.ethereum,
-
-                        reconnected:
-                            true
-                    };
-                }
-
-                return conectarConInjected();
-            }
-
-            console.log(
-                '[SarWallet] Chrome/Safari móvil → WalletConnect'
-            );
-
-            return conectarConWalletConnect();
-        }
-
-        if (tieneInjectedProvider()) {
-
-            console.log(
-                '[SarWallet] Desktop con injected'
-            );
+        if (
+            esMovil() &&
+            esNavegadorWalletInterno()
+        ) {
 
             const estado =
                 await validarSesionInjected();
 
-            if (estado) {
+
+            if (
+                estado
+            ) {
 
                 currentAccount =
                     estado.address;
@@ -1295,6 +2313,7 @@
 
                 registrarEventosInjected();
 
+
                 return {
 
                     tipo:
@@ -1311,52 +2330,160 @@
 
                     reconnected:
                         true
+
                 };
+
             }
 
+
             return conectarConInjected();
+
         }
 
-        console.log(
-            '[SarWallet] Desktop sin injected → WalletConnect'
-        );
+
+        /*
+         * En móvil normal usamos el selector.
+         */
+
+        if (
+            esMovil()
+        ) {
+
+            return seleccionarConexion();
+
+        }
+
+
+        /*
+         * Desktop con injected:
+         * conexión directa.
+         */
+
+        if (
+            tieneInjectedProvider()
+        ) {
+
+            const estado =
+                await validarSesionInjected();
+
+
+            if (
+                estado
+            ) {
+
+                currentAccount =
+                    estado.address;
+
+                currentProviderType =
+                    'injected';
+
+                guardarSesion({
+
+                    tipo:
+                        'injected',
+
+                    address:
+                        estado.address,
+
+                    chainId:
+                        estado.chainId
+
+                });
+
+                registrarEventosInjected();
+
+
+                return {
+
+                    tipo:
+                        'injected',
+
+                    address:
+                        estado.address,
+
+                    chainId:
+                        estado.chainId,
+
+                    provider:
+                        window.ethereum,
+
+                    reconnected:
+                        true
+
+                };
+
+            }
+
+
+            return conectarConInjected();
+
+        }
+
+
+        /*
+         * Desktop sin extensión:
+         * WalletConnect.
+         */
 
         return conectarConWalletConnect();
+
     }
+
+
+    /* ============================================================
+     * RESTAURAR SESIÓN
+     * ============================================================ */
 
     async function restaurarSesion() {
 
         const sesion =
             leerSesion();
 
+
         if (
+
             !sesion ||
+
             !sesion.address
+
         ) {
 
             return null;
+
         }
+
 
         if (
             sesion.tipo ===
             'injected'
         ) {
 
-            if (!debeUsarInjected()) {
+            if (
+                !debeUsarInjected()
+            ) {
+
                 return null;
+
             }
+
 
             const estado =
                 await validarSesionInjected();
 
+
             if (
+
                 !estado ||
+
                 estado.address.toLowerCase() !==
                 sesion.address.toLowerCase()
+
             ) {
 
                 return null;
+
             }
+
 
             currentAccount =
                 estado.address;
@@ -1364,7 +2491,9 @@
             currentProviderType =
                 'injected';
 
+
             registrarEventosInjected();
+
 
             return {
 
@@ -1379,32 +2508,166 @@
 
                 provider:
                     window.ethereum
+
             };
+
         }
+
+
+        /*
+         * WalletConnect:
+         *
+         * El proveedor se mantiene si la página
+         * aún tiene una sesión activa.
+         */
 
         if (
             sesion.tipo ===
             'walletconnect'
         ) {
 
-            return {
+            if (
+                wcProvider &&
+                wcProvider.accounts?.length
+            ) {
 
-                tipo:
-                    'walletconnect',
+                currentAccount =
+                    wcProvider.accounts[0];
 
-                address:
-                    sesion.address,
+                currentProviderType =
+                    'walletconnect';
 
-                chainId:
-                    sesion.chainId,
+                registrarEventosWalletConnect();
 
-                provider:
-                    wcProvider
-            };
+
+                return {
+
+                    tipo:
+                        'walletconnect',
+
+                    address:
+                        currentAccount,
+
+                    chainId:
+                        Number(
+                            wcProvider.chainId ||
+                            CHAIN_ID_OBJETIVO
+                        ),
+
+                    provider:
+                        wcProvider
+
+                };
+
+            }
+
+
+            return null;
+
         }
 
+
         return null;
+
     }
+
+
+    /* ============================================================
+     * DESCONEXIÓN
+     * ============================================================ */
+
+    function limpiarEstadoLocal() {
+
+        currentAccount =
+            null;
+
+        currentProviderType =
+            null;
+
+        limpiarSesion();
+
+    }
+
+
+    async function desconectar() {
+
+        if (
+            desconectando
+        ) {
+
+            return;
+
+        }
+
+
+        desconectando =
+            true;
+
+
+        const provider =
+            wcProvider;
+
+
+        wcProvider =
+            null;
+
+        eventosWcRegistrados =
+            false;
+
+
+        try {
+
+            if (
+
+                provider &&
+
+                typeof provider.disconnect ===
+                'function'
+
+            ) {
+
+                await provider.disconnect();
+
+            }
+
+        } catch (error) {
+
+            console.warn(
+                '[SarWallet] Error desconectando WalletConnect:',
+                error
+            );
+
+        }
+
+
+        currentAccount =
+            null;
+
+        currentProviderType =
+            null;
+
+
+        limpiarSesion();
+
+
+        window.dispatchEvent(
+
+            new CustomEvent(
+                'sar:wallet:disconnected'
+            )
+
+        );
+
+
+        desconectando =
+            false;
+
+    }
+
+
+    /* ============================================================
+     * API PÚBLICA
+     * ============================================================ */
 
     function obtenerProvider() {
 
@@ -1414,7 +2677,9 @@
         ) {
 
             return window.ethereum;
+
         }
+
 
         if (
             currentProviderType ===
@@ -1422,18 +2687,28 @@
         ) {
 
             return wcProvider;
+
         }
 
+
         return null;
+
     }
+
 
     function obtenerCuenta() {
+
         return currentAccount;
+
     }
 
+
     function obtenerTipoProvider() {
+
         return currentProviderType;
+
     }
+
 
     function redActual() {
 
@@ -1450,8 +2725,11 @@
 
             info:
                 RED
+
         };
+
     }
+
 
     function obtenerConfiguracion() {
 
@@ -1472,13 +2750,25 @@
                 CHAIN_ID_HEX,
 
             network:
-                RED.name
+                RED.name,
+
+            explorer:
+                RED.explorer
+
         };
+
     }
+
+
+    /* ============================================================
+     * EXPORTACIÓN
+     * ============================================================ */
 
     window.SarWallet = {
 
         conectar,
+
+        seleccionarConexion,
 
         desconectar,
 
@@ -1513,19 +2803,30 @@
         abrirRainbowApp,
 
         redActual
+
     };
 
+
     console.log(
-        '[SarWallet] cargado | URL:',
-        PUBLIC_APP_URL,
+
+        '[SarWallet] cargado',
+
         '| red:',
         RED_ACTIVA,
+
         '| chainId:',
         CHAIN_ID_OBJETIVO,
+
+        '| explorer:',
+        RED.explorer,
+
         '| móvil:',
         esMovil(),
+
         '| injected:',
         tieneInjectedProvider()
+
     );
+
 
 })();
