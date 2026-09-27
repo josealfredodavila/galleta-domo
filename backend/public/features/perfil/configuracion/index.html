@@ -9,6 +9,82 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="../../shared/config-layout.css" />
+
+    <!-- ═══════════════════════════════════════════════════════════
+         GUARDIÁN DE SESIÓN — Verifica antes de cargar el menú
+         ═══════════════════════════════════════════════════════════ -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script>
+        (function () {
+            'use strict';
+
+            var GUARD_SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
+            var GUARD_SUPABASE_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+
+            // ✅ Guarda returnTo y redirige a login
+            function irALoginConReturnTo() {
+                try {
+                    var returnTo = window.location.pathname + window.location.search + window.location.hash;
+                    localStorage.setItem('wallet_returnTo', returnTo);
+                    console.log('[Config Guardián] Sin sesión → guardando returnTo:', returnTo);
+                    window.location.replace('/features/perfil/login.html?returnTo=' + encodeURIComponent(returnTo));
+                } catch (e) {
+                    console.warn('[Config Guardián] Error:', e);
+                    window.location.replace('/');
+                }
+            }
+
+            function inicializarGuardian() {
+                try {
+                    if (typeof window.supabase === 'undefined') {
+                        setTimeout(inicializarGuardian, 200);
+                        return;
+                    }
+
+                    if (!window.supabaseClient) {
+                        window.supabaseClient = window.supabase.createClient(
+                            GUARD_SUPABASE_URL,
+                            GUARD_SUPABASE_KEY
+                        );
+                        console.log('[Config Guardián] ✅ supabaseClient creado.');
+                    }
+
+                    window.supabaseClient.auth.getSession().then(function (resultado) {
+                        var session = resultado && resultado.data ? resultado.data.session : null;
+                        if (!session) {
+                            console.log('[Config Guardián] Sin sesión → redirigiendo a login');
+                            irALoginConReturnTo();
+                        } else {
+                            console.log('[Config Guardián] Sesión válida → cargando configuración');
+                            document.documentElement.classList.add('auth-ready');
+                        }
+                    }).catch(function (err) {
+                        console.warn('[Config Guardián] Error verificando sesión:', err);
+                        document.documentElement.classList.add('auth-ready');
+                    });
+                } catch (e) {
+                    console.warn('[Config Guardián] Error en guardián:', e);
+                    document.documentElement.classList.add('auth-ready');
+                }
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', inicializarGuardian);
+            } else {
+                inicializarGuardian();
+            }
+        })();
+    </script>
+
+    <style>
+        /* Ocultar el contenido hasta que el guardián confirme sesión */
+        html:not(.auth-ready) body {
+            visibility: hidden;
+        }
+        html.auth-ready body {
+            visibility: visible;
+        }
+    </style>
 </head>
 <body class="cfg-page">
 
@@ -47,17 +123,14 @@
     </main>
 
     <!-- ============================================================ -->
-    <!-- SCRIPTS - ORDEN CORRECTO: Supabase PRIMERO                   -->
+    <!-- SCRIPTS - ORDEN CORRECTO                                     -->
     <!-- ============================================================ -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="../../shared/config-icons.js"></script>
     <script src="../../shared/config-layout.js"></script>
 
     <script>
 // ================================================================
 // ⚙️ CONFIGURACIÓN LEGAL — Csariel's Ecosystem
-// ================================================================
-// 👉 EDITA ESTE BLOQUE cuando tengas los datos legales listos
 // ================================================================
 var CONFIG_LEGAL = {
     nombre_comercial: 'Csariel\'s',
@@ -70,9 +143,6 @@ var CONFIG_LEGAL = {
     pais_operacion: 'México',
     ciudad_operacion: 'Puebla'
 };
-// ================================================================
-// FIN DE CONFIGURACIÓN LEGAL
-// ================================================================
 
     (function () {
         'use strict';
@@ -330,10 +400,7 @@ var CONFIG_LEGAL = {
         // ============================================================
         (async function cargarUsuario() {
             try {
-                const client = window.supabaseClient || (window.supabase && window.supabase.createClient(
-                    'https://zultnlogdoajehbswlih.supabase.co',
-                    'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
-                ));
+                const client = window.supabaseClient;
                 if (!client) return;
                 const { data } = await client.auth.getSession();
                 const session = data && data.session;
@@ -351,10 +418,7 @@ var CONFIG_LEGAL = {
 // ================================================================
 async function irARepartidorConfig() {
     try {
-        const client = window.supabaseClient || (window.supabase && window.supabase.createClient(
-            'https://zultnlogdoajehbswlih.supabase.co',
-            'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
-        ));
+        const client = window.supabaseClient;
 
         if (!client) {
             window.location.href = '/features/mercado/repartidor/registro.html';
@@ -365,8 +429,12 @@ async function irARepartidorConfig() {
         const session = data && data.session;
 
         if (!session) {
+            // ✅ Guardar returnTo antes de mandar a login
+            localStorage.setItem('wallet_returnTo', '/features/mercado/repartidor/registro.html');
             if (typeof cfgToast === 'function') cfgToast('Inicia sesión primero', 'warning');
-            setTimeout(() => { window.location.href = '/'; }, 1200);
+            setTimeout(() => {
+                window.location.href = '/features/perfil/login.html?returnTo=' + encodeURIComponent('/features/mercado/repartidor/registro.html');
+            }, 1200);
             return;
         }
 
@@ -378,7 +446,6 @@ async function irARepartidorConfig() {
             .maybeSingle();
 
         if (result.error || !result.data) {
-            // No registrado → al registro
             window.location.href = '/features/mercado/repartidor/registro.html';
             return;
         }
@@ -386,13 +453,10 @@ async function irARepartidorConfig() {
         const estado = result.data.estado_verificacion;
 
         if (estado === 'activo') {
-            // Verificado → al panel
             window.location.href = '/features/mercado/repartidor/panel.html';
         } else if (estado === 'rechazado' || estado === 'procesando' || estado === 'revision_manual') {
-            // Rechazado o en revisión → al estado de verificación
             window.location.href = '/features/mercado/repartidor/estado-verificacion.html';
         } else {
-            // pendiente_registro u otro → al registro
             window.location.href = '/features/mercado/repartidor/registro.html';
         }
 
@@ -402,7 +466,6 @@ async function irARepartidorConfig() {
     }
 }
 
-// Exponer globalmente
 window.irARepartidorConfig = irARepartidorConfig;
 window.CONFIG_LEGAL = CONFIG_LEGAL;
     </script>
