@@ -122,7 +122,8 @@ if (!LIVEKIT_URL) {
 // ================================================================
 
 const PUBLIC_APP_URL =
-    'https://auction.up.railway.app';
+    process.env.PUBLIC_APP_URL ||
+    'https://galleta-domo-production.up.railway.app';
 
 const WALLETCONNECT_PROJECT_ID =
     process.env.WALLETCONNECT_PROJECT_ID || '';
