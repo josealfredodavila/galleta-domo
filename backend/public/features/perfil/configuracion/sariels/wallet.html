@@ -15,17 +15,13 @@
         content="#05080f"
     >
 
-    <title>
-        Wallet y Polygon · Sariel's
-    </title>
-
+    <title>Wallet y Polygon · Sariel's</title>
 
     <link
         rel="icon"
         type="image/svg+xml"
         href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Arial' font-size='48' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>"
     >
-
 
     <link
         rel="preconnect"
@@ -50,149 +46,92 @@
         crossorigin
     >
 
-
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700;900&display=swap"
         rel="stylesheet"
     >
 
+    <!-- =========================================================
+         SHARED
+    ========================================================== -->
 
     <link
         rel="stylesheet"
         href="../../../shared/config-layout.css"
     >
 
-
     <style>
 
         * {
-            box-sizing:
-                border-box;
+            box-sizing: border-box;
         }
-
 
         .wallet-page {
-            padding-bottom:
-                40px;
+            padding-bottom: 40px;
         }
 
-
-        /* ========================================================
-         * HERO
-         * ======================================================== */
+        /* =====================================================
+           HERO
+        ====================================================== */
 
         .wallet-hero {
-
-            margin:
-                16px;
-
-            padding:
-                30px 20px;
-
-            border-radius:
-                26px;
-
-            border:
-                1px solid
-                rgba(0,229,255,.35);
+            margin: 16px;
+            padding: 30px 20px;
+            border-radius: 26px;
+            border: 1px solid rgba(0,229,255,.35);
 
             background:
-
                 radial-gradient(
                     circle at 20% 10%,
                     rgba(0,229,255,.18),
                     transparent 35%
                 ),
-
                 radial-gradient(
                     circle at 90% 90%,
                     rgba(168,85,247,.20),
                     transparent 40%
                 ),
-
                 linear-gradient(
                     145deg,
                     #0b1725,
                     #07110e
                 );
 
-            text-align:
-                center;
-
-            position:
-                relative;
-
-            overflow:
-                hidden;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
 
             box-shadow:
-                0 15px 50px
-                rgba(0,0,0,.25);
-
+                0 15px 50px rgba(0,0,0,.25);
         }
-
 
         .wallet-hero::after {
-
-            content:
-                '';
-
-            position:
-                absolute;
-
-            width:
-                180px;
-
-            height:
-                180px;
-
-            right:
-                -70px;
-
-            top:
-                -70px;
-
-            border-radius:
-                50%;
-
-            border:
-                1px solid
-                rgba(0,229,255,.18);
+            content: '';
+            position: absolute;
+            width: 180px;
+            height: 180px;
+            right: -70px;
+            top: -70px;
+            border-radius: 50%;
+            border: 1px solid rgba(0,229,255,.18);
 
             box-shadow:
-                0 0 0 30px
-                rgba(0,229,255,.03),
-                0 0 0 60px
-                rgba(0,229,255,.02);
+                0 0 0 30px rgba(0,229,255,.03),
+                0 0 0 60px rgba(0,229,255,.02);
 
-            pointer-events:
-                none;
-
+            pointer-events: none;
         }
 
-
         .wallet-polygon-logo {
+            width: 76px;
+            height: 76px;
+            margin: 0 auto 16px;
 
-            width:
-                76px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
 
-            height:
-                76px;
-
-            margin:
-                0 auto 16px;
-
-            display:
-                flex;
-
-            align-items:
-                center;
-
-            justify-content:
-                center;
-
-            border-radius:
-                22px;
+            border-radius: 22px;
 
             background:
                 linear-gradient(
@@ -201,125 +140,58 @@
                     #5d20ad
                 );
 
-            border:
-                1px solid
-                rgba(255,255,255,.25);
+            border: 1px solid rgba(255,255,255,.25);
 
             box-shadow:
-                0 0 35px
-                rgba(130,71,229,.45);
+                0 0 35px rgba(130,71,229,.45);
 
-            position:
-                relative;
-
-            z-index:
-                2;
-
+            position: relative;
+            z-index: 2;
         }
-
 
         .wallet-polygon-logo span {
-
-            color:
-                white;
-
-            font-size:
-                2.8rem;
-
-            font-weight:
-                900;
-
-            line-height:
-                1;
-
+            color: white;
+            font-size: 2.8rem;
+            font-weight: 900;
+            line-height: 1;
         }
-
 
         .wallet-title {
-
-            font-family:
-                Orbitron,
-                monospace;
-
-            font-size:
-                1.35rem;
-
-            font-weight:
-                900;
-
-            letter-spacing:
-                1.5px;
-
-            color:
-                var(--cfg-text);
-
-            position:
-                relative;
-
-            z-index:
-                2;
-
+            font-family: Orbitron, monospace;
+            font-size: 1.35rem;
+            font-weight: 900;
+            letter-spacing: 1.5px;
+            color: var(--cfg-text);
+            position: relative;
+            z-index: 2;
         }
-
 
         .wallet-subtitle {
-
-            margin:
-                9px auto 18px;
-
-            max-width:
-                440px;
-
-            color:
-                var(--cfg-text-muted);
-
-            font-size:
-                .78rem;
-
-            line-height:
-                1.55;
-
-            position:
-                relative;
-
-            z-index:
-                2;
-
+            margin: 9px auto 18px;
+            max-width: 440px;
+            color: var(--cfg-text-muted);
+            font-size: .78rem;
+            line-height: 1.55;
+            position: relative;
+            z-index: 2;
         }
 
-
-        /* ========================================================
-         * BOTONES
-         * ======================================================== */
+        /* =====================================================
+           BOTONES
+        ====================================================== */
 
         .wallet-primary-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
 
-            display:
-                inline-flex;
+            width: 100%;
+            min-height: 48px;
+            padding: 13px 20px;
 
-            align-items:
-                center;
-
-            justify-content:
-                center;
-
-            gap:
-                8px;
-
-            width:
-                100%;
-
-            min-height:
-                48px;
-
-            padding:
-                13px 20px;
-
-            border:
-                0;
-
-            border-radius:
-                14px;
+            border: 0;
+            border-radius: 14px;
 
             background:
                 linear-gradient(
@@ -328,297 +200,145 @@
                     #8b5cf6
                 );
 
-            color:
-                white;
-
-            font-size:
-                .85rem;
-
-            font-weight:
-                800;
-
-            cursor:
-                pointer;
+            color: white;
+            font-size: .85rem;
+            font-weight: 800;
+            cursor: pointer;
 
             box-shadow:
-                0 10px 30px
-                rgba(0,229,255,.22);
+                0 10px 30px rgba(0,229,255,.22);
 
-            transition:
-                .2s ease;
-
+            transition: .2s ease;
         }
-
 
         .wallet-primary-btn:hover {
-
-            transform:
-                translateY(-1px);
-
+            transform: translateY(-1px);
         }
-
 
         .wallet-primary-btn:disabled {
-
-            opacity:
-                .55;
-
-            cursor:
-                wait;
-
+            opacity: .55;
+            cursor: wait;
         }
-
 
         .wallet-action-grid {
-
-            display:
-                grid;
-
-            grid-template-columns:
-                repeat(2,1fr);
-
-            gap:
-                10px;
-
-            margin:
-                16px;
-
+            display: grid;
+            grid-template-columns: repeat(2,1fr);
+            gap: 10px;
+            margin: 16px;
         }
-
 
         .wallet-action-btn {
+            min-height: 58px;
 
-            min-height:
-                58px;
+            border: 1px solid var(--cfg-border);
+            border-radius: 14px;
 
-            border:
-                1px solid
-                var(--cfg-border);
+            background: rgba(255,255,255,.035);
+            color: var(--cfg-text);
 
-            border-radius:
-                14px;
+            font-size: .76rem;
+            font-weight: 700;
 
-            background:
-                rgba(255,255,255,.035);
-
-            color:
-                var(--cfg-text);
-
-            font-size:
-                .76rem;
-
-            font-weight:
-                700;
-
-            cursor:
-                pointer;
-
-            padding:
-                10px;
-
-            transition:
-                .2s ease;
-
+            cursor: pointer;
+            padding: 10px;
+            transition: .2s ease;
         }
-
 
         .wallet-action-btn:hover {
-
-            transform:
-                translateY(-1px);
-
-            border-color:
-                rgba(0,229,255,.45);
-
+            transform: translateY(-1px);
+            border-color: rgba(0,229,255,.45);
         }
-
 
         .wallet-action-btn.p2p {
-
-            border-color:
-                rgba(0,214,143,.35);
-
-            background:
-                rgba(0,214,143,.07);
-
+            border-color: rgba(0,214,143,.35);
+            background: rgba(0,214,143,.07);
         }
-
 
         .wallet-action-btn.explorer {
-
-            border-color:
-                rgba(130,71,229,.40);
-
-            background:
-                rgba(130,71,229,.08);
-
+            border-color: rgba(130,71,229,.40);
+            background: rgba(130,71,229,.08);
         }
 
-
-        /* ========================================================
-         * CONNECTED CARD
-         * ======================================================== */
+        /* =====================================================
+           CONNECTED
+        ====================================================== */
 
         .wallet-connected {
+            margin: 16px;
+            padding: 22px 18px;
+            border-radius: 22px;
 
-            margin:
-                16px;
-
-            padding:
-                22px 18px;
-
-            border-radius:
-                22px;
-
-            border:
-                1px solid
-                rgba(0,214,143,.35);
+            border: 1px solid rgba(0,214,143,.35);
 
             background:
-
                 radial-gradient(
                     circle at 10% 0%,
                     rgba(0,214,143,.12),
                     transparent 40%
                 ),
-
                 linear-gradient(
                     145deg,
                     rgba(15,45,26,.65),
                     rgba(5,8,15,.85)
                 );
 
-            text-align:
-                center;
-
+            text-align: center;
         }
-
 
         .wallet-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
 
-            display:
-                inline-flex;
+            padding: 6px 13px;
+            border-radius: 20px;
 
-            align-items:
-                center;
+            background: rgba(0,214,143,.10);
+            border: 1px solid rgba(0,214,143,.30);
 
-            gap:
-                8px;
+            color: #5ff0bd;
+            font-size: .68rem;
+            font-weight: 800;
 
-            padding:
-                6px 13px;
-
-            border-radius:
-                20px;
-
-            background:
-                rgba(0,214,143,.10);
-
-            border:
-                1px solid
-                rgba(0,214,143,.30);
-
-            color:
-                #5ff0bd;
-
-            font-size:
-                .68rem;
-
-            font-weight:
-                800;
-
-            margin-bottom:
-                13px;
-
+            margin-bottom: 13px;
         }
-
 
         .wallet-status-dot {
-
-            width:
-                7px;
-
-            height:
-                7px;
-
-            border-radius:
-                50%;
-
-            background:
-                #00d68f;
-
-            box-shadow:
-                0 0 12px
-                #00d68f;
-
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #00d68f;
+            box-shadow: 0 0 12px #00d68f;
         }
-
 
         .wallet-address {
+            display: block;
+            width: 100%;
+            padding: 13px;
+            border-radius: 13px;
 
-            display:
-                block;
+            background: rgba(0,0,0,.35);
+            border: 1px solid var(--cfg-border);
 
-            width:
-                100%;
+            color: var(--cfg-text);
 
-            padding:
-                13px;
+            font-family: monospace;
+            font-size: .75rem;
 
-            border-radius:
-                13px;
-
-            background:
-                rgba(0,0,0,.35);
-
-            border:
-                1px solid
-                var(--cfg-border);
-
-            color:
-                var(--cfg-text);
-
-            font-family:
-                monospace;
-
-            font-size:
-                .75rem;
-
-            word-break:
-                break-all;
-
-            cursor:
-                pointer;
-
+            word-break: break-all;
+            cursor: pointer;
         }
 
-
-        .wallet-address:hover {
-
-            border-color:
-                rgba(0,229,255,.45);
-
-        }
-
-
-        /* ========================================================
-         * POLYGON CARD
-         * ======================================================== */
+        /* =====================================================
+           POLYGON
+        ====================================================== */
 
         .polygon-card {
+            margin: 16px;
+            padding: 20px;
+            border-radius: 20px;
 
-            margin:
-                16px;
-
-            padding:
-                20px;
-
-            border-radius:
-                20px;
-
-            border:
-                1px solid
-                rgba(130,71,229,.32);
+            border: 1px solid rgba(130,71,229,.32);
 
             background:
                 linear-gradient(
@@ -626,46 +346,23 @@
                     rgba(130,71,229,.11),
                     rgba(255,255,255,.025)
                 );
-
         }
-
 
         .polygon-header {
-
-            display:
-                flex;
-
-            align-items:
-                center;
-
-            gap:
-                12px;
-
-            margin-bottom:
-                16px;
-
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
         }
 
-
         .polygon-mini-logo {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
 
-            width:
-                48px;
-
-            height:
-                48px;
-
-            border-radius:
-                14px;
-
-            display:
-                flex;
-
-            align-items:
-                center;
-
-            justify-content:
-                center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
 
             background:
                 linear-gradient(
@@ -674,197 +371,86 @@
                     #5b20a8
                 );
 
-            color:
-                white;
-
-            font-size:
-                1.7rem;
-
-            font-weight:
-                900;
-
+            color: white;
+            font-size: 1.7rem;
+            font-weight: 900;
         }
-
 
         .polygon-name {
-
-            font-family:
-                Orbitron,
-                monospace;
-
-            color:
-                var(--cfg-text);
-
-            font-weight:
-                800;
-
-            font-size:
-                .85rem;
-
+            font-family: Orbitron, monospace;
+            color: var(--cfg-text);
+            font-weight: 800;
+            font-size: .85rem;
         }
-
 
         .polygon-description {
-
-            color:
-                var(--cfg-text-muted);
-
-            font-size:
-                .68rem;
-
-            margin-top:
-                3px;
-
+            color: var(--cfg-text-muted);
+            font-size: .68rem;
+            margin-top: 3px;
         }
-
 
         .polygon-info-grid {
-
-            display:
-                grid;
-
-            grid-template-columns:
-                repeat(2,1fr);
-
-            gap:
-                9px;
-
+            display: grid;
+            grid-template-columns: repeat(2,1fr);
+            gap: 9px;
         }
-
 
         .polygon-info {
-
-            padding:
-                12px;
-
-            border:
-                1px solid
-                var(--cfg-border);
-
-            border-radius:
-                12px;
-
-            background:
-                rgba(0,0,0,.18);
-
+            padding: 12px;
+            border: 1px solid var(--cfg-border);
+            border-radius: 12px;
+            background: rgba(0,0,0,.18);
         }
-
 
         .polygon-info-label {
-
-            color:
-                var(--cfg-text-muted);
-
-            font-size:
-                .58rem;
-
-            text-transform:
-                uppercase;
-
-            letter-spacing:
-                .5px;
-
-            margin-bottom:
-                5px;
-
+            color: var(--cfg-text-muted);
+            font-size: .58rem;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            margin-bottom: 5px;
         }
-
 
         .polygon-info-value {
-
-            color:
-                var(--cfg-gold);
-
-            font-family:
-                Orbitron,
-                monospace;
-
-            font-size:
-                .78rem;
-
-            font-weight:
-                700;
-
-            word-break:
-                break-word;
-
+            color: var(--cfg-gold);
+            font-family: Orbitron, monospace;
+            font-size: .78rem;
+            font-weight: 700;
+            word-break: break-word;
         }
 
-
-        /* ========================================================
-         * EXPLORER
-         * ======================================================== */
+        /* =====================================================
+           EXPLORER
+        ====================================================== */
 
         .explorer-card {
+            margin: 16px;
+            padding: 18px;
+            border-radius: 18px;
 
-            margin:
-                16px;
-
-            padding:
-                18px;
-
-            border-radius:
-                18px;
-
-            border:
-                1px solid
-                rgba(0,229,255,.22);
-
-            background:
-                rgba(0,229,255,.035);
-
+            border: 1px solid rgba(0,229,255,.22);
+            background: rgba(0,229,255,.035);
         }
-
 
         .explorer-title {
-
-            font-family:
-                Orbitron,
-                monospace;
-
-            font-size:
-                .78rem;
-
-            color:
-                var(--cfg-text);
-
-            margin-bottom:
-                6px;
-
+            font-family: Orbitron, monospace;
+            font-size: .78rem;
+            color: var(--cfg-text);
+            margin-bottom: 6px;
         }
-
 
         .explorer-description {
-
-            color:
-                var(--cfg-text-muted);
-
-            font-size:
-                .68rem;
-
-            line-height:
-                1.5;
-
-            margin-bottom:
-                12px;
-
+            color: var(--cfg-text-muted);
+            font-size: .68rem;
+            line-height: 1.5;
+            margin-bottom: 12px;
         }
 
-
         .explorer-btn {
+            width: 100%;
+            min-height: 46px;
 
-            width:
-                100%;
-
-            min-height:
-                46px;
-
-            border:
-                1px solid
-                rgba(130,71,229,.45);
-
-            border-radius:
-                13px;
+            border: 1px solid rgba(130,71,229,.45);
+            border-radius: 13px;
 
             background:
                 linear-gradient(
@@ -873,134 +459,65 @@
                     rgba(130,71,229,.08)
                 );
 
-            color:
-                #d7c2ff;
-
-            font-weight:
-                800;
-
-            cursor:
-                pointer;
-
+            color: #d7c2ff;
+            font-weight: 800;
+            cursor: pointer;
         }
 
-
-        /* ========================================================
-         * ERROR
-         * ======================================================== */
+        /* =====================================================
+           ERROR
+        ====================================================== */
 
         .wallet-error {
+            margin: 16px;
+            padding: 20px;
 
-            margin:
-                16px;
+            border: 1px solid rgba(255,51,102,.30);
+            border-radius: 18px;
 
-            padding:
-                20px;
-
-            border:
-                1px solid
-                rgba(255,51,102,.30);
-
-            border-radius:
-                18px;
-
-            background:
-                rgba(255,51,102,.06);
-
-            text-align:
-                center;
-
+            background: rgba(255,51,102,.06);
+            text-align: center;
         }
-
 
         .wallet-error-title {
-
-            color:
-                #ff6689;
-
-            font-family:
-                Orbitron,
-                monospace;
-
-            font-weight:
-                800;
-
-            margin-bottom:
-                8px;
-
+            color: #ff6689;
+            font-family: Orbitron, monospace;
+            font-weight: 800;
+            margin-bottom: 8px;
         }
-
 
         .wallet-error-text {
-
-            color:
-                var(--cfg-text-muted);
-
-            font-size:
-                .75rem;
-
-            line-height:
-                1.5;
-
+            color: var(--cfg-text-muted);
+            font-size: .75rem;
+            line-height: 1.5;
         }
-
 
         .wallet-error-debug {
+            margin-top: 12px;
+            padding: 10px;
+            border-radius: 10px;
 
-            margin-top:
-                12px;
+            background: rgba(0,0,0,.25);
+            color: #8ba0b3;
 
-            padding:
-                10px;
+            font-family: monospace;
+            font-size: .62rem;
 
-            border-radius:
-                10px;
-
-            background:
-                rgba(0,0,0,.25);
-
-            color:
-                #8ba0b3;
-
-            font-family:
-                monospace;
-
-            font-size:
-                .62rem;
-
-            word-break:
-                break-word;
-
-            text-align:
-                left;
-
+            word-break: break-word;
+            text-align: left;
         }
 
-
-        /* ========================================================
-         * MOBILE
-         * ======================================================== */
-
-        @media (
-            max-width:520px
-        ) {
+        @media (max-width:520px) {
 
             .wallet-action-grid {
-
-                grid-template-columns:
-                    1fr 1fr;
-
+                grid-template-columns: 1fr 1fr;
             }
 
             .polygon-info-grid {
-
-                grid-template-columns:
-                    1fr 1fr;
-
+                grid-template-columns: 1fr 1fr;
             }
 
         }
-
 
     </style>
 
@@ -1040,9 +557,7 @@
 
             <div
                 id="textoEstadoCargando"
-                style="
-                    font-size:.85rem;
-                "
+                style="font-size:.85rem;"
             >
                 Cargando tu wallet...
             </div>
@@ -1054,28 +569,17 @@
              SIN WALLET
         ====================================================== -->
 
-        <section
-            id="estadoSinWallet"
-            style="display:none;"
-        >
+        <section id="estadoSinWallet" style="display:none;">
 
             <div class="wallet-hero">
 
                 <div class="wallet-polygon-logo">
-
-                    <span>
-                        ◈
-                    </span>
-
+                    <span>◈</span>
                 </div>
-
 
                 <div class="wallet-title">
-
                     Conecta tu Wallet
-
                 </div>
-
 
                 <div class="wallet-subtitle">
 
@@ -1085,20 +589,14 @@
 
                 </div>
 
-
                 <button
                     id="btnConectar"
                     class="wallet-primary-btn"
                     type="button"
                     onclick="window.onConectarWallet()"
                 >
-
                     🦊
-
-                    <span>
-                        Conectar Wallet
-                    </span>
-
+                    <span>Conectar Wallet</span>
                 </button>
 
             </div>
@@ -1126,7 +624,6 @@
 
                 </div>
 
-
                 <div class="polygon-info-grid">
 
                     <div class="polygon-info">
@@ -1140,7 +637,6 @@
                         </div>
 
                     </div>
-
 
                     <div class="polygon-info">
 
@@ -1170,7 +666,6 @@
                     PolygonScan
                 </button>
 
-
                 <button
                     type="button"
                     class="wallet-action-btn p2p"
@@ -1180,7 +675,6 @@
                     Muro P2P
                 </button>
 
-
                 <button
                     type="button"
                     class="wallet-action-btn"
@@ -1189,7 +683,6 @@
                     🪙<br>
                     Es.stoks
                 </button>
-
 
                 <button
                     type="button"
@@ -1211,70 +704,39 @@
             <div class="cfg-list">
 
                 <div class="cfg-item">
-
                     <div>
-
-                        <strong>
-                            🦊 MetaMask
-                        </strong>
-
+                        <strong>🦊 MetaMask</strong>
                         <small>
                             Extensión, navegador móvil y app
                         </small>
-
                     </div>
-
                 </div>
 
-
                 <div class="cfg-item">
-
                     <div>
-
-                        <strong>
-                            🔗 WalletConnect
-                        </strong>
-
+                        <strong>🔗 WalletConnect</strong>
                         <small>
                             Conecta múltiples wallets compatibles
                         </small>
-
                     </div>
-
                 </div>
 
-
                 <div class="cfg-item">
-
                     <div>
-
-                        <strong>
-                            🔷 Coinbase Wallet
-                        </strong>
-
+                        <strong>🔷 Coinbase Wallet</strong>
                         <small>
                             Conexión directa o mediante WalletConnect
                         </small>
-
                     </div>
-
                 </div>
 
-
                 <div class="cfg-item">
-
                     <div>
-
-                        <strong>
-                            🌈 Rainbow
-                        </strong>
-
+                        <strong>🌈 Rainbow</strong>
                         <small>
                             Wallet móvil compatible con Polygon
                         </small>
-
                     </div>
-
                 </div>
 
             </div>
@@ -1294,14 +756,12 @@
             <div class="wallet-hero">
 
                 <div class="wallet-polygon-logo">
-                    🔐
+                    <span>🔐</span>
                 </div>
-
 
                 <div class="wallet-title">
                     Inicia sesión primero
                 </div>
-
 
                 <div class="wallet-subtitle">
 
@@ -1309,7 +769,6 @@
                     Sariel's para vincular una wallet.
 
                 </div>
-
 
                 <button
                     class="wallet-primary-btn"
@@ -1342,7 +801,6 @@
                     ⚠️ No se pudo cargar la wallet
                 </div>
 
-
                 <div
                     id="textoEstadoError"
                     class="wallet-error-text"
@@ -1350,13 +808,11 @@
                     No fue posible consultar tu sesión.
                 </div>
 
-
                 <div
                     id="detalleEstadoError"
                     class="wallet-error-debug"
                     style="display:none;"
                 ></div>
-
 
                 <button
                     type="button"
@@ -1380,17 +836,12 @@
             style="display:none;"
         >
 
-
             <div class="wallet-connected">
 
                 <div class="wallet-status">
-
                     <span class="wallet-status-dot"></span>
-
                     WALLET CONECTADA
-
                 </div>
-
 
                 <div
                     id="walletAddress"
@@ -1404,10 +855,6 @@
             </div>
 
 
-            <!-- =================================================
-                 POLYGON
-            ================================================== -->
-
             <div class="polygon-card">
 
                 <div class="polygon-header">
@@ -1415,7 +862,6 @@
                     <div class="polygon-mini-logo">
                         ◈
                     </div>
-
 
                     <div>
 
@@ -1447,11 +893,10 @@
                             id="walletRed"
                             class="polygon-info-value"
                         >
-                            Amoy
+                            AMOY
                         </div>
 
                     </div>
-
 
                     <div class="polygon-info">
 
@@ -1473,18 +918,11 @@
             </div>
 
 
-            <!-- =================================================
-                 POLYGONSCAN
-            ================================================== -->
-
             <div class="explorer-card">
 
                 <div class="explorer-title">
-
                     🔎 Ver tu wallet en PolygonScan
-
                 </div>
-
 
                 <div class="explorer-description">
 
@@ -1494,23 +932,16 @@
 
                 </div>
 
-
                 <button
                     type="button"
                     class="explorer-btn"
                     onclick="window.onAbrirPolygonScan()"
                 >
-
                     🔎 Abrir PolygonScan
-
                 </button>
 
             </div>
 
-
-            <!-- =================================================
-                 ACCIONES PRINCIPALES
-            ================================================== -->
 
             <div class="wallet-action-grid">
 
@@ -1519,54 +950,39 @@
                     class="wallet-action-btn p2p"
                     onclick="window.onIrMuroP2P()"
                 >
-
                     🤝<br>
                     Muro P2P
-
                 </button>
-
 
                 <button
                     type="button"
                     class="wallet-action-btn"
                     onclick="window.onIrEsToks()"
                 >
-
                     🪙<br>
                     Mis Es.stoks
-
                 </button>
-
 
                 <button
                     type="button"
                     class="wallet-action-btn"
                     onclick="window.onCopiarDireccion()"
                 >
-
                     📋<br>
                     Copiar dirección
-
                 </button>
-
 
                 <button
                     type="button"
                     class="wallet-action-btn explorer"
                     onclick="window.onAbrirPolygonScan()"
                 >
-
                     🔎<br>
                     PolygonScan
-
                 </button>
 
             </div>
 
-
-            <!-- =================================================
-                 DESCONEXIÓN
-            ================================================== -->
 
             <div
                 class="cfg-list"
@@ -1609,7 +1025,6 @@
 
             </div>
 
-
         </section>
 
 
@@ -1621,53 +1036,41 @@
             class="cfg-aviso cfg-aviso-info"
             style="margin:16px;"
         >
-
             ℹ️ Sariel's únicamente vincula tu dirección
             pública. Nunca compartas tu frase semilla
             ni tus claves privadas.
-
         </div>
 
 
         <div class="cfg-footer">
 
-            <strong>
-                ◈ Sariel's
-            </strong>
-
+            <strong>◈ Sariel's</strong>
             · Wallet y Polygon
 
         </div>
-
 
     </main>
 
 
     <!-- =========================================================
-         SUPABASE
+         LIBRERÍAS
     ========================================================== -->
 
     <script
         src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"
     ></script>
 
+    <script src="../../../shared/config-icons.js"></script>
 
-    <script
-        src="../../../shared/config-icons.js"
-    ></script>
-
-
-    <script
-        src="../../../shared/config-layout.js"
-    ></script>
-
+    <script src="../../../shared/config-layout.js"></script>
 
     <!-- =========================================================
-         WALLET CONNECT
+         IMPORTANTE:
+         Este era el problema principal.
     ========================================================== -->
 
     <script
-        src="../../shared/js/wallet-connect.js?v=20260926-2"
+        src="../../../shared/js/wallet-connect.js?v=20260926-3"
     ></script>
 
 
@@ -1678,34 +1081,38 @@
         'use strict';
 
 
-        /* ========================================================
-         * HELPERS
-         * ======================================================== */
+        /* =====================================================
+         * CONFIGURACIÓN
+         * ================================================== */
 
-        const $ =
-            function (selector) {
+        const SUPABASE_URL =
+            'https://zultnlogdoajehbswlih.supabase.co';
 
-                return document.querySelector(
-                    selector
-                );
-
-            };
-
+        const SUPABASE_KEY =
+            'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
 
         const SUPABASE_TIMEOUT_MS =
-            10000;
-
-
-        const WEB3_READY_TIMEOUT_MS =
             10000;
 
 
         let cargandoWallet =
             false;
 
-
         let estadoCargado =
             false;
+
+
+        /* =====================================================
+         * HELPERS
+         * ================================================== */
+
+        function $(selector) {
+
+            return document.querySelector(
+                selector
+            );
+
+        }
 
 
         function esperar(ms) {
@@ -1724,72 +1131,59 @@
         }
 
 
-        /* ========================================================
-         * DEPENDENCIAS
-         * ======================================================== */
+        function conTimeout(
+            promise,
+            timeoutMs,
+            mensaje
+        ) {
 
-        async function esperarDependencias() {
+            let timeoutId;
 
-            const inicio =
-                Date.now();
+            const timeoutPromise =
+                new Promise(
+                    function (_, reject) {
+
+                        timeoutId =
+                            setTimeout(
+                                function () {
+
+                                    reject(
+                                        new Error(
+                                            mensaje
+                                        )
+                                    );
+
+                                },
+                                timeoutMs
+                            );
+
+                    }
+                );
 
 
-            while (
+            return Promise.race(
+                [
+                    Promise.resolve(promise),
+                    timeoutPromise
+                ]
+            ).finally(
+                function () {
 
-                Date.now() -
-                inicio <
-                WEB3_READY_TIMEOUT_MS
-
-            ) {
-
-                const supabaseDisponible =
-                    Boolean(
-
-                        window.supabaseClient ||
-
-                        (
-                            window.supabase &&
-
-                            typeof
-                            window.supabase.createClient ===
-                            'function'
-                        )
-
+                    clearTimeout(
+                        timeoutId
                     );
-
-
-                const walletDisponible =
-                    Boolean(
-                        window.SarWallet
-                    );
-
-
-                if (
-
-                    supabaseDisponible &&
-
-                    walletDisponible
-
-                ) {
-
-                    return true;
 
                 }
-
-
-                await esperar(50);
-
-            }
-
-
-            return false;
+            );
 
         }
 
 
-        /* ========================================================
+        /* =====================================================
          * SUPABASE
-         * ======================================================== */
+         *
+         * NO dependemos de SarWallet para cargar la página.
+         * ================================================== */
 
         function obtenerSupabase() {
 
@@ -1803,25 +1197,16 @@
 
 
             if (
-
                 window.supabase &&
-
-                typeof
-                window.supabase.createClient ===
+                typeof window.supabase.createClient ===
                 'function'
-
             ) {
 
                 window.supabaseClient =
-
                     window.supabase.createClient(
-
-                        'https://zultnlogdoajehbswlih.supabase.co',
-
-                        'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
-
+                        SUPABASE_URL,
+                        SUPABASE_KEY
                     );
-
 
                 return window.supabaseClient;
 
@@ -1833,148 +1218,68 @@
         }
 
 
-        /* ========================================================
-         * TIMEOUT
-         * ======================================================== */
+        /* =====================================================
+         * ESPERAR SUPABASE
+         * ================================================== */
 
-        function conTimeout(
-            promise,
-            timeoutMs,
-            mensaje
-        ) {
+        async function esperarSupabase() {
 
-            let timeoutId;
+            const inicio =
+                Date.now();
 
 
-            const timeoutPromise =
-                new Promise(
-                    function (_, reject) {
+            while (
+                Date.now() - inicio < SUPABASE_TIMEOUT_MS
+            ) {
 
-                        timeoutId =
-                            setTimeout(
-
-                                function () {
-
-                                    reject(
-                                        new Error(
-                                            mensaje
-                                        )
-                                    );
-
-                                },
-
-                                timeoutMs
-
-                            );
-
-                    }
-                );
+                const client =
+                    obtenerSupabase();
 
 
-            return Promise.race(
+                if (client) {
 
-                [
-
-                    Promise.resolve(
-                        promise
-                    ),
-
-                    timeoutPromise
-
-                ]
-
-            ).finally(
-
-                function () {
-
-                    clearTimeout(
-                        timeoutId
-                    );
+                    return client;
 
                 }
 
+
+                await esperar(50);
+
+            }
+
+
+            throw new Error(
+                'SUPABASE_NOT_AVAILABLE'
             );
 
         }
 
 
-        /* ========================================================
-         * SESIÓN
-         * ======================================================== */
+        /* =====================================================
+         * ESTADOS
+         * ================================================== */
 
-        async function obtenerSesionSegura(
-            client
-        ) {
+        function mostrarEstado(id) {
 
-            if (!client) {
-
-                throw new Error(
-                    'SUPABASE_NOT_AVAILABLE'
-                );
-
-            }
-
-
-            const resultado =
-                await conTimeout(
-
-                    client.auth.getSession(),
-
-                    SUPABASE_TIMEOUT_MS,
-
-                    'SUPABASE_SESSION_TIMEOUT'
-
-                );
-
-
-            if (
-                resultado?.error
-            ) {
-
-                throw resultado.error;
-
-            }
-
-
-            return (
-                resultado?.data?.session ||
-                null
-            );
-
-        }
-
-
-        /* ========================================================
-         * ESTADOS VISUALES
-         * ======================================================== */
-
-        function mostrarEstado(
-            id
-        ) {
-
-            [
+            const estados = [
 
                 '#estadoCargando',
-
                 '#estadoSinWallet',
-
                 '#estadoNoAutenticado',
-
                 '#estadoError',
-
                 '#estadoWalletConectada'
 
-            ].forEach(
+            ];
 
+
+            estados.forEach(
                 function (selector) {
 
                     const elemento =
                         $(selector);
 
 
-                    if (
-                        elemento
-                    ) {
+                    if (elemento) {
 
                         elemento.style.display =
                             'none';
@@ -1982,7 +1287,6 @@
                     }
 
                 }
-
             );
 
 
@@ -1990,9 +1294,7 @@
                 $(id);
 
 
-            if (
-                destino
-            ) {
+            if (destino) {
 
                 destino.style.display =
                     'block';
@@ -2011,9 +1313,7 @@
                 $('#textoEstadoError');
 
 
-            if (
-                texto
-            ) {
+            if (texto) {
 
                 texto.textContent =
                     mensaje;
@@ -2032,21 +1332,14 @@
 
                 const tecnico =
                     String(
-
                         error.message ||
-
                         error.name ||
-
                         error ||
-
                         ''
-
                     );
 
 
-                if (
-                    tecnico
-                ) {
+                if (tecnico) {
 
                     detalle.textContent =
                         tecnico;
@@ -2066,61 +1359,99 @@
         }
 
 
-        function esErrorDeRed(
-            error
+        /* =====================================================
+         * SESIÓN
+         * ================================================== */
+
+        async function obtenerSesionSegura(
+            client
         ) {
 
-            if (
-                !error
-            ) {
+            if (!client) {
 
-                return !navigator.onLine;
+                throw new Error(
+                    'SUPABASE_NOT_AVAILABLE'
+                );
 
             }
 
 
-            const mensaje =
-                String(
+            const resultado =
+                await conTimeout(
+                    client.auth.getSession(),
+                    SUPABASE_TIMEOUT_MS,
+                    'SUPABASE_SESSION_TIMEOUT'
+                );
 
-                    error.message ||
 
-                    error.name ||
+            if (
+                resultado &&
+                resultado.error
+            ) {
 
-                    error ||
+                throw resultado.error;
 
-                    ''
-
-                ).toLowerCase();
+            }
 
 
             return (
+                resultado &&
+                resultado.data &&
+                resultado.data.session
+            )
+            || null;
 
-                !navigator.onLine ||
+        }
 
-                mensaje.includes(
-                    'failed to fetch'
-                ) ||
 
-                mensaje.includes(
-                    'networkerror'
-                ) ||
+        /* =====================================================
+         * WALLET MODULE
+         *
+         * La página puede cargar aunque SarWallet todavía
+         * no exista.
+         * ================================================== */
 
-                mensaje.includes(
-                    'network error'
-                ) ||
+        function walletDisponible() {
 
-                mensaje.includes(
-                    'fetch failed'
-                )
-
+            return Boolean(
+                window.SarWallet
             );
 
         }
 
 
-        /* ========================================================
+        async function esperarWalletModule() {
+
+            const inicio =
+                Date.now();
+
+
+            while (
+                Date.now() - inicio < 5000
+            ) {
+
+                if (
+                    walletDisponible()
+                ) {
+
+                    return true;
+
+                }
+
+
+                await esperar(50);
+
+            }
+
+
+            return false;
+
+        }
+
+
+        /* =====================================================
          * MOSTRAR WALLET
-         * ======================================================== */
+         * ================================================== */
 
         function mostrarWalletConectada(
             address
@@ -2133,7 +1464,7 @@
 
             const direccion =
                 String(
-                    address
+                    address || ''
                 ).toLowerCase();
 
 
@@ -2141,22 +1472,12 @@
                 $('#walletAddress');
 
 
-            if (
-                elemento
-            ) {
+            if (elemento) {
 
                 elemento.textContent =
-
-                    direccion.slice(
-                        0,
-                        6
-                    ) +
-
+                    direccion.slice(0,6) +
                     '...' +
-
-                    direccion.slice(
-                        -4
-                    );
+                    direccion.slice(-4);
 
 
                 elemento.setAttribute(
@@ -2167,67 +1488,79 @@
             }
 
 
+            actualizarDatosRed();
+
+        }
+
+
+        function actualizarDatosRed() {
+
             try {
 
-                const red =
-                    window.SarWallet
-                        .redActual();
-
-
                 if (
-                    red
+                    !window.SarWallet ||
+                    typeof window.SarWallet.redActual !==
+                    'function'
                 ) {
 
-                    const network =
-                        $('#walletNetwork');
+                    return;
+
+                }
 
 
-                    const redTexto =
-                        $('#walletRed');
+                const red =
+                    window.SarWallet.redActual();
 
 
-                    const chain =
-                        $('#walletChainId');
+                if (!red) {
+
+                    return;
+
+                }
 
 
-                    if (
-                        network
-                    ) {
+                const network =
+                    $('#walletNetwork');
 
-                        network.textContent =
-                            red.info?.name ||
-                            'Polygon Amoy';
+                const redTexto =
+                    $('#walletRed');
 
-                    }
-
-
-                    if (
-                        redTexto
-                    ) {
-
-                        redTexto.textContent =
-                            red.nombre ||
-                            'AMOY';
-
-                    }
+                const chain =
+                    $('#walletChainId');
 
 
-                    if (
-                        chain
-                    ) {
+                if (network) {
 
-                        chain.textContent =
-                            red.chainId ||
-                            80002;
+                    network.textContent =
+                        red.info &&
+                        red.info.name
+                        ? red.info.name
+                        : 'Polygon Amoy';
 
-                    }
+                }
+
+
+                if (redTexto) {
+
+                    redTexto.textContent =
+                        red.nombre ||
+                        'AMOY';
+
+                }
+
+
+                if (chain) {
+
+                    chain.textContent =
+                        red.chainId ||
+                        80002;
 
                 }
 
             } catch (error) {
 
                 console.warn(
-                    '[wallet] Error leyendo red:',
+                    '[wallet] No se pudo leer la red:',
                     error
                 );
 
@@ -2236,18 +1569,15 @@
         }
 
 
-        /* ========================================================
+        /* =====================================================
          * CARGAR ESTADO
-         * ======================================================== */
+         * ================================================== */
 
         async function cargarEstadoWallet() {
 
             if (
-
                 cargandoWallet ||
-
                 estadoCargado
-
             ) {
 
                 return;
@@ -2266,30 +1596,14 @@
 
             try {
 
-                const dependencias =
-                    await esperarDependencias();
-
-
-                if (!dependencias) {
-
-                    throw new Error(
-                        'WALLET_DEPENDENCIES_TIMEOUT'
-                    );
-
-                }
-
+                /*
+                 * Primero Supabase.
+                 *
+                 * NO esperamos SarWallet aquí.
+                 */
 
                 const client =
-                    obtenerSupabase();
-
-
-                if (!client) {
-
-                    throw new Error(
-                        'SUPABASE_NOT_AVAILABLE'
-                    );
-
-                }
+                    await esperarSupabase();
 
 
                 const session =
@@ -2312,22 +1626,21 @@
                 }
 
 
+                /*
+                 * Ahora consultamos la wallet guardada
+                 * en Supabase.
+                 */
+
                 const resultado =
                     await conTimeout(
 
                         client
-
                             .from('usuarios')
-
-                            .select(
-                                'wallet_address'
-                            )
-
+                            .select('wallet_address')
                             .eq(
                                 'id',
                                 session.user.id
                             )
-
                             .maybeSingle(),
 
                         SUPABASE_TIMEOUT_MS,
@@ -2338,7 +1651,8 @@
 
 
                 if (
-                    resultado?.error
+                    resultado &&
+                    resultado.error
                 ) {
 
                     throw resultado.error;
@@ -2347,34 +1661,56 @@
 
 
                 const usuario =
-                    resultado?.data;
+                    resultado &&
+                    resultado.data;
 
 
                 if (
-
                     usuario &&
-
                     usuario.wallet_address
-
                 ) {
 
                     mostrarWalletConectada(
                         usuario.wallet_address
                     );
 
-
                     estadoCargado =
                         true;
-
 
                     return;
 
                 }
 
 
+                /*
+                 * El usuario está autenticado pero todavía
+                 * no tiene wallet vinculada.
+                 */
+
                 mostrarEstado(
                     '#estadoSinWallet'
                 );
+
+
+                /*
+                 * Esperamos SarWallet solamente para habilitar
+                 * la conexión, NO para bloquear la página.
+                 */
+
+                esperarWalletModule()
+                    .then(
+                        function (disponible) {
+
+                            if (!disponible) {
+
+                                console.warn(
+                                    '[wallet] wallet-connect.js no está disponible.'
+                                );
+
+                            }
+
+                        }
+                    );
 
 
                 estadoCargado =
@@ -2388,29 +1724,13 @@
                 );
 
 
-                if (
-                    esErrorDeRed(error)
-                ) {
+                mostrarError(
 
-                    mostrarError(
+                    'No fue posible cargar el estado de tu wallet.',
 
-                        '📶 No hay una conexión estable con internet.',
+                    error
 
-                        error
-
-                    );
-
-                } else {
-
-                    mostrarError(
-
-                        'No fue posible cargar el estado de tu wallet.',
-
-                        error
-
-                    );
-
-                }
+                );
 
             } finally {
 
@@ -2422,36 +1742,40 @@
         }
 
 
-        /* ========================================================
+        /* =====================================================
          * CONECTAR
-         * ======================================================== */
+         * ================================================== */
 
         window.onConectarWallet =
-
             async function () {
 
                 const boton =
                     $('#btnConectar');
 
 
-                if (
-                    boton
-                ) {
+                if (boton) {
 
                     boton.disabled =
                         true;
 
                     boton.innerHTML =
-                        '⏳ Abriendo opciones...';
+                        '⏳ <span>Abriendo wallet...</span>';
 
                 }
 
 
                 try {
 
-                    if (
-                        !window.SarWallet
-                    ) {
+                    /*
+                     * Esperar el módulo solamente cuando
+                     * el usuario realmente quiere conectar.
+                     */
+
+                    const disponible =
+                        await esperarWalletModule();
+
+
+                    if (!disponible) {
 
                         throw new Error(
                             'WALLET_MODULE_NOT_LOADED'
@@ -2461,16 +1785,7 @@
 
 
                     const client =
-                        obtenerSupabase();
-
-
-                    if (!client) {
-
-                        throw new Error(
-                            'SUPABASE_NOT_AVAILABLE'
-                        );
-
-                    }
+                        await esperarSupabase();
 
 
                     const session =
@@ -2490,11 +1805,18 @@
                     }
 
 
-                    /*
-                     * En lugar de mandar directamente
-                     * a un único proveedor, mostramos
-                     * el selector completo.
-                     */
+                    if (
+                        typeof window.SarWallet
+                            .seleccionarConexion !==
+                        'function'
+                    ) {
+
+                        throw new Error(
+                            'WALLET_CONNECT_METHOD_NOT_FOUND'
+                        );
+
+                    }
+
 
                     const result =
                         await window.SarWallet
@@ -2502,12 +1824,13 @@
 
 
                     /*
-                     * MetaMask / Rainbow pueden abrir
-                     * una aplicación externa.
+                     * En móvil puede abrir MetaMask/
+                     * Coinbase externamente.
                      */
 
                     if (
-                        result?.openedApp
+                        result &&
+                        result.openedApp
                     ) {
 
                         return;
@@ -2516,11 +1839,8 @@
 
 
                     if (
-
                         !result ||
-
                         !result.address
-
                     ) {
 
                         throw new Error(
@@ -2572,7 +1892,8 @@
 
 
                     if (
-                        error?.message ===
+                        error &&
+                        error.message ===
                         'USER_CANCELLED'
                     ) {
 
@@ -2581,48 +1902,28 @@
                     }
 
 
-                    if (
-                        error?.message ===
-                        'SUPABASE_NOT_AVAILABLE'
-                    ) {
-
-                        mostrarError(
-
-                            'Supabase no está disponible. Recarga la página.',
-
-                            error
-
-                        );
-
-                        return;
-
-                    }
+                    let mensaje =
+                        'No se pudo conectar la wallet.';
 
 
                     if (
-                        error?.message ===
-                        'SUPABASE_SESSION_TIMEOUT'
+                        error &&
+                        error.message ===
+                        'WALLET_MODULE_NOT_LOADED'
                     ) {
 
-                        mostrarError(
+                        mensaje =
+                            'No se pudo cargar el módulo de WalletConnect. Verifica la ruta de wallet-connect.js.';
 
-                            'Supabase tardó demasiado en responder.',
+                    } else if (
+                        error &&
+                        error.message
+                    ) {
 
-                            error
-
-                        );
-
-                        return;
+                        mensaje =
+                            error.message;
 
                     }
-
-
-                    const mensaje =
-                        window.SarWallet &&
-                        typeof window.SarWallet.obtenerConfiguracion ===
-                        'function'
-                            ? error.message
-                            : 'No se pudo conectar la wallet.';
 
 
                     if (
@@ -2632,11 +1933,7 @@
 
                         window.cfgToast(
 
-                            '⚠️ ' +
-                            (
-                                mensaje ||
-                                'No se pudo conectar la wallet.'
-                            ),
+                            '⚠️ ' + mensaje,
 
                             'error',
 
@@ -2654,9 +1951,7 @@
 
                 } finally {
 
-                    if (
-                        boton
-                    ) {
+                    if (boton) {
 
                         boton.disabled =
                             false;
@@ -2671,28 +1966,17 @@
             };
 
 
-        /* ========================================================
+        /* =====================================================
          * GUARDAR WALLET
-         * ======================================================== */
+         * ================================================== */
 
         async function guardarWalletEnSupabase(
-
             address,
             chainId
-
         ) {
 
             const client =
-                obtenerSupabase();
-
-
-            if (!client) {
-
-                throw new Error(
-                    'SUPABASE_NOT_AVAILABLE'
-                );
-
-            }
+                await esperarSupabase();
 
 
             const session =
@@ -2714,11 +1998,8 @@
                 await conTimeout(
 
                     client.rpc(
-
                         'vincular_wallet',
-
                         {
-
                             p_wallet_address:
                                 address,
 
@@ -2730,9 +2011,7 @@
 
                             p_network_name:
                                 'polygon-amoy'
-
                         }
-
                     ),
 
                     SUPABASE_TIMEOUT_MS,
@@ -2743,15 +2022,13 @@
 
 
             if (
-                resultado?.error
+                resultado &&
+                resultado.error
             ) {
 
                 throw new Error(
-
                     resultado.error.message ||
-
                     'SUPABASE_SAVE_WALLET_FAILED'
-
                 );
 
             }
@@ -2759,21 +2036,18 @@
         }
 
 
-        /* ========================================================
+        /* =====================================================
          * COPIAR
-         * ======================================================== */
+         * ================================================== */
 
         window.onCopiarDireccion =
-
             async function () {
 
                 const elemento =
                     $('#walletAddress');
 
 
-                if (
-                    !elemento
-                ) {
+                if (!elemento) {
 
                     return;
 
@@ -2786,9 +2060,7 @@
                     );
 
 
-                if (
-                    !address
-                ) {
+                if (!address) {
 
                     return;
 
@@ -2808,13 +2080,9 @@
                     ) {
 
                         window.cfgToast(
-
                             '📋 Dirección copiada',
-
                             'success',
-
                             3000
-
                         );
 
                     }
@@ -2830,12 +2098,11 @@
             };
 
 
-        /* ========================================================
+        /* =====================================================
          * POLYGONSCAN
-         * ======================================================== */
+         * ================================================== */
 
         window.onAbrirPolygonScan =
-
             function () {
 
                 const elemento =
@@ -2843,7 +2110,8 @@
 
 
                 const address =
-                    elemento?.getAttribute(
+                    elemento &&
+                    elemento.getAttribute(
                         'data-full'
                     );
 
@@ -2852,46 +2120,26 @@
                     'https://amoy.polygonscan.com';
 
 
-                if (
+                const url =
                     address
-                ) {
-
-                    window.open(
-
-                        base +
-                        '/address/' +
-                        address,
-
-                        '_blank',
-
-                        'noopener,noreferrer'
-
-                    );
-
-                    return;
-
-                }
+                        ? base + '/address/' + address
+                        : base;
 
 
                 window.open(
-
-                    base,
-
+                    url,
                     '_blank',
-
                     'noopener,noreferrer'
-
                 );
 
             };
 
 
-        /* ========================================================
+        /* =====================================================
          * MURO P2P
-         * ======================================================== */
+         * ================================================== */
 
         window.onIrMuroP2P =
-
             function () {
 
                 window.location.href =
@@ -2900,12 +2148,11 @@
             };
 
 
-        /* ========================================================
+        /* =====================================================
          * ES.TOKS
-         * ======================================================== */
+         * ================================================== */
 
         window.onIrEsToks =
-
             function () {
 
                 window.location.href =
@@ -2914,20 +2161,16 @@
             };
 
 
-        /* ========================================================
+        /* =====================================================
          * INFORMACIÓN
-         * ======================================================== */
+         * ================================================== */
 
         window.onComoFunciona =
-
             function () {
 
                 const mensaje =
-
                     "Sariel's vincula únicamente tu dirección pública. " +
-
                     "Tus claves privadas y frase semilla permanecen " +
-
                     "bajo control de tu wallet.";
 
 
@@ -2937,14 +2180,9 @@
                 ) {
 
                     window.cfgToast(
-
-                        'ℹ️ ' +
-                        mensaje,
-
+                        'ℹ️ ' + mensaje,
                         'success',
-
                         6000
-
                     );
 
                 } else {
@@ -2958,12 +2196,11 @@
             };
 
 
-        /* ========================================================
+        /* =====================================================
          * DESCONEXIÓN
-         * ======================================================== */
+         * ================================================== */
 
         window.onDesconectarWallet =
-
             async function () {
 
                 let confirmar =
@@ -3015,11 +2252,13 @@
                 try {
 
                     const client =
-                        obtenerSupabase();
+                        await esperarSupabase();
 
 
                     if (
-                        window.SarWallet
+                        window.SarWallet &&
+                        typeof window.SarWallet.desconectar ===
+                        'function'
                     ) {
 
                         await window.SarWallet
@@ -3028,37 +2267,29 @@
                     }
 
 
+                    const resultado =
+                        await conTimeout(
+
+                            client.rpc(
+                                'desvincular_wallet'
+                            ),
+
+                            SUPABASE_TIMEOUT_MS,
+
+                            'SUPABASE_DISCONNECT_TIMEOUT'
+
+                        );
+
+
                     if (
-                        client
+                        resultado &&
+                        resultado.error
                     ) {
 
-                        const resultado =
-                            await conTimeout(
-
-                                client.rpc(
-                                    'desvincular_wallet'
-                                ),
-
-                                SUPABASE_TIMEOUT_MS,
-
-                                'SUPABASE_DISCONNECT_TIMEOUT'
-
-                            );
-
-
-                        if (
-                            resultado?.error
-                        ) {
-
-                            throw new Error(
-
-                                resultado.error.message ||
-
-                                'SUPABASE_DISCONNECT_FAILED'
-
-                            );
-
-                        }
+                        throw new Error(
+                            resultado.error.message ||
+                            'SUPABASE_DISCONNECT_FAILED'
+                        );
 
                     }
 
@@ -3076,13 +2307,9 @@
                     ) {
 
                         window.cfgToast(
-
                             '✅ Wallet desconectada',
-
                             'success',
-
                             3000
-
                         );
 
                     }
@@ -3095,29 +2322,28 @@
                     );
 
 
+                    const mensaje =
+                        error &&
+                        error.message
+                            ? error.message
+                            : 'No se pudo desconectar la wallet.';
+
+
                     if (
                         typeof window.cfgToast ===
                         'function'
                     ) {
 
                         window.cfgToast(
-
-                            '❌ ' +
-                            (
-                                error.message ||
-                                'No se pudo desconectar la wallet.'
-                            ),
-
+                            '❌ ' + mensaje,
                             'error',
-
                             5000
-
                         );
 
                     } else {
 
                         alert(
-                            error.message
+                            mensaje
                         );
 
                     }
@@ -3127,36 +2353,34 @@
             };
 
 
-        /* ========================================================
+        /* =====================================================
          * REINTENTAR
-         * ======================================================== */
+         * ================================================== */
 
         window.onReintentarWallet =
-
             async function () {
 
                 estadoCargado =
                     false;
 
+                cargandoWallet =
+                    false;
 
                 mostrarEstado(
                     '#estadoCargando'
                 );
-
 
                 await cargarEstadoWallet();
 
             };
 
 
-        /* ========================================================
+        /* =====================================================
          * EVENTOS WALLET
-         * ======================================================== */
+         * ================================================== */
 
         window.addEventListener(
-
             'sar:wallet:accountsChanged',
-
             function () {
 
                 estadoCargado =
@@ -3165,30 +2389,21 @@
                 cargarEstadoWallet();
 
             }
-
         );
 
 
         window.addEventListener(
-
             'sar:wallet:chainChanged',
-
             function () {
 
-                estadoCargado =
-                    false;
-
-                cargarEstadoWallet();
+                actualizarDatosRed();
 
             }
-
         );
 
 
         window.addEventListener(
-
             'sar:wallet:disconnected',
-
             function () {
 
                 estadoCargado =
@@ -3197,14 +2412,11 @@
                 cargarEstadoWallet();
 
             }
-
         );
 
 
         window.addEventListener(
-
             'sar:wallet:wrongNetwork',
-
             function () {
 
                 if (
@@ -3213,60 +2425,44 @@
                 ) {
 
                     window.cfgToast(
-
                         '⚠️ Cambia tu wallet a Polygon Amoy',
-
                         'warning',
-
                         5000
-
                     );
 
                 }
 
             }
-
         );
 
 
-        /* ========================================================
-         * OFFLINE / ONLINE
-         * ======================================================== */
+        /* =====================================================
+         * ONLINE / OFFLINE
+         * ================================================== */
 
         window.addEventListener(
-
             'offline',
-
             function () {
 
-                if (
-                    cargandoWallet
-                ) {
+                if (cargandoWallet) {
 
                     cargandoWallet =
                         false;
 
-
                     mostrarError(
-
                         '📶 Se perdió la conexión a internet.',
-
-                        new Error(
-                            'OFFLINE'
-                        )
-
+                        new Error('OFFLINE')
                     );
 
                 }
 
             }
-
         );
 
 
-        /* ========================================================
-         * INICIALIZAR
-         * ======================================================== */
+        /* =====================================================
+         * INICIALIZACIÓN
+         * ================================================== */
 
         function iniciarWalletPage() {
 
@@ -3302,6 +2498,11 @@
             }
 
 
+            /*
+             * La página se inicializa inmediatamente.
+             * No esperamos WalletConnect.
+             */
+
             cargarEstadoWallet();
 
         }
@@ -3313,16 +2514,11 @@
         ) {
 
             document.addEventListener(
-
                 'DOMContentLoaded',
-
                 iniciarWalletPage,
-
                 {
-                    once:
-                        true
+                    once: true
                 }
-
             );
 
         } else {
@@ -3335,7 +2531,6 @@
     })();
 
     </script>
-
 
 </body>
 
