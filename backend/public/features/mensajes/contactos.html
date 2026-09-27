@@ -1,11 +1,27 @@
 <!DOCTYPE html>
 <html lang="es" data-contactos-page="true">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Contactos · Sariel's Ecosystem">
 
-    <title data-clave="contactos_titulo">◈ Contactos · Sariel's</title>
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    >
+
+    <meta
+        name="description"
+        content="Contactos · Sariel's Ecosystem"
+    >
+
+    <meta
+        name="theme-color"
+        content="#05080f"
+    >
+
+    <title data-clave="contactos_titulo">
+        ◈ Contactos · Sariel's
+    </title>
 
     <link
         rel="icon"
@@ -14,11 +30,27 @@
     >
 
     <link
+        rel="preconnect"
+        href="https://fonts.googleapis.com"
+    >
+
+    <link
+        rel="preconnect"
+        href="https://fonts.gstatic.com"
+        crossorigin
+    >
+
+    <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap"
         rel="stylesheet"
     >
 
-    <!-- ✅ APARIENCIA GLOBAL v2.0 - Se carga PRIMERO -->
+    <!--
+        ============================================================
+        APARIENCIA GLOBAL
+        Debe cargarse antes de contactos.js.
+        ============================================================
+    -->
     <script src="/features/shared/js/apariencia-global.js"></script>
 
     <style>
@@ -26,18 +58,28 @@
             --gold: #D4AF37;
             --gold-dark: #b8923a;
             --gold-light: #e8c84a;
+
             --green-deep: #0F2D1A;
             --green-mid: #1a4a2a;
+
             --space: #05080f;
+
             --text-primary: #f0f4f8;
             --text-secondary: #c0d8e8;
             --text-muted: #8aa8b8;
+
             --glass-bg: rgba(15, 45, 26, 0.55);
             --glass-border: rgba(212, 175, 55, 0.15);
-            --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
+
+            --shadow-gold:
+                0 8px 32px rgba(212, 175, 55, 0.25);
+
             --radius: 16px;
             --radius-xl: 24px;
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+            --transition:
+                all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
             --success: #00d68f;
             --danger: #ff3366;
             --warning: #f7d44a;
@@ -52,32 +94,74 @@
             box-sizing: border-box;
         }
 
+        html {
+            min-height: 100%;
+            scroll-behavior: smooth;
+        }
+
         body {
+            min-height: 100vh;
             background: var(--space);
             color: var(--text-primary);
             font-family: 'Inter', sans-serif;
-            min-height: 100vh;
+
             background-image:
-                radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%),
-                radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
+                radial-gradient(
+                    ellipse at 20% 50%,
+                    rgba(26, 74, 42, 0.4) 0%,
+                    transparent 60%
+                ),
+                radial-gradient(
+                    ellipse at 80% 50%,
+                    rgba(212, 175, 55, 0.08) 0%,
+                    transparent 60%
+                );
+        }
+
+        button,
+        input {
+            font: inherit;
+        }
+
+        button {
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        a {
+            -webkit-tap-highlight-color: transparent;
         }
 
         .app {
+            width: 100%;
             max-width: 1100px;
             margin: 0 auto;
             padding: 16px 20px 30px;
         }
 
+        /* ========================================================
+           HEADER
+        ======================================================== */
+
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 16px;
+
             padding: 10px 0 14px;
-            border-bottom: 1px solid var(--glass-border);
-            background: rgba(5, 8, 15, 0.92);
+
+            border-bottom:
+                1px solid var(--glass-border);
+
+            background:
+                rgba(5, 8, 15, 0.92);
+
             position: sticky;
             top: 0;
             z-index: 100;
+
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
         }
 
         .logo {
@@ -85,12 +169,14 @@
             align-items: center;
             gap: 10px;
             text-decoration: none;
+            min-width: 0;
         }
 
         .logo-hex {
             font-size: 1.8rem;
             color: var(--gold);
             font-family: 'Orbitron', monospace;
+            flex-shrink: 0;
         }
 
         .logo-text {
@@ -98,6 +184,7 @@
             font-size: 1.2rem;
             color: var(--text-primary);
             letter-spacing: 2px;
+            white-space: nowrap;
         }
 
         .logo-text span {
@@ -106,47 +193,101 @@
 
         .logo-badge {
             font-size: 0.45rem;
-            background: linear-gradient(135deg, var(--gold), var(--gold-light));
+
+            background:
+                linear-gradient(
+                    135deg,
+                    var(--gold),
+                    var(--gold-light)
+                );
+
             color: var(--space);
             padding: 2px 10px;
             border-radius: 20px;
             font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .network-badge {
             display: flex;
             align-items: center;
             gap: 6px;
+
             font-size: 0.6rem;
             color: var(--gold);
-            background: rgba(212, 175, 55, 0.1);
+
+            background:
+                rgba(212, 175, 55, 0.1);
+
             padding: 4px 12px;
             border-radius: 20px;
+            white-space: nowrap;
         }
+
+        .network-badge .dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--success);
+            box-shadow:
+                0 0 8px rgba(0, 214, 143, 0.7);
+        }
+
+        /* ========================================================
+           NAV
+        ======================================================== */
 
         .main-nav {
             display: flex;
             gap: 4px;
-            background: rgba(15, 45, 26, 0.3);
+
+            background:
+                rgba(15, 45, 26, 0.3);
+
             border-radius: var(--radius);
             padding: 4px;
-            border: 1px solid var(--glass-border);
+
+            border:
+                1px solid var(--glass-border);
+
             margin: 16px 0 20px;
+
             overflow-x: auto;
+            scrollbar-width: thin;
         }
 
         .main-nav .nav-link {
             padding: 8px 16px;
+
             border-radius: 12px;
+
             color: var(--text-muted);
             text-decoration: none;
+
             font-size: 0.7rem;
+
             transition: var(--transition);
+
             white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .main-nav .nav-link:hover {
+            color: var(--text-primary);
+            background:
+                rgba(212, 175, 55, 0.06);
         }
 
         .main-nav .nav-link.active {
-            background: rgba(212, 175, 55, 0.12);
+            background:
+                rgba(212, 175, 55, 0.12);
+
             color: var(--gold);
         }
 
@@ -154,21 +295,37 @@
             color: var(--live-red);
         }
 
+        /* ========================================================
+           CONTENEDOR
+        ======================================================== */
+
         .contactos-container {
+            width: 100%;
             max-width: 900px;
             margin: 0 auto;
         }
 
+        /* ========================================================
+           STATS
+        ======================================================== */
+
         .contactos-stats {
             display: flex;
             gap: 24px;
+
             margin-bottom: 20px;
             padding: 12px 20px;
+
             background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
+
+            border:
+                1px solid var(--glass-border);
+
             border-radius: var(--radius);
+
             font-size: 0.7rem;
             color: var(--text-muted);
+
             flex-wrap: wrap;
         }
 
@@ -194,11 +351,17 @@
 
         .contactos-stats .stat .dot.online {
             background: var(--success);
+            box-shadow:
+                0 0 7px rgba(0, 214, 143, 0.6);
         }
 
         .contactos-stats .stat .dot.offline {
             background: var(--text-muted);
         }
+
+        /* ========================================================
+           BUSCADOR
+        ======================================================== */
 
         .search-bar {
             display: flex;
@@ -209,18 +372,34 @@
 
         .search-bar input {
             flex: 1;
+
             padding: 12px 20px;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid var(--glass-border);
+
+            background:
+                rgba(255, 255, 255, 0.04);
+
+            border:
+                1px solid var(--glass-border);
+
             border-radius: 30px;
+
             color: var(--text-primary);
+
             outline: none;
+
             font-size: 0.85rem;
+
             min-width: 150px;
+
+            transition: var(--transition);
         }
 
         .search-bar input:focus {
             border-color: var(--gold);
+
+            box-shadow:
+                0 0 0 3px
+                rgba(212, 175, 55, 0.08);
         }
 
         .search-bar input::placeholder {
@@ -228,15 +407,29 @@
         }
 
         .search-bar .btn-agregar {
-            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            background:
+                linear-gradient(
+                    135deg,
+                    var(--gold),
+                    var(--gold-dark)
+                );
+
             color: var(--space);
+
             border: none;
+
             padding: 12px 24px;
+
             border-radius: 30px;
+
             font-weight: 700;
+
             cursor: pointer;
+
             font-size: 0.8rem;
+
             transition: var(--transition);
+
             white-space: nowrap;
         }
 
@@ -245,16 +438,30 @@
             box-shadow: var(--shadow-gold);
         }
 
+        .search-bar .btn-agregar:active {
+            transform: scale(0.98);
+        }
+
         .search-bar .btn-invitar {
             background: transparent;
+
             color: var(--text-secondary);
-            border: 1px solid var(--glass-border);
+
+            border:
+                1px solid var(--glass-border);
+
             padding: 12px 24px;
+
             border-radius: 30px;
+
             font-weight: 600;
+
             cursor: pointer;
+
             font-size: 0.8rem;
+
             transition: var(--transition);
+
             white-space: nowrap;
         }
 
@@ -263,25 +470,44 @@
             color: var(--gold);
         }
 
+        /* ========================================================
+           FILTROS
+        ======================================================== */
+
         .filtros {
             display: flex;
             gap: 4px;
+
             margin-bottom: 20px;
+
             flex-wrap: wrap;
-            background: rgba(0, 0, 0, 0.15);
+
+            background:
+                rgba(0, 0, 0, 0.15);
+
             border-radius: var(--radius);
+
             padding: 4px;
-            border: 1px solid var(--glass-border);
+
+            border:
+                1px solid var(--glass-border);
         }
 
         .filtros .filtro {
             padding: 6px 18px;
+
             border: none;
+
             border-radius: 12px;
+
             background: transparent;
+
             color: var(--text-muted);
+
             cursor: pointer;
+
             font-size: 0.7rem;
+
             transition: var(--transition);
         }
 
@@ -290,9 +516,15 @@
         }
 
         .filtros .filtro.active {
-            background: rgba(212, 175, 55, 0.12);
+            background:
+                rgba(212, 175, 55, 0.12);
+
             color: var(--gold);
         }
+
+        /* ========================================================
+           LISTA
+        ======================================================== */
 
         .contactos-list {
             display: grid;
@@ -304,33 +536,58 @@
             display: flex;
             align-items: center;
             gap: 16px;
+
             padding: 14px 20px;
+
             background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
+
+            border:
+                1px solid var(--glass-border);
+
             border-radius: var(--radius);
+
             transition: var(--transition);
         }
 
         .contacto-card:hover {
-            border-color: rgba(212, 175, 55, 0.3);
+            border-color:
+                rgba(212, 175, 55, 0.3);
+
             transform: translateY(-2px);
+
             box-shadow: var(--shadow-gold);
         }
 
         .contacto-card .contacto-avatar {
             width: 48px;
             height: 48px;
+
             border-radius: 50%;
-            background: linear-gradient(135deg, var(--green-deep), var(--gold));
+
+            background:
+                linear-gradient(
+                    135deg,
+                    var(--green-deep),
+                    var(--gold)
+                );
+
             display: flex;
             align-items: center;
             justify-content: center;
+
             color: white;
+
             font-size: 1.2rem;
+
             position: relative;
+
             flex-shrink: 0;
+
             overflow: hidden;
-            border: 2px solid rgba(212, 175, 55, 0.2);
+
+            border:
+                2px solid
+                rgba(212, 175, 55, 0.2);
         }
 
         .contacto-card .contacto-avatar img {
@@ -345,20 +602,29 @@
 
         .contacto-card .contacto-avatar .online-dot {
             position: absolute;
+
             bottom: 0;
             right: 0;
+
             width: 12px;
             height: 12px;
+
             border-radius: 50%;
+
             background: var(--success);
-            border: 2px solid var(--space);
+
+            border:
+                2px solid var(--space);
         }
 
         .contacto-card .contacto-avatar .favorito-badge {
             position: absolute;
+
             top: -2px;
             right: -2px;
+
             font-size: 0.7rem;
+
             color: var(--gold);
         }
 
@@ -369,25 +635,37 @@
 
         .contacto-card .contacto-info .nombre {
             font-weight: 600;
+
             color: var(--text-primary);
+
             font-size: 0.95rem;
+
             display: flex;
             align-items: center;
+
             gap: 6px;
+
             flex-wrap: wrap;
         }
 
         .contacto-card .contacto-info .nombre .verified {
             font-size: 0.45rem;
-            background: rgba(212, 175, 55, 0.1);
+
+            background:
+                rgba(212, 175, 55, 0.1);
+
             color: var(--gold);
+
             padding: 2px 10px;
+
             border-radius: 12px;
         }
 
         .contacto-card .contacto-info .estado {
             font-size: 0.65rem;
+
             color: var(--text-muted);
+
             margin-top: 2px;
         }
 
@@ -397,92 +675,166 @@
 
         .contacto-card .contacto-info .contacto-meta {
             font-size: 0.55rem;
+
             color: var(--text-muted);
+
             margin-top: 2px;
         }
 
         .contacto-card .contacto-actions {
             display: flex;
+
             gap: 2px;
+
             flex-shrink: 0;
         }
 
         .contacto-card .contacto-actions button {
             background: none;
+
             border: none;
+
             color: var(--text-muted);
+
             font-size: 0.85rem;
+
             cursor: pointer;
+
             padding: 6px 8px;
+
             border-radius: 8px;
+
             transition: var(--transition);
         }
 
         .contacto-card .contacto-actions button:hover {
             color: var(--gold);
-            background: rgba(212, 175, 55, 0.05);
+
+            background:
+                rgba(212, 175, 55, 0.05);
         }
 
-        .contacto-card .contacto-actions button.favorito.active {
+        .contacto-card
+        .contacto-actions
+        button.favorito.active {
             color: var(--gold);
         }
 
-        .contacto-card .contacto-actions button.bloquear:hover,
-        .contacto-card .contacto-actions button.eliminar:hover {
+        .contacto-card
+        .contacto-actions
+        button.bloquear:hover,
+        .contacto-card
+        .contacto-actions
+        button.eliminar:hover {
             color: var(--danger);
         }
 
-        .contacto-card .contacto-actions button.mensaje:hover {
+        .contacto-card
+        .contacto-actions
+        button.mensaje:hover {
             color: var(--cyan);
         }
 
+        /* ========================================================
+           EMPTY STATE
+        ======================================================== */
+
         .empty-state {
             text-align: center;
+
             padding: 60px 20px;
+
             color: var(--text-muted);
+
             grid-column: 1 / -1;
         }
 
         .empty-state .icon {
             font-size: 3rem;
+
             display: block;
+
             margin-bottom: 16px;
+
             color: var(--gold);
+
             opacity: 0.3;
+
             font-family: 'Orbitron', monospace;
+        }
+
+        .empty-state h3 {
+            font-size: 0.9rem;
+            font-weight: 600;
         }
 
         .empty-state .btn-accion {
             margin-top: 12px;
-            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+
+            background:
+                linear-gradient(
+                    135deg,
+                    var(--gold),
+                    var(--gold-dark)
+                );
+
             color: var(--space);
+
             border: none;
+
             padding: 10px 24px;
+
             border-radius: 30px;
+
             font-weight: 700;
+
             cursor: pointer;
+
             font-size: 0.8rem;
         }
+
+        /* ========================================================
+           TOAST
+        ======================================================== */
 
         .toast {
             position: fixed;
+
             bottom: 30px;
             right: 30px;
+
             background: var(--green-deep);
-            border: 1px solid var(--gold);
+
+            border:
+                1px solid var(--gold);
+
             color: var(--gold);
+
             padding: 14px 28px;
+
             border-radius: 14px;
+
             font-size: 0.8rem;
-            transform: translateY(100px);
+
+            transform:
+                translateY(100px);
+
             opacity: 0;
-            transition: all 0.5s ease;
+
+            transition:
+                all 0.5s ease;
+
             z-index: 9999;
+
             max-width: 400px;
+
+            pointer-events: none;
         }
 
         .toast.show {
-            transform: translateY(0);
+            transform:
+                translateY(0);
+
             opacity: 1;
         }
 
@@ -501,16 +853,36 @@
             color: var(--success);
         }
 
+        /* ========================================================
+           FOOTER
+        ======================================================== */
+
         .footer {
-            margin-top: 30px;
-            padding-top: 16px;
-            border-top: 1px solid var(--glass-border);
+            max-width: 1100px;
+
+            margin:
+                30px auto 0;
+
+            padding:
+                16px 20px;
+
+            border-top:
+                1px solid var(--glass-border);
+
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+
+            justify-content:
+                space-between;
+
+            align-items:
+                center;
+
             font-size: 0.7rem;
+
             color: var(--text-muted);
+
             flex-wrap: wrap;
+
             gap: 10px;
         }
 
@@ -521,7 +893,9 @@
 
         .footer-links {
             display: flex;
+
             gap: 12px;
+
             flex-wrap: wrap;
         }
 
@@ -534,18 +908,35 @@
             color: var(--gold);
         }
 
+        /* ========================================================
+           MODALES
+        ======================================================== */
+
         .modal-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
+
+            inset: 0;
+
             width: 100%;
             height: 100%;
-            background: rgba(5, 8, 15, 0.9);
+
+            background:
+                rgba(5, 8, 15, 0.9);
+
             display: none;
+
             align-items: center;
             justify-content: center;
+
             z-index: 1000;
-            backdrop-filter: blur(10px);
+
+            padding: 20px;
+
+            backdrop-filter:
+                blur(10px);
+
+            -webkit-backdrop-filter:
+                blur(10px);
         }
 
         .modal-overlay.show {
@@ -554,38 +945,68 @@
 
         .modal {
             background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-xl);
+
+            border:
+                1px solid var(--glass-border);
+
+            border-radius:
+                var(--radius-xl);
+
             padding: 32px;
+
             max-width: 480px;
+
             width: 92%;
+
             max-height: 85vh;
+
             overflow-y: auto;
+
+            box-shadow:
+                0 24px 80px
+                rgba(0, 0, 0, 0.45);
         }
 
         .modal .modal-header {
             display: flex;
-            justify-content: space-between;
+
+            justify-content:
+                space-between;
+
             align-items: center;
+
+            gap: 16px;
+
             margin-bottom: 20px;
         }
 
         .modal .modal-header h2 {
-            font-family: 'Orbitron', monospace;
+            font-family:
+                'Orbitron',
+                monospace;
+
             color: var(--gold);
+
             font-size: 1.1rem;
         }
 
         .modal .modal-header .btn-cerrar {
             background: none;
+
             border: none;
+
             color: var(--text-muted);
+
             font-size: 1.6rem;
+
             cursor: pointer;
+
+            line-height: 1;
         }
 
         .modal .modal-header .btn-cerrar:hover {
-            color: var(--text-primary);
+            color:
+                var(--text-primary);
         }
 
         .modal .form-group {
@@ -594,168 +1015,350 @@
 
         .modal .form-group label {
             display: block;
+
             font-size: 0.75rem;
+
             color: var(--text-muted);
+
             margin-bottom: 4px;
         }
 
         .modal .form-group input {
             width: 100%;
+
             padding: 10px 14px;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid var(--glass-border);
+
+            background:
+                rgba(0, 0, 0, 0.3);
+
+            border:
+                1px solid var(--glass-border);
+
             border-radius: 10px;
+
             color: var(--text-primary);
+
             font-size: 0.9rem;
+
             outline: none;
         }
 
         .modal .form-group input:focus {
             border-color: var(--gold);
+
+            box-shadow:
+                0 0 0 3px
+                rgba(212, 175, 55, 0.08);
         }
 
         .modal .resultados-busqueda {
             margin-top: 8px;
+
             max-height: 200px;
+
             overflow-y: auto;
         }
 
         .modal .codigo-box {
-            background: var(--bg-dark);
+            background:
+                var(--bg-dark);
+
             border-radius: 12px;
+
             padding: 16px;
+
             text-align: center;
+
             margin: 12px 0;
-            border: 1px solid rgba(212, 175, 55, 0.1);
+
+            border:
+                1px solid
+                rgba(212, 175, 55, 0.1);
         }
 
         .modal .codigo-box .codigo {
-            font-family: 'Orbitron', monospace;
+            font-family:
+                'Orbitron',
+                monospace;
+
             font-size: 1.8rem;
+
             color: var(--gold);
+
             letter-spacing: 2px;
+
+            word-break: break-word;
         }
 
         .modal .btn-copiar {
             background: transparent;
-            border: 1px solid var(--glass-border);
-            color: var(--text-secondary);
+
+            border:
+                1px solid
+                var(--glass-border);
+
+            color:
+                var(--text-secondary);
+
             padding: 8px 20px;
+
             border-radius: 20px;
+
             cursor: pointer;
+
             font-size: 0.7rem;
-            transition: var(--transition);
+
+            transition:
+                var(--transition);
         }
 
         .modal .btn-copiar:hover {
-            border-color: var(--gold);
-            color: var(--gold);
+            border-color:
+                var(--gold);
+
+            color:
+                var(--gold);
         }
 
-        /* ============================================================ */
-        /* TEMA DÍA - COMPLETO para contactos                           */
-        /* ============================================================ */
+        /* ========================================================
+           TEMA DÍA
+        ======================================================== */
+
         html.tema-dia,
         html[data-tema="dia"] {
             --space: #f5f7fa;
             --text-primary: #1a2332;
             --text-secondary: #4a5568;
             --text-muted: #718096;
-            --glass-bg: rgba(255, 255, 255, 0.9);
-            --glass-border: rgba(0, 0, 0, 0.1);
-            --bg-dark: rgba(240, 244, 248, 0.9);
-        }
-        html.tema-dia body,
-        html[data-tema="dia"] body {
-            background: #f5f7fa !important;
-            background-image:
-                radial-gradient(ellipse at 20% 50%, rgba(212, 175, 55, 0.05) 0%, transparent 60%),
-                radial-gradient(ellipse at 80% 50%, rgba(42, 106, 58, 0.05) 0%, transparent 60%) !important;
-            color: var(--text-primary) !important;
-        }
-        html.tema-dia .header,
-        html[data-tema="dia"] .header {
-            background: rgba(255, 255, 255, 0.95) !important;
-            border-bottom-color: rgba(0, 0, 0, 0.1) !important;
-        }
-        html.tema-dia .logo-text,
-        html[data-tema="dia"] .logo-text {
-            color: var(--text-primary) !important;
-        }
-        html.tema-dia .main-nav,
-        html[data-tema="dia"] .main-nav {
-            background: rgba(255, 255, 255, 0.7) !important;
-            border-color: rgba(0, 0, 0, 0.1) !important;
-        }
-        html.tema-dia .main-nav .nav-link,
-        html[data-tema="dia"] .main-nav .nav-link {
-            color: #718096 !important;
-        }
-        html.tema-dia .main-nav .nav-link.active,
-        html[data-tema="dia"] .main-nav .nav-link.active {
-            background: rgba(212, 175, 55, 0.15) !important;
-            color: var(--gold) !important;
-        }
-        html.tema-dia .contactos-stats,
-        html.tema-dia .contacto-card,
-        html.tema-dia .modal,
-        html[data-tema="dia"] .contactos-stats,
-        html[data-tema="dia"] .contacto-card,
-        html[data-tema="dia"] .modal {
-            background: rgba(255, 255, 255, 0.9) !important;
-            border-color: rgba(0, 0, 0, 0.1) !important;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08) !important;
-        }
-        html.tema-dia .contacto-card .contacto-info .nombre,
-        html[data-tema="dia"] .contacto-card .contacto-info .nombre {
-            color: var(--text-primary) !important;
-        }
-        html.tema-dia .search-bar input,
-        html.tema-dia .modal .form-group input,
-        html[data-tema="dia"] .search-bar input,
-        html[data-tema="dia"] .modal .form-group input {
-            background: rgba(0, 0, 0, 0.03) !important;
-            color: var(--text-primary) !important;
-            border-color: rgba(0, 0, 0, 0.15) !important;
-        }
-        html.tema-dia input::placeholder,
-        html[data-tema="dia"] input::placeholder {
-            color: #a0aec0 !important;
-        }
-        html.tema-dia .filtros,
-        html[data-tema="dia"] .filtros {
-            background: rgba(255, 255, 255, 0.7) !important;
-        }
-        html.tema-dia .footer,
-        html[data-tema="dia"] .footer {
-            color: #718096 !important;
-            border-top-color: rgba(0, 0, 0, 0.1) !important;
-        }
-        html.tema-dia .footer-links a,
-        html[data-tema="dia"] .footer-links a {
-            color: #718096 !important;
-        }
-        html.tema-dia .footer-links a:hover,
-        html[data-tema="dia"] .footer-links a:hover {
-            color: var(--gold) !important;
-        }
-        html.tema-dia .modal .codigo-box,
-        html[data-tema="dia"] .modal .codigo-box {
-            background: rgba(240, 244, 248, 0.9) !important;
+
+            --glass-bg:
+                rgba(255, 255, 255, 0.9);
+
+            --glass-border:
+                rgba(0, 0, 0, 0.1);
+
+            --bg-dark:
+                rgba(240, 244, 248, 0.9);
         }
 
+        html.tema-dia body,
+        html[data-tema="dia"] body {
+            background:
+                #f5f7fa !important;
+
+            background-image:
+                radial-gradient(
+                    ellipse at 20% 50%,
+                    rgba(212, 175, 55, 0.05) 0%,
+                    transparent 60%
+                ),
+                radial-gradient(
+                    ellipse at 80% 50%,
+                    rgba(42, 106, 58, 0.05) 0%,
+                    transparent 60%
+                ) !important;
+
+            color:
+                var(--text-primary) !important;
+        }
+
+        html.tema-dia .header,
+        html[data-tema="dia"] .header {
+            background:
+                rgba(255, 255, 255, 0.95) !important;
+
+            border-bottom-color:
+                rgba(0, 0, 0, 0.1) !important;
+        }
+
+        html.tema-dia .logo-text,
+        html[data-tema="dia"] .logo-text {
+            color:
+                var(--text-primary) !important;
+        }
+
+        html.tema-dia .main-nav,
+        html[data-tema="dia"] .main-nav {
+            background:
+                rgba(255, 255, 255, 0.7) !important;
+
+            border-color:
+                rgba(0, 0, 0, 0.1) !important;
+        }
+
+        html.tema-dia
+        .main-nav
+        .nav-link,
+        html[data-tema="dia"]
+        .main-nav
+        .nav-link {
+            color:
+                #718096 !important;
+        }
+
+        html.tema-dia
+        .main-nav
+        .nav-link.active,
+        html[data-tema="dia"]
+        .main-nav
+        .nav-link.active {
+            background:
+                rgba(212, 175, 55, 0.15) !important;
+
+            color:
+                var(--gold) !important;
+        }
+
+        html.tema-dia
+        .contactos-stats,
+        html.tema-dia
+        .contacto-card,
+        html.tema-dia
+        .modal,
+        html[data-tema="dia"]
+        .contactos-stats,
+        html[data-tema="dia"]
+        .contacto-card,
+        html[data-tema="dia"]
+        .modal {
+            background:
+                rgba(255, 255, 255, 0.9) !important;
+
+            border-color:
+                rgba(0, 0, 0, 0.1) !important;
+
+            box-shadow:
+                0 2px 12px
+                rgba(0, 0, 0, 0.08) !important;
+        }
+
+        html.tema-dia
+        .contacto-card
+        .contacto-info
+        .nombre,
+        html[data-tema="dia"]
+        .contacto-card
+        .contacto-info
+        .nombre {
+            color:
+                var(--text-primary) !important;
+        }
+
+        html.tema-dia
+        .search-bar
+        input,
+        html.tema-dia
+        .modal
+        .form-group
+        input,
+        html[data-tema="dia"]
+        .search-bar
+        input,
+        html[data-tema="dia"]
+        .modal
+        .form-group
+        input {
+            background:
+                rgba(0, 0, 0, 0.03) !important;
+
+            color:
+                var(--text-primary) !important;
+
+            border-color:
+                rgba(0, 0, 0, 0.15) !important;
+        }
+
+        html.tema-dia input::placeholder,
+        html[data-tema="dia"]
+        input::placeholder {
+            color:
+                #a0aec0 !important;
+        }
+
+        html.tema-dia .filtros,
+        html[data-tema="dia"] .filtros {
+            background:
+                rgba(255, 255, 255, 0.7) !important;
+        }
+
+        html.tema-dia .footer,
+        html[data-tema="dia"] .footer {
+            color:
+                #718096 !important;
+
+            border-top-color:
+                rgba(0, 0, 0, 0.1) !important;
+        }
+
+        html.tema-dia
+        .footer-links
+        a,
+        html[data-tema="dia"]
+        .footer-links
+        a {
+            color:
+                #718096 !important;
+        }
+
+        html.tema-dia
+        .footer-links
+        a:hover,
+        html[data-tema="dia"]
+        .footer-links
+        a:hover {
+            color:
+                var(--gold) !important;
+        }
+
+        html.tema-dia
+        .modal
+        .codigo-box,
+        html[data-tema="dia"]
+        .modal
+        .codigo-box {
+            background:
+                rgba(240, 244, 248, 0.9) !important;
+        }
+
+        /* ========================================================
+           RESPONSIVE
+        ======================================================== */
+
         @media (max-width: 768px) {
+
+            .app {
+                padding:
+                    12px 14px 24px;
+            }
+
+            .header {
+                padding-top: 8px;
+            }
+
+            .logo-badge {
+                display: none;
+            }
+
             .contacto-card {
                 padding: 12px 14px;
+
                 flex-wrap: wrap;
+
                 gap: 10px;
             }
 
-            .contacto-card .contacto-actions {
+            .contacto-card
+            .contacto-actions {
                 width: 100%;
-                justify-content: flex-end;
+
+                justify-content:
+                    flex-end;
+
                 padding-top: 8px;
-                border-top: 1px solid var(--glass-border);
+
+                border-top:
+                    1px solid
+                    var(--glass-border);
             }
 
             .main-nav .nav-link {
@@ -766,18 +1369,39 @@
             .search-bar .btn-invitar {
                 display: none;
             }
+
+            .footer {
+                padding-left: 14px;
+                padding-right: 14px;
+            }
         }
 
         @media (max-width: 480px) {
+
+            .logo-text {
+                font-size: 1rem;
+            }
+
+            .network-badge {
+                font-size: 0.55rem;
+                padding: 4px 8px;
+            }
+
             .search-bar {
                 flex-direction: column;
+            }
+
+            .search-bar input {
+                width: 100%;
+                min-width: 0;
             }
 
             .search-bar .btn-agregar {
                 width: 100%;
             }
 
-            .contacto-card .contacto-avatar {
+            .contacto-card
+            .contacto-avatar {
                 width: 40px;
                 height: 40px;
                 font-size: 1rem;
@@ -790,6 +1414,30 @@
 
             .modal {
                 padding: 20px;
+                width: 96%;
+            }
+
+            .modal .codigo-box .codigo {
+                font-size: 1.4rem;
+            }
+
+            .toast {
+                left: 14px;
+                right: 14px;
+                bottom: 20px;
+                max-width: none;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+
+            *,
+            *::before,
+            *::after {
+                scroll-behavior: auto !important;
+                transition-duration: 0.01ms !important;
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
             }
         }
     </style>
@@ -797,431 +1445,552 @@
 
 <body>
 
-<div class="app">
+    <div class="app">
 
-    <header class="header">
-        <a href="/" class="logo">
-            <span class="logo-hex">◈</span>
-            <span class="logo-text">Sariel<span>'s</span></span>
-            <span class="logo-badge">✦ WEB3</span>
-        </a>
+        <!-- ======================================================
+             HEADER
+        ======================================================= -->
 
-        <div class="header-actions">
-            <span class="network-badge">
-                <span class="dot"></span>
-                Polygon
-            </span>
-        </div>
-    </header>
-
-    <nav class="main-nav">
-        <a href="/" class="nav-link">⌂ Inicio</a>
-        <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
-        <a href="/features/perfil/perfil.html" class="nav-link">◆ Perfil</a>
-
-        <a
-            href="/features/mensajes/contactos.html"
-            class="nav-link active"
-            data-clave="contactos_header"
-        >
-            ◈ Contactos
-        </a>
-
-        <a href="/features/mensajes/mensajes.html" class="nav-link">
-            ◈ Mensajes
-        </a>
-
-        <a href="/features/live/live.html" class="nav-link live">
-            ◉ Live
-        </a>
-
-        <a href="/features/internet/internet.html" class="nav-link">
-            ◈ Internet
-        </a>
-
-        <a href="/features/videos/videos.html" class="nav-link">
-            🎬 Videos
-        </a>
-    </nav>
-
-    <main class="contactos-container">
-
-        <div class="contactos-stats">
-
-            <span class="stat" data-clave="contactos_total">
-                ◈ Total:
-                <span class="numero" id="totalContactos">0</span>
-            </span>
-
-            <span class="stat" data-clave="contactos_en_linea">
-                <span class="dot online"></span>
-                En línea:
-                <span class="numero" id="onlineContactos">0</span>
-            </span>
-
-        </div>
-
-        <div class="search-bar">
-
-            <input
-                type="text"
-                id="searchInput"
-                placeholder="🔍 Buscar contactos por nombre o @handle..."
-                data-placeholder="contactos_buscar"
-                autocomplete="off"
-            >
-
-            <button
-                type="button"
-                class="btn-agregar"
-                onclick="abrirAgregarContacto()"
-                data-clave="contactos_agregar"
-            >
-                ◆ Agregar contacto
-            </button>
-
-            <button
-                type="button"
-                class="btn-invitar"
-                onclick="invitarContacto()"
-                data-clave="contactos_invitar"
-            >
-                ✉️ Invitar
-            </button>
-
-        </div>
-
-        <div class="filtros">
-
-            <button
-                type="button"
-                class="filtro active"
-                data-filtro="todos"
-                data-clave="contactos_todos"
-            >
-                ◈ Todos
-            </button>
-
-            <button
-                type="button"
-                class="filtro"
-                data-filtro="online"
-                data-clave="contactos_filtro_online"
-            >
-                🟢 En línea
-            </button>
-
-            <button
-                type="button"
-                class="filtro"
-                data-filtro="favoritos"
-                data-clave="contactos_filtro_favoritos"
-            >
-                ◆ Favoritos
-            </button>
-
-            <button
-                type="button"
-                class="filtro"
-                data-filtro="recientes"
-                data-clave="contactos_filtro_recientes"
-            >
-                ⟡ Recientes
-            </button>
-
-        </div>
-
-        <div
-            class="contactos-list"
-            id="contactosList"
-            aria-live="polite"
-        >
-
-            <div class="empty-state">
-
-                <span class="icon">◈</span>
-
-                <h3 data-clave="contactos_cargando">
-                    Cargando contactos...
-                </h3>
-
-            </div>
-
-        </div>
-
-    </main>
-
-    <footer class="footer">
-
-        <span>
-            <span class="brand">◈ Sariel's</span>
-            · Sabor al Paladar · WEB3
-        </span>
-
-        <div class="footer-links">
+        <header class="header">
 
             <a
-                href="/terminos"
-                data-clave="contactos_footer_terminos"
+                href="/"
+                class="logo"
+                aria-label="Sariel's Ecosystem"
             >
-                ◈ Términos
+
+                <span class="logo-hex">
+                    ◈
+                </span>
+
+                <span class="logo-text">
+                    Sariel<span>'s</span>
+                </span>
+
+                <span class="logo-badge">
+                    ✦ WEB3
+                </span>
+
             </a>
 
-            <a
-                href="/privacidad"
-                data-clave="contactos_footer_privacidad"
-            >
-                ◈ Privacidad
-            </a>
+            <div class="header-actions">
 
-            <a
-                href="/cookies"
-                data-clave="contactos_footer_cookies"
-            >
-                ◈ Cookies
-            </a>
-
-            <a
-                href="/live-terminos"
-                data-clave="contactos_footer_live"
-            >
-                ◉ Live Términos
-            </a>
-
-            <span style="opacity:0.3;">
-                ⚡ Polygon
-            </span>
-
-        </div>
-
-    </footer>
-
-</div>
-
-<!-- ============================================================
-     MODAL BUSCAR CONTACTO
-     ============================================================ -->
-
-<div
-    class="modal-overlay"
-    id="modalBuscarContacto"
-    aria-hidden="true"
->
-
-    <div class="modal">
-
-        <div class="modal-header">
-
-            <h2 data-clave="contactos_buscar_titulo">
-                ◈ Buscar contacto
-            </h2>
-
-            <button
-                type="button"
-                class="btn-cerrar"
-                onclick="cerrarModalBuscar()"
-                aria-label="Cerrar"
-            >
-                ✕
-            </button>
-
-        </div>
-
-        <div class="form-group">
-
-            <label
-                for="searchInputModal"
-                data-clave="contactos_buscar_label"
-            >
-                Buscar por nombre o @handle
-            </label>
-
-            <input
-                type="text"
-                id="searchInputModal"
-                placeholder="Ej: Juan o @juan123"
-                autocomplete="off"
-            >
-
-        </div>
-
-        <div
-            class="resultados-busqueda"
-            id="resultadosBusqueda"
-        >
-            <div
-                style="
-                    padding:20px;
-                    text-align:center;
-                    color:var(--text-muted);
-                    font-size:0.75rem;
-                "
-                data-clave="contactos_buscar_minimo"
-            >
-                Escribe al menos 2 caracteres para buscar
-            </div>
-        </div>
-
-    </div>
-
-</div>
-
-<!-- ============================================================
-     MODAL INVITACIÓN
-     ============================================================ -->
-
-<div
-    class="modal-overlay"
-    id="modalInvitacion"
-    aria-hidden="true"
->
-
-    <div class="modal">
-
-        <div class="modal-header">
-
-            <h2 data-clave="contactos_invitar_titulo">
-                ✉️ Invitar contacto
-            </h2>
-
-            <button
-                type="button"
-                class="btn-cerrar"
-                onclick="cerrarModalInvitacion()"
-                aria-label="Cerrar"
-            >
-                ✕
-            </button>
-
-        </div>
-
-        <div style="text-align:center;">
-
-            <p
-                style="
-                    color:var(--text-secondary);
-                    font-size:0.85rem;
-                    margin-bottom:12px;
-                "
-                data-clave="contactos_invitar_desc"
-            >
-                Comparte este código con quien quieras invitar
-            </p>
-
-            <div class="codigo-box">
-
-                <div
-                    class="codigo"
-                    id="codigoInvitacion"
+                <span
+                    class="network-badge"
+                    aria-label="Red Polygon"
                 >
-                    ⏳ Generando...
+                    <span class="dot"></span>
+                    Polygon
+                </span>
+
+            </div>
+
+        </header>
+
+
+        <!-- ======================================================
+             NAVEGACIÓN
+        ======================================================= -->
+
+        <nav
+            class="main-nav"
+            aria-label="Navegación principal"
+        >
+
+            <a
+                href="/"
+                class="nav-link"
+            >
+                ⌂ Inicio
+            </a>
+
+            <a
+                href="/features/muro/muro.html"
+                class="nav-link"
+            >
+                ◇ Muro
+            </a>
+
+            <a
+                href="/features/perfil/perfil.html"
+                class="nav-link"
+            >
+                ◆ Perfil
+            </a>
+
+            <a
+                href="/features/mensajes/contactos.html"
+                class="nav-link active"
+                data-clave="contactos_header"
+                aria-current="page"
+            >
+                ◈ Contactos
+            </a>
+
+            <a
+                href="/features/mensajes/mensajes.html"
+                class="nav-link"
+            >
+                ◈ Mensajes
+            </a>
+
+            <a
+                href="/features/live/live.html"
+                class="nav-link live"
+            >
+                ◉ Live
+            </a>
+
+            <a
+                href="/features/internet/internet.html"
+                class="nav-link"
+            >
+                ◈ Internet
+            </a>
+
+            <a
+                href="/features/videos/videos.html"
+                class="nav-link"
+            >
+                🎬 Videos
+            </a>
+
+        </nav>
+
+
+        <!-- ======================================================
+             CONTENIDO
+        ======================================================= -->
+
+        <main class="contactos-container">
+
+            <div class="contactos-stats">
+
+                <span
+                    class="stat"
+                    data-clave="contactos_total"
+                >
+                    ◈ Total:
+
+                    <span
+                        class="numero"
+                        id="totalContactos"
+                    >
+                        0
+                    </span>
+                </span>
+
+                <span
+                    class="stat"
+                    data-clave="contactos_en_linea"
+                >
+
+                    <span
+                        class="dot online"
+                        aria-hidden="true"
+                    ></span>
+
+                    En línea:
+
+                    <span
+                        class="numero"
+                        id="onlineContactos"
+                    >
+                        0
+                    </span>
+
+                </span>
+
+            </div>
+
+
+            <!-- ==================================================
+                 BUSCAR / AGREGAR / INVITAR
+            =================================================== -->
+
+            <div class="search-bar">
+
+                <input
+                    type="text"
+                    id="searchInput"
+                    placeholder="🔍 Buscar contactos por nombre o @handle..."
+                    data-placeholder="contactos_buscar"
+                    autocomplete="off"
+                    maxlength="80"
+                    inputmode="search"
+                    aria-label="Buscar contactos"
+                >
+
+                <button
+                    type="button"
+                    class="btn-agregar"
+                    onclick="abrirAgregarContacto()"
+                    data-clave="contactos_agregar"
+                >
+                    ◆ Agregar contacto
+                </button>
+
+                <button
+                    type="button"
+                    class="btn-invitar"
+                    onclick="invitarContacto()"
+                    data-clave="contactos_invitar"
+                >
+                    ✉️ Invitar
+                </button>
+
+            </div>
+
+
+            <!-- ==================================================
+                 FILTROS
+            =================================================== -->
+
+            <div
+                class="filtros"
+                role="group"
+                aria-label="Filtros de contactos"
+            >
+
+                <button
+                    type="button"
+                    class="filtro active"
+                    data-filtro="todos"
+                    data-clave="contactos_todos"
+                >
+                    ◈ Todos
+                </button>
+
+                <button
+                    type="button"
+                    class="filtro"
+                    data-filtro="online"
+                    data-clave="contactos_filtro_online"
+                >
+                    🟢 En línea
+                </button>
+
+                <button
+                    type="button"
+                    class="filtro"
+                    data-filtro="favoritos"
+                    data-clave="contactos_filtro_favoritos"
+                >
+                    ◆ Favoritos
+                </button>
+
+                <button
+                    type="button"
+                    class="filtro"
+                    data-filtro="recientes"
+                    data-clave="contactos_filtro_recientes"
+                >
+                    ⟡ Recientes
+                </button>
+
+            </div>
+
+
+            <!-- ==================================================
+                 LISTA DE CONTACTOS
+            =================================================== -->
+
+            <div
+                class="contactos-list"
+                id="contactosList"
+                aria-live="polite"
+                aria-busy="true"
+            >
+
+                <div class="empty-state">
+
+                    <span class="icon">
+                        ◈
+                    </span>
+
+                    <h3
+                        data-clave="contactos_cargando"
+                    >
+                        Cargando contactos...
+                    </h3>
+
                 </div>
 
             </div>
 
-            <div
-                style="
-                    display:flex;
-                    gap:10px;
-                    justify-content:center;
-                    flex-wrap:wrap;
-                "
-            >
+        </main>
+
+
+        <!-- ======================================================
+             FOOTER
+        ======================================================= -->
+
+        <footer class="footer">
+
+            <span>
+                <span class="brand">
+                    ◈ Sariel's
+                </span>
+                · Sabor al Paladar · WEB3
+            </span>
+
+            <div class="footer-links">
+
+                <a
+                    href="/terminos"
+                    data-clave="contactos_footer_terminos"
+                >
+                    ◈ Términos
+                </a>
+
+                <a
+                    href="/privacidad"
+                    data-clave="contactos_footer_privacidad"
+                >
+                    ◈ Privacidad
+                </a>
+
+                <a
+                    href="/cookies"
+                    data-clave="contactos_footer_cookies"
+                >
+                    ◈ Cookies
+                </a>
+
+                <a
+                    href="/live-terminos"
+                    data-clave="contactos_footer_live"
+                >
+                    ◉ Live Términos
+                </a>
+
+                <span style="opacity:0.3;">
+                    ⚡ Polygon
+                </span>
+
+            </div>
+
+        </footer>
+
+    </div>
+
+
+    <!-- ==========================================================
+         TOAST GLOBAL
+    =========================================================== -->
+
+    <div
+        id="toast"
+        class="toast"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+    ></div>
+
+
+    <!-- ==========================================================
+         MODAL — BUSCAR CONTACTO
+    =========================================================== -->
+
+    <div
+        class="modal-overlay"
+        id="modalBuscarContacto"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="tituloBuscarContacto"
+        aria-hidden="true"
+    >
+
+        <div class="modal">
+
+            <div class="modal-header">
+
+                <h2
+                    id="tituloBuscarContacto"
+                    data-clave="contactos_buscar_titulo"
+                >
+                    ◈ Buscar contacto
+                </h2>
 
                 <button
                     type="button"
-                    class="btn-copiar"
-                    onclick="copiarCodigoInvitacion()"
-                    data-clave="contactos_copiar_codigo"
+                    class="btn-cerrar"
+                    onclick="cerrarModalBuscar()"
+                    aria-label="Cerrar"
                 >
-                    📋 Copiar código
-                </button>
-
-                <button
-                    type="button"
-                    class="btn-copiar"
-                    onclick="cerrarModalInvitacion()"
-                    data-clave="contactos_cerrar"
-                >
-                    Cerrar
+                    ✕
                 </button>
 
             </div>
 
-            <p
-                style="
-                    font-size:0.6rem;
-                    color:var(--text-muted);
-                    margin-top:12px;
-                "
-                data-clave="contactos_codigo_expira"
+
+            <div class="form-group">
+
+                <label
+                    for="searchInputModal"
+                    data-clave="contactos_buscar_label"
+                >
+                    Buscar por nombre o @handle
+                </label>
+
+                <input
+                    type="text"
+                    id="searchInputModal"
+                    placeholder="Ej: Juan o @juan123"
+                    autocomplete="off"
+                    maxlength="80"
+                    inputmode="search"
+                >
+
+            </div>
+
+
+            <div
+                class="resultados-busqueda"
+                id="resultadosBusqueda"
+                aria-live="polite"
             >
-                El código expira después de 7 días
-            </p>
+
+                <div
+                    style="
+                        padding:20px;
+                        text-align:center;
+                        color:var(--text-muted);
+                        font-size:0.75rem;
+                    "
+                    data-clave="contactos_buscar_minimo"
+                >
+                    Escribe al menos 2 caracteres para buscar
+                </div>
+
+            </div>
 
         </div>
 
     </div>
 
-</div>
 
-<div
-    class="toast"
-    id="toast"
-    role="status"
-    aria-live="polite"
-></div>
+    <!-- ==========================================================
+         MODAL — INVITACIÓN
+    =========================================================== -->
 
-<!-- ============================================================
-     SCRIPTS
-     
-     ORDEN:
-     1. Supabase UMD
-     2. app.js (crea window.supabaseClient)
-     3. apariencia-global.js (ya cargado en <head>)
-     4. idiomas.js
-     5. contactos.js
-     ============================================================ -->
+    <div
+        class="modal-overlay"
+        id="modalInvitacion"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="tituloInvitacion"
+        aria-hidden="true"
+    >
 
-<script
-    src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"
-    defer
-></script>
+        <div class="modal">
 
-<script
-    src="/app.js"
-    defer
-></script>
+            <div class="modal-header">
 
-<script
-    src="/features/shared/js/idiomas.js"
-    defer
-></script>
+                <h2
+                    id="tituloInvitacion"
+                    data-clave="contactos_invitar_titulo"
+                >
+                    ✉️ Invitar contacto
+                </h2>
 
-<script
-    src="/features/mensajes/contactos.js"
-    defer
-    onerror="
-        console.error('❌ No se pudo cargar contactos.js');
-        window.__contactosJsError = true;
-    "
-></script>
+                <button
+                    type="button"
+                    class="btn-cerrar"
+                    onclick="cerrarModalInvitacion()"
+                    aria-label="Cerrar"
+                >
+                    ✕
+                </button>
 
-<script>
-    // ✅ Inicializar idiomas cuando el DOM esté listo
-    document.addEventListener('DOMContentLoaded', function() {
-        setTimeout(async function() {
-            try {
-                if (typeof window.inicializarIdiomas === 'function') {
-                    await window.inicializarIdiomas();
-                    console.log('✅ Idiomas aplicados a contactos');
-                }
-            } catch (e) {
-                console.warn('⚠️ Error aplicando idiomas:', e);
-            }
-        }, 800);
-    });
-</script>
+            </div>
+
+
+            <div style="text-align:center;">
+
+                <p
+                    style="
+                        color:var(--text-secondary);
+                        font-size:0.85rem;
+                        margin-bottom:12px;
+                    "
+                    data-clave="contactos_invitar_desc"
+                >
+                    Comparte este código con quien quieras invitar
+                </p>
+
+
+                <div class="codigo-box">
+
+                    <div
+                        class="codigo"
+                        id="codigoInvitacion"
+                        aria-live="polite"
+                    >
+                        ⏳ Generando...
+                    </div>
+
+                </div>
+
+
+                <div
+                    style="
+                        display:flex;
+                        gap:10px;
+                        justify-content:center;
+                        flex-wrap:wrap;
+                    "
+                >
+
+                    <button
+                        type="button"
+                        class="btn-copiar"
+                        onclick="copiarCodigoInvitacion()"
+                        data-clave="contactos_copiar_codigo"
+                    >
+                        📋 Copiar código
+                    </button>
+
+                    <button
+                        type="button"
+                        class="btn-copiar"
+                        onclick="cerrarModalInvitacion()"
+                        data-clave="contactos_cerrar"
+                    >
+                        Cerrar
+                    </button>
+
+                </div>
+
+
+                <p
+                    style="
+                        font-size:0.6rem;
+                        color:var(--text-muted);
+                        margin-top:12px;
+                    "
+                    data-clave="contactos_codigo_expira"
+                >
+                    El código expira después de 7 días
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ==========================================================
+         CONTACTOS.JS
+         Se carga después de todo el DOM.
+    =========================================================== -->
+
+    <script
+        src="/features/mensajes/contactos.js"
+        defer
+    ></script>
 
 </body>
+
 </html>
