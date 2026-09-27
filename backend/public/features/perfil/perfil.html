@@ -7,13 +7,6 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
-    <!-- ═══════════════════════════════════════════════════════════
-         ORDEN CORREGIDO DE DEPENDENCIAS:
-         1. Supabase CDN PRIMERO (para que window.supabase exista)
-         2. apariencia-global.js (con defer)
-         3. Estilo de protección
-         4. Guardián de sesión (reutiliza/crea window.supabaseClient)
-         ═══════════════════════════════════════════════════════════ -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="/features/shared/js/apariencia-global.js?v=4" defer></script>
 
@@ -30,8 +23,18 @@
             function revelarPagina() {
                 document.documentElement.classList.add('auth-ready');
             }
-            function irAInicio() {
-                window.location.replace('/');
+
+            // ✅ CORREGIDO: Guarda returnTo antes de redirigir a login
+            function irALoginConReturnTo() {
+                try {
+                    var returnTo = window.location.pathname + window.location.search + window.location.hash;
+                    localStorage.setItem('wallet_returnTo', returnTo);
+                    console.log('[Perfil Guardián] Sin sesión → guardando returnTo:', returnTo);
+                    window.location.replace('/features/perfil/login.html?returnTo=' + encodeURIComponent(returnTo));
+                } catch (e) {
+                    console.warn('[Perfil Guardián] Error guardando returnTo:', e);
+                    window.location.replace('/');
+                }
             }
 
             // Salvaguarda: si en 5s no se resolvió, revelamos para no dejar la pantalla en negro
@@ -63,8 +66,8 @@
                         clearTimeout(salvaguarda);
                         var session = resultado && resultado.data ? resultado.data.session : null;
                         if (!session) {
-                            console.log('[Perfil Guardián] Sin sesión → redirigiendo a /');
-                            irAInicio();
+                            console.log('[Perfil Guardián] Sin sesión → redirigiendo a login con returnTo');
+                            irALoginConReturnTo();
                         } else {
                             console.log('[Perfil Guardián] Sesión válida → auth-ready');
                             revelarPagina();
@@ -329,7 +332,6 @@
         .pro-section .pro-active-badge { color: var(--success); font-weight: 700; font-family: 'Orbitron', monospace; font-size: 0.85rem; margin-bottom: 6px; }
         .pro-section .pro-active-expira { font-size: 0.7rem; color: var(--text-muted); }
 
-        /* Sección repartidor (NUEVA) */
         .repartidor-section {
             background: linear-gradient(135deg, rgba(168,85,247,0.06), rgba(15,45,26,0.5));
             border: 2px solid var(--line-black);
@@ -695,9 +697,6 @@
                 </div>
             </div>
 
-            <!-- ═══════════════════════════════════════════════════════
-                 NUEVA SECCIÓN: GANA DINERO COMO REPARTIDOR
-                 ═══════════════════════════════════════════════════════ -->
             <div class="repartidor-section" id="repartidorSection" style="display:none;">
                 <div class="rep-header">
                     <h3>🛵 <span data-clave="perfil_gana_dinero">Gana dinero con Csariel's</span></h3>
@@ -1182,8 +1181,6 @@
 // ================================================================
 // ⚙️ CONFIGURACIÓN LEGAL — Csariel's Ecosystem
 // ================================================================
-// 👉 EDITA ESTE BLOQUE cuando tengas los datos legales listos
-// ================================================================
 var CONFIG_LEGAL = {
     nombre_comercial: 'Csariel\'s',
     nombre_ecosistema: 'Csariel\'s Ecosystem',
@@ -1208,7 +1205,6 @@ async function verificarEstadoRepartidorPerfil() {
         
         if (!section) return;
 
-        // Obtener usuario (usa window.supabaseClient que ya fue creado)
         var client = window.supabaseClient;
         if (!client) {
             console.warn('[Repartidor] supabaseClient no disponible aún');
@@ -1220,18 +1216,15 @@ async function verificarEstadoRepartidorPerfil() {
 
         var usuarioId = session.data.session.user.id;
 
-        // Consultar estado
         var result = await client
             .from('mercado_repartidores')
             .select('estado_verificacion, score_confianza, motivo_rechazo')
             .eq('usuario_id', usuarioId)
             .maybeSingle();
 
-        // Mostrar sección siempre (para invitar)
         section.style.display = 'block';
 
         if (result.error || !result.data) {
-            // NO registrado
             badge.textContent = 'Sé el primero';
             badge.className = 'rep-badge no-registrado';
             info.innerHTML = 'Gana dinero entregando pedidos en tu ciudad. Regístrate como repartidor y empieza hoy mismo. <strong>Verificación 100% automática</strong>, sin esperas.';
@@ -1265,7 +1258,6 @@ async function verificarEstadoRepartidorPerfil() {
             btn.className = 'rep-btn reintentar';
 
         } else {
-            // pendiente_registro u otro
             badge.textContent = 'Completar';
             badge.className = 'rep-badge pendiente';
             info.innerHTML = 'Tienes un registro pendiente. <strong>Complétalo para empezar a ganar.</strong>';
@@ -1325,10 +1317,8 @@ async function irARepartidorDesdePerfil() {
 // INICIALIZACIÓN
 // ================================================================
 document.addEventListener('DOMContentLoaded', function() {
-    // Esperar a que el perfil cargue, luego verificar estado
     setTimeout(verificarEstadoRepartidorPerfil, 1500);
 
-    // Idiomas
     setTimeout(async () => {
         try {
             if (typeof window.inicializarIdiomas === 'function') {
@@ -2091,10 +2081,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // Exponer la función globalmente
         window.recargarPerfil = recargarPerfil;
 
-        // Esperar a que Supabase esté listo
         function iniciarRecarga() {
             if (window.supabaseClient) {
                 recargarPerfil(true);
