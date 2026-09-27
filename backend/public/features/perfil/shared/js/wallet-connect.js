@@ -30,7 +30,7 @@
      * ============================================================ */
 
     const DEFAULT_PUBLIC_APP_URL =
-        'https://auction.up.railway.app';
+        'https://galleta-domo-production.up.railway.app';
 
     const WEB3_CONFIG_ENDPOINT =
         '/api/config/web3';
@@ -1023,7 +1023,7 @@
 
                 ]
 
-            );
+            });
 
         } catch (switchError) {
 
@@ -1735,7 +1735,7 @@
             const modulo =
                 await import(
 
-                    'https://esm.sh/@walletconnect/ethereum-provider@2.17.0'
+                    'https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.17.0/+esm'
 
                 );
 
