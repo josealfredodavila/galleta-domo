@@ -45,13 +45,21 @@
         rel="stylesheet"
     >
 
-    <!--
-        ============================================================
-        APARIENCIA GLOBAL
-        Debe cargarse antes de contactos.js.
-        ============================================================
-    -->
-    <script src="/features/shared/js/apariencia-global.js"></script>
+    <!-- =========================================================
+         SUPABASE JS
+         DEBE CARGARSE ANTES DE APARIENCIA-GLOBAL.JS
+    ========================================================== -->
+    <script
+        src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"
+    ></script>
+
+    <!-- =========================================================
+         APARIENCIA GLOBAL
+         Crea window.supabaseClient
+    ========================================================== -->
+    <script
+        src="/features/shared/js/apariencia-global.js?v=4"
+    ></script>
 
     <style>
         :root {
@@ -794,6 +802,327 @@
         }
 
         /* ========================================================
+           MODALES
+        ======================================================== */
+
+        .modal-overlay {
+            position: fixed;
+
+            inset: 0;
+
+            background:
+                rgba(0, 0, 0, 0.75);
+
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            padding: 20px;
+
+            z-index: 500;
+
+            opacity: 0;
+            visibility: hidden;
+
+            transition:
+                opacity 0.25s ease,
+                visibility 0.25s ease;
+
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            width: min(100%, 520px);
+
+            max-height: 90vh;
+
+            overflow-y: auto;
+
+            background:
+                linear-gradient(
+                    145deg,
+                    rgba(15, 45, 26, 0.98),
+                    rgba(5, 8, 15, 0.98)
+                );
+
+            border:
+                1px solid var(--glass-border);
+
+            border-radius: var(--radius-xl);
+
+            padding: 24px;
+
+            box-shadow:
+                0 24px 80px
+                rgba(0, 0, 0, 0.5);
+
+            transform: translateY(20px) scale(0.98);
+
+            transition:
+                transform 0.25s ease;
+        }
+
+        .modal-overlay.active .modal {
+            transform: translateY(0) scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+
+            align-items: center;
+            justify-content: space-between;
+
+            gap: 12px;
+
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            color: var(--gold);
+
+            font-size: 1rem;
+
+            font-family: 'Orbitron', monospace;
+        }
+
+        .btn-cerrar {
+            width: 36px;
+            height: 36px;
+
+            border: 1px solid var(--glass-border);
+
+            background:
+                rgba(255, 255, 255, 0.04);
+
+            color: var(--text-secondary);
+
+            border-radius: 50%;
+
+            cursor: pointer;
+
+            transition: var(--transition);
+        }
+
+        .btn-cerrar:hover {
+            color: var(--danger);
+
+            border-color: var(--danger);
+        }
+
+        .form-group {
+            display: flex;
+
+            flex-direction: column;
+
+            gap: 8px;
+
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            font-size: 0.7rem;
+
+            color: var(--text-secondary);
+        }
+
+        .form-group input {
+            width: 100%;
+
+            padding: 12px 14px;
+
+            border-radius: 12px;
+
+            border:
+                1px solid var(--glass-border);
+
+            background:
+                rgba(255, 255, 255, 0.04);
+
+            color: var(--text-primary);
+
+            outline: none;
+
+            font-size: 0.85rem;
+        }
+
+        .form-group input:focus {
+            border-color: var(--gold);
+
+            box-shadow:
+                0 0 0 3px
+                rgba(212, 175, 55, 0.08);
+        }
+
+        .resultados-busqueda {
+            display: flex;
+
+            flex-direction: column;
+
+            gap: 8px;
+
+            max-height: 400px;
+
+            overflow-y: auto;
+        }
+
+        .resultado-usuario {
+            display: flex;
+
+            align-items: center;
+
+            gap: 12px;
+
+            padding: 12px;
+
+            border:
+                1px solid var(--glass-border);
+
+            background:
+                rgba(255, 255, 255, 0.03);
+
+            border-radius: 12px;
+        }
+
+        .resultado-usuario .avatar {
+            width: 42px;
+            height: 42px;
+
+            border-radius: 50%;
+
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            flex-shrink: 0;
+
+            overflow: hidden;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    var(--green-deep),
+                    var(--gold)
+                );
+        }
+
+        .resultado-usuario .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .resultado-usuario .info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .resultado-usuario .nombre {
+            font-weight: 600;
+
+            color: var(--text-primary);
+
+            font-size: 0.85rem;
+        }
+
+        .resultado-usuario .handle {
+            color: var(--text-muted);
+
+            font-size: 0.65rem;
+
+            margin-top: 2px;
+        }
+
+        .resultado-usuario button {
+            border: none;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    var(--gold),
+                    var(--gold-dark)
+                );
+
+            color: var(--space);
+
+            padding: 8px 14px;
+
+            border-radius: 20px;
+
+            font-weight: 700;
+
+            font-size: 0.65rem;
+
+            cursor: pointer;
+
+            white-space: nowrap;
+        }
+
+        .codigo-box {
+            background:
+                rgba(5, 8, 15, 0.8);
+
+            border:
+                1px solid var(--glass-border);
+
+            border-radius: 16px;
+
+            padding: 22px;
+
+            margin-bottom: 18px;
+        }
+
+        .codigo-box .codigo {
+            color: var(--gold);
+
+            font-family: 'Orbitron', monospace;
+
+            font-size: 1.8rem;
+
+            font-weight: 700;
+
+            letter-spacing: 4px;
+
+            word-break: break-all;
+        }
+
+        .btn-copiar {
+            border:
+                1px solid var(--glass-border);
+
+            background:
+                rgba(212, 175, 55, 0.08);
+
+            color: var(--gold);
+
+            padding: 10px 18px;
+
+            border-radius: 24px;
+
+            cursor: pointer;
+
+            font-weight: 600;
+
+            font-size: 0.75rem;
+
+            transition: var(--transition);
+        }
+
+        .btn-copiar:hover {
+            background:
+                rgba(212, 175, 55, 0.16);
+
+            border-color: var(--gold);
+        }
+
+        /* ========================================================
            TOAST
         ======================================================== */
 
@@ -864,44 +1193,44 @@
                 30px auto 0;
 
             padding:
-                16px 20px;
+                20px;
 
             border-top:
                 1px solid var(--glass-border);
 
-            display: flex;
-
-            justify-content:
-                space-between;
-
-            align-items:
-                center;
-
-            font-size: 0.7rem;
-
             color: var(--text-muted);
 
-            flex-wrap: wrap;
+            font-size: 0.65rem;
 
-            gap: 10px;
+            text-align: center;
         }
 
         .footer .brand {
             color: var(--gold);
-            font-weight: 600;
+
+            font-family: 'Orbitron', monospace;
         }
 
         .footer-links {
             display: flex;
 
-            gap: 12px;
+            justify-content: center;
+
+            align-items: center;
 
             flex-wrap: wrap;
+
+            gap: 12px;
+
+            margin-top: 10px;
         }
 
         .footer-links a {
             color: var(--text-muted);
+
             text-decoration: none;
+
+            transition: var(--transition);
         }
 
         .footer-links a:hover {
@@ -909,327 +1238,56 @@
         }
 
         /* ========================================================
-           MODALES
-        ======================================================== */
-
-        .modal-overlay {
-            position: fixed;
-
-            inset: 0;
-
-            width: 100%;
-            height: 100%;
-
-            background:
-                rgba(5, 8, 15, 0.9);
-
-            display: none;
-
-            align-items: center;
-            justify-content: center;
-
-            z-index: 1000;
-
-            padding: 20px;
-
-            backdrop-filter:
-                blur(10px);
-
-            -webkit-backdrop-filter:
-                blur(10px);
-        }
-
-        .modal-overlay.show {
-            display: flex;
-        }
-
-        .modal {
-            background: var(--glass-bg);
-
-            border:
-                1px solid var(--glass-border);
-
-            border-radius:
-                var(--radius-xl);
-
-            padding: 32px;
-
-            max-width: 480px;
-
-            width: 92%;
-
-            max-height: 85vh;
-
-            overflow-y: auto;
-
-            box-shadow:
-                0 24px 80px
-                rgba(0, 0, 0, 0.45);
-        }
-
-        .modal .modal-header {
-            display: flex;
-
-            justify-content:
-                space-between;
-
-            align-items: center;
-
-            gap: 16px;
-
-            margin-bottom: 20px;
-        }
-
-        .modal .modal-header h2 {
-            font-family:
-                'Orbitron',
-                monospace;
-
-            color: var(--gold);
-
-            font-size: 1.1rem;
-        }
-
-        .modal .modal-header .btn-cerrar {
-            background: none;
-
-            border: none;
-
-            color: var(--text-muted);
-
-            font-size: 1.6rem;
-
-            cursor: pointer;
-
-            line-height: 1;
-        }
-
-        .modal .modal-header .btn-cerrar:hover {
-            color:
-                var(--text-primary);
-        }
-
-        .modal .form-group {
-            margin-bottom: 16px;
-        }
-
-        .modal .form-group label {
-            display: block;
-
-            font-size: 0.75rem;
-
-            color: var(--text-muted);
-
-            margin-bottom: 4px;
-        }
-
-        .modal .form-group input {
-            width: 100%;
-
-            padding: 10px 14px;
-
-            background:
-                rgba(0, 0, 0, 0.3);
-
-            border:
-                1px solid var(--glass-border);
-
-            border-radius: 10px;
-
-            color: var(--text-primary);
-
-            font-size: 0.9rem;
-
-            outline: none;
-        }
-
-        .modal .form-group input:focus {
-            border-color: var(--gold);
-
-            box-shadow:
-                0 0 0 3px
-                rgba(212, 175, 55, 0.08);
-        }
-
-        .modal .resultados-busqueda {
-            margin-top: 8px;
-
-            max-height: 200px;
-
-            overflow-y: auto;
-        }
-
-        .modal .codigo-box {
-            background:
-                var(--bg-dark);
-
-            border-radius: 12px;
-
-            padding: 16px;
-
-            text-align: center;
-
-            margin: 12px 0;
-
-            border:
-                1px solid
-                rgba(212, 175, 55, 0.1);
-        }
-
-        .modal .codigo-box .codigo {
-            font-family:
-                'Orbitron',
-                monospace;
-
-            font-size: 1.8rem;
-
-            color: var(--gold);
-
-            letter-spacing: 2px;
-
-            word-break: break-word;
-        }
-
-        .modal .btn-copiar {
-            background: transparent;
-
-            border:
-                1px solid
-                var(--glass-border);
-
-            color:
-                var(--text-secondary);
-
-            padding: 8px 20px;
-
-            border-radius: 20px;
-
-            cursor: pointer;
-
-            font-size: 0.7rem;
-
-            transition:
-                var(--transition);
-        }
-
-        .modal .btn-copiar:hover {
-            border-color:
-                var(--gold);
-
-            color:
-                var(--gold);
-        }
-
-        /* ========================================================
            TEMA DÍA
         ======================================================== */
-
-        html.tema-dia,
-        html[data-tema="dia"] {
-            --space: #f5f7fa;
-            --text-primary: #1a2332;
-            --text-secondary: #4a5568;
-            --text-muted: #718096;
-
-            --glass-bg:
-                rgba(255, 255, 255, 0.9);
-
-            --glass-border:
-                rgba(0, 0, 0, 0.1);
-
-            --bg-dark:
-                rgba(240, 244, 248, 0.9);
-        }
 
         html.tema-dia body,
         html[data-tema="dia"] body {
             background:
-                #f5f7fa !important;
+                #f0f4f8;
+
+            color:
+                var(--text-primary);
 
             background-image:
                 radial-gradient(
                     ellipse at 20% 50%,
-                    rgba(212, 175, 55, 0.05) 0%,
+                    rgba(26, 74, 42, 0.08) 0%,
                     transparent 60%
                 ),
                 radial-gradient(
                     ellipse at 80% 50%,
-                    rgba(42, 106, 58, 0.05) 0%,
+                    rgba(212, 175, 55, 0.08) 0%,
                     transparent 60%
-                ) !important;
-
-            color:
-                var(--text-primary) !important;
+                );
         }
 
         html.tema-dia .header,
         html[data-tema="dia"] .header {
             background:
-                rgba(255, 255, 255, 0.95) !important;
-
-            border-bottom-color:
-                rgba(0, 0, 0, 0.1) !important;
+                rgba(255, 255, 255, 0.92);
         }
 
         html.tema-dia .logo-text,
         html[data-tema="dia"] .logo-text {
             color:
-                var(--text-primary) !important;
+                #1a202c;
         }
 
         html.tema-dia .main-nav,
         html[data-tema="dia"] .main-nav {
             background:
-                rgba(255, 255, 255, 0.7) !important;
-
-            border-color:
-                rgba(0, 0, 0, 0.1) !important;
+                rgba(255, 255, 255, 0.75);
         }
 
-        html.tema-dia
-        .main-nav
-        .nav-link,
-        html[data-tema="dia"]
-        .main-nav
-        .nav-link {
-            color:
-                #718096 !important;
-        }
-
-        html.tema-dia
-        .main-nav
-        .nav-link.active,
-        html[data-tema="dia"]
-        .main-nav
-        .nav-link.active {
+        html.tema-dia .contactos-stats,
+        html.tema-dia .contacto-card,
+        html.tema-dia .filtros,
+        html[data-tema="dia"] .contactos-stats,
+        html[data-tema="dia"] .contacto-card,
+        html[data-tema="dia"] .filtros {
             background:
-                rgba(212, 175, 55, 0.15) !important;
-
-            color:
-                var(--gold) !important;
-        }
-
-        html.tema-dia
-        .contactos-stats,
-        html.tema-dia
-        .contacto-card,
-        html.tema-dia
-        .modal,
-        html[data-tema="dia"]
-        .contactos-stats,
-        html[data-tema="dia"]
-        .contacto-card,
-        html[data-tema="dia"]
-        .modal {
-            background:
-                rgba(255, 255, 255, 0.9) !important;
-
-            border-color:
-                rgba(0, 0, 0, 0.1) !important;
-
-            box-shadow:
-                0 2px 12px
-                rgba(0, 0, 0, 0.08) !important;
+                rgba(255, 255, 255, 0.8);
         }
 
         html.tema-dia
@@ -1269,8 +1327,7 @@
         }
 
         html.tema-dia input::placeholder,
-        html[data-tema="dia"]
-        input::placeholder {
+        html[data-tema="dia"] input::placeholder {
             color:
                 #a0aec0 !important;
         }
@@ -1983,11 +2040,12 @@
 
     <!-- ==========================================================
          CONTACTOS.JS
-         Se carga después de todo el DOM.
+         Se carga DESPUÉS de Supabase y apariencia-global.
+         defer mantiene el DOM disponible al ejecutarse.
     =========================================================== -->
 
     <script
-        src="/features/mensajes/contactos.js"
+        src="/features/mensajes/contactos.js?v=4"
         defer
     ></script>
 
