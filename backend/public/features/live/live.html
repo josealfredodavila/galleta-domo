@@ -938,8 +938,16 @@ function renderizarTransmisiones(streams) {
 function togglePlay() {
     const v = document.getElementById('liveVideo');
     if (!v) return;
-    if (v.paused) { v.play().then(() => { document.getElementById('playBtn').textContent = '⏸'; }).catch(e => {}); }
-    else { v.pause(); document.getElementById('playBtn').textContent = '▶'; }
+    const playIcon = document.getElementById('playIcon');
+    const pauseIcon = document.getElementById('pauseIcon');
+    const pauseIcon2 = document.getElementById('pauseIcon2');
+    const setIconos = (reproduciendo) => {
+        if (playIcon) playIcon.style.display = reproduciendo ? 'none' : '';
+        if (pauseIcon) pauseIcon.style.display = reproduciendo ? '' : 'none';
+        if (pauseIcon2) pauseIcon2.style.display = reproduciendo ? '' : 'none';
+    };
+    if (v.paused) { v.play().then(() => setIconos(true)).catch(e => {}); }
+    else { v.pause(); setIconos(false); }
 }
 
 async function toggleMute() {
@@ -949,7 +957,9 @@ async function toggleMute() {
         await liveKitRoom.localParticipant.setMicrophoneEnabled(!en);
         isMuted = !en;
         const btn = document.getElementById('muteBtn');
-        if (isMuted) btn.classList.add('muted'); else btn.classList.remove('muted');
+        const muteLine = document.getElementById('muteLine');
+        if (isMuted) { btn.classList.add('muted'); if (muteLine) muteLine.style.display = ''; }
+        else { btn.classList.remove('muted'); if (muteLine) muteLine.style.display = 'none'; }
         showToast(isMuted ? '🎤 Micrófono silenciado' : '🎤 Micrófono activado', 'success', 2000);
     } catch (e) { showToast('❌ ' + mensajeErrorCamara(e), 'error'); }
 }
@@ -973,9 +983,10 @@ async function capturarPantalla() {
 }
 async function restaurarCamara() {
     if (liveKitRoom) {
+        const { Track } = await cargarLiveKit();
         await liveKitRoom.localParticipant.setCameraEnabled(true);
         const video = document.getElementById('liveVideo');
-        const cam = liveKitRoom.localParticipant.getTrackPublication('camera');
+        const cam = liveKitRoom.localParticipant.getTrackPublication(Track.Source.Camera);
         if (video && cam?.videoTrack) cam.videoTrack.attach(video);
     }
 }
