@@ -2,6 +2,8 @@
    contactos.js
    Sariel's Ecosystem · Contactos
 
+   PRODUCCIÓN
+
    Tablas utilizadas:
    - public.contactos
    - public.usuarios
@@ -12,7 +14,14 @@
    - solicitudes_amistad
    - amigos
    - seguidores
-   - tablas inventadas
+
+   Seguridad:
+   - Supabase Auth
+   - RLS
+   - Sin onclick dinámicos con datos de DB
+   - Búsqueda mediante ilike parametrizado
+   - Bloqueo mediante RPC transaccional
+   - Invitaciones mediante RPC
    ============================================================ */
 
 (() => {
@@ -23,17 +32,28 @@
     const INVITACIONES_TABLE = 'invitaciones';
     const BLOQUEOS_TABLE = 'bloqueos';
 
+    const RPC_BLOQUEAR_CONTACTO = 'bloquear_contacto';
+    const RPC_INVITACION = 'obtener_o_crear_invitacion';
+
+    const MAX_RESULTADOS_BUSQUEDA = 20;
+    const MIN_CARACTERES_BUSQUEDA = 2;
+    const MAX_CARACTERES_BUSQUEDA = 80;
+
     let contactos = [];
     let filtroActual = 'todos';
     let textoBusqueda = '';
     let initialized = false;
+    let busquedaTimer = null;
 
     /* ============================================================
        SUPABASE
        ============================================================ */
 
     function sb() {
-        if (window.supabaseClient) {
+        if (
+            window.supabaseClient &&
+            typeof window.supabaseClient.from === 'function'
+        ) {
             return window.supabaseClient;
         }
 
@@ -54,14 +74,29 @@
             return null;
         }
 
-        const { data, error } = await client.auth.getSession();
+        try {
+            const { data, error } =
+                await client.auth.getSession();
 
-        if (error) {
-            console.error('Error obteniendo sesión:', error);
+            if (error) {
+                console.error(
+                    'Error obteniendo sesión:',
+                    error
+                );
+
+                return null;
+            }
+
+            return data?.session || null;
+
+        } catch (error) {
+            console.error(
+                'Excepción obteniendo sesión:',
+                error
+            );
+
             return null;
         }
-
-        return data?.session || null;
     }
 
     /* ============================================================
@@ -69,14 +104,15 @@
        ============================================================ */
 
     function showToast(mensaje, tipo = '') {
-        const toast = document.getElementById('toast');
+        const toast =
+            document.getElementById('toast');
 
         if (!toast) {
             console.log(mensaje);
             return;
         }
 
-        toast.textContent = mensaje;
+        toast.textContent = String(mensaje ?? '');
         toast.className = 'toast';
 
         if (tipo) {
@@ -87,11 +123,14 @@
             toast.classList.add('show');
         });
 
-        clearTimeout(window.__contactosToastTimer);
+        clearTimeout(
+            window.__contactosToastTimer
+        );
 
-        window.__contactosToastTimer = setTimeout(() => {
-            toast.classList.remove('show');
-        }, 3500);
+        window.__contactosToastTimer =
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3500);
     }
 
     window.showToast = showToast;
@@ -110,6 +149,69 @@
     }
 
     /* ============================================================
+       NORMALIZACIÓN DE TEXTO
+       ============================================================ */
+
+    function normalizarTextoBusqueda(value) {
+        return String(value ?? '')
+            .replace(/\u0000/g, '')
+            .trim()
+            .slice(
+                0,
+                MAX_CARACTERES_BUSQUEDA
+            );
+    }
+
+    /* ============================================================
+       URL DE AVATAR SEGURA
+       ============================================================ */
+
+    function obtenerAvatarSeguro(url) {
+        if (!url) {
+            return '';
+        }
+
+        const valor =
+            String(url).trim();
+
+        if (!valor) {
+            return '';
+        }
+
+        try {
+            /*
+             * Permitimos URLs HTTP/HTTPS y rutas relativas.
+             * Se rechazan javascript:, data:, etc.
+             */
+
+            if (
+                valor.startsWith('/') &&
+                !valor.startsWith('//')
+            ) {
+                return valor;
+            }
+
+            const parsed =
+                new URL(
+                    valor,
+                    window.location.origin
+                );
+
+            if (
+                parsed.protocol !== 'http:' &&
+                parsed.protocol !== 'https:'
+            ) {
+                return '';
+            }
+
+            return parsed.href;
+
+        } catch {
+            return '';
+        }
+    }
+
+    /* ============================================================
        INICIALIZACIÓN
        ============================================================ */
 
@@ -122,14 +224,17 @@
 
         configurarEventos();
 
-        const session = await getSession();
+        const session =
+            await getSession();
 
         if (!session) {
             mostrarEstadoVacio(
                 '◈',
                 'Inicia sesión para ver tus contactos.'
             );
+
             actualizarEstadisticas([]);
+
             return;
         }
 
@@ -141,64 +246,242 @@
        ============================================================ */
 
     function configurarEventos() {
-        const searchInput = document.getElementById('searchInput');
+        const searchInput =
+            document.getElementById(
+                'searchInput'
+            );
 
         if (searchInput) {
-            searchInput.addEventListener('input', () => {
-                textoBusqueda = searchInput.value.trim().toLowerCase();
-                renderizarContactos();
-            });
+            searchInput.addEventListener(
+                'input',
+                () => {
+                    textoBusqueda =
+                        searchInput.value
+                            .trim()
+                            .toLowerCase();
+
+                    renderizarContactos();
+                }
+            );
         }
 
         document
-            .querySelectorAll('.filtros .filtro')
+            .querySelectorAll(
+                '.filtros .filtro'
+            )
             .forEach((boton) => {
-                boton.addEventListener('click', () => {
-                    document
-                        .querySelectorAll('.filtros .filtro')
-                        .forEach((item) => {
-                            item.classList.remove('active');
-                        });
+                boton.addEventListener(
+                    'click',
+                    () => {
+                        document
+                            .querySelectorAll(
+                                '.filtros .filtro'
+                            )
+                            .forEach(
+                                (item) => {
+                                    item.classList.remove(
+                                        'active'
+                                    );
+                                }
+                            );
 
-                    boton.classList.add('active');
+                        boton.classList.add(
+                            'active'
+                        );
 
-                    filtroActual =
-                        boton.dataset.filtro || 'todos';
+                        filtroActual =
+                            boton.dataset.filtro ||
+                            'todos';
 
-                    renderizarContactos();
-                });
+                        renderizarContactos();
+                    }
+                );
             });
 
         const modalInput =
-            document.getElementById('searchInputModal');
+            document.getElementById(
+                'searchInputModal'
+            );
 
         if (modalInput) {
-            let timer = null;
-
-            modalInput.addEventListener('input', () => {
-                clearTimeout(timer);
-
-                const texto = modalInput.value.trim();
-
-                if (texto.length < 2) {
-                    mostrarMensajeBusqueda(
-                        'Escribe al menos 2 caracteres para buscar'
+            modalInput.addEventListener(
+                'input',
+                () => {
+                    clearTimeout(
+                        busquedaTimer
                     );
-                    return;
-                }
 
-                timer = setTimeout(() => {
-                    buscarUsuarios(texto);
-                }, 300);
-            });
+                    const texto =
+                        normalizarTextoBusqueda(
+                            modalInput.value
+                        );
+
+                    if (
+                        texto.length <
+                        MIN_CARACTERES_BUSQUEDA
+                    ) {
+                        mostrarMensajeBusqueda(
+                            'Escribe al menos 2 caracteres para buscar'
+                        );
+
+                        return;
+                    }
+
+                    busquedaTimer =
+                        setTimeout(
+                            () => {
+                                buscarUsuarios(
+                                    texto
+                                );
+                            },
+                            300
+                        );
+                }
+            );
         }
 
-        document.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape') {
-                cerrarModalBuscar();
-                cerrarModalInvitacion();
+        /*
+         * Event delegation para botones de contactos.
+         * No se utiliza onclick="" con datos provenientes
+         * de Supabase.
+         */
+
+        const lista =
+            document.getElementById(
+                'contactosList'
+            );
+
+        if (lista) {
+            lista.addEventListener(
+                'click',
+                manejarClickListaContactos
+            );
+        }
+
+        /*
+         * Event delegation para resultados de búsqueda.
+         */
+
+        const resultados =
+            document.getElementById(
+                'resultadosBusqueda'
+            );
+
+        if (resultados) {
+            resultados.addEventListener(
+                'click',
+                manejarClickResultadosBusqueda
+            );
+        }
+
+        document.addEventListener(
+            'keydown',
+            (event) => {
+                if (event.key === 'Escape') {
+                    cerrarModalBuscar();
+                    cerrarModalInvitacion();
+                }
             }
-        });
+        );
+
+        /*
+         * Cierre de modales haciendo click en el fondo.
+         */
+
+        document.addEventListener(
+            'click',
+            (event) => {
+                const buscar =
+                    document.getElementById(
+                        'modalBuscarContacto'
+                    );
+
+                const invitacion =
+                    document.getElementById(
+                        'modalInvitacion'
+                    );
+
+                if (
+                    buscar &&
+                    event.target === buscar
+                ) {
+                    cerrarModalBuscar();
+                }
+
+                if (
+                    invitacion &&
+                    event.target === invitacion
+                ) {
+                    cerrarModalInvitacion();
+                }
+            }
+        );
+    }
+
+    /* ============================================================
+       EVENT DELEGATION — CONTACTOS
+       ============================================================ */
+
+    function manejarClickListaContactos(event) {
+        const boton =
+            event.target.closest(
+                'button[data-action]'
+            );
+
+        if (!boton) {
+            return;
+        }
+
+        const accion =
+            boton.dataset.action;
+
+        const id =
+            boton.dataset.id || '';
+
+        if (accion === 'mensaje') {
+            abrirMensaje(id);
+            return;
+        }
+
+        if (accion === 'favorito') {
+            toggleFavorito(
+                id,
+                boton.dataset.value === 'true'
+            );
+
+            return;
+        }
+
+        if (accion === 'bloquear') {
+            bloquearContacto(id);
+            return;
+        }
+
+        if (accion === 'eliminar') {
+            eliminarContacto(id);
+        }
+    }
+
+    /* ============================================================
+       EVENT DELEGATION — RESULTADOS
+       ============================================================ */
+
+    function manejarClickResultadosBusqueda(
+        event
+    ) {
+        const boton =
+            event.target.closest(
+                'button[data-action="agregar"]'
+            );
+
+        if (!boton) {
+            return;
+        }
+
+        const usuarioId =
+            boton.dataset.usuarioId || '';
+
+        agregarContacto(usuarioId);
     }
 
     /* ============================================================
@@ -207,64 +490,69 @@
 
     async function cargarContactos() {
         const client = sb();
-        const session = await getSession();
+        const session =
+            await getSession();
 
         if (!client || !session) {
             mostrarEstadoVacio(
                 '◈',
                 'Inicia sesión para ver tus contactos.'
             );
+
+            actualizarEstadisticas([]);
+
             return;
         }
 
         mostrarCargando();
 
         try {
-            /*
-             * La tabla contactos tiene:
-             * usuario_id
-             * contacto_id
-             * es_favorito
-             * estado
-             * fecha
-             * created_at
-             */
-
-            const { data, error } = await client
-                .from(CONTACTOS_TABLE)
-                .select(`
-                    id,
-                    usuario_id,
-                    contacto_id,
-                    es_favorito,
-                    estado,
-                    fecha,
-                    created_at,
-                    contacto:usuarios!contactos_contacto_id_fkey (
+            const { data, error } =
+                await client
+                    .from(CONTACTOS_TABLE)
+                    .select(`
                         id,
-                        nombre,
-                        handle,
-                        username,
-                        avatar_url,
-                        online,
-                        ultima_conexion,
-                        verificado
+                        usuario_id,
+                        contacto_id,
+                        es_favorito,
+                        estado,
+                        fecha,
+                        created_at,
+                        contacto:usuarios!contactos_contacto_id_fkey (
+                            id,
+                            nombre,
+                            handle,
+                            username,
+                            avatar_url,
+                            online,
+                            ultima_conexion,
+                            verificado
+                        )
+                    `)
+                    .eq(
+                        'usuario_id',
+                        session.user.id
                     )
-                `)
-                .eq('usuario_id', session.user.id)
-                .order('fecha', {
-                    ascending: false
-                });
+                    .order(
+                        'fecha',
+                        {
+                            ascending: false
+                        }
+                    );
 
             if (error) {
                 throw error;
             }
 
-            contactos = Array.isArray(data)
-                ? data
-                : [];
+            contactos =
+                Array.isArray(data)
+                    ? data
+                    : [];
 
-            actualizarEstadisticas(contactos);
+            actualizarEstadisticas(
+                contactos
+            );
+
             renderizarContactos();
 
         } catch (error) {
@@ -272,6 +560,10 @@
                 'Error cargando contactos:',
                 error
             );
+
+            contactos = [];
+
+            actualizarEstadisticas([]);
 
             mostrarEstadoVacio(
                 '⚠️',
@@ -285,32 +577,44 @@
         }
     }
 
-    window.cargarContactos = cargarContactos;
+    window.cargarContactos =
+        cargarContactos;
 
     /* ============================================================
        NORMALIZAR CONTACTO
        ============================================================ */
 
     function normalizarContacto(item) {
-        const usuario = item?.contacto || {};
+        const usuario =
+            item?.contacto || {};
+
+        const nombre =
+            usuario.nombre ||
+            usuario.username ||
+            usuario.handle ||
+            'Usuario';
+
+        const handle =
+            usuario.handle ||
+            usuario.username ||
+            '';
 
         return {
-            id: item?.id,
-            contacto_id: item?.contacto_id,
+            id: item?.id || null,
+
+            contacto_id:
+                item?.contacto_id || null,
 
             nombre:
-                usuario.nombre ||
-                usuario.username ||
-                usuario.handle ||
-                'Usuario',
+                String(nombre),
 
             handle:
-                usuario.handle ||
-                usuario.username ||
-                '',
+                String(handle),
 
             avatar_url:
-                usuario.avatar_url || '',
+                obtenerAvatarSeguro(
+                    usuario.avatar_url
+                ),
 
             online:
                 usuario.online === true,
@@ -330,7 +634,8 @@
                 null,
 
             ultima_conexion:
-                usuario.ultima_conexion || null
+                usuario.ultima_conexion ||
+                null
         };
     }
 
@@ -340,23 +645,34 @@
 
     function renderizarContactos() {
         const lista =
-            document.getElementById('contactosList');
+            document.getElementById(
+                'contactosList'
+            );
 
         if (!lista) {
             return;
         }
 
         let listaContactos =
-            contactos.map(normalizarContacto);
+            contactos.map(
+                normalizarContacto
+            );
 
-        if (filtroActual === 'online') {
+        if (
+            filtroActual ===
+            'online'
+        ) {
             listaContactos =
                 listaContactos.filter(
-                    (contacto) => contacto.online
+                    (contacto) =>
+                        contacto.online
                 );
         }
 
-        if (filtroActual === 'favoritos') {
+        if (
+            filtroActual ===
+            'favoritos'
+        ) {
             listaContactos =
                 listaContactos.filter(
                     (contacto) =>
@@ -364,33 +680,59 @@
                 );
         }
 
-        if (filtroActual === 'recientes') {
+        if (
+            filtroActual ===
+            'recientes'
+        ) {
             listaContactos =
                 listaContactos
-                    .filter((contacto) => contacto.fecha)
-                    .sort((a, b) => {
-                        return (
-                            new Date(b.fecha) -
-                            new Date(a.fecha)
-                        );
-                    })
+                    .filter(
+                        (contacto) =>
+                            contacto.fecha
+                    )
+                    .sort(
+                        (a, b) => {
+                            const fechaA =
+                                new Date(
+                                    a.fecha
+                                ).getTime();
+
+                            const fechaB =
+                                new Date(
+                                    b.fecha
+                                ).getTime();
+
+                            return (
+                                fechaB -
+                                fechaA
+                            );
+                        }
+                    )
                     .slice(0, 10);
         }
 
         if (textoBusqueda) {
             listaContactos =
-                listaContactos.filter((contacto) => {
-                    const nombre =
-                        contacto.nombre.toLowerCase();
+                listaContactos.filter(
+                    (contacto) => {
+                        const nombre =
+                            contacto.nombre
+                                .toLowerCase();
 
-                    const handle =
-                        contacto.handle.toLowerCase();
+                        const handle =
+                            contacto.handle
+                                .toLowerCase();
 
-                    return (
-                        nombre.includes(textoBusqueda) ||
-                        handle.includes(textoBusqueda)
-                    );
-                });
+                        return (
+                            nombre.includes(
+                                textoBusqueda
+                            ) ||
+                            handle.includes(
+                                textoBusqueda
+                            )
+                        );
+                    }
+                );
         }
 
         if (!listaContactos.length) {
@@ -400,49 +742,84 @@
                     ? 'No se encontraron contactos.'
                     : 'No hay contactos para este filtro.'
             );
+
             return;
         }
 
         lista.innerHTML =
             listaContactos
-                .map(renderizarTarjeta)
+                .map(
+                    renderizarTarjeta
+                )
                 .join('');
     }
 
-    function renderizarTarjeta(contacto) {
+    function renderizarTarjeta(
+        contacto
+    ) {
         const inicial =
             escapeHtml(
-                (contacto.nombre || 'U')
+                (
+                    contacto.nombre ||
+                    'U'
+                )
                     .charAt(0)
                     .toUpperCase()
             );
 
-        const avatar = contacto.avatar_url
-            ? `
-                <img
-                    src="${escapeHtml(contacto.avatar_url)}"
-                    alt="${escapeHtml(contacto.nombre)}"
-                    loading="lazy"
-                    onerror="this.style.display='none';"
-                >
-            `
-            : inicial;
+        const avatar =
+            contacto.avatar_url
+                ? `
+                    <img
+                        src="${escapeHtml(contacto.avatar_url)}"
+                        alt="${escapeHtml(contacto.nombre)}"
+                        loading="lazy"
+                        referrerpolicy="no-referrer"
+                        onerror="this.remove();"
+                    >
+                `
+                : inicial;
 
-        const estadoTexto = contacto.online
-            ? 'En línea'
-            : 'Desconectado';
+        let estadoTexto =
+            'Desconectado';
 
-        const handleTexto = contacto.handle
-            ? `@${contacto.handle.replace(/^@/, '')}`
-            : '';
+        if (
+            contacto.estado ===
+            'pendiente'
+        ) {
+            estadoTexto =
+                'Pendiente';
+        } else if (
+            contacto.online
+        ) {
+            estadoTexto =
+                'En línea';
+        }
+
+        const handleTexto =
+            contacto.handle
+                ? `@${String(
+                      contacto.handle
+                  ).replace(
+                      /^@/,
+                      ''
+                  )}`
+                : '';
 
         const favorito =
-            contacto.es_favorito ? 'active' : '';
+            contacto.es_favorito
+                ? 'active'
+                : '';
 
         const verificado =
             contacto.verificado
                 ? `<span class="verified">✓ Verificado</span>`
                 : '';
+
+        const favoritoNuevo =
+            contacto.es_favorito
+                ? 'false'
+                : 'true';
 
         return `
             <article
@@ -451,7 +828,11 @@
             >
 
                 <div
-                    class="contacto-avatar ${contacto.online ? 'online' : ''}"
+                    class="contacto-avatar ${
+                        contacto.online
+                            ? 'online'
+                            : ''
+                    }"
                 >
                     ${avatar}
 
@@ -471,21 +852,31 @@
                 <div class="contacto-info">
 
                     <div class="nombre">
-                        ${escapeHtml(contacto.nombre)}
+                        ${escapeHtml(
+                            contacto.nombre
+                        )}
                         ${verificado}
                     </div>
 
                     <div
-                        class="estado ${contacto.online ? 'online' : ''}"
+                        class="estado ${
+                            contacto.online
+                                ? 'online'
+                                : ''
+                        }"
                     >
-                        ${estadoTexto}
+                        ${escapeHtml(
+                            estadoTexto
+                        )}
                     </div>
 
                     ${
                         handleTexto
                             ? `
                                 <div class="contacto-meta">
-                                    ${escapeHtml(handleTexto)}
+                                    ${escapeHtml(
+                                        handleTexto
+                                    )}
                                 </div>
                             `
                             : ''
@@ -500,7 +891,10 @@
                         class="mensaje"
                         title="Enviar mensaje"
                         aria-label="Enviar mensaje"
-                        onclick="abrirMensaje('${escapeHtml(contacto.contacto_id)}')"
+                        data-action="mensaje"
+                        data-id="${escapeHtml(
+                            contacto.contacto_id
+                        )}"
                     >
                         ◈
                     </button>
@@ -508,9 +902,21 @@
                     <button
                         type="button"
                         class="favorito ${favorito}"
-                        title="Favorito"
-                        aria-label="Favorito"
-                        onclick="toggleFavorito('${escapeHtml(contacto.id)}', ${!contacto.es_favorito})"
+                        title="${
+                            contacto.es_favorito
+                                ? 'Quitar de favoritos'
+                                : 'Agregar a favoritos'
+                        }"
+                        aria-label="${
+                            contacto.es_favorito
+                                ? 'Quitar de favoritos'
+                                : 'Agregar a favoritos'
+                        }"
+                        data-action="favorito"
+                        data-id="${escapeHtml(
+                            contacto.id
+                        )}"
+                        data-value="${favoritoNuevo}"
                     >
                         ◆
                     </button>
@@ -520,7 +926,10 @@
                         class="bloquear"
                         title="Bloquear"
                         aria-label="Bloquear"
-                        onclick="bloquearContacto('${escapeHtml(contacto.contacto_id)}')"
+                        data-action="bloquear"
+                        data-id="${escapeHtml(
+                            contacto.contacto_id
+                        )}"
                     >
                         ⛔
                     </button>
@@ -530,7 +939,10 @@
                         class="eliminar"
                         title="Eliminar contacto"
                         aria-label="Eliminar contacto"
-                        onclick="eliminarContacto('${escapeHtml(contacto.id)}')"
+                        data-action="eliminar"
+                        data-id="${escapeHtml(
+                            contacto.id
+                        )}"
                     >
                         ✕
                     </button>
@@ -547,7 +959,9 @@
 
     function mostrarCargando() {
         const lista =
-            document.getElementById('contactosList');
+            document.getElementById(
+                'contactosList'
+            );
 
         if (!lista) {
             return;
@@ -561,9 +975,14 @@
         `;
     }
 
-    function mostrarEstadoVacio(icono, mensaje) {
+    function mostrarEstadoVacio(
+        icono,
+        mensaje
+    ) {
         const lista =
-            document.getElementById('contactosList');
+            document.getElementById(
+                'contactosList'
+            );
 
         if (!lista) {
             return;
@@ -586,7 +1005,7 @@
                             <button
                                 type="button"
                                 class="btn-accion"
-                                onclick="abrirAgregarContacto()"
+                                data-contactos-action="agregar"
                             >
                                 ◆ Agregar contacto
                             </button>
@@ -596,30 +1015,61 @@
 
             </div>
         `;
+
+        const boton =
+            lista.querySelector(
+                '[data-contactos-action="agregar"]'
+            );
+
+        if (boton) {
+            boton.addEventListener(
+                'click',
+                abrirAgregarContacto,
+                {
+                    once: true
+                }
+            );
+        }
     }
 
     /* ============================================================
        ESTADÍSTICAS
        ============================================================ */
 
-    function actualizarEstadisticas(lista) {
+    function actualizarEstadisticas(
+        lista
+    ) {
         const total =
-            document.getElementById('totalContactos');
+            document.getElementById(
+                'totalContactos'
+            );
 
         const online =
-            document.getElementById('onlineContactos');
+            document.getElementById(
+                'onlineContactos'
+            );
 
         if (total) {
-            total.textContent = lista.length;
+            total.textContent =
+                String(
+                    Array.isArray(lista)
+                        ? lista.length
+                        : 0
+                );
         }
 
         if (online) {
             online.textContent =
-                lista.filter((item) => {
-                    return (
-                        item?.contacto?.online === true
-                    );
-                }).length;
+                String(
+                    Array.isArray(lista)
+                        ? lista.filter(
+                              (item) =>
+                                  item?.contacto
+                                      ?.online ===
+                                  true
+                          ).length
+                        : 0
+                );
         }
     }
 
@@ -638,7 +1088,11 @@
         }
 
         modal.classList.add('show');
-        modal.setAttribute('aria-hidden', 'false');
+
+        modal.setAttribute(
+            'aria-hidden',
+            'false'
+        );
 
         const input =
             document.getElementById(
@@ -652,7 +1106,14 @@
 
         if (input) {
             input.value = '';
-            setTimeout(() => input.focus(), 100);
+
+            clearTimeout(
+                busquedaTimer
+            );
+
+            setTimeout(() => {
+                input.focus();
+            }, 100);
         }
 
         if (resultados) {
@@ -684,8 +1145,14 @@
             return;
         }
 
-        modal.classList.remove('show');
-        modal.setAttribute('aria-hidden', 'true');
+        modal.classList.remove(
+            'show'
+        );
+
+        modal.setAttribute(
+            'aria-hidden',
+            'true'
+        );
     }
 
     window.cerrarModalBuscar =
@@ -695,55 +1162,182 @@
        BUSCAR USUARIOS
        ============================================================ */
 
-    async function buscarUsuarios(texto) {
+    async function buscarUsuarios(
+        texto
+    ) {
         const client = sb();
-        const session = await getSession();
+
+        const session =
+            await getSession();
 
         if (!client || !session) {
             mostrarMensajeBusqueda(
                 'Inicia sesión para buscar contactos.'
             );
+
+            return;
+        }
+
+        const termino =
+            normalizarTextoBusqueda(
+                texto
+            )
+                .replace(
+                    /^@+/,
+                    ''
+                )
+                .trim();
+
+        if (
+            termino.length <
+            MIN_CARACTERES_BUSQUEDA
+        ) {
+            mostrarMensajeBusqueda(
+                'Escribe al menos 2 caracteres para buscar'
+            );
+
             return;
         }
 
         try {
-            const termino =
-                texto.replace(/^@/, '').trim();
-
             /*
-             * Se buscan solamente columnas existentes
-             * en public.usuarios.
+             * Se hacen tres búsquedas independientes.
+             *
+             * Esto evita construir manualmente una expresión
+             * .or() con texto introducido por el usuario.
              */
 
-            const filtros =
-                `nombre.ilike.%${termino}%,handle.ilike.%${termino}%,username.ilike.%${termino}%`;
+            const patron =
+                `%${termino}%`;
 
-            const { data, error } = await client
-                .from(USUARIOS_TABLE)
-                .select(`
-                    id,
-                    nombre,
-                    handle,
-                    username,
-                    avatar_url,
-                    online,
-                    verificado
-                `)
-                .neq('id', session.user.id)
-                .or(filtros)
-                .limit(20);
+            const [
+                resultadoNombre,
+                resultadoHandle,
+                resultadoUsername
+            ] =
+                await Promise.all([
+                    client
+                        .from(
+                            USUARIOS_TABLE
+                        )
+                        .select(`
+                            id,
+                            nombre,
+                            handle,
+                            username,
+                            avatar_url,
+                            online,
+                            verificado
+                        `)
+                        .neq(
+                            'id',
+                            session.user.id
+                        )
+                        .ilike(
+                            'nombre',
+                            patron
+                        )
+                        .limit(
+                            MAX_RESULTADOS_BUSQUEDA
+                        ),
 
-            if (error) {
-                throw error;
+                    client
+                        .from(
+                            USUARIOS_TABLE
+                        )
+                        .select(`
+                            id,
+                            nombre,
+                            handle,
+                            username,
+                            avatar_url,
+                            online,
+                            verificado
+                        `)
+                        .neq(
+                            'id',
+                            session.user.id
+                        )
+                        .ilike(
+                            'handle',
+                            patron
+                        )
+                        .limit(
+                            MAX_RESULTADOS_BUSQUEDA
+                        ),
+
+                    client
+                        .from(
+                            USUARIOS_TABLE
+                        )
+                        .select(`
+                            id,
+                            nombre,
+                            handle,
+                            username,
+                            avatar_url,
+                            online,
+                            verificado
+                        `)
+                        .neq(
+                            'id',
+                            session.user.id
+                        )
+                        .ilike(
+                            'username',
+                            patron
+                        )
+                        .limit(
+                            MAX_RESULTADOS_BUSQUEDA
+                        )
+                ]);
+
+            const errores = [
+                resultadoNombre.error,
+                resultadoHandle.error,
+                resultadoUsername.error
+            ].filter(Boolean);
+
+            if (errores.length) {
+                throw errores[0];
             }
 
+            const mapa =
+                new Map();
+
+            [
+                ...(resultadoNombre.data || []),
+                ...(resultadoHandle.data || []),
+                ...(resultadoUsername.data || [])
+            ].forEach(
+                (usuario) => {
+                    if (
+                        usuario?.id &&
+                        !mapa.has(
+                            usuario.id
+                        )
+                    ) {
+                        mapa.set(
+                            usuario.id,
+                            usuario
+                        );
+                    }
+                }
+            );
+
             const usuarios =
-                Array.isArray(data) ? data : [];
+                Array.from(
+                    mapa.values()
+                ).slice(
+                    0,
+                    MAX_RESULTADOS_BUSQUEDA
+                );
 
             if (!usuarios.length) {
                 mostrarMensajeBusqueda(
                     'No se encontraron usuarios.'
                 );
+
                 return;
             }
 
@@ -753,21 +1347,89 @@
 
             const idsContactos =
                 new Set(
-                    contactos.map(
-                        (item) => item.contacto_id
-                    )
+                    contactos
+                        .map(
+                            (item) =>
+                                item?.contacto_id
+                        )
+                        .filter(Boolean)
                 );
+
+            /*
+             * También evitamos usuarios bloqueados.
+             */
+
+            let idsBloqueados =
+                new Set();
+
+            try {
+                const {
+                    data: bloqueados,
+                    error:
+                        errorBloqueados
+                } =
+                    await client
+                        .from(
+                            BLOQUEOS_TABLE
+                        )
+                        .select(
+                            'bloqueado_id'
+                        )
+                        .eq(
+                            'usuario_id',
+                            session.user.id
+                        );
+
+                if (
+                    !errorBloqueados &&
+                    Array.isArray(
+                        bloqueados
+                    )
+                ) {
+                    idsBloqueados =
+                        new Set(
+                            bloqueados
+                                .map(
+                                    (item) =>
+                                        item?.bloqueado_id
+                                )
+                                .filter(
+                                    Boolean
+                                )
+                        );
+                }
+
+            } catch (
+                errorBloqueados
+            ) {
+                /*
+                 * Si la consulta de bloqueos falla,
+                 * no mostramos error global de búsqueda.
+                 * RLS sigue siendo la autoridad.
+                 */
+
+                console.warn(
+                    'No se pudieron consultar bloqueos:',
+                    errorBloqueados
+                );
+            }
 
             const disponibles =
                 usuarios.filter(
                     (usuario) =>
-                        !idsContactos.has(usuario.id)
+                        !idsContactos.has(
+                            usuario.id
+                        ) &&
+                        !idsBloqueados.has(
+                            usuario.id
+                        )
                 );
 
             if (!disponibles.length) {
                 mostrarMensajeBusqueda(
-                    'Los usuarios encontrados ya están en tus contactos.'
+                    'Los usuarios encontrados ya están en tus contactos o están bloqueados.'
                 );
+
                 return;
             }
 
@@ -801,134 +1463,162 @@
 
         contenedor.innerHTML =
             usuarios
-                .map((usuario) => {
-                    const inicial =
-                        (usuario.nombre ||
+                .map(
+                    (usuario) => {
+                        const inicial =
+                            (
+                                usuario.nombre ||
+                                usuario.username ||
+                                usuario.handle ||
+                                'U'
+                            )
+                                .charAt(0)
+                                .toUpperCase();
+
+                        const avatarUrl =
+                            obtenerAvatarSeguro(
+                                usuario.avatar_url
+                            );
+
+                        const avatar =
+                            avatarUrl
+                                ? `
+                                    <img
+                                        src="${escapeHtml(avatarUrl)}"
+                                        alt=""
+                                        loading="lazy"
+                                        referrerpolicy="no-referrer"
+                                        style="
+                                            width:40px;
+                                            height:40px;
+                                            border-radius:50%;
+                                            object-fit:cover;
+                                        "
+                                    >
+                                `
+                                : `
+                                    <div
+                                        style="
+                                            width:40px;
+                                            height:40px;
+                                            border-radius:50%;
+                                            display:flex;
+                                            align-items:center;
+                                            justify-content:center;
+                                            background:linear-gradient(
+                                                135deg,
+                                                var(--green-deep),
+                                                var(--gold)
+                                            );
+                                            color:white;
+                                        "
+                                    >
+                                        ${escapeHtml(
+                                            inicial
+                                        )}
+                                    </div>
+                                `;
+
+                        const nombre =
+                            usuario.nombre ||
                             usuario.username ||
                             usuario.handle ||
-                            'U')
-                            .charAt(0)
-                            .toUpperCase();
+                            'Usuario';
 
-                    const avatar =
-                        usuario.avatar_url
-                            ? `
-                                <img
-                                    src="${escapeHtml(usuario.avatar_url)}"
-                                    alt=""
-                                    style="
-                                        width:40px;
-                                        height:40px;
-                                        border-radius:50%;
-                                        object-fit:cover;
-                                    "
-                                >
-                            `
-                            : `
-                                <div
-                                    style="
-                                        width:40px;
-                                        height:40px;
-                                        border-radius:50%;
-                                        display:flex;
-                                        align-items:center;
-                                        justify-content:center;
-                                        background:linear-gradient(
-                                            135deg,
-                                            var(--green-deep),
-                                            var(--gold)
-                                        );
-                                        color:white;
-                                    "
-                                >
-                                    ${escapeHtml(inicial)}
-                                </div>
-                            `;
+                        const handle =
+                            usuario.handle ||
+                            usuario.username ||
+                            '';
 
-                    const nombre =
-                        usuario.nombre ||
-                        usuario.username ||
-                        usuario.handle ||
-                        'Usuario';
+                        return `
+                            <div
+                                style="
+                                    display:flex;
+                                    align-items:center;
+                                    gap:10px;
+                                    padding:10px;
+                                    border-bottom:1px solid var(--glass-border);
+                                "
+                            >
 
-                    const handle =
-                        usuario.handle ||
-                        usuario.username ||
-                        '';
-
-                    return `
-                        <div
-                            style="
-                                display:flex;
-                                align-items:center;
-                                gap:10px;
-                                padding:10px;
-                                border-bottom:1px solid var(--glass-border);
-                            "
-                        >
-
-                            ${avatar}
-
-                            <div style="flex:1;min-width:0;">
+                                ${avatar}
 
                                 <div
                                     style="
-                                        font-weight:600;
-                                        color:var(--text-primary);
+                                        flex:1;
+                                        min-width:0;
                                     "
                                 >
-                                    ${escapeHtml(nombre)}
+
+                                    <div
+                                        style="
+                                            font-weight:600;
+                                            color:var(--text-primary);
+                                        "
+                                    >
+                                        ${escapeHtml(
+                                            nombre
+                                        )}
+
+                                        ${
+                                            usuario.verificado
+                                                ? `
+                                                    <span
+                                                        style="
+                                                            color:var(--gold);
+                                                            font-size:0.6rem;
+                                                        "
+                                                    >
+                                                        ✓
+                                                    </span>
+                                                `
+                                                : ''
+                                        }
+                                    </div>
 
                                     ${
-                                        usuario.verificado
+                                        handle
                                             ? `
-                                                <span
+                                                <div
                                                     style="
-                                                        color:var(--gold);
-                                                        font-size:0.6rem;
+                                                        color:var(--text-muted);
+                                                        font-size:0.65rem;
                                                     "
                                                 >
-                                                    ✓
-                                                </span>
+                                                    @${escapeHtml(
+                                                        String(
+                                                            handle
+                                                        ).replace(
+                                                            /^@/,
+                                                            ''
+                                                        )
+                                                    )}
+                                                </div>
                                             `
                                             : ''
                                     }
+
                                 </div>
 
-                                ${
-                                    handle
-                                        ? `
-                                            <div
-                                                style="
-                                                    color:var(--text-muted);
-                                                    font-size:0.65rem;
-                                                "
-                                            >
-                                                @${escapeHtml(
-                                                    handle.replace(/^@/, '')
-                                                )}
-                                            </div>
-                                        `
-                                        : ''
-                                }
+                                <button
+                                    type="button"
+                                    class="btn-agregar"
+                                    data-action="agregar"
+                                    data-usuario-id="${escapeHtml(
+                                        usuario.id
+                                    )}"
+                                    style="
+                                        padding:7px 12px;
+                                        font-size:0.65rem;
+                                    "
+                                >
+                                    ◆ Agregar
+                                </button>
 
                             </div>
-
-                            <button
-                                type="button"
-                                class="btn-agregar"
-                                style="
-                                    padding:7px 12px;
-                                    font-size:0.65rem;
-                                "
-                                onclick="agregarContacto('${escapeHtml(usuario.id)}')"
-                            >
-                                ◆ Agregar
-                            </button>
-
-                        </div>
-                    `;
-                })
+                        `;
+                    }
+                )
                 .join('');
     }
 
@@ -962,15 +1652,20 @@
        AGREGAR CONTACTO
        ============================================================ */
 
-    async function agregarContacto(contactoId) {
+    async function agregarContacto(
+        contactoId
+    ) {
         const client = sb();
-        const session = await getSession();
+
+        const session =
+            await getSession();
 
         if (!client || !session) {
             showToast(
                 '⚠️ Inicia sesión',
                 'error'
             );
+
             return;
         }
 
@@ -978,22 +1673,49 @@
             return;
         }
 
-        if (contactoId === session.user.id) {
+        if (
+            contactoId ===
+            session.user.id
+        ) {
             showToast(
                 '⚠️ No puedes agregarte a ti mismo',
                 'warning'
             );
+
+            return;
+        }
+
+        /*
+         * Protección adicional de cliente.
+         * La autorización real sigue estando en RLS.
+         */
+
+        const yaExiste =
+            contactos.some(
+                (item) =>
+                    item?.contacto_id ===
+                    contactoId
+            );
+
+        if (yaExiste) {
+            showToast(
+                '⚠️ Ya es tu contacto',
+                'warning'
+            );
+
             return;
         }
 
         try {
-            /*
-             * Verificación A → B.
-             */
-
-            const { data: existe, error: errorExiste } =
+            const {
+                data: existente,
+                error:
+                    errorExiste
+            } =
                 await client
-                    .from(CONTACTOS_TABLE)
+                    .from(
+                        CONTACTOS_TABLE
+                    )
                     .select('id')
                     .eq(
                         'usuario_id',
@@ -1009,43 +1731,50 @@
                 throw errorExiste;
             }
 
-            if (existe) {
+            if (existente) {
                 showToast(
                     '⚠️ Ya es tu contacto',
                     'warning'
                 );
+
+                await cargarContactos();
+
                 return;
             }
 
-            /*
-             * Solamente insertamos la relación del usuario actual.
-             *
-             * NO intentamos escribir B → A desde el cliente.
-             * Esto evita problemas con RLS y mantiene una sola
-             * autoridad para la relación.
-             */
+            const {
+                error
+            } =
+                await client
+                    .from(
+                        CONTACTOS_TABLE
+                    )
+                    .insert({
+                        usuario_id:
+                            session.user.id,
 
-            const { error } = await client
-                .from(CONTACTOS_TABLE)
-                .insert({
-                    usuario_id: session.user.id,
-                    contacto_id: contactoId,
-                    estado: 'activo',
-                    es_favorito: false
-                });
+                        contacto_id:
+                            contactoId,
+
+                        estado:
+                            'activo',
+
+                        es_favorito:
+                            false
+                    });
 
             if (error) {
-                /*
-                 * Si existe una restricción de unicidad
-                 * o trigger de reciprocidad, lo tratamos
-                 * como ya existente.
-                 */
-
-                if (error.code === '23505') {
+                if (
+                    error.code ===
+                    '23505'
+                ) {
                     showToast(
                         '⚠️ Ya es tu contacto',
                         'warning'
                     );
+
+                    await cargarContactos();
+
                     return;
                 }
 
@@ -1072,7 +1801,8 @@
                 );
 
             if (resultados) {
-                resultados.innerHTML = '';
+                resultados.innerHTML =
+                    '';
             }
 
             cerrarModalBuscar();
@@ -1104,27 +1834,44 @@
         nuevoValor
     ) {
         const client = sb();
-        const session = await getSession();
+
+        const session =
+            await getSession();
 
         if (!client || !session) {
             showToast(
                 '⚠️ Inicia sesión',
                 'error'
             );
+
+            return;
+        }
+
+        if (!contactoRowId) {
             return;
         }
 
         try {
-            const { error } = await client
-                .from(CONTACTOS_TABLE)
-                .update({
-                    es_favorito: nuevoValor
-                })
-                .eq('id', contactoRowId)
-                .eq(
-                    'usuario_id',
-                    session.user.id
-                );
+            const {
+                error
+            } =
+                await client
+                    .from(
+                        CONTACTOS_TABLE
+                    )
+                    .update({
+                        es_favorito:
+                            nuevoValor ===
+                            true
+                    })
+                    .eq(
+                        'id',
+                        contactoRowId
+                    )
+                    .eq(
+                        'usuario_id',
+                        session.user.id
+                    );
 
             if (error) {
                 throw error;
@@ -1163,33 +1910,49 @@
         contactoRowId
     ) {
         const client = sb();
-        const session = await getSession();
+
+        const session =
+            await getSession();
 
         if (!client || !session) {
             showToast(
                 '⚠️ Inicia sesión',
                 'error'
             );
+
             return;
         }
 
-        const confirmar = window.confirm(
-            '¿Quieres eliminar este contacto?'
-        );
+        if (!contactoRowId) {
+            return;
+        }
+
+        const confirmar =
+            window.confirm(
+                '¿Quieres eliminar este contacto?'
+            );
 
         if (!confirmar) {
             return;
         }
 
         try {
-            const { error } = await client
-                .from(CONTACTOS_TABLE)
-                .delete()
-                .eq('id', contactoRowId)
-                .eq(
-                    'usuario_id',
-                    session.user.id
-                );
+            const {
+                error
+            } =
+                await client
+                    .from(
+                        CONTACTOS_TABLE
+                    )
+                    .delete()
+                    .eq(
+                        'id',
+                        contactoRowId
+                    )
+                    .eq(
+                        'usuario_id',
+                        session.user.id
+                    );
 
             if (error) {
                 throw error;
@@ -1226,13 +1989,16 @@
         contactoId
     ) {
         const client = sb();
-        const session = await getSession();
+
+        const session =
+            await getSession();
 
         if (!client || !session) {
             showToast(
                 '⚠️ Inicia sesión',
                 'error'
             );
+
             return;
         }
 
@@ -1240,9 +2006,22 @@
             return;
         }
 
-        const confirmar = window.confirm(
-            '¿Quieres bloquear a este usuario?'
-        );
+        if (
+            contactoId ===
+            session.user.id
+        ) {
+            showToast(
+                '⚠️ No puedes bloquearte a ti mismo',
+                'warning'
+            );
+
+            return;
+        }
+
+        const confirmar =
+            window.confirm(
+                '¿Quieres bloquear a este usuario?'
+            );
 
         if (!confirmar) {
             return;
@@ -1250,48 +2029,39 @@
 
         try {
             /*
-             * La tabla bloqueos utiliza:
-             * usuario_id
-             * bloqueado_id
+             * Operación atómica en PostgreSQL:
+             *
+             * 1. INSERT bloqueos
+             * 2. DELETE contactos
+             *
+             * Si una parte falla, toda la operación
+             * se revierte.
              */
 
-            const { error: errorBloqueo } =
-                await client
-                    .from(BLOQUEOS_TABLE)
-                    .insert({
-                        usuario_id:
-                            session.user.id,
-                        bloqueado_id:
+            const {
+                data,
+                error
+            } =
+                await client.rpc(
+                    RPC_BLOQUEAR_CONTACTO,
+                    {
+                        p_contacto_id:
                             contactoId
-                    });
+                    }
+                );
 
-            if (
-                errorBloqueo &&
-                errorBloqueo.code !== '23505'
-            ) {
-                throw errorBloqueo;
+            if (error) {
+                throw error;
             }
 
-            /*
-             * Eliminamos la relación del contacto
-             * del usuario actual.
-             */
-
-            const { error: errorContacto } =
-                await client
-                    .from(CONTACTOS_TABLE)
-                    .delete()
-                    .eq(
-                        'usuario_id',
-                        session.user.id
-                    )
-                    .eq(
-                        'contacto_id',
-                        contactoId
-                    );
-
-            if (errorContacto) {
-                throw errorContacto;
+            if (
+                data !== true &&
+                data !== null
+            ) {
+                console.warn(
+                    'Respuesta inesperada al bloquear:',
+                    data
+                );
             }
 
             showToast(
@@ -1321,15 +2091,20 @@
        ABRIR MENSAJE
        ============================================================ */
 
-    function abrirMensaje(contactoId) {
+    function abrirMensaje(
+        contactoId
+    ) {
         if (!contactoId) {
             return;
         }
 
         const url =
-            `/features/mensajes/mensajes.html?usuario=${encodeURIComponent(contactoId)}`;
+            `/features/mensajes/mensajes.html?usuario=${encodeURIComponent(
+                contactoId
+            )}`;
 
-        window.location.href = url;
+        window.location.href =
+            url;
     }
 
     window.abrirMensaje =
@@ -1341,13 +2116,16 @@
 
     async function invitarContacto() {
         const client = sb();
-        const session = await getSession();
+
+        const session =
+            await getSession();
 
         if (!client || !session) {
             showToast(
                 '⚠️ Inicia sesión para invitar',
                 'error'
             );
+
             return;
         }
 
@@ -1362,7 +2140,10 @@
             );
 
         if (modal) {
-            modal.classList.add('show');
+            modal.classList.add(
+                'show'
+            );
+
             modal.setAttribute(
                 'aria-hidden',
                 'false'
@@ -1376,124 +2157,41 @@
 
         try {
             /*
-             * Primero reutilizamos una invitación activa
-             * todavía no utilizada cuando exista.
+             * La generación se hace en PostgreSQL.
+             *
+             * No utilizamos Math.random().
              */
 
-            const { data: existente, error: errorExistente } =
-                await client
-                    .from(INVITACIONES_TABLE)
-                    .select(`
-                        id,
-                        codigo,
-                        usado,
-                        activo,
-                        expira_en
-                    `)
-                    .eq(
-                        'usuario_id',
-                        session.user.id
-                    )
-                    .eq('usado', false)
-                    .eq('activo', true)
-                    .gt(
-                        'expira_en',
-                        new Date().toISOString()
-                    )
-                    .order(
-                        'fecha_creacion',
-                        {
-                            ascending: false
-                        }
-                    )
-                    .limit(1)
-                    .maybeSingle();
-
-            if (errorExistente) {
-                throw errorExistente;
-            }
-
-            if (existente?.codigo) {
-                if (codigoElemento) {
-                    codigoElemento.textContent =
-                        existente.codigo;
-                }
-
-                return;
-            }
-
-            /*
-             * Código compatible con varchar + unique.
-             */
-
-            const codigo =
-                generarCodigoInvitacion();
-
-            const { data, error } =
-                await client
-                    .from(INVITACIONES_TABLE)
-                    .insert({
-                        usuario_id:
-                            session.user.id,
-                        codigo,
-                        usado: false,
-                        activo: true
-                    })
-                    .select(`
-                        id,
-                        codigo,
-                        expira_en
-                    `)
-                    .single();
+            const {
+                data,
+                error
+            } =
+                await client.rpc(
+                    RPC_INVITACION
+                );
 
             if (error) {
-                /*
-                 * En caso excepcional de colisión
-                 * de código, reintentamos una vez.
-                 */
-
-                if (error.code === '23505') {
-                    const segundoCodigo =
-                        generarCodigoInvitacion();
-
-                    const segundo =
-                        await client
-                            .from(
-                                INVITACIONES_TABLE
-                            )
-                            .insert({
-                                usuario_id:
-                                    session.user.id,
-                                codigo:
-                                    segundoCodigo,
-                                usado: false,
-                                activo: true
-                            })
-                            .select(`
-                                id,
-                                codigo,
-                                expira_en
-                            `)
-                            .single();
-
-                    if (segundo.error) {
-                        throw segundo.error;
-                    }
-
-                    if (codigoElemento) {
-                        codigoElemento.textContent =
-                            segundo.data.codigo;
-                    }
-
-                    return;
-                }
-
                 throw error;
+            }
+
+            const invitacion =
+                Array.isArray(data)
+                    ? data[0]
+                    : data;
+
+            if (
+                !invitacion?.codigo
+            ) {
+                throw new Error(
+                    'Supabase no devolvió un código de invitación.'
+                );
             }
 
             if (codigoElemento) {
                 codigoElemento.textContent =
-                    data.codigo;
+                    String(
+                        invitacion.codigo
+                    );
             }
 
         } catch (error) {
@@ -1517,24 +2215,9 @@
     window.invitarContacto =
         invitarContacto;
 
-    function generarCodigoInvitacion() {
-        const caracteres =
-            'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-
-        let resultado = '';
-
-        for (let i = 0; i < 8; i++) {
-            resultado +=
-                caracteres.charAt(
-                    Math.floor(
-                        Math.random() *
-                            caracteres.length
-                    )
-                );
-        }
-
-        return resultado;
-    }
+    /* ============================================================
+       COPIAR INVITACIÓN
+       ============================================================ */
 
     async function copiarCodigoInvitacion() {
         const elemento =
@@ -1551,16 +2234,68 @@
 
         if (
             !codigo ||
-            codigo === '⏳ Generando...' ||
+            codigo ===
+                '⏳ Generando...' ||
             codigo === 'ERROR'
         ) {
             return;
         }
 
         try {
-            await navigator.clipboard.writeText(
-                codigo
-            );
+            if (
+                navigator.clipboard &&
+                typeof navigator
+                    .clipboard
+                    .writeText ===
+                    'function'
+            ) {
+                await navigator.clipboard
+                    .writeText(
+                        codigo
+                    );
+            } else {
+                /*
+                 * Fallback para navegadores antiguos.
+                 */
+
+                const temporal =
+                    document.createElement(
+                        'textarea'
+                    );
+
+                temporal.value =
+                    codigo;
+
+                temporal.setAttribute(
+                    'readonly',
+                    ''
+                );
+
+                temporal.style.position =
+                    'fixed';
+
+                temporal.style.opacity =
+                    '0';
+
+                document.body.appendChild(
+                    temporal
+                );
+
+                temporal.select();
+
+                const correcto =
+                    document.execCommand(
+                        'copy'
+                    );
+
+                temporal.remove();
+
+                if (!correcto) {
+                    throw new Error(
+                        'No se pudo copiar'
+                    );
+                }
+            }
 
             showToast(
                 '📋 Código copiado',
@@ -1583,6 +2318,10 @@
     window.copiarCodigoInvitacion =
         copiarCodigoInvitacion;
 
+    /* ============================================================
+       CERRAR MODAL INVITACIÓN
+       ============================================================ */
+
     function cerrarModalInvitacion() {
         const modal =
             document.getElementById(
@@ -1593,7 +2332,10 @@
             return;
         }
 
-        modal.classList.remove('show');
+        modal.classList.remove(
+            'show'
+        );
+
         modal.setAttribute(
             'aria-hidden',
             'true'
@@ -1604,64 +2346,47 @@
         cerrarModalInvitacion;
 
     /* ============================================================
-       CIERRE DE MODALES AL HACER CLICK FUERA
-       ============================================================ */
-
-    document.addEventListener('click', (event) => {
-        const buscar =
-            document.getElementById(
-                'modalBuscarContacto'
-            );
-
-        const invitacion =
-            document.getElementById(
-                'modalInvitacion'
-            );
-
-        if (
-            buscar &&
-            event.target === buscar
-        ) {
-            cerrarModalBuscar();
-        }
-
-        if (
-            invitacion &&
-            event.target === invitacion
-        ) {
-            cerrarModalInvitacion();
-        }
-    });
-
-    /* ============================================================
        ARRANQUE
        ============================================================ */
 
     function esperarSupabase() {
         let intentos = 0;
 
-        const timer = setInterval(async () => {
-            intentos++;
+        const timer =
+            setInterval(
+                async () => {
+                    intentos++;
 
-            if (sb()) {
-                clearInterval(timer);
-                await inicializarContactos();
-                return;
-            }
+                    if (sb()) {
+                        clearInterval(
+                            timer
+                        );
 
-            if (intentos >= 100) {
-                clearInterval(timer);
+                        await inicializarContactos();
 
-                console.error(
-                    '❌ Supabase no estuvo disponible.'
-                );
+                        return;
+                    }
 
-                mostrarEstadoVacio(
-                    '⚠️',
-                    'No se pudo inicializar la conexión.'
-                );
-            }
-        }, 100);
+                    if (
+                        intentos >=
+                        100
+                    ) {
+                        clearInterval(
+                            timer
+                        );
+
+                        console.error(
+                            '❌ Supabase no estuvo disponible.'
+                        );
+
+                        mostrarEstadoVacio(
+                            '⚠️',
+                            'No se pudo inicializar la conexión.'
+                        );
+                    }
+                },
+                100
+            );
     }
 
     if (
