@@ -1,17 +1,18 @@
 /* ================================================================
    PERFIL.JS - SARIEL'S ECOSYSTEM
-   VERSIÓN PRODUCCIÓN CORREGIDA — 100% SUPABASE DIRECTO
+   VERSIÓN PRODUCCIÓN — 100% SUPABASE DIRECTO
 
-   CAMBIOS APLICADOS EN ESTA VERSIÓN:
+   CAMBIOS APLICADOS:
    - Sin credenciales hardcodeadas.
-   - Usa window.supabaseClient creado por el index / app.js.
+   - Usa window.supabaseClient creado por el bloque centralizado del perfil.html.
    - Si no hay sesión → redirige al index (flujo circular).
    - Cerrar sesión → signOut() y luego replace('/').
    - vincular_wallet fallback usa wallet_address (no wallet).
    - SESSION_TIMEOUT_MS subido a 15s.
-   - Sin RPC obtener_estado_pro / activar_pro (no existen).
-   - Sin tabla pagos_pro (se usa backend de pagos).
-   - Todo lo demás intacto.
+   - RPC obtener_estado_pro / activar_pro restauradas (existen en Supabase).
+   - subirVideo() usa bucket muro-videos (50 MB, RLS correcta).
+   - eliminarFotoPerfil() nueva función.
+   - Sin funciones duplicadas de reacciones/comentarios (viven en perfil.html).
    ================================================================ */
 
 (function () {
@@ -20,7 +21,7 @@
 /* ================================================================
    CONFIGURACIÓN SUPABASE
    - NO se crea cliente aquí.
-   - Se reutiliza el de window.supabaseClient / window.getSupabaseClient().
+   - Se reutiliza el de window.supabaseClient / window.supabaseReady.
    ================================================================ */
 var supabaseClient = null;
 var intentosSupabase = 0;
@@ -32,7 +33,6 @@ var SESSION_TIMEOUT_MS = 15000;
 function inicializarSupabase() {
     if (moduloInicializado) return;
 
-    /* 1) Cliente ya disponible globalmente */
     if (window.supabaseClient) {
         supabaseClient = window.supabaseClient;
         console.log('[Perfil] ✅ Reutilizando supabaseClient existente.');
@@ -40,7 +40,6 @@ function inicializarSupabase() {
         return;
     }
 
-    /* 2) Esperar a window.supabaseReady (promesa del index) */
     if (window.supabaseReady && typeof window.supabaseReady.then === 'function') {
         window.supabaseReady
             .then(function (client) {
@@ -70,7 +69,6 @@ function inicializarSupabase() {
         return;
     }
 
-    /* 3) Último intento: esperar a que aparezca */
     intentosSupabase++;
     if (intentosSupabase >= MAX_INTENTOS_SUPABASE) {
         console.error('[Perfil] ❌ No se pudo inicializar Supabase (sin cliente).');
@@ -203,9 +201,25 @@ async function cargarEstadoPro() {
         const session = await getSession();
         if (!session) return;
 
+        try {
+            const { data, error } = await supabaseClient.rpc('obtener_estado_pro');
+
+            if (!error && data && data.success) {
+                aplicarEstadoProUI({
+                    plan: data.plan,
+                    plan_expira_at: data.expira_at,
+                    plan_meta: data.meta,
+                    dias_restantes: data.dias_restantes
+                });
+                return;
+            }
+        } catch (rpcErr) {
+            console.warn('[Perfil] RPC obtener_estado_pro no disponible:', rpcErr?.message);
+        }
+
         const { data: usuario, error: userErr } = await supabaseClient
             .from('usuarios')
-            .select('plan, plan_expira_at, plan_meta')
+            .select('plan, plan_expira_at, plan_meta, membresia_live_hasta')
             .eq('id', session.user.id)
             .maybeSingle();
 
@@ -301,6 +315,25 @@ async function contratarPro() {
 
         showToast('⏳ ' + t('perfil_pro_activando', 'Iniciando contratación...'), '', 4000);
 
+        let pago = null;
+        try {
+            const { data, error } = await supabaseClient
+                .from('pagos_pro')
+                .insert({
+                    usuario_id: session.user.id,
+                    plan_id: PRO_PLAN_ID,
+                    monto_mxn: PRO_PRECIO_MXN,
+                    estado: 'pendiente',
+                    metodo_pago: 'por_definir'
+                })
+                .select()
+                .single();
+
+            if (!error) pago = data;
+        } catch (e) {
+            console.warn('[Perfil] No se pudo registrar intento de pago:', e?.message);
+        }
+
         try {
             const response = await fetch(`${API_ENDPOINTS.pagos}/create`, {
                 method: 'POST',
@@ -315,6 +348,7 @@ async function contratarPro() {
                     tipo: 'membresia_pro',
                     planId: PRO_PLAN_ID,
                     monto_mxn: PRO_PRECIO_MXN,
+                    pago_pro_id: pago?.id || null,
                     idempotency_key: `pro_${session.user.id}_${Date.now()}`
                 })
             });
@@ -325,6 +359,7 @@ async function contratarPro() {
                 if (result.data.payment_url || result.data.pay_address) {
                     window.open(result.data.payment_url || result.data.pay_address, '_blank');
                     showToast('💳 ' + t('perfil_pro_activando', 'Completa el pago en la ventana que se abrió'), 'success', 5000);
+                    if (pago?.id) iniciarPollingPagoPro(pago.id);
                     return;
                 }
             }
@@ -343,7 +378,7 @@ async function contratarPro() {
         );
 
         if (activar) {
-            await activarProDirecto(session.user.id);
+            await activarProDirecto(session.user.id, pago?.id);
         }
 
     } catch (error) {
@@ -352,22 +387,42 @@ async function contratarPro() {
     }
 }
 
-async function activarProDirecto(usuarioId) {
+async function activarProDirecto(usuarioId, pagoProId) {
     try {
         showToast('⏳ ' + t('perfil_pro_activando', 'Activando Sariel\'s Pro...'), '', 4000);
 
-        const expira = new Date(Date.now() + PRO_DURACION_DIAS * 24 * 60 * 60 * 1000).toISOString();
+        let activado = false;
+        try {
+            const { data, error } = await supabaseClient.rpc('activar_pro', {
+                p_usuario_id: usuarioId,
+                p_plan_id: PRO_PLAN_ID
+            });
+            if (!error && data && data.success) {
+                activado = true;
+            }
+        } catch (rpcErr) {
+            console.warn('[Perfil] RPC activar_pro no disponible:', rpcErr?.message);
+        }
 
-        const { error } = await supabaseClient
-            .from('usuarios')
-            .update({
-                plan: 'Pro',
-                plan_expira_at: expira,
-                plan_meta: PRO_GB + ' GB · ' + PRO_DURACION_DIAS + ' días'
-            })
-            .eq('id', usuarioId);
+        if (!activado) {
+            const expira = new Date(Date.now() + PRO_DURACION_DIAS * 24 * 60 * 60 * 1000).toISOString();
+            const { error } = await supabaseClient
+                .from('usuarios')
+                .update({
+                    plan: 'Pro',
+                    plan_expira_at: expira,
+                    plan_meta: PRO_GB + ' GB · ' + PRO_DURACION_DIAS + ' días'
+                })
+                .eq('id', usuarioId);
+            if (error) throw new Error(error.message);
+        }
 
-        if (error) throw new Error(error.message);
+        if (pagoProId) {
+            await supabaseClient
+                .from('pagos_pro')
+                .update({ estado: 'completado', metodo_pago: 'manual_prueba' })
+                .eq('id', pagoProId);
+        }
 
         showToast('🎉 ' + t('perfil_pro_activado', "¡Sariel's Pro activado!"), 'success', 5000);
         crearConfeti();
@@ -379,6 +434,45 @@ async function activarProDirecto(usuarioId) {
         console.error('[Perfil] Error activando Pro:', error);
         showToast('❌ Error al activar Pro: ' + error.message, 'error');
     }
+}
+
+let pollingPagoProInterval = null;
+function iniciarPollingPagoPro(pagoProId) {
+    if (!pagoProId) return;
+    if (pollingPagoProInterval) clearInterval(pollingPagoProInterval);
+
+    let intentos = 0;
+    const maxIntentos = 60;
+
+    pollingPagoProInterval = setInterval(async () => {
+        intentos++;
+
+        try {
+            const { data: pago } = await supabaseClient
+                .from('pagos_pro')
+                .select('estado')
+                .eq('id', pagoProId)
+                .maybeSingle();
+
+            if (pago && pago.estado === 'completado') {
+                clearInterval(pollingPagoProInterval);
+                pollingPagoProInterval = null;
+                showToast('🎉 ' + t('perfil_pro_activado', '¡Pago confirmado! Pro activado'), 'success', 5000);
+                crearConfeti();
+                await cargarEstadoPro();
+                await cargarPerfil(true);
+                return;
+            }
+        } catch (e) {
+            console.warn('[Perfil] Polling pago Pro:', e?.message);
+        }
+
+        if (intentos >= maxIntentos) {
+            clearInterval(pollingPagoProInterval);
+            pollingPagoProInterval = null;
+            showToast('⏳ ' + t('perfil_procesando_pago', 'El pago aún no se confirma. Revísalo más tarde.'), 'warning', 5000);
+        }
+    }, 5000);
 }
 
 /* ================================================================
@@ -467,7 +561,7 @@ async function cargarPerfil(forzarActualizacion = false) {
                     portada_url, ubicacion, sitio_web, verificado, es_admin,
                     tokens, tokens_acumulados, progreso_canje, puede_canjear,
                     nft_canjeado, domos, tokens_para_canje,
-                    plan, plan_expira_at, plan_meta,
+                    plan, plan_expira_at, plan_meta, membresia_live_hasta,
                     esim_iccid, esim_status, esim_data_used, esim_data_limit, esim_apn,
                     esim_imsi, esim_msisdn, esim_eid, esim_type,
                     esim_installation_status, esim_status_reason, esim_data_unit,
@@ -2007,11 +2101,11 @@ function actualizarUI(data) {
             const urlSafe = String(data.avatar_url).replace(/"/g, '&quot;');
             avatarEl.innerHTML = `
                 <img src="${urlSafe}" alt="Avatar" style="animation: fadeIn 0.5s ease-out;"
-                     onerror="this.style.display='none';this.parentElement.innerHTML='◈<span class=\\'edit-badge\\' onclick=\\'event.stopPropagation(); abrirSelectorArchivo()\\' title=\\'Cambiar avatar\\'>✎</span>'"/>
-                <span class="edit-badge" onclick="event.stopPropagation(); abrirSelectorArchivo()" title="Cambiar avatar">✎</span>
+                     onerror="this.style.display='none';this.parentElement.innerHTML='◈<span class=\\'avatar-menu-toggle\\' onclick=\\'event.stopPropagation(); toggleAvatarMenu(event)\\' title=\\'Opciones de foto\\'>✎</span>'"/>
+                <span class="avatar-menu-toggle" onclick="event.stopPropagation(); toggleAvatarMenu(event)" title="Opciones de foto">✎</span>
             `;
         } else {
-            avatarEl.innerHTML = `◈<span class="edit-badge" onclick="event.stopPropagation(); abrirSelectorArchivo()" title="Cambiar avatar">✎</span>`;
+            avatarEl.innerHTML = `◈<span class="avatar-menu-toggle" onclick="event.stopPropagation(); toggleAvatarMenu(event)" title="Opciones de foto">✎</span>`;
         }
     }
 
@@ -2821,6 +2915,58 @@ async function subirFoto(event) {
     }
 }
 
+/* ================================================================
+   ELIMINAR FOTO DE PERFIL
+   ================================================================ */
+async function eliminarFotoPerfil() {
+    const session = await getSession();
+    if (!session) {
+        showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+        return;
+    }
+
+    const confirmMsg = t('perfil_confirma_eliminar_foto', '¿Seguro que quieres eliminar tu foto de perfil?');
+    if (!confirm(confirmMsg)) return;
+
+    try {
+        showToast('⏳ Eliminando foto...', '', 4000);
+
+        /* Intentar borrar cualquier variante del archivo (jpg, png, webp, gif) */
+        const extensiones = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+        const paths = extensiones.map(ext => `${session.user.id}/avatar.${ext}`);
+
+        try {
+            await supabaseClient.storage.from('sariels-avatars').remove(paths);
+        } catch (storageErr) {
+            console.warn('[Perfil] No se pudo borrar el archivo del bucket:', storageErr);
+        }
+
+        const { error } = await supabaseClient
+            .from('usuarios')
+            .update({ avatar_url: null })
+            .eq('id', session.user.id);
+
+        if (error) throw error;
+
+        showToast('✅ Foto de perfil eliminada', 'success');
+
+        /* Actualizar UI inmediatamente */
+        const avatarEl = document.getElementById('perfilAvatar');
+        if (avatarEl) {
+            avatarEl.innerHTML = '◈<span class="avatar-menu-toggle" onclick="event.stopPropagation(); toggleAvatarMenu(event)" title="Opciones de foto">✎</span>';
+        }
+
+        await cargarPerfil(true);
+
+    } catch (error) {
+        console.error('[Perfil] Error eliminando foto de perfil:', error);
+        showToast('❌ Error al eliminar foto: ' + error.message, 'error');
+    }
+}
+
+/* ================================================================
+   SUBIR VIDEO (a bucket muro-videos)
+   ================================================================ */
 async function subirVideo(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -2833,22 +2979,24 @@ async function subirVideo(event) {
 
     if (!file.type.startsWith('video/')) {
         showToast('❌ Formato no válido (solo videos)', 'error');
+        event.target.value = '';
         return;
     }
 
-    if (file.size > 100 * 1024 * 1024) {
-        showToast('❌ El video excede 100 MB', 'error');
+    if (file.size > 50 * 1024 * 1024) {
+        showToast('❌ El video excede 50 MB', 'error');
+        event.target.value = '';
         return;
     }
 
     try {
         showToast('⏳ Subiendo video...', '', 15000);
 
-        const fileExt = file.name.split('.').pop();
+        const fileExt = file.name.split('.').pop().toLowerCase();
         const filePath = `${session.user.id}/video_${Date.now()}.${fileExt}`;
 
         const { error: uploadError } = await supabaseClient.storage
-            .from('posts')
+            .from('muro-videos')
             .upload(filePath, file, {
                 cacheControl: '3600',
                 upsert: false,
@@ -2858,7 +3006,7 @@ async function subirVideo(event) {
         if (uploadError) {
             console.error('[Perfil] Error storage:', uploadError);
             if (uploadError.message?.includes('not found') || uploadError.message?.includes('Bucket')) {
-                showToast('❌ Bucket de posts no configurado', 'error');
+                showToast('❌ Bucket de videos no configurado', 'error');
             } else if (uploadError.message?.includes('policy') || uploadError.message?.includes('violates')) {
                 showToast('❌ Sin permiso para subir video', 'error');
             } else {
@@ -2868,10 +3016,11 @@ async function subirVideo(event) {
         }
 
         const { data: urlData } = supabaseClient.storage
-            .from('posts')
+            .from('muro-videos')
             .getPublicUrl(filePath);
 
         showToast('✅ Video subido con éxito', 'success');
+        event.target.value = '';
         return urlData.publicUrl;
 
     } catch (error) {
@@ -2881,7 +3030,9 @@ async function subirVideo(event) {
 }
 
 /* ================================================================
-   INTERACCIONES SOCIALES
+   INTERACCIONES SOCIALES (versión perfil.js — no duplicar con HTML)
+   - Estas funciones NO se exponen porque perfil.html ya las implementa.
+   - Se mantienen por compatibilidad si algún otro módulo las invoca.
    ================================================================ */
 async function reaccionarPublicacion(postId, tipoReaccion) {
     try {
@@ -2892,19 +3043,14 @@ async function reaccionarPublicacion(postId, tipoReaccion) {
         }
 
         const { error } = await supabaseClient
-            .from('reacciones')
+            .from('publicaciones_reacciones')
             .upsert({
-                post_id: postId,
+                publicacion_id: postId,
                 usuario_id: session.user.id,
                 tipo: tipoReaccion
-            }, { onConflict: 'post_id,usuario_id' });
+            }, { onConflict: 'publicacion_id,usuario_id' });
 
-        if (error) {
-            if (error.code === '42P01') showToast('❌ Tabla de reacciones no configurada', 'error');
-            else if (error.code === '42501') showToast('❌ Sin permiso para reaccionar', 'error');
-            else showToast('❌ Error al reaccionar: ' + error.message, 'error');
-            return;
-        }
+        if (error) throw error;
         showToast(`❤️ Reaccionaste con ${tipoReaccion}`, 'success');
     } catch (error) {
         console.error('[Perfil] Error al reaccionar:', error);
@@ -2924,23 +3070,16 @@ async function comentarPublicacion(postId, contenido) {
             return;
         }
 
-        const textoFormateado = formatearTexto(contenido);
-
         const { error } = await supabaseClient
-            .from('muro_comentarios')
+            .from('publicaciones_comentarios')
             .insert({
-                post_id: postId,
+                publicacion_id: postId,
                 usuario_id: session.user.id,
-                contenido: textoFormateado,
+                contenido: contenido.trim(),
                 created_at: new Date().toISOString()
             });
 
-        if (error) {
-            if (error.code === '42P01') showToast('❌ Tabla de comentarios no configurada', 'error');
-            else if (error.code === '42501') showToast('❌ Sin permiso para comentar', 'error');
-            else showToast('❌ Error al comentar: ' + error.message, 'error');
-            return;
-        }
+        if (error) throw error;
         showToast('💬 Comentario publicado', 'success');
     } catch (error) {
         console.error('[Perfil] Error al comentar:', error);
@@ -3131,6 +3270,7 @@ function inicializarModuloPerfil() {
     window.expandirFotoPublicacion = expandirFotoPublicacion;
     window.subirFoto = subirFoto;
     window.subirVideo = subirVideo;
+    window.eliminarFotoPerfil = eliminarFotoPerfil;
     window.editarPerfil = editarPerfil;
     window.compartirPerfil = compartirPerfil;
     window.conectarWallet = conectarWallet;
