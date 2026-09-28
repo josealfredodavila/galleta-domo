@@ -7,77 +7,133 @@
     <title>Configuración · Csariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
-    
+
     <link rel="stylesheet" href="../../shared/config-layout.css" />
 
-    <!-- ═══════════════════════════════════════════════════════════
-         GUARDIÁN DE SESIÓN — Verifica antes de cargar el menú
-         ═══════════════════════════════════════════════════════════ -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script>
         (function () {
             'use strict';
 
-            var GUARD_SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
-            var GUARD_SUPABASE_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+            window.__sarielsAuthenticated = null;
+            window.supabaseClient = window.supabaseClient || null;
+            window.supabaseReady = null;
+            window.supabaseError = null;
 
-            // ✅ Guarda returnTo y redirige a login
-            function irALoginConReturnTo() {
+            window.getSupabaseClient = function () {
+                return window.supabaseReady;
+            };
+
+            function esRutaInternaSegura(valor) {
+                if (typeof valor !== 'string') return false;
+                if (!valor.startsWith('/')) return false;
+                if (valor.startsWith('//')) return false;
+                if (valor.startsWith('/\\')) return false;
+                return true;
+            }
+
+            function revelarPagina() {
+                document.documentElement.classList.add('auth-ready');
+            }
+
+            function irAlIndexConReturnTo() {
                 try {
                     var returnTo = window.location.pathname + window.location.search + window.location.hash;
-                    localStorage.setItem('wallet_returnTo', returnTo);
-                    console.log('[Config Guardián] Sin sesión → guardando returnTo:', returnTo);
-                    window.location.replace('/features/perfil/login.html?returnTo=' + encodeURIComponent(returnTo));
+                    if (esRutaInternaSegura(returnTo)) {
+                        localStorage.setItem('wallet_returnTo', returnTo);
+                    }
+                    console.log('[Config Guardián] Sin sesión → redirigiendo al index');
+                    window.location.replace('/');
                 } catch (e) {
-                    console.warn('[Config Guardián] Error:', e);
                     window.location.replace('/');
                 }
             }
 
-            function inicializarGuardian() {
+            var salvaguarda = setTimeout(function () {
+                console.warn('[Config Guardián] Salvaguarda activada.');
+                revelarPagina();
+            }, 10000);
+
+            async function inicializarSupabase() {
                 try {
-                    if (typeof window.supabase === 'undefined') {
-                        setTimeout(inicializarGuardian, 200);
-                        return;
+                    if (
+                        !window.supabase ||
+                        typeof window.supabase.createClient !== 'function'
+                    ) {
+                        throw new Error('Supabase SDK no disponible.');
                     }
 
                     if (!window.supabaseClient) {
-                        window.supabaseClient = window.supabase.createClient(
-                            GUARD_SUPABASE_URL,
-                            GUARD_SUPABASE_KEY
+                        var supabaseUrl = null;
+                        var supabaseAnonKey = null;
+
+                        try {
+                            const response = await fetch('/api/config/public', {
+                                method: 'GET',
+                                credentials: 'same-origin',
+                                cache: 'no-store',
+                                headers: { 'Accept': 'application/json' }
+                            });
+
+                            if (response.ok) {
+                                const config = await response.json();
+                                supabaseUrl = config && config.supabaseUrl;
+                                supabaseAnonKey = config && config.supabaseAnonKey;
+                            }
+                        } catch (fetchErr) {
+                            console.warn('[Config Guardián] fetch /api/config/public falló:', fetchErr);
+                        }
+
+                        if (!supabaseUrl || !supabaseAnonKey) {
+                            throw new Error('Configuración pública de Supabase no disponible.');
+                        }
+
+                        window.SupabaseSDK = window.supabase;
+
+                        window.supabaseClient = window.SupabaseSDK.createClient(
+                            supabaseUrl,
+                            supabaseAnonKey,
+                            {
+                                auth: {
+                                    persistSession: true,
+                                    autoRefreshToken: true,
+                                    detectSessionInUrl: true
+                                }
+                            }
                         );
+
                         console.log('[Config Guardián] ✅ supabaseClient creado.');
                     }
 
-                    window.supabaseClient.auth.getSession().then(function (resultado) {
-                        var session = resultado && resultado.data ? resultado.data.session : null;
-                        if (!session) {
-                            console.log('[Config Guardián] Sin sesión → redirigiendo a login');
-                            irALoginConReturnTo();
-                        } else {
-                            console.log('[Config Guardián] Sesión válida → cargando configuración');
-                            document.documentElement.classList.add('auth-ready');
-                        }
-                    }).catch(function (err) {
-                        console.warn('[Config Guardián] Error verificando sesión:', err);
-                        document.documentElement.classList.add('auth-ready');
-                    });
-                } catch (e) {
-                    console.warn('[Config Guardián] Error en guardián:', e);
-                    document.documentElement.classList.add('auth-ready');
+                    const resultado = await window.supabaseClient.auth.getSession();
+                    const session = resultado && resultado.data ? resultado.data.session : null;
+
+                    window.__sarielsAuthenticated = !!session;
+
+                    clearTimeout(salvaguarda);
+
+                    if (!session) {
+                        irAlIndexConReturnTo();
+                    } else {
+                        revelarPagina();
+                    }
+
+                    return window.supabaseClient;
+                } catch (error) {
+                    console.error('[Config Guardián] Error inicializando Supabase:', error);
+                    window.__sarielsAuthenticated = false;
+                    window.supabaseError = error;
+                    clearTimeout(salvaguarda);
+                    revelarPagina();
+                    return null;
                 }
             }
 
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', inicializarGuardian);
-            } else {
-                inicializarGuardian();
-            }
+            window.supabaseReady = inicializarSupabase();
         })();
     </script>
 
     <style>
-        /* Ocultar el contenido hasta que el guardián confirme sesión */
         html:not(.auth-ready) body {
             visibility: hidden;
         }
@@ -122,27 +178,21 @@
         </div>
     </main>
 
-    <!-- ============================================================ -->
-    <!-- SCRIPTS - ORDEN CORRECTO                                     -->
-    <!-- ============================================================ -->
     <script src="../../shared/config-icons.js"></script>
     <script src="../../shared/config-layout.js"></script>
 
     <script>
-// ================================================================
-// ⚙️ CONFIGURACIÓN LEGAL — Csariel's Ecosystem
-// ================================================================
-var CONFIG_LEGAL = {
-    nombre_comercial: 'Csariel\'s',
-    nombre_ecosistema: 'Csariel\'s Ecosystem',
-    slogan: 'Sabor al Paladar · Repostería Fina · Web3',
-    razon_social: '',
-    rfc: '',
-    email_contacto: '',
-    sitio_web: '',
-    pais_operacion: 'México',
-    ciudad_operacion: 'Puebla'
-};
+    var CONFIG_LEGAL = {
+        nombre_comercial: 'Csariel\'s',
+        nombre_ecosistema: 'Csariel\'s Ecosystem',
+        slogan: 'Sabor al Paladar · Repostería Fina · Web3',
+        razon_social: '',
+        rfc: '',
+        email_contacto: '',
+        sitio_web: '',
+        pais_operacion: 'México',
+        ciudad_operacion: 'Puebla'
+    };
 
     (function () {
         'use strict';
@@ -156,9 +206,6 @@ var CONFIG_LEGAL = {
         const $ = (sel) => document.querySelector(sel);
         const baseConfig = '/features/perfil/configuracion';
 
-        // ============================================================
-        // TU CUENTA
-        // ============================================================
         $('#seccionCuenta').innerHTML = [
             cfgRenderItem({
                 icon: 'user',
@@ -180,9 +227,6 @@ var CONFIG_LEGAL = {
             }),
         ].join('');
 
-        // ============================================================
-        // SEGURIDAD
-        // ============================================================
         $('#seccionSeguridad').innerHTML = [
             cfgRenderItem({
                 icon: 'shield',
@@ -198,9 +242,6 @@ var CONFIG_LEGAL = {
             }),
         ].join('');
 
-        // ============================================================
-        // PRIVACIDAD Y SEGURIDAD
-        // ============================================================
         $('#seccionPrivacidad').innerHTML = [
             cfgRenderItem({
                 icon: 'users',
@@ -246,9 +287,6 @@ var CONFIG_LEGAL = {
             }),
         ].join('');
 
-        // ============================================================
-        // NOTIFICACIONES
-        // ============================================================
         $('#seccionNotificaciones').innerHTML = [
             cfgRenderItem({
                 icon: 'bell',
@@ -258,9 +296,6 @@ var CONFIG_LEGAL = {
             }),
         ].join('');
 
-        // ============================================================
-        // ACCESIBILIDAD
-        // ============================================================
         $('#seccionAccesibilidad').innerHTML = [
             cfgRenderItem({
                 icon: 'accessibility',
@@ -294,9 +329,6 @@ var CONFIG_LEGAL = {
             }),
         ].join('');
 
-        // ============================================================
-        // CSARIEL'S
-        // ============================================================
         $('#seccionSariels').innerHTML = [
             cfgRenderItem({
                 icon: 'owl',
@@ -325,9 +357,6 @@ var CONFIG_LEGAL = {
             }),
         ].join('');
 
-        // ============================================================
-        // RECURSOS
-        // ============================================================
         $('#seccionRecursos').innerHTML = [
             cfgRenderItem({
                 icon: 'info',
@@ -355,9 +384,6 @@ var CONFIG_LEGAL = {
             }),
         ].join('');
 
-        // ============================================================
-        // CERRAR SESIÓN
-        // ============================================================
         const btnCerrarSesion = document.createElement('button');
         btnCerrarSesion.type = 'button';
         btnCerrarSesion.className = 'cfg-item';
@@ -382,11 +408,9 @@ var CONFIG_LEGAL = {
             try {
                 if (window.supabaseClient && window.supabaseClient.auth) {
                     await window.supabaseClient.auth.signOut();
-                } else if (window.supabase && window.supabase.auth) {
-                    await window.supabase.auth.signOut();
                 }
                 cfgToast('Sesión cerrada', 'success');
-                setTimeout(() => { window.location.href = '/'; }, 800);
+                setTimeout(() => { window.location.replace('/'); }, 800);
             } catch (e) {
                 console.error('Error cerrando sesión:', e);
                 cfgToast('Error al cerrar sesión', 'error');
@@ -395,12 +419,9 @@ var CONFIG_LEGAL = {
 
         $('#seccionSesion').appendChild(btnCerrarSesion);
 
-        // ============================================================
-        // CARGAR HANDLE EN SUBTITLE
-        // ============================================================
-        (async function cargarUsuario() {
+        (async function cargarHandleSubtitulo() {
             try {
-                const client = window.supabaseClient;
+                const client = await window.getSupabaseClient();
                 if (!client) return;
                 const { data } = await client.auth.getSession();
                 const session = data && data.session;
@@ -413,61 +434,56 @@ var CONFIG_LEGAL = {
 
     })();
 
-// ================================================================
-// REDIRECCIÓN INTELIGENTE AL PANEL DEL REPARTIDOR
-// ================================================================
-async function irARepartidorConfig() {
-    try {
-        const client = window.supabaseClient;
+    async function irARepartidorConfig() {
+        try {
+            const client = await window.getSupabaseClient();
 
-        if (!client) {
+            if (!client) {
+                window.location.href = '/features/mercado/repartidor/registro.html';
+                return;
+            }
+
+            const { data } = await client.auth.getSession();
+            const session = data && data.session;
+
+            if (!session) {
+                localStorage.setItem('wallet_returnTo', '/features/mercado/repartidor/registro.html');
+                if (typeof cfgToast === 'function') cfgToast('Inicia sesión primero', 'warning');
+                setTimeout(() => {
+                    window.location.replace('/');
+                }, 1200);
+                return;
+            }
+
+            const result = await client
+                .from('mercado_repartidores')
+                .select('estado_verificacion')
+                .eq('usuario_id', session.user.id)
+                .maybeSingle();
+
+            if (result.error || !result.data) {
+                window.location.href = '/features/mercado/repartidor/registro.html';
+                return;
+            }
+
+            const estado = result.data.estado_verificacion;
+
+            if (estado === 'activo') {
+                window.location.href = '/features/mercado/repartidor/panel.html';
+            } else if (estado === 'rechazado' || estado === 'procesando' || estado === 'revision_manual') {
+                window.location.href = '/features/mercado/repartidor/estado-verificacion.html';
+            } else {
+                window.location.href = '/features/mercado/repartidor/registro.html';
+            }
+
+        } catch (e) {
+            console.error('Error redirigiendo a repartidor:', e);
             window.location.href = '/features/mercado/repartidor/registro.html';
-            return;
         }
-
-        const { data } = await client.auth.getSession();
-        const session = data && data.session;
-
-        if (!session) {
-            // ✅ Guardar returnTo antes de mandar a login
-            localStorage.setItem('wallet_returnTo', '/features/mercado/repartidor/registro.html');
-            if (typeof cfgToast === 'function') cfgToast('Inicia sesión primero', 'warning');
-            setTimeout(() => {
-                window.location.href = '/features/perfil/login.html?returnTo=' + encodeURIComponent('/features/mercado/repartidor/registro.html');
-            }, 1200);
-            return;
-        }
-
-        // Consultar estado de verificación
-        const result = await client
-            .from('mercado_repartidores')
-            .select('estado_verificacion')
-            .eq('usuario_id', session.user.id)
-            .maybeSingle();
-
-        if (result.error || !result.data) {
-            window.location.href = '/features/mercado/repartidor/registro.html';
-            return;
-        }
-
-        const estado = result.data.estado_verificacion;
-
-        if (estado === 'activo') {
-            window.location.href = '/features/mercado/repartidor/panel.html';
-        } else if (estado === 'rechazado' || estado === 'procesando' || estado === 'revision_manual') {
-            window.location.href = '/features/mercado/repartidor/estado-verificacion.html';
-        } else {
-            window.location.href = '/features/mercado/repartidor/registro.html';
-        }
-
-    } catch (e) {
-        console.error('Error redirigiendo a repartidor:', e);
-        window.location.href = '/features/mercado/repartidor/registro.html';
     }
-}
 
-window.irARepartidorConfig = irARepartidorConfig;
-window.CONFIG_LEGAL = CONFIG_LEGAL;
+    window.irARepartidorConfig = irARepartidorConfig;
+    window.CONFIG_LEGAL = CONFIG_LEGAL;
     </script>
 </body>
 </html>
