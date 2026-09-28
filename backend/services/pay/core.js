@@ -2,23 +2,6 @@
 // SERVICES/PAY/CORE.JS
 // CSARIEL'S PAY - PAYMENT CORE
 // ================================================================
-// Punto de entrada único del módulo Pay. Los routers y los
-// webhooks hablan CON el Core. El Core habla CON los proveedores
-// (Stripe, Fintoc, NOWPayments) a través de adapters.
-//
-// Responsabilidades:
-//   - Validar país + método + monto + moneda
-//   - Crear intenciones de cobro (con idempotencia)
-//   - Consultar intenciones por token público
-//   - Orquestar el procesamiento de webhooks
-//   - Asegurar que exista la cuenta Pay de un usuario
-//   - Exponer saldos y cuentas
-//
-// NO hace:
-//   - Verificar autenticación (eso lo hace el router)
-//   - Hablar con proveedores directamente (eso lo hacen los adapters)
-//   - Hacer payouts (eso lo hace retiros.js)
-// ================================================================
 
 'use strict';
 
@@ -29,6 +12,53 @@ const logger = require('../../utils/logger');
 
 const paises = require('./geo/paises');
 const errors = require('./errors');
+
+// ================================================================
+// VALIDACIÓN DE DEPENDENCIAS AL ARRANQUE
+// ================================================================
+// Verificamos que paises.js exponga todo lo que necesitamos.
+// Si falta algo crítico, mejor saberlo aquí que en runtime.
+
+(function validarDependenciasPaises() {
+    const requeridosFunciones = [
+        'normalizarCodigoPais',
+        'esPaisSoportado',
+        'metodoEstaPermitido',
+        'proveedorParaMetodo',
+        'metodosDisponiblesConProveedor',
+        'obtenerPais'
+    ];
+
+    const requeridosArrays = [
+        'METODOS_VALIDOS_GLOBAL',
+        'PROVEEDORES_VALIDOS_GLOBAL'
+    ];
+
+    const faltantes = [];
+
+    requeridosFunciones.forEach(fn => {
+        if (typeof paises[fn] !== 'function') {
+            faltantes.push(`paises.${fn} (función)`);
+        }
+    });
+
+    requeridosArrays.forEach(arr => {
+        if (!Array.isArray(paises[arr])) {
+            faltantes.push(`paises.${arr} (array)`);
+        }
+    });
+
+    if (!paises.PAIS_POR_DEFECTO) {
+        faltantes.push('paises.PAIS_POR_DEFECTO (string)');
+    }
+
+    if (faltantes.length > 0) {
+        logger.error(
+            '[Pay Core] ❌ Faltan dependencias en services/pay/geo/paises.js:'
+        );
+        faltantes.forEach(f => logger.error(`   - ${f}`));
+    }
+})();
 
 // ================================================================
 // CONSTANTES
@@ -43,7 +73,7 @@ const MONEDA_POR_METODO = {
     usdt: 'USDT',
     usdc: 'USDC'
 };
-const EXPIRACION_INTENCION_MS = 30 * 60 * 1000; // 30 minutos
+const EXPIRACION_INTENCION_MS = 30 * 60 * 1000;
 
 // ================================================================
 // HELPERS INTERNOS
@@ -69,6 +99,10 @@ function normalizarMonto(monto) {
 
 function normalizarMetodo(metodo) {
     if (!metodo || typeof metodo !== 'string') return null;
+    if (!Array.isArray(paises.METODOS_VALIDOS_GLOBAL)) {
+        logger.error('[Pay Core] paises.METODOS_VALIDOS_GLOBAL no es un array');
+        return null;
+    }
     const m = metodo.trim().toLowerCase();
     return paises.METODOS_VALIDOS_GLOBAL.includes(m) ? m : null;
 }
@@ -177,7 +211,7 @@ async function asegurarCuentaPay(usuarioId, opciones) {
         });
 
     if (errSaldo && errSaldo.code !== '23505') {
-        logger.warning(`[Pay Core] No se pudo crear fila de saldos: ${errSaldo.message}`);
+        logger.warn(`[Pay Core] No se pudo crear fila de saldos: ${errSaldo.message}`);
     }
 
     logger.info(`[Pay Core] Cuenta Pay creada: ${creada.id} (tipo=${tipo})`);
@@ -480,24 +514,15 @@ async function obtenerIntencionPorTokenPublico(publicToken) {
 // ================================================================
 // PROCESAR WEBHOOK
 // ================================================================
-// Punto de entrada único para todos los webhooks de proveedor.
-//
-// Devuelve:
-//   {
-//     status: 'ok' | 'duplicado' | 'ignorado',
-//     accion: 'intencion_confirmada' | 'retiro_pendiente_de_implementar' | 'ignorada' | 'ninguna',
-//     event_id,
-//     intencion_id,           ← si accion = intencion_confirmada
-//     cuenta_receptora_id,    ← NUEVO: para que el webhook libere saldo
-//     monto_confirmado,       ← NUEVO: para que el webhook libere saldo
-//     retiro_id
-//   }
-// ================================================================
 
 async function procesarWebhook(proveedor, req) {
     verificarSupabaseAdmin();
 
-    if (!proveedor || !paises.PROVEEDORES_VALIDOS_GLOBAL.includes(proveedor)) {
+    if (!proveedor || !Array.isArray(paises.PROVEEDORES_VALIDOS_GLOBAL)) {
+        throw errors.errorWebhookPayloadInvalido(proveedor, 'proveedor inválido');
+    }
+
+    if (!paises.PROVEEDORES_VALIDOS_GLOBAL.includes(proveedor)) {
         throw errors.errorWebhookPayloadInvalido(proveedor, 'proveedor desconocido');
     }
 
@@ -519,7 +544,7 @@ async function procesarWebhook(proveedor, req) {
         throw errors.errorWebhookPayloadInvalido(proveedor, 'adapter no devolvió resultado válido');
     }
 
-    // ---------- 1) Verificar firma ----------
+    // Verificar firma
     if (!resultado.firma_valida) {
         throw errors.errorFirmaInvalida(proveedor);
     }
@@ -528,7 +553,7 @@ async function procesarWebhook(proveedor, req) {
         throw errors.errorWebhookPayloadInvalido(proveedor, 'sin event_id');
     }
 
-    // ---------- 2) Registrar evento (idempotencia) ----------
+    // Registrar evento (idempotencia)
     const { data: registro, error: errReg } = await supabaseAdmin.rpc(
         'pay_registrar_webhook_evento',
         {
@@ -554,9 +579,8 @@ async function procesarWebhook(proveedor, req) {
         };
     }
 
-    // ---------- 3) Ejecutar la acción ----------
+    // Ejecutar la acción
     let accionEjecutada = 'ninguna';
-    let intencionConfirmada = null;
     let cuentaReceptoraId = null;
     let montoConfirmado = null;
 
@@ -573,7 +597,7 @@ async function procesarWebhook(proveedor, req) {
             }
 
             if (!intencion) {
-                logger.warning(`[Pay Core] Webhook apunta a intención inexistente: ${resultado.intencion_id}`);
+                logger.warn(`[Pay Core] Webhook apunta a intención inexistente: ${resultado.intencion_id}`);
                 await marcarWebhookProcesado(proveedor, resultado.event_id, 'intencion_inexistente');
                 return {
                     status: 'ignorado',
@@ -592,8 +616,8 @@ async function procesarWebhook(proveedor, req) {
                 };
             }
 
-            // Llamar a la RPC de confirmación
-            const { data: confirmacion, error: errConf } = await supabaseAdmin.rpc(
+            // Confirmar intención vía RPC
+            const { error: errConf } = await supabaseAdmin.rpc(
                 'pay_confirmar_intencion',
                 {
                     p_intencion_id: resultado.intencion_id,
@@ -613,8 +637,7 @@ async function procesarWebhook(proveedor, req) {
 
             accionEjecutada = 'intencion_confirmada';
 
-            // Recuperar datos para la liberación de saldo
-            // (intención actualizada + cuenta receptora + monto)
+            // Recuperar datos para liberar saldo
             const { data: intencionActualizada } = await supabaseAdmin
                 .from('pay_intenciones')
                 .select('id, cuenta_receptora_id, monto, paid_at')
@@ -622,11 +645,9 @@ async function procesarWebhook(proveedor, req) {
                 .maybeSingle();
 
             if (intencionActualizada) {
-                intencionConfirmada = intencionActualizada;
                 cuentaReceptoraId = intencionActualizada.cuenta_receptora_id;
                 montoConfirmado = Number(intencionActualizada.monto) || null;
             } else {
-                // Fallback: usar los datos que ya teníamos de la intención
                 cuentaReceptoraId = intencion.cuenta_receptora_id;
                 montoConfirmado = Number(intencion.monto) || null;
             }
@@ -645,7 +666,7 @@ async function procesarWebhook(proveedor, req) {
             accionEjecutada = 'ignorada';
         }
 
-        // ---------- 4) Marcar evento como procesado ----------
+        // Marcar evento como procesado
         await marcarWebhookProcesado(proveedor, resultado.event_id, null);
 
         return {
@@ -688,7 +709,7 @@ async function marcarWebhookProcesado(proveedor, eventId, errorMensaje, marcarEx
             .eq('proveedor', proveedor)
             .eq('event_id', String(eventId));
     } catch (err) {
-        logger.warning(`[Pay Core] No se pudo marcar webhook como procesado: ${err.message}`);
+        logger.warn(`[Pay Core] No se pudo marcar webhook como procesado: ${err.message}`);
     }
 }
 
