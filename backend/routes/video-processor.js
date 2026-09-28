@@ -12,6 +12,12 @@
    4. Worker procesa en background
    5. Frontend hace polling a GET /api/video/status/:jobId
    6. Cuando termina, el video procesado reemplaza al original
+
+   FIX v2:
+   - jobId estable por video (sin timestamp) → evita duplicados si
+     el frontend encola el mismo video 2 veces.
+   - Validación de filePath (debe empezar con userId/ y no tener ..)
+   - videoUrl y bucket se toman de la DB, no del body.
    ================================================================ */
 
 const express = require('express');
@@ -39,11 +45,6 @@ const supabaseAdmin = (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY)
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 const COLA_NOMBRE = 'video-processing';
 
-// FIX: family: 0 es obligatorio para conectar a Redis dentro de la red
-// privada de Railway, que resuelve por IPv6. Sin esto, ioredis intenta
-// IPv4 por defecto, la conexión nunca se completa, y con
-// maxRetriesPerRequest: null el proceso se queda colgado para siempre
-// en cualquier comando (ej. videoQueue.add) sin lanzar ningún error.
 const redisConnection = new IORedis(REDIS_URL, {
     maxRetriesPerRequest: null,
     enableReadyCheck: false,
@@ -67,11 +68,11 @@ const videoQueue = new Queue(COLA_NOMBRE, {
             delay: 5000
         },
         removeOnComplete: {
-            age: 24 * 3600, // Borrar jobs completados después de 24 horas
+            age: 24 * 3600,
             count: 100
         },
         removeOnFail: {
-            age: 7 * 24 * 3600 // Borrar jobs fallidos después de 7 días
+            age: 7 * 24 * 3600
         }
     }
 });
@@ -104,19 +105,6 @@ async function autenticar(req, res, next) {
 /* ================================================================
    POST /api/video/queue
    Agrega un video a la cola de procesamiento
-   
-   Body: {
-       videoId: "uuid-del-video-en-supabase",
-       videoUrl: "https://...url-del-video-recien-subido.mp4",
-       bucket: "videos",
-       filePath: "userId/timestamp.mp4"
-   }
-   
-   Response: {
-       success: true,
-       jobId: "1",
-       message: "Video en cola de procesamiento"
-   }
 ================================================================ */
 router.post('/queue', autenticar, async (req, res) => {
     try {
@@ -138,6 +126,19 @@ router.post('/queue', autenticar, async (req, res) => {
             return res.status(400).json({
                 success: false,
                 error: 'filePath es requerido'
+            });
+        }
+
+        // ✅ FIX SEGURIDAD: validar filePath
+        // Debe empezar con el userId del usuario autenticado y no tener ..
+        if (
+            !filePath.startsWith(req.user.id + '/') ||
+            filePath.includes('..') ||
+            filePath.includes('//')
+        ) {
+            return res.status(400).json({
+                success: false,
+                error: 'filePath inválido'
             });
         }
 
@@ -173,15 +174,22 @@ router.post('/queue', autenticar, async (req, res) => {
             });
         }
 
-        // Agregar el job a la cola
+        // ✅ FIX 4: jobId estable (sin timestamp)
+        // Mismo video siempre genera el mismo jobId.
+        // Si por error se encola 2 veces, BullMQ ignora el 2do.
+        // Antes: `video_${videoId}_${Date.now()}` → 2 jobs distintos por doble-submit.
+        // Ahora: `video_${videoId}` → BullMQ deduplica.
+        const stableJobId = `video_${videoId}`;
+
+        // ✅ FIX SEGURIDAD: usar videoUrl y bucket de la DB, no del body
         const job = await videoQueue.add('process-video', {
             videoId,
-            videoUrl,
+            videoUrl: video.url_video,
             userId: req.user.id,
-            bucket,
+            bucket: 'videos',
             filePath
         }, {
-            jobId: `video_${videoId}_${Date.now()}`
+            jobId: stableJobId
         });
 
         console.log(`📥 [QUEUE] Job creado: ${job.id} para video: ${videoId}`);
@@ -215,22 +223,11 @@ router.post('/queue', autenticar, async (req, res) => {
 
 /* ================================================================
    GET /api/video/status/:jobId
-   Consulta el estado de un job
-   
-   Response: {
-       success: true,
-       jobId: "1",
-       estado: "pendiente|procesando|completado|fallido",
-       progreso: 45,
-       processedUrl: "https://...", (si completado)
-       error: "..." (si falló)
-   }
 ================================================================ */
 router.get('/status/:jobId', autenticar, async (req, res) => {
     try {
         const { jobId } = req.params;
 
-        // Buscar en la DB primero
         const { data: dbJob, error: dbError } = await supabaseAdmin
             .from('video_jobs')
             .select('*')
@@ -242,11 +239,9 @@ router.get('/status/:jobId', autenticar, async (req, res) => {
             return res.status(404).json({ success: false, error: 'Job no encontrado' });
         }
 
-        // Consultar BullMQ
         const job = await videoQueue.getJob(jobId);
 
         if (!job) {
-            // Si ya no está en Redis pero sí en DB, devolver el estado de la DB
             return res.json({
                 success: true,
                 jobId,
@@ -260,7 +255,6 @@ router.get('/status/:jobId', autenticar, async (req, res) => {
         const failedReason = job.failedReason;
         const returnValue = job.returnvalue;
 
-        // Mapear estados de BullMQ a estados legibles
         let estado = 'pendiente';
         if (state === 'completed') estado = 'completado';
         else if (state === 'failed') estado = 'fallido';
@@ -268,7 +262,6 @@ router.get('/status/:jobId', autenticar, async (req, res) => {
         else if (state === 'waiting') estado = 'pendiente';
         else if (state === 'delayed') estado = 'pendiente';
 
-        // Actualizar la DB si cambió el estado
         if (dbJob.estado !== estado) {
             await supabaseAdmin
                 .from('video_jobs')
@@ -309,7 +302,6 @@ router.get('/status/:jobId', autenticar, async (req, res) => {
 
 /* ================================================================
    GET /api/video/jobs
-   Lista los jobs del usuario autenticado
 ================================================================ */
 router.get('/jobs', autenticar, async (req, res) => {
     try {
@@ -340,7 +332,6 @@ router.get('/jobs', autenticar, async (req, res) => {
 
 /* ================================================================
    DELETE /api/video/jobs/:jobId
-   Cancela un job (si no ha empezado)
 ================================================================ */
 router.delete('/jobs/:jobId', autenticar, async (req, res) => {
     try {
