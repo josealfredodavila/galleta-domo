@@ -18,16 +18,13 @@
         rel="stylesheet"
     />
 
-    <!-- CSS REAL EXISTENTE -->
     <link
         rel="stylesheet"
         href="/features/shared/config-layout.css"
     />
 
-    <!-- Supabase JS v2 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
-    <!-- ICONOS REAL EXISTENTE -->
     <script src="/features/shared/config-icons.js"></script>
 
     <style>
@@ -867,9 +864,14 @@
                     "Tu cuenta",
                 desc:
                     "Consulta tu información de cuenta y descarga tus datos",
+
+                /*
+                 * CORREGIDO:
+                 * cuenta.html está dentro de
+                 * /features/perfil/configuracion/
+                 */
                 href:
-                    BASE +
-                    "/cuenta.html"
+                    "/features/perfil/configuracion/cuenta.html"
             }
         );
 
@@ -1266,7 +1268,7 @@
 
 
         /* ========================================================
-           CERRAR SESIÓN
+           SESIÓN
            ======================================================== */
 
         agregar(
