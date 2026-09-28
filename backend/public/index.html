@@ -1,7 +1,8 @@
 <!-- =========================================================
-     SUPABASE
-     La librería se carga una sola vez.
-     La configuración pública se obtiene del backend.
+     SUPABASE — Carga única y configuración centralizada
+     - La librería se carga una sola vez.
+     - La configuración pública se obtiene del backend.
+     - Nunca se escriben credenciales en el frontend.
 ========================================================== -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
@@ -9,35 +10,61 @@
     (function () {
         'use strict';
 
-        window.__sarielsAuthenticated = false;
+        /*
+         * Estado global expuesto al resto de scripts.
+         *  - __sarielsAuthenticated: null mientras se resuelve,
+         *    true/false después. Así nadie asume "false" por error.
+         *  - __sarielsAuthReady: promesa que se resuelve cuando
+         *    getSession() haya terminado.
+         *  - supabaseReady: promesa que resuelve el cliente Supabase
+         *    o null si falló la inicialización.
+         *  - supabaseError: error de inicialización si lo hubo.
+         */
+        window.__sarielsAuthenticated = null;
+        window.__sarielsAuthReady = null;
+        window.supabaseClient = window.supabaseClient || null;
         window.supabaseReady = null;
+        window.supabaseError = null;
 
-        window.supabaseReady = (async function () {
+        /*
+         * Helper reutilizable por cualquier página.
+         * Devuelve la promesa del cliente (o null si falló).
+         */
+        window.getSupabaseClient = function () {
+            return window.supabaseReady;
+        };
+
+        /*
+         * Valida que returnTo sea una ruta interna segura.
+         * Evita open redirect (//evil.com, http://..., etc.).
+         */
+        function esRutaInternaSegura(valor) {
+            if (typeof valor !== 'string') return false;
+            if (!valor.startsWith('/')) return false;
+            if (valor.startsWith('//')) return false;
+            if (valor.startsWith('/\\')) return false;
+            return true;
+        }
+
+        async function inicializarSupabase() {
             try {
                 if (
                     !window.supabase ||
                     typeof window.supabase.createClient !== 'function'
                 ) {
-                    throw new Error(
-                        'Supabase SDK no disponible.'
-                    );
+                    throw new Error('Supabase SDK no disponible.');
                 }
 
                 /*
-                 * Obtener configuración pública desde el backend.
-                 * Nunca colocar la URL o la clave directamente aquí.
+                 * Configuración pública desde el backend.
+                 * Nunca colocar URL o clave directamente aquí.
                  */
-                const response = await fetch(
-                    '/api/config/public',
-                    {
-                        method: 'GET',
-                        credentials: 'same-origin',
-                        cache: 'no-store',
-                        headers: {
-                            'Accept': 'application/json'
-                        }
-                    }
-                );
+                const response = await fetch('/api/config/public', {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    cache: 'no-store',
+                    headers: { 'Accept': 'application/json' }
+                });
 
                 if (!response.ok) {
                     throw new Error(
@@ -48,16 +75,10 @@
 
                 const config = await response.json();
 
-                const supabaseUrl =
-                    config && config.supabaseUrl;
+                const supabaseUrl = config && config.supabaseUrl;
+                const supabaseAnonKey = config && config.supabaseAnonKey;
 
-                const supabaseAnonKey =
-                    config && config.supabaseAnonKey;
-
-                if (
-                    !supabaseUrl ||
-                    !supabaseAnonKey
-                ) {
+                if (!supabaseUrl || !supabaseAnonKey) {
                     throw new Error(
                         'La configuración pública de Supabase está incompleta.'
                     );
@@ -65,17 +86,24 @@
 
                 /*
                  * Crear el cliente UNA sola vez.
-                 * app.js reutilizará este cliente.
+                 * Si ya existe uno previo creado por este mismo
+                 * mecanismo, se reutiliza.
                  */
                 if (!window.supabaseClient) {
-                    window.supabaseClient =
-                        window.supabase.createClient(
-                            supabaseUrl,
-                            supabaseAnonKey
-                        );
+                    window.supabaseClient = window.supabase.createClient(
+                        supabaseUrl,
+                        supabaseAnonKey,
+                        {
+                            auth: {
+                                persistSession: true,
+                                autoRefreshToken: true,
+                                detectSessionInUrl: true
+                            }
+                        }
+                    );
 
                     console.log(
-                        '[Index Guardián] ✅ supabaseClient creado mediante /api/config/public.'
+                        '[Index Guardián] ✅ supabaseClient creado vía /api/config/public.'
                     );
                 } else {
                     console.log(
@@ -86,49 +114,37 @@
                 /*
                  * Comprobar sesión actual.
                  */
-                const resultado =
-                    await window.supabaseClient.auth.getSession();
-
+                const resultado = await window.supabaseClient.auth.getSession();
                 const session =
-                    resultado &&
-                    resultado.data
-                        ? resultado.data.session
-                        : null;
+                    resultado && resultado.data ? resultado.data.session : null;
 
-                window.__sarielsAuthenticated =
-                    !!session;
+                window.__sarielsAuthenticated = !!session;
 
                 /*
-                 * Guardar returnTo si viene en la URL.
+                 * Guardar returnTo si viene en la URL
+                 * y es una ruta interna segura.
                  */
-                const urlParams =
-                    new URLSearchParams(
-                        window.location.search
-                    );
+                const urlParams = new URLSearchParams(window.location.search);
+                const returnTo = urlParams.get('returnTo');
 
-                const returnTo =
-                    urlParams.get('returnTo');
-
-                if (returnTo) {
-                    localStorage.setItem(
-                        'wallet_returnTo',
-                        returnTo
-                    );
+                if (returnTo && esRutaInternaSegura(returnTo)) {
+                    try {
+                        localStorage.setItem('wallet_returnTo', returnTo);
+                    } catch (_) {
+                        /* almacenamiento no disponible: se ignora */
+                    }
                 }
 
                 /*
-                 * Mantener actualizado el estado
-                 * de autenticación.
+                 * Mantener actualizado el estado de autenticación.
                  */
                 window.supabaseClient.auth.onAuthStateChange(
                     function (_event, sessionActual) {
-                        window.__sarielsAuthenticated =
-                            !!sessionActual;
+                        window.__sarielsAuthenticated = !!sessionActual;
                     }
                 );
 
                 return window.supabaseClient;
-
             } catch (error) {
                 console.error(
                     '[Index Guardián] Error inicializando Supabase:',
@@ -136,9 +152,30 @@
                 );
 
                 window.__sarielsAuthenticated = false;
+                window.supabaseError = error;
 
-                throw error;
+                /*
+                 * No rechazamos la promesa: dejamos el cliente en null
+                 * para que las páginas puedan decidir qué mostrar en vez
+                 * de romperse con "Uncaught (in promise)".
+                 */
+                return null;
             }
-        })();
+        }
+
+        /*
+         * Promesa global. Cualquier script debe hacer:
+         *     const client = await window.getSupabaseClient();
+         *     if (!client) { ... manejar error ... }
+         */
+        window.supabaseReady = inicializarSupabase();
+
+        /*
+         * Promesa de autenticación separada: se resuelve cuando
+         * ya se conoce el estado real del usuario.
+         */
+        window.__sarielsAuthReady = window.supabaseReady.then(function () {
+            return window.__sarielsAuthenticated;
+        });
     })();
 </script>
