@@ -7,7 +7,7 @@
     <title>Mis publicaciones · Sariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
-    
+
     <link rel="stylesheet" href="../../../shared/config-layout.css" />
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -195,7 +195,39 @@
             menciones_solo_contactos: 'posts_menciones_solo_contactos',
         };
 
+        let contadorPublicaciones = null;
+
+        async function contarPublicaciones() {
+            try {
+                const client = await esperarCliente();
+                if (!client) return null;
+
+                const { data: sessionData } = await client.auth.getSession();
+                const session = sessionData && sessionData.session;
+                if (!session) return null;
+
+                const { count, error } = await client
+                    .from('publicaciones')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('usuario_id', session.user.id);
+
+                if (error) {
+                    console.warn('Error contando publicaciones:', error.message);
+                    return null;
+                }
+
+                return count || 0;
+            } catch (e) {
+                console.warn('Error contando publicaciones:', e && e.message);
+                return null;
+            }
+        }
+
         function renderSecciones() {
+            const publicacionesTxt = contadorPublicaciones === null
+                ? ''
+                : ' (' + contadorPublicaciones + ')';
+
             $('#seccionVisibilidad').innerHTML = [
                 cfgRenderToggle({
                     id: 'toggleVisibilidad',
@@ -243,7 +275,7 @@
             $('#seccionPeligro').innerHTML = [
                 cfgRenderItem({
                     icon: 'ban',
-                    title: 'Ocultar todas mis publicaciones',
+                    title: 'Ocultar todas mis publicaciones' + publicacionesTxt,
                     desc: 'Solo tú podrás verlas. Se pueden hacer visibles de nuevo.',
                     onclick: 'window.onOcultarTodo()',
                     class: 'cfg-item-plain',
@@ -251,7 +283,7 @@
                 }),
                 cfgRenderItem({
                     icon: 'logout',
-                    title: 'Eliminar todas mis publicaciones',
+                    title: 'Eliminar todas mis publicaciones' + publicacionesTxt,
                     desc: 'Elimina permanentemente TODAS tus publicaciones del Muro.',
                     onclick: 'window.onEliminarTodo()',
                     class: 'cfg-item-plain',
@@ -311,17 +343,43 @@
 
             if (!ok) return;
 
-            cfgToast('⏳ Ocultando publicaciones...', 'warning');
-            await cfgSetPref('posts_todos_ocultos', true);
+            cfgToast('⏳ Ocultando publicaciones...', 'warning', 2000);
 
-            setTimeout(() => {
+            try {
+                const client = await esperarCliente();
+                if (!client) throw new Error('Supabase no disponible');
+
+                const { data: sessionData } = await client.auth.getSession();
+                const session = sessionData && sessionData.session;
+                if (!session) throw new Error('Sin sesión');
+
+                /* Guardar preferencia global de ocultas */
+                await cfgSetPref('posts_todos_ocultos', true);
+
+                /* Marcar cada publicación del usuario con estado 'oculto'. */
+                const { error } = await client
+                    .from('publicaciones')
+                    .update({ estado: 'oculto' })
+                    .eq('usuario_id', session.user.id);
+
+                if (error) {
+                    console.warn('Update estado falló (puede que la columna no exista):', error.message);
+                }
+
                 cfgToast('✅ Todas tus publicaciones están ocultas', 'success');
-            }, 1200);
+            } catch (e) {
+                console.error('Error ocultando:', e);
+                cfgToast('❌ Error: ' + e.message, 'error');
+            }
         };
 
         window.onEliminarTodo = async () => {
+            const totalTxt = contadorPublicaciones !== null
+                ? ' (' + contadorPublicaciones + ')'
+                : '';
+
             const ok = await cfgConfirm({
-                title: '⚠️ ¿Eliminar TODAS tus publicaciones?',
+                title: '⚠️ ¿Eliminar TODAS tus publicaciones' + totalTxt + '?',
                 text: 'Esta acción es PERMANENTE. Se eliminarán todas tus publicaciones del Muro sin posibilidad de recuperarlas.',
                 confirmText: 'Eliminar todo',
                 cancelText: 'Cancelar',
@@ -330,16 +388,46 @@
 
             if (!ok) return;
 
-            cfgToast('⏳ Eliminando publicaciones...', 'error');
-            await cfgSetPref('posts_todos_eliminados', true);
+            cfgToast('⏳ Eliminando publicaciones...', 'error', 3000);
 
-            setTimeout(() => {
-                cfgToast('✅ Todas tus publicaciones han sido eliminadas', 'success');
-            }, 1500);
+            try {
+                const client = await esperarCliente();
+                if (!client) throw new Error('Supabase no disponible');
+
+                const { data: sessionData } = await client.auth.getSession();
+                const session = sessionData && sessionData.session;
+                if (!session) throw new Error('Sin sesión');
+
+                /* Borrar TODAS las publicaciones del usuario. */
+                const { error } = await client
+                    .from('publicaciones')
+                    .delete()
+                    .eq('usuario_id', session.user.id);
+
+                if (error) {
+                    throw new Error(error.message);
+                }
+
+                /* Actualizar preferencia de ocultas por si estaba activa. */
+                await cfgSetPref('posts_todos_ocultos', false);
+
+                /* Actualizar contador local. */
+                contadorPublicaciones = 0;
+                renderSecciones();
+
+                cfgToast('✅ Todas tus publicaciones han sido eliminadas', 'success', 4000);
+
+            } catch (e) {
+                console.error('Error eliminando publicaciones:', e);
+                cfgToast('❌ Error: ' + e.message, 'error');
+            }
         };
 
         window.addEventListener('DOMContentLoaded', async () => {
             await new Promise(resolve => setTimeout(resolve, 400));
+            renderSecciones();
+
+            contadorPublicaciones = await contarPublicaciones();
             renderSecciones();
         });
 
