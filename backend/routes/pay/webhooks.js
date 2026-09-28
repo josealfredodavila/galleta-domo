@@ -7,15 +7,6 @@
 //   POST /api/pay/webhooks/fintoc
 //   POST /api/pay/webhooks/nowpayments
 //
-// NOVEDAD:
-//   Cuando un webhook confirma un pago, además de acreditar el saldo
-//   a pendiente_mxn (vía pay_confirmar_intencion), se llama
-//   INMEDIATAMENTE a pay_liberar_saldo para mover el saldo a
-//   disponible_mxn.
-//
-//   Resultado: el vendedor puede retirar en cuanto el webhook llega.
-//   Sin esperar job, sin esperar admin.
-//
 // Reglas:
 //   - El frontend NUNCA confirma pagos. Solo los webhooks lo hacen.
 //   - La firma se verifica en el adapter correspondiente.
@@ -37,6 +28,30 @@ const core = require('../../services/pay/core');
 const errors = require('../../services/pay/errors');
 
 // ================================================================
+// VALIDACIÓN AL ARRANQUE
+// ================================================================
+// Cargamos supabaseAdmin una sola vez, al arrancar el módulo.
+// Si no está disponible, lo loggeamos con fuerza.
+
+let supabaseAdmin = null;
+try {
+    const moduloSupabase = require('../../config/supabase');
+    supabaseAdmin = moduloSupabase.supabaseAdmin || null;
+
+    if (!supabaseAdmin) {
+        logger.error(
+            '[Pay Webhook] ⚠️ config/supabase no exporta supabaseAdmin. ' +
+            'La liberación automática de saldo NO funcionará.'
+        );
+    }
+} catch (err) {
+    logger.error(
+        `[Pay Webhook] ⚠️ No se pudo cargar config/supabase: ${err.message}. ` +
+        'La liberación automática de saldo NO funcionará.'
+    );
+}
+
+// ================================================================
 // HELPERS INTERNOS
 // ================================================================
 
@@ -49,20 +64,18 @@ const errors = require('../../services/pay/errors');
  */
 async function liberarSaldoDeIntencion(resultado) {
     try {
-        const { supabaseAdmin } = require('../../config/supabase');
-
         if (!supabaseAdmin) {
-            logger.warning('[Pay Webhook] supabaseAdmin no disponible, no se puede liberar saldo');
+            logger.warn(
+                '[Pay Webhook] supabaseAdmin no disponible, no se puede liberar saldo'
+            );
             return { ok: false, motivo: 'supabase_no_configurado' };
         }
 
-        // Extraer datos del resultado del Core
-        // El Core debe devolver cuenta_receptora_id y monto_confirmado
         const cuentaId = resultado.cuenta_receptora_id;
         const montoConfirmado = resultado.monto_confirmado;
 
         if (!cuentaId || !montoConfirmado) {
-            logger.warning(
+            logger.warn(
                 `[Pay Webhook] Core no devolvió cuenta_receptora_id o monto_confirmado. ` +
                 `No se puede liberar saldo automáticamente. ` +
                 `Intención: ${resultado.intencion_id || 'desconocida'}`
@@ -73,17 +86,28 @@ async function liberarSaldoDeIntencion(resultado) {
         const monto = Number(montoConfirmado);
 
         if (!Number.isFinite(monto) || monto <= 0) {
-            logger.warning(`[Pay Webhook] Monto inválido para liberar: ${montoConfirmado}`);
+            logger.warn(`[Pay Webhook] Monto inválido para liberar: ${montoConfirmado}`);
             return { ok: false, motivo: 'monto_invalido' };
         }
 
-        // Llamar a la RPC
         const { data, error } = await supabaseAdmin.rpc('pay_liberar_saldo', {
             p_cuenta_id: cuentaId,
             p_monto_mxn: monto
         });
 
         if (error) {
+            // Si la RPC no existe, mensaje claro
+            if (
+                error.code === '42883' ||
+                (error.message && error.message.includes('does not exist'))
+            ) {
+                logger.error(
+                    '[Pay Webhook] ❌ La función RPC "pay_liberar_saldo" NO existe en Supabase. ' +
+                    'Créala en SQL Editor para que la liberación automática funcione.'
+                );
+                return { ok: false, motivo: 'rpc_no_existe', error: error.message };
+            }
+
             logger.error(
                 `[Pay Webhook] Error liberando saldo para cuenta ${cuentaId}: ${error.message}`
             );
@@ -106,11 +130,6 @@ async function liberarSaldoDeIntencion(resultado) {
 // HELPERS DE HTTP STATUS
 // ================================================================
 
-/**
- * Procesa un webhook de cualquier proveedor.
- * Delega al Core, decide el HTTP status, loggea todo.
- * Y si confirma pago, libera el saldo inmediatamente.
- */
 async function manejarWebhook(proveedor, req, res) {
     const inicio = Date.now();
     const userAgent = req.headers['user-agent'] || 'unknown';
@@ -123,6 +142,18 @@ async function manejarWebhook(proveedor, req, res) {
         const resultado = await core.procesarWebhook(proveedor, req);
 
         const duracion = Date.now() - inicio;
+
+        // Validación defensiva del resultado
+        if (!resultado || typeof resultado !== 'object') {
+            logger.error(`${logTag} core.procesarWebhook devolvió un valor inválido`);
+
+            return res.status(500).json({
+                received: false,
+                status: 'error',
+                proveedor: proveedor,
+                error: 'Respuesta inválida del Core'
+            });
+        }
 
         // ---------- Si confirmó intención, liberar saldo INMEDIATAMENTE ----------
         let liberacion = null;
@@ -140,7 +171,7 @@ async function manejarWebhook(proveedor, req, res) {
                     `(monto: ${liberacion.monto_liberado})`
                 );
             } else {
-                logger.warning(
+                logger.warn(
                     `${logTag} No se pudo liberar el saldo automáticamente: ${liberacion.motivo}`
                 );
             }
@@ -148,8 +179,12 @@ async function manejarWebhook(proveedor, req, res) {
 
         // ---------- Decidir HTTP status ----------
         if (resultado.status === 'ok') {
+            if (!resultado.event_id) {
+                logger.warn(`${logTag} status=ok pero sin event_id (posible bug en Core)`);
+            }
+
             logger.info(
-                `${logTag} OK (${duracion}ms) event=${resultado.event_id} ` +
+                `${logTag} OK (${duracion}ms) event=${resultado.event_id || 'N/A'} ` +
                 `accion=${resultado.accion || 'ninguna'} ip=${ip}`
             );
 
@@ -157,27 +192,27 @@ async function manejarWebhook(proveedor, req, res) {
                 received: true,
                 status: 'ok',
                 proveedor: proveedor,
-                event_id: resultado.event_id,
+                event_id: resultado.event_id || null,
                 liberacion: liberacion ? liberacion.ok : null
             });
         }
 
         if (resultado.status === 'duplicado') {
             logger.info(
-                `${logTag} DUPLICADO (${duracion}ms) event=${resultado.event_id}`
+                `${logTag} DUPLICADO (${duracion}ms) event=${resultado.event_id || 'N/A'}`
             );
 
             return res.status(200).json({
                 received: true,
                 status: 'duplicado',
                 proveedor: proveedor,
-                event_id: resultado.event_id
+                event_id: resultado.event_id || null
             });
         }
 
         if (resultado.status === 'ignorado') {
             logger.info(
-                `${logTag} IGNORADO (${duracion}ms) event=${resultado.event_id} ` +
+                `${logTag} IGNORADO (${duracion}ms) event=${resultado.event_id || 'N/A'} ` +
                 `motivo=${resultado.motivo || 'no_relevante'}`
             );
 
@@ -185,13 +220,13 @@ async function manejarWebhook(proveedor, req, res) {
                 received: true,
                 status: 'ignorado',
                 proveedor: proveedor,
-                event_id: resultado.event_id,
+                event_id: resultado.event_id || null,
                 motivo: resultado.motivo || null
             });
         }
 
         // Status inesperado
-        logger.warning(`${logTag} Status inesperado: ${resultado.status}`);
+        logger.warn(`${logTag} Status inesperado: ${resultado.status}`);
 
         return res.status(500).json({
             received: false,
@@ -205,7 +240,7 @@ async function manejarWebhook(proveedor, req, res) {
 
         // ---------- Error de firma: 401 ----------
         if (err && err.code === 'FIRMA_INVALIDA') {
-            logger.warning(
+            logger.warn(
                 `${logTag} FIRMA INVÁLIDA (${duracion}ms) ip=${ip} ua=${userAgent}`
             );
 
@@ -221,7 +256,7 @@ async function manejarWebhook(proveedor, req, res) {
             err.code === 'WEBHOOK_PAYLOAD_INVALIDO' ||
             err.code === 'PARAMETRO_REQUERIDO'
         )) {
-            logger.warning(
+            logger.warn(
                 `${logTag} PAYLOAD INVÁLIDO (${duracion}ms) motivo=${err.message}`
             );
 
@@ -234,7 +269,9 @@ async function manejarWebhook(proveedor, req, res) {
         }
 
         // ---------- Error tipado del Core ----------
-        if (err instanceof errors.ErrorCsarielsPay) {
+        const ErrorClase = errors && errors.ErrorCsarielsPay;
+
+        if (typeof ErrorClase === 'function' && err instanceof ErrorClase) {
             const reintentable = err.reintentable === true;
 
             logger.error(
@@ -275,24 +312,16 @@ async function manejarWebhook(proveedor, req, res) {
 }
 
 // ================================================================
-// POST /api/pay/webhooks/stripe
+// ENDPOINTS
 // ================================================================
 
 router.post('/stripe', async function (req, res) {
     return manejarWebhook('stripe', req, res);
 });
 
-// ================================================================
-// POST /api/pay/webhooks/fintoc
-// ================================================================
-
 router.post('/fintoc', async function (req, res) {
     return manejarWebhook('fintoc', req, res);
 });
-
-// ================================================================
-// POST /api/pay/webhooks/nowpayments
-// ================================================================
 
 router.post('/nowpayments', async function (req, res) {
     return manejarWebhook('nowpayments', req, res);
