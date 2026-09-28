@@ -30,7 +30,7 @@
      * ============================================================ */
 
     const DEFAULT_PUBLIC_APP_URL =
-        'https://galleta-domo-production.up.railway.app';
+        'https://auction.up.railway.app';
 
     const WEB3_CONFIG_ENDPOINT =
         '/api/config/web3';
