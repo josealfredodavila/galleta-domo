@@ -9,8 +9,137 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="../../../shared/config-layout.css" />
-    
+
+    <!-- =========================================================
+         SUPABASE — Configuración centralizada vía backend
+         Guard: si no hay sesión → redirige al index
+    ========================================================== -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script>
+        (function () {
+            'use strict';
+
+            window.__sarielsAuthenticated = null;
+            window.supabaseClient = window.supabaseClient || null;
+            window.supabaseReady = null;
+
+            window.getSupabaseClient = function () {
+                return window.supabaseReady;
+            };
+
+            function esRutaInternaSegura(valor) {
+                if (typeof valor !== 'string') return false;
+                if (!valor.startsWith('/')) return false;
+                if (valor.startsWith('//')) return false;
+                if (valor.startsWith('/\\')) return false;
+                return true;
+            }
+
+            function revelarPagina() {
+                document.documentElement.classList.add('auth-ready');
+            }
+
+            function irAlIndexConReturnTo() {
+                try {
+                    var returnTo = window.location.pathname + window.location.search + window.location.hash;
+                    if (esRutaInternaSegura(returnTo)) {
+                        localStorage.setItem('wallet_returnTo', returnTo);
+                    }
+                    window.location.replace('/');
+                } catch (e) {
+                    window.location.replace('/');
+                }
+            }
+
+            var salvaguarda = setTimeout(function () {
+                console.warn('[Estoks] Salvaguarda activada.');
+                revelarPagina();
+            }, 10000);
+
+            async function inicializarSupabase() {
+                try {
+                    if (
+                        !window.supabase ||
+                        typeof window.supabase.createClient !== 'function'
+                    ) {
+                        throw new Error('Supabase SDK no disponible.');
+                    }
+
+                    if (!window.supabaseClient) {
+                        var supabaseUrl = null;
+                        var supabaseAnonKey = null;
+
+                        try {
+                            const response = await fetch('/api/config/public', {
+                                method: 'GET',
+                                credentials: 'same-origin',
+                                cache: 'no-store',
+                                headers: { 'Accept': 'application/json' }
+                            });
+
+                            if (response.ok) {
+                                const config = await response.json();
+                                supabaseUrl = config && config.supabaseUrl;
+                                supabaseAnonKey = config && config.supabaseAnonKey;
+                            }
+                        } catch (fetchErr) {
+                            console.warn('[Estoks] fetch /api/config/public falló:', fetchErr);
+                        }
+
+                        if (!supabaseUrl || !supabaseAnonKey) {
+                            throw new Error('Configuración pública de Supabase no disponible.');
+                        }
+
+                        window.SupabaseSDK = window.supabase;
+
+                        window.supabaseClient = window.SupabaseSDK.createClient(
+                            supabaseUrl,
+                            supabaseAnonKey,
+                            {
+                                auth: {
+                                    persistSession: true,
+                                    autoRefreshToken: true,
+                                    detectSessionInUrl: true
+                                }
+                            }
+                        );
+                    }
+
+                    const resultado = await window.supabaseClient.auth.getSession();
+                    const session = resultado && resultado.data ? resultado.data.session : null;
+
+                    window.__sarielsAuthenticated = !!session;
+
+                    clearTimeout(salvaguarda);
+
+                    if (!session) {
+                        irAlIndexConReturnTo();
+                    } else {
+                        revelarPagina();
+                    }
+
+                    return window.supabaseClient;
+                } catch (error) {
+                    console.error('[Estoks] Error inicializando Supabase:', error);
+                    window.__sarielsAuthenticated = false;
+                    clearTimeout(salvaguarda);
+                    revelarPagina();
+                    return null;
+                }
+            }
+
+            window.supabaseReady = inicializarSupabase();
+        })();
+    </script>
+
     <style>
+        html:not(.auth-ready) body {
+            visibility: hidden;
+        }
+        html.auth-ready body {
+            visibility: visible;
+        }
+
         .cfg-tokens-hero {
             margin: 16px;
             padding: 28px 20px;
@@ -159,9 +288,6 @@
 
     <main class="cfg-content">
 
-        <!-- ============================================================ -->
-        <!-- HERO - BALANCE DE ES.STOKS                                   -->
-        <!-- ============================================================ -->
         <div class="cfg-tokens-hero">
             <span class="cfg-tokens-icon">⟡</span>
             <div class="cfg-tokens-label">Balance de Es.stoks</div>
@@ -173,9 +299,6 @@
             </div>
         </div>
 
-        <!-- ============================================================ -->
-        <!-- ESTADÍSTICAS                                                 -->
-        <!-- ============================================================ -->
         <div class="cfg-tokens-stats">
             <div class="cfg-token-stat">
                 <div class="value" id="statTotal">0</div>
@@ -191,9 +314,6 @@
             </div>
         </div>
 
-        <!-- ============================================================ -->
-        <!-- PROGRESO HACIA NFT                                           -->
-        <!-- ============================================================ -->
         <div class="cfg-progress-box">
             <div class="cfg-progress-header">
                 <span>🎁 Progreso hacia el NFT</span>
@@ -204,21 +324,12 @@
             </div>
         </div>
 
-        <!-- ============================================================ -->
-        <!-- INFORMACIÓN                                                 -->
-        <!-- ============================================================ -->
         <h2 class="cfg-section-title">Información</h2>
         <div class="cfg-list" id="seccionInfo"></div>
 
-        <!-- ============================================================ -->
-        <!-- ACCIONES                                                    -->
-        <!-- ============================================================ -->
         <h2 class="cfg-section-title">Acciones</h2>
         <div class="cfg-list" id="seccionAcciones"></div>
 
-        <!-- ============================================================ -->
-        <!-- HISTORIAL                                                   -->
-        <!-- ============================================================ -->
         <h2 class="cfg-section-title">Historial reciente</h2>
         <div class="cfg-list" id="seccionHistorial">
             <div class="cfg-loading" style="padding: 20px; text-align: center; color: var(--cfg-text-muted); font-size: 0.8rem;">
@@ -235,7 +346,6 @@
         </div>
     </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="../../../shared/config-icons.js"></script>
     <script src="../../../shared/config-layout.js"></script>
 
@@ -251,20 +361,22 @@
             backUrl: '/features/perfil/configuracion/index.html',
         });
 
-        // ============================================================
-        // CARGAR BALANCE DESDE SUPABASE
-        // ============================================================
+        async function esperarCliente() {
+            const inicio = Date.now();
+            while (Date.now() - inicio < 10000) {
+                if (window.supabaseClient) return window.supabaseClient;
+                await new Promise(r => setTimeout(r, 100));
+            }
+            return null;
+        }
+
         async function cargarBalance() {
             try {
-                const client = window.supabaseClient || 
-                    (window.supabase && window.supabase.createClient(
-                        'https://zultnlogdoajehbswlih.supabase.co',
-                        'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
-                    ));
+                const client = await esperarCliente();
                 if (!client) return;
 
                 const { data: sessionData } = await client.auth.getSession();
-                const session = sessionData.session;
+                const session = sessionData && sessionData.session;
                 if (!session) return;
 
                 const { data: usuario } = await client
@@ -275,29 +387,39 @@
 
                 if (!usuario) return;
 
-                const tokens = usuario.tokens || 0;
+                const tokens = Number(usuario.tokens) || 0;
                 const progreso = Math.min(tokens, 12);
-                const nfts = usuario.progreso_canje || 0;
+                const nfts = Number(usuario.progreso_canje) || 0;
 
-                // Actualizar hero
-                $('#balanceTotal').innerHTML = tokens + '<span class="symbol">⟡</span>';
-                $('#balanceSubtitulo').textContent = tokens === 1 
-                    ? 'Tienes 1 Es.stok disponible' 
-                    : `Tienes ${tokens} Es.stoks disponibles`;
+                const balanceEl = $('#balanceTotal');
+                if (balanceEl) {
+                    balanceEl.innerHTML = tokens + '<span class="symbol">⟡</span>';
+                }
 
-                // Actualizar stats
-                $('#statTotal').textContent = tokens;
-                $('#statDisponibles').textContent = tokens;
-                $('#statNFTs').textContent = nfts;
+                const subEl = $('#balanceSubtitulo');
+                if (subEl) {
+                    subEl.textContent = tokens === 1
+                        ? 'Tienes 1 Es.stok disponible'
+                        : 'Tienes ' + tokens + ' Es.stoks disponibles';
+                }
 
-                // Actualizar progreso
+                const stTotal = $('#statTotal');
+                const stDisp = $('#statDisponibles');
+                const stNFTs = $('#statNFTs');
+                if (stTotal) stTotal.textContent = tokens;
+                if (stDisp) stDisp.textContent = tokens;
+                if (stNFTs) stNFTs.textContent = nfts;
+
                 const porcentaje = (progreso / 12) * 100;
-                $('#progresoFill').style.width = porcentaje + '%';
-                $('#progresoTexto').textContent = `${progreso} / 12`;
-
-                if (progreso >= 12) {
-                    $('#progresoTexto').innerHTML = '🎯 ¡Listo para canjear!';
-                    $('#progresoTexto').style.color = 'var(--cfg-gold)';
+                const fill = $('#progresoFill');
+                const txt = $('#progresoTexto');
+                if (fill) fill.style.width = porcentaje + '%';
+                if (txt) {
+                    txt.textContent = progreso + ' / 12';
+                    if (progreso >= 12) {
+                        txt.innerHTML = '🎯 ¡Listo para canjear!';
+                        txt.style.color = 'var(--cfg-gold)';
+                    }
                 }
 
             } catch (error) {
@@ -305,9 +427,6 @@
             }
         }
 
-        // ============================================================
-        // SECCIÓN INFORMACIÓN
-        // ============================================================
         function renderInfo() {
             $('#seccionInfo').innerHTML = [
                 cfgRenderItem({
@@ -331,9 +450,6 @@
             ].join('');
         }
 
-        // ============================================================
-        // SECCIÓN ACCIONES
-        // ============================================================
         function renderAcciones() {
             $('#seccionAcciones').innerHTML = [
                 cfgRenderItem({
@@ -363,32 +479,26 @@
             ].join('');
         }
 
-        // ============================================================
-        // SECCIÓN HISTORIAL
-        // ============================================================
         async function renderHistorial() {
             try {
-                const client = window.supabaseClient || 
-                    (window.supabase && window.supabase.createClient(
-                        'https://zultnlogdoajehbswlih.supabase.co',
-                        'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
-                    ));
-                if (!client) return;
+                const client = await esperarCliente();
+                if (!client) { mostrarEmptyHistorial(); return; }
 
                 const { data: sessionData } = await client.auth.getSession();
-                const session = sessionData.session;
-                if (!session) return;
+                const session = sessionData && sessionData.session;
+                if (!session) { mostrarEmptyHistorial(); return; }
 
-                // Intentar cargar historial de transacciones de tokens
+                // Intentar con la tabla real de movimientos.
+                // Si no existe, cae en el catch y muestra empty.
                 const { data: transacciones, error } = await client
-                    .from('tokens_transacciones')
+                    .from('es_toks_movimientos')
                     .select('*')
                     .eq('usuario_id', session.user.id)
                     .order('created_at', { ascending: false })
                     .limit(10);
 
-                if (error && error.code === '42P01') {
-                    // Tabla no existe, mostrar empty
+                if (error) {
+                    console.warn('[Estoks] Historial no disponible:', error.message);
                     mostrarEmptyHistorial();
                     return;
                 }
@@ -398,28 +508,33 @@
                     return;
                 }
 
-                // Renderizar historial
                 $('#seccionHistorial').innerHTML = transacciones.map(tx => {
-                    const esPositivo = tx.cantidad > 0;
+                    const cantidad = Number(tx.cantidad || tx.monto || 0);
+                    const esPositivo = cantidad >= 0;
                     const color = esPositivo ? 'var(--cfg-success)' : 'var(--cfg-danger)';
                     const signo = esPositivo ? '+' : '';
                     const icono = esPositivo ? '📥' : '📤';
+
+                    const fecha = tx.created_at || tx.fecha;
+                    const fechaTxt = fecha
+                        ? new Date(fecha).toLocaleString('es-MX', {
+                            day: '2-digit', month: 'short', year: 'numeric',
+                            hour: '2-digit', minute: '2-digit'
+                        })
+                        : '—';
 
                     return `
                         <div class="cfg-session-item" style="cursor:default;">
                             <span class="cfg-session-icon">${icono}</span>
                             <div class="cfg-session-info">
                                 <div class="cfg-session-title">
-                                    ${tx.descripcion || tx.tipo || 'Transacción'}
+                                    ${tx.descripcion || tx.tipo || 'Movimiento'}
                                     <span style="color:${color};font-family:'Orbitron',monospace;font-weight:700;margin-left:auto;">
-                                        ${signo}${tx.cantidad} ⟡
+                                        ${signo}${cantidad} ⟡
                                     </span>
                                 </div>
                                 <div class="cfg-session-meta">
-                                    ${new Date(tx.created_at).toLocaleString('es-MX', {
-                                        day: '2-digit', month: 'short', year: 'numeric',
-                                        hour: '2-digit', minute: '2-digit'
-                                    })}
+                                    ${fechaTxt}
                                 </div>
                             </div>
                         </div>
@@ -427,23 +542,22 @@
                 }).join('');
 
             } catch (error) {
-                console.error('Error cargando historial:', error);
+                console.warn('Error cargando historial:', error && error.message);
                 mostrarEmptyHistorial();
             }
         }
 
         function mostrarEmptyHistorial() {
-            $('#seccionHistorial').innerHTML = `
+            const el = $('#seccionHistorial');
+            if (!el) return;
+            el.innerHTML = `
                 <div class="cfg-empty" style="padding: 30px 20px;">
                     <span class="cfg-empty-icon">📜</span>
-                    <div class="cfg-empty-text">Aún no tienes transacciones</div>
+                    <div class="cfg-empty-text">Aún no tienes movimientos</div>
                 </div>
             `;
         }
 
-        // ============================================================
-        // CALLBACKS
-        // ============================================================
         window.onQueSonEstoks = () => {
             cfgToast('ℹ️ Los Es.stoks son tokens de utilidad en Polygon', 'success', 4000);
         };
@@ -460,9 +574,6 @@
             window.location.href = '/features/perfil/configuracion/sariels/wallet.html';
         };
 
-        // ============================================================
-        // INICIALIZAR
-        // ============================================================
         window.addEventListener('DOMContentLoaded', async () => {
             await new Promise(resolve => setTimeout(resolve, 400));
             renderInfo();
