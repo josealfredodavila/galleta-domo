@@ -1,6 +1,6 @@
 /* ================================================================
    WORKER.JS - SARIEL'S ECOSYSTEM
-   VERSIÓN FINAL v2 - Fix duplicados por reintentos + concurrencia
+   VERSIÓN FINAL v3 - Mejoras de estabilidad
    ================================================================ */
 
 const { Worker } = require('bullmq');
@@ -21,16 +21,30 @@ ffmpeg.setFfmpegPath(ffmpegPath);
 console.log('🎬 FFmpeg path:', ffmpegPath);
 
 // ================================================================
-// CONFIGURACIÓN DE SUPABASE
+// VALIDACIÓN DE VARIABLES DE ENTORNO
 // ================================================================
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const REDIS_URL = process.env.REDIS_URL;
+const PORT = process.env.PORT || 3001;
 
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-    console.error('❌ Faltan variables de Supabase');
+const faltantes = [];
+
+if (!SUPABASE_URL) faltantes.push('SUPABASE_URL');
+if (!SUPABASE_SERVICE_ROLE_KEY) faltantes.push('SUPABASE_SERVICE_ROLE_KEY');
+if (!REDIS_URL) faltantes.push('REDIS_URL');
+
+if (faltantes.length > 0) {
+    console.error('❌ Faltan variables de entorno críticas:');
+    faltantes.forEach(v => console.error(`   - ${v}`));
+    console.error('');
+    console.error('👉 En Railway, agrega estas variables al servicio del worker.');
     process.exit(1);
 }
 
+// ================================================================
+// CONFIGURACIÓN DE SUPABASE
+// ================================================================
 const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { autoRefreshToken: false, persistSession: false }
 });
@@ -38,19 +52,29 @@ const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 // ================================================================
 // CONFIGURACIÓN DE REDIS
 // ================================================================
-const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
-
 console.log('📡 Conectando a Redis...');
 
 const redisConnection = new IORedis(REDIS_URL, {
     maxRetriesPerRequest: null,
     enableReadyCheck: false,
     family: 0,
-    retryStrategy: (times) => Math.min(times * 1000, 30000)
+    retryStrategy: (times) => {
+        if (times > 20) {
+            console.error('❌ Redis no responde tras 20 intentos. Abortando.');
+            return null;
+        }
+        const delay = Math.min(times * 500, 10000);
+        console.log(`🔁 Reintentando Redis en ${delay}ms (intento ${times})`);
+        return delay;
+    }
 });
 
 redisConnection.on('connect', () => {
     console.log('✅ Conectado a Redis');
+});
+
+redisConnection.on('ready', () => {
+    console.log('✅ Redis listo para operar');
 });
 
 redisConnection.on('error', (err) => {
@@ -63,7 +87,6 @@ redisConnection.on('error', (err) => {
 const COLA_NOMBRE = 'video-processing';
 const TEMP_DIR = os.tmpdir();
 const MAX_CONCURRENT = 1;
-
 const LOGO_PATH = path.join(__dirname, 'assets', 'sariels_web3.png');
 
 // ================================================================
@@ -79,16 +102,11 @@ async function procesarVideo(job) {
     const outputPath = path.join(TEMP_DIR, `sariels_output_${job.id}.mp4`);
 
     try {
-        // ============================================================
-        // PASO 0: Verificar que el logo existe
-        // ============================================================
         if (!fs.existsSync(LOGO_PATH)) {
             throw new Error(`❌ El logo no existe en: ${LOGO_PATH}`);
         }
 
-        // ============================================================
-        // PASO 1: Descargar el video original
-        // ============================================================
+        // PASO 1: Descargar
         await job.updateProgress(5);
         console.log(`📥 [JOB ${job.id}] Descargando video...`);
 
@@ -103,9 +121,7 @@ async function procesarVideo(job) {
 
         await job.updateProgress(15);
 
-        // ============================================================
-        // PASO 2: Obtener metadata del video
-        // ============================================================
+        // PASO 2: Metadata
         const metadata = await new Promise((resolve, reject) => {
             ffmpeg.ffprobe(inputPath, (err, data) => {
                 if (err) reject(err);
@@ -131,9 +147,7 @@ async function procesarVideo(job) {
 
         await job.updateProgress(20);
 
-        // ============================================================
-        // PASO 3: Construir el filtro de FFmpeg
-        // ============================================================
+        // PASO 3: Filtro
         const targetHeight = Math.min(720, height);
         const scaleFactor = targetHeight / height;
         const targetWidth = Math.round(width * scaleFactor);
@@ -163,9 +177,7 @@ async function procesarVideo(job) {
 
         await job.updateProgress(25);
 
-        // ============================================================
-        // PASO 4: Procesar con FFmpeg (con AUDIO)
-        // ============================================================
+        // PASO 4: FFmpeg
         console.log(`🎬 [JOB ${job.id}] Iniciando FFmpeg...`);
 
         await new Promise((resolve, reject) => {
@@ -174,7 +186,6 @@ async function procesarVideo(job) {
                 .input(LOGO_PATH)
                 .complexFilter(filterComplex, 'out');
 
-            // ✅ Opciones de video
             command.outputOptions([
                 '-c:v libx264',
                 '-preset veryfast',
@@ -186,7 +197,6 @@ async function procesarVideo(job) {
                 '-max_muxing_queue_size 1024'
             ]);
 
-            // ✅ Opciones de audio (SOLO si el video tiene audio)
             if (tieneAudio) {
                 command.outputOptions([
                     '-map', '0:a?',
@@ -204,7 +214,6 @@ async function procesarVideo(job) {
                 .output(outputPath)
                 .on('start', (cmd) => {
                     console.log(`▶️ [JOB ${job.id}] FFmpeg iniciado`);
-                    console.log(`   CMD: ${cmd}`);
                 })
                 .on('progress', (progress) => {
                     if (progress.percent) {
@@ -226,21 +235,13 @@ async function procesarVideo(job) {
 
         await job.updateProgress(80);
 
-        // ============================================================
-        // PASO 5: Subir video procesado a Supabase
-        // ============================================================
+        // PASO 5: Subir
         console.log(`📤 [JOB ${job.id}] Subiendo video procesado...`);
 
         const outputBuffer = fs.readFileSync(outputPath);
-
-        // ✅ FIX 1: Path SIN timestamp.
-        // Si el job se reintenta (attempts:3), sube al MISMO path y sobreescribe.
-        // Antes: `${userId}/${videoId}_processed_${Date.now()}.mp4` → 3 archivos por 3 intentos.
-        // Ahora: `${userId}/${videoId}_processed.mp4` → siempre el mismo.
         const processedPath = `${userId}/${videoId}_processed.mp4`;
 
-        // ✅ FIX 2: upsert: true (sobreescribe si ya existe)
-        const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
+        const { error: uploadError } = await supabaseAdmin.storage
             .from(bucket)
             .upload(processedPath, outputBuffer, {
                 contentType: 'video/mp4',
@@ -257,14 +258,11 @@ async function procesarVideo(job) {
             .getPublicUrl(processedPath);
 
         const processedUrl = urlData.publicUrl;
-
         console.log(`✅ [JOB ${job.id}] Video subido: ${processedUrl}`);
 
         await job.updateProgress(95);
 
-        // ============================================================
-        // PASO 6: Actualizar la base de datos
-        // ============================================================
+        // PASO 6: DB
         console.log(`💾 [JOB ${job.id}] Actualizando base de datos...`);
 
         const { error: dbError } = await supabaseAdmin
@@ -282,9 +280,7 @@ async function procesarVideo(job) {
             console.log(`✅ [JOB ${job.id}] DB actualizada`);
         }
 
-        // ============================================================
-        // PASO 7: Borrar el video original
-        // ============================================================
+        // PASO 7: Borrar original
         if (filePath) {
             console.log(`🗑️ [JOB ${job.id}] Borrando video original...`);
             const { error: removeError } = await supabaseAdmin.storage
@@ -300,9 +296,7 @@ async function procesarVideo(job) {
 
         await job.updateProgress(100);
 
-        // ============================================================
-        // LIMPIAR ARCHIVOS TEMPORALES
-        // ============================================================
+        // Cleanup
         try {
             if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
             if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
@@ -329,7 +323,6 @@ async function procesarVideo(job) {
             console.warn(`⚠️ No se pudo limpiar temp:`, cleanupError.message);
         }
 
-        // Solo marcar error si es el ÚLTIMO intento
         const esUltimoIntento = (job.attemptsMade + 1) >= (job.opts.attempts || 1);
         if (esUltimoIntento) {
             try {
@@ -353,14 +346,11 @@ async function procesarVideo(job) {
 }
 
 // ================================================================
-// CREAR EL WORKER DE BULLMQ
+// WORKER BULLMQ
 // ================================================================
 const worker = new Worker(COLA_NOMBRE, procesarVideo, {
     connection: redisConnection,
     concurrency: MAX_CONCURRENT,
-    // ✅ FIX 3: subir límite de 1 a 3 jobs por minuto.
-    // Antes: 10 usuarios subían video → el 10° esperaba 10 minutos.
-    // Ahora: 3 jobs por minuto, más razonable.
     limiter: {
         max: 3,
         duration: 60000
@@ -386,10 +376,9 @@ worker.on('ready', () => {
 });
 
 // ================================================================
-// HEALTH CHECK SIMPLE
+// HEALTH CHECK
 // ================================================================
 const http = require('http');
-const PORT = process.env.PORT || 3001;
 
 const healthServer = http.createServer((req, res) => {
     if (req.url === '/health' || req.url === '/') {
@@ -397,6 +386,7 @@ const healthServer = http.createServer((req, res) => {
         res.end(JSON.stringify({
             status: 'ok',
             service: 'worker-video',
+            redis: redisConnection.status,
             timestamp: new Date().toISOString()
         }));
     } else {
@@ -412,25 +402,36 @@ healthServer.listen(PORT, '0.0.0.0', () => {
 // ================================================================
 // MANEJO DE ERRORES GLOBALES
 // ================================================================
+
+// Uncaught exceptions DEBEN matar el proceso (Node.js best practice).
+// Railway / Docker reinician el contenedor automáticamente.
 process.on('uncaughtException', (err) => {
     console.error('❌ Uncaught exception:', err);
+    console.error('🔴 Cerrando worker para que Railway reinicie el contenedor...');
+    process.exit(1);
 });
 
+// Rechazos no críticos solo se loggean fuerte
 process.on('unhandledRejection', (reason, promise) => {
-    console.error('❌ Unhandled rejection:', reason);
+    console.error('❌ Unhandled rejection en:', promise);
+    console.error('   Razón:', reason);
 });
 
 process.on('SIGTERM', async () => {
     console.log('🛑 SIGTERM recibido, cerrando worker...');
-    await worker.close();
-    await redisConnection.quit();
+    try {
+        await worker.close();
+        await redisConnection.quit();
+    } catch (err) {
+        console.error('⚠️ Error cerrando:', err.message);
+    }
     healthServer.close(() => {
         process.exit(0);
     });
 });
 
 console.log('========================================');
-console.log('🎬 WORKER DE VIDEOS - SARIEL\'S v2');
+console.log("🎬 WORKER DE VIDEOS - SARIEL'S v3");
 console.log('========================================');
 console.log('📡 Cola:', COLA_NOMBRE);
 console.log('🔢 Concurrencia:', MAX_CONCURRENT);
