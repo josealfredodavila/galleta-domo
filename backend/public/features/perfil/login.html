@@ -38,22 +38,107 @@
         var SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
         var SUPABASE_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
         var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // ============================================================
+        // VALIDACIÓN DE returnTo — Evita Open Redirect
+        // Solo permitimos rutas internas que empiecen con "/"
+        // y que NO empiecen con "//" (que sería dominio externo).
+        // ============================================================
+        function validarReturnTo(valor) {
+            var destinoDefecto = '/features/perfil/perfil.html';
+
+            if (!valor || typeof valor !== 'string') {
+                return destinoDefecto;
+            }
+
+            var v = valor.trim();
+
+            // Debe empezar con "/" pero no "//" ni "/\"
+            if (!v.startsWith('/')) {
+                return destinoDefecto;
+            }
+
+            if (v.startsWith('//') || v.startsWith('/\\')) {
+                return destinoDefecto;
+            }
+
+            // Bloqueo explícito de esquemas peligrosos
+            var lower = v.toLowerCase();
+            if (
+                lower.startsWith('javascript:') ||
+                lower.startsWith('data:') ||
+                lower.startsWith('vbscript:') ||
+                lower.indexOf('://') !== -1
+            ) {
+                return destinoDefecto;
+            }
+
+            return v;
+        }
+
+        // ============================================================
+        // VALIDACIÓN BÁSICA DE EMAIL
+        // ============================================================
+        function emailValido(email) {
+            if (!email) return false;
+            // Regex simple, suficiente para el 99% de casos reales
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+
         document.getElementById('btnLogin').addEventListener('click', async function() {
             var btn = this;
             var email = document.getElementById('email').value.trim();
             var password = document.getElementById('password').value;
             var errorDiv = document.getElementById('errorMsg');
             errorDiv.textContent = '';
-            if (!email || !password) { errorDiv.textContent = 'Ingresa tu correo y contraseña'; return; }
+
+            // Validaciones locales
+            if (!email || !password) {
+                errorDiv.textContent = 'Ingresa tu correo y contraseña';
+                return;
+            }
+
+            if (!emailValido(email)) {
+                errorDiv.textContent = 'Ingresa un correo válido';
+                return;
+            }
+
             btn.disabled = true;
             btn.textContent = 'Entrando...';
+
             try {
-                var result = await supabase.auth.signInWithPassword({ email: email, password: password });
-                if (result.error) { errorDiv.textContent = result.error.message; return; }
+                var result = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+
+                if (result.error) {
+                    // Traducir errores comunes de Supabase al español
+                    var msg = result.error.message || 'Error al iniciar sesión';
+                    if (msg.includes('Invalid login credentials')) {
+                        msg = 'Correo o contraseña incorrectos';
+                    } else if (msg.includes('Email not confirmed')) {
+                        msg = 'Debes confirmar tu correo antes de iniciar sesión';
+                    } else if (msg.includes('Too many requests')) {
+                        msg = 'Demasiados intentos. Espera unos minutos.';
+                    }
+                    errorDiv.textContent = msg;
+                    return;
+                }
+
+                // Leer y VALIDAR el returnTo
                 var urlParams = new URLSearchParams(window.location.search);
-                var returnTo = urlParams.get('returnTo') || localStorage.getItem('wallet_returnTo');
+                var returnToRaw =
+                    urlParams.get('returnTo') ||
+                    localStorage.getItem('wallet_returnTo');
+
+                var returnTo = validarReturnTo(returnToRaw);
+
                 localStorage.removeItem('wallet_returnTo');
-                window.location.href = returnTo || '/features/perfil/perfil.html';
+
+                // Redirigir al destino seguro
+                window.location.href = returnTo;
+
             } catch (err) {
                 errorDiv.textContent = err.message || 'Error al iniciar sesión';
             } finally {
@@ -61,8 +146,18 @@
                 btn.textContent = 'Entrar';
             }
         });
-        document.getElementById('password').addEventListener('keypress', function(e) { if (e.key === 'Enter') document.getElementById('btnLogin').click(); });
-        document.getElementById('email').addEventListener('keypress', function(e) { if (e.key === 'Enter') document.getElementById('password').focus(); });
+
+        document.getElementById('password').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('btnLogin').click();
+            }
+        });
+
+        document.getElementById('email').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('password').focus();
+            }
+        });
     </script>
 </body>
 </html>
