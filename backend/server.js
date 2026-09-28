@@ -123,7 +123,7 @@ if (!LIVEKIT_URL) {
 
 const PUBLIC_APP_URL =
     process.env.PUBLIC_APP_URL ||
-    'https://galleta-domo-production.up.railway.app';
+    'https://auction.up.railway.app';
 
 const WALLETCONNECT_PROJECT_ID =
     process.env.WALLETCONNECT_PROJECT_ID || '';
@@ -147,7 +147,7 @@ const TURNSTILE_SITE_KEY =
     process.env.TURNSTILE_SITE_KEY || '';
 
 const TURNSTILE_EXPECTED_HOSTNAME =
-    'galleta-domo-production.up.railway.app';
+    'auction.up.railway.app';
 
 if (!TURNSTILE_SECRET_KEY) {
     console.warn(
@@ -586,9 +586,7 @@ const corsOrigins =
 
 const DEFAULT_PRODUCTION_ORIGINS = [
 
-    'https://auction.up.railway.app',
-
-    'https://galleta-domo-production.up.railway.app'
+    'https://auction.up.railway.app'
 ];
 
 const allowedCorsOrigins =
@@ -1068,13 +1066,8 @@ async function verificarTurnstile(
         ) {
 
             if (
-
                 result.hostname !==
-                    TURNSTILE_EXPECTED_HOSTNAME &&
-
-                result.hostname !==
-                    'auction.up.railway.app'
-
+                    TURNSTILE_EXPECTED_HOSTNAME
             ) {
 
                 console.warn(
@@ -1568,6 +1561,26 @@ montarRouter(
 );
 
 // ================================================================
+// CONTACTOS (agregado para resolver 404)
+// ================================================================
+
+montarRouter(
+    '/api/contactos',
+    './routes/contactos',
+    'routes/contactos'
+);
+
+// ================================================================
+// ESTADO / ONLINE (agregado para resolver 404)
+// ================================================================
+
+montarRouter(
+    '/api/estado',
+    './routes/estado',
+    'routes/estado'
+);
+
+// ================================================================
 // VIDEO PROCESSOR
 // ================================================================
 
@@ -1807,10 +1820,30 @@ async function healthCheck(
             'error';
     }
 
-    return res.status(200).json({
+    const livekitConfigured =
+        Boolean(
+            LIVEKIT_API_KEY &&
+            LIVEKIT_API_SECRET &&
+            (
+                LIVEKIT_URL ||
+                LIVEKIT_WS_URL
+            )
+        );
+
+    const criticalOk =
+        supabaseStatus === 'ok';
+
+    const httpStatus =
+        criticalOk
+            ? 200
+            : 503;
+
+    return res.status(httpStatus).json({
 
         status:
-            'ok',
+            criticalOk
+                ? 'ok'
+                : 'degraded',
 
         service:
             'galleta-domo',
@@ -1828,14 +1861,7 @@ async function healthCheck(
         livekit: {
 
             configured:
-                Boolean(
-                    LIVEKIT_API_KEY &&
-                    LIVEKIT_API_SECRET &&
-                    (
-                        LIVEKIT_URL ||
-                        LIVEKIT_WS_URL
-                    )
-                )
+                livekitConfigured
         },
 
         web3: {
