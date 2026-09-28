@@ -487,6 +487,7 @@ const corsOrigins =
 
 const DEFAULT_PRODUCTION_ORIGINS = [];
 
+// Origen canónico derivado de PUBLIC_APP_URL
 try {
     const publicOrigin =
         new URL(PUBLIC_APP_URL).origin;
@@ -499,6 +500,19 @@ try {
         '❌ No se pudo construir el origen público:',
         error.message
     );
+}
+
+// Orígenes conocidos durante la transición de dominio.
+// El dominio canónico de producción es auction.up.railway.app,
+// pero mantenemos temporalmente el dominio antiguo permitido
+// para no romper usuarios que entren por la URL legacy.
+const TRANSITION_ORIGINS = [
+    'https://auction.up.railway.app',
+    'https://galleta-domo-production.up.railway.app'
+];
+
+for (const origin of TRANSITION_ORIGINS) {
+    DEFAULT_PRODUCTION_ORIGINS.push(origin);
 }
 
 const allowedCorsOrigins =
@@ -1250,17 +1264,10 @@ montarRouter(
     'routes/marketing'
 );
 
-montarRouter(
-    '/api/contactos',
-    './routes/contactos',
-    'routes/contactos'
-);
-
-montarRouter(
-    '/api/estado',
-    './routes/estado',
-    'routes/estado'
-);
+// ⬇️ ELIMINADOS: routes/contactos y routes/estado
+// no existen en el repositorio actual. Sus montajes
+// generaban errores de arranque en Railway sin aportar
+// funcionalidad real.
 
 montarRouter(
     '/api/video',
@@ -1678,6 +1685,11 @@ app.listen(
         console.log(
             `🌐 Web3 URL canónica: ${
                 PUBLIC_APP_URL
+            }`
+        );
+        console.log(
+            `🔗 CORS orígenes permitidos: ${
+                allowedCorsOrigins.join(', ')
             }`
         );
         console.log(
