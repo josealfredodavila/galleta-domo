@@ -113,6 +113,12 @@
             margin-bottom: 8px;
             opacity: 0.4;
         }
+        html:not(.auth-ready) body {
+            visibility: hidden;
+        }
+        html.auth-ready body {
+            visibility: visible;
+        }
     </style>
 </head>
 <body class="cfg-page">
@@ -152,35 +158,98 @@
 
         const $ = (sel) => document.querySelector(sel);
 
-        function sb() {
-            return window.supabaseClient || 
-                (window.supabase && window.supabase.createClient(
-                    'https://zultnlogdoajehbswlih.supabase.co',
-                    'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
-                ));
-        }
-
-        cfgInitPage({
-            title: 'Seguridad y acceso a la cuenta',
-            subtitle: 'Protege tu cuenta',
-            backUrl: '/features/perfil/configuracion/index.html',
-        });
-
+        let clienteSupabase = null;
+        let sesionActual = null;
         let estado2FA = null;
         let sesionesActivas = [];
         let appsConectadas = [];
 
+        async function obtenerCliente() {
+            if (clienteSupabase) return clienteSupabase;
+            if (typeof window.cfgEsperarSupabase === 'function') {
+                clienteSupabase = await window.cfgEsperarSupabase();
+            }
+            if (!clienteSupabase) {
+                clienteSupabase = window.supabaseClient || null;
+            }
+            return clienteSupabase;
+        }
+
+        function esRutaInternaSegura(valor) {
+            if (typeof valor !== 'string') return false;
+            if (!valor.startsWith('/')) return false;
+            if (valor.startsWith('//')) return false;
+            if (valor.startsWith('/\\')) return false;
+            return true;
+        }
+
+        function irAlIndexConReturnTo() {
+            try {
+                var returnTo = window.location.pathname + window.location.search + window.location.hash;
+                if (esRutaInternaSegura(returnTo)) {
+                    localStorage.setItem('wallet_returnTo', returnTo);
+                }
+                window.location.replace('/');
+            } catch (e) {
+                window.location.replace('/');
+            }
+        }
+
+        function escapeHtml(texto) {
+            if (!texto) return '';
+            const div = document.createElement('div');
+            div.textContent = texto;
+            return div.innerHTML;
+        }
+
+        // ============================================================
+        // GUARD DE AUTENTICACIÓN
+        // ============================================================
+        async function guardiaDeAutenticacion() {
+            var salvaguarda = setTimeout(function () {
+                console.warn('[Seguridad] Salvaguarda activada sin confirmación → redirigiendo al index');
+                irAlIndexConReturnTo();
+            }, 10000);
+
+            try {
+                const client = await obtenerCliente();
+                if (!client) {
+                    throw new Error('Cliente Supabase no disponible.');
+                }
+
+                const resultado = await client.auth.getSession();
+                const session = resultado && resultado.data ? resultado.data.session : null;
+
+                clearTimeout(salvaguarda);
+
+                if (!session) {
+                    irAlIndexConReturnTo();
+                    return null;
+                }
+
+                sesionActual = session;
+                document.documentElement.classList.add('auth-ready');
+                return client;
+
+            } catch (error) {
+                console.error('[Seguridad] Error crítico de autenticación:', error);
+                clearTimeout(salvaguarda);
+                irAlIndexConReturnTo();
+                return null;
+            }
+        }
+
         // ============================================================
         // CARGAR ESTADO 2FA
         // ============================================================
-        async function cargar2FA() {
+        async function cargar2FA(client) {
             try {
-                const client = sb();
-                if (!client) return;
+                if (!client || !sesionActual) return;
 
                 const { data, error } = await client
                     .from('usuarios_2fa')
                     .select('habilitado, metodo, verificado_at')
+                    .eq('usuario_id', sesionActual.user.id)
                     .maybeSingle();
 
                 if (error) {
@@ -200,19 +269,14 @@
         // ============================================================
         // CARGAR SESIONES ACTIVAS
         // ============================================================
-        async function cargarSesiones() {
+        async function cargarSesiones(client) {
             try {
-                const client = sb();
-                if (!client) return;
-
-                const { data: sessionData } = await client.auth.getSession();
-                const session = sessionData.session;
-                if (!session) return;
+                if (!client || !sesionActual) return;
 
                 const { data, error } = await client
                     .from('usuarios_sesiones')
-                    .select('*')
-                    .eq('usuario_id', session.user.id)
+                    .select('id, dispositivo, navegador, ubicacion_aproximada, ultima_actividad')
+                    .eq('usuario_id', sesionActual.user.id)
                     .order('ultima_actividad', { ascending: false })
                     .limit(10);
 
@@ -233,9 +297,8 @@
         // ============================================================
         // CARGAR APPS CONECTADAS
         // ============================================================
-        async function cargarApps() {
+        async function cargarApps(client) {
             try {
-                const client = sb();
                 if (!client) return;
 
                 const { data, error } = await client.rpc('listar_mis_apps');
@@ -276,7 +339,7 @@
                         </div>
                         <div class="cfg-item-desc">
                             ${dobleFactorActivo 
-                                ? 'Tu cuenta está protegida con 2FA. Método: ' + (estado2FA.metodo || 'TOTP')
+                                ? 'Tu cuenta está protegida con 2FA. Método: ' + escapeHtml(estado2FA.metodo || 'TOTP')
                                 : 'Añade una capa extra de seguridad a tu cuenta. Recomendamos activarla.'}
                         </div>
                     </div>
@@ -325,7 +388,7 @@
                     <span class="cfg-session-icon">${iconoActual}</span>
                     <div class="cfg-session-info">
                         <div class="cfg-session-title">
-                            ${dispositivoActual}
+                            ${escapeHtml(dispositivoActual)}
                             <span class="cfg-badge cfg-badge-success">Este dispositivo</span>
                         </div>
                         <div class="cfg-session-subtitle">Sesión actual activa</div>
@@ -334,12 +397,8 @@
                 </div>
             `;
 
-            // Añadir sesiones de Supabase
             sesionesActivas.forEach(s => {
-                const esActual = false; // ya sabemos que "este dispositivo" está arriba
-                if (esActual) return;
-
-                const icono = /Android|iPhone/i.test(s.dispositivo || '') ? '📱' : '💻';
+                const icono = /Android|iPhone|iPad/i.test(s.dispositivo || '') ? '📱' : '💻';
                 const fecha = s.ultima_actividad 
                     ? new Date(s.ultima_actividad).toLocaleString('es-MX', {
                         day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
@@ -380,7 +439,7 @@
             if (appsConectadas.length > 0) {
                 appsHtml = appsConectadas.map(app => `
                     <div class="cfg-session-item">
-                        <span class="cfg-session-icon">${app.app_icono || '🔗'}</span>
+                        <span class="cfg-session-icon">${escapeHtml(app.app_icono || '🔗')}</span>
                         <div class="cfg-session-info">
                             <div class="cfg-session-title">${escapeHtml(app.app_nombre || 'App')}</div>
                             <div class="cfg-session-subtitle">${escapeHtml(app.app_descripcion || 'App conectada')}</div>
@@ -401,23 +460,12 @@
         }
 
         // ============================================================
-        // HELPERS
-        // ============================================================
-        function escapeHtml(texto) {
-            if (!texto) return '';
-            const div = document.createElement('div');
-            div.textContent = texto;
-            return div.innerHTML;
-        }
-
-        // ============================================================
         // CALLBACKS
         // ============================================================
         window.onConfig2FA = () => {
             const activo = estado2FA && estado2FA.habilitado;
 
             if (activo) {
-                // Ofrecer desactivar
                 cfgConfirm({
                     title: '2FA está activo',
                     text: '¿Quieres desactivar la verificación en 2 pasos? Tu cuenta será menos segura.',
@@ -429,7 +477,6 @@
                     await ejecutarDesactivar2FA();
                 });
             } else {
-                // Ofrecer activar
                 cfgConfirm({
                     title: 'Activar verificación en 2 pasos',
                     text: 'Añadiremos una capa extra de seguridad a tu cuenta. Necesitarás un código de verificación cada vez que inicies sesión.',
@@ -445,12 +492,11 @@
 
         async function ejecutarActivar2FA() {
             try {
-                const client = sb();
+                const client = await obtenerCliente();
                 if (!client) throw new Error('Supabase no disponible');
 
                 cfgToast('⏳ Activando 2FA...', '', 3000);
 
-                // Generar un secret simple (en producción se usa una lib TOTP)
                 const secretKey = 'SARIELS_' + Math.random().toString(36).substring(2, 18).toUpperCase();
 
                 const { error } = await client.rpc('activar_2fa', {
@@ -462,7 +508,7 @@
 
                 cfgToast('✅ 2FA activado correctamente', 'success');
 
-                await cargar2FA();
+                await cargar2FA(client);
                 renderSecciones();
 
             } catch (e) {
@@ -473,7 +519,7 @@
 
         async function ejecutarDesactivar2FA() {
             try {
-                const client = sb();
+                const client = await obtenerCliente();
                 if (!client) throw new Error('Supabase no disponible');
 
                 cfgToast('⏳ Desactivando 2FA...', '', 3000);
@@ -484,7 +530,7 @@
 
                 cfgToast('🔓 2FA desactivado', 'warning');
 
-                await cargar2FA();
+                await cargar2FA(client);
                 renderSecciones();
 
             } catch (e) {
@@ -505,10 +551,9 @@
             if (!ok) return;
 
             try {
-                const client = sb();
+                const client = await obtenerCliente();
                 if (!client) throw new Error('Supabase no disponible');
 
-                // Eliminar la sesión directamente (RLS permite borrar las propias)
                 const { error } = await client
                     .from('usuarios_sesiones')
                     .delete()
@@ -518,7 +563,7 @@
 
                 cfgToast('✅ Sesión cerrada', 'success');
 
-                await cargarSesiones();
+                await cargarSesiones(client);
                 renderSecciones();
 
             } catch (e) {
@@ -539,26 +584,20 @@
             if (!ok) return;
 
             try {
-                const client = sb();
+                const client = await obtenerCliente();
                 if (!client) throw new Error('Supabase no disponible');
-
-                // Borrar todas las sesiones del usuario menos la actual
-                // Como no sabemos cuál es la actual, borramos todas
-                // (el usuario tendrá que re-loguearse en este dispositivo también si quiere)
-                const { data: sessionData } = await client.auth.getSession();
-                const session = sessionData.session;
-                if (!session) throw new Error('Sin sesión');
+                if (!sesionActual) throw new Error('Sin sesión');
 
                 const { error } = await client
                     .from('usuarios_sesiones')
                     .delete()
-                    .eq('usuario_id', session.user.id);
+                    .eq('usuario_id', sesionActual.user.id);
 
                 if (error) throw error;
 
                 cfgToast('✅ Todas las sesiones cerradas', 'success');
 
-                await cargarSesiones();
+                await cargarSesiones(client);
                 renderSecciones();
 
             } catch (e) {
@@ -579,7 +618,7 @@
             if (!ok) return;
 
             try {
-                const client = sb();
+                const client = await obtenerCliente();
                 if (!client) throw new Error('Supabase no disponible');
 
                 const { error } = await client.rpc('revocar_app', { p_app_id: appId });
@@ -588,7 +627,7 @@
 
                 cfgToast('🔓 App revocada', 'success');
 
-                await cargarApps();
+                await cargarApps(client);
                 renderSecciones();
 
             } catch (e) {
@@ -605,13 +644,19 @@
         // INICIALIZAR
         // ============================================================
         window.addEventListener('DOMContentLoaded', async () => {
-            await new Promise(resolve => setTimeout(resolve, 400));
-            
-            // Cargar todo en paralelo
+            const client = await guardiaDeAutenticacion();
+            if (!client) return;
+
+            cfgInitPage({
+                title: 'Seguridad y acceso a la cuenta',
+                subtitle: 'Protege tu cuenta',
+                backUrl: '/features/perfil/configuracion/index.html',
+            });
+
             await Promise.all([
-                cargar2FA(),
-                cargarSesiones(),
-                cargarApps(),
+                cargar2FA(client),
+                cargarSesiones(client),
+                cargarApps(client),
             ]);
 
             renderSecciones();
