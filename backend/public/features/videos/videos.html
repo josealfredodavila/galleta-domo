@@ -523,11 +523,11 @@
                 <div class="form-group">
                     <label data-clave="videos_seleccionar_archivo">Selecciona el archivo de video</label>
                     <div class="file-input-wrapper">
-                        <input type="file" id="inputArchivoVideo" accept="video/*" required />
+                        <input type="file" id="inputArchivoVideo" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov" required />
                         <button type="submit" class="btn-subir-video" id="btnSubirVideo" data-clave="videos_subir">◈ Subir video</button>
                     </div>
                     <div style="font-size:0.55rem;color:var(--text-muted);margin-top:4px;" data-clave="videos_formatos">
-                        Formatos: MP4, WebM, MOV · Máx 100MB · Full HD
+                        Formatos: MP4, WebM, MOV · Máx 100 MB · Full HD
                     </div>
                 </div>
                 <div id="uploadProgress" style="display:none;margin-top:8px;">
@@ -682,13 +682,11 @@
     <script>
         // ================================================================
         // VIDEOS - v8
-        // Aplicados parches de egress + fix de duplicados:
-        //  1. subirVideo() con candado antes del await, rollback y huella local
-        //  2. cargarVideos() con .limit(20), preload="none", data-src, sin loop
-        //  3. activarAutoplayScroll() con doble IntersectionObserver (carga diferida)
-        //  4. reproducirSiguienteVideo() con límite de auto-avance + visibilitychange
-        //  5. Carga inicial única (no dos veces)
-        //  6. reanudarProcesamientoPendiente() usando /api/video/jobs
+        // Límites alineados con la config real del bucket 'videos' de Supabase:
+        //   - Máximo: 100 MB
+        //   - MIME permitidos: video/mp4, video/webm, video/quicktime
+        //   - Extensiones permitidas: .mp4, .webm, .mov
+        //   - NO AVI
         // ================================================================
 
         if (typeof window.supabase === 'undefined') {
@@ -923,7 +921,7 @@
         }
 
         // ================================================================
-        // ✅ CARGAR VIDEOS — FIX 1.2
+        // ✅ CARGAR VIDEOS
         // ================================================================
         async function cargarVideos() {
             try {
@@ -988,7 +986,7 @@
         }
 
         // ================================================================
-        // ✅ AUTOPLAY SCROLL — FIX 1.3
+        // ✅ AUTOPLAY SCROLL
         // ================================================================
         function activarAutoplayScroll() {
             if (observerVideos) { observerVideos.disconnect(); observerVideos = null; }
@@ -1049,7 +1047,11 @@
         }
 
         // ================================================================
-        // ✅ SUBIR VIDEO — FIX 1.1
+        // ✅ SUBIR VIDEO
+        // Límites alineados con el bucket real de Supabase:
+        //   - 100 MB máximo
+        //   - Solo MP4/WebM/MOV
+        //   - NO AVI
         // ================================================================
         var subiendoVideo = false;
 
@@ -1081,13 +1083,24 @@
                 if (!titulo) throw new Error(tr('videos_titulo_requerido', 'Escribe un título'));
                 if (!fileInput.files || fileInput.files.length === 0) throw new Error(tr('videos_video_requerido', 'Selecciona un video'));
                 var file = fileInput.files[0];
-                if (file.size > 150 * 1024 * 1024) throw new Error(tr('videos_video_grande', 'El video es demasiado grande (máx 150MB)'));
-                var allowedTypes = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo'];
-                if (allowedTypes.indexOf(file.type) === -1) throw new Error(tr('videos_video_formato', 'Formato no soportado. Usa MP4, WebM o MOV'));
-                var nombreArchivo = file.name.toLowerCase();
-                if (!['.mp4', '.webm', '.mov', '.avi'].some(function (ext) { return nombreArchivo.endsWith(ext); })) {
+
+                // Límite real del bucket: 100 MB
+                if (file.size > 100 * 1024 * 1024) {
+                    throw new Error(tr('videos_video_grande', 'El video es demasiado grande (máx 100 MB)'));
+                }
+
+                // MIME permitidos por el bucket real
+                var allowedTypes = ['video/mp4', 'video/webm', 'video/quicktime'];
+                if (allowedTypes.indexOf(file.type) === -1) {
                     throw new Error(tr('videos_video_formato', 'Formato no soportado. Usa MP4, WebM o MOV'));
                 }
+
+                // Extensiones permitidas (NO .avi)
+                var nombreArchivo = file.name.toLowerCase();
+                if (!['.mp4', '.webm', '.mov'].some(function (ext) { return nombreArchivo.endsWith(ext); })) {
+                    throw new Error(tr('videos_video_formato', 'Formato no soportado. Usa MP4, WebM o MOV'));
+                }
+
                 var session = await getSession();
                 if (!session) throw new Error(tr('videos_sesion_requerida', 'Inicia sesión'));
 
@@ -1106,7 +1119,10 @@
                 progressText.textContent = tr('videos_subiendo', 'Subiendo...');
 
                 var fileExt = file.name.split('.').pop().toLowerCase();
+
+                // Ruta con UUID del usuario como primer segmento (requerido por las políticas de Storage)
                 filePath = session.user.id + '/' + Date.now() + '.' + fileExt;
+
                 var up = await window.supabase.storage.from('videos').upload(filePath, file, {
                     cacheControl: '31536000', upsert: false, contentType: file.type
                 });
@@ -1115,6 +1131,7 @@
                 var videoUrl = window.supabase.storage.from('videos').getPublicUrl(filePath).data.publicUrl;
                 progressFill.style.width = '60%';
                 progressText.textContent = tr('videos_creando_registro', 'Creando registro...');
+
                 var ins = await window.supabase.from('videos').insert({
                     usuario_id: session.user.id, titulo: titulo, descripcion: descripcion || null,
                     url_video: videoUrl, url_miniatura: null, estado: 'procesando', duracion: 0
@@ -1220,8 +1237,7 @@
             videoEnProcesamiento = null;
             showToast('❌ ' + msg, 'error', 6000);
         }
-
-        // ✅ FIX Claude: usa /api/video/jobs (que sí existe) en lugar de pedir job_id a videos
+        // ✅ FIX Claude: usa /api/video/jobs (que sí existe)
         async function reanudarProcesamientoPendiente() {
             if (!sessionUser) return;
             try {
@@ -1240,8 +1256,9 @@
                 iniciarPollingProcesamiento(activo.job_id, activo.video_id);
             } catch (e) {}
         }
+
         // ================================================================
-        // ✅ ABRIR VIDEO — FIX 1.4
+        // ✅ ABRIR VIDEO
         // ================================================================
         async function abrirVideo(videoId, esAuto) {
             if (!esAuto) autoAvanzados = 0;
@@ -1335,7 +1352,7 @@
         }
 
         // ================================================================
-        // ✅ SIGUIENTE — FIX 1.4
+        // ✅ SIGUIENTE
         // ================================================================
         function reproducirSiguienteVideo() {
             if (!videoActual || videosPublicados.length === 0) return;
@@ -1741,7 +1758,7 @@
         });
 
         document.addEventListener('DOMContentLoaded', function() {
-            console.log("◈ Sariel's - Videos v8 (parches egress aplicados)");
+            console.log("◈ Sariel's - Videos v8 (límites alineados con bucket real)");
             aplicarI18N();
             actualizarIconoMute();
             actualizarIconoPausa(true);
