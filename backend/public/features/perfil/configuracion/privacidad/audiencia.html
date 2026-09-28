@@ -9,6 +9,133 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="../../../shared/config-layout.css" />
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script>
+        (function () {
+            'use strict';
+
+            window.__sarielsAuthenticated = null;
+            window.supabaseClient = window.supabaseClient || null;
+            window.supabaseReady = null;
+
+            window.getSupabaseClient = function () {
+                return window.supabaseReady;
+            };
+
+            function esRutaInternaSegura(valor) {
+                if (typeof valor !== 'string') return false;
+                if (!valor.startsWith('/')) return false;
+                if (valor.startsWith('//')) return false;
+                if (valor.startsWith('/\\')) return false;
+                return true;
+            }
+
+            function revelarPagina() {
+                document.documentElement.classList.add('auth-ready');
+            }
+
+            function irAlIndexConReturnTo() {
+                try {
+                    var returnTo = window.location.pathname + window.location.search + window.location.hash;
+                    if (esRutaInternaSegura(returnTo)) {
+                        localStorage.setItem('wallet_returnTo', returnTo);
+                    }
+                    window.location.replace('/');
+                } catch (e) {
+                    window.location.replace('/');
+                }
+            }
+
+            var salvaguarda = setTimeout(function () {
+                console.warn('[Audiencia] Salvaguarda activada.');
+                revelarPagina();
+            }, 10000);
+
+            async function inicializarSupabase() {
+                try {
+                    if (
+                        !window.supabase ||
+                        typeof window.supabase.createClient !== 'function'
+                    ) {
+                        throw new Error('Supabase SDK no disponible.');
+                    }
+
+                    if (!window.supabaseClient) {
+                        var supabaseUrl = null;
+                        var supabaseAnonKey = null;
+
+                        try {
+                            const response = await fetch('/api/config/public', {
+                                method: 'GET',
+                                credentials: 'same-origin',
+                                cache: 'no-store',
+                                headers: { 'Accept': 'application/json' }
+                            });
+
+                            if (response.ok) {
+                                const config = await response.json();
+                                supabaseUrl = config && config.supabaseUrl;
+                                supabaseAnonKey = config && config.supabaseAnonKey;
+                            }
+                        } catch (fetchErr) {
+                            console.warn('[Audiencia] fetch /api/config/public falló:', fetchErr);
+                        }
+
+                        if (!supabaseUrl || !supabaseAnonKey) {
+                            throw new Error('Configuración pública de Supabase no disponible.');
+                        }
+
+                        window.SupabaseSDK = window.supabase;
+
+                        window.supabaseClient = window.SupabaseSDK.createClient(
+                            supabaseUrl,
+                            supabaseAnonKey,
+                            {
+                                auth: {
+                                    persistSession: true,
+                                    autoRefreshToken: true,
+                                    detectSessionInUrl: true
+                                }
+                            }
+                        );
+                    }
+
+                    const resultado = await window.supabaseClient.auth.getSession();
+                    const session = resultado && resultado.data ? resultado.data.session : null;
+
+                    window.__sarielsAuthenticated = !!session;
+
+                    clearTimeout(salvaguarda);
+
+                    if (!session) {
+                        irAlIndexConReturnTo();
+                    } else {
+                        revelarPagina();
+                    }
+
+                    return window.supabaseClient;
+                } catch (error) {
+                    console.error('[Audiencia] Error inicializando Supabase:', error);
+                    window.__sarielsAuthenticated = false;
+                    clearTimeout(salvaguarda);
+                    revelarPagina();
+                    return null;
+                }
+            }
+
+            window.supabaseReady = inicializarSupabase();
+        })();
+    </script>
+
+    <style>
+        html:not(.auth-ready) body {
+            visibility: hidden;
+        }
+        html.auth-ready body {
+            visibility: visible;
+        }
+    </style>
 </head>
 <body class="cfg-page">
 
@@ -34,7 +161,6 @@
         </div>
     </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="../../../shared/config-icons.js"></script>
     <script src="../../../shared/config-layout.js"></script>
 
@@ -57,107 +183,204 @@
             etiquetas_solo_conocidos: 'audiencia_etiquetas_solo_conocidos',
         };
 
+        let prefsLocales = {};
+
+        async function esperarCliente() {
+            const inicio = Date.now();
+            while (Date.now() - inicio < 10000) {
+                if (window.supabaseClient) return window.supabaseClient;
+                await new Promise(r => setTimeout(r, 100));
+            }
+            return null;
+        }
+
+        /* ============================================================
+           CARGAR PREFERENCIAS DESDE SUPABASE
+           - Intenta RPC obtener_mis_preferencias.
+           - Fallback: localStorage.
+        ============================================================ */
+        async function cargarPrefs() {
+            /* 1. Empezar con localStorage (inmediato) */
+            try {
+                const raw = localStorage.getItem('sariels_audiencia_prefs');
+                if (raw) {
+                    prefsLocales = JSON.parse(raw) || {};
+                }
+            } catch (_) {
+                prefsLocales = {};
+            }
+
+            /* 2. Intentar desde Supabase (fuente de verdad) */
+            try {
+                const client = await esperarCliente();
+                if (!client) return prefsLocales;
+
+                const { data, error } = await client.rpc('obtener_mis_preferencias');
+
+                if (error || !data) {
+                    console.warn('[Audiencia] RPC obtener_mis_preferencias no disponible:', error && error.message);
+                    return prefsLocales;
+                }
+
+                /* Fusionar: Supabase gana sobre localStorage */
+                if (typeof data === 'object' && data !== null) {
+                    /* Aceptar tanto prefs directo como prefs.prefs */
+                    const prefs = data.prefs && typeof data.prefs === 'object' ? data.prefs : data;
+
+                    PREF_KEYS.foto_publica in prefs && (prefsLocales[PREF_KEYS.foto_publica] = prefs[PREF_KEYS.foto_publica]);
+                    PREF_KEYS.posts_publicos in prefs && (prefsLocales[PREF_KEYS.posts_publicos] = prefs[PREF_KEYS.posts_publicos]);
+                    PREF_KEYS.permitir_etiquetas in prefs && (prefsLocales[PREF_KEYS.permitir_etiquetas] = prefs[PREF_KEYS.permitir_etiquetas]);
+                    PREF_KEYS.etiquetas_solo_conocidos in prefs && (prefsLocales[PREF_KEYS.etiquetas_solo_conocidos] = prefs[PREF_KEYS.etiquetas_solo_conocidos]);
+
+                    /* Guardar copia local */
+                    try {
+                        localStorage.setItem('sariels_audiencia_prefs', JSON.stringify(prefsLocales));
+                    } catch (_) {}
+                }
+            } catch (e) {
+                console.warn('[Audiencia] Error cargando desde Supabase:', e && e.message);
+            }
+
+            return prefsLocales;
+        }
+
+        /* ============================================================
+           GUARDAR PREFERENCIA
+           - Guarda en Supabase vía RPC actualizar_preferencia.
+           - Guarda en localStorage (respaldo inmediato).
+        ============================================================ */
+        async function guardarPref(clave, valor) {
+            /* 1. Guardar en localStorage inmediatamente */
+            prefsLocales[clave] = valor;
+            try {
+                localStorage.setItem('sariels_audiencia_prefs', JSON.stringify(prefsLocales));
+            } catch (_) {}
+
+            /* 2. Guardar en Supabase */
+            try {
+                const client = await esperarCliente();
+                if (!client) throw new Error('Supabase no disponible');
+
+                const { error } = await client.rpc('actualizar_preferencia', {
+                    p_key: clave,
+                    p_value: valor
+                });
+
+                if (error) {
+                    console.warn('[Audiencia] RPC actualizar_preferencia falló:', error.message);
+                    return { ok: false, error: error.message };
+                }
+
+                return { ok: true };
+            } catch (e) {
+                console.warn('[Audiencia] Error guardando preferencia:', e && e.message);
+                return { ok: false, error: (e && e.message) || 'Error desconocido' };
+            }
+        }
+
+        function getPref(clave, defecto) {
+            return (clave in prefsLocales) ? prefsLocales[clave] : defecto;
+        }
+
+        /* ============================================================
+           RENDER
+        ============================================================ */
         function renderSecciones() {
-            // ============================================================
-            // FOTO DE PERFIL
-            // ============================================================
             $('#seccionFotoPerfil').innerHTML = [
                 cfgRenderToggle({
                     id: 'toggleFotoPublica',
                     title: 'Foto de perfil pública',
                     desc: 'Permite que cualquier persona vea tu foto de perfil. Si lo desactivas, solo tus contactos podrán verla.',
-                    checked: cfgGetPref(PREF_KEYS.foto_publica, true),
+                    checked: getPref(PREF_KEYS.foto_publica, true),
                     onChange: `window.onToggleFoto(this.checked)`,
                 }),
             ].join('');
 
-            // ============================================================
-            // PUBLICACIONES
-            // ============================================================
             $('#seccionPublicaciones').innerHTML = [
                 cfgRenderToggle({
                     id: 'togglePostsPublicos',
                     title: 'Publicaciones visibles para todos',
                     desc: 'Permite que cualquier persona vea tus publicaciones en el Muro. Si lo desactivas, solo tus contactos podrán verlas.',
-                    checked: cfgGetPref(PREF_KEYS.posts_publicos, true),
+                    checked: getPref(PREF_KEYS.posts_publicos, true),
                     onChange: `window.onTogglePosts(this.checked)`,
                 }),
             ].join('');
 
-            // ============================================================
-            // ETIQUETAS
-            // ============================================================
             $('#seccionEtiquetas').innerHTML = [
                 cfgRenderToggle({
                     id: 'toggleEtiquetas',
                     title: 'Permitir que otros me etiqueten',
                     desc: 'Cualquier persona puede etiquetarte en fotos o publicaciones.',
-                    checked: cfgGetPref(PREF_KEYS.permitir_etiquetas, true),
+                    checked: getPref(PREF_KEYS.permitir_etiquetas, true),
                     onChange: `window.onToggleEtiquetas(this.checked)`,
                 }),
                 cfgRenderToggle({
                     id: 'toggleEtiquetasConocidos',
                     title: 'Solo permitir etiquetas de personas que sigo',
                     desc: 'Solo las personas que sigues podrán etiquetarte.',
-                    checked: cfgGetPref(PREF_KEYS.etiquetas_solo_conocidos, false),
+                    checked: getPref(PREF_KEYS.etiquetas_solo_conocidos, false),
                     onChange: `window.onToggleEtiquetasConocidos(this.checked)`,
                 }),
             ].join('');
         }
 
-        // ============================================================
-        // CALLBACKS
-        // ============================================================
+        /* ============================================================
+           CALLBACKS
+        ============================================================ */
         window.onToggleFoto = async (value) => {
-            await cfgSetPref(PREF_KEYS.foto_publica, value);
-            cfgToast(
-                value ? '👁️ Foto pública activada' : '🔒 Solo contactos pueden ver tu foto',
-                value ? 'success' : 'warning'
-            );
+            const r = await guardarPref(PREF_KEYS.foto_publica, value);
+            if (r.ok) {
+                cfgToast(
+                    value ? '👁️ Foto pública activada' : '🔒 Solo contactos pueden ver tu foto',
+                    value ? 'success' : 'warning'
+                );
+            } else {
+                cfgToast('⚠️ No se pudo guardar. Reintenta.', 'warning');
+            }
         };
 
         window.onTogglePosts = async (value) => {
-            await cfgSetPref(PREF_KEYS.posts_publicos, value);
-            cfgToast(
-                value ? '🌐 Publicaciones visibles para todos' : '🔒 Solo contactos pueden verlas',
-                value ? 'success' : 'warning'
-            );
+            const r = await guardarPref(PREF_KEYS.posts_publicos, value);
+            if (r.ok) {
+                cfgToast(
+                    value ? '🌐 Publicaciones visibles para todos' : '🔒 Solo contactos pueden verlas',
+                    value ? 'success' : 'warning'
+                );
+            } else {
+                cfgToast('⚠️ No se pudo guardar. Reintenta.', 'warning');
+            }
         };
 
         window.onToggleEtiquetas = async (value) => {
-            await cfgSetPref(PREF_KEYS.permitir_etiquetas, value);
-            cfgToast(
-                value ? '🏷️ Pueden etiquetarte' : '🚫 Ya no pueden etiquetarte',
-                value ? 'success' : 'warning'
-            );
+            const r = await guardarPref(PREF_KEYS.permitir_etiquetas, value);
+            if (r.ok) {
+                cfgToast(
+                    value ? '🏷️ Pueden etiquetarte' : '🚫 Ya no pueden etiquetarte',
+                    value ? 'success' : 'warning'
+                );
+            } else {
+                cfgToast('⚠️ No se pudo guardar. Reintenta.', 'warning');
+            }
         };
 
         window.onToggleEtiquetasConocidos = async (value) => {
-            await cfgSetPref(PREF_KEYS.etiquetas_solo_conocidos, value);
-            cfgToast(
-                value ? '👥 Solo tus contactos pueden etiquetarte' : '🌐 Cualquiera puede etiquetarte',
-                value ? 'success' : 'warning'
-            );
+            const r = await guardarPref(PREF_KEYS.etiquetas_solo_conocidos, value);
+            if (r.ok) {
+                cfgToast(
+                    value ? '👥 Solo tus contactos pueden etiquetarte' : '🌐 Cualquiera puede etiquetarte',
+                    value ? 'success' : 'warning'
+                );
+            } else {
+                cfgToast('⚠️ No se pudo guardar. Reintenta.', 'warning');
+            }
         };
 
-        // ============================================================
-        // INICIALIZAR
-        // ============================================================
-        window.addEventListener('DOMContentLoaded', async () => {
-            await new Promise(resolve => setTimeout(resolve, 400));
-            renderSecciones();
-        });
-
-        // ============================================================
-        // CARGAR HANDLE EN SUBTITLE
-        // ============================================================
-        (async function cargarUsuario() {
+        /* ============================================================
+           CARGAR HANDLE EN SUBTITLE
+        ============================================================ */
+        async function cargarHandleSubtitulo() {
             try {
-                const client = window.supabaseClient || 
-                    (window.supabase && window.supabase.createClient(
-                        'https://zultnlogdoajehbswlih.supabase.co',
-                        'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
-                    ));
+                const client = await esperarCliente();
                 if (!client) return;
                 const { data } = await client.auth.getSession();
                 const session = data && data.session;
@@ -166,7 +389,17 @@
                 const subEl = document.querySelector('.cfg-header-subtitle');
                 if (subEl) subEl.textContent = '@' + handle;
             } catch (e) { /* silencioso */ }
-        })();
+        }
+
+        /* ============================================================
+           INICIALIZAR
+        ============================================================ */
+        window.addEventListener('DOMContentLoaded', async () => {
+            await new Promise(resolve => setTimeout(resolve, 300));
+            await cargarPrefs();
+            renderSecciones();
+            await cargarHandleSubtitulo();
+        });
 
     })();
     </script>
