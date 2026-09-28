@@ -82,10 +82,6 @@
                         );
                     }
 
-                    /*
-                     * Guardamos el SDK original ANTES de crear el cliente,
-                     * porque app.js reemplaza window.supabase por el cliente.
-                     */
                     window.SupabaseSDK = window.supabase;
 
                     window.supabaseClient = window.SupabaseSDK.createClient(
@@ -265,106 +261,6 @@ body {
     background: var(--gold);
     border-radius: 50%;
 }
-
-/* =====================================================
-   AVATAR DE USUARIO EN EL HEADER
-===================================================== */
-.avatar-wrap {
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-.avatar-btn {
-    width: 42px;
-    height: 42px;
-    border-radius: 50%;
-    overflow: hidden;
-    border: 2px solid var(--gold);
-    background: linear-gradient(135deg, var(--green-deep), var(--gold));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    padding: 0;
-    transition: var(--transition);
-    box-shadow: 0 0 0 2px rgba(0,0,0,0.6), 0 0 20px rgba(212, 175, 55, 0.15);
-    position: relative;
-    flex-shrink: 0;
-}
-.avatar-btn:hover {
-    transform: scale(1.06);
-    box-shadow: 0 0 0 2px rgba(0,0,0,0.6), 0 0 30px rgba(212, 175, 55, 0.4);
-}
-.avatar-btn:active { transform: scale(0.98); }
-.avatar-btn img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-}
-.avatar-btn .avatar-fallback {
-    font-family: 'Orbitron', monospace;
-    font-size: 1.1rem;
-    color: var(--space);
-    font-weight: 900;
-}
-.avatar-btn .edit-dot {
-    position: absolute;
-    bottom: -2px;
-    right: -2px;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: var(--gold);
-    border: 2px solid var(--space);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.55rem;
-    color: var(--space);
-    font-weight: 900;
-}
-.avatar-btn.logged-in .edit-dot { display: flex; }
-
-.session-chip {
-    display: none;
-    align-items: center;
-    gap: 6px;
-    background: rgba(0,0,0,0.4);
-    border: 1px solid var(--glass-border);
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 0.65rem;
-    color: var(--text-secondary);
-    max-width: 160px;
-}
-.session-chip.visible { display: inline-flex; }
-.session-chip .who {
-    color: var(--gold);
-    font-weight: 600;
-    max-width: 100px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-.logout-btn-mini {
-    background: transparent;
-    border: 1px solid var(--danger);
-    color: var(--danger);
-    padding: 2px 8px;
-    border-radius: 10px;
-    cursor: pointer;
-    font-size: 0.55rem;
-    font-weight: 600;
-    transition: var(--transition);
-    font-family: 'Inter', sans-serif;
-}
-.logout-btn-mini:hover { background: rgba(255, 51, 102, 0.12); }
-
-/* =====================================================
-   HERO
-===================================================== */
 .hero {
     text-align: center;
     padding: 40px 20px 30px;
@@ -397,10 +293,6 @@ body {
     gap: 6px;
 }
 .ir-perfil-btn:hover { background: rgba(212, 175, 55, 0.25); transform: translateY(-2px); }
-
-/* =====================================================
-   AUTH — REGISTRO / LOGIN
-===================================================== */
 .auth-section {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -481,12 +373,9 @@ body {
     color: var(--gold);
     text-decoration: none;
     font-weight: 600;
+    cursor: pointer;
 }
 .auth-card .switch-link a:hover { text-decoration: underline; }
-
-/* =====================================================
-   CARRUSEL EN VIVO
-===================================================== */
 .carrusel-wrapper {
     width: 100%;
     overflow: hidden;
@@ -595,10 +484,6 @@ body {
 @media (max-width: 480px) {
     .carrusel-item { width: 160px; height: 95px; }
 }
-
-/* =====================================================
-   FOOTER
-===================================================== */
 .footer {
     margin-top: 30px;
     padding-top: 16px;
@@ -614,10 +499,6 @@ body {
 .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
 .footer-links a { color: var(--text-muted); text-decoration: none; transition: var(--transition); }
 .footer-links a:hover { color: var(--gold); }
-
-/* =====================================================
-   TOAST
-===================================================== */
 .toast {
     position: fixed;
     bottom: 20px;
@@ -641,10 +522,6 @@ body {
 .toast.error { border-color: var(--danger); color: var(--danger); }
 .toast.warning { border-color: var(--warning); color: var(--warning); }
 .toast.success { border-color: var(--success); color: var(--success); }
-
-/* =====================================================
-   NEBULOSAS
-===================================================== */
 .nebula {
     position: fixed;
     border-radius: 50%;
@@ -660,20 +537,11 @@ body {
     0% { transform: translate(0, 0) scale(1); }
     100% { transform: translate(40px, -30px) scale(1.15); }
 }
-
-/* =====================================================
-   RESPONSIVE
-===================================================== */
 @media (max-width: 768px) {
     #stars-canvas { display: none; }
     .nebula { display: none; }
     .header { flex-direction: column; align-items: flex-start; gap: 10px; }
-    .header-actions { width: 100%; flex-wrap: wrap; justify-content: space-between; }
-    .session-chip { max-width: 140px; }
-    .session-chip .who { max-width: 80px; }
-}
-@media (max-width: 480px) {
-    .avatar-btn { width: 38px; height: 38px; }
+    .header-actions { width: 100%; flex-wrap: wrap; }
 }
 </style>
 </head>
@@ -697,34 +565,6 @@ body {
         <a href="https://polygon.technology/" target="_blank" rel="noopener noreferrer" class="network-badge">
             <span class="dot"></span> Polygon
         </a>
-
-        <!-- =========================================================
-             AVATAR DE USUARIO
-        ========================================================== -->
-        <div class="avatar-wrap">
-            <div class="session-chip" id="sessionChip">
-                <span class="who" id="sessionChipName">—</span>
-                <button type="button" class="logout-btn-mini" onclick="cerrarSesionDesdeIndex()" title="Cerrar sesión">Salir</button>
-            </div>
-
-            <button
-                type="button"
-                class="avatar-btn"
-                id="avatarBtn"
-                aria-label="Perfil"
-                title="Perfil"
-            >
-                <span class="avatar-fallback" id="avatarFallback">◈</span>
-                <span class="edit-dot" title="Cambiar foto">✎</span>
-            </button>
-
-            <input
-                type="file"
-                id="avatarInput"
-                accept="image/png,image/jpeg,image/webp,image/gif"
-                style="display:none;"
-            />
-        </div>
     </div>
 </header>
 
@@ -733,9 +573,6 @@ body {
     <p data-clave="bienvenido_descripcion">
         Compra domos físicos, acumula <strong>Es.stoks</strong>, canjea NFTs y conecta con tu comunidad en un ecosistema Web3 sin custodia.
     </p>
-    <a href="/features/perfil/perfil.html" class="ir-perfil-btn protected-link" onclick="return protegerYNavegar(event, this.href)" data-clave="ir_perfil">
-        ◆ Ir a mi perfil
-    </a>
 </section>
 
 <!-- =========================================================
@@ -844,7 +681,7 @@ body {
 </div>
 
 <!-- =========================================================
-     APP.JS — auth, wallet, tokens, UI
+     APP.JS
 ========================================================== -->
 <script src="/app.js"></script>
 
@@ -921,31 +758,28 @@ window.addEventListener('unhandledrejection', function (event) {
 });
 
 /* ========================================================
-   PROTECCIÓN DE PERFIL
+   REDIRECCIÓN AUTOMÁTICA AL PERFIL SI YA HAY SESIÓN
 ======================================================== */
-function protegerYNavegar(event, url) {
-    if (!window.__sarielsAuthenticated) {
-        if (event && event.preventDefault) {
-            event.preventDefault();
+const RUTA_PERFIL = '/features/perfil/perfil.html';
+
+async function redirigirSiYaHaySesion() {
+    try {
+        const client = await window.getSupabaseClient();
+        if (!client) return;
+
+        const resultado = await client.auth.getSession();
+        const session = resultado && resultado.data ? resultado.data.session : null;
+
+        if (session) {
+            window.location.replace(RUTA_PERFIL);
         }
-        try { localStorage.setItem('wallet_returnTo', url); } catch (_) {}
-        if (window.showToast) {
-            window.showToast('⚠️ Inicia sesión o regístrate para continuar', 'warning');
-        }
-        /* Llevar al formulario del index */
-        const authSection = document.getElementById('authSection');
-        if (authSection) {
-            authSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-        /* Forzar vista de login (la más probable para un usuario que ya conoce el flujo) */
-        mostrarLoginIndex();
-        return false;
+    } catch (e) {
+        console.warn('[Index] No se pudo verificar sesión:', e);
     }
-    return true;
 }
 
 /* ========================================================
-   MOSTRAR / OCULTAR CARDS
+   CAMBIO DE CARD (Registro ↔ Login)
 ======================================================== */
 function mostrarLoginIndex() {
     const r = document.getElementById('registerCard');
@@ -962,7 +796,8 @@ function mostrarRegistroIndex() {
 }
 
 /* ========================================================
-   REGISTRO — usa window.app.registrarUsuario (real)
+   REGISTRO — usa window.app.registrarUsuario
+   Al terminar → redirige al perfil (sin volver al index)
 ======================================================== */
 async function registrarDesdeIndex() {
     const emailEl = document.getElementById('regEmail');
@@ -993,26 +828,18 @@ async function registrarDesdeIndex() {
         if (passEl) passEl.value = '';
         if (nameEl) nameEl.value = '';
 
-        /* Redirigir a returnTo si existe */
-        const returnTo = localStorage.getItem('wallet_returnTo');
-        if (returnTo && returnTo.startsWith('/')) {
-            localStorage.removeItem('wallet_returnTo');
-            window.location.href = returnTo;
-            return;
-        }
-        /* Refrescar estado visual */
-        setTimeout(refrescarAvatarYHeader, 300);
+        /* Redirigir SIEMPRE al perfil, sin dejar el index en el historial */
+        window.location.replace(RUTA_PERFIL);
 
     } catch (e) {
-        /* El toast ya lo muestra app.js */
         console.error('Error en registrarDesdeIndex:', e);
-    } finally {
         if (btn) { btn.disabled = false; btn.textContent = originalText; }
     }
 }
 
 /* ========================================================
-   LOGIN — usa window.app.iniciarSesion (real)
+   LOGIN — usa window.app.iniciarSesion
+   Al terminar → redirige al perfil (sin volver al index)
 ======================================================== */
 async function iniciarSesionDesdeIndex() {
     const emailEl = document.getElementById('loginEmail');
@@ -1040,249 +867,13 @@ async function iniciarSesionDesdeIndex() {
         if (emailEl) emailEl.value = '';
         if (passEl) passEl.value = '';
 
-        const returnTo = localStorage.getItem('wallet_returnTo');
-        if (returnTo && returnTo.startsWith('/')) {
-            localStorage.removeItem('wallet_returnTo');
-            window.location.href = returnTo;
-            return;
-        }
-        setTimeout(refrescarAvatarYHeader, 300);
+        /* Redirigir SIEMPRE al perfil */
+        window.location.replace(RUTA_PERFIL);
 
     } catch (e) {
         console.error('Error en iniciarSesionDesdeIndex:', e);
-    } finally {
         if (btn) { btn.disabled = false; btn.textContent = originalText; }
     }
-}
-
-/* ========================================================
-   LOGOUT desde el header
-======================================================== */
-async function cerrarSesionDesdeIndex() {
-    if (!window.app || typeof window.app.cerrarSesion !== 'function') return;
-    await window.app.cerrarSesion();
-    refrescarAvatarYHeader();
-    mostrarRegistroIndex();
-}
-
-/* ========================================================
-   AVATAR — cargar, mostrar, subir
-======================================================== */
-async function cargarAvatarUsuario() {
-    const client = await window.getSupabaseClient();
-    if (!client) return;
-
-    try {
-        const sessionResult = await client.auth.getSession();
-        const session = sessionResult && sessionResult.data ? sessionResult.data.session : null;
-
-        if (!session || !session.user) {
-            aplicarAvatarSinSesion();
-            return;
-        }
-
-        /* Con sesión: cargar avatar_url desde public.usuarios */
-        const { data, error } = await client
-            .from('usuarios')
-            .select('avatar_url, nombre, handle')
-            .eq('id', session.user.id)
-            .maybeSingle();
-
-        if (error) {
-            console.warn('[Avatar] Error leyendo usuarios:', error);
-        }
-
-        const avatarUrl = data && data.avatar_url ? data.avatar_url : null;
-        const nombre = (data && (data.nombre || data.handle)) || (session.user.email || 'Usuario');
-
-        aplicarAvatarConSesion(avatarUrl, nombre);
-    } catch (e) {
-        console.warn('[Avatar] Error:', e);
-        aplicarAvatarSinSesion();
-    }
-}
-
-function aplicarAvatarSinSesion() {
-    const btn = document.getElementById('avatarBtn');
-    const fallback = document.getElementById('avatarFallback');
-    const chip = document.getElementById('sessionChip');
-
-    if (!btn) return;
-    btn.classList.remove('logged-in');
-
-    /* Limpiar imágenes previas */
-    const prevImg = btn.querySelector('img');
-    if (prevImg) prevImg.remove();
-
-    if (fallback) fallback.style.display = 'inline';
-    if (chip) chip.classList.remove('visible');
-}
-
-function aplicarAvatarConSesion(avatarUrl, nombre) {
-    const btn = document.getElementById('avatarBtn');
-    const fallback = document.getElementById('avatarFallback');
-    const chip = document.getElementById('sessionChip');
-    const chipName = document.getElementById('sessionChipName');
-
-    if (!btn) return;
-
-    btn.classList.add('logged-in');
-
-    if (avatarUrl) {
-        /* Quitar imagen previa si la hubiera */
-        const prevImg = btn.querySelector('img');
-        if (prevImg) prevImg.remove();
-
-        const img = document.createElement('img');
-        img.src = avatarUrl;
-        img.alt = nombre || 'Avatar';
-        img.onerror = function () {
-            /* Si la imagen falla, mostrar fallback */
-            img.remove();
-            if (fallback) fallback.style.display = 'inline';
-        };
-        btn.insertBefore(img, fallback);
-        if (fallback) fallback.style.display = 'none';
-    } else {
-        /* Sin foto: mostrar la inicial del nombre o el rombo */
-        const prevImg = btn.querySelector('img');
-        if (prevImg) prevImg.remove();
-        if (fallback) {
-            const inicial = (nombre || '').trim().charAt(0).toUpperCase();
-            fallback.textContent = inicial || '◈';
-            fallback.style.display = 'inline';
-        }
-    }
-
-    if (chip && chipName) {
-        chipName.textContent = nombre || 'Usuario';
-        chip.classList.add('visible');
-    }
-}
-
-/* ========================================================
-   SUBIR AVATAR — misma lógica que perfil.js
-   Bucket: sariels-avatars
-   Ruta: {user_id}/avatar.{ext}
-======================================================== */
-async function subirAvatarDesdeIndex(event) {
-    const file = event && event.target ? event.target.files[0] : null;
-    if (!file) return;
-
-    /* Validaciones básicas */
-    if (file.size > 5 * 1024 * 1024) {
-        if (window.showToast) window.showToast('❌ Imagen mayor a 5 MB', 'error');
-        event.target.value = '';
-        return;
-    }
-
-    const tiposPermitidos = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-    if (tiposPermitidos.indexOf(file.type) === -1) {
-        if (window.showToast) window.showToast('❌ Formato no permitido (JPEG, PNG, WebP o GIF)', 'error');
-        event.target.value = '';
-        return;
-    }
-
-    const client = await window.getSupabaseClient();
-    if (!client) {
-        if (window.showToast) window.showToast('❌ Supabase no disponible', 'error');
-        return;
-    }
-
-    try {
-        const sessionResult = await client.auth.getSession();
-        const session = sessionResult && sessionResult.data ? sessionResult.data.session : null;
-        if (!session || !session.user) {
-            if (window.showToast) window.showToast('⚠️ Inicia sesión primero', 'warning');
-            return;
-        }
-
-        const fileExt = file.name.split('.').pop().toLowerCase();
-        const filePath = session.user.id + '/avatar.' + fileExt;
-
-        if (window.showToast) window.showToast('⏳ Subiendo foto...', '', 5000);
-
-        const { error: uploadError } = await client.storage
-            .from('sariels-avatars')
-            .upload(filePath, file, { upsert: true, contentType: file.type });
-
-        if (uploadError) {
-            console.error('[Avatar] Error storage:', uploadError);
-            const msg = uploadError.message || '';
-            if (msg.includes('not found') || msg.includes('Bucket')) {
-                if (window.showToast) window.showToast('❌ Bucket de avatares no configurado', 'error');
-            } else if (msg.includes('policy') || msg.includes('violates')) {
-                if (window.showToast) window.showToast('❌ Sin permiso para subir foto', 'error');
-            } else {
-                if (window.showToast) window.showToast('❌ Error: ' + msg, 'error');
-            }
-            return;
-        }
-
-        const { data: urlData } = client.storage
-            .from('sariels-avatars')
-            .getPublicUrl(filePath);
-
-        const publicUrl = urlData.publicUrl + '?t=' + Date.now();
-
-        const { error: updateError } = await client
-            .from('usuarios')
-            .update({ avatar_url: publicUrl })
-            .eq('id', session.user.id);
-
-        if (updateError) throw updateError;
-
-        if (window.showToast) window.showToast('✅ Foto actualizada', 'success');
-
-        /* Actualizar el avatar en pantalla sin recargar */
-        const nombreActual = (document.getElementById('sessionChipName') || {}).textContent || 'Usuario';
-        aplicarAvatarConSesion(publicUrl, nombreActual);
-
-    } catch (e) {
-        console.error('[Avatar] Error:', e);
-        if (window.showToast) window.showToast('❌ Error al subir foto', 'error');
-    } finally {
-        if (event && event.target) event.target.value = '';
-    }
-}
-
-/* ========================================================
-   CLICK EN AVATAR
-   - Sin sesión: scroll al formulario de registro
-   - Con sesión: si hace clic simple → perfil; si clic en "✎" → subir foto
-======================================================== */
-function manejarClickAvatar(event) {
-    const btn = document.getElementById('avatarBtn');
-    if (!btn) return;
-
-    const logueado = btn.classList.contains('logged-in');
-
-    if (!logueado) {
-        const authSection = document.getElementById('authSection');
-        if (authSection) {
-            authSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-        mostrarRegistroIndex();
-        return;
-    }
-
-    /* Si el clic fue sobre el edit-dot, abrir selector de archivo */
-    const editDot = event && event.target && event.target.classList && event.target.classList.contains('edit-dot');
-    if (editDot) {
-        const input = document.getElementById('avatarInput');
-        if (input) input.click();
-        return;
-    }
-
-    /* Clic normal → ir al perfil */
-    window.location.href = '/features/perfil/perfil.html';
-}
-
-/* ========================================================
-   REFRESCAR AVATAR + HEADER
-======================================================== */
-async function refrescarAvatarYHeader() {
-    await cargarAvatarUsuario();
 }
 
 /* ========================================================
@@ -1331,9 +922,7 @@ async function cargarCarruselEnVivo() {
                 .order('created_at', { ascending: false })
                 .limit(12);
 
-            if (fallback.error) {
-                throw fallback.error;
-            }
+            if (fallback.error) throw fallback.error;
 
             transmisiones = (fallback.data || []).map(function (t) {
                 return Object.assign({}, t, { grupo: null });
@@ -1444,52 +1033,32 @@ function abrirCanalDesdeCarrusel(grupoId) {
 /* ========================================================
    EXPONER AL WINDOW
 ======================================================== */
-window.protegerYNavegar = protegerYNavegar;
 window.mostrarErrorEnPantalla = mostrarErrorEnPantalla;
 window.mostrarLoginIndex = mostrarLoginIndex;
 window.mostrarRegistroIndex = mostrarRegistroIndex;
 window.registrarDesdeIndex = registrarDesdeIndex;
 window.iniciarSesionDesdeIndex = iniciarSesionDesdeIndex;
-window.cerrarSesionDesdeIndex = cerrarSesionDesdeIndex;
 window.abrirCanalDesdeCarrusel = abrirCanalDesdeCarrusel;
 window.cargarCarruselEnVivo = cargarCarruselEnVivo;
-window.subirAvatarDesdeIndex = subirAvatarDesdeIndex;
-window.cargarAvatarUsuario = cargarAvatarUsuario;
-window.refrescarAvatarYHeader = refrescarAvatarYHeader;
 
 /* ========================================================
    DOM READY
 ======================================================== */
 document.addEventListener('DOMContentLoaded', function () {
 
-    /* Click en avatar */
-    const avatarBtn = document.getElementById('avatarBtn');
-    if (avatarBtn) {
-        avatarBtn.addEventListener('click', manejarClickAvatar);
-    }
+    /* Si ya hay sesión → directo al perfil */
+    redirigirSiYaHaySesion();
 
-    /* Input de archivo para avatar */
-    const avatarInput = document.getElementById('avatarInput');
-    if (avatarInput) {
-        avatarInput.addEventListener('change', subirAvatarDesdeIndex);
-    }
-
-    /* Cargar avatar en cuanto Supabase esté listo */
+    /* Cargar carrusel cuando el cliente esté listo */
     (async function cargarCuandoListo() {
         const client = await window.getSupabaseClient();
-        if (!client) {
-            console.warn('[Index] supabaseClient no disponible; avatar y carrusel no iniciados.');
-            return;
-        }
+        if (!client) return;
 
-        await cargarAvatarUsuario();
+        /* Si hay sesión, no pintamos nada: ya se está redirigiendo */
+        if (window.__sarielsAuthenticated) return;
+
         await cargarCarruselEnVivo();
         setInterval(cargarCarruselEnVivo, 30000);
-
-        /* Reaccionar a cambios de sesión (login/logout desde otro lugar) */
-        client.auth.onAuthStateChange(function () {
-            cargarAvatarUsuario();
-        });
     })();
 
     /* Idiomas */
