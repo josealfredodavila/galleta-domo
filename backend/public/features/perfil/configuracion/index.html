@@ -1,83 +1,90 @@
-<!DOCTYPE html><html lang="es">
+<!DOCTYPE html>
+<html lang="es">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#000000" /><title>Configuración · Csariel's</title>
+    <meta name="theme-color" content="#000000" />
 
-<link
-    rel="icon"
-    type="image/svg+xml"
-    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron,monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>"
-/>
+    <title>Configuración · Csariel's</title>
 
-<link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap"
-    rel="stylesheet"
-/>
+    <link
+        rel="icon"
+        type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron,monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>"
+    />
 
-<!-- Recurso real existente en GitHub -->
-<link
-    rel="stylesheet"
-    href="/features/shared/config-layout.css"
-/>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap"
+        rel="stylesheet"
+    />
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <!-- CSS REAL EXISTENTE -->
+    <link
+        rel="stylesheet"
+        href="/features/shared/config-layout.css"
+    />
 
-<!-- Recurso real existente en GitHub -->
-<script src="/features/shared/config-icons.js"></script>
+    <!-- Supabase JS v2 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
-<style>
-    html:not(.auth-ready) body {
-        visibility: hidden;
-    }
+    <!-- ICONOS REAL EXISTENTE -->
+    <script src="/features/shared/config-icons.js"></script>
 
-    html.auth-ready body {
-        visibility: visible;
-    }
+    <style>
+        html:not(.auth-ready) body {
+            visibility: hidden;
+        }
 
-    .cfg-error-panel {
-        max-width: 480px;
-        margin: 80px auto;
-        padding: 28px 22px;
-        background: rgba(255, 51, 102, 0.08);
-        border: 1px solid rgba(255, 51, 102, 0.35);
-        border-radius: 16px;
-        text-align: center;
-        color: #f0f4f8;
-        font-family: 'Inter', sans-serif;
-    }
+        html.auth-ready body {
+            visibility: visible;
+        }
 
-    .cfg-error-panel h2 {
-        color: #ff3366;
-        margin: 0 0 12px;
-        font-size: 1.1rem;
-    }
+        .cfg-error-panel {
+            max-width: 480px;
+            margin: 80px auto;
+            padding: 28px 22px;
+            background: rgba(255, 51, 102, 0.08);
+            border: 1px solid rgba(255, 51, 102, 0.35);
+            border-radius: 16px;
+            text-align: center;
+            color: #f0f4f8;
+            font-family: 'Inter', sans-serif;
+        }
 
-    .cfg-error-panel p {
-        color: #8aa8b8;
-        font-size: .85rem;
-        line-height: 1.6;
-        margin: 0 0 18px;
-    }
+        .cfg-error-panel h2 {
+            color: #ff3366;
+            margin: 0 0 12px;
+            font-size: 1.1rem;
+        }
 
-    .cfg-error-panel button {
-        border: 0;
-        padding: 10px 20px;
-        background: linear-gradient(135deg, #d4af37, #b8923a);
-        color: #05080f;
-        font-weight: 800;
-        border-radius: 10px;
-        font-size: .85rem;
-        cursor: pointer;
-    }
+        .cfg-error-panel p {
+            color: #8aa8b8;
+            font-size: .85rem;
+            line-height: 1.6;
+            margin: 0 0 18px;
+        }
 
-    .cfg-item-danger .cfg-item-icon,
-    .cfg-item-danger .cfg-item-title {
-        color: var(--cfg-danger);
-    }
-</style>
+        .cfg-error-panel button {
+            border: 0;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #d4af37, #b8923a);
+            color: #05080f;
+            font-weight: 800;
+            border-radius: 10px;
+            font-size: .85rem;
+            cursor: pointer;
+        }
 
-</head><body class="cfg-page"><header class="cfg-header">
+        .cfg-item-danger .cfg-item-icon,
+        .cfg-item-danger .cfg-item-title {
+            color: var(--cfg-danger);
+        }
+    </style>
+</head>
+
+<body class="cfg-page">
+
+<header class="cfg-header">
 
     <button
         id="cfgBackButton"
@@ -87,6 +94,7 @@
     ></button>
 
     <div class="cfg-header-text">
+
         <h1 class="cfg-header-title">
             Configuración
         </h1>
@@ -97,6 +105,7 @@
         >
             Cargando…
         </p>
+
     </div>
 
 </header>
@@ -255,9 +264,11 @@
 
         element.className =
             "cfg-item" +
-            (danger
-                ? " cfg-item-danger"
-                : "");
+            (
+                danger
+                    ? " cfg-item-danger"
+                    : ""
+            );
 
         if (href) {
 
@@ -695,7 +706,6 @@
 
             window.__sarielsAuthenticated =
                 true;
-
 
             document.documentElement
                 .classList
@@ -1500,12 +1510,6 @@
             client
         );
 
-
-        /*
-         * Si Supabase detecta cierre de sesión
-         * mientras el usuario está en esta página,
-         * regresamos inmediatamente al inicio.
-         */
 
         client.auth.onAuthStateChange(
             function (
