@@ -1,6 +1,6 @@
 /* ================================================================
    WORKER.JS - SARIEL'S ECOSYSTEM
-   VERSIÓN FINAL - Fix "Filter not found" + Audio
+   VERSIÓN FINAL v2 - Fix duplicados por reintentos + concurrencia
    ================================================================ */
 
 const { Worker } = require('bullmq');
@@ -73,6 +73,7 @@ async function procesarVideo(job) {
     const { videoId, videoUrl, userId, bucket, filePath } = job.data;
 
     console.log(`\n📹 [JOB ${job.id}] Procesando video: ${videoId}`);
+    console.log(`   Attempt: ${job.attemptsMade + 1}/${job.opts.attempts}`);
 
     const inputPath = path.join(TEMP_DIR, `sariels_input_${job.id}.mp4`);
     const outputPath = path.join(TEMP_DIR, `sariels_output_${job.id}.mp4`);
@@ -188,10 +189,10 @@ async function procesarVideo(job) {
             // ✅ Opciones de audio (SOLO si el video tiene audio)
             if (tieneAudio) {
                 command.outputOptions([
-                    '-map', '0:a?',      // Mapear audio del input original
-                    '-c:a', 'aac',       // Re-codificar a AAC
-                    '-b:a', '128k',      // Bitrate 128k
-                    '-ac', '2'           // Forzar estéreo (2 canales)
+                    '-map', '0:a?',
+                    '-c:a', 'aac',
+                    '-b:a', '128k',
+                    '-ac', '2'
                 ]);
                 console.log(`🔊 [JOB ${job.id}] Audio: AAC 128k estéreo`);
             } else {
@@ -231,14 +232,20 @@ async function procesarVideo(job) {
         console.log(`📤 [JOB ${job.id}] Subiendo video procesado...`);
 
         const outputBuffer = fs.readFileSync(outputPath);
-        const processedPath = `${userId}/${videoId}_processed_${Date.now()}.mp4`;
 
+        // ✅ FIX 1: Path SIN timestamp.
+        // Si el job se reintenta (attempts:3), sube al MISMO path y sobreescribe.
+        // Antes: `${userId}/${videoId}_processed_${Date.now()}.mp4` → 3 archivos por 3 intentos.
+        // Ahora: `${userId}/${videoId}_processed.mp4` → siempre el mismo.
+        const processedPath = `${userId}/${videoId}_processed.mp4`;
+
+        // ✅ FIX 2: upsert: true (sobreescribe si ya existe)
         const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
             .from(bucket)
             .upload(processedPath, outputBuffer, {
                 contentType: 'video/mp4',
-                cacheControl: '3600',
-                upsert: false
+                cacheControl: '31536000',
+                upsert: true
             });
 
         if (uploadError) {
@@ -322,16 +329,23 @@ async function procesarVideo(job) {
             console.warn(`⚠️ No se pudo limpiar temp:`, cleanupError.message);
         }
 
-        try {
-            await supabaseAdmin
-                .from('videos')
-                .update({
-                    estado: 'error_procesamiento',
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', videoId);
-        } catch (dbErr) {
-            console.warn(`⚠️ No se pudo marcar error en DB:`, dbErr.message);
+        // Solo marcar error si es el ÚLTIMO intento
+        const esUltimoIntento = (job.attemptsMade + 1) >= (job.opts.attempts || 1);
+        if (esUltimoIntento) {
+            try {
+                await supabaseAdmin
+                    .from('videos')
+                    .update({
+                        estado: 'error_procesamiento',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', videoId);
+                console.log(`📝 [JOB ${job.id}] Marcado como error en DB (último intento)`);
+            } catch (dbErr) {
+                console.warn(`⚠️ No se pudo marcar error en DB:`, dbErr.message);
+            }
+        } else {
+            console.log(`🔄 [JOB ${job.id}] Se reintentará (${job.attemptsMade + 1}/${job.opts.attempts})`);
         }
 
         throw error;
@@ -344,8 +358,11 @@ async function procesarVideo(job) {
 const worker = new Worker(COLA_NOMBRE, procesarVideo, {
     connection: redisConnection,
     concurrency: MAX_CONCURRENT,
+    // ✅ FIX 3: subir límite de 1 a 3 jobs por minuto.
+    // Antes: 10 usuarios subían video → el 10° esperaba 10 minutos.
+    // Ahora: 3 jobs por minuto, más razonable.
     limiter: {
-        max: 1,
+        max: 3,
         duration: 60000
     }
 });
@@ -413,11 +430,13 @@ process.on('SIGTERM', async () => {
 });
 
 console.log('========================================');
-console.log('🎬 WORKER DE VIDEOS - SARIEL\'S');
+console.log('🎬 WORKER DE VIDEOS - SARIEL\'S v2');
 console.log('========================================');
 console.log('📡 Cola:', COLA_NOMBRE);
 console.log('🔢 Concurrencia:', MAX_CONCURRENT);
 console.log('📁 Temp dir:', TEMP_DIR);
 console.log('🖼️ Logo:', LOGO_PATH);
 console.log('🔊 Audio: AAC 128k (si el original lo tiene)');
+console.log('🎯 Limiter: 3 jobs/minuto');
+console.log('🛡️ upsert:true (evita duplicados en reintentos)');
 console.log('========================================');
