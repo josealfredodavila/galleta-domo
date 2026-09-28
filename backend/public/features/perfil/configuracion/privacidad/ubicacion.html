@@ -7,10 +7,135 @@
     <title>Acerca de tu cuenta · Sariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
-    
+
     <link rel="stylesheet" href="../../../shared/config-layout.css" />
-    
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script>
+        (function () {
+            'use strict';
+
+            window.__sarielsAuthenticated = null;
+            window.supabaseClient = window.supabaseClient || null;
+            window.supabaseReady = null;
+
+            window.getSupabaseClient = function () {
+                return window.supabaseReady;
+            };
+
+            function esRutaInternaSegura(valor) {
+                if (typeof valor !== 'string') return false;
+                if (!valor.startsWith('/')) return false;
+                if (valor.startsWith('//')) return false;
+                if (valor.startsWith('/\\')) return false;
+                return true;
+            }
+
+            function revelarPagina() {
+                document.documentElement.classList.add('auth-ready');
+            }
+
+            function irAlIndexConReturnTo() {
+                try {
+                    var returnTo = window.location.pathname + window.location.search + window.location.hash;
+                    if (esRutaInternaSegura(returnTo)) {
+                        localStorage.setItem('wallet_returnTo', returnTo);
+                    }
+                    window.location.replace('/');
+                } catch (e) {
+                    window.location.replace('/');
+                }
+            }
+
+            var salvaguarda = setTimeout(function () {
+                console.warn('[Ubicacion] Salvaguarda activada.');
+                revelarPagina();
+            }, 10000);
+
+            async function inicializarSupabase() {
+                try {
+                    if (
+                        !window.supabase ||
+                        typeof window.supabase.createClient !== 'function'
+                    ) {
+                        throw new Error('Supabase SDK no disponible.');
+                    }
+
+                    if (!window.supabaseClient) {
+                        var supabaseUrl = null;
+                        var supabaseAnonKey = null;
+
+                        try {
+                            const response = await fetch('/api/config/public', {
+                                method: 'GET',
+                                credentials: 'same-origin',
+                                cache: 'no-store',
+                                headers: { 'Accept': 'application/json' }
+                            });
+
+                            if (response.ok) {
+                                const config = await response.json();
+                                supabaseUrl = config && config.supabaseUrl;
+                                supabaseAnonKey = config && config.supabaseAnonKey;
+                            }
+                        } catch (fetchErr) {
+                            console.warn('[Ubicacion] fetch /api/config/public falló:', fetchErr);
+                        }
+
+                        if (!supabaseUrl || !supabaseAnonKey) {
+                            throw new Error('Configuración pública de Supabase no disponible.');
+                        }
+
+                        window.SupabaseSDK = window.supabase;
+
+                        window.supabaseClient = window.SupabaseSDK.createClient(
+                            supabaseUrl,
+                            supabaseAnonKey,
+                            {
+                                auth: {
+                                    persistSession: true,
+                                    autoRefreshToken: true,
+                                    detectSessionInUrl: true
+                                }
+                            }
+                        );
+                    }
+
+                    const resultado = await window.supabaseClient.auth.getSession();
+                    const session = resultado && resultado.data ? resultado.data.session : null;
+
+                    window.__sarielsAuthenticated = !!session;
+
+                    clearTimeout(salvaguarda);
+
+                    if (!session) {
+                        irAlIndexConReturnTo();
+                    } else {
+                        revelarPagina();
+                    }
+
+                    return window.supabaseClient;
+                } catch (error) {
+                    console.error('[Ubicacion] Error inicializando Supabase:', error);
+                    window.__sarielsAuthenticated = false;
+                    clearTimeout(salvaguarda);
+                    revelarPagina();
+                    return null;
+                }
+            }
+
+            window.supabaseReady = inicializarSupabase();
+        })();
+    </script>
+
     <style>
+        html:not(.auth-ready) body {
+            visibility: hidden;
+        }
+        html.auth-ready body {
+            visibility: visible;
+        }
+
         .cfg-ubicacion-card {
             margin: 0 16px 16px 16px;
             padding: 20px;
@@ -80,7 +205,6 @@
         </div>
     </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="../../../shared/config-icons.js"></script>
     <script src="../../../shared/config-layout.js"></script>
 
@@ -90,12 +214,13 @@
 
         const $ = (sel) => document.querySelector(sel);
 
-        function sb() {
-            return window.supabaseClient || 
-                (window.supabase && window.supabase.createClient(
-                    'https://zultnlogdoajehbswlih.supabase.co',
-                    'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
-                ));
+        async function esperarCliente() {
+            const inicio = Date.now();
+            while (Date.now() - inicio < 10000) {
+                if (window.supabaseClient) return window.supabaseClient;
+                await new Promise(r => setTimeout(r, 100));
+            }
+            return null;
         }
 
         cfgInitPage({
@@ -112,14 +237,10 @@
         };
 
         let ultimaUbicacion = null;
-        let historialUbicaciones = [];
 
-        // ============================================================
-        // CARGAR UBICACIÓN ACTUAL
-        // ============================================================
         async function cargarUltimaUbicacion() {
             try {
-                const client = sb();
+                const client = await esperarCliente();
                 if (!client) {
                     renderUbicacionVacia();
                     return;
@@ -133,7 +254,6 @@
                     return;
                 }
 
-                // La RPC devuelve un array o un objeto dependiendo de cómo esté definida
                 const ubicacion = Array.isArray(data) ? (data[0] || null) : data;
 
                 if (ubicacion) {
@@ -144,7 +264,7 @@
                 }
 
             } catch (e) {
-                console.warn('Error cargando ubicación:', e);
+                console.warn('Error cargando ubicación:', e && e.message);
                 renderUbicacionVacia();
             }
         }
@@ -155,10 +275,10 @@
 
             const ciudad = u.ciudad || u.municipio || 'Ubicación desconocida';
             const estado = u.estado_region || u.pais || '';
-            const coords = (u.latitud && u.longitud) 
-                ? `${parseFloat(u.latitud).toFixed(4)}, ${parseFloat(u.longitud).toFixed(4)}` 
+            const coords = (u.latitud && u.longitud)
+                ? parseFloat(u.latitud).toFixed(4) + ', ' + parseFloat(u.longitud).toFixed(4)
                 : 'Sin coordenadas';
-            const fecha = u.created_at 
+            const fecha = u.created_at
                 ? new Date(u.created_at).toLocaleString('es-MX', {
                     day: '2-digit', month: 'short', year: 'numeric',
                     hour: '2-digit', minute: '2-digit'
@@ -188,13 +308,7 @@
             `;
         }
 
-        // ============================================================
-        // RENDERIZAR SECCIONES
-        // ============================================================
         function renderSecciones() {
-            // ============================================================
-            // PUBLICACIONES
-            // ============================================================
             $('#seccionPublicaciones').innerHTML = [
                 cfgRenderToggle({
                     id: 'toggleUbicacionPosts',
@@ -212,9 +326,6 @@
                 }),
             ].join('');
 
-            // ============================================================
-            // DATOS
-            // ============================================================
             $('#seccionDatos').innerHTML = [
                 cfgRenderToggle({
                     id: 'toggleUbicacionHistorial',
@@ -240,9 +351,6 @@
             ].join('');
         }
 
-        // ============================================================
-        // HELPERS
-        // ============================================================
         function escapeHtml(texto) {
             if (!texto) return '';
             const div = document.createElement('div');
@@ -250,24 +358,19 @@
             return div.innerHTML;
         }
 
-        // ============================================================
-        // CALLBACKS
-        // ============================================================
         window.onToggleUbicacionPosts = async (value) => {
             if (value) {
-                // Pedir permiso de geolocalización
                 if (navigator.geolocation) {
                     navigator.geolocation.getCurrentPosition(
                         async (position) => {
                             await cfgSetPref(PREF_KEYS.ubicacion_activada, true);
                             await cfgSetPref(PREF_KEYS.ubicacion_posts, true);
 
-                            // Guardar ubicación en Supabase
                             await guardarUbicacionEnNube(position.coords.latitude, position.coords.longitude, 'aproximada');
 
                             cfgToast('📍 Ubicación activada en publicaciones', 'success');
                         },
-                        (error) => {
+                        () => {
                             cfgToast('⚠️ Permiso de ubicación denegado', 'warning');
                             const toggle = document.getElementById('toggleUbicacionPosts');
                             if (toggle) toggle.checked = false;
@@ -323,7 +426,7 @@
 
         async function guardarUbicacionEnNube(lat, lng, precision) {
             try {
-                const client = sb();
+                const client = await esperarCliente();
                 if (!client) return;
 
                 const { error } = await client.rpc('guardar_ubicacion', {
@@ -340,7 +443,7 @@
                 }
 
             } catch (e) {
-                console.warn('Error guardando ubicación:', e);
+                console.warn('Error guardando ubicación:', e && e.message);
             }
         }
 
@@ -356,14 +459,14 @@
             if (!ok) return;
 
             try {
-                const client = sb();
+                const client = await esperarCliente();
                 if (!client) throw new Error('Supabase no disponible');
 
                 const { error } = await client.rpc('eliminar_historial_ubicaciones');
 
                 if (error) throw error;
 
-                cfgSetPref(PREF_KEYS.ubicacion_historial, false);
+                await cfgSetPref(PREF_KEYS.ubicacion_historial, false);
                 const toggle = document.getElementById('toggleUbicacionHistorial');
                 if (toggle) toggle.checked = false;
 
@@ -377,21 +480,15 @@
             }
         };
 
-        // ============================================================
-        // INICIALIZAR
-        // ============================================================
         window.addEventListener('DOMContentLoaded', async () => {
             await new Promise(resolve => setTimeout(resolve, 400));
             renderSecciones();
             await cargarUltimaUbicacion();
         });
 
-        // ============================================================
-        // CARGAR HANDLE EN SUBTITLE
-        // ============================================================
-        (async function cargarUsuario() {
+        (async function cargarHandleSubtitulo() {
             try {
-                const client = sb();
+                const client = await esperarCliente();
                 if (!client) return;
                 const { data } = await client.auth.getSession();
                 const session = data && data.session;
