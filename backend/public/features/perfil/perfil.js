@@ -1,2287 +1,3327 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>◈ Perfil · Csariel's</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+/* ================================================================
+   PERFIL.JS - SARIEL'S ECOSYSTEM
+   VERSIÓN PRODUCCIÓN — 100% SUPABASE DIRECTO
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="/features/shared/js/apariencia-global.js?v=4" defer></script>
+   - Sin credenciales hardcodeadas.
+   - Usa window.supabaseClient creado por el bloque centralizado del perfil.html.
+   - Si no hay sesión → redirige al index.
+   - Cerrar sesión → signOut() y luego replace('/').
+   - vincular_wallet fallback usa wallet_address.
+   - SESSION_TIMEOUT_MS = 15000.
+   - RPC obtener_estado_pro / activar_pro restauradas.
+   - subirVideo() usa bucket muro-videos (50 MB).
+   - eliminarFotoPerfil() nueva función.
+   ================================================================ */
 
-<style>
-    html:not(.auth-ready) .app { display: none !important; }
-</style>
+(function () {
+'use strict';
 
-<!-- =========================================================
-     SUPABASE — Inicialización centralizada
-     - NO carga app.js.
-     - NO hardcodea credenciales.
-     - Obtiene la config desde /api/config/public.
-     - Guard: si no hay sesión → redirige al index.
-========================================================== -->
-<script>
-    (function () {
-        'use strict';
+/* ================================================================
+   CONFIGURACIÓN SUPABASE
+   - NO se crea cliente aquí.
+   - Se reutiliza el de window.supabaseClient / window.supabaseReady.
+   ================================================================ */
+var supabaseClient = null;
+var intentosSupabase = 0;
+var MAX_INTENTOS_SUPABASE = 100;
+var moduloInicializado = false;
 
-        window.__sarielsAuthenticated = null;
-        window.__sarielsAuthReady = null;
-        window.supabaseClient = window.supabaseClient || null;
-        window.supabaseReady = null;
-        window.supabaseError = null;
+var SESSION_TIMEOUT_MS = 15000;
 
-        window.getSupabaseClient = function () {
-            return window.supabaseReady;
-        };
+function inicializarSupabase() {
+    if (moduloInicializado) return;
 
-        function esRutaInternaSegura(valor) {
-            if (typeof valor !== 'string') return false;
-            if (!valor.startsWith('/')) return false;
-            if (valor.startsWith('//')) return false;
-            if (valor.startsWith('/\\')) return false;
-            return true;
-        }
+    if (window.supabaseClient) {
+        supabaseClient = window.supabaseClient;
+        console.log('[Perfil] ✅ Reutilizando supabaseClient existente.');
+        inicializarModuloPerfil();
+        return;
+    }
 
-        function revelarPagina() {
-            document.documentElement.classList.add('auth-ready');
-        }
-
-        function irAlIndexConReturnTo() {
-            try {
-                var returnTo = window.location.pathname + window.location.search + window.location.hash;
-                if (esRutaInternaSegura(returnTo)) {
-                    localStorage.setItem('wallet_returnTo', returnTo);
-                }
-                console.log('[Perfil Guardián] Sin sesión → redirigiendo al index');
-                window.location.replace('/');
-            } catch (e) {
-                console.warn('[Perfil Guardián] Error guardando returnTo:', e);
-                window.location.replace('/');
-            }
-        }
-
-        var salvaguarda = setTimeout(function () {
-            console.warn('[Perfil Guardián] Salvaguarda activada: revelando página sin confirmar sesión.');
-            revelarPagina();
-        }, 10000);
-
-        async function inicializarSupabase() {
-            try {
-                if (
-                    !window.supabase ||
-                    typeof window.supabase.createClient !== 'function'
-                ) {
-                    throw new Error('Supabase SDK no disponible.');
-                }
-
-                if (!window.supabaseClient) {
-                    var supabaseUrl = null;
-                    var supabaseAnonKey = null;
-
-                    try {
-                        const response = await fetch('/api/config/public', {
-                            method: 'GET',
-                            credentials: 'same-origin',
-                            cache: 'no-store',
-                            headers: { 'Accept': 'application/json' }
-                        });
-
-                        if (response.ok) {
-                            const config = await response.json();
-                            supabaseUrl = config && config.supabaseUrl;
-                            supabaseAnonKey = config && config.supabaseAnonKey;
-                        } else {
-                            console.warn(
-                                '[Perfil Guardián] /api/config/public respondió HTTP ' +
-                                response.status + '. Usando fallback.'
-                            );
-                        }
-                    } catch (fetchErr) {
-                        console.warn(
-                            '[Perfil Guardián] No se pudo consultar /api/config/public. Usando fallback.',
-                            fetchErr
-                        );
-                    }
-
-                    if (!supabaseUrl || !supabaseAnonKey) {
-                        supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
-                        supabaseAnonKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
-                        console.warn(
-                            '[Perfil Guardián] ⚠️ Usando credenciales de respaldo. Migra el backend a /api/config/public.'
-                        );
-                    }
-
-                    window.SupabaseSDK = window.supabase;
-
-                    window.supabaseClient = window.SupabaseSDK.createClient(
-                        supabaseUrl,
-                        supabaseAnonKey,
-                        {
-                            auth: {
-                                persistSession: true,
-                                autoRefreshToken: true,
-                                detectSessionInUrl: true
-                            }
-                        }
-                    );
-
-                    console.log('[Perfil Guardián] ✅ supabaseClient creado.');
+    if (window.supabaseReady && typeof window.supabaseReady.then === 'function') {
+        window.supabaseReady
+            .then(function (client) {
+                if (client) {
+                    supabaseClient = client;
+                    console.log('[Perfil] ✅ supabaseClient obtenido de window.supabaseReady.');
+                    inicializarModuloPerfil();
                 } else {
-                    console.log('[Perfil Guardián] ✅ Reutilizando supabaseClient existente.');
-                }
-
-                const resultado = await window.supabaseClient.auth.getSession();
-                const session =
-                    resultado && resultado.data ? resultado.data.session : null;
-
-                window.__sarielsAuthenticated = !!session;
-
-                const urlParams = new URLSearchParams(window.location.search);
-                const returnTo = urlParams.get('returnTo');
-
-                if (returnTo && esRutaInternaSegura(returnTo)) {
-                    try {
-                        localStorage.setItem('wallet_returnTo', returnTo);
-                    } catch (_) {}
-                }
-
-                window.supabaseClient.auth.onAuthStateChange(
-                    function (_event, sessionActual) {
-                        window.__sarielsAuthenticated = !!sessionActual;
-
-                        if (!sessionActual) {
-                            console.log('[Perfil Guardián] Sesión cerrada → redirigiendo al index');
-                            window.location.replace('/');
-                        }
+                    intentosSupabase++;
+                    if (intentosSupabase >= MAX_INTENTOS_SUPABASE) {
+                        console.error('[Perfil] ❌ No se pudo inicializar Supabase.');
+                        inicializarModuloPerfil();
+                    } else {
+                        setTimeout(inicializarSupabase, 200);
                     }
-                );
-
-                clearTimeout(salvaguarda);
-
-                if (!session) {
-                    irAlIndexConReturnTo();
-                } else {
-                    revelarPagina();
                 }
+            })
+            .catch(function (err) {
+                console.warn('[Perfil] Error esperando supabaseReady:', err);
+                intentosSupabase++;
+                if (intentosSupabase >= MAX_INTENTOS_SUPABASE) {
+                    inicializarModuloPerfil();
+                } else {
+                    setTimeout(inicializarSupabase, 200);
+                }
+            });
+        return;
+    }
 
-                return window.supabaseClient;
-            } catch (error) {
-                console.error(
-                    '[Perfil Guardián] Error inicializando Supabase:',
-                    error
-                );
-                window.__sarielsAuthenticated = false;
-                window.supabaseError = error;
-                clearTimeout(salvaguarda);
-                revelarPagina();
-                return null;
-            }
+    intentosSupabase++;
+    if (intentosSupabase >= MAX_INTENTOS_SUPABASE) {
+        console.error('[Perfil] ❌ No se pudo inicializar Supabase (sin cliente).');
+        inicializarModuloPerfil();
+        return;
+    }
+
+    setTimeout(inicializarSupabase, 200);
+}
+
+/* ================================================================
+   I18N HELPERS
+   ================================================================ */
+function t(clave, fallback) {
+    if (typeof window.tConFallback === 'function') {
+        return window.tConFallback(clave, fallback);
+    }
+    return fallback !== undefined ? fallback : clave;
+}
+
+async function aplicarI18NPerfil(raiz) {
+    try {
+        if (typeof window.aplicarTraducciones === 'function') {
+            await window.aplicarTraducciones(raiz || document.body);
         }
-
-        window.supabaseReady = inicializarSupabase();
-
-        window.__sarielsAuthReady = window.supabaseReady.then(function () {
-            return window.__sarielsAuthenticated;
-        });
-    })();
-</script>
-
-<style>
-    :root {
-        --gold: #D4AF37; --gold-dark: #b8923a; --gold-light: #e8c84a; --gold-bright: #f0d060;
-        --green-deep: #0F2D1A; --green-mid: #1a4a2a; --green-bright: #2a6a3a;
-        --space: #05080f; --text-primary: #f0f4f8; --text-secondary: #c0d8e8; --text-muted: #8aa8b8;
-        --glass-bg: rgba(15, 45, 26, 0.55); --glass-border: rgba(212, 175, 55, 0.15);
-        --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25); --shadow-gold-strong: 0 0 60px rgba(212, 175, 55, 0.15);
-        --radius: 16px; --radius-xl: 24px; --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        --success: #00d68f; --danger: #ff3366; --warning: #f7d44a; --cyan: #00e5ff;
-        --purple: #a855f7; --pink: #ec4899;
-        --bg-card: rgba(15, 45, 26, 0.4); --bg-dark: rgba(5, 8, 15, 0.8); --border-color: rgba(212, 175, 55, 0.08);
-        --line-black: #000000;
-        --line-black-soft: rgba(0, 0, 0, 0.85);
-        --line-black-mid: rgba(0, 0, 0, 0.65);
-        --line-black-light: rgba(0, 0, 0, 0.45);
+    } catch (e) {
+        console.warn('[Perfil] I18N re-aplicar:', e);
     }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: var(--space); color: var(--text-primary); font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; min-height: 100vh; line-height: 1.6; background-image: radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%); padding: 0; -webkit-font-smoothing: antialiased; }
-    #stars-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
-    .nebula { position: fixed; border-radius: 50%; filter: blur(120px); opacity: 0.12; pointer-events: none; z-index: 0; animation: nebula-drift 25s ease-in-out infinite alternate; }
-    .nebula-1 { width: 700px; height: 700px; background: var(--green-bright); top: -15%; right: -15%; }
-    .nebula-2 { width: 600px; height: 600px; background: var(--gold-light); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.06; }
-    .nebula-3 { width: 500px; height: 500px; background: var(--purple); top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -15s; opacity: 0.04; }
-    @keyframes nebula-drift { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(40px, -30px) scale(1.15); } }
-    ::-webkit-scrollbar { width: 4px; }
-    ::-webkit-scrollbar-track { background: var(--space); }
-    ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
-    .app { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 16px 20px 30px; }
-    .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0 14px; border-bottom: 2px solid var(--line-black); flex-wrap: wrap; gap: 10px; background: rgba(5, 8, 15, 0.92); border-radius: var(--radius) var(--radius) 0 0; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6); }
-    .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-    .logo-hex { font-size: 1.8rem; color: var(--gold); font-weight: 800; font-family: 'Orbitron', monospace; text-shadow: 0 0 30px rgba(212, 175, 55, 0.3); animation: glow-pulse 3s ease-in-out infinite; }
-    @keyframes glow-pulse { 0%, 100% { text-shadow: 0 0 30px rgba(212, 175, 55, 0.3); } 50% { text-shadow: 0 0 60px rgba(212, 175, 55, 0.6); } }
-    .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; font-weight: 700; color: var(--text-primary); letter-spacing: 2px; }
-    .logo-text span { color: var(--gold); }
-    .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; border: 1px solid var(--line-black); }
-    .network-badge { display: flex; align-items: center; gap: 6px; font-size: 0.6rem; color: var(--gold); background: rgba(212, 175, 55, 0.1); padding: 4px 12px; border-radius: 20px; border: 1px solid var(--line-black-soft); }
-    .network-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); animation: pulse-dot 2s infinite; }
-    @keyframes pulse-dot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(0.8); } }
-    .main-nav { display: flex; gap: 4px; background: rgba(15, 45, 26, 0.3); border-radius: var(--radius); padding: 4px; border: 1px solid var(--line-black-mid); margin: 16px 0 20px; overflow-x: auto; }
-    .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; font-weight: 500; transition: var(--transition); white-space: nowrap; position: relative; }
-    .main-nav .nav-link::after { content: ''; position: absolute; bottom: 2px; left: 50%; width: 0; height: 2px; background: var(--gold); transition: var(--transition); transform: translateX(-50%); }
-    .main-nav .nav-link:hover::after, .main-nav .nav-link.active::after { width: 60%; }
-    .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212, 175, 55, 0.05); }
-    .main-nav .nav-link.active { background: rgba(212, 175, 55, 0.12); color: var(--gold); border: 1px solid var(--line-black-soft); }
-    .main-nav .nav-link.live { color: var(--danger); }
-    .perfil-container { max-width: 1100px; margin: 0 auto; }
-    .perfil-header { background: var(--glass-bg); border: 2px solid var(--line-black); border-radius: var(--radius-xl); padding: 24px 28px; margin-bottom: 24px; backdrop-filter: blur(16px); display: flex; align-items: center; gap: 24px; flex-wrap: wrap; position: relative; overflow: hidden; box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(212, 175, 55, 0.1); }
-    .perfil-header::before { content: ''; position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px; background: linear-gradient(135deg, var(--gold), var(--green-deep), var(--gold)); background-size: 300% 300%; border-radius: var(--radius-xl); z-index: -1; opacity: 0.1; animation: border-flow 6s ease-in-out infinite; }
-    @keyframes border-flow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-    .perfil-header .avatar-container { position: relative; flex-shrink: 0; }
-    .perfil-header .avatar { width: 90px; height: 90px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold)); display: flex; align-items: center; justify-content: center; font-size: 2.4rem; font-weight: 700; color: white; overflow: hidden; border: 3px solid var(--gold); box-shadow: 0 0 40px rgba(212, 175, 55, 0.15), 0 0 0 2px var(--line-black); font-family: 'Orbitron', monospace; position: relative; cursor: pointer; }
-    .perfil-header .avatar img { width: 100%; height: 100%; object-fit: cover; }
-    .perfil-header .avatar .avatar-menu-toggle { position: absolute; bottom: 4px; right: 4px; background: var(--gold); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: var(--space); border: 2px solid var(--line-black); cursor: pointer; transition: var(--transition); box-shadow: 0 0 20px rgba(212, 175, 55, 0.3); font-weight: 700; }
-    .perfil-header .avatar .avatar-menu-toggle:hover { transform: scale(1.1); background: var(--gold-light); }
-    .avatar-menu { display: none; position: absolute; top: 100%; left: 0; margin-top: 8px; background: rgba(5, 8, 15, 0.98); border: 2px solid var(--line-black); border-radius: 12px; padding: 6px; min-width: 170px; z-index: 50; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7), 0 0 0 1px var(--gold); backdrop-filter: blur(12px); }
-    .avatar-menu.show { display: block; animation: fadeIn 0.2s ease-out; }
-    .avatar-menu button { display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 14px; background: transparent; border: none; color: var(--text-secondary); font-size: 0.75rem; font-weight: 600; text-align: left; border-radius: 8px; cursor: pointer; transition: var(--transition); font-family: 'Inter', sans-serif; }
-    .avatar-menu button:hover { background: rgba(212, 175, 55, 0.12); color: var(--gold); }
-    .avatar-menu button.danger { color: var(--danger); }
-    .avatar-menu button.danger:hover { background: rgba(255, 51, 102, 0.12); color: var(--danger); }
-    .avatar-menu .divider { height: 1px; background: rgba(255, 255, 255, 0.08); margin: 4px 0; }
-    .perfil-header .info { flex: 1; min-width: 200px; }
-    .perfil-header .info .nombre { font-family: 'Orbitron', monospace; font-size: 1.4rem; font-weight: 700; background: linear-gradient(135deg, var(--gold), var(--text-primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-    .perfil-header .info .nombre .verified { font-size: 0.5rem; background: rgba(212, 175, 55, 0.15); color: var(--gold); padding: 2px 12px; border-radius: 12px; font-family: 'Orbitron', monospace; border: 1px solid var(--line-black-soft); -webkit-text-fill-color: var(--gold); }
-    .perfil-header .info .handle { font-size: 0.85rem; color: var(--text-muted); letter-spacing: 0.5px; }
-    .perfil-header .info .bio { font-size: 0.9rem; color: var(--text-secondary); margin-top: 6px; max-width: 500px; line-height: 1.5; }
-    .perfil-header .info .badges { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
-    .perfil-header .info .badges .badge { font-size: 0.55rem; padding: 3px 14px; border-radius: 20px; font-family: 'Orbitron', monospace; border: 1px solid var(--line-black-mid); color: var(--text-muted); background: rgba(0, 0, 0, 0.3); }
-    .perfil-header .info .badges .badge.gold { border-color: var(--gold); color: var(--gold); background: rgba(212, 175, 55, 0.05); }
-    .perfil-header .info .badges .badge.success { border-color: var(--success); color: var(--success); background: rgba(0, 214, 143, 0.05); }
-    .perfil-header .stats { display: flex; gap: 24px; flex-wrap: wrap; margin-left: auto; }
-    .perfil-header .stats .stat { text-align: center; padding: 6px 10px; border-radius: 10px; border: 1px solid var(--line-black-soft); background: rgba(0, 0, 0, 0.25); }
-    .perfil-header .stats .stat .number { font-family: 'Orbitron', monospace; font-size: 1.2rem; font-weight: 700; color: var(--gold); text-shadow: 0 0 20px rgba(212, 175, 55, 0.05); }
-    .perfil-header .stats .stat .label { font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Orbitron', monospace; }
-    .perfil-header .acciones { display: flex; gap: 8px; flex-wrap: wrap; margin-left: 10px; }
-    .config-btn { position: absolute; top: 16px; right: 16px; z-index: 20; width: 42px; height: 42px; border-radius: 50%; background: rgba(5, 8, 15, 0.85); border: 2px solid var(--line-black); color: var(--gold); font-size: 1.3rem; display: flex; align-items: center; justify-content: center; text-decoration: none; cursor: pointer; transition: var(--transition); backdrop-filter: blur(8px); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6); }
-    .config-btn:hover, .config-btn:active { background: var(--gold); color: var(--space); transform: rotate(90deg) scale(1.05); box-shadow: 0 0 30px rgba(212, 175, 55, 0.4), 0 0 0 2px var(--line-black); }
-    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 20px; border-radius: 30px; font-size: 0.7rem; font-weight: 600; border: 2px solid var(--line-black-mid); cursor: pointer; transition: var(--transition); font-family: 'Inter', sans-serif; text-decoration: none; }
-    .btn-gold { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); box-shadow: 0 4px 20px rgba(212, 175, 55, 0.2), 0 0 0 1px var(--line-black); }
-    .btn-gold:hover { transform: translateY(-2px); box-shadow: var(--shadow-gold), 0 0 0 1px var(--line-black); }
-    .btn-outline { background: rgba(0, 0, 0, 0.35); color: var(--text-secondary); border: 2px solid var(--line-black); }
-    .btn-outline:hover { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 20px rgba(212, 175, 55, 0.1); background: rgba(0, 0, 0, 0.5); }
-    .btn-outline.active { border-color: var(--gold); color: var(--gold); background: rgba(212,175,55,0.1); }
-    .btn-sm { padding: 4px 12px; font-size: 0.65rem; }
-    .btn-danger { background: rgba(255, 51, 102, 0.1); color: var(--danger); border: 2px solid var(--line-black); }
-    .btn-danger:hover { background: rgba(255, 51, 102, 0.2); }
-    .btn-crypto { background: linear-gradient(135deg, #00ff88, #00b894); color: var(--space); box-shadow: 0 4px 20px rgba(0, 255, 136, 0.2), 0 0 0 1px var(--line-black); }
-    .btn-crypto:hover { transform: translateY(-2px); box-shadow: 0 0 40px rgba(0, 255, 136, 0.3), 0 0 0 1px var(--line-black); }
-    .perfil-tabs { display: flex; gap: 4px; background: var(--glass-bg); border-radius: var(--radius); padding: 4px; border: 2px solid var(--line-black); margin-bottom: 20px; overflow-x: auto; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); }
-    .perfil-tabs .tab-btn { padding: 10px 20px; border: none; background: transparent; color: var(--text-muted); font-family: 'Inter', sans-serif; font-size: 0.7rem; font-weight: 600; border-radius: 10px; cursor: pointer; transition: var(--transition); white-space: nowrap; }
-    .perfil-tabs .tab-btn.active { background: rgba(212, 175, 55, 0.12); color: var(--gold); box-shadow: 0 0 20px rgba(212, 175, 55, 0.05), inset 0 0 0 1px var(--line-black); }
-    .tab-content { display: none; animation: fadeIn 0.3s ease; }
-    .tab-content.active { display: block; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    .panel { background: var(--glass-bg); border: 2px solid var(--line-black); border-radius: var(--radius); overflow: hidden; backdrop-filter: blur(10px); transition: var(--transition); margin-bottom: 16px; box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4); }
-    .panel:hover { border-color: var(--line-black); box-shadow: 0 6px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(212, 175, 55, 0.15); }
-    .panel-header { padding: 14px 18px; border-bottom: 2px solid var(--line-black); display: flex; justify-content: space-between; align-items: center; background: rgba(212, 175, 55, 0.03); flex-wrap: wrap; gap: 8px; }
-    .panel-header h3 { font-size: 0.85rem; font-weight: 600; color: var(--gold); }
-    .panel-badge { font-size: 0.6rem; background: rgba(212, 175, 55, 0.12); color: var(--gold); padding: 2px 12px; border-radius: 20px; font-weight: 600; text-transform: uppercase; border: 1px solid var(--line-black-soft); }
-    .panel-body { padding: 18px; }
-    .form-publicacion { background: rgba(0,0,0,0.35); border: 2px solid var(--line-black); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 16px; }
-    .form-publicacion textarea { width: 100%; padding: 12px 14px; background: rgba(0,0,0,0.5); border: 2px solid var(--line-black); border-radius: 10px; color: var(--text-primary); font-size: 0.85rem; resize: vertical; min-height: 70px; outline: none; font-family: 'Inter', sans-serif; }
-    .form-publicacion textarea:focus { border-color: var(--gold); box-shadow: 0 0 30px rgba(212, 175, 55, 0.05); background: rgba(0,0,0,0.6); }
-    .form-publicacion .acciones { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; align-items: center; position: relative; }
-    .form-publicacion .acciones button.accion-btn { background: rgba(0,0,0,0.4); border: 2px solid var(--line-black); color: var(--text-muted); font-size: 0.7rem; cursor: pointer; padding: 6px 14px; border-radius: 20px; transition: var(--transition); display: inline-flex; align-items: center; gap: 6px; }
-    .form-publicacion .acciones button.accion-btn:hover { color: var(--gold); border-color: var(--gold); background: rgba(212,175,55,0.05); }
-    .form-publicacion .acciones .btn-publicar { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border: 2px solid var(--line-black); padding: 8px 24px; border-radius: 20px; font-weight: 700; font-size: 0.75rem; cursor: pointer; margin-left: auto; }
-    .form-publicacion .acciones .btn-publicar:hover { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
-    .form-publicacion .acciones .btn-publicar:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-    .emoji-picker { display: none; position: absolute; bottom: 100%; left: 0; background: rgba(5, 8, 15, 0.98); border: 2px solid var(--line-black); border-radius: var(--radius); padding: 12px; width: 300px; max-width: 90vw; z-index: 1000; box-shadow: var(--shadow-gold-strong); backdrop-filter: blur(12px); margin-bottom: 8px; }
-    .emoji-picker.show { display: block; }
-    .emoji-picker .grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; max-height: 200px; overflow-y: auto; }
-    .emoji-picker .grid button { background: transparent; border: none; font-size: 1.4rem; padding: 6px 4px; cursor: pointer; border-radius: 8px; transition: var(--transition); line-height: 1; }
-    .emoji-picker .grid button:hover { background: rgba(212, 175, 55, 0.15); transform: scale(1.15); }
-    .emoji-picker .titulo { color: var(--text-muted); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; text-align: center; font-family: 'Orbitron', monospace; }
-    .preview-archivos { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-    .preview-archivos .preview-item { position: relative; width: 80px; height: 80px; border-radius: 10px; overflow: hidden; border: 2px solid var(--gold); background: var(--bg-dark); box-shadow: 0 0 0 1px var(--line-black); }
-    .preview-archivos .preview-item img, .preview-archivos .preview-item video { width: 100%; height: 100%; object-fit: cover; }
-    .preview-archivos .preview-item .remove-btn { position: absolute; top: 2px; right: 2px; background: var(--danger); color: white; border: 1px solid var(--line-black); border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; }
-    .publicacion-card { background: var(--glass-bg); border: 2px solid var(--line-black); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; transition: var(--transition); box-shadow: 0 3px 16px rgba(0, 0, 0, 0.35); }
-    .publicacion-card:hover { border-color: var(--gold); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.55); }
-    .publicacion-card .header { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
-    .publicacion-card .header .avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold)); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; color: #fff; overflow: hidden; flex-shrink: 0; font-weight: 700; border: 1px solid var(--line-black); }
-    .publicacion-card .header .nombre { font-weight: 600; color: var(--gold); font-size: 0.8rem; }
-    .publicacion-card .header .fecha { font-size: 0.6rem; color: var(--text-muted); }
-    .publicacion-card .contenido { color: var(--text-secondary); font-size: 0.85rem; line-height: 1.6; margin-bottom: 10px; word-wrap: break-word; }
-    .publicacion-card .contenido img { max-width: 100%; border-radius: 10px; margin-top: 8px; display: block; border: 1px solid var(--line-black-soft); }
-    .publicacion-card .contenido video { max-width: 100%; border-radius: 10px; margin-top: 8px; display: block; border: 1px solid var(--line-black-soft); }
-    .publicacion-card .stats { display: flex; gap: 8px; font-size: 0.65rem; color: var(--text-muted); margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line-black-soft); flex-wrap: wrap; }
-    .btn-accion-pub {
-        background: rgba(0,0,0,0.35);
-        border: 1.5px solid var(--line-black);
-        color: var(--text-muted);
-        cursor: pointer;
-        padding: 5px 12px;
-        border-radius: 16px;
-        transition: var(--transition);
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        font-size: 0.65rem;
-        font-weight: 600;
-        font-family: 'Inter', sans-serif;
-    }
-    .btn-accion-pub:hover {
-        color: var(--gold);
-        border-color: var(--gold);
-        background: rgba(212,175,55,0.08);
-    }
-    .btn-accion-pub.danger {
-        color: var(--danger);
-        border-color: rgba(255, 51, 102, 0.35);
-    }
-    .btn-accion-pub.danger:hover {
-        background: rgba(255, 51, 102, 0.12);
-        border-color: var(--danger);
-        color: var(--danger);
-    }
-    .reaccion-wrap {
-        position: relative;
-        display: inline-block;
-        margin-top: 6px;
-        padding-top: 6px;
-    }
-    .reaccion-trigger {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        background: rgba(0,0,0,0.35);
-        border: 1.5px solid var(--line-black);
-        border-radius: 20px;
-        padding: 5px 12px;
-        cursor: pointer;
-        transition: var(--transition);
-        font-family: 'Inter', sans-serif;
-        color: var(--text-secondary);
-        font-size: 0.7rem;
-        font-weight: 600;
-    }
-    .reaccion-trigger:hover {
-        border-color: var(--gold);
-        background: rgba(212,175,55,0.08);
-        color: var(--gold);
-    }
-    .reaccion-trigger.activa {
-        border-color: var(--gold);
-        background: rgba(212,175,55,0.12);
-        color: var(--gold);
-    }
-    .reaccion-trigger .emoji-actual {
-        font-size: 1.05rem;
-        line-height: 1;
-    }
-    .reaccion-trigger .count {
-        color: var(--text-muted);
-        font-weight: 500;
-        font-size: 0.65rem;
-    }
-    .reaccion-trigger.activa .count {
-        color: var(--gold);
-    }
-    .reaccion-dropdown {
-        display: none;
-        position: absolute;
-        bottom: calc(100% + 6px);
-        left: 0;
-        background: rgba(5, 8, 15, 0.98);
-        border: 1.5px solid var(--line-black);
-        border-radius: 30px;
-        padding: 4px 6px;
-        z-index: 200;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.7), 0 0 0 1px var(--gold);
-        backdrop-filter: blur(12px);
-        white-space: nowrap;
-    }
-    .reaccion-dropdown.show {
-        display: flex;
-        gap: 2px;
-        animation: popIn 0.18s ease-out;
-    }
-    @keyframes popIn {
-        from { opacity: 0; transform: translateY(4px) scale(0.96); }
-        to { opacity: 1; transform: translateY(0) scale(1); }
-    }
-    .reaccion-dropdown button {
-        background: transparent;
-        border: none;
-        font-size: 1.4rem;
-        line-height: 1;
-        cursor: pointer;
-        padding: 6px 4px;
-        border-radius: 50%;
-        transition: var(--transition);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 38px;
-        height: 38px;
-        position: relative;
-    }
-    .reaccion-dropdown button:hover {
-        background: rgba(212,175,55,0.15);
-        transform: scale(1.25) translateY(-3px);
-    }
-    .reaccion-dropdown button.activa {
-        background: rgba(212,175,55,0.2);
-        box-shadow: 0 0 0 1.5px var(--gold);
-    }
-    .reaccion-dropdown button .mini-count {
-        position: absolute;
-        bottom: -2px;
-        right: -2px;
-        font-size: 0.5rem;
-        color: var(--gold);
-        background: rgba(0,0,0,0.9);
-        border: 1px solid var(--line-black);
-        border-radius: 8px;
-        padding: 0 3px;
-        font-weight: 700;
-        min-width: 12px;
-        text-align: center;
-        line-height: 1.2;
-    }
-    @media (max-width: 480px) {
-        .reaccion-dropdown button { width: 34px; height: 34px; font-size: 1.2rem; }
-    }
-    .comentarios-container { display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line-black-soft); }
-    .comentarios-container.show { display: block; }
-    .comentarios-lista { max-height: 200px; overflow-y: auto; margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px; }
-    .comentario-item { display: flex; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line-black-soft); }
-    .comentario-item .avatar-mini { width: 24px; height: 24px; border-radius: 50%; overflow: hidden; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; font-weight: 700; background: linear-gradient(135deg, var(--green-deep), var(--gold)); color: white; border: 1px solid var(--line-black); }
-    .comentario-item .contenido-comentario { flex: 1; min-width: 0; }
-    .comentario-item .contenido-comentario .nombre { color: var(--gold); font-size: 0.7rem; font-weight: 600; }
-    .comentario-item .contenido-comentario .texto { font-size: 0.75rem; color: var(--text-secondary); word-wrap: break-word; }
-    .comentario-item .contenido-comentario .fecha { font-size: 0.55rem; color: var(--text-muted); margin-top: 2px; }
-    .comentario-input-row { display: flex; gap: 8px; }
-    .comentario-input-row input { flex: 1; padding: 8px 14px; background: rgba(0,0,0,0.5); border: 2px solid var(--line-black); border-radius: 20px; color: var(--text-primary); font-size: 0.75rem; outline: none; }
-    .comentario-input-row input:focus { border-color: var(--gold); }
-    .comentario-input-row button { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border: 2px solid var(--line-black); padding: 8px 18px; border-radius: 20px; font-weight: 700; font-size: 0.7rem; cursor: pointer; }
-    .comentario-input-row button:hover { transform: scale(1.03); }
-    .conexion-section { background: var(--glass-bg); border: 2px solid var(--line-black); border-radius: var(--radius); padding: 15px; margin-top: 15px; box-shadow: 0 3px 16px rgba(0, 0, 0, 0.35); }
-    .conexion-section .conexion-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-    .conexion-section .conexion-info { display: flex; align-items: center; gap: 10px; }
-    .conexion-section .conexion-info .status { font-weight: 600; font-size: 0.9rem; }
-    .conexion-section .conexion-info .velocidad { color: var(--text-muted); font-size: 0.7rem; }
-    .conexion-section .conexion-info .señal { font-size: 0.7rem; }
-    .conexion-buttons { display: flex; gap: 8px; }
-    .conexion-buttons .btn-conexion { padding: 6px 14px; border-radius: 20px; font-size: 0.65rem; font-weight: 600; border: 2px solid var(--line-black); background: rgba(0,0,0,0.3); color: var(--text-muted); cursor: pointer; transition: var(--transition); }
-    .conexion-buttons .btn-conexion:hover { border-color: var(--gold); color: var(--gold); }
-    .conexion-buttons .btn-conexion.active { border-color: var(--gold); background: rgba(212, 175, 55, 0.15); color: var(--gold); }
-    .conexion-buttons .btn-conexion.wifi.active { border-color: var(--success); background: rgba(0, 214, 143, 0.1); color: var(--success); }
-    .conexion-buttons .btn-conexion.datos.active { border-color: var(--cyan); background: rgba(0, 229, 255, 0.1); color: var(--cyan); }
-    .estado-section { background: var(--glass-bg); border: 2px solid var(--line-black); border-radius: var(--radius); padding: 15px; margin-top: 15px; box-shadow: 0 3px 16px rgba(0, 0, 0, 0.35); }
-    .estado-section .estado-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-    .estado-section .estado-info { display: flex; align-items: center; gap: 10px; }
-    .estado-section .estado-info .badge { font-size: 1.2rem; }
-    .estado-section .estado-info .texto { font-weight: 600; }
-    .estado-section .estado-info .amigos-online { font-size: 0.6rem; color: var(--text-muted); }
-    .estado-buttons { display: flex; gap: 8px; }
-    .estado-buttons .btn-estado { padding: 4px 12px; border-radius: 20px; font-size: 0.6rem; font-weight: 600; border: 2px solid var(--line-black); background: rgba(0,0,0,0.3); color: var(--text-muted); cursor: pointer; transition: var(--transition); }
-    .estado-buttons .btn-estado:hover { border-color: var(--gold); color: var(--gold); }
-    .estado-buttons .btn-estado.online { border-color: var(--success); color: var(--success); }
-    .estado-buttons .btn-estado.online:hover { background: rgba(0, 214, 143, 0.1); }
-    .estado-buttons .btn-estado.offline { border-color: var(--text-muted); color: var(--text-muted); }
-    .estado-buttons .btn-estado.offline:hover { background: rgba(255, 255, 255, 0.05); }
-    #solicitudesSection { margin-top: 10px; padding: 10px 0; border-top: 1px solid var(--line-black-soft); }
-    #solicitudesSection h4 { color: var(--gold); font-size: 0.85rem; margin-bottom: 8px; }
-    #amigosContainer { margin-top: 10px; max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
-    #amigosContainer .amigo-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line-black); background: rgba(0,0,0,0.25); transition: var(--transition); cursor: pointer; }
-    #amigosContainer .amigo-item:hover { background: rgba(212, 175, 55, 0.05); border-color: var(--gold); }
-    #amigosContainer .amigo-item.online { border-color: rgba(0, 214, 143, 0.4); background: rgba(0, 214, 143, 0.05); }
-    #amigosContainer .amigo-item .avatar-mini { width: 32px; height: 32px; border-radius: 50%; overflow: hidden; border: 2px solid var(--line-black); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; background: var(--bg-card); }
-    #amigosContainer .amigo-item.online .avatar-mini { border-color: var(--success); }
-    #amigosContainer .amigo-item .avatar-mini img { width: 100%; height: 100%; object-fit: cover; }
-    #amigosContainer .amigo-item .info { flex: 1; min-width: 0; }
-    #amigosContainer .amigo-item .info .nombre { font-weight: 600; font-size: 0.8rem; }
-    #amigosContainer .amigo-item .info .estado { font-size: 0.6rem; }
-    #amigosContainer .amigo-item .badge-online { background: rgba(0, 214, 143, 0.1); border: 1px solid var(--line-black); border-radius: 20px; padding: 2px 10px; font-size: 0.5rem; color: var(--success); font-weight: 600; }
-    .pro-section { background: var(--glass-bg); border: 2px solid var(--line-black); border-radius: var(--radius); padding: 15px; margin-top: 15px; box-shadow: 0 3px 16px rgba(0, 0, 0, 0.35); }
-    .pro-section .pro-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--line-black-soft); }
-    .pro-section .pro-header h3 { font-size: 0.85rem; font-weight: 600; color: var(--gold); }
-    .pro-section .pro-badge { font-size: 0.55rem; background: rgba(212, 175, 55, 0.12); color: var(--gold); padding: 2px 12px; border-radius: 20px; font-weight: 600; text-transform: uppercase; border: 1px solid var(--line-black-soft); letter-spacing: 0.5px; font-family: 'Orbitron', monospace; }
-    .pro-section .pro-current { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--line-black-soft); margin-bottom: 14px; font-size: 0.8rem; }
-    .pro-section .pro-current .pro-label { color: var(--text-muted); }
-    .pro-section .pro-current .pro-value { color: var(--gold); font-weight: 700; margin-left: 6px; }
-    .pro-section .pro-current .pro-meta { color: var(--text-muted); font-size: 0.7rem; }
-    .pro-section .pro-upgrade { background: linear-gradient(135deg, rgba(212, 175, 55, 0.06), rgba(15, 45, 26, 0.4)); border: 2px solid var(--line-black); border-radius: 14px; padding: 16px; text-align: center; }
-    .pro-section .pro-upgrade-title { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px; }
-    .pro-section .pro-upgrade-icon { font-size: 1.2rem; color: var(--gold); }
-    .pro-section .pro-upgrade-name { font-family: 'Orbitron', monospace; font-size: 1.1rem; font-weight: 700; color: var(--gold); letter-spacing: 1px; }
-    .pro-section .pro-upgrade-price { font-family: 'Orbitron', monospace; font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin: 8px 0 4px; }
-    .pro-section .pro-upgrade-period { font-size: 0.75rem; color: var(--text-muted); font-weight: 400; }
-    .pro-section .pro-upgrade-features { font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 14px; }
-    .pro-section .pro-btn { width: 100%; justify-content: center; padding: 12px; font-size: 0.8rem; }
-    .pro-section .pro-active-info { text-align: center; padding: 12px; background: rgba(0, 214, 143, 0.06); border: 2px solid var(--line-black); border-radius: 12px; }
-    .pro-section .pro-active-badge { color: var(--success); font-weight: 700; font-family: 'Orbitron', monospace; font-size: 0.85rem; margin-bottom: 6px; }
-    .pro-section .pro-active-expira { font-size: 0.7rem; color: var(--text-muted); }
-    .repartidor-section { background: linear-gradient(135deg, rgba(168,85,247,0.06), rgba(15,45,26,0.5)); border: 2px solid var(--line-black); border-radius: var(--radius); padding: 18px; margin-top: 15px; box-shadow: 0 3px 16px rgba(0, 0, 0, 0.35); position: relative; overflow: hidden; }
-    .repartidor-section::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--purple), transparent); }
-    .repartidor-section .rep-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--line-black-soft); }
-    .repartidor-section .rep-header h3 { font-size: 0.85rem; font-weight: 600; color: var(--purple); display: flex; align-items: center; gap: 6px; }
-    .repartidor-section .rep-badge { font-size: 0.55rem; padding: 2px 12px; border-radius: 20px; font-weight: 600; text-transform: uppercase; border: 1px solid var(--line-black-soft); letter-spacing: 0.5px; font-family: 'Orbitron', monospace; }
-    .rep-badge.activo { background: rgba(0,214,143,0.12); color: var(--success); }
-    .rep-badge.pendiente { background: rgba(247,212,74,0.12); color: var(--warning); }
-    .rep-badge.rechazado { background: rgba(255,51,102,0.12); color: var(--danger); }
-    .rep-badge.no-registrado { background: rgba(138,168,184,0.12); color: var(--text-muted); }
-    .repartidor-section .rep-info { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 14px; }
-    .repartidor-section .rep-info strong { color: var(--gold); }
-    .repartidor-section .rep-btn { width: 100%; justify-content: center; padding: 12px; font-size: 0.8rem; font-family: 'Orbitron', monospace; font-weight: 700; border-radius: 30px; border: 2px solid var(--line-black); cursor: pointer; transition: var(--transition); display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
-    .rep-btn.registrar { background: linear-gradient(135deg, var(--purple), #7c3aed); color: #fff; }
-    .rep-btn.registrar:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(168,85,247,0.3); }
-    .rep-btn.ver-estado { background: linear-gradient(135deg, var(--warning), #e8a800); color: var(--space); }
-    .rep-btn.ver-estado:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(247,212,74,0.3); }
-    .rep-btn.ir-panel { background: linear-gradient(135deg, var(--success), #00a86b); color: #fff; }
-    .rep-btn.ir-panel:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,214,143,0.3); }
-    .rep-btn.reintentar { background: linear-gradient(135deg, var(--danger), #dc2626); color: #fff; }
-    .rep-btn.reintentar:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(255,51,102,0.3); }
-    .activity-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line-black-soft); transition: var(--transition); }
-    .activity-item:hover { background: rgba(255, 255, 255, 0.02); padding-left: 8px; border-radius: 8px; }
-    .activity-item .icon { font-size: 1.2rem; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--line-black); flex-shrink: 0; }
-    .activity-item .content { flex: 1; }
-    .activity-item .content .text { font-size: 0.85rem; color: var(--text-secondary); }
-    .activity-item .content .text strong { color: var(--text-primary); }
-    .activity-item .content .fecha { font-size: 0.6rem; color: var(--text-muted); margin-top: 2px; }
-    .token-status { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; }
-    .token-status .item { background: rgba(0, 0, 0, 0.4); border: 2px solid var(--line-black); border-radius: 12px; padding: 14px; text-align: center; transition: var(--transition); }
-    .token-status .item:hover { border-color: var(--gold); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5); }
-    .token-status .item .value { font-family: 'Orbitron', monospace; font-size: 1.3rem; font-weight: 700; color: var(--gold); }
-    .token-status .item .label { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Orbitron', monospace; }
-    .progress-bar-container { margin-top: 16px; }
-    .progress-bar-container .bar { width: 100%; height: 8px; background: rgba(0, 0, 0, 0.7); border: 1px solid var(--line-black); border-radius: 10px; overflow: hidden; }
-    .progress-bar-container .bar .fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-light)); border-radius: 10px; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
-    .progress-bar-container .label { display: flex; justify-content: space-between; font-size: 0.6rem; color: var(--text-muted); margin-top: 4px; font-family: 'Orbitron', monospace; }
-    .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
-    .empty-state .icon { font-size: 2.5rem; display: block; margin-bottom: 12px; font-family: 'Orbitron', monospace; color: var(--gold); opacity: 0.3; }
-    .empty-state h4 { font-family: 'Orbitron', monospace; color: var(--text-secondary); font-size: 1rem; font-weight: 400; letter-spacing: 0.5px; }
-    .empty-state p { font-size: 0.8rem; }
-    .toast { position: fixed; bottom: 30px; right: 30px; background: var(--green-deep); border: 2px solid var(--line-black); color: var(--gold); padding: 12px 24px; border-radius: 12px; font-size: 0.8rem; font-weight: 500; box-shadow: var(--shadow-gold-strong), 0 0 0 1px var(--gold); transform: translateY(100px); opacity: 0; transition: all 0.4s ease; z-index: 9999; max-width: 400px; backdrop-filter: blur(10px); }
-    .toast.show { transform: translateY(0); opacity: 1; }
-    .toast.error { border-color: var(--danger); color: var(--danger); box-shadow: 0 0 0 1px var(--danger); }
-    .toast.warning { border-color: var(--warning); color: var(--warning); box-shadow: 0 0 0 1px var(--warning); }
-    .toast.success { border-color: var(--success); color: var(--success); box-shadow: 0 0 0 1px var(--success); }
-    .footer { margin-top: 30px; padding-top: 16px; border-top: 2px solid var(--line-black); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; font-size: 0.7rem; color: var(--text-muted); padding-bottom: 8px; letter-spacing: 0.3px; }
-    .footer .brand { color: var(--gold); font-weight: 600; letter-spacing: 1px; }
-    .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
-    .footer-links a { color: var(--text-muted); text-decoration: none; transition: var(--transition); }
-    .footer-links a:hover { color: var(--gold); }
-    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(12px); display: none; justify-content: center; align-items: center; z-index: 9999; animation: fadeIn 0.3s ease-out; }
-    .modal-overlay.active { display: flex; }
-    .modal-content { background: linear-gradient(135deg, var(--bg-card), var(--bg-dark)); border: 2px solid var(--line-black); border-radius: 20px; padding: 30px; max-width: 480px; width: 90%; text-align: center; animation: scaleIn 0.3s ease-out; position: relative; max-height: 90vh; overflow-y: auto; box-shadow: 0 0 0 2px var(--gold), 0 20px 60px rgba(0, 0, 0, 0.6); }
-    .modal-content .close-btn { position: absolute; top: 10px; right: 15px; background: transparent; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; transition: var(--transition); }
-    .modal-content .close-btn:hover { color: var(--text-primary); transform: rotate(90deg); }
-    .modal-content h2 { color: var(--gold); font-family: 'Orbitron', monospace; font-size: 1.2rem; margin-bottom: 10px; }
-    .modal-content .subtitle { color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 16px; }
-    .modal-content .qr-container { background: white; border-radius: 12px; padding: 15px; margin: 10px 0; display: inline-block; border: 2px solid var(--line-black); }
-    .modal-content .qr-container img { max-width: 200px; width: 100%; }
-    .modal-content .address-box { background: rgba(0,0,0,0.6); border: 2px solid var(--line-black); border-radius: 10px; padding: 12px; margin: 10px 0; word-break: break-all; }
-    .modal-content .address-box .label { font-size: 0.6rem; color: var(--text-muted); }
-    .modal-content .address-box .address { font-family: monospace; font-size: 0.75rem; color: var(--gold); margin-top: 4px; }
-    .modal-content .amount { font-family: 'Orbitron', monospace; font-size: 1.4rem; color: var(--gold); margin: 10px 0; }
-    .modal-content .actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
-    .modal-content .status { margin-top: 10px; font-size: 0.8rem; color: var(--text-muted); min-height: 20px; }
-    .crypto-controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-    .crypto-controls .qty-group { display: flex; align-items: center; gap: 10px; background: rgba(0, 0, 0, 0.4); padding: 4px 12px; border-radius: 30px; border: 2px solid var(--line-black); }
-    .crypto-controls .qty-group .qty-btn { width: 28px; height: 28px; border-radius: 50%; border: none; background: transparent; color: var(--text-primary); font-size: 1.1rem; cursor: pointer; transition: var(--transition); }
-    .crypto-controls .qty-group .qty-btn:hover { background: rgba(212, 175, 55, 0.1); }
-    .crypto-controls .qty-group .qty-value { font-family: 'Orbitron', monospace; font-size: 1rem; font-weight: 600; color: var(--gold); min-width: 20px; text-align: center; }
-    .crypto-total { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--gold); font-weight: 700; }
-    .crypto-hint { font-size: 0.55rem; color: var(--text-muted); margin-top: 6px; text-align: center; }
-    #qrReaderContainer { display: none; margin-top: 10px; text-align: center; }
-    #qrReaderContainer video { width: 100%; max-width: 300px; border-radius: 10px; background: black; border: 2px solid var(--line-black); }
-    html.tema-dia, html[data-tema="dia"] {
-        --space: #f5f7fa;
-        --bg-card: rgba(255, 255, 255, 0.95);
-        --bg-dark: rgba(240, 244, 248, 0.9);
-        --glass-bg: rgba(255, 255, 255, 0.85);
-        --glass-border: rgba(0, 0, 0, 0.1);
-        --text-primary: #1a2332;
-        --text-secondary: #4a5568;
-        --text-muted: #718096;
-        --line-black: rgba(0, 0, 0, 0.15);
-        --line-black-soft: rgba(0, 0, 0, 0.12);
-        --line-black-mid: rgba(0, 0, 0, 0.18);
-        --line-black-light: rgba(0, 0, 0, 0.1);
-    }
-    html.tema-dia body, html[data-tema="dia"] body { background: #f5f7fa !important; background-image: radial-gradient(ellipse at 20% 50%, rgba(212, 175, 55, 0.05) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(42, 106, 58, 0.05) 0%, transparent 60%) !important; color: var(--text-primary) !important; }
-    html.tema-dia .header, html[data-tema="dia"] .header { background: rgba(255, 255, 255, 0.95) !important; border-bottom-color: rgba(0, 0, 0, 0.15) !important; }
-    html.tema-dia .main-nav, html[data-tema="dia"] .main-nav { background: rgba(255, 255, 255, 0.7) !important; }
-    html.tema-dia .panel, html.tema-dia .publicacion-card, html.tema-dia .estado-section, html.tema-dia .conexion-section, html.tema-dia .pro-section, html.tema-dia .repartidor-section, html.tema-dia .perfil-header, html.tema-dia .perfil-tabs, html[data-tema="dia"] .panel, html[data-tema="dia"] .publicacion-card, html[data-tema="dia"] .estado-section, html[data-tema="dia"] .conexion-section, html[data-tema="dia"] .pro-section, html[data-tema="dia"] .repartidor-section, html[data-tema="dia"] .perfil-header, html[data-tema="dia"] .perfil-tabs { background: rgba(255, 255, 255, 0.9) !important; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08) !important; }
-    html.tema-dia #stars-canvas, html.tema-dia .nebula, html[data-tema="dia"] #stars-canvas, html[data-tema="dia"] .nebula { display: none !important; }
-    html.tema-dia .panel-header h3, html[data-tema="dia"] .panel-header h3 { color: var(--gold) !important; }
-    html.tema-dia .stats .stat, html[data-tema="dia"] .stats .stat { background: rgba(0, 0, 0, 0.05) !important; border-color: rgba(0, 0, 0, 0.15) !important; }
-    html.tema-dia .form-publicacion, html[data-tema="dia"] .form-publicacion { background: rgba(0, 0, 0, 0.03) !important; }
-    html.tema-dia .form-publicacion textarea, html.tema-dia .comentario-input-row input, html[data-tema="dia"] .form-publicacion textarea, html[data-tema="dia"] .comentario-input-row input { background: rgba(255, 255, 255, 0.9) !important; color: var(--text-primary) !important; border-color: rgba(0, 0, 0, 0.15) !important; }
-    html.tema-dia .token-status .item, html[data-tema="dia"] .token-status .item { background: rgba(0, 0, 0, 0.04) !important; }
-    html.tema-dia .toast, html[data-tema="dia"] .toast { background: rgba(255, 255, 255, 0.98) !important; }
-    @media (max-width: 768px) {
-        .app { padding: 12px 14px; }
-        .perfil-header { flex-direction: column; text-align: center; padding: 60px 20px 20px; }
-        .perfil-header .stats { margin-left: 0; justify-content: center; width: 100%; }
-        .perfil-header .acciones { margin-left: 0; justify-content: center; width: 100%; }
-        .perfil-tabs .tab-btn { font-size: 0.6rem; padding: 8px 14px; }
-        .main-nav .nav-link { font-size: 0.6rem; padding: 6px 10px; }
-        .header .logo-text { font-size: 1rem; }
-        .header .logo-hex { font-size: 1.4rem; }
-        .conexion-section .conexion-header { flex-direction: column; align-items: stretch; }
-        .estado-section .estado-header { flex-direction: column; align-items: stretch; }
-        .crypto-controls { flex-direction: column; }
-        .modal-content { padding: 20px; }
-        .emoji-picker { width: 240px; left: 50%; transform: translateX(-50%); }
-        .emoji-picker .grid { grid-template-columns: repeat(6, 1fr); }
-        .form-publicacion .acciones .btn-publicar { margin-left: 0; width: 100%; justify-content: center; }
-        .config-btn { top: 12px; right: 12px; width: 38px; height: 38px; font-size: 1.1rem; }
-    }
-    @media (max-width: 480px) {
-        .perfil-header .avatar { width: 70px; height: 70px; font-size: 1.8rem; }
-        .perfil-header .info .nombre { font-size: 1.1rem; }
-        .perfil-header .stats { gap: 16px; }
-        .main-nav .nav-link { font-size: 0.55rem; padding: 4px 8px; }
-        .modal-content .qr-container img { max-width: 150px; }
-        .emoji-picker { width: 200px; }
-        .emoji-picker .grid { grid-template-columns: repeat(5, 1fr); }
-        .emoji-picker .grid button { font-size: 1.2rem; padding: 4px; }
-    }
-</style>
-</head>
-<body>
+}
 
-<canvas id="stars-canvas"></canvas>
-<div class="nebula nebula-1"></div>
-<div class="nebula nebula-2"></div>
-<div class="nebula nebula-3"></div>
+function traducirPlanMeta(meta) {
+    if (!meta || typeof meta !== 'string') return meta;
+    var diasT = t('perfil_dias', 'días');
+    return meta.replace(/\bd[ií]as?\b/gi, diasT);
+}
 
-<div class="app">
+/* ================================================================
+   CONSTANTES PRO
+   ================================================================ */
+const PRO_PLAN_ID = 1;
+const PRO_PRECIO_MXN = 60;
+const PRO_DURACION_DIAS = 30;
+const PRO_GB = 5;
 
-<header class="header">
-    <a href="/" class="logo">
-        <span class="logo-hex">◈</span>
-        <span class="logo-text">Csariel<span>'s</span></span>
-        <span class="logo-badge">✦ WEB3</span>
-    </a>
-    <div class="header-actions">
-        <span class="network-badge"><span class="dot"></span> Polygon</span>
-    </div>
-</header>
-
-<nav class="main-nav">
-    <a href="/" class="nav-link">⌂ Inicio</a>
-    <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
-    <a href="/features/perfil/perfil.html" class="nav-link active">◆ Perfil</a>
-    <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
-    <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
-    <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
-</nav>
-
-<div class="perfil-container">
-
-    <div class="perfil-header" id="perfilHeader">
-        <a href="/features/perfil/configuracion/index.html" class="config-btn" title="Configuración">⚙️</a>
-        
-        <div class="avatar-container" style="position:relative;">
-            <div class="avatar" id="perfilAvatar" onclick="window.toggleAvatarMenu(event)">
-                ◈
-                <span class="avatar-menu-toggle" title="Opciones de foto">✎</span>
-            </div>
-            <div class="avatar-menu" id="avatarMenu" role="menu">
-                <button type="button" onclick="event.stopPropagation(); window.abrirSelectorArchivo(); window.cerrarAvatarMenu();">
-                    <span>📷</span> Cambiar foto
-                </button>
-                <div class="divider"></div>
-                <button type="button" class="danger" onclick="event.stopPropagation(); window.eliminarFotoPerfil(); window.cerrarAvatarMenu();">
-                    <span>✕</span> Eliminar foto
-                </button>
-            </div>
-            <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="window.subirFoto(event)" />
-        </div>
-        <div class="info">
-            <div class="nombre" id="perfilNombre">
-                <span data-clave="perfil_nombre_usuario">Explorador</span>
-                <span class="verified" data-clave="perfil_badge_verificado">✦ VERIFICADO</span>
-            </div>
-            <div class="handle" id="perfilHandle">@explorador</div>
-            <div class="bio" id="perfilBio" data-clave="perfil_biografia_default">Explorando el ecosistema Csariel's · WEB3 · Comunidad</div>
-            <div class="badges">
-                <span class="badge gold" data-clave="perfil_badge_miembro">✦ MIEMBRO</span>
-                <span class="badge success" data-clave="perfil_badge_activo">● ACTIVO</span>
-                <span class="badge" data-clave="perfil_badge_web3">◈ WEB3</span>
-                <span class="badge" id="nivelUsuario" style="border-color:var(--purple);color:var(--purple);background:rgba(168,85,247,0.05);">🌱 Explorador</span>
-            </div>
-        </div>
-        <div class="stats">
-            <div class="stat">
-                <div class="number" id="statTokens">0</div>
-                <div class="label" data-clave="perfil_stat_tokens">◈ Tokens</div>
-            </div>
-            <div class="stat">
-                <div class="number" id="statNFTS">0</div>
-                <div class="label" data-clave="perfil_stat_nfts">◈ NFTs</div>
-            </div>
-            <div class="stat">
-                <div class="number" id="statSeguidores">0</div>
-                <div class="label" data-clave="perfil_stat_seguidores">◈ Seguidores</div>
-            </div>
-            <div class="stat">
-                <div class="number" id="statSiguiendo">0</div>
-                <div class="label" data-clave="perfil_stat_siguiendo">◈ Siguiendo</div>
-            </div>
-        </div>
-        <div class="acciones">
-            <button class="btn btn-outline btn-sm" onclick="window.compartirPerfil()" data-clave="perfil_btn_compartir">◈ Compartir</button>
-            <button class="btn btn-outline btn-sm" onclick="window.generarQRPerfil()" data-clave="perfil_share_qr">📱 Share QR</button>
-        </div>
-    </div>
-
-    <div class="repartidor-section" id="repartidorSection" style="display:none;">
-        <div class="rep-header">
-            <h3>🛵 <span data-clave="perfil_gana_dinero">Gana dinero con Csariel's</span></h3>
-            <span class="rep-badge" id="repBadge">Cargando...</span>
-        </div>
-        <div class="rep-info" id="repInfo">
-            Cargando información...
-        </div>
-        <button class="rep-btn" id="repBtn" onclick="window.irARepartidorDesdePerfil()">
-            Cargando...
-        </button>
-    </div>
-
-    <div class="estado-section">
-        <div class="estado-header">
-            <div class="estado-info">
-                <span class="badge" id="estadoBadge">🟢</span>
-                <span class="texto" id="estadoTexto" style="color:var(--success);" data-clave="perfil_activo_ahora">Activo ahora</span>
-                <span class="amigos-online">· <span id="amigosEnLineaContador">0</span> <span data-clave="perfil_amigos_en_linea">amigos en línea</span></span>
-            </div>
-            <div class="estado-buttons">
-                <button class="btn-estado online" onclick="window.cambiarEstado(true)" data-clave="perfil_btn_activo">🟢 Activo</button>
-                <button class="btn-estado offline" onclick="window.cambiarEstado(false)" data-clave="perfil_btn_inactivo">⭕ Inactivo</button>
-            </div>
-        </div>
-
-        <div id="solicitudesSection">
-            <h4><span data-clave="perfil_solicitudes_pendientes">📨 Solicitudes pendientes</span> <span id="solicitudesContador" style="font-size:0.7rem;color:var(--warning);">0</span></h4>
-            <div id="solicitudesContainer" style="max-height: 200px; overflow-y: auto;">
-                <div style="text-align:center; padding:10px; color:var(--text-muted); font-size:0.7rem;">
-                    <span style="font-size:1.2rem;">✅</span>
-                    <p data-clave="perfil_sin_solicitudes">No tienes solicitudes pendientes</p>
-                </div>
-            </div>
-        </div>
-
-        <div id="amigosContainer"></div>
-    </div>
-
-    <div class="pro-section" id="proSection">
-        <div class="pro-header">
-            <h3>⟡ Csariel's Pro</h3>
-            <span class="pro-badge" data-clave="perfil_pro_membresia">MEMBRESÍA</span>
-        </div>
-        <div class="pro-body">
-            <div class="pro-current">
-                <div>
-                    <span class="pro-label" data-clave="perfil_pro_plan_actual">Plan actual:</span>
-                    <span class="pro-value" id="planActual" data-clave="perfil_pro_gratis">Gratis</span>
-                </div>
-                <div>
-                    <span class="pro-meta" id="planMeta">1 GB · 90 días</span>
-                </div>
-            </div>
-
-            <div class="pro-upgrade" id="proUpgradeCard">
-                <div class="pro-upgrade-title">
-                    <span class="pro-upgrade-icon">✦</span>
-                    <span class="pro-upgrade-name">Csariel's Pro</span>
-                </div>
-                <div class="pro-upgrade-price">
-                    <span id="proPrecio">$60 MXN</span>
-                    <span class="pro-upgrade-period" data-clave="perfil_pro_periodo">/ 30 días</span>
-                </div>
-                <div class="pro-upgrade-features" id="proFeatures" data-clave="perfil_pro_features">
-                    Conservación ampliada · 5 GB
-                </div>
-                <button class="btn btn-gold pro-btn" onclick="window.contratarPro()" id="btnContratarPro" data-clave="perfil_pro_contratar">
-                    🚀 Contratar Pro por $60 MXN
-                </button>
-            </div>
-
-            <div class="pro-active-info" id="proActiveInfo" style="display:none;">
-                <div class="pro-active-badge" data-clave="perfil_pro_activo">✅ PRO ACTIVO</div>
-                <div class="pro-active-expira">
-                    <span data-clave="perfil_pro_expira">Expira:</span> <span id="proExpira">--</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="conexion-section">
-        <div class="conexion-header">
-            <div class="conexion-info">
-                <span class="status" id="conexionStatus" data-clave="perfil_conexion_wifi">🛜 WiFi</span>
-                <span class="velocidad" id="conexionVelocidad">0 Mbps</span>
-                <span class="señal" id="conexionSeñal" style="color:var(--success);">████</span>
-            </div>
-            <div class="conexion-buttons">
-                <button class="btn-conexion wifi active" id="btnWifi" onclick="window.cambiarConexion('wifi')" data-clave="perfil_conexion_wifi">🛜 WiFi</button>
-                <button class="btn-conexion datos" id="btnDatos" onclick="window.cambiarConexion('datos')" data-clave="perfil_conexion_datos">📶 Datos</button>
-            </div>
-        </div>
-        <div style="font-size:0.6rem;color:var(--text-muted);margin-top:6px;">
-            <span data-clave="perfil_conexion">Conexión:</span> <span id="conexionTipo">🛜 WiFi</span>
-            · <span data-clave="perfil_operador">Operador:</span> <span id="conexionOperador">Csariel's Net</span>
-        </div>
-    </div>
-
-    <div class="perfil-tabs">
-        <button class="tab-btn active" onclick="window.cambiarTab('mis-publicaciones')" data-clave="perfil_mis_publicaciones">◈ Mis Publicaciones</button>
-        <button class="tab-btn" onclick="window.cambiarTab('actividad')" data-clave="perfil_tab_actividad">◆ Actividad</button>
-        <button class="tab-btn" onclick="window.cambiarTab('tokens')" data-clave="perfil_tab_tokens">⟡ Tokens</button>
-        <button class="tab-btn" onclick="window.cambiarTab('esim')" data-clave="perfil_tab_esim">📱 eSIM</button>
-        <button class="tab-btn" onclick="window.cambiarTab('qr')" data-clave="perfil_tab_qr">📷 Escanear QR</button>
-        <button class="tab-btn" onclick="window.cambiarTab('internet')" data-clave="perfil_tab_internet">📶 Internet</button>
-    </div>
-<div id="tab-mis-publicaciones" class="tab-content active">
-    <div class="panel">
-        <div class="panel-header">
-            <h3 data-clave="perfil_crear_publicacion">✦ Crear publicación</h3>
-            <span class="panel-badge" data-clave="perfil_badge_nuevo">Nuevo</span>
-        </div>
-        <div class="panel-body">
-            <div class="form-publicacion">
-                <textarea id="inputNuevaPublicacion" data-placeholder="perfil_que_piensas" placeholder="¿Qué estás pensando? Puedes usar #hashtags, @menciones y emojis ✨"></textarea>
-                
-                <div class="acciones">
-                    <button type="button" class="accion-btn" onclick="window.toggleEmojiPickerPerfil()" id="btnEmojiPerfil" data-clave="perfil_emoji">
-                        😀 Emoji
-                    </button>
-                    <button type="button" class="accion-btn" onclick="window.insertarHashtagPerfil()" data-clave="perfil_hashtag">
-                        # Hashtag
-                    </button>
-                    <button type="button" class="accion-btn" onclick="document.getElementById('inputFotoPerfilPost').click()" data-clave="perfil_foto">
-                        📸 Foto
-                    </button>
-                    <button type="button" class="accion-btn" onclick="document.getElementById('inputVideoPerfilPost').click()" data-clave="perfil_video">
-                        🎬 Video
-                    </button>
-                    
-                    <input type="file" id="inputFotoPerfilPost" accept="image/*" style="display:none;" onchange="window.seleccionarArchivoPerfil(event, 'imagen')" />
-                    <input type="file" id="inputVideoPerfilPost" accept="video/*" style="display:none;" onchange="window.seleccionarArchivoPerfil(event, 'video')" />
-                    
-                    <button type="button" class="btn-publicar" onclick="window.publicarDesdePerfil()" id="btnPublicarPerfil" data-clave="perfil_publicar">
-                        ◈ Publicar
-                    </button>
-
-                    <div class="emoji-picker" id="emojiPickerPerfil">
-                        <div class="titulo" data-clave="perfil_elige_emoji">✦ Elige tu emoji</div>
-                        <div class="grid" id="emojiGridPerfil"></div>
-                    </div>
-                </div>
-
-                <div id="previewArchivosPerfil" class="preview-archivos"></div>
-            </div>
-        </div>
-    </div>
-
-    <div class="panel">
-        <div class="panel-header">
-            <h3 data-clave="perfil_mis_publicaciones">◈ Mis publicaciones</h3>
-            <span class="panel-badge" id="misPostsCount">0</span>
-        </div>
-        <div class="panel-body">
-            <div id="misPublicacionesList">
-                <div class="empty-state">
-                    <span class="icon">◈</span>
-                    <h4 data-clave="perfil_sin_publicaciones">Sin publicaciones aún</h4>
-                    <p data-clave="perfil_crea_primera">Publica algo para verlo aquí</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div id="tab-actividad" class="tab-content">
-    <div class="panel">
-        <div class="panel-header">
-            <h3 data-clave="perfil_seccion_ultima_actividad">◈ Última actividad</h3>
-            <span class="panel-badge" data-clave="perfil_tiempo_real">En tiempo real</span>
-        </div>
-        <div class="panel-body" id="actividadList">
-            <div class="empty-state">
-                <span class="icon">◈</span>
-                <h4 data-clave="perfil_sin_actividad">Sin actividad reciente</h4>
-                <p data-clave="perfil_comienza_muro">Comienza a interactuar en el Muro</p>
-            </div>
-        </div>
-    </div>
-    <div class="panel">
-        <div class="panel-header">
-            <h3 data-clave="perfil_seccion_historial_tx">◈ Historial de transacciones</h3>
-            <span class="panel-badge" id="historialCount">0</span>
-        </div>
-        <div class="panel-body" id="historialList">
-            <div class="empty-state">
-                <span class="icon">◈</span>
-                <h4 data-clave="perfil_sin_transacciones">Sin transacciones</h4>
-                <p data-clave="perfil_compra_domos_tokens">Compra domos para acumular tokens</p>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div id="tab-tokens" class="tab-content">
-    <div class="panel">
-        <div class="panel-header">
-            <h3 data-clave="perfil_seccion_estado_tokens">⟡ Estado de tokens</h3>
-            <span class="panel-badge" data-clave="perfil_actualizado">Actualizado</span>
-        </div>
-        <div class="panel-body">
-            <div class="token-status">
-                <div class="item">
-                    <div class="value" id="tokenTotal">0</div>
-                    <div class="label" data-clave="perfil_balance_tokens">◈ Total tokens</div>
-                </div>
-                <div class="item">
-                    <div class="value" id="tokenDisponibles">0</div>
-                    <div class="label" data-clave="perfil_disponibles">◈ Disponibles</div>
-                </div>
-                <div class="item">
-                    <div class="value" id="tokenVendidos">0</div>
-                    <div class="label" data-clave="perfil_vendidos">◈ Vendidos</div>
-                </div>
-                <div class="item">
-                    <div class="value" id="tokenNFTs">0</div>
-                    <div class="label" data-clave="perfil_nfts_info">◈ NFTs</div>
-                </div>
-            </div>
-
-            <div class="progress-bar-container">
-                <div class="bar">
-                    <div class="fill" id="progressFill" style="width: 0%;"></div>
-                </div>
-                <div class="label">
-                    <span data-clave="perfil_progreso_meta">Progreso NFT</span>
-                    <span id="progressText">0 / 12</span>
-                </div>
-            </div>
-
-            <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
-                <button class="btn btn-gold" style="flex:1;justify-content:center;" onclick="window.comprarDomo(1)" data-clave="perfil_comprar_domo">
-                    ⟡ Comprar Domo (MXN)
-                </button>
-                <button class="btn btn-gold" style="flex:1;justify-content:center;" id="canjearNft" onclick="window.canjearNFT()" disabled data-clave="perfil_canjear_nft">
-                    🔒 CANJEAR NFT
-                </button>
-            </div>
-
-            <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--line-black-soft);">
-                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-                    <span style="font-size:0.75rem;color:var(--gold);font-weight:600;" data-clave="perfil_pagar_usdt">💳 Comprar con Cripto</span>
-                    <span style="font-size:0.55rem;color:var(--text-muted);" data-clave="perfil_usdt_trc20">USDT / USDC · 2% comisión</span>
-                </div>
-                <div class="crypto-controls">
-                    <div class="qty-group">
-                        <button class="qty-btn" id="cryptoDecreaseQty">−</button>
-                        <span class="qty-value" id="cryptoQuantity">1</span>
-                        <button class="qty-btn" id="cryptoIncreaseQty">+</button>
-                    </div>
-                    <div style="flex:1;text-align:center;">
-                        <span class="crypto-total" id="cryptoTotal">$4.59 USDT</span>
-                    </div>
-                </div>
-                <button class="btn btn-crypto" style="width:100%;justify-content:center;margin-top:8px;padding:10px;" onclick="window.comprarConCripto()" data-clave="perfil_pagar_usdt">
-                    💳 Pagar con USDT/USDC
-                </button>
-                <div class="crypto-hint" data-clave="perfil_usdt_trc20">
-                    ⚡ Red: TRC-20 (tarifas bajas) · Acepta USDT y USDC
-                </div>
-            </div>
-
-            <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;" onclick="window.irAMuro()" data-clave="perfil_ir_muro">
-                ◇ Ir al Muro
-            </button>
-        </div>
-    </div>
-</div>
-
-<div id="tab-esim" class="tab-content">
-    <div class="panel">
-        <div class="panel-header">
-            <h3 data-clave="perfil_telnyx">📱 Mi eSIM</h3>
-            <span class="panel-badge" data-clave="perfil_telnyx">Telnyx</span>
-        </div>
-        <div class="panel-body">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                <div style="background:rgba(0,0,0,0.4);padding:10px;border-radius:10px;border:2px solid var(--line-black);">
-                    <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_esim_estado">ESTADO</span>
-                    <div id="esimStatus" style="font-weight:600;font-size:0.9rem;">⏳ Sin eSIM</div>
-                </div>
-                <div style="background:rgba(0,0,0,0.4);padding:10px;border-radius:10px;border:2px solid var(--line-black);">
-                    <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_datos_consumidos">DATOS USADOS</span>
-                    <div id="esimDataUsed" style="font-weight:600;font-size:0.9rem;">0 GB</div>
-                </div>
-                <div style="background:rgba(0,0,0,0.4);padding:10px;border-radius:10px;border:2px solid var(--line-black);">
-                    <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_limite_plan">LÍMITE</span>
-                    <div id="esimDataLimit" style="font-weight:600;font-size:0.9rem;">0 GB</div>
-                </div>
-                <div style="background:rgba(0,0,0,0.4);padding:10px;border-radius:10px;border:2px solid var(--line-black);">
-                    <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_datos_restantes">RESTANTE</span>
-                    <div id="esimDataRestante" style="font-weight:600;font-size:0.9rem;color:var(--success);">0 GB</div>
-                </div>
-                <div style="background:rgba(0,0,0,0.4);padding:10px;border-radius:10px;border:2px solid var(--line-black);grid-column:span 2;">
-                    <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_iccid">ICCID</span>
-                    <div id="esimIccid" style="font-weight:600;font-size:0.8rem;font-family:monospace;" data-clave="perfil_no_asignado">No asignado</div>
-                </div>
-            </div>
-
-            <div style="margin-top:10px;">
-                <div style="background:rgba(0,0,0,0.6);border:1px solid var(--line-black);border-radius:10px;height:8px;overflow:hidden;">
-                    <div id="esimDataProgress" style="height:100%;width:0%;background:var(--success);transition:width 0.8s;"></div>
-                </div>
-            </div>
-
-            <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
-                <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" onclick="window.comprarESIM(1)" data-clave="perfil_adquirir_esim">
-                    📱 Comprar eSIM
-                </button>
-                <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="window.generarQRESIM()" data-clave="perfil_obtener_qr">
-                    📲 QR Activación
-                </button>
-                <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="window.sincronizarESIM()" data-clave="perfil_sincronizar">
-                    🔄 Sincronizar
-                </button>
-            </div>
-
-            <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
-                <button class="btn btn-outline btn-sm" onclick="window.activarESIM()" style="border-color:var(--success);color:var(--success);" data-clave="perfil_activar_esim">
-                    ✅ Activar
-                </button>
-                <button class="btn btn-danger btn-sm" onclick="window.desactivarESIM()" data-clave="perfil_desactivar_esim">
-                    ⛔ Desactivar
-                </button>
-            </div>
-
-            <div style="margin-top:10px;font-size:0.6rem;color:var(--text-muted);">
-                <span data-clave="perfil_apn_requerido">APN:</span> <span id="esimApn" style="font-family:monospace;color:var(--text-secondary);">data00.telnyx</span>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div id="tab-qr" class="tab-content">
-    <div class="panel">
-        <div class="panel-header">
-            <h3 data-clave="perfil_escanear_qr">📱 Escanear QR</h3>
-            <span class="panel-badge" data-clave="perfil_recibe_estoks">Recibe Es.stoks</span>
-        </div>
-        <div class="panel-body">
-            <div class="config-group">
-                <label data-clave="perfil_codigo_qr">Código del QR (escanea o escribe)</label>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                    <input type="text" id="qrInput" data-placeholder="perfil_ejemplo_codigo_qr" placeholder="Ej: DOMO-2025-ABC123" 
-                           style="flex:1;padding:10px 14px;background:rgba(0,0,0,0.5);border:2px solid var(--line-black);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;">
-                    <button class="btn btn-gold" onclick="window.escanearQR()" id="btnEscanearQR" data-clave="perfil_validar_codigo">
-                        🔍 Escanear QR
-                    </button>
-                </div>
-                <div class="hint" data-clave="perfil_escanea_qr_hint">⚡ Escanea el QR de tu domo físico para recibir 1 Es.stok</div>
-            </div>
-
-            <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;" onclick="window.abrirCamaraQR()" data-clave="perfil_abrir_camara">
-                📷 Escanear con cámara
-            </button>
-
-            <div id="qrReaderContainer">
-                <video id="qrVideo" style="width:100%;max-width:300px;border-radius:10px;background:black;"></video>
-                <canvas id="qrCanvas" style="display:none;"></canvas>
-                <button class="btn btn-danger btn-sm" onclick="window.cerrarCamaraQR()" style="margin-top:8px;" data-clave="perfil_cerrar_camara">
-                    ✕ Cerrar cámara
-                </button>
-                <div id="qrCamaraStatus" style="font-size:0.7rem;color:var(--text-muted);margin-top:4px;"></div>
-            </div>
-
-            <div id="qrStatus" style="margin-top:12px;font-size:0.8rem;color:var(--text-muted);min-height:24px;text-align:center;"></div>
-
-            <div style="margin-top:16px;border-top:1px solid var(--line-black-soft);padding-top:12px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.7rem;color:var(--text-muted);">
-                    <span data-clave="perfil_historial">📋 Últimos escaneos</span>
-                    <span id="qrHistorialCount">0</span>
-                </div>
-                <div id="qrHistorialList" style="margin-top:8px;">
-                    <div class="empty-state" style="padding:10px;">
-                        <span class="icon" style="font-size:1.5rem;">◈</span>
-                        <p style="font-size:0.7rem;" data-clave="perfil_sin_escaneos">Sin escaneos recientes</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div id="tab-internet" class="tab-content">
-    <div class="panel">
-        <div class="panel-header">
-            <h3 data-clave="perfil_mis_compras_internet">📶 Mis compras de Internet</h3>
-            <span class="panel-badge" id="internetOrdenesCount">0</span>
-        </div>
-        <div class="panel-body">
-            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
-                <button class="btn btn-outline btn-sm internet-filter active" data-filter="all" onclick="window.filtrarOrdenesInternet('all')" data-clave="perfil_filtro_todas">Todas</button>
-                <button class="btn btn-outline btn-sm internet-filter" data-filter="activa" onclick="window.filtrarOrdenesInternet('activa')" data-clave="perfil_filtro_activas">✅ Activas</button>
-                <button class="btn btn-outline btn-sm internet-filter" data-filter="pagando" onclick="window.filtrarOrdenesInternet('pagando')" data-clave="perfil_filtro_pendientes">⏳ Pendientes</button>
-                <button class="btn btn-outline btn-sm internet-filter" data-filter="cancelada" onclick="window.filtrarOrdenesInternet('cancelada')" data-clave="perfil_filtro_canceladas">❌ Canceladas</button>
-                <button class="btn btn-outline btn-sm" onclick="window.cargarOrdenesInternet()" style="margin-left:auto;" data-clave="perfil_refrescar">🔄 Refrescar</button>
-            </div>
-
-            <div id="ordenesInternetList">
-                <div class="empty-state">
-                    <span class="icon">📶</span>
-                    <h4 data-clave="perfil_cargando_ordenes">Cargando órdenes...</h4>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-</div>
-
-<footer class="footer">
-    <span><span class="brand">© Csariel's</span> · Sabor al Paladar · WEB3</span>
-    <div class="footer-links">
-        <a href="/terminos" data-clave="perfil_footer_terminos">◈ Términos</a>
-        <a href="/privacidad" data-clave="perfil_footer_privacidad">◈ Privacidad</a>
-        <a href="/cookies" data-clave="perfil_footer_cookies">◈ Cookies</a>
-        <a href="/live-terminos" data-clave="perfil_footer_terminos_live">◈ Términos Live</a>
-        <span style="opacity:0.3;">⚡ Polygon</span>
-    </div>
-</footer>
-
-</div>
-
-<div class="toast" id="toast"></div>
-
-<div class="modal-overlay" id="cryptoPaymentModal">
-    <div class="modal-content">
-        <button class="close-btn" onclick="window.cerrarModalPago()">✕</button>
-        <h2 data-clave="perfil_pagar_usdt">💳 Pagar con Cripto</h2>
-        <p class="subtitle" data-clave="perfil_obtencion_cripto">Escanea el QR o copia la dirección para pagar</p>
-        <div class="qr-container">
-            <img id="cryptoQR" src="" alt="QR de pago" />
-        </div>
-        <div class="address-box">
-            <div class="label" data-clave="perfil_codigo_qr">📤 Dirección de pago</div>
-            <div class="address" id="cryptoAddress" data-clave="perfil_cargando_direccion">Cargando dirección...</div>
-        </div>
-        <div class="amount">
-            <span id="cryptoMonto">0.00</span> <span id="cryptoMoneda">USDT</span>
-        </div>
-        <div class="actions">
-            <button class="btn btn-outline btn-sm" onclick="window.copiarDireccion()" data-clave="perfil_copiar_direccion">📋 Copiar dirección</button>
-            <button class="btn btn-gold btn-sm" onclick="window.verificarPagoCrypto()" data-clave="perfil_validacion_real">✅ Verificar pago</button>
-            <button class="btn btn-outline btn-sm" onclick="window.cerrarModalPago()" data-clave="perfil_cerrar">Cerrar</button>
-        </div>
-        <div class="status" id="cryptoStatus" data-clave="perfil_cargando_membresia">⏳ Esperando confirmación de pago...</div>
-    </div>
-</div>
-
-<div id="errorBanner" style="display:none; position:fixed; top:0; left:0; right:0; z-index:99999; background:#ff3366; color:#fff; padding:12px 16px; font-family:monospace; font-size:0.75rem; word-break:break-word; box-shadow:0 4px 20px rgba(0,0,0,0.4);">
-    <strong>⚠️ Error detectado:</strong>
-    <span id="errorBannerText"></span>
-    <button onclick="document.getElementById('errorBanner').style.display='none'" style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">Cerrar</button>
-</div>
-
-<script>
-    function mostrarErrorEnPantalla(mensaje) {
-        const banner = document.getElementById('errorBanner');
-        const texto = document.getElementById('errorBannerText');
-        if (banner && texto) { texto.textContent = mensaje; banner.style.display = 'block'; }
-    }
-    window.addEventListener('error', function (event) {
-        mostrarErrorEnPantalla((event.message || 'Error desconocido') + ' — línea ' + event.lineno + ' de ' + (event.filename || 'este archivo'));
-    });
-    window.addEventListener('unhandledrejection', function (event) {
-        mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason?.message || event.reason));
-    });
-    window.addEventListener('load', function () {
-        if (typeof window.supabase === 'undefined') {
-            mostrarErrorEnPantalla('No se pudo cargar la conexión a la base de datos (Supabase). Revisa tu internet o si algo está bloqueando cdn.jsdelivr.net.');
-        }
-    });
-</script>
-
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
-
-<script src="/features/shared/js/idiomas.js?v=4" defer></script>
-<script src="/features/perfil/perfil.js?v=4" defer></script>
-
-<script>
-// ================================================================
-// ⚙️ CONFIGURACIÓN LEGAL
-// ================================================================
-var CONFIG_LEGAL = {
-    nombre_comercial: 'Csariel\'s',
-    nombre_ecosistema: 'Csariel\'s Ecosystem',
-    slogan: 'Sabor al Paladar · Repostería Fina · Web3',
-    razon_social: '',
-    rfc: '',
-    email_contacto: '',
-    sitio_web: '',
-    pais_operacion: 'México',
-    ciudad_operacion: 'Puebla'
+/* ================================================================
+   CONFIGURACIÓN DE ENTORNO
+   ================================================================ */
+const ENV = {
+    isProduction: window.location.hostname !== 'localhost' && !window.location.hostname.includes('127.0.0.1'),
+    isTestnet: true,
+    networkName: 'Polygon Amoy Testnet',
+    networkChainId: '0x13882',
+    networkCurrency: 'MATIC',
+    networkRPC: 'https://rpc-amoy.polygon.technology/',
+    networkExplorer: 'https://www.oklink.com/amoy'
 };
 
-// ================================================================
-// AVATAR MENU + TOGGLE
-// ================================================================
-function toggleAvatarMenu(event) {
-    if (event) event.stopPropagation();
-    var menu = document.getElementById('avatarMenu');
-    if (!menu) return;
-    menu.classList.toggle('show');
-}
-
-function cerrarAvatarMenu() {
-    var menu = document.getElementById('avatarMenu');
-    if (menu) menu.classList.remove('show');
-}
-
-window.toggleAvatarMenu = toggleAvatarMenu;
-window.cerrarAvatarMenu = cerrarAvatarMenu;
-
-// ================================================================
-// VERIFICAR ESTADO DEL REPARTIDOR
-// ================================================================
-async function verificarEstadoRepartidorPerfil() {
-    try {
-        var section = document.getElementById('repartidorSection');
-        var badge = document.getElementById('repBadge');
-        var info = document.getElementById('repInfo');
-        var btn = document.getElementById('repBtn');
-        
-        if (!section) return;
-
-        var client = window.supabaseClient;
-        if (!client) return;
-
-        var session = await client.auth.getSession();
-        if (!session.data.session) return;
-
-        var usuarioId = session.data.session.user.id;
-
-        var result = await client
-            .from('mercado_repartidores')
-            .select('estado_verificacion, score_confianza, motivo_rechazo')
-            .eq('usuario_id', usuarioId)
-            .maybeSingle();
-
-        section.style.display = 'block';
-
-        if (result.error || !result.data) {
-            badge.textContent = 'Sé el primero';
-            badge.className = 'rep-badge no-registrado';
-            info.innerHTML = 'Gana dinero entregando pedidos en tu ciudad. Regístrate como repartidor y empieza hoy mismo. <strong>Verificación 100% automática</strong>, sin esperas.';
-            btn.textContent = '✨ Registrarme como repartidor';
-            btn.className = 'rep-btn registrar';
-            return;
-        }
-
-        var estado = result.data.estado_verificacion;
-
-        if (estado === 'activo') {
-            badge.textContent = '✓ Verificado';
-            badge.className = 'rep-badge activo';
-            info.innerHTML = 'Eres repartidor verificado. Puedes recibir pedidos ahora mismo. <strong>Score: ' + (result.data.score_confianza || 100) + '</strong>';
-            btn.textContent = '🛵 Ir a mi panel de repartidor';
-            btn.className = 'rep-btn ir-panel';
-        } else if (estado === 'procesando' || estado === 'revision_manual') {
-            badge.textContent = 'En revisión';
-            badge.className = 'rep-badge pendiente';
-            info.innerHTML = 'Estamos verificando tu identidad. Te avisaremos cuando termine. <strong>Esto puede tomar hasta 24 horas.</strong>';
-            btn.textContent = '⏳ Ver estado de verificación';
-            btn.className = 'rep-btn ver-estado';
-        } else if (estado === 'rechazado') {
-            badge.textContent = 'Rechazado';
-            badge.className = 'rep-badge rechazado';
-            var motivo = result.data.motivo_rechazo || 'Revisa los requisitos';
-            info.innerHTML = 'Tu registro fue rechazado. <strong>Motivo:</strong> ' + motivo;
-            btn.textContent = '🔄 Volver a intentar';
-            btn.className = 'rep-btn reintentar';
-        } else {
-            badge.textContent = 'Completar';
-            badge.className = 'rep-badge pendiente';
-            info.innerHTML = 'Tienes un registro pendiente. <strong>Complétalo para empezar a ganar.</strong>';
-            btn.textContent = '📝 Completar registro';
-            btn.className = 'rep-btn registrar';
-        }
-
-    } catch (e) {
-        console.warn('Error verificando estado repartidor:', e);
-    }
-}
-
-async function irARepartidorDesdePerfil() {
-    try {
-        var client = window.supabaseClient;
-        if (!client) return;
-
-        var session = await client.auth.getSession();
-        if (!session.data.session) {
-            if (window.showToast) window.showToast('⚠️ Inicia sesión', 'warning');
-            return;
-        }
-
-        var usuarioId = session.data.session.user.id;
-
-        var result = await client
-            .from('mercado_repartidores')
-            .select('estado_verificacion')
-            .eq('usuario_id', usuarioId)
-            .maybeSingle();
-
-        if (result.error || !result.data) {
-            window.location.href = '/features/mercado/repartidor/registro.html';
-            return;
-        }
-
-        var estado = result.data.estado_verificacion;
-
-        if (estado === 'activo') {
-            window.location.href = '/features/mercado/repartidor/panel.html';
-        } else if (estado === 'rechazado' || estado === 'procesando' || estado === 'revision_manual') {
-            window.location.href = '/features/mercado/repartidor/estado-verificacion.html';
-        } else {
-            window.location.href = '/features/mercado/repartidor/registro.html';
-        }
-
-    } catch (e) {
-        console.error('Error:', e);
-        window.location.href = '/features/mercado/repartidor/registro.html';
-    }
-}
-
-window.verificarEstadoRepartidorPerfil = verificarEstadoRepartidorPerfil;
-window.irARepartidorDesdePerfil = irARepartidorDesdePerfil;
-
-document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(verificarEstadoRepartidorPerfil, 1500);
-
-    setTimeout(async () => {
-        try {
-            if (typeof window.inicializarIdiomas === 'function') {
-                await window.inicializarIdiomas();
-            }
-        } catch (error) {
-            console.error('Error inicializando idiomas en perfil:', error);
-        }
-    }, 800);
-
-    document.addEventListener('click', function(e) {
-        var menu = document.getElementById('avatarMenu');
-        var avatar = document.getElementById('perfilAvatar');
-        if (menu && menu.classList.contains('show')) {
-            if (!menu.contains(e.target) && !avatar.contains(e.target)) {
-                menu.classList.remove('show');
-            }
-        }
-        var picker = document.getElementById('emojiPickerPerfil');
-        if (picker && picker.classList.contains('show')) {
-            if (!picker.contains(e.target) && e.target.id !== 'btnEmojiPerfil') {
-                picker.classList.remove('show');
-            }
-        }
-        var rd = document.querySelectorAll('.reaccion-dropdown.show');
-        rd.forEach(function(dd) {
-            if (!dd.contains(e.target) && !dd.parentElement.contains(e.target)) {
-                dd.classList.remove('show');
-            }
-        });
-    });
-});
-</script>
-
-<script>
 /* ================================================================
-   PUBLICACIONES DEL PERFIL — Módulo autocontenido
-   - Todas las funciones se exponen en window.*
-   - Foto y video suben a bucket 'muro-videos'
-   - Eliminar borra fila + archivo del bucket
-   - Reacciones: botón único + dropdown
-=============================================================== */
-(function() {
-    'use strict';
+   BACKEND ENDPOINTS (SOLO PAGOS)
+   ================================================================ */
+const BACKEND_URL = window.location.origin;
+const API_ENDPOINTS = {
+    pagos:    `${BACKEND_URL}/api/payments`,
+    webhook:  `${BACKEND_URL}/api/webhooks/nowpayments`
+};
 
-    function sb() {
-        return window.supabaseClient;
+/* ================================================================
+   TOAST NOTIFICACIONES
+   ================================================================ */
+function showToast(msg, type = '', duration = 3500) {
+    let toastEl = document.getElementById('toast');
+    if (!toastEl) {
+        toastEl = document.createElement('div');
+        toastEl.id = 'toast';
+        toastEl.className = 'toast';
+        document.body.appendChild(toastEl);
     }
+    toastEl.textContent = msg;
+    toastEl.className = 'toast show';
+    toastEl.style.animation = 'none';
+    void toastEl.offsetHeight;
+    toastEl.style.animation = 'slideInRight 0.3s ease-out';
 
-    var archivosSeleccionados = {
-        imagen: null,
-        video: null
-    };
+    if (type === 'error') toastEl.classList.add('error');
+    else if (type === 'warning') toastEl.classList.add('warning');
+    else if (type === 'success') toastEl.classList.add('success');
+    else toastEl.classList.remove('error', 'warning', 'success');
 
-    var EMOJIS_REACCION = ['❤️', '😊', '🔥', '👏', '🎉', '💎', '🤩', '😍', '😂'];
+    clearTimeout(toastEl._timeout);
+    toastEl._timeout = setTimeout(() => {
+        toastEl.style.animation = 'slideOutRight 0.3s ease-in';
+        setTimeout(() => toastEl.classList.remove('show'), 300);
+    }, duration);
+}
 
-    var emojisDisponibles = ['😀','😁','😂','🤣','😃','😄','😅','😊','😇','🙂','😉','😍','🥰','😘','😗','😙','😚','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🤐','🤨','😐','😑','😶','😏','😒','🙄','😬','🤥','😌','😔','😪','🤤','😴','😷','🤒','🤕','🤢','🤮','🤧','🥵','🥶','😵','🤯','🤠','🥳','😎','🤓','🧐','😕','😟','🙁','😮','😯','😲','😳','🥺','😦','😧','😨','😰','😥','😢','😭','😱','😖','😣','😞','😓','😩','😫','🥱','😤','😡','😠','🤬','😈','👿','💀','💩','🤡','👹','👺','👻','👽','👾','🤖','❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','🔥','✨','🌟','💫','⭐','⚡','💥','💢','🌈','☀️','🌤️','⛅','🌥️','☁️','🌦️','🌧️','⛈️','🌩️','🌨️','❄️','☃️','⛄','🌬️','💨','🌪️','🌫️','🌊','💧','💦','☔','☂️','🌂','🎉','🎊','🎈','🎁','🎂','🍰','🧁','🍕','🍔','🍟','🌮','🌯','🍿','🍩','🍪','🍫','🍬','🍭','🍮','🍯','🍷','🍸','🍹','🍺','🍻','🥂','🥃','🍾','☕','🍵','🧃','🥤','🧋','🍼','🥛','💊','🌿','🍃','🍀','🍁','🍂','🌸','🌺','🌻','🌹','🌷','🌼','💐','🌱','🌲','🌳','🌴','🌵','🌾','🍄','🐚','🪨','🌍','🌎','🌏','🌕','🌖','🌗','🌘','🌑','🌒','🌓','🌔','🌙','🌚','🌝','🌞','🪐','☄️','🌠','🌌'];
+/* ================================================================
+   SESIÓN
+   ================================================================ */
+async function getSession() {
+    if (!supabaseClient) return null;
 
-    /* ---------------- EMOJI PICKER ---------------- */
-    window.toggleEmojiPickerPerfil = function() {
-        var picker = document.getElementById('emojiPickerPerfil');
-        if (!picker) return;
-        if (picker.classList.contains('show')) { picker.classList.remove('show'); return; }
-        var grid = document.getElementById('emojiGridPerfil');
-        if (grid && grid.children.length === 0) {
-            emojisDisponibles.forEach(function(emoji) {
-                var btn = document.createElement('button');
-                btn.type = 'button';
-                btn.textContent = emoji;
-                btn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    insertarEmojiEnPerfil(emoji);
-                    picker.classList.remove('show');
+    try {
+        const resultado = await Promise.race([
+            supabaseClient.auth.getSession(),
+            new Promise((resolve) => setTimeout(() => resolve({
+                data: null,
+                error: new Error('Timeout obteniendo sesión')
+            }), SESSION_TIMEOUT_MS))
+        ]);
+
+        if (resultado.error) {
+            console.error('[Perfil] Error sesión:', resultado.error);
+            return null;
+        }
+
+        return resultado.data?.session || null;
+
+    } catch (error) {
+        console.error('[Perfil] Excepción sesión:', error);
+        return null;
+    }
+}
+
+/* ================================================================
+   CARGAR ESTADO DE MEMBRESÍA PRO
+   ================================================================ */
+async function cargarEstadoPro() {
+    try {
+        if (!supabaseClient) return;
+        const session = await getSession();
+        if (!session) return;
+
+        try {
+            const { data, error } = await supabaseClient.rpc('obtener_estado_pro');
+
+            if (!error && data && data.success) {
+                aplicarEstadoProUI({
+                    plan: data.plan,
+                    plan_expira_at: data.expira_at,
+                    plan_meta: data.meta,
+                    dias_restantes: data.dias_restantes
                 });
-                grid.appendChild(btn);
-            });
+                return;
+            }
+        } catch (rpcErr) {
+            console.warn('[Perfil] RPC obtener_estado_pro no disponible:', rpcErr?.message);
         }
-        picker.classList.add('show');
-    };
 
-    function insertarEmojiEnPerfil(emoji) {
-        var input = document.getElementById('inputNuevaPublicacion');
-        if (!input) return;
-        var start = input.selectionStart || 0;
-        var end = input.selectionEnd || 0;
-        var texto = input.value;
-        input.value = texto.substring(0, start) + emoji + texto.substring(end);
-        input.focus();
-        input.selectionStart = input.selectionEnd = start + emoji.length;
-    }
+        const { data: usuario, error: userErr } = await supabaseClient
+            .from('usuarios')
+            .select('plan, plan_expira_at, plan_meta, membresia_live_hasta')
+            .eq('id', session.user.id)
+            .maybeSingle();
 
-    window.insertarHashtagPerfil = function() {
-        var input = document.getElementById('inputNuevaPublicacion');
-        if (!input) return;
-        var start = input.selectionStart || 0;
-        var end = input.selectionEnd || 0;
-        var texto = input.value;
-        input.value = texto.substring(0, start) + '#' + texto.substring(end);
-        input.focus();
-        input.selectionStart = input.selectionEnd = start + 1;
-    };
-
-    /* ---------------- ARCHIVOS ---------------- */
-    window.seleccionarArchivoPerfil = function(event, tipo) {
-        var file = event.target.files[0];
-        if (!file) return;
-        if (tipo === 'imagen') {
-            if (file.size > 10 * 1024 * 1024) { if (window.showToast) window.showToast('❌ Imagen mayor a 10 MB', 'error'); event.target.value = ''; return; }
-            if (!file.type.startsWith('image/')) { if (window.showToast) window.showToast('❌ Solo imágenes', 'error'); event.target.value = ''; return; }
-        } else if (tipo === 'video') {
-            if (file.size > 50 * 1024 * 1024) { if (window.showToast) window.showToast('❌ Video mayor a 50 MB', 'error'); event.target.value = ''; return; }
-            if (!file.type.startsWith('video/')) { if (window.showToast) window.showToast('❌ Solo videos', 'error'); event.target.value = ''; return; }
-        }
-        archivosSeleccionados[tipo] = file;
-        renderizarPreviewPerfil();
-    };
-
-    function renderizarPreviewPerfil() {
-        var container = document.getElementById('previewArchivosPerfil');
-        if (!container) return;
-        container.innerHTML = '';
-        Object.keys(archivosSeleccionados).forEach(function(tipo) {
-            var file = archivosSeleccionados[tipo];
-            if (!file) return;
-            var wrapper = document.createElement('div');
-            wrapper.className = 'preview-item';
-            var reader = new FileReader();
-            reader.onload = function(e) {
-                if (tipo === 'imagen') {
-                    wrapper.innerHTML = '<img src="' + e.target.result + '" alt="preview"><button type="button" class="remove-btn" onclick="window.quitarArchivoPerfil(\'' + tipo + '\')">×</button>';
-                } else if (tipo === 'video') {
-                    wrapper.innerHTML = '<video src="' + e.target.result + '" muted></video><button type="button" class="remove-btn" onclick="window.quitarArchivoPerfil(\'' + tipo + '\')">×</button>';
-                }
-            };
-            reader.readAsDataURL(file);
-            container.appendChild(wrapper);
-        });
-    }
-
-    window.quitarArchivoPerfil = function(tipo) {
-        archivosSeleccionados[tipo] = null;
-        var inputId = tipo === 'imagen' ? 'inputFotoPerfilPost' : 'inputVideoPerfilPost';
-        var input = document.getElementById(inputId);
-        if (input) input.value = '';
-        renderizarPreviewPerfil();
-    };
-
-    /* ---------------- PUBLICAR ---------------- */
-    window.publicarDesdePerfil = async function() {
-        var btn = document.getElementById('btnPublicarPerfil');
-        var input = document.getElementById('inputNuevaPublicacion');
-        var contenido = input ? input.value.trim() : '';
-        if (!contenido && !archivosSeleccionados.imagen && !archivosSeleccionados.video) {
-            if (window.showToast) window.showToast('⚠️ Escribe algo o sube una foto/video', 'warning');
+        if (userErr) {
+            console.warn('[Perfil] Error leyendo plan:', userErr.message);
             return;
         }
-        var textoOriginalBtn = btn ? btn.textContent : '◈ Publicar';
-        if (btn) { btn.disabled = true; btn.textContent = '⏳ Publicando...'; }
-        try {
-            var client = sb();
-            if (!client) throw new Error('Supabase no está listo. Recarga la página.');
-            var sessionResult = await client.auth.getSession();
-            var session = sessionResult.data.session;
-            if (!session) { if (window.showToast) window.showToast('⚠️ Inicia sesión', 'error'); return; }
-            var mediaUrl = null;
-            var mediaType = null;
-            if (archivosSeleccionados.imagen) {
-                if (window.showToast) window.showToast('⏳ Subiendo imagen...', '', 5000);
-                var file = archivosSeleccionados.imagen;
-                var ext = file.name.split('.').pop().toLowerCase();
-                var filePath = session.user.id + '/post_' + Date.now() + '.' + ext;
-                var uploadResult = await client.storage.from('muro-videos').upload(filePath, file, { cacheControl: '3600', upsert: false, contentType: file.type });
-                if (uploadResult.error) throw new Error('Error subiendo imagen: ' + uploadResult.error.message);
-                var urlData = client.storage.from('muro-videos').getPublicUrl(filePath);
-                mediaUrl = urlData.data.publicUrl;
-                mediaType = 'imagen';
-            }
-            if (archivosSeleccionados.video) {
-                if (window.showToast) window.showToast('⏳ Subiendo video...', '', 15000);
-                var vfile = archivosSeleccionados.video;
-                var vext = vfile.name.split('.').pop().toLowerCase();
-                var vfilePath = session.user.id + '/video_' + Date.now() + '.' + vext;
-                var vuploadResult = await client.storage.from('muro-videos').upload(vfilePath, vfile, { cacheControl: '3600', upsert: false, contentType: vfile.type });
-                if (vuploadResult.error) throw new Error('Error subiendo video: ' + vuploadResult.error.message);
-                var vurlData = client.storage.from('muro-videos').getPublicUrl(vfilePath);
-                mediaUrl = vurlData.data.publicUrl;
-                mediaType = 'video';
-            }
-            var insertPayload = { usuario_id: session.user.id, contenido: contenido || '', media_url: mediaUrl, media_type: mediaType, estado: 'publicado' };
-            var insertResult = await client.from('publicaciones').insert(insertPayload).select().single();
-            if (insertResult.error) {
-                delete insertPayload.estado;
-                var fb = await client.from('publicaciones').insert(insertPayload).select().single();
-                if (fb.error) throw new Error(fb.error.message);
-            }
-            if (window.showToast) window.showToast('✅ ¡Publicación creada!', 'success');
-            if (input) input.value = '';
-            archivosSeleccionados.imagen = null;
-            archivosSeleccionados.video = null;
-            var i1 = document.getElementById('inputFotoPerfilPost'); if (i1) i1.value = '';
-            var i2 = document.getElementById('inputVideoPerfilPost'); if (i2) i2.value = '';
-            renderizarPreviewPerfil();
-            await window.cargarMisPublicaciones();
-        } catch (error) {
-            console.error('Error publicando:', error);
-            if (window.showToast) window.showToast('❌ Error: ' + error.message, 'error');
-        } finally {
-            if (btn) { btn.disabled = false; btn.textContent = textoOriginalBtn; }
-        }
-    };
 
-    /* ---------------- AVATAR HTML ---------------- */
-    function obtenerAvatarActual() {
-        if (window.perfilCache && window.perfilCache.avatar_url) {
-            return '<img src="' + window.perfilCache.avatar_url + '" alt="Avatar" style="width:100%;height:100%;object-fit:cover;">';
+        if (usuario) {
+            let diasRestantes = 0;
+            if (usuario.plan_expira_at) {
+                const expira = new Date(usuario.plan_expira_at);
+                diasRestantes = Math.max(0, Math.ceil((expira - Date.now()) / (1000 * 60 * 60 * 24)));
+            }
+            aplicarEstadoProUI({
+                plan: usuario.plan || 'Gratis',
+                plan_expira_at: usuario.plan_expira_at,
+                plan_meta: usuario.plan_meta || '1 GB · 90 días',
+                dias_restantes: diasRestantes
+            });
+        } else {
+            aplicarEstadoProUI({
+                plan: 'Gratis',
+                plan_expira_at: null,
+                plan_meta: '1 GB · 90 días',
+                dias_restantes: 0
+            });
         }
-        var imgHeader = document.querySelector('#perfilAvatar img');
-        if (imgHeader && imgHeader.src) {
-            return '<img src="' + imgHeader.src + '" alt="Avatar" style="width:100%;height:100%;object-fit:cover;">';
-        }
-        return '◈';
+    } catch (error) {
+        console.warn('[Perfil] Error cargando estado Pro:', error?.message);
     }
+}
 
-    /* ---------------- CARGAR PUBLICACIONES ---------------- */
-    window.cargarMisPublicaciones = async function() {
-        var container = document.getElementById('misPublicacionesList');
-        var contador = document.getElementById('misPostsCount');
-        if (!container) return;
-        try {
-            var client = sb();
-            if (!client) { setTimeout(window.cargarMisPublicaciones, 1000); return; }
-            var sessionResult = await client.auth.getSession();
-            var session = sessionResult.data.session;
-            if (!session) {
-                container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h4>Inicia sesión</h4><p>Para ver tus publicaciones</p></div>';
-                return;
-            }
-            var result = await client.from('publicaciones').select('*').eq('usuario_id', session.user.id).order('created_at', { ascending: false }).limit(50);
-            if (result.error) throw result.error;
-            var publicaciones = result.data || [];
-            if (contador) contador.textContent = publicaciones.length;
-            if (publicaciones.length === 0) {
-                container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h4>Sin publicaciones aún</h4><p>Publica algo para verlo aquí</p></div>';
-                return;
-            }
-            container.innerHTML = '';
-            var reaccionesUsuario = {};
-            try {
-                var reaccResult = await client.from('publicaciones_reacciones').select('publicacion_id, tipo').eq('usuario_id', session.user.id);
-                if (!reaccResult.error && reaccResult.data) {
-                    reaccResult.data.forEach(function(r) { reaccionesUsuario[r.publicacion_id] = r.tipo; });
-                }
-            } catch(e) {}
-            var conteosReacciones = {};
-            try {
-                var allReacc = await client.from('publicaciones_reacciones').select('publicacion_id, tipo');
-                if (!allReacc.error && allReacc.data) {
-                    allReacc.data.forEach(function(r) {
-                        if (!conteosReacciones[r.publicacion_id]) conteosReacciones[r.publicacion_id] = {};
-                        conteosReacciones[r.publicacion_id][r.tipo] = (conteosReacciones[r.publicacion_id][r.tipo] || 0) + 1;
-                    });
-                }
-            } catch(e) {}
-            var avatarHtml = obtenerAvatarActual();
-            publicaciones.forEach(function(p) {
-                var card = document.createElement('div');
-                card.className = 'publicacion-card';
-                var contenidoHtml = escapeHtmlPerfil(p.contenido || '');
-                if (p.media_url) {
-                    if (p.media_type === 'video') {
-                        contenidoHtml += '<video src="' + p.media_url + '" controls preload="metadata"></video>';
-                    } else if (p.media_type === 'imagen') {
-                        contenidoHtml += '<img src="' + p.media_url + '" alt="Imagen" loading="lazy" style="cursor:pointer;" onclick="window.expandirFotoPublicacion(this.src)" />';
-                    }
-                }
-                var fecha = p.created_at ? new Date(p.created_at).toLocaleString() : '';
-                var reaccionUsuario = reaccionesUsuario[p.id] || null;
-                var conteos = conteosReacciones[p.id] || {};
+function aplicarEstadoProUI(usuario) {
+    const planActualEl = document.getElementById('planActual');
+    const planMetaEl = document.getElementById('planMeta');
+    const proUpgradeCard = document.getElementById('proUpgradeCard');
+    const proActiveInfo = document.getElementById('proActiveInfo');
+    const proExpiraEl = document.getElementById('proExpira');
+    const btnContratarPro = document.getElementById('btnContratarPro');
 
-                var totalReacciones = 0;
-                Object.keys(conteos).forEach(function(k) { totalReacciones += (conteos[k] || 0); });
+    const planActual = usuario.plan || 'Gratis';
+    const planMeta = usuario.plan_meta || '1 GB · 90 días';
+    const esPro = planActual.toLowerCase().includes('pro');
 
-                var emojiMostrado = reaccionUsuario || '❤️';
+    if (planActualEl) planActualEl.textContent = planActual;
+    if (planMetaEl) planMetaEl.textContent = traducirPlanMeta(planMeta);
 
-                var dropdownHtml = '<div class="reaccion-dropdown" id="reaccion-dropdown-' + p.id + '">';
-                EMOJIS_REACCION.forEach(function(emoji) {
-                    var count = conteos[emoji] || 0;
-                    var activo = reaccionUsuario === emoji ? ' activa' : '';
-                    dropdownHtml += '<button type="button" class="' + activo.trim() + '" onclick="event.stopPropagation(); window.reaccionarPublicacionPerfil(\'' + p.id + '\', \'' + emoji + '\')" title="Reaccionar ' + emoji + '">' + emoji + (count > 0 ? '<span class="mini-count">' + count + '</span>' : '') + '</button>';
-                });
-                dropdownHtml += '</div>';
-
-                var triggerClass = 'reaccion-trigger' + (reaccionUsuario ? ' activa' : '');
-                var triggerHtml =
-                    '<div class="reaccion-wrap">' +
-                        dropdownHtml +
-                        '<button type="button" class="' + triggerClass + '" onclick="event.stopPropagation(); window.toggleReaccionDropdown(\'' + p.id + '\')" title="Reaccionar">' +
-                            '<span class="emoji-actual">' + emojiMostrado + '</span>' +
-                            (totalReacciones > 0 ? '<span class="count">' + totalReacciones + '</span>' : '<span class="count">Reaccionar</span>') +
-                        '</button>' +
-                    '</div>';
-
-                card.innerHTML =
-                    '<div class="header"><div class="avatar">' + avatarHtml + '</div><div><div class="nombre">Mi publicación</div><div class="fecha">' + fecha + '</div></div></div>' +
-                    '<div class="contenido">' + contenidoHtml + '</div>' + triggerHtml +
-                    '<div class="stats">' +
-                        '<button type="button" class="btn-accion-pub" onclick="event.stopPropagation(); window.toggleComentariosPerfil(\'' + p.id + '\')">💬 Comentarios</button>' +
-                        '<button type="button" class="btn-accion-pub danger" onclick="event.stopPropagation(); window.eliminarMiPublicacion(\'' + p.id + '\', event)">Eliminar</button>' +
-                    '</div>' +
-                    '<div class="comentarios-container" id="comentarios-container-' + p.id + '">' +
-                        '<div class="comentarios-lista" id="comentarios-lista-' + p.id + '"></div>' +
-                        '<div class="comentario-input-row">' +
-                            '<input type="text" id="comentario-input-' + p.id + '" placeholder="Escribe un comentario..." />' +
-                            '<button type="button" onclick="window.enviarComentarioPerfil(\'' + p.id + '\')">Enviar</button>' +
-                        '</div>' +
-                    '</div>';
-                container.appendChild(card);
-            });
-        } catch (error) {
-            console.error('Error cargando mis publicaciones:', error);
-            container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h4>Error al cargar</h4><p>' + error.message + '</p></div>';
+    if (esPro) {
+        if (proUpgradeCard) proUpgradeCard.style.display = 'none';
+        if (proActiveInfo) proActiveInfo.style.display = 'block';
+        if (proExpiraEl && usuario.plan_expira_at) {
+            const fecha = new Date(usuario.plan_expira_at);
+            const dias = usuario.dias_restantes || 0;
+            proExpiraEl.textContent = fecha.toLocaleDateString('es-MX', {
+                day: 'numeric', month: 'long', year: 'numeric'
+            }) + (dias > 0 ? ' (' + dias + ' ' + t('perfil_dias', 'días') + ')' : '');
         }
-    };
-
-    /* ---------------- REACCIONES ---------------- */
-    window.toggleReaccionDropdown = function(postId) {
-        var dd = document.getElementById('reaccion-dropdown-' + postId);
-        if (!dd) return;
-        var esta = dd.classList.contains('show');
-        document.querySelectorAll('.reaccion-dropdown.show').forEach(function(el) {
-            el.classList.remove('show');
-        });
-        if (!esta) dd.classList.add('show');
-    };
-
-    window.reaccionarPublicacionPerfil = async function(postId, emoji) {
-        if (!EMOJIS_REACCION.includes(emoji)) return;
-        try {
-            var client = sb();
-            if (!client) return;
-            var sessionResult = await client.auth.getSession();
-            var session = sessionResult.data.session;
-            if (!session) { if (window.showToast) window.showToast('⚠️ Inicia sesión', 'error'); return; }
-
-            var dd = document.getElementById('reaccion-dropdown-' + postId);
-            if (dd) dd.classList.remove('show');
-
-            var existing = await client.from('publicaciones_reacciones').select('id, tipo').eq('publicacion_id', postId).eq('usuario_id', session.user.id).maybeSingle();
-            if (existing.data && existing.data.tipo === emoji) {
-                await client.from('publicaciones_reacciones').delete().eq('id', existing.data.id);
-                if (window.showToast) window.showToast('💔 Reacción eliminada', 'warning', 2000);
-            } else {
-                if (existing.data) {
-                    await client.from('publicaciones_reacciones').update({ tipo: emoji }).eq('id', existing.data.id);
-                } else {
-                    var insert = await client.from('publicaciones_reacciones').insert({ publicacion_id: postId, usuario_id: session.user.id, tipo: emoji });
-                    if (insert.error) throw insert.error;
-                }
-                if (window.showToast) window.showToast(emoji + ' ¡Reacción registrada!', 'success', 2000);
-            }
-            await recargarBarraReacciones(postId);
-        } catch (error) {
-            console.error('Error reaccionando:', error);
-        }
-    };
-
-    async function recargarBarraReacciones(postId) {
-        try {
-            var client = sb();
-            if (!client) return;
-            var sessionResult = await client.auth.getSession();
-            var session = sessionResult.data.session;
-            if (!session) return;
-            var allReacc = await client.from('publicaciones_reacciones').select('tipo, usuario_id').eq('publicacion_id', postId);
-            if (allReacc.error) return;
-            var conteos = {};
-            var reaccionUsuario = null;
-            (allReacc.data || []).forEach(function(r) {
-                conteos[r.tipo] = (conteos[r.tipo] || 0) + 1;
-                if (r.usuario_id === session.user.id) reaccionUsuario = r.tipo;
-            });
-
-            var dd = document.getElementById('reaccion-dropdown-' + postId);
-            if (!dd) return;
-            var wrap = dd.parentElement;
-            if (!wrap) return;
-
-            var total = 0;
-            Object.keys(conteos).forEach(function(k) { total += conteos[k]; });
-            var emojiMostrado = reaccionUsuario || '❤️';
-
-            var ddHtml = '';
-            EMOJIS_REACCION.forEach(function(emoji) {
-                var count = conteos[emoji] || 0;
-                var activo = reaccionUsuario === emoji ? ' activa' : '';
-                ddHtml += '<button type="button" class="' + activo.trim() + '" onclick="event.stopPropagation(); window.reaccionarPublicacionPerfil(\'' + postId + '\', \'' + emoji + '\')" title="Reaccionar ' + emoji + '">' + emoji + (count > 0 ? '<span class="mini-count">' + count + '</span>' : '') + '</button>';
-            });
-            dd.innerHTML = ddHtml;
-
-            var trigger = wrap.querySelector('.reaccion-trigger');
-            if (trigger) {
-                trigger.className = 'reaccion-trigger' + (reaccionUsuario ? ' activa' : '');
-                trigger.innerHTML =
-                    '<span class="emoji-actual">' + emojiMostrado + '</span>' +
-                    (total > 0 ? '<span class="count">' + total + '</span>' : '<span class="count">Reaccionar</span>');
-            }
-        } catch(e) {}
+        if (btnContratarPro) btnContratarPro.textContent = '✅ ' + t('perfil_pro_ya_eres', 'Ya eres Pro');
+    } else {
+        if (proUpgradeCard) proUpgradeCard.style.display = 'block';
+        if (proActiveInfo) proActiveInfo.style.display = 'none';
+        if (btnContratarPro) btnContratarPro.textContent = '🚀 ' + t('perfil_pro_contratar', 'Contratar Pro por $60 MXN');
     }
+    aplicarI18NPerfil();
+}
 
-    /* ---------------- COMENTARIOS ---------------- */
-    window.toggleComentariosPerfil = async function(publicacionId) {
-        var container = document.getElementById('comentarios-container-' + publicacionId);
-        if (!container) return;
-        if (container.classList.contains('show')) { container.classList.remove('show'); return; }
-        container.classList.add('show');
-        await cargarComentariosPerfil(publicacionId);
-    };
-
-    async function cargarComentariosPerfil(publicacionId) {
-        var lista = document.getElementById('comentarios-lista-' + publicacionId);
-        if (!lista) return;
-        lista.innerHTML = '<div style="font-size:0.7rem;color:var(--text-muted);padding:4px;">Cargando...</div>';
-        try {
-            var client = sb();
-            if (!client) return;
-            var result = await client.from('publicaciones_comentarios').select('*').eq('publicacion_id', publicacionId).order('created_at', { ascending: true });
-            if (result.error && result.error.code === '42P01') {
-                result = await client.from('muro_comentarios').select('*').eq('post_id', publicacionId).order('created_at', { ascending: true });
-            }
-            if (result.error && result.error.code !== '42P01') throw result.error;
-            var comentarios = result.data || [];
-            if (comentarios.length === 0) {
-                lista.innerHTML = '<div style="font-size:0.7rem;color:var(--text-muted);padding:4px;">Sin comentarios. ¡Sé el primero!</div>';
-                return;
-            }
-            lista.innerHTML = '';
-            comentarios.forEach(function(c) {
-                var item = document.createElement('div');
-                item.className = 'comentario-item';
-                var nombre = escapeHtmlPerfil(c.nombre_usuario || c.usuario_nombre || 'Usuario');
-                var texto = escapeHtmlPerfil(c.contenido || '');
-                var fecha = c.created_at ? new Date(c.created_at).toLocaleString() : '';
-                item.innerHTML = '<div class="avatar-mini">' + (nombre.charAt(0).toUpperCase() || '◈') + '</div><div class="contenido-comentario"><div class="nombre">' + nombre + '</div><div class="texto">' + texto + '</div><div class="fecha">' + fecha + '</div></div>';
-                lista.appendChild(item);
-            });
-        } catch (error) {
-            console.error('Error cargando comentarios:', error);
-            lista.innerHTML = '<div style="font-size:0.7rem;color:var(--danger);padding:4px;">Error al cargar comentarios</div>';
+/* ================================================================
+   CONTRATAR MEMBRESÍA PRO
+   ================================================================ */
+async function contratarPro() {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión') + ' Pro', 'error');
+            return;
         }
-    }
 
-    window.enviarComentarioPerfil = async function(publicacionId) {
-        var input = document.getElementById('comentario-input-' + publicacionId);
-        var texto = input ? input.value.trim() : '';
-        if (!texto) return;
-        try {
-            var client = sb();
-            if (!client) return;
-            var sessionResult = await client.auth.getSession();
-            var session = sessionResult.data.session;
-            if (!session) return;
-            var payload = { publicacion_id: publicacionId, usuario_id: session.user.id, contenido: texto, created_at: new Date().toISOString() };
-            var result = await client.from('publicaciones_comentarios').insert(payload);
-            if (result.error && result.error.code === '42P01') {
-                result = await client.from('muro_comentarios').insert({ post_id: publicacionId, usuario_id: session.user.id, contenido: texto, created_at: new Date().toISOString() });
-            }
-            if (result.error) throw new Error(result.error.message);
-            if (input) input.value = '';
-            if (window.showToast) window.showToast('💬 Comentario publicado', 'success');
-            await cargarComentariosPerfil(publicacionId);
-        } catch (error) {
-            console.error('Error enviando comentario:', error);
-        }
-    };
+        const { data: usuario } = await supabaseClient
+            .from('usuarios')
+            .select('plan, plan_expira_at')
+            .eq('id', session.user.id)
+            .maybeSingle();
 
-    /* ---------------- ELIMINAR PUBLICACIÓN ---------------- */
-    window.eliminarMiPublicacion = async function(publicacionId, event) {
-        if (event) {
-            event.preventDefault();
-            event.stopPropagation();
+        if (usuario && usuario.plan && usuario.plan.toLowerCase().includes('pro')) {
+            const expira = usuario.plan_expira_at ? new Date(usuario.plan_expira_at).toLocaleDateString('es-MX') : '';
+            showToast('✅ ' + t('perfil_pro_ya_eres', 'Ya eres Pro') + '. ' + expira, 'success', 4000);
+            return;
         }
-        var confirmMsg = '¿Seguro que quieres eliminar esta publicación?';
+
+        const confirmMsg = t('perfil_confirmar_pro', '¿Contratar Sariel\'s Pro por $' + PRO_PRECIO_MXN + ' MXN / ' + PRO_DURACION_DIAS + ' días?');
         if (!confirm(confirmMsg)) return;
+
+        showToast('⏳ ' + t('perfil_pro_activando', 'Iniciando contratación...'), '', 4000);
+
+        let pago = null;
         try {
-            var client = sb();
-            if (!client) { if (window.showToast) window.showToast('❌ Supabase no disponible', 'error'); return; }
+            const { data, error } = await supabaseClient
+                .from('pagos_pro')
+                .insert({
+                    usuario_id: session.user.id,
+                    plan_id: PRO_PLAN_ID,
+                    monto_mxn: PRO_PRECIO_MXN,
+                    estado: 'pendiente',
+                    metodo_pago: 'por_definir'
+                })
+                .select()
+                .single();
 
-            /* Obtener URL del archivo antes de borrar la fila */
-            try {
-                var pubRes = await client.from('publicaciones').select('media_url').eq('id', publicacionId).maybeSingle();
-                if (pubRes && pubRes.data && pubRes.data.media_url) {
-                    var mediaUrl = pubRes.data.media_url;
-                    var marker = '/storage/v1/object/public/muro-videos/';
-                    var idx = mediaUrl.indexOf(marker);
-                    if (idx !== -1) {
-                        var filePath = mediaUrl.substring(idx + marker.length);
-                        var qIdx = filePath.indexOf('?');
-                        if (qIdx !== -1) filePath = filePath.substring(0, qIdx);
-                        try {
-                            await client.storage.from('muro-videos').remove([filePath]);
-                        } catch (storageErr) {
-                            console.warn('No se pudo borrar el archivo del bucket:', storageErr);
-                        }
-                    }
-                }
-            } catch (storageErr) {
-                console.warn('Error obteniendo media_url:', storageErr);
-            }
-
-            var result = await client.from('publicaciones').delete().eq('id', publicacionId);
-            if (result.error) throw new Error(result.error.message);
-            if (window.showToast) window.showToast('✅ Publicación eliminada', 'success');
-            await window.cargarMisPublicaciones();
-        } catch (error) {
-            console.error('Error eliminando:', error);
-            if (window.showToast) window.showToast('❌ Error al eliminar: ' + error.message, 'error');
+            if (!error) pago = data;
+        } catch (e) {
+            console.warn('[Perfil] No se pudo registrar intento de pago:', e?.message);
         }
-    };
-
-    /* ---------------- HELPERS ---------------- */
-    function escapeHtmlPerfil(texto) {
-        if (!texto) return '';
-        return String(texto).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;').replace(/\n/g, '<br>');
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        var intentos = 0;
-        function intentarCargar() {
-            if (sb() && intentos < 30) {
-                window.cargarMisPublicaciones();
-            } else if (intentos < 30) {
-                intentos++;
-                setTimeout(intentarCargar, 500);
-            }
-        }
-        intentarCargar();
-    });
-})();
-</script>
-
-<script>
-/* ================================================================
-   ÓRDENES DE INTERNET — Módulo autocontenido
-=============================================================== */
-(function() {
-    'use strict';
-
-    var ordenesInternet = [];
-    var filtroInternet = 'all';
-
-    function sb() {
-        return window.supabaseClient;
-    }
-
-    function escapeHTML(t) {
-        if (t === null || t === undefined) return '';
-        return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-    }
-
-    function formatearFecha(fecha) {
-        if (!fecha) return '—';
-        try {
-            var d = new Date(fecha);
-            return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
-                + ' · '
-                + d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
-        } catch(e) { return '—'; }
-    }
-
-    function estadoInfo(estado) {
-        var map = {
-            'pendiente':   { color: '#f59e0b', icon: '⏳', texto: 'Pendiente de pago', bg: 'rgba(245, 158, 11, 0.12)' },
-            'pagando':     { color: '#f59e0b', icon: '⏳', texto: 'Procesando pago',  bg: 'rgba(245, 158, 11, 0.12)' },
-            'confirmando': { color: '#22d3ee', icon: '⏱️', texto: 'Confirmando',         bg: 'rgba(34, 211, 238, 0.12)' },
-            'pagada':      { color: '#00d68f', icon: '💚', texto: 'Pagada',                    bg: 'rgba(0, 214, 143, 0.12)' },
-            'activa':      { color: '#00d68f', icon: '✅', texto: 'Activa',                    bg: 'rgba(0, 214, 143, 0.12)' },
-            'activada':    { color: '#00d68f', icon: '✅', texto: 'Activa',                    bg: 'rgba(0, 214, 143, 0.12)' },
-            'completado':  { color: '#00d68f', icon: '✅', texto: 'Completado',            bg: 'rgba(0, 214, 143, 0.12)' },
-            'cancelada':   { color: '#ff3366', icon: '❌', texto: 'Cancelada',              bg: 'rgba(255, 51, 102, 0.12)' },
-            'cancelado':   { color: '#ff3366', icon: '❌', texto: 'Cancelada',              bg: 'rgba(255, 51, 102, 0.12)' }
-        };
-        return map[estado] || { color: '#8aa8b8', icon: '◈', texto: estado || 'Desconocido', bg: 'rgba(138, 168, 184, 0.12)' };
-    }
-
-    window.cargarOrdenesInternet = async function() {
-        var list = document.getElementById('ordenesInternetList');
-        var contador = document.getElementById('internetOrdenesCount');
-        if (!list) return;
-
-        list.innerHTML = '<div class="empty-state"><span class="icon">📶</span><h4>Cargando órdenes...</h4></div>';
 
         try {
-            var client = sb();
-            if (!client) throw new Error('Supabase no disponible');
-
-            var sessionResult = await client.auth.getSession();
-            var session = sessionResult.data.session;
-            if (!session) {
-                list.innerHTML = '<div class="empty-state"><span class="icon">📶</span><h4>Inicia sesión</h4><p>Para ver tu historial de compras</p></div>';
-                return;
-            }
-
-            var response = await client
-                .from('ordenes_internet')
-                .select('*')
-                .eq('usuario_id', session.user.id)
-                .order('created_at', { ascending: false })
-                .limit(100);
-
-            if (response.error) throw response.error;
-
-            ordenesInternet = response.data || [];
-            if (contador) contador.textContent = ordenesInternet.length;
-
-            if (ordenesInternet.length === 0) {
-                list.innerHTML = '<div class="empty-state"><span class="icon">📶</span><h4>Sin compras de Internet</h4><p>Cuando compres un paquete aparecerá aquí</p></div>';
-                return;
-            }
-
-            renderOrdenesInternet();
-        } catch (error) {
-            console.error('Error cargando órdenes Internet:', error);
-            list.innerHTML = '<div class="empty-state"><span class="icon">❌</span><h4>Error al cargar</h4><p style="font-size:0.75rem;">' + escapeHTML(error.message) + '</p></div>';
-        }
-    };
-
-    function renderOrdenesInternet() {
-        var list = document.getElementById('ordenesInternetList');
-        if (!list) return;
-
-        var filtered = filtroInternet === 'all'
-            ? ordenesInternet
-            : ordenesInternet.filter(function(o){ return o.estado === filtroInternet; });
-
-        if (filtered.length === 0) {
-            list.innerHTML = '<div class="empty-state"><span class="icon">📶</span><h4>Sin órdenes en este filtro</h4></div>';
-            return;
-        }
-
-        list.innerHTML = filtered.map(function(o) {
-            var info = estadoInfo(o.estado);
-            var esActiva = ['activa', 'activada', 'completado'].indexOf(o.estado) !== -1;
-            return '<div class="publicacion-card" style="border-left:3px solid ' + info.color + ';">' +
-                '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">' +
-                    '<div style="flex:1;min-width:180px;">' +
-                        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">' +
-                            '<span style="font-size:1.3rem;">📦</span>' +
-                            '<strong style="color:var(--gold);font-size:0.9rem;font-family:\'Orbitron\',monospace;">' + escapeHTML(o.plan_nombre || 'Paquete') + '</strong>' +
-                        '</div>' +
-                        '<div style="color:var(--text-secondary);font-size:0.8rem;line-height:1.6;">📊 <strong>' + (o.datos_gb || 0) + ' GB</strong> · 📅 ' + (o.duracion_dias || 0) + ' días</div>' +
-                        '<div style="color:var(--text-muted);font-size:0.7rem;margin-top:4px;">📱 ' + escapeHTML(o.telefono_activacion || '—') + '</div>' +
-                    '</div>' +
-                    '<div style="text-align:right;min-width:140px;">' +
-                        '<div style="background:' + info.bg + ';color:' + info.color + ';padding:4px 12px;border-radius:20px;font-size:0.65rem;font-weight:700;display:inline-block;margin-bottom:6px;">' + info.icon + ' ' + escapeHTML(info.texto) + '</div>' +
-                        '<div style="color:var(--gold);font-family:\'Orbitron\',monospace;font-size:1rem;font-weight:700;">$' + parseFloat(o.monto_mxn || 0).toFixed(2) + ' MXN</div>' +
-                    '</div>' +
-                '</div>' +
-                '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid rgba(0,0,0,0.5);font-size:0.65rem;color:var(--text-muted);flex-wrap:wrap;gap:6px;">' +
-                    '<span>🕐 ' + formatearFecha(o.created_at) + '</span>' +
-                    (esActiva && o.activado_en ? '<span style="color:var(--success);">✓ ' + formatearFecha(o.activado_en) + '</span>' : '') +
-                '</div>' +
-            '</div>';
-        }).join('');
-    }
-
-    window.filtrarOrdenesInternet = function(filtro) {
-        filtroInternet = filtro;
-        document.querySelectorAll('.internet-filter').forEach(function(btn){
-            btn.classList.toggle('active', btn.dataset.filter === filtro);
-        });
-        renderOrdenesInternet();
-    };
-
-    document.addEventListener('DOMContentLoaded', function() {
-        document.querySelectorAll('.perfil-tabs .tab-btn').forEach(function(btn){
-            btn.addEventListener('click', function() {
-                var onclick = btn.getAttribute('onclick') || '';
-                if (onclick.indexOf("'internet'") !== -1) {
-                    setTimeout(window.cargarOrdenesInternet, 100);
-                }
+            const response = await fetch(`${API_ENDPOINTS.pagos}/create`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify({
+                    transmisionId: null,
+                    monto: PRO_PRECIO_MXN,
+                    metodo: 'crypto',
+                    tipo: 'membresia_pro',
+                    planId: PRO_PLAN_ID,
+                    monto_mxn: PRO_PRECIO_MXN,
+                    pago_pro_id: pago?.id || null,
+                    idempotency_key: `pro_${session.user.id}_${Date.now()}`
+                })
             });
-        });
 
-        var tabInternet = document.getElementById('tab-internet');
-        if (tabInternet && tabInternet.classList.contains('active')) {
-            window.cargarOrdenesInternet();
+            const result = await response.json();
+
+            if (response.ok && result.success && result.data) {
+                if (result.data.payment_url || result.data.pay_address) {
+                    window.open(result.data.payment_url || result.data.pay_address, '_blank');
+                    showToast('💳 ' + t('perfil_pro_activando', 'Completa el pago en la ventana que se abrió'), 'success', 5000);
+                    if (pago?.id) iniciarPollingPagoPro(pago.id);
+                    return;
+                }
+            }
+
+            if (!response.ok) {
+                console.warn('[Perfil] Backend pagos respondió:', response.status, result);
+            }
+        } catch (backendError) {
+            console.warn('[Perfil] Backend de pagos no disponible:', backendError.message);
         }
-    });
-})();
-</script>
 
-<script>
-/* ================================================================
-   SINCRONIZACIÓN DE PERFIL — Realtime + Reintentos
-=============================================================== */
-(function() {
-    'use strict';
+        const activar = confirm(
+            'No se pudo conectar con la pasarela de pago.\n\n' +
+            '¿Quieres activar Pro en modo manual (prueba)?\n' +
+            'Se activará por ' + PRO_DURACION_DIAS + ' días.'
+        );
 
-    var ultimaRecarga = 0;
-
-    function actualizarDOM(usuario) {
-        try {
-            if (!usuario) return;
-
-            var nombreContainer = document.querySelector('#perfilNombre');
-            if (nombreContainer) {
-                var nombreSpan = nombreContainer.querySelector('[data-clave="perfil_nombre_usuario"]');
-                if (nombreSpan) {
-                    nombreSpan.textContent = usuario.nombre || 'Explorador';
-                } else {
-                    nombreContainer.textContent = usuario.nombre || 'Explorador';
-                }
-            }
-
-            var handleElement = document.querySelector('#perfilHandle');
-            if (handleElement) {
-                handleElement.textContent = usuario.handle ? '@' + usuario.handle : '@explorador';
-            }
-
-            var bioElement = document.querySelector('#perfilBio');
-            if (bioElement) {
-                var tieneClave = bioElement.hasAttribute('data-clave');
-                var bioPersonalizada = usuario.bio && String(usuario.bio).trim() !== '';
-                var bioDefault = "Explorando el ecosistema Csariel's · WEB3 · Comunidad";
-                if (bioPersonalizada && usuario.bio !== bioDefault) {
-                    if (tieneClave) bioElement.removeAttribute('data-clave');
-                    bioElement.textContent = usuario.bio;
-                }
-            }
-
-            var avatarElement = document.querySelector('#perfilAvatar');
-            if (avatarElement) {
-                if (usuario.avatar_url) {
-                    avatarElement.innerHTML =
-                        '<img src="' + usuario.avatar_url + '" alt="Avatar">' +
-                        '<span class="avatar-menu-toggle" onclick="event.stopPropagation(); window.toggleAvatarMenu(event)" title="Opciones de foto">✎</span>';
-                } else {
-                    avatarElement.innerHTML =
-                        '◈' +
-                        '<span class="avatar-menu-toggle" onclick="event.stopPropagation(); window.toggleAvatarMenu(event)" title="Opciones de foto">✎</span>';
-                }
-            }
-        } catch (error) {
-            console.warn('[Perfil] Error actualizando el DOM:', error);
+        if (activar) {
+            await activarProDirecto(session.user.id, pago?.id);
         }
+
+    } catch (error) {
+        console.error('[Perfil] Error contratando Pro:', error);
+        showToast('❌ Error: ' + error.message, 'error');
     }
+}
 
-    async function recargarPerfil(forzar) {
+async function activarProDirecto(usuarioId, pagoProId) {
+    try {
+        showToast('⏳ ' + t('perfil_pro_activando', 'Activando Sariel\'s Pro...'), '', 4000);
+
+        let activado = false;
         try {
-            var ahora = Date.now();
-            if (!forzar && ahora - ultimaRecarga < 500) return;
-            ultimaRecarga = ahora;
-
-            if (!window.supabaseClient) {
-                setTimeout(function() { recargarPerfil(true); }, 500);
-                return;
+            const { data, error } = await supabaseClient.rpc('activar_pro', {
+                p_usuario_id: usuarioId,
+                p_plan_id: PRO_PLAN_ID
+            });
+            if (!error && data && data.success) {
+                activado = true;
             }
+        } catch (rpcErr) {
+            console.warn('[Perfil] RPC activar_pro no disponible:', rpcErr?.message);
+        }
 
-            var sessionResult = await window.supabaseClient.auth.getSession();
-            if (sessionResult.error || !sessionResult.data || !sessionResult.data.session || !sessionResult.data.session.user) {
-                return;
-            }
-
-            var userId = sessionResult.data.session.user.id;
-
-            var result = await window.supabaseClient
+        if (!activado) {
+            const expira = new Date(Date.now() + PRO_DURACION_DIAS * 24 * 60 * 60 * 1000).toISOString();
+            const { error } = await supabaseClient
                 .from('usuarios')
-                .select('id, nombre, handle, bio, avatar_url')
-                .eq('id', userId)
+                .update({
+                    plan: 'Pro',
+                    plan_expira_at: expira,
+                    plan_meta: PRO_GB + ' GB · ' + PRO_DURACION_DIAS + ' días'
+                })
+                .eq('id', usuarioId);
+            if (error) throw new Error(error.message);
+        }
+
+        if (pagoProId) {
+            await supabaseClient
+                .from('pagos_pro')
+                .update({ estado: 'completado', metodo_pago: 'manual_prueba' })
+                .eq('id', pagoProId);
+        }
+
+        showToast('🎉 ' + t('perfil_pro_activado', "¡Sariel's Pro activado!"), 'success', 5000);
+        crearConfeti();
+
+        await cargarEstadoPro();
+        await cargarPerfil(true);
+
+    } catch (error) {
+        console.error('[Perfil] Error activando Pro:', error);
+        showToast('❌ Error al activar Pro: ' + error.message, 'error');
+    }
+}
+
+let pollingPagoProInterval = null;
+function iniciarPollingPagoPro(pagoProId) {
+    if (!pagoProId) return;
+    if (pollingPagoProInterval) clearInterval(pollingPagoProInterval);
+
+    let intentos = 0;
+    const maxIntentos = 60;
+
+    pollingPagoProInterval = setInterval(async () => {
+        intentos++;
+
+        try {
+            const { data: pago } = await supabaseClient
+                .from('pagos_pro')
+                .select('estado')
+                .eq('id', pagoProId)
                 .maybeSingle();
 
-            if (result.error) {
-                console.warn('[Perfil] Error leyendo usuarios:', result.error);
+            if (pago && pago.estado === 'completado') {
+                clearInterval(pollingPagoProInterval);
+                pollingPagoProInterval = null;
+                showToast('🎉 ' + t('perfil_pro_activado', '¡Pago confirmado! Pro activado'), 'success', 5000);
+                crearConfeti();
+                await cargarEstadoPro();
+                await cargarPerfil(true);
                 return;
             }
-
-            if (result.data) {
-                actualizarDOM(result.data);
-                window.perfilCache = Object.assign(window.perfilCache || {}, result.data);
-            }
-        } catch (error) {
-            console.warn('[Perfil] Error en recargarPerfil():', error);
-        }
-    }
-
-    window.recargarPerfil = recargarPerfil;
-
-    function iniciarRecarga() {
-        if (window.supabaseClient) {
-            recargarPerfil(true);
-        } else {
-            setTimeout(iniciarRecarga, 200);
-        }
-    }
-    iniciarRecarga();
-
-    setTimeout(function() { recargarPerfil(true); }, 800);
-    setTimeout(function() { recargarPerfil(true); }, 1600);
-    setTimeout(function() { recargarPerfil(true); }, 3000);
-
-    document.addEventListener('visibilitychange', function() {
-        if (document.visibilityState === 'visible') recargarPerfil(true);
-    });
-
-    window.addEventListener('focus', function() { recargarPerfil(true); });
-
-    async function iniciarRealtime() {
-        try {
-            if (!window.supabaseClient) {
-                setTimeout(iniciarRealtime, 500);
-                return;
-            }
-            var sessionResult = await window.supabaseClient.auth.getSession();
-            if (!sessionResult.data || !sessionResult.data.session || !sessionResult.data.session.user) return;
-            var userId = sessionResult.data.session.user.id;
-
-            window.supabaseClient
-                .channel('perfil-sync-' + userId)
-                .on('postgres_changes', {
-                    event: 'UPDATE',
-                    schema: 'public',
-                    table: 'usuarios',
-                    filter: 'id=eq.' + userId
-                }, function(payload) {
-                    if (payload && payload.new) actualizarDOM(payload.new);
-                })
-                .subscribe();
         } catch (e) {
-            console.warn('[Perfil] Realtime error:', e);
+            console.warn('[Perfil] Polling pago Pro:', e?.message);
         }
-    }
-    setTimeout(iniciarRealtime, 1000);
-})();
-</script>
 
-<script>
+        if (intentos >= maxIntentos) {
+            clearInterval(pollingPagoProInterval);
+            pollingPagoProInterval = null;
+            showToast('⏳ ' + t('perfil_procesando_pago', 'El pago aún no se confirma. Revísalo más tarde.'), 'warning', 5000);
+        }
+    }, 5000);
+}
+
 /* ================================================================
-   RESPALDO DE EMERGENCIA — Solo si perfil.js no cargó
-=============================================================== */
-(function() {
-    'use strict';
+   NAVEGACIÓN
+   ================================================================ */
+function cambiarTab(tab) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    const tabContent = document.getElementById('tab-' + tab);
+    if (tabContent) {
+        tabContent.classList.add('active');
+        tabContent.style.animation = 'fadeIn 0.3s ease-out';
+    }
+    const tabBtn = document.querySelector(`.tab-btn[onclick*="'${tab}'"]`);
+    if (tabBtn) tabBtn.classList.add('active');
+}
 
-    setTimeout(function() {
-        var perfilCargo = typeof window.contratarPro === 'function'
-                       && typeof window.cambiarTab === 'function';
+/* ================================================================
+   FORMATEO DE TEXTO
+   ================================================================ */
+function formatearTexto(texto) {
+    if (!texto) return '';
+    return texto
+        .replace(/#(\w+)/g, '<a href="/features/muro/muro.html?tag=$1" class="hashtag" style="color:var(--gold);text-decoration:none;font-weight:600;">#$1</a>')
+        .replace(/@(\w+)/g, '<a href="/perfil/$1" class="mencion" style="color:var(--cyan);text-decoration:none;font-weight:600;">@$1</a>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/__(.*?)__/g, '<em>$1</em>')
+        .replace(/~~(.*?)~~/g, '<del>$1</del>')
+        .replace(/`(.*?)`/g, '<code style="background:var(--bg-card);padding:2px 6px;border-radius:4px;font-family:monospace;">$1</code>');
+}
 
-        if (perfilCargo) {
+/* ================================================================
+   CACHE DE PERFIL
+   ================================================================ */
+let perfilCache = null;
+let ultimaActualizacion = 0;
+const CACHE_DURATION = 30000;
+let contadoresSocialesCache = null;
+let ultimaActualizacionContadores = 0;
+const CONTADORES_CACHE_DURATION = 5 * 60 * 1000;
+
+Object.defineProperty(window, 'perfilCache', {
+    get: function () { return perfilCache; },
+    set: function (v) { perfilCache = v; },
+    configurable: true
+});
+
+/* ================================================================
+   CARGAR PERFIL
+   ================================================================ */
+async function cargarPerfil(forzarActualizacion = false) {
+    try {
+        if (!supabaseClient) {
+            console.warn('[Perfil] supabaseClient no disponible');
             return;
         }
 
-        console.warn('[Perfil Respaldo] ⚠️ perfil.js NO cargó. Activando respaldos mínimos.');
+        const session = await getSession();
+        if (!session) {
+            console.warn('[Perfil] Sin sesión → redirigiendo al index');
+            window.location.replace('/');
+            return;
+        }
 
-        window.showToast = window.showToast || function(mensaje, tipo, duracion) {
-            var toast = document.getElementById('toast');
-            if (!toast) { alert(mensaje); return; }
-            toast.textContent = mensaje;
-            toast.className = 'toast show';
-            if (tipo === 'error') toast.classList.add('error');
-            else if (tipo === 'warning') toast.classList.add('warning');
-            else if (tipo === 'success') toast.classList.add('success');
-            clearTimeout(toast._timeout);
-            toast._timeout = setTimeout(function() { toast.classList.remove('show'); }, duracion || 3000);
-        };
+        const ahora = Date.now();
+        if (!forzarActualizacion && perfilCache && (ahora - ultimaActualizacion) < CACHE_DURATION) {
+            actualizarUI(perfilCache);
+            return;
+        }
 
-        window.cambiarTab = window.cambiarTab || function(tab) {
-            document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
-            var target = document.getElementById('tab-' + tab);
-            if (target) target.classList.add('active');
-            document.querySelectorAll('.perfil-tabs .tab-btn').forEach(function(b) { b.classList.remove('active'); });
-            if (window.event && window.event.target) window.event.target.classList.add('active');
-        };
+        let perfil = null;
+        try {
+            const { data, error } = await supabaseClient.rpc('obtener_mi_perfil');
+            if (!error && data) {
+                perfil = Array.isArray(data) && data.length > 0 ? data[0] : (Array.isArray(data) ? null : data);
+            }
+        } catch (rpcErr) {
+            console.warn('[Perfil] RPC obtener_mi_perfil falló, usando SELECT directo:', rpcErr?.message);
+        }
 
-        window.abrirSelectorArchivo = window.abrirSelectorArchivo || function() {
-            var input = document.getElementById('fileInput');
-            if (input) input.click();
-        };
+        if (!perfil) {
+            const { data, error } = await supabaseClient
+                .from('usuarios')
+                .select(`
+                    id, email, nombre, handle, username, bio, avatar_url,
+                    portada_url, ubicacion, sitio_web, verificado, es_admin,
+                    tokens, tokens_acumulados, progreso_canje, puede_canjear,
+                    nft_canjeado, domos, tokens_para_canje,
+                    plan, plan_expira_at, plan_meta, membresia_live_hasta,
+                    esim_iccid, esim_status, esim_data_used, esim_data_limit, esim_apn,
+                    esim_imsi, esim_msisdn, esim_eid, esim_type,
+                    esim_installation_status, esim_status_reason, esim_data_unit,
+                    esim_last_sync_at, esim_last_error, esim_activated_at,
+                    esim_expires_at, esim_operator, esim_network,
+                    telnyx_sim_id, telnyx_connection_id, telefono_telnyx,
+                    telefono, numero_verificado,
+                    online, ultima_conexion, offline_desde,
+                    conexion_tipo, conexion_activa, conexion_velocidad,
+                    conexion_senal, conexion_ultimo_cambio,
+                    wallet_address, stripe_account_id,
+                    pais_codigo, roaming_activo, ciudad,
+                    minutos_disponibles, sms_disponibles,
+                    idioma_preferido_id,
+                    avatar_verificacion_url,
+                    created_at, updated_at
+                `)
+                .eq('id', session.user.id)
+                .maybeSingle();
 
-        window.irAMuro = window.irAMuro || function() {
-            window.location.href = '/features/muro/muro.html';
-        };
+            if (error) {
+                console.error('[Perfil] Error leyendo usuarios:', error.message);
+                perfil = {
+                    id: session.user.id,
+                    email: session.user.email,
+                    nombre: session.user.user_metadata?.nombre || t('perfil_nombre_usuario', 'Explorador'),
+                    handle: session.user.email?.split('@')[0] || 'explorador',
+                    bio: t('perfil_biografia_default', "Explorando el ecosistema Sariel's · WEB3 · Comunidad"),
+                    avatar_url: null,
+                    tokens: 0,
+                    online: true
+                };
+            } else {
+                perfil = data;
+            }
+        }
 
-        var funcionesPendientes = [
-            'contratarPro', 'comprarDomo', 'canjearNFT', 'comprarConCripto',
-            'comprarESIM', 'generarQRESIM', 'sincronizarESIM', 'activarESIM',
-            'desactivarESIM', 'escanearQR', 'abrirCamaraQR', 'cerrarCamaraQR',
-            'cerrarModalPago', 'copiarDireccion', 'verificarPagoCrypto',
-            'subirFoto', 'eliminarFotoPerfil', 'expandirAvatar',
-            'compartirPerfil', 'generarQRPerfil', 'cambiarEstado',
-            'cambiarConexion', 'cerrarSesion', 'compartirLogro'
-        ];
-
-        funcionesPendientes.forEach(function(nombre) {
-            window[nombre] = window[nombre] || function() {
-                if (window.showToast) {
-                    window.showToast('⚠️ Módulo de perfil no cargó. Recarga con Ctrl+F5.', 'error', 5000);
-                }
+        if (!perfil) {
+            perfil = {
+                id: session.user.id,
+                email: session.user.email,
+                nombre: session.user.user_metadata?.nombre || t('perfil_nombre_usuario', 'Explorador'),
+                handle: session.user.email?.split('@')[0] || 'explorador',
+                bio: t('perfil_biografia_default', "Explorando el ecosistema Sariel's · WEB3 · Comunidad"),
+                avatar_url: null,
+                tokens: 0,
+                online: true
             };
+        }
+
+        perfilCache = perfil;
+        window.perfilCache = perfil;
+        ultimaActualizacion = ahora;
+
+        await actualizarEstadoEnLinea(true);
+        actualizarUI(perfil);
+
+        if (perfil.esim_iccid) {
+            await cargarDatosESIM(perfil.esim_iccid);
+        }
+
+        Promise.all([
+            cargarEstadoConexion(),
+            cargarAmigosEnLinea(),
+            cargarHistorialQR(),
+            cargarEstadoPro(),
+            cargarContadoresSociales(session.user.id),
+            cargarPortadaUbicacion(session.user.id)
+        ]).catch(err => console.warn('[Perfil] Error en cargas paralelas:', err?.message));
+
+        await aplicarI18NPerfil();
+
+    } catch (error) {
+        console.error('[Perfil] Error cargando perfil:', error);
+        showToast('❌ Error al cargar perfil', 'error');
+    }
+}
+
+/* ================================================================
+   ESTADO ONLINE
+   ================================================================ */
+async function actualizarEstadoEnLinea(online) {
+    try {
+        const session = await getSession();
+        if (!session) return false;
+
+        const ahora = new Date().toISOString();
+
+        const { error } = await supabaseClient
+            .from('usuarios')
+            .update({
+                online: online === true,
+                ultima_conexion: ahora,
+                offline_desde: online ? null : ahora
+            })
+            .eq('id', session.user.id);
+
+        if (error) {
+            console.warn('[Perfil] Error actualizando estado:', error.message);
+            return false;
+        }
+
+        if (perfilCache) {
+            perfilCache.online = online;
+            perfilCache.ultima_conexion = ahora;
+        }
+
+        actualizarUIEstado(online);
+        return true;
+    } catch (error) {
+        console.error('[Perfil] Error actualizando estado en línea:', error);
+        return false;
+    }
+}
+
+function actualizarUIEstado(online) {
+    const estadoBadge = document.getElementById('estadoBadge');
+    const estadoTexto = document.getElementById('estadoTexto');
+
+    if (estadoBadge) {
+        estadoBadge.innerHTML = online ? '🟢' : '⭕';
+        estadoBadge.style.color = online ? 'var(--success)' : 'var(--text-muted)';
+    }
+
+    if (estadoTexto) {
+        estadoTexto.removeAttribute('data-clave');
+        estadoTexto.textContent = online
+            ? t('perfil_activo_ahora', 'Activo ahora')
+            : t('perfil_inactivo', 'Inactivo');
+        estadoTexto.style.color = online ? 'var(--success)' : 'var(--text-muted)';
+    }
+}
+
+let tiempoInactividad = 0;
+let maxInactividad = 300000;
+
+function iniciarDetectorInactividad() {
+    const resetInactividad = () => {
+        tiempoInactividad = 0;
+        if (perfilCache && !perfilCache.online) {
+            actualizarEstadoEnLinea(true);
+        }
+    };
+
+    const eventos = ['mousemove', 'mousedown', 'click', 'scroll', 'keydown', 'touchstart', 'touchmove'];
+    eventos.forEach(evento => {
+        document.addEventListener(evento, resetInactividad, { passive: true });
+    });
+
+    setInterval(async () => {
+        tiempoInactividad += 30000;
+
+        if (tiempoInactividad >= maxInactividad && perfilCache && perfilCache.online) {
+            await actualizarEstadoEnLinea(false);
+            showToast('⭕ ' + t('perfil_inactivo', 'Inactivo'), 'warning');
+        }
+    }, 30000);
+}
+
+async function cambiarEstado(online) {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+            return;
+        }
+
+        await actualizarEstadoEnLinea(online);
+
+        if (online) {
+            showToast('🟢 ' + t('perfil_activo_ahora', 'Activo ahora'), 'success');
+        } else {
+            showToast('⭕ ' + t('perfil_inactivo', 'Inactivo'), 'warning');
+        }
+
+        await notificarCambioEstado(online);
+
+    } catch (error) {
+        console.error('[Perfil] Error cambiando estado:', error);
+        showToast('❌ Error al cambiar estado', 'error');
+    }
+}
+
+/* ================================================================
+   AMIGOS EN TIEMPO REAL
+   ================================================================ */
+let canalAmigos = null;
+
+function iniciarEscuchaAmigos() {
+    if (!supabaseClient) return;
+    if (canalAmigos) {
+        try { supabaseClient.removeChannel(canalAmigos); } catch (e) {}
+    }
+
+    canalAmigos = supabaseClient
+        .channel('amigos_online')
+        .on('postgres_changes', {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'usuarios'
+        }, (payload) => {
+            const usuario = payload.new;
+            if (usuario.id !== perfilCache?.id) {
+                actualizarListaAmigos();
+            }
+        })
+        .subscribe();
+
+    return canalAmigos;
+}
+
+async function cargarAmigosEnLinea() {
+    try {
+        const session = await getSession();
+        if (!session) return null;
+
+        const { data: contactos, error: contactosError } = await supabaseClient
+            .from('contactos')
+            .select('contacto_id, es_favorito, estado')
+            .eq('usuario_id', session.user.id);
+
+        if (contactosError) {
+            console.warn('[Perfil] Error contactos:', contactosError.message);
+            actualizarUIAmigos([], []);
+            return null;
+        }
+
+        if (!contactos || contactos.length === 0) {
+            actualizarUIAmigos([], []);
+            return { enLinea: [], todosContactos: [] };
+        }
+
+        const idsContactos = contactos
+            .map(c => c?.contacto_id)
+            .filter(Boolean);
+
+        if (idsContactos.length === 0) {
+            actualizarUIAmigos([], []);
+            return { enLinea: [], todosContactos: [] };
+        }
+
+        let todosContactos = [];
+
+        try {
+            const { data, error } = await supabaseClient
+                .from('perfiles_publicos')
+                .select('id, nombre, handle, avatar_url, online, ultima_conexion')
+                .in('id', idsContactos);
+
+            if (error) throw error;
+            todosContactos = data || [];
+        } catch (e) {
+            console.warn('[Perfil] perfiles_publicos no disponible, usando usuarios:', e?.message);
+            const { data, error } = await supabaseClient
+                .from('usuarios')
+                .select('id, nombre, handle, avatar_url, online, ultima_conexion')
+                .in('id', idsContactos);
+            if (error) {
+                console.warn('[Perfil] Error usuarios fallback:', error.message);
+                todosContactos = [];
+            } else {
+                todosContactos = data || [];
+            }
+        }
+
+        const enLinea = todosContactos.filter(u => u.online === true);
+
+        actualizarUIAmigos(todosContactos, enLinea);
+        return { enLinea, todosContactos };
+
+    } catch (error) {
+        console.error('[Perfil] Error cargando amigos en línea:', error);
+        actualizarUIAmigos([], []);
+        return null;
+    }
+}
+
+function actualizarUIAmigos(todosAmigos = [], enLinea = []) {
+    const container = document.getElementById('amigosContainer');
+    const contador = document.getElementById('amigosEnLineaContador');
+
+    if (contador) {
+        contador.textContent = enLinea.length;
+        contador.style.color = enLinea.length > 0 ? 'var(--success)' : 'var(--text-muted)';
+    }
+
+    if (!container) return;
+
+    if (!todosAmigos || todosAmigos.length === 0) {
+        container.innerHTML =
+            '<div style="text-align:center; padding:20px; color:var(--text-muted); font-size:0.8rem;">'
+                + '<span style="font-size:2rem;">👥</span>'
+                + '<p style="margin-top:8px;">Aún no tienes amigos agregados</p>'
+                + '<p style="font-size:0.6rem;">Explora el muro para conectar con otros</p>'
+            + '</div>';
+        aplicarI18NPerfil(container);
+        return;
+    }
+
+    const enLineaIds = new Set(enLinea.map(a => a.id));
+    const ordenados = [
+        ...todosAmigos.filter(a => enLineaIds.has(a.id)),
+        ...todosAmigos.filter(a => !enLineaIds.has(a.id))
+    ];
+
+    const activoAhoraT = t('perfil_activo_ahora', 'Activo ahora');
+    const desconectadoT = t('perfil_desconectado', 'Desconectado');
+    const enLineaT = t('perfil_en_linea', 'EN LÍNEA');
+
+    container.innerHTML = ordenados.map(amigo => {
+        const estaEnLinea = enLineaIds.has(amigo.id);
+        const estadoTxt = estaEnLinea ? '🟢 ' + activoAhoraT : '⭕ ' + desconectadoT;
+        const handleSafe = String(amigo.handle || amigo.id || '').replace(/[<>"']/g, '');
+        const nombreSafe = String(amigo.nombre || amigo.handle || '').replace(/[<>"']/g, '');
+        const avatarSafe = amigo.avatar_url ? String(amigo.avatar_url).replace(/"/g, '&quot;') : '';
+        return ''
+            + '<div class="amigo-item ' + (estaEnLinea ? 'online' : '') + '" onclick="window.location.href=\'/perfil/' + handleSafe + '\'">'
+                + '<div class="avatar-mini">' + (avatarSafe ? '<img src="' + avatarSafe + '">' : '◈') + '</div>'
+                + '<div class="info">'
+                    + '<div class="nombre" style="color:' + (estaEnLinea ? 'var(--text-primary)' : 'var(--text-muted)') + '">' + nombreSafe + '</div>'
+                    + '<div class="estado" style="color:' + (estaEnLinea ? 'var(--success)' : 'var(--text-muted)') + '">'
+                        + estadoTxt
+                        + (!estaEnLinea && amigo.ultima_conexion ? ' · ' + haceTiempo(amigo.ultima_conexion) : '')
+                    + '</div>'
+                + '</div>'
+                + (estaEnLinea ? '<div class="badge-online">' + enLineaT + '</div>' : '')
+            + '</div>';
+    }).join('');
+}
+
+async function actualizarListaAmigos() {
+    await cargarAmigosEnLinea();
+}
+
+async function notificarCambioEstado(online) {
+    try {
+        const session = await getSession();
+        if (!session) return;
+
+        const { data: contactos, error } = await supabaseClient
+            .from('contactos')
+            .select('contacto_id')
+            .eq('usuario_id', session.user.id);
+
+        if (error || !contactos || contactos.length === 0) return;
+
+        const nombre = perfilCache?.nombre || 'Un usuario';
+        const estado = online ? '🟢 ' + t('perfil_activo_ahora', 'activo') : '⭕ ' + t('perfil_desconectado', 'inactivo');
+
+        const notifs = contactos.map(c => ({
+            user_id: c.contacto_id,
+            tipo: 'estado',
+            mensaje: `${nombre} ${estado}`,
+            emisor_id: session.user.id,
+            leida: false,
+            fecha: new Date().toISOString()
+        }));
+
+        for (let i = 0; i < notifs.length; i += 50) {
+            await supabaseClient.from('notificaciones').insert(notifs.slice(i, i + 50));
+        }
+
+    } catch (error) {
+        console.error('[Perfil] Error notificando cambio de estado:', error);
+    }
+}
+
+function haceTiempo(fecha) {
+    if (!fecha) return '';
+    const ahora = new Date();
+    const entonces = new Date(fecha);
+    const diffMs = ahora - entonces;
+    const diffMin = Math.floor(diffMs / 60000);
+
+    if (diffMin < 1) return 'hace un momento';
+    if (diffMin < 60) return `hace ${diffMin} min`;
+    if (diffMin < 1440) return `hace ${Math.floor(diffMin / 60)} h`;
+    return `hace ${Math.floor(diffMin / 1440)} d`;
+}
+
+/* ================================================================
+   CONTADORES SOCIALES
+   ================================================================ */
+async function cargarContadoresSociales(usuarioId) {
+    try {
+        if (!usuarioId) return;
+        if (!supabaseClient) return;
+
+        const ahora = Date.now();
+        if (contadoresSocialesCache && (ahora - ultimaActualizacionContadores) < CONTADORES_CACHE_DURATION) {
+            aplicarContadoresSociales(contadoresSocialesCache);
+            return;
+        }
+
+        try {
+            const { data: usuario, error } = await supabaseClient
+                .from('usuarios')
+                .select('seguidores_count, siguiendo_count')
+                .eq('id', usuarioId)
+                .maybeSingle();
+
+            if (!error && usuario &&
+                (typeof usuario.seguidores_count === 'number' || typeof usuario.siguiendo_count === 'number')) {
+                contadoresSocialesCache = {
+                    seguidores: usuario.seguidores_count || 0,
+                    siguiendo: usuario.siguiendo_count || 0
+                };
+                ultimaActualizacionContadores = ahora;
+                aplicarContadoresSociales(contadoresSocialesCache);
+                return;
+            }
+        } catch (e) {}
+
+        const [seguidoresRes, siguiendoRes] = await Promise.all([
+            supabaseClient
+                .from('contactos')
+                .select('*', { count: 'exact', head: true })
+                .eq('contacto_id', usuarioId),
+            supabaseClient
+                .from('contactos')
+                .select('*', { count: 'exact', head: true })
+                .eq('usuario_id', usuarioId)
+        ]);
+
+        contadoresSocialesCache = {
+            seguidores: seguidoresRes.count || 0,
+            siguiendo: siguiendoRes.count || 0
+        };
+        ultimaActualizacionContadores = ahora;
+        aplicarContadoresSociales(contadoresSocialesCache);
+
+    } catch (error) {
+        console.warn('[Perfil] Error contadores sociales:', error?.message);
+    }
+}
+
+function aplicarContadoresSociales(c) {
+    const segEl = document.getElementById('statSeguidores');
+    const sigEl = document.getElementById('statSiguiendo');
+    if (segEl) segEl.textContent = String(c?.seguidores ?? 0);
+    if (sigEl) sigEl.textContent = String(c?.siguiendo ?? 0);
+}
+
+/* ================================================================
+   PORTADA / UBICACIÓN / SITIO WEB
+   ================================================================ */
+async function cargarPortadaUbicacion(usuarioId) {
+    try {
+        if (!usuarioId || !supabaseClient) return;
+
+        const { data, error } = await supabaseClient
+            .from('perfiles')
+            .select('portada_url, ubicacion, sitio_web')
+            .eq('id', usuarioId)
+            .maybeSingle();
+
+        if (error || !data) return;
+
+        if (perfilCache) {
+            perfilCache.portada_url = data.portada_url || null;
+            perfilCache.ubicacion = data.ubicacion || null;
+            perfilCache.sitio_web = data.sitio_web || null;
+        }
+    } catch (error) {
+        console.warn('[Perfil] Error cargando portada:', error?.message);
+    }
+}
+
+/* ================================================================
+   GESTIÓN DE CONEXIÓN
+   ================================================================ */
+let estadoConexion = {
+    tipo: 'wifi',
+    activa: true,
+    velocidad: '0 Mbps',
+    señal: 100,
+    operador: 'Sariel\'s Net',
+    datos_usados: 0,
+    datos_limite: 0,
+    datos_restantes: 0
+};
+
+async function cargarEstadoConexion() {
+    try {
+        const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+
+        if (connection) {
+            const velocidad = connection.downlink ? `${connection.downlink} Mbps` : '0 Mbps';
+
+            let tipoConexion = 'wifi';
+            if (connection.type) {
+                if (connection.type === 'cellular' || connection.type === '4g' || connection.type === '3g') {
+                    tipoConexion = 'datos';
+                } else if (connection.type === 'wifi') {
+                    tipoConexion = 'wifi';
+                } else {
+                    tipoConexion = 'wifi';
+                }
+            } else {
+                if (connection.downlink && connection.downlink < 10) {
+                    tipoConexion = 'datos';
+                }
+            }
+
+            if (perfilCache?.conexion_tipo) {
+                tipoConexion = perfilCache.conexion_tipo;
+            }
+
+            estadoConexion = {
+                ...estadoConexion,
+                tipo: tipoConexion,
+                activa: navigator.onLine,
+                velocidad: velocidad,
+                señal: Math.min(Math.round((connection.downlink || 50) * 2), 100)
+            };
+
+            actualizarUIConexion(estadoConexion);
+            await guardarEstadoConexion(estadoConexion);
+        } else {
+            estadoConexion = {
+                ...estadoConexion,
+                activa: navigator.onLine
+            };
+            actualizarUIConexion(estadoConexion);
+        }
+
+        return estadoConexion;
+
+    } catch (error) {
+        console.error('[Perfil] Error cargando estado de conexión:', error);
+        estadoConexion = {
+            ...estadoConexion,
+            activa: navigator.onLine
+        };
+        actualizarUIConexion(estadoConexion);
+        return estadoConexion;
+    }
+}
+
+async function cambiarConexion(tipo) {
+    try {
+        if (!['wifi', 'datos'].includes(tipo)) {
+            showToast('❌ Tipo de conexión no válido', 'error');
+            return;
+        }
+
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+            return;
+        }
+
+        if (tipo === 'datos') {
+            const perfil = await getPerfilActual();
+            if (!perfil || !perfil.esim_iccid) {
+                showToast('⚠️ No tienes una eSIM activa. Compra una primero.', 'warning');
+                return;
+            }
+            if (perfil.esim_status !== 'enabled' && perfil.esim_status !== 'active') {
+                showToast('⚠️ Tu eSIM no está activa. Actívala primero.', 'warning');
+                return;
+            }
+        }
+
+        const { error } = await supabaseClient
+            .from('usuarios')
+            .update({
+                conexion_tipo: tipo,
+                conexion_activa: true,
+                conexion_ultimo_cambio: new Date().toISOString()
+            })
+            .eq('id', session.user.id);
+
+        if (error) throw error;
+
+        estadoConexion.tipo = tipo;
+        estadoConexion.activa = true;
+
+        if (perfilCache) {
+            perfilCache.conexion_tipo = tipo;
+            perfilCache.conexion_activa = true;
+        }
+
+        actualizarUIConexion(estadoConexion);
+
+        if (tipo === 'wifi') {
+            showToast('🛜 ' + t('perfil_conexion_wifi', 'WiFi'), 'success');
+        } else {
+            showToast('📶 ' + t('perfil_conexion_datos', 'Datos'), 'success');
+        }
+
+        if (tipo === 'datos') {
+            await cargarDatosESIM(perfilCache?.esim_iccid);
+        }
+
+    } catch (error) {
+        console.error('[Perfil] Error cambiando conexión:', error);
+        showToast('❌ Error al cambiar conexión: ' + error.message, 'error');
+    }
+}
+
+function getPerfilActual() {
+    return perfilCache;
+}
+
+async function guardarEstadoConexion(estado) {
+    try {
+        const session = await getSession();
+        if (!session) return;
+
+        await supabaseClient
+            .from('usuarios')
+            .update({
+                conexion_tipo: estado.tipo,
+                conexion_activa: estado.activa,
+                conexion_velocidad: estado.velocidad,
+                conexion_senal: estado.señal
+            })
+            .eq('id', session.user.id);
+
+    } catch (error) {
+        console.warn('[Perfil] Error guardando estado de conexión:', error?.message);
+    }
+}
+
+function actualizarUIConexion(estado) {
+    const conexionStatus = document.getElementById('conexionStatus');
+    const conexionTipo = document.getElementById('conexionTipo');
+    const conexionVelocidad = document.getElementById('conexionVelocidad');
+    const conexionSeñal = document.getElementById('conexionSeñal');
+    const wifiBtn = document.getElementById('btnWifi');
+    const datosBtn = document.getElementById('btnDatos');
+    const conexionOperador = document.getElementById('conexionOperador');
+
+    const wifiT = t('perfil_conexion_wifi', 'WiFi');
+    const datosT = t('perfil_conexion_datos', 'Datos');
+
+    if (conexionStatus) {
+        conexionStatus.removeAttribute('data-clave');
+        if (!estado.activa) {
+            conexionStatus.innerHTML = '⛔ Sin conexión';
+            conexionStatus.style.color = 'var(--danger)';
+        } else if (estado.tipo === 'wifi') {
+            conexionStatus.innerHTML = '🛜 ' + wifiT;
+            conexionStatus.style.color = 'var(--success)';
+        } else {
+            conexionStatus.innerHTML = '📶 ' + datosT;
+            conexionStatus.style.color = 'var(--cyan)';
+        }
+    }
+
+    if (conexionTipo) {
+        conexionTipo.textContent = estado.tipo === 'wifi' ? '🛜 ' + wifiT : '📶 ' + datosT;
+    }
+
+    if (conexionVelocidad) {
+        conexionVelocidad.textContent = estado.velocidad;
+    }
+
+    if (conexionSeñal) {
+        const barras = Math.round((estado.señal / 100) * 4);
+        conexionSeñal.textContent = '█'.repeat(barras) + '░'.repeat(4 - barras);
+        conexionSeñal.style.color = estado.señal > 50 ? 'var(--success)' : 'var(--warning)';
+    }
+
+    if (conexionOperador) {
+        conexionOperador.textContent = estado.operador || "Sariel's Net";
+    }
+
+    if (wifiBtn) {
+        wifiBtn.style.borderColor = estado.tipo === 'wifi' ? 'var(--gold)' : 'var(--glass-border)';
+        wifiBtn.style.background = estado.tipo === 'wifi' ? 'rgba(212,175,55,0.15)' : 'transparent';
+    }
+    if (datosBtn) {
+        datosBtn.style.borderColor = estado.tipo === 'datos' ? 'var(--gold)' : 'var(--glass-border)';
+        datosBtn.style.background = estado.tipo === 'datos' ? 'rgba(212,175,55,0.15)' : 'transparent';
+    }
+}
+
+function iniciarEscuchaConexion() {
+    window.addEventListener('online', () => {
+        estadoConexion.activa = true;
+        actualizarUIConexion(estadoConexion);
+        guardarEstadoConexion(estadoConexion);
+        showToast('🛜 ' + t('perfil_conexion', 'Conexión'), 'success');
+    });
+
+    window.addEventListener('offline', () => {
+        estadoConexion.activa = false;
+        actualizarUIConexion(estadoConexion);
+        guardarEstadoConexion(estadoConexion);
+        showToast('⛔ Sin conexión', 'error');
+    });
+
+    if (navigator.connection && navigator.connection.addEventListener) {
+        navigator.connection.addEventListener('change', async () => {
+            await cargarEstadoConexion();
+        });
+    }
+}
+
+/* ================================================================
+   eSIM
+   ================================================================ */
+function actualizarUIESIM(data) {
+    const esimStatus = document.getElementById('esimStatus');
+    const esimDataUsed = document.getElementById('esimDataUsed');
+    const esimDataLimit = document.getElementById('esimDataLimit');
+    const esimDataProgress = document.getElementById('esimDataProgress');
+    const esimIccid = document.getElementById('esimIccid');
+    const esimApn = document.getElementById('esimApn');
+    const esimRestante = document.getElementById('esimDataRestante');
+
+    if (esimStatus) {
+        const statusMap = {
+            'enabled': '✅ Activo',
+            'active': '✅ Activo',
+            'disabled': '❌ Inactivo',
+            'inactive': '❌ Inactivo',
+            'standby': '⏳ En espera',
+            'pending': '🔄 Pendiente',
+            'unknown': '❓ Desconocido'
+        };
+        const st = data.esim_status;
+        esimStatus.textContent = st ? (statusMap[st] || st) : '⏳ Sin eSIM';
+        esimStatus.style.color = (st === 'enabled' || st === 'active')
+            ? 'var(--success)'
+            : 'var(--warning)';
+    }
+
+    if (esimDataUsed) {
+        const used = (data.esim_data_used || 0) / 1024 / 1024 / 1024;
+        esimDataUsed.textContent = used.toFixed(2) + ' GB';
+    }
+
+    if (esimDataLimit) {
+        const limit = (data.esim_data_limit || 0) / 1024 / 1024 / 1024;
+        esimDataLimit.textContent = limit.toFixed(2) + ' GB';
+    }
+
+    if (esimRestante) {
+        const usado = (data.esim_data_used || 0) / 1024 / 1024 / 1024;
+        const limite = (data.esim_data_limit || 0) / 1024 / 1024 / 1024;
+        const restante = Math.max(limite - usado, 0);
+        esimRestante.textContent = restante.toFixed(2) + ' GB';
+        esimRestante.style.color = restante < 1 ? 'var(--danger)' : 'var(--success)';
+    }
+
+    if (esimDataProgress && data.esim_data_limit > 0) {
+        const porcentaje = ((data.esim_data_used || 0) / (data.esim_data_limit || 1)) * 100;
+        esimDataProgress.style.width = Math.min(porcentaje, 100) + '%';
+        esimDataProgress.style.transition = 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+
+        if (porcentaje > 80) {
+            esimDataProgress.style.background = 'var(--danger)';
+        } else if (porcentaje > 50) {
+            esimDataProgress.style.background = 'var(--warning)';
+        } else {
+            esimDataProgress.style.background = 'var(--success)';
+        }
+    }
+
+    if (esimIccid) {
+        const iccid = data.esim_iccid || t('perfil_no_asignado', 'No asignado');
+        esimIccid.textContent = iccid.length > 10 ? iccid.slice(0, 10) + '...' + iccid.slice(-4) : iccid;
+    }
+
+    if (esimApn) {
+        esimApn.textContent = data.esim_apn || 'data00.telnyx';
+    }
+}
+
+function mostrarSinESIM() {
+    actualizarUIESIM({
+        esim_iccid: null,
+        esim_status: 'disabled',
+        esim_data_used: 0,
+        esim_data_limit: 0,
+        esim_apn: 'data00.telnyx'
+    });
+    const esimStatus = document.getElementById('esimStatus');
+    if (esimStatus) {
+        esimStatus.textContent = '⏳ Sin eSIM';
+        esimStatus.style.color = 'var(--text-muted)';
+    }
+}
+
+async function cargarDatosESIM(iccid) {
+    if (!iccid) {
+        mostrarSinESIM();
+        return null;
+    }
+
+    try {
+        const session = await getSession();
+        if (!session) return null;
+
+        const { data: usuario, error } = await supabaseClient
+            .from('usuarios')
+            .select('esim_iccid, esim_status, esim_data_used, esim_data_limit, esim_apn, esim_activated_at, esim_expires_at, esim_operator, esim_network, esim_last_sync_at, esim_last_error, esim_imsi, esim_msisdn, esim_eid, esim_type, esim_installation_status, esim_status_reason, esim_data_unit')
+            .eq('id', session.user.id)
+            .maybeSingle();
+
+        if (error) {
+            console.warn('[Perfil] Error leyendo eSIM:', error.message);
+            return null;
+        }
+
+        if (!usuario || !usuario.esim_iccid) {
+            mostrarSinESIM();
+            return null;
+        }
+
+        actualizarUIESIM({
+            esim_iccid: usuario.esim_iccid,
+            esim_status: usuario.esim_status,
+            esim_data_used: usuario.esim_data_used || 0,
+            esim_data_limit: usuario.esim_data_limit || 0,
+            esim_apn: usuario.esim_apn || 'data00.telnyx',
+            esim_activated_at: usuario.esim_activated_at,
+            esim_expires_at: usuario.esim_expires_at,
+            esim_operator: usuario.esim_operator || 'Telnyx',
+            esim_network: usuario.esim_network || '4G/5G'
         });
 
-        window.expandirFotoPublicacion = window.expandirFotoPublicacion || function(src) {
-            if (!src) return;
-            var overlay = document.createElement('div');
-            overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.95);display:flex;align-items:center;justify-content:center;z-index:99999;padding:20px;cursor:pointer;';
-            overlay.innerHTML = '<img src="' + src + '" style="max-width:100%;max-height:100%;border-radius:12px;border:2px solid var(--gold);">';
-            overlay.onclick = function() { overlay.remove(); };
-            document.body.appendChild(overlay);
+        return usuario;
+
+    } catch (error) {
+        console.error('[Perfil] Error cargando datos eSIM:', error);
+        await cargarDatosESIMLocal(iccid);
+        return null;
+    }
+}
+
+async function cargarDatosESIMLocal(iccid) {
+    try {
+        const session = await getSession();
+        if (!session) return;
+
+        const { data: usuario, error } = await supabaseClient
+            .from('usuarios')
+            .select('esim_iccid, esim_status, esim_data_used, esim_data_limit, esim_apn')
+            .eq('id', session.user.id)
+            .single();
+
+        if (error) throw error;
+
+        if (usuario && usuario.esim_iccid) {
+            actualizarUIESIM({
+                esim_iccid: usuario.esim_iccid,
+                esim_status: usuario.esim_status || 'disabled',
+                esim_data_used: usuario.esim_data_used || 0,
+                esim_data_limit: usuario.esim_data_limit || 0,
+                esim_apn: usuario.esim_apn || 'data00.telnyx'
+            });
+        }
+    } catch (error) {
+        console.error('[Perfil] Error cargando datos locales:', error);
+        mostrarSinESIM();
+    }
+}
+
+async function sincronizarESIM() {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+            return;
+        }
+
+        showToast('⏳ ' + t('perfil_sincronizando', 'Sincronizando...'), '', 3000);
+
+        const { data: usuario, error } = await supabaseClient
+            .from('usuarios')
+            .select('esim_iccid, esim_status, esim_data_used, esim_data_limit, esim_apn, esim_last_sync_at')
+            .eq('id', session.user.id)
+            .maybeSingle();
+
+        if (error) throw error;
+
+        if (usuario && usuario.esim_iccid) {
+            actualizarUIESIM(usuario);
+            showToast('✅ ' + t('perfil_sincronizar', 'Datos sincronizados'), 'success');
+        } else {
+            mostrarSinESIM();
+            showToast('⚠️ No tienes eSIM asignada', 'warning');
+        }
+
+    } catch (error) {
+        console.error('[Perfil] Error sincronizando eSIM:', error);
+        showToast('❌ Error al sincronizar: ' + error.message, 'error');
+    }
+}
+
+async function comprarESIM(planId) {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+            return;
+        }
+
+        const { data: plan, error } = await supabaseClient
+            .from('planes_esim')
+            .select('*')
+            .eq('id', planId)
+            .maybeSingle();
+
+        if (error || !plan) {
+            showToast('❌ Plan no encontrado', 'error');
+            return;
+        }
+
+        showToast('⏳ Creando orden de compra...', '', 5000);
+
+        const response = await fetch(`${API_ENDPOINTS.pagos}/create`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify({
+                transmisionId: null,
+                monto: Number(plan.precio_mxn) || 0,
+                metodo: 'crypto',
+                tipo: 'esim',
+                planId: plan.id,
+                idempotency_key: `esim_${session.user.id}_${planId}_${Date.now()}`
+            })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            throw new Error(result.error || 'Error al crear la orden');
+        }
+
+        if (result.data && result.data.payment_url) {
+            mostrarModalPagoReal(result.data.payment_url, result.data.id, plan);
+        } else {
+            const qrData = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('Orden: ' + (result.data?.id || ''))}`;
+            mostrarModalPagoSimulado(qrData, result.data?.id, plan);
+        }
+
+    } catch (error) {
+        console.error('[Perfil] Error comprando eSIM:', error);
+        showToast('❌ Error al comprar eSIM: ' + error.message, 'error');
+    }
+}
+
+async function activarESIM(iccid) {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+            return;
+        }
+
+        const iccidParam = iccid || perfilCache?.esim_iccid;
+        if (!iccidParam) {
+            showToast('⚠️ No hay eSIM para activar', 'error');
+            return;
+        }
+
+        showToast('⏳ Activando eSIM...', '', 5000);
+
+        const { error } = await supabaseClient
+            .from('usuarios')
+            .update({
+                esim_status: 'enabled',
+                esim_last_sync_at: new Date().toISOString()
+            })
+            .eq('id', session.user.id);
+
+        if (error) throw error;
+
+        showToast('✅ eSIM activada correctamente', 'success');
+        await cargarPerfil(true);
+
+    } catch (error) {
+        console.error('[Perfil] Error activando eSIM:', error);
+        showToast('❌ Error al activar eSIM: ' + error.message, 'error');
+    }
+}
+
+async function desactivarESIM(iccid) {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+            return;
+        }
+
+        const iccidParam = iccid || perfilCache?.esim_iccid;
+        if (!iccidParam) {
+            showToast('⚠️ No hay eSIM para desactivar', 'error');
+            return;
+        }
+
+        const confirmMsg = t('perfil_confirmar_desactivar_esim', '¿Seguro que quieres desactivar tu eSIM?');
+        if (!confirm(confirmMsg)) return;
+
+        showToast('⏳ Desactivando eSIM...', '', 5000);
+
+        const { error } = await supabaseClient
+            .from('usuarios')
+            .update({
+                esim_status: 'disabled',
+                esim_last_sync_at: new Date().toISOString()
+            })
+            .eq('id', session.user.id);
+
+        if (error) throw error;
+
+        showToast('🔌 eSIM desactivada', 'warning');
+        await cargarPerfil(true);
+
+    } catch (error) {
+        console.error('[Perfil] Error desactivando eSIM:', error);
+        showToast('❌ Error al desactivar eSIM: ' + error.message, 'error');
+    }
+}
+
+async function generarQRESIM(iccid) {
+    try {
+        const iccidParam = iccid || perfilCache?.esim_iccid;
+        if (!iccidParam) {
+            showToast('⚠️ No hay eSIM para generar QR', 'error');
+            return;
+        }
+        const qrData = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('LPA:1$' + iccidParam + "$Sariel's")}`;
+        mostrarModalQR(qrData);
+    } catch (error) {
+        console.error('[Perfil] Error generando QR:', error);
+        showToast('❌ Error al generar QR: ' + error.message, 'error');
+    }
+}
+
+async function obtenerEstadoESIM() {
+    try {
+        const session = await getSession();
+        if (!session) return null;
+
+        const { data, error } = await supabaseClient
+            .from('usuarios')
+            .select('esim_iccid, esim_status, esim_data_used, esim_data_limit, esim_apn')
+            .eq('id', session.user.id)
+            .maybeSingle();
+
+        if (error) throw error;
+        return data || null;
+
+    } catch (error) {
+        console.error('[Perfil] Error obteniendo estado eSIM:', error);
+        return null;
+    }
+}
+
+async function obtenerPlanesESIM() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('planes_esim')
+            .select('*')
+            .eq('activo', true)
+            .order('precio_mxn', { ascending: true });
+
+        if (error) throw error;
+        return data || [];
+
+    } catch (error) {
+        console.error('[Perfil] Error obteniendo planes:', error);
+        return [];
+    }
+}
+
+/* ================================================================
+   MODALES DE PAGO
+   ================================================================ */
+function mostrarModalPagoReal(paymentUrl, ordenId, plan) {
+    const modal = document.createElement('div');
+    modal.id = 'pagoModal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.85);
+        backdrop-filter: blur(10px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        animation: fadeIn 0.3s ease-out;
+    `;
+    modal.innerHTML = `
+        <div style="
+            background: linear-gradient(135deg, var(--bg-card), var(--bg-dark));
+            border: 2px solid var(--gold);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 450px;
+            width: 90%;
+            text-align: center;
+        ">
+            <h2 style="color: var(--gold); margin-bottom: 10px;">📱 Compra eSIM</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                ${plan.nombre} - ${plan.datos_gb} GB ${t('perfil_duracion', 'por')} ${plan.duracion_dias} ${t('perfil_dias', 'días')}
+            </p>
+            <p style="color: var(--gold); font-size: 1.2rem; font-weight: bold;">
+                $${plan.precio_usdt || plan.precio_mxn} ${plan.precio_usdt ? 'USDT' : 'MXN'}
+            </p>
+            <p style="color: var(--text-muted); font-size: 0.8rem; margin: 10px 0;">
+                💳 Paga con la pasarela segura
+            </p>
+            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 15px 0;">
+                <a href="${paymentUrl}" target="_blank" rel="noopener noreferrer"
+                   style="background: linear-gradient(135deg, var(--gold), #f7971e); border: none; color: #fff; padding: 12px 30px; border-radius: 10px; font-weight: 600; cursor: pointer; text-decoration: none;">
+                    💳 Ir a pagar
+                </a>
+                <button onclick="window.verificarPago('${ordenId}')"
+                        style="background: var(--bg-card); border: 1px solid var(--cyan); color: var(--cyan); padding: 12px 30px; border-radius: 10px; font-weight: 600; cursor: pointer;">
+                    ✅ Verificar pago
+                </button>
+                <button onclick="this.closest('#pagoModal').remove()"
+                        style="background: transparent; border: 1px solid var(--text-muted); color: var(--text-muted); padding: 12px 30px; border-radius: 10px; cursor: pointer;">
+                    ${t('perfil_cerrar', 'Cerrar')}
+                </button>
+            </div>
+            <div id="pagoStatus" style="margin-top: 10px; font-size: 0.8rem; color: var(--text-secondary);"></div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function mostrarModalPagoSimulado(qrData, ordenId, plan) {
+    const modal = document.createElement('div');
+    modal.id = 'pagoModal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.85);
+        backdrop-filter: blur(10px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    `;
+    modal.innerHTML = `
+        <div style="
+            background: linear-gradient(135deg, var(--bg-card), var(--bg-dark));
+            border: 2px solid var(--gold);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 450px;
+            width: 90%;
+            text-align: center;
+        ">
+            <h2 style="color: var(--gold); margin-bottom: 10px;">📱 Compra eSIM</h2>
+            <div style="background: white; border-radius: 10px; padding: 15px; margin: 10px 0;">
+                <img src="${qrData}" alt="QR de pago" style="max-width: 200px; width: 100%;">
+            </div>
+            <p style="color: var(--gold); font-size: 1.2rem; font-weight: bold;">
+                $${plan.precio_usdt || plan.precio_mxn} ${plan.precio_usdt ? 'USDT' : 'MXN'}
+            </p>
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+                <button onclick="window.verificarPago('${ordenId}')"
+                        style="background: linear-gradient(135deg, var(--gold), #f7971e); border: none; color: #fff; padding: 10px 30px; border-radius: 10px; font-weight: 600; cursor: pointer;">
+                    ✅ Verificar pago
+                </button>
+                <button onclick="this.closest('#pagoModal').remove()"
+                        style="background: transparent; border: 1px solid var(--text-muted); color: var(--text-muted); padding: 10px 30px; border-radius: 10px; cursor: pointer;">
+                    ${t('perfil_cerrar', 'Cerrar')}
+                </button>
+            </div>
+            <div id="pagoStatus" style="margin-top: 10px; font-size: 0.8rem; color: var(--text-secondary);"></div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function mostrarModalQR(qrData) {
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.85);
+        backdrop-filter: blur(10px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    `;
+    modal.innerHTML = `
+        <div style="background: linear-gradient(135deg, var(--bg-card), var(--bg-dark)); border: 2px solid var(--gold); border-radius: 20px; padding: 30px; max-width: 400px; width: 90%; text-align: center;">
+            <h2 style="color: var(--gold); margin-bottom: 10px;">📱 Activa tu eSIM</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 20px;">Escanea con la cámara de tu móvil</p>
+            <div style="background: white; border-radius: 10px; padding: 15px; margin: 10px 0;">
+                <img src="${qrData}" alt="QR de activación" style="max-width: 200px; width: 100%;">
+            </div>
+            <p style="color: var(--text-muted); font-size: 0.7rem;">📲 Ve a Ajustes > Datos Móviles > Añadir eSIM</p>
+            <button onclick="this.parentElement.parentElement.remove()"
+                    style="margin-top: 15px; background: var(--gold); border: none; color: #fff; padding: 10px 30px; border-radius: 10px; cursor: pointer;">
+                ${t('perfil_cerrar', 'Cerrar')}
+            </button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+async function verificarPago(ordenId) {
+    const statusEl = document.getElementById('pagoStatus');
+    if (!statusEl) return;
+
+    statusEl.textContent = '⏳ Verificando pago...';
+
+    try {
+        const session = await getSession();
+        if (!session) {
+            statusEl.textContent = '❌ ' + t('perfil_inicia_sesion', 'Inicia sesión');
+            return;
+        }
+
+        const response = await fetch(`${API_ENDPOINTS.pagos}/status/${ordenId}`, {
+            headers: {
+                'Authorization': `Bearer ${session.access_token}`
+            }
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            throw new Error(result.error || 'Error al verificar pago');
+        }
+
+        const orden = result.data;
+
+        if (orden.estado === 'completado' || orden.estado === 'finished' || orden.estado === 'confirmed' || orden.estado === 'pagado') {
+            statusEl.textContent = '✅ ¡Pago confirmado! Activando eSIM...';
+            showToast('🎉 ¡eSIM activada exitosamente!', 'success');
+
+            await cargarPerfil(true);
+
+            setTimeout(() => {
+                document.getElementById('pagoModal')?.remove();
+            }, 2000);
+
+        } else if (orden.estado === 'pendiente' || orden.estado === 'pagando') {
+            statusEl.textContent = '⏳ Aún no se confirma el pago. Espera unos minutos.';
+            setTimeout(() => verificarPago(ordenId), 10000);
+        } else {
+            statusEl.textContent = `❌ Estado: ${orden.estado}`;
+        }
+
+    } catch (error) {
+        console.error('[Perfil] Error verificando pago:', error);
+        statusEl.textContent = '❌ Error al verificar: ' + error.message;
+    }
+}
+
+/* ================================================================
+   ESCANEO QR
+   ================================================================ */
+let qrScannerInterval = null;
+let scannerActive = false;
+let qrHistorial = [];
+let qrScanningLock = false;
+
+async function abrirCamaraQR() {
+    const container = document.getElementById('qrReaderContainer');
+    const video = document.getElementById('qrVideo');
+    const status = document.getElementById('qrCamaraStatus');
+    const canvas = document.getElementById('qrCanvas');
+    const ctx = canvas?.getContext('2d');
+
+    if (scannerActive) {
+        cerrarCamaraQR();
+        return;
+    }
+
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } }
+        });
+
+        video.srcObject = stream;
+        await video.play();
+        container.style.display = 'block';
+        scannerActive = true;
+        status.textContent = '📷 Enfoca el QR...';
+
+        const leerQR = async () => {
+            if (!scannerActive || !video.readyState || video.readyState < 2) return;
+
+            try {
+                if (!canvas || !ctx) return;
+
+                canvas.width = video.videoWidth || 400;
+                canvas.height = video.videoHeight || 300;
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+                if (typeof jsQR !== 'undefined') {
+                    const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                        inversionAttempts: "dontInvert",
+                    });
+
+                    if (code && code.data) {
+                        const qrData = code.data;
+                        status.textContent = '✅ QR detectado: ' + qrData.slice(0, 30) + '...';
+
+                        const input = document.getElementById('qrInput');
+                        if (input) {
+                            input.value = qrData;
+                            setTimeout(async () => {
+                                await procesarQR(qrData);
+                            }, 1000);
+                        }
+                        cerrarCamaraQR();
+                        return;
+                    }
+                } else {
+                    status.textContent = '📱 Escanea el QR o ingresa el código manualmente';
+                }
+
+            } catch (error) {
+                console.error('[Perfil] Error leyendo QR:', error);
+            }
         };
 
-    }, 3000);
+        if (qrScannerInterval) clearInterval(qrScannerInterval);
+        qrScannerInterval = setInterval(leerQR, 500);
+
+        showToast('📷 Apunta la cámara al QR', 'warning');
+
+    } catch (error) {
+        console.error('[Perfil] Error abriendo cámara:', error);
+        status.textContent = '❌ No se pudo acceder a la cámara';
+        showToast('❌ No se pudo acceder a la cámara', 'error');
+    }
+}
+
+function cerrarCamaraQR() {
+    const container = document.getElementById('qrReaderContainer');
+    const video = document.getElementById('qrVideo');
+    const status = document.getElementById('qrCamaraStatus');
+
+    if (video && video.srcObject) {
+        video.srcObject.getTracks().forEach(track => track.stop());
+        video.srcObject = null;
+    }
+    if (container) container.style.display = 'none';
+    scannerActive = false;
+    if (status) status.textContent = '';
+
+    if (qrScannerInterval) {
+        clearInterval(qrScannerInterval);
+        qrScannerInterval = null;
+    }
+}
+
+async function procesarQR(codigo) {
+    if (qrScanningLock) {
+        showToast('⏳ Procesando otro QR...', 'warning');
+        return;
+    }
+
+    qrScanningLock = true;
+    const status = document.getElementById('qrStatus');
+    const input = document.getElementById('qrInput');
+
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+            qrScanningLock = false;
+            return;
+        }
+
+        if (status) status.textContent = '⏳ Validando QR...';
+        showToast('⏳ Verificando QR...', '', 5000);
+
+        const { data, error } = await supabaseClient.rpc('reclamar_qr_domo', {
+            p_codigo: codigo
+        });
+
+        if (error) {
+            if (error.message.includes('already used')) {
+                showToast('❌ Este QR ya fue usado', 'error');
+                if (status) status.textContent = '❌ QR ya utilizado';
+            } else if (error.message.includes('invalid code')) {
+                showToast('❌ QR inválido', 'error');
+                if (status) status.textContent = '❌ QR inválido';
+            } else if (error.message.includes('not a domo')) {
+                showToast('❌ Este QR no es para un domo', 'error');
+                if (status) status.textContent = '❌ QR no es domo';
+            } else {
+                throw error;
+            }
+            qrScanningLock = false;
+            return;
+        }
+
+        if (!data || !data.success) {
+            showToast('❌ ' + ((data && data.error) || 'Error al reclamar QR'), 'error');
+            if (status) status.textContent = '❌ ' + ((data && data.error) || 'Error');
+            qrScanningLock = false;
+            return;
+        }
+
+        if (status) status.textContent = '✅ ¡QR reclamado exitosamente!';
+        if (input) input.value = '';
+
+        showToast('🎉 ¡QR escaneado! +1 Es.stok', 'success');
+
+        await cargarPerfil(true);
+        await cargarHistorialQR();
+        mostrarCelebracion();
+
+    } catch (error) {
+        console.error('[Perfil] Error procesando QR:', error);
+        if (status) status.textContent = '❌ Error al procesar QR';
+        showToast('❌ Error al escanear QR: ' + error.message, 'error');
+    } finally {
+        qrScanningLock = false;
+    }
+}
+
+async function escanearQR() {
+    const input = document.getElementById('qrInput');
+    const qrCode = input?.value?.trim();
+
+    if (!qrCode) {
+        showToast('⚠️ Escribe o escanea el código QR', 'error');
+        return;
+    }
+
+    await procesarQR(qrCode);
+}
+
+async function cargarHistorialQR() {
+    try {
+        const session = await getSession();
+        if (!session) return;
+
+        const { data, error } = await supabaseClient
+            .from('qr_historial')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .order('fecha', { ascending: false })
+            .limit(10);
+
+        if (error) {
+            if (error.code === '42P01') {
+                qrHistorial = [];
+                actualizarUIHistorialQR([]);
+                return;
+            }
+            throw error;
+        }
+
+        qrHistorial = data || [];
+        actualizarUIHistorialQR(qrHistorial);
+
+    } catch (error) {
+        console.error('[Perfil] Error cargando historial QR:', error);
+        actualizarUIHistorialQR([]);
+    }
+}
+
+function actualizarUIHistorialQR(historial = []) {
+    const container = document.getElementById('qrHistorialList');
+    const contador = document.getElementById('qrHistorialCount');
+
+    if (contador) {
+        contador.textContent = historial.length + ' ' + t('perfil_escaneos', 'escaneos');
+    }
+
+    if (!container) return;
+
+    if (!historial || historial.length === 0) {
+        container.innerHTML =
+            '<div class="empty-state" style="padding:10px;">'
+                + '<span class="icon" style="font-size:1.5rem;">◈</span>'
+                + '<p style="font-size:0.7rem;">Sin escaneos recientes</p>'
+            + '</div>';
+        aplicarI18NPerfil(container);
+        return;
+    }
+
+    container.innerHTML = historial.map(item => {
+        const fecha = new Date(item.fecha).toLocaleString('es-MX');
+        const qrId = item.qr_id ? String(item.qr_id).slice(0, 15) : 'N/A';
+        return `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(212,175,55,0.05);font-size:0.7rem;color:var(--text-muted);">
+                <span>📱 QR: ${qrId}</span>
+                <span>${fecha}</span>
+            </div>
+        `;
+    }).join('');
+}
+
+/* ================================================================
+   ACTUALIZAR UI PRINCIPAL
+   ================================================================ */
+function actualizarUI(data) {
+    if (!data) return;
+
+    const nombreEl = document.getElementById('perfilNombre');
+    const handleEl = document.getElementById('perfilHandle');
+    const bioEl = document.getElementById('perfilBio');
+    const avatarEl = document.getElementById('perfilAvatar');
+
+    if (nombreEl) {
+        const verificado = data.verificado ? '<span class="verified">✦ VERIFICADO</span>' : '';
+        const nombreSafe = String(data.nombre || t('perfil_nombre_usuario', 'Explorador')).replace(/[<>]/g, '');
+        nombreEl.innerHTML = `<span>${nombreSafe}</span> ${verificado}`;
+    }
+
+    if (handleEl) handleEl.textContent = '@' + (data.handle || 'explorador');
+
+    if (bioEl) {
+        const bioDefault = "Explorando el ecosistema Sariel's · WEB3 · Comunidad";
+        const bioT = t('perfil_biografia_default', bioDefault);
+        if (!data.bio || data.bio === bioDefault) {
+            bioEl.setAttribute('data-clave', 'perfil_biografia_default');
+            bioEl.innerHTML = bioT;
+        } else {
+            bioEl.removeAttribute('data-clave');
+            bioEl.innerHTML = formatearTexto(data.bio);
+        }
+    }
+
+    if (avatarEl) {
+        if (data.avatar_url) {
+            const urlSafe = String(data.avatar_url).replace(/"/g, '&quot;');
+            avatarEl.innerHTML = `
+                <img src="${urlSafe}" alt="Avatar" style="animation: fadeIn 0.5s ease-out;"
+                     onerror="this.style.display='none';this.parentElement.innerHTML='◈<span class=\\'avatar-menu-toggle\\' onclick=\\'event.stopPropagation(); window.toggleAvatarMenu(event)\\' title=\\'Opciones de foto\\'>✎</span>'"/>
+                <span class="avatar-menu-toggle" onclick="event.stopPropagation(); window.toggleAvatarMenu(event)" title="Opciones de foto">✎</span>
+            `;
+        } else {
+            avatarEl.innerHTML = `◈<span class="avatar-menu-toggle" onclick="event.stopPropagation(); window.toggleAvatarMenu(event)" title="Opciones de foto">✎</span>`;
+        }
+    }
+
+    const stats = [
+        { id: 'statTokens', value: data.tokens || 0 },
+        { id: 'statNFTS', value: data.nft_canjeado ? 1 : (data.domos || 0) }
+    ];
+
+    stats.forEach(stat => {
+        const el = document.getElementById(stat.id);
+        if (el && el.textContent !== String(stat.value)) {
+            animarContador(el, parseInt(el.textContent) || 0, stat.value);
+        }
+    });
+
+    const tokens = data.tokens || 0;
+    const progreso = Math.min(tokens, 12);
+    const puedeCanjear = data.puede_canjear || false;
+
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
+
+    if (progressFill) {
+        const porcentaje = (progreso / 12) * 100;
+        progressFill.style.width = `${porcentaje}%`;
+        progressFill.style.transition = 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+    }
+    if (progressText) {
+        progressText.textContent = `${progreso} / 12`;
+        if (progreso >= 12) {
+            progressText.style.color = 'var(--gold)';
+            if (!progressText.innerHTML.includes('🎯')) {
+                progressText.innerHTML += ' 🎯';
+            }
+        }
+    }
+
+    const tokenTotal = document.getElementById('tokenTotal');
+    const tokenDisponibles = document.getElementById('tokenDisponibles');
+    const tokenNFTs = document.getElementById('tokenNFTs');
+    const tokenVendidos = document.getElementById('tokenVendidos');
+
+    if (tokenTotal) tokenTotal.textContent = tokens;
+    if (tokenDisponibles) tokenDisponibles.textContent = tokens;
+    if (tokenNFTs) tokenNFTs.textContent = data.nft_canjeado ? 1 : 0;
+    if (tokenVendidos) tokenVendidos.textContent = data.tokens_acumulados ? Math.max(0, (data.tokens_acumulados || 0) - tokens) : 0;
+
+    const btnCanjear = document.getElementById('canjearNft');
+    if (btnCanjear) {
+        btnCanjear.disabled = !puedeCanjear;
+        if (puedeCanjear) {
+            btnCanjear.style.background = 'linear-gradient(135deg, var(--gold), #f7971e)';
+            btnCanjear.style.border = 'none';
+            btnCanjear.style.color = '#fff';
+            btnCanjear.innerHTML = '🎁 CANJEAR NFT';
+        } else {
+            btnCanjear.style.background = 'var(--bg-card)';
+            btnCanjear.style.border = '1px solid var(--text-muted)';
+            btnCanjear.style.color = 'var(--text-muted)';
+            btnCanjear.innerHTML = '🔒 NECESITAS 12 TOKENS';
+        }
+    }
+
+    actualizarUIESIM(data);
+    actualizarUIConexion(estadoConexion);
+    actualizarUIEstado(data.online !== false);
+}
+
+function animarContador(elemento, inicio, fin) {
+    if (!elemento || inicio === fin) return;
+    const duracion = 800;
+    const paso = 20;
+    const incremento = (fin - inicio) / (duracion / paso);
+    let actual = inicio;
+    const intervalo = setInterval(() => {
+        actual += incremento;
+        if ((incremento > 0 && actual >= fin) || (incremento < 0 && actual <= fin)) {
+            actual = fin;
+            clearInterval(intervalo);
+        }
+        elemento.textContent = Math.round(actual);
+    }, paso);
+}
+
+/* ================================================================
+   WALLET — METAMASK
+   ================================================================ */
+async function conectarWallet() {
+    if (typeof window.ethereum === 'undefined') {
+        showToast('⚠️ Instala MetaMask para conectar tu wallet', 'error', 5000);
+        setTimeout(() => {
+            window.open('https://metamask.io/es/download', '_blank', 'noopener,noreferrer');
+        }, 800);
+        return;
+    }
+
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+            return;
+        }
+
+        let accounts;
+        try {
+            accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        } catch (err) {
+            if (err.code === 4001) {
+                showToast('❌ Cancelaste la conexión en MetaMask', 'warning');
+            } else {
+                showToast('❌ Error al abrir MetaMask: ' + (err.message || 'Desconocido'), 'error');
+            }
+            return;
+        }
+
+        if (!accounts || accounts.length === 0) {
+            showToast('❌ No se obtuvo ninguna cuenta de MetaMask', 'error');
+            return;
+        }
+
+        const cuenta = accounts[0];
+        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+
+        if (chainId !== ENV.networkChainId) {
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: ENV.networkChainId }]
+                });
+            } catch (switchError) {
+                if (switchError.code === 4902) {
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_addEthereumChain',
+                            params: [{
+                                chainId: ENV.networkChainId,
+                                chainName: ENV.networkName,
+                                nativeCurrency: { name: ENV.networkCurrency, symbol: ENV.networkCurrency, decimals: 18 },
+                                rpcUrls: [ENV.networkRPC],
+                                blockExplorerUrls: [ENV.networkExplorer]
+                            }]
+                        });
+                    } catch (addError) {
+                        showToast('❌ No se pudo agregar la red Polygon Amoy', 'error');
+                        return;
+                    }
+                } else {
+                    showToast('❌ No se pudo cambiar a la red Polygon Amoy', 'error');
+                    return;
+                }
+            }
+        }
+
+        const { error: rpcErr } = await supabaseClient.rpc('vincular_wallet', { p_wallet_address: cuenta });
+
+        if (rpcErr) {
+            console.warn('[Perfil] RPC vincular_wallet falló, usando UPDATE directo:', rpcErr.message);
+            const { error: updateError } = await supabaseClient
+                .from('usuarios')
+                .update({ wallet_address: cuenta })
+                .eq('id', session.user.id);
+            if (updateError) throw updateError;
+        }
+
+        showToast(`✅ Wallet conectada a ${ENV.networkName}`, 'success', 4000);
+        await cargarPerfil(true);
+
+    } catch (error) {
+        console.error('[Perfil] Error conectando wallet:', error);
+        if (error.code === -32002) {
+            showToast('⚠️ MetaMask ya tiene una solicitud pendiente. Ábrelo y confirma.', 'warning', 5000);
+        } else {
+            showToast('❌ Error al conectar wallet: ' + (error.message || 'Desconocido'), 'error');
+        }
+    }
+}
+
+async function desconectarWallet() {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+            return;
+        }
+
+        const { error: rpcError } = await supabaseClient.rpc('desvincular_wallet');
+        if (rpcError) {
+            const { error: updateError } = await supabaseClient
+                .from('usuarios')
+                .update({ wallet_address: null })
+                .eq('id', session.user.id);
+            if (updateError) throw updateError;
+        }
+
+        showToast('🔌 Wallet desconectada', 'warning');
+        await cargarPerfil(true);
+
+    } catch (error) {
+        console.error('[Perfil] Error desconectando wallet:', error);
+        showToast('❌ Error al desconectar wallet', 'error');
+    }
+}
+
+/* ================================================================
+   COMPRAR DOMO
+   ================================================================ */
+async function comprarDomo(cantidad = 1) {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+            return;
+        }
+
+        cantidad = Math.max(1, Math.floor(cantidad));
+        if (cantidad > 10) {
+            showToast('⚠️ Máximo 10 domos por transacción', 'warning');
+            return;
+        }
+
+        showToast('⏳ Procesando compra de ' + cantidad + ' domo(s)...', '', 5000);
+
+        const { data, error } = await supabaseClient.rpc('comprar_domo', { p_cantidad: cantidad });
+
+        if (error) {
+            if (error.message.includes('insufficient')) {
+                showToast('❌ Fondos insuficientes para comprar domos', 'error');
+            } else {
+                throw error;
+            }
+            return;
+        }
+
+        showToast(`🎉 ¡${cantidad} Domo(s) comprado(s) exitosamente!`, 'success', 5000);
+        await cargarPerfil(true);
+        mostrarCelebracion();
+
+    } catch (error) {
+        console.error('[Perfil] Error al comprar domo:', error);
+        showToast('❌ Error en la compra: ' + error.message, 'error');
+    }
+}
+
+/* ================================================================
+   COMPRAR CON CRIPTO
+   ================================================================ */
+async function comprarConCripto() {
+    const session = await getSession();
+    if (!session) {
+        showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+        return;
+    }
+
+    const qtyEl = document.getElementById('cryptoQuantity');
+    const qty = parseInt(qtyEl?.textContent || '1');
+    if (qty < 1 || qty > 10) {
+        showToast('⚠️ Cantidad inválida (1-10)', 'warning');
+        return;
+    }
+
+    const precioUnitario = 4.50;
+    const total = qty * precioUnitario;
+    const comision = total * 0.02;
+    const totalConComision = total + comision;
+
+    const modal = document.getElementById('cryptoPaymentModal');
+    const qrImg = document.getElementById('cryptoQR');
+    const addressEl = document.getElementById('cryptoAddress');
+    const montoEl = document.getElementById('cryptoMonto');
+    const monedaEl = document.getElementById('cryptoMoneda');
+    const statusEl = document.getElementById('cryptoStatus');
+
+    if (modal) modal.classList.add('active');
+
+    try {
+        const response = await fetch(`${API_ENDPOINTS.pagos}/create`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify({
+                transmisionId: null,
+                monto: totalConComision,
+                metodo: 'crypto',
+                tipo: 'domo',
+                cantidad: qty,
+                idempotency_key: `domo_${session.user.id}_${qty}_${Date.now()}`
+            })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            showToast('❌ Error al crear pago: ' + (result.error || 'Error desconocido'), 'error');
+            if (modal) modal.classList.remove('active');
+            return;
+        }
+
+        const pagoData = result.data;
+        if (montoEl) montoEl.textContent = totalConComision.toFixed(2);
+        if (monedaEl) monedaEl.textContent = 'USDT';
+        if (addressEl) addressEl.textContent = pagoData.pay_address || pagoData.payment_address || '0x...';
+        if (statusEl) statusEl.textContent = '⏳ Esperando confirmación de pago...';
+
+        if (qrImg) {
+            if (pagoData.payment_url) {
+                qrImg.src = pagoData.payment_url;
+            } else {
+                qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('Orden: ' + pagoData.id)}`;
+            }
+        }
+
+        window._ordenPagoId = pagoData.id;
+
+        showToast('💳 QR generado. Escanea para pagar.', 'success');
+
+    } catch (error) {
+        console.error('[Perfil] Error comprando cripto:', error);
+        showToast('❌ Error al crear el pago', 'error');
+        if (modal) modal.classList.remove('active');
+    }
+}
+
+async function verificarPagoCrypto() {
+    const statusEl = document.getElementById('cryptoStatus');
+    const ordenId = window._ordenPagoId;
+
+    if (!ordenId) {
+        if (statusEl) statusEl.textContent = '❌ No hay orden para verificar';
+        return;
+    }
+
+    if (statusEl) statusEl.textContent = '⏳ Verificando pago...';
+
+    try {
+        const session = await getSession();
+        if (!session) {
+            if (statusEl) statusEl.textContent = '❌ ' + t('perfil_inicia_sesion', 'Inicia sesión');
+            return;
+        }
+
+        const response = await fetch(`${API_ENDPOINTS.pagos}/status/${ordenId}`, {
+            headers: {
+                'Authorization': `Bearer ${session.access_token}`
+            }
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            throw new Error(result.error || 'Error al verificar pago');
+        }
+
+        const orden = result.data;
+
+        if (orden.estado === 'completado' || orden.estado === 'finished' || orden.estado === 'confirmed' || orden.estado === 'pagado') {
+            if (statusEl) statusEl.textContent = '✅ ¡Pago confirmado! Procesando compra...';
+            showToast('🎉 ¡Compra exitosa!', 'success');
+            await cargarPerfil(true);
+            setTimeout(() => cerrarModalPago(), 2000);
+        } else if (orden.estado === 'pendiente' || orden.estado === 'pagando') {
+            if (statusEl) statusEl.textContent = '⏳ Aún no se confirma el pago.';
+            setTimeout(() => verificarPagoCrypto(), 10000);
+        } else {
+            if (statusEl) statusEl.textContent = `❌ Estado: ${orden.estado}`;
+        }
+
+    } catch (error) {
+        console.error('[Perfil] Error verificando pago:', error);
+        if (statusEl) statusEl.textContent = '❌ Error: ' + error.message;
+    }
+}
+
+function copiarDireccion() {
+    const addressEl = document.getElementById('cryptoAddress');
+    const address = addressEl?.textContent;
+
+    if (address && address !== 'Cargando dirección...') {
+        navigator.clipboard.writeText(address).then(() => {
+            showToast('📋 Dirección copiada', 'success');
+        }).catch(() => {
+            const textArea = document.createElement('textarea');
+            textArea.value = address;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            textArea.remove();
+            showToast('📋 Dirección copiada', 'success');
+        });
+    }
+}
+
+function cerrarModalPago() {
+    const modal = document.getElementById('cryptoPaymentModal');
+    if (modal) modal.classList.remove('active');
+    window._ordenPagoId = null;
+}
+
+/* ================================================================
+   CANJEAR NFT
+   ================================================================ */
+async function canjearNFT() {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+            return;
+        }
+
+        showToast('⏳ Verificando tokens para canje...', '', 4000);
+
+        const { data, error } = await supabaseClient.rpc('canjear_nft');
+
+        if (error) {
+            if (error.message.includes('insufficient tokens')) {
+                showToast('❌ Necesitas exactamente 12 Es.stoks', 'error');
+            } else if (error.message.includes('already redeemed')) {
+                showToast('⚠️ Ya has canjeado tu NFT', 'warning');
+            } else {
+                throw error;
+            }
+            return;
+        }
+
+        showToast('🎁 ¡NFT Canjeado! Tienes 30 días para reclamar.', 'success', 8000);
+        await cargarPerfil(true);
+        mostrarModalNFT(data);
+
+    } catch (error) {
+        console.error('[Perfil] Error al canjear NFT:', error);
+        showToast('❌ Error al canjear NFT: ' + error.message, 'error');
+    }
+}
+
+/* ================================================================
+   CONFETI / CELEBRACIÓN / MODAL NFT
+   ================================================================ */
+function crearConfeti() {
+    const colores = ['#ff6b6b', '#feca57', '#48dbfb', '#ff9ff3', '#54a0ff', '#5f27cd'];
+    for (let i = 0; i < 50; i++) {
+        setTimeout(() => {
+            const confeti = document.createElement('div');
+            confeti.style.cssText = `
+                position: fixed;
+                width: 10px;
+                height: 10px;
+                background: ${colores[Math.floor(Math.random() * colores.length)]};
+                left: ${Math.random() * 100}vw;
+                top: -10px;
+                border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
+                animation: confetiFall ${2 + Math.random() * 3}s linear forwards;
+                transform: rotate(${Math.random() * 360}deg);
+                z-index: 9998;
+                pointer-events: none;
+            `;
+            document.body.appendChild(confeti);
+            setTimeout(() => confeti.remove(), 5000);
+        }, i * 50);
+    }
+}
+
+function mostrarCelebracion() {
+    crearConfeti();
+    showToast('🎉 ¡Transacción exitosa!', 'success');
+}
+
+function compartirLogro() {
+    const texto = "🎁 ¡Acabo de canjear mi NFT en Sariel's! Únete al ecosistema. #Sariels #WEB3 #NFT";
+    if (navigator.share) {
+        navigator.share({ title: "Mi logro en Sariel's", text: texto }).catch(() => {});
+    } else {
+        navigator.clipboard.writeText(texto).then(() => {
+            showToast('📋 Copiado al portapapeles', 'success');
+        });
+    }
+}
+
+function mostrarModalNFT(data) {
+    const modal = document.createElement('div');
+    modal.id = 'nftModal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.8);
+        backdrop-filter: blur(10px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    `;
+
+    const nftId = (data && data.nft_id) ? data.nft_id : ('NFT-' + Date.now().toString().slice(-6));
+
+    modal.innerHTML = `
+        <div style="background: linear-gradient(135deg, var(--bg-card), var(--bg-dark)); border: 2px solid var(--gold); border-radius: 20px; padding: 40px; max-width: 500px; width: 90%; text-align: center;">
+            <div style="font-size: 80px; margin-bottom: 20px;">🎁</div>
+            <h2 style="color: var(--gold); font-size: 28px; margin-bottom: 10px;">¡NFT Canjeado!</h2>
+            <p style="color: var(--text-primary); margin-bottom: 20px; font-size: 18px;">Tu Domo físico te espera</p>
+            <div style="background: var(--bg-dark); border-radius: 10px; padding: 15px; margin-bottom: 20px;">
+                <p style="color: var(--text-muted); font-size: 14px;">⏳ Vigencia: 30 días para reclamar</p>
+                <p style="color: var(--cyan); font-size: 12px; margin-top: 5px;">ID: ${nftId}</p>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button onclick="this.closest('#nftModal').remove()"
+                        style="background: linear-gradient(135deg, var(--gold), #f7971e); border: none; color: #fff; padding: 12px 30px; border-radius: 10px; font-weight: 600; cursor: pointer;">
+                    ✅ Entendido
+                </button>
+                <button onclick="window.compartirLogro()"
+                        style="background: transparent; border: 2px solid var(--cyan); color: var(--cyan); padding: 12px 30px; border-radius: 10px; font-weight: 600; cursor: pointer;">
+                    📤 Compartir
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    crearConfeti();
+}
+
+/* ================================================================
+   GESTIÓN DE PERFIL
+   ================================================================ */
+function editarPerfil() {
+    cambiarTab('config');
+    setTimeout(() => {
+        const input = document.getElementById('editNombre');
+        if (input) {
+            input.focus();
+            input.select();
+        }
+    }, 300);
+}
+
+async function guardarPerfil() {
+    const session = await getSession();
+    if (!session) {
+        showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+        return;
+    }
+
+    const perfil = {
+        nombre: (document.getElementById('editNombre')?.value || '').trim() || t('perfil_nombre_usuario', 'Explorador'),
+        handle: (document.getElementById('editHandle')?.value || '').trim().replace('@', '') || 'explorador',
+        bio: (document.getElementById('editBio')?.value || '').trim() || t('perfil_biografia_default', "Explorando el ecosistema Sariel's · WEB3 · Comunidad")
+    };
+
+    if (!/^[a-zA-Z0-9_]+$/.test(perfil.handle)) {
+        showToast('❌ El handle solo puede contener letras, números y _', 'error');
+        return;
+    }
+
+    try {
+        const { error } = await supabaseClient
+            .from('usuarios')
+            .update({
+                nombre: perfil.nombre,
+                handle: perfil.handle,
+                bio: perfil.bio,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', session.user.id);
+
+        if (error) throw error;
+
+        showToast('✅ Perfil guardado correctamente', 'success');
+        await cargarPerfil(true);
+
+    } catch (error) {
+        console.error('[Perfil] Error guardando perfil:', error);
+        showToast('❌ Error al guardar: ' + error.message, 'error');
+    }
+}
+
+function compartirPerfil() {
+    const nombre = document.getElementById('perfilNombre')?.textContent.split(' ')[0] || 'Explorador';
+    const handle = document.getElementById('perfilHandle')?.textContent.replace('@', '') || 'explorador';
+    const url = `${window.location.origin}/perfil/${handle}`;
+    const texto = `◈ Perfil de ${nombre} en Sariel's\n◈ ${url}\n\n#Sariels #WEB3 #NFT #Comunidad`;
+
+    if (navigator.share) {
+        navigator.share({ title: `Perfil de ${nombre} en Sariel's`, text: texto, url: url }).catch(() => {});
+    } else {
+        navigator.clipboard.writeText(texto).then(() => {
+            showToast('◈ Copiado al portapapeles', 'success');
+        }).catch(() => {
+            prompt('Copia este enlace:', url);
+        });
+    }
+}
+
+function irAMuro() {
+    window.location.href = '/features/muro/muro.html';
+}
+
+function abrirSelectorArchivo() {
+    const input = document.getElementById('fileInput');
+    if (input) input.click();
+}
+
+/* ================================================================
+   EXPANDIR AVATAR / FOTO
+   ================================================================ */
+function expandirAvatar() {
+    const avatarEl = document.getElementById('perfilAvatar');
+    if (!avatarEl) return;
+
+    const img = avatarEl.querySelector('img');
+    if (!img || !img.src) return;
+
+    const modal = document.createElement('div');
+    modal.id = 'perfilAvatarModal';
+    modal.style.cssText = [
+        'position: fixed',
+        'top: 0', 'left: 0', 'right: 0', 'bottom: 0',
+        'width: 100vw', 'height: 100vh',
+        'background: rgba(0,0,0,0.95)',
+        '-webkit-backdrop-filter: blur(8px)',
+        'backdrop-filter: blur(8px)',
+        'display: flex',
+        'justify-content: center',
+        'align-items: center',
+        'z-index: 2147483647',
+        'cursor: zoom-out',
+        'padding: 20px',
+        'box-sizing: border-box'
+    ].join(';');
+
+    const imgFull = document.createElement('img');
+    imgFull.src = img.src;
+    imgFull.alt = 'Avatar';
+    imgFull.style.cssText = [
+        'max-width: 95vw',
+        'max-height: 95vh',
+        'width: auto',
+        'height: auto',
+        'object-fit: contain',
+        'border-radius: 16px',
+        'box-shadow: 0 0 60px rgba(212, 175, 55, 0.5), 0 0 0 3px rgba(212, 175, 55, 0.6)',
+        'display: block'
+    ].join(';');
+
+    modal.appendChild(imgFull);
+    document.body.appendChild(modal);
+
+    const cerrar = function (e) {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        modal.remove();
+        document.removeEventListener('keydown', onKeyDown);
+    };
+
+    const onKeyDown = function (e) {
+        if (e.key === 'Escape' || e.key === 'Esc') cerrar();
+    };
+
+    modal.addEventListener('click', cerrar);
+    imgFull.addEventListener('click', cerrar);
+    document.addEventListener('keydown', onKeyDown);
+}
+
+function expandirFotoPublicacion(src) {
+    if (!src) return;
+
+    const modal = document.createElement('div');
+    modal.id = 'fotoPublicacionModal';
+    modal.style.cssText = [
+        'position: fixed',
+        'top: 0', 'left: 0', 'right: 0', 'bottom: 0',
+        'width: 100vw', 'height: 100vh',
+        'background: rgba(0,0,0,0.95)',
+        '-webkit-backdrop-filter: blur(8px)',
+        'backdrop-filter: blur(8px)',
+        'display: flex',
+        'justify-content: center',
+        'align-items: center',
+        'z-index: 2147483647',
+        'cursor: zoom-out',
+        'padding: 20px',
+        'box-sizing: border-box'
+    ].join(';');
+
+    const imgFull = document.createElement('img');
+    imgFull.src = src;
+    imgFull.alt = 'Imagen publicada';
+    imgFull.style.cssText = [
+        'max-width: 95vw',
+        'max-height: 95vh',
+        'width: auto',
+        'height: auto',
+        'object-fit: contain',
+        'border-radius: 16px',
+        'box-shadow: 0 0 60px rgba(212, 175, 55, 0.5), 0 0 0 3px rgba(212, 175, 55, 0.6)',
+        'display: block'
+    ].join(';');
+
+    modal.appendChild(imgFull);
+    document.body.appendChild(modal);
+
+    const cerrar = function (e) {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        modal.remove();
+        document.removeEventListener('keydown', onKeyDown);
+    };
+
+    const onKeyDown = function (e) {
+        if (e.key === 'Escape' || e.key === 'Esc') cerrar();
+    };
+
+    modal.addEventListener('click', cerrar);
+    imgFull.addEventListener('click', cerrar);
+    document.addEventListener('keydown', onKeyDown);
+}
+
+/* ================================================================
+   SUBIR FOTO DE PERFIL
+   ================================================================ */
+async function subirFoto(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const session = await getSession();
+    if (!session) {
+        showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+        return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+        showToast('❌ La imagen no puede superar los 5 MB', 'error');
+        event.target.value = '';
+        return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+        showToast('❌ Solo se permiten imágenes', 'error');
+        event.target.value = '';
+        return;
+    }
+
+    const fileExt = file.name.split('.').pop().toLowerCase();
+    const filePath = `${session.user.id}/avatar.${fileExt}`;
+
+    try {
+        showToast('⏳ Subiendo foto...', '', 5000);
+
+        const { error: uploadError } = await supabaseClient.storage
+            .from('sariels-avatars')
+            .upload(filePath, file, { upsert: true, contentType: file.type });
+
+        if (uploadError) {
+            console.error('[Perfil] Error storage:', uploadError);
+            if (uploadError.message?.includes('not found') || uploadError.message?.includes('Bucket')) {
+                showToast('❌ Bucket de avatares no configurado', 'error');
+            } else if (uploadError.message?.includes('policy') || uploadError.message?.includes('violates')) {
+                showToast('❌ Sin permiso para subir foto', 'error');
+            } else {
+                showToast('❌ Error: ' + uploadError.message, 'error');
+            }
+            return;
+        }
+
+        const { data: urlData } = supabaseClient.storage
+            .from('sariels-avatars')
+            .getPublicUrl(filePath);
+
+        const publicUrl = urlData.publicUrl + '?t=' + Date.now();
+
+        const { error: updateError } = await supabaseClient
+            .from('usuarios')
+            .update({ avatar_url: publicUrl })
+            .eq('id', session.user.id);
+
+        if (updateError) throw updateError;
+
+        showToast('✅ Foto actualizada correctamente', 'success');
+        event.target.value = '';
+        await cargarPerfil(true);
+
+    } catch (error) {
+        console.error('[Perfil] Error al subir foto:', error);
+        showToast('❌ Error al subir foto: ' + error.message, 'error');
+    }
+}
+
+/* ================================================================
+   ELIMINAR FOTO DE PERFIL
+   ================================================================ */
+async function eliminarFotoPerfil() {
+    const session = await getSession();
+    if (!session) {
+        showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+        return;
+    }
+
+    const confirmMsg = t('perfil_confirma_eliminar_foto', '¿Seguro que quieres eliminar tu foto de perfil?');
+    if (!confirm(confirmMsg)) return;
+
+    try {
+        showToast('⏳ Eliminando foto...', '', 4000);
+
+        const extensiones = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+        const paths = extensiones.map(ext => `${session.user.id}/avatar.${ext}`);
+
+        try {
+            await supabaseClient.storage.from('sariels-avatars').remove(paths);
+        } catch (storageErr) {
+            console.warn('[Perfil] No se pudo borrar el archivo del bucket:', storageErr);
+        }
+
+        const { error } = await supabaseClient
+            .from('usuarios')
+            .update({ avatar_url: null })
+            .eq('id', session.user.id);
+
+        if (error) throw error;
+
+        showToast('✅ Foto de perfil eliminada', 'success');
+
+        const avatarEl = document.getElementById('perfilAvatar');
+        if (avatarEl) {
+            avatarEl.innerHTML = '◈<span class="avatar-menu-toggle" onclick="event.stopPropagation(); window.toggleAvatarMenu(event)" title="Opciones de foto">✎</span>';
+        }
+
+        await cargarPerfil(true);
+
+    } catch (error) {
+        console.error('[Perfil] Error eliminando foto de perfil:', error);
+        showToast('❌ Error al eliminar foto: ' + error.message, 'error');
+    }
+}
+
+/* ================================================================
+   SUBIR VIDEO (a bucket muro-videos)
+   ================================================================ */
+async function subirVideo(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const session = await getSession();
+    if (!session) {
+        showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+        return;
+    }
+
+    if (!file.type.startsWith('video/')) {
+        showToast('❌ Formato no válido (solo videos)', 'error');
+        event.target.value = '';
+        return;
+    }
+
+    if (file.size > 50 * 1024 * 1024) {
+        showToast('❌ El video excede 50 MB', 'error');
+        event.target.value = '';
+        return;
+    }
+
+    try {
+        showToast('⏳ Subiendo video...', '', 15000);
+
+        const fileExt = file.name.split('.').pop().toLowerCase();
+        const filePath = `${session.user.id}/video_${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabaseClient.storage
+            .from('muro-videos')
+            .upload(filePath, file, {
+                cacheControl: '3600',
+                upsert: false,
+                contentType: file.type
+            });
+
+        if (uploadError) {
+            console.error('[Perfil] Error storage:', uploadError);
+            if (uploadError.message?.includes('not found') || uploadError.message?.includes('Bucket')) {
+                showToast('❌ Bucket de videos no configurado', 'error');
+            } else if (uploadError.message?.includes('policy') || uploadError.message?.includes('violates')) {
+                showToast('❌ Sin permiso para subir video', 'error');
+            } else {
+                showToast('❌ Error: ' + uploadError.message, 'error');
+            }
+            return;
+        }
+
+        const { data: urlData } = supabaseClient.storage
+            .from('muro-videos')
+            .getPublicUrl(filePath);
+
+        showToast('✅ Video subido con éxito', 'success');
+        event.target.value = '';
+        return urlData.publicUrl;
+
+    } catch (error) {
+        console.error('[Perfil] Error al subir video:', error);
+        showToast('❌ Error al subir el video: ' + error.message, 'error');
+    }
+}
+
+/* ================================================================
+   SISTEMA DE AMIGOS
+   ================================================================ */
+async function agregarAmigo(amigoId) {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+            return;
+        }
+
+        const { error } = await supabaseClient
+            .from('contactos')
+            .insert({
+                usuario_id: session.user.id,
+                contacto_id: amigoId,
+                estado: 'pendiente'
+            });
+
+        if (error) {
+            if (error.code === '23505') showToast('⚠️ Ya enviaste solicitud a este usuario', 'warning');
+            else if (error.code === '42P01') showToast('❌ Tabla de contactos no configurada', 'error');
+            else if (error.code === '42501') showToast('❌ Sin permiso para agregar', 'error');
+            else showToast('❌ Error: ' + error.message, 'error');
+            return;
+        }
+
+        showToast('🤝 Solicitud de amistad enviada', 'success');
+    } catch (error) {
+        console.error('[Perfil] Error al agregar amigo:', error);
+        showToast('❌ No se pudo enviar la solicitud', 'error');
+    }
+}
+
+/* ================================================================
+   GENERAR QR PERFIL
+   ================================================================ */
+async function generarQRPerfil() {
+    try {
+        const session = await getSession();
+        if (!session) return;
+
+        const handle = document.getElementById('perfilHandle')?.textContent.replace('@', '') || 'explorador';
+        const url = `${window.location.origin}/perfil/${handle}`;
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
+
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        `;
+        modal.innerHTML = `
+            <div style="background: var(--bg-card); border-radius: 20px; padding: 30px; text-align: center; max-width: 90vw;">
+                <h3 style="color: var(--gold); margin-bottom: 20px;">📱 Share QR</h3>
+                <img src="${qrUrl}" alt="QR Code" style="border-radius: 10px; max-width: 200px;">
+                <p style="color: var(--text-muted); margin-top: 15px; font-size: 12px; word-break: break-all;">${url}</p>
+                <button onclick="this.parentElement.parentElement.remove()"
+                        style="margin-top: 20px; background: var(--gold); border: none; color: #fff; padding: 10px 30px; border-radius: 10px; cursor: pointer;">
+                    Cerrar
+                </button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        aplicarI18NPerfil(modal);
+
+    } catch (error) {
+        console.error('[Perfil] Error generando QR:', error);
+        showToast('❌ Error al generar QR', 'error');
+    }
+}
+
+/* ================================================================
+   NIVEL Y ESTADÍSTICAS
+   ================================================================ */
+function calcularNivel(tokens) {
+    const niveles = [
+        { min: 0, max: 4, nombre: '🌱 Explorador', emoji: '🌱' },
+        { min: 5, max: 9, nombre: '⚡ Cazador', emoji: '⚡' },
+        { min: 10, max: 14, nombre: '🏆 Leyenda', emoji: '🏆' },
+        { min: 15, max: 19, nombre: '👑 Maestro', emoji: '👑' },
+        { min: 20, max: Infinity, nombre: '✨ Inmortal', emoji: '✨' }
+    ];
+
+    for (const nivel of niveles) {
+        if (tokens >= nivel.min && tokens <= nivel.max) return nivel;
+    }
+    return niveles[0];
+}
+
+async function obtenerEstadisticas() {
+    try {
+        const session = await getSession();
+        if (!session) return null;
+
+        const { data, error } = await supabaseClient
+            .from('estadisticas_usuarios')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .maybeSingle();
+
+        if (error && error.code !== 'PGRST116') throw error;
+        return data || null;
+    } catch (error) {
+        console.warn('[Perfil] Error obteniendo estadísticas:', error?.message);
+        return null;
+    }
+}
+
+/* ================================================================
+   CERRAR SESIÓN
+   ================================================================ */
+async function cerrarSesion() {
+    const confirmMsg = t('perfil_cerrar_sesion', '¿Seguro que quieres cerrar sesión?');
+    if (!confirm(confirmMsg)) return;
+
+    try {
+        await actualizarEstadoEnLinea(false);
+    } catch (e) {
+        console.warn('[Perfil] No se pudo marcar offline:', e?.message);
+    }
+
+    try {
+        await supabaseClient.auth.signOut();
+    } catch (error) {
+        console.error('[Perfil] Error cerrando sesión:', error);
+        showToast('❌ Error al cerrar sesión', 'error');
+        return;
+    }
+
+    window.location.replace('/');
+}
+
+/* ================================================================
+   NOTIFICACIONES EN TIEMPO REAL
+   ================================================================ */
+function iniciarNotificacionesRealtime() {
+    if (!supabaseClient) return;
+    const channel = supabaseClient
+        .channel('notificaciones')
+        .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'notificaciones'
+        }, (payload) => {
+            const notificacion = payload.new;
+            if (notificacion.user_id === perfilCache?.id) {
+                showToast(`🔔 ${notificacion.mensaje}`, 'warning', 4000);
+
+                try {
+                    const audio = new Audio('/sound/notification.mp3');
+                    audio.play().catch(() => {});
+                } catch (e) {}
+            }
+        })
+        .subscribe();
+
+    return channel;
+}
+
+/* ================================================================
+   INICIALIZACIÓN DEL MÓDULO
+   ================================================================ */
+function inicializarModuloPerfil() {
+    if (moduloInicializado) return;
+    moduloInicializado = true;
+
+    console.log('[Perfil] 🚀 Inicializando módulo...');
+
+    window.cambiarTab = cambiarTab;
+    window.cargarPerfil = cargarPerfil;
+    window.guardarPerfil = guardarPerfil;
+    window.abrirSelectorArchivo = abrirSelectorArchivo;
+    window.expandirAvatar = expandirAvatar;
+    window.expandirFotoPublicacion = expandirFotoPublicacion;
+    window.subirFoto = subirFoto;
+    window.subirVideo = subirVideo;
+    window.eliminarFotoPerfil = eliminarFotoPerfil;
+    window.editarPerfil = editarPerfil;
+    window.compartirPerfil = compartirPerfil;
+    window.conectarWallet = conectarWallet;
+    window.desconectarWallet = desconectarWallet;
+    window.comprarDomo = comprarDomo;
+    window.canjearNFT = canjearNFT;
+    window.agregarAmigo = agregarAmigo;
+    window.cerrarSesion = cerrarSesion;
+    window.irAMuro = irAMuro;
+    window.showToast = showToast;
+    window.generarQRPerfil = generarQRPerfil;
+    window.calcularNivel = calcularNivel;
+    window.compartirLogro = compartirLogro;
+
+    window.comprarESIM = comprarESIM;
+    window.cargarDatosESIM = cargarDatosESIM;
+    window.activarESIM = activarESIM;
+    window.desactivarESIM = desactivarESIM;
+    window.generarQRESIM = generarQRESIM;
+    window.obtenerEstadoESIM = obtenerEstadoESIM;
+    window.obtenerPlanesESIM = obtenerPlanesESIM;
+    window.verificarPago = verificarPago;
+    window.sincronizarESIM = sincronizarESIM;
+
+    window.comprarConCripto = comprarConCripto;
+    window.verificarPagoCrypto = verificarPagoCrypto;
+    window.copiarDireccion = copiarDireccion;
+    window.cerrarModalPago = cerrarModalPago;
+
+    window.cambiarConexion = cambiarConexion;
+    window.cargarEstadoConexion = cargarEstadoConexion;
+    window.getPerfilActual = getPerfilActual;
+
+    window.actualizarEstadoEnLinea = actualizarEstadoEnLinea;
+    window.cambiarEstado = cambiarEstado;
+    window.cargarAmigosEnLinea = cargarAmigosEnLinea;
+    window.actualizarListaAmigos = actualizarListaAmigos;
+
+    window.escanearQR = escanearQR;
+    window.abrirCamaraQR = abrirCamaraQR;
+    window.cerrarCamaraQR = cerrarCamaraQR;
+    window.cargarHistorialQR = cargarHistorialQR;
+    window.actualizarUIHistorialQR = actualizarUIHistorialQR;
+    window.procesarQR = procesarQR;
+
+    window.cargarEstadoPro = cargarEstadoPro;
+    window.contratarPro = contratarPro;
+    window.activarProDirecto = activarProDirecto;
+
+    window.perfilT = t;
+    window.aplicarI18NPerfil = aplicarI18NPerfil;
+    window.traducirPlanMeta = traducirPlanMeta;
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', iniciarPerfil);
+    } else {
+        iniciarPerfil();
+    }
+}
+
+async function iniciarPerfil() {
+    console.log('[Perfil] 🎬 Cargando datos del perfil...');
+
+    if (typeof jsQR === 'undefined') {
+        try {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
+            document.head.appendChild(script);
+            await new Promise(resolve => { script.onload = resolve; script.onerror = resolve; });
+        } catch (e) {}
+    }
+
+    await cargarPerfil();
+
+    const stats = await obtenerEstadisticas();
+    if (stats) {
+        const nivel = calcularNivel(stats.tokens_actuales || 0);
+        const nivelEl = document.getElementById('nivelUsuario');
+        if (nivelEl) {
+            nivelEl.textContent = `${nivel.emoji} ${nivel.nombre}`;
+        }
+    }
+
+    iniciarNotificacionesRealtime();
+    iniciarEscuchaConexion();
+    iniciarEscuchaAmigos();
+    iniciarDetectorInactividad();
+    await cargarHistorialQR();
+
+    if (perfilCache?.esim_iccid) {
+        setInterval(() => {
+            cargarDatosESIM(perfilCache.esim_iccid);
+        }, 30000);
+    }
+
+    setInterval(() => {
+        cargarEstadoConexion();
+    }, 10000);
+
+    setInterval(() => {
+        cargarAmigosEnLinea();
+    }, 15000);
+
+    const cryptoQty = document.getElementById('cryptoQuantity');
+    const decBtn = document.getElementById('cryptoDecreaseQty');
+    const incBtn = document.getElementById('cryptoIncreaseQty');
+
+    if (decBtn && cryptoQty) {
+        decBtn.addEventListener('click', () => {
+            let val = parseInt(cryptoQty.textContent);
+            if (val > 1) {
+                cryptoQty.textContent = val - 1;
+                actualizarCryptoTotal();
+            }
+        });
+    }
+    if (incBtn && cryptoQty) {
+        incBtn.addEventListener('click', () => {
+            let val = parseInt(cryptoQty.textContent);
+            if (val < 10) {
+                cryptoQty.textContent = val + 1;
+                actualizarCryptoTotal();
+            }
+        });
+    }
+
+    function actualizarCryptoTotal() {
+        const qty = parseInt(cryptoQty?.textContent || 1);
+        const total = qty * 4.50;
+        const comision = total * 0.02;
+        const totalConComision = total + comision;
+        const totalEl = document.getElementById('cryptoTotal');
+        if (totalEl) {
+            totalEl.textContent = `$${totalConComision.toFixed(2)} USDT`;
+        }
+    }
+    actualizarCryptoTotal();
+
+    console.log('[Perfil] ✅ Módulo inicializado completamente.');
+}
+
+/* ================================================================
+   ARRANCAR
+   ================================================================ */
+inicializarSupabase();
+
 })();
-</script>
-</body>
-</html>
