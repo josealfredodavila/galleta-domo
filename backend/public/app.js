@@ -3,6 +3,10 @@
    PRODUCCIÓN — SUPABASE + AUTH + WALLET + LIVE
    POLYGON AMOY 80002
    SIN CLAVES HARDCODEADAS
+
+   CORREGIDO:
+   - NO sobrescribe window.supabase (SDK). Solo expone window.supabaseClient.
+   - vincularWallet usa la columna real 'wallet_address'.
 ================================================================ */
 
 'use strict';
@@ -76,8 +80,14 @@ async function cargarConfiguracionPublica() {
             }
 
             /*
-             * Guardamos la referencia al SDK antes de reemplazar
-             * window.supabase por el cliente.
+             * Guardamos la referencia al SDK en window.SupabaseSDK
+             * para que otros módulos puedan reutilizarlo.
+             *
+             * IMPORTANTE:
+             * NO sobrescribimos window.supabase.
+             * El SDK debe permanecer intacto en window.supabase
+             * para que cualquier otro script que llame a
+             * window.supabase.createClient() siga funcionando.
              */
             window.SupabaseSDK =
                 SupabaseSDK;
@@ -88,13 +98,11 @@ async function cargarConfiguracionPublica() {
                     config.supabaseAnonKey
                 );
 
-            window.supabaseClient =
-                supabaseClient;
-
             /*
-             * Compatibilidad con código antiguo.
+             * Exponemos el cliente en window.supabaseClient.
+             * NO tocamos window.supabase.
              */
-            window.supabase =
+            window.supabaseClient =
                 supabaseClient;
 
             return supabaseClient;
@@ -326,11 +334,6 @@ class GalletaDomoApp {
 
         try {
 
-            /*
-             * IMPORTANTE:
-             * Esperamos la configuración pública antes
-             * de usar Supabase.
-             */
             this.supabase =
                 await cargarConfiguracionPublica();
 
@@ -1549,6 +1552,10 @@ class GalletaDomoApp {
     }
 
 
+    /* ============================================================
+       VINCULAR WALLET — columna real: wallet_address
+    ============================================================ */
+
     async vincularWallet(
         walletAddress
     ) {
@@ -1565,7 +1572,7 @@ class GalletaDomoApp {
                 await this.supabase
                     .from('usuarios')
                     .update({
-                        wallet:
+                        wallet_address:
                             walletAddress
                     })
                     .eq(
