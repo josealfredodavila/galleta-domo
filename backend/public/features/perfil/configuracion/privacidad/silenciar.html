@@ -9,8 +9,133 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="../../../shared/config-layout.css" />
-    
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script>
+        (function () {
+            'use strict';
+
+            window.__sarielsAuthenticated = null;
+            window.supabaseClient = window.supabaseClient || null;
+            window.supabaseReady = null;
+
+            window.getSupabaseClient = function () {
+                return window.supabaseReady;
+            };
+
+            function esRutaInternaSegura(valor) {
+                if (typeof valor !== 'string') return false;
+                if (!valor.startsWith('/')) return false;
+                if (valor.startsWith('//')) return false;
+                if (valor.startsWith('/\\')) return false;
+                return true;
+            }
+
+            function revelarPagina() {
+                document.documentElement.classList.add('auth-ready');
+            }
+
+            function irAlIndexConReturnTo() {
+                try {
+                    var returnTo = window.location.pathname + window.location.search + window.location.hash;
+                    if (esRutaInternaSegura(returnTo)) {
+                        localStorage.setItem('wallet_returnTo', returnTo);
+                    }
+                    window.location.replace('/');
+                } catch (e) {
+                    window.location.replace('/');
+                }
+            }
+
+            var salvaguarda = setTimeout(function () {
+                console.warn('[Silenciar] Salvaguarda activada.');
+                revelarPagina();
+            }, 10000);
+
+            async function inicializarSupabase() {
+                try {
+                    if (
+                        !window.supabase ||
+                        typeof window.supabase.createClient !== 'function'
+                    ) {
+                        throw new Error('Supabase SDK no disponible.');
+                    }
+
+                    if (!window.supabaseClient) {
+                        var supabaseUrl = null;
+                        var supabaseAnonKey = null;
+
+                        try {
+                            const response = await fetch('/api/config/public', {
+                                method: 'GET',
+                                credentials: 'same-origin',
+                                cache: 'no-store',
+                                headers: { 'Accept': 'application/json' }
+                            });
+
+                            if (response.ok) {
+                                const config = await response.json();
+                                supabaseUrl = config && config.supabaseUrl;
+                                supabaseAnonKey = config && config.supabaseAnonKey;
+                            }
+                        } catch (fetchErr) {
+                            console.warn('[Silenciar] fetch /api/config/public falló:', fetchErr);
+                        }
+
+                        if (!supabaseUrl || !supabaseAnonKey) {
+                            throw new Error('Configuración pública de Supabase no disponible.');
+                        }
+
+                        window.SupabaseSDK = window.supabase;
+
+                        window.supabaseClient = window.SupabaseSDK.createClient(
+                            supabaseUrl,
+                            supabaseAnonKey,
+                            {
+                                auth: {
+                                    persistSession: true,
+                                    autoRefreshToken: true,
+                                    detectSessionInUrl: true
+                                }
+                            }
+                        );
+                    }
+
+                    const resultado = await window.supabaseClient.auth.getSession();
+                    const session = resultado && resultado.data ? resultado.data.session : null;
+
+                    window.__sarielsAuthenticated = !!session;
+
+                    clearTimeout(salvaguarda);
+
+                    if (!session) {
+                        irAlIndexConReturnTo();
+                    } else {
+                        revelarPagina();
+                    }
+
+                    return window.supabaseClient;
+                } catch (error) {
+                    console.error('[Silenciar] Error inicializando Supabase:', error);
+                    window.__sarielsAuthenticated = false;
+                    clearTimeout(salvaguarda);
+                    revelarPagina();
+                    return null;
+                }
+            }
+
+            window.supabaseReady = inicializarSupabase();
+        })();
+    </script>
+
     <style>
+        html:not(.auth-ready) body {
+            visibility: hidden;
+        }
+        html.auth-ready body {
+            visibility: visible;
+        }
+
         .cfg-lista-vacia {
             padding: 24px 16px;
             text-align: center;
@@ -43,6 +168,7 @@
             justify-content: center;
             font-size: 1rem;
             flex-shrink: 0;
+            overflow: hidden;
         }
         .cfg-item-lista .info {
             flex: 1;
@@ -146,7 +272,6 @@
         </div>
     </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="../../../shared/config-icons.js"></script>
     <script src="../../../shared/config-layout.js"></script>
 
@@ -156,13 +281,13 @@
 
         const $ = (sel) => document.querySelector(sel);
 
-        // Cliente Supabase
-        function sb() {
-            return window.supabaseClient || 
-                (window.supabase && window.supabase.createClient(
-                    'https://zultnlogdoajehbswlih.supabase.co',
-                    'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
-                ));
+        async function esperarCliente() {
+            const inicio = Date.now();
+            while (Date.now() - inicio < 10000) {
+                if (window.supabaseClient) return window.supabaseClient;
+                await new Promise(r => setTimeout(r, 100));
+            }
+            return null;
         }
 
         cfgInitPage({
@@ -175,9 +300,6 @@
         let cuentasBloqueadas = [];
         let palabrasSilenciadas = [];
 
-        // ============================================================
-        // CARGAR DATOS DESDE SUPABASE
-        // ============================================================
         async function cargarTodo() {
             await Promise.all([
                 cargarCuentasSilenciadas(),
@@ -188,8 +310,8 @@
 
         async function cargarCuentasSilenciadas() {
             try {
-                const client = sb();
-                if (!client) return;
+                const client = await esperarCliente();
+                if (!client) { cuentasSilenciadas = []; return; }
 
                 const { data, error } = await client.rpc('listar_cuentas_gestionadas', {
                     p_tipo: 'silenciada'
@@ -203,15 +325,15 @@
 
                 cuentasSilenciadas = data || [];
             } catch (e) {
-                console.warn('Error cargando silenciadas:', e.message);
+                console.warn('Error cargando silenciadas:', e && e.message);
                 cuentasSilenciadas = [];
             }
         }
 
         async function cargarCuentasBloqueadas() {
             try {
-                const client = sb();
-                if (!client) return;
+                const client = await esperarCliente();
+                if (!client) { cuentasBloqueadas = []; return; }
 
                 const { data, error } = await client.rpc('listar_cuentas_gestionadas', {
                     p_tipo: 'bloqueada'
@@ -225,15 +347,15 @@
 
                 cuentasBloqueadas = data || [];
             } catch (e) {
-                console.warn('Error cargando bloqueadas:', e.message);
+                console.warn('Error cargando bloqueadas:', e && e.message);
                 cuentasBloqueadas = [];
             }
         }
 
         async function cargarPalabrasSilenciadas() {
             try {
-                const client = sb();
-                if (!client) return;
+                const client = await esperarCliente();
+                if (!client) { palabrasSilenciadas = []; return; }
 
                 const { data, error } = await client.rpc('listar_palabras_silenciadas');
 
@@ -245,44 +367,37 @@
 
                 palabrasSilenciadas = data || [];
             } catch (e) {
-                console.warn('Error cargando palabras:', e.message);
+                console.warn('Error cargando palabras:', e && e.message);
                 palabrasSilenciadas = [];
             }
         }
 
-        // ============================================================
-        // RENDERIZAR SECCIONES
-        // ============================================================
         function renderSecciones() {
-            // ============================================================
-            // CUENTAS
-            // ============================================================
             const totalSilenciadas = cuentasSilenciadas.length;
             const totalBloqueadas = cuentasBloqueadas.length;
 
             $('#seccionCuentas').innerHTML = [
                 cfgRenderItem({
                     icon: 'ban',
-                    title: `Cuentas silenciadas (${totalSilenciadas})`,
-                    desc: totalSilenciadas === 0 
-                        ? 'No has silenciado ninguna cuenta' 
+                    title: 'Cuentas silenciadas (' + totalSilenciadas + ')',
+                    desc: totalSilenciadas === 0
+                        ? 'No has silenciado ninguna cuenta'
                         : 'Toca para ver y administrar',
                     onclick: 'window.onVerSilenciadas()',
                 }),
                 cfgRenderItem({
                     icon: 'ban',
-                    title: `Cuentas bloqueadas (${totalBloqueadas})`,
-                    desc: totalBloqueadas === 0 
-                        ? 'No has bloqueado ninguna cuenta' 
+                    title: 'Cuentas bloqueadas (' + totalBloqueadas + ')',
+                    desc: totalBloqueadas === 0
+                        ? 'No has bloqueado ninguna cuenta'
                         : 'Toca para ver y administrar',
                     onclick: 'window.onVerBloqueadas()',
                 }),
             ].join('');
 
-            // ============================================================
-            // PALABRAS SILENCIADAS
-            // ============================================================
             const container = $('#palabrasContainer');
+            if (!container) return;
+
             if (palabrasSilenciadas.length === 0) {
                 container.innerHTML = `
                     <div class="cfg-lista-vacia">
@@ -299,9 +414,6 @@
                 `).join('');
             }
 
-            // ============================================================
-            // NOTIFICACIONES
-            // ============================================================
             $('#seccionNotificaciones').innerHTML = [
                 cfgRenderToggle({
                     id: 'toggleNotifSilenciadas',
@@ -320,9 +432,6 @@
             ].join('');
         }
 
-        // ============================================================
-        // HELPERS
-        // ============================================================
         function escapeHtml(texto) {
             if (!texto) return '';
             const div = document.createElement('div');
@@ -330,9 +439,6 @@
             return div.innerHTML;
         }
 
-        // ============================================================
-        // CALLBACKS
-        // ============================================================
         window.onToggleNotifSilenciadas = async (value) => {
             await cfgSetPref('silenciar_notif_cuentas', value);
             cfgToast(
@@ -373,7 +479,7 @@
 
             const itemsHtml = lista.map(c => `
                 <div class="cfg-item-lista">
-                    <div class="icon">${c.avatar_url ? `<img src="${escapeHtml(c.avatar_url)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : '◈'}</div>
+                    <div class="icon">${c.avatar_url ? '<img src="' + escapeHtml(c.avatar_url) + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">' : '◈'}</div>
                     <div class="info">
                         <div class="nombre">${escapeHtml(c.nombre || 'Usuario')}</div>
                         <div class="handle">@${escapeHtml(c.handle || 'usuario')}</div>
@@ -420,7 +526,7 @@
             if (!ok) return;
 
             try {
-                const client = sb();
+                const client = await esperarCliente();
                 if (!client) throw new Error('Supabase no disponible');
 
                 const { error } = await client.rpc('desbloquear_cuenta', {
@@ -431,13 +537,11 @@
 
                 cfgToast('✅ Cuenta removida', 'success');
 
-                // Cerrar modal
                 document.querySelectorAll('.cfg-modal-overlay').forEach(m => {
                     m.classList.remove('show');
                     setTimeout(() => m.remove(), 200);
                 });
 
-                // Recargar
                 await cargarTodo();
                 renderSecciones();
 
@@ -447,9 +551,6 @@
             }
         };
 
-        // ============================================================
-        // AGREGAR PALABRA
-        // ============================================================
         window.onAgregarPalabra = () => {
             const overlay = document.createElement('div');
             overlay.className = 'cfg-modal-overlay';
@@ -502,7 +603,7 @@
                 }
 
                 try {
-                    const client = sb();
+                    const client = await esperarCliente();
                     if (!client) throw new Error('Supabase no disponible');
 
                     const { error } = await client.rpc('agregar_palabra_silenciada', {
@@ -512,7 +613,7 @@
 
                     if (error) throw error;
 
-                    cfgToast(`✅ "${palabra}" silenciada`, 'success');
+                    cfgToast('✅ "' + palabra + '" silenciada', 'success');
                     close();
 
                     await cargarPalabrasSilenciadas();
@@ -537,7 +638,7 @@
             if (!ok) return;
 
             try {
-                const client = sb();
+                const client = await esperarCliente();
                 if (!client) throw new Error('Supabase no disponible');
 
                 const { error } = await client.rpc('eliminar_palabra_silenciada', {
@@ -557,28 +658,19 @@
             }
         };
 
-        // ============================================================
-        // INICIALIZAR
-        // ============================================================
         window.addEventListener('DOMContentLoaded', async () => {
             await new Promise(resolve => setTimeout(resolve, 400));
-            
-            // Renderizar primero con placeholders
+
             renderSecciones();
 
-            // Cargar datos desde Supabase
             await cargarTodo();
 
-            // Re-renderizar con datos reales
             renderSecciones();
         });
 
-        // ============================================================
-        // CARGAR HANDLE EN SUBTITLE
-        // ============================================================
-        (async function cargarUsuario() {
+        (async function cargarHandleSubtitulo() {
             try {
-                const client = sb();
+                const client = await esperarCliente();
                 if (!client) return;
                 const { data } = await client.auth.getSession();
                 const session = data && data.session;
