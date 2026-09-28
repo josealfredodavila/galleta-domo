@@ -24,7 +24,6 @@
                 document.documentElement.classList.add('auth-ready');
             }
 
-            // ✅ CORREGIDO: Guarda returnTo antes de redirigir a login
             function irALoginConReturnTo() {
                 try {
                     var returnTo = window.location.pathname + window.location.search + window.location.hash;
@@ -37,11 +36,11 @@
                 }
             }
 
-            // Salvaguarda: si en 5s no se resolvió, revelamos para no dejar la pantalla en negro
+            // Timeout subido a 10s para redes lentas
             var salvaguarda = setTimeout(function () {
                 console.warn('[Perfil] Salvaguarda activada: revelando página sin confirmar sesión.');
                 revelarPagina();
-            }, 5000);
+            }, 10000);
 
             function inicializarGuardian() {
                 try {
@@ -51,7 +50,6 @@
                         return;
                     }
 
-                    // Reutilizar cliente existente si ya fue creado
                     if (!window.supabaseClient) {
                         window.supabaseClient = window.supabase.createClient(
                             GUARD_SUPABASE_URL,
@@ -804,379 +802,378 @@
                 <button class="tab-btn" onclick="cambiarTab('qr')" data-clave="perfil_tab_qr">📷 Escanear QR</button>
                 <button class="tab-btn" onclick="cambiarTab('internet')" data-clave="perfil_tab_internet">📶 Internet</button>
             </div>
-            <div id="tab-mis-publicaciones" class="tab-content active">
-                <div class="panel">
-                    <div class="panel-header">
-                        <h3 data-clave="perfil_crear_publicacion">✦ Crear publicación</h3>
-                        <span class="panel-badge" data-clave="perfil_badge_nuevo">Nuevo</span>
-                    </div>
-                    <div class="panel-body">
-                        <div class="form-publicacion">
-                            <textarea id="inputNuevaPublicacion" data-placeholder="perfil_que_piensas" placeholder="¿Qué estás pensando? Puedes usar #hashtags, @menciones y emojis ✨"></textarea>
+        <div id="tab-mis-publicaciones" class="tab-content active">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 data-clave="perfil_crear_publicacion">✦ Crear publicación</h3>
+                    <span class="panel-badge" data-clave="perfil_badge_nuevo">Nuevo</span>
+                </div>
+                <div class="panel-body">
+                    <div class="form-publicacion">
+                        <textarea id="inputNuevaPublicacion" data-placeholder="perfil_que_piensas" placeholder="¿Qué estás pensando? Puedes usar #hashtags, @menciones y emojis ✨"></textarea>
+                        
+                        <div class="acciones">
+                            <button type="button" class="accion-btn" onclick="toggleEmojiPickerPerfil()" id="btnEmojiPerfil" data-clave="perfil_emoji">
+                                😀 Emoji
+                            </button>
+                            <button type="button" class="accion-btn" onclick="insertarHashtagPerfil()" data-clave="perfil_hashtag">
+                                # Hashtag
+                            </button>
+                            <button type="button" class="accion-btn" onclick="document.getElementById('inputFotoPerfilPost').click()" data-clave="perfil_foto">
+                                📸 Foto
+                            </button>
+                            <button type="button" class="accion-btn" onclick="document.getElementById('inputVideoPerfilPost').click()" data-clave="perfil_video">
+                                🎬 Video
+                            </button>
                             
-                            <div class="acciones">
-                                <button type="button" class="accion-btn" onclick="toggleEmojiPickerPerfil()" id="btnEmojiPerfil" data-clave="perfil_emoji">
-                                    😀 Emoji
-                                </button>
-                                <button type="button" class="accion-btn" onclick="insertarHashtagPerfil()" data-clave="perfil_hashtag">
-                                    # Hashtag
-                                </button>
-                                <button type="button" class="accion-btn" onclick="document.getElementById('inputFotoPerfilPost').click()" data-clave="perfil_foto">
-                                    📸 Foto
-                                </button>
-                                <button type="button" class="accion-btn" onclick="document.getElementById('inputVideoPerfilPost').click()" data-clave="perfil_video">
-                                    🎬 Video
-                                </button>
-                                
-                                <input type="file" id="inputFotoPerfilPost" accept="image/*" style="display:none;" onchange="seleccionarArchivoPerfil(event, 'imagen')" />
-                                <input type="file" id="inputVideoPerfilPost" accept="video/*" style="display:none;" onchange="seleccionarArchivoPerfil(event, 'video')" />
-                                
-                                <button type="button" class="btn-publicar" onclick="publicarDesdePerfil()" id="btnPublicarPerfil" data-clave="perfil_publicar">
-                                    ◈ Publicar
-                                </button>
+                            <input type="file" id="inputFotoPerfilPost" accept="image/*" style="display:none;" onchange="seleccionarArchivoPerfil(event, 'imagen')" />
+                            <input type="file" id="inputVideoPerfilPost" accept="video/*" style="display:none;" onchange="seleccionarArchivoPerfil(event, 'video')" />
+                            
+                            <button type="button" class="btn-publicar" onclick="publicarDesdePerfil()" id="btnPublicarPerfil" data-clave="perfil_publicar">
+                                ◈ Publicar
+                            </button>
 
-                                <div class="emoji-picker" id="emojiPickerPerfil">
-                                    <div class="titulo" data-clave="perfil_elige_emoji">✦ Elige tu emoji</div>
-                                    <div class="grid" id="emojiGridPerfil"></div>
-                                </div>
-                            </div>
-
-                            <div id="previewArchivosPerfil" class="preview-archivos"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="panel">
-                    <div class="panel-header">
-                        <h3 data-clave="perfil_mis_publicaciones">◈ Mis publicaciones</h3>
-                        <span class="panel-badge" id="misPostsCount">0</span>
-                    </div>
-                    <div class="panel-body">
-                        <div id="misPublicacionesList">
-                            <div class="empty-state">
-                                <span class="icon">◈</span>
-                                <h4 data-clave="perfil_sin_publicaciones">Sin publicaciones aún</h4>
-                                <p data-clave="perfil_crea_primera">Publica algo para verlo aquí</p>
+                            <div class="emoji-picker" id="emojiPickerPerfil">
+                                <div class="titulo" data-clave="perfil_elige_emoji">✦ Elige tu emoji</div>
+                                <div class="grid" id="emojiGridPerfil"></div>
                             </div>
                         </div>
+
+                        <div id="previewArchivosPerfil" class="preview-archivos"></div>
                     </div>
                 </div>
             </div>
 
-            <div id="tab-actividad" class="tab-content">
-                <div class="panel">
-                    <div class="panel-header">
-                        <h3 data-clave="perfil_seccion_ultima_actividad">◈ Última actividad</h3>
-                        <span class="panel-badge" data-clave="perfil_tiempo_real">En tiempo real</span>
-                    </div>
-                    <div class="panel-body" id="actividadList">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 data-clave="perfil_mis_publicaciones">◈ Mis publicaciones</h3>
+                    <span class="panel-badge" id="misPostsCount">0</span>
+                </div>
+                <div class="panel-body">
+                    <div id="misPublicacionesList">
                         <div class="empty-state">
                             <span class="icon">◈</span>
-                            <h4 data-clave="perfil_sin_actividad">Sin actividad reciente</h4>
-                            <p data-clave="perfil_comienza_muro">Comienza a interactuar en el Muro</p>
+                            <h4 data-clave="perfil_sin_publicaciones">Sin publicaciones aún</h4>
+                            <p data-clave="perfil_crea_primera">Publica algo para verlo aquí</p>
                         </div>
                     </div>
                 </div>
-                <div class="panel">
-                    <div class="panel-header">
-                        <h3 data-clave="perfil_seccion_historial_tx">◈ Historial de transacciones</h3>
-                        <span class="panel-badge" id="historialCount">0</span>
+            </div>
+        </div>
+
+        <div id="tab-actividad" class="tab-content">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 data-clave="perfil_seccion_ultima_actividad">◈ Última actividad</h3>
+                    <span class="panel-badge" data-clave="perfil_tiempo_real">En tiempo real</span>
+                </div>
+                <div class="panel-body" id="actividadList">
+                    <div class="empty-state">
+                        <span class="icon">◈</span>
+                        <h4 data-clave="perfil_sin_actividad">Sin actividad reciente</h4>
+                        <p data-clave="perfil_comienza_muro">Comienza a interactuar en el Muro</p>
                     </div>
-                    <div class="panel-body" id="historialList">
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 data-clave="perfil_seccion_historial_tx">◈ Historial de transacciones</h3>
+                    <span class="panel-badge" id="historialCount">0</span>
+                </div>
+                <div class="panel-body" id="historialList">
+                    <div class="empty-state">
+                        <span class="icon">◈</span>
+                        <h4 data-clave="perfil_sin_transacciones">Sin transacciones</h4>
+                        <p data-clave="perfil_compra_domos_tokens">Compra domos para acumular tokens</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-tokens" class="tab-content">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 data-clave="perfil_seccion_estado_tokens">⟡ Estado de tokens</h3>
+                    <span class="panel-badge" data-clave="perfil_actualizado">Actualizado</span>
+                </div>
+                <div class="panel-body">
+                    <div class="token-status">
+                        <div class="item">
+                            <div class="value" id="tokenTotal">0</div>
+                            <div class="label" data-clave="perfil_balance_tokens">◈ Total tokens</div>
+                        </div>
+                        <div class="item">
+                            <div class="value" id="tokenDisponibles">0</div>
+                            <div class="label" data-clave="perfil_disponibles">◈ Disponibles</div>
+                        </div>
+                        <div class="item">
+                            <div class="value" id="tokenVendidos">0</div>
+                            <div class="label" data-clave="perfil_vendidos">◈ Vendidos</div>
+                        </div>
+                        <div class="item">
+                            <div class="value" id="tokenNFTs">0</div>
+                            <div class="label" data-clave="perfil_nfts_info">◈ NFTs</div>
+                        </div>
+                    </div>
+
+                    <div class="progress-bar-container">
+                        <div class="bar">
+                            <div class="fill" id="progressFill" style="width: 0%;"></div>
+                        </div>
+                        <div class="label">
+                            <span data-clave="perfil_progreso_meta">Progreso NFT</span>
+                            <span id="progressText">0 / 12</span>
+                        </div>
+                    </div>
+
+                    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+                        <button class="btn btn-gold" style="flex:1;justify-content:center;" onclick="comprarDomo(1)" data-clave="perfil_comprar_domo">
+                            ⟡ Comprar Domo (MXN)
+                        </button>
+                        <button class="btn btn-gold" style="flex:1;justify-content:center;" id="canjearNft" onclick="canjearNFT()" disabled data-clave="perfil_canjear_nft">
+                            🔒 CANJEAR NFT
+                        </button>
+                    </div>
+
+                    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--line-black-soft);">
+                        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+                            <span style="font-size:0.75rem;color:var(--gold);font-weight:600;" data-clave="perfil_pagar_usdt">💳 Comprar con Cripto</span>
+                            <span style="font-size:0.55rem;color:var(--text-muted);" data-clave="perfil_usdt_trc20">USDT / USDC · 2% comisión</span>
+                        </div>
+                        <div class="crypto-controls">
+                            <div class="qty-group">
+                                <button class="qty-btn" id="cryptoDecreaseQty">−</button>
+                                <span class="qty-value" id="cryptoQuantity">1</span>
+                                <button class="qty-btn" id="cryptoIncreaseQty">+</button>
+                            </div>
+                            <div style="flex:1;text-align:center;">
+                                <span class="crypto-total" id="cryptoTotal">$4.59 USDT</span>
+                            </div>
+                        </div>
+                        <button class="btn btn-crypto" style="width:100%;justify-content:center;margin-top:8px;padding:10px;" onclick="comprarConCripto()" data-clave="perfil_pagar_usdt">
+                            💳 Pagar con USDT/USDC
+                        </button>
+                        <div class="crypto-hint" data-clave="perfil_usdt_trc20">
+                            ⚡ Red: TRC-20 (tarifas bajas) · Acepta USDT y USDC
+                        </div>
+                    </div>
+
+                    <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;" onclick="irAMuro()" data-clave="perfil_ir_muro">
+                        ◇ Ir al Muro
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-esim" class="tab-content">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 data-clave="perfil_telnyx">📱 Mi eSIM</h3>
+                    <span class="panel-badge" data-clave="perfil_telnyx">Telnyx</span>
+                </div>
+                <div class="panel-body">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                        <div style="background:rgba(0,0,0,0.4);padding:10px;border-radius:10px;border:2px solid var(--line-black);">
+                            <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_esim_estado">ESTADO</span>
+                            <div id="esimStatus" style="font-weight:600;font-size:0.9rem;">⏳ Sin eSIM</div>
+                        </div>
+                        <div style="background:rgba(0,0,0,0.4);padding:10px;border-radius:10px;border:2px solid var(--line-black);">
+                            <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_datos_consumidos">DATOS USADOS</span>
+                            <div id="esimDataUsed" style="font-weight:600;font-size:0.9rem;">0 GB</div>
+                        </div>
+                        <div style="background:rgba(0,0,0,0.4);padding:10px;border-radius:10px;border:2px solid var(--line-black);">
+                            <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_limite_plan">LÍMITE</span>
+                            <div id="esimDataLimit" style="font-weight:600;font-size:0.9rem;">0 GB</div>
+                        </div>
+                        <div style="background:rgba(0,0,0,0.4);padding:10px;border-radius:10px;border:2px solid var(--line-black);">
+                            <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_datos_restantes">RESTANTE</span>
+                            <div id="esimDataRestante" style="font-weight:600;font-size:0.9rem;color:var(--success);">0 GB</div>
+                        </div>
+                        <div style="background:rgba(0,0,0,0.4);padding:10px;border-radius:10px;border:2px solid var(--line-black);grid-column:span 2;">
+                            <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_iccid">ICCID</span>
+                            <div id="esimIccid" style="font-weight:600;font-size:0.8rem;font-family:monospace;" data-clave="perfil_no_asignado">No asignado</div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top:10px;">
+                        <div style="background:rgba(0,0,0,0.6);border:1px solid var(--line-black);border-radius:10px;height:8px;overflow:hidden;">
+                            <div id="esimDataProgress" style="height:100%;width:0%;background:var(--success);transition:width 0.8s;"></div>
+                        </div>
+                    </div>
+
+                    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+                        <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" onclick="comprarESIM(1)" data-clave="perfil_adquirir_esim">
+                            📱 Comprar eSIM
+                        </button>
+                        <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="generarQRESIM()" data-clave="perfil_obtener_qr">
+                            📲 QR Activación
+                        </button>
+                        <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="sincronizarESIM()" data-clave="perfil_sincronizar">
+                            🔄 Sincronizar
+                        </button>
+                    </div>
+
+                    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+                        <button class="btn btn-outline btn-sm" onclick="activarESIM()" style="border-color:var(--success);color:var(--success);" data-clave="perfil_activar_esim">
+                            ✅ Activar
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="desactivarESIM()" data-clave="perfil_desactivar_esim">
+                            ⛔ Desactivar
+                        </button>
+                    </div>
+
+                    <div style="margin-top:10px;font-size:0.6rem;color:var(--text-muted);">
+                        <span data-clave="perfil_apn_requerido">APN:</span> <span id="esimApn" style="font-family:monospace;color:var(--text-secondary);">data00.telnyx</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-qr" class="tab-content">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 data-clave="perfil_escanear_qr">📱 Escanear QR</h3>
+                    <span class="panel-badge" data-clave="perfil_recibe_estoks">Recibe Es.stoks</span>
+                </div>
+                <div class="panel-body">
+                    <div class="config-group">
+                        <label data-clave="perfil_codigo_qr">Código del QR (escanea o escribe)</label>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                            <input type="text" id="qrInput" data-placeholder="perfil_ejemplo_codigo_qr" placeholder="Ej: DOMO-2025-ABC123" 
+                                   style="flex:1;padding:10px 14px;background:rgba(0,0,0,0.5);border:2px solid var(--line-black);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;">
+                            <button class="btn btn-gold" onclick="escanearQR()" id="btnEscanearQR" data-clave="perfil_validar_codigo">
+                                🔍 Escanear QR
+                            </button>
+                        </div>
+                        <div class="hint" data-clave="perfil_escanea_qr_hint">⚡ Escanea el QR de tu domo físico para recibir 1 Es.stok</div>
+                    </div>
+
+                    <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;" onclick="abrirCamaraQR()" data-clave="perfil_abrir_camara">
+                        📷 Escanear con cámara
+                    </button>
+
+                    <div id="qrReaderContainer">
+                        <video id="qrVideo" style="width:100%;max-width:300px;border-radius:10px;background:black;"></video>
+                        <canvas id="qrCanvas" style="display:none;"></canvas>
+                        <button class="btn btn-danger btn-sm" onclick="cerrarCamaraQR()" style="margin-top:8px;" data-clave="perfil_cerrar_camara">
+                            ✕ Cerrar cámara
+                        </button>
+                        <div id="qrCamaraStatus" style="font-size:0.7rem;color:var(--text-muted);margin-top:4px;"></div>
+                    </div>
+
+                    <div id="qrStatus" style="margin-top:12px;font-size:0.8rem;color:var(--text-muted);min-height:24px;text-align:center;"></div>
+
+                    <div style="margin-top:16px;border-top:1px solid var(--line-black-soft);padding-top:12px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.7rem;color:var(--text-muted);">
+                            <span data-clave="perfil_historial">📋 Últimos escaneos</span>
+                            <span id="qrHistorialCount">0</span>
+                        </div>
+                        <div id="qrHistorialList" style="margin-top:8px;">
+                            <div class="empty-state" style="padding:10px;">
+                                <span class="icon" style="font-size:1.5rem;">◈</span>
+                                <p style="font-size:0.7rem;" data-clave="perfil_sin_escaneos">Sin escaneos recientes</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-internet" class="tab-content">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 data-clave="perfil_mis_compras_internet">📶 Mis compras de Internet</h3>
+                    <span class="panel-badge" id="internetOrdenesCount">0</span>
+                </div>
+                <div class="panel-body">
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
+                        <button class="btn btn-outline btn-sm internet-filter active" data-filter="all" onclick="filtrarOrdenesInternet('all')" data-clave="perfil_filtro_todas">Todas</button>
+                        <button class="btn btn-outline btn-sm internet-filter" data-filter="activa" onclick="filtrarOrdenesInternet('activa')" data-clave="perfil_filtro_activas">✅ Activas</button>
+                        <button class="btn btn-outline btn-sm internet-filter" data-filter="pagando" onclick="filtrarOrdenesInternet('pagando')" data-clave="perfil_filtro_pendientes">⏳ Pendientes</button>
+                        <button class="btn btn-outline btn-sm internet-filter" data-filter="cancelada" onclick="filtrarOrdenesInternet('cancelada')" data-clave="perfil_filtro_canceladas">❌ Canceladas</button>
+                        <button class="btn btn-outline btn-sm" onclick="cargarOrdenesInternet()" style="margin-left:auto;" data-clave="perfil_refrescar">🔄 Refrescar</button>
+                    </div>
+
+                    <div id="ordenesInternetList">
                         <div class="empty-state">
-                            <span class="icon">◈</span>
-                            <h4 data-clave="perfil_sin_transacciones">Sin transacciones</h4>
-                            <p data-clave="perfil_compra_domos_tokens">Compra domos para acumular tokens</p>
+                            <span class="icon">📶</span>
+                            <h4 data-clave="perfil_cargando_ordenes">Cargando órdenes...</h4>
                         </div>
                     </div>
                 </div>
             </div>
-
-            <div id="tab-tokens" class="tab-content">
-                <div class="panel">
-                    <div class="panel-header">
-                        <h3 data-clave="perfil_seccion_estado_tokens">⟡ Estado de tokens</h3>
-                        <span class="panel-badge" data-clave="perfil_actualizado">Actualizado</span>
-                    </div>
-                    <div class="panel-body">
-                        <div class="token-status">
-                            <div class="item">
-                                <div class="value" id="tokenTotal">0</div>
-                                <div class="label" data-clave="perfil_balance_tokens">◈ Total tokens</div>
-                            </div>
-                            <div class="item">
-                                <div class="value" id="tokenDisponibles">0</div>
-                                <div class="label" data-clave="perfil_disponibles">◈ Disponibles</div>
-                            </div>
-                            <div class="item">
-                                <div class="value" id="tokenVendidos">0</div>
-                                <div class="label" data-clave="perfil_vendidos">◈ Vendidos</div>
-                            </div>
-                            <div class="item">
-                                <div class="value" id="tokenNFTs">0</div>
-                                <div class="label" data-clave="perfil_nfts_info">◈ NFTs</div>
-                            </div>
-                        </div>
-
-                        <div class="progress-bar-container">
-                            <div class="bar">
-                                <div class="fill" id="progressFill" style="width: 0%;"></div>
-                            </div>
-                            <div class="label">
-                                <span data-clave="perfil_progreso_meta">Progreso NFT</span>
-                                <span id="progressText">0 / 12</span>
-                            </div>
-                        </div>
-
-                        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
-                            <button class="btn btn-gold" style="flex:1;justify-content:center;" onclick="comprarDomo(1)" data-clave="perfil_comprar_domo">
-                                ⟡ Comprar Domo (MXN)
-                            </button>
-                            <button class="btn btn-gold" style="flex:1;justify-content:center;" id="canjearNft" onclick="canjearNFT()" disabled data-clave="perfil_canjear_nft">
-                                🔒 CANJEAR NFT
-                            </button>
-                        </div>
-
-                        <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--line-black-soft);">
-                            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-                                <span style="font-size:0.75rem;color:var(--gold);font-weight:600;" data-clave="perfil_pagar_usdt">💳 Comprar con Cripto</span>
-                                <span style="font-size:0.55rem;color:var(--text-muted);" data-clave="perfil_usdt_trc20">USDT / USDC · 2% comisión</span>
-                            </div>
-                            <div class="crypto-controls">
-                                <div class="qty-group">
-                                    <button class="qty-btn" id="cryptoDecreaseQty">−</button>
-                                    <span class="qty-value" id="cryptoQuantity">1</span>
-                                    <button class="qty-btn" id="cryptoIncreaseQty">+</button>
-                                </div>
-                                <div style="flex:1;text-align:center;">
-                                    <span class="crypto-total" id="cryptoTotal">$4.59 USDT</span>
-                                </div>
-                            </div>
-                            <button class="btn btn-crypto" style="width:100%;justify-content:center;margin-top:8px;padding:10px;" onclick="comprarConCripto()" data-clave="perfil_pagar_usdt">
-                                💳 Pagar con USDT/USDC
-                            </button>
-                            <div class="crypto-hint" data-clave="perfil_usdt_trc20">
-                                ⚡ Red: TRC-20 (tarifas bajas) · Acepta USDT y USDC
-                            </div>
-                        </div>
-
-                        <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;" onclick="irAMuro()" data-clave="perfil_ir_muro">
-                            ◇ Ir al Muro
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div id="tab-esim" class="tab-content">
-                <div class="panel">
-                    <div class="panel-header">
-                        <h3 data-clave="perfil_telnyx">📱 Mi eSIM</h3>
-                        <span class="panel-badge" data-clave="perfil_telnyx">Telnyx</span>
-                    </div>
-                    <div class="panel-body">
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                            <div style="background:rgba(0,0,0,0.4);padding:10px;border-radius:10px;border:2px solid var(--line-black);">
-                                <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_esim_estado">ESTADO</span>
-                                <div id="esimStatus" style="font-weight:600;font-size:0.9rem;">⏳ Sin eSIM</div>
-                            </div>
-                            <div style="background:rgba(0,0,0,0.4);padding:10px;border-radius:10px;border:2px solid var(--line-black);">
-                                <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_datos_consumidos">DATOS USADOS</span>
-                                <div id="esimDataUsed" style="font-weight:600;font-size:0.9rem;">0 GB</div>
-                            </div>
-                            <div style="background:rgba(0,0,0,0.4);padding:10px;border-radius:10px;border:2px solid var(--line-black);">
-                                <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_limite_plan">LÍMITE</span>
-                                <div id="esimDataLimit" style="font-weight:600;font-size:0.9rem;">0 GB</div>
-                            </div>
-                            <div style="background:rgba(0,0,0,0.4);padding:10px;border-radius:10px;border:2px solid var(--line-black);">
-                                <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_datos_restantes">RESTANTE</span>
-                                <div id="esimDataRestante" style="font-weight:600;font-size:0.9rem;color:var(--success);">0 GB</div>
-                            </div>
-                            <div style="background:rgba(0,0,0,0.4);padding:10px;border-radius:10px;border:2px solid var(--line-black);grid-column:span 2;">
-                                <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_iccid">ICCID</span>
-                                <div id="esimIccid" style="font-weight:600;font-size:0.8rem;font-family:monospace;" data-clave="perfil_no_asignado">No asignado</div>
-                            </div>
-                        </div>
-
-                        <div style="margin-top:10px;">
-                            <div style="background:rgba(0,0,0,0.6);border:1px solid var(--line-black);border-radius:10px;height:8px;overflow:hidden;">
-                                <div id="esimDataProgress" style="height:100%;width:0%;background:var(--success);transition:width 0.8s;"></div>
-                            </div>
-                        </div>
-
-                        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
-                            <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" onclick="comprarESIM(1)" data-clave="perfil_adquirir_esim">
-                                📱 Comprar eSIM
-                            </button>
-                            <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="generarQRESIM()" data-clave="perfil_obtener_qr">
-                                📲 QR Activación
-                            </button>
-                            <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="sincronizarESIM()" data-clave="perfil_sincronizar">
-                                🔄 Sincronizar
-                            </button>
-                        </div>
-
-                        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
-                            <button class="btn btn-outline btn-sm" onclick="activarESIM()" style="border-color:var(--success);color:var(--success);" data-clave="perfil_activar_esim">
-                                ✅ Activar
-                            </button>
-                            <button class="btn btn-danger btn-sm" onclick="desactivarESIM()" data-clave="perfil_desactivar_esim">
-                                ⛔ Desactivar
-                            </button>
-                        </div>
-
-                        <div style="margin-top:10px;font-size:0.6rem;color:var(--text-muted);">
-                            <span data-clave="perfil_apn_requerido">APN:</span> <span id="esimApn" style="font-family:monospace;color:var(--text-secondary);">data00.telnyx</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="tab-qr" class="tab-content">
-                <div class="panel">
-                    <div class="panel-header">
-                        <h3 data-clave="perfil_escanear_qr">📱 Escanear QR</h3>
-                        <span class="panel-badge" data-clave="perfil_recibe_estoks">Recibe Es.stoks</span>
-                    </div>
-                    <div class="panel-body">
-                        <div class="config-group">
-                            <label data-clave="perfil_codigo_qr">Código del QR (escanea o escribe)</label>
-                            <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                                <input type="text" id="qrInput" data-placeholder="perfil_ejemplo_codigo_qr" placeholder="Ej: DOMO-2025-ABC123" 
-                                       style="flex:1;padding:10px 14px;background:rgba(0,0,0,0.5);border:2px solid var(--line-black);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;">
-                                <button class="btn btn-gold" onclick="escanearQR()" id="btnEscanearQR" data-clave="perfil_validar_codigo">
-                                    🔍 Escanear QR
-                                </button>
-                            </div>
-                            <div class="hint" data-clave="perfil_escanea_qr_hint">⚡ Escanea el QR de tu domo físico para recibir 1 Es.stok</div>
-                        </div>
-
-                        <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;" onclick="abrirCamaraQR()" data-clave="perfil_abrir_camara">
-                            📷 Escanear con cámara
-                        </button>
-
-                        <div id="qrReaderContainer">
-                            <video id="qrVideo" style="width:100%;max-width:300px;border-radius:10px;background:black;"></video>
-                            <canvas id="qrCanvas" style="display:none;"></canvas>
-                            <button class="btn btn-danger btn-sm" onclick="cerrarCamaraQR()" style="margin-top:8px;" data-clave="perfil_cerrar_camara">
-                                ✕ Cerrar cámara
-                            </button>
-                            <div id="qrCamaraStatus" style="font-size:0.7rem;color:var(--text-muted);margin-top:4px;"></div>
-                        </div>
-
-                        <div id="qrStatus" style="margin-top:12px;font-size:0.8rem;color:var(--text-muted);min-height:24px;text-align:center;"></div>
-
-                        <div style="margin-top:16px;border-top:1px solid var(--line-black-soft);padding-top:12px;">
-                            <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.7rem;color:var(--text-muted);">
-                                <span data-clave="perfil_historial">📋 Últimos escaneos</span>
-                                <span id="qrHistorialCount">0</span>
-                            </div>
-                            <div id="qrHistorialList" style="margin-top:8px;">
-                                <div class="empty-state" style="padding:10px;">
-                                    <span class="icon" style="font-size:1.5rem;">◈</span>
-                                    <p style="font-size:0.7rem;" data-clave="perfil_sin_escaneos">Sin escaneos recientes</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="tab-internet" class="tab-content">
-                <div class="panel">
-                    <div class="panel-header">
-                        <h3 data-clave="perfil_mis_compras_internet">📶 Mis compras de Internet</h3>
-                        <span class="panel-badge" id="internetOrdenesCount">0</span>
-                    </div>
-                    <div class="panel-body">
-                        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
-                            <button class="btn btn-outline btn-sm internet-filter active" data-filter="all" onclick="filtrarOrdenesInternet('all')" data-clave="perfil_filtro_todas">Todas</button>
-                            <button class="btn btn-outline btn-sm internet-filter" data-filter="activa" onclick="filtrarOrdenesInternet('activa')" data-clave="perfil_filtro_activas">✅ Activas</button>
-                            <button class="btn btn-outline btn-sm internet-filter" data-filter="pagando" onclick="filtrarOrdenesInternet('pagando')" data-clave="perfil_filtro_pendientes">⏳ Pendientes</button>
-                            <button class="btn btn-outline btn-sm internet-filter" data-filter="cancelada" onclick="filtrarOrdenesInternet('cancelada')" data-clave="perfil_filtro_canceladas">❌ Canceladas</button>
-                            <button class="btn btn-outline btn-sm" onclick="cargarOrdenesInternet()" style="margin-left:auto;" data-clave="perfil_refrescar">🔄 Refrescar</button>
-                        </div>
-
-                        <div id="ordenesInternetList">
-                            <div class="empty-state">
-                                <span class="icon">📶</span>
-                                <h4 data-clave="perfil_cargando_ordenes">Cargando órdenes...</h4>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
         </div>
 
-        <footer class="footer">
-            <span><span class="brand">© Csariel's</span> · Sabor al Paladar · WEB3</span>
-            <div class="footer-links">
-                <a href="/terminos" data-clave="perfil_footer_terminos">◈ Términos</a>
-                <a href="/privacidad" data-clave="perfil_footer_privacidad">◈ Privacidad</a>
-                <a href="/cookies" data-clave="perfil_footer_cookies">◈ Cookies</a>
-                <a href="/live-terminos" data-clave="perfil_footer_terminos_live">◈ Términos Live</a>
-                <span style="opacity:0.3;">⚡ Polygon</span>
-            </div>
-        </footer>
-
     </div>
 
-    <div class="toast" id="toast"></div>
-
-    <div class="modal-overlay" id="cryptoPaymentModal">
-        <div class="modal-content">
-            <button class="close-btn" onclick="cerrarModalPago()">✕</button>
-            <h2 data-clave="perfil_pagar_usdt">💳 Pagar con Cripto</h2>
-            <p class="subtitle" data-clave="perfil_obtencion_cripto">Escanea el QR o copia la dirección para pagar</p>
-            <div class="qr-container">
-                <img id="cryptoQR" src="" alt="QR de pago" />
-            </div>
-            <div class="address-box">
-                <div class="label" data-clave="perfil_codigo_qr">📤 Dirección de pago</div>
-                <div class="address" id="cryptoAddress" data-clave="perfil_cargando_direccion">Cargando dirección...</div>
-            </div>
-            <div class="amount">
-                <span id="cryptoMonto">0.00</span> <span id="cryptoMoneda">USDT</span>
-            </div>
-            <div class="actions">
-                <button class="btn btn-outline btn-sm" onclick="copiarDireccion()" data-clave="perfil_copiar_direccion">📋 Copiar dirección</button>
-                <button class="btn btn-gold btn-sm" onclick="verificarPagoCrypto()" data-clave="perfil_validacion_real">✅ Verificar pago</button>
-                <button class="btn btn-outline btn-sm" onclick="cerrarModalPago()" data-clave="perfil_cerrar">Cerrar</button>
-            </div>
-            <div class="status" id="cryptoStatus" data-clave="perfil_cargando_membresia">⏳ Esperando confirmación de pago...</div>
+    <footer class="footer">
+        <span><span class="brand">© Csariel's</span> · Sabor al Paladar · WEB3</span>
+        <div class="footer-links">
+            <a href="/terminos" data-clave="perfil_footer_terminos">◈ Términos</a>
+            <a href="/privacidad" data-clave="perfil_footer_privacidad">◈ Privacidad</a>
+            <a href="/cookies" data-clave="perfil_footer_cookies">◈ Cookies</a>
+            <a href="/live-terminos" data-clave="perfil_footer_terminos_live">◈ Términos Live</a>
+            <span style="opacity:0.3;">⚡ Polygon</span>
         </div>
-    </div>
+    </footer>
 
-    <div id="errorBanner" style="display:none; position:fixed; top:0; left:0; right:0; z-index:99999; background:#ff3366; color:#fff; padding:12px 16px; font-family:monospace; font-size:0.75rem; word-break:break-word; box-shadow:0 4px 20px rgba(0,0,0,0.4);">
-        <strong>⚠️ Error detectado:</strong>
-        <span id="errorBannerText"></span>
-        <button onclick="document.getElementById('errorBanner').style.display='none'" style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">Cerrar</button>
-    </div>
+</div>
 
-    <script>
-        function mostrarErrorEnPantalla(mensaje) {
-            const banner = document.getElementById('errorBanner');
-            const texto = document.getElementById('errorBannerText');
-            if (banner && texto) { texto.textContent = mensaje; banner.style.display = 'block'; }
+<div class="toast" id="toast"></div>
+
+<div class="modal-overlay" id="cryptoPaymentModal">
+    <div class="modal-content">
+        <button class="close-btn" onclick="cerrarModalPago()">✕</button>
+        <h2 data-clave="perfil_pagar_usdt">💳 Pagar con Cripto</h2>
+        <p class="subtitle" data-clave="perfil_obtencion_cripto">Escanea el QR o copia la dirección para pagar</p>
+        <div class="qr-container">
+            <img id="cryptoQR" src="" alt="QR de pago" />
+        </div>
+        <div class="address-box">
+            <div class="label" data-clave="perfil_codigo_qr">📤 Dirección de pago</div>
+            <div class="address" id="cryptoAddress" data-clave="perfil_cargando_direccion">Cargando dirección...</div>
+        </div>
+        <div class="amount">
+            <span id="cryptoMonto">0.00</span> <span id="cryptoMoneda">USDT</span>
+        </div>
+        <div class="actions">
+            <button class="btn btn-outline btn-sm" onclick="copiarDireccion()" data-clave="perfil_copiar_direccion">📋 Copiar dirección</button>
+            <button class="btn btn-gold btn-sm" onclick="verificarPagoCrypto()" data-clave="perfil_validacion_real">✅ Verificar pago</button>
+            <button class="btn btn-outline btn-sm" onclick="cerrarModalPago()" data-clave="perfil_cerrar">Cerrar</button>
+        </div>
+        <div class="status" id="cryptoStatus" data-clave="perfil_cargando_membresia">⏳ Esperando confirmación de pago...</div>
+    </div>
+</div>
+
+<div id="errorBanner" style="display:none; position:fixed; top:0; left:0; right:0; z-index:99999; background:#ff3366; color:#fff; padding:12px 16px; font-family:monospace; font-size:0.75rem; word-break:break-word; box-shadow:0 4px 20px rgba(0,0,0,0.4);">
+    <strong>⚠️ Error detectado:</strong>
+    <span id="errorBannerText"></span>
+    <button onclick="document.getElementById('errorBanner').style.display='none'" style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">Cerrar</button>
+</div>
+
+<script>
+    function mostrarErrorEnPantalla(mensaje) {
+        const banner = document.getElementById('errorBanner');
+        const texto = document.getElementById('errorBannerText');
+        if (banner && texto) { texto.textContent = mensaje; banner.style.display = 'block'; }
+    }
+    window.addEventListener('error', function (event) {
+        mostrarErrorEnPantalla((event.message || 'Error desconocido') + ' — línea ' + event.lineno + ' de ' + (event.filename || 'este archivo'));
+    });
+    window.addEventListener('unhandledrejection', function (event) {
+        mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason?.message || event.reason));
+    });
+    window.addEventListener('load', function () {
+        if (typeof window.supabase === 'undefined') {
+            mostrarErrorEnPantalla('No se pudo cargar la conexión a la base de datos (Supabase). Revisa tu internet o si algo está bloqueando cdn.jsdelivr.net.');
         }
-        window.addEventListener('error', function (event) {
-            mostrarErrorEnPantalla((event.message || 'Error desconocido') + ' — línea ' + event.lineno + ' de ' + (event.filename || 'este archivo'));
-        });
-        window.addEventListener('unhandledrejection', function (event) {
-            mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason?.message || event.reason));
-        });
-        window.addEventListener('load', function () {
-            if (typeof window.supabase === 'undefined') {
-                mostrarErrorEnPantalla('No se pudo cargar la conexión a la base de datos (Supabase). Revisa tu internet o si algo está bloqueando cdn.jsdelivr.net.');
-            }
-        });
-    </script>
+    });
+</script>
 
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 
-    <script src="/features/shared/js/idiomas.js?v=4" defer></script>
-    <script src="/features/perfil/perfil.js?v=4" defer></script>
-
+<script src="/features/shared/js/idiomas.js?v=4" defer></script>
+<script src="/features/perfil/perfil.js?v=4" defer></script>
     <script>
 // ================================================================
 // ⚙️ CONFIGURACIÓN LEGAL — Csariel's Ecosystem
@@ -1328,7 +1325,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('Error inicializando idiomas en perfil:', error);
         }
-    }, 500);
+    }, 800);
 });
     </script>
 
@@ -1445,7 +1442,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             var textoOriginalBtn = btn ? btn.textContent : '◈ Publicar';
-            if (btn) { btn.disabled = true; btn.textContent = window.tConFallback('perfil_publicando', '⏳ Publicando...'); }
+            if (btn) { btn.disabled = true; btn.textContent = (window.tConFallback ? window.tConFallback('perfil_publicando', '⏳ Publicando...') : '⏳ Publicando...'); }
             try {
                 var client = sb();
                 if (!client) throw new Error('Supabase no está listo. Recarga la página.');
@@ -2142,61 +2139,81 @@ document.addEventListener('DOMContentLoaded', function() {
 
     <script>
     // ================================================================
-    // FUNCIONES FALTANTES (para evitar errores de referencia)
+    // RESPALDO DE EMERGENCIA — Solo actúa si perfil.js no cargó
     // ================================================================
-    window.showToast = window.showToast || function(mensaje, tipo, duracion) {
-        var toast = document.getElementById('toast');
-        if (!toast) { console.warn(mensaje); return; }
-        toast.textContent = mensaje;
-        toast.className = 'toast show';
-        if (tipo === 'error') toast.classList.add('error');
-        else if (tipo === 'warning') toast.classList.add('warning');
-        else if (tipo === 'success') toast.classList.add('success');
-        clearTimeout(toast._timeout);
-        toast._timeout = setTimeout(function() { toast.classList.remove('show'); }, duracion || 3000);
-    };
+    (function() {
+        'use strict';
 
-    window.abrirSelectorArchivo = window.abrirSelectorArchivo || function() {
-        var input = document.getElementById('fileInput');
-        if (input) input.click();
-    };
+        setTimeout(function() {
+            var perfilCargo = typeof window.contratarPro === 'function'
+                           && typeof window.cambiarTab === 'function';
 
-    window.expandirAvatar = window.expandirAvatar || function() { /* placeholder */ };
-    window.expandirFotoPublicacion = window.expandirFotoPublicacion || function(src) {
-        var overlay = document.createElement('div');
-        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.95);display:flex;align-items:center;justify-content:center;z-index:99999;padding:20px;cursor:pointer;';
-        overlay.innerHTML = '<img src="' + src + '" style="max-width:100%;max-height:100%;border-radius:12px;border:2px solid var(--gold);">';
-        overlay.onclick = function() { overlay.remove(); };
-        document.body.appendChild(overlay);
-    };
-    window.compartirPerfil = window.compartirPerfil || function() { /* placeholder */ };
-    window.generarQRPerfil = window.generarQRPerfil || function() { /* placeholder */ };
-    window.cambiarEstado = window.cambiarEstado || function(estado) { /* placeholder */ };
-    window.cambiarTab = window.cambiarTab || function(tab) {
-        document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
-        var target = document.getElementById('tab-' + tab);
-        if (target) target.classList.add('active');
-        document.querySelectorAll('.perfil-tabs .tab-btn').forEach(function(b) { b.classList.remove('active'); });
-        if (window.event && window.event.target) window.event.target.classList.add('active');
-    };
-    window.cambiarConexion = window.cambiarConexion || function(tipo) { /* placeholder */ };
-    window.contratarPro = window.contratarPro || function() { /* placeholder */ };
-    window.comprarDomo = window.comprarDomo || function() { /* placeholder */ };
-    window.canjearNFT = window.canjearNFT || function() { /* placeholder */ };
-    window.comprarConCripto = window.comprarConCripto || function() { /* placeholder */ };
-    window.irAMuro = window.irAMuro || function() { window.location.href = '/features/muro/muro.html'; };
-    window.comprarESIM = window.comprarESIM || function() { /* placeholder */ };
-    window.generarQRESIM = window.generarQRESIM || function() { /* placeholder */ };
-    window.sincronizarESIM = window.sincronizarESIM || function() { /* placeholder */ };
-    window.activarESIM = window.activarESIM || function() { /* placeholder */ };
-    window.desactivarESIM = window.desactivarESIM || function() { /* placeholder */ };
-    window.escanearQR = window.escanearQR || function() { /* placeholder */ };
-    window.abrirCamaraQR = window.abrirCamaraQR || function() { /* placeholder */ };
-    window.cerrarCamaraQR = window.cerrarCamaraQR || function() { /* placeholder */ };
-    window.cerrarModalPago = window.cerrarModalPago || function() { /* placeholder */ };
-    window.copiarDireccion = window.copiarDireccion || function() { /* placeholder */ };
-    window.verificarPagoCrypto = window.verificarPagoCrypto || function() { /* placeholder */ };
-    window.subirFoto = window.subirFoto || function() { /* placeholder */ };
+            if (perfilCargo) {
+                console.log('[Perfil Respaldo] ✅ perfil.js cargó bien, sin respaldos.');
+                return;
+            }
+
+            console.warn('[Perfil Respaldo] ⚠️ perfil.js NO cargó. Activando respaldos mínimos.');
+
+            window.showToast = window.showToast || function(mensaje, tipo, duracion) {
+                var toast = document.getElementById('toast');
+                if (!toast) { alert(mensaje); return; }
+                toast.textContent = mensaje;
+                toast.className = 'toast show';
+                if (tipo === 'error') toast.classList.add('error');
+                else if (tipo === 'warning') toast.classList.add('warning');
+                else if (tipo === 'success') toast.classList.add('success');
+                clearTimeout(toast._timeout);
+                toast._timeout = setTimeout(function() { toast.classList.remove('show'); }, duracion || 3000);
+            };
+
+            window.cambiarTab = window.cambiarTab || function(tab) {
+                document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+                var target = document.getElementById('tab-' + tab);
+                if (target) target.classList.add('active');
+                document.querySelectorAll('.perfil-tabs .tab-btn').forEach(function(b) { b.classList.remove('active'); });
+                if (window.event && window.event.target) window.event.target.classList.add('active');
+            };
+
+            window.abrirSelectorArchivo = window.abrirSelectorArchivo || function() {
+                var input = document.getElementById('fileInput');
+                if (input) input.click();
+            };
+
+            window.irAMuro = window.irAMuro || function() {
+                window.location.href = '/features/muro/muro.html';
+            };
+
+            var funcionesPendientes = [
+                'contratarPro', 'comprarDomo', 'canjearNFT', 'comprarConCripto',
+                'comprarESIM', 'generarQRESIM', 'sincronizarESIM', 'activarESIM',
+                'desactivarESIM', 'escanearQR', 'abrirCamaraQR', 'cerrarCamaraQR',
+                'cerrarModalPago', 'copiarDireccion', 'verificarPagoCrypto',
+                'subirFoto', 'expandirAvatar', 'expandirFotoPublicacion',
+                'compartirPerfil', 'generarQRPerfil', 'cambiarEstado',
+                'cambiarConexion', 'cerrarSesion', 'compartirLogro'
+            ];
+
+            funcionesPendientes.forEach(function(nombre) {
+                window[nombre] = window[nombre] || function() {
+                    if (window.showToast) {
+                        window.showToast('⚠️ Módulo de perfil no cargó. Recarga con Ctrl+F5.', 'error', 5000);
+                    }
+                    console.error('[Perfil Respaldo] Función faltante:', nombre);
+                };
+            });
+
+            window.expandirFotoPublicacion = window.expandirFotoPublicacion || function(src) {
+                if (!src) return;
+                var overlay = document.createElement('div');
+                overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.95);display:flex;align-items:center;justify-content:center;z-index:99999;padding:20px;cursor:pointer;';
+                overlay.innerHTML = '<img src="' + src + '" style="max-width:100%;max-height:100%;border-radius:12px;border:2px solid var(--gold);">';
+                overlay.onclick = function() { overlay.remove(); };
+                document.body.appendChild(overlay);
+            };
+
+        }, 3000);
+    })();
     </script>
 </body>
 </html>
