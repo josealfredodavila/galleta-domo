@@ -11,16 +11,12 @@
    - RPC obtener_estado_pro / activar_pro restauradas.
    - subirVideo() usa bucket muro-videos (50 MB).
    - eliminarFotoPerfil() nueva función.
+   - Blindaje de botones de tarjetas con data-no-traducir.
    ================================================================ */
 
 (function () {
 'use strict';
 
-/* ================================================================
-   CONFIGURACIÓN SUPABASE
-   - NO se crea cliente aquí.
-   - Se reutiliza el de window.supabaseClient / window.supabaseReady.
-   ================================================================ */
 var supabaseClient = null;
 var intentosSupabase = 0;
 var MAX_INTENTOS_SUPABASE = 100;
@@ -111,9 +107,6 @@ const PRO_PRECIO_MXN = 60;
 const PRO_DURACION_DIAS = 30;
 const PRO_GB = 5;
 
-/* ================================================================
-   CONFIGURACIÓN DE ENTORNO
-   ================================================================ */
 const ENV = {
     isProduction: window.location.hostname !== 'localhost' && !window.location.hostname.includes('127.0.0.1'),
     isTestnet: true,
@@ -124,9 +117,6 @@ const ENV = {
     networkExplorer: 'https://www.oklink.com/amoy'
 };
 
-/* ================================================================
-   BACKEND ENDPOINTS (SOLO PAGOS)
-   ================================================================ */
 const BACKEND_URL = window.location.origin;
 const API_ENDPOINTS = {
     pagos:    `${BACKEND_URL}/api/payments`,
@@ -686,6 +676,7 @@ function actualizarUIEstado(online) {
 
     if (estadoTexto) {
         estadoTexto.removeAttribute('data-clave');
+        estadoTexto.setAttribute('data-no-traducir', '1');
         estadoTexto.textContent = online
             ? t('perfil_activo_ahora', 'Activo ahora')
             : t('perfil_inactivo', 'Inactivo');
@@ -1199,6 +1190,7 @@ function actualizarUIConexion(estado) {
 
     if (conexionStatus) {
         conexionStatus.removeAttribute('data-clave');
+        conexionStatus.setAttribute('data-no-traducir', '1');
         if (!estado.activa) {
             conexionStatus.innerHTML = '⛔ Sin conexión';
             conexionStatus.style.color = 'var(--danger)';
@@ -2074,7 +2066,8 @@ function actualizarUI(data) {
     if (nombreEl) {
         const verificado = data.verificado ? '<span class="verified">✦ VERIFICADO</span>' : '';
         const nombreSafe = String(data.nombre || t('perfil_nombre_usuario', 'Explorador')).replace(/[<>]/g, '');
-        nombreEl.innerHTML = `<span>${nombreSafe}</span> ${verificado}`;
+        nombreEl.innerHTML = `<span data-no-traducir="1">${nombreSafe}</span> ${verificado}`;
+        nombreEl.setAttribute('data-no-traducir', '1');
     }
 
     if (handleEl) handleEl.textContent = '@' + (data.handle || 'explorador');
@@ -2087,6 +2080,7 @@ function actualizarUI(data) {
             bioEl.innerHTML = bioT;
         } else {
             bioEl.removeAttribute('data-clave');
+            bioEl.setAttribute('data-no-traducir', '1');
             bioEl.innerHTML = formatearTexto(data.bio);
         }
     }
