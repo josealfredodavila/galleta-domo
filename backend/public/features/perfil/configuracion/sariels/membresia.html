@@ -10,7 +10,132 @@
 
     <link rel="stylesheet" href="../../../shared/config-layout.css" />
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script>
+        (function () {
+            'use strict';
+
+            window.__sarielsAuthenticated = null;
+            window.supabaseClient = window.supabaseClient || null;
+            window.supabaseReady = null;
+
+            window.getSupabaseClient = function () {
+                return window.supabaseReady;
+            };
+
+            function esRutaInternaSegura(valor) {
+                if (typeof valor !== 'string') return false;
+                if (!valor.startsWith('/')) return false;
+                if (valor.startsWith('//')) return false;
+                if (valor.startsWith('/\\')) return false;
+                return true;
+            }
+
+            function revelarPagina() {
+                document.documentElement.classList.add('auth-ready');
+            }
+
+            function irAlIndexConReturnTo() {
+                try {
+                    var returnTo = window.location.pathname + window.location.search + window.location.hash;
+                    if (esRutaInternaSegura(returnTo)) {
+                        localStorage.setItem('wallet_returnTo', returnTo);
+                    }
+                    window.location.replace('/');
+                } catch (e) {
+                    window.location.replace('/');
+                }
+            }
+
+            var salvaguarda = setTimeout(function () {
+                console.warn('[Membresía] Salvaguarda activada.');
+                revelarPagina();
+            }, 10000);
+
+            async function inicializarSupabase() {
+                try {
+                    if (
+                        !window.supabase ||
+                        typeof window.supabase.createClient !== 'function'
+                    ) {
+                        throw new Error('Supabase SDK no disponible.');
+                    }
+
+                    if (!window.supabaseClient) {
+                        var supabaseUrl = null;
+                        var supabaseAnonKey = null;
+
+                        try {
+                            const response = await fetch('/api/config/public', {
+                                method: 'GET',
+                                credentials: 'same-origin',
+                                cache: 'no-store',
+                                headers: { 'Accept': 'application/json' }
+                            });
+
+                            if (response.ok) {
+                                const config = await response.json();
+                                supabaseUrl = config && config.supabaseUrl;
+                                supabaseAnonKey = config && config.supabaseAnonKey;
+                            }
+                        } catch (fetchErr) {
+                            console.warn('[Membresía] fetch /api/config/public falló:', fetchErr);
+                        }
+
+                        if (!supabaseUrl || !supabaseAnonKey) {
+                            throw new Error('Configuración pública de Supabase no disponible.');
+                        }
+
+                        window.SupabaseSDK = window.supabase;
+
+                        window.supabaseClient = window.SupabaseSDK.createClient(
+                            supabaseUrl,
+                            supabaseAnonKey,
+                            {
+                                auth: {
+                                    persistSession: true,
+                                    autoRefreshToken: true,
+                                    detectSessionInUrl: true
+                                }
+                            }
+                        );
+                    }
+
+                    const resultado = await window.supabaseClient.auth.getSession();
+                    const session = resultado && resultado.data ? resultado.data.session : null;
+
+                    window.__sarielsAuthenticated = !!session;
+
+                    clearTimeout(salvaguarda);
+
+                    if (!session) {
+                        irAlIndexConReturnTo();
+                    } else {
+                        revelarPagina();
+                    }
+
+                    return window.supabaseClient;
+                } catch (error) {
+                    console.error('[Membresía] Error inicializando Supabase:', error);
+                    window.__sarielsAuthenticated = false;
+                    clearTimeout(salvaguarda);
+                    revelarPagina();
+                    return null;
+                }
+            }
+
+            window.supabaseReady = inicializarSupabase();
+        })();
+    </script>
+
     <style>
+        html:not(.auth-ready) body {
+            visibility: hidden;
+        }
+        html.auth-ready body {
+            visibility: visible;
+        }
+
         .cfg-pro-hero {
             margin: 16px;
             padding: 32px 20px;
@@ -237,17 +362,11 @@
 
     <main class="cfg-content">
 
-        <!-- ============================================================ -->
-        <!-- ESTADO: CARGANDO                                             -->
-        <!-- ============================================================ -->
         <div id="estadoCargando" style="text-align: center; padding: 60px 20px; color: var(--cfg-text-muted);">
             <div style="font-size: 2rem; margin-bottom: 12px;">⟡</div>
             <div style="font-size: 0.85rem;">Cargando tu membresía...</div>
         </div>
 
-        <!-- ============================================================ -->
-        <!-- ESTADO: NO PRO (mostrar hero de compra)                      -->
-        <!-- ============================================================ -->
         <div id="estadoNoPro" style="display: none;">
 
             <div class="cfg-pro-hero">
@@ -309,9 +428,6 @@
 
         </div>
 
-        <!-- ============================================================ -->
-        <!-- ESTADO: PRO ACTIVO                                           -->
-        <!-- ============================================================ -->
         <div id="estadoProActivo" style="display: none;">
 
             <div class="cfg-pro-active-card">
@@ -383,7 +499,6 @@
         </div>
     </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="../../../shared/config-icons.js"></script>
     <script src="../../../shared/config-layout.js"></script>
 
@@ -393,15 +508,9 @@
 
         const $ = (sel) => document.querySelector(sel);
 
-        const SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
-        const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
-
-        // Precio y duración reales: vienen de planes_membresia (misma
-        // fuente que usa el backend para cobrar). Nunca se escriben a mano.
         let precioPro = null;
         let duracionDias = 30;
         let esProActivo = false;
-        let clienteCache = null;
 
         cfgInitPage({
             title: 'Membresía Pro',
@@ -409,14 +518,13 @@
             backUrl: '/features/perfil/configuracion/index.html',
         });
 
-        // ============================================================
-        // HELPERS
-        // ============================================================
-        function getClient() {
-            if (clienteCache) return clienteCache;
-            clienteCache = window.supabaseClient ||
-                (window.supabase && window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY));
-            return clienteCache;
+        async function esperarCliente() {
+            const inicio = Date.now();
+            while (Date.now() - inicio < 10000) {
+                if (window.supabaseClient) return window.supabaseClient;
+                await new Promise(r => setTimeout(r, 100));
+            }
+            return null;
         }
 
         function formatoMxn(n) {
@@ -428,9 +536,6 @@
 
         const dormir = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-        // ============================================================
-        // PRECIO DEL PLAN
-        // ============================================================
         async function cargarPrecio(client) {
             try {
                 const { data, error } = await client
@@ -456,30 +561,30 @@
             const btn = $('#btnContratarPro');
 
             if (precioPro === null) {
-                hero.textContent = '—';
-                btn.textContent = '🚀 Contratar Pro';
-                btn.disabled = true;
+                if (hero) hero.textContent = '—';
+                if (btn) {
+                    btn.textContent = '🚀 Contratar Pro';
+                    btn.disabled = true;
+                }
                 return;
             }
 
-            hero.textContent = '$' + precioPro.toLocaleString('es-MX', {
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 2
-            });
-            periodo.textContent = '/ ' + duracionDias + ' días';
-            btn.textContent = '🚀 Contratar Pro por ' + formatoMxn(precioPro);
-            btn.disabled = false;
+            if (hero) {
+                hero.textContent = '$' + precioPro.toLocaleString('es-MX', {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 2
+                });
+            }
+            if (periodo) periodo.textContent = '/ ' + duracionDias + ' días';
+            if (btn) {
+                btn.textContent = '🚀 Contratar Pro por ' + formatoMxn(precioPro);
+                btn.disabled = false;
+            }
         }
 
-        // ============================================================
-        // CARGAR ESTADO DE PRO
-        // Fuente de verdad: RPC obtener_membresia_usuario
-        // (lee membresias_usuarios, que es donde el backend activa Pro).
-        // Devuelve true si Pro está activo.
-        // ============================================================
         async function cargarEstadoPro() {
             try {
-                const client = getClient();
+                const client = await esperarCliente();
                 if (!client) {
                     mostrarNoPro();
                     return false;
@@ -488,7 +593,7 @@
                 await cargarPrecio(client);
 
                 const { data: sessionData } = await client.auth.getSession();
-                const session = sessionData.session;
+                const session = sessionData && sessionData.session;
                 if (!session) {
                     mostrarNoPro();
                     return false;
@@ -510,11 +615,16 @@
                     const expira = new Date(m.vence_at);
                     const dias = Number(m.dias_restantes) || 0;
 
-                    $('#proExpira').textContent = 'Expira el ' + expira.toLocaleDateString('es-MX', {
-                        day: 'numeric', month: 'long', year: 'numeric'
-                    });
-
-                    $('#proDias').textContent = '◉ ' + dias + ' ' + (dias === 1 ? 'día restante' : 'días restantes');
+                    const expiraEl = $('#proExpira');
+                    const diasEl = $('#proDias');
+                    if (expiraEl) {
+                        expiraEl.textContent = 'Expira el ' + expira.toLocaleDateString('es-MX', {
+                            day: 'numeric', month: 'long', year: 'numeric'
+                        });
+                    }
+                    if (diasEl) {
+                        diasEl.textContent = '◉ ' + dias + ' ' + (dias === 1 ? 'día restante' : 'días restantes');
+                    }
 
                     renderAccionesPro();
                     mostrarProActivo();
@@ -533,25 +643,28 @@
 
         function mostrarNoPro() {
             esProActivo = false;
-            $('#estadoCargando').style.display = 'none';
-            $('#estadoNoPro').style.display = 'block';
-            $('#estadoProActivo').style.display = 'none';
+            const cargando = $('#estadoCargando');
+            const noPro = $('#estadoNoPro');
+            const activo = $('#estadoProActivo');
+            if (cargando) cargando.style.display = 'none';
+            if (noPro) noPro.style.display = 'block';
+            if (activo) activo.style.display = 'none';
         }
 
         function mostrarProActivo() {
             esProActivo = true;
-            $('#estadoCargando').style.display = 'none';
-            $('#estadoNoPro').style.display = 'none';
-            $('#estadoProActivo').style.display = 'block';
+            const cargando = $('#estadoCargando');
+            const noPro = $('#estadoNoPro');
+            const activo = $('#estadoProActivo');
+            if (cargando) cargando.style.display = 'none';
+            if (noPro) noPro.style.display = 'none';
+            if (activo) activo.style.display = 'block';
         }
 
-        // ============================================================
-        // ACCIONES PARA PRO ACTIVO
-        // (Se quitaron "Gestionar método de pago" y "Cancelar renovación":
-        //  el pago es único en cripto, no hay método guardado ni renovación.)
-        // ============================================================
         function renderAccionesPro() {
-            $('#seccionAcciones').innerHTML = [
+            const cont = $('#seccionAcciones');
+            if (!cont) return;
+            cont.innerHTML = [
                 cfgRenderItem({
                     icon: 'check',
                     title: 'Extender ' + duracionDias + ' días más',
@@ -561,13 +674,12 @@
             ].join('');
         }
 
-        // ============================================================
-        // CREAR PAGO EN EL BACKEND Y REDIRIGIR AL INVOICE
-        // ============================================================
         async function crearPagoPro() {
-            const client = getClient();
+            const client = await esperarCliente();
+            if (!client) throw new Error('Supabase no disponible');
+
             const { data: sessionData } = await client.auth.getSession();
-            const session = sessionData.session;
+            const session = sessionData && sessionData.session;
 
             if (!session) {
                 throw new Error('Inicia sesión para contratar Pro');
@@ -588,13 +700,9 @@
                 throw new Error(data.error || 'No se pudo crear el pago');
             }
 
-            // Se abre en la misma pestaña (mejor en móvil)
             window.location.href = data.payment_url;
         }
 
-        // ============================================================
-        // CALLBACKS
-        // ============================================================
         window.onContratarPro = async () => {
             if (precioPro === null) {
                 cfgToast('⚠️ No se pudo cargar el precio. Recarga la página.', 'warning', 5000);
@@ -633,10 +741,6 @@
             }
         };
 
-        // ============================================================
-        // VOLVER DEL PAGO: esperar a que llegue la confirmación (webhook)
-        // Se activa si la URL trae ?payment=success
-        // ============================================================
         async function esperarActivacion() {
             cfgToast('⏳ Confirmando tu pago...', '', 5000);
 
@@ -652,9 +756,6 @@
             cfgToast('El pago puede tardar unos minutos en confirmarse. Vuelve a revisar en un rato.', 'warning', 8000);
         }
 
-        // ============================================================
-        // INICIALIZAR
-        // ============================================================
         window.addEventListener('DOMContentLoaded', async () => {
             await dormir(400);
             const activo = await cargarEstadoPro();
