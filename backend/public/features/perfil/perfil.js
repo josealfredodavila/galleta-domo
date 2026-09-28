@@ -1,16 +1,13 @@
 /* ================================================================
    PERFIL.JS - SARIEL'S ECOSYSTEM
-   VERSIÓN PRODUCCIÓN — 100% SUPABASE DIRECTO
+   VERSIÓN PRODUCCIÓN CORREGIDA — 100% SUPABASE DIRECTO
    
-   CAMBIOS CRÍTICOS:
-   - CERO 404: eliminadas todas las llamadas a /api/estado, /api/contactos,
-     /api/perfil, /api/esim/*. Todo va directo a Supabase.
-   - Pagos SÍ van al backend (necesitan NOWPayments + service_role):
-     /api/payments/create y /api/payments/status/:id (rutas corregidas).
-   - perfilCache expone TODAS las columnas reales de la tabla usuarios.
-   - Contadores sociales (seguidores/siguiendo) con COUNT + cache.
-   - Timeout de sesión para no quedar en "Cargando..." eterno.
-   - Escalable a millones de usuarios (Promise.all, cache TTL, sin N+1).
+   CORRECCIONES APLICADAS:
+   - Error de sintaxis *//* eliminado.
+   - Funciones expuestas correctamente en window.
+   - Sin 404: todo directo a Supabase (excepto pagos).
+   - Cache TTL, contadores sociales optimizados.
+   - Timeout de sesión aumentado.
    ================================================================ */
 
 (function () {
@@ -27,7 +24,7 @@ var intentosSupabase = 0;
 var MAX_INTENTOS_SUPABASE = 100;
 var moduloInicializado = false;
 
-var SESSION_TIMEOUT_MS = 5000;
+var SESSION_TIMEOUT_MS = 8000;
 
 function inicializarSupabase() {
     if (moduloInicializado) return;
@@ -90,7 +87,7 @@ function traducirPlanMeta(meta) {
 }
 
 /* ================================================================
-   ✦ PRO: CONSTANTES
+   CONSTANTES PRO
    ================================================================ */
 const PRO_PLAN_ID = 1;
 const PRO_PRECIO_MXN = 60;
@@ -111,15 +108,12 @@ const ENV = {
 };
 
 /* ================================================================
-   BACKEND ENDPOINTS (SOLO PAGOS — todo lo demás va a Supabase)
+   BACKEND ENDPOINTS (SOLO PAGOS)
    ================================================================ */
 const BACKEND_URL = window.location.origin;
 const API_ENDPOINTS = {
-    // Rutas reales del backend (verificado en server.js + routes/payments.js)
-    pagos:    `${BACKEND_URL}/api/payments`,    // ← ANTES /api/pagos (404). AHORA correcto.
+    pagos:    `${BACKEND_URL}/api/payments`,
     webhook:  `${BACKEND_URL}/api/webhooks/nowpayments`
-    // NOTA: estado, contactos, perfil y esim → NO existen en backend.
-    // Se hacen directo a Supabase más abajo.
 };
 
 /* ================================================================
@@ -152,7 +146,7 @@ function showToast(msg, type = '', duration = 3500) {
 }
 
 /* ================================================================
-   SESIÓN (con timeout para evitar bloqueos)
+   SESIÓN
    ================================================================ */
 async function getSession() {
     if (!supabaseClient) return null;
@@ -180,7 +174,7 @@ async function getSession() {
 }
 
 /* ================================================================
-   ✦ PRO: CARGAR ESTADO DE MEMBRESÍA (Supabase directo)
+   CARGAR ESTADO DE MEMBRESÍA PRO
    ================================================================ */
 async function cargarEstadoPro() {
     try {
@@ -188,7 +182,6 @@ async function cargarEstadoPro() {
         const session = await getSession();
         if (!session) return;
 
-        // Intentar primero con RPC (si existe y funciona)
         try {
             const { data, error } = await supabaseClient.rpc('obtener_estado_pro');
 
@@ -205,7 +198,6 @@ async function cargarEstadoPro() {
             console.warn('[Perfil] RPC obtener_estado_pro no disponible:', rpcErr?.message);
         }
 
-        // Fallback: leer directo de la tabla usuarios
         const { data: usuario, error: userErr } = await supabaseClient
             .from('usuarios')
             .select('plan, plan_expira_at, plan_meta, membresia_live_hasta')
@@ -277,7 +269,7 @@ function aplicarEstadoProUI(usuario) {
 }
 
 /* ================================================================
-   ✦ PRO: CONTRATAR MEMBRESÍA
+   CONTRATAR MEMBRESÍA PRO
    ================================================================ */
 async function contratarPro() {
     try {
@@ -304,7 +296,6 @@ async function contratarPro() {
 
         showToast('⏳ ' + t('perfil_pro_activando', 'Iniciando contratación...'), '', 4000);
 
-        // Registrar intento de pago en Supabase (para tracking)
         let pago = null;
         try {
             const { data, error } = await supabaseClient
@@ -324,7 +315,6 @@ async function contratarPro() {
             console.warn('[Perfil] No se pudo registrar intento de pago:', e?.message);
         }
 
-        // Llamar al backend de pagos (ruta CORREGIDA)
         try {
             const response = await fetch(`${API_ENDPOINTS.pagos}/create`, {
                 method: 'POST',
@@ -362,7 +352,6 @@ async function contratarPro() {
             console.warn('[Perfil] Backend de pagos no disponible:', backendError.message);
         }
 
-        // Fallback manual (modo prueba) — el usuario decide
         const activar = confirm(
             'No se pudo conectar con la pasarela de pago.\n\n' +
             '¿Quieres activar Pro en modo manual (prueba)?\n' +
@@ -489,7 +478,7 @@ let ultimaActualizacion = 0;
 const CACHE_DURATION = 30000;
 let contadoresSocialesCache = null;
 let ultimaActualizacionContadores = 0;
-const CONTADORES_CACHE_DURATION = 5 * 60 * 1000; // 5 min
+const CONTADORES_CACHE_DURATION = 5 * 60 * 1000;
 
 Object.defineProperty(window, 'perfilCache', {
     get: function () { return perfilCache; },
@@ -498,7 +487,7 @@ Object.defineProperty(window, 'perfilCache', {
 });
 
 /* ================================================================
-   CARGAR PERFIL — Supabase directo
+   CARGAR PERFIL
    ================================================================ */
 async function cargarPerfil(forzarActualizacion = false) {
     try {
@@ -519,7 +508,6 @@ async function cargarPerfil(forzarActualizacion = false) {
             return;
         }
 
-        // 1) Intentar RPC obtener_mi_perfil (si existe y funciona)
         let perfil = null;
         try {
             const { data, error } = await supabaseClient.rpc('obtener_mi_perfil');
@@ -530,7 +518,6 @@ async function cargarPerfil(forzarActualizacion = false) {
             console.warn('[Perfil] RPC obtener_mi_perfil falló, usando SELECT directo:', rpcErr?.message);
         }
 
-        // 2) Fallback: SELECT completo de la tabla usuarios
         if (!perfil) {
             const { data, error } = await supabaseClient
                 .from('usuarios')
@@ -562,7 +549,6 @@ async function cargarPerfil(forzarActualizacion = false) {
 
             if (error) {
                 console.error('[Perfil] Error leyendo usuarios:', error.message);
-                // Último fallback: datos mínimos desde la sesión
                 perfil = {
                     id: session.user.id,
                     email: session.user.email,
@@ -578,7 +564,6 @@ async function cargarPerfil(forzarActualizacion = false) {
             }
         }
 
-        // 3) Si no hay perfil, usar datos mínimos de sesión
         if (!perfil) {
             perfil = {
                 id: session.user.id,
@@ -592,7 +577,6 @@ async function cargarPerfil(forzarActualizacion = false) {
             };
         }
 
-        // 4) Cache y UI
         perfilCache = perfil;
         window.perfilCache = perfil;
         ultimaActualizacion = ahora;
@@ -604,7 +588,6 @@ async function cargarPerfil(forzarActualizacion = false) {
             await cargarDatosESIM(perfil.esim_iccid);
         }
 
-        // 5) Cargas paralelas (no bloqueantes)
         Promise.all([
             cargarEstadoConexion(),
             cargarAmigosEnLinea(),
@@ -620,10 +603,8 @@ async function cargarPerfil(forzarActualizacion = false) {
         console.error('[Perfil] Error cargando perfil:', error);
         showToast('❌ Error al cargar perfil', 'error');
     }
-}
-
-/* ================================================================
-   ESTADO ONLINE — Supabase directo (antes POST /api/estado/online)
+}/* ================================================================
+   ESTADO ONLINE
    ================================================================ */
 async function actualizarEstadoEnLinea(online) {
     try {
@@ -728,7 +709,7 @@ async function cambiarEstado(online) {
 }
 
 /* ================================================================
-   AMIGOS EN TIEMPO REAL — Supabase directo (antes GET /api/contactos)
+   AMIGOS EN TIEMPO REAL
    ================================================================ */
 let canalAmigos = null;
 
@@ -760,7 +741,6 @@ async function cargarAmigosEnLinea() {
         const session = await getSession();
         if (!session) return null;
 
-        // 1) Obtener contactos del usuario (Supabase directo)
         const { data: contactos, error: contactosError } = await supabaseClient
             .from('contactos')
             .select('contacto_id, es_favorito, estado')
@@ -786,7 +766,6 @@ async function cargarAmigosEnLinea() {
             return { enLinea: [], todosContactos: [] };
         }
 
-        // 2) Obtener datos públicos de esos contactos (intentar perfiles_publicos primero)
         let todosContactos = [];
 
         try {
@@ -927,8 +906,7 @@ function haceTiempo(fecha) {
 }
 
 /* ================================================================
-   CONTADORES SOCIALES (seguidores / siguiendo)
-   Optimizado para escala: COUNT + cache TTL, no en cada render
+   CONTADORES SOCIALES
    ================================================================ */
 async function cargarContadoresSociales(usuarioId) {
     try {
@@ -941,7 +919,6 @@ async function cargarContadoresSociales(usuarioId) {
             return;
         }
 
-        // Intentar primero con columnas desnormalizadas (si existen)
         try {
             const { data: usuario, error } = await supabaseClient
                 .from('usuarios')
@@ -963,7 +940,6 @@ async function cargarContadoresSociales(usuarioId) {
             // Las columnas no existen, seguimos con COUNT
         }
 
-        // Fallback: COUNT real (solo 2 queries)
         const [seguidoresRes, siguiendoRes] = await Promise.all([
             supabaseClient
                 .from('contactos')
@@ -995,7 +971,7 @@ function aplicarContadoresSociales(c) {
 }
 
 /* ================================================================
-   PORTADA / UBICACIÓN / SITIO WEB (tabla perfiles)
+   PORTADA / UBICACIÓN / SITIO WEB
    ================================================================ */
 async function cargarPortadaUbicacion(usuarioId) {
     try {
@@ -1020,34 +996,6 @@ async function cargarPortadaUbicacion(usuarioId) {
 }
 
 /* ================================================================
-   FUNCIONES QUE CONTINÚAN EN LA PARTE 2:
-   - cargarEstadoConexion()
-   - cambiarConexion()
-   - guardarEstadoConexion()
-   - actualizarUIConexion()
-   - iniciarEscuchaConexion()
-   - actualizarUIESIM()
-   - mostrarSinESIM()
-   - cargarDatosESIM()      ← Supabase directo
-   - sincronizarESIM()      ← Supabase directo
-   - activarESIM()          ← Supabase directo
-   - desactivarESIM()       ← Supabase directo
-   - obtenerEstadoESIM()    ← Supabase directo
-   - obtenerPlanesESIM()
-   - comprarESIM()          ← backend /api/payments/create
-   - generarQRESIM()
-   - mostrarModalPagoReal / Simulado / QR
-   - verificarPago()        ← backend /api/payments/status/:id
-   - Escaneo QR
-   - actualizarUI() principal
-   - Wallet (MetaMask)
-   - Comprar Domo / Canjear NFT / Cripto
-   - guardarPerfil()        ← Supabase directo
-   - subirFoto() / subirVideo()
-   - cerrarSesion()
-   - Notificaciones realtime
-   - Inicialización final
-   ================================================================ *//* ================================================================
    GESTIÓN DE CONEXIÓN
    ================================================================ */
 let estadoConexion = {
@@ -1083,7 +1031,6 @@ async function cargarEstadoConexion() {
                 }
             }
 
-            // Respetar la preferencia guardada del usuario
             if (perfilCache?.conexion_tipo) {
                 tipoConexion = perfilCache.conexion_tipo;
             }
@@ -1282,7 +1229,7 @@ function iniciarEscuchaConexion() {
 }
 
 /* ================================================================
-   eSIM — TODO DIRECTO A SUPABASE
+   eSIM
    ================================================================ */
 function actualizarUIESIM(data) {
     const esimStatus = document.getElementById('esimStatus');
@@ -1377,7 +1324,6 @@ async function cargarDatosESIM(iccid) {
         const session = await getSession();
         if (!session) return null;
 
-        // TODO DIRECTO A SUPABASE (antes era POST /api/esim/profile → 404)
         const { data: usuario, error } = await supabaseClient
             .from('usuarios')
             .select('esim_iccid, esim_status, esim_data_used, esim_data_limit, esim_apn, esim_activated_at, esim_expires_at, esim_operator, esim_network, esim_last_sync_at, esim_last_error, esim_imsi, esim_msisdn, esim_eid, esim_type, esim_installation_status, esim_status_reason, esim_data_unit')
@@ -1453,7 +1399,6 @@ async function sincronizarESIM() {
 
         showToast('⏳ ' + t('perfil_sincronizando', 'Sincronizando...'), '', 3000);
 
-        // TODO DIRECTO A SUPABASE (antes era POST /api/esim/sync → 404)
         const { data: usuario, error } = await supabaseClient
             .from('usuarios')
             .select('esim_iccid, esim_status, esim_data_used, esim_data_limit, esim_apn, esim_last_sync_at')
@@ -1474,9 +1419,7 @@ async function sincronizarESIM() {
         console.error('[Perfil] Error sincronizando eSIM:', error);
         showToast('❌ Error al sincronizar: ' + error.message, 'error');
     }
-}
-
-async function comprarESIM(planId) {
+}async function comprarESIM(planId) {
     try {
         const session = await getSession();
         if (!session) {
@@ -1484,7 +1427,6 @@ async function comprarESIM(planId) {
             return;
         }
 
-        // Buscar el plan
         const { data: plan, error } = await supabaseClient
             .from('planes_esim')
             .select('*')
@@ -1498,7 +1440,6 @@ async function comprarESIM(planId) {
 
         showToast('⏳ Creando orden de compra...', '', 5000);
 
-        // El backend SÍ tiene /api/payments/create (ruta corregida)
         const response = await fetch(`${API_ENDPOINTS.pagos}/create`, {
             method: 'POST',
             headers: {
@@ -1550,7 +1491,6 @@ async function activarESIM(iccid) {
 
         showToast('⏳ Activando eSIM...', '', 5000);
 
-        // TODO DIRECTO A SUPABASE (antes era POST /api/esim/activar → 404)
         const { error } = await supabaseClient
             .from('usuarios')
             .update({
@@ -1589,7 +1529,6 @@ async function desactivarESIM(iccid) {
 
         showToast('⏳ Desactivando eSIM...', '', 5000);
 
-        // TODO DIRECTO A SUPABASE (antes era POST /api/esim/desactivar → 404)
         const { error } = await supabaseClient
             .from('usuarios')
             .update({
@@ -1629,7 +1568,6 @@ async function obtenerEstadoESIM() {
         const session = await getSession();
         if (!session) return null;
 
-        // TODO DIRECTO A SUPABASE (antes era GET /api/esim/status → 404)
         const { data, error } = await supabaseClient
             .from('usuarios')
             .select('esim_iccid, esim_status, esim_data_used, esim_data_limit, esim_apn')
@@ -1807,7 +1745,6 @@ async function verificarPago(ordenId) {
             return;
         }
 
-        // RUTA CORREGIDA: /api/payments/status/:id (antes /api/pagos/estado/:id → 404)
         const response = await fetch(`${API_ENDPOINTS.pagos}/status/${ordenId}`, {
             headers: {
                 'Authorization': `Bearer ${session.access_token}`
@@ -2309,7 +2246,6 @@ async function conectarWallet() {
             }
         }
 
-        // Intentar RPC primero
         const { error: rpcErr } = await supabaseClient.rpc('vincular_wallet', { p_wallet_address: cuenta });
 
         if (rpcErr) {
@@ -2678,7 +2614,7 @@ function mostrarModalNFT(data) {
 }
 
 /* ================================================================
-   GESTIÓN DE PERFIL — TODO DIRECTO A SUPABASE
+   GESTIÓN DE PERFIL
    ================================================================ */
 function editarPerfil() {
     cambiarTab('config');
@@ -2710,7 +2646,6 @@ async function guardarPerfil() {
     }
 
     try {
-        // TODO DIRECTO A SUPABASE (antes era PUT /api/perfil → 404)
         const { error } = await supabaseClient
             .from('usuarios')
             .update({
@@ -2872,7 +2807,7 @@ function expandirFotoPublicacion(src) {
 }
 
 /* ================================================================
-   SUBIR FOTO (Storage con user.id como primer segmento)
+   SUBIR FOTO
    ================================================================ */
 async function subirFoto(event) {
     const file = event.target.files[0];
@@ -2897,7 +2832,7 @@ async function subirFoto(event) {
     }
 
     const fileExt = file.name.split('.').pop().toLowerCase();
-    const filePath = `${session.user.id}/avatar.${fileExt}`; // ← cumple política Storage
+    const filePath = `${session.user.id}/avatar.${fileExt}`;
 
     try {
         showToast('⏳ Subiendo foto...', '', 5000);
@@ -2965,7 +2900,7 @@ async function subirVideo(event) {
         showToast('⏳ Subiendo video...', '', 15000);
 
         const fileExt = file.name.split('.').pop();
-        const filePath = `${session.user.id}/video_${Date.now()}.${fileExt}`; // ← cumple política Storage
+        const filePath = `${session.user.id}/video_${Date.now()}.${fileExt}`;
 
         const { error: uploadError } = await supabaseClient.storage
             .from('posts')
@@ -3234,7 +3169,6 @@ function inicializarModuloPerfil() {
 
     console.log('[Perfil] 🚀 Inicializando módulo...');
 
-    // Exponer funciones globales
     window.cambiarTab = cambiarTab;
     window.cargarPerfil = cargarPerfil;
     window.guardarPerfil = guardarPerfil;
@@ -3308,7 +3242,6 @@ function inicializarModuloPerfil() {
 async function iniciarPerfil() {
     console.log('[Perfil] 🎬 Cargando datos del perfil...');
 
-    // Cargar jsQR si no está
     if (typeof jsQR === 'undefined') {
         try {
             const script = document.createElement('script');
@@ -3349,7 +3282,6 @@ async function iniciarPerfil() {
         cargarAmigosEnLinea();
     }, 15000);
 
-    // Crypto controls
     const cryptoQty = document.getElementById('cryptoQuantity');
     const decBtn = document.getElementById('cryptoDecreaseQty');
     const incBtn = document.getElementById('cryptoIncreaseQty');
