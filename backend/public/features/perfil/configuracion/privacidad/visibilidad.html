@@ -7,7 +7,7 @@
     <title>Visibilidad y contactos · Sariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
-    
+
     <link rel="stylesheet" href="../../../shared/config-layout.css" />
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -188,6 +188,34 @@
             sync_contactos: 'visibilidad_sync_contactos',
         };
 
+        let contadorContactos = null;
+
+        async function contarContactos() {
+            try {
+                const client = await esperarCliente();
+                if (!client) return null;
+
+                const { data: sessionData } = await client.auth.getSession();
+                const session = sessionData && sessionData.session;
+                if (!session) return null;
+
+                const { count, error } = await client
+                    .from('contactos')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('usuario_id', session.user.id);
+
+                if (error) {
+                    console.warn('Error contando contactos:', error.message);
+                    return null;
+                }
+
+                return count || 0;
+            } catch (e) {
+                console.warn('Error contando contactos:', e && e.message);
+                return null;
+            }
+        }
+
         function renderToggles() {
             $('#seccionVisibilidad').innerHTML = [
                 cfgRenderToggle({
@@ -206,6 +234,10 @@
                 }),
             ].join('');
 
+            const contactosTxt = contadorContactos === null
+                ? ''
+                : ' (' + contadorContactos + ')';
+
             $('#seccionContactos').innerHTML = [
                 cfgRenderToggle({
                     id: 'toggleSync',
@@ -216,7 +248,7 @@
                 }),
                 cfgRenderItem({
                     icon: 'ban',
-                    title: 'Eliminar todos los contactos',
+                    title: 'Eliminar todos los contactos' + contactosTxt,
                     desc: 'Elimina todos los contactos que hayas subido previamente y desactiva la sincronización en todos tus dispositivos.',
                     onclick: 'window.onEliminarContactos()',
                     class: 'cfg-item-plain',
@@ -255,8 +287,12 @@
         };
 
         window.onEliminarContactos = async () => {
+            const totalTxt = contadorContactos !== null
+                ? ' (' + contadorContactos + ')'
+                : '';
+
             const ok = await cfgConfirm({
-                title: '¿Eliminar todos los contactos?',
+                title: '¿Eliminar todos los contactos' + totalTxt + '?',
                 text: 'Esta acción eliminará todos los contactos cargados previamente y desactivará la sincronización. Puede tardar unos minutos.',
                 confirmText: 'Eliminar todo',
                 cancelText: 'Cancelar',
@@ -265,19 +301,48 @@
 
             if (!ok) return;
 
-            cfgToast('⏳ Eliminando contactos...', 'warning');
+            cfgToast('⏳ Eliminando contactos...', 'error', 3000);
 
-            await cfgSetPref(PREF_KEYS.sync_contactos, false);
-            const t = document.getElementById('toggleSync');
-            if (t) t.checked = false;
+            try {
+                const client = await esperarCliente();
+                if (!client) throw new Error('Supabase no disponible');
 
-            setTimeout(() => {
-                cfgToast('✅ Todos los contactos eliminados', 'success');
-            }, 800);
+                const { data: sessionData } = await client.auth.getSession();
+                const session = sessionData && sessionData.session;
+                if (!session) throw new Error('Sin sesión');
+
+                /* Borrar TODAS las filas del usuario en la tabla contactos. */
+                const { error } = await client
+                    .from('contactos')
+                    .delete()
+                    .eq('usuario_id', session.user.id);
+
+                if (error) {
+                    throw new Error(error.message);
+                }
+
+                /* Desactivar sincronización. */
+                await cfgSetPref(PREF_KEYS.sync_contactos, false);
+                const t = document.getElementById('toggleSync');
+                if (t) t.checked = false;
+
+                /* Actualizar contador local. */
+                contadorContactos = 0;
+                renderToggles();
+
+                cfgToast('✅ Todos los contactos eliminados', 'success', 4000);
+
+            } catch (e) {
+                console.error('Error eliminando contactos:', e);
+                cfgToast('❌ Error: ' + e.message, 'error');
+            }
         };
 
         window.addEventListener('DOMContentLoaded', async () => {
             await new Promise(resolve => setTimeout(resolve, 400));
+            renderToggles();
+
+            contadorContactos = await contarContactos();
             renderToggles();
         });
 
