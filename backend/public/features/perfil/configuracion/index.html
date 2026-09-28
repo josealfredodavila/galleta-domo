@@ -19,6 +19,38 @@
         html.auth-ready body {
             visibility: visible;
         }
+        .cfg-error-panel {
+            max-width: 480px;
+            margin: 80px auto;
+            padding: 28px 22px;
+            background: rgba(255, 51, 102, 0.08);
+            border: 1px solid rgba(255, 51, 102, 0.35);
+            border-radius: 16px;
+            text-align: center;
+            color: #f0f4f8;
+            font-family: 'Inter', sans-serif;
+        }
+        .cfg-error-panel h2 {
+            color: #ff3366;
+            margin: 0 0 12px;
+            font-size: 1.1rem;
+        }
+        .cfg-error-panel p {
+            color: #8aa8b8;
+            font-size: .85rem;
+            line-height: 1.6;
+            margin: 0 0 18px;
+        }
+        .cfg-error-panel a {
+            display: inline-block;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #d4af37, #b8923a);
+            color: #05080f;
+            font-weight: 800;
+            text-decoration: none;
+            border-radius: 10px;
+            font-size: .85rem;
+        }
     </style>
 </head>
 <body class="cfg-page">
@@ -79,6 +111,61 @@
         const $ = (sel) => document.querySelector(sel);
         const baseConfig = '/features/perfil/configuracion';
 
+        let clienteSupabase = null;
+
+        // ============================================================
+        // INICIALIZACIÓN CENTRALIZADA DE SUPABASE
+        // Único punto donde se crea window.supabaseClient.
+        // Usa /api/config/public. Sin credenciales hardcodeadas.
+        // ============================================================
+        async function inicializarSupabase() {
+            if (window.supabaseClient) {
+                return window.supabaseClient;
+            }
+
+            if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+                throw new Error('Supabase SDK no disponible.');
+            }
+
+            let supabaseUrl = null;
+            let supabaseAnonKey = null;
+
+            const response = await fetch('/api/config/public', {
+                method: 'GET',
+                credentials: 'same-origin',
+                cache: 'no-store',
+                headers: { 'Accept': 'application/json' }
+            });
+
+            if (!response.ok) {
+                throw new Error('No se pudo obtener /api/config/public (HTTP ' + response.status + ').');
+            }
+
+            const config = await response.json();
+
+            supabaseUrl = config && config.supabaseUrl;
+            supabaseAnonKey = config && config.supabaseAnonKey;
+
+            if (!supabaseUrl || !supabaseAnonKey) {
+                throw new Error('Configuración pública de Supabase incompleta.');
+            }
+
+            const client = window.supabase.createClient(
+                supabaseUrl,
+                supabaseAnonKey,
+                {
+                    auth: {
+                        persistSession: true,
+                        autoRefreshToken: true,
+                        detectSessionInUrl: true
+                    }
+                }
+            );
+
+            window.supabaseClient = client;
+            return client;
+        }
+
         function esRutaInternaSegura(valor) {
             if (typeof valor !== 'string') return false;
             if (!valor.startsWith('/')) return false;
@@ -93,7 +180,6 @@
                 if (esRutaInternaSegura(returnTo)) {
                     localStorage.setItem('wallet_returnTo', returnTo);
                 }
-                console.log('[Config Guardián] Estado de autenticación no verificable → redirigiendo al index');
                 window.location.replace('/');
             } catch (e) {
                 window.location.replace('/');
@@ -104,44 +190,37 @@
             document.documentElement.classList.add('auth-ready');
         }
 
+        function mostrarErrorControlado(mensaje) {
+            revelarPagina();
+            const main = document.querySelector('.cfg-content');
+            if (main) {
+                main.innerHTML =
+                    '<div class="cfg-error-panel">' +
+                        '<h2>⚠️ No se pudo cargar la configuración</h2>' +
+                        '<p>' + (mensaje || 'Error de inicialización.') + '</p>' +
+                        '<a href="/">Volver al inicio</a>' +
+                    '</div>';
+            }
+        }
+
+        // ============================================================
+        // GUARD DE AUTENTICACIÓN
+        // ============================================================
         async function guardiaDeAutenticacion() {
             var salvaguarda = setTimeout(function () {
-                console.warn('[Config Guardián] Salvaguarda activada sin confirmación → redirigiendo al index');
-                irAlIndexConReturnTo();
-            }, 10000);
+                console.warn('[Config] Salvaguarda activada sin confirmación.');
+                mostrarErrorControlado('La verificación de sesión tardó demasiado. Vuelve a intentarlo.');
+            }, 12000);
 
             try {
-                if (
-                    !window.supabase ||
-                    typeof window.supabase.createClient !== 'function'
-                ) {
-                    throw new Error('Supabase SDK no disponible.');
-                }
+                const client = await inicializarSupabase();
 
-                var client = null;
-
-                if (typeof window.cfgEsperarSupabase === 'function') {
-                    client = await window.cfgEsperarSupabase();
-                }
-
-                if (!client && typeof window.esperarSupabase === 'function') {
-                    client = await window.esperarSupabase();
-                }
-
-                if (!client) {
-                    throw new Error('Cliente Supabase no disponible.');
-                }
-
-                window.supabaseClient = client;
-                window.supabaseReady = client;
-
-                var resultado = await client.auth.getSession();
-                var session = resultado && resultado.data ? resultado.data.session : null;
+                const resultado = await client.auth.getSession();
+                const session = resultado && resultado.data ? resultado.data.session : null;
 
                 clearTimeout(salvaguarda);
 
                 if (!session) {
-                    window.__sarielsAuthenticated = false;
                     irAlIndexConReturnTo();
                     return null;
                 }
@@ -151,11 +230,11 @@
                 return client;
 
             } catch (error) {
-                console.error('[Config Guardián] Error crítico de autenticación:', error);
+                console.error('[Config] Error crítico de inicialización:', error);
                 window.__sarielsAuthenticated = false;
                 window.supabaseError = error;
                 clearTimeout(salvaguarda);
-                irAlIndexConReturnTo();
+                mostrarErrorControlado(error.message || 'Error desconocido de inicialización.');
                 return null;
             }
         }
@@ -398,7 +477,10 @@
 
         async function irARepartidorConfig() {
             try {
-                const client = window.supabaseClient || (typeof window.cfgEsperarSupabase === 'function' ? await window.cfgEsperarSupabase() : null);
+                var client = window.supabaseClient;
+                if (!client) {
+                    client = await inicializarSupabase();
+                }
 
                 if (!client) {
                     window.location.href = '/features/mercado/repartidor/registro.html';
