@@ -39,11 +39,27 @@
     const MIN_CARACTERES_BUSQUEDA = 2;
     const MAX_CARACTERES_BUSQUEDA = 80;
 
+    const SESSION_TIMEOUT_MS = 5000;
+
     let contactos = [];
     let filtroActual = 'todos';
     let textoBusqueda = '';
     let initialized = false;
     let busquedaTimer = null;
+
+    /* ============================================================
+       EVENTO DE FIN DE CARGA
+       ============================================================ */
+
+    function emitirListo() {
+        try {
+            window.dispatchEvent(
+                new Event('contactos:listo')
+            );
+        } catch (_) {
+            /* noop */
+        }
+    }
 
     /* ============================================================
        SUPABASE
@@ -75,8 +91,32 @@
         }
 
         try {
+            /*
+             * Timeout de seguridad: si getSession() se cuelga
+             * (red, token corrupto, storage bloqueado),
+             * no bloqueamos la UI.
+             */
+
+            const resultado =
+                await Promise.race([
+                    client.auth.getSession(),
+
+                    new Promise((resolve) => {
+                        setTimeout(
+                            () =>
+                                resolve({
+                                    data: null,
+                                    error: new Error(
+                                        'Timeout obteniendo sesión'
+                                    )
+                                }),
+                            SESSION_TIMEOUT_MS
+                        );
+                    })
+                ]);
+
             const { data, error } =
-                await client.auth.getSession();
+                resultado || {};
 
             if (error) {
                 console.error(
@@ -234,6 +274,8 @@
             );
 
             actualizarEstadisticas([]);
+
+            emitirListo();
 
             return;
         }
@@ -493,6 +535,11 @@
         const session =
             await getSession();
 
+        const lista =
+            document.getElementById(
+                'contactosList'
+            );
+
         if (!client || !session) {
             mostrarEstadoVacio(
                 '◈',
@@ -500,6 +547,15 @@
             );
 
             actualizarEstadisticas([]);
+
+            if (lista) {
+                lista.setAttribute(
+                    'aria-busy',
+                    'false'
+                );
+            }
+
+            emitirListo();
 
             return;
         }
@@ -555,6 +611,15 @@
 
             renderizarContactos();
 
+            if (lista) {
+                lista.setAttribute(
+                    'aria-busy',
+                    'false'
+                );
+            }
+
+            emitirListo();
+
         } catch (error) {
             console.error(
                 'Error cargando contactos:',
@@ -570,10 +635,19 @@
                 'No se pudieron cargar los contactos.'
             );
 
+            if (lista) {
+                lista.setAttribute(
+                    'aria-busy',
+                    'false'
+                );
+            }
+
             showToast(
                 '❌ Error al cargar contactos',
                 'error'
             );
+
+            emitirListo();
         }
     }
 
@@ -966,6 +1040,11 @@
         if (!lista) {
             return;
         }
+
+        lista.setAttribute(
+            'aria-busy',
+            'true'
+        );
 
         lista.innerHTML = `
             <div class="empty-state">
@@ -2383,6 +2462,8 @@
                             '⚠️',
                             'No se pudo inicializar la conexión.'
                         );
+
+                        emitirListo();
                     }
                 },
                 100
