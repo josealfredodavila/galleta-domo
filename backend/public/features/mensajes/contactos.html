@@ -19,6 +19,11 @@
         content="#05080f"
     >
 
+    <meta
+        name="referrer"
+        content="strict-origin-when-cross-origin"
+    >
+
     <title data-clave="contactos_titulo">
         ◈ Contactos · Sariel's
     </title>
@@ -2036,6 +2041,145 @@
         </div>
 
     </div>
+
+
+    <!-- ==========================================================
+         GUARDIA DE CARGA
+         Evita que la página se quede en "Cargando..." si algo
+         falla al inicializar (Supabase, apariencia-global, contactos.js).
+         NO reemplaza la lógica de contactos.js — solo asegura
+         que si algo se rompe, el usuario vea un mensaje claro
+         en vez de una pantalla congelada.
+    =========================================================== -->
+
+    <script>
+        (function () {
+
+            var LOADING_TIMEOUT_MS = 10000;
+            var _loadingResuelto = false;
+
+            function _marcarListoCarga() {
+                if (_loadingResuelto) return;
+                _loadingResuelto = true;
+
+                var lista =
+                    document.getElementById('contactosList');
+
+                if (lista) {
+                    lista.setAttribute('aria-busy', 'false');
+                }
+
+                window.removeEventListener(
+                    'contactos:listo',
+                    _marcarListoCarga
+                );
+            }
+
+            window.addEventListener(
+                'contactos:listo',
+                _marcarListoCarga
+            );
+
+            window.addEventListener(
+                'load',
+                function () {
+
+                    // Supabase no cargó (CDN bloqueado, red, etc.)
+                    if (
+                        typeof window.supabase === 'undefined'
+                    ) {
+                        _mostrarError(
+                            'No se pudo cargar la librería de Supabase. ' +
+                            'Revisa tu conexión e intenta de nuevo.'
+                        );
+                        return;
+                    }
+
+                    // apariencia-global.js no creó el cliente
+                    if (!window.supabaseClient) {
+
+                        // Damos un pequeño margen por si
+                        // apariencia-global.js se inicializa async.
+                        setTimeout(function () {
+
+                            if (!window.supabaseClient) {
+                                _mostrarError(
+                                    'No se pudo inicializar la sesión. ' +
+                                    'Recarga la página o vuelve a iniciar sesión.'
+                                );
+                            }
+
+                        }, 1500);
+                    }
+
+                    // Timeout duro: si en N segundos todavía
+                    // dice "Cargando contactos...", algo se rompió.
+                    setTimeout(function () {
+
+                        if (_loadingResuelto) return;
+
+                        var lista =
+                            document.getElementById('contactosList');
+
+                        if (!lista) return;
+
+                        // ¿Sigue mostrando el estado inicial de carga?
+                        var texto =
+                            (lista.textContent || '').toLowerCase();
+
+                        if (
+                            texto.indexOf('cargando contactos') !== -1
+                        ) {
+                            _mostrarError(
+                                'No se pudieron cargar los contactos. ' +
+                                'Es posible que el servicio no esté disponible ' +
+                                'en este momento.'
+                            );
+                        }
+
+                    }, LOADING_TIMEOUT_MS);
+                }
+            );
+
+            function _mostrarError(mensaje) {
+
+                if (_loadingResuelto) return;
+                _loadingResuelto = true;
+
+                var lista =
+                    document.getElementById('contactosList');
+
+                if (!lista) return;
+
+                lista.setAttribute('aria-busy', 'false');
+
+                lista.innerHTML =
+                    '<div class="empty-state">' +
+                        '<span class="icon">⚠</span>' +
+                        '<h3>' +
+                            _escapeHtml(mensaje) +
+                        '</h3>' +
+                        '<button ' +
+                            'type="button" ' +
+                            'class="btn-accion" ' +
+                            'onclick="location.reload()" ' +
+                        '>' +
+                            '↻ Reintentar' +
+                        '</button>' +
+                    '</div>';
+            }
+
+            function _escapeHtml(str) {
+                return String(str)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            }
+
+        })();
+    </script>
 
 
     <!-- ==========================================================
