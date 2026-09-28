@@ -30,6 +30,10 @@
 //   POST   /api/pay/webhooks/stripe
 //   POST   /api/pay/webhooks/fintoc
 //   POST   /api/pay/webhooks/nowpayments
+//
+// Los webhooks van al final. NO usan express.raw(), sino que
+// aprovechan req.rawBody capturado por express.json({ verify })
+// en server.js.
 // ================================================================
 
 'use strict';
@@ -40,14 +44,81 @@ const router = express.Router();
 const logger = require('../../utils/logger');
 
 // ================================================================
-// SUB-ROUTERS
+// CARGA DE SUB-ROUTERS (con protección)
+// ================================================================
+// Envolvemos cada require en try/catch para que si UNO falla,
+// los demás sigan funcionando y solo se reporte ese error.
+
+const routersCargados = {
+    intenciones: false,
+    cuentas: false,
+    retiros: false,
+    stripeConnect: false,
+    webhooks: false
+};
+
+let intencionesRouter = null;
+let cuentasRouter = null;
+let retirosRouter = null;
+let stripeConnectRouter = null;
+let webhooksRouter = null;
+
+try {
+    intencionesRouter = require('./intenciones');
+    routersCargados.intenciones = true;
+} catch (err) {
+    logger.error(`[Pay Index] ❌ No se pudo cargar ./intenciones: ${err.message}`);
+}
+
+try {
+    cuentasRouter = require('./cuentas');
+    routersCargados.cuentas = true;
+} catch (err) {
+    logger.error(`[Pay Index] ❌ No se pudo cargar ./cuentas: ${err.message}`);
+}
+
+try {
+    retirosRouter = require('./retiros');
+    routersCargados.retiros = true;
+} catch (err) {
+    logger.error(`[Pay Index] ❌ No se pudo cargar ./retiros: ${err.message}`);
+}
+
+try {
+    stripeConnectRouter = require('./stripe-connect');
+    routersCargados.stripeConnect = true;
+} catch (err) {
+    logger.error(`[Pay Index] ❌ No se pudo cargar ./stripe-connect: ${err.message}`);
+}
+
+try {
+    webhooksRouter = require('./webhooks');
+    routersCargados.webhooks = true;
+} catch (err) {
+    logger.error(`[Pay Index] ❌ No se pudo cargar ./webhooks: ${err.message}`);
+}
+
+// ================================================================
+// SERVICIOS AUXILIARES (con protección)
 // ================================================================
 
-const intencionesRouter = require('./intenciones');
-const cuentasRouter = require('./cuentas');
-const retirosRouter = require('./retiros');
-const stripeConnectRouter = require('./stripe-connect');
-const webhooksRouter = require('./webhooks');
+let paisesService = null;
+try {
+    paisesService = require('../../services/pay/geo/paises');
+} catch (err) {
+    logger.error(
+        `[Pay Index] ❌ No se pudo cargar services/pay/geo/paises: ${err.message}`
+    );
+}
+
+let errorsService = null;
+try {
+    errorsService = require('../../services/pay/errors');
+} catch (err) {
+    logger.error(
+        `[Pay Index] ❌ No se pudo cargar services/pay/errors: ${err.message}`
+    );
+}
 
 // ================================================================
 // HEALTH CHECK DEL MÓDULO PAY
@@ -60,12 +131,17 @@ router.get('/health', function (req, res) {
     return res.status(200).json({
         success: true,
         data: {
-            servicio: 'Csariel\'s Pay',
+            servicio: "Csariel's Pay",
             version: '1.0.0',
             proveedores: {
                 stripe: Boolean(process.env.STRIPE_SECRET_KEY),
                 fintoc: Boolean(process.env.FINTOC_SECRET_KEY),
                 nowpayments: Boolean(process.env.NOWPAYMENTS_API_KEY)
+            },
+            routers_cargados: routersCargados,
+            servicios_auxiliares: {
+                paises: Boolean(paisesService),
+                errors: Boolean(errorsService)
             },
             timestamp: new Date().toISOString()
         }
@@ -75,68 +151,78 @@ router.get('/health', function (req, res) {
 // ================================================================
 // MONTAJE DE SUB-ROUTERS
 // ================================================================
-// El orden importa: los webhooks van al final porque
-// usan express.raw() y no deben ser interceptados por
-// el express.json() global.
+
+if (intencionesRouter) {
+    router.use('/intenciones', intencionesRouter);
+    // Alias para comodidad: /api/pay/mis-intenciones → /api/pay/intenciones/mias
+    // NOTA: el alias real está definido dentro de intenciones.js para
+    // evitar duplicación de lógica.
+}
+
+if (cuentasRouter) {
+    router.use('/cuentas', cuentasRouter);
+}
+
+if (retirosRouter) {
+    router.use('/retiros', retirosRouter);
+}
+
+if (stripeConnectRouter) {
+    router.use('/stripe-connect', stripeConnectRouter);
+}
+
+// ================================================================
+// RUTAS AMIGABLES
 // ================================================================
 
-router.use('/intenciones', intencionesRouter);
-router.use('/cuentas', cuentasRouter);
-router.use('/retiros', retirosRouter);
-router.use('/stripe-connect', stripeConnectRouter);
-
-// Rutas amigables (sin necesidad de /cuentas/... para lo más común)
-const { verificarToken } = require('../../middleware/auth');
-
 // GET /api/pay/metodos-disponibles?pais=MX
-router.get(
-    '/metodos-disponibles',
-    async function (req, res) {
-        try {
-            const paises = require('../../services/pay/geo/paises');
-            const codigoPais = paises.normalizarCodigoPais(req.query.pais)
-                || paises.PAIS_POR_DEFECTO;
-
-            if (!paises.esPaisSoportado(codigoPais)) {
-                return res.status(400).json({
-                    success: false,
-                    error: `El país ${codigoPais} no está disponible en Csariel's Pay`
-                });
-            }
-
-            const metodos = paises.metodosDisponiblesConProveedor(codigoPais);
-            const config = paises.obtenerPais(codigoPais);
-
-            return res.status(200).json({
-                success: true,
-                data: {
-                    pais: codigoPais,
-                    moneda_local: config.moneda_local,
-                    metodos: metodos
-                }
-            });
-        } catch (err) {
-            logger.error(`[Pay] Error en /metodos-disponibles: ${err.message}`);
-            return res.status(500).json({
+router.get('/metodos-disponibles', async function (req, res) {
+    try {
+        if (!paisesService) {
+            return res.status(503).json({
                 success: false,
-                error: 'Error interno'
+                error: 'Servicio de países no disponible'
             });
         }
-    }
-);
 
-// GET /api/pay/mis-intenciones -> alias de /intenciones (ver intenciones.js)
-// Se resuelve con un middleware que redirige internamente.
-router.use('/mis-intenciones', function (req, res, next) {
-    req.url = '/' + req.url.replace(/^\//, '');
-    intencionesRouter(req, res, next);
+        const codigoPais =
+            paisesService.normalizarCodigoPais(req.query.pais) ||
+            paisesService.PAIS_POR_DEFECTO;
+
+        if (!paisesService.esPaisSoportado(codigoPais)) {
+            return res.status(400).json({
+                success: false,
+                error: `El país ${codigoPais} no está disponible en Csariel's Pay`
+            });
+        }
+
+        const metodos = paisesService.metodosDisponiblesConProveedor(codigoPais);
+        const config = paisesService.obtenerPais(codigoPais);
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                pais: codigoPais,
+                moneda_local: config.moneda_local,
+                metodos: metodos
+            }
+        });
+    } catch (err) {
+        logger.error(`[Pay] Error en /metodos-disponibles: ${err.message}`);
+        return res.status(500).json({
+            success: false,
+            error: 'Error interno'
+        });
+    }
 });
 
 // ================================================================
 // WEBHOOKS (al final, con sus propios middlewares)
 // ================================================================
 
-router.use('/webhooks', webhooksRouter);
+if (webhooksRouter) {
+    router.use('/webhooks', webhooksRouter);
+}
 
 // ================================================================
 // 404 DEL MÓDULO PAY
@@ -145,34 +231,33 @@ router.use('/webhooks', webhooksRouter);
 router.use(function (req, res) {
     return res.status(404).json({
         success: false,
-        error: 'Endpoint de Csariel\'s Pay no encontrado'
+        error: "Endpoint de Csariel's Pay no encontrado"
     });
 });
 
 // ================================================================
 // ERROR HANDLER DEL MÓDULO PAY
 // ================================================================
-// Captura errores tipados del Core y responde con el formato
-// estándar del proyecto.
-// ================================================================
 
 router.use(function (err, req, res, next) {
-    // Si el error es del Core de Pay, dejar que su helper lo formatee
-    try {
-        const { responderError } = require('../../services/pay/errors');
-        return responderError(res, err);
-    } catch (errCarga) {
-        logger.error(`[Pay] Error handler no disponible: ${errCarga.message}`);
+    logger.error(`[Pay] Error global: ${err && err.message ? err.message : err}`);
 
-        if (res.headersSent) {
-            return next(err);
+    if (errorsService && typeof errorsService.responderError === 'function') {
+        try {
+            return errorsService.responderError(res, err);
+        } catch (errFormat) {
+            logger.error(`[Pay] responderError falló: ${errFormat.message}`);
         }
-
-        return res.status(500).json({
-            success: false,
-            error: 'Error interno de Csariel\'s Pay'
-        });
     }
+
+    if (res.headersSent) {
+        return next(err);
+    }
+
+    return res.status(500).json({
+        success: false,
+        error: "Error interno de Csariel's Pay"
+    });
 });
 
 module.exports = router;
