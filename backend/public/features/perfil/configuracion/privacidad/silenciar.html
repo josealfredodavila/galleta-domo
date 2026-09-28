@@ -7,7 +7,7 @@
     <title>Silenciar y bloquear · Sariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
-    
+
     <link rel="stylesheet" href="../../../shared/config-layout.css" />
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -159,16 +159,24 @@
             border-bottom: none;
         }
         .cfg-item-lista .icon {
-            width: 36px;
-            height: 36px;
+            width: 38px;
+            height: 38px;
             border-radius: 50%;
-            background: rgba(212, 175, 55, 0.1);
+            background: linear-gradient(135deg, #0F2D1A, #D4AF37);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1rem;
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.9rem;
             flex-shrink: 0;
             overflow: hidden;
+            border: 1px solid var(--cfg-border);
+        }
+        .cfg-item-lista .icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
         .cfg-item-lista .info {
             flex: 1;
@@ -185,6 +193,9 @@
         .cfg-item-lista .info .handle {
             font-size: 0.68rem;
             color: var(--cfg-text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .cfg-item-lista .btn-eliminar {
             background: rgba(255, 51, 102, 0.1);
@@ -230,6 +241,12 @@
             display: flex;
             flex-wrap: wrap;
             min-height: 50px;
+        }
+        .cfg-loading-mini {
+            padding: 20px;
+            text-align: center;
+            color: var(--cfg-text-muted);
+            font-size: 0.75rem;
         }
     </style>
 </head>
@@ -300,55 +317,92 @@
         let cuentasBloqueadas = [];
         let palabrasSilenciadas = [];
 
+        /* ============================================================
+           CARGAR DATOS DESDE SUPABASE
+           - El RPC listar_cuentas_gestionadas devuelve:
+             id, usuario_id, cuenta_gestionada_id, tipo, motivo, created_at
+           - Los datos de perfil (nombre, handle, avatar) se obtienen
+             con una segunda consulta a perfiles_publicos.
+        ============================================================ */
         async function cargarTodo() {
             await Promise.all([
-                cargarCuentasSilenciadas(),
-                cargarCuentasBloqueadas(),
+                cargarCuentas('silenciada'),
+                cargarCuentas('bloqueada'),
                 cargarPalabrasSilenciadas(),
             ]);
         }
 
-        async function cargarCuentasSilenciadas() {
+        async function cargarCuentas(tipo) {
             try {
                 const client = await esperarCliente();
-                if (!client) { cuentasSilenciadas = []; return; }
+                if (!client) {
+                    if (tipo === 'silenciada') cuentasSilenciadas = [];
+                    else cuentasBloqueadas = [];
+                    return;
+                }
 
                 const { data, error } = await client.rpc('listar_cuentas_gestionadas', {
-                    p_tipo: 'silenciada'
+                    p_tipo: tipo
                 });
 
                 if (error) {
                     console.warn('Error RPC listar_cuentas_gestionadas:', error.message);
-                    cuentasSilenciadas = [];
+                    if (tipo === 'silenciada') cuentasSilenciadas = [];
+                    else cuentasBloqueadas = [];
                     return;
                 }
 
-                cuentasSilenciadas = data || [];
-            } catch (e) {
-                console.warn('Error cargando silenciadas:', e && e.message);
-                cuentasSilenciadas = [];
-            }
-        }
+                const filas = data || [];
 
-        async function cargarCuentasBloqueadas() {
-            try {
-                const client = await esperarCliente();
-                if (!client) { cuentasBloqueadas = []; return; }
+                /* Segunda consulta: obtener datos de perfil de cada cuenta */
+                let listaConPerfil = [];
 
-                const { data, error } = await client.rpc('listar_cuentas_gestionadas', {
-                    p_tipo: 'bloqueada'
-                });
+                if (filas.length > 0) {
+                    const ids = filas
+                        .map(function (f) { return f.cuenta_gestionada_id; })
+                        .filter(Boolean);
 
-                if (error) {
-                    console.warn('Error RPC listar_cuentas_gestionadas:', error.message);
-                    cuentasBloqueadas = [];
-                    return;
+                    let perfilesMap = {};
+
+                    if (ids.length > 0) {
+                        try {
+                            const { data: perfiles, error: errP } = await client
+                                .from('perfiles_publicos')
+                                .select('id, nombre, handle, avatar_url')
+                                .in('id', ids);
+
+                            if (!errP && perfiles) {
+                                perfiles.forEach(function (p) {
+                                    perfilesMap[p.id] = p;
+                                });
+                            }
+                        } catch (errP) {
+                            console.warn('Error obteniendo perfiles:', errP && errP.message);
+                        }
+                    }
+
+                    listaConPerfil = filas.map(function (f) {
+                        const p = perfilesMap[f.cuenta_gestionada_id] || {};
+                        return {
+                            id: f.id,
+                            cuenta_id: f.cuenta_gestionada_id,
+                            tipo: f.tipo,
+                            motivo: f.motivo || '',
+                            created_at: f.created_at,
+                            nombre: p.nombre || 'Usuario',
+                            handle: p.handle || 'usuario',
+                            avatar_url: p.avatar_url || null,
+                        };
+                    });
                 }
 
-                cuentasBloqueadas = data || [];
+                if (tipo === 'silenciada') cuentasSilenciadas = listaConPerfil;
+                else cuentasBloqueadas = listaConPerfil;
+
             } catch (e) {
-                console.warn('Error cargando bloqueadas:', e && e.message);
-                cuentasBloqueadas = [];
+                console.warn('Error cargando cuentas:', e && e.message);
+                if (tipo === 'silenciada') cuentasSilenciadas = [];
+                else cuentasBloqueadas = [];
             }
         }
 
@@ -372,6 +426,9 @@
             }
         }
 
+        /* ============================================================
+           RENDERIZAR
+        ============================================================ */
         function renderSecciones() {
             const totalSilenciadas = cuentasSilenciadas.length;
             const totalBloqueadas = cuentasBloqueadas.length;
@@ -439,22 +496,9 @@
             return div.innerHTML;
         }
 
-        window.onToggleNotifSilenciadas = async (value) => {
-            await cfgSetPref('silenciar_notif_cuentas', value);
-            cfgToast(
-                value ? '🔔 Recibirás notificaciones' : '🔕 Notificaciones silenciadas',
-                value ? 'success' : 'warning'
-            );
-        };
-
-        window.onToggleNotifPalabras = async (value) => {
-            await cfgSetPref('silenciar_notif_palabras', value);
-            cfgToast(
-                value ? '🔔 Recibirás notificaciones' : '🔕 Notificaciones silenciadas',
-                value ? 'success' : 'warning'
-            );
-        };
-
+        /* ============================================================
+           MODAL DE CUENTAS
+        ============================================================ */
         window.onVerSilenciadas = () => {
             if (cuentasSilenciadas.length === 0) {
                 cfgToast('📭 No tienes cuentas silenciadas', 'warning');
@@ -477,16 +521,23 @@
 
             const titulo = tipo === 'silenciadas' ? '🔇 Cuentas silenciadas' : '🚫 Cuentas bloqueadas';
 
-            const itemsHtml = lista.map(c => `
-                <div class="cfg-item-lista">
-                    <div class="icon">${c.avatar_url ? '<img src="' + escapeHtml(c.avatar_url) + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">' : '◈'}</div>
-                    <div class="info">
-                        <div class="nombre">${escapeHtml(c.nombre || 'Usuario')}</div>
-                        <div class="handle">@${escapeHtml(c.handle || 'usuario')}</div>
+            const itemsHtml = lista.map(c => {
+                const inicial = (c.nombre || 'U').charAt(0).toUpperCase();
+                const avatar = c.avatar_url
+                    ? `<img src="${escapeHtml(c.avatar_url)}" alt="${escapeHtml(c.nombre)}">`
+                    : inicial;
+
+                return `
+                    <div class="cfg-item-lista">
+                        <div class="icon">${avatar}</div>
+                        <div class="info">
+                            <div class="nombre">${escapeHtml(c.nombre)}</div>
+                            <div class="handle">@${escapeHtml(c.handle)}</div>
+                        </div>
+                        <button class="btn-eliminar" onclick="window.onDesbloquearCuenta('${c.cuenta_id}', '${tipo}')">Quitar</button>
                     </div>
-                    <button class="btn-eliminar" onclick="window.onDesbloquearCuenta('${c.cuenta_id}', '${tipo}')">Quitar</button>
-                </div>
-            `).join('');
+                `;
+            }).join('');
 
             overlay.innerHTML = `
                 <div class="cfg-modal" style="max-width: 420px; max-height: 80vh; overflow-y: auto;">
@@ -502,15 +553,14 @@
             document.body.appendChild(overlay);
             requestAnimationFrame(() => overlay.classList.add('show'));
 
-            overlay.querySelector('[data-action="close"]').onclick = () => {
+            const closeModal = () => {
                 overlay.classList.remove('show');
                 setTimeout(() => overlay.remove(), 200);
             };
+
+            overlay.querySelector('[data-action="close"]').onclick = closeModal;
             overlay.onclick = (e) => {
-                if (e.target === overlay) {
-                    overlay.classList.remove('show');
-                    setTimeout(() => overlay.remove(), 200);
-                }
+                if (e.target === overlay) closeModal();
             };
         }
 
@@ -551,6 +601,9 @@
             }
         };
 
+        /* ============================================================
+           PALABRAS SILENCIADAS
+        ============================================================ */
         window.onAgregarPalabra = () => {
             const overlay = document.createElement('div');
             overlay.className = 'cfg-modal-overlay';
@@ -658,6 +711,28 @@
             }
         };
 
+        /* ============================================================
+           NOTIFICACIONES
+        ============================================================ */
+        window.onToggleNotifSilenciadas = async (value) => {
+            await cfgSetPref('silenciar_notif_cuentas', value);
+            cfgToast(
+                value ? '🔔 Recibirás notificaciones' : '🔕 Notificaciones silenciadas',
+                value ? 'success' : 'warning'
+            );
+        };
+
+        window.onToggleNotifPalabras = async (value) => {
+            await cfgSetPref('silenciar_notif_palabras', value);
+            cfgToast(
+                value ? '🔔 Recibirás notificaciones' : '🔕 Notificaciones silenciadas',
+                value ? 'success' : 'warning'
+            );
+        };
+
+        /* ============================================================
+           INICIALIZAR
+        ============================================================ */
         window.addEventListener('DOMContentLoaded', async () => {
             await new Promise(resolve => setTimeout(resolve, 400));
 
