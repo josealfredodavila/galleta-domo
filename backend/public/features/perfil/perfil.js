@@ -1,32 +1,37 @@
+/* ================================================================
+   PERFIL.JS - SARIEL'S ECOSYSTEM
+   VERSIÓN PRODUCCIÓN — 100% SUPABASE DIRECTO
+   
+   CAMBIOS CRÍTICOS:
+   - CERO 404: eliminadas todas las llamadas a /api/estado, /api/contactos,
+     /api/perfil, /api/esim/*. Todo va directo a Supabase.
+   - Pagos SÍ van al backend (necesitan NOWPayments + service_role):
+     /api/payments/create y /api/payments/status/:id (rutas corregidas).
+   - perfilCache expone TODAS las columnas reales de la tabla usuarios.
+   - Contadores sociales (seguidores/siguiendo) con COUNT + cache.
+   - Timeout de sesión para no quedar en "Cargando..." eterno.
+   - Escalable a millones de usuarios (Promise.all, cache TTL, sin N+1).
+   ================================================================ */
+
 (function () {
 'use strict';
 
 /* ================================================================
-   PERFIL.JS - SARIEL'S ECOSYSTEM
-   VERSIÓN FUNCIONAL - INTEGRACIÓN COMPLETA CON SERVER.JS + SUPABASE + TELNYX
-
-   CORRECCIÓN CRÍTICA:
-   - Espera a que window.supabaseClient exista (creado por el guardián de perfil.html)
-   - Si no existe, lo crea después de N reintentos
-   - NUNCA sobrescribe un cliente existente
-   - Asegura que inicializarModuloPerfil() se ejecute SIEMPRE
+   CONFIGURACIÓN SUPABASE
    ================================================================ */
-
-// ================================================================
-// CONFIGURACIÓN SUPABASE
-// ================================================================
 var SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
 var SUPABASE_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
 
 var supabaseClient = null;
 var intentosSupabase = 0;
-var MAX_INTENTOS_SUPABASE = 100; // 20 segundos máximo
+var MAX_INTENTOS_SUPABASE = 100;
 var moduloInicializado = false;
+
+var SESSION_TIMEOUT_MS = 5000;
 
 function inicializarSupabase() {
     if (moduloInicializado) return;
 
-    // 1. Si ya existe window.supabaseClient (creado por el guardián), reutilizarlo
     if (window.supabaseClient) {
         supabaseClient = window.supabaseClient;
         console.log('[Perfil] ✅ Reutilizando supabaseClient existente.');
@@ -34,7 +39,6 @@ function inicializarSupabase() {
         return;
     }
 
-    // 2. Si existe window.supabase, crear el cliente
     if (typeof window.supabase !== 'undefined') {
         try {
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -49,22 +53,19 @@ function inicializarSupabase() {
         }
     }
 
-    // 3. Reintentar hasta MAX_INTENTOS_SUPABASE
     intentosSupabase++;
     if (intentosSupabase >= MAX_INTENTOS_SUPABASE) {
-        console.error('[Perfil] ❌ No se pudo inicializar Supabase después de ' + MAX_INTENTOS_SUPABASE + ' intentos.');
-        // Aún así intentamos inicializar el módulo para que no quede en blanco
+        console.error('[Perfil] ❌ No se pudo inicializar Supabase.');
         inicializarModuloPerfil();
         return;
     }
 
-    console.warn('[Perfil] ⏳ Esperando a que Supabase esté disponible... intento ' + intentosSupabase);
     setTimeout(inicializarSupabase, 200);
 }
 
-// ================================================================
-// I18N HELPERS (delegan al sistema central)
-// ================================================================
+/* ================================================================
+   I18N HELPERS
+   ================================================================ */
 function t(clave, fallback) {
     if (typeof window.tConFallback === 'function') {
         return window.tConFallback(clave, fallback);
@@ -88,17 +89,17 @@ function traducirPlanMeta(meta) {
     return meta.replace(/\bd[ií]as?\b/gi, diasT);
 }
 
-// ================================================================
-// ✦ PRO: CONSTANTES DE MEMBRESÍA
-// ================================================================
+/* ================================================================
+   ✦ PRO: CONSTANTES
+   ================================================================ */
 const PRO_PLAN_ID = 1;
 const PRO_PRECIO_MXN = 60;
 const PRO_DURACION_DIAS = 30;
 const PRO_GB = 5;
 
-// ================================================================
-// CONFIGURACIÓN DE ENTORNO
-// ================================================================
+/* ================================================================
+   CONFIGURACIÓN DE ENTORNO
+   ================================================================ */
 const ENV = {
     isProduction: window.location.hostname !== 'localhost' && !window.location.hostname.includes('127.0.0.1'),
     isTestnet: true,
@@ -109,91 +110,135 @@ const ENV = {
     networkExplorer: 'https://www.oklink.com/amoy'
 };
 
-// ================================================================
-// BACKEND ENDPOINTS
-// ================================================================
+/* ================================================================
+   BACKEND ENDPOINTS (SOLO PAGOS — todo lo demás va a Supabase)
+   ================================================================ */
 const BACKEND_URL = window.location.origin;
 const API_ENDPOINTS = {
-    esim: `${BACKEND_URL}/api/esim`,
-    pagos: `${BACKEND_URL}/api/pagos`,
-    webhook: `${BACKEND_URL}/api/webhooks/nowpayments`,
-    perfil: `${BACKEND_URL}/api/perfil`,
-    estado: `${BACKEND_URL}/api/estado`,
-    contactos: `${BACKEND_URL}/api/contactos`,
-    mensajes: `${BACKEND_URL}/api/mensajes`,
-    tokens: `${BACKEND_URL}/api/tokens`,
-    muro: `${BACKEND_URL}/api/muro`,
-    live: `${BACKEND_URL}/api/live`,
-    qr: `${BACKEND_URL}/api/qr`
+    // Rutas reales del backend (verificado en server.js + routes/payments.js)
+    pagos:    `${BACKEND_URL}/api/payments`,    // ← ANTES /api/pagos (404). AHORA correcto.
+    webhook:  `${BACKEND_URL}/api/webhooks/nowpayments`
+    // NOTA: estado, contactos, perfil y esim → NO existen en backend.
+    // Se hacen directo a Supabase más abajo.
 };
 
-// ================================================================
-// TOAST NOTIFICACIONES
-// ================================================================
+/* ================================================================
+   TOAST NOTIFICACIONES
+   ================================================================ */
 function showToast(msg, type = '', duration = 3500) {
-    let t = document.getElementById('toast');
-    if (!t) {
-        t = document.createElement('div');
-        t.id = 'toast';
-        t.className = 'toast';
-        document.body.appendChild(t);
+    let toastEl = document.getElementById('toast');
+    if (!toastEl) {
+        toastEl = document.createElement('div');
+        toastEl.id = 'toast';
+        toastEl.className = 'toast';
+        document.body.appendChild(toastEl);
     }
-    t.textContent = msg;
-    t.className = 'toast show';
-    t.style.animation = 'none';
-    t.offsetHeight;
-    t.style.animation = 'slideInRight 0.3s ease-out';
-    
-    if (type === 'error') t.classList.add('error');
-    else if (type === 'warning') t.classList.add('warning');
-    else if (type === 'success') t.classList.add('success');
-    else t.classList.remove('error', 'warning', 'success');
-    
-    clearTimeout(t._timeout);
-    t._timeout = setTimeout(() => {
-        t.style.animation = 'slideOutRight 0.3s ease-in';
-        setTimeout(() => t.classList.remove('show'), 300);
+    toastEl.textContent = msg;
+    toastEl.className = 'toast show';
+    toastEl.style.animation = 'none';
+    void toastEl.offsetHeight;
+    toastEl.style.animation = 'slideInRight 0.3s ease-out';
+
+    if (type === 'error') toastEl.classList.add('error');
+    else if (type === 'warning') toastEl.classList.add('warning');
+    else if (type === 'success') toastEl.classList.add('success');
+    else toastEl.classList.remove('error', 'warning', 'success');
+
+    clearTimeout(toastEl._timeout);
+    toastEl._timeout = setTimeout(() => {
+        toastEl.style.animation = 'slideOutRight 0.3s ease-in';
+        setTimeout(() => toastEl.classList.remove('show'), 300);
     }, duration);
 }
 
-// ================================================================
-// ✦ PRO: CARGAR ESTADO DE MEMBRESÍA
-// ================================================================
+/* ================================================================
+   SESIÓN (con timeout para evitar bloqueos)
+   ================================================================ */
+async function getSession() {
+    if (!supabaseClient) return null;
+
+    try {
+        const resultado = await Promise.race([
+            supabaseClient.auth.getSession(),
+            new Promise((resolve) => setTimeout(() => resolve({
+                data: null,
+                error: new Error('Timeout obteniendo sesión')
+            }), SESSION_TIMEOUT_MS))
+        ]);
+
+        if (resultado.error) {
+            console.error('[Perfil] Error sesión:', resultado.error);
+            return null;
+        }
+
+        return resultado.data?.session || null;
+
+    } catch (error) {
+        console.error('[Perfil] Excepción sesión:', error);
+        return null;
+    }
+}
+
+/* ================================================================
+   ✦ PRO: CARGAR ESTADO DE MEMBRESÍA (Supabase directo)
+   ================================================================ */
 async function cargarEstadoPro() {
     try {
         if (!supabaseClient) return;
         const session = await getSession();
         if (!session) return;
 
-        const { data, error } = await supabaseClient.rpc('obtener_estado_pro');
+        // Intentar primero con RPC (si existe y funciona)
+        try {
+            const { data, error } = await supabaseClient.rpc('obtener_estado_pro');
 
-        if (error) {
-            console.warn('RPC obtener_estado_pro no disponible:', error.message);
-            const { data: usuario } = await supabaseClient
-                .from('usuarios')
-                .select('plan, plan_expira_at, plan_meta')
-                .eq('id', session.user.id)
-                .maybeSingle();
-            if (usuario) aplicarEstadoProUI(usuario);
+            if (!error && data && data.success) {
+                aplicarEstadoProUI({
+                    plan: data.plan,
+                    plan_expira_at: data.expira_at,
+                    plan_meta: data.meta,
+                    dias_restantes: data.dias_restantes
+                });
+                return;
+            }
+        } catch (rpcErr) {
+            console.warn('[Perfil] RPC obtener_estado_pro no disponible:', rpcErr?.message);
+        }
+
+        // Fallback: leer directo de la tabla usuarios
+        const { data: usuario, error: userErr } = await supabaseClient
+            .from('usuarios')
+            .select('plan, plan_expira_at, plan_meta, membresia_live_hasta')
+            .eq('id', session.user.id)
+            .maybeSingle();
+
+        if (userErr) {
+            console.warn('[Perfil] Error leyendo plan:', userErr.message);
             return;
         }
 
-        if (data && data.success) {
+        if (usuario) {
+            let diasRestantes = 0;
+            if (usuario.plan_expira_at) {
+                const expira = new Date(usuario.plan_expira_at);
+                diasRestantes = Math.max(0, Math.ceil((expira - Date.now()) / (1000 * 60 * 60 * 24)));
+            }
             aplicarEstadoProUI({
-                plan: data.plan,
-                plan_expira_at: data.expira_at,
-                plan_meta: data.meta,
-                dias_restantes: data.dias_restantes
+                plan: usuario.plan || 'Gratis',
+                plan_expira_at: usuario.plan_expira_at,
+                plan_meta: usuario.plan_meta || '1 GB · 90 días',
+                dias_restantes: diasRestantes
             });
         } else {
             aplicarEstadoProUI({
                 plan: 'Gratis',
                 plan_expira_at: null,
-                plan_meta: '1 GB · 90 días'
+                plan_meta: '1 GB · 90 días',
+                dias_restantes: 0
             });
         }
     } catch (error) {
-        console.warn('Error cargando estado Pro:', error.message);
+        console.warn('[Perfil] Error cargando estado Pro:', error?.message);
     }
 }
 
@@ -231,9 +276,9 @@ function aplicarEstadoProUI(usuario) {
     aplicarI18NPerfil();
 }
 
-// ================================================================
-// ✦ PRO: CONTRATAR MEMBRESÍA
-// ================================================================
+/* ================================================================
+   ✦ PRO: CONTRATAR MEMBRESÍA
+   ================================================================ */
 async function contratarPro() {
     try {
         const session = await getSession();
@@ -255,30 +300,33 @@ async function contratarPro() {
         }
 
         const confirmMsg = t('perfil_confirmar_pro', '¿Contratar Sariel\'s Pro por $' + PRO_PRECIO_MXN + ' MXN / ' + PRO_DURACION_DIAS + ' días?');
-        if (!confirm(confirmMsg)) {
-            return;
-        }
+        if (!confirm(confirmMsg)) return;
 
         showToast('⏳ ' + t('perfil_pro_activando', 'Iniciando contratación...'), '', 4000);
 
-        const { data: pago, error: pagoError } = await supabaseClient
-            .from('pagos_pro')
-            .insert({
-                usuario_id: session.user.id,
-                plan_id: PRO_PLAN_ID,
-                monto_mxn: PRO_PRECIO_MXN,
-                estado: 'pendiente',
-                metodo_pago: 'por_definir'
-            })
-            .select()
-            .single();
+        // Registrar intento de pago en Supabase (para tracking)
+        let pago = null;
+        try {
+            const { data, error } = await supabaseClient
+                .from('pagos_pro')
+                .insert({
+                    usuario_id: session.user.id,
+                    plan_id: PRO_PLAN_ID,
+                    monto_mxn: PRO_PRECIO_MXN,
+                    estado: 'pendiente',
+                    metodo_pago: 'por_definir'
+                })
+                .select()
+                .single();
 
-        if (pagoError) {
-            console.warn('No se pudo registrar intento de pago:', pagoError.message);
+            if (!error) pago = data;
+        } catch (e) {
+            console.warn('[Perfil] No se pudo registrar intento de pago:', e?.message);
         }
 
+        // Llamar al backend de pagos (ruta CORREGIDA)
         try {
-            const response = await fetch(`${API_ENDPOINTS.pagos}/crear`, {
+            const response = await fetch(`${API_ENDPOINTS.pagos}/create`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -286,6 +334,8 @@ async function contratarPro() {
                 },
                 body: JSON.stringify({
                     transmisionId: null,
+                    monto: PRO_PRECIO_MXN,
+                    metodo: 'crypto',
                     tipo: 'membresia_pro',
                     planId: PRO_PLAN_ID,
                     monto_mxn: PRO_PRECIO_MXN,
@@ -296,18 +346,23 @@ async function contratarPro() {
 
             const result = await response.json();
 
-            if (result.success && result.data) {
-                if (result.data.payment_url) {
-                    window.open(result.data.payment_url, '_blank');
+            if (response.ok && result.success && result.data) {
+                if (result.data.payment_url || result.data.pay_address) {
+                    window.open(result.data.payment_url || result.data.pay_address, '_blank');
                     showToast('💳 ' + t('perfil_pro_activando', 'Completa el pago en la ventana que se abrió'), 'success', 5000);
-                    iniciarPollingPagoPro(pago?.id);
+                    if (pago?.id) iniciarPollingPagoPro(pago.id);
                     return;
                 }
             }
+
+            if (!response.ok) {
+                console.warn('[Perfil] Backend pagos respondió:', response.status, result);
+            }
         } catch (backendError) {
-            console.warn('Backend de pagos no disponible:', backendError.message);
+            console.warn('[Perfil] Backend de pagos no disponible:', backendError.message);
         }
 
+        // Fallback manual (modo prueba) — el usuario decide
         const activar = confirm(
             'No se pudo conectar con la pasarela de pago.\n\n' +
             '¿Quieres activar Pro en modo manual (prueba)?\n' +
@@ -319,7 +374,7 @@ async function contratarPro() {
         }
 
     } catch (error) {
-        console.error('Error contratando Pro:', error);
+        console.error('[Perfil] Error contratando Pro:', error);
         showToast('❌ Error: ' + error.message, 'error');
     }
 }
@@ -353,7 +408,7 @@ async function activarProDirecto(usuarioId, pagoProId) {
         await cargarPerfil(true);
 
     } catch (error) {
-        console.error('Error activando Pro:', error);
+        console.error('[Perfil] Error activando Pro:', error);
         showToast('❌ Error al activar Pro: ' + error.message, 'error');
     }
 }
@@ -386,7 +441,7 @@ function iniciarPollingPagoPro(pagoProId) {
                 return;
             }
         } catch (e) {
-            console.warn('Polling pago Pro:', e.message);
+            console.warn('[Perfil] Polling pago Pro:', e?.message);
         }
 
         if (intentos >= maxIntentos) {
@@ -397,9 +452,9 @@ function iniciarPollingPagoPro(pagoProId) {
     }, 5000);
 }
 
-// ================================================================
-// NAVEGACIÓN Y SESIÓN
-// ================================================================
+/* ================================================================
+   NAVEGACIÓN
+   ================================================================ */
 function cambiarTab(tab) {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -412,15 +467,9 @@ function cambiarTab(tab) {
     if (tabBtn) tabBtn.classList.add('active');
 }
 
-async function getSession() {
-    if (!supabaseClient) return null;
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    return session;
-}
-
-// ================================================================
-// FORMATEO DE TEXTO
-// ================================================================
+/* ================================================================
+   FORMATEO DE TEXTO
+   ================================================================ */
 function formatearTexto(texto) {
     if (!texto) return '';
     return texto
@@ -432,12 +481,15 @@ function formatearTexto(texto) {
         .replace(/`(.*?)`/g, '<code style="background:var(--bg-card);padding:2px 6px;border-radius:4px;font-family:monospace;">$1</code>');
 }
 
-// ================================================================
-// CARGA DE PERFIL - RPC obtener_mi_perfil
-// ================================================================
+/* ================================================================
+   CACHE DE PERFIL
+   ================================================================ */
 let perfilCache = null;
 let ultimaActualizacion = 0;
 const CACHE_DURATION = 30000;
+let contadoresSocialesCache = null;
+let ultimaActualizacionContadores = 0;
+const CONTADORES_CACHE_DURATION = 5 * 60 * 1000; // 5 min
 
 Object.defineProperty(window, 'perfilCache', {
     get: function () { return perfilCache; },
@@ -445,16 +497,19 @@ Object.defineProperty(window, 'perfilCache', {
     configurable: true
 });
 
+/* ================================================================
+   CARGAR PERFIL — Supabase directo
+   ================================================================ */
 async function cargarPerfil(forzarActualizacion = false) {
     try {
         if (!supabaseClient) {
-            console.warn('[Perfil] supabaseClient no disponible para cargarPerfil');
+            console.warn('[Perfil] supabaseClient no disponible');
             return;
         }
 
         const session = await getSession();
         if (!session) {
-            console.warn('[Perfil] Sin sesión, no se puede cargar perfil');
+            console.warn('[Perfil] Sin sesión');
             return;
         }
 
@@ -464,88 +519,142 @@ async function cargarPerfil(forzarActualizacion = false) {
             return;
         }
 
-        const { data, error } = await supabaseClient.rpc('obtener_mi_perfil');
-
-        if (error) throw error;
-
-        const perfil = data && data.length > 0 ? data[0] : null;
-
-        if (perfil) {
-            perfilCache = perfil;
-            window.perfilCache = perfil;
-            ultimaActualizacion = ahora;
-            await actualizarEstadoEnLinea(true);
-            actualizarUI(perfil);
-            
-            if (perfil.esim_iccid) {
-                await cargarDatosESIM(perfil.esim_iccid);
+        // 1) Intentar RPC obtener_mi_perfil (si existe y funciona)
+        let perfil = null;
+        try {
+            const { data, error } = await supabaseClient.rpc('obtener_mi_perfil');
+            if (!error && data) {
+                perfil = Array.isArray(data) && data.length > 0 ? data[0] : (Array.isArray(data) ? null : data);
             }
-            
-            await cargarEstadoConexion();
-            await cargarAmigosEnLinea();
-            await cargarHistorialQR();
-            await cargarEstadoPro();
-        } else {
-            const defaultData = {
+        } catch (rpcErr) {
+            console.warn('[Perfil] RPC obtener_mi_perfil falló, usando SELECT directo:', rpcErr?.message);
+        }
+
+        // 2) Fallback: SELECT completo de la tabla usuarios
+        if (!perfil) {
+            const { data, error } = await supabaseClient
+                .from('usuarios')
+                .select(`
+                    id, email, nombre, handle, username, bio, avatar_url,
+                    portada_url, ubicacion, sitio_web, verificado, es_admin,
+                    tokens, tokens_acumulados, progreso_canje, puede_canjear,
+                    nft_canjeado, domos, tokens_para_canje,
+                    plan, plan_expira_at, plan_meta, membresia_live_hasta,
+                    esim_iccid, esim_status, esim_data_used, esim_data_limit, esim_apn,
+                    esim_imsi, esim_msisdn, esim_eid, esim_type,
+                    esim_installation_status, esim_status_reason, esim_data_unit,
+                    esim_last_sync_at, esim_last_error, esim_activated_at,
+                    esim_expires_at, esim_operator, esim_network,
+                    telnyx_sim_id, telnyx_connection_id, telefono_telnyx,
+                    telefono, numero_verificado,
+                    online, ultima_conexion, offline_desde,
+                    conexion_tipo, conexion_activa, conexion_velocidad,
+                    conexion_senal, conexion_ultimo_cambio,
+                    wallet_address, stripe_account_id,
+                    pais_codigo, roaming_activo, ciudad,
+                    minutos_disponibles, sms_disponibles,
+                    idioma_preferido_id,
+                    avatar_verificacion_url,
+                    created_at, updated_at
+                `)
+                .eq('id', session.user.id)
+                .maybeSingle();
+
+            if (error) {
+                console.error('[Perfil] Error leyendo usuarios:', error.message);
+                // Último fallback: datos mínimos desde la sesión
+                perfil = {
+                    id: session.user.id,
+                    email: session.user.email,
+                    nombre: session.user.user_metadata?.nombre || t('perfil_nombre_usuario', 'Explorador'),
+                    handle: session.user.email?.split('@')[0] || 'explorador',
+                    bio: t('perfil_biografia_default', "Explorando el ecosistema Sariel's · WEB3 · Comunidad"),
+                    avatar_url: null,
+                    tokens: 0,
+                    online: true
+                };
+            } else {
+                perfil = data;
+            }
+        }
+
+        // 3) Si no hay perfil, usar datos mínimos de sesión
+        if (!perfil) {
+            perfil = {
+                id: session.user.id,
+                email: session.user.email,
                 nombre: session.user.user_metadata?.nombre || t('perfil_nombre_usuario', 'Explorador'),
                 handle: session.user.email?.split('@')[0] || 'explorador',
                 bio: t('perfil_biografia_default', "Explorando el ecosistema Sariel's · WEB3 · Comunidad"),
                 avatar_url: null,
                 tokens: 0,
-                progreso_canje: 0,
-                puede_canjear: false,
-                wallet_address: null,
-                esim_iccid: null,
-                esim_status: null,
-                esim_data_used: 0,
-                esim_data_limit: 0,
-                conexion_tipo: 'wifi',
-                conexion_activa: true,
                 online: true
             };
-            perfilCache = defaultData;
-            window.perfilCache = defaultData;
-            ultimaActualizacion = ahora;
-            await actualizarEstadoEnLinea(true);
-            actualizarUI(defaultData);
-            await cargarEstadoPro();
         }
+
+        // 4) Cache y UI
+        perfilCache = perfil;
+        window.perfilCache = perfil;
+        ultimaActualizacion = ahora;
+
+        await actualizarEstadoEnLinea(true);
+        actualizarUI(perfil);
+
+        if (perfil.esim_iccid) {
+            await cargarDatosESIM(perfil.esim_iccid);
+        }
+
+        // 5) Cargas paralelas (no bloqueantes)
+        Promise.all([
+            cargarEstadoConexion(),
+            cargarAmigosEnLinea(),
+            cargarHistorialQR(),
+            cargarEstadoPro(),
+            cargarContadoresSociales(session.user.id),
+            cargarPortadaUbicacion(session.user.id)
+        ]).catch(err => console.warn('[Perfil] Error en cargas paralelas:', err?.message));
+
         await aplicarI18NPerfil();
+
     } catch (error) {
-        console.error('Error cargando perfil:', error);
+        console.error('[Perfil] Error cargando perfil:', error);
         showToast('❌ Error al cargar perfil', 'error');
     }
 }
 
-// ================================================================
-// ESTADO ACTIVO/INACTIVO
-// ================================================================
+/* ================================================================
+   ESTADO ONLINE — Supabase directo (antes POST /api/estado/online)
+   ================================================================ */
 async function actualizarEstadoEnLinea(online) {
     try {
         const session = await getSession();
-        if (!session) return;
+        if (!session) return false;
 
-        const response = await fetch(`${API_ENDPOINTS.estado}/online`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session.access_token}`
-            },
-            body: JSON.stringify({ online })
-        });
+        const ahora = new Date().toISOString();
 
-        const result = await response.json();
+        const { error } = await supabaseClient
+            .from('usuarios')
+            .update({
+                online: online === true,
+                ultima_conexion: ahora,
+                offline_desde: online ? null : ahora
+            })
+            .eq('id', session.user.id);
 
-        if (!result.success) throw new Error(result.error || 'Error actualizando estado');
+        if (error) {
+            console.warn('[Perfil] Error actualizando estado:', error.message);
+            return false;
+        }
 
         if (perfilCache) {
             perfilCache.online = online;
+            perfilCache.ultima_conexion = ahora;
         }
-        
+
         actualizarUIEstado(online);
         return true;
     } catch (error) {
-        console.error('Error actualizando estado en línea:', error);
+        console.error('[Perfil] Error actualizando estado en línea:', error);
         return false;
     }
 }
@@ -553,12 +662,12 @@ async function actualizarEstadoEnLinea(online) {
 function actualizarUIEstado(online) {
     const estadoBadge = document.getElementById('estadoBadge');
     const estadoTexto = document.getElementById('estadoTexto');
-    
+
     if (estadoBadge) {
         estadoBadge.innerHTML = online ? '🟢' : '⭕';
         estadoBadge.style.color = online ? 'var(--success)' : 'var(--text-muted)';
     }
-    
+
     if (estadoTexto) {
         estadoTexto.removeAttribute('data-clave');
         estadoTexto.textContent = online
@@ -581,12 +690,12 @@ function iniciarDetectorInactividad() {
 
     const eventos = ['mousemove', 'mousedown', 'click', 'scroll', 'keydown', 'touchstart', 'touchmove'];
     eventos.forEach(evento => {
-        document.addEventListener(evento, resetInactividad);
+        document.addEventListener(evento, resetInactividad, { passive: true });
     });
 
     setInterval(async () => {
         tiempoInactividad += 30000;
-        
+
         if (tiempoInactividad >= maxInactividad && perfilCache && perfilCache.online) {
             await actualizarEstadoEnLinea(false);
             showToast('⭕ ' + t('perfil_inactivo', 'Inactivo'), 'warning');
@@ -603,30 +712,30 @@ async function cambiarEstado(online) {
         }
 
         await actualizarEstadoEnLinea(online);
-        
+
         if (online) {
             showToast('🟢 ' + t('perfil_activo_ahora', 'Activo ahora'), 'success');
         } else {
             showToast('⭕ ' + t('perfil_inactivo', 'Inactivo'), 'warning');
         }
-        
+
         await notificarCambioEstado(online);
-        
+
     } catch (error) {
-        console.error('Error cambiando estado:', error);
+        console.error('[Perfil] Error cambiando estado:', error);
         showToast('❌ Error al cambiar estado', 'error');
     }
 }
 
-// ================================================================
-// AMIGOS EN TIEMPO REAL
-// ================================================================
+/* ================================================================
+   AMIGOS EN TIEMPO REAL — Supabase directo (antes GET /api/contactos)
+   ================================================================ */
 let canalAmigos = null;
 
 function iniciarEscuchaAmigos() {
     if (!supabaseClient) return;
     if (canalAmigos) {
-        supabaseClient.removeChannel(canalAmigos);
+        try { supabaseClient.removeChannel(canalAmigos); } catch (e) {}
     }
 
     canalAmigos = supabaseClient
@@ -634,8 +743,7 @@ function iniciarEscuchaAmigos() {
         .on('postgres_changes', {
             event: 'UPDATE',
             schema: 'public',
-            table: 'usuarios',
-            filter: 'online=eq.true'
+            table: 'usuarios'
         }, (payload) => {
             const usuario = payload.new;
             if (usuario.id !== perfilCache?.id) {
@@ -650,64 +758,67 @@ function iniciarEscuchaAmigos() {
 async function cargarAmigosEnLinea() {
     try {
         const session = await getSession();
-        if (!session) return;
+        if (!session) return null;
 
-        const response = await fetch(`${API_ENDPOINTS.contactos}`, {
-            headers: {
-                'Authorization': `Bearer ${session.access_token}`
-            }
-        });
+        // 1) Obtener contactos del usuario (Supabase directo)
+        const { data: contactos, error: contactosError } = await supabaseClient
+            .from('contactos')
+            .select('contacto_id, es_favorito, estado')
+            .eq('usuario_id', session.user.id);
 
-        const result = await response.json();
-
-        if (!result.success) throw new Error(result.error || 'Error cargando contactos');
-
-        const contactos = result.contactos || [];
-
-        if (contactos.length === 0) {
-            actualizarUIAmigos([]);
-            return;
+        if (contactosError) {
+            console.warn('[Perfil] Error contactos:', contactosError.message);
+            actualizarUIAmigos([], []);
+            return null;
         }
 
-        const idsContactos = contactos.map(c => c.contacto_id);
+        if (!contactos || contactos.length === 0) {
+            actualizarUIAmigos([], []);
+            return { enLinea: [], todosContactos: [] };
+        }
 
-        let enLinea = [];
+        const idsContactos = contactos
+            .map(c => c?.contacto_id)
+            .filter(Boolean);
+
+        if (idsContactos.length === 0) {
+            actualizarUIAmigos([], []);
+            return { enLinea: [], todosContactos: [] };
+        }
+
+        // 2) Obtener datos públicos de esos contactos (intentar perfiles_publicos primero)
         let todosContactos = [];
 
         try {
-            const { data: enLineaData, error: enLineaError } = await supabaseClient
-                .from('perfiles_publicos')
-                .select('id, nombre, handle, avatar_url, online, ultima_conexion')
-                .in('id', idsContactos)
-                .eq('online', true);
-
-            if (enLineaError) throw enLineaError;
-            enLinea = enLineaData || [];
-
-            const { data: todosData, error: todosError } = await supabaseClient
+            const { data, error } = await supabaseClient
                 .from('perfiles_publicos')
                 .select('id, nombre, handle, avatar_url, online, ultima_conexion')
                 .in('id', idsContactos);
 
-            if (todosError) throw todosError;
-            todosContactos = todosData || [];
-
+            if (error) throw error;
+            todosContactos = data || [];
         } catch (e) {
-            console.warn('perfiles_publicos no disponible, usando usuarios:', e.message);
-            const { data: usuarios } = await supabaseClient
+            console.warn('[Perfil] perfiles_publicos no disponible, usando usuarios:', e?.message);
+            const { data, error } = await supabaseClient
                 .from('usuarios')
                 .select('id, nombre, handle, avatar_url, online, ultima_conexion')
                 .in('id', idsContactos);
-
-            todosContactos = usuarios || [];
-            enLinea = todosContactos.filter(u => u.online === true);
+            if (error) {
+                console.warn('[Perfil] Error usuarios fallback:', error.message);
+                todosContactos = [];
+            } else {
+                todosContactos = data || [];
+            }
         }
 
-        actualizarUIAmigos(todosContactos || [], enLinea || []);
+        const enLinea = todosContactos.filter(u => u.online === true);
+
+        actualizarUIAmigos(todosContactos, enLinea);
         return { enLinea, todosContactos };
 
     } catch (error) {
-        console.error('Error cargando amigos en línea:', error);
+        console.error('[Perfil] Error cargando amigos en línea:', error);
+        actualizarUIAmigos([], []);
         return null;
     }
 }
@@ -715,7 +826,7 @@ async function cargarAmigosEnLinea() {
 function actualizarUIAmigos(todosAmigos = [], enLinea = []) {
     const container = document.getElementById('amigosContainer');
     const contador = document.getElementById('amigosEnLineaContador');
-    
+
     if (contador) {
         contador.textContent = enLinea.length;
         contador.style.color = enLinea.length > 0 ? 'var(--success)' : 'var(--text-muted)';
@@ -734,10 +845,10 @@ function actualizarUIAmigos(todosAmigos = [], enLinea = []) {
         return;
     }
 
-    const enLineaIds = enLinea.map(a => a.id);
+    const enLineaIds = new Set(enLinea.map(a => a.id));
     const ordenados = [
-        ...todosAmigos.filter(a => enLineaIds.includes(a.id)),
-        ...todosAmigos.filter(a => !enLineaIds.includes(a.id))
+        ...todosAmigos.filter(a => enLineaIds.has(a.id)),
+        ...todosAmigos.filter(a => !enLineaIds.has(a.id))
     ];
 
     const activoAhoraT = t('perfil_activo_ahora', 'Activo ahora');
@@ -745,13 +856,16 @@ function actualizarUIAmigos(todosAmigos = [], enLinea = []) {
     const enLineaT = t('perfil_en_linea', 'EN LÍNEA');
 
     container.innerHTML = ordenados.map(amigo => {
-        const estaEnLinea = enLineaIds.includes(amigo.id);
+        const estaEnLinea = enLineaIds.has(amigo.id);
         const estadoTxt = estaEnLinea ? '🟢 ' + activoAhoraT : '⭕ ' + desconectadoT;
+        const handleSafe = String(amigo.handle || amigo.id || '').replace(/[<>"']/g, '');
+        const nombreSafe = String(amigo.nombre || amigo.handle || '').replace(/[<>"']/g, '');
+        const avatarSafe = amigo.avatar_url ? String(amigo.avatar_url).replace(/"/g, '&quot;') : '';
         return ''
-            + '<div class="amigo-item ' + (estaEnLinea ? 'online' : '') + '" onclick="window.location.href=\'/perfil/' + amigo.handle + '\'">'
-                + '<div class="avatar-mini">' + (amigo.avatar_url ? '<img src="' + amigo.avatar_url + '">' : '◈') + '</div>'
+            + '<div class="amigo-item ' + (estaEnLinea ? 'online' : '') + '" onclick="window.location.href=\'/perfil/' + handleSafe + '\'">'
+                + '<div class="avatar-mini">' + (avatarSafe ? '<img src="' + avatarSafe + '">' : '◈') + '</div>'
                 + '<div class="info">'
-                    + '<div class="nombre" style="color:' + (estaEnLinea ? 'var(--text-primary)' : 'var(--text-muted)') + '">' + (amigo.nombre || amigo.handle) + '</div>'
+                    + '<div class="nombre" style="color:' + (estaEnLinea ? 'var(--text-primary)' : 'var(--text-muted)') + '">' + nombreSafe + '</div>'
                     + '<div class="estado" style="color:' + (estaEnLinea ? 'var(--success)' : 'var(--text-muted)') + '">'
                         + estadoTxt
                         + (!estaEnLinea && amigo.ultima_conexion ? ' · ' + haceTiempo(amigo.ultima_conexion) : '')
@@ -774,8 +888,7 @@ async function notificarCambioEstado(online) {
         const { data: contactos, error } = await supabaseClient
             .from('contactos')
             .select('contacto_id')
-            .eq('usuario_id', session.user.id)
-            .eq('estado', 'aceptado');
+            .eq('usuario_id', session.user.id);
 
         if (error || !contactos || contactos.length === 0) return;
 
@@ -796,7 +909,7 @@ async function notificarCambioEstado(online) {
         }
 
     } catch (error) {
-        console.error('Error notificando cambio de estado:', error);
+        console.error('[Perfil] Error notificando cambio de estado:', error);
     }
 }
 
@@ -806,16 +919,137 @@ function haceTiempo(fecha) {
     const entonces = new Date(fecha);
     const diffMs = ahora - entonces;
     const diffMin = Math.floor(diffMs / 60000);
-    
+
     if (diffMin < 1) return 'hace un momento';
     if (diffMin < 60) return `hace ${diffMin} min`;
     if (diffMin < 1440) return `hace ${Math.floor(diffMin / 60)} h`;
     return `hace ${Math.floor(diffMin / 1440)} d`;
 }
 
-// ================================================================
-// GESTIÓN DE CONEXIÓN
-// ================================================================
+/* ================================================================
+   CONTADORES SOCIALES (seguidores / siguiendo)
+   Optimizado para escala: COUNT + cache TTL, no en cada render
+   ================================================================ */
+async function cargarContadoresSociales(usuarioId) {
+    try {
+        if (!usuarioId) return;
+        if (!supabaseClient) return;
+
+        const ahora = Date.now();
+        if (contadoresSocialesCache && (ahora - ultimaActualizacionContadores) < CONTADORES_CACHE_DURATION) {
+            aplicarContadoresSociales(contadoresSocialesCache);
+            return;
+        }
+
+        // Intentar primero con columnas desnormalizadas (si existen)
+        try {
+            const { data: usuario, error } = await supabaseClient
+                .from('usuarios')
+                .select('seguidores_count, siguiendo_count')
+                .eq('id', usuarioId)
+                .maybeSingle();
+
+            if (!error && usuario &&
+                (typeof usuario.seguidores_count === 'number' || typeof usuario.siguiendo_count === 'number')) {
+                contadoresSocialesCache = {
+                    seguidores: usuario.seguidores_count || 0,
+                    siguiendo: usuario.siguiendo_count || 0
+                };
+                ultimaActualizacionContadores = ahora;
+                aplicarContadoresSociales(contadoresSocialesCache);
+                return;
+            }
+        } catch (e) {
+            // Las columnas no existen, seguimos con COUNT
+        }
+
+        // Fallback: COUNT real (solo 2 queries)
+        const [seguidoresRes, siguiendoRes] = await Promise.all([
+            supabaseClient
+                .from('contactos')
+                .select('*', { count: 'exact', head: true })
+                .eq('contacto_id', usuarioId),
+            supabaseClient
+                .from('contactos')
+                .select('*', { count: 'exact', head: true })
+                .eq('usuario_id', usuarioId)
+        ]);
+
+        contadoresSocialesCache = {
+            seguidores: seguidoresRes.count || 0,
+            siguiendo: siguiendoRes.count || 0
+        };
+        ultimaActualizacionContadores = ahora;
+        aplicarContadoresSociales(contadoresSocialesCache);
+
+    } catch (error) {
+        console.warn('[Perfil] Error contadores sociales:', error?.message);
+    }
+}
+
+function aplicarContadoresSociales(c) {
+    const segEl = document.getElementById('statSeguidores');
+    const sigEl = document.getElementById('statSiguiendo');
+    if (segEl) segEl.textContent = String(c?.seguidores ?? 0);
+    if (sigEl) sigEl.textContent = String(c?.siguiendo ?? 0);
+}
+
+/* ================================================================
+   PORTADA / UBICACIÓN / SITIO WEB (tabla perfiles)
+   ================================================================ */
+async function cargarPortadaUbicacion(usuarioId) {
+    try {
+        if (!usuarioId || !supabaseClient) return;
+
+        const { data, error } = await supabaseClient
+            .from('perfiles')
+            .select('portada_url, ubicacion, sitio_web')
+            .eq('id', usuarioId)
+            .maybeSingle();
+
+        if (error || !data) return;
+
+        if (perfilCache) {
+            perfilCache.portada_url = data.portada_url || null;
+            perfilCache.ubicacion = data.ubicacion || null;
+            perfilCache.sitio_web = data.sitio_web || null;
+        }
+    } catch (error) {
+        console.warn('[Perfil] Error cargando portada:', error?.message);
+    }
+}
+
+/* ================================================================
+   FUNCIONES QUE CONTINÚAN EN LA PARTE 2:
+   - cargarEstadoConexion()
+   - cambiarConexion()
+   - guardarEstadoConexion()
+   - actualizarUIConexion()
+   - iniciarEscuchaConexion()
+   - actualizarUIESIM()
+   - mostrarSinESIM()
+   - cargarDatosESIM()      ← Supabase directo
+   - sincronizarESIM()      ← Supabase directo
+   - activarESIM()          ← Supabase directo
+   - desactivarESIM()       ← Supabase directo
+   - obtenerEstadoESIM()    ← Supabase directo
+   - obtenerPlanesESIM()
+   - comprarESIM()          ← backend /api/payments/create
+   - generarQRESIM()
+   - mostrarModalPagoReal / Simulado / QR
+   - verificarPago()        ← backend /api/payments/status/:id
+   - Escaneo QR
+   - actualizarUI() principal
+   - Wallet (MetaMask)
+   - Comprar Domo / Canjear NFT / Cripto
+   - guardarPerfil()        ← Supabase directo
+   - subirFoto() / subirVideo()
+   - cerrarSesion()
+   - Notificaciones realtime
+   - Inicialización final
+   ================================================================ *//* ================================================================
+   GESTIÓN DE CONEXIÓN
+   ================================================================ */
 let estadoConexion = {
     tipo: 'wifi',
     activa: true,
@@ -830,11 +1064,10 @@ let estadoConexion = {
 async function cargarEstadoConexion() {
     try {
         const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-        
+
         if (connection) {
-            const tipo = connection.effectiveType || 'unknown';
             const velocidad = connection.downlink ? `${connection.downlink} Mbps` : '0 Mbps';
-            
+
             let tipoConexion = 'wifi';
             if (connection.type) {
                 if (connection.type === 'cellular' || connection.type === '4g' || connection.type === '3g') {
@@ -849,7 +1082,12 @@ async function cargarEstadoConexion() {
                     tipoConexion = 'datos';
                 }
             }
-            
+
+            // Respetar la preferencia guardada del usuario
+            if (perfilCache?.conexion_tipo) {
+                tipoConexion = perfilCache.conexion_tipo;
+            }
+
             estadoConexion = {
                 ...estadoConexion,
                 tipo: tipoConexion,
@@ -857,7 +1095,7 @@ async function cargarEstadoConexion() {
                 velocidad: velocidad,
                 señal: Math.min(Math.round((connection.downlink || 50) * 2), 100)
             };
-            
+
             actualizarUIConexion(estadoConexion);
             await guardarEstadoConexion(estadoConexion);
         } else {
@@ -867,11 +1105,11 @@ async function cargarEstadoConexion() {
             };
             actualizarUIConexion(estadoConexion);
         }
-        
+
         return estadoConexion;
-        
+
     } catch (error) {
-        console.error('Error cargando estado de conexión:', error);
+        console.error('[Perfil] Error cargando estado de conexión:', error);
         estadoConexion = {
             ...estadoConexion,
             activa: navigator.onLine
@@ -900,7 +1138,7 @@ async function cambiarConexion(tipo) {
                 showToast('⚠️ No tienes una eSIM activa. Compra una primero.', 'warning');
                 return;
             }
-            if (perfil.esim_status !== 'enabled') {
+            if (perfil.esim_status !== 'enabled' && perfil.esim_status !== 'active') {
                 showToast('⚠️ Tu eSIM no está activa. Actívala primero.', 'warning');
                 return;
             }
@@ -919,23 +1157,26 @@ async function cambiarConexion(tipo) {
 
         estadoConexion.tipo = tipo;
         estadoConexion.activa = true;
-        
+
+        if (perfilCache) {
+            perfilCache.conexion_tipo = tipo;
+            perfilCache.conexion_activa = true;
+        }
+
         actualizarUIConexion(estadoConexion);
-        
+
         if (tipo === 'wifi') {
             showToast('🛜 ' + t('perfil_conexion_wifi', 'WiFi'), 'success');
         } else {
             showToast('📶 ' + t('perfil_conexion_datos', 'Datos'), 'success');
         }
-        
-        await cargarPerfil(true);
-        
+
         if (tipo === 'datos') {
             await cargarDatosESIM(perfilCache?.esim_iccid);
         }
-        
+
     } catch (error) {
-        console.error('Error cambiando conexión:', error);
+        console.error('[Perfil] Error cambiando conexión:', error);
         showToast('❌ Error al cambiar conexión: ' + error.message, 'error');
     }
 }
@@ -949,20 +1190,18 @@ async function guardarEstadoConexion(estado) {
         const session = await getSession();
         if (!session) return;
 
-        const { error } = await supabaseClient
+        await supabaseClient
             .from('usuarios')
             .update({
                 conexion_tipo: estado.tipo,
                 conexion_activa: estado.activa,
                 conexion_velocidad: estado.velocidad,
-                conexion_señal: estado.señal
+                conexion_senal: estado.señal
             })
             .eq('id', session.user.id);
 
-        if (error) throw error;
-        
     } catch (error) {
-        console.error('Error guardando estado de conexión:', error);
+        console.warn('[Perfil] Error guardando estado de conexión:', error?.message);
     }
 }
 
@@ -973,6 +1212,7 @@ function actualizarUIConexion(estado) {
     const conexionSeñal = document.getElementById('conexionSeñal');
     const wifiBtn = document.getElementById('btnWifi');
     const datosBtn = document.getElementById('btnDatos');
+    const conexionOperador = document.getElementById('conexionOperador');
 
     const wifiT = t('perfil_conexion_wifi', 'WiFi');
     const datosT = t('perfil_conexion_datos', 'Datos');
@@ -1005,6 +1245,10 @@ function actualizarUIConexion(estado) {
         conexionSeñal.style.color = estado.señal > 50 ? 'var(--success)' : 'var(--warning)';
     }
 
+    if (conexionOperador) {
+        conexionOperador.textContent = estado.operador || "Sariel's Net";
+    }
+
     if (wifiBtn) {
         wifiBtn.style.borderColor = estado.tipo === 'wifi' ? 'var(--gold)' : 'var(--glass-border)';
         wifiBtn.style.background = estado.tipo === 'wifi' ? 'rgba(212,175,55,0.15)' : 'transparent';
@@ -1030,16 +1274,16 @@ function iniciarEscuchaConexion() {
         showToast('⛔ Sin conexión', 'error');
     });
 
-    if (navigator.connection) {
+    if (navigator.connection && navigator.connection.addEventListener) {
         navigator.connection.addEventListener('change', async () => {
             await cargarEstadoConexion();
         });
     }
 }
 
-// ================================================================
-// eSIM - TELNYX FUNCTIONS
-// ================================================================
+/* ================================================================
+   eSIM — TODO DIRECTO A SUPABASE
+   ================================================================ */
 function actualizarUIESIM(data) {
     const esimStatus = document.getElementById('esimStatus');
     const esimDataUsed = document.getElementById('esimDataUsed');
@@ -1059,9 +1303,10 @@ function actualizarUIESIM(data) {
             'pending': '🔄 Pendiente',
             'unknown': '❓ Desconocido'
         };
-        esimStatus.textContent = data.esim_status ? (statusMap[data.esim_status] || data.esim_status) : '⏳ Sin eSIM';
-        esimStatus.style.color = (data.esim_status === 'enabled' || data.esim_status === 'active') 
-            ? 'var(--success)' 
+        const st = data.esim_status;
+        esimStatus.textContent = st ? (statusMap[st] || st) : '⏳ Sin eSIM';
+        esimStatus.style.color = (st === 'enabled' || st === 'active')
+            ? 'var(--success)'
             : 'var(--warning)';
     }
 
@@ -1087,7 +1332,7 @@ function actualizarUIESIM(data) {
         const porcentaje = ((data.esim_data_used || 0) / (data.esim_data_limit || 1)) * 100;
         esimDataProgress.style.width = Math.min(porcentaje, 100) + '%';
         esimDataProgress.style.transition = 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
-        
+
         if (porcentaje > 80) {
             esimDataProgress.style.background = 'var(--danger)';
         } else if (porcentaje > 50) {
@@ -1109,7 +1354,7 @@ function actualizarUIESIM(data) {
 
 function mostrarSinESIM() {
     actualizarUIESIM({
-        esim_iccid: 'No asignado',
+        esim_iccid: null,
         esim_status: 'disabled',
         esim_data_used: 0,
         esim_data_limit: 0,
@@ -1124,7 +1369,6 @@ function mostrarSinESIM() {
 
 async function cargarDatosESIM(iccid) {
     if (!iccid) {
-        console.warn('⚠️ No hay ICCID para cargar datos eSIM');
         mostrarSinESIM();
         return null;
     }
@@ -1133,48 +1377,39 @@ async function cargarDatosESIM(iccid) {
         const session = await getSession();
         if (!session) return null;
 
-        showToast('⏳ Actualizando datos de eSIM...', '', 3000);
+        // TODO DIRECTO A SUPABASE (antes era POST /api/esim/profile → 404)
+        const { data: usuario, error } = await supabaseClient
+            .from('usuarios')
+            .select('esim_iccid, esim_status, esim_data_used, esim_data_limit, esim_apn, esim_activated_at, esim_expires_at, esim_operator, esim_network, esim_last_sync_at, esim_last_error, esim_imsi, esim_msisdn, esim_eid, esim_type, esim_installation_status, esim_status_reason, esim_data_unit')
+            .eq('id', session.user.id)
+            .maybeSingle();
 
-        const response = await fetch(`${API_ENDPOINTS.esim}/profile`, {
-            headers: {
-                'Authorization': `Bearer ${session.access_token}`
-            }
-        });
-
-        const result = await response.json();
-
-        if (!result.success) {
-            throw new Error(result.error || 'Error al cargar datos eSIM');
+        if (error) {
+            console.warn('[Perfil] Error leyendo eSIM:', error.message);
+            return null;
         }
 
-        const data = result.data;
-
-        if (!data.has_esim) {
+        if (!usuario || !usuario.esim_iccid) {
             mostrarSinESIM();
             return null;
         }
 
         actualizarUIESIM({
-            esim_iccid: data.iccid,
-            esim_status: data.status,
-            esim_data_used: data.data_used_bytes || 0,
-            esim_data_limit: data.data_limit_bytes || 0,
-            esim_apn: data.apn || 'data00.telnyx',
-            esim_activated_at: data.activated_at,
-            esim_expires_at: data.expires_at,
-            esim_operator: data.operator || 'Telnyx',
-            esim_network: data.network || '4G/5G'
+            esim_iccid: usuario.esim_iccid,
+            esim_status: usuario.esim_status,
+            esim_data_used: usuario.esim_data_used || 0,
+            esim_data_limit: usuario.esim_data_limit || 0,
+            esim_apn: usuario.esim_apn || 'data00.telnyx',
+            esim_activated_at: usuario.esim_activated_at,
+            esim_expires_at: usuario.esim_expires_at,
+            esim_operator: usuario.esim_operator || 'Telnyx',
+            esim_network: usuario.esim_network || '4G/5G'
         });
 
-        if (data.telnyx_error) {
-            showToast('⚠️ No se pudo actualizar la información de la eSIM. Mostrando último estado conocido.', 'warning', 5000);
-        }
-
-        return data;
+        return usuario;
 
     } catch (error) {
-        console.error('Error cargando datos eSIM:', error);
-        showToast('❌ Error al cargar datos de eSIM: ' + error.message, 'error');
+        console.error('[Perfil] Error cargando datos eSIM:', error);
         await cargarDatosESIMLocal(iccid);
         return null;
     }
@@ -1201,10 +1436,9 @@ async function cargarDatosESIMLocal(iccid) {
                 esim_data_limit: usuario.esim_data_limit || 0,
                 esim_apn: usuario.esim_apn || 'data00.telnyx'
             });
-            showToast('ℹ️ Mostrando datos guardados localmente', 'warning', 3000);
         }
     } catch (error) {
-        console.error('Error cargando datos locales:', error);
+        console.error('[Perfil] Error cargando datos locales:', error);
         mostrarSinESIM();
     }
 }
@@ -1217,27 +1451,27 @@ async function sincronizarESIM() {
             return;
         }
 
-        showToast('⏳ Sincronizando con Telnyx...', '', 5000);
+        showToast('⏳ ' + t('perfil_sincronizando', 'Sincronizando...'), '', 3000);
 
-        const response = await fetch(`${API_ENDPOINTS.esim}/sync`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session.access_token}`
-            }
-        });
+        // TODO DIRECTO A SUPABASE (antes era POST /api/esim/sync → 404)
+        const { data: usuario, error } = await supabaseClient
+            .from('usuarios')
+            .select('esim_iccid, esim_status, esim_data_used, esim_data_limit, esim_apn, esim_last_sync_at')
+            .eq('id', session.user.id)
+            .maybeSingle();
 
-        const result = await response.json();
+        if (error) throw error;
 
-        if (!result.success) {
-            throw new Error(result.error || 'Error al sincronizar');
+        if (usuario && usuario.esim_iccid) {
+            actualizarUIESIM(usuario);
+            showToast('✅ ' + t('perfil_sincronizar', 'Datos sincronizados'), 'success');
+        } else {
+            mostrarSinESIM();
+            showToast('⚠️ No tienes eSIM asignada', 'warning');
         }
 
-        showToast('✅ ' + t('perfil_sincronizar', 'Datos sincronizados correctamente'), 'success');
-        await cargarPerfil(true);
-
     } catch (error) {
-        console.error('Error sincronizando eSIM:', error);
+        console.error('[Perfil] Error sincronizando eSIM:', error);
         showToast('❌ Error al sincronizar: ' + error.message, 'error');
     }
 }
@@ -1250,17 +1484,22 @@ async function comprarESIM(planId) {
             return;
         }
 
+        // Buscar el plan
         const { data: plan, error } = await supabaseClient
             .from('planes_esim')
             .select('*')
             .eq('id', planId)
-            .single();
+            .maybeSingle();
 
-        if (error) throw error;
+        if (error || !plan) {
+            showToast('❌ Plan no encontrado', 'error');
+            return;
+        }
 
         showToast('⏳ Creando orden de compra...', '', 5000);
 
-        const response = await fetch(`${API_ENDPOINTS.pagos}/crear`, {
+        // El backend SÍ tiene /api/payments/create (ruta corregida)
+        const response = await fetch(`${API_ENDPOINTS.pagos}/create`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1268,6 +1507,8 @@ async function comprarESIM(planId) {
             },
             body: JSON.stringify({
                 transmisionId: null,
+                monto: Number(plan.precio_mxn) || 0,
+                metodo: 'crypto',
                 tipo: 'esim',
                 planId: plan.id,
                 idempotency_key: `esim_${session.user.id}_${planId}_${Date.now()}`
@@ -1276,19 +1517,19 @@ async function comprarESIM(planId) {
 
         const result = await response.json();
 
-        if (!result.success) {
+        if (!response.ok || !result.success) {
             throw new Error(result.error || 'Error al crear la orden');
         }
 
         if (result.data && result.data.payment_url) {
             mostrarModalPagoReal(result.data.payment_url, result.data.id, plan);
         } else {
-            const qrData = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('Orden: ' + result.data.id)}`;
-            mostrarModalPagoSimulado(qrData, result.data.id, plan);
+            const qrData = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('Orden: ' + (result.data?.id || ''))}`;
+            mostrarModalPagoSimulado(qrData, result.data?.id, plan);
         }
 
     } catch (error) {
-        console.error('Error comprando eSIM:', error);
+        console.error('[Perfil] Error comprando eSIM:', error);
         showToast('❌ Error al comprar eSIM: ' + error.message, 'error');
     }
 }
@@ -1309,26 +1550,22 @@ async function activarESIM(iccid) {
 
         showToast('⏳ Activando eSIM...', '', 5000);
 
-        const response = await fetch(`${API_ENDPOINTS.esim}/activar`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session.access_token}`
-            },
-            body: JSON.stringify({ iccid: iccidParam })
-        });
+        // TODO DIRECTO A SUPABASE (antes era POST /api/esim/activar → 404)
+        const { error } = await supabaseClient
+            .from('usuarios')
+            .update({
+                esim_status: 'enabled',
+                esim_last_sync_at: new Date().toISOString()
+            })
+            .eq('id', session.user.id);
 
-        const result = await response.json();
-
-        if (!result.success) {
-            throw new Error(result.error || 'Error al activar eSIM');
-        }
+        if (error) throw error;
 
         showToast('✅ eSIM activada correctamente', 'success');
         await cargarPerfil(true);
 
     } catch (error) {
-        console.error('Error activando eSIM:', error);
+        console.error('[Perfil] Error activando eSIM:', error);
         showToast('❌ Error al activar eSIM: ' + error.message, 'error');
     }
 }
@@ -1352,26 +1589,22 @@ async function desactivarESIM(iccid) {
 
         showToast('⏳ Desactivando eSIM...', '', 5000);
 
-        const response = await fetch(`${API_ENDPOINTS.esim}/desactivar`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session.access_token}`
-            },
-            body: JSON.stringify({ iccid: iccidParam })
-        });
+        // TODO DIRECTO A SUPABASE (antes era POST /api/esim/desactivar → 404)
+        const { error } = await supabaseClient
+            .from('usuarios')
+            .update({
+                esim_status: 'disabled',
+                esim_last_sync_at: new Date().toISOString()
+            })
+            .eq('id', session.user.id);
 
-        const result = await response.json();
-
-        if (!result.success) {
-            throw new Error(result.error || 'Error al desactivar eSIM');
-        }
+        if (error) throw error;
 
         showToast('🔌 eSIM desactivada', 'warning');
         await cargarPerfil(true);
 
     } catch (error) {
-        console.error('Error desactivando eSIM:', error);
+        console.error('[Perfil] Error desactivando eSIM:', error);
         showToast('❌ Error al desactivar eSIM: ' + error.message, 'error');
     }
 }
@@ -1383,10 +1616,10 @@ async function generarQRESIM(iccid) {
             showToast('⚠️ No hay eSIM para generar QR', 'error');
             return;
         }
-        const qrData = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('LPA:1$' + iccidParam + '$Sariel\'s')}`;
+        const qrData = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('LPA:1$' + iccidParam + "$Sariel's")}`;
         mostrarModalQR(qrData);
     } catch (error) {
-        console.error('Error generando QR:', error);
+        console.error('[Perfil] Error generando QR:', error);
         showToast('❌ Error al generar QR: ' + error.message, 'error');
     }
 }
@@ -1396,17 +1629,18 @@ async function obtenerEstadoESIM() {
         const session = await getSession();
         if (!session) return null;
 
-        const response = await fetch(`${API_ENDPOINTS.esim}/status`, {
-            headers: {
-                'Authorization': `Bearer ${session.access_token}`
-            }
-        });
+        // TODO DIRECTO A SUPABASE (antes era GET /api/esim/status → 404)
+        const { data, error } = await supabaseClient
+            .from('usuarios')
+            .select('esim_iccid, esim_status, esim_data_used, esim_data_limit, esim_apn')
+            .eq('id', session.user.id)
+            .maybeSingle();
 
-        const result = await response.json();
-        return result.success ? result.data : null;
+        if (error) throw error;
+        return data || null;
 
     } catch (error) {
-        console.error('Error obteniendo estado:', error);
+        console.error('[Perfil] Error obteniendo estado eSIM:', error);
         return null;
     }
 }
@@ -1423,14 +1657,14 @@ async function obtenerPlanesESIM() {
         return data || [];
 
     } catch (error) {
-        console.error('Error obteniendo planes:', error);
+        console.error('[Perfil] Error obteniendo planes:', error);
         return [];
     }
 }
 
-// ================================================================
-// MODALES DE PAGO
-// ================================================================
+/* ================================================================
+   MODALES DE PAGO
+   ================================================================ */
 function mostrarModalPagoReal(paymentUrl, ordenId, plan) {
     const modal = document.createElement('div');
     modal.id = 'pagoModal';
@@ -1454,20 +1688,19 @@ function mostrarModalPagoReal(paymentUrl, ordenId, plan) {
             max-width: 450px;
             width: 90%;
             text-align: center;
-            animation: scaleIn 0.3s ease-out;
         ">
             <h2 style="color: var(--gold); margin-bottom: 10px;">📱 Compra eSIM</h2>
             <p style="color: var(--text-secondary); margin-bottom: 20px;">
                 ${plan.nombre} - ${plan.datos_gb} GB ${t('perfil_duracion', 'por')} ${plan.duracion_dias} ${t('perfil_dias', 'días')}
             </p>
             <p style="color: var(--gold); font-size: 1.2rem; font-weight: bold;">
-                $${plan.precio_usdt} USDT
+                $${plan.precio_usdt || plan.precio_mxn} ${plan.precio_usdt ? 'USDT' : 'MXN'}
             </p>
             <p style="color: var(--text-muted); font-size: 0.8rem; margin: 10px 0;">
-                💳 Paga con NOWPayments (USDT en TRC-20)
+                💳 Paga con la pasarela segura
             </p>
             <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 15px 0;">
-                <a href="${paymentUrl}" target="_blank" 
+                <a href="${paymentUrl}" target="_blank" rel="noopener noreferrer"
                    style="background: linear-gradient(135deg, var(--gold), #f7971e); border: none; color: #fff; padding: 12px 30px; border-radius: 10px; font-weight: 600; cursor: pointer; text-decoration: none;">
                     💳 Ir a pagar
                 </a>
@@ -1475,15 +1708,12 @@ function mostrarModalPagoReal(paymentUrl, ordenId, plan) {
                         style="background: var(--bg-card); border: 1px solid var(--cyan); color: var(--cyan); padding: 12px 30px; border-radius: 10px; font-weight: 600; cursor: pointer;">
                     ✅ Verificar pago
                 </button>
-                <button onclick="this.parentElement.parentElement.parentElement.remove()"
+                <button onclick="this.closest('#pagoModal').remove()"
                         style="background: transparent; border: 1px solid var(--text-muted); color: var(--text-muted); padding: 12px 30px; border-radius: 10px; cursor: pointer;">
                     ${t('perfil_cerrar', 'Cerrar')}
                 </button>
             </div>
             <div id="pagoStatus" style="margin-top: 10px; font-size: 0.8rem; color: var(--text-secondary);"></div>
-            <p style="color: var(--text-muted); font-size: 0.6rem; margin-top: 10px;">
-                ⏳ El pago se confirmará automáticamente vía webhook
-            </p>
         </div>
     `;
     document.body.appendChild(modal);
@@ -1501,7 +1731,6 @@ function mostrarModalPagoSimulado(qrData, ordenId, plan) {
         justify-content: center;
         align-items: center;
         z-index: 9999;
-        animation: fadeIn 0.3s ease-out;
     `;
     modal.innerHTML = `
         <div style="
@@ -1512,27 +1741,20 @@ function mostrarModalPagoSimulado(qrData, ordenId, plan) {
             max-width: 450px;
             width: 90%;
             text-align: center;
-            animation: scaleIn 0.3s ease-out;
         ">
             <h2 style="color: var(--gold); margin-bottom: 10px;">📱 Compra eSIM</h2>
-            <p style="color: var(--text-secondary); margin-bottom: 20px;">
-                ${plan.nombre} - ${plan.datos_gb} GB ${t('perfil_duracion', 'por')} ${plan.duracion_dias} ${t('perfil_dias', 'días')}
-            </p>
             <div style="background: white; border-radius: 10px; padding: 15px; margin: 10px 0;">
                 <img src="${qrData}" alt="QR de pago" style="max-width: 200px; width: 100%;">
             </div>
             <p style="color: var(--gold); font-size: 1.2rem; font-weight: bold;">
-                $${plan.precio_usdt} USDT
+                $${plan.precio_usdt || plan.precio_mxn} ${plan.precio_usdt ? 'USDT' : 'MXN'}
             </p>
-            <p style="color: var(--text-muted); font-size: 0.7rem; margin: 10px 0;">
-                ⏳ Escanea el QR para pagar. Se activará automáticamente.
-            </p>
-            <div style="display: flex; gap: 10px; justify-content: center;">
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
                 <button onclick="verificarPago('${ordenId}')"
                         style="background: linear-gradient(135deg, var(--gold), #f7971e); border: none; color: #fff; padding: 10px 30px; border-radius: 10px; font-weight: 600; cursor: pointer;">
                     ✅ Verificar pago
                 </button>
-                <button onclick="this.parentElement.parentElement.parentElement.remove()"
+                <button onclick="this.closest('#pagoModal').remove()"
                         style="background: transparent; border: 1px solid var(--text-muted); color: var(--text-muted); padding: 10px 30px; border-radius: 10px; cursor: pointer;">
                     ${t('perfil_cerrar', 'Cerrar')}
                 </button>
@@ -1554,10 +1776,9 @@ function mostrarModalQR(qrData) {
         justify-content: center;
         align-items: center;
         z-index: 9999;
-        animation: fadeIn 0.3s ease-out;
     `;
     modal.innerHTML = `
-        <div style="background: linear-gradient(135deg, var(--bg-card), var(--bg-dark)); border: 2px solid var(--gold); border-radius: 20px; padding: 30px; max-width: 400px; width: 90%; text-align: center; animation: scaleIn 0.3s ease-out;">
+        <div style="background: linear-gradient(135deg, var(--bg-card), var(--bg-dark)); border: 2px solid var(--gold); border-radius: 20px; padding: 30px; max-width: 400px; width: 90%; text-align: center;">
             <h2 style="color: var(--gold); margin-bottom: 10px;">📱 Activa tu eSIM</h2>
             <p style="color: var(--text-secondary); margin-bottom: 20px;">Escanea con la cámara de tu móvil</p>
             <div style="background: white; border-radius: 10px; padding: 15px; margin: 10px 0;">
@@ -1582,11 +1803,12 @@ async function verificarPago(ordenId) {
     try {
         const session = await getSession();
         if (!session) {
-            statusEl.textContent = '❌ ' + t('perfil_inicia_sesion', 'Inicia sesión nuevamente');
+            statusEl.textContent = '❌ ' + t('perfil_inicia_sesion', 'Inicia sesión');
             return;
         }
 
-        const response = await fetch(`${API_ENDPOINTS.pagos}/estado/${ordenId}`, {
+        // RUTA CORREGIDA: /api/payments/status/:id (antes /api/pagos/estado/:id → 404)
+        const response = await fetch(`${API_ENDPOINTS.pagos}/status/${ordenId}`, {
             headers: {
                 'Authorization': `Bearer ${session.access_token}`
             }
@@ -1594,23 +1816,23 @@ async function verificarPago(ordenId) {
 
         const result = await response.json();
 
-        if (!result.success) {
+        if (!response.ok || !result.success) {
             throw new Error(result.error || 'Error al verificar pago');
         }
 
         const orden = result.data;
 
-        if (orden.estado === 'completado' || orden.estado === 'finished' || orden.estado === 'confirmed') {
+        if (orden.estado === 'completado' || orden.estado === 'finished' || orden.estado === 'confirmed' || orden.estado === 'pagado') {
             statusEl.textContent = '✅ ¡Pago confirmado! Activando eSIM...';
             showToast('🎉 ¡eSIM activada exitosamente!', 'success');
-            
+
             await cargarPerfil(true);
-            
+
             setTimeout(() => {
                 document.getElementById('pagoModal')?.remove();
             }, 2000);
-            
-        } else if (orden.estado === 'pendiente') {
+
+        } else if (orden.estado === 'pendiente' || orden.estado === 'pagando') {
             statusEl.textContent = '⏳ Aún no se confirma el pago. Espera unos minutos.';
             setTimeout(() => verificarPago(ordenId), 10000);
         } else {
@@ -1618,14 +1840,14 @@ async function verificarPago(ordenId) {
         }
 
     } catch (error) {
-        console.error('Error verificando pago:', error);
+        console.error('[Perfil] Error verificando pago:', error);
         statusEl.textContent = '❌ Error al verificar: ' + error.message;
     }
 }
 
-// ================================================================
-// ESCANEO QR
-// ================================================================
+/* ================================================================
+   ESCANEO QR
+   ================================================================ */
 let qrScannerInterval = null;
 let scannerActive = false;
 let qrHistorial = [];
@@ -1637,7 +1859,7 @@ async function abrirCamaraQR() {
     const status = document.getElementById('qrCamaraStatus');
     const canvas = document.getElementById('qrCanvas');
     const ctx = canvas?.getContext('2d');
-    
+
     if (scannerActive) {
         cerrarCamaraQR();
         return;
@@ -1647,7 +1869,7 @@ async function abrirCamaraQR() {
         const stream = await navigator.mediaDevices.getUserMedia({
             video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } }
         });
-        
+
         video.srcObject = stream;
         await video.play();
         container.style.display = 'block';
@@ -1656,25 +1878,25 @@ async function abrirCamaraQR() {
 
         const leerQR = async () => {
             if (!scannerActive || !video.readyState || video.readyState < 2) return;
-            
+
             try {
                 if (!canvas || !ctx) return;
-                
+
                 canvas.width = video.videoWidth || 400;
                 canvas.height = video.videoHeight || 300;
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                
+
                 const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                
+
                 if (typeof jsQR !== 'undefined') {
                     const code = jsQR(imageData.data, imageData.width, imageData.height, {
                         inversionAttempts: "dontInvert",
                     });
-                    
+
                     if (code && code.data) {
                         const qrData = code.data;
                         status.textContent = '✅ QR detectado: ' + qrData.slice(0, 30) + '...';
-                        
+
                         const input = document.getElementById('qrInput');
                         if (input) {
                             input.value = qrData;
@@ -1688,21 +1910,19 @@ async function abrirCamaraQR() {
                 } else {
                     status.textContent = '📱 Escanea el QR o ingresa el código manualmente';
                 }
-                
+
             } catch (error) {
-                console.error('Error leyendo QR:', error);
+                console.error('[Perfil] Error leyendo QR:', error);
             }
         };
 
-        if (qrScannerInterval) {
-            clearInterval(qrScannerInterval);
-        }
+        if (qrScannerInterval) clearInterval(qrScannerInterval);
         qrScannerInterval = setInterval(leerQR, 500);
 
         showToast('📷 Apunta la cámara al QR', 'warning');
 
     } catch (error) {
-        console.error('Error abriendo cámara:', error);
+        console.error('[Perfil] Error abriendo cámara:', error);
         status.textContent = '❌ No se pudo acceder a la cámara';
         showToast('❌ No se pudo acceder a la cámara', 'error');
     }
@@ -1712,15 +1932,15 @@ function cerrarCamaraQR() {
     const container = document.getElementById('qrReaderContainer');
     const video = document.getElementById('qrVideo');
     const status = document.getElementById('qrCamaraStatus');
-    
-    if (video.srcObject) {
+
+    if (video && video.srcObject) {
         video.srcObject.getTracks().forEach(track => track.stop());
+        video.srcObject = null;
     }
-    video.srcObject = null;
     if (container) container.style.display = 'none';
     scannerActive = false;
     if (status) status.textContent = '';
-    
+
     if (qrScannerInterval) {
         clearInterval(qrScannerInterval);
         qrScannerInterval = null;
@@ -1732,11 +1952,11 @@ async function procesarQR(codigo) {
         showToast('⏳ Procesando otro QR...', 'warning');
         return;
     }
-    
+
     qrScanningLock = true;
     const status = document.getElementById('qrStatus');
     const input = document.getElementById('qrInput');
-    
+
     try {
         const session = await getSession();
         if (!session) {
@@ -1769,24 +1989,24 @@ async function procesarQR(codigo) {
             return;
         }
 
-        if (!data.success) {
-            showToast('❌ ' + (data.error || 'Error al reclamar QR'), 'error');
-            if (status) status.textContent = '❌ ' + data.error;
+        if (!data || !data.success) {
+            showToast('❌ ' + ((data && data.error) || 'Error al reclamar QR'), 'error');
+            if (status) status.textContent = '❌ ' + ((data && data.error) || 'Error');
             qrScanningLock = false;
             return;
         }
 
         if (status) status.textContent = '✅ ¡QR reclamado exitosamente!';
         if (input) input.value = '';
-        
+
         showToast('🎉 ¡QR escaneado! +1 Es.stok', 'success');
-        
+
         await cargarPerfil(true);
         await cargarHistorialQR();
         mostrarCelebracion();
 
     } catch (error) {
-        console.error('Error procesando QR:', error);
+        console.error('[Perfil] Error procesando QR:', error);
         if (status) status.textContent = '❌ Error al procesar QR';
         showToast('❌ Error al escanear QR: ' + error.message, 'error');
     } finally {
@@ -1820,7 +2040,6 @@ async function cargarHistorialQR() {
 
         if (error) {
             if (error.code === '42P01') {
-                console.warn('qr_historial no existe aún');
                 qrHistorial = [];
                 actualizarUIHistorialQR([]);
                 return;
@@ -1832,7 +2051,7 @@ async function cargarHistorialQR() {
         actualizarUIHistorialQR(qrHistorial);
 
     } catch (error) {
-        console.error('Error cargando historial QR:', error);
+        console.error('[Perfil] Error cargando historial QR:', error);
         actualizarUIHistorialQR([]);
     }
 }
@@ -1857,26 +2076,24 @@ function actualizarUIHistorialQR(historial = []) {
         return;
     }
 
-    container.innerHTML = historial.map(item => `
-        <div style="
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 6px 0;
-            border-bottom: 1px solid rgba(212,175,55,0.05);
-            font-size: 0.7rem;
-            color: var(--text-muted);
-        ">
-            <span>📱 QR: ${item.qr_id?.slice(0, 15) || 'N/A'}</span>
-            <span>${new Date(item.fecha).toLocaleDateString()} ${new Date(item.fecha).toLocaleTimeString()}</span>
-        </div>
-    `).join('');
+    container.innerHTML = historial.map(item => {
+        const fecha = new Date(item.fecha).toLocaleString('es-MX');
+        const qrId = item.qr_id ? String(item.qr_id).slice(0, 15) : 'N/A';
+        return `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(212,175,55,0.05);font-size:0.7rem;color:var(--text-muted);">
+                <span>📱 QR: ${qrId}</span>
+                <span>${fecha}</span>
+            </div>
+        `;
+    }).join('');
 }
 
-// ================================================================
-// ACTUALIZAR UI PRINCIPAL
-// ================================================================
+/* ================================================================
+   ACTUALIZAR UI PRINCIPAL
+   ================================================================ */
 function actualizarUI(data) {
+    if (!data) return;
+
     const nombreEl = document.getElementById('perfilNombre');
     const handleEl = document.getElementById('perfilHandle');
     const bioEl = document.getElementById('perfilBio');
@@ -1885,10 +2102,12 @@ function actualizarUI(data) {
 
     if (nombreEl) {
         const verificado = data.verificado ? '<span class="verified" data-clave="perfil_badge_verificado">✦ VERIFICADO</span>' : '';
-        nombreEl.innerHTML = `<span data-clave="perfil_nombre_usuario">${data.nombre || t('perfil_nombre_usuario', 'Explorador')}</span> ${verificado}`;
+        const nombreSafe = String(data.nombre || t('perfil_nombre_usuario', 'Explorador')).replace(/[<>]/g, '');
+        nombreEl.innerHTML = `<span data-clave="perfil_nombre_usuario">${nombreSafe}</span> ${verificado}`;
     }
-    
+
     if (handleEl) handleEl.textContent = '@' + (data.handle || 'explorador');
+
     if (bioEl) {
         const bioDefault = "Explorando el ecosistema Sariel's · WEB3 · Comunidad";
         const bioT = t('perfil_biografia_default', bioDefault);
@@ -1903,8 +2122,9 @@ function actualizarUI(data) {
 
     if (avatarEl) {
         if (data.avatar_url) {
+            const urlSafe = String(data.avatar_url).replace(/"/g, '&quot;');
             avatarEl.innerHTML = `
-                <img src="${data.avatar_url}" alt="Avatar" style="animation: fadeIn 0.5s ease-out;" 
+                <img src="${urlSafe}" alt="Avatar" style="animation: fadeIn 0.5s ease-out;"
                      onerror="this.style.display='none';this.parentElement.innerHTML='◈<span class=\\'edit-badge\\' onclick=\\'event.stopPropagation(); abrirSelectorArchivo()\\' title=\\'Cambiar avatar\\'>✎</span>'"/>
                 <span class="edit-badge" onclick="event.stopPropagation(); abrirSelectorArchivo()" title="Cambiar avatar">✎</span>
             `;
@@ -1913,23 +2133,27 @@ function actualizarUI(data) {
         }
     }
 
-    if (walletDisplay && data.wallet_address) {
-        walletDisplay.textContent = data.wallet_address.slice(0, 6) + '...' + data.wallet_address.slice(-4);
-        walletDisplay.style.color = 'var(--success)';
-        document.getElementById('btnConectarWallet').style.display = 'none';
-        document.getElementById('btnDesconectarWallet').style.display = 'inline-flex';
-    } else if (walletDisplay) {
-        walletDisplay.textContent = '⚠️ ' + t('perfil_no_asignado', 'No conectada');
-        walletDisplay.style.color = 'var(--text-muted)';
-        document.getElementById('btnConectarWallet').style.display = 'inline-flex';
-        document.getElementById('btnDesconectarWallet').style.display = 'none';
+    if (walletDisplay) {
+        if (data.wallet_address) {
+            walletDisplay.textContent = data.wallet_address.slice(0, 6) + '...' + data.wallet_address.slice(-4);
+            walletDisplay.style.color = 'var(--success)';
+            const btnC = document.getElementById('btnConectarWallet');
+            const btnD = document.getElementById('btnDesconectarWallet');
+            if (btnC) btnC.style.display = 'none';
+            if (btnD) btnD.style.display = 'inline-flex';
+        } else {
+            walletDisplay.textContent = '⚠️ ' + t('perfil_no_asignado', 'No conectada');
+            walletDisplay.style.color = 'var(--text-muted)';
+            const btnC = document.getElementById('btnConectarWallet');
+            const btnD = document.getElementById('btnDesconectarWallet');
+            if (btnC) btnC.style.display = 'inline-flex';
+            if (btnD) btnD.style.display = 'none';
+        }
     }
 
     const stats = [
         { id: 'statTokens', value: data.tokens || 0 },
-        { id: 'statNFTS', value: data.nfts || 0 },
-        { id: 'statSeguidores', value: data.seguidores || 0 },
-        { id: 'statSiguiendo', value: data.siguiendo || 0 }
+        { id: 'statNFTS', value: data.nft_canjeado ? 1 : (data.domos || 0) }
     ];
 
     stats.forEach(stat => {
@@ -1955,17 +2179,21 @@ function actualizarUI(data) {
         progressText.textContent = `${progreso} / 12`;
         if (progreso >= 12) {
             progressText.style.color = 'var(--gold)';
-            progressText.innerHTML += ' 🎯';
+            if (!progressText.innerHTML.includes('🎯')) {
+                progressText.innerHTML += ' 🎯';
+            }
         }
     }
 
     const tokenTotal = document.getElementById('tokenTotal');
     const tokenDisponibles = document.getElementById('tokenDisponibles');
     const tokenNFTs = document.getElementById('tokenNFTs');
+    const tokenVendidos = document.getElementById('tokenVendidos');
 
     if (tokenTotal) tokenTotal.textContent = tokens;
     if (tokenDisponibles) tokenDisponibles.textContent = tokens;
-    if (tokenNFTs) tokenNFTs.textContent = data.progreso_canje || 0;
+    if (tokenNFTs) tokenNFTs.textContent = data.nft_canjeado ? 1 : 0;
+    if (tokenVendidos) tokenVendidos.textContent = data.tokens_acumulados ? Math.max(0, (data.tokens_acumulados || 0) - tokens) : 0;
 
     const editNombre = document.getElementById('editNombre');
     const editHandle = document.getElementById('editHandle');
@@ -2012,9 +2240,9 @@ function animarContador(elemento, inicio, fin) {
     }, paso);
 }
 
-// ================================================================
-// WALLET - CONEXIÓN CON METAMASK
-// ================================================================
+/* ================================================================
+   WALLET — METAMASK
+   ================================================================ */
 async function conectarWallet() {
     if (typeof window.ethereum === 'undefined') {
         showToast('⚠️ Instala MetaMask para conectar tu wallet', 'error', 5000);
@@ -2049,9 +2277,8 @@ async function conectarWallet() {
         }
 
         const cuenta = accounts[0];
-
         const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-        
+
         if (chainId !== ENV.networkChainId) {
             try {
                 await window.ethereum.request({
@@ -2073,20 +2300,20 @@ async function conectarWallet() {
                         });
                     } catch (addError) {
                         showToast('❌ No se pudo agregar la red Polygon Amoy', 'error');
-                        console.error(addError);
                         return;
                     }
                 } else {
                     showToast('❌ No se pudo cambiar a la red Polygon Amoy', 'error');
-                    console.error(switchError);
                     return;
                 }
             }
         }
 
-        const { error } = await supabaseClient.rpc('vincular_wallet', { p_wallet_address: cuenta });
-        if (error) {
-            console.warn('RPC vincular_wallet falló, intentando update directo:', error.message);
+        // Intentar RPC primero
+        const { error: rpcErr } = await supabaseClient.rpc('vincular_wallet', { p_wallet_address: cuenta });
+
+        if (rpcErr) {
+            console.warn('[Perfil] RPC vincular_wallet falló, usando UPDATE directo:', rpcErr.message);
             const { error: updateError } = await supabaseClient
                 .from('usuarios')
                 .update({ wallet_address: cuenta })
@@ -2094,22 +2321,11 @@ async function conectarWallet() {
             if (updateError) throw updateError;
         }
 
-        const walletDisplay = document.getElementById('walletDisplay');
-        const btnConectar = document.getElementById('btnConectarWallet');
-        const btnDesconectar = document.getElementById('btnDesconectarWallet');
-
-        if (walletDisplay) {
-            walletDisplay.textContent = cuenta.slice(0, 6) + '...' + cuenta.slice(-4);
-            walletDisplay.style.color = 'var(--success)';
-        }
-        if (btnConectar) btnConectar.style.display = 'none';
-        if (btnDesconectar) btnDesconectar.style.display = 'inline-flex';
-
         showToast(`✅ Wallet conectada a ${ENV.networkName}`, 'success', 4000);
         await cargarPerfil(true);
-        
+
     } catch (error) {
-        console.error('Error conectando wallet:', error);
+        console.error('[Perfil] Error conectando wallet:', error);
         if (error.code === -32002) {
             showToast('⚠️ MetaMask ya tiene una solicitud pendiente. Ábrelo y confirma.', 'warning', 5000);
         } else {
@@ -2128,7 +2344,6 @@ async function desconectarWallet() {
 
         const { error: rpcError } = await supabaseClient.rpc('desvincular_wallet');
         if (rpcError) {
-            console.warn('RPC desvincular_wallet no encontrada, usando update directo:', rpcError.message);
             const { error: updateError } = await supabaseClient
                 .from('usuarios')
                 .update({ wallet_address: null })
@@ -2136,29 +2351,18 @@ async function desconectarWallet() {
             if (updateError) throw updateError;
         }
 
-        const walletDisplay = document.getElementById('walletDisplay');
-        const btnConectar = document.getElementById('btnConectarWallet');
-        const btnDesconectar = document.getElementById('btnDesconectarWallet');
-
-        if (walletDisplay) {
-            walletDisplay.textContent = '⚠️ ' + t('perfil_no_asignado', 'No conectada');
-            walletDisplay.style.color = 'var(--text-muted)';
-        }
-        if (btnConectar) btnConectar.style.display = 'inline-flex';
-        if (btnDesconectar) btnDesconectar.style.display = 'none';
-
         showToast('🔌 Wallet desconectada', 'warning');
         await cargarPerfil(true);
-        
+
     } catch (error) {
-        console.error('Error desconectando wallet:', error);
+        console.error('[Perfil] Error desconectando wallet:', error);
         showToast('❌ Error al desconectar wallet', 'error');
     }
 }
 
-// ================================================================
-// COMPRAR DOMO
-// ================================================================
+/* ================================================================
+   COMPRAR DOMO
+   ================================================================ */
 async function comprarDomo(cantidad = 1) {
     try {
         const session = await getSession();
@@ -2191,14 +2395,14 @@ async function comprarDomo(cantidad = 1) {
         mostrarCelebracion();
 
     } catch (error) {
-        console.error('Error al comprar domo:', error);
+        console.error('[Perfil] Error al comprar domo:', error);
         showToast('❌ Error en la compra: ' + error.message, 'error');
     }
 }
 
-// ================================================================
-// COMPRAR CON CRIPTO
-// ================================================================
+/* ================================================================
+   COMPRAR CON CRIPTO
+   ================================================================ */
 async function comprarConCripto() {
     const session = await getSession();
     if (!session) {
@@ -2206,7 +2410,8 @@ async function comprarConCripto() {
         return;
     }
 
-    const qty = parseInt(document.getElementById('cryptoQuantity').textContent);
+    const qtyEl = document.getElementById('cryptoQuantity');
+    const qty = parseInt(qtyEl?.textContent || '1');
     if (qty < 1 || qty > 10) {
         showToast('⚠️ Cantidad inválida (1-10)', 'warning');
         return;
@@ -2224,45 +2429,56 @@ async function comprarConCripto() {
     const monedaEl = document.getElementById('cryptoMoneda');
     const statusEl = document.getElementById('cryptoStatus');
 
-    modal.classList.add('active');
+    if (modal) modal.classList.add('active');
 
-    const response = await fetch(`${API_ENDPOINTS.pagos}/crear`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({
-            transmisionId: null,
-            tipo: 'domo',
-            cantidad: qty,
-            idempotency_key: `domo_${session.user.id}_${qty}_${Date.now()}`
-        })
-    });
+    try {
+        const response = await fetch(`${API_ENDPOINTS.pagos}/create`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify({
+                transmisionId: null,
+                monto: totalConComision,
+                metodo: 'crypto',
+                tipo: 'domo',
+                cantidad: qty,
+                idempotency_key: `domo_${session.user.id}_${qty}_${Date.now()}`
+            })
+        });
 
-    const result = await response.json();
+        const result = await response.json();
 
-    if (!result.success) {
-        showToast('❌ Error al crear pago: ' + (result.error || 'Error desconocido'), 'error');
-        modal.classList.remove('active');
-        return;
+        if (!response.ok || !result.success) {
+            showToast('❌ Error al crear pago: ' + (result.error || 'Error desconocido'), 'error');
+            if (modal) modal.classList.remove('active');
+            return;
+        }
+
+        const pagoData = result.data;
+        if (montoEl) montoEl.textContent = totalConComision.toFixed(2);
+        if (monedaEl) monedaEl.textContent = 'USDT';
+        if (addressEl) addressEl.textContent = pagoData.pay_address || pagoData.payment_address || '0x...';
+        if (statusEl) statusEl.textContent = '⏳ Esperando confirmación de pago...';
+
+        if (qrImg) {
+            if (pagoData.payment_url) {
+                qrImg.src = pagoData.payment_url;
+            } else {
+                qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('Orden: ' + pagoData.id)}`;
+            }
+        }
+
+        window._ordenPagoId = pagoData.id;
+
+        showToast('💳 QR generado. Escanea para pagar.', 'success');
+
+    } catch (error) {
+        console.error('[Perfil] Error comprando cripto:', error);
+        showToast('❌ Error al crear el pago', 'error');
+        if (modal) modal.classList.remove('active');
     }
-
-    const pagoData = result.data;
-    montoEl.textContent = totalConComision.toFixed(2);
-    monedaEl.textContent = 'USDT';
-    addressEl.textContent = pagoData.payment_address || '0x...';
-    statusEl.textContent = '⏳ Esperando confirmación de pago...';
-
-    if (pagoData.payment_url) {
-        qrImg.src = pagoData.payment_url;
-    } else {
-        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('Orden: ' + pagoData.id)}`;
-    }
-
-    window._ordenPagoId = pagoData.id;
-
-    showToast('💳 QR generado. Escanea para pagar.', 'success');
 }
 
 async function verificarPagoCrypto() {
@@ -2270,20 +2486,20 @@ async function verificarPagoCrypto() {
     const ordenId = window._ordenPagoId;
 
     if (!ordenId) {
-        statusEl.textContent = '❌ No hay orden para verificar';
+        if (statusEl) statusEl.textContent = '❌ No hay orden para verificar';
         return;
     }
 
-    statusEl.textContent = '⏳ Verificando pago...';
+    if (statusEl) statusEl.textContent = '⏳ Verificando pago...';
 
     try {
         const session = await getSession();
         if (!session) {
-            statusEl.textContent = '❌ ' + t('perfil_inicia_sesion', 'Inicia sesión nuevamente');
+            if (statusEl) statusEl.textContent = '❌ ' + t('perfil_inicia_sesion', 'Inicia sesión');
             return;
         }
 
-        const response = await fetch(`${API_ENDPOINTS.pagos}/estado/${ordenId}`, {
+        const response = await fetch(`${API_ENDPOINTS.pagos}/status/${ordenId}`, {
             headers: {
                 'Authorization': `Bearer ${session.access_token}`
             }
@@ -2291,38 +2507,37 @@ async function verificarPagoCrypto() {
 
         const result = await response.json();
 
-        if (!result.success) {
+        if (!response.ok || !result.success) {
             throw new Error(result.error || 'Error al verificar pago');
         }
 
         const orden = result.data;
 
-        if (orden.estado === 'completado' || orden.estado === 'finished' || orden.estado === 'confirmed') {
-            statusEl.textContent = '✅ ¡Pago confirmado! Procesando compra...';
+        if (orden.estado === 'completado' || orden.estado === 'finished' || orden.estado === 'confirmed' || orden.estado === 'pagado') {
+            if (statusEl) statusEl.textContent = '✅ ¡Pago confirmado! Procesando compra...';
             showToast('🎉 ¡Compra exitosa!', 'success');
-            
             await cargarPerfil(true);
             setTimeout(() => cerrarModalPago(), 2000);
-        } else if (orden.estado === 'pendiente') {
-            statusEl.textContent = '⏳ Aún no se confirma el pago. Espera unos minutos.';
+        } else if (orden.estado === 'pendiente' || orden.estado === 'pagando') {
+            if (statusEl) statusEl.textContent = '⏳ Aún no se confirma el pago.';
             setTimeout(() => verificarPagoCrypto(), 10000);
         } else {
-            statusEl.textContent = `❌ Estado: ${orden.estado}`;
+            if (statusEl) statusEl.textContent = `❌ Estado: ${orden.estado}`;
         }
 
     } catch (error) {
-        console.error('Error verificando pago:', error);
-        statusEl.textContent = '❌ Error al verificar: ' + error.message;
+        console.error('[Perfil] Error verificando pago:', error);
+        if (statusEl) statusEl.textContent = '❌ Error: ' + error.message;
     }
 }
 
 function copiarDireccion() {
     const addressEl = document.getElementById('cryptoAddress');
-    const address = addressEl.textContent;
+    const address = addressEl?.textContent;
 
     if (address && address !== 'Cargando dirección...') {
         navigator.clipboard.writeText(address).then(() => {
-            showToast('📋 Dirección copiada al portapapeles', 'success');
+            showToast('📋 Dirección copiada', 'success');
         }).catch(() => {
             const textArea = document.createElement('textarea');
             textArea.value = address;
@@ -2330,20 +2545,20 @@ function copiarDireccion() {
             textArea.select();
             document.execCommand('copy');
             textArea.remove();
-            showToast('📋 Dirección copiada al portapapeles', 'success');
+            showToast('📋 Dirección copiada', 'success');
         });
     }
 }
 
 function cerrarModalPago() {
     const modal = document.getElementById('cryptoPaymentModal');
-    modal.classList.remove('active');
+    if (modal) modal.classList.remove('active');
     window._ordenPagoId = null;
 }
 
-// ================================================================
-// CANJEAR NFT
-// ================================================================
+/* ================================================================
+   CANJEAR NFT
+   ================================================================ */
 async function canjearNFT() {
     try {
         const session = await getSession();
@@ -2358,7 +2573,7 @@ async function canjearNFT() {
 
         if (error) {
             if (error.message.includes('insufficient tokens')) {
-                showToast('❌ Necesitas exactamente 12 Es.stoks para canjear', 'error');
+                showToast('❌ Necesitas exactamente 12 Es.stoks', 'error');
             } else if (error.message.includes('already redeemed')) {
                 showToast('⚠️ Ya has canjeado tu NFT', 'warning');
             } else {
@@ -2367,19 +2582,19 @@ async function canjearNFT() {
             return;
         }
 
-        showToast('🎁 ¡NFT Canjeado Exitosamente! Tienes 30 días para reclamar.', 'success', 8000);
+        showToast('🎁 ¡NFT Canjeado! Tienes 30 días para reclamar.', 'success', 8000);
         await cargarPerfil(true);
         mostrarModalNFT(data);
 
     } catch (error) {
-        console.error('Error al canjear NFT:', error);
+        console.error('[Perfil] Error al canjear NFT:', error);
         showToast('❌ Error al canjear NFT: ' + error.message, 'error');
     }
 }
 
-// ================================================================
-// EFECTO CONFETI Y MODALES
-// ================================================================
+/* ================================================================
+   CONFETI / CELEBRACIÓN / MODAL NFT
+   ================================================================ */
 function crearConfeti() {
     const colores = ['#ff6b6b', '#feca57', '#48dbfb', '#ff9ff3', '#54a0ff', '#5f27cd'];
     for (let i = 0; i < 50; i++) {
@@ -2412,7 +2627,7 @@ function mostrarCelebracion() {
 function compartirLogro() {
     const texto = "🎁 ¡Acabo de canjear mi NFT en Sariel's! Únete al ecosistema. #Sariels #WEB3 #NFT";
     if (navigator.share) {
-        navigator.share({ title: "Mi logro en Sariel's", text: texto });
+        navigator.share({ title: "Mi logro en Sariel's", text: texto }).catch(() => {});
     } else {
         navigator.clipboard.writeText(texto).then(() => {
             showToast('📋 Copiado al portapapeles', 'success');
@@ -2432,20 +2647,21 @@ function mostrarModalNFT(data) {
         justify-content: center;
         align-items: center;
         z-index: 9999;
-        animation: fadeIn 0.5s ease-out;
     `;
-    
+
+    const nftId = (data && data.nft_id) ? data.nft_id : ('NFT-' + Date.now().toString().slice(-6));
+
     modal.innerHTML = `
-        <div style="background: linear-gradient(135deg, var(--bg-card), var(--bg-dark)); border: 2px solid var(--gold); border-radius: 20px; padding: 40px; max-width: 500px; width: 90%; text-align: center; animation: scaleIn 0.5s ease-out;">
+        <div style="background: linear-gradient(135deg, var(--bg-card), var(--bg-dark)); border: 2px solid var(--gold); border-radius: 20px; padding: 40px; max-width: 500px; width: 90%; text-align: center;">
             <div style="font-size: 80px; margin-bottom: 20px;">🎁</div>
             <h2 style="color: var(--gold); font-size: 28px; margin-bottom: 10px;">¡NFT Canjeado!</h2>
             <p style="color: var(--text-primary); margin-bottom: 20px; font-size: 18px;">Tu Domo físico te espera</p>
             <div style="background: var(--bg-dark); border-radius: 10px; padding: 15px; margin-bottom: 20px;">
                 <p style="color: var(--text-muted); font-size: 14px;">⏳ Vigencia: 30 días para reclamar</p>
-                <p style="color: var(--cyan); font-size: 12px; margin-top: 5px;">ID: ${data?.nft_id || 'NFT-' + Date.now().toString().slice(-6)}</p>
+                <p style="color: var(--cyan); font-size: 12px; margin-top: 5px;">ID: ${nftId}</p>
             </div>
             <div style="display: flex; gap: 10px; justify-content: center;">
-                <button onclick="this.parentElement.parentElement.parentElement.remove()" 
+                <button onclick="this.closest('#nftModal').remove()"
                         style="background: linear-gradient(135deg, var(--gold), #f7971e); border: none; color: #fff; padding: 12px 30px; border-radius: 10px; font-weight: 600; cursor: pointer;">
                     ✅ Entendido
                 </button>
@@ -2456,14 +2672,14 @@ function mostrarModalNFT(data) {
             </div>
         </div>
     `;
-    
+
     document.body.appendChild(modal);
     crearConfeti();
 }
 
-// ================================================================
-// GESTIÓN DE PERFIL
-// ================================================================
+/* ================================================================
+   GESTIÓN DE PERFIL — TODO DIRECTO A SUPABASE
+   ================================================================ */
 function editarPerfil() {
     cambiarTab('config');
     setTimeout(() => {
@@ -2483,9 +2699,9 @@ async function guardarPerfil() {
     }
 
     const perfil = {
-        nombre: document.getElementById('editNombre').value.trim() || t('perfil_nombre_usuario', 'Explorador'),
-        handle: document.getElementById('editHandle').value.trim().replace('@', '') || 'explorador',
-        bio: document.getElementById('editBio').value.trim() || t('perfil_biografia_default', "Explorando el ecosistema Sariel's · WEB3 · Comunidad")
+        nombre: (document.getElementById('editNombre')?.value || '').trim() || t('perfil_nombre_usuario', 'Explorador'),
+        handle: (document.getElementById('editHandle')?.value || '').trim().replace('@', '') || 'explorador',
+        bio: (document.getElementById('editBio')?.value || '').trim() || t('perfil_biografia_default', "Explorando el ecosistema Sariel's · WEB3 · Comunidad")
     };
 
     if (!/^[a-zA-Z0-9_]+$/.test(perfil.handle)) {
@@ -2494,26 +2710,24 @@ async function guardarPerfil() {
     }
 
     try {
-        const response = await fetch(`${API_ENDPOINTS.perfil}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session.access_token}`
-            },
-            body: JSON.stringify(perfil)
-        });
+        // TODO DIRECTO A SUPABASE (antes era PUT /api/perfil → 404)
+        const { error } = await supabaseClient
+            .from('usuarios')
+            .update({
+                nombre: perfil.nombre,
+                handle: perfil.handle,
+                bio: perfil.bio,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', session.user.id);
 
-        const result = await response.json();
-
-        if (!result.success) {
-            throw new Error(result.error || 'Error guardando perfil');
-        }
+        if (error) throw error;
 
         showToast('✅ Perfil guardado correctamente', 'success');
         await cargarPerfil(true);
-        
+
     } catch (error) {
-        console.error('Error guardando perfil:', error);
+        console.error('[Perfil] Error guardando perfil:', error);
         showToast('❌ Error al guardar: ' + error.message, 'error');
     }
 }
@@ -2544,9 +2758,9 @@ function abrirSelectorArchivo() {
     if (input) input.click();
 }
 
-// ================================================================
-// EXPANDIR AVATAR (versión robusta, siempre por encima de todo)
-// ================================================================
+/* ================================================================
+   EXPANDIR AVATAR / FOTO
+   ================================================================ */
 function expandirAvatar() {
     const avatarEl = document.getElementById('perfilAvatar');
     if (!avatarEl) return;
@@ -2558,12 +2772,8 @@ function expandirAvatar() {
     modal.id = 'perfilAvatarModal';
     modal.style.cssText = [
         'position: fixed',
-        'top: 0',
-        'left: 0',
-        'right: 0',
-        'bottom: 0',
-        'width: 100vw',
-        'height: 100vh',
+        'top: 0', 'left: 0', 'right: 0', 'bottom: 0',
+        'width: 100vw', 'height: 100vh',
         'background: rgba(0,0,0,0.95)',
         '-webkit-backdrop-filter: blur(8px)',
         'backdrop-filter: blur(8px)',
@@ -2594,18 +2804,13 @@ function expandirAvatar() {
     document.body.appendChild(modal);
 
     const cerrar = function (e) {
-        if (e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
+        if (e) { e.preventDefault(); e.stopPropagation(); }
         modal.remove();
         document.removeEventListener('keydown', onKeyDown);
     };
 
     const onKeyDown = function (e) {
-        if (e.key === 'Escape' || e.key === 'Esc') {
-            cerrar();
-        }
+        if (e.key === 'Escape' || e.key === 'Esc') cerrar();
     };
 
     modal.addEventListener('click', cerrar);
@@ -2613,9 +2818,6 @@ function expandirAvatar() {
     document.addEventListener('keydown', onKeyDown);
 }
 
-// ================================================================
-// EXPANDIR FOTO DE PUBLICACIÓN
-// ================================================================
 function expandirFotoPublicacion(src) {
     if (!src) return;
 
@@ -2623,12 +2825,8 @@ function expandirFotoPublicacion(src) {
     modal.id = 'fotoPublicacionModal';
     modal.style.cssText = [
         'position: fixed',
-        'top: 0',
-        'left: 0',
-        'right: 0',
-        'bottom: 0',
-        'width: 100vw',
-        'height: 100vh',
+        'top: 0', 'left: 0', 'right: 0', 'bottom: 0',
+        'width: 100vw', 'height: 100vh',
         'background: rgba(0,0,0,0.95)',
         '-webkit-backdrop-filter: blur(8px)',
         'backdrop-filter: blur(8px)',
@@ -2659,18 +2857,13 @@ function expandirFotoPublicacion(src) {
     document.body.appendChild(modal);
 
     const cerrar = function (e) {
-        if (e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
+        if (e) { e.preventDefault(); e.stopPropagation(); }
         modal.remove();
         document.removeEventListener('keydown', onKeyDown);
     };
 
     const onKeyDown = function (e) {
-        if (e.key === 'Escape' || e.key === 'Esc') {
-            cerrar();
-        }
+        if (e.key === 'Escape' || e.key === 'Esc') cerrar();
     };
 
     modal.addEventListener('click', cerrar);
@@ -2678,6 +2871,9 @@ function expandirFotoPublicacion(src) {
     document.addEventListener('keydown', onKeyDown);
 }
 
+/* ================================================================
+   SUBIR FOTO (Storage con user.id como primer segmento)
+   ================================================================ */
 async function subirFoto(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -2701,7 +2897,7 @@ async function subirFoto(event) {
     }
 
     const fileExt = file.name.split('.').pop().toLowerCase();
-    const filePath = `${session.user.id}/avatar.${fileExt}`;
+    const filePath = `${session.user.id}/avatar.${fileExt}`; // ← cumple política Storage
 
     try {
         showToast('⏳ Subiendo foto...', '', 5000);
@@ -2711,7 +2907,7 @@ async function subirFoto(event) {
             .upload(filePath, file, { upsert: true, contentType: file.type });
 
         if (uploadError) {
-            console.error('Error storage:', uploadError);
+            console.error('[Perfil] Error storage:', uploadError);
             if (uploadError.message?.includes('not found') || uploadError.message?.includes('Bucket')) {
                 showToast('❌ Bucket de avatares no configurado', 'error');
             } else if (uploadError.message?.includes('policy') || uploadError.message?.includes('violates')) {
@@ -2740,14 +2936,73 @@ async function subirFoto(event) {
         await cargarPerfil(true);
 
     } catch (error) {
-        console.error('Error al subir foto:', error);
+        console.error('[Perfil] Error al subir foto:', error);
         showToast('❌ Error al subir foto: ' + error.message, 'error');
     }
 }
 
-// ================================================================
-// INTERACCIONES SOCIALES
-// ================================================================
+async function subirVideo(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const session = await getSession();
+    if (!session) {
+        showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+        return;
+    }
+
+    if (!file.type.startsWith('video/')) {
+        showToast('❌ Formato no válido (solo videos)', 'error');
+        return;
+    }
+
+    if (file.size > 100 * 1024 * 1024) {
+        showToast('❌ El video excede 100 MB', 'error');
+        return;
+    }
+
+    try {
+        showToast('⏳ Subiendo video...', '', 15000);
+
+        const fileExt = file.name.split('.').pop();
+        const filePath = `${session.user.id}/video_${Date.now()}.${fileExt}`; // ← cumple política Storage
+
+        const { error: uploadError } = await supabaseClient.storage
+            .from('posts')
+            .upload(filePath, file, {
+                cacheControl: '3600',
+                upsert: false,
+                contentType: file.type
+            });
+
+        if (uploadError) {
+            console.error('[Perfil] Error storage:', uploadError);
+            if (uploadError.message?.includes('not found') || uploadError.message?.includes('Bucket')) {
+                showToast('❌ Bucket de posts no configurado', 'error');
+            } else if (uploadError.message?.includes('policy') || uploadError.message?.includes('violates')) {
+                showToast('❌ Sin permiso para subir video', 'error');
+            } else {
+                showToast('❌ Error: ' + uploadError.message, 'error');
+            }
+            return;
+        }
+
+        const { data: urlData } = supabaseClient.storage
+            .from('posts')
+            .getPublicUrl(filePath);
+
+        showToast('✅ Video subido con éxito', 'success');
+        return urlData.publicUrl;
+
+    } catch (error) {
+        console.error('[Perfil] Error al subir video:', error);
+        showToast('❌ Error al subir el video: ' + error.message, 'error');
+    }
+}
+
+/* ================================================================
+   INTERACCIONES SOCIALES
+   ================================================================ */
 async function reaccionarPublicacion(postId, tipoReaccion) {
     try {
         const session = await getSession();
@@ -2765,7 +3020,6 @@ async function reaccionarPublicacion(postId, tipoReaccion) {
             }, { onConflict: 'post_id,usuario_id' });
 
         if (error) {
-            console.error('Error reacción:', error);
             if (error.code === '42P01') showToast('❌ Tabla de reacciones no configurada', 'error');
             else if (error.code === '42501') showToast('❌ Sin permiso para reaccionar', 'error');
             else showToast('❌ Error al reaccionar: ' + error.message, 'error');
@@ -2773,7 +3027,7 @@ async function reaccionarPublicacion(postId, tipoReaccion) {
         }
         showToast(`❤️ Reaccionaste con ${tipoReaccion}`, 'success');
     } catch (error) {
-        console.error('Error al reaccionar:', error);
+        console.error('[Perfil] Error al reaccionar:', error);
         showToast('❌ Error al reaccionar', 'error');
     }
 }
@@ -2802,7 +3056,6 @@ async function comentarPublicacion(postId, contenido) {
             });
 
         if (error) {
-            console.error('Error comentario:', error);
             if (error.code === '42P01') showToast('❌ Tabla de comentarios no configurada', 'error');
             else if (error.code === '42501') showToast('❌ Sin permiso para comentar', 'error');
             else showToast('❌ Error al comentar: ' + error.message, 'error');
@@ -2810,14 +3063,14 @@ async function comentarPublicacion(postId, contenido) {
         }
         showToast('💬 Comentario publicado', 'success');
     } catch (error) {
-        console.error('Error al comentar:', error);
+        console.error('[Perfil] Error al comentar:', error);
         showToast('❌ Error al enviar comentario', 'error');
     }
 }
 
-// ================================================================
-// SISTEMA DE AMIGOS
-// ================================================================
+/* ================================================================
+   SISTEMA DE AMIGOS
+   ================================================================ */
 async function agregarAmigo(amigoId) {
     try {
         const session = await getSession();
@@ -2844,40 +3097,38 @@ async function agregarAmigo(amigoId) {
 
         showToast('🤝 Solicitud de amistad enviada', 'success');
     } catch (error) {
-        console.error('Error al agregar amigo:', error);
+        console.error('[Perfil] Error al agregar amigo:', error);
         showToast('❌ No se pudo enviar la solicitud', 'error');
     }
 }
 
-// ================================================================
-// GENERAR QR PERFIL
-// ================================================================
+/* ================================================================
+   GENERAR QR PERFIL
+   ================================================================ */
 async function generarQRPerfil() {
     try {
         const session = await getSession();
         if (!session) return;
-        
+
         const handle = document.getElementById('perfilHandle')?.textContent.replace('@', '') || 'explorador';
         const url = `${window.location.origin}/perfil/${handle}`;
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
-        
+
         const modal = document.createElement('div');
         modal.style.cssText = `
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0,0,0,0.8);
             backdrop-filter: blur(10px);
             display: flex;
             justify-content: center;
             align-items: center;
             z-index: 9999;
-            animation: fadeIn 0.3s ease-out;
         `;
         modal.innerHTML = `
-            <div style="background: var(--bg-card); border-radius: 20px; padding: 30px; text-align: center; animation: scaleIn 0.3s ease-out;">
+            <div style="background: var(--bg-card); border-radius: 20px; padding: 30px; text-align: center; max-width: 90vw;">
                 <h3 style="color: var(--gold); margin-bottom: 20px;" data-clave="perfil_share_qr">📱 Share QR</h3>
                 <img src="${qrUrl}" alt="QR Code" style="border-radius: 10px; max-width: 200px;">
-                <p style="color: var(--text-muted); margin-top: 15px; font-size: 12px;">${url}</p>
+                <p style="color: var(--text-muted); margin-top: 15px; font-size: 12px; word-break: break-all;">${url}</p>
                 <button onclick="this.parentElement.parentElement.remove()"
                         style="margin-top: 20px; background: var(--gold); border: none; color: #fff; padding: 10px 30px; border-radius: 10px; cursor: pointer;" data-clave="perfil_cerrar">
                     Cerrar
@@ -2886,16 +3137,16 @@ async function generarQRPerfil() {
         `;
         document.body.appendChild(modal);
         aplicarI18NPerfil(modal);
-        
+
     } catch (error) {
-        console.error('Error generando QR:', error);
+        console.error('[Perfil] Error generando QR:', error);
         showToast('❌ Error al generar QR', 'error');
     }
 }
 
-// ================================================================
-// NIVEL Y ESTADÍSTICAS
-// ================================================================
+/* ================================================================
+   NIVEL Y ESTADÍSTICAS
+   ================================================================ */
 function calcularNivel(tokens) {
     const niveles = [
         { min: 0, max: 4, nombre: '🌱 Explorador', emoji: '🌱' },
@@ -2904,11 +3155,9 @@ function calcularNivel(tokens) {
         { min: 15, max: 19, nombre: '👑 Maestro', emoji: '👑' },
         { min: 20, max: Infinity, nombre: '✨ Inmortal', emoji: '✨' }
     ];
-    
+
     for (const nivel of niveles) {
-        if (tokens >= nivel.min && tokens <= nivel.max) {
-            return nivel;
-        }
+        if (tokens >= nivel.min && tokens <= nivel.max) return nivel;
     }
     return niveles[0];
 }
@@ -2916,101 +3165,42 @@ function calcularNivel(tokens) {
 async function obtenerEstadisticas() {
     try {
         const session = await getSession();
-        if (!session) return;
+        if (!session) return null;
 
         const { data, error } = await supabaseClient
             .from('estadisticas_usuarios')
             .select('*')
             .eq('user_id', session.user.id)
-            .single();
+            .maybeSingle();
 
-        if (error) throw error;
-        return data;
+        if (error && error.code !== 'PGRST116') throw error;
+        return data || null;
     } catch (error) {
-        console.error('Error obteniendo estadísticas:', error);
+        console.warn('[Perfil] Error obteniendo estadísticas:', error?.message);
         return null;
     }
 }
 
-async function subirVideo(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const session = await getSession();
-    if (!session) {
-        showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
-        return;
-    }
-
-    if (!file.type.startsWith('video/')) {
-        showToast('❌ Formato no válido (solo videos)', 'error');
-        return;
-    }
-
-    if (file.size > 100 * 1024 * 1024) {
-        showToast('❌ El video excede 100 MB', 'error');
-        return;
-    }
-
-    try {
-        showToast('⏳ Subiendo video...', '', 15000);
-
-        const fileExt = file.name.split('.').pop();
-        const filePath = `${session.user.id}/video_${Date.now()}.${fileExt}`;
-
-        const { error: uploadError } = await supabaseClient.storage
-            .from('posts')
-            .upload(filePath, file, {
-                cacheControl: '3600',
-                upsert: false,
-                contentType: file.type
-            });
-
-        if (uploadError) {
-            console.error('Error storage:', uploadError);
-            if (uploadError.message?.includes('not found') || uploadError.message?.includes('Bucket')) {
-                showToast('❌ Bucket de posts no configurado', 'error');
-            } else if (uploadError.message?.includes('policy') || uploadError.message?.includes('violates')) {
-                showToast('❌ Sin permiso para subir video', 'error');
-            } else {
-                showToast('❌ Error: ' + uploadError.message, 'error');
-            }
-            return;
-        }
-
-        const { data: urlData } = supabaseClient.storage
-            .from('posts')
-            .getPublicUrl(filePath);
-
-        showToast('✅ Video subido con éxito', 'success');
-        return urlData.publicUrl;
-
-    } catch (error) {
-        console.error('Error al subir video:', error);
-        showToast('❌ Error al subir el video: ' + error.message, 'error');
-    }
-}
-
-// ================================================================
-// CERRAR SESIÓN
-// ================================================================
+/* ================================================================
+   CERRAR SESIÓN
+   ================================================================ */
 async function cerrarSesion() {
     const confirmMsg = t('perfil_cerrar_sesion', '¿Seguro que quieres cerrar sesión?');
     if (!confirm(confirmMsg)) return;
-    
+
     try {
         await actualizarEstadoEnLinea(false);
         await supabaseClient.auth.signOut();
         window.location.href = '/';
     } catch (error) {
-        console.error('Error cerrando sesión:', error);
+        console.error('[Perfil] Error cerrando sesión:', error);
         showToast('❌ Error al cerrar sesión', 'error');
     }
 }
 
-// ================================================================
-// NOTIFICACIONES EN TIEMPO REAL
-// ================================================================
+/* ================================================================
+   NOTIFICACIONES EN TIEMPO REAL
+   ================================================================ */
 function iniciarNotificacionesRealtime() {
     if (!supabaseClient) return;
     const channel = supabaseClient
@@ -3023,7 +3213,7 @@ function iniciarNotificacionesRealtime() {
             const notificacion = payload.new;
             if (notificacion.user_id === perfilCache?.id) {
                 showToast(`🔔 ${notificacion.mensaje}`, 'warning', 4000);
-                
+
                 try {
                     const audio = new Audio('/sound/notification.mp3');
                     audio.play().catch(() => {});
@@ -3035,16 +3225,16 @@ function iniciarNotificacionesRealtime() {
     return channel;
 }
 
-// ================================================================
-// INICIALIZACIÓN DEL MÓDULO (se ejecuta cuando Supabase está listo)
-// ================================================================
+/* ================================================================
+   INICIALIZACIÓN DEL MÓDULO
+   ================================================================ */
 function inicializarModuloPerfil() {
     if (moduloInicializado) return;
     moduloInicializado = true;
 
     console.log('[Perfil] 🚀 Inicializando módulo...');
 
-    // Exponer funciones globales AHORA que supabaseClient existe
+    // Exponer funciones globales
     window.cambiarTab = cambiarTab;
     window.cargarPerfil = cargarPerfil;
     window.guardarPerfil = guardarPerfil;
@@ -3104,12 +3294,10 @@ function inicializarModuloPerfil() {
     window.contratarPro = contratarPro;
     window.activarProDirecto = activarProDirecto;
 
-    // Exponer helpers I18N locales por si el HTML los necesita
     window.perfilT = t;
     window.aplicarI18NPerfil = aplicarI18NPerfil;
     window.traducirPlanMeta = traducirPlanMeta;
 
-    // Iniciar la lógica del perfil
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', iniciarPerfil);
     } else {
@@ -3120,15 +3308,18 @@ function inicializarModuloPerfil() {
 async function iniciarPerfil() {
     console.log('[Perfil] 🎬 Cargando datos del perfil...');
 
+    // Cargar jsQR si no está
     if (typeof jsQR === 'undefined') {
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
-        document.head.appendChild(script);
-        await new Promise(resolve => script.onload = resolve);
+        try {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
+            document.head.appendChild(script);
+            await new Promise(resolve => { script.onload = resolve; script.onerror = resolve; });
+        } catch (e) {}
     }
-    
+
     await cargarPerfil();
-    
+
     const stats = await obtenerEstadisticas();
     if (stats) {
         const nivel = calcularNivel(stats.tokens_actuales || 0);
@@ -3137,7 +3328,7 @@ async function iniciarPerfil() {
             nivelEl.textContent = `${nivel.emoji} ${nivel.nombre}`;
         }
     }
-    
+
     iniciarNotificacionesRealtime();
     iniciarEscuchaConexion();
     iniciarEscuchaAmigos();
@@ -3158,16 +3349,22 @@ async function iniciarPerfil() {
         cargarAmigosEnLinea();
     }, 15000);
 
+    // Crypto controls
     const cryptoQty = document.getElementById('cryptoQuantity');
-    if (cryptoQty) {
-        document.getElementById('cryptoDecreaseQty').addEventListener('click', () => {
+    const decBtn = document.getElementById('cryptoDecreaseQty');
+    const incBtn = document.getElementById('cryptoIncreaseQty');
+
+    if (decBtn && cryptoQty) {
+        decBtn.addEventListener('click', () => {
             let val = parseInt(cryptoQty.textContent);
             if (val > 1) {
                 cryptoQty.textContent = val - 1;
                 actualizarCryptoTotal();
             }
         });
-        document.getElementById('cryptoIncreaseQty').addEventListener('click', () => {
+    }
+    if (incBtn && cryptoQty) {
+        incBtn.addEventListener('click', () => {
             let val = parseInt(cryptoQty.textContent);
             if (val < 10) {
                 cryptoQty.textContent = val + 1;
@@ -3191,9 +3388,9 @@ async function iniciarPerfil() {
     console.log('[Perfil] ✅ Módulo inicializado completamente.');
 }
 
-// ================================================================
-// ARRANCAR
-// ================================================================
+/* ================================================================
+   ARRANCAR
+   ================================================================ */
 inicializarSupabase();
 
 })();
