@@ -8,19 +8,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="/features/shared/js/apariencia-global.js?v=4" defer></script>
+<script src="/features/shared/js/apariencia-global.js?v=5" defer></script>
 
 <style>
     html:not(.auth-ready) .app { display: none !important; }
 </style>
 
-<!-- =========================================================
-     SUPABASE — Inicialización centralizada
-     - NO carga app.js.
-     - NO hardcodea credenciales.
-     - Obtiene la config desde /api/config/public.
-     - Guard: si no hay sesión → redirige al index.
-========================================================== -->
 <script>
     (function () {
         'use strict';
@@ -91,25 +84,15 @@
                             const config = await response.json();
                             supabaseUrl = config && config.supabaseUrl;
                             supabaseAnonKey = config && config.supabaseAnonKey;
-                        } else {
-                            console.warn(
-                                '[Perfil Guardián] /api/config/public respondió HTTP ' +
-                                response.status + '. Usando fallback.'
-                            );
                         }
                     } catch (fetchErr) {
-                        console.warn(
-                            '[Perfil Guardián] No se pudo consultar /api/config/public. Usando fallback.',
-                            fetchErr
-                        );
+                        console.warn('[Perfil Guardián] fetch falló:', fetchErr);
                     }
 
                     if (!supabaseUrl || !supabaseAnonKey) {
+                        console.warn('[Perfil Guardián] /api/config/public no devolvió datos. Usando fallback.');
                         supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
                         supabaseAnonKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
-                        console.warn(
-                            '[Perfil Guardián] ⚠️ Usando credenciales de respaldo. Migra el backend a /api/config/public.'
-                        );
                     }
 
                     window.SupabaseSDK = window.supabase;
@@ -125,10 +108,6 @@
                             }
                         }
                     );
-
-                    console.log('[Perfil Guardián] ✅ supabaseClient creado.');
-                } else {
-                    console.log('[Perfil Guardián] ✅ Reutilizando supabaseClient existente.');
                 }
 
                 const resultado = await window.supabaseClient.auth.getSession();
@@ -149,9 +128,7 @@
                 window.supabaseClient.auth.onAuthStateChange(
                     function (_event, sessionActual) {
                         window.__sarielsAuthenticated = !!sessionActual;
-
                         if (!sessionActual) {
-                            console.log('[Perfil Guardián] Sesión cerrada → redirigiendo al index');
                             window.location.replace('/');
                         }
                     }
@@ -167,10 +144,7 @@
 
                 return window.supabaseClient;
             } catch (error) {
-                console.error(
-                    '[Perfil Guardián] Error inicializando Supabase:',
-                    error
-                );
+                console.error('[Perfil Guardián] Error inicializando Supabase:', error);
                 window.__sarielsAuthenticated = false;
                 window.supabaseError = error;
                 clearTimeout(salvaguarda);
@@ -316,143 +290,25 @@
     .publicacion-card .contenido img { max-width: 100%; border-radius: 10px; margin-top: 8px; display: block; border: 1px solid var(--line-black-soft); }
     .publicacion-card .contenido video { max-width: 100%; border-radius: 10px; margin-top: 8px; display: block; border: 1px solid var(--line-black-soft); }
     .publicacion-card .stats { display: flex; gap: 8px; font-size: 0.65rem; color: var(--text-muted); margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line-black-soft); flex-wrap: wrap; }
-    .btn-accion-pub {
-        background: rgba(0,0,0,0.35);
-        border: 1.5px solid var(--line-black);
-        color: var(--text-muted);
-        cursor: pointer;
-        padding: 5px 12px;
-        border-radius: 16px;
-        transition: var(--transition);
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        font-size: 0.65rem;
-        font-weight: 600;
-        font-family: 'Inter', sans-serif;
-    }
-    .btn-accion-pub:hover {
-        color: var(--gold);
-        border-color: var(--gold);
-        background: rgba(212,175,55,0.08);
-    }
-    .btn-accion-pub.danger {
-        color: var(--danger);
-        border-color: rgba(255, 51, 102, 0.35);
-    }
-    .btn-accion-pub.danger:hover {
-        background: rgba(255, 51, 102, 0.12);
-        border-color: var(--danger);
-        color: var(--danger);
-    }
-    .reaccion-wrap {
-        position: relative;
-        display: inline-block;
-        margin-top: 6px;
-        padding-top: 6px;
-    }
-    .reaccion-trigger {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        background: rgba(0,0,0,0.35);
-        border: 1.5px solid var(--line-black);
-        border-radius: 20px;
-        padding: 5px 12px;
-        cursor: pointer;
-        transition: var(--transition);
-        font-family: 'Inter', sans-serif;
-        color: var(--text-secondary);
-        font-size: 0.7rem;
-        font-weight: 600;
-    }
-    .reaccion-trigger:hover {
-        border-color: var(--gold);
-        background: rgba(212,175,55,0.08);
-        color: var(--gold);
-    }
-    .reaccion-trigger.activa {
-        border-color: var(--gold);
-        background: rgba(212,175,55,0.12);
-        color: var(--gold);
-    }
-    .reaccion-trigger .emoji-actual {
-        font-size: 1.05rem;
-        line-height: 1;
-    }
-    .reaccion-trigger .count {
-        color: var(--text-muted);
-        font-weight: 500;
-        font-size: 0.65rem;
-    }
-    .reaccion-trigger.activa .count {
-        color: var(--gold);
-    }
-    .reaccion-dropdown {
-        display: none;
-        position: absolute;
-        bottom: calc(100% + 6px);
-        left: 0;
-        background: rgba(5, 8, 15, 0.98);
-        border: 1.5px solid var(--line-black);
-        border-radius: 30px;
-        padding: 4px 6px;
-        z-index: 200;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.7), 0 0 0 1px var(--gold);
-        backdrop-filter: blur(12px);
-        white-space: nowrap;
-    }
-    .reaccion-dropdown.show {
-        display: flex;
-        gap: 2px;
-        animation: popIn 0.18s ease-out;
-    }
-    @keyframes popIn {
-        from { opacity: 0; transform: translateY(4px) scale(0.96); }
-        to { opacity: 1; transform: translateY(0) scale(1); }
-    }
-    .reaccion-dropdown button {
-        background: transparent;
-        border: none;
-        font-size: 1.4rem;
-        line-height: 1;
-        cursor: pointer;
-        padding: 6px 4px;
-        border-radius: 50%;
-        transition: var(--transition);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 38px;
-        height: 38px;
-        position: relative;
-    }
-    .reaccion-dropdown button:hover {
-        background: rgba(212,175,55,0.15);
-        transform: scale(1.25) translateY(-3px);
-    }
-    .reaccion-dropdown button.activa {
-        background: rgba(212,175,55,0.2);
-        box-shadow: 0 0 0 1.5px var(--gold);
-    }
-    .reaccion-dropdown button .mini-count {
-        position: absolute;
-        bottom: -2px;
-        right: -2px;
-        font-size: 0.5rem;
-        color: var(--gold);
-        background: rgba(0,0,0,0.9);
-        border: 1px solid var(--line-black);
-        border-radius: 8px;
-        padding: 0 3px;
-        font-weight: 700;
-        min-width: 12px;
-        text-align: center;
-        line-height: 1.2;
-    }
-    @media (max-width: 480px) {
-        .reaccion-dropdown button { width: 34px; height: 34px; font-size: 1.2rem; }
-    }
+    .btn-accion-pub { background: rgba(0,0,0,0.35); border: 1.5px solid var(--line-black); color: var(--text-muted); cursor: pointer; padding: 5px 12px; border-radius: 16px; transition: var(--transition); display: inline-flex; align-items: center; gap: 4px; font-size: 0.65rem; font-weight: 600; font-family: 'Inter', sans-serif; }
+    .btn-accion-pub:hover { color: var(--gold); border-color: var(--gold); background: rgba(212,175,55,0.08); }
+    .btn-accion-pub.danger { color: var(--danger); border-color: rgba(255, 51, 102, 0.35); }
+    .btn-accion-pub.danger:hover { background: rgba(255, 51, 102, 0.12); border-color: var(--danger); color: var(--danger); }
+    .reaccion-wrap { position: relative; display: inline-block; margin-top: 6px; padding-top: 6px; }
+    .reaccion-trigger { display: inline-flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.35); border: 1.5px solid var(--line-black); border-radius: 20px; padding: 5px 12px; cursor: pointer; transition: var(--transition); font-family: 'Inter', sans-serif; color: var(--text-secondary); font-size: 0.7rem; font-weight: 600; }
+    .reaccion-trigger:hover { border-color: var(--gold); background: rgba(212,175,55,0.08); color: var(--gold); }
+    .reaccion-trigger.activa { border-color: var(--gold); background: rgba(212,175,55,0.12); color: var(--gold); }
+    .reaccion-trigger .emoji-actual { font-size: 1.05rem; line-height: 1; }
+    .reaccion-trigger .count { color: var(--text-muted); font-weight: 500; font-size: 0.65rem; }
+    .reaccion-trigger.activa .count { color: var(--gold); }
+    .reaccion-dropdown { display: none; position: absolute; bottom: calc(100% + 6px); left: 0; background: rgba(5, 8, 15, 0.98); border: 1.5px solid var(--line-black); border-radius: 30px; padding: 4px 6px; z-index: 200; box-shadow: 0 8px 32px rgba(0,0,0,0.7), 0 0 0 1px var(--gold); backdrop-filter: blur(12px); white-space: nowrap; }
+    .reaccion-dropdown.show { display: flex; gap: 2px; animation: popIn 0.18s ease-out; }
+    @keyframes popIn { from { opacity: 0; transform: translateY(4px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    .reaccion-dropdown button { background: transparent; border: none; font-size: 1.4rem; line-height: 1; cursor: pointer; padding: 6px 4px; border-radius: 50%; transition: var(--transition); display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; position: relative; }
+    .reaccion-dropdown button:hover { background: rgba(212,175,55,0.15); transform: scale(1.25) translateY(-3px); }
+    .reaccion-dropdown button.activa { background: rgba(212,175,55,0.2); box-shadow: 0 0 0 1.5px var(--gold); }
+    .reaccion-dropdown button .mini-count { position: absolute; bottom: -2px; right: -2px; font-size: 0.5rem; color: var(--gold); background: rgba(0,0,0,0.9); border: 1px solid var(--line-black); border-radius: 8px; padding: 0 3px; font-weight: 700; min-width: 12px; text-align: center; line-height: 1.2; }
+    @media (max-width: 480px) { .reaccion-dropdown button { width: 34px; height: 34px; font-size: 1.2rem; } }
     .comentarios-container { display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line-black-soft); }
     .comentarios-container.show { display: block; }
     .comentarios-lista { max-height: 200px; overflow-y: auto; margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px; }
@@ -1218,13 +1074,49 @@
 
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 
-<script src="/features/shared/js/idiomas.js?v=4" defer></script>
-<script src="/features/perfil/perfil.js?v=4" defer></script>
+<script>
+/* ================================================================
+   BLOQUE DE INICIALIZACIÓN DE IDIOMAS (ÚNICA VEZ)
+   - Se ejecuta ANTES de perfil.js.
+   - Aplica traducciones UNA SOLA VEZ al DOM estático.
+   - NO se vuelve a llamar tras pintar las publicaciones.
+=============================================================== */
+(function() {
+    'use strict';
+
+    function intentarInicializarIdiomas() {
+        if (typeof window.inicializarIdiomas === 'function') {
+            try {
+                // Ejecuta, pero no bloquea.
+                Promise.resolve(window.inicializarIdiomas()).catch(function(e) {
+                    console.warn('[Perfil] Error inicializando idiomas (ignorado):', e);
+                });
+                return true;
+            } catch (e) {
+                console.warn('[Perfil] Excepción inicializando idiomas:', e);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Esperar hasta que idiomas.js exponga inicializarIdiomas (máx 5s).
+    var intentos = 0;
+    (function esperar() {
+        if (intentarInicializarIdiomas()) return;
+        if (intentos++ >= 25) return;
+        setTimeout(esperar, 200);
+    })();
+})();
+</script>
+
+<script src="/features/shared/js/idiomas.js?v=5" defer></script>
+<script src="/features/perfil/perfil.js?v=5" defer></script>
 
 <script>
-// ================================================================
-// ⚙️ CONFIGURACIÓN LEGAL
-// ================================================================
+/* ================================================================
+   AVATAR MENU + REPARTIDOR + LISTENERS GLOBALES
+=============================================================== */
 var CONFIG_LEGAL = {
     nombre_comercial: 'Csariel\'s',
     nombre_ecosistema: 'Csariel\'s Ecosystem',
@@ -1237,9 +1129,6 @@ var CONFIG_LEGAL = {
     ciudad_operacion: 'Puebla'
 };
 
-// ================================================================
-// AVATAR MENU + TOGGLE
-// ================================================================
 function toggleAvatarMenu(event) {
     if (event) event.stopPropagation();
     var menu = document.getElementById('avatarMenu');
@@ -1255,34 +1144,24 @@ function cerrarAvatarMenu() {
 window.toggleAvatarMenu = toggleAvatarMenu;
 window.cerrarAvatarMenu = cerrarAvatarMenu;
 
-// ================================================================
-// VERIFICAR ESTADO DEL REPARTIDOR
-// ================================================================
 async function verificarEstadoRepartidorPerfil() {
     try {
         var section = document.getElementById('repartidorSection');
         var badge = document.getElementById('repBadge');
         var info = document.getElementById('repInfo');
         var btn = document.getElementById('repBtn');
-        
         if (!section) return;
-
         var client = window.supabaseClient;
         if (!client) return;
-
         var session = await client.auth.getSession();
         if (!session.data.session) return;
-
         var usuarioId = session.data.session.user.id;
-
         var result = await client
             .from('mercado_repartidores')
             .select('estado_verificacion, score_confianza, motivo_rechazo')
             .eq('usuario_id', usuarioId)
             .maybeSingle();
-
         section.style.display = 'block';
-
         if (result.error || !result.data) {
             badge.textContent = 'Sé el primero';
             badge.className = 'rep-badge no-registrado';
@@ -1291,9 +1170,7 @@ async function verificarEstadoRepartidorPerfil() {
             btn.className = 'rep-btn registrar';
             return;
         }
-
         var estado = result.data.estado_verificacion;
-
         if (estado === 'activo') {
             badge.textContent = '✓ Verificado';
             badge.className = 'rep-badge activo';
@@ -1320,7 +1197,6 @@ async function verificarEstadoRepartidorPerfil() {
             btn.textContent = '📝 Completar registro';
             btn.className = 'rep-btn registrar';
         }
-
     } catch (e) {
         console.warn('Error verificando estado repartidor:', e);
     }
@@ -1330,28 +1206,22 @@ async function irARepartidorDesdePerfil() {
     try {
         var client = window.supabaseClient;
         if (!client) return;
-
         var session = await client.auth.getSession();
         if (!session.data.session) {
             if (window.showToast) window.showToast('⚠️ Inicia sesión', 'warning');
             return;
         }
-
         var usuarioId = session.data.session.user.id;
-
         var result = await client
             .from('mercado_repartidores')
             .select('estado_verificacion')
             .eq('usuario_id', usuarioId)
             .maybeSingle();
-
         if (result.error || !result.data) {
             window.location.href = '/features/mercado/repartidor/registro.html';
             return;
         }
-
         var estado = result.data.estado_verificacion;
-
         if (estado === 'activo') {
             window.location.href = '/features/mercado/repartidor/panel.html';
         } else if (estado === 'rechazado' || estado === 'procesando' || estado === 'revision_manual') {
@@ -1359,7 +1229,6 @@ async function irARepartidorDesdePerfil() {
         } else {
             window.location.href = '/features/mercado/repartidor/registro.html';
         }
-
     } catch (e) {
         console.error('Error:', e);
         window.location.href = '/features/mercado/repartidor/registro.html';
@@ -1371,16 +1240,6 @@ window.irARepartidorDesdePerfil = irARepartidorDesdePerfil;
 
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(verificarEstadoRepartidorPerfil, 1500);
-
-    setTimeout(async () => {
-        try {
-            if (typeof window.inicializarIdiomas === 'function') {
-                await window.inicializarIdiomas();
-            }
-        } catch (error) {
-            console.error('Error inicializando idiomas en perfil:', error);
-        }
-    }, 800);
 
     document.addEventListener('click', function(e) {
         var menu = document.getElementById('avatarMenu');
@@ -1409,28 +1268,21 @@ document.addEventListener('DOMContentLoaded', function() {
 <script>
 /* ================================================================
    PUBLICACIONES DEL PERFIL — Módulo autocontenido
-   - Todas las funciones se exponen en window.*
-   - Foto y video suben a bucket 'muro-videos'
-   - Eliminar borra fila + archivo del bucket
-   - Reacciones: botón único + dropdown
+   Foto y video suben a bucket 'muro-videos'
+   Eliminar borra fila + archivo del bucket
+   Reacciones: botón único + dropdown
 =============================================================== */
 (function() {
     'use strict';
 
-    function sb() {
-        return window.supabaseClient;
-    }
+    function sb() { return window.supabaseClient; }
 
-    var archivosSeleccionados = {
-        imagen: null,
-        video: null
-    };
+    var archivosSeleccionados = { imagen: null, video: null };
 
     var EMOJIS_REACCION = ['❤️', '😊', '🔥', '👏', '🎉', '💎', '🤩', '😍', '😂'];
 
     var emojisDisponibles = ['😀','😁','😂','🤣','😃','😄','😅','😊','😇','🙂','😉','😍','🥰','😘','😗','😙','😚','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🤐','🤨','😐','😑','😶','😏','😒','🙄','😬','🤥','😌','😔','😪','🤤','😴','😷','🤒','🤕','🤢','🤮','🤧','🥵','🥶','😵','🤯','🤠','🥳','😎','🤓','🧐','😕','😟','🙁','😮','😯','😲','😳','🥺','😦','😧','😨','😰','😥','😢','😭','😱','😖','😣','😞','😓','😩','😫','🥱','😤','😡','😠','🤬','😈','👿','💀','💩','🤡','👹','👺','👻','👽','👾','🤖','❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','🔥','✨','🌟','💫','⭐','⚡','💥','💢','🌈','☀️','🌤️','⛅','🌥️','☁️','🌦️','🌧️','⛈️','🌩️','🌨️','❄️','☃️','⛄','🌬️','💨','🌪️','🌫️','🌊','💧','💦','☔','☂️','🌂','🎉','🎊','🎈','🎁','🎂','🍰','🧁','🍕','🍔','🍟','🌮','🌯','🍿','🍩','🍪','🍫','🍬','🍭','🍮','🍯','🍷','🍸','🍹','🍺','🍻','🥂','🥃','🍾','☕','🍵','🧃','🥤','🧋','🍼','🥛','💊','🌿','🍃','🍀','🍁','🍂','🌸','🌺','🌻','🌹','🌷','🌼','💐','🌱','🌲','🌳','🌴','🌵','🌾','🍄','🐚','🪨','🌍','🌎','🌏','🌕','🌖','🌗','🌘','🌑','🌒','🌓','🌔','🌙','🌚','🌝','🌞','🪐','☄️','🌠','🌌'];
 
-    /* ---------------- EMOJI PICKER ---------------- */
     window.toggleEmojiPickerPerfil = function() {
         var picker = document.getElementById('emojiPickerPerfil');
         if (!picker) return;
@@ -1474,7 +1326,6 @@ document.addEventListener('DOMContentLoaded', function() {
         input.selectionStart = input.selectionEnd = start + 1;
     };
 
-    /* ---------------- ARCHIVOS ---------------- */
     window.seleccionarArchivoPerfil = function(event, tipo) {
         var file = event.target.files[0];
         if (!file) return;
@@ -1519,7 +1370,6 @@ document.addEventListener('DOMContentLoaded', function() {
         renderizarPreviewPerfil();
     };
 
-    /* ---------------- PUBLICAR ---------------- */
     window.publicarDesdePerfil = async function() {
         var btn = document.getElementById('btnPublicarPerfil');
         var input = document.getElementById('inputNuevaPublicacion');
@@ -1583,7 +1433,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    /* ---------------- AVATAR HTML ---------------- */
     function obtenerAvatarActual() {
         if (window.perfilCache && window.perfilCache.avatar_url) {
             return '<img src="' + window.perfilCache.avatar_url + '" alt="Avatar" style="width:100%;height:100%;object-fit:cover;">';
@@ -1595,7 +1444,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return '◈';
     }
 
-    /* ---------------- CARGAR PUBLICACIONES ---------------- */
     window.cargarMisPublicaciones = async function() {
         var container = document.getElementById('misPublicacionesList');
         var contador = document.getElementById('misPostsCount');
@@ -1696,7 +1544,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    /* ---------------- REACCIONES ---------------- */
     window.toggleReaccionDropdown = function(postId) {
         var dd = document.getElementById('reaccion-dropdown-' + postId);
         if (!dd) return;
@@ -1781,7 +1628,6 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch(e) {}
     }
 
-    /* ---------------- COMENTARIOS ---------------- */
     window.toggleComentariosPerfil = async function(publicacionId) {
         var container = document.getElementById('comentarios-container-' + publicacionId);
         if (!container) return;
@@ -1847,7 +1693,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    /* ---------------- ELIMINAR PUBLICACIÓN ---------------- */
     window.eliminarMiPublicacion = async function(publicacionId, event) {
         if (event) {
             event.preventDefault();
@@ -1859,7 +1704,6 @@ document.addEventListener('DOMContentLoaded', function() {
             var client = sb();
             if (!client) { if (window.showToast) window.showToast('❌ Supabase no disponible', 'error'); return; }
 
-            /* Obtener URL del archivo antes de borrar la fila */
             try {
                 var pubRes = await client.from('publicaciones').select('media_url').eq('id', publicacionId).maybeSingle();
                 if (pubRes && pubRes.data && pubRes.data.media_url) {
@@ -1891,7 +1735,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    /* ---------------- HELPERS ---------------- */
     function escapeHtmlPerfil(texto) {
         if (!texto) return '';
         return String(texto).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;').replace(/\n/g, '<br>');
@@ -1922,9 +1765,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var ordenesInternet = [];
     var filtroInternet = 'all';
 
-    function sb() {
-        return window.supabaseClient;
-    }
+    function sb() { return window.supabaseClient; }
 
     function escapeHTML(t) {
         if (t === null || t === undefined) return '';
@@ -2075,7 +1916,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function actualizarDOM(usuario) {
         try {
             if (!usuario) return;
-
             var nombreContainer = document.querySelector('#perfilNombre');
             if (nombreContainer) {
                 var nombreSpan = nombreContainer.querySelector('[data-clave="perfil_nombre_usuario"]');
@@ -2085,12 +1925,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     nombreContainer.textContent = usuario.nombre || 'Explorador';
                 }
             }
-
             var handleElement = document.querySelector('#perfilHandle');
             if (handleElement) {
                 handleElement.textContent = usuario.handle ? '@' + usuario.handle : '@explorador';
             }
-
             var bioElement = document.querySelector('#perfilBio');
             if (bioElement) {
                 var tieneClave = bioElement.hasAttribute('data-clave');
@@ -2101,7 +1939,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     bioElement.textContent = usuario.bio;
                 }
             }
-
             var avatarElement = document.querySelector('#perfilAvatar');
             if (avatarElement) {
                 if (usuario.avatar_url) {
@@ -2124,30 +1961,19 @@ document.addEventListener('DOMContentLoaded', function() {
             var ahora = Date.now();
             if (!forzar && ahora - ultimaRecarga < 500) return;
             ultimaRecarga = ahora;
-
             if (!window.supabaseClient) {
                 setTimeout(function() { recargarPerfil(true); }, 500);
                 return;
             }
-
             var sessionResult = await window.supabaseClient.auth.getSession();
-            if (sessionResult.error || !sessionResult.data || !sessionResult.data.session || !sessionResult.data.session.user) {
-                return;
-            }
-
+            if (sessionResult.error || !sessionResult.data || !sessionResult.data.session || !sessionResult.data.session.user) return;
             var userId = sessionResult.data.session.user.id;
-
             var result = await window.supabaseClient
                 .from('usuarios')
                 .select('id, nombre, handle, bio, avatar_url')
                 .eq('id', userId)
                 .maybeSingle();
-
-            if (result.error) {
-                console.warn('[Perfil] Error leyendo usuarios:', result.error);
-                return;
-            }
-
+            if (result.error) return;
             if (result.data) {
                 actualizarDOM(result.data);
                 window.perfilCache = Object.assign(window.perfilCache || {}, result.data);
@@ -2175,19 +2001,14 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('visibilitychange', function() {
         if (document.visibilityState === 'visible') recargarPerfil(true);
     });
-
     window.addEventListener('focus', function() { recargarPerfil(true); });
 
     async function iniciarRealtime() {
         try {
-            if (!window.supabaseClient) {
-                setTimeout(iniciarRealtime, 500);
-                return;
-            }
+            if (!window.supabaseClient) { setTimeout(iniciarRealtime, 500); return; }
             var sessionResult = await window.supabaseClient.auth.getSession();
             if (!sessionResult.data || !sessionResult.data.session || !sessionResult.data.session.user) return;
             var userId = sessionResult.data.session.user.id;
-
             window.supabaseClient
                 .channel('perfil-sync-' + userId)
                 .on('postgres_changes', {
@@ -2199,9 +2020,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (payload && payload.new) actualizarDOM(payload.new);
                 })
                 .subscribe();
-        } catch (e) {
-            console.warn('[Perfil] Realtime error:', e);
-        }
+        } catch (e) { console.warn('[Perfil] Realtime error:', e); }
     }
     setTimeout(iniciarRealtime, 1000);
 })();
@@ -2209,18 +2028,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script>
 /* ================================================================
-   RESPALDO DE EMERGENCIA — Solo si perfil.js no cargó
+   RESPALDO DE EMERGENCIA
 =============================================================== */
 (function() {
     'use strict';
-
     setTimeout(function() {
         var perfilCargo = typeof window.contratarPro === 'function'
                        && typeof window.cambiarTab === 'function';
-
-        if (perfilCargo) {
-            return;
-        }
+        if (perfilCargo) return;
 
         console.warn('[Perfil Respaldo] ⚠️ perfil.js NO cargó. Activando respaldos mínimos.');
 
@@ -2279,7 +2094,6 @@ document.addEventListener('DOMContentLoaded', function() {
             overlay.onclick = function() { overlay.remove(); };
             document.body.appendChild(overlay);
         };
-
     }, 3000);
 })();
 </script>
