@@ -102,46 +102,57 @@
     <script src="../../shared/config-layout.js"></script>
 
     <script>
-    var CONFIG_LEGAL = {
-        nombre_comercial: 'Csariel\'s',
-        nombre_ecosistema: 'Csariel\'s Ecosystem',
-        slogan: 'Sabor al Paladar · Repostería Fina · Web3',
-        razon_social: '',
-        rfc: '',
-        email_contacto: '',
-        sitio_web: '',
-        pais_operacion: 'México',
-        ciudad_operacion: 'Puebla'
+    'use strict';
+
+    const CONFIG_LEGAL = {
+        nombre_comercial: "Csariel's",
+        nombre_ecosistema: "Csariel's Ecosystem",
+        slogan: "Sabor al Paladar · Repostería Fina · Web3",
+        razon_social: "",
+        rfc: "",
+        email_contacto: "",
+        sitio_web: "",
+        pais_operacion: "México",
+        ciudad_operacion: "Puebla"
     };
 
     (function () {
-        'use strict';
 
-        const $ = (sel) => document.querySelector(sel);
-        const baseConfig = '/features/perfil/configuracion';
+        const $ = (selector) =>
+            document.querySelector(selector);
+
+        const baseConfig =
+            "/features/perfil/configuracion";
+
         const AUTH_TIMEOUT_MS = 10000;
 
         let clienteSupabase = null;
 
         // ============================================================
-        // INICIALIZACIÓN DE SUPABASE
+        // SUPABASE
         //
         // /api/config/public
-        //        ↓
+        //      ↓
         // supabaseUrl + supabaseAnonKey
-        //        ↓
+        //      ↓
         // window.supabaseClient
-        //        ↓
+        //      ↓
         // cfgEsperarSupabase()
         //
-        // SIN credenciales hardcodeadas.
+        // NO hay credenciales hardcodeadas.
         // ============================================================
+
         async function inicializarSupabase() {
 
             if (window.supabaseClient) {
-                clienteSupabase = window.supabaseClient;
 
-                if (typeof window.cfgEsperarSupabase === 'function') {
+                clienteSupabase =
+                    window.supabaseClient;
+
+                if (
+                    typeof window.cfgEsperarSupabase ===
+                    "function"
+                ) {
                     await window.cfgEsperarSupabase();
                 }
 
@@ -150,51 +161,63 @@
 
             if (
                 !window.supabase ||
-                typeof window.supabase.createClient !== 'function'
+                typeof window.supabase.createClient !==
+                    "function"
             ) {
-                throw new Error('Supabase SDK no disponible.');
-            }
-
-            const response = await fetch('/api/config/public', {
-                method: 'GET',
-                credentials: 'same-origin',
-                cache: 'no-store',
-                headers: {
-                    'Accept': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
                 throw new Error(
-                    'No se pudo obtener /api/config/public (HTTP ' +
-                    response.status +
-                    ').'
+                    "Supabase SDK no disponible."
                 );
             }
 
-            const config = await response.json();
+            const response =
+                await fetch(
+                    "/api/config/public",
+                    {
+                        method: "GET",
+                        credentials: "same-origin",
+                        cache: "no-store",
+                        headers: {
+                            Accept:
+                                "application/json"
+                        }
+                    }
+                );
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "No se pudo obtener /api/config/public (HTTP " +
+                    response.status +
+                    ")."
+                );
+            }
+
+            const config =
+                await response.json();
 
             const supabaseUrl =
-                config && config.supabaseUrl;
+                config &&
+                config.supabaseUrl;
 
             const supabaseAnonKey =
-                config && config.supabaseAnonKey;
+                config &&
+                config.supabaseAnonKey;
 
             if (
-                typeof supabaseUrl !== 'string' ||
+                typeof supabaseUrl !== "string" ||
                 !supabaseUrl.trim()
             ) {
                 throw new Error(
-                    'supabaseUrl no está disponible en /api/config/public.'
+                    "supabaseUrl no está disponible en /api/config/public."
                 );
             }
 
             if (
-                typeof supabaseAnonKey !== 'string' ||
+                typeof supabaseAnonKey !== "string" ||
                 !supabaseAnonKey.trim()
             ) {
                 throw new Error(
-                    'supabaseAnonKey no está disponible en /api/config/public.'
+                    "supabaseAnonKey no está disponible en /api/config/public."
                 );
             }
 
@@ -215,7 +238,8 @@
                 window.supabaseClient;
 
             if (
-                typeof window.cfgEsperarSupabase === 'function'
+                typeof window.cfgEsperarSupabase ===
+                "function"
             ) {
                 await window.cfgEsperarSupabase();
             }
@@ -224,104 +248,138 @@
         }
 
         // ============================================================
-        // RUTA INTERNA SEGURA
+        // SEGURIDAD DE RUTAS
         // ============================================================
+
         function esRutaInternaSegura(valor) {
-            if (typeof valor !== 'string') return false;
-            if (!valor.startsWith('/')) return false;
-            if (valor.startsWith('//')) return false;
-            if (valor.startsWith('/\\')) return false;
+
+            if (typeof valor !== "string") {
+                return false;
+            }
+
+            if (!valor.startsWith("/")) {
+                return false;
+            }
+
+            if (valor.startsWith("//")) {
+                return false;
+            }
+
+            if (valor.startsWith("/\\")) {
+                return false;
+            }
+
             return true;
         }
 
         function irAlIndexConReturnTo() {
+
             try {
+
                 const returnTo =
                     window.location.pathname +
                     window.location.search +
                     window.location.hash;
 
-                if (esRutaInternaSegura(returnTo)) {
+                if (
+                    esRutaInternaSegura(returnTo)
+                ) {
+
                     localStorage.setItem(
-                        'wallet_returnTo',
+                        "wallet_returnTo",
                         returnTo
                     );
                 }
-            } catch (e) {
+
+            } catch (error) {
+
                 console.warn(
-                    '[Config] No se pudo guardar returnTo:',
-                    e
+                    "[Config] No se pudo guardar returnTo:",
+                    error
                 );
             }
 
-            window.location.replace('/');
+            window.location.replace("/");
         }
 
         function revelarPagina() {
+
             document.documentElement.classList.add(
-                'auth-ready'
+                "auth-ready"
             );
         }
 
-        function mostrarErrorControlado(mensaje) {
-            revelarPagina();
-
-            const main =
-                document.querySelector('.cfg-content');
-
-            if (!main) return;
-
-            main.innerHTML =
-                '<div class="cfg-error-panel">' +
-                    '<h2>⚠️ No se pudo cargar la configuración</h2>' +
-                    '<p>' +
-                        escapeHtml(
-                            mensaje ||
-                            'Error de inicialización.'
-                        ) +
-                    '</p>' +
-                    '<a href="/">Volver al inicio</a>' +
-                '</div>';
-        }
-
         function escapeHtml(texto) {
-            if (texto === null || texto === undefined) {
-                return '';
+
+            if (
+                texto === null ||
+                texto === undefined
+            ) {
+                return "";
             }
 
             const div =
-                document.createElement('div');
+                document.createElement("div");
 
-            div.textContent = String(texto);
+            div.textContent =
+                String(texto);
 
             return div.innerHTML;
         }
 
+        function mostrarErrorControlado(mensaje) {
+
+            revelarPagina();
+
+            const main =
+                document.querySelector(
+                    ".cfg-content"
+                );
+
+            if (!main) {
+                return;
+            }
+
+            main.innerHTML =
+                '<div class="cfg-error-panel">' +
+                    '<h2>⚠️ No se pudo cargar la configuración</h2>' +
+                    "<p>" +
+                        escapeHtml(
+                            mensaje ||
+                            "Error de inicialización."
+                        ) +
+                    "</p>" +
+                    '<a href="/">Volver al inicio</a>' +
+                "</div>";
+        }
+
         // ============================================================
         // GUARDIA DE AUTENTICACIÓN
-        //
-        // Máximo 10 segundos.
-        // Si no termina → /
-        // Si no existe sesión → /
         // ============================================================
+
         async function guardiaDeAutenticacion() {
 
             let terminado = false;
 
             const salvaguarda =
-                setTimeout(function () {
+                setTimeout(
+                    function () {
 
-                    if (terminado) return;
+                        if (terminado) {
+                            return;
+                        }
 
-                    terminado = true;
+                        terminado = true;
 
-                    console.warn(
-                        '[Config] Timeout de autenticación → redirigiendo al index.'
-                    );
+                        console.warn(
+                            "[Config] Timeout de autenticación → /"
+                        );
 
-                    irAlIndexConReturnTo();
+                        irAlIndexConReturnTo();
 
-                }, AUTH_TIMEOUT_MS);
+                    },
+                    AUTH_TIMEOUT_MS
+                );
 
             try {
 
@@ -333,8 +391,9 @@
                 }
 
                 if (!client) {
+
                     throw new Error(
-                        'Cliente Supabase no disponible.'
+                        "Cliente Supabase no disponible."
                     );
                 }
 
@@ -352,7 +411,10 @@
                         : null;
 
                 terminado = true;
-                clearTimeout(salvaguarda);
+
+                clearTimeout(
+                    salvaguarda
+                );
 
                 if (!session) {
 
@@ -361,7 +423,8 @@
                     return null;
                 }
 
-                window.__sarielsAuthenticated = true;
+                window.__sarielsAuthenticated =
+                    true;
 
                 revelarPagina();
 
@@ -374,21 +437,27 @@
                 }
 
                 terminado = true;
-                clearTimeout(salvaguarda);
+
+                clearTimeout(
+                    salvaguarda
+                );
 
                 console.error(
-                    '[Config] Error crítico de autenticación:',
+                    "[Config] Error crítico de autenticación:",
                     error
                 );
 
-                window.__sarielsAuthenticated = false;
-                window.supabaseError = error;
+                window.__sarielsAuthenticated =
+                    false;
+
+                window.supabaseError =
+                    error;
 
                 mostrarErrorControlado(
                     error &&
                     error.message
                         ? error.message
-                        : 'No fue posible verificar tu sesión.'
+                        : "No fue posible verificar tu sesión."
                 );
 
                 return null;
@@ -398,343 +467,414 @@
         // ============================================================
         // INICIO
         // ============================================================
-        guardiaDeAutenticacion().then(
-            function (client) {
 
-                if (!client) return;
+        guardiaDeAutenticacion()
+            .then(
+                function (client) {
 
-                inicializarUI(client);
-            }
-        );
+                    if (!client) {
+                        return;
+                    }
+
+                    inicializarUI(client);
+                }
+            );
 
         // ============================================================
         // INTERFAZ
         // ============================================================
+
         function inicializarUI(client) {
 
+            if (
+                typeof window.cfgInitPage !==
+                "function"
+            ) {
+
+                mostrarErrorControlado(
+                    "config-layout.js no cargó correctamente."
+                );
+
+                return;
+            }
+
+            if (
+                typeof window.cfgRenderItem !==
+                "function"
+            ) {
+
+                mostrarErrorControlado(
+                    "La función de configuración de tarjetas no está disponible."
+                );
+
+                return;
+            }
+
             cfgInitPage({
-                title: 'Configuración',
-                subtitle: '@tu_usuario',
+                title: "Configuración",
+                subtitle: "@tu_usuario",
                 backUrl:
-                    '/features/perfil/perfil.html'
+                    "/features/perfil/perfil.html"
             });
 
             // ========================================================
             // TU CUENTA
             // ========================================================
-            $('#seccionCuenta').innerHTML = [
+
+            $("#seccionCuenta").innerHTML = [
 
                 cfgRenderItem({
-                    icon: 'user',
-                    title: 'Tu cuenta',
+                    icon: "user",
+                    title: "Tu cuenta",
                     desc:
-                        'Consulta tu información de cuenta y descarga tus datos',
+                        "Consulta tu información de cuenta y descarga tus datos",
                     href:
-                        baseConfig + '/cuenta.html'
+                        baseConfig +
+                        "/cuenta.html"
                 }),
 
                 cfgRenderItem({
-                    icon: 'lock',
-                    title: 'Cambiar contraseña',
+                    icon: "lock",
+                    title: "Cambiar contraseña",
                     desc:
-                        'Actualiza tu contraseña para mantener tu cuenta segura',
+                        "Actualiza tu contraseña para mantener tu cuenta segura",
                     href:
-                        '/actualizar-contraseña.html'
+                        "/actualizar-contraseña.html"
                 }),
 
                 cfgRenderItem({
-                    icon: 'logout',
-                    title: 'Eliminar cuenta',
+                    icon: "logout",
+                    title: "Eliminar cuenta",
                     desc:
-                        'Solicita eliminar tu cuenta permanentemente',
+                        "Solicita eliminar tu cuenta permanentemente",
                     href:
-                        '/eliminar-cuenta.html'
+                        "/eliminar-cuenta.html"
                 })
 
-            ].join('');
+            ].join("");
 
             // ========================================================
             // SEGURIDAD
             // ========================================================
-            $('#seccionSeguridad').innerHTML = [
+
+            $("#seccionSeguridad").innerHTML = [
 
                 cfgRenderItem({
-                    icon: 'shield',
-                    title: 'Seguridad y acceso a la cuenta',
+                    icon: "shield",
+                    title:
+                        "Seguridad y acceso a la cuenta",
                     desc:
-                        'Administra la seguridad de tu cuenta y apps conectadas',
+                        "Administra la seguridad de tu cuenta y apps conectadas",
                     href:
-                        baseConfig + '/seguridad.html'
+                        baseConfig +
+                        "/seguridad.html"
                 }),
 
                 cfgRenderItem({
-                    icon: 'wallet',
-                    title: 'Wallet y Polygon',
+                    icon: "wallet",
+                    title:
+                        "Wallet y Polygon",
                     desc:
-                        'Administra tu wallet conectada',
+                        "Administra tu wallet conectada",
                     href:
                         baseConfig +
-                        '/sariels/wallet.html'
+                        "/sariels/wallet.html"
                 })
 
-            ].join('');
+            ].join("");
 
             // ========================================================
             // PRIVACIDAD
             // ========================================================
-            $('#seccionPrivacidad').innerHTML = [
+
+            $("#seccionPrivacidad").innerHTML = [
 
                 cfgRenderItem({
-                    icon: 'users',
-                    title: 'Audiencia y etiquetas',
+                    icon: "users",
+                    title:
+                        "Audiencia y etiquetas",
                     desc:
-                        'Administra qué información permites que vean otras personas',
+                        "Administra qué información permites que vean otras personas",
                     href:
                         baseConfig +
-                        '/privacidad/audiencia.html'
+                        "/privacidad/audiencia.html"
                 }),
 
                 cfgRenderItem({
-                    icon: 'fileText',
-                    title: 'Tus publicaciones',
+                    icon: "fileText",
+                    title:
+                        "Tus publicaciones",
                     desc:
-                        'Administra la información asociada a tus publicaciones',
+                        "Administra la información asociada a tus publicaciones",
                     href:
                         baseConfig +
-                        '/privacidad/posts.html'
+                        "/privacidad/posts.html"
                 }),
 
                 cfgRenderItem({
-                    icon: 'eye',
-                    title: 'Contenido que ves',
+                    icon: "eye",
+                    title:
+                        "Contenido que ves",
                     desc:
-                        'Decide qué ver en Csariel\'s en función de tus preferencias',
+                        "Decide qué ver en Csariel's en función de tus preferencias",
                     href:
                         baseConfig +
-                        '/privacidad/contenido.html'
+                        "/privacidad/contenido.html"
                 }),
 
                 cfgRenderItem({
-                    icon: 'ban',
-                    title: 'Silenciar y bloquear',
+                    icon: "ban",
+                    title:
+                        "Silenciar y bloquear",
                     desc:
-                        'Administra las cuentas, palabras y notificaciones bloqueadas',
+                        "Administra las cuentas, palabras y notificaciones bloqueadas",
                     href:
                         baseConfig +
-                        '/privacidad/silenciar.html'
+                        "/privacidad/silenciar.html"
                 }),
 
                 cfgRenderItem({
-                    icon: 'messageCircle',
-                    title: 'Chats',
+                    icon: "messageCircle",
+                    title:
+                        "Chats",
                     desc:
-                        'Administra quiénes pueden enviarte mensajes directos',
+                        "Administra quiénes pueden enviarte mensajes directos",
                     href:
                         baseConfig +
-                        '/privacidad/chats.html'
+                        "/privacidad/chats.html"
                 }),
 
                 cfgRenderItem({
-                    icon: 'mapPin',
-                    title: 'Visibilidad y contactos',
+                    icon: "mapPin",
+                    title:
+                        "Visibilidad y contactos",
                     desc:
-                        'Controla tu configuración de visibilidad y contactos importados',
+                        "Controla tu configuración de visibilidad y contactos importados",
                     href:
                         baseConfig +
-                        '/privacidad/visibilidad.html'
+                        "/privacidad/visibilidad.html"
                 }),
 
                 cfgRenderItem({
-                    icon: 'globe',
-                    title: 'Acerca de tu cuenta',
+                    icon: "globe",
+                    title:
+                        "Acerca de tu cuenta",
                     desc:
-                        'Administra la ubicación asociada a tu cuenta',
+                        "Administra la ubicación asociada a tu cuenta",
                     href:
                         baseConfig +
-                        '/privacidad/ubicacion.html'
+                        "/privacidad/ubicacion.html"
                 })
 
-            ].join('');
+            ].join("");
 
             // ========================================================
             // NOTIFICACIONES
             // ========================================================
-            $('#seccionNotificaciones').innerHTML = [
+
+            $("#seccionNotificaciones").innerHTML = [
 
                 cfgRenderItem({
-                    icon: 'bell',
-                    title: 'Preferencias de notificaciones',
+                    icon: "bell",
+                    title:
+                        "Preferencias de notificaciones",
                     desc:
-                        'Elige cómo quieres recibir notificaciones',
+                        "Elige cómo quieres recibir notificaciones",
                     href:
                         baseConfig +
-                        '/notificaciones.html'
+                        "/notificaciones.html"
                 })
 
-            ].join('');
+            ].join("");
 
             // ========================================================
             // ACCESIBILIDAD
             // ========================================================
-            $('#seccionAccesibilidad').innerHTML = [
+
+            $("#seccionAccesibilidad").innerHTML = [
 
                 cfgRenderItem({
-                    icon: 'accessibility',
-                    title: 'Accesibilidad',
+                    icon: "accessibility",
+                    title:
+                        "Accesibilidad",
                     desc:
-                        'Administra contraste, movimiento y otras opciones',
+                        "Administra contraste, movimiento y otras opciones",
                     href:
                         baseConfig +
-                        '/accesibilidad/accesibilidad.html'
+                        "/accesibilidad/accesibilidad.html"
                 }),
 
                 cfgRenderItem({
-                    icon: 'brush',
-                    title: 'Mostrar',
+                    icon: "brush",
+                    title:
+                        "Mostrar",
                     desc:
-                        'Administra fondo, color y tamaño de fuente',
+                        "Administra fondo, color y tamaño de fuente",
                     href:
                         baseConfig +
-                        '/accesibilidad/mostrar.html'
+                        "/accesibilidad/mostrar.html"
                 }),
 
                 cfgRenderItem({
-                    icon: 'globe',
-                    title: 'Idiomas',
+                    icon: "globe",
+                    title:
+                        "Idiomas",
                     desc:
-                        'Administra qué idiomas se usan para personalizar tu experiencia',
+                        "Administra qué idiomas se usan para personalizar tu experiencia",
                     href:
                         baseConfig +
-                        '/accesibilidad/idiomas.html'
+                        "/accesibilidad/idiomas.html"
                 }),
 
                 cfgRenderItem({
-                    icon: 'database',
-                    title: 'Uso de datos',
+                    icon: "database",
+                    title:
+                        "Uso de datos",
                     desc:
-                        'Establece límites para el uso de datos de tu red',
+                        "Establece límites para el uso de datos de tu red",
                     href:
                         baseConfig +
-                        '/accesibilidad/datos.html'
+                        "/accesibilidad/datos.html"
                 }),
 
                 cfgRenderItem({
-                    icon: 'navigation',
-                    title: 'Navegación',
+                    icon: "navigation",
+                    title:
+                        "Navegación",
                     desc:
-                        'Administra cómo se abren los enlaces',
+                        "Administra cómo se abren los enlaces",
                     href:
                         baseConfig +
-                        '/accesibilidad/navegacion.html'
+                        "/accesibilidad/navegacion.html"
                 })
 
-            ].join('');
+            ].join("");
 
             // ========================================================
             // CSARIEL'S
             // ========================================================
-            $('#seccionSariels').innerHTML = [
+
+            $("#seccionSariels").innerHTML = [
 
                 cfgRenderItem({
-                    icon: 'owl',
-                    title: 'Derechos y Usos',
+                    icon: "owl",
+                    title:
+                        "Derechos y Usos",
                     desc:
-                        'Reglas de convivencia y propiedad intelectual',
+                        "Reglas de convivencia y propiedad intelectual",
                     href:
-                        '/features/terminos/derechos-sariels.html'
+                        "/features/terminos/derechos-sariels.html"
                 }),
 
                 cfgRenderItem({
-                    icon: 'coin',
-                    title: 'Es.stoks',
+                    icon: "coin",
+                    title:
+                        "Es.stoks",
                     desc:
-                        'Administra tus tokens Es.stoks',
-                    href:
-                        baseConfig +
-                        '/sariels/estoks.html'
-                }),
-
-                cfgRenderItem({
-                    icon: 'crown',
-                    title: 'Membresía Pro',
-                    desc:
-                        'Administra tu suscripción Csariel\'s Pro',
+                        "Administra tus tokens Es.stoks",
                     href:
                         baseConfig +
-                        '/sariels/membresia.html'
+                        "/sariels/estoks.html"
                 }),
 
                 cfgRenderItem({
-                    icon: 'scooter',
-                    title: 'Panel Repartidor',
+                    icon: "crown",
+                    title:
+                        "Membresía Pro",
                     desc:
-                        'Accede a tu panel de entregas y gestiona tu disponibilidad',
+                        "Administra tu suscripción Csariel's Pro",
+                    href:
+                        baseConfig +
+                        "/sariels/membresia.html"
+                }),
+
+                cfgRenderItem({
+                    icon: "scooter",
+                    title:
+                        "Panel Repartidor",
+                    desc:
+                        "Accede a tu panel de entregas y gestiona tu disponibilidad",
                     onclick:
-                        'window.irARepartidorConfig()'
+                        "window.irARepartidorConfig()"
                 })
 
-            ].join('');
+            ].join("");
 
             // ========================================================
             // RECURSOS
             // ========================================================
-            $('#seccionRecursos').innerHTML = [
+
+            $("#seccionRecursos").innerHTML = [
 
                 cfgRenderItem({
-                    icon: 'info',
-                    title: 'Términos y condiciones',
+                    icon: "info",
+                    title:
+                        "Términos y condiciones",
                     desc:
-                        'Consulta los términos de uso de Csariel\'s',
+                        "Consulta los términos de uso de Csariel's",
                     href:
-                        '/terminos'
+                        "/terminos"
                 }),
 
                 cfgRenderItem({
-                    icon: 'shield',
-                    title: 'Política de privacidad',
+                    icon: "shield",
+                    title:
+                        "Política de privacidad",
                     desc:
-                        'Consulta cómo protegemos tus datos',
+                        "Consulta cómo protegemos tus datos",
                     href:
-                        '/privacidad.html'
+                        "/privacidad.html"
                 }),
 
                 cfgRenderItem({
-                    icon: 'fileText',
-                    title: 'Cookies',
+                    icon: "fileText",
+                    title:
+                        "Cookies",
                     desc:
-                        'Consulta la política de cookies',
+                        "Consulta la política de cookies",
                     href:
-                        '/cookies.html'
+                        "/cookies.html"
                 }),
 
                 cfgRenderItem({
-                    icon: 'info',
-                    title: 'Términos del Live',
+                    icon: "info",
+                    title:
+                        "Términos del Live",
                     desc:
-                        'Consulta los términos de transmisiones en vivo',
+                        "Consulta los términos de transmisiones en vivo",
                     href:
-                        '/live-terminos.html'
+                        "/live-terminos.html"
                 })
 
-            ].join('');
+            ].join("");
 
             // ========================================================
             // SESIÓN
             // ========================================================
-            const btnCerrarSesion =
-                document.createElement('button');
 
-            btnCerrarSesion.type = 'button';
-            btnCerrarSesion.className = 'cfg-item';
+            const btnCerrarSesion =
+                document.createElement("button");
+
+            btnCerrarSesion.type =
+                "button";
+
+            btnCerrarSesion.className =
+                "cfg-item";
+
             btnCerrarSesion.style.color =
-                'var(--cfg-danger, #ff3366)';
+                "var(--cfg-danger, #ff3366)";
 
             btnCerrarSesion.innerHTML = `
                 <div
                     class="cfg-item-icon"
                     style="color:var(--cfg-danger, #ff3366);"
                 >
-                    ${window.cfgIcon('logout')}
+                    ${
+                        typeof window.cfgIcon ===
+                        "function"
+                            ? window.cfgIcon("logout")
+                            : ""
+                    }
                 </div>
 
                 <div class="cfg-item-content">
@@ -757,17 +897,20 @@
                     const ok =
                         await cfgConfirm({
                             title:
-                                '¿Cerrar sesión?',
+                                "¿Cerrar sesión?",
                             text:
-                                'Tendrás que volver a iniciar sesión para acceder a tu cuenta.',
+                                "Tendrás que volver a iniciar sesión para acceder a tu cuenta.",
                             confirmText:
-                                'Cerrar sesión',
+                                "Cerrar sesión",
                             cancelText:
-                                'Cancelar',
-                            danger: true
+                                "Cancelar",
+                            danger:
+                                true
                         });
 
-                    if (!ok) return;
+                    if (!ok) {
+                        return;
+                    }
 
                     try {
 
@@ -775,36 +918,41 @@
                             client &&
                             client.auth
                         ) {
+
                             await client.auth.signOut();
                         }
 
                         cfgToast(
-                            'Sesión cerrada',
-                            'success'
+                            "Sesión cerrada",
+                            "success"
                         );
 
                         setTimeout(
                             function () {
-                                window.location.replace('/');
+
+                                window.location.replace(
+                                    "/"
+                                );
+
                             },
                             800
                         );
 
-                    } catch (e) {
+                    } catch (error) {
 
                         console.error(
-                            'Error cerrando sesión:',
-                            e
+                            "Error cerrando sesión:",
+                            error
                         );
 
                         cfgToast(
-                            'Error al cerrar sesión',
-                            'error'
+                            "Error al cerrar sesión",
+                            "error"
                         );
                     }
                 };
 
-            $('#seccionSesion')
+            $("#seccionSesion")
                 .appendChild(
                     btnCerrarSesion
                 );
@@ -812,41 +960,47 @@
             // ========================================================
             // SUBTÍTULO DEL HEADER
             // ========================================================
+
             (async function cargarHandleSubtitulo() {
 
                 try {
 
                     const {
                         data
-                    } = await client.auth.getSession();
+                    } =
+                        await client.auth.getSession();
 
                     const session =
                         data &&
                         data.session;
 
-                    if (!session) return;
+                    if (!session) {
+                        return;
+                    }
 
                     const handle =
                         session.user &&
                         session.user.email
                             ? session.user.email
-                                .split('@')[0]
-                            : 'usuario';
+                                .split("@")[0]
+                            : "usuario";
 
                     const subEl =
                         document.querySelector(
-                            '.cfg-header-subtitle'
+                            ".cfg-header-subtitle"
                         );
 
                     if (subEl) {
+
                         subEl.textContent =
-                            '@' + handle;
+                            "@" + handle;
                     }
 
-                } catch (e) {
+                } catch (error) {
+
                     console.warn(
-                        '[Config] No se pudo cargar subtítulo:',
-                        e
+                        "[Config] No se pudo cargar subtítulo:",
+                        error
                     );
                 }
 
@@ -856,6 +1010,7 @@
         // ============================================================
         // PANEL REPARTIDOR
         // ============================================================
+
         async function irARepartidorConfig() {
 
             try {
@@ -864,6 +1019,7 @@
                     window.supabaseClient;
 
                 if (!client) {
+
                     client =
                         await inicializarSupabase();
                 }
@@ -871,14 +1027,15 @@
                 if (!client) {
 
                     window.location.href =
-                        '/features/mercado/repartidor/registro.html';
+                        "/features/mercado/repartidor/registro.html";
 
                     return;
                 }
 
                 const {
                     data
-                } = await client.auth.getSession();
+                } =
+                    await client.auth.getSession();
 
                 const session =
                     data &&
@@ -887,23 +1044,28 @@
                 if (!session) {
 
                     localStorage.setItem(
-                        'wallet_returnTo',
-                        '/features/mercado/repartidor/registro.html'
+                        "wallet_returnTo",
+                        "/features/mercado/repartidor/registro.html"
                     );
 
                     if (
-                        typeof cfgToast ===
-                        'function'
+                        typeof window.cfgToast ===
+                        "function"
                     ) {
+
                         cfgToast(
-                            'Inicia sesión primero',
-                            'warning'
+                            "Inicia sesión primero",
+                            "warning"
                         );
                     }
 
                     setTimeout(
                         function () {
-                            window.location.replace('/');
+
+                            window.location.replace(
+                                "/"
+                            );
+
                         },
                         1200
                     );
@@ -914,13 +1076,13 @@
                 const result =
                     await client
                         .from(
-                            'mercado_repartidores'
+                            "mercado_repartidores"
                         )
                         .select(
-                            'estado_verificacion'
+                            "estado_verificacion"
                         )
                         .eq(
-                            'usuario_id',
+                            "usuario_id",
                             session.user.id
                         )
                         .maybeSingle();
@@ -931,7 +1093,7 @@
                 ) {
 
                     window.location.href =
-                        '/features/mercado/repartidor/registro.html';
+                        "/features/mercado/repartidor/registro.html";
 
                     return;
                 }
@@ -940,36 +1102,36 @@
                     result.data.estado_verificacion;
 
                 if (
-                    estado === 'activo'
+                    estado === "activo"
                 ) {
 
                     window.location.href =
-                        '/features/mercado/repartidor/panel.html';
+                        "/features/mercado/repartidor/panel.html";
 
                 } else if (
-                    estado === 'rechazado' ||
-                    estado === 'procesando' ||
-                    estado === 'revision_manual'
+                    estado === "rechazado" ||
+                    estado === "procesando" ||
+                    estado === "revision_manual"
                 ) {
 
                     window.location.href =
-                        '/features/mercado/repartidor/estado-verificacion.html';
+                        "/features/mercado/repartidor/estado-verificacion.html";
 
                 } else {
 
                     window.location.href =
-                        '/features/mercado/repartidor/registro.html';
+                        "/features/mercado/repartidor/registro.html";
                 }
 
-            } catch (e) {
+            } catch (error) {
 
                 console.error(
-                    'Error redirigiendo a repartidor:',
-                    e
+                    "Error redirigiendo a repartidor:",
+                    error
                 );
 
                 window.location.href =
-                    '/features/mercado/repartidor/registro.html';
+                    "/features/mercado/repartidor/registro.html";
             }
         }
 
