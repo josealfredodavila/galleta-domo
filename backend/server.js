@@ -1218,6 +1218,14 @@ montarRouter(
     'routes/payments'
 );
 
+// ⬇️ NUEVA LÍNEA: monta routes/membresia.js para que
+// /api/payments/membresia/create funcione.
+montarRouter(
+    '/api/payments/membresia',
+    './routes/membresia',
+    'routes/membresia'
+);
+
 montarRouter(
     '/api/webhook',
     './routes/webhooks',
