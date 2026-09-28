@@ -14,6 +14,13 @@
     html:not(.auth-ready) .app { display: none !important; }
 </style>
 
+<!-- =========================================================
+     SUPABASE — Inicialización centralizada
+     - NO carga app.js.
+     - NO hardcodea credenciales.
+     - Obtiene la config desde /api/config/public.
+     - Guard: si no hay sesión → redirige al index.
+========================================================== -->
 <script>
     (function () {
         'use strict';
@@ -309,12 +316,35 @@
     .publicacion-card .contenido img { max-width: 100%; border-radius: 10px; margin-top: 8px; display: block; border: 1px solid var(--line-black-soft); }
     .publicacion-card .contenido video { max-width: 100%; border-radius: 10px; margin-top: 8px; display: block; border: 1px solid var(--line-black-soft); }
     .publicacion-card .stats { display: flex; gap: 8px; font-size: 0.65rem; color: var(--text-muted); margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line-black-soft); flex-wrap: wrap; }
-    .publicacion-card .stats span { cursor: pointer; padding: 3px 8px; border-radius: 14px; transition: var(--transition); display: inline-flex; align-items: center; gap: 4px; font-size: 0.6rem; }
-    .publicacion-card .stats span:hover { color: var(--gold); background: rgba(212,175,55,0.05); }
-
-    /* =====================================================
-       NUEVA BARRA DE REACCIONES — Botón único + dropdown
-    ===================================================== */
+    .btn-accion-pub {
+        background: rgba(0,0,0,0.35);
+        border: 1.5px solid var(--line-black);
+        color: var(--text-muted);
+        cursor: pointer;
+        padding: 5px 12px;
+        border-radius: 16px;
+        transition: var(--transition);
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.65rem;
+        font-weight: 600;
+        font-family: 'Inter', sans-serif;
+    }
+    .btn-accion-pub:hover {
+        color: var(--gold);
+        border-color: var(--gold);
+        background: rgba(212,175,55,0.08);
+    }
+    .btn-accion-pub.danger {
+        color: var(--danger);
+        border-color: rgba(255, 51, 102, 0.35);
+    }
+    .btn-accion-pub.danger:hover {
+        background: rgba(255, 51, 102, 0.12);
+        border-color: var(--danger);
+        color: var(--danger);
+    }
     .reaccion-wrap {
         position: relative;
         display: inline-block;
@@ -423,7 +453,6 @@
     @media (max-width: 480px) {
         .reaccion-dropdown button { width: 34px; height: 34px; font-size: 1.2rem; }
     }
-
     .comentarios-container { display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line-black-soft); }
     .comentarios-container.show { display: block; }
     .comentarios-lista { max-height: 200px; overflow-y: auto; margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px; }
@@ -659,20 +688,20 @@
         <a href="/features/perfil/configuracion/index.html" class="config-btn" title="Configuración">⚙️</a>
         
         <div class="avatar-container" style="position:relative;">
-            <div class="avatar" id="perfilAvatar" onclick="toggleAvatarMenu(event)">
+            <div class="avatar" id="perfilAvatar" onclick="window.toggleAvatarMenu(event)">
                 ◈
                 <span class="avatar-menu-toggle" title="Opciones de foto">✎</span>
             </div>
             <div class="avatar-menu" id="avatarMenu" role="menu">
-                <button type="button" onclick="event.stopPropagation(); abrirSelectorArchivo(); cerrarAvatarMenu();">
+                <button type="button" onclick="event.stopPropagation(); window.abrirSelectorArchivo(); window.cerrarAvatarMenu();">
                     <span>📷</span> Cambiar foto
                 </button>
                 <div class="divider"></div>
-                <button type="button" class="danger" onclick="event.stopPropagation(); eliminarFotoPerfil(); cerrarAvatarMenu();">
+                <button type="button" class="danger" onclick="event.stopPropagation(); window.eliminarFotoPerfil(); window.cerrarAvatarMenu();">
                     <span>✕</span> Eliminar foto
                 </button>
             </div>
-            <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="subirFoto(event)" />
+            <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="window.subirFoto(event)" />
         </div>
         <div class="info">
             <div class="nombre" id="perfilNombre">
@@ -707,8 +736,8 @@
             </div>
         </div>
         <div class="acciones">
-            <button class="btn btn-outline btn-sm" onclick="compartirPerfil()" data-clave="perfil_btn_compartir">◈ Compartir</button>
-            <button class="btn btn-outline btn-sm" onclick="generarQRPerfil()" data-clave="perfil_share_qr">📱 Share QR</button>
+            <button class="btn btn-outline btn-sm" onclick="window.compartirPerfil()" data-clave="perfil_btn_compartir">◈ Compartir</button>
+            <button class="btn btn-outline btn-sm" onclick="window.generarQRPerfil()" data-clave="perfil_share_qr">📱 Share QR</button>
         </div>
     </div>
 
@@ -720,7 +749,7 @@
         <div class="rep-info" id="repInfo">
             Cargando información...
         </div>
-        <button class="rep-btn" id="repBtn" onclick="irARepartidorDesdePerfil()">
+        <button class="rep-btn" id="repBtn" onclick="window.irARepartidorDesdePerfil()">
             Cargando...
         </button>
     </div>
@@ -733,8 +762,8 @@
                 <span class="amigos-online">· <span id="amigosEnLineaContador">0</span> <span data-clave="perfil_amigos_en_linea">amigos en línea</span></span>
             </div>
             <div class="estado-buttons">
-                <button class="btn-estado online" onclick="cambiarEstado(true)" data-clave="perfil_btn_activo">🟢 Activo</button>
-                <button class="btn-estado offline" onclick="cambiarEstado(false)" data-clave="perfil_btn_inactivo">⭕ Inactivo</button>
+                <button class="btn-estado online" onclick="window.cambiarEstado(true)" data-clave="perfil_btn_activo">🟢 Activo</button>
+                <button class="btn-estado offline" onclick="window.cambiarEstado(false)" data-clave="perfil_btn_inactivo">⭕ Inactivo</button>
             </div>
         </div>
 
@@ -779,7 +808,7 @@
                 <div class="pro-upgrade-features" id="proFeatures" data-clave="perfil_pro_features">
                     Conservación ampliada · 5 GB
                 </div>
-                <button class="btn btn-gold pro-btn" onclick="contratarPro()" id="btnContratarPro" data-clave="perfil_pro_contratar">
+                <button class="btn btn-gold pro-btn" onclick="window.contratarPro()" id="btnContratarPro" data-clave="perfil_pro_contratar">
                     🚀 Contratar Pro por $60 MXN
                 </button>
             </div>
@@ -801,8 +830,8 @@
                 <span class="señal" id="conexionSeñal" style="color:var(--success);">████</span>
             </div>
             <div class="conexion-buttons">
-                <button class="btn-conexion wifi active" id="btnWifi" onclick="cambiarConexion('wifi')" data-clave="perfil_conexion_wifi">🛜 WiFi</button>
-                <button class="btn-conexion datos" id="btnDatos" onclick="cambiarConexion('datos')" data-clave="perfil_conexion_datos">📶 Datos</button>
+                <button class="btn-conexion wifi active" id="btnWifi" onclick="window.cambiarConexion('wifi')" data-clave="perfil_conexion_wifi">🛜 WiFi</button>
+                <button class="btn-conexion datos" id="btnDatos" onclick="window.cambiarConexion('datos')" data-clave="perfil_conexion_datos">📶 Datos</button>
             </div>
         </div>
         <div style="font-size:0.6rem;color:var(--text-muted);margin-top:6px;">
@@ -812,12 +841,12 @@
     </div>
 
     <div class="perfil-tabs">
-        <button class="tab-btn active" onclick="cambiarTab('mis-publicaciones')" data-clave="perfil_mis_publicaciones">◈ Mis Publicaciones</button>
-        <button class="tab-btn" onclick="cambiarTab('actividad')" data-clave="perfil_tab_actividad">◆ Actividad</button>
-        <button class="tab-btn" onclick="cambiarTab('tokens')" data-clave="perfil_tab_tokens">⟡ Tokens</button>
-        <button class="tab-btn" onclick="cambiarTab('esim')" data-clave="perfil_tab_esim">📱 eSIM</button>
-        <button class="tab-btn" onclick="cambiarTab('qr')" data-clave="perfil_tab_qr">📷 Escanear QR</button>
-        <button class="tab-btn" onclick="cambiarTab('internet')" data-clave="perfil_tab_internet">📶 Internet</button>
+        <button class="tab-btn active" onclick="window.cambiarTab('mis-publicaciones')" data-clave="perfil_mis_publicaciones">◈ Mis Publicaciones</button>
+        <button class="tab-btn" onclick="window.cambiarTab('actividad')" data-clave="perfil_tab_actividad">◆ Actividad</button>
+        <button class="tab-btn" onclick="window.cambiarTab('tokens')" data-clave="perfil_tab_tokens">⟡ Tokens</button>
+        <button class="tab-btn" onclick="window.cambiarTab('esim')" data-clave="perfil_tab_esim">📱 eSIM</button>
+        <button class="tab-btn" onclick="window.cambiarTab('qr')" data-clave="perfil_tab_qr">📷 Escanear QR</button>
+        <button class="tab-btn" onclick="window.cambiarTab('internet')" data-clave="perfil_tab_internet">📶 Internet</button>
     </div>
 <div id="tab-mis-publicaciones" class="tab-content active">
     <div class="panel">
@@ -830,10 +859,10 @@
                 <textarea id="inputNuevaPublicacion" data-placeholder="perfil_que_piensas" placeholder="¿Qué estás pensando? Puedes usar #hashtags, @menciones y emojis ✨"></textarea>
                 
                 <div class="acciones">
-                    <button type="button" class="accion-btn" onclick="toggleEmojiPickerPerfil()" id="btnEmojiPerfil" data-clave="perfil_emoji">
+                    <button type="button" class="accion-btn" onclick="window.toggleEmojiPickerPerfil()" id="btnEmojiPerfil" data-clave="perfil_emoji">
                         😀 Emoji
                     </button>
-                    <button type="button" class="accion-btn" onclick="insertarHashtagPerfil()" data-clave="perfil_hashtag">
+                    <button type="button" class="accion-btn" onclick="window.insertarHashtagPerfil()" data-clave="perfil_hashtag">
                         # Hashtag
                     </button>
                     <button type="button" class="accion-btn" onclick="document.getElementById('inputFotoPerfilPost').click()" data-clave="perfil_foto">
@@ -843,10 +872,10 @@
                         🎬 Video
                     </button>
                     
-                    <input type="file" id="inputFotoPerfilPost" accept="image/*" style="display:none;" onchange="seleccionarArchivoPerfil(event, 'imagen')" />
-                    <input type="file" id="inputVideoPerfilPost" accept="video/*" style="display:none;" onchange="seleccionarArchivoPerfil(event, 'video')" />
+                    <input type="file" id="inputFotoPerfilPost" accept="image/*" style="display:none;" onchange="window.seleccionarArchivoPerfil(event, 'imagen')" />
+                    <input type="file" id="inputVideoPerfilPost" accept="video/*" style="display:none;" onchange="window.seleccionarArchivoPerfil(event, 'video')" />
                     
-                    <button type="button" class="btn-publicar" onclick="publicarDesdePerfil()" id="btnPublicarPerfil" data-clave="perfil_publicar">
+                    <button type="button" class="btn-publicar" onclick="window.publicarDesdePerfil()" id="btnPublicarPerfil" data-clave="perfil_publicar">
                         ◈ Publicar
                     </button>
 
@@ -944,10 +973,10 @@
             </div>
 
             <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
-                <button class="btn btn-gold" style="flex:1;justify-content:center;" onclick="comprarDomo(1)" data-clave="perfil_comprar_domo">
+                <button class="btn btn-gold" style="flex:1;justify-content:center;" onclick="window.comprarDomo(1)" data-clave="perfil_comprar_domo">
                     ⟡ Comprar Domo (MXN)
                 </button>
-                <button class="btn btn-gold" style="flex:1;justify-content:center;" id="canjearNft" onclick="canjearNFT()" disabled data-clave="perfil_canjear_nft">
+                <button class="btn btn-gold" style="flex:1;justify-content:center;" id="canjearNft" onclick="window.canjearNFT()" disabled data-clave="perfil_canjear_nft">
                     🔒 CANJEAR NFT
                 </button>
             </div>
@@ -967,7 +996,7 @@
                         <span class="crypto-total" id="cryptoTotal">$4.59 USDT</span>
                     </div>
                 </div>
-                <button class="btn btn-crypto" style="width:100%;justify-content:center;margin-top:8px;padding:10px;" onclick="comprarConCripto()" data-clave="perfil_pagar_usdt">
+                <button class="btn btn-crypto" style="width:100%;justify-content:center;margin-top:8px;padding:10px;" onclick="window.comprarConCripto()" data-clave="perfil_pagar_usdt">
                     💳 Pagar con USDT/USDC
                 </button>
                 <div class="crypto-hint" data-clave="perfil_usdt_trc20">
@@ -975,7 +1004,7 @@
                 </div>
             </div>
 
-            <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;" onclick="irAMuro()" data-clave="perfil_ir_muro">
+            <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;" onclick="window.irAMuro()" data-clave="perfil_ir_muro">
                 ◇ Ir al Muro
             </button>
         </div>
@@ -1019,22 +1048,22 @@
             </div>
 
             <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
-                <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" onclick="comprarESIM(1)" data-clave="perfil_adquirir_esim">
+                <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" onclick="window.comprarESIM(1)" data-clave="perfil_adquirir_esim">
                     📱 Comprar eSIM
                 </button>
-                <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="generarQRESIM()" data-clave="perfil_obtener_qr">
+                <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="window.generarQRESIM()" data-clave="perfil_obtener_qr">
                     📲 QR Activación
                 </button>
-                <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="sincronizarESIM()" data-clave="perfil_sincronizar">
+                <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="window.sincronizarESIM()" data-clave="perfil_sincronizar">
                     🔄 Sincronizar
                 </button>
             </div>
 
             <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
-                <button class="btn btn-outline btn-sm" onclick="activarESIM()" style="border-color:var(--success);color:var(--success);" data-clave="perfil_activar_esim">
+                <button class="btn btn-outline btn-sm" onclick="window.activarESIM()" style="border-color:var(--success);color:var(--success);" data-clave="perfil_activar_esim">
                     ✅ Activar
                 </button>
-                <button class="btn btn-danger btn-sm" onclick="desactivarESIM()" data-clave="perfil_desactivar_esim">
+                <button class="btn btn-danger btn-sm" onclick="window.desactivarESIM()" data-clave="perfil_desactivar_esim">
                     ⛔ Desactivar
                 </button>
             </div>
@@ -1058,21 +1087,21 @@
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
                     <input type="text" id="qrInput" data-placeholder="perfil_ejemplo_codigo_qr" placeholder="Ej: DOMO-2025-ABC123" 
                            style="flex:1;padding:10px 14px;background:rgba(0,0,0,0.5);border:2px solid var(--line-black);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;">
-                    <button class="btn btn-gold" onclick="escanearQR()" id="btnEscanearQR" data-clave="perfil_validar_codigo">
+                    <button class="btn btn-gold" onclick="window.escanearQR()" id="btnEscanearQR" data-clave="perfil_validar_codigo">
                         🔍 Escanear QR
                     </button>
                 </div>
                 <div class="hint" data-clave="perfil_escanea_qr_hint">⚡ Escanea el QR de tu domo físico para recibir 1 Es.stok</div>
             </div>
 
-            <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;" onclick="abrirCamaraQR()" data-clave="perfil_abrir_camara">
+            <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;" onclick="window.abrirCamaraQR()" data-clave="perfil_abrir_camara">
                 📷 Escanear con cámara
             </button>
 
             <div id="qrReaderContainer">
                 <video id="qrVideo" style="width:100%;max-width:300px;border-radius:10px;background:black;"></video>
                 <canvas id="qrCanvas" style="display:none;"></canvas>
-                <button class="btn btn-danger btn-sm" onclick="cerrarCamaraQR()" style="margin-top:8px;" data-clave="perfil_cerrar_camara">
+                <button class="btn btn-danger btn-sm" onclick="window.cerrarCamaraQR()" style="margin-top:8px;" data-clave="perfil_cerrar_camara">
                     ✕ Cerrar cámara
                 </button>
                 <div id="qrCamaraStatus" style="font-size:0.7rem;color:var(--text-muted);margin-top:4px;"></div>
@@ -1104,11 +1133,11 @@
         </div>
         <div class="panel-body">
             <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
-                <button class="btn btn-outline btn-sm internet-filter active" data-filter="all" onclick="filtrarOrdenesInternet('all')" data-clave="perfil_filtro_todas">Todas</button>
-                <button class="btn btn-outline btn-sm internet-filter" data-filter="activa" onclick="filtrarOrdenesInternet('activa')" data-clave="perfil_filtro_activas">✅ Activas</button>
-                <button class="btn btn-outline btn-sm internet-filter" data-filter="pagando" onclick="filtrarOrdenesInternet('pagando')" data-clave="perfil_filtro_pendientes">⏳ Pendientes</button>
-                <button class="btn btn-outline btn-sm internet-filter" data-filter="cancelada" onclick="filtrarOrdenesInternet('cancelada')" data-clave="perfil_filtro_canceladas">❌ Canceladas</button>
-                <button class="btn btn-outline btn-sm" onclick="cargarOrdenesInternet()" style="margin-left:auto;" data-clave="perfil_refrescar">🔄 Refrescar</button>
+                <button class="btn btn-outline btn-sm internet-filter active" data-filter="all" onclick="window.filtrarOrdenesInternet('all')" data-clave="perfil_filtro_todas">Todas</button>
+                <button class="btn btn-outline btn-sm internet-filter" data-filter="activa" onclick="window.filtrarOrdenesInternet('activa')" data-clave="perfil_filtro_activas">✅ Activas</button>
+                <button class="btn btn-outline btn-sm internet-filter" data-filter="pagando" onclick="window.filtrarOrdenesInternet('pagando')" data-clave="perfil_filtro_pendientes">⏳ Pendientes</button>
+                <button class="btn btn-outline btn-sm internet-filter" data-filter="cancelada" onclick="window.filtrarOrdenesInternet('cancelada')" data-clave="perfil_filtro_canceladas">❌ Canceladas</button>
+                <button class="btn btn-outline btn-sm" onclick="window.cargarOrdenesInternet()" style="margin-left:auto;" data-clave="perfil_refrescar">🔄 Refrescar</button>
             </div>
 
             <div id="ordenesInternetList">
@@ -1140,7 +1169,7 @@
 
 <div class="modal-overlay" id="cryptoPaymentModal">
     <div class="modal-content">
-        <button class="close-btn" onclick="cerrarModalPago()">✕</button>
+        <button class="close-btn" onclick="window.cerrarModalPago()">✕</button>
         <h2 data-clave="perfil_pagar_usdt">💳 Pagar con Cripto</h2>
         <p class="subtitle" data-clave="perfil_obtencion_cripto">Escanea el QR o copia la dirección para pagar</p>
         <div class="qr-container">
@@ -1154,9 +1183,9 @@
             <span id="cryptoMonto">0.00</span> <span id="cryptoMoneda">USDT</span>
         </div>
         <div class="actions">
-            <button class="btn btn-outline btn-sm" onclick="copiarDireccion()" data-clave="perfil_copiar_direccion">📋 Copiar dirección</button>
-            <button class="btn btn-gold btn-sm" onclick="verificarPagoCrypto()" data-clave="perfil_validacion_real">✅ Verificar pago</button>
-            <button class="btn btn-outline btn-sm" onclick="cerrarModalPago()" data-clave="perfil_cerrar">Cerrar</button>
+            <button class="btn btn-outline btn-sm" onclick="window.copiarDireccion()" data-clave="perfil_copiar_direccion">📋 Copiar dirección</button>
+            <button class="btn btn-gold btn-sm" onclick="window.verificarPagoCrypto()" data-clave="perfil_validacion_real">✅ Verificar pago</button>
+            <button class="btn btn-outline btn-sm" onclick="window.cerrarModalPago()" data-clave="perfil_cerrar">Cerrar</button>
         </div>
         <div class="status" id="cryptoStatus" data-clave="perfil_cargando_membresia">⏳ Esperando confirmación de pago...</div>
     </div>
@@ -1191,9 +1220,10 @@
 
 <script src="/features/shared/js/idiomas.js?v=4" defer></script>
 <script src="/features/perfil/perfil.js?v=4" defer></script>
+
 <script>
 // ================================================================
-// ⚙️ CONFIGURACIÓN LEGAL — Csariel's Ecosystem
+// ⚙️ CONFIGURACIÓN LEGAL
 // ================================================================
 var CONFIG_LEGAL = {
     nombre_comercial: 'Csariel\'s',
@@ -1208,6 +1238,24 @@ var CONFIG_LEGAL = {
 };
 
 // ================================================================
+// AVATAR MENU + TOGGLE
+// ================================================================
+function toggleAvatarMenu(event) {
+    if (event) event.stopPropagation();
+    var menu = document.getElementById('avatarMenu');
+    if (!menu) return;
+    menu.classList.toggle('show');
+}
+
+function cerrarAvatarMenu() {
+    var menu = document.getElementById('avatarMenu');
+    if (menu) menu.classList.remove('show');
+}
+
+window.toggleAvatarMenu = toggleAvatarMenu;
+window.cerrarAvatarMenu = cerrarAvatarMenu;
+
+// ================================================================
 // VERIFICAR ESTADO DEL REPARTIDOR
 // ================================================================
 async function verificarEstadoRepartidorPerfil() {
@@ -1220,10 +1268,7 @@ async function verificarEstadoRepartidorPerfil() {
         if (!section) return;
 
         var client = window.supabaseClient;
-        if (!client) {
-            console.warn('[Repartidor] supabaseClient no disponible aún');
-            return;
-        }
+        if (!client) return;
 
         var session = await client.auth.getSession();
         if (!session.data.session) return;
@@ -1255,14 +1300,12 @@ async function verificarEstadoRepartidorPerfil() {
             info.innerHTML = 'Eres repartidor verificado. Puedes recibir pedidos ahora mismo. <strong>Score: ' + (result.data.score_confianza || 100) + '</strong>';
             btn.textContent = '🛵 Ir a mi panel de repartidor';
             btn.className = 'rep-btn ir-panel';
-
         } else if (estado === 'procesando' || estado === 'revision_manual') {
             badge.textContent = 'En revisión';
             badge.className = 'rep-badge pendiente';
             info.innerHTML = 'Estamos verificando tu identidad. Te avisaremos cuando termine. <strong>Esto puede tomar hasta 24 horas.</strong>';
             btn.textContent = '⏳ Ver estado de verificación';
             btn.className = 'rep-btn ver-estado';
-
         } else if (estado === 'rechazado') {
             badge.textContent = 'Rechazado';
             badge.className = 'rep-badge rechazado';
@@ -1270,7 +1313,6 @@ async function verificarEstadoRepartidorPerfil() {
             info.innerHTML = 'Tu registro fue rechazado. <strong>Motivo:</strong> ' + motivo;
             btn.textContent = '🔄 Volver a intentar';
             btn.className = 'rep-btn reintentar';
-
         } else {
             badge.textContent = 'Completar';
             badge.className = 'rep-badge pendiente';
@@ -1284,9 +1326,6 @@ async function verificarEstadoRepartidorPerfil() {
     }
 }
 
-// ================================================================
-// IR A REPARTIDOR
-// ================================================================
 async function irARepartidorDesdePerfil() {
     try {
         var client = window.supabaseClient;
@@ -1327,27 +1366,9 @@ async function irARepartidorDesdePerfil() {
     }
 }
 
-// ================================================================
-// MENÚ DEL AVATAR
-// ================================================================
-function toggleAvatarMenu(event) {
-    if (event) event.stopPropagation();
-    var menu = document.getElementById('avatarMenu');
-    if (!menu) return;
-    menu.classList.toggle('show');
-}
+window.verificarEstadoRepartidorPerfil = verificarEstadoRepartidorPerfil;
+window.irARepartidorDesdePerfil = irARepartidorDesdePerfil;
 
-function cerrarAvatarMenu() {
-    var menu = document.getElementById('avatarMenu');
-    if (menu) menu.classList.remove('show');
-}
-
-window.toggleAvatarMenu = toggleAvatarMenu;
-window.cerrarAvatarMenu = cerrarAvatarMenu;
-
-// ================================================================
-// INICIALIZACIÓN
-// ================================================================
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(verificarEstadoRepartidorPerfil, 1500);
 
@@ -1355,7 +1376,6 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             if (typeof window.inicializarIdiomas === 'function') {
                 await window.inicializarIdiomas();
-                console.log('✅ Idiomas aplicados al perfil');
             }
         } catch (error) {
             console.error('Error inicializando idiomas en perfil:', error);
@@ -1387,6 +1407,13 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <script>
+/* ================================================================
+   PUBLICACIONES DEL PERFIL — Módulo autocontenido
+   - Todas las funciones se exponen en window.*
+   - Foto y video suben a bucket 'muro-videos'
+   - Eliminar borra fila + archivo del bucket
+   - Reacciones: botón único + dropdown
+=============================================================== */
 (function() {
     'use strict';
 
@@ -1403,6 +1430,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     var emojisDisponibles = ['😀','😁','😂','🤣','😃','😄','😅','😊','😇','🙂','😉','😍','🥰','😘','😗','😙','😚','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🤐','🤨','😐','😑','😶','😏','😒','🙄','😬','🤥','😌','😔','😪','🤤','😴','😷','🤒','🤕','🤢','🤮','🤧','🥵','🥶','😵','🤯','🤠','🥳','😎','🤓','🧐','😕','😟','🙁','😮','😯','😲','😳','🥺','😦','😧','😨','😰','😥','😢','😭','😱','😖','😣','😞','😓','😩','😫','🥱','😤','😡','😠','🤬','😈','👿','💀','💩','🤡','👹','👺','👻','👽','👾','🤖','❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','🔥','✨','🌟','💫','⭐','⚡','💥','💢','🌈','☀️','🌤️','⛅','🌥️','☁️','🌦️','🌧️','⛈️','🌩️','🌨️','❄️','☃️','⛄','🌬️','💨','🌪️','🌫️','🌊','💧','💦','☔','☂️','🌂','🎉','🎊','🎈','🎁','🎂','🍰','🧁','🍕','🍔','🍟','🌮','🌯','🍿','🍩','🍪','🍫','🍬','🍭','🍮','🍯','🍷','🍸','🍹','🍺','🍻','🥂','🥃','🍾','☕','🍵','🧃','🥤','🧋','🍼','🥛','💊','🌿','🍃','🍀','🍁','🍂','🌸','🌺','🌻','🌹','🌷','🌼','💐','🌱','🌲','🌳','🌴','🌵','🌾','🍄','🐚','🪨','🌍','🌎','🌏','🌕','🌖','🌗','🌘','🌑','🌒','🌓','🌔','🌙','🌚','🌝','🌞','🪐','☄️','🌠','🌌'];
 
+    /* ---------------- EMOJI PICKER ---------------- */
     window.toggleEmojiPickerPerfil = function() {
         var picker = document.getElementById('emojiPickerPerfil');
         if (!picker) return;
@@ -1446,6 +1474,7 @@ document.addEventListener('DOMContentLoaded', function() {
         input.selectionStart = input.selectionEnd = start + 1;
     };
 
+    /* ---------------- ARCHIVOS ---------------- */
     window.seleccionarArchivoPerfil = function(event, tipo) {
         var file = event.target.files[0];
         if (!file) return;
@@ -1472,9 +1501,9 @@ document.addEventListener('DOMContentLoaded', function() {
             var reader = new FileReader();
             reader.onload = function(e) {
                 if (tipo === 'imagen') {
-                    wrapper.innerHTML = '<img src="' + e.target.result + '" alt="preview"><button type="button" class="remove-btn" onclick="quitarArchivoPerfil(\'' + tipo + '\')">×</button>';
+                    wrapper.innerHTML = '<img src="' + e.target.result + '" alt="preview"><button type="button" class="remove-btn" onclick="window.quitarArchivoPerfil(\'' + tipo + '\')">×</button>';
                 } else if (tipo === 'video') {
-                    wrapper.innerHTML = '<video src="' + e.target.result + '" muted></video><button type="button" class="remove-btn" onclick="quitarArchivoPerfil(\'' + tipo + '\')">×</button>';
+                    wrapper.innerHTML = '<video src="' + e.target.result + '" muted></video><button type="button" class="remove-btn" onclick="window.quitarArchivoPerfil(\'' + tipo + '\')">×</button>';
                 }
             };
             reader.readAsDataURL(file);
@@ -1490,6 +1519,7 @@ document.addEventListener('DOMContentLoaded', function() {
         renderizarPreviewPerfil();
     };
 
+    /* ---------------- PUBLICAR ---------------- */
     window.publicarDesdePerfil = async function() {
         var btn = document.getElementById('btnPublicarPerfil');
         var input = document.getElementById('inputNuevaPublicacion');
@@ -1499,7 +1529,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         var textoOriginalBtn = btn ? btn.textContent : '◈ Publicar';
-        if (btn) { btn.disabled = true; btn.textContent = (window.tConFallback ? window.tConFallback('perfil_publicando', '⏳ Publicando...') : '⏳ Publicando...'); }
+        if (btn) { btn.disabled = true; btn.textContent = '⏳ Publicando...'; }
         try {
             var client = sb();
             if (!client) throw new Error('Supabase no está listo. Recarga la página.');
@@ -1544,7 +1574,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var i1 = document.getElementById('inputFotoPerfilPost'); if (i1) i1.value = '';
             var i2 = document.getElementById('inputVideoPerfilPost'); if (i2) i2.value = '';
             renderizarPreviewPerfil();
-            await cargarMisPublicaciones();
+            await window.cargarMisPublicaciones();
         } catch (error) {
             console.error('Error publicando:', error);
             if (window.showToast) window.showToast('❌ Error: ' + error.message, 'error');
@@ -1553,6 +1583,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
+    /* ---------------- AVATAR HTML ---------------- */
     function obtenerAvatarActual() {
         if (window.perfilCache && window.perfilCache.avatar_url) {
             return '<img src="' + window.perfilCache.avatar_url + '" alt="Avatar" style="width:100%;height:100%;object-fit:cover;">';
@@ -1564,18 +1595,18 @@ document.addEventListener('DOMContentLoaded', function() {
         return '◈';
     }
 
+    /* ---------------- CARGAR PUBLICACIONES ---------------- */
     window.cargarMisPublicaciones = async function() {
         var container = document.getElementById('misPublicacionesList');
         var contador = document.getElementById('misPostsCount');
         if (!container) return;
         try {
             var client = sb();
-            if (!client) { setTimeout(cargarMisPublicaciones, 1000); return; }
+            if (!client) { setTimeout(window.cargarMisPublicaciones, 1000); return; }
             var sessionResult = await client.auth.getSession();
             var session = sessionResult.data.session;
             if (!session) {
-                container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h4 data-clave="perfil_inicia_sesion_publicaciones">Inicia sesión</h4><p data-clave="perfil_para_ver_publicaciones">Para ver tus publicaciones</p></div>';
-                if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
+                container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h4>Inicia sesión</h4><p>Para ver tus publicaciones</p></div>';
                 return;
             }
             var result = await client.from('publicaciones').select('*').eq('usuario_id', session.user.id).order('created_at', { ascending: false }).limit(50);
@@ -1583,8 +1614,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var publicaciones = result.data || [];
             if (contador) contador.textContent = publicaciones.length;
             if (publicaciones.length === 0) {
-                container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h4 data-clave="perfil_sin_publicaciones">Sin publicaciones aún</h4><p data-clave="perfil_crea_primera">Publica algo para verlo aquí</p></div>';
-                if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
+                container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h4>Sin publicaciones aún</h4><p>Publica algo para verlo aquí</p></div>';
                 return;
             }
             container.innerHTML = '';
@@ -1614,74 +1644,63 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (p.media_type === 'video') {
                         contenidoHtml += '<video src="' + p.media_url + '" controls preload="metadata"></video>';
                     } else if (p.media_type === 'imagen') {
-                        contenidoHtml += '<img src="' + p.media_url + '" alt="Imagen" loading="lazy" ' +
-                            'style="cursor:pointer;" ' +
-                            'onclick="expandirFotoPublicacion(this.src)" />';
+                        contenidoHtml += '<img src="' + p.media_url + '" alt="Imagen" loading="lazy" style="cursor:pointer;" onclick="window.expandirFotoPublicacion(this.src)" />';
                     }
                 }
                 var fecha = p.created_at ? new Date(p.created_at).toLocaleString() : '';
                 var reaccionUsuario = reaccionesUsuario[p.id] || null;
                 var conteos = conteosReacciones[p.id] || {};
 
-                /* Total de reacciones en la publicación */
                 var totalReacciones = 0;
                 Object.keys(conteos).forEach(function(k) { totalReacciones += (conteos[k] || 0); });
 
-                /* Emoji a mostrar en el trigger: el del usuario o ❤️ por defecto */
                 var emojiMostrado = reaccionUsuario || '❤️';
 
-                /* Construir el dropdown con todos los emojis */
                 var dropdownHtml = '<div class="reaccion-dropdown" id="reaccion-dropdown-' + p.id + '">';
                 EMOJIS_REACCION.forEach(function(emoji) {
                     var count = conteos[emoji] || 0;
                     var activo = reaccionUsuario === emoji ? ' activa' : '';
-                    dropdownHtml += '<button type="button" class="' + activo.trim() + '" onclick="event.stopPropagation(); reaccionarPublicacionPerfil(\'' + p.id + '\', \'' + emoji + '\')" title="Reaccionar ' + emoji + '">' + emoji + (count > 0 ? '<span class="mini-count">' + count + '</span>' : '') + '</button>';
+                    dropdownHtml += '<button type="button" class="' + activo.trim() + '" onclick="event.stopPropagation(); window.reaccionarPublicacionPerfil(\'' + p.id + '\', \'' + emoji + '\')" title="Reaccionar ' + emoji + '">' + emoji + (count > 0 ? '<span class="mini-count">' + count + '</span>' : '') + '</button>';
                 });
                 dropdownHtml += '</div>';
 
-                /* Trigger */
                 var triggerClass = 'reaccion-trigger' + (reaccionUsuario ? ' activa' : '');
                 var triggerHtml =
                     '<div class="reaccion-wrap">' +
                         dropdownHtml +
-                        '<button type="button" class="' + triggerClass + '" onclick="event.stopPropagation(); toggleReaccionDropdown(\'' + p.id + '\')" title="Reaccionar">' +
+                        '<button type="button" class="' + triggerClass + '" onclick="event.stopPropagation(); window.toggleReaccionDropdown(\'' + p.id + '\')" title="Reaccionar">' +
                             '<span class="emoji-actual">' + emojiMostrado + '</span>' +
                             (totalReacciones > 0 ? '<span class="count">' + totalReacciones + '</span>' : '<span class="count">Reaccionar</span>') +
                         '</button>' +
                     '</div>';
 
                 card.innerHTML =
-                    '<div class="header"><div class="avatar">' + avatarHtml + '</div><div><div class="nombre" data-clave="perfil_mi_publicacion">Mi publicación</div><div class="fecha">' + fecha + '</div></div></div>' +
+                    '<div class="header"><div class="avatar">' + avatarHtml + '</div><div><div class="nombre">Mi publicación</div><div class="fecha">' + fecha + '</div></div></div>' +
                     '<div class="contenido">' + contenidoHtml + '</div>' + triggerHtml +
                     '<div class="stats">' +
-                        '<span onclick="toggleComentariosPerfil(\'' + p.id + '\')" data-clave="perfil_comentarios">💬 Comentarios</span>' +
-                        '<span onclick="eliminarMiPublicacion(\'' + p.id + '\')" data-clave="perfil_eliminar">Eliminar</span>' +
+                        '<button type="button" class="btn-accion-pub" onclick="event.stopPropagation(); window.toggleComentariosPerfil(\'' + p.id + '\')">💬 Comentarios</button>' +
+                        '<button type="button" class="btn-accion-pub danger" onclick="event.stopPropagation(); window.eliminarMiPublicacion(\'' + p.id + '\', event)">Eliminar</button>' +
                     '</div>' +
                     '<div class="comentarios-container" id="comentarios-container-' + p.id + '">' +
                         '<div class="comentarios-lista" id="comentarios-lista-' + p.id + '"></div>' +
                         '<div class="comentario-input-row">' +
-                            '<input type="text" id="comentario-input-' + p.id + '" data-placeholder="perfil_placeholder_comentario" placeholder="Escribe un comentario..." />' +
-                            '<button onclick="enviarComentarioPerfil(\'' + p.id + '\')" data-clave="perfil_enviar">Enviar</button>' +
+                            '<input type="text" id="comentario-input-' + p.id + '" placeholder="Escribe un comentario..." />' +
+                            '<button type="button" onclick="window.enviarComentarioPerfil(\'' + p.id + '\')">Enviar</button>' +
                         '</div>' +
                     '</div>';
                 container.appendChild(card);
             });
-            if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
         } catch (error) {
             console.error('Error cargando mis publicaciones:', error);
-            container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h4 data-clave="perfil_error_cargar">Error al cargar</h4><p>' + error.message + '</p></div>';
-            if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
+            container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h4>Error al cargar</h4><p>' + error.message + '</p></div>';
         }
     };
 
-    /* =========================================================
-       NUEVO: toggle del dropdown de reacciones
-    ========================================================= */
+    /* ---------------- REACCIONES ---------------- */
     window.toggleReaccionDropdown = function(postId) {
         var dd = document.getElementById('reaccion-dropdown-' + postId);
         if (!dd) return;
         var esta = dd.classList.contains('show');
-        /* Cerrar todos */
         document.querySelectorAll('.reaccion-dropdown.show').forEach(function(el) {
             el.classList.remove('show');
         });
@@ -1697,7 +1716,6 @@ document.addEventListener('DOMContentLoaded', function() {
             var session = sessionResult.data.session;
             if (!session) { if (window.showToast) window.showToast('⚠️ Inicia sesión', 'error'); return; }
 
-            /* Cerrar dropdown inmediatamente */
             var dd = document.getElementById('reaccion-dropdown-' + postId);
             if (dd) dd.classList.remove('show');
 
@@ -1736,26 +1754,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (r.usuario_id === session.user.id) reaccionUsuario = r.tipo;
             });
 
-            var wrap = document.querySelector('#reaccion-dropdown-' + postId)?.parentElement;
+            var dd = document.getElementById('reaccion-dropdown-' + postId);
+            if (!dd) return;
+            var wrap = dd.parentElement;
             if (!wrap) return;
 
             var total = 0;
             Object.keys(conteos).forEach(function(k) { total += conteos[k]; });
             var emojiMostrado = reaccionUsuario || '❤️';
 
-            /* Reconstruir dropdown */
-            var dd = document.getElementById('reaccion-dropdown-' + postId);
-            if (dd) {
-                var ddHtml = '';
-                EMOJIS_REACCION.forEach(function(emoji) {
-                    var count = conteos[emoji] || 0;
-                    var activo = reaccionUsuario === emoji ? ' activa' : '';
-                    ddHtml += '<button type="button" class="' + activo.trim() + '" onclick="event.stopPropagation(); reaccionarPublicacionPerfil(\'' + postId + '\', \'' + emoji + '\')" title="Reaccionar ' + emoji + '">' + emoji + (count > 0 ? '<span class="mini-count">' + count + '</span>' : '') + '</button>';
-                });
-                dd.innerHTML = ddHtml;
-            }
+            var ddHtml = '';
+            EMOJIS_REACCION.forEach(function(emoji) {
+                var count = conteos[emoji] || 0;
+                var activo = reaccionUsuario === emoji ? ' activa' : '';
+                ddHtml += '<button type="button" class="' + activo.trim() + '" onclick="event.stopPropagation(); window.reaccionarPublicacionPerfil(\'' + postId + '\', \'' + emoji + '\')" title="Reaccionar ' + emoji + '">' + emoji + (count > 0 ? '<span class="mini-count">' + count + '</span>' : '') + '</button>';
+            });
+            dd.innerHTML = ddHtml;
 
-            /* Reconstruir trigger */
             var trigger = wrap.querySelector('.reaccion-trigger');
             if (trigger) {
                 trigger.className = 'reaccion-trigger' + (reaccionUsuario ? ' activa' : '');
@@ -1766,6 +1781,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch(e) {}
     }
 
+    /* ---------------- COMENTARIOS ---------------- */
     window.toggleComentariosPerfil = async function(publicacionId) {
         var container = document.getElementById('comentarios-container-' + publicacionId);
         if (!container) return;
@@ -1777,8 +1793,7 @@ document.addEventListener('DOMContentLoaded', function() {
     async function cargarComentariosPerfil(publicacionId) {
         var lista = document.getElementById('comentarios-lista-' + publicacionId);
         if (!lista) return;
-        lista.innerHTML = '<div style="font-size:0.7rem;color:var(--text-muted);padding:4px;" data-clave="perfil_cargando_comentarios">Cargando...</div>';
-        if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(lista);
+        lista.innerHTML = '<div style="font-size:0.7rem;color:var(--text-muted);padding:4px;">Cargando...</div>';
         try {
             var client = sb();
             if (!client) return;
@@ -1789,8 +1804,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (result.error && result.error.code !== '42P01') throw result.error;
             var comentarios = result.data || [];
             if (comentarios.length === 0) {
-                lista.innerHTML = '<div style="font-size:0.7rem;color:var(--text-muted);padding:4px;" data-clave="perfil_sin_comentarios">Sin comentarios. ¡Sé el primero!</div>';
-                if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(lista);
+                lista.innerHTML = '<div style="font-size:0.7rem;color:var(--text-muted);padding:4px;">Sin comentarios. ¡Sé el primero!</div>';
                 return;
             }
             lista.innerHTML = '';
@@ -1805,8 +1819,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         } catch (error) {
             console.error('Error cargando comentarios:', error);
-            lista.innerHTML = '<div style="font-size:0.7rem;color:var(--danger);padding:4px;" data-clave="perfil_error_cargar_comentarios">Error al cargar comentarios</div>';
-            if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(lista);
+            lista.innerHTML = '<div style="font-size:0.7rem;color:var(--danger);padding:4px;">Error al cargar comentarios</div>';
         }
     }
 
@@ -1834,45 +1847,51 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    window.eliminarMiPublicacion = async function(publicacionId) {
-        var confirmMsg = (typeof window.tConFallback === 'function')
-            ? window.tConFallback('perfil_confirma_eliminar', '¿Seguro que quieres eliminar esta publicación?')
-            : '¿Seguro que quieres eliminar esta publicación?';
+    /* ---------------- ELIMINAR PUBLICACIÓN ---------------- */
+    window.eliminarMiPublicacion = async function(publicacionId, event) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        var confirmMsg = '¿Seguro que quieres eliminar esta publicación?';
         if (!confirm(confirmMsg)) return;
         try {
             var client = sb();
-            if (!client) return;
+            if (!client) { if (window.showToast) window.showToast('❌ Supabase no disponible', 'error'); return; }
 
-            /* Antes de borrar la fila, obtenemos la URL del archivo para borrarlo del bucket */
+            /* Obtener URL del archivo antes de borrar la fila */
             try {
-                var pubRes = await client.from('publicaciones').select('media_url, media_type').eq('id', publicacionId).maybeSingle();
+                var pubRes = await client.from('publicaciones').select('media_url').eq('id', publicacionId).maybeSingle();
                 if (pubRes && pubRes.data && pubRes.data.media_url) {
                     var mediaUrl = pubRes.data.media_url;
-                    /* Extraer el path relativo del bucket 'muro-videos' */
                     var marker = '/storage/v1/object/public/muro-videos/';
                     var idx = mediaUrl.indexOf(marker);
                     if (idx !== -1) {
                         var filePath = mediaUrl.substring(idx + marker.length);
-                        /* Quitar query string si la hay */
                         var qIdx = filePath.indexOf('?');
                         if (qIdx !== -1) filePath = filePath.substring(0, qIdx);
-                        await client.storage.from('muro-videos').remove([filePath]);
+                        try {
+                            await client.storage.from('muro-videos').remove([filePath]);
+                        } catch (storageErr) {
+                            console.warn('No se pudo borrar el archivo del bucket:', storageErr);
+                        }
                     }
                 }
             } catch (storageErr) {
-                console.warn('[Perfil] No se pudo borrar el archivo del bucket:', storageErr);
+                console.warn('Error obteniendo media_url:', storageErr);
             }
 
             var result = await client.from('publicaciones').delete().eq('id', publicacionId);
             if (result.error) throw new Error(result.error.message);
             if (window.showToast) window.showToast('✅ Publicación eliminada', 'success');
-            await cargarMisPublicaciones();
+            await window.cargarMisPublicaciones();
         } catch (error) {
             console.error('Error eliminando:', error);
-            if (window.showToast) window.showToast('❌ Error al eliminar', 'error');
+            if (window.showToast) window.showToast('❌ Error al eliminar: ' + error.message, 'error');
         }
     };
 
+    /* ---------------- HELPERS ---------------- */
     function escapeHtmlPerfil(texto) {
         if (!texto) return '';
         return String(texto).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;').replace(/\n/g, '<br>');
@@ -1882,7 +1901,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var intentos = 0;
         function intentarCargar() {
             if (sb() && intentos < 30) {
-                cargarMisPublicaciones();
+                window.cargarMisPublicaciones();
             } else if (intentos < 30) {
                 intentos++;
                 setTimeout(intentarCargar, 500);
@@ -1894,11 +1913,14 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <script>
+/* ================================================================
+   ÓRDENES DE INTERNET — Módulo autocontenido
+=============================================================== */
 (function() {
     'use strict';
 
-    let ordenesInternet = [];
-    let filtroInternet = 'all';
+    var ordenesInternet = [];
+    var filtroInternet = 'all';
 
     function sb() {
         return window.supabaseClient;
@@ -1912,136 +1934,103 @@ document.addEventListener('DOMContentLoaded', function() {
     function formatearFecha(fecha) {
         if (!fecha) return '—';
         try {
-            const d = new Date(fecha);
+            var d = new Date(fecha);
             return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
                 + ' · '
                 + d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
         } catch(e) { return '—'; }
     }
 
-    function tLocal(clave, fallback) {
-        if (typeof window.tConFallback === 'function') {
-            return window.tConFallback(clave, fallback);
-        }
-        return fallback;
-    }
-
     function estadoInfo(estado) {
-        const map = {
-            'pendiente':   { color: '#f59e0b', icon: '⏳', texto: tLocal('perfil_pendiente_pago', 'Pendiente de pago'), bg: 'rgba(245, 158, 11, 0.12)' },
-            'pagando':     { color: '#f59e0b', icon: '⏳', texto: tLocal('perfil_procesando_pago', 'Procesando pago'),  bg: 'rgba(245, 158, 11, 0.12)' },
-            'confirmando': { color: '#22d3ee', icon: '⏱️', texto: tLocal('perfil_confirmando', 'Confirmando'),         bg: 'rgba(34, 211, 238, 0.12)' },
-            'pagada':      { color: '#00d68f', icon: '💚', texto: tLocal('perfil_pagada', 'Pagada'),                    bg: 'rgba(0, 214, 143, 0.12)' },
-            'activa':      { color: '#00d68f', icon: '✅', texto: tLocal('perfil_activa', 'Activa'),                    bg: 'rgba(0, 214, 143, 0.12)' },
-            'activada':    { color: '#00d68f', icon: '✅', texto: tLocal('perfil_activa', 'Activa'),                    bg: 'rgba(0, 214, 143, 0.12)' },
-            'completado':  { color: '#00d68f', icon: '✅', texto: tLocal('perfil_completado', 'Completado'),            bg: 'rgba(0, 214, 143, 0.12)' },
-            'cancelada':   { color: '#ff3366', icon: '❌', texto: tLocal('perfil_cancelada', 'Cancelada'),              bg: 'rgba(255, 51, 102, 0.12)' },
-            'cancelado':   { color: '#ff3366', icon: '❌', texto: tLocal('perfil_cancelada', 'Cancelada'),              bg: 'rgba(255, 51, 102, 0.12)' },
+        var map = {
+            'pendiente':   { color: '#f59e0b', icon: '⏳', texto: 'Pendiente de pago', bg: 'rgba(245, 158, 11, 0.12)' },
+            'pagando':     { color: '#f59e0b', icon: '⏳', texto: 'Procesando pago',  bg: 'rgba(245, 158, 11, 0.12)' },
+            'confirmando': { color: '#22d3ee', icon: '⏱️', texto: 'Confirmando',         bg: 'rgba(34, 211, 238, 0.12)' },
+            'pagada':      { color: '#00d68f', icon: '💚', texto: 'Pagada',                    bg: 'rgba(0, 214, 143, 0.12)' },
+            'activa':      { color: '#00d68f', icon: '✅', texto: 'Activa',                    bg: 'rgba(0, 214, 143, 0.12)' },
+            'activada':    { color: '#00d68f', icon: '✅', texto: 'Activa',                    bg: 'rgba(0, 214, 143, 0.12)' },
+            'completado':  { color: '#00d68f', icon: '✅', texto: 'Completado',            bg: 'rgba(0, 214, 143, 0.12)' },
+            'cancelada':   { color: '#ff3366', icon: '❌', texto: 'Cancelada',              bg: 'rgba(255, 51, 102, 0.12)' },
+            'cancelado':   { color: '#ff3366', icon: '❌', texto: 'Cancelada',              bg: 'rgba(255, 51, 102, 0.12)' }
         };
-        return map[estado] || { color: '#8aa8b8', icon: '◈', texto: estado || tLocal('perfil_desconocido', 'Desconocido'), bg: 'rgba(138, 168, 184, 0.12)' };
-    }
-
-    function redLabel(payCurrency) {
-        if (!payCurrency) return '—';
-        const map = {
-            'usdttrc20': 'USDT · TRON',
-            'usdtbsc':   'USDT · BSC',
-            'usdtmatic': 'USDT · Polygon',
-            'usdtsol':   'USDT · Solana',
-            'usdterc20': 'USDT · Ethereum',
-            'usdcsol':   'USDC · Solana',
-            'usdcmatic': 'USDC · Polygon',
-            'usdcbsc':   'USDC · BSC',
-            'usdc':      'USDC · Ethereum',
-        };
-        return map[payCurrency] || payCurrency.toUpperCase();
+        return map[estado] || { color: '#8aa8b8', icon: '◈', texto: estado || 'Desconocido', bg: 'rgba(138, 168, 184, 0.12)' };
     }
 
     window.cargarOrdenesInternet = async function() {
-        const list = document.getElementById('ordenesInternetList');
-        const contador = document.getElementById('internetOrdenesCount');
+        var list = document.getElementById('ordenesInternetList');
+        var contador = document.getElementById('internetOrdenesCount');
         if (!list) return;
 
-        list.innerHTML = '<div class="empty-state"><span class="icon">📶</span><h4 data-clave="perfil_cargando_ordenes">Cargando órdenes...</h4></div>';
-        if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(list);
+        list.innerHTML = '<div class="empty-state"><span class="icon">📶</span><h4>Cargando órdenes...</h4></div>';
 
         try {
-            const client = sb();
+            var client = sb();
             if (!client) throw new Error('Supabase no disponible');
 
-            const sessionResult = await client.auth.getSession();
-            const session = sessionResult.data.session;
+            var sessionResult = await client.auth.getSession();
+            var session = sessionResult.data.session;
             if (!session) {
-                list.innerHTML = '<div class="empty-state"><span class="icon">📶</span><h4 data-clave="perfil_inicia_sesion">Inicia sesión</h4><p data-clave="perfil_inicia_sesion_historial">Para ver tu historial de compras</p></div>';
-                if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(list);
+                list.innerHTML = '<div class="empty-state"><span class="icon">📶</span><h4>Inicia sesión</h4><p>Para ver tu historial de compras</p></div>';
                 return;
             }
 
-            const { data, error } = await client
+            var response = await client
                 .from('ordenes_internet')
                 .select('*')
                 .eq('usuario_id', session.user.id)
                 .order('created_at', { ascending: false })
                 .limit(100);
 
-            if (error) throw error;
+            if (response.error) throw response.error;
 
-            ordenesInternet = data || [];
+            ordenesInternet = response.data || [];
             if (contador) contador.textContent = ordenesInternet.length;
 
             if (ordenesInternet.length === 0) {
-                list.innerHTML = '<div class="empty-state"><span class="icon">📶</span><h4 data-clave="perfil_sin_compras_internet">Sin compras de Internet</h4><p data-clave="perfil_compra_paquete_aqui">Cuando compres un paquete aparecerá aquí</p><a href="/features/internet/internet.html" class="btn btn-gold btn-sm" style="margin-top:12px;text-decoration:none;" data-clave="perfil_ver_paquetes">Ver paquetes disponibles</a></div>';
-                if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(list);
+                list.innerHTML = '<div class="empty-state"><span class="icon">📶</span><h4>Sin compras de Internet</h4><p>Cuando compres un paquete aparecerá aquí</p></div>';
                 return;
             }
 
             renderOrdenesInternet();
         } catch (error) {
             console.error('Error cargando órdenes Internet:', error);
-            list.innerHTML = '<div class="empty-state"><span class="icon">❌</span><h4 data-clave="perfil_error_cargar">Error al cargar</h4><p style="font-size:0.75rem;">' + escapeHTML(error.message) + '</p></div>';
-            if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(list);
+            list.innerHTML = '<div class="empty-state"><span class="icon">❌</span><h4>Error al cargar</h4><p style="font-size:0.75rem;">' + escapeHTML(error.message) + '</p></div>';
         }
     };
 
     function renderOrdenesInternet() {
-        const list = document.getElementById('ordenesInternetList');
+        var list = document.getElementById('ordenesInternetList');
         if (!list) return;
 
-        const filtered = filtroInternet === 'all'
+        var filtered = filtroInternet === 'all'
             ? ordenesInternet
-            : ordenesInternet.filter(o => o.estado === filtroInternet);
+            : ordenesInternet.filter(function(o){ return o.estado === filtroInternet; });
 
         if (filtered.length === 0) {
-            list.innerHTML = '<div class="empty-state"><span class="icon">📶</span><h4 data-clave="perfil_sin_ordenes_filtro">Sin órdenes en este filtro</h4></div>';
-            if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(list);
+            list.innerHTML = '<div class="empty-state"><span class="icon">📶</span><h4>Sin órdenes en este filtro</h4></div>';
             return;
         }
 
-        const diasT = tLocal('perfil_dias', 'días');
-        const activaAlT = tLocal('perfil_activa_al', 'Activa al:');
-
-        list.innerHTML = filtered.map(o => {
-            const info = estadoInfo(o.estado);
-            const esActiva = ['activa', 'activada', 'completado'].includes(o.estado);
-            return '<div class="publicacion-card" style="border-left:3px solid ' + info.color + ';cursor:pointer;" onclick="verDetalleOrdenInternet(\'' + escapeHTML(o.id) + '\')">' +
+        list.innerHTML = filtered.map(function(o) {
+            var info = estadoInfo(o.estado);
+            var esActiva = ['activa', 'activada', 'completado'].indexOf(o.estado) !== -1;
+            return '<div class="publicacion-card" style="border-left:3px solid ' + info.color + ';">' +
                 '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">' +
                     '<div style="flex:1;min-width:180px;">' +
                         '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">' +
                             '<span style="font-size:1.3rem;">📦</span>' +
-                            '<strong style="color:var(--gold);font-size:0.9rem;font-family:\'Orbitron\',monospace;">' + escapeHTML(o.plan_nombre || tLocal('perfil_paquete', 'Paquete')) + '</strong>' +
+                            '<strong style="color:var(--gold);font-size:0.9rem;font-family:\'Orbitron\',monospace;">' + escapeHTML(o.plan_nombre || 'Paquete') + '</strong>' +
                         '</div>' +
-                        '<div style="color:var(--text-secondary);font-size:0.8rem;line-height:1.6;">📊 <strong>' + o.datos_gb + ' GB</strong> · 📅 ' + o.duracion_dias + ' ' + diasT + '</div>' +
-                        '<div style="color:var(--text-muted);font-size:0.7rem;margin-top:4px;">📱 ' + activaAlT + ' <span style="font-family:monospace;color:var(--text-secondary);">' + escapeHTML(o.telefono_activacion || '—') + '</span></div>' +
+                        '<div style="color:var(--text-secondary);font-size:0.8rem;line-height:1.6;">📊 <strong>' + (o.datos_gb || 0) + ' GB</strong> · 📅 ' + (o.duracion_dias || 0) + ' días</div>' +
+                        '<div style="color:var(--text-muted);font-size:0.7rem;margin-top:4px;">📱 ' + escapeHTML(o.telefono_activacion || '—') + '</div>' +
                     '</div>' +
                     '<div style="text-align:right;min-width:140px;">' +
-                        '<div style="background:' + info.bg + ';color:' + info.color + ';padding:4px 12px;border-radius:20px;font-size:0.65rem;font-weight:700;display:inline-block;margin-bottom:6px;border:1px solid rgba(0,0,0,0.4);">' + info.icon + ' ' + escapeHTML(info.texto) + '</div>' +
+                        '<div style="background:' + info.bg + ';color:' + info.color + ';padding:4px 12px;border-radius:20px;font-size:0.65rem;font-weight:700;display:inline-block;margin-bottom:6px;">' + info.icon + ' ' + escapeHTML(info.texto) + '</div>' +
                         '<div style="color:var(--gold);font-family:\'Orbitron\',monospace;font-size:1rem;font-weight:700;">$' + parseFloat(o.monto_mxn || 0).toFixed(2) + ' MXN</div>' +
-                        (o.precio_usdt ? '<div style="color:var(--text-muted);font-size:0.6rem;">≈ $' + parseFloat(o.precio_usdt).toFixed(2) + ' USD</div>' : '') +
                     '</div>' +
                 '</div>' +
                 '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid rgba(0,0,0,0.5);font-size:0.65rem;color:var(--text-muted);flex-wrap:wrap;gap:6px;">' +
                     '<span>🕐 ' + formatearFecha(o.created_at) + '</span>' +
-                    '<span>' + (o.pay_currency ? '⚡ ' + redLabel(o.pay_currency) : '') + '</span>' +
                     (esActiva && o.activado_en ? '<span style="color:var(--success);">✓ ' + formatearFecha(o.activado_en) + '</span>' : '') +
                 '</div>' +
             '</div>';
@@ -2050,68 +2039,34 @@ document.addEventListener('DOMContentLoaded', function() {
 
     window.filtrarOrdenesInternet = function(filtro) {
         filtroInternet = filtro;
-        document.querySelectorAll('.internet-filter').forEach(btn => {
+        document.querySelectorAll('.internet-filter').forEach(function(btn){
             btn.classList.toggle('active', btn.dataset.filter === filtro);
         });
         renderOrdenesInternet();
     };
 
-    window.verDetalleOrdenInternet = function(ordenId) {
-        const orden = ordenesInternet.find(o => o.id === ordenId);
-        if (!orden) return;
-        const info = estadoInfo(orden.estado);
-        const diasT = tLocal('perfil_dias', 'días');
-
-        const html = '<div style="text-align:left;max-width:500px;margin:0 auto;">' +
-            '<div style="text-align:center;margin-bottom:20px;">' +
-                '<div style="font-size:3rem;">📦</div>' +
-                '<h2 style="color:var(--gold);font-family:\'Orbitron\',monospace;font-size:1.1rem;margin:10px 0 4px;">' + escapeHTML(orden.plan_nombre || tLocal('perfil_paquete', 'Paquete')) + '</h2>' +
-                '<div style="background:' + info.bg + ';color:' + info.color + ';padding:4px 14px;border-radius:20px;font-size:0.7rem;font-weight:700;display:inline-block;border:1px solid rgba(0,0,0,0.4);">' + info.icon + ' ' + escapeHTML(info.texto) + '</div>' +
-            '</div>' +
-            '<div style="background:rgba(0,0,0,0.5);border:2px solid #000;border-radius:12px;padding:14px;margin-bottom:12px;">' +
-                '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.5);font-size:0.75rem;"><span style="color:var(--text-muted);">📊 ' + tLocal('perfil_datos', 'Datos') + '</span><span style="color:var(--text-primary);font-weight:600;">' + orden.datos_gb + ' GB</span></div>' +
-                '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.5);font-size:0.75rem;"><span style="color:var(--text-muted);">📅 ' + tLocal('perfil_duracion', 'Duración') + '</span><span style="color:var(--text-primary);font-weight:600;">' + orden.duracion_dias + ' ' + diasT + '</span></div>' +
-                '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.5);font-size:0.75rem;"><span style="color:var(--text-muted);">📱 ' + tLocal('perfil_telefono', 'Teléfono') + '</span><span style="color:var(--text-primary);font-weight:600;font-family:monospace;">' + escapeHTML(orden.telefono_activacion || '—') + '</span></div>' +
-                '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.5);font-size:0.75rem;"><span style="color:var(--text-muted);">💰 ' + tLocal('perfil_total_mxn', 'Total MXN') + '</span><span style="color:var(--gold);font-weight:700;font-family:\'Orbitron\',monospace;">$' + parseFloat(orden.monto_mxn || 0).toFixed(2) + '</span></div>' +
-                '<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:0.75rem;"><span style="color:var(--text-muted);">🕐 ' + tLocal('perfil_creada', 'Creada') + '</span><span style="color:var(--text-primary);font-weight:600;">' + formatearFecha(orden.created_at) + '</span></div>' +
-            '</div>' +
-            '<div style="text-align:center;"><button class="btn btn-outline btn-sm" onclick="cerrarModalDetalleOrden()" data-clave="perfil_cerrar">Cerrar</button></div>' +
-        '</div>';
-
-        const modal = document.createElement('div');
-        modal.id = 'modalDetalleOrden';
-        modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);backdrop-filter:blur(12px);display:flex;justify-content:center;align-items:center;z-index:99999;padding:20px;';
-        modal.innerHTML = '<div style="background:linear-gradient(135deg,rgba(15,45,26,0.95),rgba(5,8,15,0.98));border:2px solid #000;border-radius:20px;padding:24px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;position:relative;box-shadow:0 0 0 2px var(--gold), 0 20px 60px rgba(0,0,0,0.7);">' +
-            '<button onclick="cerrarModalDetalleOrden()" style="position:absolute;top:10px;right:15px;background:transparent;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;">×</button>' + html + '</div>';
-        modal.addEventListener('click', (e) => { if (e.target === modal) cerrarModalDetalleOrden(); });
-        document.body.appendChild(modal);
-        if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(modal);
-    };
-
-    window.cerrarModalDetalleOrden = function() {
-        const modal = document.getElementById('modalDetalleOrden');
-        if (modal) modal.remove();
-    };
-
     document.addEventListener('DOMContentLoaded', function() {
-        document.querySelectorAll('.perfil-tabs .tab-btn').forEach(btn => {
+        document.querySelectorAll('.perfil-tabs .tab-btn').forEach(function(btn){
             btn.addEventListener('click', function() {
-                const onclick = btn.getAttribute('onclick') || '';
-                if (onclick.includes("'internet'")) {
-                    setTimeout(() => cargarOrdenesInternet(), 100);
+                var onclick = btn.getAttribute('onclick') || '';
+                if (onclick.indexOf("'internet'") !== -1) {
+                    setTimeout(window.cargarOrdenesInternet, 100);
                 }
             });
         });
 
-        const tabInternet = document.getElementById('tab-internet');
+        var tabInternet = document.getElementById('tab-internet');
         if (tabInternet && tabInternet.classList.contains('active')) {
-            cargarOrdenesInternet();
+            window.cargarOrdenesInternet();
         }
     });
 })();
 </script>
 
 <script>
+/* ================================================================
+   SINCRONIZACIÓN DE PERFIL — Realtime + Reintentos
+=============================================================== */
 (function() {
     'use strict';
 
@@ -2144,9 +2099,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (bioPersonalizada && usuario.bio !== bioDefault) {
                     if (tieneClave) bioElement.removeAttribute('data-clave');
                     bioElement.textContent = usuario.bio;
-                } else {
-                    if (!tieneClave) bioElement.setAttribute('data-clave', 'perfil_biografia_default');
-                    if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(bioElement);
                 }
             }
 
@@ -2155,15 +2107,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (usuario.avatar_url) {
                     avatarElement.innerHTML =
                         '<img src="' + usuario.avatar_url + '" alt="Avatar">' +
-                        '<span class="avatar-menu-toggle" onclick="event.stopPropagation(); toggleAvatarMenu(event)" title="Opciones de foto">✎</span>';
+                        '<span class="avatar-menu-toggle" onclick="event.stopPropagation(); window.toggleAvatarMenu(event)" title="Opciones de foto">✎</span>';
                 } else {
                     avatarElement.innerHTML =
                         '◈' +
-                        '<span class="avatar-menu-toggle" onclick="event.stopPropagation(); toggleAvatarMenu(event)" title="Opciones de foto">✎</span>';
+                        '<span class="avatar-menu-toggle" onclick="event.stopPropagation(); window.toggleAvatarMenu(event)" title="Opciones de foto">✎</span>';
                 }
             }
-
-            console.log('[Perfil] ✅ DOM actualizado con:', usuario.nombre);
         } catch (error) {
             console.warn('[Perfil] Error actualizando el DOM:', error);
         }
@@ -2176,14 +2126,12 @@ document.addEventListener('DOMContentLoaded', function() {
             ultimaRecarga = ahora;
 
             if (!window.supabaseClient) {
-                console.warn('[Perfil] supabaseClient no disponible aún, reintentando...');
                 setTimeout(function() { recargarPerfil(true); }, 500);
                 return;
             }
 
             var sessionResult = await window.supabaseClient.auth.getSession();
             if (sessionResult.error || !sessionResult.data || !sessionResult.data.session || !sessionResult.data.session.user) {
-                console.warn('[Perfil] Sin sesión');
                 return;
             }
 
@@ -2202,6 +2150,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (result.data) {
                 actualizarDOM(result.data);
+                window.perfilCache = Object.assign(window.perfilCache || {}, result.data);
             }
         } catch (error) {
             console.warn('[Perfil] Error en recargarPerfil():', error);
@@ -2213,9 +2162,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function iniciarRecarga() {
         if (window.supabaseClient) {
             recargarPerfil(true);
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', function() { recargarPerfil(true); }, { once: true });
-            }
         } else {
             setTimeout(iniciarRecarga, 200);
         }
@@ -2252,25 +2198,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 }, function(payload) {
                     if (payload && payload.new) actualizarDOM(payload.new);
                 })
-                .subscribe(function(status) {
-                    if (status === 'SUBSCRIBED') {
-                        console.log('[Perfil] ✅ Realtime conectado');
-                    }
-                });
+                .subscribe();
         } catch (e) {
             console.warn('[Perfil] Realtime error:', e);
         }
     }
     setTimeout(iniciarRealtime, 1000);
-
-    console.log('[Perfil] ✅ Módulo de sincronización cargado');
 })();
 </script>
 
 <script>
-// ================================================================
-// RESPALDO DE EMERGENCIA — Solo actúa si perfil.js no cargó
-// ================================================================
+/* ================================================================
+   RESPALDO DE EMERGENCIA — Solo si perfil.js no cargó
+=============================================================== */
 (function() {
     'use strict';
 
@@ -2279,7 +2219,6 @@ document.addEventListener('DOMContentLoaded', function() {
                        && typeof window.cambiarTab === 'function';
 
         if (perfilCargo) {
-            console.log('[Perfil Respaldo] ✅ perfil.js cargó bien, sin respaldos.');
             return;
         }
 
@@ -2310,10 +2249,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (input) input.click();
         };
 
-        window.eliminarFotoPerfil = window.eliminarFotoPerfil || function() {
-            if (window.showToast) window.showToast('⚠️ Módulo de perfil no cargó. Recarga con Ctrl+F5.', 'error', 5000);
-        };
-
         window.irAMuro = window.irAMuro || function() {
             window.location.href = '/features/muro/muro.html';
         };
@@ -2323,7 +2258,7 @@ document.addEventListener('DOMContentLoaded', function() {
             'comprarESIM', 'generarQRESIM', 'sincronizarESIM', 'activarESIM',
             'desactivarESIM', 'escanearQR', 'abrirCamaraQR', 'cerrarCamaraQR',
             'cerrarModalPago', 'copiarDireccion', 'verificarPagoCrypto',
-            'subirFoto', 'expandirAvatar', 'expandirFotoPublicacion',
+            'subirFoto', 'eliminarFotoPerfil', 'expandirAvatar',
             'compartirPerfil', 'generarQRPerfil', 'cambiarEstado',
             'cambiarConexion', 'cerrarSesion', 'compartirLogro'
         ];
@@ -2333,7 +2268,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (window.showToast) {
                     window.showToast('⚠️ Módulo de perfil no cargó. Recarga con Ctrl+F5.', 'error', 5000);
                 }
-                console.error('[Perfil Respaldo] Función faltante:', nombre);
             };
         });
 
