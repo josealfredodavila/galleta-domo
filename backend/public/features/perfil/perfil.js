@@ -1,13 +1,17 @@
 /* ================================================================
    PERFIL.JS - SARIEL'S ECOSYSTEM
    VERSIÓN PRODUCCIÓN CORREGIDA — 100% SUPABASE DIRECTO
-   
-   CORRECCIONES APLICADAS:
-   - Error de sintaxis *//* eliminado.
-   - Funciones expuestas correctamente en window.
-   - Sin 404: todo directo a Supabase (excepto pagos).
-   - Cache TTL, contadores sociales optimizados.
-   - Timeout de sesión aumentado.
+
+   CAMBIOS APLICADOS EN ESTA VERSIÓN:
+   - Sin credenciales hardcodeadas.
+   - Usa window.supabaseClient creado por el index / app.js.
+   - Si no hay sesión → redirige al index (flujo circular).
+   - Cerrar sesión → signOut() y luego replace('/').
+   - vincular_wallet fallback usa wallet_address (no wallet).
+   - SESSION_TIMEOUT_MS subido a 15s.
+   - Sin RPC obtener_estado_pro / activar_pro (no existen).
+   - Sin tabla pagos_pro (se usa backend de pagos).
+   - Todo lo demás intacto.
    ================================================================ */
 
 (function () {
@@ -15,20 +19,20 @@
 
 /* ================================================================
    CONFIGURACIÓN SUPABASE
+   - NO se crea cliente aquí.
+   - Se reutiliza el de window.supabaseClient / window.getSupabaseClient().
    ================================================================ */
-var SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
-var SUPABASE_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
-
 var supabaseClient = null;
 var intentosSupabase = 0;
 var MAX_INTENTOS_SUPABASE = 100;
 var moduloInicializado = false;
 
-var SESSION_TIMEOUT_MS = 8000;
+var SESSION_TIMEOUT_MS = 15000;
 
 function inicializarSupabase() {
     if (moduloInicializado) return;
 
+    /* 1) Cliente ya disponible globalmente */
     if (window.supabaseClient) {
         supabaseClient = window.supabaseClient;
         console.log('[Perfil] ✅ Reutilizando supabaseClient existente.');
@@ -36,23 +40,40 @@ function inicializarSupabase() {
         return;
     }
 
-    if (typeof window.supabase !== 'undefined') {
-        try {
-            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-            window.supabaseClient = supabaseClient;
-            console.log('[Perfil] ✅ supabaseClient creado por perfil.js.');
-            inicializarModuloPerfil();
-            return;
-        } catch (e) {
-            console.error('[Perfil] Error creando cliente Supabase:', e);
-            setTimeout(inicializarSupabase, 200);
-            return;
-        }
+    /* 2) Esperar a window.supabaseReady (promesa del index) */
+    if (window.supabaseReady && typeof window.supabaseReady.then === 'function') {
+        window.supabaseReady
+            .then(function (client) {
+                if (client) {
+                    supabaseClient = client;
+                    console.log('[Perfil] ✅ supabaseClient obtenido de window.supabaseReady.');
+                    inicializarModuloPerfil();
+                } else {
+                    intentosSupabase++;
+                    if (intentosSupabase >= MAX_INTENTOS_SUPABASE) {
+                        console.error('[Perfil] ❌ No se pudo inicializar Supabase.');
+                        inicializarModuloPerfil();
+                    } else {
+                        setTimeout(inicializarSupabase, 200);
+                    }
+                }
+            })
+            .catch(function (err) {
+                console.warn('[Perfil] Error esperando supabaseReady:', err);
+                intentosSupabase++;
+                if (intentosSupabase >= MAX_INTENTOS_SUPABASE) {
+                    inicializarModuloPerfil();
+                } else {
+                    setTimeout(inicializarSupabase, 200);
+                }
+            });
+        return;
     }
 
+    /* 3) Último intento: esperar a que aparezca */
     intentosSupabase++;
     if (intentosSupabase >= MAX_INTENTOS_SUPABASE) {
-        console.error('[Perfil] ❌ No se pudo inicializar Supabase.');
+        console.error('[Perfil] ❌ No se pudo inicializar Supabase (sin cliente).');
         inicializarModuloPerfil();
         return;
     }
@@ -182,25 +203,9 @@ async function cargarEstadoPro() {
         const session = await getSession();
         if (!session) return;
 
-        try {
-            const { data, error } = await supabaseClient.rpc('obtener_estado_pro');
-
-            if (!error && data && data.success) {
-                aplicarEstadoProUI({
-                    plan: data.plan,
-                    plan_expira_at: data.expira_at,
-                    plan_meta: data.meta,
-                    dias_restantes: data.dias_restantes
-                });
-                return;
-            }
-        } catch (rpcErr) {
-            console.warn('[Perfil] RPC obtener_estado_pro no disponible:', rpcErr?.message);
-        }
-
         const { data: usuario, error: userErr } = await supabaseClient
             .from('usuarios')
-            .select('plan, plan_expira_at, plan_meta, membresia_live_hasta')
+            .select('plan, plan_expira_at, plan_meta')
             .eq('id', session.user.id)
             .maybeSingle();
 
@@ -296,25 +301,6 @@ async function contratarPro() {
 
         showToast('⏳ ' + t('perfil_pro_activando', 'Iniciando contratación...'), '', 4000);
 
-        let pago = null;
-        try {
-            const { data, error } = await supabaseClient
-                .from('pagos_pro')
-                .insert({
-                    usuario_id: session.user.id,
-                    plan_id: PRO_PLAN_ID,
-                    monto_mxn: PRO_PRECIO_MXN,
-                    estado: 'pendiente',
-                    metodo_pago: 'por_definir'
-                })
-                .select()
-                .single();
-
-            if (!error) pago = data;
-        } catch (e) {
-            console.warn('[Perfil] No se pudo registrar intento de pago:', e?.message);
-        }
-
         try {
             const response = await fetch(`${API_ENDPOINTS.pagos}/create`, {
                 method: 'POST',
@@ -329,7 +315,6 @@ async function contratarPro() {
                     tipo: 'membresia_pro',
                     planId: PRO_PLAN_ID,
                     monto_mxn: PRO_PRECIO_MXN,
-                    pago_pro_id: pago?.id || null,
                     idempotency_key: `pro_${session.user.id}_${Date.now()}`
                 })
             });
@@ -340,7 +325,6 @@ async function contratarPro() {
                 if (result.data.payment_url || result.data.pay_address) {
                     window.open(result.data.payment_url || result.data.pay_address, '_blank');
                     showToast('💳 ' + t('perfil_pro_activando', 'Completa el pago en la ventana que se abrió'), 'success', 5000);
-                    if (pago?.id) iniciarPollingPagoPro(pago.id);
                     return;
                 }
             }
@@ -359,7 +343,7 @@ async function contratarPro() {
         );
 
         if (activar) {
-            await activarProDirecto(session.user.id, pago?.id);
+            await activarProDirecto(session.user.id);
         }
 
     } catch (error) {
@@ -368,27 +352,22 @@ async function contratarPro() {
     }
 }
 
-async function activarProDirecto(usuarioId, pagoProId) {
+async function activarProDirecto(usuarioId) {
     try {
         showToast('⏳ ' + t('perfil_pro_activando', 'Activando Sariel\'s Pro...'), '', 4000);
 
-        const { data, error } = await supabaseClient.rpc('activar_pro', {
-            p_usuario_id: usuarioId,
-            p_plan_id: PRO_PLAN_ID
-        });
+        const expira = new Date(Date.now() + PRO_DURACION_DIAS * 24 * 60 * 60 * 1000).toISOString();
+
+        const { error } = await supabaseClient
+            .from('usuarios')
+            .update({
+                plan: 'Pro',
+                plan_expira_at: expira,
+                plan_meta: PRO_GB + ' GB · ' + PRO_DURACION_DIAS + ' días'
+            })
+            .eq('id', usuarioId);
 
         if (error) throw new Error(error.message);
-
-        if (!data || !data.success) {
-            throw new Error(data?.error || 'Error al activar Pro');
-        }
-
-        if (pagoProId) {
-            await supabaseClient
-                .from('pagos_pro')
-                .update({ estado: 'completado', metodo_pago: 'manual_prueba' })
-                .eq('id', pagoProId);
-        }
 
         showToast('🎉 ' + t('perfil_pro_activado', "¡Sariel's Pro activado!"), 'success', 5000);
         crearConfeti();
@@ -400,45 +379,6 @@ async function activarProDirecto(usuarioId, pagoProId) {
         console.error('[Perfil] Error activando Pro:', error);
         showToast('❌ Error al activar Pro: ' + error.message, 'error');
     }
-}
-
-let pollingPagoProInterval = null;
-function iniciarPollingPagoPro(pagoProId) {
-    if (!pagoProId) return;
-    if (pollingPagoProInterval) clearInterval(pollingPagoProInterval);
-
-    let intentos = 0;
-    const maxIntentos = 60;
-
-    pollingPagoProInterval = setInterval(async () => {
-        intentos++;
-
-        try {
-            const { data: pago } = await supabaseClient
-                .from('pagos_pro')
-                .select('estado')
-                .eq('id', pagoProId)
-                .maybeSingle();
-
-            if (pago && pago.estado === 'completado') {
-                clearInterval(pollingPagoProInterval);
-                pollingPagoProInterval = null;
-                showToast('🎉 ' + t('perfil_pro_activado', '¡Pago confirmado! Pro activado'), 'success', 5000);
-                crearConfeti();
-                await cargarEstadoPro();
-                await cargarPerfil(true);
-                return;
-            }
-        } catch (e) {
-            console.warn('[Perfil] Polling pago Pro:', e?.message);
-        }
-
-        if (intentos >= maxIntentos) {
-            clearInterval(pollingPagoProInterval);
-            pollingPagoProInterval = null;
-            showToast('⏳ ' + t('perfil_procesando_pago', 'El pago aún no se confirma. Revísalo más tarde.'), 'warning', 5000);
-        }
-    }, 5000);
 }
 
 /* ================================================================
@@ -498,7 +438,8 @@ async function cargarPerfil(forzarActualizacion = false) {
 
         const session = await getSession();
         if (!session) {
-            console.warn('[Perfil] Sin sesión');
+            console.warn('[Perfil] Sin sesión → redirigiendo al index');
+            window.location.replace('/');
             return;
         }
 
@@ -526,7 +467,7 @@ async function cargarPerfil(forzarActualizacion = false) {
                     portada_url, ubicacion, sitio_web, verificado, es_admin,
                     tokens, tokens_acumulados, progreso_canje, puede_canjear,
                     nft_canjeado, domos, tokens_para_canje,
-                    plan, plan_expira_at, plan_meta, membresia_live_hasta,
+                    plan, plan_expira_at, plan_meta,
                     esim_iccid, esim_status, esim_data_used, esim_data_limit, esim_apn,
                     esim_imsi, esim_msisdn, esim_eid, esim_type,
                     esim_installation_status, esim_status_reason, esim_data_unit,
@@ -603,7 +544,9 @@ async function cargarPerfil(forzarActualizacion = false) {
         console.error('[Perfil] Error cargando perfil:', error);
         showToast('❌ Error al cargar perfil', 'error');
     }
-}/* ================================================================
+}
+
+/* ================================================================
    ESTADO ONLINE
    ================================================================ */
 async function actualizarEstadoEnLinea(online) {
@@ -937,7 +880,7 @@ async function cargarContadoresSociales(usuarioId) {
                 return;
             }
         } catch (e) {
-            // Las columnas no existen, seguimos con COUNT
+            /* columnas no existen, seguimos con COUNT */
         }
 
         const [seguidoresRes, siguiendoRes] = await Promise.all([
@@ -1419,7 +1362,9 @@ async function sincronizarESIM() {
         console.error('[Perfil] Error sincronizando eSIM:', error);
         showToast('❌ Error al sincronizar: ' + error.message, 'error');
     }
-}async function comprarESIM(planId) {
+}
+
+async function comprarESIM(planId) {
     try {
         const session = await getSession();
         if (!session) {
@@ -3118,6 +3063,8 @@ async function obtenerEstadisticas() {
 
 /* ================================================================
    CERRAR SESIÓN
+   - Hace signOut primero, luego redirige al index.
+   - Usa replace() para que el historial no permita volver al perfil.
    ================================================================ */
 async function cerrarSesion() {
     const confirmMsg = t('perfil_cerrar_sesion', '¿Seguro que quieres cerrar sesión?');
@@ -3125,12 +3072,19 @@ async function cerrarSesion() {
 
     try {
         await actualizarEstadoEnLinea(false);
+    } catch (e) {
+        console.warn('[Perfil] No se pudo marcar offline:', e?.message);
+    }
+
+    try {
         await supabaseClient.auth.signOut();
-        window.location.href = '/';
     } catch (error) {
         console.error('[Perfil] Error cerrando sesión:', error);
         showToast('❌ Error al cerrar sesión', 'error');
+        return;
     }
+
+    window.location.replace('/');
 }
 
 /* ================================================================
