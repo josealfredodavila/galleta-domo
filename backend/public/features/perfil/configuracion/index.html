@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#000000" />
     <title>Configuración · Csariel's</title>
+
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="../../shared/config-layout.css" />
@@ -16,9 +18,11 @@
         html:not(.auth-ready) body {
             visibility: hidden;
         }
+
         html.auth-ready body {
             visibility: visible;
         }
+
         .cfg-error-panel {
             max-width: 480px;
             margin: 80px auto;
@@ -30,17 +34,20 @@
             color: #f0f4f8;
             font-family: 'Inter', sans-serif;
         }
+
         .cfg-error-panel h2 {
             color: #ff3366;
             margin: 0 0 12px;
             font-size: 1.1rem;
         }
+
         .cfg-error-panel p {
             color: #8aa8b8;
             font-size: .85rem;
             line-height: 1.6;
             margin: 0 0 18px;
         }
+
         .cfg-error-panel a {
             display: inline-block;
             padding: 10px 20px;
@@ -53,6 +60,7 @@
         }
     </style>
 </head>
+
 <body class="cfg-page">
 
     <div id="cfgHeaderSlot"></div>
@@ -87,6 +95,7 @@
             <strong>© Csariel's</strong> · Csariel's Ecosystem · WEB3<br>
             Versión de configuración 1.1
         </div>
+
     </main>
 
     <script src="../../shared/config-icons.js"></script>
@@ -110,62 +119,113 @@
 
         const $ = (sel) => document.querySelector(sel);
         const baseConfig = '/features/perfil/configuracion';
+        const AUTH_TIMEOUT_MS = 10000;
 
         let clienteSupabase = null;
 
         // ============================================================
-        // INICIALIZACIÓN CENTRALIZADA DE SUPABASE
-        // Único punto donde se crea window.supabaseClient.
-        // Usa /api/config/public. Sin credenciales hardcodeadas.
+        // INICIALIZACIÓN DE SUPABASE
+        //
+        // /api/config/public
+        //        ↓
+        // supabaseUrl + supabaseAnonKey
+        //        ↓
+        // window.supabaseClient
+        //        ↓
+        // cfgEsperarSupabase()
+        //
+        // SIN credenciales hardcodeadas.
         // ============================================================
         async function inicializarSupabase() {
+
             if (window.supabaseClient) {
-                return window.supabaseClient;
+                clienteSupabase = window.supabaseClient;
+
+                if (typeof window.cfgEsperarSupabase === 'function') {
+                    await window.cfgEsperarSupabase();
+                }
+
+                return clienteSupabase;
             }
 
-            if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+            if (
+                !window.supabase ||
+                typeof window.supabase.createClient !== 'function'
+            ) {
                 throw new Error('Supabase SDK no disponible.');
             }
-
-            let supabaseUrl = null;
-            let supabaseAnonKey = null;
 
             const response = await fetch('/api/config/public', {
                 method: 'GET',
                 credentials: 'same-origin',
                 cache: 'no-store',
-                headers: { 'Accept': 'application/json' }
+                headers: {
+                    'Accept': 'application/json'
+                }
             });
 
             if (!response.ok) {
-                throw new Error('No se pudo obtener /api/config/public (HTTP ' + response.status + ').');
+                throw new Error(
+                    'No se pudo obtener /api/config/public (HTTP ' +
+                    response.status +
+                    ').'
+                );
             }
 
             const config = await response.json();
 
-            supabaseUrl = config && config.supabaseUrl;
-            supabaseAnonKey = config && config.supabaseAnonKey;
+            const supabaseUrl =
+                config && config.supabaseUrl;
 
-            if (!supabaseUrl || !supabaseAnonKey) {
-                throw new Error('Configuración pública de Supabase incompleta.');
+            const supabaseAnonKey =
+                config && config.supabaseAnonKey;
+
+            if (
+                typeof supabaseUrl !== 'string' ||
+                !supabaseUrl.trim()
+            ) {
+                throw new Error(
+                    'supabaseUrl no está disponible en /api/config/public.'
+                );
             }
 
-            const client = window.supabase.createClient(
-                supabaseUrl,
-                supabaseAnonKey,
-                {
-                    auth: {
-                        persistSession: true,
-                        autoRefreshToken: true,
-                        detectSessionInUrl: true
-                    }
-                }
-            );
+            if (
+                typeof supabaseAnonKey !== 'string' ||
+                !supabaseAnonKey.trim()
+            ) {
+                throw new Error(
+                    'supabaseAnonKey no está disponible en /api/config/public.'
+                );
+            }
 
-            window.supabaseClient = client;
-            return client;
+            window.supabaseClient =
+                window.supabase.createClient(
+                    supabaseUrl.trim(),
+                    supabaseAnonKey.trim(),
+                    {
+                        auth: {
+                            persistSession: true,
+                            autoRefreshToken: true,
+                            detectSessionInUrl: true
+                        }
+                    }
+                );
+
+            clienteSupabase =
+                window.supabaseClient;
+
+            if (
+                typeof window.cfgEsperarSupabase === 'function'
+            ) {
+                await window.cfgEsperarSupabase();
+            }
+
+            return clienteSupabase;
         }
 
+        // ============================================================
+        // RUTA INTERNA SEGURA
+        // ============================================================
         function esRutaInternaSegura(valor) {
             if (typeof valor !== 'string') return false;
             if (!valor.startsWith('/')) return false;
@@ -176,359 +236,751 @@
 
         function irAlIndexConReturnTo() {
             try {
-                var returnTo = window.location.pathname + window.location.search + window.location.hash;
+                const returnTo =
+                    window.location.pathname +
+                    window.location.search +
+                    window.location.hash;
+
                 if (esRutaInternaSegura(returnTo)) {
-                    localStorage.setItem('wallet_returnTo', returnTo);
+                    localStorage.setItem(
+                        'wallet_returnTo',
+                        returnTo
+                    );
                 }
-                window.location.replace('/');
             } catch (e) {
-                window.location.replace('/');
+                console.warn(
+                    '[Config] No se pudo guardar returnTo:',
+                    e
+                );
             }
+
+            window.location.replace('/');
         }
 
         function revelarPagina() {
-            document.documentElement.classList.add('auth-ready');
+            document.documentElement.classList.add(
+                'auth-ready'
+            );
         }
 
         function mostrarErrorControlado(mensaje) {
             revelarPagina();
-            const main = document.querySelector('.cfg-content');
-            if (main) {
-                main.innerHTML =
-                    '<div class="cfg-error-panel">' +
-                        '<h2>⚠️ No se pudo cargar la configuración</h2>' +
-                        '<p>' + (mensaje || 'Error de inicialización.') + '</p>' +
-                        '<a href="/">Volver al inicio</a>' +
-                    '</div>';
+
+            const main =
+                document.querySelector('.cfg-content');
+
+            if (!main) return;
+
+            main.innerHTML =
+                '<div class="cfg-error-panel">' +
+                    '<h2>⚠️ No se pudo cargar la configuración</h2>' +
+                    '<p>' +
+                        escapeHtml(
+                            mensaje ||
+                            'Error de inicialización.'
+                        ) +
+                    '</p>' +
+                    '<a href="/">Volver al inicio</a>' +
+                '</div>';
+        }
+
+        function escapeHtml(texto) {
+            if (texto === null || texto === undefined) {
+                return '';
             }
+
+            const div =
+                document.createElement('div');
+
+            div.textContent = String(texto);
+
+            return div.innerHTML;
         }
 
         // ============================================================
-        // GUARD DE AUTENTICACIÓN
+        // GUARDIA DE AUTENTICACIÓN
+        //
+        // Máximo 10 segundos.
+        // Si no termina → /
+        // Si no existe sesión → /
         // ============================================================
         async function guardiaDeAutenticacion() {
-            var salvaguarda = setTimeout(function () {
-                console.warn('[Config] Salvaguarda activada sin confirmación.');
-                mostrarErrorControlado('La verificación de sesión tardó demasiado. Vuelve a intentarlo.');
-            }, 12000);
+
+            let terminado = false;
+
+            const salvaguarda =
+                setTimeout(function () {
+
+                    if (terminado) return;
+
+                    terminado = true;
+
+                    console.warn(
+                        '[Config] Timeout de autenticación → redirigiendo al index.'
+                    );
+
+                    irAlIndexConReturnTo();
+
+                }, AUTH_TIMEOUT_MS);
 
             try {
-                const client = await inicializarSupabase();
 
-                const resultado = await client.auth.getSession();
-                const session = resultado && resultado.data ? resultado.data.session : null;
+                const client =
+                    await inicializarSupabase();
 
+                if (terminado) {
+                    return null;
+                }
+
+                if (!client) {
+                    throw new Error(
+                        'Cliente Supabase no disponible.'
+                    );
+                }
+
+                const resultado =
+                    await client.auth.getSession();
+
+                if (terminado) {
+                    return null;
+                }
+
+                const session =
+                    resultado &&
+                    resultado.data
+                        ? resultado.data.session
+                        : null;
+
+                terminado = true;
                 clearTimeout(salvaguarda);
 
                 if (!session) {
+
                     irAlIndexConReturnTo();
+
                     return null;
                 }
 
                 window.__sarielsAuthenticated = true;
+
                 revelarPagina();
+
                 return client;
 
             } catch (error) {
-                console.error('[Config] Error crítico de inicialización:', error);
+
+                if (terminado) {
+                    return null;
+                }
+
+                terminado = true;
+                clearTimeout(salvaguarda);
+
+                console.error(
+                    '[Config] Error crítico de autenticación:',
+                    error
+                );
+
                 window.__sarielsAuthenticated = false;
                 window.supabaseError = error;
-                clearTimeout(salvaguarda);
-                mostrarErrorControlado(error.message || 'Error desconocido de inicialización.');
+
+                mostrarErrorControlado(
+                    error &&
+                    error.message
+                        ? error.message
+                        : 'No fue posible verificar tu sesión.'
+                );
+
                 return null;
             }
         }
 
-        guardiaDeAutenticacion().then(function (client) {
-            if (!client) return;
-            inicializarUI(client);
-        });
+        // ============================================================
+        // INICIO
+        // ============================================================
+        guardiaDeAutenticacion().then(
+            function (client) {
 
+                if (!client) return;
+
+                inicializarUI(client);
+            }
+        );
+
+        // ============================================================
+        // INTERFAZ
+        // ============================================================
         function inicializarUI(client) {
+
             cfgInitPage({
                 title: 'Configuración',
                 subtitle: '@tu_usuario',
-                backUrl: '/features/perfil/perfil.html',
+                backUrl:
+                    '/features/perfil/perfil.html'
             });
 
+            // ========================================================
+            // TU CUENTA
+            // ========================================================
             $('#seccionCuenta').innerHTML = [
+
                 cfgRenderItem({
                     icon: 'user',
                     title: 'Tu cuenta',
-                    desc: 'Consulta tu información de cuenta y descarga tus datos',
-                    href: baseConfig + '/cuenta.html',
+                    desc:
+                        'Consulta tu información de cuenta y descarga tus datos',
+                    href:
+                        baseConfig + '/cuenta.html'
                 }),
+
                 cfgRenderItem({
                     icon: 'lock',
                     title: 'Cambiar contraseña',
-                    desc: 'Actualiza tu contraseña para mantener tu cuenta segura',
-                    href: '/actualizar-contraseña.html',
+                    desc:
+                        'Actualiza tu contraseña para mantener tu cuenta segura',
+                    href:
+                        '/actualizar-contraseña.html'
                 }),
+
                 cfgRenderItem({
                     icon: 'logout',
                     title: 'Eliminar cuenta',
-                    desc: 'Solicita eliminar tu cuenta permanentemente',
-                    href: '/eliminar-cuenta.html',
-                }),
+                    desc:
+                        'Solicita eliminar tu cuenta permanentemente',
+                    href:
+                        '/eliminar-cuenta.html'
+                })
+
             ].join('');
 
+            // ========================================================
+            // SEGURIDAD
+            // ========================================================
             $('#seccionSeguridad').innerHTML = [
+
                 cfgRenderItem({
                     icon: 'shield',
                     title: 'Seguridad y acceso a la cuenta',
-                    desc: 'Administra la seguridad de tu cuenta y apps conectadas',
-                    href: baseConfig + '/seguridad.html',
+                    desc:
+                        'Administra la seguridad de tu cuenta y apps conectadas',
+                    href:
+                        baseConfig + '/seguridad.html'
                 }),
+
                 cfgRenderItem({
                     icon: 'wallet',
                     title: 'Wallet y Polygon',
-                    desc: 'Administra tu wallet conectada',
-                    href: baseConfig + '/sariels/wallet.html',
-                }),
+                    desc:
+                        'Administra tu wallet conectada',
+                    href:
+                        baseConfig +
+                        '/sariels/wallet.html'
+                })
+
             ].join('');
 
+            // ========================================================
+            // PRIVACIDAD
+            // ========================================================
             $('#seccionPrivacidad').innerHTML = [
+
                 cfgRenderItem({
                     icon: 'users',
                     title: 'Audiencia y etiquetas',
-                    desc: 'Administra qué información permites que vean otras personas',
-                    href: baseConfig + '/privacidad/audiencia.html',
+                    desc:
+                        'Administra qué información permites que vean otras personas',
+                    href:
+                        baseConfig +
+                        '/privacidad/audiencia.html'
                 }),
+
                 cfgRenderItem({
                     icon: 'fileText',
                     title: 'Tus publicaciones',
-                    desc: 'Administra la información asociada a tus publicaciones',
-                    href: baseConfig + '/privacidad/posts.html',
+                    desc:
+                        'Administra la información asociada a tus publicaciones',
+                    href:
+                        baseConfig +
+                        '/privacidad/posts.html'
                 }),
+
                 cfgRenderItem({
                     icon: 'eye',
                     title: 'Contenido que ves',
-                    desc: 'Decide qué ver en Csariel\'s en función de tus preferencias',
-                    href: baseConfig + '/privacidad/contenido.html',
+                    desc:
+                        'Decide qué ver en Csariel\'s en función de tus preferencias',
+                    href:
+                        baseConfig +
+                        '/privacidad/contenido.html'
                 }),
+
                 cfgRenderItem({
                     icon: 'ban',
                     title: 'Silenciar y bloquear',
-                    desc: 'Administra las cuentas, palabras y notificaciones bloqueadas',
-                    href: baseConfig + '/privacidad/silenciar.html',
+                    desc:
+                        'Administra las cuentas, palabras y notificaciones bloqueadas',
+                    href:
+                        baseConfig +
+                        '/privacidad/silenciar.html'
                 }),
+
                 cfgRenderItem({
                     icon: 'messageCircle',
                     title: 'Chats',
-                    desc: 'Administra quiénes pueden enviarte mensajes directos',
-                    href: baseConfig + '/privacidad/chats.html',
+                    desc:
+                        'Administra quiénes pueden enviarte mensajes directos',
+                    href:
+                        baseConfig +
+                        '/privacidad/chats.html'
                 }),
+
                 cfgRenderItem({
                     icon: 'mapPin',
                     title: 'Visibilidad y contactos',
-                    desc: 'Controla tu configuración de visibilidad y contactos importados',
-                    href: baseConfig + '/privacidad/visibilidad.html',
+                    desc:
+                        'Controla tu configuración de visibilidad y contactos importados',
+                    href:
+                        baseConfig +
+                        '/privacidad/visibilidad.html'
                 }),
+
                 cfgRenderItem({
                     icon: 'globe',
                     title: 'Acerca de tu cuenta',
-                    desc: 'Administra la ubicación asociada a tu cuenta',
-                    href: baseConfig + '/privacidad/ubicacion.html',
-                }),
+                    desc:
+                        'Administra la ubicación asociada a tu cuenta',
+                    href:
+                        baseConfig +
+                        '/privacidad/ubicacion.html'
+                })
+
             ].join('');
 
+            // ========================================================
+            // NOTIFICACIONES
+            // ========================================================
             $('#seccionNotificaciones').innerHTML = [
+
                 cfgRenderItem({
                     icon: 'bell',
                     title: 'Preferencias de notificaciones',
-                    desc: 'Elige cómo quieres recibir notificaciones',
-                    href: baseConfig + '/notificaciones.html',
-                }),
+                    desc:
+                        'Elige cómo quieres recibir notificaciones',
+                    href:
+                        baseConfig +
+                        '/notificaciones.html'
+                })
+
             ].join('');
 
+            // ========================================================
+            // ACCESIBILIDAD
+            // ========================================================
             $('#seccionAccesibilidad').innerHTML = [
+
                 cfgRenderItem({
                     icon: 'accessibility',
                     title: 'Accesibilidad',
-                    desc: 'Administra contraste, movimiento y otras opciones',
-                    href: baseConfig + '/accesibilidad/accesibilidad.html',
+                    desc:
+                        'Administra contraste, movimiento y otras opciones',
+                    href:
+                        baseConfig +
+                        '/accesibilidad/accesibilidad.html'
                 }),
+
                 cfgRenderItem({
                     icon: 'brush',
                     title: 'Mostrar',
-                    desc: 'Administra fondo, color y tamaño de fuente',
-                    href: baseConfig + '/accesibilidad/mostrar.html',
+                    desc:
+                        'Administra fondo, color y tamaño de fuente',
+                    href:
+                        baseConfig +
+                        '/accesibilidad/mostrar.html'
                 }),
+
                 cfgRenderItem({
                     icon: 'globe',
                     title: 'Idiomas',
-                    desc: 'Administra qué idiomas se usan para personalizar tu experiencia',
-                    href: baseConfig + '/accesibilidad/idiomas.html',
+                    desc:
+                        'Administra qué idiomas se usan para personalizar tu experiencia',
+                    href:
+                        baseConfig +
+                        '/accesibilidad/idiomas.html'
                 }),
+
                 cfgRenderItem({
                     icon: 'database',
                     title: 'Uso de datos',
-                    desc: 'Establece límites para el uso de datos de tu red',
-                    href: baseConfig + '/accesibilidad/datos.html',
+                    desc:
+                        'Establece límites para el uso de datos de tu red',
+                    href:
+                        baseConfig +
+                        '/accesibilidad/datos.html'
                 }),
+
                 cfgRenderItem({
                     icon: 'navigation',
                     title: 'Navegación',
-                    desc: 'Administra cómo se abren los enlaces',
-                    href: baseConfig + '/accesibilidad/navegacion.html',
-                }),
+                    desc:
+                        'Administra cómo se abren los enlaces',
+                    href:
+                        baseConfig +
+                        '/accesibilidad/navegacion.html'
+                })
+
             ].join('');
 
+            // ========================================================
+            // CSARIEL'S
+            // ========================================================
             $('#seccionSariels').innerHTML = [
+
                 cfgRenderItem({
                     icon: 'owl',
                     title: 'Derechos y Usos',
-                    desc: 'Reglas de convivencia y propiedad intelectual',
-                    href: '/features/terminos/derechos-sariels.html',
+                    desc:
+                        'Reglas de convivencia y propiedad intelectual',
+                    href:
+                        '/features/terminos/derechos-sariels.html'
                 }),
+
                 cfgRenderItem({
                     icon: 'coin',
                     title: 'Es.stoks',
-                    desc: 'Administra tus tokens Es.stoks',
-                    href: baseConfig + '/sariels/estoks.html',
+                    desc:
+                        'Administra tus tokens Es.stoks',
+                    href:
+                        baseConfig +
+                        '/sariels/estoks.html'
                 }),
+
                 cfgRenderItem({
                     icon: 'crown',
                     title: 'Membresía Pro',
-                    desc: 'Administra tu suscripción Csariel\'s Pro',
-                    href: baseConfig + '/sariels/membresia.html',
+                    desc:
+                        'Administra tu suscripción Csariel\'s Pro',
+                    href:
+                        baseConfig +
+                        '/sariels/membresia.html'
                 }),
+
                 cfgRenderItem({
                     icon: 'scooter',
                     title: 'Panel Repartidor',
-                    desc: 'Accede a tu panel de entregas y gestiona tu disponibilidad',
-                    onclick: 'window.irARepartidorConfig()',
-                }),
+                    desc:
+                        'Accede a tu panel de entregas y gestiona tu disponibilidad',
+                    onclick:
+                        'window.irARepartidorConfig()'
+                })
+
             ].join('');
 
+            // ========================================================
+            // RECURSOS
+            // ========================================================
             $('#seccionRecursos').innerHTML = [
+
                 cfgRenderItem({
                     icon: 'info',
                     title: 'Términos y condiciones',
-                    desc: 'Consulta los términos de uso de Csariel\'s',
-                    href: '/terminos',
+                    desc:
+                        'Consulta los términos de uso de Csariel\'s',
+                    href:
+                        '/terminos'
                 }),
+
                 cfgRenderItem({
                     icon: 'shield',
                     title: 'Política de privacidad',
-                    desc: 'Consulta cómo protegemos tus datos',
-                    href: '/privacidad.html',
+                    desc:
+                        'Consulta cómo protegemos tus datos',
+                    href:
+                        '/privacidad.html'
                 }),
+
                 cfgRenderItem({
                     icon: 'fileText',
                     title: 'Cookies',
-                    desc: 'Consulta la política de cookies',
-                    href: '/cookies.html',
+                    desc:
+                        'Consulta la política de cookies',
+                    href:
+                        '/cookies.html'
                 }),
+
                 cfgRenderItem({
                     icon: 'info',
                     title: 'Términos del Live',
-                    desc: 'Consulta los términos de transmisiones en vivo',
-                    href: '/live-terminos.html',
-                }),
+                    desc:
+                        'Consulta los términos de transmisiones en vivo',
+                    href:
+                        '/live-terminos.html'
+                })
+
             ].join('');
 
-            const btnCerrarSesion = document.createElement('button');
+            // ========================================================
+            // SESIÓN
+            // ========================================================
+            const btnCerrarSesion =
+                document.createElement('button');
+
             btnCerrarSesion.type = 'button';
             btnCerrarSesion.className = 'cfg-item';
-            btnCerrarSesion.style.color = 'var(--cfg-danger, #ff3366)';
+            btnCerrarSesion.style.color =
+                'var(--cfg-danger, #ff3366)';
+
             btnCerrarSesion.innerHTML = `
-                <div class="cfg-item-icon" style="color:var(--cfg-danger, #ff3366);">${window.cfgIcon('logout')}</div>
+                <div
+                    class="cfg-item-icon"
+                    style="color:var(--cfg-danger, #ff3366);"
+                >
+                    ${window.cfgIcon('logout')}
+                </div>
+
                 <div class="cfg-item-content">
-                    <div class="cfg-item-title" style="color:var(--cfg-danger, #ff3366);">Cerrar sesión</div>
-                    <p class="cfg-item-desc">Salir de tu cuenta en este dispositivo</p>
+                    <div
+                        class="cfg-item-title"
+                        style="color:var(--cfg-danger, #ff3366);"
+                    >
+                        Cerrar sesión
+                    </div>
+
+                    <p class="cfg-item-desc">
+                        Salir de tu cuenta en este dispositivo
+                    </p>
                 </div>
             `;
-            btnCerrarSesion.onclick = async () => {
-                const ok = await cfgConfirm({
-                    title: '¿Cerrar sesión?',
-                    text: 'Tendrás que volver a iniciar sesión para acceder a tu cuenta.',
-                    confirmText: 'Cerrar sesión',
-                    cancelText: 'Cancelar',
-                    danger: true,
-                });
-                if (!ok) return;
 
-                try {
-                    if (client && client.auth) {
-                        await client.auth.signOut();
+            btnCerrarSesion.onclick =
+                async function () {
+
+                    const ok =
+                        await cfgConfirm({
+                            title:
+                                '¿Cerrar sesión?',
+                            text:
+                                'Tendrás que volver a iniciar sesión para acceder a tu cuenta.',
+                            confirmText:
+                                'Cerrar sesión',
+                            cancelText:
+                                'Cancelar',
+                            danger: true
+                        });
+
+                    if (!ok) return;
+
+                    try {
+
+                        if (
+                            client &&
+                            client.auth
+                        ) {
+                            await client.auth.signOut();
+                        }
+
+                        cfgToast(
+                            'Sesión cerrada',
+                            'success'
+                        );
+
+                        setTimeout(
+                            function () {
+                                window.location.replace('/');
+                            },
+                            800
+                        );
+
+                    } catch (e) {
+
+                        console.error(
+                            'Error cerrando sesión:',
+                            e
+                        );
+
+                        cfgToast(
+                            'Error al cerrar sesión',
+                            'error'
+                        );
                     }
-                    cfgToast('Sesión cerrada', 'success');
-                    setTimeout(() => { window.location.replace('/'); }, 800);
-                } catch (e) {
-                    console.error('Error cerrando sesión:', e);
-                    cfgToast('Error al cerrar sesión', 'error');
-                }
-            };
+                };
 
-            $('#seccionSesion').appendChild(btnCerrarSesion);
+            $('#seccionSesion')
+                .appendChild(
+                    btnCerrarSesion
+                );
 
+            // ========================================================
+            // SUBTÍTULO DEL HEADER
+            // ========================================================
             (async function cargarHandleSubtitulo() {
+
                 try {
-                    const { data } = await client.auth.getSession();
-                    const session = data && data.session;
+
+                    const {
+                        data
+                    } = await client.auth.getSession();
+
+                    const session =
+                        data &&
+                        data.session;
+
                     if (!session) return;
-                    const handle = session.user.email ? session.user.email.split('@')[0] : 'usuario';
-                    const subEl = document.querySelector('.cfg-header-subtitle');
-                    if (subEl) subEl.textContent = '@' + handle;
-                } catch (e) { /* silencioso */ }
+
+                    const handle =
+                        session.user &&
+                        session.user.email
+                            ? session.user.email
+                                .split('@')[0]
+                            : 'usuario';
+
+                    const subEl =
+                        document.querySelector(
+                            '.cfg-header-subtitle'
+                        );
+
+                    if (subEl) {
+                        subEl.textContent =
+                            '@' + handle;
+                    }
+
+                } catch (e) {
+                    console.warn(
+                        '[Config] No se pudo cargar subtítulo:',
+                        e
+                    );
+                }
+
             })();
         }
 
+        // ============================================================
+        // PANEL REPARTIDOR
+        // ============================================================
         async function irARepartidorConfig() {
+
             try {
-                var client = window.supabaseClient;
+
+                let client =
+                    window.supabaseClient;
+
                 if (!client) {
-                    client = await inicializarSupabase();
+                    client =
+                        await inicializarSupabase();
                 }
 
                 if (!client) {
-                    window.location.href = '/features/mercado/repartidor/registro.html';
+
+                    window.location.href =
+                        '/features/mercado/repartidor/registro.html';
+
                     return;
                 }
 
-                const { data } = await client.auth.getSession();
-                const session = data && data.session;
+                const {
+                    data
+                } = await client.auth.getSession();
+
+                const session =
+                    data &&
+                    data.session;
 
                 if (!session) {
-                    localStorage.setItem('wallet_returnTo', '/features/mercado/repartidor/registro.html');
-                    if (typeof cfgToast === 'function') cfgToast('Inicia sesión primero', 'warning');
-                    setTimeout(() => {
-                        window.location.replace('/');
-                    }, 1200);
+
+                    localStorage.setItem(
+                        'wallet_returnTo',
+                        '/features/mercado/repartidor/registro.html'
+                    );
+
+                    if (
+                        typeof cfgToast ===
+                        'function'
+                    ) {
+                        cfgToast(
+                            'Inicia sesión primero',
+                            'warning'
+                        );
+                    }
+
+                    setTimeout(
+                        function () {
+                            window.location.replace('/');
+                        },
+                        1200
+                    );
+
                     return;
                 }
 
-                const result = await client
-                    .from('mercado_repartidores')
-                    .select('estado_verificacion')
-                    .eq('usuario_id', session.user.id)
-                    .maybeSingle();
+                const result =
+                    await client
+                        .from(
+                            'mercado_repartidores'
+                        )
+                        .select(
+                            'estado_verificacion'
+                        )
+                        .eq(
+                            'usuario_id',
+                            session.user.id
+                        )
+                        .maybeSingle();
 
-                if (result.error || !result.data) {
-                    window.location.href = '/features/mercado/repartidor/registro.html';
+                if (
+                    result.error ||
+                    !result.data
+                ) {
+
+                    window.location.href =
+                        '/features/mercado/repartidor/registro.html';
+
                     return;
                 }
 
-                const estado = result.data.estado_verificacion;
+                const estado =
+                    result.data.estado_verificacion;
 
-                if (estado === 'activo') {
-                    window.location.href = '/features/mercado/repartidor/panel.html';
-                } else if (estado === 'rechazado' || estado === 'procesando' || estado === 'revision_manual') {
-                    window.location.href = '/features/mercado/repartidor/estado-verificacion.html';
+                if (
+                    estado === 'activo'
+                ) {
+
+                    window.location.href =
+                        '/features/mercado/repartidor/panel.html';
+
+                } else if (
+                    estado === 'rechazado' ||
+                    estado === 'procesando' ||
+                    estado === 'revision_manual'
+                ) {
+
+                    window.location.href =
+                        '/features/mercado/repartidor/estado-verificacion.html';
+
                 } else {
-                    window.location.href = '/features/mercado/repartidor/registro.html';
+
+                    window.location.href =
+                        '/features/mercado/repartidor/registro.html';
                 }
 
             } catch (e) {
-                console.error('Error redirigiendo a repartidor:', e);
-                window.location.href = '/features/mercado/repartidor/registro.html';
+
+                console.error(
+                    'Error redirigiendo a repartidor:',
+                    e
+                );
+
+                window.location.href =
+                    '/features/mercado/repartidor/registro.html';
             }
         }
 
-        window.irARepartidorConfig = irARepartidorConfig;
-        window.CONFIG_LEGAL = CONFIG_LEGAL;
+        window.irARepartidorConfig =
+            irARepartidorConfig;
+
+        window.CONFIG_LEGAL =
+            CONFIG_LEGAL;
+
     })();
     </script>
+
 </body>
 </html>
