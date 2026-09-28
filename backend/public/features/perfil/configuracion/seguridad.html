@@ -7,9 +7,9 @@
     <title>Seguridad y acceso · Sariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
-    
+
     <link rel="stylesheet" href="../../shared/config-layout.css" />
-    
+
     <style>
         .cfg-badge {
             display: inline-flex;
@@ -24,26 +24,31 @@
             text-transform: uppercase;
             flex-shrink: 0;
         }
+
         .cfg-badge-success {
             background: rgba(0, 214, 143, 0.12);
             color: var(--cfg-success);
             border: 1px solid rgba(0, 214, 143, 0.3);
         }
+
         .cfg-badge-warning {
             background: rgba(247, 212, 74, 0.12);
             color: var(--cfg-warning);
             border: 1px solid rgba(247, 212, 74, 0.3);
         }
+
         .cfg-badge-danger {
             background: rgba(255, 51, 102, 0.12);
             color: var(--cfg-danger);
             border: 1px solid rgba(255, 51, 102, 0.3);
         }
+
         .cfg-badge-info {
             background: rgba(0, 229, 255, 0.12);
             color: var(--cfg-cyan);
             border: 1px solid rgba(0, 229, 255, 0.3);
         }
+
         .cfg-session-item {
             display: flex;
             align-items: center;
@@ -51,17 +56,21 @@
             padding: 14px 16px;
             border-bottom: 1px solid var(--cfg-border);
         }
+
         .cfg-session-item:last-child {
             border-bottom: none;
         }
+
         .cfg-session-icon {
             font-size: 1.6rem;
             flex-shrink: 0;
         }
+
         .cfg-session-info {
             flex: 1;
             min-width: 0;
         }
+
         .cfg-session-title {
             font-size: 0.85rem;
             font-weight: 600;
@@ -72,15 +81,18 @@
             gap: 8px;
             flex-wrap: wrap;
         }
+
         .cfg-session-subtitle {
             font-size: 0.72rem;
             color: var(--cfg-text-muted);
         }
+
         .cfg-session-meta {
             font-size: 0.65rem;
             color: var(--cfg-text-dim);
             margin-top: 4px;
         }
+
         .cfg-session-btn {
             background: rgba(255, 51, 102, 0.1);
             border: 1px solid rgba(255, 51, 102, 0.3);
@@ -92,35 +104,42 @@
             cursor: pointer;
             flex-shrink: 0;
         }
+
         .cfg-session-btn:hover {
             background: rgba(255, 51, 102, 0.2);
         }
+
         .cfg-loading-mini {
             padding: 20px;
             text-align: center;
             color: var(--cfg-text-muted);
             font-size: 0.75rem;
         }
+
         .cfg-empty-mini {
             padding: 30px 20px;
             text-align: center;
             color: var(--cfg-text-muted);
             font-size: 0.75rem;
         }
+
         .cfg-empty-mini .icon {
             font-size: 2rem;
             display: block;
             margin-bottom: 8px;
             opacity: 0.4;
         }
+
         html:not(.auth-ready) body {
             visibility: hidden;
         }
+
         html.auth-ready body {
             visibility: visible;
         }
     </style>
 </head>
+
 <body class="cfg-page">
 
     <div id="cfgHeaderSlot"></div>
@@ -164,17 +183,85 @@
         let sesionesActivas = [];
         let appsConectadas = [];
 
+        // ============================================================
+        // INICIALIZAR SUPABASE
+        // /api/config/public → window.supabaseClient
+        // → cfgEsperarSupabase()
+        // ============================================================
         async function obtenerCliente() {
-            if (clienteSupabase) return clienteSupabase;
+            if (clienteSupabase) {
+                return clienteSupabase;
+            }
+
+            if (window.supabaseClient) {
+                clienteSupabase = window.supabaseClient;
+                return clienteSupabase;
+            }
+
+            if (
+                !window.supabase ||
+                typeof window.supabase.createClient !== 'function'
+            ) {
+                throw new Error('La librería de Supabase no está disponible.');
+            }
+
+            const respuesta = await fetch('/api/config/public', {
+                method: 'GET',
+                credentials: 'same-origin',
+                cache: 'no-store',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (!respuesta.ok) {
+                throw new Error(
+                    'No se pudo cargar la configuración pública de Supabase (' +
+                    respuesta.status +
+                    ').'
+                );
+            }
+
+            const config = await respuesta.json();
+
+            const supabaseUrl = config && config.supabaseUrl;
+            const supabaseAnonKey = config && config.supabaseAnonKey;
+
+            if (
+                typeof supabaseUrl !== 'string' ||
+                !supabaseUrl.trim() ||
+                typeof supabaseAnonKey !== 'string' ||
+                !supabaseAnonKey.trim()
+            ) {
+                throw new Error(
+                    'La configuración pública de Supabase está incompleta.'
+                );
+            }
+
+            window.supabaseClient = window.supabase.createClient(
+                supabaseUrl.trim(),
+                supabaseAnonKey.trim(),
+                {
+                    auth: {
+                        persistSession: true,
+                        autoRefreshToken: true,
+                        detectSessionInUrl: true
+                    }
+                }
+            );
+
+            clienteSupabase = window.supabaseClient;
+
             if (typeof window.cfgEsperarSupabase === 'function') {
-                clienteSupabase = await window.cfgEsperarSupabase();
+                await window.cfgEsperarSupabase();
             }
-            if (!clienteSupabase) {
-                clienteSupabase = window.supabaseClient || null;
-            }
+
             return clienteSupabase;
         }
 
+        // ============================================================
+        // RUTAS
+        // ============================================================
         function esRutaInternaSegura(valor) {
             if (typeof valor !== 'string') return false;
             if (!valor.startsWith('/')) return false;
@@ -185,20 +272,30 @@
 
         function irAlIndexConReturnTo() {
             try {
-                var returnTo = window.location.pathname + window.location.search + window.location.hash;
+                var returnTo =
+                    window.location.pathname +
+                    window.location.search +
+                    window.location.hash;
+
                 if (esRutaInternaSegura(returnTo)) {
                     localStorage.setItem('wallet_returnTo', returnTo);
                 }
+
                 window.location.replace('/');
             } catch (e) {
                 window.location.replace('/');
             }
         }
 
+        // ============================================================
+        // HELPERS
+        // ============================================================
         function escapeHtml(texto) {
             if (!texto) return '';
+
             const div = document.createElement('div');
             div.textContent = texto;
+
             return div.innerHTML;
         }
 
@@ -207,18 +304,26 @@
         // ============================================================
         async function guardiaDeAutenticacion() {
             var salvaguarda = setTimeout(function () {
-                console.warn('[Seguridad] Salvaguarda activada sin confirmación → redirigiendo al index');
+                console.warn(
+                    '[Seguridad] Salvaguarda activada sin confirmación → redirigiendo al index'
+                );
+
                 irAlIndexConReturnTo();
             }, 10000);
 
             try {
                 const client = await obtenerCliente();
+
                 if (!client) {
                     throw new Error('Cliente Supabase no disponible.');
                 }
 
                 const resultado = await client.auth.getSession();
-                const session = resultado && resultado.data ? resultado.data.session : null;
+
+                const session =
+                    resultado && resultado.data
+                        ? resultado.data.session
+                        : null;
 
                 clearTimeout(salvaguarda);
 
@@ -228,19 +333,28 @@
                 }
 
                 sesionActual = session;
+
                 document.documentElement.classList.add('auth-ready');
+
                 return client;
 
             } catch (error) {
-                console.error('[Seguridad] Error crítico de autenticación:', error);
+                console.error(
+                    '[Seguridad] Error crítico de autenticación:',
+                    error
+                );
+
                 clearTimeout(salvaguarda);
+
                 irAlIndexConReturnTo();
+
                 return null;
             }
         }
 
         // ============================================================
         // CARGAR ESTADO 2FA
+        // usuarios_2fa
         // ============================================================
         async function cargar2FA(client) {
             try {
@@ -248,12 +362,21 @@
 
                 const { data, error } = await client
                     .from('usuarios_2fa')
-                    .select('habilitado, metodo, verificado_at')
-                    .eq('usuario_id', sesionActual.user.id)
+                    .select(
+                        'habilitado, metodo, verificado_at'
+                    )
+                    .eq(
+                        'usuario_id',
+                        sesionActual.user.id
+                    )
                     .maybeSingle();
 
                 if (error) {
-                    console.warn('Error leyendo 2FA:', error.message);
+                    console.warn(
+                        'Error leyendo 2FA:',
+                        error.message
+                    );
+
                     estado2FA = null;
                     return;
                 }
@@ -261,13 +384,18 @@
                 estado2FA = data;
 
             } catch (e) {
-                console.warn('Error 2FA:', e.message);
+                console.warn(
+                    'Error 2FA:',
+                    e.message
+                );
+
                 estado2FA = null;
             }
         }
 
         // ============================================================
-        // CARGAR SESIONES ACTIVAS
+        // CARGAR SESIONES
+        // usuarios_sesiones
         // ============================================================
         async function cargarSesiones(client) {
             try {
@@ -275,13 +403,27 @@
 
                 const { data, error } = await client
                     .from('usuarios_sesiones')
-                    .select('id, dispositivo, navegador, ubicacion_aproximada, ultima_actividad')
-                    .eq('usuario_id', sesionActual.user.id)
-                    .order('ultima_actividad', { ascending: false })
+                    .select(
+                        'id, dispositivo, navegador, ubicacion_aproximada, ultima_actividad'
+                    )
+                    .eq(
+                        'usuario_id',
+                        sesionActual.user.id
+                    )
+                    .order(
+                        'ultima_actividad',
+                        {
+                            ascending: false
+                        }
+                    )
                     .limit(10);
 
                 if (error) {
-                    console.warn('Error leyendo sesiones:', error.message);
+                    console.warn(
+                        'Error leyendo sesiones:',
+                        error.message
+                    );
+
                     sesionesActivas = [];
                     return;
                 }
@@ -289,22 +431,34 @@
                 sesionesActivas = data || [];
 
             } catch (e) {
-                console.warn('Error sesiones:', e.message);
+                console.warn(
+                    'Error sesiones:',
+                    e.message
+                );
+
                 sesionesActivas = [];
             }
         }
 
         // ============================================================
         // CARGAR APPS CONECTADAS
+        // listar_mis_apps
         // ============================================================
         async function cargarApps(client) {
             try {
                 if (!client) return;
 
-                const { data, error } = await client.rpc('listar_mis_apps');
+                const { data, error } =
+                    await client.rpc(
+                        'listar_mis_apps'
+                    );
 
                 if (error) {
-                    console.warn('Error RPC listar_mis_apps:', error.message);
+                    console.warn(
+                        'Error RPC listar_mis_apps:',
+                        error.message
+                    );
+
                     appsConectadas = [];
                     return;
                 }
@@ -312,7 +466,11 @@
                 appsConectadas = data || [];
 
             } catch (e) {
-                console.warn('Error apps:', e.message);
+                console.warn(
+                    'Error apps:',
+                    e.message
+                );
+
                 appsConectadas = [];
             }
         }
@@ -321,35 +479,58 @@
         // RENDERIZAR SECCIONES
         // ============================================================
         function renderSecciones() {
-            // ============================================================
-            // AUTENTICACIÓN (2FA)
-            // ============================================================
-            const dobleFactorActivo = estado2FA && estado2FA.habilitado === true;
-            const badge2FA = dobleFactorActivo 
-                ? '<span class="cfg-badge cfg-badge-success">✓ Activo</span>' 
-                : '<span class="cfg-badge cfg-badge-warning">⚠ Inactivo</span>';
+
+            // ========================================================
+            // AUTENTICACIÓN / 2FA
+            // ========================================================
+            const dobleFactorActivo =
+                estado2FA &&
+                estado2FA.habilitado === true;
+
+            const badge2FA =
+                dobleFactorActivo
+                    ? '<span class="cfg-badge cfg-badge-success">✓ Activo</span>'
+                    : '<span class="cfg-badge cfg-badge-warning">⚠ Inactivo</span>';
 
             $('#seccionAuth').innerHTML = `
-                <div class="cfg-item" style="cursor:pointer;" onclick="window.onConfig2FA()">
-                    <div class="cfg-item-icon">${window.cfgIcon('shield')}</div>
+                <div
+                    class="cfg-item"
+                    style="cursor:pointer;"
+                    onclick="window.onConfig2FA()"
+                >
+                    <div class="cfg-item-icon">
+                        ${window.cfgIcon('shield')}
+                    </div>
+
                     <div class="cfg-item-content">
                         <div class="cfg-item-title">
                             Verificación en 2 pasos
-                            <span style="margin-left:8px;">${badge2FA}</span>
+                            <span style="margin-left:8px;">
+                                ${badge2FA}
+                            </span>
                         </div>
+
                         <div class="cfg-item-desc">
-                            ${dobleFactorActivo 
-                                ? 'Tu cuenta está protegida con 2FA. Método: ' + escapeHtml(estado2FA.metodo || 'TOTP')
-                                : 'Añade una capa extra de seguridad a tu cuenta. Recomendamos activarla.'}
+                            ${
+                                dobleFactorActivo
+                                    ? 'Tu cuenta está protegida con 2FA. Método: ' +
+                                      escapeHtml(
+                                          estado2FA.metodo || 'TOTP'
+                                      )
+                                    : 'Añade una capa extra de seguridad a tu cuenta. Recomendamos activarla.'
+                            }
                         </div>
                     </div>
-                    <div class="cfg-item-chevron">›</div>
+
+                    <div class="cfg-item-chevron">
+                        ›
+                    </div>
                 </div>
             `;
 
-            // ============================================================
+            // ========================================================
             // CONTRASEÑA
-            // ============================================================
+            // ========================================================
             $('#seccionPassword').innerHTML = [
                 cfgRenderItem({
                     icon: 'lock',
@@ -359,13 +540,14 @@
                 }),
             ].join('');
 
-            // ============================================================
+            // ========================================================
             // SESIONES ACTIVAS
-            // ============================================================
+            // ========================================================
             const ua = navigator.userAgent;
+
             let dispositivoActual = 'Navegador web';
             let iconoActual = '💻';
-            
+
             if (/Android/i.test(ua)) {
                 dispositivoActual = 'Android';
                 iconoActual = '📱';
@@ -385,282 +567,569 @@
 
             let sesionesHtml = `
                 <div class="cfg-session-item">
-                    <span class="cfg-session-icon">${iconoActual}</span>
+                    <span class="cfg-session-icon">
+                        ${iconoActual}
+                    </span>
+
                     <div class="cfg-session-info">
                         <div class="cfg-session-title">
                             ${escapeHtml(dispositivoActual)}
-                            <span class="cfg-badge cfg-badge-success">Este dispositivo</span>
+
+                            <span class="cfg-badge cfg-badge-success">
+                                Este dispositivo
+                            </span>
                         </div>
-                        <div class="cfg-session-subtitle">Sesión actual activa</div>
-                        <div class="cfg-session-meta">Ahora mismo</div>
+
+                        <div class="cfg-session-subtitle">
+                            Sesión actual activa
+                        </div>
+
+                        <div class="cfg-session-meta">
+                            Ahora mismo
+                        </div>
                     </div>
                 </div>
             `;
 
             sesionesActivas.forEach(s => {
-                const icono = /Android|iPhone|iPad/i.test(s.dispositivo || '') ? '📱' : '💻';
-                const fecha = s.ultima_actividad 
-                    ? new Date(s.ultima_actividad).toLocaleString('es-MX', {
-                        day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
-                    })
-                    : 'Desconocido';
+
+                const icono =
+                    /Android|iPhone|iPad/i.test(
+                        s.dispositivo || ''
+                    )
+                        ? '📱'
+                        : '💻';
+
+                const fecha =
+                    s.ultima_actividad
+                        ? new Date(
+                              s.ultima_actividad
+                          ).toLocaleString(
+                              'es-MX',
+                              {
+                                  day: '2-digit',
+                                  month: 'short',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                              }
+                          )
+                        : 'Desconocido';
 
                 sesionesHtml += `
                     <div class="cfg-session-item">
-                        <span class="cfg-session-icon">${icono}</span>
+                        <span class="cfg-session-icon">
+                            ${icono}
+                        </span>
+
                         <div class="cfg-session-info">
                             <div class="cfg-session-title">
-                                ${escapeHtml(s.dispositivo || 'Dispositivo')}
+                                ${escapeHtml(
+                                    s.dispositivo ||
+                                    'Dispositivo'
+                                )}
                             </div>
-                            <div class="cfg-session-subtitle">${escapeHtml(s.navegador || 'Navegador')}</div>
-                            <div class="cfg-session-meta">${escapeHtml(s.ubicacion_aproximada || 'Ubicación desconocida')} · ${fecha}</div>
+
+                            <div class="cfg-session-subtitle">
+                                ${escapeHtml(
+                                    s.navegador ||
+                                    'Navegador'
+                                )}
+                            </div>
+
+                            <div class="cfg-session-meta">
+                                ${escapeHtml(
+                                    s.ubicacion_aproximada ||
+                                    'Ubicación desconocida'
+                                )}
+                                ·
+                                ${fecha}
+                            </div>
                         </div>
-                        <button class="cfg-session-btn" onclick="window.onCerrarSesion('${s.id}')">Cerrar</button>
+
+                        <button
+                            class="cfg-session-btn"
+                            onclick="window.onCerrarSesion('${escapeHtml(String(s.id))}')"
+                        >
+                            Cerrar
+                        </button>
                     </div>
                 `;
             });
 
-            $('#seccionSesiones').innerHTML = sesionesHtml + [
-                cfgRenderItem({
-                    icon: 'logout',
-                    title: 'Cerrar sesión en todos los demás dispositivos',
-                    desc: 'Se cerrará la sesión en todos los dispositivos excepto este',
-                    onclick: 'window.onCerrarOtrasSesiones()',
-                    class: 'cfg-item-plain',
-                    style: 'color: var(--cfg-warning, #f7d44a);',
-                }),
-            ].join('');
+            $('#seccionSesiones').innerHTML =
+                sesionesHtml +
+                [
+                    cfgRenderItem({
+                        icon: 'logout',
+                        title: 'Cerrar sesión en todos los demás dispositivos',
+                        desc: 'Se cerrará la sesión en todos los dispositivos excepto este',
+                        onclick:
+                            'window.onCerrarOtrasSesiones()',
+                        class: 'cfg-item-plain',
+                        style:
+                            'color: var(--cfg-warning, #f7d44a);',
+                    }),
+                ].join('');
 
-            // ============================================================
+            // ========================================================
             // APPS CONECTADAS
-            // ============================================================
+            // ========================================================
             let appsHtml = '';
 
             if (appsConectadas.length > 0) {
-                appsHtml = appsConectadas.map(app => `
-                    <div class="cfg-session-item">
-                        <span class="cfg-session-icon">${escapeHtml(app.app_icono || '🔗')}</span>
-                        <div class="cfg-session-info">
-                            <div class="cfg-session-title">${escapeHtml(app.app_nombre || 'App')}</div>
-                            <div class="cfg-session-subtitle">${escapeHtml(app.app_descripcion || 'App conectada')}</div>
-                        </div>
-                        <button class="cfg-session-btn" onclick="window.onRevocarApp('${app.id}')">Revocar</button>
-                    </div>
-                `).join('');
+                appsHtml =
+                    appsConectadas
+                        .map(app => `
+                            <div class="cfg-session-item">
+                                <span class="cfg-session-icon">
+                                    ${escapeHtml(
+                                        app.app_icono || '🔗'
+                                    )}
+                                </span>
+
+                                <div class="cfg-session-info">
+                                    <div class="cfg-session-title">
+                                        ${escapeHtml(
+                                            app.app_nombre ||
+                                            'App'
+                                        )}
+                                    </div>
+
+                                    <div class="cfg-session-subtitle">
+                                        ${escapeHtml(
+                                            app.app_descripcion ||
+                                            'App conectada'
+                                        )}
+                                    </div>
+                                </div>
+
+                                <button
+                                    class="cfg-session-btn"
+                                    onclick="window.onRevocarApp('${escapeHtml(String(app.id))}')"
+                                >
+                                    Revocar
+                                </button>
+                            </div>
+                        `)
+                        .join('');
             }
 
-            $('#seccionApps').innerHTML = appsHtml + [
-                cfgRenderItem({
-                    icon: 'wallet',
-                    title: 'Wallet conectada',
-                    desc: 'Consulta qué wallet tienes vinculada',
-                    onclick: 'window.onVerWallet()',
-                }),
-            ].join('');
+            $('#seccionApps').innerHTML =
+                appsHtml +
+                [
+                    cfgRenderItem({
+                        icon: 'wallet',
+                        title: 'Wallet conectada',
+                        desc: 'Consulta qué wallet tienes vinculada',
+                        onclick:
+                            'window.onVerWallet()',
+                    }),
+                ].join('');
         }
 
         // ============================================================
-        // CALLBACKS
+        // CONFIGURAR 2FA
         // ============================================================
         window.onConfig2FA = () => {
-            const activo = estado2FA && estado2FA.habilitado;
+
+            const activo =
+                estado2FA &&
+                estado2FA.habilitado;
 
             if (activo) {
+
                 cfgConfirm({
                     title: '2FA está activo',
                     text: '¿Quieres desactivar la verificación en 2 pasos? Tu cuenta será menos segura.',
                     confirmText: 'Desactivar',
                     cancelText: 'Mantener activo',
                     danger: true,
-                }).then(async (ok) => {
-                    if (!ok) return;
-                    await ejecutarDesactivar2FA();
-                });
+                }).then(
+                    async (ok) => {
+                        if (!ok) return;
+
+                        await ejecutarDesactivar2FA();
+                    }
+                );
+
             } else {
+
                 cfgConfirm({
-                    title: 'Activar verificación en 2 pasos',
+                    title:
+                        'Activar verificación en 2 pasos',
                     text: 'Añadiremos una capa extra de seguridad a tu cuenta. Necesitarás un código de verificación cada vez que inicies sesión.',
-                    confirmText: 'Activar 2FA',
-                    cancelText: 'Cancelar',
+                    confirmText:
+                        'Activar 2FA',
+                    cancelText:
+                        'Cancelar',
                     danger: false,
-                }).then(async (ok) => {
-                    if (!ok) return;
-                    await ejecutarActivar2FA();
-                });
+                }).then(
+                    async (ok) => {
+                        if (!ok) return;
+
+                        await ejecutarActivar2FA();
+                    }
+                );
             }
         };
 
+        // ============================================================
+        // ACTIVAR 2FA
+        // activar_2fa
+        // ============================================================
         async function ejecutarActivar2FA() {
             try {
-                const client = await obtenerCliente();
-                if (!client) throw new Error('Supabase no disponible');
+                const client =
+                    await obtenerCliente();
 
-                cfgToast('⏳ Activando 2FA...', '', 3000);
+                if (!client) {
+                    throw new Error(
+                        'Supabase no disponible'
+                    );
+                }
 
-                const secretKey = 'SARIELS_' + Math.random().toString(36).substring(2, 18).toUpperCase();
+                cfgToast(
+                    '⏳ Activando 2FA...',
+                    '',
+                    3000
+                );
 
-                const { error } = await client.rpc('activar_2fa', {
-                    p_metodo: 'totp',
-                    p_secret: secretKey
-                });
+                const secretKey =
+                    'SARIELS_' +
+                    Math.random()
+                        .toString(36)
+                        .substring(2, 18)
+                        .toUpperCase();
+
+                const { error } =
+                    await client.rpc(
+                        'activar_2fa',
+                        {
+                            p_metodo: 'totp',
+                            p_secret: secretKey
+                        }
+                    );
 
                 if (error) throw error;
 
-                cfgToast('✅ 2FA activado correctamente', 'success');
+                cfgToast(
+                    '✅ 2FA activado correctamente',
+                    'success'
+                );
 
                 await cargar2FA(client);
+
                 renderSecciones();
 
             } catch (e) {
-                console.error('Error activando 2FA:', e);
-                cfgToast('❌ Error: ' + e.message, 'error');
+                console.error(
+                    'Error activando 2FA:',
+                    e
+                );
+
+                cfgToast(
+                    '❌ Error: ' + e.message,
+                    'error'
+                );
             }
         }
 
+        // ============================================================
+        // DESACTIVAR 2FA
+        // desactivar_2fa
+        // ============================================================
         async function ejecutarDesactivar2FA() {
             try {
-                const client = await obtenerCliente();
-                if (!client) throw new Error('Supabase no disponible');
+                const client =
+                    await obtenerCliente();
 
-                cfgToast('⏳ Desactivando 2FA...', '', 3000);
+                if (!client) {
+                    throw new Error(
+                        'Supabase no disponible'
+                    );
+                }
 
-                const { error } = await client.rpc('desactivar_2fa');
+                cfgToast(
+                    '⏳ Desactivando 2FA...',
+                    '',
+                    3000
+                );
+
+                const { error } =
+                    await client.rpc(
+                        'desactivar_2fa'
+                    );
 
                 if (error) throw error;
 
-                cfgToast('🔓 2FA desactivado', 'warning');
+                cfgToast(
+                    '🔓 2FA desactivado',
+                    'warning'
+                );
 
                 await cargar2FA(client);
+
                 renderSecciones();
 
             } catch (e) {
-                console.error('Error desactivando 2FA:', e);
-                cfgToast('❌ Error: ' + e.message, 'error');
+                console.error(
+                    'Error desactivando 2FA:',
+                    e
+                );
+
+                cfgToast(
+                    '❌ Error: ' + e.message,
+                    'error'
+                );
             }
         }
 
-        window.onCerrarSesion = async (sesionId) => {
-            const ok = await cfgConfirm({
-                title: '¿Cerrar esta sesión?',
-                text: 'Se cerrará la sesión en ese dispositivo. Tendrá que volver a iniciar sesión.',
-                confirmText: 'Cerrar sesión',
-                cancelText: 'Cancelar',
-                danger: true,
-            });
+        // ============================================================
+        // CERRAR UNA SESIÓN
+        // ============================================================
+        window.onCerrarSesion =
+            async (sesionId) => {
 
-            if (!ok) return;
+                const ok =
+                    await cfgConfirm({
+                        title:
+                            '¿Cerrar esta sesión?',
+                        text:
+                            'Se cerrará la sesión en ese dispositivo. Tendrá que volver a iniciar sesión.',
+                        confirmText:
+                            'Cerrar sesión',
+                        cancelText:
+                            'Cancelar',
+                        danger: true,
+                    });
 
-            try {
-                const client = await obtenerCliente();
-                if (!client) throw new Error('Supabase no disponible');
+                if (!ok) return;
 
-                const { error } = await client
-                    .from('usuarios_sesiones')
-                    .delete()
-                    .eq('id', sesionId);
+                try {
+                    const client =
+                        await obtenerCliente();
 
-                if (error) throw error;
+                    if (!client) {
+                        throw new Error(
+                            'Supabase no disponible'
+                        );
+                    }
 
-                cfgToast('✅ Sesión cerrada', 'success');
+                    const { error } =
+                        await client
+                            .from(
+                                'usuarios_sesiones'
+                            )
+                            .delete()
+                            .eq(
+                                'id',
+                                sesionId
+                            );
 
-                await cargarSesiones(client);
-                renderSecciones();
+                    if (error) throw error;
 
-            } catch (e) {
-                console.error('Error cerrando sesión:', e);
-                cfgToast('❌ Error: ' + e.message, 'error');
-            }
-        };
+                    cfgToast(
+                        '✅ Sesión cerrada',
+                        'success'
+                    );
 
-        window.onCerrarOtrasSesiones = async () => {
-            const ok = await cfgConfirm({
-                title: '¿Cerrar otras sesiones?',
-                text: 'Se cerrará la sesión en todos los dispositivos excepto en este. Tendrás que volver a iniciar sesión en ellos.',
-                confirmText: 'Cerrar otras sesiones',
-                cancelText: 'Cancelar',
-                danger: true,
-            });
+                    await cargarSesiones(
+                        client
+                    );
 
-            if (!ok) return;
+                    renderSecciones();
 
-            try {
-                const client = await obtenerCliente();
-                if (!client) throw new Error('Supabase no disponible');
-                if (!sesionActual) throw new Error('Sin sesión');
+                } catch (e) {
+                    console.error(
+                        'Error cerrando sesión:',
+                        e
+                    );
 
-                const { error } = await client
-                    .from('usuarios_sesiones')
-                    .delete()
-                    .eq('usuario_id', sesionActual.user.id);
+                    cfgToast(
+                        '❌ Error: ' + e.message,
+                        'error'
+                    );
+                }
+            };
 
-                if (error) throw error;
+        // ============================================================
+        // CERRAR TODAS LAS DEMÁS SESIONES
+        // ============================================================
+        window.onCerrarOtrasSesiones =
+            async () => {
 
-                cfgToast('✅ Todas las sesiones cerradas', 'success');
+                const ok =
+                    await cfgConfirm({
+                        title:
+                            '¿Cerrar otras sesiones?',
+                        text:
+                            'Se cerrará la sesión en todos los dispositivos excepto en este. Tendrás que volver a iniciar sesión en ellos.',
+                        confirmText:
+                            'Cerrar otras sesiones',
+                        cancelText:
+                            'Cancelar',
+                        danger: true,
+                    });
 
-                await cargarSesiones(client);
-                renderSecciones();
+                if (!ok) return;
 
-            } catch (e) {
-                console.error('Error cerrando sesiones:', e);
-                cfgToast('❌ Error: ' + e.message, 'error');
-            }
-        };
+                try {
+                    const client =
+                        await obtenerCliente();
 
-        window.onRevocarApp = async (appId) => {
-            const ok = await cfgConfirm({
-                title: '¿Revocar acceso?',
-                text: 'La app ya no podrá acceder a tu cuenta de Sariel\'s.',
-                confirmText: 'Revocar',
-                cancelText: 'Cancelar',
-                danger: true,
-            });
+                    if (!client) {
+                        throw new Error(
+                            'Supabase no disponible'
+                        );
+                    }
 
-            if (!ok) return;
+                    if (!sesionActual) {
+                        throw new Error(
+                            'Sin sesión'
+                        );
+                    }
 
-            try {
-                const client = await obtenerCliente();
-                if (!client) throw new Error('Supabase no disponible');
+                    const { error } =
+                        await client
+                            .from(
+                                'usuarios_sesiones'
+                            )
+                            .delete()
+                            .eq(
+                                'usuario_id',
+                                sesionActual.user.id
+                            );
 
-                const { error } = await client.rpc('revocar_app', { p_app_id: appId });
+                    if (error) throw error;
 
-                if (error) throw error;
+                    cfgToast(
+                        '✅ Todas las sesiones cerradas',
+                        'success'
+                    );
 
-                cfgToast('🔓 App revocada', 'success');
+                    await cargarSesiones(
+                        client
+                    );
 
-                await cargarApps(client);
-                renderSecciones();
+                    renderSecciones();
 
-            } catch (e) {
-                console.error('Error revocando app:', e);
-                cfgToast('❌ Error: ' + e.message, 'error');
-            }
-        };
+                } catch (e) {
+                    console.error(
+                        'Error cerrando sesiones:',
+                        e
+                    );
 
+                    cfgToast(
+                        '❌ Error: ' + e.message,
+                        'error'
+                    );
+                }
+            };
+
+        // ============================================================
+        // REVOCAR APP
+        // revocar_app
+        // ============================================================
+        window.onRevocarApp =
+            async (appId) => {
+
+                const ok =
+                    await cfgConfirm({
+                        title:
+                            '¿Revocar acceso?',
+                        text:
+                            'La app ya no podrá acceder a tu cuenta de Sariel\'s.',
+                        confirmText:
+                            'Revocar',
+                        cancelText:
+                            'Cancelar',
+                        danger: true,
+                    });
+
+                if (!ok) return;
+
+                try {
+                    const client =
+                        await obtenerCliente();
+
+                    if (!client) {
+                        throw new Error(
+                            'Supabase no disponible'
+                        );
+                    }
+
+                    const { error } =
+                        await client.rpc(
+                            'revocar_app',
+                            {
+                                p_app_id: appId
+                            }
+                        );
+
+                    if (error) throw error;
+
+                    cfgToast(
+                        '🔓 App revocada',
+                        'success'
+                    );
+
+                    await cargarApps(
+                        client
+                    );
+
+                    renderSecciones();
+
+                } catch (e) {
+                    console.error(
+                        'Error revocando app:',
+                        e
+                    );
+
+                    cfgToast(
+                        '❌ Error: ' + e.message,
+                        'error'
+                    );
+                }
+            };
+
+        // ============================================================
+        // WALLET
+        // ============================================================
         window.onVerWallet = () => {
-            window.location.href = '/features/perfil/configuracion/sariels/wallet.html';
+            window.location.href =
+                '/features/perfil/configuracion/sariels/wallet.html';
         };
 
         // ============================================================
-        // INICIALIZAR
+        // INICIALIZAR PÁGINA
         // ============================================================
-        window.addEventListener('DOMContentLoaded', async () => {
-            const client = await guardiaDeAutenticacion();
-            if (!client) return;
+        window.addEventListener(
+            'DOMContentLoaded',
+            async () => {
 
-            cfgInitPage({
-                title: 'Seguridad y acceso a la cuenta',
-                subtitle: 'Protege tu cuenta',
-                backUrl: '/features/perfil/configuracion/index.html',
-            });
+                const client =
+                    await guardiaDeAutenticacion();
 
-            await Promise.all([
-                cargar2FA(client),
-                cargarSesiones(client),
-                cargarApps(client),
-            ]);
+                if (!client) return;
 
-            renderSecciones();
-        });
+                cfgInitPage({
+                    title:
+                        'Seguridad y acceso a la cuenta',
+                    subtitle:
+                        'Protege tu cuenta',
+                    backUrl:
+                        '/features/perfil/configuracion/index.html',
+                });
+
+                await Promise.all([
+                    cargar2FA(client),
+                    cargarSesiones(client),
+                    cargarApps(client),
+                ]);
+
+                renderSecciones();
+            }
+        );
 
     })();
     </script>
