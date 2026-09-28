@@ -14,12 +14,6 @@
     html:not(.auth-ready) .app { display: none !important; }
 </style>
 
-<!-- =========================================================
-     SUPABASE — Configuración centralizada vía backend
-     - La librería se carga una sola vez (arriba).
-     - Este bloque crea window.supabaseClient desde /api/config/public.
-     - Guardián de sesión: si no hay sesión → redirige al index.
-========================================================== -->
 <script>
     (function () {
         'use strict';
@@ -46,7 +40,6 @@
             document.documentElement.classList.add('auth-ready');
         }
 
-        /* Si no hay sesión → guardar returnTo y volver al index */
         function irAlIndexConReturnTo() {
             try {
                 var returnTo = window.location.pathname + window.location.search + window.location.hash;
@@ -61,7 +54,6 @@
             }
         }
 
-        /* Salvaguarda: si en 10s no se confirma, revelar (evita pantalla en blanco) */
         var salvaguarda = setTimeout(function () {
             console.warn('[Perfil Guardián] Salvaguarda activada: revelando página sin confirmar sesión.');
             revelarPagina();
@@ -132,14 +124,12 @@
                     console.log('[Perfil Guardián] ✅ Reutilizando supabaseClient existente.');
                 }
 
-                /* Comprobar sesión */
                 const resultado = await window.supabaseClient.auth.getSession();
                 const session =
                     resultado && resultado.data ? resultado.data.session : null;
 
                 window.__sarielsAuthenticated = !!session;
 
-                /* Guardar returnTo si viene en la URL */
                 const urlParams = new URLSearchParams(window.location.search);
                 const returnTo = urlParams.get('returnTo');
 
@@ -149,12 +139,10 @@
                     } catch (_) {}
                 }
 
-                /* Listener de cambios de sesión */
                 window.supabaseClient.auth.onAuthStateChange(
                     function (_event, sessionActual) {
                         window.__sarielsAuthenticated = !!sessionActual;
 
-                        /* Si cierra sesión → index */
                         if (!sessionActual) {
                             console.log('[Perfil Guardián] Sesión cerrada → redirigiendo al index');
                             window.location.replace('/');
@@ -162,7 +150,6 @@
                     }
                 );
 
-                /* Decidir: revelar o redirigir */
                 clearTimeout(salvaguarda);
 
                 if (!session) {
@@ -243,9 +230,17 @@
     .perfil-header::before { content: ''; position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px; background: linear-gradient(135deg, var(--gold), var(--green-deep), var(--gold)); background-size: 300% 300%; border-radius: var(--radius-xl); z-index: -1; opacity: 0.1; animation: border-flow 6s ease-in-out infinite; }
     @keyframes border-flow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
     .perfil-header .avatar-container { position: relative; flex-shrink: 0; }
-    .perfil-header .avatar { width: 90px; height: 90px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold)); display: flex; align-items: center; justify-content: center; font-size: 2.4rem; font-weight: 700; color: white; overflow: hidden; border: 3px solid var(--gold); box-shadow: 0 0 40px rgba(212, 175, 55, 0.15), 0 0 0 2px var(--line-black); font-family: 'Orbitron', monospace; position: relative; }
+    .perfil-header .avatar { width: 90px; height: 90px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold)); display: flex; align-items: center; justify-content: center; font-size: 2.4rem; font-weight: 700; color: white; overflow: hidden; border: 3px solid var(--gold); box-shadow: 0 0 40px rgba(212, 175, 55, 0.15), 0 0 0 2px var(--line-black); font-family: 'Orbitron', monospace; position: relative; cursor: pointer; }
     .perfil-header .avatar img { width: 100%; height: 100%; object-fit: cover; }
-    .perfil-header .avatar .edit-badge { position: absolute; bottom: 4px; right: 4px; background: var(--gold); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; color: var(--space); border: 2px solid var(--line-black); cursor: pointer; transition: var(--transition); box-shadow: 0 0 20px rgba(212, 175, 55, 0.3); }
+    .perfil-header .avatar .avatar-menu-toggle { position: absolute; bottom: 4px; right: 4px; background: var(--gold); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: var(--space); border: 2px solid var(--line-black); cursor: pointer; transition: var(--transition); box-shadow: 0 0 20px rgba(212, 175, 55, 0.3); font-weight: 700; }
+    .perfil-header .avatar .avatar-menu-toggle:hover { transform: scale(1.1); background: var(--gold-light); }
+    .avatar-menu { display: none; position: absolute; top: 100%; left: 0; margin-top: 8px; background: rgba(5, 8, 15, 0.98); border: 2px solid var(--line-black); border-radius: 12px; padding: 6px; min-width: 170px; z-index: 50; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7), 0 0 0 1px var(--gold); backdrop-filter: blur(12px); }
+    .avatar-menu.show { display: block; animation: fadeIn 0.2s ease-out; }
+    .avatar-menu button { display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 14px; background: transparent; border: none; color: var(--text-secondary); font-size: 0.75rem; font-weight: 600; text-align: left; border-radius: 8px; cursor: pointer; transition: var(--transition); font-family: 'Inter', sans-serif; }
+    .avatar-menu button:hover { background: rgba(212, 175, 55, 0.12); color: var(--gold); }
+    .avatar-menu button.danger { color: var(--danger); }
+    .avatar-menu button.danger:hover { background: rgba(255, 51, 102, 0.12); color: var(--danger); }
+    .avatar-menu .divider { height: 1px; background: rgba(255, 255, 255, 0.08); margin: 4px 0; }
     .perfil-header .info { flex: 1; min-width: 200px; }
     .perfil-header .info .nombre { font-family: 'Orbitron', monospace; font-size: 1.4rem; font-weight: 700; background: linear-gradient(135deg, var(--gold), var(--text-primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .perfil-header .info .nombre .verified { font-size: 0.5rem; background: rgba(212, 175, 55, 0.15); color: var(--gold); padding: 2px 12px; border-radius: 12px; font-family: 'Orbitron', monospace; border: 1px solid var(--line-black-soft); -webkit-text-fill-color: var(--gold); }
@@ -316,13 +311,119 @@
     .publicacion-card .stats { display: flex; gap: 8px; font-size: 0.65rem; color: var(--text-muted); margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line-black-soft); flex-wrap: wrap; }
     .publicacion-card .stats span { cursor: pointer; padding: 3px 8px; border-radius: 14px; transition: var(--transition); display: inline-flex; align-items: center; gap: 4px; font-size: 0.6rem; }
     .publicacion-card .stats span:hover { color: var(--gold); background: rgba(212,175,55,0.05); }
-    .reacciones-bar { display: flex; gap: 4px; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line-black-soft); flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; align-items: center; }
-    .reacciones-bar::-webkit-scrollbar { display: none; }
-    .reacciones-bar .reaccion-btn { background: transparent; border: none; padding: 0; font-size: 1.15rem; line-height: 1; cursor: pointer; transition: var(--transition); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%; position: relative; }
-    .reacciones-bar .reaccion-btn:hover { background: rgba(255,255,255,0.08); transform: scale(1.15); }
-    .reacciones-bar .reaccion-btn.activa { background: rgba(212,175,55,0.15); }
-    .reacciones-bar .reaccion-btn.activa::after { content: ''; position: absolute; inset: 0; border-radius: 50%; border: 1.5px solid var(--gold); }
-    .reacciones-bar .reaccion-btn .count { position: absolute; bottom: -2px; right: -2px; font-size: 0.5rem; color: var(--gold); background: rgba(0,0,0,0.9); border: 1px solid var(--line-black); border-radius: 10px; padding: 0 4px; font-weight: 700; min-width: 14px; text-align: center; line-height: 1.3; }
+
+    /* =====================================================
+       NUEVA BARRA DE REACCIONES — Botón único + dropdown
+    ===================================================== */
+    .reaccion-wrap {
+        position: relative;
+        display: inline-block;
+        margin-top: 6px;
+        padding-top: 6px;
+    }
+    .reaccion-trigger {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(0,0,0,0.35);
+        border: 1.5px solid var(--line-black);
+        border-radius: 20px;
+        padding: 5px 12px;
+        cursor: pointer;
+        transition: var(--transition);
+        font-family: 'Inter', sans-serif;
+        color: var(--text-secondary);
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+    .reaccion-trigger:hover {
+        border-color: var(--gold);
+        background: rgba(212,175,55,0.08);
+        color: var(--gold);
+    }
+    .reaccion-trigger.activa {
+        border-color: var(--gold);
+        background: rgba(212,175,55,0.12);
+        color: var(--gold);
+    }
+    .reaccion-trigger .emoji-actual {
+        font-size: 1.05rem;
+        line-height: 1;
+    }
+    .reaccion-trigger .count {
+        color: var(--text-muted);
+        font-weight: 500;
+        font-size: 0.65rem;
+    }
+    .reaccion-trigger.activa .count {
+        color: var(--gold);
+    }
+    .reaccion-dropdown {
+        display: none;
+        position: absolute;
+        bottom: calc(100% + 6px);
+        left: 0;
+        background: rgba(5, 8, 15, 0.98);
+        border: 1.5px solid var(--line-black);
+        border-radius: 30px;
+        padding: 4px 6px;
+        z-index: 200;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.7), 0 0 0 1px var(--gold);
+        backdrop-filter: blur(12px);
+        white-space: nowrap;
+    }
+    .reaccion-dropdown.show {
+        display: flex;
+        gap: 2px;
+        animation: popIn 0.18s ease-out;
+    }
+    @keyframes popIn {
+        from { opacity: 0; transform: translateY(4px) scale(0.96); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .reaccion-dropdown button {
+        background: transparent;
+        border: none;
+        font-size: 1.4rem;
+        line-height: 1;
+        cursor: pointer;
+        padding: 6px 4px;
+        border-radius: 50%;
+        transition: var(--transition);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 38px;
+        height: 38px;
+        position: relative;
+    }
+    .reaccion-dropdown button:hover {
+        background: rgba(212,175,55,0.15);
+        transform: scale(1.25) translateY(-3px);
+    }
+    .reaccion-dropdown button.activa {
+        background: rgba(212,175,55,0.2);
+        box-shadow: 0 0 0 1.5px var(--gold);
+    }
+    .reaccion-dropdown button .mini-count {
+        position: absolute;
+        bottom: -2px;
+        right: -2px;
+        font-size: 0.5rem;
+        color: var(--gold);
+        background: rgba(0,0,0,0.9);
+        border: 1px solid var(--line-black);
+        border-radius: 8px;
+        padding: 0 3px;
+        font-weight: 700;
+        min-width: 12px;
+        text-align: center;
+        line-height: 1.2;
+    }
+    @media (max-width: 480px) {
+        .reaccion-dropdown button { width: 34px; height: 34px; font-size: 1.2rem; }
+    }
+
     .comentarios-container { display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line-black-soft); }
     .comentarios-container.show { display: block; }
     .comentarios-lista { max-height: 200px; overflow-y: auto; margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px; }
@@ -557,10 +658,19 @@
     <div class="perfil-header" id="perfilHeader">
         <a href="/features/perfil/configuracion/index.html" class="config-btn" title="Configuración">⚙️</a>
         
-        <div class="avatar-container">
-            <div class="avatar" id="perfilAvatar" onclick="expandirAvatar()">
+        <div class="avatar-container" style="position:relative;">
+            <div class="avatar" id="perfilAvatar" onclick="toggleAvatarMenu(event)">
                 ◈
-                <span class="edit-badge" onclick="event.stopPropagation(); abrirSelectorArchivo()" title="Cambiar avatar">✎</span>
+                <span class="avatar-menu-toggle" title="Opciones de foto">✎</span>
+            </div>
+            <div class="avatar-menu" id="avatarMenu" role="menu">
+                <button type="button" onclick="event.stopPropagation(); abrirSelectorArchivo(); cerrarAvatarMenu();">
+                    <span>📷</span> Cambiar foto
+                </button>
+                <div class="divider"></div>
+                <button type="button" class="danger" onclick="event.stopPropagation(); eliminarFotoPerfil(); cerrarAvatarMenu();">
+                    <span>✕</span> Eliminar foto
+                </button>
             </div>
             <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="subirFoto(event)" />
         </div>
@@ -1218,6 +1328,24 @@ async function irARepartidorDesdePerfil() {
 }
 
 // ================================================================
+// MENÚ DEL AVATAR
+// ================================================================
+function toggleAvatarMenu(event) {
+    if (event) event.stopPropagation();
+    var menu = document.getElementById('avatarMenu');
+    if (!menu) return;
+    menu.classList.toggle('show');
+}
+
+function cerrarAvatarMenu() {
+    var menu = document.getElementById('avatarMenu');
+    if (menu) menu.classList.remove('show');
+}
+
+window.toggleAvatarMenu = toggleAvatarMenu;
+window.cerrarAvatarMenu = cerrarAvatarMenu;
+
+// ================================================================
 // INICIALIZACIÓN
 // ================================================================
 document.addEventListener('DOMContentLoaded', function() {
@@ -1233,6 +1361,28 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error inicializando idiomas en perfil:', error);
         }
     }, 800);
+
+    document.addEventListener('click', function(e) {
+        var menu = document.getElementById('avatarMenu');
+        var avatar = document.getElementById('perfilAvatar');
+        if (menu && menu.classList.contains('show')) {
+            if (!menu.contains(e.target) && !avatar.contains(e.target)) {
+                menu.classList.remove('show');
+            }
+        }
+        var picker = document.getElementById('emojiPickerPerfil');
+        if (picker && picker.classList.contains('show')) {
+            if (!picker.contains(e.target) && e.target.id !== 'btnEmojiPerfil') {
+                picker.classList.remove('show');
+            }
+        }
+        var rd = document.querySelectorAll('.reaccion-dropdown.show');
+        rd.forEach(function(dd) {
+            if (!dd.contains(e.target) && !dd.parentElement.contains(e.target)) {
+                dd.classList.remove('show');
+            }
+        });
+    });
 });
 </script>
 
@@ -1303,7 +1453,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (file.size > 10 * 1024 * 1024) { if (window.showToast) window.showToast('❌ Imagen mayor a 10 MB', 'error'); event.target.value = ''; return; }
             if (!file.type.startsWith('image/')) { if (window.showToast) window.showToast('❌ Solo imágenes', 'error'); event.target.value = ''; return; }
         } else if (tipo === 'video') {
-            if (file.size > 100 * 1024 * 1024) { if (window.showToast) window.showToast('❌ Video mayor a 100 MB', 'error'); event.target.value = ''; return; }
+            if (file.size > 50 * 1024 * 1024) { if (window.showToast) window.showToast('❌ Video mayor a 50 MB', 'error'); event.target.value = ''; return; }
             if (!file.type.startsWith('video/')) { if (window.showToast) window.showToast('❌ Solo videos', 'error'); event.target.value = ''; return; }
         }
         archivosSeleccionados[tipo] = file;
@@ -1363,9 +1513,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 var file = archivosSeleccionados.imagen;
                 var ext = file.name.split('.').pop().toLowerCase();
                 var filePath = session.user.id + '/post_' + Date.now() + '.' + ext;
-                var uploadResult = await client.storage.from('posts').upload(filePath, file, { cacheControl: '3600', upsert: false, contentType: file.type });
+                var uploadResult = await client.storage.from('muro-videos').upload(filePath, file, { cacheControl: '3600', upsert: false, contentType: file.type });
                 if (uploadResult.error) throw new Error('Error subiendo imagen: ' + uploadResult.error.message);
-                var urlData = client.storage.from('posts').getPublicUrl(filePath);
+                var urlData = client.storage.from('muro-videos').getPublicUrl(filePath);
                 mediaUrl = urlData.data.publicUrl;
                 mediaType = 'imagen';
             }
@@ -1374,9 +1524,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 var vfile = archivosSeleccionados.video;
                 var vext = vfile.name.split('.').pop().toLowerCase();
                 var vfilePath = session.user.id + '/video_' + Date.now() + '.' + vext;
-                var vuploadResult = await client.storage.from('posts').upload(vfilePath, vfile, { cacheControl: '3600', upsert: false, contentType: vfile.type });
+                var vuploadResult = await client.storage.from('muro-videos').upload(vfilePath, vfile, { cacheControl: '3600', upsert: false, contentType: vfile.type });
                 if (vuploadResult.error) throw new Error('Error subiendo video: ' + vuploadResult.error.message);
-                var vurlData = client.storage.from('posts').getPublicUrl(vfilePath);
+                var vurlData = client.storage.from('muro-videos').getPublicUrl(vfilePath);
                 mediaUrl = vurlData.data.publicUrl;
                 mediaType = 'video';
             }
@@ -1472,19 +1622,40 @@ document.addEventListener('DOMContentLoaded', function() {
                 var fecha = p.created_at ? new Date(p.created_at).toLocaleString() : '';
                 var reaccionUsuario = reaccionesUsuario[p.id] || null;
                 var conteos = conteosReacciones[p.id] || {};
-                var reaccionesHtml = '<div class="reacciones-bar" id="reacciones-' + p.id + '">';
+
+                /* Total de reacciones en la publicación */
+                var totalReacciones = 0;
+                Object.keys(conteos).forEach(function(k) { totalReacciones += (conteos[k] || 0); });
+
+                /* Emoji a mostrar en el trigger: el del usuario o ❤️ por defecto */
+                var emojiMostrado = reaccionUsuario || '❤️';
+
+                /* Construir el dropdown con todos los emojis */
+                var dropdownHtml = '<div class="reaccion-dropdown" id="reaccion-dropdown-' + p.id + '">';
                 EMOJIS_REACCION.forEach(function(emoji) {
                     var count = conteos[emoji] || 0;
-                    var activa = reaccionUsuario === emoji ? ' activa' : '';
-                    reaccionesHtml += '<button class="reaccion-btn' + activa + '" onclick="reaccionarPublicacionPerfil(\'' + p.id + '\', \'' + emoji + '\')" title="Reaccionar ' + emoji + '">' + emoji + (count > 0 ? ' <span class="count">' + count + '</span>' : '') + '</button>';
+                    var activo = reaccionUsuario === emoji ? ' activa' : '';
+                    dropdownHtml += '<button type="button" class="' + activo.trim() + '" onclick="event.stopPropagation(); reaccionarPublicacionPerfil(\'' + p.id + '\', \'' + emoji + '\')" title="Reaccionar ' + emoji + '">' + emoji + (count > 0 ? '<span class="mini-count">' + count + '</span>' : '') + '</button>';
                 });
-                reaccionesHtml += '</div>';
+                dropdownHtml += '</div>';
+
+                /* Trigger */
+                var triggerClass = 'reaccion-trigger' + (reaccionUsuario ? ' activa' : '');
+                var triggerHtml =
+                    '<div class="reaccion-wrap">' +
+                        dropdownHtml +
+                        '<button type="button" class="' + triggerClass + '" onclick="event.stopPropagation(); toggleReaccionDropdown(\'' + p.id + '\')" title="Reaccionar">' +
+                            '<span class="emoji-actual">' + emojiMostrado + '</span>' +
+                            (totalReacciones > 0 ? '<span class="count">' + totalReacciones + '</span>' : '<span class="count">Reaccionar</span>') +
+                        '</button>' +
+                    '</div>';
+
                 card.innerHTML =
                     '<div class="header"><div class="avatar">' + avatarHtml + '</div><div><div class="nombre" data-clave="perfil_mi_publicacion">Mi publicación</div><div class="fecha">' + fecha + '</div></div></div>' +
-                    '<div class="contenido">' + contenidoHtml + '</div>' + reaccionesHtml +
+                    '<div class="contenido">' + contenidoHtml + '</div>' + triggerHtml +
                     '<div class="stats">' +
                         '<span onclick="toggleComentariosPerfil(\'' + p.id + '\')" data-clave="perfil_comentarios">💬 Comentarios</span>' +
-                        '<span onclick="eliminarMiPublicacion(\'' + p.id + '\')" data-clave="perfil_eliminar">🗑️ Eliminar</span>' +
+                        '<span onclick="eliminarMiPublicacion(\'' + p.id + '\')" data-clave="perfil_eliminar">Eliminar</span>' +
                     '</div>' +
                     '<div class="comentarios-container" id="comentarios-container-' + p.id + '">' +
                         '<div class="comentarios-lista" id="comentarios-lista-' + p.id + '"></div>' +
@@ -1503,6 +1674,20 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
+    /* =========================================================
+       NUEVO: toggle del dropdown de reacciones
+    ========================================================= */
+    window.toggleReaccionDropdown = function(postId) {
+        var dd = document.getElementById('reaccion-dropdown-' + postId);
+        if (!dd) return;
+        var esta = dd.classList.contains('show');
+        /* Cerrar todos */
+        document.querySelectorAll('.reaccion-dropdown.show').forEach(function(el) {
+            el.classList.remove('show');
+        });
+        if (!esta) dd.classList.add('show');
+    };
+
     window.reaccionarPublicacionPerfil = async function(postId, emoji) {
         if (!EMOJIS_REACCION.includes(emoji)) return;
         try {
@@ -1511,6 +1696,11 @@ document.addEventListener('DOMContentLoaded', function() {
             var sessionResult = await client.auth.getSession();
             var session = sessionResult.data.session;
             if (!session) { if (window.showToast) window.showToast('⚠️ Inicia sesión', 'error'); return; }
+
+            /* Cerrar dropdown inmediatamente */
+            var dd = document.getElementById('reaccion-dropdown-' + postId);
+            if (dd) dd.classList.remove('show');
+
             var existing = await client.from('publicaciones_reacciones').select('id, tipo').eq('publicacion_id', postId).eq('usuario_id', session.user.id).maybeSingle();
             if (existing.data && existing.data.tipo === emoji) {
                 await client.from('publicaciones_reacciones').delete().eq('id', existing.data.id);
@@ -1545,15 +1735,34 @@ document.addEventListener('DOMContentLoaded', function() {
                 conteos[r.tipo] = (conteos[r.tipo] || 0) + 1;
                 if (r.usuario_id === session.user.id) reaccionUsuario = r.tipo;
             });
-            var barra = document.getElementById('reacciones-' + postId);
-            if (!barra) return;
-            var html = '';
-            EMOJIS_REACCION.forEach(function(emoji) {
-                var count = conteos[emoji] || 0;
-                var activa = reaccionUsuario === emoji ? ' activa' : '';
-                html += '<button class="reaccion-btn' + activa + '" onclick="reaccionarPublicacionPerfil(\'' + postId + '\', \'' + emoji + '\')" title="Reaccionar ' + emoji + '">' + emoji + (count > 0 ? ' <span class="count">' + count + '</span>' : '') + '</button>';
-            });
-            barra.innerHTML = html;
+
+            var wrap = document.querySelector('#reaccion-dropdown-' + postId)?.parentElement;
+            if (!wrap) return;
+
+            var total = 0;
+            Object.keys(conteos).forEach(function(k) { total += conteos[k]; });
+            var emojiMostrado = reaccionUsuario || '❤️';
+
+            /* Reconstruir dropdown */
+            var dd = document.getElementById('reaccion-dropdown-' + postId);
+            if (dd) {
+                var ddHtml = '';
+                EMOJIS_REACCION.forEach(function(emoji) {
+                    var count = conteos[emoji] || 0;
+                    var activo = reaccionUsuario === emoji ? ' activa' : '';
+                    ddHtml += '<button type="button" class="' + activo.trim() + '" onclick="event.stopPropagation(); reaccionarPublicacionPerfil(\'' + postId + '\', \'' + emoji + '\')" title="Reaccionar ' + emoji + '">' + emoji + (count > 0 ? '<span class="mini-count">' + count + '</span>' : '') + '</button>';
+                });
+                dd.innerHTML = ddHtml;
+            }
+
+            /* Reconstruir trigger */
+            var trigger = wrap.querySelector('.reaccion-trigger');
+            if (trigger) {
+                trigger.className = 'reaccion-trigger' + (reaccionUsuario ? ' activa' : '');
+                trigger.innerHTML =
+                    '<span class="emoji-actual">' + emojiMostrado + '</span>' +
+                    (total > 0 ? '<span class="count">' + total + '</span>' : '<span class="count">Reaccionar</span>');
+            }
         } catch(e) {}
     }
 
@@ -1633,12 +1842,34 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             var client = sb();
             if (!client) return;
+
+            /* Antes de borrar la fila, obtenemos la URL del archivo para borrarlo del bucket */
+            try {
+                var pubRes = await client.from('publicaciones').select('media_url, media_type').eq('id', publicacionId).maybeSingle();
+                if (pubRes && pubRes.data && pubRes.data.media_url) {
+                    var mediaUrl = pubRes.data.media_url;
+                    /* Extraer el path relativo del bucket 'muro-videos' */
+                    var marker = '/storage/v1/object/public/muro-videos/';
+                    var idx = mediaUrl.indexOf(marker);
+                    if (idx !== -1) {
+                        var filePath = mediaUrl.substring(idx + marker.length);
+                        /* Quitar query string si la hay */
+                        var qIdx = filePath.indexOf('?');
+                        if (qIdx !== -1) filePath = filePath.substring(0, qIdx);
+                        await client.storage.from('muro-videos').remove([filePath]);
+                    }
+                }
+            } catch (storageErr) {
+                console.warn('[Perfil] No se pudo borrar el archivo del bucket:', storageErr);
+            }
+
             var result = await client.from('publicaciones').delete().eq('id', publicacionId);
             if (result.error) throw new Error(result.error.message);
-            if (window.showToast) window.showToast('🗑️ Publicación eliminada', 'success');
+            if (window.showToast) window.showToast('✅ Publicación eliminada', 'success');
             await cargarMisPublicaciones();
         } catch (error) {
             console.error('Error eliminando:', error);
+            if (window.showToast) window.showToast('❌ Error al eliminar', 'error');
         }
     };
 
@@ -1658,14 +1889,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         intentarCargar();
-        document.addEventListener('click', function(e) {
-            var picker = document.getElementById('emojiPickerPerfil');
-            if (picker && picker.classList.contains('show')) {
-                if (!picker.contains(e.target) && e.target.id !== 'btnEmojiPerfil') {
-                    picker.classList.remove('show');
-                }
-            }
-        });
     });
 })();
 </script>
@@ -1932,11 +2155,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (usuario.avatar_url) {
                     avatarElement.innerHTML =
                         '<img src="' + usuario.avatar_url + '" alt="Avatar">' +
-                        '<span class="edit-badge" onclick="event.stopPropagation(); abrirSelectorArchivo()" title="Cambiar avatar">✎</span>';
+                        '<span class="avatar-menu-toggle" onclick="event.stopPropagation(); toggleAvatarMenu(event)" title="Opciones de foto">✎</span>';
                 } else {
                     avatarElement.innerHTML =
                         '◈' +
-                        '<span class="edit-badge" onclick="event.stopPropagation(); abrirSelectorArchivo()" title="Cambiar avatar">✎</span>';
+                        '<span class="avatar-menu-toggle" onclick="event.stopPropagation(); toggleAvatarMenu(event)" title="Opciones de foto">✎</span>';
                 }
             }
 
@@ -2085,6 +2308,10 @@ document.addEventListener('DOMContentLoaded', function() {
         window.abrirSelectorArchivo = window.abrirSelectorArchivo || function() {
             var input = document.getElementById('fileInput');
             if (input) input.click();
+        };
+
+        window.eliminarFotoPerfil = window.eliminarFotoPerfil || function() {
+            if (window.showToast) window.showToast('⚠️ Módulo de perfil no cargó. Recarga con Ctrl+F5.', 'error', 5000);
         };
 
         window.irAMuro = window.irAMuro || function() {
