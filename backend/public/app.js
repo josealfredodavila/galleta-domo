@@ -1,307 +1,514 @@
 /* ================================================================
-   APP.JS - VERSIÓN PRODUCCIÓN - CORREGIDA Y OPTIMIZADA
-   SISTEMA COMPLETO: Supabase + Autenticación + Tokens + Wallet + Live
+   APP.JS — SARIEL'S ECOSYSTEM
+   PRODUCCIÓN — SUPABASE + AUTH + WALLET + LIVE
+   POLYGON AMOY 80002
    ================================================================ */
 
-// ================================================================
-// CONFIGURACIÓN SUPABASE - CON VALIDACIÓN
-// ================================================================
-const SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+'use strict';
 
-// ✅ VALIDACIÓN: Asegurar que Supabase está disponible
+/* ================================================================
+   SUPABASE
+================================================================ */
+
+const SUPABASE_URL =
+    'https://zultnlogdoajehbswlih.supabase.co';
+
+const SUPABASE_ANON_KEY =
+    'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+
+/*
+ * El CDN de Supabase debe existir antes de este archivo.
+ * Guardamos la referencia a la librería antes de crear el cliente.
+ */
+const SupabaseSDK = window.supabase;
+
 if (
-    typeof window.supabase === 'undefined' ||
-    typeof window.supabase.createClient !== 'function'
+    !SupabaseSDK ||
+    typeof SupabaseSDK.createClient !== 'function'
 ) {
     console.error(
-        '❌ Supabase no está disponible. Verifica la carga de la librería.'
+        '❌ Supabase SDK no disponible.'
     );
-
-    // Fallback mínimo para evitar errores en páginas donde Supabase
-    // todavía no haya cargado.
-    window.supabase = {
-        createClient: () => ({
-            auth: {
-                getSession: async () => ({
-                    data: { session: null },
-                    error: null
-                }),
-                onAuthStateChange: () => ({
-                    data: {
-                        subscription: {
-                            unsubscribe: () => {}
-                        }
-                    }
-                })
-            }
-        })
-    };
 }
 
-// ================================================================
-// CREAR CLIENTE SUPABASE
-// ================================================================
-const supabaseClient = window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_ANON_KEY
-);
+/*
+ * Reutilizar el cliente que index.html ya creó.
+ * Si no existe, crearlo aquí.
+ */
+let supabaseClient = window.supabaseClient;
 
-// ================================================================
-// EXPONER SUPABASE GLOBALMENTE
-// ================================================================
-//
-// IMPORTANTE PARA CONTACTOS:
-// contactos.js busca primero:
-//
-//     window.supabaseClient
-//
-// Por eso se exponen ambas referencias.
-//
-// ================================================================
+if (
+    !supabaseClient &&
+    SupabaseSDK &&
+    typeof SupabaseSDK.createClient === 'function'
+) {
+    supabaseClient = SupabaseSDK.createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY
+    );
+}
+
+if (!supabaseClient) {
+    throw new Error(
+        'No fue posible inicializar Supabase.'
+    );
+}
+
+/*
+ * Cliente oficial compartido por todo el ecosistema.
+ */
 window.supabaseClient = supabaseClient;
+
+/*
+ * Compatibilidad:
+ * Algunas páginas antiguas utilizan window.supabase
+ * como cliente. Lo conservamos como cliente después
+ * de guardar la SDK original en window.SupabaseSDK.
+ */
+window.SupabaseSDK = SupabaseSDK;
 window.supabase = supabaseClient;
 
-// ================================================================
-// VARIABLES GLOBALES
-// ================================================================
+
+/* ================================================================
+   CONFIGURACIÓN WEB3
+================================================================ */
+
+const POLYGON_AMOY_CHAIN_ID = 80002;
+const POLYGON_AMOY_HEX = '0x13882';
+
+const POLYGON_AMOY_PARAMS = {
+    chainId: POLYGON_AMOY_HEX,
+    chainName: 'Polygon Amoy',
+    nativeCurrency: {
+        name: 'POL',
+        symbol: 'POL',
+        decimals: 18
+    },
+    rpcUrls: [
+        'https://rpc-amoy.polygon.technology'
+    ],
+    blockExplorerUrls: [
+        'https://amoy.polygonscan.com'
+    ]
+};
+
+
+/* ================================================================
+   VARIABLES GLOBALES
+================================================================ */
+
 let usuarioActual = null;
 let walletConectada = false;
 let web3 = null;
 let appInstance = null;
 
-// ================================================================
-// ESCAPE HTML - PREVENCIÓN XSS
-// ================================================================
-function escapeHTML(texto) {
-    if (!texto) return '';
 
-    const div = document.createElement('div');
-    div.textContent = texto;
+/* ================================================================
+   HELPERS GLOBALES
+================================================================ */
+
+function escapeHTML(texto) {
+
+    if (
+        texto === null ||
+        texto === undefined
+    ) {
+        return '';
+    }
+
+    const div =
+        document.createElement('div');
+
+    div.textContent = String(texto);
 
     return div.innerHTML;
 }
 
-// ================================================================
-// TOAST - VERSIÓN SEGURA CON FALLBACK
-// ================================================================
-function showToast(msg, type = '') {
+
+/* ================================================================
+   TOAST
+================================================================ */
+
+function showToast(
+    msg,
+    type = ''
+) {
+
     try {
-        let t = document.getElementById('toast');
+
+        let t =
+            document.getElementById('toast');
 
         if (!t) {
-            t = document.createElement('div');
+
+            t =
+                document.createElement('div');
+
             t.id = 'toast';
             t.className = 'toast';
+
             document.body.appendChild(t);
         }
 
-        t.textContent = msg;
-        t.className = 'toast show';
+        t.textContent =
+            String(msg);
+
+        t.className =
+            'toast show';
+
+        t.classList.remove(
+            'error',
+            'warning',
+            'success'
+        );
 
         if (type === 'error') {
             t.classList.add('error');
-        } else if (type === 'warning') {
-            t.classList.add('warning');
-        } else if (type === 'success') {
-            t.classList.add('success');
-        } else {
-            t.classList.remove(
-                'error',
-                'warning',
-                'success'
-            );
         }
 
-        clearTimeout(t._timeout);
+        if (type === 'warning') {
+            t.classList.add('warning');
+        }
 
-        t._timeout = setTimeout(() => {
-            t.classList.remove('show');
-        }, 3500);
+        if (type === 'success') {
+            t.classList.add('success');
+        }
 
-    } catch (e) {
-        console.warn('Toast no disponible:', e);
-        console.log(`[${type || 'info'}] ${msg}`);
+        clearTimeout(
+            t._timeout
+        );
+
+        t._timeout =
+            setTimeout(
+                function () {
+                    t.classList.remove(
+                        'show'
+                    );
+                },
+                3500
+            );
+
+    } catch (error) {
+
+        console.warn(
+            'Toast no disponible:',
+            error
+        );
+
+        console.log(
+            '[' +
+            (type || 'info') +
+            '] ' +
+            msg
+        );
     }
 }
 
-// ================================================================
-// CLASE PRINCIPAL - GALETA DOMO APP
-// ================================================================
+
+/* ================================================================
+   SINCRONIZACIÓN GLOBAL DE USUARIO
+================================================================ */
+
+function establecerUsuario(user) {
+
+    usuarioActual =
+        user || null;
+
+    window.usuarioActual =
+        usuarioActual;
+
+    if (appInstance) {
+        appInstance.usuario =
+            usuarioActual;
+    }
+}
+
+
+/* ================================================================
+   APP PRINCIPAL
+================================================================ */
+
 class GalletaDomoApp {
 
     constructor() {
-        this.supabase = supabaseClient;
-        this.apiUrl = window.location.origin + '/api';
 
-        this.usuario = null;
-        this.wallet = null;
-        this.tokens = 0;
-        this.isOnline = false;
+        this.supabase =
+            supabaseClient;
 
-        this._initialized = false;
-        this._authListener = null;
-        this._intervalos = [];
+        /*
+         * Nunca usar el dominio viejo de Railway.
+         * Las llamadas API son same-origin.
+         */
+        this.apiUrl =
+            '/api';
+
+        this.usuario =
+            null;
+
+        this.wallet =
+            null;
+
+        this.tokens =
+            0;
+
+        this.isOnline =
+            false;
+
+        this._initialized =
+            false;
+
+        this._authListener =
+            null;
+
+        this._intervalos =
+            [];
     }
 
-    // ================================================================
-    // INICIALIZACIÓN
-    // ================================================================
+
+    /* ============================================================
+       INIT
+    ============================================================ */
+
     async init() {
 
-        if (this._initialized) return;
+        if (this._initialized) {
+            return;
+        }
 
-        this._initialized = true;
+        this._initialized =
+            true;
 
-        console.log('◈ Sariel\'s - App inicializada');
-        console.log('🌐 API:', this.apiUrl);
+        console.log(
+            "◈ Sariel's — App inicializada"
+        );
+
+        console.log(
+            '🌐 API:',
+            this.apiUrl
+        );
 
         try {
 
-            // --------------------------------------------------------
-            // VERIFICAR SESIÓN EXISTENTE
-            // --------------------------------------------------------
             const {
-                data: { session },
+                data,
                 error
-            } = await this.supabase.auth.getSession();
+            } =
+                await this.supabase.auth.getSession();
 
-            if (error) throw error;
+            if (error) {
+                throw error;
+            }
+
+            const session =
+                data?.session || null;
 
             if (session) {
 
-                this.usuario = session.user;
-                usuarioActual = session.user;
+                establecerUsuario(
+                    session.user
+                );
 
                 await this.cargarTokens();
-                await this.actualizarOnline(true);
 
-                this.actualizarUIUsuario(session.user);
+                await this.actualizarOnline(
+                    true
+                );
 
-                showToast(
-                    '✅ ¡Bienvenido ' +
-                    escapeHTML(
-                        session.user.user_metadata?.nombre ||
-                        'Usuario'
-                    ) +
-                    '!'
+                this.actualizarUIUsuario(
+                    session.user
+                );
+
+            } else {
+
+                establecerUsuario(null);
+
+                this.actualizarUIUsuario(
+                    null
                 );
             }
 
-            // --------------------------------------------------------
-            // LISTENER DE AUTENTICACIÓN
-            // --------------------------------------------------------
-            this._authListener =
+
+            /* ====================================================
+               AUTH LISTENER
+            ==================================================== */
+
+            const authResult =
                 this.supabase.auth.onAuthStateChange(
-                    async (event, session) => {
+                    (event, session) => {
 
-                        try {
+                        /*
+                         * No hacemos operaciones pesadas directamente
+                         * dentro del callback de Supabase.
+                         */
+                        Promise.resolve()
+                            .then(
+                                async () => {
 
-                            if (
-                                event === 'SIGNED_IN' &&
-                                session
-                            ) {
+                                    try {
 
-                                this.usuario = session.user;
-                                usuarioActual = session.user;
+                                        if (
+                                            session
+                                        ) {
 
-                                await this.cargarTokens();
-                                await this.actualizarOnline(true);
+                                            establecerUsuario(
+                                                session.user
+                                            );
 
-                                this.actualizarUIUsuario(
-                                    session.user
-                                );
+                                        } else {
 
-                                showToast(
-                                    '✅ ¡Bienvenido ' +
-                                    escapeHTML(
-                                        session.user.user_metadata?.nombre ||
-                                        'Usuario'
-                                    ) +
-                                    '!'
-                                );
-                            }
+                                            establecerUsuario(
+                                                null
+                                            );
+                                        }
 
-                            if (event === 'SIGNED_OUT') {
 
-                                await this.actualizarOnline(false);
+                                        if (
+                                            event ===
+                                            'SIGNED_IN' &&
+                                            session
+                                        ) {
 
-                                this.usuario = null;
-                                usuarioActual = null;
-                                this.tokens = 0;
+                                            await this.cargarTokens();
 
-                                this.actualizarUIUsuario(null);
+                                            await this.actualizarOnline(
+                                                true
+                                            );
 
-                                showToast(
-                                    '🔌 Sesión cerrada'
-                                );
-                            }
+                                            this.actualizarUIUsuario(
+                                                session.user
+                                            );
 
-                            if (event === 'TOKEN_REFRESHED') {
+                                            showToast(
+                                                '✅ Sesión iniciada correctamente',
+                                                'success'
+                                            );
 
-                                console.log(
-                                    '🔄 Token refrescado automáticamente'
-                                );
-                            }
+                                        } else if (
+                                            event ===
+                                            'SIGNED_OUT'
+                                        ) {
 
-                        } catch (e) {
+                                            this.isOnline =
+                                                false;
 
-                            console.error(
-                                'Error en onAuthStateChange:',
-                                e
+                                            this.tokens =
+                                                0;
+
+                                            this.wallet =
+                                                null;
+
+                                            localStorage.removeItem(
+                                                'sariels_wallet'
+                                            );
+
+                                            this.actualizarUIUsuario(
+                                                null
+                                            );
+
+                                            this.actualizarUIWallet(
+                                                null
+                                            );
+
+                                        } else if (
+                                            event ===
+                                            'TOKEN_REFRESHED' &&
+                                            session
+                                        ) {
+
+                                            establecerUsuario(
+                                                session.user
+                                            );
+
+                                        }
+
+                                    } catch (error) {
+
+                                        console.error(
+                                            '❌ Error en auth listener:',
+                                            error
+                                        );
+                                    }
+                                }
                             );
-                        }
                     }
                 );
 
-            // --------------------------------------------------------
-            // RECUPERAR WALLET GUARDADA
-            // --------------------------------------------------------
+            this._authListener =
+                authResult?.data?.subscription ||
+                authResult?.subscription ||
+                null;
+
+
+            /* ====================================================
+               WALLET LOCAL
+            ==================================================== */
+
             const walletGuardada =
-                localStorage.getItem('sariels_wallet');
+                localStorage.getItem(
+                    'sariels_wallet'
+                );
 
             if (walletGuardada) {
 
-                this.wallet = walletGuardada;
-                this.actualizarUIWallet(walletGuardada);
+                this.wallet =
+                    walletGuardada;
+
+                walletConectada =
+                    true;
+
+                this.actualizarUIWallet(
+                    walletGuardada
+                );
             }
 
-            // --------------------------------------------------------
-            // CERRAR PÁGINA
-            // --------------------------------------------------------
-            window.addEventListener(
-                'beforeunload',
-                () => {
 
-                    if (this.usuario) {
-                        this.actualizarOnline(false);
-                    }
-                }
-            );
+            /* ====================================================
+               VISIBILIDAD
+            ==================================================== */
 
-            // --------------------------------------------------------
-            // VISIBILIDAD
-            // --------------------------------------------------------
             document.addEventListener(
                 'visibilitychange',
                 () => {
 
                     if (
-                        document.visibilityState === 'visible' &&
-                        this.usuario
+                        document.visibilityState ===
+                        'visible'
                     ) {
 
-                        this.actualizarOnline(true);
+                        if (this.usuario) {
+                            this.actualizarOnline(
+                                true
+                            );
+                        }
 
-                    } else if (
-                        document.visibilityState === 'hidden' &&
-                        this.usuario
-                    ) {
+                    } else {
 
-                        this.actualizarOnline(false);
+                        if (this.usuario) {
+                            this.actualizarOnline(
+                                false
+                            );
+                        }
                     }
                 }
             );
+
+
+            /* ====================================================
+               ANTES DE CERRAR
+            ==================================================== */
+
+            window.addEventListener(
+                'beforeunload',
+                () => {
+
+                    if (this.usuario) {
+                        this.actualizarOnline(
+                            false
+                        );
+                    }
+                }
+            );
+
 
             console.log(
                 '✅ App inicializada correctamente'
@@ -321,54 +528,70 @@ class GalletaDomoApp {
         }
     }
 
-    // ================================================================
-    // DESTRUIR APP
-    // ================================================================
+
+    /* ============================================================
+       DESTROY
+    ============================================================ */
+
     destroy() {
 
         if (
             this._authListener &&
-            this._authListener.unsubscribe
+            typeof this._authListener.unsubscribe ===
+            'function'
         ) {
 
             this._authListener.unsubscribe();
-            this._authListener = null;
+
+            this._authListener =
+                null;
         }
 
         this._intervalos.forEach(
-            interval => clearInterval(interval)
+            function (interval) {
+                clearInterval(interval);
+            }
         );
 
-        this._intervalos = [];
+        this._intervalos =
+            [];
 
-        this._initialized = false;
-
-        console.log(
-            '🧹 App destruida correctamente'
-        );
+        this._initialized =
+            false;
     }
 
-    // ================================================================
-    // SISTEMA DE TOKENS
-    // ================================================================
+
+    /* ============================================================
+       TOKENS
+    ============================================================ */
+
     async cargarTokens() {
 
         try {
 
-            if (!this.usuario) return 0;
+            if (!this.usuario) {
+                return 0;
+            }
 
             const {
                 data,
                 error
-            } = await this.supabase
-                .from('usuarios')
-                .select('tokens')
-                .eq('id', this.usuario.id)
-                .single();
+            } =
+                await this.supabase
+                    .from('usuarios')
+                    .select('tokens')
+                    .eq(
+                        'id',
+                        this.usuario.id
+                    )
+                    .maybeSingle();
 
-            if (error) throw error;
+            if (error) {
+                throw error;
+            }
 
-            this.tokens = data?.tokens || 0;
+            this.tokens =
+                Number(data?.tokens || 0);
 
             return this.tokens;
 
@@ -379,20 +602,30 @@ class GalletaDomoApp {
                 error
             );
 
+            this.tokens =
+                0;
+
             return 0;
         }
     }
 
+
     async obtenerTokens() {
 
-        if (!this.usuario) return 0;
+        if (!this.usuario) {
+            return 0;
+        }
 
         await this.cargarTokens();
 
         return this.tokens;
     }
 
-    async transferirTokens(destinoId, cantidad) {
+
+    async transferirTokens(
+        destinoId,
+        cantidad
+    ) {
 
         try {
 
@@ -406,17 +639,13 @@ class GalletaDomoApp {
                 return false;
             }
 
-            if (this.tokens < cantidad) {
+            cantidad =
+                Number(cantidad);
 
-                showToast(
-                    '⚠️ No tienes suficientes tokens',
-                    'error'
-                );
-
-                return false;
-            }
-
-            if (cantidad <= 0) {
+            if (
+                !Number.isFinite(cantidad) ||
+                cantidad <= 0
+            ) {
 
                 showToast(
                     '⚠️ Cantidad inválida',
@@ -426,21 +655,41 @@ class GalletaDomoApp {
                 return false;
             }
 
+            if (
+                this.tokens <
+                cantidad
+            ) {
+
+                showToast(
+                    '⚠️ No tienes suficientes tokens',
+                    'error'
+                );
+
+                return false;
+            }
+
             const {
-                data,
                 error
-            } = await this.supabase.rpc(
-                'transferir_tokens',
-                {
-                    p_remitente_id: this.usuario.id,
-                    p_destinatario_id: destinoId,
-                    p_cantidad: cantidad
-                }
-            );
+            } =
+                await this.supabase.rpc(
+                    'transferir_tokens',
+                    {
+                        p_remitente_id:
+                            this.usuario.id,
 
-            if (error) throw error;
+                        p_destinatario_id:
+                            destinoId,
 
-            this.tokens -= cantidad;
+                        p_cantidad:
+                            cantidad
+                    }
+                );
+
+            if (error) {
+                throw error;
+            }
+
+            await this.cargarTokens();
 
             showToast(
                 `✅ ${cantidad} Es.stoks transferidos`,
@@ -465,29 +714,44 @@ class GalletaDomoApp {
         }
     }
 
-    // ================================================================
-    // ESTADO ONLINE
-    // ================================================================
-    async actualizarOnline(online) {
+
+    /* ============================================================
+       ESTADO ONLINE
+    ============================================================ */
+
+    async actualizarOnline(
+        online
+    ) {
 
         try {
 
-            if (!this.usuario) return;
+            if (!this.usuario) {
+                return;
+            }
 
             const {
                 error
-            } = await this.supabase
-                .from('usuarios')
-                .update({
-                    online: online,
-                    ultima_conexion:
-                        new Date().toISOString()
-                })
-                .eq('id', this.usuario.id);
+            } =
+                await this.supabase
+                    .from('usuarios')
+                    .update({
+                        online:
+                            Boolean(online),
 
-            if (error) throw error;
+                        ultima_conexion:
+                            new Date().toISOString()
+                    })
+                    .eq(
+                        'id',
+                        this.usuario.id
+                    );
 
-            this.isOnline = online;
+            if (error) {
+                throw error;
+            }
+
+            this.isOnline =
+                Boolean(online);
 
             const estadoEl =
                 document.getElementById(
@@ -500,11 +764,6 @@ class GalletaDomoApp {
                     online
                         ? '🟢 En línea'
                         : '⚪ Desconectado';
-
-                estadoEl.style.color =
-                    online
-                        ? 'var(--success)'
-                        : 'var(--text-muted)';
             }
 
         } catch (error) {
@@ -516,22 +775,31 @@ class GalletaDomoApp {
         }
     }
 
-    async obtenerEstadoOnline(usuarioId) {
+
+    async obtenerEstadoOnline(
+        usuarioId
+    ) {
 
         try {
 
             const {
                 data,
                 error
-            } = await this.supabase
-                .from('usuarios')
-                .select(
-                    'online, ultima_conexion'
-                )
-                .eq('id', usuarioId)
-                .single();
+            } =
+                await this.supabase
+                    .from('usuarios')
+                    .select(
+                        'online, ultima_conexion'
+                    )
+                    .eq(
+                        'id',
+                        usuarioId
+                    )
+                    .maybeSingle();
 
-            if (error) throw error;
+            if (error) {
+                throw error;
+            }
 
             return data;
 
@@ -546,26 +814,33 @@ class GalletaDomoApp {
         }
     }
 
-    // ================================================================
-    // ESTADÍSTICAS DE USUARIO
-    // ================================================================
+
+    /* ============================================================
+       ESTADÍSTICAS
+    ============================================================ */
+
     async obtenerEstadisticas() {
 
         try {
 
-            if (!this.usuario) return null;
+            if (!this.usuario) {
+                return null;
+            }
 
             const {
                 data,
                 error
-            } = await this.supabase
-                .from('estadisticas_usuarios')
-                .select('*')
-                .eq(
-                    'user_id',
-                    this.usuario.id
-                )
-                .single();
+            } =
+                await this.supabase
+                    .from(
+                        'estadisticas_usuarios'
+                    )
+                    .select('*')
+                    .eq(
+                        'user_id',
+                        this.usuario.id
+                    )
+                    .maybeSingle();
 
             if (
                 error &&
@@ -587,11 +862,14 @@ class GalletaDomoApp {
         }
     }
 
+
     async actualizarEstadisticas() {
 
         try {
 
-            if (!this.usuario) return;
+            if (!this.usuario) {
+                return;
+            }
 
             const stats =
                 await this.obtenerEstadisticas();
@@ -599,10 +877,13 @@ class GalletaDomoApp {
             if (stats) {
 
                 await this.supabase
-                    .from('estadisticas_usuarios')
+                    .from(
+                        'estadisticas_usuarios'
+                    )
                     .update({
                         tokens_actuales:
                             this.tokens,
+
                         ultima_actividad:
                             new Date().toISOString()
                     })
@@ -614,12 +895,16 @@ class GalletaDomoApp {
             } else {
 
                 await this.supabase
-                    .from('estadisticas_usuarios')
+                    .from(
+                        'estadisticas_usuarios'
+                    )
                     .insert({
                         user_id:
                             this.usuario.id,
+
                         tokens_actuales:
                             this.tokens,
+
                         ultima_actividad:
                             new Date().toISOString()
                     });
@@ -634,9 +919,11 @@ class GalletaDomoApp {
         }
     }
 
-    // ================================================================
-    // AUTENTICACIÓN CON EMAIL
-    // ================================================================
+
+    /* ============================================================
+       REGISTRO
+    ============================================================ */
+
     async registrarUsuario(
         email,
         password,
@@ -644,6 +931,17 @@ class GalletaDomoApp {
     ) {
 
         try {
+
+            email =
+                String(email || '')
+                    .trim();
+
+            password =
+                String(password || '');
+
+            nombre =
+                String(nombre || '')
+                    .trim();
 
             if (!email || !password) {
 
@@ -668,29 +966,35 @@ class GalletaDomoApp {
             const {
                 data,
                 error
-            } = await this.supabase.auth.signUp({
+            } =
+                await this.supabase.auth.signUp({
 
-                email: email,
+                    email:
+                        email,
 
-                password: password,
+                    password:
+                        password,
 
-                options: {
-                    data: {
-                        nombre:
-                            nombre || 'Explorador',
-                        role: 'user'
+                    options: {
+                        data: {
+                            nombre:
+                                nombre ||
+                                'Explorador',
+
+                            role:
+                                'user'
+                        }
                     }
-                }
-            });
+                });
 
-            if (error) throw error;
+            if (error) {
+                throw error;
+            }
 
             showToast(
-                `✅ Cuenta creada ${
-                    data.session
-                        ? 'y sesión iniciada'
-                        : '. Verifica tu correo'
-                }.`,
+                data?.session
+                    ? '✅ Cuenta creada y sesión iniciada'
+                    : '✅ Cuenta creada. Verifica tu correo.',
                 'success'
             );
 
@@ -704,31 +1008,17 @@ class GalletaDomoApp {
             );
 
             let msg =
-                error.message ||
+                error?.message ||
                 'Error desconocido';
 
             if (
-                msg.includes(
-                    'already registered'
-                )
+                msg
+                    .toLowerCase()
+                    .includes('already registered')
             ) {
 
                 msg =
                     '⚠️ Este correo ya está registrado';
-
-            } else if (
-                msg.includes('password')
-            ) {
-
-                msg =
-                    '⚠️ Contraseña inválida';
-
-            } else if (
-                msg.includes('rate limit')
-            ) {
-
-                msg =
-                    '⏳ Demasiados intentos. Espera unos minutos.';
             }
 
             showToast(
@@ -740,12 +1030,24 @@ class GalletaDomoApp {
         }
     }
 
+
+    /* ============================================================
+       LOGIN
+    ============================================================ */
+
     async iniciarSesion(
         email,
         password
     ) {
 
         try {
+
+            email =
+                String(email || '')
+                    .trim();
+
+            password =
+                String(password || '');
 
             if (!email || !password) {
 
@@ -760,13 +1062,25 @@ class GalletaDomoApp {
             const {
                 data,
                 error
-            } = await this.supabase.auth
-                .signInWithPassword({
-                    email: email,
-                    password: password
-                });
+            } =
+                await this.supabase.auth
+                    .signInWithPassword({
+                        email:
+                            email,
 
-            if (error) throw error;
+                        password:
+                            password
+                    });
+
+            if (error) {
+                throw error;
+            }
+
+            if (data?.user) {
+                establecerUsuario(
+                    data.user
+                );
+            }
 
             showToast(
                 '✅ Sesión iniciada correctamente',
@@ -783,13 +1097,15 @@ class GalletaDomoApp {
             );
 
             let msg =
-                error.message ||
+                error?.message ||
                 'Error desconocido';
 
             if (
-                msg.includes(
-                    'Invalid login credentials'
-                )
+                msg
+                    .toLowerCase()
+                    .includes(
+                        'invalid login credentials'
+                    )
             ) {
 
                 msg =
@@ -805,6 +1121,11 @@ class GalletaDomoApp {
         }
     }
 
+
+    /* ============================================================
+       LOGOUT
+    ============================================================ */
+
     async cerrarSesion() {
 
         if (
@@ -812,28 +1133,55 @@ class GalletaDomoApp {
                 '¿Seguro que quieres cerrar sesión?'
             )
         ) {
-            return;
+            return false;
         }
 
         try {
 
-            await this.actualizarOnline(false);
+            await this.actualizarOnline(
+                false
+            );
 
-            await this.supabase.auth.signOut();
+            const {
+                error
+            } =
+                await this.supabase.auth.signOut();
+
+            if (error) {
+                throw error;
+            }
 
             localStorage.removeItem(
                 'sariels_wallet'
             );
 
-            this.wallet = null;
-            this.usuario = null;
-            usuarioActual = null;
-            this.tokens = 0;
+            this.wallet =
+                null;
+
+            walletConectada =
+                false;
+
+            establecerUsuario(
+                null
+            );
+
+            this.tokens =
+                0;
+
+            this.actualizarUIUsuario(
+                null
+            );
+
+            this.actualizarUIWallet(
+                null
+            );
 
             showToast(
                 '🔌 Sesión cerrada',
                 'success'
             );
+
+            return true;
 
         } catch (error) {
 
@@ -846,15 +1194,25 @@ class GalletaDomoApp {
                 '❌ Error al cerrar sesión',
                 'error'
             );
+
+            return false;
         }
     }
 
-    // ================================================================
-    // RECUPERAR CONTRASEÑA
-    // ================================================================
-    async recuperarContraseña(email) {
+
+    /* ============================================================
+       RECUPERAR CONTRASEÑA
+    ============================================================ */
+
+    async recuperarContraseña(
+        email
+    ) {
 
         try {
+
+            email =
+                String(email || '')
+                    .trim();
 
             if (!email) {
 
@@ -867,22 +1225,24 @@ class GalletaDomoApp {
             }
 
             const {
-                data,
                 error
-            } = await this.supabase.auth
-                .resetPasswordForEmail(
-                    email,
-                    {
-                        redirectTo:
-                            window.location.origin +
-                            '/actualizar-contraseña.html'
-                    }
-                );
+            } =
+                await this.supabase.auth
+                    .resetPasswordForEmail(
+                        email,
+                        {
+                            redirectTo:
+                                window.location.origin +
+                                '/actualizar-contraseña.html'
+                        }
+                    );
 
-            if (error) throw error;
+            if (error) {
+                throw error;
+            }
 
             showToast(
-                '📧 ¡Listo! Te enviamos un enlace a tu correo. Revisa tu bandeja.',
+                '📧 Te enviamos un enlace a tu correo.',
                 'success'
             );
 
@@ -896,13 +1256,14 @@ class GalletaDomoApp {
             );
 
             showToast(
-                '❌ No encontramos ese correo. Verifica que esté bien escrito.',
+                '❌ No se pudo enviar el enlace.',
                 'error'
             );
 
             return false;
         }
     }
+
 
     async actualizarContraseña(
         nuevaContraseña
@@ -924,18 +1285,20 @@ class GalletaDomoApp {
             }
 
             const {
-                data,
                 error
-            } = await this.supabase.auth
-                .updateUser({
-                    password:
-                        nuevaContraseña
-                });
+            } =
+                await this.supabase.auth
+                    .updateUser({
+                        password:
+                            nuevaContraseña
+                    });
 
-            if (error) throw error;
+            if (error) {
+                throw error;
+            }
 
             showToast(
-                '✅ ¡Contraseña actualizada! Ahora inicia sesión con la nueva.',
+                '✅ Contraseña actualizada correctamente.',
                 'success'
             );
 
@@ -949,7 +1312,7 @@ class GalletaDomoApp {
             );
 
             showToast(
-                '❌ Error al actualizar. Intenta de nuevo.',
+                '❌ Error al actualizar la contraseña.',
                 'error'
             );
 
@@ -957,86 +1320,11 @@ class GalletaDomoApp {
         }
     }
 
-    // ================================================================
-    // RECUPERAR CON WALLET
-    // ================================================================
-    async recuperarConWallet() {
 
-        try {
+    /* ============================================================
+       WALLET — POLYGON AMOY
+    ============================================================ */
 
-            if (
-                typeof window.ethereum ===
-                'undefined'
-            ) {
-
-                showToast(
-                    '⚠️ Conecta MetaMask primero',
-                    'error'
-                );
-
-                return;
-            }
-
-            const accounts =
-                await window.ethereum.request({
-                    method:
-                        'eth_requestAccounts'
-                });
-
-            if (
-                !accounts ||
-                accounts.length === 0
-            ) {
-                return;
-            }
-
-            const wallet =
-                accounts[0];
-
-            const {
-                data,
-                error
-            } = await this.supabase
-                .from('usuarios')
-                .select('email')
-                .eq(
-                    'wallet',
-                    wallet
-                )
-                .single();
-
-            if (error || !data) {
-
-                showToast(
-                    '⚠️ No hay cuenta asociada a esta wallet',
-                    'error'
-                );
-
-                return;
-            }
-
-            await this.recuperarContraseña(
-                data.email
-            );
-
-        } catch (error) {
-
-            console.error(
-                'Error recuperando con wallet:',
-                error
-            );
-
-            showToast(
-                '❌ Error: ' +
-                error.message,
-                'error'
-            );
-        }
-    }
-
-    // ================================================================
-    // WALLET METAMASK
-    // ================================================================
     async conectarWallet() {
 
         if (
@@ -1045,52 +1333,44 @@ class GalletaDomoApp {
         ) {
 
             showToast(
-                '⚠️ Instala MetaMask para continuar',
+                '⚠️ Abre Sariel\'s desde MetaMask o usa WalletConnect.',
                 'warning'
             );
 
-            if (
-                confirm(
-                    '¿Quieres ir a descargar MetaMask?'
-                )
-            ) {
-
-                window.open(
-                    'https://metamask.io/download/',
-                    '_blank'
-                );
-            }
-
-            return;
+            return false;
         }
 
         try {
 
+            /*
+             * Solicitar cuenta.
+             */
+            const accounts =
+                await window.ethereum.request({
+                    method:
+                        'eth_requestAccounts'
+                });
+
             if (
-                typeof Web3 ===
-                'undefined'
+                !accounts ||
+                !accounts.length
             ) {
-
-                showToast(
-                    '⚠️ Web3 no está cargado. Recarga la página.',
-                    'error'
-                );
-
-                return;
+                return false;
             }
 
-            web3 =
-                new Web3(
-                    window.ethereum
-                );
-
-            const chainId =
+            /*
+             * Cambiar a Polygon Amoy.
+             */
+            let chainId =
                 await window.ethereum.request({
                     method:
                         'eth_chainId'
                 });
 
-            if (chainId !== '0x89') {
+            if (
+                String(chainId).toLowerCase() !==
+                POLYGON_AMOY_HEX
+            ) {
 
                 try {
 
@@ -1101,58 +1381,113 @@ class GalletaDomoApp {
                         params: [
                             {
                                 chainId:
-                                    '0x89'
+                                    POLYGON_AMOY_HEX
                             }
                         ]
                     });
 
-                } catch (e) {
+                } catch (switchError) {
 
-                    showToast(
-                        '⚠️ Cambia a Polygon Mainnet',
-                        'warning'
-                    );
+                    /*
+                     * 4902 = red no agregada.
+                     */
+                    if (
+                        switchError &&
+                        switchError.code ===
+                        4902
+                    ) {
+
+                        await window.ethereum.request({
+                            method:
+                                'wallet_addEthereumChain',
+
+                            params: [
+                                POLYGON_AMOY_PARAMS
+                            ]
+                        });
+
+                    } else {
+
+                        showToast(
+                            '⚠️ Cambia MetaMask a Polygon Amoy.',
+                            'warning'
+                        );
+
+                        return false;
+                    }
                 }
-            }
 
-            const accounts =
-                await window.ethereum.request({
-                    method:
-                        'eth_requestAccounts'
-                });
+                chainId =
+                    await window.ethereum.request({
+                        method:
+                            'eth_chainId'
+                    });
+            }
 
             if (
-                accounts &&
-                accounts.length > 0
+                String(chainId).toLowerCase() !==
+                POLYGON_AMOY_HEX
             ) {
 
-                this.wallet =
-                    accounts[0];
-
-                localStorage.setItem(
-                    'sariels_wallet',
-                    accounts[0]
-                );
-
-                this.actualizarUIWallet(
-                    accounts[0]
-                );
-
                 showToast(
-                    '✅ Wallet conectada: ' +
-                    accounts[0].slice(0, 6) +
-                    '...' +
-                    accounts[0].slice(-4),
-                    'success'
+                    '⚠️ La wallet debe estar en Polygon Amoy.',
+                    'warning'
                 );
 
-                if (this.usuario) {
-
-                    await this.vincularWallet(
-                        accounts[0]
-                    );
-                }
+                return false;
             }
+
+
+            /*
+             * Web3 opcional.
+             */
+            if (
+                typeof Web3 !==
+                'undefined'
+            ) {
+
+                web3 =
+                    new Web3(
+                        window.ethereum
+                    );
+            }
+
+
+            const wallet =
+                accounts[0];
+
+            this.wallet =
+                wallet;
+
+            walletConectada =
+                true;
+
+            localStorage.setItem(
+                'sariels_wallet',
+                wallet
+            );
+
+            this.actualizarUIWallet(
+                wallet
+            );
+
+            showToast(
+                '✅ Wallet conectada en Polygon Amoy: ' +
+                wallet.slice(0, 6) +
+                '...' +
+                wallet.slice(-4),
+                'success'
+            );
+
+
+            if (this.usuario) {
+
+                await this.vincularWallet(
+                    wallet
+                );
+            }
+
+            return true;
 
         } catch (error) {
 
@@ -1161,23 +1496,28 @@ class GalletaDomoApp {
                 error
             );
 
-            if (error.code === 4001) {
+            if (
+                error &&
+                error.code === 4001
+            ) {
 
                 showToast(
-                    '⚠️ Usuario rechazó la conexión',
+                    '⚠️ Conexión cancelada',
                     'warning'
                 );
 
             } else {
 
                 showToast(
-                    '❌ Error al conectar wallet: ' +
-                    error.message,
+                    '❌ Error al conectar wallet',
                     'error'
                 );
             }
+
+            return false;
         }
     }
+
 
     async vincularWallet(
         walletAddress
@@ -1185,20 +1525,29 @@ class GalletaDomoApp {
 
         try {
 
+            if (!this.usuario) {
+                return false;
+            }
+
             const {
                 error
-            } = await this.supabase
-                .from('usuarios')
-                .update({
-                    wallet:
-                        walletAddress
-                })
-                .eq(
-                    'id',
-                    this.usuario.id
-                );
+            } =
+                await this.supabase
+                    .from('usuarios')
+                    .update({
+                        wallet:
+                            walletAddress
+                    })
+                    .eq(
+                        'id',
+                        this.usuario.id
+                    );
 
-            if (error) throw error;
+            if (error) {
+                throw error;
+            }
+
+            return true;
 
         } catch (error) {
 
@@ -1206,8 +1555,11 @@ class GalletaDomoApp {
                 'Error vinculando wallet:',
                 error
             );
+
+            return false;
         }
     }
+
 
     async desconectarWallet() {
 
@@ -1216,45 +1568,42 @@ class GalletaDomoApp {
                 '¿Seguro que quieres desconectar tu wallet?'
             )
         ) {
-            return;
+            return false;
         }
 
-        try {
+        localStorage.removeItem(
+            'sariels_wallet'
+        );
 
-            localStorage.removeItem(
-                'sariels_wallet'
-            );
+        this.wallet =
+            null;
 
-            this.wallet = null;
-            web3 = null;
+        walletConectada =
+            false;
 
-            this.actualizarUIWallet(
-                null
-            );
+        web3 =
+            null;
 
-            showToast(
-                '🔌 Wallet desconectada',
-                'warning'
-            );
+        this.actualizarUIWallet(
+            null
+        );
 
-        } catch (error) {
+        showToast(
+            '🔌 Wallet desconectada',
+            'warning'
+        );
 
-            console.error(
-                'Error desconectando wallet:',
-                error
-            );
-
-            showToast(
-                '❌ Error al desconectar wallet',
-                'error'
-            );
-        }
+        return true;
     }
 
-    // ================================================================
-    // TRANSMISIONES
-    // ================================================================
-    async crearTransmision(datos) {
+
+    /* ============================================================
+       TRANSMISIONES
+    ============================================================ */
+
+    async crearTransmision(
+        datos
+    ) {
 
         try {
 
@@ -1269,6 +1618,7 @@ class GalletaDomoApp {
             }
 
             if (
+                !datos ||
                 !datos.titulo ||
                 datos.titulo.length < 3
             ) {
@@ -1284,44 +1634,48 @@ class GalletaDomoApp {
             const {
                 data,
                 error
-            } = await this.supabase
-                .from('transmisiones')
-                .insert({
-                    streamer_id:
-                        this.usuario.id,
+            } =
+                await this.supabase
+                    .from('transmisiones')
+                    .insert({
+                        streamer_id:
+                            this.usuario.id,
 
-                    titulo:
-                        datos.titulo,
+                        titulo:
+                            datos.titulo,
 
-                    descripcion:
-                        datos.descripcion ||
-                        '',
+                        descripcion:
+                            datos.descripcion ||
+                            '',
 
-                    tags:
-                        datos.tags ||
-                        [],
+                        tags:
+                            datos.tags ||
+                            [],
 
-                    tipo_transmision:
-                        datos.tipo ||
-                        'pago',
+                        tipo_transmision:
+                            datos.tipo ||
+                            'pago',
 
-                    precio:
-                        datos.precio ||
-                        0,
+                        precio:
+                            datos.precio ||
+                            0,
 
-                    precio_suscripcion:
-                        datos.precioSuscripcion ||
-                        0,
+                        precio_suscripcion:
+                            datos.precioSuscripcion ||
+                            0,
 
-                    fecha_inicio:
-                        new Date().toISOString(),
+                        fecha_inicio:
+                            new Date().toISOString(),
 
-                    estado:
-                        'en_vivo'
-                })
-                .select();
+                        estado:
+                            'en_vivo'
+                    })
+                    .select()
+                    .single();
 
-            if (error) throw error;
+            if (error) {
+                throw error;
+            }
 
             showToast(
                 '◉ Transmisión iniciada: ' +
@@ -1331,7 +1685,7 @@ class GalletaDomoApp {
                 'success'
             );
 
-            return data[0];
+            return data;
 
         } catch (error) {
 
@@ -1342,13 +1696,14 @@ class GalletaDomoApp {
 
             showToast(
                 '❌ Error: ' +
-                error.message,
+                (error?.message || 'No se pudo crear'),
                 'error'
             );
 
             return null;
         }
     }
+
 
     async obtenerTransmisionesActivas() {
 
@@ -1357,23 +1712,27 @@ class GalletaDomoApp {
             const {
                 data,
                 error
-            } = await this.supabase
-                .from('transmisiones')
-                .select(
-                    '*, usuarios(nombre, avatar)'
-                )
-                .eq(
-                    'estado',
-                    'en_vivo'
-                )
-                .order(
-                    'fecha_inicio',
-                    {
-                        ascending: false
-                    }
-                );
+            } =
+                await this.supabase
+                    .from('transmisiones')
+                    .select(
+                        '*, usuarios(nombre, avatar)'
+                    )
+                    .eq(
+                        'estado',
+                        'en_vivo'
+                    )
+                    .order(
+                        'fecha_inicio',
+                        {
+                            ascending:
+                                false
+                        }
+                    );
 
-            if (error) throw error;
+            if (error) {
+                throw error;
+            }
 
             return data || [];
 
@@ -1388,6 +1747,7 @@ class GalletaDomoApp {
         }
     }
 
+
     async obtenerTransmisionesProgramadas() {
 
         try {
@@ -1395,23 +1755,27 @@ class GalletaDomoApp {
             const {
                 data,
                 error
-            } = await this.supabase
-                .from('transmisiones')
-                .select(
-                    '*, usuarios(nombre, avatar)'
-                )
-                .eq(
-                    'estado',
-                    'programada'
-                )
-                .order(
-                    'fecha_inicio',
-                    {
-                        ascending: true
-                    }
-                );
+            } =
+                await this.supabase
+                    .from('transmisiones')
+                    .select(
+                        '*, usuarios(nombre, avatar)'
+                    )
+                    .eq(
+                        'estado',
+                        'programada'
+                    )
+                    .order(
+                        'fecha_inicio',
+                        {
+                            ascending:
+                                true
+                        }
+                    );
 
-            if (error) throw error;
+            if (error) {
+                throw error;
+            }
 
             return data || [];
 
@@ -1426,9 +1790,11 @@ class GalletaDomoApp {
         }
     }
 
-    // ================================================================
-    // CHAT
-    // ================================================================
+
+    /* ============================================================
+       CHAT LIVE
+    ============================================================ */
+
     async enviarMensaje(
         transmisionId,
         mensaje
@@ -1446,10 +1812,11 @@ class GalletaDomoApp {
                 return null;
             }
 
-            if (
-                !mensaje ||
-                mensaje.trim().length === 0
-            ) {
+            mensaje =
+                String(mensaje || '')
+                    .trim();
+
+            if (!mensaje) {
 
                 showToast(
                     '⚠️ Escribe un mensaje',
@@ -1462,29 +1829,33 @@ class GalletaDomoApp {
             const {
                 data,
                 error
-            } = await this.supabase
-                .from('mensajes_live')
-                .insert({
-                    transmision_id:
-                        transmisionId,
+            } =
+                await this.supabase
+                    .from('mensajes_live')
+                    .insert({
+                        transmision_id:
+                            transmisionId,
 
-                    usuario_id:
-                        this.usuario.id,
+                        usuario_id:
+                            this.usuario.id,
 
-                    mensaje:
-                        mensaje.trim(),
+                        mensaje:
+                            mensaje,
 
-                    nombre_usuario:
-                        this.usuario
-                            .user_metadata
-                            ?.nombre ||
-                        'Anónimo'
-                })
-                .select();
+                        nombre_usuario:
+                            this.usuario
+                                .user_metadata
+                                ?.nombre ||
+                            'Anónimo'
+                    })
+                    .select()
+                    .single();
 
-            if (error) throw error;
+            if (error) {
+                throw error;
+            }
 
-            return data[0];
+            return data;
 
         } catch (error) {
 
@@ -1502,6 +1873,7 @@ class GalletaDomoApp {
         }
     }
 
+
     async obtenerMensajes(
         transmisionId
     ) {
@@ -1511,22 +1883,26 @@ class GalletaDomoApp {
             const {
                 data,
                 error
-            } = await this.supabase
-                .from('mensajes_live')
-                .select('*')
-                .eq(
-                    'transmision_id',
-                    transmisionId
-                )
-                .order(
-                    'created_at',
-                    {
-                        ascending: true
-                    }
-                )
-                .limit(50);
+            } =
+                await this.supabase
+                    .from('mensajes_live')
+                    .select('*')
+                    .eq(
+                        'transmision_id',
+                        transmisionId
+                    )
+                    .order(
+                        'created_at',
+                        {
+                            ascending:
+                                true
+                        }
+                    )
+                    .limit(50);
 
-            if (error) throw error;
+            if (error) {
+                throw error;
+            }
 
             return data || [];
 
@@ -1541,6 +1917,7 @@ class GalletaDomoApp {
         }
     }
 
+
     suscribirseChat(
         transmisionId,
         callback
@@ -1553,13 +1930,19 @@ class GalletaDomoApp {
             .on(
                 'postgres_changes',
                 {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'mensajes_live',
+                    event:
+                        'INSERT',
+
+                    schema:
+                        'public',
+
+                    table:
+                        'mensajes_live',
+
                     filter:
                         `transmision_id=eq.${transmisionId}`
                 },
-                (payload) => {
+                function (payload) {
 
                     if (callback) {
                         callback(
@@ -1571,9 +1954,11 @@ class GalletaDomoApp {
             .subscribe();
     }
 
-    // ================================================================
-    // PAGOS
-    // ================================================================
+
+    /* ============================================================
+       PAGOS LIVE
+    ============================================================ */
+
     async registrarPago(
         transmisionId,
         monto,
@@ -1592,7 +1977,13 @@ class GalletaDomoApp {
                 return null;
             }
 
-            if (monto <= 0) {
+            monto =
+                Number(monto);
+
+            if (
+                !Number.isFinite(monto) ||
+                monto <= 0
+            ) {
 
                 showToast(
                     '⚠️ Monto inválido',
@@ -1609,57 +2000,57 @@ class GalletaDomoApp {
                 monto * 0.5;
 
             const idempotencyKey =
-                `pago_${this.usuario.id}_${transmisionId}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+                'pago_' +
+                this.usuario.id +
+                '_' +
+                transmisionId +
+                '_' +
+                Date.now() +
+                '_' +
+                Math.random()
+                    .toString(36)
+                    .substring(2, 8);
 
             const {
                 data,
                 error
-            } = await this.supabase
-                .from('pagos_transmision')
-                .insert({
-                    transmision_id:
-                        transmisionId,
+            } =
+                await this.supabase
+                    .from(
+                        'pagos_transmision'
+                    )
+                    .insert({
+                        transmision_id:
+                            transmisionId,
 
-                    espectador_id:
-                        this.usuario.id,
+                        espectador_id:
+                            this.usuario.id,
 
-                    monto_pagado:
-                        monto,
+                        monto_pagado:
+                            monto,
 
-                    comision_sariels:
-                        comision,
+                        comision_sariels:
+                            comision,
 
-                    monto_streamer:
-                        montoStreamer,
+                        monto_streamer:
+                            montoStreamer,
 
-                    metodo_pago:
-                        metodo,
+                        metodo_pago:
+                            metodo,
 
-                    tipo_pago:
-                        'acceso',
+                        tipo_pago:
+                            'acceso',
 
-                    estado:
-                        'completado',
+                        estado:
+                            'completado',
 
-                    idempotency_key:
-                        idempotencyKey
-                })
-                .select();
+                        idempotency_key:
+                            idempotencyKey
+                    })
+                    .select()
+                    .single();
 
             if (error) {
-
-                if (
-                    error.code === '23505'
-                ) {
-
-                    showToast(
-                        '⚠️ Este pago ya fue procesado',
-                        'warning'
-                    );
-
-                    return null;
-                }
-
                 throw error;
             }
 
@@ -1668,7 +2059,7 @@ class GalletaDomoApp {
                 'success'
             );
 
-            return data[0];
+            return data;
 
         } catch (error) {
 
@@ -1678,8 +2069,7 @@ class GalletaDomoApp {
             );
 
             showToast(
-                '❌ Error en pago: ' +
-                error.message,
+                '❌ Error en pago',
                 'error'
             );
 
@@ -1687,38 +2077,47 @@ class GalletaDomoApp {
         }
     }
 
+
     async verificarAcceso(
         transmisionId
     ) {
 
         try {
 
-            if (!this.usuario) return false;
+            if (!this.usuario) {
+                return false;
+            }
 
             const {
                 data,
                 error
-            } = await this.supabase
-                .from('pagos_transmision')
-                .select('*')
-                .eq(
-                    'transmision_id',
-                    transmisionId
-                )
-                .eq(
-                    'espectador_id',
-                    this.usuario.id
-                )
-                .eq(
-                    'estado',
-                    'completado'
-                );
+            } =
+                await this.supabase
+                    .from(
+                        'pagos_transmision'
+                    )
+                    .select('id')
+                    .eq(
+                        'transmision_id',
+                        transmisionId
+                    )
+                    .eq(
+                        'espectador_id',
+                        this.usuario.id
+                    )
+                    .eq(
+                        'estado',
+                        'completado'
+                    )
+                    .limit(1);
 
-            if (error) throw error;
+            if (error) {
+                throw error;
+            }
 
-            return (
+            return Boolean(
                 data &&
-                data.length > 0
+                data.length
             );
 
         } catch (error) {
@@ -1732,9 +2131,11 @@ class GalletaDomoApp {
         }
     }
 
-    // ================================================================
-    // SUSCRIPCIONES
-    // ================================================================
+
+    /* ============================================================
+       SUSCRIPCIONES
+    ============================================================ */
+
     async suscribirse(
         streamerId,
         precioMensual
@@ -1752,7 +2153,15 @@ class GalletaDomoApp {
                 return null;
             }
 
-            if (precioMensual <= 0) {
+            precioMensual =
+                Number(precioMensual);
+
+            if (
+                !Number.isFinite(
+                    precioMensual
+                ) ||
+                precioMensual <= 0
+            ) {
 
                 showToast(
                     '⚠️ Precio inválido',
@@ -1765,41 +2174,45 @@ class GalletaDomoApp {
             const {
                 data,
                 error
-            } = await this.supabase
-                .from('suscripciones')
-                .insert({
-                    streamer_id:
-                        streamerId,
+            } =
+                await this.supabase
+                    .from('suscripciones')
+                    .insert({
+                        streamer_id:
+                            streamerId,
 
-                    espectador_id:
-                        this.usuario.id,
+                        espectador_id:
+                            this.usuario.id,
 
-                    precio_mensual:
-                        precioMensual,
+                        precio_mensual:
+                            precioMensual,
 
-                    activo:
-                        true,
+                        activo:
+                            true,
 
-                    proximo_pago:
-                        new Date(
-                            Date.now() +
-                            30 *
-                            24 *
-                            60 *
-                            60 *
-                            1000
-                        ).toISOString()
-                })
-                .select();
+                        proximo_pago:
+                            new Date(
+                                Date.now() +
+                                30 *
+                                24 *
+                                60 *
+                                60 *
+                                1000
+                            ).toISOString()
+                    })
+                    .select()
+                    .single();
 
-            if (error) throw error;
+            if (error) {
+                throw error;
+            }
 
             showToast(
                 `✅ Suscripción mensual de $${precioMensual} MXN activada`,
                 'success'
             );
 
-            return data[0];
+            return data;
 
         } catch (error) {
 
@@ -1809,8 +2222,7 @@ class GalletaDomoApp {
             );
 
             showToast(
-                '❌ Error: ' +
-                error.message,
+                '❌ Error al suscribirse',
                 'error'
             );
 
@@ -1818,9 +2230,11 @@ class GalletaDomoApp {
         }
     }
 
-    // ================================================================
-    // PROMOCIONES
-    // ================================================================
+
+    /* ============================================================
+       PROMOCIONES
+    ============================================================ */
+
     async activarPromocion(
         transmisionId,
         nivel,
@@ -1839,14 +2253,18 @@ class GalletaDomoApp {
                 return null;
             }
 
+            nivel =
+                Number(nivel);
+
+            horas =
+                Number(horas);
+
             if (
-                !nivel ||
-                nivel < 1 ||
-                nivel > 3
+                ![1, 2, 3].includes(nivel)
             ) {
 
                 showToast(
-                    '⚠️ Nivel inválido (1-3)',
+                    '⚠️ Nivel inválido',
                     'error'
                 );
 
@@ -1854,7 +2272,7 @@ class GalletaDomoApp {
             }
 
             if (
-                !horas ||
+                !Number.isFinite(horas) ||
                 horas <= 0
             ) {
 
@@ -1879,64 +2297,82 @@ class GalletaDomoApp {
             };
 
             const costo =
-                precios[nivel] * horas;
+                precios[nivel] *
+                horas;
 
             const {
                 data,
                 error
-            } = await this.supabase
-                .from(
-                    'promociones_streamer'
-                )
-                .insert({
-                    streamer_id:
-                        this.usuario.id,
+            } =
+                await this.supabase
+                    .from(
+                        'promociones_streamer'
+                    )
+                    .insert({
+                        streamer_id:
+                            this.usuario.id,
 
-                    transmision_id:
-                        transmisionId,
+                        transmision_id:
+                            transmisionId,
 
-                    nivel_promocion:
-                        nivel,
+                        nivel_promocion:
+                            nivel,
 
-                    costo_promocion:
-                        costo,
+                        costo_promocion:
+                            costo,
 
-                    duracion_promocion:
-                        horas,
+                        duracion_promocion:
+                            horas,
 
-                    posicion_prioridad:
-                        prioridades[nivel],
+                        posicion_prioridad:
+                            prioridades[nivel],
 
-                    activo:
-                        true
-                })
-                .select();
+                        activo:
+                            true
+                    })
+                    .select()
+                    .single();
 
-            if (error) throw error;
+            if (error) {
+                throw error;
+            }
 
-            await this.supabase
-                .from('transmisiones')
-                .update({
-                    promocion_activa:
-                        true,
+            const {
+                error:
+                    updateError
+            } =
+                await this.supabase
+                    .from(
+                        'transmisiones'
+                    )
+                    .update({
+                        promocion_activa:
+                            true,
 
-                    nivel_promocion:
-                        nivel,
+                        nivel_promocion:
+                            nivel,
 
-                    costo_promocion:
-                        costo
-                })
-                .eq(
-                    'id',
-                    transmisionId
+                        costo_promocion:
+                            costo
+                    })
+                    .eq(
+                        'id',
+                        transmisionId
+                    );
+
+            if (updateError) {
+                console.warn(
+                    '⚠️ No se pudo actualizar transmisión:',
+                    updateError
                 );
+            }
 
             showToast(
-                `🚀 Promoción nivel ${nivel} activada por $${costo} MXN`,
+                `🚀 Promoción nivel ${nivel} activada`,
                 'success'
             );
 
-            return data[0];
+            return data;
 
         } catch (error) {
 
@@ -1946,8 +2382,7 @@ class GalletaDomoApp {
             );
 
             showToast(
-                '❌ Error: ' +
-                error.message,
+                '❌ Error activando promoción',
                 'error'
             );
 
@@ -1955,10 +2390,14 @@ class GalletaDomoApp {
         }
     }
 
-    // ================================================================
-    // UI USUARIO
-    // ================================================================
-    actualizarUIUsuario(user) {
+
+    /* ============================================================
+       UI USUARIO
+    ============================================================ */
+
+    actualizarUIUsuario(
+        user
+    ) {
 
         const loginBtn =
             document.getElementById(
@@ -1970,36 +2409,53 @@ class GalletaDomoApp {
                 'userInfo'
             );
 
-        if (
-            !loginBtn &&
-            !userInfo
-        ) {
-            return;
-        }
+        /*
+         * UI actual del index.html.
+         */
+        const sessionInfo =
+            document.getElementById(
+                'sessionInfo'
+            );
+
+        const userEmail =
+            document.getElementById(
+                'userEmail'
+            );
+
+        const logoutBtn =
+            document.getElementById(
+                'logoutBtn'
+            );
+
 
         try {
 
             if (user) {
+
+                const nombre =
+                    user.user_metadata?.nombre ||
+                    user.email ||
+                    'Usuario';
+
 
                 if (loginBtn) {
                     loginBtn.style.display =
                         'none';
                 }
 
+
+                /*
+                 * Sistema antiguo.
+                 */
                 if (userInfo) {
 
                     userInfo.style.display =
                         'flex';
 
-                    const nombre =
-                        escapeHTML(
-                            user.user_metadata?.nombre ||
-                            'Usuario'
-                        );
-
-                    userInfo.innerHTML = `
+                    userInfo.innerHTML =
+                        `
                         <span style="font-size:0.7rem;color:var(--gold);">
-                            ${nombre}
+                            ${escapeHTML(nombre)}
                             <span style="font-size:0.5rem;color:var(--text-muted);">
                                 (${this.tokens} Es.stoks)
                             </span>
@@ -2010,12 +2466,36 @@ class GalletaDomoApp {
                         >
                             ✕
                         </button>
-                    `;
+                        `;
                 }
+
+
+                /*
+                 * Sistema actual.
+                 */
+                if (sessionInfo) {
+                    sessionInfo.style.display =
+                        'flex';
+                }
+
+                if (userEmail) {
+
+                    userEmail.textContent =
+                        user.email ||
+                        nombre;
+                }
+
+                if (logoutBtn) {
+
+                    logoutBtn.style.display =
+                        'inline-block';
+                }
+
 
             } else {
 
                 if (loginBtn) {
+
                     loginBtn.style.display =
                         'inline-flex';
                 }
@@ -2028,6 +2508,18 @@ class GalletaDomoApp {
                     userInfo.innerHTML =
                         '';
                 }
+
+                if (userEmail) {
+
+                    userEmail.textContent =
+                        'No autenticado';
+                }
+
+                if (logoutBtn) {
+
+                    logoutBtn.style.display =
+                        'none';
+                }
             }
 
         } catch (error) {
@@ -2039,10 +2531,14 @@ class GalletaDomoApp {
         }
     }
 
-    // ================================================================
-    // UI WALLET
-    // ================================================================
-    actualizarUIWallet(wallet) {
+
+    /* ============================================================
+       UI WALLET
+    ============================================================ */
+
+    actualizarUIWallet(
+        wallet
+    ) {
 
         const walletBtn =
             document.getElementById(
@@ -2066,6 +2562,7 @@ class GalletaDomoApp {
             if (wallet) {
 
                 if (walletBtn) {
+
                     walletBtn.style.display =
                         'none';
                 }
@@ -2075,7 +2572,8 @@ class GalletaDomoApp {
                     walletInfo.style.display =
                         'flex';
 
-                    walletInfo.innerHTML = `
+                    walletInfo.innerHTML =
+                        `
                         <span style="font-size:0.6rem;color:var(--text-muted);">
                             🟢 ${wallet.slice(0, 6)}...${wallet.slice(-4)}
                         </span>
@@ -2085,12 +2583,13 @@ class GalletaDomoApp {
                         >
                             ✕
                         </button>
-                    `;
+                        `;
                 }
 
             } else {
 
                 if (walletBtn) {
+
                     walletBtn.style.display =
                         'inline-flex';
                 }
@@ -2114,9 +2613,11 @@ class GalletaDomoApp {
         }
     }
 
-    // ================================================================
-    // ACTUALIZAR UI TOKENS
-    // ================================================================
+
+    /* ============================================================
+       TOKENS UI
+    ============================================================ */
+
     async actualizarUITokens() {
 
         await this.cargarTokens();
@@ -2131,41 +2632,64 @@ class GalletaDomoApp {
             );
 
         if (tokenBadge) {
+
             tokenBadge.textContent =
                 this.tokens;
         }
     }
 }
 
-// ================================================================
-// INSTANCIAR APP Y EXPONER GLOBALMENTE
-// ================================================================
+
+/* ================================================================
+   CREAR APP
+================================================================ */
+
 const app =
     new GalletaDomoApp();
 
-appInstance = app;
+appInstance =
+    app;
 
-window.app = app;
-window.usuarioActual = usuarioActual;
-window.showToast = showToast;
-window.escapeHTML = escapeHTML;
+window.app =
+    app;
 
-// ================================================================
-// FUNCIONES GLOBALES
-// ================================================================
+window.usuarioActual =
+    usuarioActual;
 
-// getSession()
+window.showToast =
+    showToast;
+
+window.escapeHTML =
+    escapeHTML;
+
+
+/* ================================================================
+   GET SESSION
+================================================================ */
+
 async function getSession() {
 
     try {
 
         const {
-            data: { session },
+            data,
             error
-        } = await supabaseClient.auth
-            .getSession();
+        } =
+            await supabaseClient.auth
+                .getSession();
 
-        if (error) throw error;
+        if (error) {
+            throw error;
+        }
+
+        const session =
+            data?.session || null;
+
+        if (session) {
+            establecerUsuario(
+                session.user
+            );
+        }
 
         return session;
 
@@ -2180,9 +2704,14 @@ async function getSession() {
     }
 }
 
-window.getSession = getSession;
+window.getSession =
+    getSession;
 
-// getSupabase()
+
+/* ================================================================
+   GET SUPABASE
+================================================================ */
+
 function getSupabase() {
     return supabaseClient;
 }
@@ -2190,13 +2719,33 @@ function getSupabase() {
 window.getSupabase =
     getSupabase;
 
-console.log(
-    '✅ Funciones globales expuestas: getSession(), getSupabase(), supabaseClient'
-);
 
-// ================================================================
-// INICIALIZACIÓN
-// ================================================================
+/* ================================================================
+   CONFIG WEB3
+================================================================ */
+
+window.SARIELS_WEB3 = {
+    chainId:
+        POLYGON_AMOY_CHAIN_ID,
+
+    chainIdHex:
+        POLYGON_AMOY_HEX,
+
+    chainName:
+        'Polygon Amoy',
+
+    rpcUrl:
+        'https://rpc-amoy.polygon.technology',
+
+    explorer:
+        'https://amoy.polygonscan.com'
+};
+
+
+/* ================================================================
+   INICIALIZACIÓN
+================================================================ */
+
 document.addEventListener(
     'DOMContentLoaded',
     function () {
@@ -2204,7 +2753,7 @@ document.addEventListener(
         try {
 
             console.log(
-                '◈ Sariel\'s App - Lista'
+                "◈ Sariel's App — lista"
             );
 
             console.log(
@@ -2217,24 +2766,9 @@ document.addEventListener(
             );
 
             console.log(
-                '◆ Wallet: ' +
-                (
-                    localStorage.getItem(
-                        'sariels_wallet'
-                    )
-                        ? 'Conectada'
-                        : 'Desconectada'
-                )
+                '⛓️ Polygon Amoy:',
+                POLYGON_AMOY_CHAIN_ID
             );
-
-            app.init();
-
-            if (app.usuario) {
-
-                app.actualizarUIUsuario(
-                    app.usuario
-                );
-            }
 
             const walletGuardada =
                 localStorage.getItem(
@@ -2243,10 +2777,18 @@ document.addEventListener(
 
             if (walletGuardada) {
 
+                app.wallet =
+                    walletGuardada;
+
+                walletConectada =
+                    true;
+
                 app.actualizarUIWallet(
                     walletGuardada
                 );
             }
+
+            app.init();
 
         } catch (error) {
 
@@ -2263,9 +2805,11 @@ document.addEventListener(
     }
 );
 
-// ================================================================
-// LIMPIEZA DE RECURSOS AL CERRAR
-// ================================================================
+
+/* ================================================================
+   LIMPIEZA
+================================================================ */
+
 window.addEventListener(
     'beforeunload',
     function () {
@@ -2280,3 +2824,83 @@ window.addEventListener(
         }
     }
 );
+
+
+/* ================================================================
+   EVENTOS DE WALLET
+================================================================ */
+
+if (
+    typeof window.ethereum !==
+    'undefined'
+) {
+
+    window.ethereum.on(
+        'accountsChanged',
+        function (accounts) {
+
+            if (
+                !accounts ||
+                !accounts.length
+            ) {
+
+                app.wallet =
+                    null;
+
+                walletConectada =
+                    false;
+
+                localStorage.removeItem(
+                    'sariels_wallet'
+                );
+
+                app.actualizarUIWallet(
+                    null
+                );
+
+                return;
+            }
+
+            const wallet =
+                accounts[0];
+
+            app.wallet =
+                wallet;
+
+            walletConectada =
+                true;
+
+            localStorage.setItem(
+                'sariels_wallet',
+                wallet
+            );
+
+            app.actualizarUIWallet(
+                wallet
+            );
+        }
+    );
+
+
+    window.ethereum.on(
+        'chainChanged',
+        function (chainId) {
+
+            if (
+                String(chainId).toLowerCase() !==
+                POLYGON_AMOY_HEX
+            ) {
+
+                showToast(
+                    '⚠️ MetaMask está fuera de Polygon Amoy.',
+                    'warning'
+                );
+            }
+        }
+    );
+}
+
+
+/* ================================================================
+   FIN APP.JS
+================================================================ */
