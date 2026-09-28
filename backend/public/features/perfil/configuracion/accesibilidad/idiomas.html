@@ -100,6 +100,13 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+
+        html:not(.auth-ready) body {
+            visibility: hidden;
+        }
+        html.auth-ready body {
+            visibility: visible;
+        }
     </style>
 </head>
 <body class="cfg-page">
@@ -138,50 +145,108 @@
 
         const $ = (sel) => document.querySelector(sel);
 
-        cfgInitPage({
-            title: 'Idiomas',
-            subtitle: 'Personaliza tu experiencia',
-            backUrl: '/features/perfil/configuracion/index.html',
-        });
+        let clienteSupabase = null;
+        let sesionActual = null;
+
+        async function obtenerCliente() {
+            if (clienteSupabase) return clienteSupabase;
+            if (typeof window.cfgEsperarSupabase === 'function') {
+                clienteSupabase = await window.cfgEsperarSupabase();
+            }
+            if (!clienteSupabase) {
+                clienteSupabase = window.supabaseClient || null;
+            }
+            return clienteSupabase;
+        }
+
+        function esRutaInternaSegura(valor) {
+            if (typeof valor !== 'string') return false;
+            if (!valor.startsWith('/')) return false;
+            if (valor.startsWith('//')) return false;
+            if (valor.startsWith('/\\')) return false;
+            return true;
+        }
+
+        function irAlIndexConReturnTo() {
+            try {
+                var returnTo = window.location.pathname + window.location.search + window.location.hash;
+                if (esRutaInternaSegura(returnTo)) {
+                    localStorage.setItem('wallet_returnTo', returnTo);
+                }
+                window.location.replace('/');
+            } catch (e) {
+                window.location.replace('/');
+            }
+        }
+
+        // ============================================================
+        // GUARD DE AUTENTICACIÓN
+        // ============================================================
+        async function guardiaDeAutenticacion() {
+            var salvaguarda = setTimeout(function () {
+                console.warn('[Idiomas] Salvaguarda activada sin confirmación → redirigiendo al index');
+                irAlIndexConReturnTo();
+            }, 10000);
+
+            try {
+                const client = await obtenerCliente();
+                if (!client) {
+                    throw new Error('Cliente Supabase no disponible.');
+                }
+
+                const resultado = await client.auth.getSession();
+                const session = resultado && resultado.data ? resultado.data.session : null;
+
+                clearTimeout(salvaguarda);
+
+                if (!session) {
+                    irAlIndexConReturnTo();
+                    return null;
+                }
+
+                sesionActual = session;
+                document.documentElement.classList.add('auth-ready');
+                return client;
+
+            } catch (error) {
+                console.error('[Idiomas] Error crítico de autenticación:', error);
+                clearTimeout(salvaguarda);
+                irAlIndexConReturnTo();
+                return null;
+            }
+        }
 
         // ============================================================
         // CARGAR IDIOMAS DESDE SUPABASE
         // ============================================================
-        async function cargarIdiomas() {
+        async function cargarIdiomas(client) {
             try {
-                const client = window.supabaseClient || 
-                    (window.supabase && window.supabase.createClient(
-                        'https://zultnlogdoajehbswlih.supabase.co',
-                        'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
-                    ));
                 if (!client) {
                     mostrarErrorIdiomas();
                     return;
                 }
 
-                // Obtener idioma actual
-                const sessionResult = await client.auth.getSession();
-                const session = sessionResult.data.session;
                 let idiomaActualId = null;
 
-                if (session) {
+                if (sesionActual) {
                     const { data: usuario } = await client
                         .from('usuarios')
                         .select('idioma_preferido_id')
-                        .eq('id', session.user.id)
+                        .eq('id', sesionActual.user.id)
                         .maybeSingle();
-                    if (usuario) idiomaActualId = usuario.idioma_preferido_id;
+
+                    if (usuario && usuario.idioma_preferido_id) {
+                        idiomaActualId = usuario.idioma_preferido_id;
+                    }
                 }
 
-                // Fallback: leer de localStorage
                 if (!idiomaActualId) {
                     idiomaActualId = localStorage.getItem('idioma_preferido');
                 }
 
-                // Cargar todos los idiomas activos
                 const { data: idiomas, error } = await client
                     .from('idiomas_sistema')
-                    .select('id, codigo, nombre, nombre_nativo, bandera')
+                    .select('id, codigo, nombre, nombre_nativo, bandera, activo')
                     .eq('activo', true)
                     .order('nombre', { ascending: true });
 
@@ -192,7 +257,6 @@
                     return;
                 }
 
-                // Si no hay idioma actual, marcar el primero (español)
                 if (!idiomaActualId) {
                     const español = idiomas.find(i => i.codigo === 'es-MX') || idiomas[0];
                     idiomaActualId = español.id;
@@ -209,15 +273,17 @@
         function renderizarIdiomas(idiomas, idiomaActualId) {
             $('#seccionIdiomas').innerHTML = idiomas.map(idioma => {
                 const activo = idioma.id === idiomaActualId;
+                const nombreSeguro = (idioma.nombre || '').replace(/'/g, "\\'");
+                const codigoSeguro = (idioma.codigo || '').replace(/'/g, "\\'");
                 return `
                     <div class="cfg-idioma-card ${activo ? 'active' : ''}" 
-                         onclick="window.onSeleccionarIdioma('${idioma.id}', '${idioma.codigo}', '${idioma.nombre.replace(/'/g, "\\'")}')">
+                         onclick="window.onSeleccionarIdioma('${idioma.id}', '${codigoSeguro}', '${nombreSeguro}')">
                         <span class="cfg-idioma-flag">${idioma.bandera || '🌐'}</span>
                         <div class="cfg-idioma-info">
-                            <div class="cfg-idioma-nombre">${idioma.nombre}</div>
-                            <div class="cfg-idioma-nativo">${idioma.nombre_nativo || ''}</div>
+                            <div class="cfg-idioma-nombre">${escapeHtml(idioma.nombre || '')}</div>
+                            <div class="cfg-idioma-nativo">${escapeHtml(idioma.nombre_nativo || '')}</div>
                         </div>
-                        <div class="cfg-idioma-codigo">${idioma.codigo}</div>
+                        <div class="cfg-idioma-codigo">${escapeHtml(idioma.codigo || '')}</div>
                         ${activo ? '<span class="cfg-idioma-check">✓</span>' : ''}
                     </div>
                 `;
@@ -242,6 +308,13 @@
             `;
         }
 
+        function escapeHtml(texto) {
+            if (!texto) return '';
+            const div = document.createElement('div');
+            div.textContent = texto;
+            return div.innerHTML;
+        }
+
         // ============================================================
         // SELECCIONAR IDIOMA
         // ============================================================
@@ -257,30 +330,20 @@
             if (!ok) return;
 
             try {
-                // 1. Guardar en localStorage
                 localStorage.setItem('idioma_preferido', idiomaId);
 
-                // 2. Guardar en Supabase
-                const client = window.supabaseClient || 
-                    (window.supabase && window.supabase.createClient(
-                        'https://zultnlogdoajehbswlih.supabase.co',
-                        'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
-                    ));
-                
-                if (client) {
-                    const sessionResult = await client.auth.getSession();
-                    const session = sessionResult.data.session;
-                    if (session) {
-                        await client
-                            .from('usuarios')
-                            .update({ idioma_preferido_id: idiomaId })
-                            .eq('id', session.user.id);
-                    }
+                const client = await obtenerCliente();
+                if (client && sesionActual) {
+                    const { error } = await client
+                        .from('usuarios')
+                        .update({ idioma_preferido_id: idiomaId })
+                        .eq('id', sesionActual.user.id);
+
+                    if (error) throw error;
                 }
 
                 cfgToast(`🌐 Idioma cambiado a ${nombre}`, 'success');
 
-                // Recargar página después de un momento
                 setTimeout(() => {
                     window.location.reload();
                 }, 800);
@@ -323,9 +386,17 @@
         // INICIALIZAR
         // ============================================================
         window.addEventListener('DOMContentLoaded', async () => {
-            await new Promise(resolve => setTimeout(resolve, 400));
+            const client = await guardiaDeAutenticacion();
+            if (!client) return;
+
+            cfgInitPage({
+                title: 'Idiomas',
+                subtitle: 'Personaliza tu experiencia',
+                backUrl: '/features/perfil/configuracion/index.html',
+            });
+
             renderizarContenido();
-            await cargarIdiomas();
+            await cargarIdiomas(client);
         });
 
     })();
