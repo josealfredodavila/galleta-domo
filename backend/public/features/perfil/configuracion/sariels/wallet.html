@@ -57,74 +57,132 @@
     >
 
     <!-- ═══════════════════════════════════════════════════════════
-         GUARDIÁN DE SESIÓN — Verifica ANTES de cargar el HTML
-         Si no hay sesión → guarda returnTo y redirige a login
+         GUARDIÁN DE SESIÓN — Bloque centralizado
+         - Sin credenciales hardcodeadas.
+         - Configuración vía /api/config/public.
+         - Si no hay sesión → redirige al index (/).
          ═══════════════════════════════════════════════════════════ -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script>
         (function () {
             'use strict';
 
-            var GUARD_SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
-            var GUARD_SUPABASE_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+            window.__sarielsAuthenticated = null;
+            window.supabaseClient = window.supabaseClient || null;
+            window.supabaseReady = null;
 
-            // ✅ Guarda returnTo y redirige a login
-            function irALoginConReturnTo() {
+            window.getSupabaseClient = function () {
+                return window.supabaseReady;
+            };
+
+            function esRutaInternaSegura(valor) {
+                if (typeof valor !== 'string') return false;
+                if (!valor.startsWith('/')) return false;
+                if (valor.startsWith('//')) return false;
+                if (valor.startsWith('/\\')) return false;
+                return true;
+            }
+
+            function revelarPagina() {
+                document.documentElement.classList.add('auth-ready');
+            }
+
+            function irAlIndexConReturnTo() {
                 try {
                     var returnTo = window.location.pathname + window.location.search + window.location.hash;
-                    localStorage.setItem('wallet_returnTo', returnTo);
-                    console.log('[Wallet Guardián] Sin sesión → guardando returnTo:', returnTo);
-                    window.location.replace('/features/perfil/login.html?returnTo=' + encodeURIComponent(returnTo));
+                    if (esRutaInternaSegura(returnTo)) {
+                        localStorage.setItem('wallet_returnTo', returnTo);
+                    }
+                    console.log('[Wallet Guardián] Sin sesión → redirigiendo al index');
+                    window.location.replace('/');
                 } catch (e) {
                     console.warn('[Wallet Guardián] Error:', e);
                     window.location.replace('/');
                 }
             }
 
-            function inicializarGuardian() {
+            var salvaguarda = setTimeout(function () {
+                console.warn('[Wallet Guardián] Salvaguarda activada.');
+                revelarPagina();
+            }, 10000);
+
+            async function inicializarSupabase() {
                 try {
-                    if (typeof window.supabase === 'undefined') {
-                        setTimeout(inicializarGuardian, 200);
-                        return;
+                    if (
+                        !window.supabase ||
+                        typeof window.supabase.createClient !== 'function'
+                    ) {
+                        throw new Error('Supabase SDK no disponible.');
                     }
 
                     if (!window.supabaseClient) {
-                        window.supabaseClient = window.supabase.createClient(
-                            GUARD_SUPABASE_URL,
-                            GUARD_SUPABASE_KEY
+                        var supabaseUrl = null;
+                        var supabaseAnonKey = null;
+
+                        try {
+                            const response = await fetch('/api/config/public', {
+                                method: 'GET',
+                                credentials: 'same-origin',
+                                cache: 'no-store',
+                                headers: { 'Accept': 'application/json' }
+                            });
+
+                            if (response.ok) {
+                                const config = await response.json();
+                                supabaseUrl = config && config.supabaseUrl;
+                                supabaseAnonKey = config && config.supabaseAnonKey;
+                            }
+                        } catch (fetchErr) {
+                            console.warn('[Wallet Guardián] fetch /api/config/public falló:', fetchErr);
+                        }
+
+                        if (!supabaseUrl || !supabaseAnonKey) {
+                            throw new Error('Configuración pública de Supabase no disponible.');
+                        }
+
+                        window.SupabaseSDK = window.supabase;
+
+                        window.supabaseClient = window.SupabaseSDK.createClient(
+                            supabaseUrl,
+                            supabaseAnonKey,
+                            {
+                                auth: {
+                                    persistSession: true,
+                                    autoRefreshToken: true,
+                                    detectSessionInUrl: true
+                                }
+                            }
                         );
-                        console.log('[Wallet Guardián] ✅ supabaseClient creado.');
                     }
 
-                    window.supabaseClient.auth.getSession().then(function (resultado) {
-                        var session = resultado && resultado.data ? resultado.data.session : null;
-                        if (!session) {
-                            console.log('[Wallet Guardián] Sin sesión → redirigiendo a login');
-                            irALoginConReturnTo();
-                        } else {
-                            console.log('[Wallet Guardián] Sesión válida → cargando wallet');
-                            document.documentElement.classList.add('auth-ready');
-                        }
-                    }).catch(function (err) {
-                        console.warn('[Wallet Guardián] Error verificando sesión:', err);
-                        document.documentElement.classList.add('auth-ready');
-                    });
-                } catch (e) {
-                    console.warn('[Wallet Guardián] Error en guardián:', e);
-                    document.documentElement.classList.add('auth-ready');
+                    const resultado = await window.supabaseClient.auth.getSession();
+                    const session = resultado && resultado.data ? resultado.data.session : null;
+
+                    window.__sarielsAuthenticated = !!session;
+
+                    clearTimeout(salvaguarda);
+
+                    if (!session) {
+                        irAlIndexConReturnTo();
+                    } else {
+                        revelarPagina();
+                    }
+
+                    return window.supabaseClient;
+                } catch (error) {
+                    console.error('[Wallet Guardián] Error inicializando:', error);
+                    window.__sarielsAuthenticated = false;
+                    clearTimeout(salvaguarda);
+                    revelarPagina();
+                    return null;
                 }
             }
 
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', inicializarGuardian);
-            } else {
-                inicializarGuardian();
-            }
+            window.supabaseReady = inicializarSupabase();
         })();
     </script>
 
     <style>
-        /* Ocultar el contenido hasta que el guardián confirme sesión */
         html:not(.auth-ready) body {
             visibility: hidden;
         }
@@ -540,10 +598,6 @@
             text-align: left;
         }
 
-        .wallet-hidden-link {
-            display: none;
-        }
-
         @media (max-width:520px) {
             .wallet-action-grid {
                 grid-template-columns: repeat(2, minmax(0,1fr));
@@ -563,7 +617,6 @@
 
     <main class="cfg-content">
 
-        <!-- CARGANDO -->
         <section
             id="estadoCargando"
             style="text-align:center; padding:65px 20px; color:var(--cfg-text-muted);"
@@ -574,7 +627,6 @@
             </div>
         </section>
 
-        <!-- SIN WALLET -->
         <section id="estadoSinWallet" style="display:none;">
 
             <div class="wallet-hero">
@@ -706,7 +758,6 @@
 
         </section>
 
-        <!-- NO AUTENTICADO -->
         <section id="estadoNoAutenticado" style="display:none;">
 
             <div class="wallet-hero">
@@ -727,17 +778,16 @@
                 <a
                     class="wallet-primary-btn"
                     id="btnIrALogin"
-                    href="/features/perfil/login.html"
+                    href="/"
                 >
                     🔐
-                    <span>Iniciar sesión</span>
+                    <span>Ir al inicio</span>
                 </a>
 
             </div>
 
         </section>
 
-        <!-- ERROR -->
         <section id="estadoError" style="display:none;">
 
             <div class="wallet-error">
@@ -769,7 +819,6 @@
 
         </section>
 
-        <!-- WALLET CONECTADA -->
         <section id="estadoWalletConectada" style="display:none;">
 
             <div class="wallet-connected">
@@ -901,7 +950,6 @@
 
         </section>
 
-        <!-- INFO -->
         <div
             class="cfg-aviso cfg-aviso-info"
             style="margin:16px;"
@@ -918,27 +966,19 @@
 
     </main>
 
-    <!-- SHARED -->
     <script src="../../../shared/config-icons.js"></script>
     <script src="../../../shared/config-layout.js"></script>
 
-    <!-- WALLET CONNECT -->
-    <script src="../../shared/js/wallet-connect.js?v=20260927-2"></script>
+    <script src="../../shared/js/wallet-connect.js?v=20260928-3"></script>
 
-    <!-- WALLET PAGE -->
     <script>
 
     (function () {
 
         'use strict';
 
-        const SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
         const SUPABASE_TIMEOUT_MS = 10000;
         const POLYGON_AMOY_EXPLORER = 'https://amoy.polygonscan.com';
-        const MURO_URL = '/features/muro/muro.html';
-        const ESTOKS_URL = '/features/perfil/configuracion/sariels/estoks.html';
-        const LOGIN_URL = '/features/perfil/login.html';
 
         let cargandoWallet = false;
         let estadoCargado = false;
@@ -970,29 +1010,12 @@
             });
         }
 
-        function obtenerSupabase() {
-            if (window.supabaseClient) {
-                return window.supabaseClient;
-            }
-
-            if (window.supabase && typeof window.supabase.createClient === 'function') {
-                window.supabaseClient = window.supabase.createClient(
-                    SUPABASE_URL,
-                    SUPABASE_KEY
-                );
-                return window.supabaseClient;
-            }
-
-            return null;
-        }
-
         async function esperarSupabase() {
             const inicio = Date.now();
 
             while (Date.now() - inicio < SUPABASE_TIMEOUT_MS) {
-                const client = obtenerSupabase();
-                if (client) {
-                    return client;
+                if (window.supabaseClient) {
+                    return window.supabaseClient;
                 }
                 await esperar(50);
             }
@@ -1143,13 +1166,14 @@
                 const session = await obtenerSesionSegura(client);
 
                 if (!session) {
-                    // ✅ Guardar returnTo (por si el guardián no lo hizo)
+                    /* Guardar returnTo y redirigir al index */
                     const returnTo = window.location.pathname + window.location.search;
-                    localStorage.setItem('wallet_returnTo', returnTo);
-                    console.log('[wallet] Sin sesión. returnTo guardado:', returnTo);
+                    try {
+                        localStorage.setItem('wallet_returnTo', returnTo);
+                    } catch (_) {}
+                    console.log('[wallet] Sin sesión → redirigiendo al index');
 
-                    mostrarEstado('#estadoNoAutenticado');
-                    estadoCargado = true;
+                    window.location.replace('/');
                     return;
                 }
 
@@ -1210,7 +1234,7 @@
                 const session = await obtenerSesionSegura(client);
 
                 if (!session) {
-                    mostrarEstado('#estadoNoAutenticado');
+                    window.location.replace('/');
                     return;
                 }
 
@@ -1247,7 +1271,7 @@
                 let mensaje = 'No se pudo conectar la wallet.';
 
                 if (error && error.message === 'WALLET_MODULE_NOT_LOADED') {
-                    mensaje = 'No se pudo cargar wallet-connect.js. La ruta debe ser ../../shared/js/wallet-connect.js.';
+                    mensaje = 'No se pudo cargar el módulo de wallets. Recarga la página.';
                 } else if (error && error.message) {
                     mensaje = error.message;
                 }
@@ -1400,7 +1424,6 @@
             await cargarEstadoWallet();
         }
 
-        // EVENTOS WALLET
         window.addEventListener('sar:wallet:accountsChanged', function () {
             estadoCargado = false;
             cargarEstadoWallet();
@@ -1421,7 +1444,6 @@
             }
         });
 
-        // ONLINE / OFFLINE
         window.addEventListener('offline', function () {
             if (cargandoWallet) {
                 cargandoWallet = false;
@@ -1429,7 +1451,6 @@
             }
         });
 
-        // BOTONES
         function registrarEventosPagina() {
 
             const conectar = $('#btnConectar');
@@ -1460,16 +1481,6 @@
             const reintentar = $('#btnReintentar');
             if (reintentar) {
                 reintentar.addEventListener('click', reintentarWallet);
-            }
-
-            // ✅ BOTÓN "INICIAR SESIÓN" — GUARDA returnTo
-            const btnLogin = document.getElementById('btnIrALogin');
-            if (btnLogin) {
-                btnLogin.addEventListener('click', function(e) {
-                    const returnTo = window.location.pathname + window.location.search;
-                    localStorage.setItem('wallet_returnTo', returnTo);
-                    console.log('[wallet] returnTo guardado desde botón:', returnTo);
-                });
             }
         }
 
