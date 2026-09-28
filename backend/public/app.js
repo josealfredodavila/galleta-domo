@@ -2,75 +2,121 @@
    APP.JS — SARIEL'S ECOSYSTEM
    PRODUCCIÓN — SUPABASE + AUTH + WALLET + LIVE
    POLYGON AMOY 80002
-   ================================================================ */
+   SIN CLAVES HARDCODEADAS
+================================================================ */
 
 'use strict';
 
 /* ================================================================
-   SUPABASE
+   CONFIGURACIÓN PÚBLICA DESDE BACKEND
 ================================================================ */
 
-const SUPABASE_URL =
-    'https://zultnlogdoajehbswlih.supabase.co';
+let supabaseClient = window.supabaseClient || null;
 
-const SUPABASE_ANON_KEY =
-    'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+let supabaseConfigPromise = null;
 
-/*
- * El CDN de Supabase debe existir antes de este archivo.
- * Guardamos la referencia a la librería antes de crear el cliente.
- */
-const SupabaseSDK = window.supabase;
+async function cargarConfiguracionPublica() {
 
-if (
-    !SupabaseSDK ||
-    typeof SupabaseSDK.createClient !== 'function'
-) {
-    console.error(
-        '❌ Supabase SDK no disponible.'
-    );
+    if (supabaseClient) {
+        window.supabaseClient = supabaseClient;
+        return supabaseClient;
+    }
+
+    if (supabaseConfigPromise) {
+        return supabaseConfigPromise;
+    }
+
+    supabaseConfigPromise = (async function () {
+
+        try {
+
+            const response =
+                await fetch(
+                    '/api/config/public',
+                    {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json'
+                        },
+                        credentials: 'same-origin',
+                        cache: 'no-store'
+                    }
+                );
+
+            if (!response.ok) {
+                throw new Error(
+                    `HTTP ${response.status} al cargar /api/config/public`
+                );
+            }
+
+            const config =
+                await response.json();
+
+            if (
+                !config ||
+                !config.supabaseUrl ||
+                !config.supabaseAnonKey
+            ) {
+                throw new Error(
+                    'La configuración pública de Supabase está incompleta.'
+                );
+            }
+
+            const SupabaseSDK =
+                window.supabase;
+
+            if (
+                !SupabaseSDK ||
+                typeof SupabaseSDK.createClient !==
+                    'function'
+            ) {
+                throw new Error(
+                    'El SDK de Supabase no está disponible.'
+                );
+            }
+
+            /*
+             * Guardamos la referencia al SDK antes de reemplazar
+             * window.supabase por el cliente.
+             */
+            window.SupabaseSDK =
+                SupabaseSDK;
+
+            supabaseClient =
+                SupabaseSDK.createClient(
+                    config.supabaseUrl,
+                    config.supabaseAnonKey
+                );
+
+            window.supabaseClient =
+                supabaseClient;
+
+            /*
+             * Compatibilidad con código antiguo.
+             */
+            window.supabase =
+                supabaseClient;
+
+            return supabaseClient;
+
+        } catch (error) {
+
+            console.error(
+                '❌ No fue posible cargar la configuración pública:',
+                error
+            );
+
+            throw error;
+        }
+
+    })();
+
+    return supabaseConfigPromise;
 }
-
-/*
- * Reutilizar el cliente que index.html ya creó.
- * Si no existe, crearlo aquí.
- */
-let supabaseClient = window.supabaseClient;
-
-if (
-    !supabaseClient &&
-    SupabaseSDK &&
-    typeof SupabaseSDK.createClient === 'function'
-) {
-    supabaseClient = SupabaseSDK.createClient(
-        SUPABASE_URL,
-        SUPABASE_ANON_KEY
-    );
-}
-
-if (!supabaseClient) {
-    throw new Error(
-        'No fue posible inicializar Supabase.'
-    );
-}
-
-/*
- * Cliente oficial compartido por todo el ecosistema.
- */
-window.supabaseClient = supabaseClient;
-
-/*
- * Compatibilidad:
- * Algunas páginas antiguas utilizan window.supabase
- * como cliente. Lo conservamos como cliente después
- * de guardar la SDK original en window.SupabaseSDK.
- */
-window.SupabaseSDK = SupabaseSDK;
-window.supabase = supabaseClient;
 
 
 /* ================================================================
-   CONFIGURACIÓN WEB3
+   POLYGON AMOY
 ================================================================ */
 
 const POLYGON_AMOY_CHAIN_ID = 80002;
@@ -79,14 +125,17 @@ const POLYGON_AMOY_HEX = '0x13882';
 const POLYGON_AMOY_PARAMS = {
     chainId: POLYGON_AMOY_HEX,
     chainName: 'Polygon Amoy',
+
     nativeCurrency: {
         name: 'POL',
         symbol: 'POL',
         decimals: 18
     },
+
     rpcUrls: [
         'https://rpc-amoy.polygon.technology'
     ],
+
     blockExplorerUrls: [
         'https://amoy.polygonscan.com'
     ]
@@ -104,7 +153,7 @@ let appInstance = null;
 
 
 /* ================================================================
-   HELPERS GLOBALES
+   HELPERS
 ================================================================ */
 
 function escapeHTML(texto) {
@@ -119,7 +168,8 @@ function escapeHTML(texto) {
     const div =
         document.createElement('div');
 
-    div.textContent = String(texto);
+    div.textContent =
+        String(texto);
 
     return div.innerHTML;
 }
@@ -174,16 +224,16 @@ function showToast(
             t.classList.add('success');
         }
 
-        clearTimeout(
-            t._timeout
-        );
+        clearTimeout(t._timeout);
 
         t._timeout =
             setTimeout(
                 function () {
+
                     t.classList.remove(
                         'show'
                     );
+
                 },
                 3500
             );
@@ -206,7 +256,7 @@ function showToast(
 
 
 /* ================================================================
-   SINCRONIZACIÓN GLOBAL DE USUARIO
+   USUARIO GLOBAL
 ================================================================ */
 
 function establecerUsuario(user) {
@@ -235,10 +285,6 @@ class GalletaDomoApp {
         this.supabase =
             supabaseClient;
 
-        /*
-         * Nunca usar el dominio viejo de Railway.
-         * Las llamadas API son same-origin.
-         */
         this.apiUrl =
             '/api';
 
@@ -278,16 +324,24 @@ class GalletaDomoApp {
         this._initialized =
             true;
 
-        console.log(
-            "◈ Sariel's — App inicializada"
-        );
-
-        console.log(
-            '🌐 API:',
-            this.apiUrl
-        );
-
         try {
+
+            /*
+             * IMPORTANTE:
+             * Esperamos la configuración pública antes
+             * de usar Supabase.
+             */
+            this.supabase =
+                await cargarConfiguracionPublica();
+
+            console.log(
+                "◈ Sariel's — App inicializada"
+            );
+
+            console.log(
+                '🌐 API:',
+                this.apiUrl
+            );
 
             const {
                 data,
@@ -336,19 +390,13 @@ class GalletaDomoApp {
                 this.supabase.auth.onAuthStateChange(
                     (event, session) => {
 
-                        /*
-                         * No hacemos operaciones pesadas directamente
-                         * dentro del callback de Supabase.
-                         */
                         Promise.resolve()
                             .then(
                                 async () => {
 
                                     try {
 
-                                        if (
-                                            session
-                                        ) {
+                                        if (session) {
 
                                             establecerUsuario(
                                                 session.user
@@ -360,7 +408,6 @@ class GalletaDomoApp {
                                                 null
                                             );
                                         }
-
 
                                         if (
                                             event ===
@@ -418,7 +465,6 @@ class GalletaDomoApp {
                                             establecerUsuario(
                                                 session.user
                                             );
-
                                         }
 
                                     } catch (error) {
@@ -516,6 +562,9 @@ class GalletaDomoApp {
 
         } catch (error) {
 
+            this._initialized =
+                false;
+
             console.error(
                 '❌ Error en init:',
                 error
@@ -538,7 +587,7 @@ class GalletaDomoApp {
         if (
             this._authListener &&
             typeof this._authListener.unsubscribe ===
-            'function'
+                'function'
         ) {
 
             this._authListener.unsubscribe();
@@ -832,9 +881,7 @@ class GalletaDomoApp {
                 error
             } =
                 await this.supabase
-                    .from(
-                        'estadisticas_usuarios'
-                    )
+                    .from('estadisticas_usuarios')
                     .select('*')
                     .eq(
                         'user_id',
@@ -877,9 +924,7 @@ class GalletaDomoApp {
             if (stats) {
 
                 await this.supabase
-                    .from(
-                        'estadisticas_usuarios'
-                    )
+                    .from('estadisticas_usuarios')
                     .update({
                         tokens_actuales:
                             this.tokens,
@@ -895,9 +940,7 @@ class GalletaDomoApp {
             } else {
 
                 await this.supabase
-                    .from(
-                        'estadisticas_usuarios'
-                    )
+                    .from('estadisticas_usuarios')
                     .insert({
                         user_id:
                             this.usuario.id,
@@ -968,7 +1011,6 @@ class GalletaDomoApp {
                 error
             } =
                 await this.supabase.auth.signUp({
-
                     email:
                         email,
 
@@ -1014,7 +1056,9 @@ class GalletaDomoApp {
             if (
                 msg
                     .toLowerCase()
-                    .includes('already registered')
+                    .includes(
+                        'already registered'
+                    )
             ) {
 
                 msg =
@@ -1077,6 +1121,7 @@ class GalletaDomoApp {
             }
 
             if (data?.user) {
+
                 establecerUsuario(
                     data.user
                 );
@@ -1342,9 +1387,6 @@ class GalletaDomoApp {
 
         try {
 
-            /*
-             * Solicitar cuenta.
-             */
             const accounts =
                 await window.ethereum.request({
                     method:
@@ -1358,9 +1400,6 @@ class GalletaDomoApp {
                 return false;
             }
 
-            /*
-             * Cambiar a Polygon Amoy.
-             */
             let chainId =
                 await window.ethereum.request({
                     method:
@@ -1388,13 +1427,10 @@ class GalletaDomoApp {
 
                 } catch (switchError) {
 
-                    /*
-                     * 4902 = red no agregada.
-                     */
                     if (
                         switchError &&
                         switchError.code ===
-                        4902
+                            4902
                     ) {
 
                         await window.ethereum.request({
@@ -1437,10 +1473,6 @@ class GalletaDomoApp {
                 return false;
             }
 
-
-            /*
-             * Web3 opcional.
-             */
             if (
                 typeof Web3 !==
                 'undefined'
@@ -1451,7 +1483,6 @@ class GalletaDomoApp {
                         window.ethereum
                     );
             }
-
 
             const wallet =
                 accounts[0];
@@ -1478,7 +1509,6 @@ class GalletaDomoApp {
                 wallet.slice(-4),
                 'success'
             );
-
 
             if (this.usuario) {
 
@@ -1601,9 +1631,7 @@ class GalletaDomoApp {
        TRANSMISIONES
     ============================================================ */
 
-    async crearTransmision(
-        datos
-    ) {
+    async crearTransmision(datos) {
 
         try {
 
@@ -1696,7 +1724,8 @@ class GalletaDomoApp {
 
             showToast(
                 '❌ Error: ' +
-                (error?.message || 'No se pudo crear'),
+                (error?.message ||
+                    'No se pudo crear'),
                 'error'
             );
 
@@ -2361,6 +2390,7 @@ class GalletaDomoApp {
                     );
 
             if (updateError) {
+
                 console.warn(
                     '⚠️ No se pudo actualizar transmisión:',
                     updateError
@@ -2395,9 +2425,7 @@ class GalletaDomoApp {
        UI USUARIO
     ============================================================ */
 
-    actualizarUIUsuario(
-        user
-    ) {
+    actualizarUIUsuario(user) {
 
         const loginBtn =
             document.getElementById(
@@ -2409,9 +2437,6 @@ class GalletaDomoApp {
                 'userInfo'
             );
 
-        /*
-         * UI actual del index.html.
-         */
         const sessionInfo =
             document.getElementById(
                 'sessionInfo'
@@ -2427,7 +2452,6 @@ class GalletaDomoApp {
                 'logoutBtn'
             );
 
-
         try {
 
             if (user) {
@@ -2437,16 +2461,11 @@ class GalletaDomoApp {
                     user.email ||
                     'Usuario';
 
-
                 if (loginBtn) {
                     loginBtn.style.display =
                         'none';
                 }
 
-
-                /*
-                 * Sistema antiguo.
-                 */
                 if (userInfo) {
 
                     userInfo.style.display =
@@ -2469,33 +2488,25 @@ class GalletaDomoApp {
                         `;
                 }
 
-
-                /*
-                 * Sistema actual.
-                 */
                 if (sessionInfo) {
                     sessionInfo.style.display =
                         'flex';
                 }
 
                 if (userEmail) {
-
                     userEmail.textContent =
                         user.email ||
                         nombre;
                 }
 
                 if (logoutBtn) {
-
                     logoutBtn.style.display =
                         'inline-block';
                 }
 
-
             } else {
 
                 if (loginBtn) {
-
                     loginBtn.style.display =
                         'inline-flex';
                 }
@@ -2510,13 +2521,11 @@ class GalletaDomoApp {
                 }
 
                 if (userEmail) {
-
                     userEmail.textContent =
                         'No autenticado';
                 }
 
                 if (logoutBtn) {
-
                     logoutBtn.style.display =
                         'none';
                 }
@@ -2536,9 +2545,7 @@ class GalletaDomoApp {
        UI WALLET
     ============================================================ */
 
-    actualizarUIWallet(
-        wallet
-    ) {
+    actualizarUIWallet(wallet) {
 
         const walletBtn =
             document.getElementById(
@@ -2562,7 +2569,6 @@ class GalletaDomoApp {
             if (wallet) {
 
                 if (walletBtn) {
-
                     walletBtn.style.display =
                         'none';
                 }
@@ -2589,7 +2595,6 @@ class GalletaDomoApp {
             } else {
 
                 if (walletBtn) {
-
                     walletBtn.style.display =
                         'inline-flex';
                 }
@@ -2671,12 +2676,14 @@ async function getSession() {
 
     try {
 
+        const client =
+            await cargarConfiguracionPublica();
+
         const {
             data,
             error
         } =
-            await supabaseClient.auth
-                .getSession();
+            await client.auth.getSession();
 
         if (error) {
             throw error;
@@ -2686,6 +2693,7 @@ async function getSession() {
             data?.session || null;
 
         if (session) {
+
             establecerUsuario(
                 session.user
             );
@@ -2712,8 +2720,8 @@ window.getSession =
    GET SUPABASE
 ================================================================ */
 
-function getSupabase() {
-    return supabaseClient;
+async function getSupabase() {
+    return await cargarConfiguracionPublica();
 }
 
 window.getSupabase =
@@ -2721,7 +2729,7 @@ window.getSupabase =
 
 
 /* ================================================================
-   CONFIG WEB3
+   CONFIG WEB3 PÚBLICA
 ================================================================ */
 
 window.SARIELS_WEB3 = {
@@ -2759,15 +2767,6 @@ document.addEventListener(
             console.log(
                 '🌐 API:',
                 app.apiUrl
-            );
-
-            console.log(
-                '◉ Supabase conectado'
-            );
-
-            console.log(
-                '⛓️ Polygon Amoy:',
-                POLYGON_AMOY_CHAIN_ID
             );
 
             const walletGuardada =
@@ -2817,7 +2816,7 @@ window.addEventListener(
         if (
             app &&
             typeof app.destroy ===
-            'function'
+                'function'
         ) {
 
             app.destroy();
