@@ -9,6 +9,133 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="../../../shared/config-layout.css" />
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script>
+        (function () {
+            'use strict';
+
+            window.__sarielsAuthenticated = null;
+            window.supabaseClient = window.supabaseClient || null;
+            window.supabaseReady = null;
+
+            window.getSupabaseClient = function () {
+                return window.supabaseReady;
+            };
+
+            function esRutaInternaSegura(valor) {
+                if (typeof valor !== 'string') return false;
+                if (!valor.startsWith('/')) return false;
+                if (valor.startsWith('//')) return false;
+                if (valor.startsWith('/\\')) return false;
+                return true;
+            }
+
+            function revelarPagina() {
+                document.documentElement.classList.add('auth-ready');
+            }
+
+            function irAlIndexConReturnTo() {
+                try {
+                    var returnTo = window.location.pathname + window.location.search + window.location.hash;
+                    if (esRutaInternaSegura(returnTo)) {
+                        localStorage.setItem('wallet_returnTo', returnTo);
+                    }
+                    window.location.replace('/');
+                } catch (e) {
+                    window.location.replace('/');
+                }
+            }
+
+            var salvaguarda = setTimeout(function () {
+                console.warn('[Posts] Salvaguarda activada.');
+                revelarPagina();
+            }, 10000);
+
+            async function inicializarSupabase() {
+                try {
+                    if (
+                        !window.supabase ||
+                        typeof window.supabase.createClient !== 'function'
+                    ) {
+                        throw new Error('Supabase SDK no disponible.');
+                    }
+
+                    if (!window.supabaseClient) {
+                        var supabaseUrl = null;
+                        var supabaseAnonKey = null;
+
+                        try {
+                            const response = await fetch('/api/config/public', {
+                                method: 'GET',
+                                credentials: 'same-origin',
+                                cache: 'no-store',
+                                headers: { 'Accept': 'application/json' }
+                            });
+
+                            if (response.ok) {
+                                const config = await response.json();
+                                supabaseUrl = config && config.supabaseUrl;
+                                supabaseAnonKey = config && config.supabaseAnonKey;
+                            }
+                        } catch (fetchErr) {
+                            console.warn('[Posts] fetch /api/config/public falló:', fetchErr);
+                        }
+
+                        if (!supabaseUrl || !supabaseAnonKey) {
+                            throw new Error('Configuración pública de Supabase no disponible.');
+                        }
+
+                        window.SupabaseSDK = window.supabase;
+
+                        window.supabaseClient = window.SupabaseSDK.createClient(
+                            supabaseUrl,
+                            supabaseAnonKey,
+                            {
+                                auth: {
+                                    persistSession: true,
+                                    autoRefreshToken: true,
+                                    detectSessionInUrl: true
+                                }
+                            }
+                        );
+                    }
+
+                    const resultado = await window.supabaseClient.auth.getSession();
+                    const session = resultado && resultado.data ? resultado.data.session : null;
+
+                    window.__sarielsAuthenticated = !!session;
+
+                    clearTimeout(salvaguarda);
+
+                    if (!session) {
+                        irAlIndexConReturnTo();
+                    } else {
+                        revelarPagina();
+                    }
+
+                    return window.supabaseClient;
+                } catch (error) {
+                    console.error('[Posts] Error inicializando Supabase:', error);
+                    window.__sarielsAuthenticated = false;
+                    clearTimeout(salvaguarda);
+                    revelarPagina();
+                    return null;
+                }
+            }
+
+            window.supabaseReady = inicializarSupabase();
+        })();
+    </script>
+
+    <style>
+        html:not(.auth-ready) body {
+            visibility: hidden;
+        }
+        html.auth-ready body {
+            visibility: visible;
+        }
+    </style>
 </head>
 <body class="cfg-page">
 
@@ -37,7 +164,6 @@
         </div>
     </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="../../../shared/config-icons.js"></script>
     <script src="../../../shared/config-layout.js"></script>
 
@@ -46,6 +172,15 @@
         'use strict';
 
         const $ = (sel) => document.querySelector(sel);
+
+        async function esperarCliente() {
+            const inicio = Date.now();
+            while (Date.now() - inicio < 10000) {
+                if (window.supabaseClient) return window.supabaseClient;
+                await new Promise(r => setTimeout(r, 100));
+            }
+            return null;
+        }
 
         cfgInitPage({
             title: 'Mis publicaciones',
@@ -61,9 +196,6 @@
         };
 
         function renderSecciones() {
-            // ============================================================
-            // VISIBILIDAD
-            // ============================================================
             $('#seccionVisibilidad').innerHTML = [
                 cfgRenderToggle({
                     id: 'toggleVisibilidad',
@@ -74,9 +206,6 @@
                 }),
             ].join('');
 
-            // ============================================================
-            // COMENTARIOS
-            // ============================================================
             $('#seccionComentarios').innerHTML = [
                 cfgRenderToggle({
                     id: 'toggleComentarios',
@@ -94,9 +223,6 @@
                 }),
             ].join('');
 
-            // ============================================================
-            // MENCIONES
-            // ============================================================
             $('#seccionMenciones').innerHTML = [
                 cfgRenderToggle({
                     id: 'toggleMenciones',
@@ -114,9 +240,6 @@
                 }),
             ].join('');
 
-            // ============================================================
-            // ZONA DE PELIGRO
-            // ============================================================
             $('#seccionPeligro').innerHTML = [
                 cfgRenderItem({
                     icon: 'ban',
@@ -137,9 +260,6 @@
             ].join('');
         }
 
-        // ============================================================
-        // CALLBACKS
-        // ============================================================
         window.onToggleVisibilidad = async (value) => {
             await cfgSetPref('posts_visibles_muro', value);
             cfgToast(
@@ -218,24 +338,14 @@
             }, 1500);
         };
 
-        // ============================================================
-        // INICIALIZAR
-        // ============================================================
         window.addEventListener('DOMContentLoaded', async () => {
             await new Promise(resolve => setTimeout(resolve, 400));
             renderSecciones();
         });
 
-        // ============================================================
-        // CARGAR HANDLE EN SUBTITLE
-        // ============================================================
-        (async function cargarUsuario() {
+        (async function cargarHandleSubtitulo() {
             try {
-                const client = window.supabaseClient || 
-                    (window.supabase && window.supabase.createClient(
-                        'https://zultnlogdoajehbswlih.supabase.co',
-                        'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
-                    ));
+                const client = await esperarCliente();
                 if (!client) return;
                 const { data } = await client.auth.getSession();
                 const session = data && data.session;
