@@ -514,16 +514,10 @@ html[data-tema="dia"] .footer {
 
 <script>
 'use strict';
-const SUPABASE_URL='https://zultnlogdoajehbswlih.supabase.co';
-const SUPABASE_ANON_KEY='sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+
 const BOT_ID='bot-marquinhos';
 const BOT_UUID='0a000000-0000-4000-8000-000000000001';
 const ESTADOS_BUCKET='sariels-estados';
-
-// ✅ Exponer supabaseClient globalmente
-if (typeof window.supabase !== 'undefined' && !window.supabaseClient) {
-    window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-}
 
 let db=null,user=null,current=null,msgChannel=null,callChannel=null,incomingId=null;
 let recorder=null,audioChunks=[],recordingMode=null,recordingStartedAt=0;
@@ -546,6 +540,44 @@ const call={room:null,id:null,active:false,audio:null,video:null,screen:null,ini
 const $=id=>document.getElementById(id);
 function toast(text,type=''){const el=$('toast');el.textContent=text;el.className='toast show '+type;clearTimeout(el.t);el.t=setTimeout(()=>el.classList.remove('show'),3500)}
 function esc(v){const d=document.createElement('div');d.textContent=v??'';return d.innerHTML}
+
+// ============================================================
+// INICIALIZACIÓN CENTRALIZADA DE SUPABASE
+// ============================================================
+async function inicializarSupabase() {
+    if (window.supabaseClient) return window.supabaseClient;
+
+    if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+        throw new Error('SDK de Supabase no disponible.');
+    }
+
+    const response = await fetch('/api/config/public', {
+        method: 'GET',
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: { 'Accept': 'application/json' }
+    });
+
+    if (!response.ok) {
+        throw new Error('No se pudo obtener /api/config/public (HTTP ' + response.status + ').');
+    }
+
+    const config = await response.json();
+    const supabaseUrl = config && config.supabaseUrl;
+    const supabaseAnonKey = config && config.supabaseAnonKey;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+        throw new Error('Configuración pública de Supabase incompleta.');
+    }
+
+    window.supabaseClient = window.supabase.createClient(supabaseUrl, supabaseAnonKey, {
+        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+        realtime: { params: { eventsPerSecond: 10 } }
+    });
+
+    return window.supabaseClient;
+}
+
 async function session(){if(!db)return null;const r=await db.auth.getSession();if(r.error)throw r.error;return r.data.session}
 async function auth(){const s=await session();if(!s){toast('⚠️ Inicia sesión para usar Mensajes','error');return false}user=s.user;return true}
 function avatar(name,url,cls='avatar'){return `<div class="${cls}">${url?`<img src="${esc(url)}" alt="">`:esc((name||'◈').charAt(0).toUpperCase())}</div>`}
@@ -1510,6 +1542,8 @@ async function enviarVozAlBot(file){
     $btn.textContent = '⏳';
     $btn.disabled = true;
 
+    let tempId = null;
+
     try {
         const s = await session();
         if(!s) { enviandoVozBot = false; $btn.classList.remove('processing'); $btn.textContent = '🔊'; $btn.disabled = false; return; }
@@ -1521,7 +1555,7 @@ async function enviarVozAlBot(file){
         const { data: signed } = await db.storage.from('chat-audio').createSignedUrl(path, 3600);
         if(!signed?.signedUrl){ toast('❌ Error firmando audio', 'error'); enviandoVozBot = false; $btn.classList.remove('processing'); $btn.textContent = '🔊'; $btn.disabled = false; return; }
 
-        const tempId = 'voice-user-' + Date.now();
+        tempId = 'voice-user-' + Date.now();
         const box = $('messages');
         const anchorRef = box.querySelector('#scrollAnchor');
         const tempHTML = `<div class="bubblewrap sent" id="${tempId}"><div class="bubble"><div class="voice-label">🎙️ TU VOZ</div><div class="voice-loading">Enviando a Marquinhos…</div></div></div>`;
@@ -1553,6 +1587,7 @@ async function enviarVozAlBot(file){
         if (!exito) throw new Error('El servidor de IA está saturado. Intenta de nuevo en unos minutos.');
 
         document.getElementById(tempId)?.remove();
+        tempId = null;
 
         try { await db.from('mensajes_chat').insert({remitente_id:user.id, destinatario_id:BOT_UUID, contenido: data.transcripcion || file.name, nombre_archivo: file.name, imagen_url: `bucket://chat-audio/${path}`, tipo:'audio', leido:true, editado:false, eliminado:false}); } catch(e) { console.warn('No se pudo guardar la nota de voz:', e); }
         try { if(data.reply){ await db.from('mensajes_chat').insert({remitente_id:BOT_UUID, destinatario_id:user.id, contenido: data.reply, tipo:'texto', leido:true, editado:false, eliminado:false}); } } catch(e) { console.warn('No se pudo guardar la respuesta de Marquinhos:', e); }
@@ -1571,7 +1606,7 @@ async function enviarVozAlBot(file){
         loadConversations();
     } catch(e) {
         console.error('Error voz bot:', e);
-        document.getElementById(tempId)?.remove();
+        if(tempId) document.getElementById(tempId)?.remove();
         if (e.message.includes('429') || e.message.includes('Too Many Requests') || e.message.includes('saturado')) {
             toast('⏳ El asistente está saturado. Por favor, espera unos segundos e intenta de nuevo.', 'warning');
         } else {
@@ -1774,11 +1809,13 @@ async function toggleScreen(){
 }
 
 async function init(){
-    db=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{
-        auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true},
-        realtime:{params:{eventsPerSecond:10}}
-    });
-    window.supabaseClient = db;
+    try {
+        db = await inicializarSupabase();
+    } catch(error) {
+        console.error('No se pudo inicializar Supabase:', error);
+        toast('❌ Error de configuración: ' + error.message, 'error');
+        return;
+    }
 
     try {
         const s = await session();
@@ -1898,7 +1935,6 @@ async function init(){
 
     setInterval(() => { limpiarVistosAntiguos(); cargarEstados(); }, 5 * 60 * 1000);
 
-    // ✅ Inicializar idiomas
     setTimeout(async function() {
         try {
             if (typeof window.inicializarIdiomas === 'function') {
