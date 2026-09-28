@@ -3,9 +3,11 @@
   "version": "2.1.0",
   "description": "Backend de Sariel's con Supabase, LiveKit, NOWPayments y Marquinhos AI",
   "main": "server.js",
+  "private": true,
+  "type": "commonjs",
   "engines": {
-    "node": "22.x",
-    "npm": "10.x"
+    "node": ">=22.0.0 <23.0.0",
+    "npm": ">=10.0.0"
   },
   "scripts": {
     "start": "node server.js",
