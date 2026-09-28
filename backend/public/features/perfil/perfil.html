@@ -8,7 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="/features/shared/js/apariencia-global.js?v=5" defer></script>
+<script src="/features/shared/js/apariencia-global.js?v=6" defer></script>
 
 <style>
     html:not(.auth-ready) .app { display: none !important; }
@@ -90,9 +90,9 @@
                     }
 
                     if (!supabaseUrl || !supabaseAnonKey) {
-                        console.warn('[Perfil Guardián] /api/config/public no devolvió datos. Usando fallback.');
                         supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
                         supabaseAnonKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+                        console.warn('[Perfil Guardián] Usando fallback.');
                     }
 
                     window.SupabaseSDK = window.supabase;
@@ -144,7 +144,7 @@
 
                 return window.supabaseClient;
             } catch (error) {
-                console.error('[Perfil Guardián] Error inicializando Supabase:', error);
+                console.error('[Perfil Guardián] Error:', error);
                 window.__sarielsAuthenticated = false;
                 window.supabaseError = error;
                 clearTimeout(salvaguarda);
@@ -1076,46 +1076,37 @@
 
 <script>
 /* ================================================================
-   BLOQUE DE INICIALIZACIÓN DE IDIOMAS (ÚNICA VEZ)
-   - Se ejecuta ANTES de perfil.js.
-   - Aplica traducciones UNA SOLA VEZ al DOM estático.
-   - NO se vuelve a llamar tras pintar las publicaciones.
+   INICIALIZACIÓN DE IDIOMAS — UNA SOLA VEZ, ANTES DE perfil.js
 =============================================================== */
 (function() {
     'use strict';
-
-    function intentarInicializarIdiomas() {
+    var intentos = 0;
+    function intentar() {
         if (typeof window.inicializarIdiomas === 'function') {
             try {
-                // Ejecuta, pero no bloquea.
                 Promise.resolve(window.inicializarIdiomas()).catch(function(e) {
                     console.warn('[Perfil] Error inicializando idiomas (ignorado):', e);
                 });
-                return true;
+                return;
             } catch (e) {
                 console.warn('[Perfil] Excepción inicializando idiomas:', e);
-                return true;
+                return;
             }
         }
-        return false;
-    }
-
-    // Esperar hasta que idiomas.js exponga inicializarIdiomas (máx 5s).
-    var intentos = 0;
-    (function esperar() {
-        if (intentarInicializarIdiomas()) return;
         if (intentos++ >= 25) return;
-        setTimeout(esperar, 200);
-    })();
+        setTimeout(intentar, 200);
+    }
+    intentar();
 })();
 </script>
 
-<script src="/features/shared/js/idiomas.js?v=5" defer></script>
-<script src="/features/perfil/perfil.js?v=5" defer></script>
+<script src="/features/shared/js/idiomas.js?v=6" defer></script>
+<script src="/features/perfil/perfil.js?v=6" defer></script>
 
 <script>
 /* ================================================================
    AVATAR MENU + REPARTIDOR + LISTENERS GLOBALES
+   — NO se vuelve a llamar inicializarIdiomas() aquí —
 =============================================================== */
 var CONFIG_LEGAL = {
     nombre_comercial: 'Csariel\'s',
@@ -1241,6 +1232,10 @@ window.irARepartidorDesdePerfil = irARepartidorDesdePerfil;
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(verificarEstadoRepartidorPerfil, 1500);
 
+    /* ⚠️ NO llamar inicializarIdiomas() aquí.
+       Ya se llamó UNA sola vez en el bloque de arriba.
+       Llamarlo otra vez rompería los onclick de las tarjetas. */
+
     document.addEventListener('click', function(e) {
         var menu = document.getElementById('avatarMenu');
         var avatar = document.getElementById('perfilAvatar');
@@ -1267,10 +1262,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script>
 /* ================================================================
-   PUBLICACIONES DEL PERFIL — Módulo autocontenido
-   Foto y video suben a bucket 'muro-videos'
-   Eliminar borra fila + archivo del bucket
-   Reacciones: botón único + dropdown
+   PUBLICACIONES DEL PERFIL
 =============================================================== */
 (function() {
     'use strict';
@@ -1278,7 +1270,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function sb() { return window.supabaseClient; }
 
     var archivosSeleccionados = { imagen: null, video: null };
-
     var EMOJIS_REACCION = ['❤️', '😊', '🔥', '👏', '🎉', '💎', '🤩', '😍', '😂'];
 
     var emojisDisponibles = ['😀','😁','😂','🤣','😃','😄','😅','😊','😇','🙂','😉','😍','🥰','😘','😗','😙','😚','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🤐','🤨','😐','😑','😶','😏','😒','🙄','😬','🤥','😌','😔','😪','🤤','😴','😷','🤒','🤕','🤢','🤮','🤧','🥵','🥶','😵','🤯','🤠','🥳','😎','🤓','🧐','😕','😟','🙁','😮','😯','😲','😳','🥺','😦','😧','😨','😰','😥','😢','😭','😱','😖','😣','😞','😓','😩','😫','🥱','😤','😡','😠','🤬','😈','👿','💀','💩','🤡','👹','👺','👻','👽','👾','🤖','❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','🔥','✨','🌟','💫','⭐','⚡','💥','💢','🌈','☀️','🌤️','⛅','🌥️','☁️','🌦️','🌧️','⛈️','🌩️','🌨️','❄️','☃️','⛄','🌬️','💨','🌪️','🌫️','🌊','💧','💦','☔','☂️','🌂','🎉','🎊','🎈','🎁','🎂','🍰','🧁','🍕','🍔','🍟','🌮','🌯','🍿','🍩','🍪','🍫','🍬','🍭','🍮','🍯','🍷','🍸','🍹','🍺','🍻','🥂','🥃','🍾','☕','🍵','🧃','🥤','🧋','🍼','🥛','💊','🌿','🍃','🍀','🍁','🍂','🌸','🌺','🌻','🌹','🌷','🌼','💐','🌱','🌲','🌳','🌴','🌵','🌾','🍄','🐚','🪨','🌍','🌎','🌏','🌕','🌖','🌗','🌘','🌑','🌒','🌓','🌔','🌙','🌚','🌝','🌞','🪐','☄️','🌠','🌌'];
@@ -1504,39 +1495,44 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 var emojiMostrado = reaccionUsuario || '❤️';
 
-                var dropdownHtml = '<div class="reaccion-dropdown" id="reaccion-dropdown-' + p.id + '">';
+                var dropdownHtml = '<div class="reaccion-dropdown" id="reaccion-dropdown-' + p.id + '" data-no-traducir="1">';
                 EMOJIS_REACCION.forEach(function(emoji) {
                     var count = conteos[emoji] || 0;
                     var activo = reaccionUsuario === emoji ? ' activa' : '';
-                    dropdownHtml += '<button type="button" class="' + activo.trim() + '" onclick="event.stopPropagation(); window.reaccionarPublicacionPerfil(\'' + p.id + '\', \'' + emoji + '\')" title="Reaccionar ' + emoji + '">' + emoji + (count > 0 ? '<span class="mini-count">' + count + '</span>' : '') + '</button>';
+                    dropdownHtml += '<button type="button" data-no-traducir="1" class="' + activo.trim() + '" onclick="event.stopPropagation(); window.reaccionarPublicacionPerfil(\'' + p.id + '\', \'' + emoji + '\')" title="Reaccionar ' + emoji + '">' + emoji + (count > 0 ? '<span class="mini-count" data-no-traducir="1">' + count + '</span>' : '') + '</button>';
                 });
                 dropdownHtml += '</div>';
 
                 var triggerClass = 'reaccion-trigger' + (reaccionUsuario ? ' activa' : '');
                 var triggerHtml =
-                    '<div class="reaccion-wrap">' +
+                    '<div class="reaccion-wrap" data-no-traducir="1">' +
                         dropdownHtml +
-                        '<button type="button" class="' + triggerClass + '" onclick="event.stopPropagation(); window.toggleReaccionDropdown(\'' + p.id + '\')" title="Reaccionar">' +
-                            '<span class="emoji-actual">' + emojiMostrado + '</span>' +
-                            (totalReacciones > 0 ? '<span class="count">' + totalReacciones + '</span>' : '<span class="count">Reaccionar</span>') +
+                        '<button type="button" data-no-traducir="1" class="' + triggerClass + '" onclick="event.stopPropagation(); window.toggleReaccionDropdown(\'' + p.id + '\')" title="Reaccionar">' +
+                            '<span class="emoji-actual" data-no-traducir="1">' + emojiMostrado + '</span>' +
+                            (totalReacciones > 0 ? '<span class="count" data-no-traducir="1">' + totalReacciones + '</span>' : '<span class="count" data-no-traducir="1">Reaccionar</span>') +
                         '</button>' +
                     '</div>';
 
                 card.innerHTML =
-                    '<div class="header"><div class="avatar">' + avatarHtml + '</div><div><div class="nombre">Mi publicación</div><div class="fecha">' + fecha + '</div></div></div>' +
-                    '<div class="contenido">' + contenidoHtml + '</div>' + triggerHtml +
-                    '<div class="stats">' +
-                        '<button type="button" class="btn-accion-pub" onclick="event.stopPropagation(); window.toggleComentariosPerfil(\'' + p.id + '\')">💬 Comentarios</button>' +
-                        '<button type="button" class="btn-accion-pub danger" onclick="event.stopPropagation(); window.eliminarMiPublicacion(\'' + p.id + '\', event)">Eliminar</button>' +
+                    '<div class="header"><div class="avatar">' + avatarHtml + '</div><div><div class="nombre" data-no-traducir="1">Mi publicación</div><div class="fecha" data-no-traducir="1">' + fecha + '</div></div></div>' +
+                    '<div class="contenido" data-no-traducir="1">' + contenidoHtml + '</div>' + triggerHtml +
+                    '<div class="stats" data-no-traducir="1">' +
+                        '<button type="button" data-no-traducir="1" class="btn-accion-pub" onclick="event.stopPropagation(); window.toggleComentariosPerfil(\'' + p.id + '\')">💬 Comentarios</button>' +
+                        '<button type="button" data-no-traducir="1" class="btn-accion-pub danger" onclick="event.stopPropagation(); window.eliminarMiPublicacion(\'' + p.id + '\', event)">Eliminar</button>' +
                     '</div>' +
-                    '<div class="comentarios-container" id="comentarios-container-' + p.id + '">' +
-                        '<div class="comentarios-lista" id="comentarios-lista-' + p.id + '"></div>' +
-                        '<div class="comentario-input-row">' +
+                    '<div class="comentarios-container" data-no-traducir="1" id="comentarios-container-' + p.id + '">' +
+                        '<div class="comentarios-lista" data-no-traducir="1" id="comentarios-lista-' + p.id + '"></div>' +
+                        '<div class="comentario-input-row" data-no-traducir="1">' +
                             '<input type="text" id="comentario-input-' + p.id + '" placeholder="Escribe un comentario..." />' +
-                            '<button type="button" onclick="window.enviarComentarioPerfil(\'' + p.id + '\')">Enviar</button>' +
+                            '<button type="button" data-no-traducir="1" onclick="window.enviarComentarioPerfil(\'' + p.id + '\')">Enviar</button>' +
                         '</div>' +
                     '</div>';
                 container.appendChild(card);
+
+                /* Blindar botones contra sobrescritura de textContent */
+                card.querySelectorAll('.btn-accion-pub, .reaccion-trigger, .reaccion-dropdown button, .stats, .comentarios-container').forEach(function(btn) {
+                    btn.setAttribute('data-no-traducir', '1');
+                });
             });
         } catch (error) {
             console.error('Error cargando mis publicaciones:', error);
@@ -1614,7 +1610,7 @@ document.addEventListener('DOMContentLoaded', function() {
             EMOJIS_REACCION.forEach(function(emoji) {
                 var count = conteos[emoji] || 0;
                 var activo = reaccionUsuario === emoji ? ' activa' : '';
-                ddHtml += '<button type="button" class="' + activo.trim() + '" onclick="event.stopPropagation(); window.reaccionarPublicacionPerfil(\'' + postId + '\', \'' + emoji + '\')" title="Reaccionar ' + emoji + '">' + emoji + (count > 0 ? '<span class="mini-count">' + count + '</span>' : '') + '</button>';
+                ddHtml += '<button type="button" data-no-traducir="1" class="' + activo.trim() + '" onclick="event.stopPropagation(); window.reaccionarPublicacionPerfil(\'' + postId + '\', \'' + emoji + '\')" title="Reaccionar ' + emoji + '">' + emoji + (count > 0 ? '<span class="mini-count" data-no-traducir="1">' + count + '</span>' : '') + '</button>';
             });
             dd.innerHTML = ddHtml;
 
@@ -1622,8 +1618,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (trigger) {
                 trigger.className = 'reaccion-trigger' + (reaccionUsuario ? ' activa' : '');
                 trigger.innerHTML =
-                    '<span class="emoji-actual">' + emojiMostrado + '</span>' +
-                    (total > 0 ? '<span class="count">' + total + '</span>' : '<span class="count">Reaccionar</span>');
+                    '<span class="emoji-actual" data-no-traducir="1">' + emojiMostrado + '</span>' +
+                    (total > 0 ? '<span class="count" data-no-traducir="1">' + total + '</span>' : '<span class="count" data-no-traducir="1">Reaccionar</span>');
             }
         } catch(e) {}
     }
@@ -1757,7 +1753,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script>
 /* ================================================================
-   ÓRDENES DE INTERNET — Módulo autocontenido
+   ÓRDENES DE INTERNET
 =============================================================== */
 (function() {
     'use strict';
