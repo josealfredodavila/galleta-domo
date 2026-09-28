@@ -18,24 +18,22 @@
 // - public.traducciones usa: idioma_id, clave, valor, modulo
 // - No se crea un segundo sistema de traducciones
 //
-// FIX (v2):
-// - aplicarTraducciones() ya NO sobrescribe el texto original del
-//   HTML cuando la clave no existe en el mapa de traducciones.
-//   Antes usaba `t(clave)` que devuelve la clave humanizada como
-//   fallback, y eso causaba que en pantalla aparecieran textos como
-//   "perfil mi publicacion" o "nav inicio" en lugar del texto
-//   original del HTML.
-// - Ahora se verifica estrictamente contra el mapa `traducciones`.
+// FIX (v3):
+// - aplicarTraducciones() NUNCA sobrescribe el contenido de un
+//   elemento que tenga hijos HTML (children.length > 0).
+//   Esto evita que se borren botones, spans, e iconos internos.
+// - Se respeta el atributo data-no-traducir="1" para blindar
+//   elementos que no deben ser tocados por el sistema.
+// - Si un elemento está vacío o solo contiene texto plano, se
+//   traduce con textContent. Si tiene hijos, se ignora.
 // ================================================================
-
 
 // ================================================================
 // OBTENER CLIENTE SUPABASE
 // ================================================================
 
 function getSupabaseClient() {
-
-    // 1. Usar cliente global existente
+    // 1. Usar cliente global existente (creado por el bloque del HTML)
     if (window.supabaseClient) {
         return window.supabaseClient;
     }
@@ -46,7 +44,9 @@ function getSupabaseClient() {
         typeof window.supabase.createClient === 'function'
     ) {
         try {
-
+            // ⚠️ Nota: estas credenciales solo se usan si el bloque
+            // centralizado del HTML no pudo crear window.supabaseClient.
+            // En producción /api/config/public es la fuente de verdad.
             const client = window.supabase.createClient(
                 'https://zultnlogdoajehbswlih.supabase.co',
                 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
@@ -55,9 +55,7 @@ function getSupabaseClient() {
             window.supabaseClient = client;
 
             return client;
-
         } catch (e) {
-
             console.warn(
                 '⚠️ No se pudo crear cliente Supabase:',
                 e
@@ -68,15 +66,12 @@ function getSupabaseClient() {
     return null;
 }
 
-
 // ================================================================
 // OBTENER SESIÓN
 // ================================================================
 
 async function getSession() {
-
     try {
-
         const client = getSupabaseClient();
 
         if (!client) {
@@ -89,9 +84,7 @@ async function getSession() {
         } = await client.auth.getSession();
 
         return session;
-
     } catch (e) {
-
         console.error(
             '❌ Error obteniendo sesión:',
             e
@@ -101,7 +94,6 @@ async function getSession() {
     }
 }
 
-
 // ================================================================
 // ESTADO GLOBAL DEL SISTEMA I18N
 // ================================================================
@@ -109,11 +101,9 @@ async function getSession() {
 let idiomaActual = null;
 let traducciones = {};
 
-
 // Exponer el objeto globalmente.
 window.traducciones = traducciones;
 window.idiomaActual = idiomaActual;
-
 
 // ================================================================
 // IDIOMA POR DEFECTO
@@ -126,15 +116,12 @@ const IDIOMA_DEFAULT = {
     bandera: '🌐'
 };
 
-
 // ================================================================
 // OBTENER EL IDIOMA DEL USUARIO
 // ================================================================
 
 async function obtenerIdiomaUsuario() {
-
     try {
-
         const client = getSupabaseClient();
 
         if (!client) {
@@ -143,7 +130,6 @@ async function obtenerIdiomaUsuario() {
             return idiomaActual;
         }
 
-
         // ------------------------------------------------------------
         // 1. Intentar desde el perfil del usuario
         // ------------------------------------------------------------
@@ -151,7 +137,6 @@ async function obtenerIdiomaUsuario() {
         const session = await getSession();
 
         if (session && session.user) {
-
             const {
                 data: usuario,
                 error: errUsuario
@@ -161,13 +146,11 @@ async function obtenerIdiomaUsuario() {
                 .eq('id', session.user.id)
                 .maybeSingle();
 
-
             if (
                 !errUsuario &&
                 usuario &&
                 usuario.idioma_preferido_id
             ) {
-
                 const {
                     data: idioma
                 } = await client
@@ -179,9 +162,7 @@ async function obtenerIdiomaUsuario() {
                     )
                     .maybeSingle();
 
-
                 if (idioma) {
-
                     idiomaActual = idioma;
                     window.idiomaActual = idiomaActual;
 
@@ -189,7 +170,6 @@ async function obtenerIdiomaUsuario() {
                 }
             }
         }
-
 
         // ------------------------------------------------------------
         // 2. Intentar desde localStorage
@@ -208,9 +188,7 @@ async function obtenerIdiomaUsuario() {
             );
         }
 
-
         if (localId) {
-
             const {
                 data: idioma
             } = await client
@@ -219,16 +197,13 @@ async function obtenerIdiomaUsuario() {
                 .eq('id', localId)
                 .maybeSingle();
 
-
             if (idioma) {
-
                 idiomaActual = idioma;
                 window.idiomaActual = idiomaActual;
 
                 return idioma;
             }
         }
-
 
         // ------------------------------------------------------------
         // 3. Idioma por defecto: es-MX
@@ -243,53 +218,40 @@ async function obtenerIdiomaUsuario() {
             .eq('activo', true)
             .maybeSingle();
 
-
         idiomaActual =
             idiomaDefault ||
             IDIOMA_DEFAULT;
 
-
         window.idiomaActual = idiomaActual;
 
-
         return idiomaActual;
-
-
     } catch (error) {
-
         console.error(
             'Error obteniendo idioma:',
             error
         );
 
-
         idiomaActual = IDIOMA_DEFAULT;
         window.idiomaActual = idiomaActual;
-
 
         return idiomaActual;
     }
 }
-
 
 // ================================================================
 // CARGAR TRADUCCIONES DEL IDIOMA ACTUAL
 // ================================================================
 
 async function cargarTraducciones(idiomaId) {
-
     try {
-
         const client = getSupabaseClient();
 
         if (!client || !idiomaId) {
-
             traducciones = {};
             window.traducciones = traducciones;
 
             return traducciones;
         }
-
 
         const {
             data,
@@ -304,11 +266,9 @@ async function cargarTraducciones(idiomaId) {
                 idiomaId
             );
 
-
         if (error) {
             throw error;
         }
-
 
         // ------------------------------------------------------------
         // Crear nuevo mapa de traducciones
@@ -316,11 +276,8 @@ async function cargarTraducciones(idiomaId) {
 
         const nuevoMapa = {};
 
-
         if (Array.isArray(data)) {
-
             data.forEach(item => {
-
                 if (
                     !item ||
                     !item.clave
@@ -328,40 +285,30 @@ async function cargarTraducciones(idiomaId) {
                     return;
                 }
 
-
                 // La columna correcta es "valor".
                 nuevoMapa[item.clave] =
                     item.valor ?? '';
             });
         }
 
-
         traducciones = nuevoMapa;
-
 
         // Sincronizar referencia global
         window.traducciones = traducciones;
 
-
         return traducciones;
-
-
     } catch (error) {
-
         console.error(
             'Error cargando traducciones:',
             error
         );
 
-
         traducciones = {};
         window.traducciones = traducciones;
-
 
         return traducciones;
     }
 }
-
 
 // ================================================================
 // OBTENER TEXTO TRADUCIDO
@@ -377,11 +324,9 @@ async function cargarTraducciones(idiomaId) {
 // ================================================================
 
 function t(clave, modulo = null) {
-
     if (!clave) {
         return '';
     }
-
 
     // ------------------------------------------------------------
     // Buscar clave exacta
@@ -393,7 +338,6 @@ function t(clave, modulo = null) {
             clave
         )
     ) {
-
         const valor =
             traducciones[clave];
 
@@ -406,16 +350,13 @@ function t(clave, modulo = null) {
         }
     }
 
-
     // ------------------------------------------------------------
     // Buscar clave usando módulo
     // ------------------------------------------------------------
 
     if (modulo) {
-
         const keyModulo =
             `${modulo}_${clave}`;
-
 
         if (
             Object.prototype.hasOwnProperty.call(
@@ -423,10 +364,8 @@ function t(clave, modulo = null) {
                 keyModulo
             )
         ) {
-
             const valor =
                 traducciones[keyModulo];
-
 
             if (
                 valor !== null &&
@@ -438,7 +377,6 @@ function t(clave, modulo = null) {
         }
     }
 
-
     // ------------------------------------------------------------
     // Fallback seguro
     //
@@ -449,7 +387,6 @@ function t(clave, modulo = null) {
         .replace(/_/g, ' ');
 }
 
-
 // ================================================================
 // VERIFICAR SI UNA CLAVE TIENE TRADUCCIÓN REAL
 // ================================================================
@@ -459,7 +396,6 @@ function t(clave, modulo = null) {
 // ================================================================
 
 function obtenerTraduccionReal(clave, modulo = null) {
-
     if (!clave) {
         return null;
     }
@@ -470,7 +406,6 @@ function obtenerTraduccionReal(clave, modulo = null) {
             clave
         )
     ) {
-
         const valor = traducciones[clave];
 
         if (
@@ -483,7 +418,6 @@ function obtenerTraduccionReal(clave, modulo = null) {
     }
 
     if (modulo) {
-
         const keyModulo = `${modulo}_${clave}`;
 
         if (
@@ -492,7 +426,6 @@ function obtenerTraduccionReal(clave, modulo = null) {
                 keyModulo
             )
         ) {
-
             const valor = traducciones[keyModulo];
 
             if (
@@ -508,7 +441,6 @@ function obtenerTraduccionReal(clave, modulo = null) {
     return null;
 }
 
-
 // ================================================================
 // OBTENER TRADUCCIÓN CON FALLBACK PERSONALIZADO
 // ================================================================
@@ -518,7 +450,6 @@ function tConFallback(
     fallback = '',
     modulo = null
 ) {
-
     const real = obtenerTraduccionReal(clave, modulo);
 
     if (real !== null) {
@@ -532,29 +463,25 @@ function tConFallback(
     return String(clave).replace(/_/g, ' ');
 }
 
-
 // ================================================================
 // APLICAR TRADUCCIONES A HTML
 // ================================================================
 //
 // Acepta una raíz opcional (document, un elemento, etc.).
 //
-// FIX v2:
-// - Ahora usa obtenerTraduccionReal() en lugar de t().
-// - Esto significa que si una clave NO existe en el mapa de
-//   traducciones, se respeta el texto original del HTML.
-//   Antes se sobrescribía con la clave humanizada y se veía
-//   "perfil mi publicacion" o "nav inicio" en pantalla.
+// FIX v3:
+// - Ahora es ESTRICTO: NUNCA sobrescribe el contenido de un
+//   elemento que tenga hijos HTML. Solo traduce elementos cuyo
+//   contenido sea texto plano (sin children).
+// - Respeta data-no-traducir="1" para saltar elementos blindados.
+// - Esto evita que se borren botones, íconos o spans internos.
 // ================================================================
 
 function aplicarTraducciones(raiz = document) {
-
     try {
-
         if (!raiz) {
             raiz = document;
         }
-
 
         // ----------------------------------------------------------
         // DATA-CLAVE
@@ -565,35 +492,44 @@ function aplicarTraducciones(raiz = document) {
                 ? raiz.querySelectorAll('[data-clave]')
                 : [];
 
-
         elementosClave.forEach(el => {
-
             const clave =
                 el.getAttribute('data-clave');
-
 
             if (!clave) {
                 return;
             }
 
+            // ✅ BLINDAJE 1: Si tiene hijos HTML, NO tocar.
+            // Ejemplo: <div><span>texto</span><button>...</button></div>
+            // NO se debe sobrescribir con textContent.
+            if (el.children && el.children.length > 0) {
+                return;
+            }
+
+            // ✅ BLINDAJE 2: Si tiene data-no-traducir, NO tocar.
+            if (el.hasAttribute('data-no-traducir')) {
+                return;
+            }
+
+            // ✅ BLINDAJE 3: Si tiene contenido con elementos (svg, img, etc.),
+            // NO tocar aunque children esté vacío.
+            if (el.innerHTML && el.innerHTML.indexOf('<') !== -1) {
+                return;
+            }
 
             const modulo =
                 el.getAttribute('data-modulo') || null;
-
 
             // Obtener traducción REAL (null si no existe).
             const traduccion =
                 obtenerTraduccionReal(clave, modulo);
 
-
             // SOLO sobrescribir si hay traducción real.
-            // Si no existe, se respeta el texto original del HTML.
             if (traduccion !== null) {
                 el.textContent = traduccion;
             }
-
         });
-
 
         // ----------------------------------------------------------
         // DATA-PLACEHOLDER
@@ -604,45 +540,37 @@ function aplicarTraducciones(raiz = document) {
                 ? raiz.querySelectorAll('[data-placeholder]')
                 : [];
 
-
         elementosPlaceholder.forEach(el => {
-
             const clave =
                 el.getAttribute('data-placeholder');
-
 
             if (!clave) {
                 return;
             }
 
+            if (el.hasAttribute('data-no-traducir')) {
+                return;
+            }
 
             const traduccion =
                 obtenerTraduccionReal(clave);
-
 
             // SOLO sobrescribir el placeholder si hay traducción real.
             if (traduccion !== null) {
                 el.setAttribute('placeholder', traduccion);
             }
-
         });
 
-
         return true;
-
-
     } catch (error) {
-
         console.error(
             '❌ Error aplicando traducciones:',
             error
         );
 
-
         return false;
     }
 }
-
 
 // ================================================================
 // APLICAR TRADUCCIONES A CONTENIDO DINÁMICO
@@ -652,17 +580,14 @@ function aplicarTraducciones(raiz = document) {
 // ================================================================
 
 function aplicarTraduccionesDinamicas(raiz = document) {
-
     return aplicarTraducciones(raiz);
 }
-
 
 // ================================================================
 // CÓDIGO DEL IDIOMA ACTUAL
 // ================================================================
 
 function obtenerCodigoIdiomaActual() {
-
     return (
         idiomaActual?.codigo ||
         window.idiomaActual?.codigo ||
@@ -670,64 +595,50 @@ function obtenerCodigoIdiomaActual() {
     );
 }
 
-
 // ================================================================
 // COMPROBAR SI EL IDIOMA ACTUAL ES UNO ESPECÍFICO
 // ================================================================
 
 function esIdioma(codigo) {
-
     return (
         obtenerCodigoIdiomaActual() ===
         codigo
     );
 }
 
-
 // ================================================================
 // CAMBIAR EL IDIOMA DEL USUARIO
 // ================================================================
 
 async function cambiarIdioma(idiomaId) {
-
     try {
-
         if (!idiomaId) {
             return;
         }
 
-
         try {
-
             localStorage.setItem(
                 'idioma_preferido',
                 idiomaId
             );
-
         } catch (e) {
-
             console.warn(
                 '⚠️ No se pudo guardar idioma_preferido:',
                 e
             );
         }
 
-
         const session =
             await getSession();
-
 
         if (
             session &&
             session.user
         ) {
-
             const client =
                 getSupabaseClient();
 
-
             if (client) {
-
                 const {
                     error
                 } = await client
@@ -741,9 +652,7 @@ async function cambiarIdioma(idiomaId) {
                         session.user.id
                     );
 
-
                 if (error) {
-
                     console.warn(
                         '⚠️ No se pudo guardar idioma en perfil:',
                         error
@@ -752,23 +661,17 @@ async function cambiarIdioma(idiomaId) {
             }
         }
 
-
         window.location.reload();
-
-
     } catch (error) {
-
         console.error(
             'Error cambiando idioma:',
             error
         );
 
-
         if (
             typeof window.showToast ===
             'function'
         ) {
-
             window.showToast(
                 '❌ Error al cambiar idioma',
                 'error'
@@ -777,41 +680,32 @@ async function cambiarIdioma(idiomaId) {
     }
 }
 
-
 // ================================================================
 // CARGAR SELECTOR DE IDIOMAS
 // ================================================================
 
 async function cargarSelectorIdiomas() {
-
     try {
-
         const select =
             document.getElementById(
                 'selectorIdioma'
             );
 
-
         if (!select) {
             return;
         }
 
-
         const client =
             getSupabaseClient();
 
-
         if (!client) {
-
             select.innerHTML =
                 '<option value="es-MX" selected>🌐 Español</option>';
 
             return;
         }
 
-
         select.innerHTML = '';
-
 
         const {
             data,
@@ -832,45 +726,36 @@ async function cargarSelectorIdiomas() {
                 }
             );
 
-
         if (error) {
             throw error;
         }
-
 
         if (
             !data ||
             data.length === 0
         ) {
-
             select.innerHTML =
                 '<option value="es-MX" selected>🌐 Español</option>';
 
             return;
         }
 
-
         const idiomaUsuario =
             await obtenerIdiomaUsuario();
-
 
         const idiomaIdActual =
             idiomaUsuario?.id;
 
-
         const codigosVistos =
             new Set();
 
-
         data.forEach(idioma => {
-
             if (
                 !idioma ||
                 !idioma.codigo
             ) {
                 return;
             }
-
 
             if (
                 codigosVistos.has(
@@ -880,98 +765,76 @@ async function cargarSelectorIdiomas() {
                 return;
             }
 
-
             codigosVistos.add(
                 idioma.codigo
             );
-
 
             const option =
                 document.createElement(
                     'option'
                 );
 
-
             option.value =
                 idioma.id;
-
 
             const bandera =
                 idioma.bandera ||
                 '🌐';
-
 
             const nombre =
                 idioma.nombre_nativo ||
                 idioma.nombre ||
                 idioma.codigo;
 
-
             option.textContent =
                 `${bandera} ${nombre}`;
-
 
             if (
                 idioma.id ===
                 idiomaIdActual
             ) {
-
                 option.selected =
                     true;
             }
 
-
             select.appendChild(
                 option
             );
-
         });
-
 
         console.log(
             `✅ Selector de idiomas cargado: ${select.options.length} idiomas`
         );
-
-
     } catch (error) {
-
         console.error(
             'Error cargando selector de idiomas:',
             error
         );
-
 
         const select =
             document.getElementById(
                 'selectorIdioma'
             );
 
-
         if (select) {
-
             select.innerHTML =
                 '<option value="es-MX" selected>🌐 Español</option>';
         }
     }
 }
 
-
 // ================================================================
 // INICIALIZAR SISTEMA COMPLETO
 // ================================================================
 
 async function inicializarIdiomas() {
-
     try {
-
         let intentos = 0;
-
 
         while (
             !getSupabaseClient() &&
             intentos < 30
         ) {
-
             await new Promise(
                 resolve =>
                     setTimeout(
@@ -980,20 +843,16 @@ async function inicializarIdiomas() {
                     )
             );
 
-
             intentos++;
         }
 
-
         const idioma =
             await obtenerIdiomaUsuario();
-
 
         if (
             idioma &&
             idioma.id
         ) {
-
             await cargarTraducciones(
                 idioma.id
             );
@@ -1001,17 +860,12 @@ async function inicializarIdiomas() {
             aplicarTraducciones();
         }
 
-
         await cargarSelectorIdiomas();
-
-
     } catch (error) {
-
         console.error(
             'Error inicializando idiomas:',
             error
         );
-
 
         try {
             await cargarSelectorIdiomas();
@@ -1023,7 +877,6 @@ async function inicializarIdiomas() {
         }
     }
 }
-
 
 // ================================================================
 // EXPOSICIÓN GLOBAL
@@ -1071,11 +924,10 @@ window.obtenerCodigoIdiomaActual =
 window.esIdioma =
     esIdioma;
 
-
 // ================================================================
 // LOG
 // ================================================================
 
 console.log(
-    '✅ Sistema de idiomas cargado correctamente (v2 - fallback corregido)'
+    '✅ Sistema de idiomas cargado correctamente (v3 - blindaje estricto)'
 );
