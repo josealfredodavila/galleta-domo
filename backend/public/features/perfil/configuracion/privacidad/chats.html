@@ -9,8 +9,133 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="../../../shared/config-layout.css" />
-    
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script>
+        (function () {
+            'use strict';
+
+            window.__sarielsAuthenticated = null;
+            window.supabaseClient = window.supabaseClient || null;
+            window.supabaseReady = null;
+
+            window.getSupabaseClient = function () {
+                return window.supabaseReady;
+            };
+
+            function esRutaInternaSegura(valor) {
+                if (typeof valor !== 'string') return false;
+                if (!valor.startsWith('/')) return false;
+                if (valor.startsWith('//')) return false;
+                if (valor.startsWith('/\\')) return false;
+                return true;
+            }
+
+            function revelarPagina() {
+                document.documentElement.classList.add('auth-ready');
+            }
+
+            function irAlIndexConReturnTo() {
+                try {
+                    var returnTo = window.location.pathname + window.location.search + window.location.hash;
+                    if (esRutaInternaSegura(returnTo)) {
+                        localStorage.setItem('wallet_returnTo', returnTo);
+                    }
+                    window.location.replace('/');
+                } catch (e) {
+                    window.location.replace('/');
+                }
+            }
+
+            var salvaguarda = setTimeout(function () {
+                console.warn('[Chats] Salvaguarda activada.');
+                revelarPagina();
+            }, 10000);
+
+            async function inicializarSupabase() {
+                try {
+                    if (
+                        !window.supabase ||
+                        typeof window.supabase.createClient !== 'function'
+                    ) {
+                        throw new Error('Supabase SDK no disponible.');
+                    }
+
+                    if (!window.supabaseClient) {
+                        var supabaseUrl = null;
+                        var supabaseAnonKey = null;
+
+                        try {
+                            const response = await fetch('/api/config/public', {
+                                method: 'GET',
+                                credentials: 'same-origin',
+                                cache: 'no-store',
+                                headers: { 'Accept': 'application/json' }
+                            });
+
+                            if (response.ok) {
+                                const config = await response.json();
+                                supabaseUrl = config && config.supabaseUrl;
+                                supabaseAnonKey = config && config.supabaseAnonKey;
+                            }
+                        } catch (fetchErr) {
+                            console.warn('[Chats] fetch /api/config/public falló:', fetchErr);
+                        }
+
+                        if (!supabaseUrl || !supabaseAnonKey) {
+                            throw new Error('Configuración pública de Supabase no disponible.');
+                        }
+
+                        window.SupabaseSDK = window.supabase;
+
+                        window.supabaseClient = window.SupabaseSDK.createClient(
+                            supabaseUrl,
+                            supabaseAnonKey,
+                            {
+                                auth: {
+                                    persistSession: true,
+                                    autoRefreshToken: true,
+                                    detectSessionInUrl: true
+                                }
+                            }
+                        );
+                    }
+
+                    const resultado = await window.supabaseClient.auth.getSession();
+                    const session = resultado && resultado.data ? resultado.data.session : null;
+
+                    window.__sarielsAuthenticated = !!session;
+
+                    clearTimeout(salvaguarda);
+
+                    if (!session) {
+                        irAlIndexConReturnTo();
+                    } else {
+                        revelarPagina();
+                    }
+
+                    return window.supabaseClient;
+                } catch (error) {
+                    console.error('[Chats] Error inicializando Supabase:', error);
+                    window.__sarielsAuthenticated = false;
+                    clearTimeout(salvaguarda);
+                    revelarPagina();
+                    return null;
+                }
+            }
+
+            window.supabaseReady = inicializarSupabase();
+        })();
+    </script>
+
     <style>
+        html:not(.auth-ready) body {
+            visibility: hidden;
+        }
+        html.auth-ready body {
+            visibility: visible;
+        }
+
         .cfg-solicitud-card {
             display: flex;
             align-items: center;
@@ -114,7 +239,6 @@
             font-size: 0.75rem;
         }
         
-        /* Input búsqueda usuarios */
         .cfg-search-input {
             width: 100%;
             padding: 12px 14px;
@@ -135,7 +259,6 @@
             color: var(--cfg-text-dim);
         }
         
-        /* Resultados búsqueda */
         .cfg-resultado-usuario {
             display: flex;
             align-items: center;
@@ -199,7 +322,6 @@
             color: var(--cfg-success);
         }
         
-        /* Lista contactos de confianza */
         .cfg-contacto-confianza {
             display: flex;
             align-items: center;
@@ -300,7 +422,6 @@
         </div>
     </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="../../../shared/config-icons.js"></script>
     <script src="../../../shared/config-layout.js"></script>
 
@@ -311,11 +432,16 @@
         const $ = (sel) => document.querySelector(sel);
 
         function sb() {
-            return window.supabaseClient || 
-                (window.supabase && window.supabase.createClient(
-                    'https://zultnlogdoajehbswlih.supabase.co',
-                    'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
-                ));
+            return window.supabaseClient || null;
+        }
+
+        async function esperarCliente() {
+            const inicio = Date.now();
+            while (Date.now() - inicio < 10000) {
+                if (window.supabaseClient) return window.supabaseClient;
+                await new Promise(r => setTimeout(r, 100));
+            }
+            return null;
         }
 
         cfgInitPage({
@@ -334,19 +460,16 @@
         let solicitudes = [];
         let contactosConfianza = [];
 
-        // ============================================================
-        // CARGAR SOLICITUDES
-        // ============================================================
         async function cargarSolicitudes() {
             try {
-                const client = sb();
+                const client = await esperarCliente();
                 if (!client) {
                     mostrarSinSolicitudes();
                     return;
                 }
 
                 const { data: sessionData } = await client.auth.getSession();
-                const session = sessionData.session;
+                const session = sessionData && sessionData.session;
                 if (!session) {
                     mostrarSinSolicitudes();
                     return;
@@ -374,7 +497,6 @@
                     return;
                 }
 
-                // Cargar info de remitentes
                 const idsRemitentes = [...new Set(solicitudes.map(s => s.remitente_id))];
                 const { data: perfiles } = await client
                     .from('perfiles_publicos')
@@ -443,12 +565,9 @@
             `;
         }
 
-        // ============================================================
-        // CARGAR CONTACTOS DE CONFIANZA
-        // ============================================================
         async function cargarContactosConfianza() {
             try {
-                const client = sb();
+                const client = await esperarCliente();
                 if (!client) {
                     mostrarSinContactos();
                     return;
@@ -473,7 +592,7 @@
                 renderContactosConfianza();
 
             } catch (e) {
-                console.warn('Error contactos:', e.message);
+                console.warn('Error contactos:', e && e.message);
                 contactosConfianza = [];
                 mostrarSinContactos();
             }
@@ -519,9 +638,6 @@
             `;
         }
 
-        // ============================================================
-        // RENDERIZAR SECCIONES
-        // ============================================================
         function renderSecciones() {
             const quienPuede = cfgGetPref(PREF_KEYS.quien_puede, 'todos');
             const textos = {
@@ -564,9 +680,6 @@
             ].join('');
         }
 
-        // ============================================================
-        // HELPERS
-        // ============================================================
         function escapeHtml(texto) {
             if (!texto) return '';
             const div = document.createElement('div');
@@ -574,12 +687,9 @@
             return div.innerHTML;
         }
 
-        // ============================================================
-        // ACCIONES DE SOLICITUDES
-        // ============================================================
         window.onAceptarSolicitud = async (solicitudId) => {
             try {
-                const client = sb();
+                const client = await esperarCliente();
                 if (!client) throw new Error('Supabase no disponible');
 
                 const { error } = await client.rpc('aceptar_solicitud_mensaje', {
@@ -609,7 +719,7 @@
             if (!ok) return;
 
             try {
-                const client = sb();
+                const client = await esperarCliente();
                 if (!client) throw new Error('Supabase no disponible');
 
                 const { error } = await client.rpc('rechazar_solicitud_mensaje', {
@@ -627,9 +737,6 @@
             }
         };
 
-        // ============================================================
-        // QUIÉN PUEDE ENVIARME MENSAJES — Modal
-        // ============================================================
         window.onConfigurarQuienPuede = async () => {
             const actual = cfgGetPref(PREF_KEYS.quien_puede, 'todos');
 
@@ -693,9 +800,6 @@
             };
         };
 
-        // ============================================================
-        // AGREGAR CONTACTO DE CONFIANZA — Modal
-        // ============================================================
         window.onAgregarContacto = () => {
             const overlay = document.createElement('div');
             overlay.className = 'cfg-modal-overlay';
@@ -746,11 +850,11 @@
             container.innerHTML = '<div class="cfg-loading-mini">🔍 Buscando...</div>';
 
             try {
-                const client = sb();
+                const client = await esperarCliente();
                 if (!client) throw new Error('Supabase no disponible');
 
                 const { data: sessionData } = await client.auth.getSession();
-                const session = sessionData.session;
+                const session = sessionData && sessionData.session;
                 if (!session) return;
 
                 const { data, error } = await client
@@ -801,7 +905,7 @@
 
         window.onConfirmarAgregarContacto = async (contactoId, btn) => {
             try {
-                const client = sb();
+                const client = await esperarCliente();
                 if (!client) throw new Error('Supabase no disponible');
 
                 btn.disabled = true;
@@ -840,7 +944,7 @@
             if (!ok) return;
 
             try {
-                const client = sb();
+                const client = await esperarCliente();
                 if (!client) throw new Error('Supabase no disponible');
 
                 const { error } = await client.rpc('quitar_contacto_confianza', {
@@ -858,9 +962,6 @@
             }
         };
 
-        // ============================================================
-        // CALLBACKS
-        // ============================================================
         window.onToggleFiltro = async (value) => {
             await cfgSetPref(PREF_KEYS.filtro_solicitudes, value);
             cfgToast(
@@ -885,9 +986,6 @@
             );
         };
 
-        // ============================================================
-        // INICIALIZAR
-        // ============================================================
         window.addEventListener('DOMContentLoaded', async () => {
             await new Promise(resolve => setTimeout(resolve, 400));
             renderSecciones();
@@ -897,12 +995,9 @@
             ]);
         });
 
-        // ============================================================
-        // CARGAR HANDLE EN SUBTITLE
-        // ============================================================
-        (async function cargarUsuario() {
+        (async function cargarHandleSubtitulo() {
             try {
-                const client = sb();
+                const client = await esperarCliente();
                 if (!client) return;
                 const { data } = await client.auth.getSession();
                 const session = data && data.session;
