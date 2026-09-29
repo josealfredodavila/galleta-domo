@@ -278,4 +278,164 @@ router.post('/', async (req, res) => {
         // ============ 4) BUSCAR PAGO EN DB ============
         const { data: pago, error: errBuscar } = await supabaseAdmin
             .from('mercado_membresias_pagos')
-   
+            .select('id, tienda_id, usuario_id, plan_slug, monto_mxn, duracion_dias, estado, payment_id')
+            .eq('payment_id', String(paymentId))
+            .maybeSingle();
+
+        if (errBuscar) {
+            logError('✶ Error consultando pago:', errBuscar.message);
+            return res.status(500).json({ ok: false, error: 'Error consultando pago' });
+        }
+
+        if (!pago) {
+            log('ℹ️ Pago no registrado — ignorando:', paymentId);
+            return res.status(200).json({ ok: true, ignorado: 'pago no registrado' });
+        }
+
+        // ============ 5) IDEMPOTENCIA ESTRICTA ============
+        // Si ya está 'pagada', respondemos 200 sin tocar nada.
+        if (pago.estado === 'pagada') {
+            log('ℹ️ Pago ya procesado — ignorando:', paymentId);
+            return res.status(200).json({ ok: true, ignorado: 'ya procesado' });
+        }
+
+        // ============ 6) RECLAMO CONDICIONAL ============
+        // Intentamos pasar el pago a 'pagando' con un UPDATE condicional.
+        // Solo si el estado actual NO es 'pagada' (estado previo guardado
+        // en pago.estado). Si otro IPN concurrente ya lo reclamó, el
+        // UPDATE no afectará filas y salimos.
+        const estadoAnterior = pago.estado;
+
+        const { data: reclamado, error: errReclamo } = await supabaseAdmin
+            .from('mercado_membresias_pagos')
+            .update({
+                estado: 'pagando',
+                nowpayments_status: npStatus || null,
+                payment_id: String(paymentId),
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', pago.id)
+            .neq('estado', 'pagada')
+            .select('id')
+            .maybeSingle();
+
+        if (errReclamo) {
+            logError('✶ Error en reclamo condicional:', errReclamo.message);
+            return res.status(500).json({ ok: false, error: 'Error reclamando pago' });
+        }
+
+        if (!reclamado) {
+            // Otro IPN concurrente lo procesó primero.
+            log('ℹ️ Pago reclamado por otro IPN concurrente — ignorando:', paymentId);
+            return res.status(200).json({ ok: true, ignorado: 'concurrente' });
+        }
+
+        // ============ 7) ESTADOS NO FINALES ============
+        // Si el IPN no es 'finished' ni 'confirmed', solo registramos
+        // el estado mapeado y salimos.
+        const esFinal =
+            npStatus === 'finished' ||
+            npStatus === 'confirmed';
+
+        if (!esFinal) {
+            const nuevoEstado = mapearEstado(npStatus, estadoAnterior);
+
+            const { error: errEstado } = await supabaseAdmin
+                .from('mercado_membresias_pagos')
+                .update({
+                    estado: nuevoEstado,
+                    nowpayments_status: npStatus || null,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', pago.id);
+
+            if (errEstado) {
+                logError('✶ Error actualizando estado intermedio:', errEstado.message);
+                return res.status(500).json({ ok: false, error: 'Error actualizando estado' });
+            }
+
+            log('◈ Estado intermedio registrado:', npStatus, '→', nuevoEstado);
+            return res.status(200).json({ ok: true, estado: nuevoEstado });
+        }
+
+        // ============ 8) ACTIVAR MEMBRESÍA ============
+        const resultado = await activarMembresia(
+            pago.tienda_id,
+            pago.id,
+            pago.plan_slug,
+            pago.duracion_dias
+        );
+
+        if (!resultado.ok) {
+            // Revertimos el 'pagando' al estado anterior para que el
+            // siguiente reintento de NOWPayments lo pueda reclamar.
+            await supabaseAdmin
+                .from('mercado_membresias_pagos')
+                .update({
+                    estado: estadoAnterior,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', pago.id);
+
+            if (resultado.reintentable === false) {
+                logError('✶ Activación fallida (no reintentable):', resultado.error);
+                return res.status(200).json({ ok: true, ignorado: 'activación no reintentable' });
+            }
+
+            logError('✶ Activación fallida (reintentable):', resultado.error);
+            return res.status(500).json({ ok: false, error: 'Activación fallida' });
+        }
+
+        // ============ 9) MARCAR COMO PAGADA ============
+        const ahora = new Date();
+
+        const { error: errPagada } = await supabaseAdmin
+            .from('mercado_membresias_pagos')
+            .update({
+                estado: 'pagada',
+                nowpayments_status: npStatus || null,
+                pagado_en: ahora.toISOString(),
+                updated_at: ahora.toISOString()
+            })
+            .eq('id', pago.id);
+
+        if (errPagada) {
+            // La membresía ya fue activada; el error al marcar 'pagada'
+            // es no-reintentable (no queremos re-activar). Lo logueamos.
+            logError('⚠️ Membresía activada pero no se pudo marcar pagada:', errPagada.message);
+        }
+
+        // ============ 10) NOTIFICACIÓN (best-effort) ============
+        if (resultado.usuario_id) {
+            await crearNotificacionMembresia(
+                resultado.usuario_id,
+                resultado.nivel,
+                resultado.fecha_fin
+            );
+        }
+
+        const duracionMs = Date.now() - inicio;
+        log('✔ Webhook procesado en', duracionMs, 'ms');
+
+        return res.status(200).json({
+            ok: true,
+            estado: 'pagada',
+            tienda_id: resultado.tienda_id,
+            nivel: resultado.nivel,
+            fecha_fin: resultado.fecha_fin
+        });
+
+    } catch (error) {
+        logError('✶ Excepción en POST /:', error);
+        return res.status(500).json({ ok: false, error: 'Error interno' });
+    }
+});
+
+// ================================================================
+// EXPORT
+// ================================================================
+// Router Express. routes/webhooks.js lo captura como función y lo
+// delega con (req, res) para que pueda verificar req.rawBody y
+// req.headers['x-nowpayments-sig'].
+// ================================================================
+module.exports = router;
