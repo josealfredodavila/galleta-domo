@@ -19,6 +19,10 @@
 //   3. Frontend captura frames + analiza.
 //   4. Frontend manda score + metadata al backend.
 //   5. Backend valida (con este archivo).
+//
+// NUEVO: obtenerUltimaVerificacionExitosa(usuarioId)
+//   Permite a retiros.js verificar que el usuario completó
+//   liveness recientemente antes de emitir un token de retiro.
 // ================================================================
 
 'use strict';
@@ -32,13 +36,15 @@ const errors = require('./errors');
 // CONFIGURACIÓN
 // ================================================================
 
-// Umbrales de liveness
-const LIVENESS_SCORE_MINIMO = 0.80;      // Score global mínimo aceptable
-const FRAMES_MINIMOS = 3;                 // Frames mínimos que debe capturar el frontend
-const DURACION_MINIMA_MS = 1000;          // Duración mínima de la verificación (1 segundo)
-const DURACION_MAXIMA_MS = 60000;         // Duración máxima (60 segundos)
+const LIVENESS_SCORE_MINIMO = 0.80;
+const FRAMES_MINIMOS = 3;
+const DURACION_MINIMA_MS = 1000;
+const DURACION_MAXIMA_MS = 60000;
 
-// Acciones aleatorias que el usuario debe realizar
+// Ventana durante la cual una verificación exitosa sigue siendo válida
+// para emitir un token de retiro. 5 minutos.
+const VENTANA_VERIFICACION_VALIDA_MS = 5 * 60 * 1000;
+
 const ACCIONES_DISPONIBLES = [
     {
         id: 'parpadear',
@@ -67,15 +73,14 @@ const ACCIONES_DISPONIBLES = [
     }
 ];
 
-// Almacenamiento en memoria de challenges de liveness
-// NOTA: si Railway reinicia, se pierden. Los usuarios simplemente repiten.
-const challengesLiveness = new Map(); // challengeId -> { usuarioId, accion, expiraEn, iniciadoEn }
+const challengesLiveness = new Map();
 
-// TTL de 5 minutos
+// Registro de verificaciones exitosas: usuarioId -> { ts, accion, score }
+const verificacionesExitosas = new Map();
+
 const CHALLENGE_TTL_MS = 5 * 60 * 1000;
 
-// Limpieza automática cada 1 minuto
-setInterval(function () {
+const cleanupInterval = setInterval(function () {
     const ahora = Date.now();
     let limpiados = 0;
 
@@ -86,10 +91,19 @@ setInterval(function () {
         }
     }
 
+    for (const [usuarioId, registro] of verificacionesExitosas.entries()) {
+        if (registro.ts + VENTANA_VERIFICACION_VALIDA_MS < ahora) {
+            verificacionesExitosas.delete(usuarioId);
+            limpiados++;
+        }
+    }
+
     if (limpiados > 0) {
-        logger.debug(`[Liveness] Limpiados ${limpiados} challenges expirados`);
+        logger.debug(`[Liveness] Limpiados ${limpiados} elementos expirados`);
     }
 }, 60 * 1000);
+
+if (cleanupInterval.unref) cleanupInterval.unref();
 
 // ================================================================
 // HELPERS
@@ -99,35 +113,27 @@ function generarChallenge() {
     return crypto.randomBytes(32).toString('base64url');
 }
 
-/**
- * Genera un challenge de liveness con una acción aleatoria.
- */
 function generarAccionAleatoria() {
     const index = Math.floor(Math.random() * ACCIONES_DISPONIBLES.length);
     return ACCIONES_DISPONIBLES[index];
 }
 
-/**
- * Normaliza un score (si viene como número, string, o porcentaje).
- */
 function normalizarScore(valor) {
     const n = parseFloat(valor);
 
     if (!Number.isFinite(n)) return null;
 
-    // Si viene como porcentaje (0-100), normalizar a 0-1
     if (n > 1 && n <= 100) {
         return n / 100;
     }
 
-    // Si viene fuera de rango
     if (n < 0 || n > 1) return null;
 
     return n;
 }
 
 // ================================================================
-// GENERAR CHALLENGE DE LIVENESS
+// GENERAR CHALLENGE
 // ================================================================
 
 function generarChallengeLiveness(usuarioId) {
@@ -163,22 +169,7 @@ function generarChallengeLiveness(usuarioId) {
 }
 
 // ================================================================
-// VALIDAR RESULTADO DE LIVENESS
-// ================================================================
-// El frontend manda:
-//   - challenge_id
-//   - liveness_score (0-1): confianza de que sea persona real
-//   - frame_count: cuántos frames capturó
-//   - duracion_ms: cuánto duró la verificación
-//   - accion_completada: boolean, si el usuario realizó la acción
-//   - micro_movimientos: número de micro-movimientos detectados
-//
-// El backend valida que:
-//   - El challenge exista y no esté usado.
-//   - Los scores sean plausibles.
-//   - Los frames sean suficientes.
-//   - La duración sea razonable.
-//   - La acción solicitada se haya completado.
+// VALIDAR RESULTADO
 // ================================================================
 
 function validarResultadoLiveness(usuarioId, datos) {
@@ -190,7 +181,6 @@ function validarResultadoLiveness(usuarioId, datos) {
         throw errors.errorParametroRequerido('challenge_id');
     }
 
-    // Recuperar challenge
     const registro = challengesLiveness.get(datos.challenge_id);
 
     if (!registro) {
@@ -216,10 +206,8 @@ function validarResultadoLiveness(usuarioId, datos) {
         throw new errors.ErrorValidacion('LIVENESS_CHALLENGE_USADO', 'Este challenge ya fue utilizado');
     }
 
-    // Consumir challenge
     registro.usado = true;
 
-    // ---------- Validar liveness_score ----------
     const livenessScore = normalizarScore(datos.liveness_score);
 
     if (livenessScore === null) {
@@ -240,7 +228,6 @@ function validarResultadoLiveness(usuarioId, datos) {
         );
     }
 
-    // ---------- Validar frame_count ----------
     const frameCount = parseInt(datos.frame_count, 10);
 
     if (!Number.isFinite(frameCount) || frameCount < FRAMES_MINIMOS) {
@@ -251,7 +238,6 @@ function validarResultadoLiveness(usuarioId, datos) {
         );
     }
 
-    // ---------- Validar duración ----------
     const duracion = parseInt(datos.duracion_ms, 10);
 
     if (!Number.isFinite(duracion)) {
@@ -274,7 +260,6 @@ function validarResultadoLiveness(usuarioId, datos) {
         );
     }
 
-    // ---------- Validar acción completada ----------
     if (datos.accion_completada !== true) {
         logger.warning(`[Liveness] Acción no completada por usuario ${usuarioId}`);
         throw new errors.ErrorAutorizacion(
@@ -283,7 +268,6 @@ function validarResultadoLiveness(usuarioId, datos) {
         );
     }
 
-    // ---------- Validar acción correcta ----------
     const accionSolicitada = registro.accion;
     const accionReportada = datos.accion_realizada;
 
@@ -298,7 +282,6 @@ function validarResultadoLiveness(usuarioId, datos) {
         );
     }
 
-    // ---------- Validar micro_movimientos ----------
     const microMovimientos = parseInt(datos.micro_movimientos, 10);
 
     if (Number.isFinite(microMovimientos) && microMovimientos < 1) {
@@ -309,7 +292,14 @@ function validarResultadoLiveness(usuarioId, datos) {
         );
     }
 
-    // ---------- Todo bien ----------
+    // Registrar verificación exitosa para que retiros.js pueda consultarla
+    verificacionesExitosas.set(usuarioId, {
+        ts: Date.now(),
+        accion: accionSolicitada,
+        score: livenessScore,
+        challenge_id: datos.challenge_id
+    });
+
     logger.info(
         `[Liveness] Verificación exitosa para usuario ${usuarioId} ` +
         `(score: ${livenessScore.toFixed(2)}, frames: ${frameCount}, ` +
@@ -327,112 +317,100 @@ function validarResultadoLiveness(usuarioId, datos) {
 }
 
 // ================================================================
-// VALIDADORES DE ACCIONES
+// CONSULTAR ÚLTIMA VERIFICACIÓN EXITOSA
 // ================================================================
-// Los validadores se llaman desde el frontend (que ya analizó los frames).
-// Aquí solo exponemos las firmas para consistencia.
-// En el futuro podrían correrse server-side si se sube el video.
+// Devuelve la verificación exitosa del usuario si está dentro de la
+// ventana de validez. Si no, devuelve null.
+//
+// Se usa desde routes/pay/retiros.js para verificar que el usuario
+// completó liveness recientemente antes de emitir un token de retiro.
 // ================================================================
 
-/**
- * Valida que el usuario haya parpadeado.
- * El frontend analiza los frames y detecta cambios en los ojos.
- */
+function obtenerUltimaVerificacionExitosa(usuarioId) {
+    if (!usuarioId) return null;
+
+    const registro = verificacionesExitosas.get(usuarioId);
+
+    if (!registro) return null;
+
+    if (registro.ts + VENTANA_VERIFICACION_VALIDA_MS < Date.now()) {
+        verificacionesExitosas.delete(usuarioId);
+        return null;
+    }
+
+    return {
+        verificada: true,
+        ts: registro.ts,
+        accion: registro.accion,
+        score: registro.score,
+        edad_ms: Date.now() - registro.ts,
+        valida_por_ms: VENTANA_VERIFICACION_VALIDA_MS - (Date.now() - registro.ts)
+    };
+}
+
+// ================================================================
+// VALIDADORES DE ACCIONES (firmas para consistencia)
+// ================================================================
+
 function validarParpadeo(metadata) {
-    // El frontend ya hizo el análisis.
-    // Aquí validamos que el reporte sea plausible.
     const m = metadata || {};
-
     if (typeof m.parpadeo_detectado !== 'boolean') {
         return { valido: false, motivo: 'parpadeo_no_reportado' };
     }
-
     if (!m.parpadeo_detectado) {
         return { valido: false, motivo: 'parpadeo_no_detectado' };
     }
-
     return { valido: true };
 }
 
-/**
- * Valida que el usuario haya girado a la derecha.
- */
 function validarGiroDerecha(metadata) {
     const m = metadata || {};
-
     if (typeof m.giro_derecha_detectado !== 'boolean') {
         return { valido: false, motivo: 'giro_no_reportado' };
     }
-
     if (!m.giro_derecha_detectado) {
         return { valido: false, motivo: 'giro_no_detectado' };
     }
-
     return { valido: true };
 }
 
-/**
- * Valida que el usuario haya girado a la izquierda.
- */
 function validarGiroIzquierda(metadata) {
     const m = metadata || {};
-
     if (typeof m.giro_izquierda_detectado !== 'boolean') {
         return { valido: false, motivo: 'giro_no_reportado' };
     }
-
     if (!m.giro_izquierda_detectado) {
         return { valido: false, motivo: 'giro_no_detectado' };
     }
-
     return { valido: true };
 }
 
-/**
- * Valida que el usuario haya sonreído.
- */
 function validarSonrisa(metadata) {
     const m = metadata || {};
-
     if (typeof m.sonrisa_detectada !== 'boolean') {
         return { valido: false, motivo: 'sonrisa_no_reportada' };
     }
-
     if (!m.sonrisa_detectada) {
         return { valido: false, motivo: 'sonrisa_no_detectada' };
     }
-
     return { valido: true };
 }
 
-/**
- * Valida que el usuario haya abierto la boca.
- */
 function validarBocaAbierta(metadata) {
     const m = metadata || {};
-
     if (typeof m.boca_abierta_detectada !== 'boolean') {
         return { valido: false, motivo: 'boca_no_reportada' };
     }
-
     if (!m.boca_abierta_detectada) {
         return { valido: false, motivo: 'boca_no_detectada' };
     }
-
     return { valido: true };
 }
 
 // ================================================================
-// UTILIDADES PARA EL FRONTEND
-// ================================================================
-// El frontend necesita saber qué acción le tocó y cómo reportarla.
-// Estas funciones le ayudan.
+// UTILIDADES PÚBLICAS
 // ================================================================
 
-/**
- * Devuelve la lista de acciones disponibles con sus IDs.
- * Útil para debugging y para el frontend.
- */
 function listarAccionesDisponibles() {
     return ACCIONES_DISPONIBLES.map(function (a) {
         return {
@@ -442,16 +420,14 @@ function listarAccionesDisponibles() {
     });
 }
 
-/**
- * Devuelve la configuración de umbrales de liveness.
- */
 function obtenerConfiguracion() {
     return {
         liveness_score_minimo: LIVENESS_SCORE_MINIMO,
         frames_minimos: FRAMES_MINIMOS,
         duracion_minima_ms: DURACION_MINIMA_MS,
         duracion_maxima_ms: DURACION_MAXIMA_MS,
-        acciones_disponibles: ACCIONES_DISPONIBLES.map(function (a) { return a.id; })
+        acciones_disponibles: ACCIONES_DISPONIBLES.map(function (a) { return a.id; }),
+        ventana_verificacion_valida_ms: VENTANA_VERIFICACION_VALIDA_MS
     };
 }
 
@@ -460,18 +436,17 @@ function obtenerConfiguracion() {
 // ================================================================
 
 module.exports = {
-    // Flujo principal
     generarChallengeLiveness: generarChallengeLiveness,
     validarResultadoLiveness: validarResultadoLiveness,
+    obtenerUltimaVerificacionExitosa: obtenerUltimaVerificacionExitosa,
 
-    // Utilidades
     listarAccionesDisponibles: listarAccionesDisponibles,
     obtenerConfiguracion: obtenerConfiguracion,
     normalizarScore: normalizarScore,
 
-    // Constantes
     LIVENESS_SCORE_MINIMO: LIVENESS_SCORE_MINIMO,
     FRAMES_MINIMOS: FRAMES_MINIMOS,
     DURACION_MINIMA_MS: DURACION_MINIMA_MS,
-    DURACION_MAXIMA_MS: DURACION_MAXIMA_MS
+    DURACION_MAXIMA_MS: DURACION_MAXIMA_MS,
+    VENTANA_VERIFICACION_VALIDA_MS: VENTANA_VERIFICACION_VALIDA_MS
 };
