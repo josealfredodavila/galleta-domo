@@ -1,7 +1,24 @@
 /* ================================================================
    routes/ai-chat.js - CHAT DE TEXTO CON MARQUINHOS
    PRODUCCIÓN - GROQ
-   ================================================================ */
+   ================================================================
+   Endpoint: POST /api/ai/chat
+   Modelo:   Groq (openai/gpt-oss-120b por defecto)
+
+   RESPONSABILIDADES:
+   - Recibir el mensaje del usuario y opcionalmente el historial.
+   - Construir el payload para Groq.
+   - Limpiar el Markdown de la respuesta antes de devolverla.
+   - Aplicar límite duro de longitud para evitar "biblias".
+   - Loggear errores con suficiente detalle para diagnosticar.
+
+   GARANTÍAS:
+   - NO cambia la firma del endpoint.
+   - NO cambia los códigos HTTP de respuesta.
+   - Marcaquesinos responde en texto plano, sin Markdown.
+================================================================ */
+
+'use strict';
 
 const express = require('express');
 const router = express.Router();
@@ -19,10 +36,31 @@ const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const GROQ_ENDPOINT =
     'https://api.groq.com/openai/v1/chat/completions';
 
+/*
+ * Modelo por defecto.
+ *
+ * Verificado en producción el 28-sep-2026:
+ *   openai/gpt-oss-120b responde correctamente en Groq.
+ *
+ * NOTA IMPORTANTE:
+ *   NO cambiar el default a 'llama-3.3-70b-versatile'.
+ *   Ese modelo fue retirado por Groq el 16-ago-2026 y devolvería
+ *   'model does not exist'. gpt-oss-120b es el reemplazo recomendado
+ *   y hoy funciona.
+ */
 const GROQ_MODEL =
     process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
 
 const GROQ_TIMEOUT_MS = 30000;
+
+/*
+ * Límites de longitud de la respuesta.
+ * - max_tokens: límite de tokens en la llamada a Groq.
+ * - MAX_CARACTERES_RESPUESTA: recorte duro en el backend para
+ *   evitar respuestas tipo "biblia" aunque el modelo se pase.
+ */
+const MAX_TOKENS_RESPUESTA = 180;
+const MAX_CARACTERES_RESPUESTA = 500;
 
 /* ================================================================
    SUPABASE ADMIN
@@ -119,24 +157,24 @@ Eres Marquinhos, el asistente oficial del ecosistema Sariel's.
 
 Tu forma de conversar es profesional, educada, cercana y natural.
 
-IMPORTANTE:
-No hables como un ingeniero sénior.
-No conviertas una pregunta sencilla en una explicación técnica extensa.
-No des una guía completa si el usuario solamente pidió el siguiente paso.
-Conversa con la persona de manera progresiva.
+REGLA MÁS IMPORTANTE (LÍMITE ABSOLUTO):
+Nunca escribas más de 3 frases o 60 palabras por respuesta.
+Si necesitas explicar algo largo, divídelo en pasos y espera
+la respuesta del usuario antes de continuar con el siguiente paso.
+Una respuesta corta y útil es siempre preferible a una explicación larga.
 
 ESTILO DE RESPUESTA:
 
 1. Responde primero exactamente a la pregunta que acaba de hacer el usuario.
 
 2. Mantén la respuesta breve y clara.
-Normalmente utiliza entre 1 y 4 frases.
+Normalmente utiliza entre 1 y 3 frases.
 
 3. Si el usuario está realizando un procedimiento, explica solamente el paso que corresponde en ese momento.
 
 4. Después espera la respuesta del usuario antes de continuar con el siguiente paso, cuando sea necesario.
 
-5. Si una explicación realmente requiere varios pasos, puedes utilizar una lista numerada sencilla, pero solamente cuando sea necesario.
+5. Si una explicación realmente requiere varios pasos, divídela en el tiempo, no en una sola respuesta.
 
 6. No repitas información que el usuario ya conoce.
 
@@ -144,47 +182,51 @@ Normalmente utiliza entre 1 y 4 frases.
 
 8. Si el usuario pregunta algo sencillo, responde de manera sencilla.
 
-9. Si el usuario pide una explicación detallada, entonces puedes ampliar la explicación.
+9. Si el usuario pide una explicación detallada, entonces puedes ampliar la explicación, pero nunca más de 6 frases.
 
 10. Utiliza español mexicano neutro, natural y profesional.
 
-FORMATO:
+FORMATO OBLIGATORIO:
 
 No utilices Markdown.
+No utilices ningún tipo de símbolo decorativo.
 
-No utilices:
+NO uses:
 *
 **
 #
 ###
 -
 _
-No uses títulos decorativos.
+>
+|
+---
+===
+
+No uses títulos.
 No uses encabezados.
 No uses listas con guiones.
+No uses listas numeradas.
 No uses negritas.
 No uses cursivas.
 No uses bloques de código.
+No uses citas.
+No uses separadores.
+No uses tablas.
 
 Escribe como una persona conversando normalmente en un chat.
-
-No agregues símbolos decorativos al principio o al final de las respuestas.
 
 Puedes utilizar signos normales de puntuación como:
 ¿ ? ¡ ! , . : ;
 
-No utilices símbolos como * # _ ~ para decorar el mensaje.
+No utilices emojis salvo que sean realmente necesarios.
 
 PERSONALIDAD:
 
 Sé amable, paciente y profesional.
-
 No seas excesivamente formal.
-
 No seas frío.
-
 No seas condescendiente.
-
 No trates al usuario como si no entendiera nada.
 
 Si el usuario está teniendo un problema, ayúdalo con calma y empieza por el siguiente paso más útil.
@@ -208,28 +250,20 @@ Puedes orientar sobre Domos, Es.stoks, NFT, Polygon, LIVE, canales, mensajes y f
 REGLAS DE SEGURIDAD Y PRECISIÓN:
 
 No inventes información.
-
 No inventes precios.
-
 No inventes saldos.
-
 No inventes transacciones.
-
 No inventes datos personales.
-
 No inventes funciones que no conozcas.
-
 No afirmes que ejecutaste una operación si realmente no tienes acceso para ejecutarla.
-
 Si no conoces una información, dilo claramente.
-
 Si una función depende de la aplicación, explica solamente lo que sabes.
 
 OBJETIVO:
 
 La conversación debe sentirse como hablar con un asistente humano profesional.
 
-Marquinhos debe resolver la conversación poco a poco.
+Marquinhos debe resolver la conversación poco a poco, un paso a la vez.
 
 No debe intentar resolver toda la vida del usuario en una sola respuesta.
 `.trim();
@@ -265,7 +299,10 @@ function limpiarHistorial(history) {
 
 /* ================================================================
    LIMPIAR FORMATO DE MARQUINHOS
-================================================================ */
+   ================================================================
+   Quita todo el Markdown residual que el modelo pueda generar
+   aunque el prompt diga que no lo use.
+   ================================================================ */
 
 function limpiarFormatoMarquinhos(texto) {
     if (typeof texto !== 'string') {
@@ -274,106 +311,94 @@ function limpiarFormatoMarquinhos(texto) {
 
     let respuesta = texto.trim();
 
-    /* ------------------------------------------------------------
-       QUITAR BLOQUES DE CÓDIGO
-    ------------------------------------------------------------ */
-
+    /* Bloques de código */
     respuesta = respuesta.replace(/```[\s\S]*?```/g, '');
 
-    /* ------------------------------------------------------------
-       QUITAR MARKDOWN DE ENCABEZADOS
-    ------------------------------------------------------------ */
+    /* Encabezados */
+    respuesta = respuesta.replace(/^\s{0,3}#{1,6}\s*/gm, '');
 
+    /* Negritas / cursivas */
+    respuesta = respuesta.replace(/\*\*\*(.*?)\*\*\*/g, '$1');
+    respuesta = respuesta.replace(/\*\*(.*?)\*\*/g, '$1');
+    respuesta = respuesta.replace(/\*(.*?)\*/g, '$1');
+    respuesta = respuesta.replace(/___(.*?)___/g, '$1');
+    respuesta = respuesta.replace(/__(.*?)__/g, '$1');
+    respuesta = respuesta.replace(/_(.*?)_/g, '$1');
+
+    /* Código inline */
+    respuesta = respuesta.replace(/`([^`]+)`/g, '$1');
+
+    /* Listas con guion, asterisco o signo más */
+    respuesta = respuesta.replace(/^\s{0,3}[-*+]\s+/gm, '');
+
+    /* Listas numeradas: 1. 2. 3. o 1) 2) 3) */
+    respuesta = respuesta.replace(/^\s{0,3}\d{1,3}[.)]\s+/gm, '');
+
+    /* Citas */
+    respuesta = respuesta.replace(/^\s{0,3}>\s?/gm, '');
+
+    /* Separadores horizontales: ---, ***, ___ */
+    respuesta = respuesta.replace(/^\s{0,3}([-*_])\s*\1\s*\1[\s\1]*$/gm, '');
+    respuesta = respuesta.replace(/^\s{0,3}[-*_]{3,}\s*$/gm, '');
+
+    /* Tablas: líneas delimitadas por | */
+    respuesta = respuesta.replace(/^\s*\|.*\|\s*$/gm, '');
+    respuesta = respuesta.replace(/\|/g, ' ');
+
+    /* Símbolos decorativos sueltos al inicio de línea */
     respuesta = respuesta.replace(
-        /^\s{0,3}#{1,6}\s*/gm,
+        /^\s*[*#_~•◈✦🔴🟡🟢🟣🔵🟠➤→»]+\s*/gm,
         ''
     );
 
-    /* ------------------------------------------------------------
-       QUITAR NEGRITAS / CURSIVAS MARKDOWN
-    ------------------------------------------------------------ */
+    /* Símbolos dobles sueltos entre espacios */
+    respuesta = respuesta.replace(/\s+[*#_~]{2,}\s+/g, ' ');
 
-    respuesta = respuesta.replace(
-        /\*\*\*(.*?)\*\*\*/g,
-        '$1'
-    );
-
-    respuesta = respuesta.replace(
-        /\*\*(.*?)\*\*/g,
-        '$1'
-    );
-
-    respuesta = respuesta.replace(
-        /\*(.*?)\*/g,
-        '$1'
-    );
-
-    respuesta = respuesta.replace(
-        /__(.*?)__/g,
-        '$1'
-    );
-
-    respuesta = respuesta.replace(
-        /_(.*?)_/g,
-        '$1'
-    );
-
-    /* ------------------------------------------------------------
-       QUITAR LISTAS CON GUIONES O ASTERISCOS
-    ------------------------------------------------------------ */
-
-    respuesta = respuesta.replace(
-        /^\s*[-*+]\s+/gm,
-        ''
-    );
-
-    /* ------------------------------------------------------------
-       QUITAR TILDES DE CÓDIGO
-    ------------------------------------------------------------ */
-
-    respuesta = respuesta.replace(
-        /`([^`]+)`/g,
-        '$1'
-    );
-
-    /* ------------------------------------------------------------
-       QUITAR SÍMBOLOS DECORATIVOS AISLADOS
-    ------------------------------------------------------------ */
-
-    respuesta = respuesta.replace(
-        /^\s*[*#_~]+\s*/gm,
-        ''
-    );
-
-    respuesta = respuesta.replace(
-        /\s+[*#_~]{2,}\s+/g,
-        ' '
-    );
-
-    /* ------------------------------------------------------------
-       LIMPIAR ESPACIOS
-    ------------------------------------------------------------ */
-
-    respuesta = respuesta.replace(
-        /[ \t]{2,}/g,
-        ' '
-    );
-
-    respuesta = respuesta.replace(
-        /\n{3,}/g,
-        '\n\n'
-    );
+    /* Colapsar espacios y saltos */
+    respuesta = respuesta.replace(/[ \t]{2,}/g, ' ');
+    respuesta = respuesta.replace(/\r?\n{2,}/g, ' ');
+    respuesta = respuesta.replace(/\r?\n+/g, ' ');
+    respuesta = respuesta.replace(/\s{2,}/g, ' ');
 
     return respuesta.trim();
 }
 
 /* ================================================================
-   EXTRAER RESPUESTA
+   RECORTAR RESPUESTA
+   ================================================================
+   Si el modelo se excede del límite duro de caracteres,
+   cortamos en el último espacio y agregamos "…".
+   ================================================================ */
+
+function recortarRespuesta(texto, maximo) {
+    if (typeof texto !== 'string') {
+        return '';
+    }
+
+    if (texto.length <= maximo) {
+        return texto;
+    }
+
+    const recorte = texto.slice(0, maximo);
+    const ultimoEspacio = recorte.lastIndexOf(' ');
+
+    const corte = ultimoEspacio > maximo * 0.6
+        ? recorte.slice(0, ultimoEspacio)
+        : recorte;
+
+    return corte.trim() + '…';
+}
+
+/* ================================================================
+   EXTRAER RESPUESTA DE GROQ
 ================================================================ */
 
 function extraerRespuesta(data) {
     const respuesta =
-        data?.choices?.[0]?.message?.content;
+        data && data.choices && data.choices[0] &&
+        data.choices[0].message
+            ? data.choices[0].message.content
+            : '';
 
     return typeof respuesta === 'string'
         ? respuesta.trim()
@@ -393,12 +418,8 @@ router.post(
 
         try {
 
-            /* ========================================================
-               VALIDAR GROQ
-            ======================================================== */
-
+            /* Validar GROQ_API_KEY */
             if (!GROQ_API_KEY) {
-
                 console.error(
                     '❌ GROQ_API_KEY no está configurada'
                 );
@@ -410,10 +431,7 @@ router.post(
                 });
             }
 
-            /* ========================================================
-               VALIDAR BODY
-            ======================================================== */
-
+            /* Validar body */
             const {
                 message,
                 context = 'chat_sariels',
@@ -424,7 +442,6 @@ router.post(
                 typeof message !== 'string' ||
                 !message.trim()
             ) {
-
                 return res.status(400).json({
                     success: false,
                     error:
@@ -441,56 +458,41 @@ router.post(
                 '💬 Marquinhos recibió mensaje:',
                 {
                     userId:
-                        req.user?.id || null,
+                        req.user && req.user.id
+                            ? req.user.id
+                            : null,
                     context,
                     chars:
-                        mensajeLimpio.length
+                        mensajeLimpio.length,
+                    historyItems:
+                        Array.isArray(history)
+                            ? history.length
+                            : 0
                 }
             );
 
-            /* ========================================================
-               HISTORIAL
-            ======================================================== */
-
+            /* Preparar historial */
             const historialSeguro =
                 limpiarHistorial(history);
 
-            /* ========================================================
-               PAYLOAD GROQ
-            ======================================================== */
-
+            /* Payload Groq */
             const payload = {
-
                 model: GROQ_MODEL,
 
                 messages: [
-
                     {
                         role: 'system',
                         content: SYSTEM_PROMPT
                     },
-
                     ...historialSeguro,
-
                     {
                         role: 'user',
                         content: mensajeLimpio
                     }
-
                 ],
 
-                /*
-                 * Respuestas cortas.
-                 * El prompt también controla la longitud.
-                 */
-                max_tokens: 280,
-
-                /*
-                 * Un poco menos de creatividad
-                 * para mantener respuestas consistentes.
-                 */
+                max_tokens: MAX_TOKENS_RESPUESTA,
                 temperature: 0.5,
-
                 stream: false
             };
 
@@ -498,10 +500,7 @@ router.post(
                 `⚡ Enviando solicitud a GROQ (${GROQ_MODEL})...`
             );
 
-            /* ========================================================
-               GROQ
-            ======================================================== */
-
+            /* Llamada a Groq */
             const groqResponse =
                 await axios.post(
                     GROQ_ENDPOINT,
@@ -510,43 +509,28 @@ router.post(
                         headers: {
                             Authorization:
                                 `Bearer ${GROQ_API_KEY}`,
-
                             Accept:
                                 'application/json',
-
                             'Content-Type':
                                 'application/json'
                         },
-
-                        timeout:
-                            GROQ_TIMEOUT_MS,
-
-                        validateStatus:
-                            () => true
+                        timeout: GROQ_TIMEOUT_MS,
+                        validateStatus: () => true
                     }
                 );
 
-            const status =
-                groqResponse.status;
+            const status = groqResponse.status;
+            const responseData = groqResponse.data;
 
-            const responseData =
-                groqResponse.data;
-
-            /* ========================================================
-               ERROR GROQ
-            ======================================================== */
-
-            if (
-                status < 200 ||
-                status >= 300
-            ) {
+            /* Error de Groq */
+            if (status < 200 || status >= 300) {
 
                 console.error(
                     '❌ GROQ respondió con error:',
                     {
                         status,
-                        data:
-                            responseData
+                        model: GROQ_MODEL,
+                        data: responseData
                     }
                 );
 
@@ -554,7 +538,9 @@ router.post(
                     'El servicio de Marquinhos no respondió correctamente.';
 
                 if (
-                    responseData?.error?.message
+                    responseData &&
+                    responseData.error &&
+                    responseData.error.message
                 ) {
                     mensajeError =
                         responseData.error.message;
@@ -566,10 +552,7 @@ router.post(
                 });
             }
 
-            /* ========================================================
-               EXTRAER RESPUESTA
-            ======================================================== */
-
+            /* Extraer respuesta */
             const respuestaOriginal =
                 extraerRespuesta(responseData);
 
@@ -587,17 +570,13 @@ router.post(
                 });
             }
 
-            /* ========================================================
-               LIMPIAR FORMATO
-            ======================================================== */
-
-            const respuestaTexto =
+            /* Limpiar Markdown */
+            let respuestaTexto =
                 limpiarFormatoMarquinhos(
                     respuestaOriginal
                 );
 
             if (!respuestaTexto) {
-
                 return res.status(502).json({
                     success: false,
                     error:
@@ -605,52 +584,49 @@ router.post(
                 });
             }
 
-            const duracion =
-                Date.now() - inicio;
+            /* Límite duro de caracteres */
+            respuestaTexto = recortarRespuesta(
+                respuestaTexto,
+                MAX_CARACTERES_RESPUESTA
+            );
+
+            const duracion = Date.now() - inicio;
 
             console.log(
                 '✅ Marquinhos respondió:',
                 {
                     ms: duracion,
-                    chars:
-                        respuestaTexto.length
+                    chars: respuestaTexto.length
                 }
             );
 
-            /* ========================================================
-               RESPUESTA FINAL
-            ======================================================== */
-
             return res.status(200).json({
-
                 success: true,
-
-                reply:
-                    respuestaTexto
-
+                reply: respuestaTexto
             });
 
         } catch (error) {
 
-            const duracion =
-                Date.now() - inicio;
+            const duracion = Date.now() - inicio;
 
             console.error(
                 '❌ Error en /api/ai/chat:',
                 {
-                    message:
-                        error.message,
-
-                    code:
-                        error.code,
-
-                    duration:
-                        duracion
+                    name: error.name,
+                    message: error.message,
+                    code: error.code,
+                    status:
+                        error.response
+                            ? error.response.status
+                            : null,
+                    duration: duracion
                 }
             );
 
-            if (error.response?.data) {
-
+            if (
+                error.response &&
+                error.response.data
+            ) {
                 console.error(
                     '❌ Detalle GROQ:',
                     JSON.stringify(
@@ -661,17 +637,11 @@ router.post(
                 );
             }
 
-            /* ========================================================
-               TIMEOUT
-            ======================================================== */
-
+            /* Timeout */
             if (
-                error.code ===
-                    'ECONNABORTED' ||
-                error.code ===
-                    'ETIMEDOUT'
+                error.code === 'ECONNABORTED' ||
+                error.code === 'ETIMEDOUT'
             ) {
-
                 return res.status(504).json({
                     success: false,
                     error:
@@ -679,19 +649,12 @@ router.post(
                 });
             }
 
-            /* ========================================================
-               ERROR DE CONEXIÓN
-            ======================================================== */
-
+            /* Errores de conexión */
             if (
-                error.code ===
-                    'ENOTFOUND' ||
-                error.code ===
-                    'ECONNRESET' ||
-                error.code ===
-                    'ECONNREFUSED'
+                error.code === 'ENOTFOUND' ||
+                error.code === 'ECONNRESET' ||
+                error.code === 'ECONNREFUSED'
             ) {
-
                 return res.status(502).json({
                     success: false,
                     error:
@@ -699,14 +662,15 @@ router.post(
                 });
             }
 
-            /* ========================================================
-               ERROR GENERAL
-            ======================================================== */
-
+            /* Error general */
             return res.status(500).json({
                 success: false,
                 error:
-                    'Error procesando el mensaje de Marquinhos.'
+                    'Error procesando el mensaje de Marquinhos.',
+                detalles:
+                    process.env.NODE_ENV === 'development'
+                        ? error.message
+                        : undefined
             });
         }
     }
