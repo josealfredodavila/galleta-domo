@@ -984,6 +984,21 @@ app.get('/eliminar-cuenta', (req, res) => {
 });
 
 // ================================================================
+// ACTUALIZAR CONTRASEÑA (sin tilde)
+// ================================================================
+// El frontend y Supabase Auth redirigen a esta ruta (sin tilde).
+// La página real es public/actualizar-contrasena.html.
+// Se sirve tal cual, NO se delega al SPA fallback, porque procesa
+// el token de recuperación que Supabase pone en la URL.
+// ================================================================
+
+app.get('/actualizar-contrasena', (req, res) => {
+    return res.sendFile(
+        path.join(publicPath, 'actualizar-contrasena.html')
+    );
+});
+
+// ================================================================
 // HEALTH CHECK
 // ================================================================
 
