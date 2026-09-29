@@ -6,10 +6,7 @@
 const express = require('express');
 const router = express.Router();
 
-const {
-    supabase,
-    supabaseAdmin
-} = require('../config/supabase');
+const { createClient } = require('@supabase/supabase-js');
 
 const {
     verificarToken
@@ -26,6 +23,23 @@ const {
 
 const logger = require('../utils/logger');
 const axios = require('axios');
+
+// ================================================================
+// SUPABASE ADMIN Y ANON
+// Instanciación directa para hacer el router 100% autónomo.
+// El cliente anon se usa en /status/:ordenId (pagos_transmision).
+// El cliente admin se usa en /muro/*, /marketing/*, /internet/*.
+// ================================================================
+
+const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_ANON_KEY
+);
+
+const supabaseAdmin = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 // ================================================================
 // CONFIGURACIÓN NOWPAYMENTS
@@ -298,7 +312,6 @@ router.post(
             if (!orden || orden.success !== true) {
                 const motivo = (orden && orden.error) ? String(orden.error) : 'error_desconocido';
 
-                // Traducir errores de la RPC a mensajes amigables
                 const mapaErrores = {
                     'post_no_encontrado':     { status: 404, msg: 'Publicación no encontrada' },
                     'no_puedes_comprar_tus_tokens': { status: 400, msg: 'No puedes comprar tus propios tokens' },
@@ -331,10 +344,8 @@ router.post(
             const precioTotalMxn = Number(orden.precio_mxn);
             const comisionPlataforma = Number(orden.comision_plataforma);
 
-            // Validar red según el precio real (ya recalculado por la RPC)
             const validacionRed = validarRedPago(payCurrency, precioTotalMxn);
             if (!validacionRed.valido) {
-                // La orden ya se creó y reservó. Cancelar y devolver el inventario.
                 try {
                     await supabaseAdmin.rpc('cancelar_venta_muro', {
                         p_venta_id: ventaId,
@@ -382,7 +393,6 @@ router.post(
                     }`
                 );
 
-                // Liberar reserva vía RPC
                 try {
                     await supabaseAdmin.rpc('cancelar_venta_muro', {
                         p_venta_id: ventaId,
@@ -459,7 +469,6 @@ router.post(
                     `registrar_payment_muro devolvió success!=true para venta ${ventaId}: ` +
                     `${JSON.stringify(registroPago)}`
                 );
-                // No rompemos: el pago existe en NOWPayments, se reconciliará en el webhook.
             }
 
             logger.info(
@@ -944,9 +953,6 @@ router.get(
                 return respuestaError(res, 404, 'Venta no encontrada');
             }
 
-            // ----------------------------------------------------
-            // Estado final: no consultar NOWPayments
-            // ----------------------------------------------------
             if (venta.estado === 'pagado' || venta.estado === 'completado') {
                 return res.json({
                     success: true,
@@ -987,9 +993,6 @@ router.get(
                 });
             }
 
-            // ----------------------------------------------------
-            // Consultar NOWPayments
-            // ----------------------------------------------------
             let payment;
             try {
                 const response = await axios.get(
@@ -1024,9 +1027,6 @@ router.get(
             const ESTADOS_FINALIZADOS = ['finished', 'confirmed'];
             const ESTADOS_CANCELADOS = ['failed', 'refunded', 'expired', 'canceled'];
 
-            // ----------------------------------------------------
-            // Pago finalizado → registrar + liquidar
-            // ----------------------------------------------------
             if (ESTADOS_FINALIZADOS.includes(estadoNow)) {
 
                 const { error: regError } = await supabaseAdmin.rpc(
@@ -1061,7 +1061,6 @@ router.get(
                     });
                 }
 
-                // Si la liquidación devolvió expired=true, significa que se venció durante el proceso
                 if (liquidacion && liquidacion.success === false && liquidacion.expired === true) {
                     return res.json({
                         success: true,
@@ -1073,7 +1072,6 @@ router.get(
                     });
                 }
 
-                // Recargar venta final
                 const { data: ventaFinal } = await supabaseAdmin
                     .from('muro_ventas_tokens')
                     .select('*')
@@ -1091,9 +1089,6 @@ router.get(
                 });
             }
 
-            // ----------------------------------------------------
-            // Pago cancelado / expirado
-            // ----------------------------------------------------
             if (ESTADOS_CANCELADOS.includes(estadoNow)) {
 
                 const { error: cancelError } = await supabaseAdmin.rpc(
@@ -1125,9 +1120,6 @@ router.get(
                 });
             }
 
-            // ----------------------------------------------------
-            // Pago en proceso → solo registrar estado
-            // ----------------------------------------------------
             const { error: regError } = await supabaseAdmin.rpc(
                 'registrar_payment_muro',
                 {
