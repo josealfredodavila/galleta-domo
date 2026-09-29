@@ -31,13 +31,18 @@ const {
 // ================================================================
 // HANDLER DE NOWPAYMENTS PARA EL MURO
 // ================================================================
-// Puede venir de:
-// routes/webhooks/nowpayments.js
+// routes/webhooks/nowpayments.js exporta un Express Router.
 //
-// Se mantiene compatible con dos posibles formas de exportación:
-//   module.exports = function...
-// o
-//   module.exports = { procesarWebhookMuro: function... }
+// Los Routers de Express son funciones (typeof === 'function'), así
+// que la primera rama del if lo captura directamente.
+//
+// El Router espera (req, res) porque necesita:
+//   - req.rawBody                     → verificar HMAC-SHA512
+//   - req.headers['x-nowpayments-sig'] → verificar HMAC-SHA512
+//   - req.body                        → payload del IPN
+//
+// NO se le pasa solo el payload: sin los headers ni el rawBody no
+// puede verificar la firma.
 // ================================================================
 let procesarWebhookMuro = null;
 
@@ -45,6 +50,7 @@ try {
     const nowpaymentsHandler = require('./webhooks/nowpayments');
 
     if (typeof nowpaymentsHandler === 'function') {
+        // Express Router (o cualquier handler con firma (req, res, next)).
         procesarWebhookMuro = nowpaymentsHandler;
     } else if (
         nowpaymentsHandler &&
@@ -64,10 +70,13 @@ try {
 // Recibe los IPN de NOWPayments.
 //
 // Según order_id:
-//   - order_id empieza con "pro_" → Membresía Pro
+//   - order_id empieza con "PRO-" (case-insensitive) → Membresía Pro
 //   - cualquier otro order_id → Muro P2P
 //
 // IMPORTANTE:
+// El prefijo real que emite routes/membresia.js es "PRO-" (mayúsculas
+// con guion). Se compara con toUpperCase() para no perder ningún IPN.
+//
 // Para membresía Pro se utiliza handleWebhookMembresia()
 // y NO procesarWebhookMembresia() directamente.
 //
@@ -94,7 +103,9 @@ router.post('/nowpayments', async (req, res) => {
         // ============================================================
         // 1) MEMBRESÍA PRO
         // ============================================================
-        if (orderId.startsWith('pro_')) {
+        // El prefijo real es "PRO-" (mayúsculas). Se normaliza a
+        // mayúsculas para tolerar también "pro-" si algún día cambia.
+        if (orderId.toUpperCase().startsWith('PRO-')) {
             console.log(
                 '💳 Webhook identificado como membresía Pro:',
                 orderId
@@ -109,34 +120,18 @@ router.post('/nowpayments', async (req, res) => {
         // ============================================================
         // 2) MURO P2P
         // ============================================================
+        // Cubre muro_, MKT- y NET- (todos los que no son PRO-).
+        //
+        // IMPORTANTE:
+        // Se delega el Router COMPLETO con (req, res) para que el
+        // handler del Muro pueda:
+        //   - verificar la firma HMAC-SHA512 con req.rawBody
+        //     y req.headers['x-nowpayments-sig']
+        //   - leer req.body
+        //
+        // NO se le pasa solo el payload.
         if (procesarWebhookMuro) {
-            try {
-                const result = await procesarWebhookMuro(payload);
-
-                if (result && result.success === false) {
-                    return res
-                        .status(result.noRetry ? 200 : 500)
-                        .json({
-                            status: 'error',
-                            error: result.error
-                        });
-                }
-
-                return res.status(200).json({
-                    status: 'ok'
-                });
-
-            } catch (e) {
-                console.error(
-                    '❌ Error procesando webhook del Muro:',
-                    e
-                );
-
-                return res.status(500).json({
-                    status: 'error',
-                    error: 'Error procesando webhook del Muro'
-                });
-            }
+            return procesarWebhookMuro(req, res);
         }
 
         // ============================================================
