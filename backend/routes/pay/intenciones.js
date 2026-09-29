@@ -103,7 +103,7 @@ async function intentarCrearCuentaPay(usuarioId) {
                 })
                 .then(function (r) {
                     if (r.error && r.error.code !== '23505') {
-                        logger.warning(`[Pay Intenciones] Error creando saldos: ${r.error.message}`);
+                        logger.warn(`[Pay Intenciones] Error creando saldos: ${r.error.message}`);
                     }
                 });
 
@@ -166,7 +166,7 @@ async function intentarCrearCuentaPay(usuarioId) {
                 })
                 .then(function (r) {
                     if (r.error && r.error.code !== '23505') {
-                        logger.warning(`[Pay Intenciones] Error creando saldos: ${r.error.message}`);
+                        logger.warn(`[Pay Intenciones] Error creando saldos: ${r.error.message}`);
                     }
                 });
 
@@ -372,7 +372,7 @@ router.get(
             });
 
         } catch (err) {
-            logger.warning(`[Pay Intenciones] Error consultando ${req.params.publicToken}: ${err.message}`);
+            logger.warn(`[Pay Intenciones] Error consultando ${req.params.publicToken}: ${err.message}`);
             return errors.responderError(res, err);
         }
     }
