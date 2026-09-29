@@ -103,7 +103,7 @@ async function intentarCrearCuentaPay(usuarioId) {
                 })
                 .then(function (r) {
                     if (r.error && r.error.code !== '23505') {
-                        logger.warn(`[Pay Intenciones] Error creando saldos: ${r.error.message}`);
+                        logger.warning(`[Pay Intenciones] Error creando saldos: ${r.error.message}`);
                     }
                 });
 
@@ -166,7 +166,7 @@ async function intentarCrearCuentaPay(usuarioId) {
                 })
                 .then(function (r) {
                     if (r.error && r.error.code !== '23505') {
-                        logger.warn(`[Pay Intenciones] Error creando saldos: ${r.error.message}`);
+                        logger.warning(`[Pay Intenciones] Error creando saldos: ${r.error.message}`);
                     }
                 });
 
@@ -217,16 +217,6 @@ function generarIdempotencyKey(usuarioId) {
     return `${usuarioId}-${Date.now()}-${random}`;
 }
 
-/**
- * Determina el tipo y modo de liberación de una intención.
- *
- * Reglas:
- *   - Si tiene pedidoId → tipo 'fisico', liberar_al 'entregado'
- *   - Si NO tiene pedidoId → tipo 'digital', liberar_al '24h'
- *
- * Esto se guarda en metadata para que el sistema (actual o futuro)
- * sepa cómo manejar la liberación del saldo.
- */
 function determinarTipoYLiberacion(pedidoId) {
     if (pedidoId) {
         return {
@@ -267,7 +257,6 @@ router.post(
                 });
             }
 
-            // ---------- Resolver cuenta receptora (con auto-creación) ----------
             const cuenta = await resolverCuentaDelUsuario(usuarioId);
 
             if (!cuenta) {
@@ -280,11 +269,8 @@ router.post(
 
             const codigoPais = body.codigoPais || await resolverPaisDelUsuario(usuarioId);
             const idempotencyKey = body.idempotencyKey || generarIdempotencyKey(usuarioId);
-
-            // ---------- Determinar tipo + liberación ----------
             const tipoYLiberacion = determinarTipoYLiberacion(body.pedidoId || null);
 
-            // ---------- Combinar datosExtra del body con la metadata del sistema ----------
             const datosExtraDelCliente = (body.datosExtra && typeof body.datosExtra === 'object')
                 ? body.datosExtra
                 : {};
@@ -297,7 +283,6 @@ router.post(
                 datosExtraDelCliente
             );
 
-            // ---------- Crear la intención ----------
             const intencion = await core.crearIntencion({
                 cuentaReceptoraId: cuenta.id,
                 compradorId: null,
@@ -348,7 +333,6 @@ router.post(
 
 // ================================================================
 // GET /api/pay/intenciones/:publicToken
-// PÚBLICO - El comprador consulta la intención (página del QR).
 // ================================================================
 
 router.get(
@@ -372,7 +356,7 @@ router.get(
             });
 
         } catch (err) {
-            logger.warn(`[Pay Intenciones] Error consultando ${req.params.publicToken}: ${err.message}`);
+            logger.warning(`[Pay Intenciones] Error consultando ${req.params.publicToken}: ${err.message}`);
             return errors.responderError(res, err);
         }
     }
@@ -380,7 +364,6 @@ router.get(
 
 // ================================================================
 // POST /api/pay/intenciones/:publicToken/pagar
-// PÚBLICO - El comprador elige método y crea el pago en el proveedor.
 // ================================================================
 
 router.post(
@@ -604,7 +587,6 @@ router.post(
 
 // ================================================================
 // GET /api/pay/mis-intenciones
-// PRIVADO - El vendedor ve sus intenciones (cobros recibidos).
 // ================================================================
 
 router.get(
@@ -677,7 +659,6 @@ router.get(
 
 // ================================================================
 // POST /api/pay/intenciones/:id/cancelar
-// PRIVADO - El vendedor cancela una intención pending.
 // ================================================================
 
 router.post(
