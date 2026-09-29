@@ -478,6 +478,17 @@ app.get('/api/config/web3', (req, res) => {
     });
 });
 
+// Configuración pública de Supabase para el frontend (auth-global.js).
+// La clave anon es pública por diseño. NUNCA devolver SERVICE_ROLE.
+app.get('/api/config/public', (req, res) => {
+    return res.status(200).json({
+        success: true,
+        supabaseUrl: SUPABASE_URL,
+        supabaseAnonKey: SUPABASE_ANON_KEY,
+        publicUrl: PUBLIC_APP_URL
+    });
+});
+
 // ================================================================
 // I18N
 // Esquema real:
@@ -882,21 +893,21 @@ montarRouter('/api/auth', './routes/auth', 'routes/auth');
 
 montarRouter('/api/payments', './routes/payments', 'routes/payments');
 
-montarRouter('/api/webhook', './routes/webhooks', 'routes/webhooks');
+// Membresía: existe y estaba montada en producción (log de Railway).
+// Debe ir DESPUÉS de /api/payments, igual que en el despliegue anterior.
+montarRouter(
+    '/api/payments/membresia',
+    './routes/membresia',
+    'routes/membresia'
+);
 
-// NOTA: NO se carga ./routes/payments/membresia.
-// El handler de membresía vive en ./routes/membresia-webhook-handler.js
-// (exporta funciones, no un Router) y se integra vía routes/webhooks.js.
+montarRouter('/api/webhook', './routes/webhooks', 'routes/webhooks');
 
 montarRouter('/api/pay', './routes/pay', 'routes/pay');
 
 montarRouter('/api/mensajes', './routes/mensajes', 'routes/mensajes');
 
 montarRouter('/api/marketing', './routes/marketing', 'routes/marketing');
-
-montarRouter('/api/contactos', './routes/contactos', 'routes/contactos');
-
-montarRouter('/api/estado', './routes/estado', 'routes/estado');
 
 montarRouter('/api/video', './routes/video-processor', 'routes/video-processor');
 
