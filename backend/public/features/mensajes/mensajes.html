@@ -1,13 +1,26 @@
 // ================================================================
-// ROUTES/MENSAJES.JS - SARIEL'S BACKEND (PRODUCCIÓN)
+// ROUTES/MENSAJES.JS — SARIEL'S ECOSYSTEM
 // RUTAS DE MENSAJERÍA
 // ================================================================
-// ORDEN DE DEFINICIÓN:
+// ARCHIVO:  backend/routes/mensajes.js
+// MONTAJE:  server.js → app.use('/api/mensajes', ...)
+//
+// ORDEN DE DEFINICIÓN DE RUTAS:
 // Express evalúa las rutas en el orden en que se registran.
-// Las rutas literales (/llamadas, /archivos, /usuarios, etc.) se
-// definen ANTES que las dinámicas (/:id, /:conversacionId) para
+// Las rutas LITERALES (/llamadas, /archivos, /usuarios, etc.) se
+// definen ANTES que las DINÁMICAS (/:id, /:conversacionId) para
 // evitar que una ruta literal sea capturada por un parámetro.
+//
+// Ejemplo del problema que evitamos:
+//   Si definimos primero  router.post('/:conversacionId', ...)
+//   y después             router.post('/llamadas', ...)
+//   entonces POST /llamadas → matchea /:conversacionId
+//   con conversacionId = 'llamadas'. La ruta nunca se ejecuta.
+//
+// Este archivo respeta el orden correcto.
 // ================================================================
+
+'use strict';
 
 const express = require('express');
 const router = express.Router();
@@ -15,7 +28,12 @@ const router = express.Router();
 const { verificarToken } = require('../middleware/auth');
 const mensajesController = require('../controllers/mensajesController');
 
-// Extraemos los métodos del controlador unificado de producción
+// ================================================================
+// EXTRAER MÉTODOS DEL CONTROLADOR
+// ================================================================
+// El controlador unificado de producción expone estos 17 métodos.
+// Los desestructuramos para usarlos directamente como handlers.
+
 const {
     obtenerConversaciones,
     obtenerMensajes,
@@ -42,25 +60,37 @@ const {
 
 /**
  * @route   GET /api/mensajes/conversaciones
- * @desc    Obtener todas las conversaciones del usuario autenticado
+ * @desc    Obtener todas las conversaciones del usuario autenticado.
  * @access  Private
  */
-router.get('/conversaciones', verificarToken, obtenerConversaciones);
+router.get(
+    '/conversaciones',
+    verificarToken,
+    obtenerConversaciones
+);
 
 /**
  * @route   POST /api/mensajes/conversaciones
- * @desc    Crear una nueva conversación
- * @body    { participanteId } (ID del otro usuario)
+ * @desc    Crear una nueva conversación.
+ * @body    { participanteId } — ID del otro usuario.
  * @access  Private
  */
-router.post('/conversaciones', verificarToken, crearConversacion);
+router.post(
+    '/conversaciones',
+    verificarToken,
+    crearConversacion
+);
 
 /**
  * @route   DELETE /api/mensajes/conversaciones/:id
- * @desc    Salir de una conversación
+ * @desc    Salir de una conversación.
  * @access  Private
  */
-router.delete('/conversaciones/:id', verificarToken, salirConversacion);
+router.delete(
+    '/conversaciones/:id',
+    verificarToken,
+    salirConversacion
+);
 
 // ================================================================
 // 2) USUARIOS (rutas literales de dos segmentos)
@@ -68,26 +98,38 @@ router.delete('/conversaciones/:id', verificarToken, salirConversacion);
 
 /**
  * @route   GET /api/mensajes/usuarios/buscar
- * @desc    Buscar usuarios por nombre o email
- * @query   { q } (término de búsqueda, mínimo 2 caracteres)
+ * @desc    Buscar usuarios por nombre o email.
+ * @query   { q } — término de búsqueda (mínimo 2 caracteres).
  * @access  Private
  */
-router.get('/usuarios/buscar', verificarToken, buscarUsuarios);
+router.get(
+    '/usuarios/buscar',
+    verificarToken,
+    buscarUsuarios
+);
 
 /**
  * @route   POST /api/mensajes/usuarios/bloquear
- * @desc    Bloquear a un usuario
+ * @desc    Bloquear a un usuario.
  * @body    { usuarioId }
  * @access  Private
  */
-router.post('/usuarios/bloquear', verificarToken, bloquearUsuario);
+router.post(
+    '/usuarios/bloquear',
+    verificarToken,
+    bloquearUsuario
+);
 
 /**
  * @route   DELETE /api/mensajes/usuarios/bloquear/:id
- * @desc    Desbloquear a un usuario
+ * @desc    Desbloquear a un usuario.
  * @access  Private
  */
-router.delete('/usuarios/bloquear/:id', verificarToken, desbloquearUsuario);
+router.delete(
+    '/usuarios/bloquear/:id',
+    verificarToken,
+    desbloquearUsuario
+);
 
 // ================================================================
 // 3) ARCHIVOS (ruta literal de un segmento)
@@ -95,11 +137,15 @@ router.delete('/usuarios/bloquear/:id', verificarToken, desbloquearUsuario);
 
 /**
  * @route   POST /api/mensajes/archivos
- * @desc    Subir un archivo (usado para mensajes)
- * @body    FormData con el archivo
+ * @desc    Subir un archivo (usado para mensajes).
+ * @body    FormData con el archivo.
  * @access  Private
  */
-router.post('/archivos', verificarToken, subirArchivo);
+router.post(
+    '/archivos',
+    verificarToken,
+    subirArchivo
+);
 
 // ================================================================
 // 4) LLAMADAS (rutas literales)
@@ -107,87 +153,141 @@ router.post('/archivos', verificarToken, subirArchivo);
 
 /**
  * @route   POST /api/mensajes/llamadas
- * @desc    Crear una nueva llamada
+ * @desc    Crear una nueva llamada.
  * @body    { destinatarioId, tipo, conversationId }
  * @access  Private
  */
-router.post('/llamadas', verificarToken, crearLlamada);
+router.post(
+    '/llamadas',
+    verificarToken,
+    crearLlamada
+);
 
 /**
  * @route   GET /api/mensajes/llamadas/:id
- * @desc    Verificar estado de una llamada
+ * @desc    Verificar estado de una llamada.
  * @access  Private
  */
-router.get('/llamadas/:id', verificarToken, verificarLlamada);
+router.get(
+    '/llamadas/:id',
+    verificarToken,
+    verificarLlamada
+);
 
 /**
  * @route   PUT /api/mensajes/llamadas/:id
- * @desc    Actualizar estado de una llamada (aceptar/rechazar/finalizar)
+ * @desc    Actualizar estado de una llamada (aceptar/rechazar/finalizar).
  * @body    { estado }
  * @access  Private
  */
-router.put('/llamadas/:id', verificarToken, actualizarLlamada);
+router.put(
+    '/llamadas/:id',
+    verificarToken,
+    actualizarLlamada
+);
 
 // ================================================================
 // 5) MENSAJES EN CONVERSACIÓN (rutas dinámicas de dos segmentos)
 // ================================================================
+// Se definen ANTES que las rutas dinámicas de un solo segmento,
+// porque tienen dos segmentos y son más específicas.
 
 /**
  * @route   PUT /api/mensajes/:conversacionId/leer
- * @desc    Marcar mensajes como leídos
+ * @desc    Marcar mensajes como leídos.
  * @access  Private
  */
-router.put('/:conversacionId/leer', verificarToken, marcarLeidos);
+router.put(
+    '/:conversacionId/leer',
+    verificarToken,
+    marcarLeidos
+);
 
 /**
  * @route   GET /api/mensajes/:conversacionId/buscar
- * @desc    Buscar mensajes en una conversación
- * @query   { q } (término de búsqueda)
+ * @desc    Buscar mensajes en una conversación.
+ * @query   { q } — término de búsqueda.
  * @access  Private
  */
-router.get('/:conversacionId/buscar', verificarToken, buscarEnConversacion);
+router.get(
+    '/:conversacionId/buscar',
+    verificarToken,
+    buscarEnConversacion
+);
 
 /**
  * @route   POST /api/mensajes/:id/reportar
- * @desc    Reportar un mensaje
+ * @desc    Reportar un mensaje.
  * @body    { motivo }
  * @access  Private
  */
-router.post('/:id/reportar', verificarToken, reportarMensaje);
+router.post(
+    '/:id/reportar',
+    verificarToken,
+    reportarMensaje
+);
 
 // ================================================================
 // 6) MENSAJES (rutas dinámicas de un segmento)
 // ================================================================
+// Se definen AL FINAL porque son las más genéricas.
+// Cualquier ruta de un solo segmento que no coincida con las
+// anteriores (todas literales) cae aquí.
 
 /**
  * @route   GET /api/mensajes/:conversacionId
- * @desc    Obtener mensajes de una conversación
- * @query   { limit, before } (opcional)
+ * @desc    Obtener mensajes de una conversación.
+ * @query   { limit, before } — paginación (opcional).
  * @access  Private
  */
-router.get('/:conversacionId', verificarToken, obtenerMensajes);
+router.get(
+    '/:conversacionId',
+    verificarToken,
+    obtenerMensajes
+);
 
 /**
  * @route   POST /api/mensajes/:conversacionId
- * @desc    Enviar un mensaje (texto o archivo)
- * @body    { contenido, tipo, media_url, nombre_archivo, tamano_bytes, mime_type }
+ * @desc    Enviar un mensaje (texto o archivo).
+ * @body    { contenido, tipo, media_url, nombre_archivo,
+ *            tamano_bytes, mime_type }
  * @access  Private
  */
-router.post('/:conversacionId', verificarToken, enviarMensaje);
+router.post(
+    '/:conversacionId',
+    verificarToken,
+    enviarMensaje
+);
 
 /**
  * @route   PUT /api/mensajes/:id
- * @desc    Editar un mensaje
+ * @desc    Editar un mensaje.
  * @body    { contenido }
  * @access  Private
  */
-router.put('/:id', verificarToken, editarMensaje);
+router.put(
+    '/:id',
+    verificarToken,
+    editarMensaje
+);
 
 /**
  * @route   DELETE /api/mensajes/:id
- * @desc    Eliminar un mensaje (soft delete)
+ * @desc    Eliminar un mensaje (soft delete).
  * @access  Private
  */
-router.delete('/:id', verificarToken, eliminarMensaje);
+router.delete(
+    '/:id',
+    verificarToken,
+    eliminarMensaje
+);
+
+// ================================================================
+// EXPORT
+// ================================================================
+// server.js hace:
+//   app.use('/api/mensajes', require('./routes/mensajes'));
+// Por eso este archivo exporta directamente el Router.
+// ================================================================
 
 module.exports = router;
