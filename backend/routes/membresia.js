@@ -17,32 +17,49 @@
 //
 // El webhook (/api/webhook/nowpayments) encuentra el pago por order_id
 // y la RPC activar_membresia_pro completa payment_id al confirmarse.
+//
+// SUPABASE:
+// Se instancia supabaseAdmin directamente con @supabase/supabase-js
+// para hacer el router 100% autónomo (no depende de ../config/supabase).
+//
+// DOMINIO:
+// SITE_URL se resuelve con cadena de prioridad dinámica:
+//   process.env.SITE_URL
+//   || process.env.FRONTEND_URL
+//   || process.env.PUBLIC_APP_URL
+//   || 'https://galleta-domo-production.up.railway.app'
 // ================================================================
 
 const express = require('express');
 const router = express.Router();
+
+const { createClient } = require('@supabase/supabase-js');
 
 const { limitadorPagos } = require('../middleware/rateLimit');
 
 // ===== CONFIGURACIÓN =====
 const NOWPAYMENTS_API_KEY = process.env.NOWPAYMENTS_API_KEY;
 const NOWPAYMENTS_API_URL = 'https://api.nowpayments.io/v1';
-const SITE_URL = process.env.SITE_URL || 'https://sariels.xyz';
 const PAY_CURRENCY = 'usdttrc20';
+
+const DEFAULT_SITE_URL =
+    'https://galleta-domo-production.up.railway.app';
+
+const SITE_URL =
+    process.env.SITE_URL ||
+    process.env.FRONTEND_URL ||
+    process.env.PUBLIC_APP_URL ||
+    DEFAULT_SITE_URL;
 
 console.log('🔑 NOWPAYMENTS_API_KEY:', NOWPAYMENTS_API_KEY ? '✅ Definida' : '❌ NO DEFINIDA');
 console.log('🌐 SITE_URL:', SITE_URL);
 
 // ===== SUPABASE ADMIN =====
-let supabaseAdmin = null;
-
-try {
-    const supabaseConfig = require('../config/supabase');
-    supabaseAdmin = supabaseConfig.supabaseAdmin;
-    console.log('✅ supabaseAdmin cargado:', supabaseAdmin ? '✅ Disponible' : '❌ NO DISPONIBLE');
-} catch (error) {
-    console.error('❌ Error cargando config/supabase.js:', error.message);
-}
+// Instanciación directa para hacer el router 100% autónomo.
+const supabaseAdmin = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 // ================================================================
 // MIDDLEWARE DE AUTENTICACIÓN
@@ -61,8 +78,7 @@ async function verificarAutenticacion(req, res, next) {
             return res.status(401).json({ success: false, error: 'No autenticado: token vacío' });
         }
 
-        const { createClient: createUserClient } = require('@supabase/supabase-js');
-        const supabaseUser = createUserClient(
+        const supabaseUser = createClient(
             process.env.SUPABASE_URL,
             process.env.SUPABASE_ANON_KEY,
             {
