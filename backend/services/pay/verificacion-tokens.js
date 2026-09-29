@@ -37,7 +37,9 @@ const errors = require('./errors');
 // CONFIGURACIÓN
 // ================================================================
 
-const TOKEN_SECRET = process.env.BIOMETRIA_SECRET || process.env.VERIFICACION_TOKEN_SECRET;
+const TOKEN_SECRET =
+    process.env.BIOMETRIA_SECRET ||
+    process.env.VERIFICACION_TOKEN_SECRET;
 
 // TTL del token: 5 minutos
 const TOKEN_TTL_MS = 5 * 60 * 1000;
@@ -61,16 +63,6 @@ function verificarConfiguracion() {
 
 // ================================================================
 // GENERAR TOKEN
-// ================================================================
-// Se llama desde `biometria.js` o `liveness.js` después de validar.
-//
-// Datos requeridos:
-//   - usuarioId: uuid
-//   - montoMaximo: número (monto máximo autorizado para retirar)
-//   - metodo: 'spei' | 'crypto' | 'tarjeta'
-//   - metodoBiometrico: 'huella' | 'rostro'
-//   - livenessVerificado: boolean
-//   - metadata: objeto opcional (scores, IP, dispositivo, etc.)
 // ================================================================
 
 function generarTokenVerificacion(datos) {
@@ -100,11 +92,9 @@ function generarTokenVerificacion(datos) {
         throw errors.errorParametroRequerido('metodoBiometrico (huella|rostro)');
     }
 
-    // Generar token
     const tokenAleatorio = crypto.randomBytes(32).toString('base64url');
     const timestamp = Date.now();
 
-    // Firma HMAC para que no se pueda falsificar
     const contenido = `${d.usuarioId}:${montoMaximo}:${metodo}:${metodoBiometrico}:${timestamp}:${tokenAleatorio}`;
     const firma = crypto
         .createHmac('sha256', TOKEN_SECRET)
@@ -113,7 +103,6 @@ function generarTokenVerificacion(datos) {
 
     const token = `${firma}.${tokenAleatorio}`;
 
-    // Guardar en memoria
     tokensActivos.set(token, {
         usuarioId: d.usuarioId,
         montoMaximo: montoMaximo,
@@ -143,17 +132,6 @@ function generarTokenVerificacion(datos) {
 // ================================================================
 // VALIDAR TOKEN
 // ================================================================
-// Se llama desde `retiros.js` antes de crear un retiro.
-//
-// Parámetros:
-//   - token: string
-//   - usuarioId: uuid
-//   - monto: número (monto del retiro)
-//   - metodo: string (método del retiro)
-//
-// Si todo OK, marca el token como usado y devuelve { valido: true }.
-// Si algo falla, tira un error tipado.
-// ================================================================
 
 async function validarYConsumirToken(datos) {
     verificarConfiguracion();
@@ -181,7 +159,6 @@ async function validarYConsumirToken(datos) {
         throw errors.errorMetodoInvalido(d.metodo);
     }
 
-    // Recuperar token de memoria
     const registro = tokensActivos.get(d.token);
 
     if (!registro) {
@@ -191,7 +168,6 @@ async function validarYConsumirToken(datos) {
         );
     }
 
-    // Verificar que pertenece al usuario
     if (registro.usuarioId !== d.usuarioId) {
         tokensActivos.delete(d.token);
         logger.warning(
@@ -203,7 +179,6 @@ async function validarYConsumirToken(datos) {
         );
     }
 
-    // Verificar expiración
     if (registro.expiraEn < Date.now()) {
         tokensActivos.delete(d.token);
         throw new errors.ErrorAutorizacion(
@@ -212,7 +187,6 @@ async function validarYConsumirToken(datos) {
         );
     }
 
-    // Verificar que no esté usado
     if (registro.usado) {
         tokensActivos.delete(d.token);
         logger.warning(`[VerifTokens] Token ya usado por usuario ${d.usuarioId}`);
@@ -222,7 +196,6 @@ async function validarYConsumirToken(datos) {
         );
     }
 
-    // Verificar que el método coincida
     if (registro.metodo !== d.metodo) {
         logger.warning(
             `[VerifTokens] Método no coincide: ` +
@@ -234,7 +207,6 @@ async function validarYConsumirToken(datos) {
         );
     }
 
-    // Verificar que el monto no supere el autorizado
     if (monto > registro.montoMaximo) {
         logger.warning(
             `[VerifTokens] Monto supera el autorizado: ` +
@@ -247,7 +219,6 @@ async function validarYConsumirToken(datos) {
         );
     }
 
-    // Verificar liveness previo
     if (!registro.livenessVerificado) {
         throw new errors.ErrorAutorizacion(
             'TOKEN_SIN_LIVENESS',
@@ -255,7 +226,6 @@ async function validarYConsumirToken(datos) {
         );
     }
 
-    // Verificar firma HMAC (por si alguien manipuló el token en memoria)
     const tokenPartes = d.token.split('.');
 
     if (tokenPartes.length !== 2) {
@@ -308,7 +278,6 @@ async function validarYConsumirToken(datos) {
         );
     }
 
-    // Marcar como usado
     registro.usado = true;
 
     logger.info(
@@ -328,9 +297,6 @@ async function validarYConsumirToken(datos) {
 
 // ================================================================
 // CONSULTAR TOKEN (sin consumirlo)
-// ================================================================
-// Útil para que el frontend verifique si un token sigue válido
-// antes de intentar usarlo.
 // ================================================================
 
 function consultarToken(token, usuarioId) {
@@ -370,8 +336,6 @@ function consultarToken(token, usuarioId) {
 // ================================================================
 // INVALIDAR TOKEN
 // ================================================================
-// Útil si el usuario cancela el retiro antes de completarlo.
-// ================================================================
 
 function invalidarToken(token, usuarioId) {
     if (!token || typeof token !== 'string') return false;
@@ -394,9 +358,6 @@ function invalidarToken(token, usuarioId) {
 // ================================================================
 // INVALIDAR TODOS LOS TOKENS DE UN USUARIO
 // ================================================================
-// Útil si el usuario cambia contraseña, cierra sesión en todos
-// los dispositivos, o hay actividad sospechosa.
-// ================================================================
 
 function invalidarTokensDeUsuario(usuarioId) {
     let contador = 0;
@@ -417,8 +378,6 @@ function invalidarTokensDeUsuario(usuarioId) {
 
 // ================================================================
 // ESTADÍSTICAS
-// ================================================================
-// Útil para monitoreo y debugging.
 // ================================================================
 
 function obtenerEstadisticas() {
@@ -451,9 +410,11 @@ function obtenerEstadisticas() {
 // LIMPIEZA AUTOMÁTICA
 // ================================================================
 // Cada minuto, limpia tokens expirados o usados.
+// .unref() evita que el timer mantenga el proceso vivo si todo lo
+// demás ha terminado (tests, shutdown, scripts CLI).
 // ================================================================
 
-setInterval(function () {
+const cleanupInterval = setInterval(function () {
     const ahora = Date.now();
     let limpiados = 0;
 
@@ -468,6 +429,10 @@ setInterval(function () {
         logger.debug(`[VerifTokens] Limpiados ${limpiados} tokens expirados/usados`);
     }
 }, 60 * 1000);
+
+if (cleanupInterval.unref) {
+    cleanupInterval.unref();
+}
 
 // ================================================================
 // EXPORTACIONES
