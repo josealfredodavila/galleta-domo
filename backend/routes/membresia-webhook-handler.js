@@ -23,8 +23,13 @@
 //            (junto a routes/webhooks.js)
 // ================================================================
 
-const { supabaseAdmin } = require('../config/supabase.js');
+const { createClient } = require('@supabase/supabase-js');
 const { verificarFirmaNowPayments } = require('../utils/nowpayments-sig.js');
+
+const supabaseAdmin = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 const NOWPAYMENTS_IPN_SECRET = process.env.NOWPAYMENTS_IPN_SECRET;
 
