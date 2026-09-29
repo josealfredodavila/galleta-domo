@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-require-auth>
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,159 +7,18 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
+<!-- 1) SDK de Supabase -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+<!-- 2) Guardia de autenticación global -->
+<script src="/features/shared/js/auth-global.js"></script>
+
+<!-- 3) Apariencia global (usa window.supabaseClient que ya creó auth-global) -->
 <script src="/features/shared/js/apariencia-global.js?v=6" defer></script>
 
 <style>
     html:not(.auth-ready) .app { display: none !important; }
 </style>
-
-<script>
-    (function () {
-        'use strict';
-
-        window.__sarielsAuthenticated = null;
-        window.__sarielsAuthReady = null;
-        window.supabaseClient = window.supabaseClient || null;
-        window.supabaseReady = null;
-        window.supabaseError = null;
-
-        window.getSupabaseClient = function () {
-            return window.supabaseReady;
-        };
-
-        function esRutaInternaSegura(valor) {
-            if (typeof valor !== 'string') return false;
-            if (!valor.startsWith('/')) return false;
-            if (valor.startsWith('//')) return false;
-            if (valor.startsWith('/\\')) return false;
-            return true;
-        }
-
-        function revelarPagina() {
-            document.documentElement.classList.add('auth-ready');
-        }
-
-        function irAlIndexConReturnTo() {
-            try {
-                var returnTo = window.location.pathname + window.location.search + window.location.hash;
-                if (esRutaInternaSegura(returnTo)) {
-                    localStorage.setItem('wallet_returnTo', returnTo);
-                }
-                console.log('[Perfil Guardián] Sin sesión → redirigiendo al index');
-                window.location.replace('/');
-            } catch (e) {
-                console.warn('[Perfil Guardián] Error guardando returnTo:', e);
-                window.location.replace('/');
-            }
-        }
-
-        var salvaguarda = setTimeout(function () {
-            console.warn('[Perfil Guardián] Salvaguarda activada: revelando página sin confirmar sesión.');
-            revelarPagina();
-        }, 10000);
-
-        async function inicializarSupabase() {
-            try {
-                if (
-                    !window.supabase ||
-                    typeof window.supabase.createClient !== 'function'
-                ) {
-                    throw new Error('Supabase SDK no disponible.');
-                }
-
-                if (!window.supabaseClient) {
-                    var supabaseUrl = null;
-                    var supabaseAnonKey = null;
-
-                    try {
-                        const response = await fetch('/api/config/public', {
-                            method: 'GET',
-                            credentials: 'same-origin',
-                            cache: 'no-store',
-                            headers: { 'Accept': 'application/json' }
-                        });
-
-                        if (response.ok) {
-                            const config = await response.json();
-                            supabaseUrl = config && config.supabaseUrl;
-                            supabaseAnonKey = config && config.supabaseAnonKey;
-                        }
-                    } catch (fetchErr) {
-                        console.warn('[Perfil Guardián] fetch falló:', fetchErr);
-                    }
-
-                    if (!supabaseUrl || !supabaseAnonKey) {
-                        supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
-                        supabaseAnonKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
-                        console.warn('[Perfil Guardián] Usando fallback.');
-                    }
-
-                    window.SupabaseSDK = window.supabase;
-
-                    window.supabaseClient = window.SupabaseSDK.createClient(
-                        supabaseUrl,
-                        supabaseAnonKey,
-                        {
-                            auth: {
-                                persistSession: true,
-                                autoRefreshToken: true,
-                                detectSessionInUrl: true
-                            }
-                        }
-                    );
-                }
-
-                const resultado = await window.supabaseClient.auth.getSession();
-                const session =
-                    resultado && resultado.data ? resultado.data.session : null;
-
-                window.__sarielsAuthenticated = !!session;
-
-                const urlParams = new URLSearchParams(window.location.search);
-                const returnTo = urlParams.get('returnTo');
-
-                if (returnTo && esRutaInternaSegura(returnTo)) {
-                    try {
-                        localStorage.setItem('wallet_returnTo', returnTo);
-                    } catch (_) {}
-                }
-
-                window.supabaseClient.auth.onAuthStateChange(
-                    function (_event, sessionActual) {
-                        window.__sarielsAuthenticated = !!sessionActual;
-                        if (!sessionActual) {
-                            window.location.replace('/');
-                        }
-                    }
-                );
-
-                clearTimeout(salvaguarda);
-
-                if (!session) {
-                    irAlIndexConReturnTo();
-                } else {
-                    revelarPagina();
-                }
-
-                return window.supabaseClient;
-            } catch (error) {
-                console.error('[Perfil Guardián] Error:', error);
-                window.__sarielsAuthenticated = false;
-                window.supabaseError = error;
-                clearTimeout(salvaguarda);
-                revelarPagina();
-                return null;
-            }
-        }
-
-        window.supabaseReady = inicializarSupabase();
-
-        window.__sarielsAuthReady = window.supabaseReady.then(function () {
-            return window.__sarielsAuthenticated;
-        });
-    })();
-</script>
 
 <style>
     :root {
@@ -704,6 +563,7 @@
         <button class="tab-btn" onclick="window.cambiarTab('qr')" data-clave="perfil_tab_qr">📷 Escanear QR</button>
         <button class="tab-btn" onclick="window.cambiarTab('internet')" data-clave="perfil_tab_internet">📶 Internet</button>
     </div>
+
 <div id="tab-mis-publicaciones" class="tab-content active">
     <div class="panel">
         <div class="panel-header">
@@ -2022,76 +1882,5 @@ document.addEventListener('DOMContentLoaded', function() {
 })();
 </script>
 
-<script>
-/* ================================================================
-   RESPALDO DE EMERGENCIA
-=============================================================== */
-(function() {
-    'use strict';
-    setTimeout(function() {
-        var perfilCargo = typeof window.contratarPro === 'function'
-                       && typeof window.cambiarTab === 'function';
-        if (perfilCargo) return;
-
-        console.warn('[Perfil Respaldo] ⚠️ perfil.js NO cargó. Activando respaldos mínimos.');
-
-        window.showToast = window.showToast || function(mensaje, tipo, duracion) {
-            var toast = document.getElementById('toast');
-            if (!toast) { alert(mensaje); return; }
-            toast.textContent = mensaje;
-            toast.className = 'toast show';
-            if (tipo === 'error') toast.classList.add('error');
-            else if (tipo === 'warning') toast.classList.add('warning');
-            else if (tipo === 'success') toast.classList.add('success');
-            clearTimeout(toast._timeout);
-            toast._timeout = setTimeout(function() { toast.classList.remove('show'); }, duracion || 3000);
-        };
-
-        window.cambiarTab = window.cambiarTab || function(tab) {
-            document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
-            var target = document.getElementById('tab-' + tab);
-            if (target) target.classList.add('active');
-            document.querySelectorAll('.perfil-tabs .tab-btn').forEach(function(b) { b.classList.remove('active'); });
-            if (window.event && window.event.target) window.event.target.classList.add('active');
-        };
-
-        window.abrirSelectorArchivo = window.abrirSelectorArchivo || function() {
-            var input = document.getElementById('fileInput');
-            if (input) input.click();
-        };
-
-        window.irAMuro = window.irAMuro || function() {
-            window.location.href = '/features/muro/muro.html';
-        };
-
-        var funcionesPendientes = [
-            'contratarPro', 'comprarDomo', 'canjearNFT', 'comprarConCripto',
-            'comprarESIM', 'generarQRESIM', 'sincronizarESIM', 'activarESIM',
-            'desactivarESIM', 'escanearQR', 'abrirCamaraQR', 'cerrarCamaraQR',
-            'cerrarModalPago', 'copiarDireccion', 'verificarPagoCrypto',
-            'subirFoto', 'eliminarFotoPerfil', 'expandirAvatar',
-            'compartirPerfil', 'generarQRPerfil', 'cambiarEstado',
-            'cambiarConexion', 'cerrarSesion', 'compartirLogro'
-        ];
-
-        funcionesPendientes.forEach(function(nombre) {
-            window[nombre] = window[nombre] || function() {
-                if (window.showToast) {
-                    window.showToast('⚠️ Módulo de perfil no cargó. Recarga con Ctrl+F5.', 'error', 5000);
-                }
-            };
-        });
-
-        window.expandirFotoPublicacion = window.expandirFotoPublicacion || function(src) {
-            if (!src) return;
-            var overlay = document.createElement('div');
-            overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.95);display:flex;align-items:center;justify-content:center;z-index:99999;padding:20px;cursor:pointer;';
-            overlay.innerHTML = '<img src="' + src + '" style="max-width:100%;max-height:100%;border-radius:12px;border:2px solid var(--gold);">';
-            overlay.onclick = function() { overlay.remove(); };
-            document.body.appendChild(overlay);
-        };
-    }, 3000);
-})();
-</script>
 </body>
 </html>
