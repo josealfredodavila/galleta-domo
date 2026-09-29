@@ -2686,4 +2686,592 @@ function abrirSelectorArchivo() {
 function abrirVisorImagen(src, alt, idModal) {
     if (!src) return;
 
-    const modal = documen
+    const modal = document.createElement('div');
+    modal.id = idModal;
+    modal.style.cssText = [
+        'position: fixed',
+        'top: 0', 'left: 0', 'right: 0', 'bottom: 0',
+        'width: 100vw', 'height: 100vh',
+        'background: rgba(0,0,0,0.95)',
+        '-webkit-backdrop-filter: blur(8px)',
+        'backdrop-filter: blur(8px)',
+        'display: flex',
+        'justify-content: center',
+        'align-items: center',
+        'z-index: 2147483647',
+        'cursor: zoom-out',
+        'padding: 20px',
+        'box-sizing: border-box'
+    ].join(';');
+
+    const imgFull = document.createElement('img');
+    imgFull.src = src;
+    imgFull.alt = alt;
+    imgFull.style.cssText = [
+        'max-width: 95vw',
+        'max-height: 95vh',
+        'width: auto',
+        'height: auto',
+        'object-fit: contain',
+        'border-radius: 16px',
+        'box-shadow: 0 0 60px rgba(212, 175, 55, 0.5), 0 0 0 3px rgba(212, 175, 55, 0.6)',
+        'display: block'
+    ].join(';');
+
+    modal.appendChild(imgFull);
+    document.body.appendChild(modal);
+
+    const cerrar = function (e) {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        modal.remove();
+        document.removeEventListener('keydown', onKeyDown);
+    };
+
+    const onKeyDown = function (e) {
+        if (e.key === 'Escape' || e.key === 'Esc') cerrar();
+    };
+
+    modal.addEventListener('click', cerrar);
+    imgFull.addEventListener('click', cerrar);
+    document.addEventListener('keydown', onKeyDown);
+}
+
+function expandirAvatar() {
+    const avatarEl = document.getElementById('perfilAvatar');
+    if (!avatarEl) return;
+    const img = avatarEl.querySelector('img');
+    if (!img || !img.src) return;
+    abrirVisorImagen(img.src, 'Avatar', 'perfilAvatarModal');
+}
+
+function expandirFotoPublicacion(src) {
+    abrirVisorImagen(src, 'Imagen publicada', 'fotoPublicacionModal');
+}
+
+/* ================================================================
+   SUBIR FOTO DE PERFIL
+   ================================================================ */
+async function subirFoto(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const session = await getSession();
+    if (!session) {
+        showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+        return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+        showToast('❌ La imagen no puede superar los 5 MB', 'error');
+        event.target.value = '';
+        return;
+    }
+
+    if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) {
+        showToast('❌ Solo JPG, PNG, WEBP o GIF', 'error');
+        event.target.value = '';
+        return;
+    }
+
+    const fileExt = file.name.split('.').pop().toLowerCase();
+    const filePath = `${session.user.id}/avatar.${fileExt}`;
+
+    try {
+        showToast('⏳ Subiendo foto...', '', 5000);
+
+        const { error: uploadError } = await supabaseClient.storage
+            .from('sariels-avatars')
+            .upload(filePath, file, { upsert: true, contentType: file.type });
+
+        if (uploadError) {
+            console.error('[Perfil] Error storage:', uploadError);
+            const m = uploadError.message || '';
+            if (m.includes('not found') || m.includes('Bucket')) {
+                showToast('❌ Bucket de avatares no configurado', 'error');
+            } else if (m.includes('policy') || m.includes('violates')) {
+                showToast('❌ Sin permiso para subir foto', 'error');
+            } else {
+                showToast('❌ Error: ' + m, 'error');
+            }
+            return;
+        }
+
+        const { data: urlData } = supabaseClient.storage
+            .from('sariels-avatars')
+            .getPublicUrl(filePath);
+
+        const publicUrl = urlData.publicUrl + '?t=' + Date.now();
+
+        const { error: updateError } = await supabaseClient
+            .from('usuarios')
+            .update({ avatar_url: publicUrl })
+            .eq('id', session.user.id);
+
+        if (updateError) throw updateError;
+
+        showToast('✅ Foto actualizada correctamente', 'success');
+        event.target.value = '';
+        await cargarPerfil(true);
+
+    } catch (error) {
+        console.error('[Perfil] Error al subir foto:', error);
+        showToast('❌ Error al subir foto: ' + msgError(error), 'error');
+    }
+}
+
+/* ================================================================
+   ELIMINAR FOTO DE PERFIL
+   ================================================================ */
+async function eliminarFotoPerfil() {
+    const session = await getSession();
+    if (!session) {
+        showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+        return;
+    }
+
+    const confirmMsg = t('perfil_confirma_eliminar_foto', '¿Seguro que quieres eliminar tu foto de perfil?');
+    if (!confirm(confirmMsg)) return;
+
+    try {
+        showToast('⏳ Eliminando foto...', '', 4000);
+
+        const extensiones = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+        const paths = extensiones.map(ext => `${session.user.id}/avatar.${ext}`);
+
+        try {
+            await supabaseClient.storage.from('sariels-avatars').remove(paths);
+        } catch (storageErr) {
+            console.warn('[Perfil] No se pudo borrar el archivo del bucket:', storageErr);
+        }
+
+        const { error } = await supabaseClient
+            .from('usuarios')
+            .update({ avatar_url: null })
+            .eq('id', session.user.id);
+
+        if (error) throw error;
+
+        showToast('✅ Foto de perfil eliminada', 'success');
+        await cargarPerfil(true);
+
+    } catch (error) {
+        console.error('[Perfil] Error eliminando foto de perfil:', error);
+        showToast('❌ Error al eliminar foto: ' + msgError(error), 'error');
+    }
+}
+
+/* ================================================================
+   SUBIR VIDEO (a bucket muro-videos)
+   ================================================================ */
+async function subirVideo(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const session = await getSession();
+    if (!session) {
+        showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+        return;
+    }
+
+    if (!file.type.startsWith('video/')) {
+        showToast('❌ Formato no válido (solo videos)', 'error');
+        event.target.value = '';
+        return;
+    }
+
+    if (file.size > 50 * 1024 * 1024) {
+        showToast('❌ El video excede 50 MB', 'error');
+        event.target.value = '';
+        return;
+    }
+
+    try {
+        showToast('⏳ Subiendo video...', '', 15000);
+
+        const fileExt = file.name.split('.').pop().toLowerCase();
+        const filePath = `${session.user.id}/video_${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabaseClient.storage
+            .from('muro-videos')
+            .upload(filePath, file, {
+                cacheControl: '3600',
+                upsert: false,
+                contentType: file.type
+            });
+
+        if (uploadError) {
+            console.error('[Perfil] Error storage:', uploadError);
+            const m = uploadError.message || '';
+            if (m.includes('not found') || m.includes('Bucket')) {
+                showToast('❌ Bucket de videos no configurado', 'error');
+            } else if (m.includes('policy') || m.includes('violates')) {
+                showToast('❌ Sin permiso para subir video', 'error');
+            } else {
+                showToast('❌ Error: ' + m, 'error');
+            }
+            return;
+        }
+
+        const { data: urlData } = supabaseClient.storage
+            .from('muro-videos')
+            .getPublicUrl(filePath);
+
+        showToast('✅ Video subido con éxito', 'success');
+        event.target.value = '';
+        return urlData.publicUrl;
+
+    } catch (error) {
+        console.error('[Perfil] Error al subir video:', error);
+        showToast('❌ Error al subir el video: ' + msgError(error), 'error');
+    }
+}
+
+/* ================================================================
+   SISTEMA DE AMIGOS
+   ================================================================ */
+async function agregarAmigo(amigoId) {
+    try {
+        const session = await getSession();
+        if (!session) {
+            showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+            return;
+        }
+
+        const { error } = await supabaseClient
+            .from('contactos')
+            .insert({
+                usuario_id: session.user.id,
+                contacto_id: amigoId,
+                estado: 'pendiente'
+            });
+
+        if (error) {
+            if (error.code === '23505') showToast('⚠️ Ya enviaste solicitud a este usuario', 'warning');
+            else if (error.code === '42P01') showToast('❌ Tabla de contactos no configurada', 'error');
+            else if (error.code === '42501') showToast('❌ Sin permiso para agregar', 'error');
+            else showToast('❌ Error: ' + error.message, 'error');
+            return;
+        }
+
+        showToast('🤝 Solicitud de amistad enviada', 'success');
+    } catch (error) {
+        console.error('[Perfil] Error al agregar amigo:', error);
+        showToast('❌ No se pudo enviar la solicitud', 'error');
+    }
+}
+
+/* ================================================================
+   GENERAR QR PERFIL
+   ================================================================ */
+async function generarQRPerfil() {
+    try {
+        const session = await getSession();
+        if (!session) return;
+
+        const handle = document.getElementById('perfilHandle')?.textContent.replace('@', '') || 'explorador';
+        const url = `${window.location.origin}/perfil/${encodeURIComponent(handle)}`;
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
+
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        `;
+        modal.innerHTML = `
+            <div style="background: var(--bg-card); border-radius: 20px; padding: 30px; text-align: center; max-width: 90vw;">
+                <h3 style="color: var(--gold); margin-bottom: 20px;">📱 Share QR</h3>
+                <img src="${escaparHTML(qrUrl)}" alt="QR Code" style="border-radius: 10px; max-width: 200px;">
+                <p style="color: var(--text-muted); margin-top: 15px; font-size: 12px; word-break: break-all;">${escaparHTML(url)}</p>
+                <button onclick="this.parentElement.parentElement.remove()"
+                        style="margin-top: 20px; background: var(--gold); border: none; color: #fff; padding: 10px 30px; border-radius: 10px; cursor: pointer;">
+                    Cerrar
+                </button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        aplicarI18NPerfil(modal);
+
+    } catch (error) {
+        console.error('[Perfil] Error generando QR:', error);
+        showToast('❌ Error al generar QR', 'error');
+    }
+}
+
+/* ================================================================
+   NIVEL Y ESTADÍSTICAS
+   ================================================================ */
+function calcularNivel(tokens) {
+    const niveles = [
+        { min: 0, max: 4, nombre: 'Explorador', emoji: '🌱' },
+        { min: 5, max: 9, nombre: 'Cazador', emoji: '⚡' },
+        { min: 10, max: 14, nombre: 'Leyenda', emoji: '🏆' },
+        { min: 15, max: 19, nombre: 'Maestro', emoji: '👑' },
+        { min: 20, max: Infinity, nombre: 'Inmortal', emoji: '✨' }
+    ];
+
+    for (const nivel of niveles) {
+        if (tokens >= nivel.min && tokens <= nivel.max) return nivel;
+    }
+    return niveles[0];
+}
+
+async function obtenerEstadisticas() {
+    try {
+        const session = await getSession();
+        if (!session) return null;
+
+        const { data, error } = await supabaseClient
+            .from('estadisticas_usuarios')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .maybeSingle();
+
+        if (error && error.code !== 'PGRST116') throw error;
+        return data || null;
+    } catch (error) {
+        console.warn('[Perfil] Error obteniendo estadísticas:', error?.message);
+        return null;
+    }
+}
+
+/* ================================================================
+   CERRAR SESIÓN
+   ================================================================ */
+async function cerrarSesion() {
+    const confirmMsg = t('perfil_cerrar_sesion', '¿Seguro que quieres cerrar sesión?');
+    if (!confirm(confirmMsg)) return;
+
+    try {
+        await actualizarEstadoEnLinea(false);
+    } catch (e) {
+        console.warn('[Perfil] No se pudo marcar offline:', e?.message);
+    }
+
+    try {
+        await supabaseClient.auth.signOut();
+    } catch (error) {
+        console.error('[Perfil] Error cerrando sesión:', error);
+        showToast('❌ Error al cerrar sesión', 'error');
+        return;
+    }
+
+    window.location.replace('/');
+}
+
+/* ================================================================
+   NOTIFICACIONES EN TIEMPO REAL (solo las mías)
+   ================================================================ */
+let canalNotificaciones = null;
+function iniciarNotificacionesRealtime() {
+    if (!cli() || !perfilCache?.id) return;
+    if (canalNotificaciones) {
+        try { supabaseClient.removeChannel(canalNotificaciones); } catch (e) {}
+    }
+
+    canalNotificaciones = supabaseClient
+        .channel('notificaciones_' + perfilCache.id)
+        .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'notificaciones',
+            filter: 'user_id=eq.' + perfilCache.id
+        }, (payload) => {
+            const notificacion = payload.new;
+            if (notificacion && notificacion.user_id === perfilCache?.id) {
+                showToast(`🔔 ${notificacion.mensaje}`, 'warning', 4000);
+
+                try {
+                    const audio = new Audio('/sound/notification.mp3');
+                    audio.play().catch(() => {});
+                } catch (e) {}
+            }
+        })
+        .subscribe();
+
+    return canalNotificaciones;
+}
+
+/* ================================================================
+   ASIGNACIÓN INMEDIATA DE FUNCIONES GLOBALES
+   ----------------------------------------------------------------
+   Las funciones están declaradas arriba (se "elevan" al cargar el
+   archivo), así que se publican en window de inmediato. Los botones
+   del HTML (onclick="window.xxx()") las encuentran desde el segundo 0,
+   sin esperar a que Supabase esté listo.
+   ================================================================ */
+function publicarFuncionesGlobales() {
+    window.cambiarTab = cambiarTab;
+    window.cargarPerfil = cargarPerfil;
+    window.guardarPerfil = guardarPerfil;
+    window.abrirSelectorArchivo = abrirSelectorArchivo;
+    window.expandirAvatar = expandirAvatar;
+    window.expandirFotoPublicacion = expandirFotoPublicacion;
+    window.subirFoto = subirFoto;
+    window.subirVideo = subirVideo;
+    window.eliminarFotoPerfil = eliminarFotoPerfil;
+    window.editarPerfil = editarPerfil;
+    window.compartirPerfil = compartirPerfil;
+    window.conectarWallet = conectarWallet;
+    window.desconectarWallet = desconectarWallet;
+    window.comprarDomo = comprarDomo;
+    window.canjearNFT = canjearNFT;
+    window.agregarAmigo = agregarAmigo;
+    window.cerrarSesion = cerrarSesion;
+    window.irAMuro = irAMuro;
+    window.showToast = showToast;
+    window.generarQRPerfil = generarQRPerfil;
+    window.calcularNivel = calcularNivel;
+    window.compartirLogro = compartirLogro;
+
+    window.comprarESIM = comprarESIM;
+    window.cargarDatosESIM = cargarDatosESIM;
+    window.activarESIM = activarESIM;
+    window.desactivarESIM = desactivarESIM;
+    window.generarQRESIM = generarQRESIM;
+    window.obtenerEstadoESIM = obtenerEstadoESIM;
+    window.obtenerPlanesESIM = obtenerPlanesESIM;
+    window.verificarPago = verificarPago;
+    window.sincronizarESIM = sincronizarESIM;
+
+    window.comprarConCripto = comprarConCripto;
+    window.verificarPagoCrypto = verificarPagoCrypto;
+    window.copiarDireccion = copiarDireccion;
+    window.cerrarModalPago = cerrarModalPago;
+
+    window.cambiarConexion = cambiarConexion;
+    window.cargarEstadoConexion = cargarEstadoConexion;
+    window.getPerfilActual = getPerfilActual;
+
+    window.actualizarEstadoEnLinea = actualizarEstadoEnLinea;
+    window.cambiarEstado = cambiarEstado;
+    window.cargarAmigosEnLinea = cargarAmigosEnLinea;
+    window.actualizarListaAmigos = actualizarListaAmigos;
+
+    window.escanearQR = escanearQR;
+    window.abrirCamaraQR = abrirCamaraQR;
+    window.cerrarCamaraQR = cerrarCamaraQR;
+    window.cargarHistorialQR = cargarHistorialQR;
+    window.actualizarUIHistorialQR = actualizarUIHistorialQR;
+    window.procesarQR = procesarQR;
+
+    window.cargarEstadoPro = cargarEstadoPro;
+    window.contratarPro = contratarPro;
+    window.activarProDirecto = activarProDirecto;
+
+    window.perfilT = t;
+    window.aplicarI18NPerfil = aplicarI18NPerfil;
+    window.traducirPlanMeta = traducirPlanMeta;
+}
+
+/* ================================================================
+   INICIALIZACIÓN DEL MÓDULO
+   ================================================================ */
+function inicializarModuloPerfil() {
+    if (moduloInicializado) return;
+    moduloInicializado = true;
+
+    console.log('[Perfil] 🚀 Inicializando módulo...');
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', iniciarPerfil);
+    } else {
+        iniciarPerfil();
+    }
+}
+
+async function iniciarPerfil() {
+    console.log('[Perfil] 🎬 Cargando datos del perfil...');
+
+    if (typeof jsQR === 'undefined') {
+        try {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
+            document.head.appendChild(script);
+            await new Promise(resolve => { script.onload = resolve; script.onerror = resolve; });
+        } catch (e) {}
+    }
+
+    await cargarPerfil();
+
+    const stats = await obtenerEstadisticas();
+    if (stats) {
+        const nivel = calcularNivel(stats.tokens_actuales || 0);
+        const nivelEl = document.getElementById('nivelUsuario');
+        if (nivelEl) {
+            nivelEl.textContent = `${nivel.emoji} ${nivel.nombre}`;
+        }
+    }
+
+    iniciarNotificacionesRealtime();
+    iniciarEscuchaConexion();
+    iniciarEscuchaAmigos();
+    iniciarDetectorInactividad();
+
+    /* Sondeos ligeros: cada 60 s y solo con la pestaña visible.
+       (Antes: 10 s / 15 s / 30 s, incluso en segundo plano.) */
+    setInterval(() => {
+        if (document.hidden) return;
+        if (perfilCache?.esim_iccid) cargarDatosESIM(perfilCache.esim_iccid);
+    }, 60000);
+
+    setInterval(() => {
+        if (document.hidden) return;
+        cargarEstadoConexion();
+    }, 60000);
+
+    setInterval(() => {
+        if (document.hidden) return;
+        cargarAmigosEnLinea();
+    }, 60000);
+
+    const cryptoQty = document.getElementById('cryptoQuantity');
+    const decBtn = document.getElementById('cryptoDecreaseQty');
+    const incBtn = document.getElementById('cryptoIncreaseQty');
+
+    function actualizarCryptoTotal() {
+        const qty = parseInt(cryptoQty?.textContent || 1);
+        const total = qty * 4.50;
+        const comision = total * 0.02;
+        const totalConComision = total + comision;
+        const totalEl = document.getElementById('cryptoTotal');
+        if (totalEl) {
+            totalEl.textContent = `$${totalConComision.toFixed(2)} USDT`;
+        }
+    }
+
+    if (decBtn && cryptoQty) {
+        decBtn.addEventListener('click', () => {
+            let val = parseInt(cryptoQty.textContent);
+            if (val > 1) {
+                cryptoQty.textContent = val - 1;
+                actualizarCryptoTotal();
+            }
+        });
+    }
+    if (incBtn && cryptoQty) {
+        incBtn.addEventListener('click', () => {
+            let val = parseInt(cryptoQty.textContent);
+            if (val < 10) {
+                cryptoQty.textContent = val + 1;
+                actualizarCryptoTotal();
+            }
+        });
+    }
+    actualizarCryptoTotal();
+
+    console.log('[Perfil] ✅ Módulo inicializado completamente.');
+}
+
+/* ================================================================
+   ARRANCAR
+   ================================================================ */
+asegurarEstilosPerfil();
+publicarFuncionesGlobales();   /* ← botones listos desde el segundo 0 */
+inicializarSupabase();
+
+})();
