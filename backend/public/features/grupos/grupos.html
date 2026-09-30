@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>◈ Canales · Sariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <!-- ✅ Cambio 4: banner de diagnóstico como PRIMER elemento del head -->
+    <script>
+    (function(){
+    function show(t){var b=document.getElementById('dbgErr');if(!b){b=document.createElement('div');b.id='dbgErr';b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:999999;background:#b00020;color:#fff;font:12px monospace;padding:8px;max-height:40vh;overflow:auto;white-space:pre-wrap';(document.body||document.documentElement).appendChild(b);}b.textContent+=t+'\n';}
+    window.addEventListener('error',function(e){show((e.message||'error')+' @'+String(e.filename||'').split('/').pop()+':'+e.lineno);});
+    window.addEventListener('unhandledrejection',function(e){show('promesa: '+(e.reason&&e.reason.message||e.reason));});
+    window.__dbgShow=show;
+    })();
+    </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
     <script src="/features/shared/js/apariencia-global.js"></script>
@@ -983,6 +992,8 @@
         </footer>
     </div><!-- ✅ SUPABASE + IDIOMAS -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<!-- ✅ Cambio 2: proteger el SDK ANTES de que app.js pueda sobrescribirlo -->
+<script>window.__SB_SDK = window.supabase;</script>
 <script src="/features/shared/js/idiomas.js"></script>
 <script src="/app.js"></script>
 
@@ -1020,7 +1031,8 @@
     })();
 
     // ================================================================
-    // ✅ FIX: Inicializar Supabase correctamente
+    // ✅ Cambio 2: usar __SB_SDK si existe
+    // ✅ Cambio 4: reportar errores al banner
     // ================================================================
     (function inicializarSupabase() {
         try {
@@ -1029,9 +1041,10 @@
                 return;
             }
             
-            var SDK = window.supabase;
+            var SDK = window.__SB_SDK || window.supabase;
             if (!SDK || typeof SDK.createClient !== 'function') {
                 console.error('[Grupos] ❌ Supabase SDK no disponible');
+                if (window.__dbgShow) window.__dbgShow('Supabase: SDK no disponible (window.supabase=' + (typeof window.supabase) + ', __SB_SDK=' + (typeof window.__SB_SDK) + ')');
                 return;
             }
             
@@ -1049,12 +1062,22 @@
             console.log('[Grupos] ✅ Supabase Client inicializado');
         } catch (e) {
             console.error('[Grupos] ❌ Error inicializando Supabase:', e);
+            if (window.__dbgShow) window.__dbgShow('Supabase: ' + (e && e.message ? e.message : String(e)));
         }
     })();
 
     // Alias para todos los usos internos
     var supabaseClient = window.supabaseClient;
     window.supabaseReady = Promise.resolve(window.supabaseClient);
+
+    // ✅ Cambio 3: esperar a que supabaseClient esté disponible
+    async function esperarSupabase() {
+        for (var i = 0; i < 10; i++) {
+            if (window.supabaseClient) return true;
+            await new Promise(function(r) { setTimeout(r, 300); });
+        }
+        return false;
+    }
 
     var sessionUser = null;
     var grupoActual = null;
@@ -1083,11 +1106,11 @@
     var adVistaTimer = null;
     var adCerrado = false;
 
-    // ✅ Cambio 9: paginación
-    var gruposPagina = 0;
-    var gruposPaginaSize = 24;
-    var gruposHayMas = false;
-    var buscarDebounceTimer = null;
+    // ✅ Cambio 1: renombrados para evitar choques con app.js
+    var grpPagina = 0;
+    var grpPaginaSize = 24;
+    var grpHayMas = false;
+    var grpBuscarTimer = null;
 
     const LIVEKIT_CONFIG = { url: 'wss://csariels-domo-57ujk04t.livekit.cloud' };
 
@@ -1101,9 +1124,9 @@
     var esStreamerDelLiveGrupo = false;
 
     // ================================================================
-    // ✅ Cambio 1: helper ok() para errores de supabase-js
+    // ✅ Cambio 1: helper renombrado a grpOk
     // ================================================================
-    function ok(r) {
+    function grpOk(r) {
         if (r && r.error) throw r.error;
         return r;
     }
@@ -1187,7 +1210,6 @@
         return true;
     }
 
-    // ✅ Cambio 12: firma con ms
     function showToast(msg, type, ms) {
         var t = document.getElementById('toast');
         if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); }
@@ -1209,7 +1231,6 @@
         } catch (e) { console.error('[Grupos] Error sesión:', e); return null; }
     }
 
-    // ✅ Cambio 7: escape de comillas
     function escapeHTML(texto) {
         if (texto === null || texto === undefined) return '';
         return String(texto)
@@ -1220,8 +1241,8 @@
             .replace(/'/g, '&#39;');
     }
 
-    // ✅ Cambio 7: validar URLs https
-    function safeUrl(u) {
+    // ✅ Cambio 1: renombrado a grpSafeUrl
+    function grpSafeUrl(u) {
         if (!u) return '';
         return (typeof u === 'string' && u.startsWith('https://')) ? u : '';
     }
@@ -1292,8 +1313,8 @@
         const desc = document.getElementById('marketingAdDesc');
         const cta = document.getElementById('marketingAdCta');
         if (!container || !media || !title || !desc || !cta) return;
-        var img = safeUrl(ad.imagen_url);
-        var vid = safeUrl(ad.video_url);
+        var img = grpSafeUrl(ad.imagen_url);
+        var vid = grpSafeUrl(ad.video_url);
         if (img) {
             media.innerHTML = `<img src="${escapeHTML(img)}" alt="${escapeHTML(ad.titulo)}" loading="lazy" onerror="this.parentElement.innerHTML='<span>◈</span>'">`;
         } else if (vid) {
@@ -1331,8 +1352,8 @@
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
                 body: JSON.stringify({ ad_id: anuncioActual.id, campaign_id: anuncioActual.campaign_id, target_tipo: 'grupo', target_id: grupoActualId, evento: 'clic', session_id: getOrCreateAdSessionId() })
             });
-            if (anuncioActual.video_url) window.open(safeUrl(anuncioActual.video_url) || '#', '_blank', 'noopener');
-            else if (anuncioActual.imagen_url) window.open(safeUrl(anuncioActual.imagen_url) || '#', '_blank', 'noopener');
+            if (anuncioActual.video_url) window.open(grpSafeUrl(anuncioActual.video_url) || '#', '_blank', 'noopener');
+            else if (anuncioActual.imagen_url) window.open(grpSafeUrl(anuncioActual.imagen_url) || '#', '_blank', 'noopener');
         } catch (error) { console.warn('Error registrando clic:', error); }
     }
 
@@ -1371,7 +1392,6 @@
         } catch (e) { console.warn('[Grupos] Error cargando categorías:', e); }
     }
 
-    // ✅ Cambio 9: limit(1000)
     async function cargarEstados() {
         try {
             var result = await window.supabaseClient.from('grupos_video').select('estado_region').not('estado_region', 'is', null).neq('estado_region', '').limit(1000);
@@ -1392,7 +1412,6 @@
         } catch (e) { console.warn('[Grupos] Error cargando estados:', e); }
     }
 
-    // ✅ Cambio 9: limit(1000)
     async function cargarMunicipios() {
         try {
             var result = await window.supabaseClient.from('grupos_video').select('municipio').not('municipio', 'is', null).neq('municipio', '').limit(1000);
@@ -1415,13 +1434,18 @@
 
     // ================================================================
     // DASHBOARD
-    // ✅ Cambio 11: botón "Salir al aire" con lógica inteligente
-    // ✅ Cambio 9: limit(20) en transmisiones
+    // ✅ Cambio 3: esperarSupabase al inicio
     // ================================================================
     async function cargarDashboard() {
         var misCanalesDiv = document.getElementById('misCanalesLista');
         var enVivoDiv = document.getElementById('enVivoGrid');
         if (!misCanalesDiv || !enVivoDiv) return;
+
+        // ✅ Cambio 3: esperar a que supabaseClient esté listo
+        if (!(await esperarSupabase())) {
+            console.warn('[Grupos] cargarDashboard: supabaseClient no disponible tras esperar');
+            return;
+        }
 
         try {
             if (!window.supabaseClient) return;
@@ -1437,7 +1461,7 @@
                     misCanalesCache = misCanalesData.data || [];
                     
                     misCanalesDiv.innerHTML = misCanalesCache.map(function(g) {
-                        var avatar = g.avatar_url ? '<img src="' + escapeHTML(safeUrl(g.avatar_url)) + '">' : '◈';
+                        var avatar = g.avatar_url ? '<img src="' + escapeHTML(grpSafeUrl(g.avatar_url)) + '">' : '◈';
                         var precio = g.precio_usdt > 0 ? '$' + g.precio_usdt + ' USDT' : 'Gratis';
                         var mkIcon = g.marketplace_activo ? '<svg class="icon icon-sm" viewBox="0 0 24 24" style="vertical-align:middle;"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>' : '';
                         return '<div class="canal-item" onclick="abrirGrupo(\'' + g.id + '\')">' +
@@ -1450,7 +1474,6 @@
                 }
             }
 
-            // Cargar lives activos (limit 20)
             var livesResult = await window.supabaseClient.from('transmisiones')
                 .select(`*, grupo:grupos_video(id, nombre, avatar_url)`)
                 .eq('estado', 'en_vivo')
@@ -1460,7 +1483,6 @@
 
             var lives = livesResult.data || [];
             if (lives.length === 0) {
-                // ✅ Cambio 11: lógica inteligente
                 var botonAireHTML;
                 if (misCanalesCache && misCanalesCache.length > 0) {
                     botonAireHTML = '<button class="btn-salir-aire" onclick="abrirGrupo(\'' + misCanalesCache[0].id + '\')">' +
@@ -1482,7 +1504,7 @@
             } else {
                 enVivoDiv.innerHTML = lives.map(function(l) {
                     var g = l.grupo || {};
-                    var img = safeUrl(g.avatar_url);
+                    var img = grpSafeUrl(g.avatar_url);
                     return `<div class="en-vivo-card" onclick="abrirGrupo('${g.id}')">
                         <div class="live-tag-small">
                             <svg class="icon icon-sm" viewBox="0 0 24 24" style="color:#fff;fill:currentColor;stroke:none;"><circle cx="12" cy="12" r="6"/></svg>
@@ -1523,22 +1545,20 @@
 <script>
     // ================================================================
     // CARGAR GRUPOS — VERSIÓN ROBUSTA
-    // ✅ Cambio 8: debounce + sanitizar + quitar cargarDashboard
-    // ✅ Cambio 9: paginación con range + columnas específicas
+    // ✅ Cambio 1: renombrados
+    // ✅ Cambio 3: esperarSupabase
     // ================================================================
     
-    // ✅ Cambio 8: debounce helper
     function buscarGruposDebounce() {
-        if (buscarDebounceTimer) clearTimeout(buscarDebounceTimer);
-        buscarDebounceTimer = setTimeout(function() {
-            gruposPagina = 0;
+        if (grpBuscarTimer) clearTimeout(grpBuscarTimer);
+        grpBuscarTimer = setTimeout(function() {
+            grpPagina = 0;
             cargarGrupos();
         }, 300);
     }
     
-    // ✅ Cambio 9: cargar más
     async function cargarMasGrupos() {
-        gruposPagina++;
+        grpPagina++;
         await cargarGrupos(true);
     }
 
@@ -1546,11 +1566,18 @@
         var grid = document.getElementById('gruposGrid');
         if (!grid) return;
         
-        if (!esPaginaSiguiente) {
-            gruposPagina = 0;
+        // ✅ Cambio 3: esperar a supabaseClient
+        if (!(await esperarSupabase())) {
+            console.error('[Grupos] cargarGrupos: supabaseClient no disponible tras esperar 3s');
+            grid.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><h3>Sin conexión a Supabase</h3></div>';
+            return;
         }
         
-        console.log('[Grupos] 🔍 Iniciando cargarGrupos... página', gruposPagina);
+        if (!esPaginaSiguiente) {
+            grpPagina = 0;
+        }
+        
+        console.log('[Grupos] 🔍 Iniciando cargarGrupos... página', grpPagina);
         
         var timeoutId = setTimeout(function() {
             if (grid.querySelector('.empty-state h3')?.textContent.includes('Cargando')) {
@@ -1579,20 +1606,14 @@
                 console.warn('[Grupos] ⚠️ Timeout/error usuario, siguiendo anónimo');
             }
             
-            // ❌ CAMBIO 8: eliminado cargarDashboard() de aquí.
-            // ✅ El dashboard se carga solo en init y tras crear/eliminar/finalizar live.
-            // Si es la primera página y el usuario es nuevo, cargamos dashboard una sola vez fuera de aquí.
-            
             var buscar = document.getElementById('inputBuscar')?.value?.trim() || '';
             var estado = document.getElementById('selectEstado')?.value || '';
             var municipio = document.getElementById('selectMunicipio')?.value || '';
             var categoria = document.getElementById('selectCategoria')?.value || '';
 
-            // ✅ Cambio 8: sanitizar búsqueda
             buscar = buscar.replace(/[(),%*\\]/g, ' ').trim();
             console.log('[Grupos] 🔍 Query a grupos_video... buscar=', buscar);
             
-            // ✅ Cambio 9: columnas específicas + paginación
             var query = window.supabaseClient
                 .from('grupos_video')
                 .select('id, nombre, descripcion, avatar_url, municipio, estado_region, visibilidad, precio_usdt, marketplace_activo')
@@ -1617,9 +1638,8 @@
                 query = query.in('id', ids);
             }
             
-            // ✅ Cambio 9: rango 0..23 según página
-            var offsetInicio = gruposPagina * gruposPaginaSize;
-            var offsetFin = offsetInicio + gruposPaginaSize - 1;
+            var offsetInicio = grpPagina * grpPaginaSize;
+            var offsetFin = offsetInicio + grpPaginaSize - 1;
             query = query.range(offsetInicio, offsetFin);
 
             var result = await query;
@@ -1627,7 +1647,7 @@
             console.log('[Grupos] 📊 Resultado:', {
                 error: result.error?.message || null,
                 count: result.data?.length || 0,
-                pagina: gruposPagina
+                pagina: grpPagina
             });
             
             clearTimeout(timeoutId);
@@ -1635,8 +1655,7 @@
             if (result.error) throw result.error;
             var grupos = result.data || [];
             
-            // ✅ Cambio 9: hay más si recibimos exactamente 24
-            gruposHayMas = grupos.length === gruposPaginaSize;
+            grpHayMas = grupos.length === grpPaginaSize;
 
             if (grupos.length === 0 && !esPaginaSiguiente) {
                 console.warn('[Grupos] ⚠️ 0 canales en la DB');
@@ -1648,7 +1667,6 @@
             
             console.log('[Grupos] ✅ Mostrando', grupos.length, 'canales');
 
-            // Cargar lives aparte (no rompe si falla)
             var liveMap = {};
             try {
                 var liveResult = await window.supabaseClient.from('transmisiones').select('grupo_id').eq('estado', 'en_vivo').eq('is_live', true);
@@ -1668,7 +1686,7 @@
                 if (g.municipio) ubicacion.push(g.municipio);
                 if (g.estado_region) ubicacion.push(g.estado_region);
                 var ubicacionTexto = ubicacion.length > 0 ? ubicacion.join(', ') : 'Sin ubicación';
-                var img = safeUrl(g.avatar_url);
+                var img = grpSafeUrl(g.avatar_url);
                 return '<div class="grupo-card ' + liveClass + '" onclick="abrirGrupo(\'' + g.id + '\')">' +
                     '<div class="avatar">' + (img ? '<img src="' + escapeHTML(img) + '">' : '◈') + '</div>' +
                     '<div class="nombre">' + escapeHTML(g.nombre) + '</div>' +
@@ -1678,17 +1696,15 @@
                     '</div></div>';
             }).join('');
             
-            // ✅ Cambio 9: append si es página siguiente, replace si no
             if (esPaginaSiguiente) {
                 grid.insertAdjacentHTML('beforeend', gruposHTML);
             } else {
                 grid.innerHTML = gruposHTML;
             }
             
-            // ✅ Cambio 9: botón "Cargar más"
             var btnMas = document.getElementById('btnCargarMasContainer');
             if (btnMas) {
-                btnMas.style.display = gruposHayMas ? 'block' : 'none';
+                btnMas.style.display = grpHayMas ? 'block' : 'none';
             }
 
         } catch (e) {
@@ -1703,13 +1719,12 @@
         var btn = document.getElementById('btnMisGrupos');
         if (soloMisGrupos) { btn.style.borderColor = 'var(--gold)'; btn.style.color = 'var(--gold)'; }
         else { btn.style.borderColor = ''; btn.style.color = ''; }
-        gruposPagina = 0;
+        grpPagina = 0;
         cargarGrupos();
     }
 
     // ================================================================
     // ABRIR GRUPO
-    // ✅ Cambio 2: se añade lógica del botón Unirse
     // ================================================================
     async function abrirGrupo(grupoId) {
         try {
@@ -1769,12 +1784,12 @@
             }
 
             var avatarEl = document.getElementById('grupoAvatar');
-            var avatarImg = safeUrl(grupoActual.avatar_url);
+            var avatarImg = grpSafeUrl(grupoActual.avatar_url);
             if (avatarImg) avatarEl.innerHTML = '<img src="' + escapeHTML(avatarImg) + '">';
             else avatarEl.textContent = '◈';
 
             var portadaEl = document.getElementById('grupoPortada');
-            var portadaImg = safeUrl(grupoActual.portada_url);
+            var portadaImg = grpSafeUrl(grupoActual.portada_url);
             if (portadaImg) {
                 portadaEl.innerHTML = `<video src="${escapeHTML(portadaImg)}" autoplay loop muted playsinline style="width:100%; height:100%; object-fit:cover;"></video>`;
             } else {
@@ -1784,7 +1799,6 @@
             var esAdminOGerente = esAdmin || esCreador;
             document.getElementById('btnAjustesCanal').style.display = esAdminOGerente ? 'flex' : 'none';
 
-            // ✅ Cambio 2: construir botón Unirse
             reconstruirBotonesAcciones();
 
             await cargarPublicacionesGrupo(grupoId);
@@ -1796,7 +1810,6 @@
         }
     }
 
-    // ✅ Cambio 2: helper para reconstruir botones de acciones con Unirse
     function reconstruirBotonesAcciones() {
         var contenedor = document.getElementById('grupoAcciones');
         if (!contenedor) return;
@@ -1805,11 +1818,9 @@
         var btnVerLive = document.getElementById('btnVerLive');
         var btnFinalizarLive = document.getElementById('btnFinalizarLive');
         
-        // Quitar cualquier botón "Unirse" previo
         var btnUnirseExistente = document.getElementById('btnUnirseGrupo');
         if (btnUnirseExistente) btnUnirseExistente.remove();
         
-        // Mostrar/ocultar según membresía y live
         if (liveActivoEnGrupo) {
             if (btnVerLive) btnVerLive.style.display = 'inline-flex';
             document.getElementById('grupoLiveBadge').style.display = 'inline-flex';
@@ -1827,7 +1838,6 @@
             if (btnLive) btnLive.style.display = esMiembro() ? 'inline-flex' : 'none';
         }
         
-        // ✅ Cambio 2: botón Unirse si sessionUser && !esMiembro()
         if (sessionUser && !esMiembro()) {
             var modo = grupoActual?.modo_ingreso || 'abierto';
             var btnUnirse = document.createElement('button');
@@ -1853,7 +1863,6 @@
         }
     }
 
-    // ✅ Cambio 2: función unirse
     async function unirseAlGrupo() {
         if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
         if (!grupoActualId) return;
@@ -1864,7 +1873,7 @@
                 rol: 'miembro',
                 estado: 'activo'
             });
-            ok(r);
+            grpOk(r);
             showToast('Te has unido al canal', 'success');
             await abrirGrupo(grupoActualId);
         } catch (e) {
@@ -1872,12 +1881,10 @@
         }
     }
 
-    // ✅ Cambio 2: función solicitar
     async function solicitarUnirseAlGrupo() {
         if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
         if (!grupoActualId) return;
         try {
-            // Revisar solicitud pendiente
             var existente = await window.supabaseClient.from('grupos_video_solicitudes')
                 .select('id')
                 .eq('grupo_id', grupoActualId)
@@ -1892,7 +1899,7 @@
                 grupo_id: grupoActualId,
                 usuario_id: sessionUser.id
             });
-            ok(r);
+            grpOk(r);
             showToast('Solicitud enviada', 'success');
         } catch (e) {
             showToast('Error: ' + (e.message || e), 'error');
@@ -1956,12 +1963,10 @@
         renderizarPublicacionesCache();
     }
 
-    // ✅ Cambio 10: filtrar siempre no_quiero_ver
     function renderizarPublicacionesCache() {
         var container = document.getElementById('publicacionesContainer');
         if (!container) return;
         
-        // ✅ Cambio 10: filtro base siempre activo
         var filtradas = publicacionesCache.filter(function(p) {
             return !(misInteracciones[p.id]?.no_quiero_ver);
         });
@@ -1992,11 +1997,11 @@
 
     function renderizarPublicacionHTML(p) {
         var u = p.usuarios || {};
-        var avatar = u.avatar_url && safeUrl(u.avatar_url) ? '<img src="' + escapeHTML(safeUrl(u.avatar_url)) + '">' : '◈';
+        var avatar = u.avatar_url && grpSafeUrl(u.avatar_url) ? '<img src="' + escapeHTML(grpSafeUrl(u.avatar_url)) + '">' : '◈';
         var nombre = escapeHTML(u.nombre || 'Usuario');
         var contenido = escapeHTML(p.contenido || '');
-        var imgUrl = safeUrl(p.imagen_url);
-        var vidUrl = safeUrl(p.video_url);
+        var imgUrl = grpSafeUrl(p.imagen_url);
+        var vidUrl = grpSafeUrl(p.video_url);
         if (imgUrl) contenido += '<br><img src="' + escapeHTML(imgUrl) + '" loading="lazy" />';
         if (vidUrl) contenido += '<br><video src="' + escapeHTML(vidUrl) + '" controls preload="metadata"></video>';
         var likesCount = p.likes_count || 0;
@@ -2086,24 +2091,23 @@
         }
     });
 
-    // ✅ Cambio 1: toggleInteraccion con ok()
     async function toggleInteraccion(publicacionId, tipo) {
         if (!sessionUser) { showToast('Inicia sesión para interactuar', 'error'); return false; }
         try {
             var tieneActual = misInteracciones[publicacionId] && misInteracciones[publicacionId][tipo];
             if (tieneActual) {
-                ok(await window.supabaseClient.from('grupos_video_interacciones').delete().eq('publicacion_id', publicacionId).eq('usuario_id', sessionUser.id).eq('tipo', tipo));
+                grpOk(await window.supabaseClient.from('grupos_video_interacciones').delete().eq('publicacion_id', publicacionId).eq('usuario_id', sessionUser.id).eq('tipo', tipo));
                 if (!misInteracciones[publicacionId]) misInteracciones[publicacionId] = {};
                 delete misInteracciones[publicacionId][tipo];
             } else {
                 if (tipo === 'me_interesa' || tipo === 'no_me_interesa') {
                     var opuesto = tipo === 'me_interesa' ? 'no_me_interesa' : 'me_interesa';
                     if (misInteracciones[publicacionId] && misInteracciones[publicacionId][opuesto]) {
-                        ok(await window.supabaseClient.from('grupos_video_interacciones').delete().eq('publicacion_id', publicacionId).eq('usuario_id', sessionUser.id).eq('tipo', opuesto));
+                        grpOk(await window.supabaseClient.from('grupos_video_interacciones').delete().eq('publicacion_id', publicacionId).eq('usuario_id', sessionUser.id).eq('tipo', opuesto));
                         delete misInteracciones[publicacionId][opuesto];
                     }
                 }
-                ok(await window.supabaseClient.from('grupos_video_interacciones').insert({ publicacion_id: publicacionId, usuario_id: sessionUser.id, tipo: tipo }));
+                grpOk(await window.supabaseClient.from('grupos_video_interacciones').insert({ publicacion_id: publicacionId, usuario_id: sessionUser.id, tipo: tipo }));
                 if (!misInteracciones[publicacionId]) misInteracciones[publicacionId] = {};
                 misInteracciones[publicacionId][tipo] = true;
             }
@@ -2131,7 +2135,6 @@
         }
     }
 
-    // ✅ Cambio 10: persistir no_quiero_ver
     async function ocultarPublicacionUsuario(publicacionId) {
         document.querySelectorAll('.post-menu-dropdown.show').forEach(function(m) { m.classList.remove('show'); });
         var exitoso = await toggleInteraccion(publicacionId, 'no_quiero_ver');
@@ -2141,18 +2144,17 @@
         }
     }
 
-    // ✅ Cambio 1: toggleNotificacion con ok()
     async function toggleNotificacion(publicacionId) {
         document.querySelectorAll('.post-menu-dropdown.show').forEach(function(m) { m.classList.remove('show'); });
         if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
         try {
             var tiene = misNotificaciones[publicacionId];
             if (tiene) {
-                ok(await window.supabaseClient.from('grupos_video_notificaciones').delete().eq('publicacion_id', publicacionId).eq('usuario_id', sessionUser.id));
+                grpOk(await window.supabaseClient.from('grupos_video_notificaciones').delete().eq('publicacion_id', publicacionId).eq('usuario_id', sessionUser.id));
                 delete misNotificaciones[publicacionId];
                 showToast('Notificaciones desactivadas', '');
             } else {
-                ok(await window.supabaseClient.from('grupos_video_notificaciones').insert({ publicacion_id: publicacionId, usuario_id: sessionUser.id }));
+                grpOk(await window.supabaseClient.from('grupos_video_notificaciones').insert({ publicacion_id: publicacionId, usuario_id: sessionUser.id }));
                 misNotificaciones[publicacionId] = true;
                 showToast('Notificaciones activadas', 'success');
             }
@@ -2247,7 +2249,7 @@
         if (!pub || !pub.imagen_url) { showToast('Esta publicación no tiene foto para etiquetar', 'warning'); return; }
         publicacionReportando = publicacionId;
         etiquetadosSeleccionados = [];
-        document.getElementById('imagenEtiquetar').src = safeUrl(pub.imagen_url);
+        document.getElementById('imagenEtiquetar').src = grpSafeUrl(pub.imagen_url);
         document.getElementById('inputBuscarUsuarioEtiqueta').value = '';
         document.getElementById('resultadosUsuariosEtiqueta').innerHTML = '';
         document.getElementById('etiquetadosSeleccionados').innerHTML = '';
@@ -2256,7 +2258,6 @@
 
     function cerrarModalEtiquetar() { document.getElementById('modalEtiquetarFoto').classList.remove('show'); }
 
-    // ✅ Cambio 7: usar data-* y addEventListener, no onclick con interpolación
     async function buscarUsuariosEtiqueta() {
         var q = document.getElementById('inputBuscarUsuarioEtiqueta').value.trim();
         var container = document.getElementById('resultadosUsuariosEtiqueta');
@@ -2268,14 +2269,13 @@
             if (result.error || !result.data) { container.innerHTML = '<div style="color:var(--text-muted);font-size:0.7rem;padding:8px;">Sin resultados</div>'; return; }
             container.innerHTML = result.data.map(function(u) {
                 var yaSel = etiquetadosSeleccionados.find(function(e) { return e.id === u.id; });
-                var avatar = u.avatar_url && safeUrl(u.avatar_url) ? '<img src="' + escapeHTML(safeUrl(u.avatar_url)) + '" style="width:100%;height:100%;object-fit:cover;">' : '◈';
-                return '<div class="usuario-etiqueta-item" data-id="' + escapeHTML(u.id) + '" data-nombre="' + escapeHTML(u.nombre || '') + '" data-handle="' + escapeHTML(u.handle || '') + '" data-avatar="' + escapeHTML(safeUrl(u.avatar_url) || '') + '" style="display:flex;align-items:center;gap:10px;padding:8px;border-bottom:1px solid rgba(212,175,55,0.05);cursor:pointer;' + (yaSel ? 'opacity:0.4;pointer-events:none;' : '') + '">' +
+                var avatar = u.avatar_url && grpSafeUrl(u.avatar_url) ? '<img src="' + escapeHTML(grpSafeUrl(u.avatar_url)) + '" style="width:100%;height:100%;object-fit:cover;">' : '◈';
+                return '<div class="usuario-etiqueta-item" data-id="' + escapeHTML(u.id) + '" data-nombre="' + escapeHTML(u.nombre || '') + '" data-handle="' + escapeHTML(u.handle || '') + '" data-avatar="' + escapeHTML(grpSafeUrl(u.avatar_url) || '') + '" style="display:flex;align-items:center;gap:10px;padding:8px;border-bottom:1px solid rgba(212,175,55,0.05);cursor:pointer;' + (yaSel ? 'opacity:0.4;pointer-events:none;' : '') + '">' +
                     '<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--green-deep),var(--gold));display:flex;align-items:center;justify-content:center;overflow:hidden;font-weight:700;">' + avatar + '</div>' +
                     '<div><div style="font-size:0.75rem;font-weight:600;">' + escapeHTML(u.nombre || 'Usuario') + '</div>' +
                     '<div style="font-size:0.6rem;color:var(--text-muted);">@' + escapeHTML(u.handle || 'usuario') + '</div></div></div>';
             }).join('');
             
-            // ✅ Event listeners con data-*
             container.querySelectorAll('.usuario-etiqueta-item').forEach(function(el) {
                 el.addEventListener('click', function() {
                     agregarEtiqueta(
@@ -2297,7 +2297,6 @@
         document.getElementById('resultadosUsuariosEtiqueta').innerHTML = '';
     }
 
-    // ✅ Cambio 7: render con data-* y event listeners
     function renderEtiquetadosSeleccionados() {
         var container = document.getElementById('etiquetadosSeleccionados');
         if (etiquetadosSeleccionados.length === 0) { container.innerHTML = ''; return; }
@@ -2305,7 +2304,6 @@
             return '<span style="background:rgba(212,175,55,0.15);color:var(--gold);padding:4px 10px;border-radius:20px;font-size:0.65rem;display:inline-flex;align-items:center;gap:6px;">@' + escapeHTML(e.handle) + ' <button class="quitar-etiqueta-btn" data-id="' + escapeHTML(e.id) + '" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:0.8rem;padding:0;">×</button></span>';
         }).join('');
         
-        // ✅ Event listeners con data-*
         container.querySelectorAll('.quitar-etiqueta-btn').forEach(function(btn) {
             btn.addEventListener('click', function() {
                 quitarEtiqueta(btn.dataset.id);
@@ -2331,7 +2329,6 @@
         } catch (e) { showToast('Error: ' + e.message, 'error'); }
     }
 
-    // ✅ Cambio 9: limit(30)
     async function cargarPublicacionesGrupo(grupoId) {
         try {
             var result = await window.supabaseClient.from('grupos_video_publicaciones').select(`*, usuarios:usuario_id (id, nombre, handle, avatar_url)`).eq('grupo_id', grupoId).eq('estado', 'publicado').order('created_at', { ascending: false }).limit(30);
@@ -2510,7 +2507,6 @@
         finally { btn.disabled = false; btn.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> Publicar en Marketplace'; }
     }
 
-    // ✅ Cambio 1: reaccionarPublicacion con ok() + no sumar si falla
     async function reaccionarPublicacion(publicacionId) {
         if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
         try {
@@ -2518,10 +2514,10 @@
             var likesSpan = document.getElementById('likes-' + publicacionId);
             var currentLikes = parseInt(likesSpan?.textContent || 0);
             if (existing.data) {
-                ok(await window.supabaseClient.from('grupos_video_reacciones').delete().eq('id', existing.data.id));
+                grpOk(await window.supabaseClient.from('grupos_video_reacciones').delete().eq('id', existing.data.id));
                 if (likesSpan) likesSpan.textContent = Math.max(0, currentLikes - 1);
             } else {
-                ok(await window.supabaseClient.from('grupos_video_reacciones').insert({ publicacion_id: publicacionId, usuario_id: sessionUser.id, tipo: 'like' }));
+                grpOk(await window.supabaseClient.from('grupos_video_reacciones').insert({ publicacion_id: publicacionId, usuario_id: sessionUser.id, tipo: 'like' }));
                 if (likesSpan) likesSpan.textContent = currentLikes + 1;
             }
         } catch (e) { console.warn('Error reaccionando:', e); showToast('Error: ' + (e.message || e), 'error'); }
@@ -2545,7 +2541,7 @@
             if (data.length === 0) { lista.innerHTML = '<div style="color:var(--text-muted);font-size:0.65rem;padding:4px 0;">Sin comentarios</div>'; return; }
             lista.innerHTML = data.map(function(c) {
                 var u = c.usuarios || {};
-                var avatar = u.avatar_url && safeUrl(u.avatar_url) ? '<img src="' + escapeHTML(safeUrl(u.avatar_url)) + '">' : '◈';
+                var avatar = u.avatar_url && grpSafeUrl(u.avatar_url) ? '<img src="' + escapeHTML(grpSafeUrl(u.avatar_url)) + '">' : '◈';
                 return '<div style="display:flex;gap:6px;padding:4px 0;border-bottom:1px solid rgba(212,175,55,0.04);">' +
                     '<div style="width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,var(--green-deep),var(--gold));display:flex;align-items:center;justify-content:center;font-size:0.5rem;color:#fff;overflow:hidden;flex-shrink:0;">' + avatar + '</div>' +
                     '<div style="flex:1;font-size:0.65rem;"><strong style="color:var(--gold);">' + escapeHTML(u.nombre || 'Usuario') + '</strong> ' + escapeHTML(c.contenido || '') +
@@ -2554,7 +2550,6 @@
         } catch (e) { lista.innerHTML = '<div style="color:var(--danger);font-size:0.65rem;">Error</div>'; }
     }
 
-    // ✅ Cambio 1: enviarComentario con ok() + no incrementar si falla
     async function enviarComentarioPublicacion(publicacionId) {
         if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
         var input = document.getElementById('inputComentario-' + publicacionId);
@@ -2562,7 +2557,7 @@
         if (!texto) return;
         if (!validarTextoPermitido(texto, 'Comentario')) return;
         try {
-            ok(await window.supabaseClient.from('grupos_video_comentarios').insert({ publicacion_id: publicacionId, usuario_id: sessionUser.id, contenido: texto }));
+            grpOk(await window.supabaseClient.from('grupos_video_comentarios').insert({ publicacion_id: publicacionId, usuario_id: sessionUser.id, contenido: texto }));
             input.value = '';
             var countSpan = document.getElementById('comentarios-' + publicacionId);
             if (countSpan) countSpan.textContent = (parseInt(countSpan.textContent) || 0) + 1;
@@ -2602,7 +2597,7 @@
                 var urlData = window.supabaseClient.storage.from('grupos-publicaciones').getPublicUrl(filePath);
                 var updateResult = await window.supabaseClient.from('grupos_video').update({ avatar_url: urlData.data.publicUrl }).eq('id', grupoActualId);
                 if (updateResult.error) throw updateResult.error;
-                document.getElementById('grupoAvatar').innerHTML = '<img src="' + escapeHTML(safeUrl(urlData.data.publicUrl)) + '">';
+                document.getElementById('grupoAvatar').innerHTML = '<img src="' + escapeHTML(grpSafeUrl(urlData.data.publicUrl)) + '">';
                 showToast('Foto actualizada', 'success');
             } catch (error) { showToast('Error: ' + error.message, 'error'); }
         };
@@ -2628,7 +2623,7 @@
                 var updateResult = await window.supabaseClient.from('grupos_video').update({ portada_url: urlData.data.publicUrl }).eq('id', grupoActualId);
                 if (updateResult.error) throw updateResult.error;
                 var portadaEl = document.getElementById('grupoPortada');
-                var safePortada = safeUrl(urlData.data.publicUrl);
+                var safePortada = grpSafeUrl(urlData.data.publicUrl);
                 if (file.type.startsWith('video/')) {
                     portadaEl.innerHTML = `<video src="${escapeHTML(safePortada)}" autoplay loop muted playsinline style="width:100%; height:100%; object-fit:cover;"></video>`;
                 } else {
@@ -2755,10 +2750,9 @@
         } catch (e) { container.innerHTML = '<div class="empty-state">Error</div>'; }
     }
 
-    // ✅ Cambio 1: marcarReporte con ok()
     async function marcarReporte(reporteId, estado) {
         try {
-            ok(await window.supabaseClient.from('grupos_video_reportes').update({ estado: estado, revisado_por: sessionUser.id, revisado_at: new Date().toISOString() }).eq('id', reporteId));
+            grpOk(await window.supabaseClient.from('grupos_video_reportes').update({ estado: estado, revisado_por: sessionUser.id, revisado_at: new Date().toISOString() }).eq('id', reporteId));
             showToast('Reporte ' + estado, 'success');
             cargarAdminReportes();
         } catch (e) { showToast('Error: ' + (e.message || e), 'error'); }
@@ -2811,10 +2805,9 @@
         } catch (e) { showToast('Error: ' + e.message, 'error'); }
     }
 
-    // ✅ Cambio 1: RPCs con ok()
     async function aceptarSolicitud(solicitudId) {
         try {
-            ok(await window.supabaseClient.rpc('aceptar_solicitud_grupo', { p_solicitud_id: solicitudId }));
+            grpOk(await window.supabaseClient.rpc('aceptar_solicitud_grupo', { p_solicitud_id: solicitudId }));
             showToast('Solicitud aceptada', 'success');
             await cargarAdminSolicitudes();
         } catch (e) { showToast('Error: ' + (e.message || e), 'error'); }
@@ -2822,7 +2815,7 @@
     async function rechazarSolicitud(solicitudId) {
         try {
             var motivo = prompt('Motivo:', '');
-            ok(await window.supabaseClient.rpc('rechazar_solicitud_grupo', { p_solicitud_id: solicitudId, p_motivo: motivo || 'Rechazado' }));
+            grpOk(await window.supabaseClient.rpc('rechazar_solicitud_grupo', { p_solicitud_id: solicitudId, p_motivo: motivo || 'Rechazado' }));
             showToast('Rechazada', 'success');
             await cargarAdminSolicitudes();
         } catch (e) { showToast('Error: ' + (e.message || e), 'error'); }
@@ -2830,7 +2823,7 @@
     async function asignarModerador(usuarioId) {
         if (!confirm('¿Asignar moderador?')) return;
         try {
-            ok(await window.supabaseClient.rpc('asignar_moderador_grupo', { p_grupo_id: grupoActualId, p_usuario_id: usuarioId }));
+            grpOk(await window.supabaseClient.rpc('asignar_moderador_grupo', { p_grupo_id: grupoActualId, p_usuario_id: usuarioId }));
             showToast('Moderador asignado', 'success');
             await cargarAdminMiembros();
         } catch (e) { showToast('Error: ' + (e.message || e), 'error'); }
@@ -2838,7 +2831,7 @@
     async function quitarModerador(usuarioId) {
         if (!confirm('¿Quitar moderador?')) return;
         try {
-            ok(await window.supabaseClient.rpc('quitar_moderador_grupo', { p_grupo_id: grupoActualId, p_usuario_id: usuarioId }));
+            grpOk(await window.supabaseClient.rpc('quitar_moderador_grupo', { p_grupo_id: grupoActualId, p_usuario_id: usuarioId }));
             showToast('Quitado', 'success');
             await cargarAdminMiembros();
         } catch (e) { showToast('Error: ' + (e.message || e), 'error'); }
@@ -2847,7 +2840,7 @@
         if (!confirm('¿Expulsar?')) return;
         var motivo = prompt('Motivo:', ''); if (motivo === null) return;
         try {
-            ok(await window.supabaseClient.rpc('expulsar_miembro_grupo', { p_grupo_id: grupoActualId, p_usuario_id: usuarioId, p_motivo: motivo || 'Expulsado' }));
+            grpOk(await window.supabaseClient.rpc('expulsar_miembro_grupo', { p_grupo_id: grupoActualId, p_usuario_id: usuarioId, p_motivo: motivo || 'Expulsado' }));
             showToast('Expulsado', 'success');
             await cargarAdminMiembros();
         } catch (e) { showToast('Error: ' + (e.message || e), 'error'); }
@@ -2856,7 +2849,7 @@
         if (!confirm('¿Bloquear?')) return;
         var motivo = prompt('Motivo:', ''); if (motivo === null) return;
         try {
-            ok(await window.supabaseClient.rpc('bloquear_miembro_grupo', { p_grupo_id: grupoActualId, p_usuario_id: usuarioId, p_motivo: motivo || 'Bloqueado' }));
+            grpOk(await window.supabaseClient.rpc('bloquear_miembro_grupo', { p_grupo_id: grupoActualId, p_usuario_id: usuarioId, p_motivo: motivo || 'Bloqueado' }));
             showToast('Bloqueado', 'success');
             await cargarAdminMiembros();
         } catch (e) { showToast('Error: ' + (e.message || e), 'error'); }
@@ -2864,14 +2857,14 @@
     async function ocultarPublicacion(publicacionId) {
         var motivo = prompt('Motivo:', 'Inapropiado'); if (motivo === null) return;
         try {
-            ok(await window.supabaseClient.rpc('ocultar_publicacion_grupo', { p_publicacion_id: publicacionId, p_motivo: motivo }));
+            grpOk(await window.supabaseClient.rpc('ocultar_publicacion_grupo', { p_publicacion_id: publicacionId, p_motivo: motivo }));
             showToast('Ocultada', 'success');
             await cargarAdminPublicaciones();
         } catch (e) { showToast('Error: ' + (e.message || e), 'error'); }
     }
     async function mostrarPublicacion(publicacionId) {
         try {
-            ok(await window.supabaseClient.rpc('mostrar_publicacion_grupo', { p_publicacion_id: publicacionId }));
+            grpOk(await window.supabaseClient.rpc('mostrar_publicacion_grupo', { p_publicacion_id: publicacionId }));
             showToast('Visible', 'success');
             await cargarAdminPublicaciones();
         } catch (e) { showToast('Error: ' + (e.message || e), 'error'); }
@@ -2880,7 +2873,7 @@
         if (!confirm('¿Eliminar?')) return;
         var motivo = prompt('Motivo:', 'Inapropiado'); if (motivo === null) return;
         try {
-            ok(await window.supabaseClient.rpc('eliminar_publicacion_grupo', { p_publicacion_id: publicacionId, p_motivo: motivo }));
+            grpOk(await window.supabaseClient.rpc('eliminar_publicacion_grupo', { p_publicacion_id: publicacionId, p_motivo: motivo }));
             showToast('Eliminada', 'success');
             await cargarAdminPublicaciones();
         } catch (e) { showToast('Error: ' + (e.message || e), 'error'); }
@@ -3056,7 +3049,6 @@
         finally { eliminandoGrupo = false; }
     }
 
-    // ✅ Cambio 4: iniciarLiveEnGrupo con cleanup si falla LiveKit
     async function iniciarLiveEnGrupo() {
         if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
         if (!grupoActualId) { showToast('No hay canal seleccionado', 'error'); return; }
@@ -3085,7 +3077,7 @@
             document.getElementById('btnIniciarLive').style.display = 'none';
             document.getElementById('btnFinalizarLive').style.display = 'inline-flex';
             document.getElementById('btnVerLive').style.display = 'inline-flex';
-            document.getElementById('grupoLiveEndBtn').style.display = 'flex'; // ✅ Cambio 6
+            document.getElementById('grupoLiveEndBtn').style.display = 'flex';
             await cargarDashboard();
             try {
                 showToast('Conectando a LiveKit...', '', 2000);
@@ -3100,7 +3092,6 @@
                 document.getElementById('grupoLiveEstado').innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24" style="fill:currentColor;stroke:none;"><circle cx="12" cy="12" r="6"/></svg> En vivo';
                 showToast('Transmitiendo en el canal', 'success');
             } catch (e) {
-                // ✅ Cambio 4: cleanup si falla LiveKit
                 console.error('[LiveKit] Error al conectar:', e);
                 try {
                     if (transmision && transmision.id) {
@@ -3127,7 +3118,6 @@
                 else if (e && e.name === 'NotReadableError') msj = 'La cámara está en uso por otra app';
                 else if (e && e.message) msj = e.message;
                 showToast(msj, 'error', 6000);
-                // No mostramos toast de éxito
                 return;
             }
             suscribirseAlChatGrupo();
@@ -3155,28 +3145,23 @@
         if (titulo) titulo.textContent = transmision.titulo || 'Transmisión del canal';
     }
 
-    // ✅ Cambio 5: cerrarLiveGrupoInline con lógica para espectadores
     async function cerrarLiveGrupoInline() {
         const container = document.getElementById('grupoLiveContainer');
         if (container) container.classList.remove('visible');
         
-        // ✅ Cambio 5: si NO es streamer, desconectar room y quitar canal de chat
         if (!esStreamerDelLiveGrupo) {
             if (liveKitRoomGrupo) { try { await liveKitRoomGrupo.disconnect(); } catch(e){} liveKitRoomGrupo = null; }
             if (channelChatGrupo) { try { window.supabaseClient.removeChannel(channelChatGrupo); } catch(e){} channelChatGrupo = null; }
         }
     }
 
-    // ✅ Cambio 5: verLiveActivo robusto
     async function verLiveActivo() {
         if (!liveActivoEnGrupo) { showToast('No hay LIVE activo', 'warning'); return; }
         mostrarLiveGrupoInline(liveActivoEnGrupo);
         esStreamerDelLiveGrupo = (sessionUser && liveActivoEnGrupo.streamer_id === sessionUser.id);
         
-        // ✅ Cambio 6: mostrar endBtn solo si es streamer
         document.getElementById('grupoLiveEndBtn').style.display = esStreamerDelLiveGrupo ? 'flex' : 'none';
         
-        // ✅ Cambio 5: video muted solo para streamer
         const videoEl = document.getElementById('grupoLiveVideo');
         if (videoEl) {
             videoEl.muted = esStreamerDelLiveGrupo;
@@ -3184,7 +3169,6 @@
         
         try {
             const { Room } = await cargarLiveKit();
-            // ✅ Cambio 5: desconectar room anterior si existe
             if (liveKitRoomGrupo) {
                 try { await liveKitRoomGrupo.disconnect(); } catch(e) {}
                 liveKitRoomGrupo = null;
@@ -3193,7 +3177,6 @@
             const token = await obtenerTokenLiveKitGrupo(liveActivoEnGrupo.room_name, sessionUser?.id || 'anon', 'subscriber');
             await liveKitRoomGrupo.connect(LIVEKIT_CONFIG.url, token);
             
-            // ✅ Cambio 5: adjuntar pistas ya publicadas
             liveKitRoomGrupo.remoteParticipants.forEach(function(participant) {
                 participant.trackPublications.forEach(function(pub) {
                     if (pub.track) {
@@ -3202,12 +3185,10 @@
                 });
             });
             
-            // Listener para nuevas pistas
             liveKitRoomGrupo.on('trackSubscribed', (track) => {
                 adjuntarTrackGrupo(track);
             });
             
-            // ✅ Cambio 5: contador de espectadores
             function actualizarEspectadores() {
                 var el = document.getElementById('grupoLiveEspectadores');
                 if (el && liveKitRoomGrupo) {
@@ -3224,13 +3205,11 @@
         } catch (e) { showToast('Error al conectar: ' + e.message, 'warning'); }
     }
     
-    // ✅ Cambio 5: helper para adjuntar pistas (video y audio)
     function adjuntarTrackGrupo(track) {
         if (track.kind === 'video') {
             const video = document.getElementById('grupoLiveVideo');
             if (video) { track.attach(video); video.play().catch(e => {}); }
         } else if (track.kind === 'audio') {
-            // ✅ Cambio 5: adjuntar audio a un elemento <audio> oculto
             let audioEl = document.getElementById('grupoLiveAudio');
             if (!audioEl) {
                 audioEl = document.createElement('audio');
@@ -3253,7 +3232,6 @@
             .subscribe();
     }
 
-    // ✅ Cambio 1: enviarMensajeLiveGrupo con ok()
     async function enviarMensajeLiveGrupo() {
         const input = document.getElementById('grupoLiveChatInput');
         const mensaje = (input?.value || '').trim();
@@ -3262,7 +3240,7 @@
         if (!currentStreamGrupoId) { showToast('No hay LIVE activo', 'error'); return; }
         if (!validarTextoPermitido(mensaje, 'Mensaje del Live')) return;
         try {
-            ok(await window.supabaseClient.from('mensajes_live').insert({
+            grpOk(await window.supabaseClient.from('mensajes_live').insert({
                 transmision_id: currentStreamGrupoId, usuario_id: sessionUser.id, mensaje: mensaje,
                 nombre_usuario: sessionUser.user_metadata?.nombre || 'Usuario', creado_en: new Date().toISOString()
             }));
@@ -3340,10 +3318,16 @@
 
     // ================================================================
     // INIT CON TIMEOUT DE SEGURIDAD
+    // ✅ Cambio 3: esperar supabaseClient antes de fallar
     // ================================================================
     document.addEventListener('DOMContentLoaded', async function() {
         console.log('◈ Sariel\'s - Cablera Descentralizada');
         console.log('[Grupos] supabaseClient:', !!window.supabaseClient);
+        
+        // ✅ Cambio 4: reportar estado del SDK al banner si no está
+        if (!window.supabaseClient) {
+            if (window.__dbgShow) window.__dbgShow('Init: supabaseClient no disponible (SDK=' + (typeof (window.__SB_SDK || window.supabase)) + ')');
+        }
         
         var timeoutGlobal = setTimeout(function() {
             var grid = document.getElementById('gruposGrid');
@@ -3354,6 +3338,9 @@
         }, 8000);
         
         try {
+            // ✅ Cambio 3: esperar a que el cliente esté listo
+            await esperarSupabase();
+            
             try { await cargarUsuarioActual(); } catch (e) { console.warn('[Grupos] Usuario:', e.message); }
             
             await Promise.all([
@@ -3362,7 +3349,6 @@
                 cargarMunicipios().catch(function(e) { console.warn('[Grupos] Mun:', e.message); })
             ]);
             
-            // ✅ Cambio 8: cargarDashboard solo en init
             try { await cargarDashboard(); } catch (e) { console.warn('[Grupos] Dash:', e.message); }
             
             var params = new URLSearchParams(window.location.search);
@@ -3377,6 +3363,7 @@
             clearTimeout(timeoutGlobal);
         } catch (e) {
             console.error('[Grupos] ❌ Error en init:', e);
+            if (window.__dbgShow) window.__dbgShow('Init: ' + (e && e.message ? e.message : String(e)));
             clearTimeout(timeoutGlobal);
             try { await cargarGrupos(); } catch (e2) { console.error('[Grupos] Error final:', e2); }
         }
