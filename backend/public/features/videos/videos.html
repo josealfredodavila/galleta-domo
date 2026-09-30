@@ -681,7 +681,7 @@
 
     <script>
         // ================================================================
-        // VIDEOS - v8
+        // VIDEOS - v8 (con fallback y diagnóstico)
         // Límites alineados con la config real del bucket 'videos' de Supabase:
         //   - Máximo: 100 MB
         //   - MIME permitidos: video/mp4, video/webm, video/quicktime
@@ -921,20 +921,44 @@
         }
 
         // ================================================================
-        // ✅ CARGAR VIDEOS
+        // ✅ CARGAR VIDEOS (con fallback sin JOIN + error real visible)
         // ================================================================
         async function cargarVideos() {
+            var container = document.getElementById('videosContainer');
             try {
+                // Intento 1: con JOIN de usuarios (lo normal)
                 var result = await window.supabase
                     .from('videos')
                     .select('id, titulo, descripcion, url_video, url_miniatura, usuario_id, reproducciones, likes, comentarios, created_at, usuarios:usuario_id (id, nombre, handle, avatar_url)')
                     .eq('estado', 'publicado')
                     .order('created_at', { ascending: false })
                     .limit(20);
-                if (result.error) throw result.error;
 
-                var container = document.getElementById('videosContainer');
-                var data = result.data || [];
+                var data = null;
+
+                if (result.error) {
+                    // Intento 2: sin JOIN (por si RLS de usuarios falla)
+                    console.warn('[Videos] Falló con JOIN, reintentando sin JOIN...', result.error);
+                    var result2 = await window.supabase
+                        .from('videos')
+                        .select('id, titulo, descripcion, url_video, url_miniatura, usuario_id, reproducciones, likes, comentarios, created_at')
+                        .eq('estado', 'publicado')
+                        .order('created_at', { ascending: false })
+                        .limit(20);
+
+                    if (result2.error) {
+                        // Ambos fallaron → mostrar el error real
+                        throw new Error(
+                            'Con JOIN: ' + (result.error.message || JSON.stringify(result.error)) +
+                            ' || Sin JOIN: ' + (result2.error.message || JSON.stringify(result2.error))
+                        );
+                    }
+                    data = result2.data || [];
+                    console.warn('[Videos] Cargó sin JOIN. Los videos no mostrarán nombre del autor.');
+                } else {
+                    data = result.data || [];
+                }
+
                 videosPublicados = data.slice();
 
                 if (data.length === 0) {
@@ -981,8 +1005,69 @@
 
                 activarAutoplayScroll();
             } catch (e) {
-                showToast(tr('videos_error_cargar', 'Error al cargar videos'), 'error');
+                var errMsg = (e && e.message) ? e.message : String(e);
+                console.error('[Videos] ❌ Error al cargar:', e);
+
+                // Mostrar en el banner rojo (el que ya tienes en el HTML)
+                var banner = document.getElementById('errorBanner');
+                var bannerText = document.getElementById('errorBannerText');
+                if (banner && bannerText) {
+                    bannerText.textContent = 'cargarVideos: ' + errMsg;
+                    banner.style.display = 'block';
+                }
+
+                // Toast más descriptivo
+                showToast('Error al cargar videos: ' + errMsg, 'error', 6000);
+
+                if (container) {
+                    container.className = '';
+                    container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>Error al cargar videos</h3><p style="font-size:0.7rem;color:var(--danger);word-break:break-word;">' + escapeHTML(errMsg) + '</p></div>';
+                }
             }
+        }
+
+        // ================================================================
+        // ✅ DIAGNÓSTICO MANUAL (llamar desde consola: diagnosticarVideos())
+        // ================================================================
+        async function diagnosticarVideos() {
+            console.log('%c◈ Diagnóstico de Videos', 'color:#D4AF37;font-weight:bold;font-size:14px;');
+            var resultados = [];
+
+            try {
+                var r1 = await window.supabase.from('videos').select('id, titulo, estado').limit(3);
+                resultados.push('1. SELECT videos simple: ' + (r1.error ? '❌ ' + r1.error.message : '✅ ' + (r1.data?.length || 0) + ' filas'));
+            } catch (e) { resultados.push('1. SELECT videos simple: ❌ ' + e.message); }
+
+            try {
+                var r2 = await window.supabase.from('videos').select('id, titulo, usuarios:usuario_id (id, nombre, handle)').limit(3);
+                resultados.push('2. SELECT videos + JOIN usuarios: ' + (r2.error ? '❌ ' + r2.error.message : '✅ ' + (r2.data?.length || 0) + ' filas'));
+            } catch (e) { resultados.push('2. SELECT videos + JOIN usuarios: ❌ ' + e.message); }
+
+            try {
+                var r3 = await window.supabase.from('usuarios').select('id, nombre, handle').limit(3);
+                resultados.push('3. SELECT usuarios: ' + (r3.error ? '❌ ' + r3.error.message : '✅ ' + (r3.data?.length || 0) + ' filas'));
+            } catch (e) { resultados.push('3. SELECT usuarios: ❌ ' + e.message); }
+
+            try {
+                var ses = await getSession();
+                resultados.push('4. Sesión: ' + (ses ? '✅ user_id=' + ses.user.id : '⚠️ sin sesión (anon)'));
+            } catch (e) { resultados.push('4. Sesión: ❌ ' + e.message); }
+
+            try {
+                var r5 = await window.supabase.from('videos').select('*', { count: 'exact', head: true }).eq('estado', 'publicado');
+                resultados.push('5. Count videos publicados: ' + (r5.error ? '❌ ' + r5.error.message : '✅ ' + r5.count));
+            } catch (e) { resultados.push('5. Count videos publicados: ❌ ' + e.message); }
+
+            var texto = resultados.join('\n');
+            console.log(texto);
+
+            var banner = document.getElementById('errorBanner');
+            var bannerText = document.getElementById('errorBannerText');
+            if (banner && bannerText) {
+                bannerText.textContent = texto;
+                banner.style.display = 'block';
+            }
+            return resultados;
         }
 
         // ================================================================
@@ -1084,18 +1169,15 @@
                 if (!fileInput.files || fileInput.files.length === 0) throw new Error(tr('videos_video_requerido', 'Selecciona un video'));
                 var file = fileInput.files[0];
 
-                // Límite real del bucket: 100 MB
                 if (file.size > 100 * 1024 * 1024) {
                     throw new Error(tr('videos_video_grande', 'El video es demasiado grande (máx 100 MB)'));
                 }
 
-                // MIME permitidos por el bucket real
                 var allowedTypes = ['video/mp4', 'video/webm', 'video/quicktime'];
                 if (allowedTypes.indexOf(file.type) === -1) {
                     throw new Error(tr('videos_video_formato', 'Formato no soportado. Usa MP4, WebM o MOV'));
                 }
 
-                // Extensiones permitidas (NO .avi)
                 var nombreArchivo = file.name.toLowerCase();
                 if (!['.mp4', '.webm', '.mov'].some(function (ext) { return nombreArchivo.endsWith(ext); })) {
                     throw new Error(tr('videos_video_formato', 'Formato no soportado. Usa MP4, WebM o MOV'));
@@ -1120,7 +1202,6 @@
 
                 var fileExt = file.name.split('.').pop().toLowerCase();
 
-                // Ruta con UUID del usuario como primer segmento (requerido por las políticas de Storage)
                 filePath = session.user.id + '/' + Date.now() + '.' + fileExt;
 
                 var up = await window.supabase.storage.from('videos').upload(filePath, file, {
@@ -1237,7 +1318,6 @@
             videoEnProcesamiento = null;
             showToast('❌ ' + msg, 'error', 6000);
         }
-        // ✅ FIX Claude: usa /api/video/jobs (que sí existe)
         async function reanudarProcesamientoPendiente() {
             if (!sessionUser) return;
             try {
@@ -1758,7 +1838,7 @@
         });
 
         document.addEventListener('DOMContentLoaded', function() {
-            console.log("◈ Sariel's - Videos v8 (límites alineados con bucket real)");
+            console.log("◈ Sariel's - Videos v8 (con fallback y diagnóstico)");
             aplicarI18N();
             actualizarIconoMute();
             actualizarIconoPausa(true);
@@ -1777,6 +1857,7 @@
 
         window.subirVideo = subirVideo;
         window.cargarVideos = cargarVideos;
+        window.diagnosticarVideos = diagnosticarVideos;
         window.abrirVideo = abrirVideo;
         window.cerrarModalVideo = cerrarModalVideo;
         window.toggleLikeVideo = toggleLikeVideo;
