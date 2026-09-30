@@ -38,9 +38,6 @@
         .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); }
         .main-nav .nav-link.live { color: var(--danger); }
 
-        /* ============================================================
-           ICONOS SVG - Sistema limpio
-           ============================================================ */
         .icon { display: inline-block; width: 1em; height: 1em; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; vertical-align: -0.125em; flex-shrink: 0; }
         .icon-sm { width: 0.85em; height: 0.85em; }
         .icon-lg { width: 1.25em; height: 1.25em; }
@@ -150,8 +147,6 @@
         .grupo-live-container .live-video-wrap { position: relative; width: 100%; background: #000; aspect-ratio: 16/9; max-height: 60vh; }
         .grupo-live-container .live-video-wrap video { width: 100%; height: 100%; object-fit: cover; }
         .grupo-live-container .live-controls-inline { position: absolute; bottom: 0; left: 0; right: 0; padding: 16px; background: linear-gradient(to top, rgba(0,0,0,0.85), transparent); display: flex; gap: 8px; justify-content: center; align-items: center; }
-        .grupo-live-container .live-ctrl-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #fff; cursor: pointer; transition: var(--transition); backdrop-filter: blur(8px); }
-        .grupo-live-container .live-ctrl-btn:hover { transform: scale(1.08); border-color: var(--gold); color: var(--gold); }
         .grupo-live-container .live-info { padding: 12px 16px; border-top: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--text-secondary); }
         .grupo-live-container .live-chat-inline { max-height: 150px; overflow-y: auto; padding: 8px 16px; border-top: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); display: flex; flex-direction: column; gap: 4px; }
         .grupo-live-container .live-chat-inline .chat-msg { font-size: 0.7rem; color: var(--text-secondary); padding: 2px 0; border-bottom: 1px solid rgba(212,175,55,0.04); }
@@ -250,7 +245,6 @@
         .footer-links a { color: var(--text-muted); text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
         .footer-links a:hover { color: var(--gold); }
 
-        /* ===== TEMA DÍA ===== */
         html.tema-dia, html[data-tema="dia"] {
             --space: #f5f7fa; --text-primary: #1a2332; --text-secondary: #4a5568; --text-muted: #718096;
             --glass-bg: rgba(255, 255, 255, 0.9); --glass-border: rgba(0, 0, 0, 0.1);
@@ -1025,15 +1019,17 @@
 
     // ================================================================
     // ✅ FIX: Inicializar Supabase correctamente
-    // (window.supabase = SDK crudo, window.supabaseClient = cliente)
     // ================================================================
     (function inicializarSupabase() {
         try {
-            if (window.supabaseClient) return; // Ya existe
+            if (window.supabaseClient) {
+                console.log('[Grupos] ✅ supabaseClient ya existía');
+                return;
+            }
             
             var SDK = window.supabase;
             if (!SDK || typeof SDK.createClient !== 'function') {
-                console.error('[Grupos] Supabase SDK no disponible');
+                console.error('[Grupos] ❌ Supabase SDK no disponible');
                 return;
             }
             
@@ -1050,7 +1046,7 @@
             );
             console.log('[Grupos] ✅ Supabase Client inicializado');
         } catch (e) {
-            console.error('[Grupos] Error inicializando Supabase:', e);
+            console.error('[Grupos] ❌ Error inicializando Supabase:', e);
         }
     })();
 
@@ -1190,10 +1186,10 @@
 
     async function getSession() {
         try {
-            if (!window.supabaseClient) { console.warn('Supabase client no disponible'); return null; }
+            if (!window.supabaseClient) { console.warn('[Grupos] supabaseClient no disponible'); return null; }
             var r = await window.supabaseClient.auth.getSession();
             return r.data.session;
-        } catch (e) { console.error('Error sesión:', e); return null; }
+        } catch (e) { console.error('[Grupos] Error sesión:', e); return null; }
     }
 
     function escapeHTML(texto) {
@@ -1214,10 +1210,11 @@
             sessionUser = session.user;
             var result = await window.supabaseClient.from('usuarios').select('nombre, handle, tokens').eq('id', session.user.id).single();
             if (!result.error && result.data) {
-                document.getElementById('tokenBadgeCantidad').textContent = result.data.tokens || 0;
+                var badge = document.getElementById('tokenBadgeCantidad');
+                if (badge) badge.textContent = result.data.tokens || 0;
             }
             return result.data || null;
-        } catch (e) { console.error('Error cargando usuario:', e); return null; }
+        } catch (e) { console.error('[Grupos] Error cargando usuario:', e); return null; }
     }
 
     // ================================================================
@@ -1258,7 +1255,7 @@
             anuncioActual = data.ad;
             if (adVistaTimer) clearTimeout(adVistaTimer);
             adVistaTimer = setTimeout(() => { registrarVistaAnuncio(); }, 3000);
-        } catch (error) { console.error('Error cargando anuncio:', error); }
+        } catch (error) { console.warn('[Grupos] Error cargando anuncio:', error); }
     }
 
     function mostrarAnuncio(ad) {
@@ -1323,8 +1320,6 @@
         if (adVistaTimer) { clearTimeout(adVistaTimer); adVistaTimer = null; }
     }
 
-    async function procesarConMarcaDeAgua(file, tipo) { return file; }
-
     // ================================================================
     // CARGAR CATEGORÍAS / ESTADOS / MUNICIPIOS
     // ================================================================
@@ -1344,7 +1339,7 @@
                 });
                 select.value = currentVal;
             }
-        } catch (e) { console.error('Error cargando categorías:', e); }
+        } catch (e) { console.warn('[Grupos] Error cargando categorías:', e); }
     }
 
     async function cargarEstados() {
@@ -1364,7 +1359,7 @@
                 });
                 select.value = currentVal;
             }
-        } catch (e) { console.error('Error cargando estados:', e); }
+        } catch (e) { console.warn('[Grupos] Error cargando estados:', e); }
     }
 
     async function cargarMunicipios() {
@@ -1384,7 +1379,7 @@
                 });
                 select.value = currentVal;
             }
-        } catch (e) { console.error('Error cargando municipios:', e); }
+        } catch (e) { console.warn('[Grupos] Error cargando municipios:', e); }
     }
 
     // ================================================================
@@ -1396,9 +1391,11 @@
         if (!misCanalesDiv || !enVivoDiv) return;
 
         try {
-            if (!sessionUser) await cargarUsuarioActual();
-
-            if (sessionUser) {
+            if (!window.supabaseClient) return;
+            
+            if (!sessionUser) {
+                misCanalesDiv.innerHTML = '<div class="empty-state" style="padding:20px;"><svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg><p style="font-size:0.7rem;">Inicia sesión para ver tus canales.</p></div>';
+            } else {
                 var misGruposResult = await window.supabaseClient.from('grupos_video_miembros').select('grupo_id').eq('usuario_id', sessionUser.id).eq('estado', 'activo');
                 var ids = (misGruposResult.data || []).map(function(m) { return m.grupo_id; });
                 
@@ -1406,31 +1403,21 @@
                     var misCanalesData = await window.supabaseClient.from('grupos_video').select('id, nombre, avatar_url, precio_usdt, marketplace_activo').in('id', ids);
                     misCanalesCache = misCanalesData.data || [];
                     
-                    var liveStatus = {};
-                    for (var i = 0; i < misCanalesCache.length; i++) {
-                        var g = misCanalesCache[i];
-                        var liveCheck = await window.supabaseClient.from('transmisiones').select('id').eq('grupo_id', g.id).eq('estado', 'en_vivo').eq('is_live', true).maybeSingle();
-                        if (liveCheck.data) liveStatus[g.id] = true;
-                    }
-
                     misCanalesDiv.innerHTML = misCanalesCache.map(function(g) {
-                        var isLive = liveStatus[g.id] ? '<span class="live-dot"></span>' : '';
                         var avatar = g.avatar_url ? '<img src="' + escapeHTML(g.avatar_url) + '">' : '◈';
                         var precio = g.precio_usdt > 0 ? '$' + g.precio_usdt + ' USDT' : 'Gratis';
                         var mkIcon = g.marketplace_activo ? '<svg class="icon icon-sm" viewBox="0 0 24 24" style="vertical-align:middle;"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>' : '';
                         return '<div class="canal-item" onclick="abrirGrupo(\'' + g.id + '\')">' +
                             '<div class="avatar-mini">' + avatar + '</div>' +
                             '<div class="info"><div class="nombre">' + escapeHTML(g.nombre) + ' ' + mkIcon + '</div>' +
-                            '<div class="stats">' + precio + '</div></div>' +
-                            isLive + '</div>';
+                            '<div class="stats">' + precio + '</div></div></div>';
                     }).join('');
                 } else {
                     misCanalesDiv.innerHTML = '<div class="empty-state" style="padding:20px;"><svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg><p style="font-size:0.7rem;">No sigues ningún canal aún.</p></div>';
                 }
-            } else {
-                misCanalesDiv.innerHTML = '<div class="empty-state" style="padding:20px;"><svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg><p style="font-size:0.7rem;">Inicia sesión para ver tus canales.</p></div>';
             }
 
+            // Cargar lives activos
             var livesResult = await window.supabaseClient.from('transmisiones')
                 .select(`*, grupo:grupos_video(id, nombre, avatar_url)`)
                 .eq('estado', 'en_vivo')
@@ -1470,8 +1457,7 @@
                     </div>`;
                 }).join('');
             }
-
-        } catch (e) { console.error('Error cargando dashboard:', e); }
+        } catch (e) { console.warn('[Grupos] Error cargando dashboard:', e); }
     }
 
     function switchTab(tab) {
@@ -1490,24 +1476,67 @@
     }
 </script>    <script>
         // ================================================================
-        // CARGAR GRUPOS
+        // CARGAR GRUPOS — VERSIÓN ROBUSTA (sin bloqueos, con logs)
         // ================================================================
         async function cargarGrupos() {
             var grid = document.getElementById('gruposGrid');
+            if (!grid) return;
+            
+            console.log('[Grupos] 🔍 Iniciando cargarGrupos...');
+            
+            // ✅ Timeout de seguridad: si en 8s no termina, mostrar error
+            var timeoutId = setTimeout(function() {
+                if (grid.querySelector('.empty-state h3')?.textContent.includes('Cargando')) {
+                    console.warn('[Grupos] ⚠️ Timeout de 8s');
+                    grid.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><h3>La carga está tardando</h3><p>Intenta recargar la página</p></div>';
+                }
+            }, 8000);
+            
             try {
+                // ✅ Verificar cliente
                 if (!window.supabaseClient) {
-                    grid.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><h3>Error de conexión</h3></div>';
+                    console.error('[Grupos] ❌ supabaseClient NO disponible');
+                    clearTimeout(timeoutId);
+                    grid.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><h3>Sin conexión a Supabase</h3></div>';
                     return;
                 }
-                if (!sessionUser) await cargarUsuarioActual();
-                await cargarDashboard();
+                
+                // ✅ Cargar usuario SIN BLOQUEAR (si falla, seguir como anónimo)
+                try {
+                    if (!sessionUser) {
+                        await Promise.race([
+                            cargarUsuarioActual(),
+                            new Promise(function(_, reject) { setTimeout(function() { reject(new Error('timeout usuario')); }, 3000); })
+                        ]);
+                    }
+                    console.log('[Grupos] ✅ Usuario:', sessionUser?.id || 'anónimo');
+                } catch (e) {
+                    console.warn('[Grupos] ⚠️ Timeout/error usuario, siguiendo anónimo');
+                }
+                
+                // ✅ Dashboard SIN BLOQUEAR
+                try {
+                    await Promise.race([
+                        cargarDashboard(),
+                        new Promise(function(_, reject) { setTimeout(function() { reject(new Error('timeout dashboard')); }, 3000); })
+                    ]);
+                } catch (e) {
+                    console.warn('[Grupos] ⚠️ Timeout/error dashboard, ignorando');
+                }
 
                 var buscar = document.getElementById('inputBuscar')?.value?.trim() || '';
                 var estado = document.getElementById('selectEstado')?.value || '';
                 var municipio = document.getElementById('selectMunicipio')?.value || '';
                 var categoria = document.getElementById('selectCategoria')?.value || '';
 
-                var query = window.supabaseClient.from('grupos_video').select(`*, miembros:grupos_video_miembros(count)`).order('created_at', { ascending: false });
+                console.log('[Grupos] 🔍 Query a grupos_video...');
+                
+                // ✅ Query SIMPLE primero (sin JOIN) para evitar problemas de RLS
+                var query = window.supabaseClient
+                    .from('grupos_video')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                    
                 if (buscar) query = query.or(`nombre.ilike.%${buscar}%,descripcion.ilike.%${buscar}%`);
                 if (estado) query = query.eq('estado_region', estado);
                 if (municipio) query = query.eq('municipio', municipio);
@@ -1518,6 +1547,7 @@
                     if (misGruposResult.error) throw misGruposResult.error;
                     var ids = (misGruposResult.data || []).map(function(m) { return m.grupo_id; });
                     if (ids.length === 0) {
+                        clearTimeout(timeoutId);
                         grid.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg><h3>No sigues ningún canal</h3></div>';
                         return;
                     }
@@ -1525,25 +1555,35 @@
                 }
 
                 var result = await query;
+                
+                console.log('[Grupos] 📊 Resultado:', {
+                    error: result.error?.message || null,
+                    count: result.data?.length || 0,
+                    sample: result.data?.[0]?.nombre || 'none'
+                });
+                
+                clearTimeout(timeoutId);
+                
                 if (result.error) throw result.error;
                 var grupos = result.data || [];
 
                 if (grupos.length === 0) {
-                    grid.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg><h3>No hay canales</h3><p>Activa el primero</p></div>';
+                    console.warn('[Grupos] ⚠️ 0 canales en la DB');
+                    grid.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg><h3>No hay canales disponibles</h3><p>Activa el primero</p></div>';
                     return;
                 }
+                
+                console.log('[Grupos] ✅ Mostrando', grupos.length, 'canales');
 
+                // ✅ Intentar cargar "en vivo" aparte (sin bloquear)
                 var liveMap = {};
-                for (var i = 0; i < grupos.length; i++) {
-                    try {
-                        var g = grupos[i];
-                        var liveResult = await window.supabaseClient.from('transmisiones').select('id').eq('grupo_id', g.id).eq('estado', 'en_vivo').eq('is_live', true).maybeSingle();
-                        if (liveResult.data) liveMap[g.id] = true;
-                    } catch (e) {}
-                }
+                try {
+                    var liveResult = await window.supabaseClient.from('transmisiones').select('grupo_id').eq('estado', 'en_vivo').eq('is_live', true);
+                    (liveResult.data || []).forEach(function(t) { liveMap[t.grupo_id] = true; });
+                } catch (e) { console.warn('[Grupos] Error lives (ignorado):', e); }
 
+                // ✅ Renderizar
                 grid.innerHTML = grupos.map(function(g) {
-                    var miembros = g.miembros ? g.miembros[0]?.count || 0 : 0;
                     var tieneLive = liveMap[g.id] ? true : false;
                     var visibilidad = g.visibilidad || 'publico';
                     var visBadge = visibilidad === 'publico'
@@ -1560,15 +1600,15 @@
                         '<div class="avatar">' + (g.avatar_url ? '<img src="' + escapeHTML(g.avatar_url) + '">' : '◈') + '</div>' +
                         '<div class="nombre">' + escapeHTML(g.nombre) + '</div>' +
                         '<div class="descripcion">' + escapeHTML((g.descripcion || '').substring(0, 80)) + '</div>' +
-                        '<div class="meta"><span class="ciudad"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>' + escapeHTML(ubicacionTexto) + '</span>' +
-                        '<span><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>' + miembros + '</span>' + visBadge + precio + mkBadge +
+                        '<div class="meta"><span class="ciudad"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>' + escapeHTML(ubicacionTexto) + '</span>' + visBadge + precio + mkBadge +
                         (tieneLive ? ' <span class="live-badge"><svg class="icon icon-sm" viewBox="0 0 24 24" style="color:#fff;fill:currentColor;stroke:none;"><circle cx="12" cy="12" r="5"/></svg>EN VIVO</span>' : '') +
                         '</div></div>';
                 }).join('');
 
             } catch (e) {
-                console.error('Error cargando canales:', e);
-                grid.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><h3>Error cargando canales</h3><p>' + (e.message || '') + '</p></div>';
+                clearTimeout(timeoutId);
+                console.error('[Grupos] ❌ ERROR cargando canales:', e);
+                grid.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><h3>Error cargando canales</h3><p style="font-size:0.7rem;">' + escapeHTML(e.message || 'Error desconocido') + '</p></div>';
             }
         }
 
@@ -1619,9 +1659,7 @@
                     : '<svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Privado';
                 
                 var mkBadgeEl = document.getElementById('grupoMkBadge');
-                if (mkBadgeEl) {
-                    mkBadgeEl.style.display = grupoActual.marketplace_activo ? 'inline-flex' : 'none';
-                }
+                if (mkBadgeEl) mkBadgeEl.style.display = grupoActual.marketplace_activo ? 'inline-flex' : 'none';
                 
                 var btnMk = document.getElementById('btnMarketplace');
                 if (btnMk) {
@@ -1631,9 +1669,7 @@
                 }
                 
                 var mkAviso = document.getElementById('marketplaceAviso');
-                if (mkAviso) {
-                    mkAviso.style.display = !grupoActual.marketplace_activo ? 'block' : 'none';
-                }
+                if (mkAviso) mkAviso.style.display = !grupoActual.marketplace_activo ? 'block' : 'none';
                 
                 var btnDonar = document.getElementById('btnDonar');
                 if (btnDonar) {
@@ -1683,7 +1719,7 @@
                 adCerrado = false;
                 iniciarRefrescoAnuncios();
             } catch (e) {
-                console.error('Error abriendo canal:', e);
+                console.error('[Grupos] Error abriendo canal:', e);
                 showToast('Error al abrir canal', 'error');
             }
         }
@@ -1709,15 +1745,9 @@
                 liveActivoEnGrupo = result.data || null;
                 if (liveActivoEnGrupo) currentStreamGrupoId = liveActivoEnGrupo.id;
                 return liveActivoEnGrupo;
-            } catch (e) {
-                liveActivoEnGrupo = null;
-                return null;
-            }
+            } catch (e) { liveActivoEnGrupo = null; return null; }
         }
 
-        // ================================================================
-        // INTERACCIONES
-        // ================================================================
         async function cargarMisInteracciones() {
             misInteracciones = {};
             if (!sessionUser) return;
@@ -1729,7 +1759,7 @@
                         misInteracciones[i.publicacion_id][i.tipo] = true;
                     });
                 }
-            } catch (e) { console.warn('Error cargando interacciones:', e); }
+            } catch (e) { console.warn('Error interacciones:', e); }
         }
 
         async function cargarMisNotificaciones() {
@@ -1740,7 +1770,7 @@
                 if (!result.error && result.data) {
                     result.data.forEach(function(n) { misNotificaciones[n.publicacion_id] = true; });
                 }
-            } catch (e) { console.warn('Error cargando notificaciones:', e); }
+            } catch (e) { console.warn('Error notificaciones:', e); }
         }
 
         function filtrarFeed(filtro) {
@@ -1754,7 +1784,6 @@
         function renderizarPublicacionesCache() {
             var container = document.getElementById('publicacionesContainer');
             if (!container) return;
-
             var filtradas = publicacionesCache;
 
             if (filtroFeedActual === 'marketplace') {
@@ -1810,24 +1839,17 @@
                 var contactoHTML = '';
                 if (p.whatsapp) {
                     var wapp = String(p.whatsapp).replace(/\D/g, '');
-                    if (wapp.length >= 10) {
-                        contactoHTML += '<a href="https://wa.me/52' + wapp + '" target="_blank" rel="noopener" class="btn-whatsapp">💬 WhatsApp</a>';
-                    }
+                    if (wapp.length >= 10) contactoHTML += '<a href="https://wa.me/52' + wapp + '" target="_blank" rel="noopener" class="btn-whatsapp">💬 WhatsApp</a>';
                 }
                 if (p.telefono_contacto) {
                     var tel = String(p.telefono_contacto).replace(/\D/g, '');
-                    if (tel.length >= 10) {
-                        contactoHTML += '<a href="tel:+52' + tel + '" class="btn-llamar">📞 Llamar</a>';
-                    }
+                    if (tel.length >= 10) contactoHTML += '<a href="tel:+52' + tel + '" class="btn-llamar">📞 Llamar</a>';
                 }
                 var contactoDiv = contactoHTML ? '<div class="contacto">' + contactoHTML + '</div>' : '';
 
                 mkHTML = '<div class="marketplace-info">' +
                     '<div class="titulo-mk"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>' + tipoLabel + '</div>' +
-                    '<div>' + precioHTML + '</div>' +
-                    ubicacionHTML +
-                    contactoDiv +
-                    '</div>';
+                    '<div>' + precioHTML + '</div>' + ubicacionHTML + contactoDiv + '</div>';
             }
 
             var claseMK = p.tipo_marketplace ? ' marketplace ' + p.tipo_marketplace : '';
@@ -1853,8 +1875,7 @@
                 '<button class="post-menu-item danger" onclick="abrirModalReportar(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg> Reportar publicación</button>' +
                 '<button class="post-menu-item danger" onclick="abrirModalReportarAdmin(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Reportar al administrador</button>' +
                 '</div></div></div>' +
-                '<div class="contenido">' + contenido + '</div>' +
-                mkHTML +
+                '<div class="contenido">' + contenido + '</div>' + mkHTML +
                 '<div class="stats">' +
                 '<span onclick="reaccionarPublicacion(' + p.id + ')" id="like-btn-' + p.id + '"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> <span id="likes-' + p.id + '">' + likesCount + '</span></span>' +
                 '<span onclick="toggleComentariosPublicacion(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> <span id="comentarios-' + p.id + '">' + comentariosCount + '</span></span>' +
@@ -1873,12 +1894,8 @@
             event.stopPropagation();
             var menuActual = document.getElementById('postMenu-' + publicacionId);
             var menuAbierto = menuActual && menuActual.classList.contains('show');
-            
             document.querySelectorAll('.post-menu-dropdown.show').forEach(function(m) { m.classList.remove('show'); });
-            
-            if (!menuAbierto && menuActual) {
-                menuActual.classList.add('show');
-            }
+            if (!menuAbierto && menuActual) menuActual.classList.add('show');
         }
 
         document.addEventListener('click', function(e) {
@@ -1891,39 +1908,24 @@
             if (!sessionUser) { showToast('Inicia sesión para interactuar', 'error'); return; }
             try {
                 var tieneActual = misInteracciones[publicacionId] && misInteracciones[publicacionId][tipo];
-                
                 if (tieneActual) {
-                    await window.supabaseClient.from('grupos_video_interacciones')
-                        .delete()
-                        .eq('publicacion_id', publicacionId)
-                        .eq('usuario_id', sessionUser.id)
-                        .eq('tipo', tipo);
+                    await window.supabaseClient.from('grupos_video_interacciones').delete().eq('publicacion_id', publicacionId).eq('usuario_id', sessionUser.id).eq('tipo', tipo);
                     if (!misInteracciones[publicacionId]) misInteracciones[publicacionId] = {};
                     delete misInteracciones[publicacionId][tipo];
                 } else {
                     if (tipo === 'me_interesa' || tipo === 'no_me_interesa') {
                         var opuesto = tipo === 'me_interesa' ? 'no_me_interesa' : 'me_interesa';
                         if (misInteracciones[publicacionId] && misInteracciones[publicacionId][opuesto]) {
-                            await window.supabaseClient.from('grupos_video_interacciones')
-                                .delete()
-                                .eq('publicacion_id', publicacionId)
-                                .eq('usuario_id', sessionUser.id)
-                                .eq('tipo', opuesto);
+                            await window.supabaseClient.from('grupos_video_interacciones').delete().eq('publicacion_id', publicacionId).eq('usuario_id', sessionUser.id).eq('tipo', opuesto);
                             delete misInteracciones[publicacionId][opuesto];
                         }
                     }
-                    
-                    await window.supabaseClient.from('grupos_video_interacciones')
-                        .insert({ publicacion_id: publicacionId, usuario_id: sessionUser.id, tipo: tipo });
+                    await window.supabaseClient.from('grupos_video_interacciones').insert({ publicacion_id: publicacionId, usuario_id: sessionUser.id, tipo: tipo });
                     if (!misInteracciones[publicacionId]) misInteracciones[publicacionId] = {};
                     misInteracciones[publicacionId][tipo] = true;
                 }
                 return true;
-            } catch (e) {
-                console.error('Error interacción:', e);
-                showToast('Error al procesar', 'error');
-                return false;
-            }
+            } catch (e) { console.error('Error interacción:', e); showToast('Error al procesar', 'error'); return false; }
         }
 
         async function toggleMeInteresa(publicacionId) {
@@ -1962,36 +1964,24 @@
             try {
                 var tiene = misNotificaciones[publicacionId];
                 if (tiene) {
-                    await window.supabaseClient.from('grupos_video_notificaciones')
-                        .delete()
-                        .eq('publicacion_id', publicacionId)
-                        .eq('usuario_id', sessionUser.id);
+                    await window.supabaseClient.from('grupos_video_notificaciones').delete().eq('publicacion_id', publicacionId).eq('usuario_id', sessionUser.id);
                     delete misNotificaciones[publicacionId];
                     showToast('Notificaciones desactivadas', '');
                 } else {
-                    await window.supabaseClient.from('grupos_video_notificaciones')
-                        .insert({ publicacion_id: publicacionId, usuario_id: sessionUser.id });
+                    await window.supabaseClient.from('grupos_video_notificaciones').insert({ publicacion_id: publicacionId, usuario_id: sessionUser.id });
                     misNotificaciones[publicacionId] = true;
                     showToast('Notificaciones activadas', 'success');
                 }
                 renderizarPublicacionesCache();
-            } catch (e) {
-                showToast('Error al procesar', 'error');
-            }
+            } catch (e) { showToast('Error al procesar', 'error'); }
         }
 
         function copiarEnlacePost(publicacionId) {
             document.querySelectorAll('.post-menu-dropdown.show').forEach(function(m) { m.classList.remove('show'); });
             var url = window.location.origin + '/features/grupos/grupos.html?grupo=' + grupoActualId + '&publicacion=' + publicacionId;
             if (navigator.clipboard) {
-                navigator.clipboard.writeText(url).then(function() {
-                    showToast('Enlace copiado', 'success');
-                }).catch(function() {
-                    prompt('Copia el enlace:', url);
-                });
-            } else {
-                prompt('Copia el enlace:', url);
-            }
+                navigator.clipboard.writeText(url).then(function() { showToast('Enlace copiado', 'success'); }).catch(function() { prompt('Copia el enlace:', url); });
+            } else { prompt('Copia el enlace:', url); }
         }
 
         function abrirModalReportar(publicacionId) {
@@ -2014,32 +2004,20 @@
             var motivo = document.getElementById('inputMotivoReporte').value;
             var descripcion = document.getElementById('inputDescripcionReporte').value.trim();
             var statusEl = document.getElementById('reporteStatus');
-            
             if (!motivo) { statusEl.textContent = '⚠️ Selecciona un motivo'; statusEl.style.color = 'var(--warning)'; return; }
-            
             statusEl.textContent = 'Enviando reporte...';
             statusEl.style.color = 'var(--text-muted)';
-            
             try {
                 var result = await window.supabaseClient.from('grupos_video_reportes').insert({
-                    publicacion_id: publicacionReportando,
-                    grupo_id: grupoActualId,
-                    usuario_id: sessionUser.id,
-                    tipo: 'publicacion',
-                    motivo: motivo,
-                    descripcion: descripcion || null,
-                    estado: 'pendiente'
+                    publicacion_id: publicacionReportando, grupo_id: grupoActualId, usuario_id: sessionUser.id,
+                    tipo: 'publicacion', motivo: motivo, descripcion: descripcion || null, estado: 'pendiente'
                 });
                 if (result.error) throw result.error;
-                
                 statusEl.textContent = '✅ Reporte enviado. Gracias.';
                 statusEl.style.color = 'var(--success)';
                 showToast('Reporte enviado', 'success');
                 setTimeout(cerrarModalReportar, 1500);
-            } catch (e) {
-                statusEl.textContent = '❌ Error: ' + e.message;
-                statusEl.style.color = 'var(--danger)';
-            }
+            } catch (e) { statusEl.textContent = '❌ Error: ' + e.message; statusEl.style.color = 'var(--danger)'; }
         }
 
         function abrirModalReportarAdmin(publicacionId) {
@@ -2053,52 +2031,36 @@
             document.getElementById('modalReportarAdmin').classList.add('show');
         }
 
-        function cerrarModalReportarAdmin() {
-            document.getElementById('modalReportarAdmin').classList.remove('show');
-        }
+        function cerrarModalReportarAdmin() { document.getElementById('modalReportarAdmin').classList.remove('show'); }
 
         async function enviarReporteAdmin() {
             var tipo = document.getElementById('inputTipoReporteAdmin').value;
             var motivo = document.getElementById('inputMotivoReporteAdmin').value;
             var descripcion = document.getElementById('inputDescripcionReporteAdmin').value.trim();
             var statusEl = document.getElementById('reporteAdminStatus');
-            
             if (!tipo) { statusEl.textContent = '⚠️ Selecciona el tipo'; statusEl.style.color = 'var(--warning)'; return; }
             if (!motivo) { statusEl.textContent = '⚠️ Selecciona un motivo'; statusEl.style.color = 'var(--warning)'; return; }
             if (!descripcion) { statusEl.textContent = '⚠️ Describe el problema'; statusEl.style.color = 'var(--warning)'; return; }
-            
             statusEl.textContent = 'Enviando reporte al admin...';
             statusEl.style.color = 'var(--text-muted)';
-            
             try {
                 var result = await window.supabaseClient.from('grupos_video_reportes').insert({
-                    publicacion_id: publicacionReportando || null,
-                    grupo_id: grupoActualId,
-                    usuario_id: sessionUser.id,
-                    tipo: tipo,
-                    motivo: motivo,
-                    descripcion: descripcion,
-                    estado: 'pendiente'
+                    publicacion_id: publicacionReportando || null, grupo_id: grupoActualId, usuario_id: sessionUser.id,
+                    tipo: tipo, motivo: motivo, descripcion: descripcion, estado: 'pendiente'
                 });
                 if (result.error) throw result.error;
-                
                 statusEl.textContent = '✅ Reporte enviado al administrador.';
                 statusEl.style.color = 'var(--success)';
                 showToast('Reporte al admin enviado', 'success');
                 setTimeout(cerrarModalReportarAdmin, 1500);
-            } catch (e) {
-                statusEl.textContent = '❌ Error: ' + e.message;
-                statusEl.style.color = 'var(--danger)';
-            }
+            } catch (e) { statusEl.textContent = '❌ Error: ' + e.message; statusEl.style.color = 'var(--danger)'; }
         }
 
         function abrirModalEtiquetar(publicacionId) {
             document.querySelectorAll('.post-menu-dropdown.show').forEach(function(m) { m.classList.remove('show'); });
             if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
-            
             var pub = publicacionesCache.find(function(p) { return p.id === publicacionId; });
             if (!pub || !pub.imagen_url) { showToast('Esta publicación no tiene foto para etiquetar', 'warning'); return; }
-            
             publicacionReportando = publicacionId;
             etiquetadosSeleccionados = [];
             document.getElementById('imagenEtiquetar').src = pub.imagen_url;
@@ -2108,34 +2070,24 @@
             document.getElementById('modalEtiquetarFoto').classList.add('show');
         }
 
-        function cerrarModalEtiquetar() {
-            document.getElementById('modalEtiquetarFoto').classList.remove('show');
-        }
+        function cerrarModalEtiquetar() { document.getElementById('modalEtiquetarFoto').classList.remove('show'); }
 
         async function buscarUsuariosEtiqueta() {
             var q = document.getElementById('inputBuscarUsuarioEtiqueta').value.trim();
             var container = document.getElementById('resultadosUsuariosEtiqueta');
             if (!q || q.length < 2) { container.innerHTML = ''; return; }
-            
             try {
-                var result = await window.supabaseClient.from('perfiles_publicos')
-                    .select('id, nombre, handle, avatar_url')
-                    .or(`nombre.ilike.%${q}%,handle.ilike.%${q}%`)
-                    .neq('id', sessionUser.id)
-                    .limit(10);
-                
+                var result = await window.supabaseClient.from('perfiles_publicos').select('id, nombre, handle, avatar_url').or(`nombre.ilike.%${q}%,handle.ilike.%${q}%`).neq('id', sessionUser.id).limit(10);
                 if (result.error || !result.data) { container.innerHTML = '<div style="color:var(--text-muted);font-size:0.7rem;padding:8px;">Sin resultados</div>'; return; }
-                
                 container.innerHTML = result.data.map(function(u) {
                     var yaSel = etiquetadosSeleccionados.find(function(e) { return e.id === u.id; });
                     var avatar = u.avatar_url ? '<img src="' + escapeHTML(u.avatar_url) + '" style="width:100%;height:100%;object-fit:cover;">' : '◈';
                     return '<div onclick="agregarEtiqueta(\'' + u.id + '\', \'' + escapeHTML(u.nombre || '').replace(/'/g, "\\'") + '\', \'' + escapeHTML(u.handle || '') + '\', \'' + escapeHTML(u.avatar_url || '') + '\')" style="display:flex;align-items:center;gap:10px;padding:8px;border-bottom:1px solid rgba(212,175,55,0.05);cursor:pointer;' + (yaSel ? 'opacity:0.4;pointer-events:none;' : '') + '">' +
                         '<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--green-deep),var(--gold));display:flex;align-items:center;justify-content:center;overflow:hidden;font-weight:700;">' + avatar + '</div>' +
                         '<div><div style="font-size:0.75rem;font-weight:600;">' + escapeHTML(u.nombre || 'Usuario') + '</div>' +
-                        '<div style="font-size:0.6rem;color:var(--text-muted);">@' + escapeHTML(u.handle || 'usuario') + '</div></div>' +
-                        '</div>';
+                        '<div style="font-size:0.6rem;color:var(--text-muted);">@' + escapeHTML(u.handle || 'usuario') + '</div></div></div>';
                 }).join('');
-            } catch (e) { console.error('Error buscando:', e); }
+            } catch (e) { console.warn('Error buscando:', e); }
         }
 
         function agregarEtiqueta(id, nombre, handle, avatarUrl) {
@@ -2162,19 +2114,14 @@
         async function guardarEtiquetas() {
             if (etiquetadosSeleccionados.length === 0) { showToast('Selecciona al menos una persona', 'warning'); return; }
             if (!publicacionReportando) return;
-            
             showToast('Guardando etiquetas...', '');
             try {
-                var inserts = etiquetadosSeleccionados.map(function(e) {
-                    return { publicacion_id: publicacionReportando, etiquetado_id: e.id, etiquetado_por: sessionUser.id };
-                });
+                var inserts = etiquetadosSeleccionados.map(function(e) { return { publicacion_id: publicacionReportando, etiquetado_id: e.id, etiquetado_por: sessionUser.id }; });
                 var result = await window.supabaseClient.from('grupos_video_etiquetas').upsert(inserts, { onConflict: 'publicacion_id,etiquetado_id', ignoreDuplicates: true });
                 if (result.error) throw result.error;
                 showToast('Personas etiquetadas', 'success');
                 cerrarModalEtiquetar();
-            } catch (e) {
-                showToast('Error: ' + e.message, 'error');
-            }
+            } catch (e) { showToast('Error: ' + e.message, 'error'); }
         }
 
         async function cargarPublicacionesGrupo(grupoId) {
@@ -2182,12 +2129,10 @@
                 var result = await window.supabaseClient.from('grupos_video_publicaciones').select(`*, usuarios:usuario_id (id, nombre, handle, avatar_url)`).eq('grupo_id', grupoId).eq('estado', 'publicado').order('created_at', { ascending: false });
                 if (result.error) throw result.error;
                 publicacionesCache = result.data || [];
-                
                 await cargarMisInteracciones();
                 await cargarMisNotificaciones();
-                
                 filtrarFeed(filtroFeedActual);
-            } catch (e) { showToast('Error cargando publicaciones', 'error'); }
+            } catch (e) { console.warn('Error publicaciones:', e); }
         }
 
         async function publicarEnGrupo() {
@@ -2198,9 +2143,7 @@
             var input = document.getElementById('inputPublicacion');
             var contenido = input.value.trim();
             if (!contenido) { showToast('Escribe algo', 'warning'); return; }
-            
             if (!validarTextoPermitido(contenido, 'Publicación')) return;
-            
             publicando = true;
             try {
                 var result = await window.supabaseClient.from('grupos_video_publicaciones').insert({ grupo_id: grupoActualId, usuario_id: sessionUser.id, contenido: contenido, tipo: 'texto', estado: 'publicado' }).select().single();
@@ -2267,7 +2210,6 @@
             if (!grupoActualId) { showToast('No hay canal', 'error'); return; }
             if (!esMiembro()) { showToast('Debes ser miembro del grupo para vender', 'error'); return; }
             if (!grupoActual.marketplace_activo) { showToast('El Marketplace no está activo en este grupo', 'warning'); return; }
-            
             document.getElementById('inputTipoMarketplace').value = '';
             document.getElementById('inputTituloMarketplace').value = '';
             document.getElementById('inputDescripcionMarketplace').value = '';
@@ -2280,26 +2222,17 @@
             document.getElementById('inputImagenMarketplace').value = '';
             document.getElementById('inputVideoMarketplace').value = '';
             document.getElementById('marketplaceStatus').textContent = '';
-            
             document.getElementById('modalMarketplace').classList.add('show');
         }
 
-        function cerrarModalMarketplace() {
-            document.getElementById('modalMarketplace').classList.remove('show');
-        }
+        function cerrarModalMarketplace() { document.getElementById('modalMarketplace').classList.remove('show'); }
 
         function validarDuracionVideo(file) {
             return new Promise(function(resolve) {
                 var video = document.createElement('video');
                 video.preload = 'metadata';
-                video.onloadedmetadata = function() {
-                    window.URL.revokeObjectURL(video.src);
-                    resolve({ duracion: video.duration, valido: video.duration <= 40 });
-                };
-                video.onerror = function() {
-                    window.URL.revokeObjectURL(video.src);
-                    resolve({ duracion: 0, valido: false });
-                };
+                video.onloadedmetadata = function() { window.URL.revokeObjectURL(video.src); resolve({ duracion: video.duration, valido: video.duration <= 40 }); };
+                video.onerror = function() { window.URL.revokeObjectURL(video.src); resolve({ duracion: 0, valido: false }); };
                 video.src = URL.createObjectURL(file);
             });
         }
@@ -2308,7 +2241,6 @@
             if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
             if (!esMiembro()) { showToast('Debes ser miembro del grupo', 'error'); return; }
             if (!grupoActual.marketplace_activo) { showToast('El Marketplace no está activo', 'error'); return; }
-            
             var tipo = document.getElementById('inputTipoMarketplace').value;
             var titulo = document.getElementById('inputTituloMarketplace').value.trim();
             var descripcion = document.getElementById('inputDescripcionMarketplace').value.trim();
@@ -2322,100 +2254,52 @@
             var videoInput = document.getElementById('inputVideoMarketplace');
             var statusEl = document.getElementById('marketplaceStatus');
             var btn = document.getElementById('btnPublicarMarketplace');
-            
             if (!tipo) { statusEl.textContent = '⚠️ Selecciona el tipo'; statusEl.style.color = 'var(--warning)'; return; }
             if (!titulo) { statusEl.textContent = '⚠️ Escribe un título'; statusEl.style.color = 'var(--warning)'; return; }
             if (!descripcion) { statusEl.textContent = '⚠️ Escribe una descripción'; statusEl.style.color = 'var(--warning)'; return; }
             if (!municipio) { statusEl.textContent = '⚠️ Escribe el municipio'; statusEl.style.color = 'var(--warning)'; return; }
-            
             var infTitulo = detectarInfraccion(titulo);
-            if (infTitulo.bloqueado) {
-                var ct = infTitulo.categorias.join(', ');
-                statusEl.innerHTML = '❌ <strong>No se permite publicar este contenido en el Marketplace.</strong><br><br>Categoría(s) detectada(s): <strong style="color:#ff6688;">' + ct + '</strong><br><br>Revisa los <a href="/features/terminos/derechos-sariels.html" target="_blank" style="color:var(--gold);">Derechos y Usos</a> para más información.';
-                statusEl.style.color = 'var(--danger)';
-                showToast('Contenido bloqueado: ' + ct, 'error', 6000);
-                return;
-            }
-            
+            if (infTitulo.bloqueado) { statusEl.innerHTML = '❌ <strong>No permitido.</strong><br>Categoría: ' + infTitulo.categorias.join(', '); statusEl.style.color = 'var(--danger)'; return; }
             var infDesc = detectarInfraccion(descripcion);
-            if (infDesc.bloqueado) {
-                var cd = infDesc.categorias.join(', ');
-                statusEl.innerHTML = '❌ <strong>No se permite publicar este contenido en el Marketplace.</strong><br><br>Categoría(s) detectada(s): <strong style="color:#ff6688;">' + cd + '</strong><br><br>Revisa los <a href="/features/terminos/derechos-sariels.html" target="_blank" style="color:var(--gold);">Derechos y Usos</a> para más información.';
-                statusEl.style.color = 'var(--danger)';
-                showToast('Contenido bloqueado: ' + cd, 'error', 6000);
-                return;
-            }
-            
+            if (infDesc.bloqueado) { statusEl.innerHTML = '❌ <strong>No permitido.</strong><br>Categoría: ' + infDesc.categorias.join(', '); statusEl.style.color = 'var(--danger)'; return; }
             btn.disabled = true;
             btn.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Publicando...';
             statusEl.textContent = 'Subiendo...';
-            statusEl.style.color = 'var(--text-muted)';
-            
             try {
-                var imagenUrl = null;
-                var videoUrl = null;
-                
+                var imagenUrl = null, videoUrl = null;
                 if (imagenInput.files && imagenInput.files[0]) {
                     var file = imagenInput.files[0];
-                    if (file.size > 10 * 1024 * 1024) throw new Error('Imagen demasiado grande (máx 10MB)');
+                    if (file.size > 10 * 1024 * 1024) throw new Error('Imagen > 10MB');
                     var fileExt = file.name.split('.').pop();
                     var filePath = grupoActualId + '/marketplace/' + sessionUser.id + '/' + Date.now() + '.' + fileExt;
                     var uploadResult = await window.supabaseClient.storage.from('grupos-publicaciones').upload(filePath, file, { cacheControl: '3600', upsert: true });
                     if (uploadResult.error) throw uploadResult.error;
-                    var urlData = window.supabaseClient.storage.from('grupos-publicaciones').getPublicUrl(filePath);
-                    imagenUrl = urlData.data.publicUrl;
+                    imagenUrl = window.supabaseClient.storage.from('grupos-publicaciones').getPublicUrl(filePath).data.publicUrl;
                 }
-                
                 if (videoInput.files && videoInput.files[0]) {
                     var vfile = videoInput.files[0];
-                    if (vfile.size > 50 * 1024 * 1024) throw new Error('Video demasiado grande (máx 50MB)');
-                    
-                    statusEl.textContent = 'Validando video...';
+                    if (vfile.size > 50 * 1024 * 1024) throw new Error('Video > 50MB');
                     var validacion = await validarDuracionVideo(vfile);
-                    if (!validacion.valido) throw new Error('El video excede los 40 segundos permitidos (duración: ' + Math.round(validacion.duracion) + 's)');
-                    
+                    if (!validacion.valido) throw new Error('Video > 40s');
                     var vext = vfile.name.split('.').pop();
                     var vfilePath = grupoActualId + '/marketplace/' + sessionUser.id + '/video_' + Date.now() + '.' + vext;
                     var vuploadResult = await window.supabaseClient.storage.from('grupos-publicaciones').upload(vfilePath, vfile, { cacheControl: '3600', upsert: true });
                     if (vuploadResult.error) throw vuploadResult.error;
-                    var vurlData = window.supabaseClient.storage.from('grupos-publicaciones').getPublicUrl(vfilePath);
-                    videoUrl = vurlData.data.publicUrl;
+                    videoUrl = window.supabaseClient.storage.from('grupos-publicaciones').getPublicUrl(vfilePath).data.publicUrl;
                 }
-                
-                var insertData = {
-                    grupo_id: grupoActualId,
-                    usuario_id: sessionUser.id,
-                    contenido: titulo,
-                    tipo: 'marketplace',
-                    estado: 'publicado',
-                    tipo_marketplace: tipo,
-                    precio_mxn: precioMxn,
-                    precio_usdt: precioUsdt,
-                    municipio: municipio,
-                    estado_region: estado || null,
-                    telefono_contacto: telefono || null,
-                    whatsapp: whatsapp || null,
-                    imagen_url: imagenUrl,
-                    video_url: videoUrl
-                };
-                
-                var result = await window.supabaseClient.from('grupos_video_publicaciones').insert(insertData).select().single();
+                var result = await window.supabaseClient.from('grupos_video_publicaciones').insert({
+                    grupo_id: grupoActualId, usuario_id: sessionUser.id, contenido: titulo, tipo: 'marketplace', estado: 'publicado',
+                    tipo_marketplace: tipo, precio_mxn: precioMxn, precio_usdt: precioUsdt, municipio: municipio,
+                    estado_region: estado || null, telefono_contacto: telefono || null, whatsapp: whatsapp || null,
+                    imagen_url: imagenUrl, video_url: videoUrl
+                }).select().single();
                 if (result.error) throw result.error;
-                
                 statusEl.textContent = '✅ Publicado';
                 statusEl.style.color = 'var(--success)';
-                showToast('Publicación de marketplace creada', 'success');
-                setTimeout(function() {
-                    cerrarModalMarketplace();
-                    cargarPublicacionesGrupo(grupoActualId);
-                }, 800);
-            } catch (e) {
-                statusEl.textContent = '❌ Error: ' + e.message;
-                statusEl.style.color = 'var(--danger)';
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> Publicar en Marketplace';
-            }
+                showToast('Publicación creada', 'success');
+                setTimeout(function() { cerrarModalMarketplace(); cargarPublicacionesGrupo(grupoActualId); }, 800);
+            } catch (e) { statusEl.textContent = '❌ Error: ' + e.message; statusEl.style.color = 'var(--danger)'; }
+            finally { btn.disabled = false; btn.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> Publicar en Marketplace'; }
         }
 
         async function reaccionarPublicacion(publicacionId) {
@@ -2431,7 +2315,7 @@
                     await window.supabaseClient.from('grupos_video_reacciones').insert({ publicacion_id: publicacionId, usuario_id: sessionUser.id, tipo: 'like' });
                     if (likesSpan) likesSpan.textContent = currentLikes + 1;
                 }
-            } catch (e) { console.error('Error reaccionando:', e); }
+            } catch (e) { console.warn('Error reaccionando:', e); }
         }
 
         function toggleComentariosPublicacion(publicacionId) {
@@ -2466,9 +2350,7 @@
             var input = document.getElementById('inputComentario-' + publicacionId);
             var texto = input.value.trim();
             if (!texto) return;
-            
             if (!validarTextoPermitido(texto, 'Comentario')) return;
-            
             try {
                 await window.supabaseClient.from('grupos_video_comentarios').insert({ publicacion_id: publicacionId, usuario_id: sessionUser.id, contenido: texto });
                 input.value = '';
@@ -2487,14 +2369,10 @@
 
         function abrirAjustesCanal() {
             var mkAviso = document.getElementById('marketplaceAviso');
-            if (mkAviso && grupoActual) {
-                mkAviso.style.display = !grupoActual.marketplace_activo ? 'block' : 'none';
-            }
+            if (mkAviso && grupoActual) mkAviso.style.display = !grupoActual.marketplace_activo ? 'block' : 'none';
             document.getElementById('modalAjustesCanal').classList.add('show');
         }
-        function cerrarAjustesCanal() {
-            document.getElementById('modalAjustesCanal').classList.remove('show');
-        }
+        function cerrarAjustesCanal() { document.getElementById('modalAjustesCanal').classList.remove('show'); }
 
         async function cambiarAvatarGrupo() {
             cerrarAjustesCanal();
@@ -2581,8 +2459,7 @@
                         (m.rol === 'moderador' ? ' <span style="color:var(--cyan);font-size:0.6rem;">Mod</span>' : '') +
                         (esYo ? ' <span style="color:var(--text-muted);font-size:0.6rem;">(tú)</span>' : '') +
                         ' <span style="color:' + estadoColor + ';font-size:0.5rem;">● ' + estado + '</span></div>' +
-                        (esAdmin && !esCreadorDelGrupo && !esYo ?
-                            '<div style="display:flex;gap:4px;flex-wrap:wrap;">' +
+                        (esAdmin && !esCreadorDelGrupo && !esYo ? '<div style="display:flex;gap:4px;flex-wrap:wrap;">' +
                             (m.rol !== 'moderador' ? '<button class="btn-outline btn-sm" onclick="asignarModerador(\'' + m.usuario_id + '\')">Mod</button> ' : '') +
                             (m.rol === 'moderador' ? '<button class="btn-outline btn-sm" onclick="quitarModerador(\'' + m.usuario_id + '\')">Quitar Mod</button> ' : '') +
                             (estado === 'activo' ? '<button class="btn-danger btn-sm" onclick="expulsarMiembro(\'' + m.usuario_id + '\')">Expulsar</button> ' : '') +
@@ -2689,13 +2566,8 @@
                     '<div class="form-group"><label>Municipio</label><input type="text" id="editGrupoMunicipio" value="' + escapeHTML(g.municipio || '') + '" /></div>' +
                     '<div class="form-group"><label>Ciudad</label><input type="text" id="editGrupoCiudad" value="' + escapeHTML(g.ciudad || '') + '" /></div>' +
                     '<div class="form-group"><label>Precio Búho (USDT)</label><input type="number" id="editGrupoPrecio" value="' + (g.precio_usdt || 0) + '" min="0" step="1" /></div>' +
-                    '<div class="form-group"><label>Visibilidad</label><select id="editGrupoVisibilidad">' +
-                    '<option value="publico"' + (g.visibilidad === 'publico' ? ' selected' : '') + '>Público</option>' +
-                    '<option value="privado"' + (g.visibilidad === 'privado' ? ' selected' : '') + '>Privado</option></select></div>' +
-                    '<div class="form-group"><label>Modo ingreso</label><select id="editGrupoModoIngreso">' +
-                    '<option value="abierto"' + (g.modo_ingreso === 'abierto' ? ' selected' : '') + '>Abierto</option>' +
-                    '<option value="solicitud"' + (g.modo_ingreso === 'solicitud' ? ' selected' : '') + '>Solicitud</option>' +
-                    '<option value="invitacion"' + (g.modo_ingreso === 'invitacion' ? ' selected' : '') + '>Invitación</option></select></div>' +
+                    '<div class="form-group"><label>Visibilidad</label><select id="editGrupoVisibilidad"><option value="publico"' + (g.visibilidad === 'publico' ? ' selected' : '') + '>Público</option><option value="privado"' + (g.visibilidad === 'privado' ? ' selected' : '') + '>Privado</option></select></div>' +
+                    '<div class="form-group"><label>Modo ingreso</label><select id="editGrupoModoIngreso"><option value="abierto"' + (g.modo_ingreso === 'abierto' ? ' selected' : '') + '>Abierto</option><option value="solicitud"' + (g.modo_ingreso === 'solicitud' ? ' selected' : '') + '>Solicitud</option><option value="invitacion"' + (g.modo_ingreso === 'invitacion' ? ' selected' : '') + '>Invitación</option></select></div>' +
                     '<button class="btn-gold" style="width:100%;justify-content:center;padding:10px;" onclick="guardarEdicionGrupo()">Guardar cambios</button>';
                 container.innerHTML = html;
             } catch (e) { container.innerHTML = '<div class="empty-state">Error</div>'; }
@@ -2711,20 +2583,13 @@
             var visibilidad = document.getElementById('editGrupoVisibilidad')?.value;
             var modoIngreso = document.getElementById('editGrupoModoIngreso')?.value;
             if (!nombre) { showToast('El nombre es requerido', 'warning'); return; }
-            
             if (!validarTextoPermitido(nombre, 'Nombre del canal')) return;
             if (!validarTextoPermitido(descripcion, 'Descripción del canal')) return;
-            
             try {
-                var result = await window.supabaseClient.from('grupos_video').update({ 
-                    nombre: nombre, 
-                    descripcion: descripcion || null, 
-                    estado_region: estado || null, 
-                    municipio: municipio || null, 
-                    ciudad: ciudad || null, 
-                    precio_usdt: parseFloat(precio) || 0, 
-                    visibilidad: visibilidad, 
-                    modo_ingreso: modoIngreso
+                var result = await window.supabaseClient.from('grupos_video').update({
+                    nombre: nombre, descripcion: descripcion || null, estado_region: estado || null,
+                    municipio: municipio || null, ciudad: ciudad || null, precio_usdt: parseFloat(precio) || 0,
+                    visibilidad: visibilidad, modo_ingreso: modoIngreso
                 }).eq('id', grupoActualId).select().single();
                 if (result.error) throw result.error;
                 showToast('Canal actualizado', 'success');
@@ -2816,7 +2681,7 @@
                 if (data.estado === 'finished') { statusEl.textContent = 'Regalo enviado'; statusEl.style.color = 'var(--success)'; }
                 else if (data.estado === 'pending') { statusEl.textContent = 'Pendiente'; statusEl.style.color = 'var(--warning)'; }
                 else { statusEl.textContent = 'Estado: ' + data.estado; }
-            } catch (e) { console.error(e); }
+            } catch (e) { console.warn(e); }
         }
 
         function abrirModalCrearGrupo() { document.getElementById('modalCrearGrupo').classList.add('show'); document.getElementById('inputNombreGrupo').focus(); }
@@ -2835,38 +2700,24 @@
             var marketplaceActivo = document.getElementById('inputMarketplaceActivo').checked;
             var visibilidad = document.getElementById('inputVisibilidadGrupo').value;
             var modoIngreso = document.getElementById('inputModoIngresoGrupo').value;
-            
             if (!nombre) { showToast('Nombre requerido', 'warning'); return; }
             if (!municipio) { showToast('Municipio requerido', 'warning'); return; }
-            
             if (!validarTextoPermitido(nombre, 'Nombre del canal')) return;
             if (!validarTextoPermitido(descripcion, 'Descripción del canal')) return;
-            
             var btn = document.getElementById('btnCrearGrupo');
             btn.disabled = true;
             btn.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Activando...';
             try {
                 var catResult = await window.supabaseClient.from('grupos_video_categorias').select('id').eq('nombre', categoriaNombre).maybeSingle();
                 var categoriaId = catResult.data?.id || '2822d03e-c8aa-4e65-a537-736dd432ed36';
-                
-                var groupResult = await window.supabaseClient.from('grupos_video').insert({ 
-                    nombre: nombre, 
-                    descripcion: descripcion || null, 
-                    categoria_id: categoriaId, 
-                    estado_region: estadoRegion || null,
-                    municipio: municipio,
-                    ciudad: ciudad || null, 
-                    pais: pais, 
-                    precio_usdt: parseFloat(precioUsdt) || 0,
-                    firma_ligera: 'Yo me hago cargo de lo que digo aquí',
-                    marketplace_activo: marketplaceActivo,
-                    visibilidad: visibilidad, 
-                    modo_ingreso: modoIngreso, 
-                    creador_id: sessionUser.id, 
-                    activo: true 
+                var groupResult = await window.supabaseClient.from('grupos_video').insert({
+                    nombre: nombre, descripcion: descripcion || null, categoria_id: categoriaId,
+                    estado_region: estadoRegion || null, municipio: municipio, ciudad: ciudad || null, pais: pais,
+                    precio_usdt: parseFloat(precioUsdt) || 0, firma_ligera: 'Yo me hago cargo de lo que digo aquí',
+                    marketplace_activo: marketplaceActivo, visibilidad: visibilidad, modo_ingreso: modoIngreso,
+                    creador_id: sessionUser.id, activo: true
                 }).select().single();
                 if (groupResult.error) throw groupResult.error;
-                
                 showToast('Comunidad Creada', 'success');
                 cerrarModalCrearGrupo();
                 document.getElementById('inputNombreGrupo').value = '';
@@ -2875,12 +2726,8 @@
                 document.getElementById('inputMunicipioGrupo').value = '';
                 document.getElementById('inputCiudadGrupo').value = '';
                 document.getElementById('inputMarketplaceActivo').checked = false;
-                
-                if (groupResult.data?.id) {
-                    await abrirGrupo(groupResult.data.id);
-                } else {
-                    cargarGrupos();
-                }
+                if (groupResult.data?.id) { await abrirGrupo(groupResult.data.id); }
+                else { cargarGrupos(); }
             } catch (e) { showToast('Error: ' + e.message, 'error'); }
             finally { btn.disabled = false; btn.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg> Crear Comunidad'; }
         }
@@ -2939,9 +2786,7 @@
             document.getElementById('modalConfirmarEliminarGrupo').classList.add('show');
             document.getElementById('eliminarGrupoStatus').textContent = '';
         }
-        function cerrarConfirmacionEliminarGrupo() {
-            document.getElementById('modalConfirmarEliminarGrupo').classList.remove('show');
-        }
+        function cerrarConfirmacionEliminarGrupo() { document.getElementById('modalConfirmarEliminarGrupo').classList.remove('show'); }
 
         async function ejecutarEliminarGrupo() {
             if (eliminandoGrupo) return;
@@ -2964,56 +2809,39 @@
                 esAdmin = false; esModerador = false; esCreador = false; rolEnGrupo = null;
                 var url = new URL(window.location); url.searchParams.delete('grupo'); window.history.replaceState({}, '', url);
                 await cargarGrupos();
-            } catch (e) {
-                statusEl.textContent = 'Error: ' + e.message;
-                statusEl.style.color = 'var(--danger)';
-            } finally { eliminandoGrupo = false; }
+            } catch (e) { statusEl.textContent = 'Error: ' + e.message; statusEl.style.color = 'var(--danger)'; }
+            finally { eliminandoGrupo = false; }
         }
 
         async function iniciarLiveEnGrupo() {
             if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
             if (!grupoActualId) { showToast('No hay canal seleccionado', 'error'); return; }
             if (!esMiembro()) { showToast('Debes ser miembro del canal', 'error'); return; }
-            if (isLiveGrupoActivo) { showToast('Ya hay un LIVE activo en este canal', 'warning'); return; }
-
+            if (isLiveGrupoActivo) { showToast('Ya hay un LIVE activo', 'warning'); return; }
             var liveExistente = await verificarLiveActivoGrupo(grupoActualId);
-            if (liveExistente) { showToast('Ya hay un LIVE activo en este canal', 'warning'); return; }
-
+            if (liveExistente) { showToast('Ya hay un LIVE activo', 'warning'); return; }
             try {
                 var titulo = prompt('Título del LIVE:', 'Saliendo al aire en ' + (grupoActual.nombre || 'canal')) || 'Live en canal';
-                
-                if (!validarTextoPermitido(titulo, 'Título del Live')) {
-                    return;
-                }
-                
+                if (!validarTextoPermitido(titulo, 'Título del Live')) return;
                 showToast('Saliendo al aire...', '');
-
                 const { data: rpcResult, error } = await window.supabaseClient.rpc('crear_transmision', {
-                    p_titulo: titulo,
-                    p_categoria: 'grupo',
-                    p_room_name: null,
-                    p_grupo_id: grupoActualId
+                    p_titulo: titulo, p_categoria: 'grupo', p_room_name: null, p_grupo_id: grupoActualId
                 });
-
                 if (error) throw new Error(error.message || 'Error al crear LIVE');
                 const nuevoId = (typeof rpcResult === 'object' && rpcResult !== null) ? rpcResult.id : rpcResult;
                 if (!nuevoId) throw new Error('No se pudo crear la transmisión');
-
                 const { data: transmision, error: fetchError } = await window.supabaseClient.from('transmisiones').select('*').eq('id', nuevoId).single();
                 if (fetchError || !transmision) throw new Error('No se pudo recuperar la transmisión');
-
                 currentStreamGrupoId = transmision.id;
                 liveActivoEnGrupo = transmision;
                 isLiveGrupoActivo = true;
                 esStreamerDelLiveGrupo = true;
-
                 mostrarLiveGrupoInline(transmision);
                 document.getElementById('grupoLiveBadge').style.display = 'inline-flex';
                 document.getElementById('btnIniciarLive').style.display = 'none';
                 document.getElementById('btnFinalizarLive').style.display = 'inline-flex';
                 document.getElementById('btnVerLive').style.display = 'inline-flex';
                 await cargarDashboard();
-
                 try {
                     showToast('Conectando a LiveKit...', '', 2000);
                     const { Room, Track } = await cargarLiveKit();
@@ -3022,10 +2850,8 @@
                     await liveKitRoomGrupo.connect(LIVEKIT_CONFIG.url, token);
                     await liveKitRoomGrupo.localParticipant.setCameraEnabled(true);
                     await liveKitRoomGrupo.localParticipant.setMicrophoneEnabled(true);
-
                     const localVideoTrack = liveKitRoomGrupo.localParticipant.getTrackPublication(Track.Source.Camera)?.videoTrack;
                     if (localVideoTrack) localVideoTrack.attach(document.getElementById('grupoLiveVideo'));
-
                     document.getElementById('grupoLiveEstado').innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24" style="fill:currentColor;stroke:none;"><circle cx="12" cy="12" r="6"/></svg> En vivo';
                     showToast('Transmitiendo en el canal', 'success');
                 } catch (e) {
@@ -3033,10 +2859,7 @@
                     document.getElementById('grupoLiveEstado').textContent = 'Sin conexión LiveKit';
                 }
                 suscribirseAlChatGrupo();
-            } catch (e) {
-                showToast('Error: ' + e.message, 'error');
-                isLiveGrupoActivo = false;
-            }
+            } catch (e) { showToast('Error: ' + e.message, 'error'); isLiveGrupoActivo = false; }
         }
 
         async function obtenerTokenLiveKitGrupo(roomName, participantName, role) {
@@ -3070,13 +2893,11 @@
             mostrarLiveGrupoInline(liveActivoEnGrupo);
             esStreamerDelLiveGrupo = (sessionUser && liveActivoEnGrupo.streamer_id === sessionUser.id);
             document.getElementById('grupoLiveEndBtn').style.display = esStreamerDelLiveGrupo ? 'flex' : 'none';
-
             try {
                 const { Room } = await cargarLiveKit();
                 liveKitRoomGrupo = new Room();
                 const token = await obtenerTokenLiveKitGrupo(liveActivoEnGrupo.room_name, sessionUser.id, 'subscriber');
                 await liveKitRoomGrupo.connect(LIVEKIT_CONFIG.url, token);
-
                 liveKitRoomGrupo.on('trackSubscribed', (track) => {
                     if (track.kind === 'video') {
                         const video = document.getElementById('grupoLiveVideo');
@@ -3086,9 +2907,7 @@
                 document.getElementById('grupoLiveEstado').innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24" style="fill:currentColor;stroke:none;"><circle cx="12" cy="12" r="6"/></svg> En vivo';
                 showToast('Conectado al LIVE', 'success');
                 suscribirseAlChatGrupo();
-            } catch (e) {
-                showToast('Error al conectar: ' + e.message, 'warning');
-            }
+            } catch (e) { showToast('Error al conectar: ' + e.message, 'warning'); }
         }
 
         function suscribirseAlChatGrupo() {
@@ -3106,9 +2925,7 @@
             if (!mensaje) return;
             if (!sessionUser) { showToast('Inicia sesión para chatear', 'error'); return; }
             if (!currentStreamGrupoId) { showToast('No hay LIVE activo', 'error'); return; }
-            
             if (!validarTextoPermitido(mensaje, 'Mensaje del Live')) return;
-            
             try {
                 await window.supabaseClient.from('mensajes_live').insert({
                     transmision_id: currentStreamGrupoId, usuario_id: sessionUser.id, mensaje: mensaje,
@@ -3134,7 +2951,7 @@
                 const enabled = liveKitRoomGrupo.localParticipant.isMicrophoneEnabled;
                 await liveKitRoomGrupo.localParticipant.setMicrophoneEnabled(!enabled);
                 showToast(enabled ? 'Micrófono silenciado' : 'Micrófono activado', 'success', 2000);
-            } catch (e) { console.error('Error micrófono:', e); }
+            } catch (e) { console.warn('Error micrófono:', e); }
         }
 
         async function finalizarLiveGrupo() {
@@ -3185,27 +3002,50 @@
         function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
 
         // ================================================================
-        // INIT
+        // INIT CON TIMEOUT DE SEGURIDAD
         // ================================================================
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('◈ Sariel\'s - Cablera Descentralizada');
-            await cargarUsuarioActual();
-            await cargarCategorias();
-            await cargarEstados();
-            await cargarMunicipios();
+            console.log('[Grupos] supabaseClient:', !!window.supabaseClient);
+            
+            // ✅ Timeout de seguridad global: si en 8s la UI sigue en "Cargando", forzar carga directa
+            var timeoutGlobal = setTimeout(function() {
+                var grid = document.getElementById('gruposGrid');
+                if (grid && grid.innerHTML.includes('Cargando canales')) {
+                    console.warn('[Grupos] ⚠️ Timeout global, reintentando carga directa');
+                    cargarGrupos();
+                }
+            }, 8000);
+            
+            try {
+                // Cargar usuario SIN BLOQUEAR
+                try { await cargarUsuarioActual(); } catch (e) { console.warn('[Grupos] Usuario:', e.message); }
+                
+                // Cargar catálogos en paralelo SIN BLOQUEAR
+                await Promise.all([
+                    cargarCategorias().catch(function(e) { console.warn('[Grupos] Cat:', e.message); }),
+                    cargarEstados().catch(function(e) { console.warn('[Grupos] Est:', e.message); }),
+                    cargarMunicipios().catch(function(e) { console.warn('[Grupos] Mun:', e.message); })
+                ]);
+                
+                var params = new URLSearchParams(window.location.search);
+                var grupoIdDesdeUrl = params.get('grupo');
 
-            var params = new URLSearchParams(window.location.search);
-            var grupoIdDesdeUrl = params.get('grupo');
-
-            if (grupoIdDesdeUrl) {
-                await abrirGrupo(grupoIdDesdeUrl);
-            } else {
-                await cargarGrupos();
+                if (grupoIdDesdeUrl) {
+                    await abrirGrupo(grupoIdDesdeUrl);
+                } else {
+                    await cargarGrupos();
+                }
+                
+                clearTimeout(timeoutGlobal);
+            } catch (e) {
+                console.error('[Grupos] ❌ Error en init:', e);
+                clearTimeout(timeoutGlobal);
+                // Fallback: forzar carga de grupos
+                try { await cargarGrupos(); } catch (e2) { console.error('[Grupos] Error final:', e2); }
             }
-
-            if (window.innerWidth < 900) {
-                switchTab('mis-canales');
-            }
+            
+            if (window.innerWidth < 900) switchTab('mis-canales');
 
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') {
@@ -3221,6 +3061,7 @@
                     }
                 }
             });
+            
             document.querySelectorAll('.modal-overlay').forEach(function(modal) {
                 modal.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('show'); });
             });
@@ -3228,22 +3069,17 @@
             window.addEventListener('popstate', async function(e) {
                 var params = new URLSearchParams(window.location.search);
                 var grupoId = params.get('grupo');
-                if (grupoId) {
-                    if (grupoId !== grupoActualId) await abrirGrupo(grupoId);
-                } else {
-                    volverALista();
-                }
+                if (grupoId) { if (grupoId !== grupoActualId) await abrirGrupo(grupoId); }
+                else { volverALista(); }
             });
 
             setTimeout(async function() {
                 try {
                     if (typeof window.inicializarIdiomas === 'function') {
                         await window.inicializarIdiomas();
-                        console.log('✅ Idiomas aplicados a grupos');
+                        console.log('✅ Idiomas aplicados');
                     }
-                } catch (e) {
-                    console.warn('⚠️ Error aplicando idiomas:', e);
-                }
+                } catch (e) { console.warn('⚠️ Error idiomas:', e); }
             }, 500);
         });
 
