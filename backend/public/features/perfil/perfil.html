@@ -42,6 +42,25 @@
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: var(--space); }
     ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
+
+    /* ============================================================
+       ICONOS SVG - Sistema limpio (reemplaza emojis de UI)
+       ============================================================ */
+    .icon {
+        display: inline-block;
+        width: 1em;
+        height: 1em;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        fill: none;
+        vertical-align: -0.125em;
+        flex-shrink: 0;
+    }
+    .icon-sm { width: 0.85em; height: 0.85em; }
+    .icon-lg { width: 1.25em; height: 1.25em; }
+
     .app { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 16px 20px 30px; }
     .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0 14px; border-bottom: 2px solid var(--line-black); flex-wrap: wrap; gap: 10px; background: rgba(5, 8, 15, 0.92); border-radius: var(--radius) var(--radius) 0 0; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6); }
     .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
@@ -54,7 +73,7 @@
     .network-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); animation: pulse-dot 2s infinite; }
     @keyframes pulse-dot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(0.8); } }
     .main-nav { display: flex; gap: 4px; background: rgba(15, 45, 26, 0.3); border-radius: var(--radius); padding: 4px; border: 1px solid var(--line-black-mid); margin: 16px 0 20px; overflow-x: auto; }
-    .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; font-weight: 500; transition: var(--transition); white-space: nowrap; position: relative; }
+    .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; font-weight: 500; transition: var(--transition); white-space: nowrap; position: relative; display: inline-flex; align-items: center; gap: 6px; }
     .main-nav .nav-link::after { content: ''; position: absolute; bottom: 2px; left: 50%; width: 0; height: 2px; background: var(--gold); transition: var(--transition); transform: translateX(-50%); }
     .main-nav .nav-link:hover::after, .main-nav .nav-link.active::after { width: 60%; }
     .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212, 175, 55, 0.05); }
@@ -68,6 +87,7 @@
     .perfil-header .avatar { width: 90px; height: 90px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold)); display: flex; align-items: center; justify-content: center; font-size: 2.4rem; font-weight: 700; color: white; overflow: hidden; border: 3px solid var(--gold); box-shadow: 0 0 40px rgba(212, 175, 55, 0.15), 0 0 0 2px var(--line-black); font-family: 'Orbitron', monospace; position: relative; cursor: pointer; }
     .perfil-header .avatar img { width: 100%; height: 100%; object-fit: cover; }
     .perfil-header .avatar .avatar-menu-toggle { position: absolute; bottom: 4px; right: 4px; background: var(--gold); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: var(--space); border: 2px solid var(--line-black); cursor: pointer; transition: var(--transition); box-shadow: 0 0 20px rgba(212, 175, 55, 0.3); font-weight: 700; }
+    .perfil-header .avatar .avatar-menu-toggle svg { width: 14px; height: 14px; }
     .perfil-header .avatar .avatar-menu-toggle:hover { transform: scale(1.1); background: var(--gold-light); }
     .avatar-menu { display: none; position: absolute; top: 100%; left: 0; margin-top: 8px; background: rgba(5, 8, 15, 0.98); border: 2px solid var(--line-black); border-radius: 12px; padding: 6px; min-width: 170px; z-index: 50; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7), 0 0 0 1px var(--gold); backdrop-filter: blur(12px); }
     .avatar-menu.show { display: block; animation: fadeIn 0.2s ease-out; }
@@ -78,19 +98,19 @@
     .avatar-menu .divider { height: 1px; background: rgba(255, 255, 255, 0.08); margin: 4px 0; }
     .perfil-header .info { flex: 1; min-width: 200px; }
     .perfil-header .info .nombre { font-family: 'Orbitron', monospace; font-size: 1.4rem; font-weight: 700; background: linear-gradient(135deg, var(--gold), var(--text-primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-    .perfil-header .info .nombre .verified { font-size: 0.5rem; background: rgba(212, 175, 55, 0.15); color: var(--gold); padding: 2px 12px; border-radius: 12px; font-family: 'Orbitron', monospace; border: 1px solid var(--line-black-soft); -webkit-text-fill-color: var(--gold); }
+    .perfil-header .info .nombre .verified { font-size: 0.5rem; background: rgba(212, 175, 55, 0.15); color: var(--gold); padding: 2px 12px; border-radius: 12px; font-family: 'Orbitron', monospace; border: 1px solid var(--line-black-soft); -webkit-text-fill-color: var(--gold); display: inline-flex; align-items: center; gap: 4px; }
     .perfil-header .info .handle { font-size: 0.85rem; color: var(--text-muted); letter-spacing: 0.5px; }
     .perfil-header .info .bio { font-size: 0.9rem; color: var(--text-secondary); margin-top: 6px; max-width: 500px; line-height: 1.5; }
     .perfil-header .info .badges { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
-    .perfil-header .info .badges .badge { font-size: 0.55rem; padding: 3px 14px; border-radius: 20px; font-family: 'Orbitron', monospace; border: 1px solid var(--line-black-mid); color: var(--text-muted); background: rgba(0, 0, 0, 0.3); }
+    .perfil-header .info .badges .badge { font-size: 0.55rem; padding: 3px 14px; border-radius: 20px; font-family: 'Orbitron', monospace; border: 1px solid var(--line-black-mid); color: var(--text-muted); background: rgba(0, 0, 0, 0.3); display: inline-flex; align-items: center; gap: 4px; }
     .perfil-header .info .badges .badge.gold { border-color: var(--gold); color: var(--gold); background: rgba(212, 175, 55, 0.05); }
     .perfil-header .info .badges .badge.success { border-color: var(--success); color: var(--success); background: rgba(0, 214, 143, 0.05); }
     .perfil-header .stats { display: flex; gap: 24px; flex-wrap: wrap; margin-left: auto; }
     .perfil-header .stats .stat { text-align: center; padding: 6px 10px; border-radius: 10px; border: 1px solid var(--line-black-soft); background: rgba(0, 0, 0, 0.25); }
     .perfil-header .stats .stat .number { font-family: 'Orbitron', monospace; font-size: 1.2rem; font-weight: 700; color: var(--gold); text-shadow: 0 0 20px rgba(212, 175, 55, 0.05); }
-    .perfil-header .stats .stat .label { font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Orbitron', monospace; }
+    .perfil-header .stats .stat .label { font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Orbitron', monospace; display: inline-flex; align-items: center; gap: 3px; }
     .perfil-header .acciones { display: flex; gap: 8px; flex-wrap: wrap; margin-left: 10px; }
-    .config-btn { position: absolute; top: 16px; right: 16px; z-index: 20; width: 42px; height: 42px; border-radius: 50%; background: rgba(5, 8, 15, 0.85); border: 2px solid var(--line-black); color: var(--gold); font-size: 1.3rem; display: flex; align-items: center; justify-content: center; text-decoration: none; cursor: pointer; transition: var(--transition); backdrop-filter: blur(8px); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6); }
+    .config-btn { position: absolute; top: 16px; right: 16px; z-index: 20; width: 42px; height: 42px; border-radius: 50%; background: rgba(5, 8, 15, 0.85); border: 2px solid var(--line-black); color: var(--gold); display: flex; align-items: center; justify-content: center; text-decoration: none; cursor: pointer; transition: var(--transition); backdrop-filter: blur(8px); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6); }
     .config-btn:hover, .config-btn:active { background: var(--gold); color: var(--space); transform: rotate(90deg) scale(1.05); box-shadow: 0 0 30px rgba(212, 175, 55, 0.4), 0 0 0 2px var(--line-black); }
     .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 20px; border-radius: 30px; font-size: 0.7rem; font-weight: 600; border: 2px solid var(--line-black-mid); cursor: pointer; transition: var(--transition); font-family: 'Inter', sans-serif; text-decoration: none; }
     .btn-gold { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); box-shadow: 0 4px 20px rgba(212, 175, 55, 0.2), 0 0 0 1px var(--line-black); }
@@ -104,7 +124,7 @@
     .btn-crypto { background: linear-gradient(135deg, #00ff88, #00b894); color: var(--space); box-shadow: 0 4px 20px rgba(0, 255, 136, 0.2), 0 0 0 1px var(--line-black); }
     .btn-crypto:hover { transform: translateY(-2px); box-shadow: 0 0 40px rgba(0, 255, 136, 0.3), 0 0 0 1px var(--line-black); }
     .perfil-tabs { display: flex; gap: 4px; background: var(--glass-bg); border-radius: var(--radius); padding: 4px; border: 2px solid var(--line-black); margin-bottom: 20px; overflow-x: auto; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); }
-    .perfil-tabs .tab-btn { padding: 10px 20px; border: none; background: transparent; color: var(--text-muted); font-family: 'Inter', sans-serif; font-size: 0.7rem; font-weight: 600; border-radius: 10px; cursor: pointer; transition: var(--transition); white-space: nowrap; }
+    .perfil-tabs .tab-btn { padding: 10px 20px; border: none; background: transparent; color: var(--text-muted); font-family: 'Inter', sans-serif; font-size: 0.7rem; font-weight: 600; border-radius: 10px; cursor: pointer; transition: var(--transition); white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; }
     .perfil-tabs .tab-btn.active { background: rgba(212, 175, 55, 0.12); color: var(--gold); box-shadow: 0 0 20px rgba(212, 175, 55, 0.05), inset 0 0 0 1px var(--line-black); }
     .tab-content { display: none; animation: fadeIn 0.3s ease; }
     .tab-content.active { display: block; }
@@ -112,7 +132,7 @@
     .panel { background: var(--glass-bg); border: 2px solid var(--line-black); border-radius: var(--radius); overflow: hidden; backdrop-filter: blur(10px); transition: var(--transition); margin-bottom: 16px; box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4); }
     .panel:hover { border-color: var(--line-black); box-shadow: 0 6px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(212, 175, 55, 0.15); }
     .panel-header { padding: 14px 18px; border-bottom: 2px solid var(--line-black); display: flex; justify-content: space-between; align-items: center; background: rgba(212, 175, 55, 0.03); flex-wrap: wrap; gap: 8px; }
-    .panel-header h3 { font-size: 0.85rem; font-weight: 600; color: var(--gold); }
+    .panel-header h3 { font-size: 0.85rem; font-weight: 600; color: var(--gold); display: inline-flex; align-items: center; gap: 6px; }
     .panel-badge { font-size: 0.6rem; background: rgba(212, 175, 55, 0.12); color: var(--gold); padding: 2px 12px; border-radius: 20px; font-weight: 600; text-transform: uppercase; border: 1px solid var(--line-black-soft); }
     .panel-body { padding: 18px; }
     .form-publicacion { background: rgba(0,0,0,0.35); border: 2px solid var(--line-black); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 16px; }
@@ -121,7 +141,7 @@
     .form-publicacion .acciones { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; align-items: center; position: relative; }
     .form-publicacion .acciones button.accion-btn { background: rgba(0,0,0,0.4); border: 2px solid var(--line-black); color: var(--text-muted); font-size: 0.7rem; cursor: pointer; padding: 6px 14px; border-radius: 20px; transition: var(--transition); display: inline-flex; align-items: center; gap: 6px; }
     .form-publicacion .acciones button.accion-btn:hover { color: var(--gold); border-color: var(--gold); background: rgba(212,175,55,0.05); }
-    .form-publicacion .acciones .btn-publicar { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border: 2px solid var(--line-black); padding: 8px 24px; border-radius: 20px; font-weight: 700; font-size: 0.75rem; cursor: pointer; margin-left: auto; }
+    .form-publicacion .acciones .btn-publicar { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border: 2px solid var(--line-black); padding: 8px 24px; border-radius: 20px; font-weight: 700; font-size: 0.75rem; cursor: pointer; margin-left: auto; display: inline-flex; align-items: center; gap: 6px; }
     .form-publicacion .acciones .btn-publicar:hover { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
     .form-publicacion .acciones .btn-publicar:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
     .emoji-picker { display: none; position: absolute; bottom: 100%; left: 0; background: rgba(5, 8, 15, 0.98); border: 2px solid var(--line-black); border-radius: var(--radius); padding: 12px; width: 300px; max-width: 90vw; z-index: 1000; box-shadow: var(--shadow-gold-strong); backdrop-filter: blur(12px); margin-bottom: 8px; }
@@ -180,11 +200,11 @@
     .conexion-section { background: var(--glass-bg); border: 2px solid var(--line-black); border-radius: var(--radius); padding: 15px; margin-top: 15px; box-shadow: 0 3px 16px rgba(0, 0, 0, 0.35); }
     .conexion-section .conexion-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
     .conexion-section .conexion-info { display: flex; align-items: center; gap: 10px; }
-    .conexion-section .conexion-info .status { font-weight: 600; font-size: 0.9rem; }
+    .conexion-section .conexion-info .status { font-weight: 600; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 6px; }
     .conexion-section .conexion-info .velocidad { color: var(--text-muted); font-size: 0.7rem; }
     .conexion-section .conexion-info .señal { font-size: 0.7rem; }
     .conexion-buttons { display: flex; gap: 8px; }
-    .conexion-buttons .btn-conexion { padding: 6px 14px; border-radius: 20px; font-size: 0.65rem; font-weight: 600; border: 2px solid var(--line-black); background: rgba(0,0,0,0.3); color: var(--text-muted); cursor: pointer; transition: var(--transition); }
+    .conexion-buttons .btn-conexion { padding: 6px 14px; border-radius: 20px; font-size: 0.65rem; font-weight: 600; border: 2px solid var(--line-black); background: rgba(0,0,0,0.3); color: var(--text-muted); cursor: pointer; transition: var(--transition); display: inline-flex; align-items: center; gap: 5px; }
     .conexion-buttons .btn-conexion:hover { border-color: var(--gold); color: var(--gold); }
     .conexion-buttons .btn-conexion.active { border-color: var(--gold); background: rgba(212, 175, 55, 0.15); color: var(--gold); }
     .conexion-buttons .btn-conexion.wifi.active { border-color: var(--success); background: rgba(0, 214, 143, 0.1); color: var(--success); }
@@ -192,18 +212,19 @@
     .estado-section { background: var(--glass-bg); border: 2px solid var(--line-black); border-radius: var(--radius); padding: 15px; margin-top: 15px; box-shadow: 0 3px 16px rgba(0, 0, 0, 0.35); }
     .estado-section .estado-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
     .estado-section .estado-info { display: flex; align-items: center; gap: 10px; }
-    .estado-section .estado-info .badge { font-size: 1.2rem; }
+    .estado-section .estado-info .badge { display: inline-flex; align-items: center; justify-content: center; }
+    .estado-section .estado-info .badge svg { width: 18px; height: 18px; }
     .estado-section .estado-info .texto { font-weight: 600; }
     .estado-section .estado-info .amigos-online { font-size: 0.6rem; color: var(--text-muted); }
     .estado-buttons { display: flex; gap: 8px; }
-    .estado-buttons .btn-estado { padding: 4px 12px; border-radius: 20px; font-size: 0.6rem; font-weight: 600; border: 2px solid var(--line-black); background: rgba(0,0,0,0.3); color: var(--text-muted); cursor: pointer; transition: var(--transition); }
+    .estado-buttons .btn-estado { padding: 4px 12px; border-radius: 20px; font-size: 0.6rem; font-weight: 600; border: 2px solid var(--line-black); background: rgba(0,0,0,0.3); color: var(--text-muted); cursor: pointer; transition: var(--transition); display: inline-flex; align-items: center; gap: 5px; }
     .estado-buttons .btn-estado:hover { border-color: var(--gold); color: var(--gold); }
     .estado-buttons .btn-estado.online { border-color: var(--success); color: var(--success); }
     .estado-buttons .btn-estado.online:hover { background: rgba(0, 214, 143, 0.1); }
     .estado-buttons .btn-estado.offline { border-color: var(--text-muted); color: var(--text-muted); }
     .estado-buttons .btn-estado.offline:hover { background: rgba(255, 255, 255, 0.05); }
     #solicitudesSection { margin-top: 10px; padding: 10px 0; border-top: 1px solid var(--line-black-soft); }
-    #solicitudesSection h4 { color: var(--gold); font-size: 0.85rem; margin-bottom: 8px; }
+    #solicitudesSection h4 { color: var(--gold); font-size: 0.85rem; margin-bottom: 8px; display: inline-flex; align-items: center; gap: 6px; }
     #amigosContainer { margin-top: 10px; max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
     #amigosContainer .amigo-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line-black); background: rgba(0,0,0,0.25); transition: var(--transition); cursor: pointer; }
     #amigosContainer .amigo-item:hover { background: rgba(212, 175, 55, 0.05); border-color: var(--gold); }
@@ -217,7 +238,7 @@
     #amigosContainer .amigo-item .badge-online { background: rgba(0, 214, 143, 0.1); border: 1px solid var(--line-black); border-radius: 20px; padding: 2px 10px; font-size: 0.5rem; color: var(--success); font-weight: 600; }
     .pro-section { background: var(--glass-bg); border: 2px solid var(--line-black); border-radius: var(--radius); padding: 15px; margin-top: 15px; box-shadow: 0 3px 16px rgba(0, 0, 0, 0.35); }
     .pro-section .pro-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--line-black-soft); }
-    .pro-section .pro-header h3 { font-size: 0.85rem; font-weight: 600; color: var(--gold); }
+    .pro-section .pro-header h3 { font-size: 0.85rem; font-weight: 600; color: var(--gold); display: inline-flex; align-items: center; gap: 6px; }
     .pro-section .pro-badge { font-size: 0.55rem; background: rgba(212, 175, 55, 0.12); color: var(--gold); padding: 2px 12px; border-radius: 20px; font-weight: 600; text-transform: uppercase; border: 1px solid var(--line-black-soft); letter-spacing: 0.5px; font-family: 'Orbitron', monospace; }
     .pro-section .pro-current { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--line-black-soft); margin-bottom: 14px; font-size: 0.8rem; }
     .pro-section .pro-current .pro-label { color: var(--text-muted); }
@@ -225,19 +246,19 @@
     .pro-section .pro-current .pro-meta { color: var(--text-muted); font-size: 0.7rem; }
     .pro-section .pro-upgrade { background: linear-gradient(135deg, rgba(212, 175, 55, 0.06), rgba(15, 45, 26, 0.4)); border: 2px solid var(--line-black); border-radius: 14px; padding: 16px; text-align: center; }
     .pro-section .pro-upgrade-title { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px; }
-    .pro-section .pro-upgrade-icon { font-size: 1.2rem; color: var(--gold); }
+    .pro-section .pro-upgrade-icon { color: var(--gold); display: inline-flex; }
     .pro-section .pro-upgrade-name { font-family: 'Orbitron', monospace; font-size: 1.1rem; font-weight: 700; color: var(--gold); letter-spacing: 1px; }
     .pro-section .pro-upgrade-price { font-family: 'Orbitron', monospace; font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin: 8px 0 4px; }
     .pro-section .pro-upgrade-period { font-size: 0.75rem; color: var(--text-muted); font-weight: 400; }
     .pro-section .pro-upgrade-features { font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 14px; }
     .pro-section .pro-btn { width: 100%; justify-content: center; padding: 12px; font-size: 0.8rem; }
     .pro-section .pro-active-info { text-align: center; padding: 12px; background: rgba(0, 214, 143, 0.06); border: 2px solid var(--line-black); border-radius: 12px; }
-    .pro-section .pro-active-badge { color: var(--success); font-weight: 700; font-family: 'Orbitron', monospace; font-size: 0.85rem; margin-bottom: 6px; }
+    .pro-section .pro-active-badge { color: var(--success); font-weight: 700; font-family: 'Orbitron', monospace; font-size: 0.85rem; margin-bottom: 6px; display: inline-flex; align-items: center; gap: 6px; }
     .pro-section .pro-active-expira { font-size: 0.7rem; color: var(--text-muted); }
     .repartidor-section { background: linear-gradient(135deg, rgba(168,85,247,0.06), rgba(15,45,26,0.5)); border: 2px solid var(--line-black); border-radius: var(--radius); padding: 18px; margin-top: 15px; box-shadow: 0 3px 16px rgba(0, 0, 0, 0.35); position: relative; overflow: hidden; }
     .repartidor-section::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--purple), transparent); }
     .repartidor-section .rep-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--line-black-soft); }
-    .repartidor-section .rep-header h3 { font-size: 0.85rem; font-weight: 600; color: var(--purple); display: flex; align-items: center; gap: 6px; }
+    .repartidor-section .rep-header h3 { font-size: 0.85rem; font-weight: 600; color: var(--purple); display: inline-flex; align-items: center; gap: 6px; }
     .repartidor-section .rep-badge { font-size: 0.55rem; padding: 2px 12px; border-radius: 20px; font-weight: 600; text-transform: uppercase; border: 1px solid var(--line-black-soft); letter-spacing: 0.5px; font-family: 'Orbitron', monospace; }
     .rep-badge.activo { background: rgba(0,214,143,0.12); color: var(--success); }
     .rep-badge.pendiente { background: rgba(247,212,74,0.12); color: var(--warning); }
@@ -265,13 +286,13 @@
     .token-status .item { background: rgba(0, 0, 0, 0.4); border: 2px solid var(--line-black); border-radius: 12px; padding: 14px; text-align: center; transition: var(--transition); }
     .token-status .item:hover { border-color: var(--gold); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5); }
     .token-status .item .value { font-family: 'Orbitron', monospace; font-size: 1.3rem; font-weight: 700; color: var(--gold); }
-    .token-status .item .label { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Orbitron', monospace; }
+    .token-status .item .label { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Orbitron', monospace; display: inline-flex; align-items: center; gap: 4px; }
     .progress-bar-container { margin-top: 16px; }
     .progress-bar-container .bar { width: 100%; height: 8px; background: rgba(0, 0, 0, 0.7); border: 1px solid var(--line-black); border-radius: 10px; overflow: hidden; }
     .progress-bar-container .bar .fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-light)); border-radius: 10px; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
     .progress-bar-container .label { display: flex; justify-content: space-between; font-size: 0.6rem; color: var(--text-muted); margin-top: 4px; font-family: 'Orbitron', monospace; }
     .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
-    .empty-state .icon { font-size: 2.5rem; display: block; margin-bottom: 12px; font-family: 'Orbitron', monospace; color: var(--gold); opacity: 0.3; }
+    .empty-state .icon { font-size: 2.5rem; display: block; margin: 0 auto 12px; color: var(--gold); opacity: 0.3; width: 2.5rem; height: 2.5rem; }
     .empty-state h4 { font-family: 'Orbitron', monospace; color: var(--text-secondary); font-size: 1rem; font-weight: 400; letter-spacing: 0.5px; }
     .empty-state p { font-size: 0.8rem; }
     .toast { position: fixed; bottom: 30px; right: 30px; background: var(--green-deep); border: 2px solid var(--line-black); color: var(--gold); padding: 12px 24px; border-radius: 12px; font-size: 0.8rem; font-weight: 500; box-shadow: var(--shadow-gold-strong), 0 0 0 1px var(--gold); transform: translateY(100px); opacity: 0; transition: all 0.4s ease; z-index: 9999; max-width: 400px; backdrop-filter: blur(10px); }
@@ -282,19 +303,19 @@
     .footer { margin-top: 30px; padding-top: 16px; border-top: 2px solid var(--line-black); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; font-size: 0.7rem; color: var(--text-muted); padding-bottom: 8px; letter-spacing: 0.3px; }
     .footer .brand { color: var(--gold); font-weight: 600; letter-spacing: 1px; }
     .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
-    .footer-links a { color: var(--text-muted); text-decoration: none; transition: var(--transition); }
+    .footer-links a { color: var(--text-muted); text-decoration: none; transition: var(--transition); display: inline-flex; align-items: center; gap: 4px; }
     .footer-links a:hover { color: var(--gold); }
     .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(12px); display: none; justify-content: center; align-items: center; z-index: 9999; animation: fadeIn 0.3s ease-out; }
     .modal-overlay.active { display: flex; }
     .modal-content { background: linear-gradient(135deg, var(--bg-card), var(--bg-dark)); border: 2px solid var(--line-black); border-radius: 20px; padding: 30px; max-width: 480px; width: 90%; text-align: center; animation: scaleIn 0.3s ease-out; position: relative; max-height: 90vh; overflow-y: auto; box-shadow: 0 0 0 2px var(--gold), 0 20px 60px rgba(0, 0, 0, 0.6); }
     .modal-content .close-btn { position: absolute; top: 10px; right: 15px; background: transparent; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; transition: var(--transition); }
     .modal-content .close-btn:hover { color: var(--text-primary); transform: rotate(90deg); }
-    .modal-content h2 { color: var(--gold); font-family: 'Orbitron', monospace; font-size: 1.2rem; margin-bottom: 10px; }
+    .modal-content h2 { color: var(--gold); font-family: 'Orbitron', monospace; font-size: 1.2rem; margin-bottom: 10px; display: inline-flex; align-items: center; gap: 8px; }
     .modal-content .subtitle { color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 16px; }
     .modal-content .qr-container { background: white; border-radius: 12px; padding: 15px; margin: 10px 0; display: inline-block; border: 2px solid var(--line-black); }
     .modal-content .qr-container img { max-width: 200px; width: 100%; }
     .modal-content .address-box { background: rgba(0,0,0,0.6); border: 2px solid var(--line-black); border-radius: 10px; padding: 12px; margin: 10px 0; word-break: break-all; }
-    .modal-content .address-box .label { font-size: 0.6rem; color: var(--text-muted); }
+    .modal-content .address-box .label { font-size: 0.6rem; color: var(--text-muted); display: inline-flex; align-items: center; gap: 4px; }
     .modal-content .address-box .address { font-family: monospace; font-size: 0.75rem; color: var(--gold); margin-top: 4px; }
     .modal-content .amount { font-family: 'Orbitron', monospace; font-size: 1.4rem; color: var(--gold); margin: 10px 0; }
     .modal-content .actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
@@ -308,6 +329,8 @@
     .crypto-hint { font-size: 0.55rem; color: var(--text-muted); margin-top: 6px; text-align: center; }
     #qrReaderContainer { display: none; margin-top: 10px; text-align: center; }
     #qrReaderContainer video { width: 100%; max-width: 300px; border-radius: 10px; background: black; border: 2px solid var(--line-black); }
+
+    /* ===== TEMA DÍA ===== */
     html.tema-dia, html[data-tema="dia"] {
         --space: #f5f7fa;
         --bg-card: rgba(255, 255, 255, 0.95);
@@ -349,7 +372,7 @@
         .emoji-picker { width: 240px; left: 50%; transform: translateX(-50%); }
         .emoji-picker .grid { grid-template-columns: repeat(6, 1fr); }
         .form-publicacion .acciones .btn-publicar { margin-left: 0; width: 100%; justify-content: center; }
-        .config-btn { top: 12px; right: 12px; width: 38px; height: 38px; font-size: 1.1rem; }
+        .config-btn { top: 12px; right: 12px; width: 38px; height: 38px; }
     }
     @media (max-width: 480px) {
         .perfil-header .avatar { width: 70px; height: 70px; font-size: 1.8rem; }
@@ -362,8 +385,7 @@
         .emoji-picker .grid button { font-size: 1.2rem; padding: 4px; }
     }
 </style>
-</head>
-<body>
+</head><body>
 
 <canvas id="stars-canvas"></canvas>
 <div class="nebula nebula-1"></div>
@@ -384,31 +406,55 @@
 </header>
 
 <nav class="main-nav">
-    <a href="/" class="nav-link">⌂ Inicio</a>
-    <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
-    <a href="/features/perfil/perfil.html" class="nav-link active">◆ Perfil</a>
-    <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
-    <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
-    <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
+    <a href="/" class="nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Inicio
+    </a>
+    <a href="/features/muro/muro.html" class="nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Muro
+    </a>
+    <a href="/features/perfil/perfil.html" class="nav-link active">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Perfil
+    </a>
+    <a href="/features/mensajes/contactos.html" class="nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Contactos
+    </a>
+    <a href="/features/live/live.html" class="nav-link live">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4.93 19.07A10 10 0 0 1 4.93 4.93M19.07 19.07a10 10 0 0 0 0-14.14M7.76 16.24a6 6 0 0 1 0-8.48M16.24 16.24a6 6 0 0 0 0-8.48"/><circle cx="12" cy="12" r="2"/></svg>
+        Live
+    </a>
+    <a href="/features/internet/internet.html" class="nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4.93 19.07A10 10 0 0 1 4.93 4.93M19.07 19.07a10 10 0 0 0 0-14.14M7.76 16.24a6 6 0 0 1 0-8.48M16.24 16.24a6 6 0 0 0 0-8.48"/><circle cx="12" cy="12" r="2"/></svg>
+        Internet
+    </a>
 </nav>
 
 <div class="perfil-container">
 
     <div class="perfil-header" id="perfilHeader">
-        <a href="/features/perfil/configuracion/index.html" class="config-btn" title="Configuración">⚙️</a>
+        <a href="/features/perfil/configuracion/index.html" class="config-btn" title="Configuración">
+            <svg class="icon icon-lg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </a>
         
         <div class="avatar-container" style="position:relative;">
             <div class="avatar" id="perfilAvatar" onclick="window.toggleAvatarMenu(event)">
                 ◈
-                <span class="avatar-menu-toggle" title="Opciones de foto">✎</span>
+                <span class="avatar-menu-toggle" title="Opciones de foto">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+                </span>
             </div>
             <div class="avatar-menu" id="avatarMenu" role="menu">
                 <button type="button" onclick="event.stopPropagation(); window.abrirSelectorArchivo(); window.cerrarAvatarMenu();">
-                    <span>📷</span> Cambiar foto
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    Cambiar foto
                 </button>
                 <div class="divider"></div>
                 <button type="button" class="danger" onclick="event.stopPropagation(); window.eliminarFotoPerfil(); window.cerrarAvatarMenu();">
-                    <span>✕</span> Eliminar foto
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                    Eliminar foto
                 </button>
             </div>
             <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="window.subirFoto(event)" />
@@ -416,44 +462,80 @@
         <div class="info">
             <div class="nombre" id="perfilNombre">
                 <span data-clave="perfil_nombre_usuario">Explorador</span>
-                <span class="verified" data-clave="perfil_badge_verificado">✦ VERIFICADO</span>
+                <span class="verified" data-clave="perfil_badge_verificado">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg>
+                    VERIFICADO
+                </span>
             </div>
             <div class="handle" id="perfilHandle">@explorador</div>
             <div class="bio" id="perfilBio" data-clave="perfil_biografia_default">Explorando el ecosistema Csariel's · WEB3 · Comunidad</div>
             <div class="badges">
-                <span class="badge gold" data-clave="perfil_badge_miembro">✦ MIEMBRO</span>
-                <span class="badge success" data-clave="perfil_badge_activo">● ACTIVO</span>
-                <span class="badge" data-clave="perfil_badge_web3">◈ WEB3</span>
-                <span class="badge" id="nivelUsuario" style="border-color:var(--purple);color:var(--purple);background:rgba(168,85,247,0.05);">🌱 Explorador</span>
+                <span class="badge gold" data-clave="perfil_badge_miembro">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg>
+                    MIEMBRO
+                </span>
+                <span class="badge success" data-clave="perfil_badge_activo">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="currentColor" stroke="none"/></svg>
+                    ACTIVO
+                </span>
+                <span class="badge" data-clave="perfil_badge_web3">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/><polygon points="12 7 16 9.5 16 14.5 12 17 8 14.5 8 9.5 12 7"/></svg>
+                    WEB3
+                </span>
+                <span class="badge" id="nivelUsuario" style="border-color:var(--purple);color:var(--purple);background:rgba(168,85,247,0.05);">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg>
+                    Explorador
+                </span>
             </div>
         </div>
         <div class="stats">
             <div class="stat">
                 <div class="number" id="statTokens">0</div>
-                <div class="label" data-clave="perfil_stat_tokens">◈ Tokens</div>
+                <div class="label" data-clave="perfil_stat_tokens">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/><path d="M2 9h20M12 3l-4 6 4 12 4-12-4-6"/></svg>
+                    Tokens
+                </div>
             </div>
             <div class="stat">
                 <div class="number" id="statNFTS">0</div>
-                <div class="label" data-clave="perfil_stat_nfts">◈ NFTs</div>
+                <div class="label" data-clave="perfil_stat_nfts">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/><path d="M2 9h20M12 3l-4 6 4 12 4-12-4-6"/></svg>
+                    NFTs
+                </div>
             </div>
             <div class="stat">
                 <div class="number" id="statSeguidores">0</div>
-                <div class="label" data-clave="perfil_stat_seguidores">◈ Seguidores</div>
+                <div class="label" data-clave="perfil_stat_seguidores">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                    Seguidores
+                </div>
             </div>
             <div class="stat">
                 <div class="number" id="statSiguiendo">0</div>
-                <div class="label" data-clave="perfil_stat_siguiendo">◈ Siguiendo</div>
+                <div class="label" data-clave="perfil_stat_siguiendo">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+                    Siguiendo
+                </div>
             </div>
         </div>
         <div class="acciones">
-            <button class="btn btn-outline btn-sm" onclick="window.compartirPerfil()" data-clave="perfil_btn_compartir">◈ Compartir</button>
-            <button class="btn btn-outline btn-sm" onclick="window.generarQRPerfil()" data-clave="perfil_share_qr">📱 Share QR</button>
+            <button class="btn btn-outline btn-sm" onclick="window.compartirPerfil()" data-clave="perfil_btn_compartir">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                Compartir
+            </button>
+            <button class="btn btn-outline btn-sm" onclick="window.generarQRPerfil()" data-clave="perfil_share_qr">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="17"/><line x1="17" y1="14" x2="21" y2="14"/><line x1="14" y1="21" x2="21" y2="21"/><line x1="17" y1="17" x2="21" y2="21"/></svg>
+                Share QR
+            </button>
         </div>
     </div>
 
     <div class="repartidor-section" id="repartidorSection" style="display:none;">
         <div class="rep-header">
-            <h3>🛵 <span data-clave="perfil_gana_dinero">Gana dinero con Csariel's</span></h3>
+            <h3>
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM15 6l-3 6h-3l-3 6M12 12h5l1.5 5.5"/></svg>
+                <span data-clave="perfil_gana_dinero">Gana dinero con Csariel's</span>
+            </h3>
             <span class="rep-badge" id="repBadge">Cargando...</span>
         </div>
         <div class="rep-info" id="repInfo">
@@ -467,21 +549,33 @@
     <div class="estado-section">
         <div class="estado-header">
             <div class="estado-info">
-                <span class="badge" id="estadoBadge">🟢</span>
+                <span class="badge" id="estadoBadge">
+                    <svg class="icon" viewBox="0 0 24 24" style="color:var(--success);"><circle cx="12" cy="12" r="8" fill="currentColor" stroke="none"/></svg>
+                </span>
                 <span class="texto" id="estadoTexto" style="color:var(--success);" data-clave="perfil_activo_ahora">Activo ahora</span>
                 <span class="amigos-online">· <span id="amigosEnLineaContador">0</span> <span data-clave="perfil_amigos_en_linea">amigos en línea</span></span>
             </div>
             <div class="estado-buttons">
-                <button class="btn-estado online" onclick="window.cambiarEstado(true)" data-clave="perfil_btn_activo">🟢 Activo</button>
-                <button class="btn-estado offline" onclick="window.cambiarEstado(false)" data-clave="perfil_btn_inactivo">⭕ Inactivo</button>
+                <button class="btn-estado online" onclick="window.cambiarEstado(true)" data-clave="perfil_btn_activo">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="currentColor" stroke="none"/></svg>
+                    Activo
+                </button>
+                <button class="btn-estado offline" onclick="window.cambiarEstado(false)" data-clave="perfil_btn_inactivo">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg>
+                    Inactivo
+                </button>
             </div>
         </div>
 
         <div id="solicitudesSection">
-            <h4><span data-clave="perfil_solicitudes_pendientes">📨 Solicitudes pendientes</span> <span id="solicitudesContador" style="font-size:0.7rem;color:var(--warning);">0</span></h4>
+            <h4>
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                <span data-clave="perfil_solicitudes_pendientes">Solicitudes pendientes</span>
+                <span id="solicitudesContador" style="font-size:0.7rem;color:var(--warning);">0</span>
+            </h4>
             <div id="solicitudesContainer" style="max-height: 200px; overflow-y: auto;">
                 <div style="text-align:center; padding:10px; color:var(--text-muted); font-size:0.7rem;">
-                    <span style="font-size:1.2rem;">✅</span>
+                    <svg class="icon" viewBox="0 0 24 24" style="color:var(--success);width:1.5rem;height:1.5rem;"><polyline points="20 6 9 17 4 12"/></svg>
                     <p data-clave="perfil_sin_solicitudes">No tienes solicitudes pendientes</p>
                 </div>
             </div>
@@ -492,7 +586,10 @@
 
     <div class="pro-section" id="proSection">
         <div class="pro-header">
-            <h3>⟡ Csariel's Pro</h3>
+            <h3>
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg>
+                Csariel's Pro
+            </h3>
             <span class="pro-badge" data-clave="perfil_pro_membresia">MEMBRESÍA</span>
         </div>
         <div class="pro-body">
@@ -508,7 +605,9 @@
 
             <div class="pro-upgrade" id="proUpgradeCard">
                 <div class="pro-upgrade-title">
-                    <span class="pro-upgrade-icon">✦</span>
+                    <span class="pro-upgrade-icon">
+                        <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg>
+                    </span>
                     <span class="pro-upgrade-name">Csariel's Pro</span>
                 </div>
                 <div class="pro-upgrade-price">
@@ -519,12 +618,16 @@
                     Conservación ampliada · 5 GB
                 </div>
                 <button class="btn btn-gold pro-btn" onclick="window.contratarPro()" id="btnContratarPro" data-clave="perfil_pro_contratar">
-                    🚀 Contratar Pro por $60 MXN
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
+                    Contratar Pro por $60 MXN
                 </button>
             </div>
 
             <div class="pro-active-info" id="proActiveInfo" style="display:none;">
-                <div class="pro-active-badge" data-clave="perfil_pro_activo">✅ PRO ACTIVO</div>
+                <div class="pro-active-badge" data-clave="perfil_pro_activo">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                    PRO ACTIVO
+                </div>
                 <div class="pro-active-expira">
                     <span data-clave="perfil_pro_expira">Expira:</span> <span id="proExpira">--</span>
                 </div>
@@ -535,34 +638,67 @@
     <div class="conexion-section">
         <div class="conexion-header">
             <div class="conexion-info">
-                <span class="status" id="conexionStatus" data-clave="perfil_conexion_wifi">🛜 WiFi</span>
+                <span class="status" id="conexionStatus" data-clave="perfil_conexion_wifi">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+                    WiFi
+                </span>
                 <span class="velocidad" id="conexionVelocidad">0 Mbps</span>
                 <span class="señal" id="conexionSeñal" style="color:var(--success);">████</span>
             </div>
             <div class="conexion-buttons">
-                <button class="btn-conexion wifi active" id="btnWifi" onclick="window.cambiarConexion('wifi')" data-clave="perfil_conexion_wifi">🛜 WiFi</button>
-                <button class="btn-conexion datos" id="btnDatos" onclick="window.cambiarConexion('datos')" data-clave="perfil_conexion_datos">📶 Datos</button>
+                <button class="btn-conexion wifi active" id="btnWifi" onclick="window.cambiarConexion('wifi')" data-clave="perfil_conexion_wifi">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+                    WiFi
+                </button>
+                <button class="btn-conexion datos" id="btnDatos" onclick="window.cambiarConexion('datos')" data-clave="perfil_conexion_datos">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+                    Datos
+                </button>
             </div>
         </div>
         <div style="font-size:0.6rem;color:var(--text-muted);margin-top:6px;">
-            <span data-clave="perfil_conexion">Conexión:</span> <span id="conexionTipo">🛜 WiFi</span>
+            <span data-clave="perfil_conexion">Conexión:</span> <span id="conexionTipo">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+                WiFi
+            </span>
             · <span data-clave="perfil_operador">Operador:</span> <span id="conexionOperador">Csariel's Net</span>
         </div>
     </div>
 
     <div class="perfil-tabs">
-        <button class="tab-btn active" onclick="window.cambiarTab('mis-publicaciones')" data-clave="perfil_mis_publicaciones">◈ Mis Publicaciones</button>
-        <button class="tab-btn" onclick="window.cambiarTab('actividad')" data-clave="perfil_tab_actividad">◆ Actividad</button>
-        <button class="tab-btn" onclick="window.cambiarTab('tokens')" data-clave="perfil_tab_tokens">⟡ Tokens</button>
-        <button class="tab-btn" onclick="window.cambiarTab('esim')" data-clave="perfil_tab_esim">📱 eSIM</button>
-        <button class="tab-btn" onclick="window.cambiarTab('qr')" data-clave="perfil_tab_qr">📷 Escanear QR</button>
-        <button class="tab-btn" onclick="window.cambiarTab('internet')" data-clave="perfil_tab_internet">📶 Internet</button>
+        <button class="tab-btn active" onclick="window.cambiarTab('mis-publicaciones')" data-clave="perfil_mis_publicaciones">
+            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Mis Publicaciones
+        </button>
+        <button class="tab-btn" onclick="window.cambiarTab('actividad')" data-clave="perfil_tab_actividad">
+            <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Actividad
+        </button>
+        <button class="tab-btn" onclick="window.cambiarTab('tokens')" data-clave="perfil_tab_tokens">
+            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/><path d="M2 9h20M12 3l-4 6 4 12 4-12-4-6"/></svg>
+            Tokens
+        </button>
+        <button class="tab-btn" onclick="window.cambiarTab('esim')" data-clave="perfil_tab_esim">
+            <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+            eSIM
+        </button>
+        <button class="tab-btn" onclick="window.cambiarTab('qr')" data-clave="perfil_tab_qr">
+            <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="17"/><line x1="17" y1="14" x2="21" y2="14"/><line x1="14" y1="21" x2="21" y2="21"/><line x1="17" y1="17" x2="21" y2="21"/></svg>
+            Escanear QR
+        </button>
+        <button class="tab-btn" onclick="window.cambiarTab('internet')" data-clave="perfil_tab_internet">
+            <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+            Internet
+        </button>
     </div>
 
 <div id="tab-mis-publicaciones" class="tab-content active">
     <div class="panel">
         <div class="panel-header">
-            <h3 data-clave="perfil_crear_publicacion">✦ Crear publicación</h3>
+            <h3 data-clave="perfil_crear_publicacion">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg>
+                Crear publicación
+            </h3>
             <span class="panel-badge" data-clave="perfil_badge_nuevo">Nuevo</span>
         </div>
         <div class="panel-body">
@@ -571,23 +707,27 @@
                 
                 <div class="acciones">
                     <button type="button" class="accion-btn" onclick="window.toggleEmojiPickerPerfil()" id="btnEmojiPerfil" data-clave="perfil_emoji">
-                        😀 Emoji
+                        <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+                        Emoji
                     </button>
                     <button type="button" class="accion-btn" onclick="window.insertarHashtagPerfil()" data-clave="perfil_hashtag">
-                        # Hashtag
-                    </button>
+                        <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>
+                        Hashtag                    </button>
                     <button type="button" class="accion-btn" onclick="document.getElementById('inputFotoPerfilPost').click()" data-clave="perfil_foto">
-                        📸 Foto
+                        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                        Foto
                     </button>
                     <button type="button" class="accion-btn" onclick="document.getElementById('inputVideoPerfilPost').click()" data-clave="perfil_video">
-                        🎬 Video
+                        <svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                        Video
                     </button>
                     
                     <input type="file" id="inputFotoPerfilPost" accept="image/*" style="display:none;" onchange="window.seleccionarArchivoPerfil(event, 'imagen')" />
                     <input type="file" id="inputVideoPerfilPost" accept="video/*" style="display:none;" onchange="window.seleccionarArchivoPerfil(event, 'video')" />
                     
                     <button type="button" class="btn-publicar" onclick="window.publicarDesdePerfil()" id="btnPublicarPerfil" data-clave="perfil_publicar">
-                        ◈ Publicar
+                        <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                        Publicar
                     </button>
 
                     <div class="emoji-picker" id="emojiPickerPerfil">
@@ -603,13 +743,16 @@
 
     <div class="panel">
         <div class="panel-header">
-            <h3 data-clave="perfil_mis_publicaciones">◈ Mis publicaciones</h3>
+            <h3 data-clave="perfil_mis_publicaciones">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Mis publicaciones
+            </h3>
             <span class="panel-badge" id="misPostsCount">0</span>
         </div>
         <div class="panel-body">
             <div id="misPublicacionesList">
                 <div class="empty-state">
-                    <span class="icon">◈</span>
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/><path d="M2 9h20M12 3l-4 6 4 12 4-12-4-6"/></svg>
                     <h4 data-clave="perfil_sin_publicaciones">Sin publicaciones aún</h4>
                     <p data-clave="perfil_crea_primera">Publica algo para verlo aquí</p>
                 </div>
@@ -621,12 +764,15 @@
 <div id="tab-actividad" class="tab-content">
     <div class="panel">
         <div class="panel-header">
-            <h3 data-clave="perfil_seccion_ultima_actividad">◈ Última actividad</h3>
+            <h3 data-clave="perfil_seccion_ultima_actividad">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                Última actividad
+            </h3>
             <span class="panel-badge" data-clave="perfil_tiempo_real">En tiempo real</span>
         </div>
         <div class="panel-body" id="actividadList">
             <div class="empty-state">
-                <span class="icon">◈</span>
+                <svg class="icon" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                 <h4 data-clave="perfil_sin_actividad">Sin actividad reciente</h4>
                 <p data-clave="perfil_comienza_muro">Comienza a interactuar en el Muro</p>
             </div>
@@ -634,12 +780,15 @@
     </div>
     <div class="panel">
         <div class="panel-header">
-            <h3 data-clave="perfil_seccion_historial_tx">◈ Historial de transacciones</h3>
+            <h3 data-clave="perfil_seccion_historial_tx">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                Historial de transacciones
+            </h3>
             <span class="panel-badge" id="historialCount">0</span>
         </div>
         <div class="panel-body" id="historialList">
             <div class="empty-state">
-                <span class="icon">◈</span>
+                <svg class="icon" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/><path d="M2 9h20M12 3l-4 6 4 12 4-12-4-6"/></svg>
                 <h4 data-clave="perfil_sin_transacciones">Sin transacciones</h4>
                 <p data-clave="perfil_compra_domos_tokens">Compra domos para acumular tokens</p>
             </div>
@@ -650,26 +799,41 @@
 <div id="tab-tokens" class="tab-content">
     <div class="panel">
         <div class="panel-header">
-            <h3 data-clave="perfil_seccion_estado_tokens">⟡ Estado de tokens</h3>
+            <h3 data-clave="perfil_seccion_estado_tokens">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/><path d="M2 9h20M12 3l-4 6 4 12 4-12-4-6"/></svg>
+                Estado de tokens
+            </h3>
             <span class="panel-badge" data-clave="perfil_actualizado">Actualizado</span>
         </div>
         <div class="panel-body">
             <div class="token-status">
                 <div class="item">
                     <div class="value" id="tokenTotal">0</div>
-                    <div class="label" data-clave="perfil_balance_tokens">◈ Total tokens</div>
+                    <div class="label" data-clave="perfil_balance_tokens">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/><path d="M2 9h20M12 3l-4 6 4 12 4-12-4-6"/></svg>
+                        Total tokens
+                    </div>
                 </div>
                 <div class="item">
                     <div class="value" id="tokenDisponibles">0</div>
-                    <div class="label" data-clave="perfil_disponibles">◈ Disponibles</div>
+                    <div class="label" data-clave="perfil_disponibles">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                        Disponibles
+                    </div>
                 </div>
                 <div class="item">
                     <div class="value" id="tokenVendidos">0</div>
-                    <div class="label" data-clave="perfil_vendidos">◈ Vendidos</div>
+                    <div class="label" data-clave="perfil_vendidos">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/></svg>
+                        Vendidos
+                    </div>
                 </div>
                 <div class="item">
                     <div class="value" id="tokenNFTs">0</div>
-                    <div class="label" data-clave="perfil_nfts_info">◈ NFTs</div>
+                    <div class="label" data-clave="perfil_nfts_info">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg>
+                        NFTs
+                    </div>
                 </div>
             </div>
 
@@ -685,16 +849,21 @@
 
             <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
                 <button class="btn btn-gold" style="flex:1;justify-content:center;" onclick="window.comprarDomo(1)" data-clave="perfil_comprar_domo">
-                    ⟡ Comprar Domo (MXN)
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/><path d="M2 9h20M12 3l-4 6 4 12 4-12-4-6"/></svg>
+                    Comprar Domo (MXN)
                 </button>
                 <button class="btn btn-gold" style="flex:1;justify-content:center;" id="canjearNft" onclick="window.canjearNFT()" disabled data-clave="perfil_canjear_nft">
-                    🔒 CANJEAR NFT
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    CANJEAR NFT
                 </button>
             </div>
 
             <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--line-black-soft);">
                 <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-                    <span style="font-size:0.75rem;color:var(--gold);font-weight:600;" data-clave="perfil_pagar_usdt">💳 Comprar con Cripto</span>
+                    <span style="font-size:0.75rem;color:var(--gold);font-weight:600;display:inline-flex;align-items:center;gap:5px;" data-clave="perfil_pagar_usdt">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                        Comprar con Cripto
+                    </span>
                     <span style="font-size:0.55rem;color:var(--text-muted);" data-clave="perfil_usdt_trc20">USDT / USDC · 2% comisión</span>
                 </div>
                 <div class="crypto-controls">
@@ -708,7 +877,8 @@
                     </div>
                 </div>
                 <button class="btn btn-crypto" style="width:100%;justify-content:center;margin-top:8px;padding:10px;" onclick="window.comprarConCripto()" data-clave="perfil_pagar_usdt">
-                    💳 Pagar con USDT/USDC
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                    Pagar con USDT/USDC
                 </button>
                 <div class="crypto-hint" data-clave="perfil_usdt_trc20">
                     ⚡ Red: TRC-20 (tarifas bajas) · Acepta USDT y USDC
@@ -716,7 +886,8 @@
             </div>
 
             <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;" onclick="window.irAMuro()" data-clave="perfil_ir_muro">
-                ◇ Ir al Muro
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                Ir al Muro
             </button>
         </div>
     </div>
@@ -725,14 +896,17 @@
 <div id="tab-esim" class="tab-content">
     <div class="panel">
         <div class="panel-header">
-            <h3 data-clave="perfil_telnyx">📱 Mi eSIM</h3>
+            <h3 data-clave="perfil_telnyx">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                Mi eSIM
+            </h3>
             <span class="panel-badge" data-clave="perfil_telnyx">Telnyx</span>
         </div>
         <div class="panel-body">
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
                 <div style="background:rgba(0,0,0,0.4);padding:10px;border-radius:10px;border:2px solid var(--line-black);">
                     <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_esim_estado">ESTADO</span>
-                    <div id="esimStatus" style="font-weight:600;font-size:0.9rem;">⏳ Sin eSIM</div>
+                    <div id="esimStatus" style="font-weight:600;font-size:0.9rem;">Sin eSIM</div>
                 </div>
                 <div style="background:rgba(0,0,0,0.4);padding:10px;border-radius:10px;border:2px solid var(--line-black);">
                     <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_datos_consumidos">DATOS USADOS</span>
@@ -760,22 +934,27 @@
 
             <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
                 <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" onclick="window.comprarESIM(1)" data-clave="perfil_adquirir_esim">
-                    📱 Comprar eSIM
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                    Comprar eSIM
                 </button>
                 <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="window.generarQRESIM()" data-clave="perfil_obtener_qr">
-                    📲 QR Activación
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="17"/><line x1="17" y1="14" x2="21" y2="14"/><line x1="14" y1="21" x2="21" y2="21"/></svg>
+                    QR Activación
                 </button>
                 <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="window.sincronizarESIM()" data-clave="perfil_sincronizar">
-                    🔄 Sincronizar
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                    Sincronizar
                 </button>
             </div>
 
             <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
                 <button class="btn btn-outline btn-sm" onclick="window.activarESIM()" style="border-color:var(--success);color:var(--success);" data-clave="perfil_activar_esim">
-                    ✅ Activar
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                    Activar
                 </button>
                 <button class="btn btn-danger btn-sm" onclick="window.desactivarESIM()" data-clave="perfil_desactivar_esim">
-                    ⛔ Desactivar
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                    Desactivar
                 </button>
             </div>
 
@@ -789,7 +968,10 @@
 <div id="tab-qr" class="tab-content">
     <div class="panel">
         <div class="panel-header">
-            <h3 data-clave="perfil_escanear_qr">📱 Escanear QR</h3>
+            <h3 data-clave="perfil_escanear_qr">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="17"/><line x1="17" y1="14" x2="21" y2="14"/><line x1="14" y1="21" x2="21" y2="21"/></svg>
+                Escanear QR
+            </h3>
             <span class="panel-badge" data-clave="perfil_recibe_estoks">Recibe Es.stoks</span>
         </div>
         <div class="panel-body">
@@ -799,21 +981,24 @@
                     <input type="text" id="qrInput" data-placeholder="perfil_ejemplo_codigo_qr" placeholder="Ej: DOMO-2025-ABC123" 
                            style="flex:1;padding:10px 14px;background:rgba(0,0,0,0.5);border:2px solid var(--line-black);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;">
                     <button class="btn btn-gold" onclick="window.escanearQR()" id="btnEscanearQR" data-clave="perfil_validar_codigo">
-                        🔍 Escanear QR
+                        <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        Escanear QR
                     </button>
                 </div>
                 <div class="hint" data-clave="perfil_escanea_qr_hint">⚡ Escanea el QR de tu domo físico para recibir 1 Es.stok</div>
             </div>
 
             <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;" onclick="window.abrirCamaraQR()" data-clave="perfil_abrir_camara">
-                📷 Escanear con cámara
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                Escanear con cámara
             </button>
 
             <div id="qrReaderContainer">
                 <video id="qrVideo" style="width:100%;max-width:300px;border-radius:10px;background:black;"></video>
                 <canvas id="qrCanvas" style="display:none;"></canvas>
                 <button class="btn btn-danger btn-sm" onclick="window.cerrarCamaraQR()" style="margin-top:8px;" data-clave="perfil_cerrar_camara">
-                    ✕ Cerrar cámara
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    Cerrar cámara
                 </button>
                 <div id="qrCamaraStatus" style="font-size:0.7rem;color:var(--text-muted);margin-top:4px;"></div>
             </div>
@@ -822,12 +1007,15 @@
 
             <div style="margin-top:16px;border-top:1px solid var(--line-black-soft);padding-top:12px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.7rem;color:var(--text-muted);">
-                    <span data-clave="perfil_historial">📋 Últimos escaneos</span>
+                    <span data-clave="perfil_historial">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        Últimos escaneos
+                    </span>
                     <span id="qrHistorialCount">0</span>
                 </div>
                 <div id="qrHistorialList" style="margin-top:8px;">
                     <div class="empty-state" style="padding:10px;">
-                        <span class="icon" style="font-size:1.5rem;">◈</span>
+                        <svg class="icon" viewBox="0 0 24 24" style="width:1.5rem;height:1.5rem;"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/></svg>
                         <p style="font-size:0.7rem;" data-clave="perfil_sin_escaneos">Sin escaneos recientes</p>
                     </div>
                 </div>
@@ -839,21 +1027,36 @@
 <div id="tab-internet" class="tab-content">
     <div class="panel">
         <div class="panel-header">
-            <h3 data-clave="perfil_mis_compras_internet">📶 Mis compras de Internet</h3>
+            <h3 data-clave="perfil_mis_compras_internet">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+                Mis compras de Internet
+            </h3>
             <span class="panel-badge" id="internetOrdenesCount">0</span>
         </div>
         <div class="panel-body">
             <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
                 <button class="btn btn-outline btn-sm internet-filter active" data-filter="all" onclick="window.filtrarOrdenesInternet('all')" data-clave="perfil_filtro_todas">Todas</button>
-                <button class="btn btn-outline btn-sm internet-filter" data-filter="activa" onclick="window.filtrarOrdenesInternet('activa')" data-clave="perfil_filtro_activas">✅ Activas</button>
-                <button class="btn btn-outline btn-sm internet-filter" data-filter="pagando" onclick="window.filtrarOrdenesInternet('pagando')" data-clave="perfil_filtro_pendientes">⏳ Pendientes</button>
-                <button class="btn btn-outline btn-sm internet-filter" data-filter="cancelada" onclick="window.filtrarOrdenesInternet('cancelada')" data-clave="perfil_filtro_canceladas">❌ Canceladas</button>
-                <button class="btn btn-outline btn-sm" onclick="window.cargarOrdenesInternet()" style="margin-left:auto;" data-clave="perfil_refrescar">🔄 Refrescar</button>
+                <button class="btn btn-outline btn-sm internet-filter" data-filter="activa" onclick="window.filtrarOrdenesInternet('activa')" data-clave="perfil_filtro_activas">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                    Activas
+                </button>
+                <button class="btn btn-outline btn-sm internet-filter" data-filter="pagando" onclick="window.filtrarOrdenesInternet('pagando')" data-clave="perfil_filtro_pendientes">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    Pendientes
+                </button>
+                <button class="btn btn-outline btn-sm internet-filter" data-filter="cancelada" onclick="window.filtrarOrdenesInternet('cancelada')" data-clave="perfil_filtro_canceladas">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    Canceladas
+                </button>
+                <button class="btn btn-outline btn-sm" onclick="window.cargarOrdenesInternet()" style="margin-left:auto;" data-clave="perfil_refrescar">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                    Refrescar
+                </button>
             </div>
 
             <div id="ordenesInternetList">
                 <div class="empty-state">
-                    <span class="icon">📶</span>
+                    <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
                     <h4 data-clave="perfil_cargando_ordenes">Cargando órdenes...</h4>
                 </div>
             </div>
@@ -861,14 +1064,31 @@
     </div>
 </div>
 
-</div><footer class="footer">
+</div>
+
+<footer class="footer">
     <span><span class="brand">© Csariel's</span> · Sabor al Paladar · WEB3</span>
     <div class="footer-links">
-        <a href="/terminos" data-clave="perfil_footer_terminos">◈ Términos</a>
-        <a href="/privacidad" data-clave="perfil_footer_privacidad">◈ Privacidad</a>
-        <a href="/cookies" data-clave="perfil_footer_cookies">◈ Cookies</a>
-        <a href="/live-terminos" data-clave="perfil_footer_terminos_live">◈ Términos Live</a>
-        <span style="opacity:0.3;">⚡ Polygon</span>
+        <a href="/terminos" data-clave="perfil_footer_terminos">
+            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Términos
+        </a>
+        <a href="/privacidad" data-clave="perfil_footer_privacidad">
+            <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Privacidad
+        </a>
+        <a href="/cookies" data-clave="perfil_footer_cookies">
+            <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="8.5" cy="8.5" r="1"/><circle cx="15.5" cy="15.5" r="1"/><circle cx="12" cy="12" r="1"/></svg>
+            Cookies
+        </a>
+        <a href="/live-terminos" data-clave="perfil_footer_terminos_live">
+            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4.93 19.07A10 10 0 0 1 4.93 4.93M19.07 19.07a10 10 0 0 0 0-14.14M7.76 16.24a6 6 0 0 1 0-8.48M16.24 16.24a6 6 0 0 0 0-8.48"/><circle cx="12" cy="12" r="2"/></svg>
+            Términos Live
+        </a>
+        <span style="opacity:0.3;display:inline-flex;align-items:center;gap:4px;">
+            <svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            Polygon
+        </span>
     </div>
 </footer>
 
@@ -879,24 +1099,39 @@
 <div class="modal-overlay" id="cryptoPaymentModal">
     <div class="modal-content">
         <button class="close-btn" onclick="window.cerrarModalPago()">✕</button>
-        <h2 data-clave="perfil_pagar_usdt">💳 Pagar con Cripto</h2>
+        <h2 data-clave="perfil_pagar_usdt">
+            <svg class="icon" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            Pagar con Cripto
+        </h2>
         <p class="subtitle" data-clave="perfil_obtencion_cripto">Escanea el QR o copia la dirección para pagar</p>
         <div class="qr-container">
             <img id="cryptoQR" src="" alt="QR de pago" />
         </div>
         <div class="address-box">
-            <div class="label" data-clave="perfil_codigo_qr">📤 Dirección de pago</div>
+            <div class="label" data-clave="perfil_codigo_qr">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                Dirección de pago
+            </div>
             <div class="address" id="cryptoAddress" data-clave="perfil_cargando_direccion">Cargando dirección...</div>
         </div>
         <div class="amount">
             <span id="cryptoMonto">0.00</span> <span id="cryptoMoneda">USDT</span>
         </div>
         <div class="actions">
-            <button class="btn btn-outline btn-sm" onclick="window.copiarDireccion()" data-clave="perfil_copiar_direccion">📋 Copiar dirección</button>
-            <button class="btn btn-gold btn-sm" onclick="window.verificarPagoCrypto()" data-clave="perfil_validacion_real">✅ Verificar pago</button>
+            <button class="btn btn-outline btn-sm" onclick="window.copiarDireccion()" data-clave="perfil_copiar_direccion">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                Copiar dirección
+            </button>
+            <button class="btn btn-gold btn-sm" onclick="window.verificarPagoCrypto()" data-clave="perfil_validacion_real">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                Verificar pago
+            </button>
             <button class="btn btn-outline btn-sm" onclick="window.cerrarModalPago()" data-clave="perfil_cerrar">Cerrar</button>
         </div>
-        <div class="status" id="cryptoStatus" data-clave="perfil_cargando_membresia">⏳ Esperando confirmación de pago...</div>
+        <div class="status" id="cryptoStatus" data-clave="perfil_cargando_membresia">
+            <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Esperando confirmación de pago...
+        </div>
     </div>
 </div>
 
@@ -904,9 +1139,7 @@
     <strong>⚠️ Error detectado:</strong>
     <span id="errorBannerText"></span>
     <button onclick="document.getElementById('errorBanner').style.display='none'" style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">Cerrar</button>
-</div>
-
-<script>
+</div><script>
     function mostrarErrorEnPantalla(mensaje) {
         const banner = document.getElementById('errorBanner');
         const texto = document.getElementById('errorBannerText');
@@ -955,7 +1188,7 @@
 <script src="/features/perfil/perfil.js?v=7" defer></script>
 
 <!-- ============================================================
-     NUEVO: Soporte para abrir tab desde la URL (?tab=qr, ?tab=internet, etc.)
+     Soporte para abrir tab desde la URL (?tab=qr, ?tab=internet, etc.)
      Y soporte para ejecutar acción desde la URL (?action=canjear)
      ============================================================ -->
 <script>
@@ -967,13 +1200,11 @@
         var tab = params.get('tab');
         var action = params.get('action');
 
-        // Abrir tab específica
         if (tab && typeof window.cambiarTab === 'function') {
             setTimeout(function() {
                 window.cambiarTab(tab);
-                console.log('✅ [Perfil] Tab cambiada a:', tab);
+                console.log('[Perfil] Tab cambiada a:', tab);
 
-                // Si es la tab QR, hacer scroll a ella
                 if (tab === 'qr') {
                     var tabContent = document.getElementById('tab-qr');
                     if (tabContent) {
@@ -985,24 +1216,20 @@
             }, 600);
         }
 
-        // Ejecutar acción específica
         if (action === 'canjear') {
             setTimeout(function() {
-                // Primero cambiar a la tab de tokens
                 if (typeof window.cambiarTab === 'function') {
                     window.cambiarTab('tokens');
                 }
-                // Luego abrir el canje
                 setTimeout(function() {
                     if (typeof window.canjearNFT === 'function') {
                         window.canjearNFT();
-                        console.log('✅ [Perfil] Acción canjear ejecutada');
+                        console.log('[Perfil] Acción canjear ejecutada');
                     }
                 }, 500);
             }, 800);
         }
 
-        // Limpiar los parámetros de la URL después de procesarlos
         if (tab || action) {
             setTimeout(function() {
                 try {
@@ -1015,7 +1242,6 @@
         }
     }
 
-    // Ejecutar cuando el DOM esté listo
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function() {
             setTimeout(aplicarParametrosURL, 500);
@@ -1076,35 +1302,35 @@ async function verificarEstadoRepartidorPerfil() {
             badge.textContent = 'Sé el primero';
             badge.className = 'rep-badge no-registrado';
             info.innerHTML = 'Gana dinero entregando pedidos en tu ciudad. Regístrate como repartidor y empieza hoy mismo. <strong>Verificación 100% automática</strong>, sin esperas.';
-            btn.textContent = '✨ Registrarme como repartidor';
+            btn.textContent = 'Registrarme como repartidor';
             btn.className = 'rep-btn registrar';
             return;
         }
         var estado = result.data.estado_verificacion;
         if (estado === 'activo') {
-            badge.textContent = '✓ Verificado';
+            badge.textContent = 'Verificado';
             badge.className = 'rep-badge activo';
             info.innerHTML = 'Eres repartidor verificado. Puedes recibir pedidos ahora mismo. <strong>Score: ' + (result.data.score_confianza || 100) + '</strong>';
-            btn.textContent = '🛵 Ir a mi panel de repartidor';
+            btn.textContent = 'Ir a mi panel de repartidor';
             btn.className = 'rep-btn ir-panel';
         } else if (estado === 'procesando' || estado === 'revision_manual') {
             badge.textContent = 'En revisión';
             badge.className = 'rep-badge pendiente';
             info.innerHTML = 'Estamos verificando tu identidad. Te avisaremos cuando termine. <strong>Esto puede tomar hasta 24 horas.</strong>';
-            btn.textContent = '⏳ Ver estado de verificación';
+            btn.textContent = 'Ver estado de verificación';
             btn.className = 'rep-btn ver-estado';
         } else if (estado === 'rechazado') {
             badge.textContent = 'Rechazado';
             badge.className = 'rep-badge rechazado';
             var motivo = result.data.motivo_rechazo || 'Revisa los requisitos';
             info.innerHTML = 'Tu registro fue rechazado. <strong>Motivo:</strong> ' + motivo;
-            btn.textContent = '🔄 Volver a intentar';
+            btn.textContent = 'Volver a intentar';
             btn.className = 'rep-btn reintentar';
         } else {
             badge.textContent = 'Completar';
             badge.className = 'rep-badge pendiente';
             info.innerHTML = 'Tienes un registro pendiente. <strong>Complétalo para empezar a ganar.</strong>';
-            btn.textContent = '📝 Completar registro';
+            btn.textContent = 'Completar registro';
             btn.className = 'rep-btn registrar';
         }
     } catch (e) {
@@ -1118,7 +1344,7 @@ async function irARepartidorDesdePerfil() {
         if (!client) return;
         var session = await client.auth.getSession();
         if (!session.data.session) {
-            if (window.showToast) window.showToast('⚠️ Inicia sesión', 'warning');
+            if (window.showToast) window.showToast('Inicia sesión', 'warning');
             return;
         }
         var usuarioId = session.data.session.user.id;
@@ -1174,11 +1400,17 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+
 <script>
-/* PUBLICACIONES DEL PERFIL */
+/* ============================================================
+   PUBLICACIONES DEL PERFIL
+   Sistema único: tabla 'publicaciones' (sin fallbacks a muro_posts)
+   ============================================================ */
 (function() {
     'use strict';
+
     function sb() { return window.supabaseClient; }
+
     var archivosSeleccionados = { imagen: null, video: null };
     var EMOJIS_REACCION = ['❤️', '😊', '🔥', '👏', '🎉', '💎', '🤩', '😍', '😂'];
     var emojisDisponibles = ['😀','😁','😂','🤣','😃','😄','😅','😊','😇','🙂','😉','😍','🥰','😘','😗','😙','😚','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🤐','🤨','😐','😑','😶','😏','😒','🙄','😬','🤥','😌','😔','😪','🤤','😴','😷','🤒','🤕','🤢','🤮','🤧','🥵','🥶','😵','🤯','🤠','🥳','😎','🤓','🧐','😕','😟','🙁','😮','😯','😲','😳','🥺','😦','😧','😨','😰','😥','😢','😭','😱','😖','😣','😞','😓','😩','😫','🥱','😤','😡','😠','🤬','😈','👿','💀','💩','🤡','👹','👺','👻','👽','👾','🤖','❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','🔥','✨','🌟','💫','⭐','⚡','💥','💢','🌈','☀️','🌤️','⛅','🌥️','☁️','🌦️','🌧️','⛈️','🌩️','🌨️','❄️','☃️','⛄','🌬️','💨','🌪️','🌫️','🌊','💧','💦','☔','☂️','🌂','🎉','🎊','🎈','🎁','🎂','🍰','🧁','🍕','🍔','🍟','🌮','🌯','🍿','🍩','🍪','🍫','🍬','🍭','🍮','🍯','🍷','🍸','🍹','🍺','🍻','🥂','🥃','🍾','☕','🍵','🧃','🥤','🧋','🍼','🥛','💊','🌿','🍃','🍀','🍁','🍂','🌸','🌺','🌻','🌹','🌷','🌼','💐','🌱','🌲','🌳','🌴','🌵','🌾','🍄','🐚','🪨','🌍','🌎','🌏','🌕','🌖','🌗','🌘','🌑','🌒','🌓','🌔','🌙','🌚','🌝','🌞','🪐','☄️','🌠','🌌'];
@@ -1230,11 +1462,11 @@ document.addEventListener('DOMContentLoaded', function() {
         var file = event.target.files[0];
         if (!file) return;
         if (tipo === 'imagen') {
-            if (file.size > 10 * 1024 * 1024) { if (window.showToast) window.showToast('❌ Imagen mayor a 10 MB', 'error'); event.target.value = ''; return; }
-            if (!file.type.startsWith('image/')) { if (window.showToast) window.showToast('❌ Solo imágenes', 'error'); event.target.value = ''; return; }
+            if (file.size > 10 * 1024 * 1024) { if (window.showToast) window.showToast('Imagen mayor a 10 MB', 'error'); event.target.value = ''; return; }
+            if (!file.type.startsWith('image/')) { if (window.showToast) window.showToast('Solo imágenes', 'error'); event.target.value = ''; return; }
         } else if (tipo === 'video') {
-            if (file.size > 50 * 1024 * 1024) { if (window.showToast) window.showToast('❌ Video mayor a 50 MB', 'error'); event.target.value = ''; return; }
-            if (!file.type.startsWith('video/')) { if (window.showToast) window.showToast('❌ Solo videos', 'error'); event.target.value = ''; return; }
+            if (file.size > 50 * 1024 * 1024) { if (window.showToast) window.showToast('Video mayor a 50 MB', 'error'); event.target.value = ''; return; }
+            if (!file.type.startsWith('video/')) { if (window.showToast) window.showToast('Solo videos', 'error'); event.target.value = ''; return; }
         }
         archivosSeleccionados[tipo] = file;
         renderizarPreviewPerfil();
@@ -1275,21 +1507,21 @@ document.addEventListener('DOMContentLoaded', function() {
         var input = document.getElementById('inputNuevaPublicacion');
         var contenido = input ? input.value.trim() : '';
         if (!contenido && !archivosSeleccionados.imagen && !archivosSeleccionados.video) {
-            if (window.showToast) window.showToast('⚠️ Escribe algo o sube una foto/video', 'warning');
+            if (window.showToast) window.showToast('Escribe algo o sube una foto/video', 'warning');
             return;
         }
-        var textoOriginalBtn = btn ? btn.textContent : '◈ Publicar';
-        if (btn) { btn.disabled = true; btn.textContent = '⏳ Publicando...'; }
+        var textoOriginalBtn = btn ? btn.innerHTML : 'Publicar';
+        if (btn) { btn.disabled = true; btn.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Publicando...'; }
         try {
             var client = sb();
             if (!client) throw new Error('Supabase no está listo. Recarga la página.');
             var sessionResult = await client.auth.getSession();
             var session = sessionResult.data.session;
-            if (!session) { if (window.showToast) window.showToast('⚠️ Inicia sesión', 'error'); return; }
+            if (!session) { if (window.showToast) window.showToast('Inicia sesión', 'error'); return; }
             var mediaUrl = null;
             var mediaType = null;
             if (archivosSeleccionados.imagen) {
-                if (window.showToast) window.showToast('⏳ Subiendo imagen...', '', 5000);
+                if (window.showToast) window.showToast('Subiendo imagen...', '', 5000);
                 var file = archivosSeleccionados.imagen;
                 var ext = file.name.split('.').pop().toLowerCase();
                 var filePath = session.user.id + '/post_' + Date.now() + '.' + ext;
@@ -1300,7 +1532,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 mediaType = 'imagen';
             }
             if (archivosSeleccionados.video) {
-                if (window.showToast) window.showToast('⏳ Subiendo video...', '', 15000);
+                if (window.showToast) window.showToast('Subiendo video...', '', 15000);
                 var vfile = archivosSeleccionados.video;
                 var vext = vfile.name.split('.').pop().toLowerCase();
                 var vfilePath = session.user.id + '/video_' + Date.now() + '.' + vext;
@@ -1312,12 +1544,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             var insertPayload = { usuario_id: session.user.id, contenido: contenido || '', media_url: mediaUrl, media_type: mediaType, estado: 'publicado' };
             var insertResult = await client.from('publicaciones').insert(insertPayload).select().single();
-            if (insertResult.error) {
-                delete insertPayload.estado;
-                var fb = await client.from('publicaciones').insert(insertPayload).select().single();
-                if (fb.error) throw new Error(fb.error.message);
-            }
-            if (window.showToast) window.showToast('✅ ¡Publicación creada!', 'success');
+            if (insertResult.error) throw new Error(insertResult.error.message);
+            if (window.showToast) window.showToast('¡Publicación creada!', 'success');
             if (input) input.value = '';
             archivosSeleccionados.imagen = null;
             archivosSeleccionados.video = null;
@@ -1327,9 +1555,9 @@ document.addEventListener('DOMContentLoaded', function() {
             await window.cargarMisPublicaciones();
         } catch (error) {
             console.error('Error publicando:', error);
-            if (window.showToast) window.showToast('❌ Error: ' + error.message, 'error');
+            if (window.showToast) window.showToast('Error: ' + error.message, 'error');
         } finally {
-            if (btn) { btn.disabled = false; btn.textContent = textoOriginalBtn; }
+            if (btn) { btn.disabled = false; btn.innerHTML = textoOriginalBtn; }
         }
     };
 
@@ -1354,7 +1582,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var sessionResult = await client.auth.getSession();
             var session = sessionResult.data.session;
             if (!session) {
-                container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h4>Inicia sesión</h4><p>Para ver tus publicaciones</p></div>';
+                container.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/></svg><h4>Inicia sesión</h4><p>Para ver tus publicaciones</p></div>';
                 return;
             }
             var result = await client.from('publicaciones').select('*').eq('usuario_id', session.user.id).order('created_at', { ascending: false }).limit(50);
@@ -1362,10 +1590,11 @@ document.addEventListener('DOMContentLoaded', function() {
             var publicaciones = result.data || [];
             if (contador) contador.textContent = publicaciones.length;
             if (publicaciones.length === 0) {
-                container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h4>Sin publicaciones aún</h4><p>Publica algo para verlo aquí</p></div>';
+                container.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/></svg><h4>Sin publicaciones aún</h4><p>Publica algo para verlo aquí</p></div>';
                 return;
             }
             container.innerHTML = '';
+
             var reaccionesUsuario = {};
             try {
                 var reaccResult = await client.from('publicaciones_reacciones').select('publicacion_id, tipo').eq('usuario_id', session.user.id);
@@ -1373,6 +1602,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     reaccResult.data.forEach(function(r) { reaccionesUsuario[r.publicacion_id] = r.tipo; });
                 }
             } catch(e) {}
+
             var conteosReacciones = {};
             try {
                 var allReacc = await client.from('publicaciones_reacciones').select('publicacion_id, tipo');
@@ -1383,7 +1613,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
                 }
             } catch(e) {}
+
             var avatarHtml = obtenerAvatarActual();
+
             publicaciones.forEach(function(p) {
                 var card = document.createElement('div');
                 card.className = 'publicacion-card';
@@ -1401,6 +1633,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 var totalReacciones = 0;
                 Object.keys(conteos).forEach(function(k) { totalReacciones += (conteos[k] || 0); });
                 var emojiMostrado = reaccionUsuario || '❤️';
+
                 var dropdownHtml = '<div class="reaccion-dropdown" id="reaccion-dropdown-' + p.id + '" data-no-traducir="1">';
                 EMOJIS_REACCION.forEach(function(emoji) {
                     var count = conteos[emoji] || 0;
@@ -1408,6 +1641,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     dropdownHtml += '<button type="button" data-no-traducir="1" class="' + activo.trim() + '" onclick="event.stopPropagation(); window.reaccionarPublicacionPerfil(\'' + p.id + '\', \'' + emoji + '\')" title="Reaccionar ' + emoji + '">' + emoji + (count > 0 ? '<span class="mini-count" data-no-traducir="1">' + count + '</span>' : '') + '</button>';
                 });
                 dropdownHtml += '</div>';
+
                 var triggerClass = 'reaccion-trigger' + (reaccionUsuario ? ' activa' : '');
                 var triggerHtml =
                     '<div class="reaccion-wrap" data-no-traducir="1">' +
@@ -1417,12 +1651,13 @@ document.addEventListener('DOMContentLoaded', function() {
                             (totalReacciones > 0 ? '<span class="count" data-no-traducir="1">' + totalReacciones + '</span>' : '<span class="count" data-no-traducir="1">Reaccionar</span>') +
                         '</button>' +
                     '</div>';
+
                 card.innerHTML =
                     '<div class="header"><div class="avatar">' + avatarHtml + '</div><div><div class="nombre" data-no-traducir="1">Mi publicación</div><div class="fecha" data-no-traducir="1">' + fecha + '</div></div></div>' +
                     '<div class="contenido" data-no-traducir="1">' + contenidoHtml + '</div>' + triggerHtml +
                     '<div class="stats" data-no-traducir="1">' +
-                        '<button type="button" data-no-traducir="1" class="btn-accion-pub" onclick="event.stopPropagation(); window.toggleComentariosPerfil(\'' + p.id + '\')">💬 Comentarios</button>' +
-                        '<button type="button" data-no-traducir="1" class="btn-accion-pub danger" onclick="event.stopPropagation(); window.eliminarMiPublicacion(\'' + p.id + '\', event)">Eliminar</button>' +
+                        '<button type="button" data-no-traducir="1" class="btn-accion-pub" onclick="event.stopPropagation(); window.toggleComentariosPerfil(\'' + p.id + '\')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Comentarios</button>' +
+                        '<button type="button" data-no-traducir="1" class="btn-accion-pub danger" onclick="event.stopPropagation(); window.eliminarMiPublicacion(\'' + p.id + '\', event)"><svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg> Eliminar</button>' +
                     '</div>' +
                     '<div class="comentarios-container" data-no-traducir="1" id="comentarios-container-' + p.id + '">' +
                         '<div class="comentarios-lista" data-no-traducir="1" id="comentarios-lista-' + p.id + '"></div>' +
@@ -1438,7 +1673,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         } catch (error) {
             console.error('Error cargando mis publicaciones:', error);
-            container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h4>Error al cargar</h4><p>' + error.message + '</p></div>';
+            container.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><h4>Error al cargar</h4><p>' + error.message + '</p></div>';
         }
     };
 
@@ -1459,13 +1694,13 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!client) return;
             var sessionResult = await client.auth.getSession();
             var session = sessionResult.data.session;
-            if (!session) { if (window.showToast) window.showToast('⚠️ Inicia sesión', 'error'); return; }
+            if (!session) { if (window.showToast) window.showToast('Inicia sesión', 'error'); return; }
             var dd = document.getElementById('reaccion-dropdown-' + postId);
             if (dd) dd.classList.remove('show');
             var existing = await client.from('publicaciones_reacciones').select('id, tipo').eq('publicacion_id', postId).eq('usuario_id', session.user.id).maybeSingle();
             if (existing.data && existing.data.tipo === emoji) {
                 await client.from('publicaciones_reacciones').delete().eq('id', existing.data.id);
-                if (window.showToast) window.showToast('💔 Reacción eliminada', 'warning', 2000);
+                if (window.showToast) window.showToast('Reacción eliminada', 'warning', 2000);
             } else {
                 if (existing.data) {
                     await client.from('publicaciones_reacciones').update({ tipo: emoji }).eq('id', existing.data.id);
@@ -1473,7 +1708,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     var insert = await client.from('publicaciones_reacciones').insert({ publicacion_id: postId, usuario_id: session.user.id, tipo: emoji });
                     if (insert.error) throw insert.error;
                 }
-                if (window.showToast) window.showToast(emoji + ' ¡Reacción registrada!', 'success', 2000);
+                if (window.showToast) window.showToast(emoji + ' Reacción registrada', 'success', 2000);
             }
             await recargarBarraReacciones(postId);
         } catch (error) {
@@ -1536,10 +1771,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var client = sb();
             if (!client) return;
             var result = await client.from('publicaciones_comentarios').select('*').eq('publicacion_id', publicacionId).order('created_at', { ascending: true });
-            if (result.error && result.error.code === '42P01') {
-                result = await client.from('muro_comentarios').select('*').eq('post_id', publicacionId).order('created_at', { ascending: true });
-            }
-            if (result.error && result.error.code !== '42P01') throw result.error;
+            if (result.error) throw result.error;
             var comentarios = result.data || [];
             if (comentarios.length === 0) {
                 lista.innerHTML = '<div style="font-size:0.7rem;color:var(--text-muted);padding:4px;">Sin comentarios. ¡Sé el primero!</div>';
@@ -1573,12 +1805,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!session) return;
             var payload = { publicacion_id: publicacionId, usuario_id: session.user.id, contenido: texto, created_at: new Date().toISOString() };
             var result = await client.from('publicaciones_comentarios').insert(payload);
-            if (result.error && result.error.code === '42P01') {
-                result = await client.from('muro_comentarios').insert({ post_id: publicacionId, usuario_id: session.user.id, contenido: texto, created_at: new Date().toISOString() });
-            }
             if (result.error) throw new Error(result.error.message);
             if (input) input.value = '';
-            if (window.showToast) window.showToast('💬 Comentario publicado', 'success');
+            if (window.showToast) window.showToast('Comentario publicado', 'success');
             await cargarComentariosPerfil(publicacionId);
         } catch (error) {
             console.error('Error enviando comentario:', error);
@@ -1594,7 +1823,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!confirm(confirmMsg)) return;
         try {
             var client = sb();
-            if (!client) { if (window.showToast) window.showToast('❌ Supabase no disponible', 'error'); return; }
+            if (!client) { if (window.showToast) window.showToast('Supabase no disponible', 'error'); return; }
             try {
                 var pubRes = await client.from('publicaciones').select('media_url').eq('id', publicacionId).maybeSingle();
                 if (pubRes && pubRes.data && pubRes.data.media_url) {
@@ -1617,11 +1846,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             var result = await client.from('publicaciones').delete().eq('id', publicacionId);
             if (result.error) throw new Error(result.error.message);
-            if (window.showToast) window.showToast('✅ Publicación eliminada', 'success');
+            if (window.showToast) window.showToast('Publicación eliminada', 'success');
             await window.cargarMisPublicaciones();
         } catch (error) {
             console.error('Error eliminando:', error);
-            if (window.showToast) window.showToast('❌ Error al eliminar: ' + error.message, 'error');
+            if (window.showToast) window.showToast('Error al eliminar: ' + error.message, 'error');
         }
     };
 
@@ -1667,30 +1896,30 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     function estadoInfo(estado) {
         var map = {
-            'pendiente':   { color: '#f59e0b', icon: '⏳', texto: 'Pendiente de pago', bg: 'rgba(245, 158, 11, 0.12)' },
-            'pagando':     { color: '#f59e0b', icon: '⏳', texto: 'Procesando pago',  bg: 'rgba(245, 158, 11, 0.12)' },
-            'confirmando': { color: '#22d3ee', icon: '⏱️', texto: 'Confirmando',         bg: 'rgba(34, 211, 238, 0.12)' },
-            'pagada':      { color: '#00d68f', icon: '💚', texto: 'Pagada',                    bg: 'rgba(0, 214, 143, 0.12)' },
-            'activa':      { color: '#00d68f', icon: '✅', texto: 'Activa',                    bg: 'rgba(0, 214, 143, 0.12)' },
-            'activada':    { color: '#00d68f', icon: '✅', texto: 'Activa',                    bg: 'rgba(0, 214, 143, 0.12)' },
-            'completado':  { color: '#00d68f', icon: '✅', texto: 'Completado',            bg: 'rgba(0, 214, 143, 0.12)' },
-            'cancelada':   { color: '#ff3366', icon: '❌', texto: 'Cancelada',              bg: 'rgba(255, 51, 102, 0.12)' },
-            'cancelado':   { color: '#ff3366', icon: '❌', texto: 'Cancelada',              bg: 'rgba(255, 51, 102, 0.12)' }
+            'pendiente':   { color: '#f59e0b', texto: 'Pendiente de pago', bg: 'rgba(245, 158, 11, 0.12)' },
+            'pagando':     { color: '#f59e0b', texto: 'Procesando pago',  bg: 'rgba(245, 158, 11, 0.12)' },
+            'confirmando': { color: '#22d3ee', texto: 'Confirmando',         bg: 'rgba(34, 211, 238, 0.12)' },
+            'pagada':      { color: '#00d68f', texto: 'Pagada',                    bg: 'rgba(0, 214, 143, 0.12)' },
+            'activa':      { color: '#00d68f', texto: 'Activa',                    bg: 'rgba(0, 214, 143, 0.12)' },
+            'activada':    { color: '#00d68f', texto: 'Activa',                    bg: 'rgba(0, 214, 143, 0.12)' },
+            'completado':  { color: '#00d68f', texto: 'Completado',            bg: 'rgba(0, 214, 143, 0.12)' },
+            'cancelada':   { color: '#ff3366', texto: 'Cancelada',              bg: 'rgba(255, 51, 102, 0.12)' },
+            'cancelado':   { color: '#ff3366', texto: 'Cancelada',              bg: 'rgba(255, 51, 102, 0.12)' }
         };
-        return map[estado] || { color: '#8aa8b8', icon: '◈', texto: estado || 'Desconocido', bg: 'rgba(138, 168, 184, 0.12)' };
+        return map[estado] || { color: '#8aa8b8', texto: estado || 'Desconocido', bg: 'rgba(138, 168, 184, 0.12)' };
     }
     window.cargarOrdenesInternet = async function() {
         var list = document.getElementById('ordenesInternetList');
         var contador = document.getElementById('internetOrdenesCount');
         if (!list) return;
-        list.innerHTML = '<div class="empty-state"><span class="icon">📶</span><h4>Cargando órdenes...</h4></div>';
+        list.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg><h4>Cargando órdenes...</h4></div>';
         try {
             var client = sb();
             if (!client) throw new Error('Supabase no disponible');
             var sessionResult = await client.auth.getSession();
             var session = sessionResult.data.session;
             if (!session) {
-                list.innerHTML = '<div class="empty-state"><span class="icon">📶</span><h4>Inicia sesión</h4><p>Para ver tu historial de compras</p></div>';
+                list.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg><h4>Inicia sesión</h4><p>Para ver tu historial de compras</p></div>';
                 return;
             }
             var response = await client
@@ -1703,13 +1932,13 @@ document.addEventListener('DOMContentLoaded', function() {
             ordenesInternet = response.data || [];
             if (contador) contador.textContent = ordenesInternet.length;
             if (ordenesInternet.length === 0) {
-                list.innerHTML = '<div class="empty-state"><span class="icon">📶</span><h4>Sin compras de Internet</h4><p>Cuando compres un paquete aparecerá aquí</p></div>';
+                list.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg><h4>Sin compras de Internet</h4><p>Cuando compres un paquete aparecerá aquí</p></div>';
                 return;
             }
             renderOrdenesInternet();
         } catch (error) {
             console.error('Error cargando órdenes Internet:', error);
-            list.innerHTML = '<div class="empty-state"><span class="icon">❌</span><h4>Error al cargar</h4><p style="font-size:0.75rem;">' + escapeHTML(error.message) + '</p></div>';
+            list.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><h4>Error al cargar</h4><p style="font-size:0.75rem;">' + escapeHTML(error.message) + '</p></div>';
         }
     };
     function renderOrdenesInternet() {
@@ -1719,7 +1948,7 @@ document.addEventListener('DOMContentLoaded', function() {
             ? ordenesInternet
             : ordenesInternet.filter(function(o){ return o.estado === filtroInternet; });
         if (filtered.length === 0) {
-            list.innerHTML = '<div class="empty-state"><span class="icon">📶</span><h4>Sin órdenes en este filtro</h4></div>';
+            list.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg><h4>Sin órdenes en este filtro</h4></div>';
             return;
         }
         list.innerHTML = filtered.map(function(o) {
@@ -1729,20 +1958,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">' +
                     '<div style="flex:1;min-width:180px;">' +
                         '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">' +
-                            '<span style="font-size:1.3rem;">📦</span>' +
+                            '<svg class="icon" viewBox="0 0 24 24"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>' +
                             '<strong style="color:var(--gold);font-size:0.9rem;font-family:\'Orbitron\',monospace;">' + escapeHTML(o.plan_nombre || 'Paquete') + '</strong>' +
                         '</div>' +
-                        '<div style="color:var(--text-secondary);font-size:0.8rem;line-height:1.6;">📊 <strong>' + (o.datos_gb || 0) + ' GB</strong> · 📅 ' + (o.duracion_dias || 0) + ' días</div>' +
-                        '<div style="color:var(--text-muted);font-size:0.7rem;margin-top:4px;">📱 ' + escapeHTML(o.telefono_activacion || '—') + '</div>' +
+                        '<div style="color:var(--text-secondary);font-size:0.8rem;line-height:1.6;"><strong>' + (o.datos_gb || 0) + ' GB</strong> · ' + (o.duracion_dias || 0) + ' días</div>' +
+                        '<div style="color:var(--text-muted);font-size:0.7rem;margin-top:4px;">' + escapeHTML(o.telefono_activacion || '—') + '</div>' +
                     '</div>' +
                     '<div style="text-align:right;min-width:140px;">' +
-                        '<div style="background:' + info.bg + ';color:' + info.color + ';padding:4px 12px;border-radius:20px;font-size:0.65rem;font-weight:700;display:inline-block;margin-bottom:6px;">' + info.icon + ' ' + escapeHTML(info.texto) + '</div>' +
+                        '<div style="background:' + info.bg + ';color:' + info.color + ';padding:4px 12px;border-radius:20px;font-size:0.65rem;font-weight:700;display:inline-block;margin-bottom:6px;">' + escapeHTML(info.texto) + '</div>' +
                         '<div style="color:var(--gold);font-family:\'Orbitron\',monospace;font-size:1rem;font-weight:700;">$' + parseFloat(o.monto_mxn || 0).toFixed(2) + ' MXN</div>' +
                     '</div>' +
                 '</div>' +
                 '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid rgba(0,0,0,0.5);font-size:0.65rem;color:var(--text-muted);flex-wrap:wrap;gap:6px;">' +
-                    '<span>🕐 ' + formatearFecha(o.created_at) + '</span>' +
-                    (esActiva && o.activado_en ? '<span style="color:var(--success);">✓ ' + formatearFecha(o.activado_en) + '</span>' : '') +
+                    '<span>' + formatearFecha(o.created_at) + '</span>' +
+                    (esActiva && o.activado_en ? '<span style="color:var(--success);">' + formatearFecha(o.activado_en) + '</span>' : '') +
                 '</div>' +
             '</div>';
         }).join('');
@@ -1807,11 +2036,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (usuario.avatar_url) {
                     avatarElement.innerHTML =
                         '<img src="' + usuario.avatar_url + '" alt="Avatar">' +
-                        '<span class="avatar-menu-toggle" onclick="event.stopPropagation(); window.toggleAvatarMenu(event)" title="Opciones de foto">✎</span>';
+                        '<span class="avatar-menu-toggle" onclick="event.stopPropagation(); window.toggleAvatarMenu(event)" title="Opciones de foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></span>';
                 } else {
                     avatarElement.innerHTML =
                         '◈' +
-                        '<span class="avatar-menu-toggle" onclick="event.stopPropagation(); window.toggleAvatarMenu(event)" title="Opciones de foto">✎</span>';
+                        '<span class="avatar-menu-toggle" onclick="event.stopPropagation(); window.toggleAvatarMenu(event)" title="Opciones de foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></span>';
                 }
             }
         } catch (error) {
