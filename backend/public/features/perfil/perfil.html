@@ -7,13 +7,8 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
-<!-- 1) SDK de Supabase -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-
-<!-- 2) Guardia de autenticación global -->
 <script src="/features/shared/js/auth-global.js"></script>
-
-<!-- 3) Apariencia global (usa window.supabaseClient que ya creó auth-global) -->
 <script src="/features/shared/js/apariencia-global.js?v=6" defer></script>
 
 <style>
@@ -866,9 +861,7 @@
     </div>
 </div>
 
-</div>
-
-<footer class="footer">
+</div><footer class="footer">
     <span><span class="brand">© Csariel's</span> · Sabor al Paladar · WEB3</span>
     <div class="footer-links">
         <a href="/terminos" data-clave="perfil_footer_terminos">◈ Términos</a>
@@ -935,9 +928,7 @@
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 
 <script>
-/* ================================================================
-   INICIALIZACIÓN DE IDIOMAS — UNA SOLA VEZ, ANTES DE perfil.js
-=============================================================== */
+/* INICIALIZACIÓN DE IDIOMAS — UNA SOLA VEZ, ANTES DE perfil.js */
 (function() {
     'use strict';
     var intentos = 0;
@@ -960,14 +951,10 @@
 })();
 </script>
 
-<script src="/features/shared/js/idiomas.js?v=6" defer></script>
-<script src="/features/perfil/perfil.js?v=6" defer></script>
+<script src="/features/shared/js/idiomas.js?v=7" defer></script>
+<script src="/features/perfil/perfil.js?v=7" defer></script>
 
 <script>
-/* ================================================================
-   AVATAR MENU + REPARTIDOR + LISTENERS GLOBALES
-   — NO se vuelve a llamar inicializarIdiomas() aquí —
-=============================================================== */
 var CONFIG_LEGAL = {
     nombre_comercial: 'Csariel\'s',
     nombre_ecosistema: 'Csariel\'s Ecosystem',
@@ -1092,10 +1079,6 @@ window.irARepartidorDesdePerfil = irARepartidorDesdePerfil;
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(verificarEstadoRepartidorPerfil, 1500);
 
-    /* ⚠️ NO llamar inicializarIdiomas() aquí.
-       Ya se llamó UNA sola vez en el bloque de arriba.
-       Llamarlo otra vez rompería los onclick de las tarjetas. */
-
     document.addEventListener('click', function(e) {
         var menu = document.getElementById('avatarMenu');
         var avatar = document.getElementById('perfilAvatar');
@@ -1118,20 +1101,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
-</script>
-
-<script>
-/* ================================================================
-   PUBLICACIONES DEL PERFIL
-=============================================================== */
+</script><script>
+/* PUBLICACIONES DEL PERFIL */
 (function() {
     'use strict';
-
     function sb() { return window.supabaseClient; }
-
     var archivosSeleccionados = { imagen: null, video: null };
     var EMOJIS_REACCION = ['❤️', '😊', '🔥', '👏', '🎉', '💎', '🤩', '😍', '😂'];
-
     var emojisDisponibles = ['😀','😁','😂','🤣','😃','😄','😅','😊','😇','🙂','😉','😍','🥰','😘','😗','😙','😚','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🤐','🤨','😐','😑','😶','😏','😒','🙄','😬','🤥','😌','😔','😪','🤤','😴','😷','🤒','🤕','🤢','🤮','🤧','🥵','🥶','😵','🤯','🤠','🥳','😎','🤓','🧐','😕','😟','🙁','😮','😯','😲','😳','🥺','😦','😧','😨','😰','😥','😢','😭','😱','😖','😣','😞','😓','😩','😫','🥱','😤','😡','😠','🤬','😈','👿','💀','💩','🤡','👹','👺','👻','👽','👾','🤖','❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','🔥','✨','🌟','💫','⭐','⚡','💥','💢','🌈','☀️','🌤️','⛅','🌥️','☁️','🌦️','🌧️','⛈️','🌩️','🌨️','❄️','☃️','⛄','🌬️','💨','🌪️','🌫️','🌊','💧','💦','☔','☂️','🌂','🎉','🎊','🎈','🎁','🎂','🍰','🧁','🍕','🍔','🍟','🌮','🌯','🍿','🍩','🍪','🍫','🍬','🍭','🍮','🍯','🍷','🍸','🍹','🍺','🍻','🥂','🥃','🍾','☕','🍵','🧃','🥤','🧋','🍼','🥛','💊','🌿','🍃','🍀','🍁','🍂','🌸','🌺','🌻','🌹','🌷','🌼','💐','🌱','🌲','🌳','🌴','🌵','🌾','🍄','🐚','🪨','🌍','🌎','🌏','🌕','🌖','🌗','🌘','🌑','🌒','🌓','🌔','🌙','🌚','🌝','🌞','🪐','☄️','🌠','🌌'];
 
     window.toggleEmojiPickerPerfil = function() {
@@ -1349,12 +1325,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 var fecha = p.created_at ? new Date(p.created_at).toLocaleString() : '';
                 var reaccionUsuario = reaccionesUsuario[p.id] || null;
                 var conteos = conteosReacciones[p.id] || {};
-
                 var totalReacciones = 0;
                 Object.keys(conteos).forEach(function(k) { totalReacciones += (conteos[k] || 0); });
-
                 var emojiMostrado = reaccionUsuario || '❤️';
-
                 var dropdownHtml = '<div class="reaccion-dropdown" id="reaccion-dropdown-' + p.id + '" data-no-traducir="1">';
                 EMOJIS_REACCION.forEach(function(emoji) {
                     var count = conteos[emoji] || 0;
@@ -1362,7 +1335,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     dropdownHtml += '<button type="button" data-no-traducir="1" class="' + activo.trim() + '" onclick="event.stopPropagation(); window.reaccionarPublicacionPerfil(\'' + p.id + '\', \'' + emoji + '\')" title="Reaccionar ' + emoji + '">' + emoji + (count > 0 ? '<span class="mini-count" data-no-traducir="1">' + count + '</span>' : '') + '</button>';
                 });
                 dropdownHtml += '</div>';
-
                 var triggerClass = 'reaccion-trigger' + (reaccionUsuario ? ' activa' : '');
                 var triggerHtml =
                     '<div class="reaccion-wrap" data-no-traducir="1">' +
@@ -1372,7 +1344,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             (totalReacciones > 0 ? '<span class="count" data-no-traducir="1">' + totalReacciones + '</span>' : '<span class="count" data-no-traducir="1">Reaccionar</span>') +
                         '</button>' +
                     '</div>';
-
                 card.innerHTML =
                     '<div class="header"><div class="avatar">' + avatarHtml + '</div><div><div class="nombre" data-no-traducir="1">Mi publicación</div><div class="fecha" data-no-traducir="1">' + fecha + '</div></div></div>' +
                     '<div class="contenido" data-no-traducir="1">' + contenidoHtml + '</div>' + triggerHtml +
@@ -1388,8 +1359,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         '</div>' +
                     '</div>';
                 container.appendChild(card);
-
-                /* Blindar botones contra sobrescritura de textContent */
                 card.querySelectorAll('.btn-accion-pub, .reaccion-trigger, .reaccion-dropdown button, .stats, .comentarios-container').forEach(function(btn) {
                     btn.setAttribute('data-no-traducir', '1');
                 });
@@ -1418,10 +1387,8 @@ document.addEventListener('DOMContentLoaded', function() {
             var sessionResult = await client.auth.getSession();
             var session = sessionResult.data.session;
             if (!session) { if (window.showToast) window.showToast('⚠️ Inicia sesión', 'error'); return; }
-
             var dd = document.getElementById('reaccion-dropdown-' + postId);
             if (dd) dd.classList.remove('show');
-
             var existing = await client.from('publicaciones_reacciones').select('id, tipo').eq('publicacion_id', postId).eq('usuario_id', session.user.id).maybeSingle();
             if (existing.data && existing.data.tipo === emoji) {
                 await client.from('publicaciones_reacciones').delete().eq('id', existing.data.id);
@@ -1456,16 +1423,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 conteos[r.tipo] = (conteos[r.tipo] || 0) + 1;
                 if (r.usuario_id === session.user.id) reaccionUsuario = r.tipo;
             });
-
             var dd = document.getElementById('reaccion-dropdown-' + postId);
             if (!dd) return;
             var wrap = dd.parentElement;
             if (!wrap) return;
-
             var total = 0;
             Object.keys(conteos).forEach(function(k) { total += conteos[k]; });
             var emojiMostrado = reaccionUsuario || '❤️';
-
             var ddHtml = '';
             EMOJIS_REACCION.forEach(function(emoji) {
                 var count = conteos[emoji] || 0;
@@ -1473,7 +1437,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 ddHtml += '<button type="button" data-no-traducir="1" class="' + activo.trim() + '" onclick="event.stopPropagation(); window.reaccionarPublicacionPerfil(\'' + postId + '\', \'' + emoji + '\')" title="Reaccionar ' + emoji + '">' + emoji + (count > 0 ? '<span class="mini-count" data-no-traducir="1">' + count + '</span>' : '') + '</button>';
             });
             dd.innerHTML = ddHtml;
-
             var trigger = wrap.querySelector('.reaccion-trigger');
             if (trigger) {
                 trigger.className = 'reaccion-trigger' + (reaccionUsuario ? ' activa' : '');
@@ -1559,7 +1522,6 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             var client = sb();
             if (!client) { if (window.showToast) window.showToast('❌ Supabase no disponible', 'error'); return; }
-
             try {
                 var pubRes = await client.from('publicaciones').select('media_url').eq('id', publicacionId).maybeSingle();
                 if (pubRes && pubRes.data && pubRes.data.media_url) {
@@ -1580,7 +1542,6 @@ document.addEventListener('DOMContentLoaded', function() {
             } catch (storageErr) {
                 console.warn('Error obteniendo media_url:', storageErr);
             }
-
             var result = await client.from('publicaciones').delete().eq('id', publicacionId);
             if (result.error) throw new Error(result.error.message);
             if (window.showToast) window.showToast('✅ Publicación eliminada', 'success');
@@ -1612,22 +1573,16 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <script>
-/* ================================================================
-   ÓRDENES DE INTERNET
-=============================================================== */
+/* ÓRDENES DE INTERNET */
 (function() {
     'use strict';
-
     var ordenesInternet = [];
     var filtroInternet = 'all';
-
     function sb() { return window.supabaseClient; }
-
     function escapeHTML(t) {
         if (t === null || t === undefined) return '';
         return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
-
     function formatearFecha(fecha) {
         if (!fecha) return '—';
         try {
@@ -1637,7 +1592,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 + d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
         } catch(e) { return '—'; }
     }
-
     function estadoInfo(estado) {
         var map = {
             'pendiente':   { color: '#f59e0b', icon: '⏳', texto: 'Pendiente de pago', bg: 'rgba(245, 158, 11, 0.12)' },
@@ -1652,62 +1606,49 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         return map[estado] || { color: '#8aa8b8', icon: '◈', texto: estado || 'Desconocido', bg: 'rgba(138, 168, 184, 0.12)' };
     }
-
     window.cargarOrdenesInternet = async function() {
         var list = document.getElementById('ordenesInternetList');
         var contador = document.getElementById('internetOrdenesCount');
         if (!list) return;
-
         list.innerHTML = '<div class="empty-state"><span class="icon">📶</span><h4>Cargando órdenes...</h4></div>';
-
         try {
             var client = sb();
             if (!client) throw new Error('Supabase no disponible');
-
             var sessionResult = await client.auth.getSession();
             var session = sessionResult.data.session;
             if (!session) {
                 list.innerHTML = '<div class="empty-state"><span class="icon">📶</span><h4>Inicia sesión</h4><p>Para ver tu historial de compras</p></div>';
                 return;
             }
-
             var response = await client
                 .from('ordenes_internet')
                 .select('*')
                 .eq('usuario_id', session.user.id)
                 .order('created_at', { ascending: false })
                 .limit(100);
-
             if (response.error) throw response.error;
-
             ordenesInternet = response.data || [];
             if (contador) contador.textContent = ordenesInternet.length;
-
             if (ordenesInternet.length === 0) {
                 list.innerHTML = '<div class="empty-state"><span class="icon">📶</span><h4>Sin compras de Internet</h4><p>Cuando compres un paquete aparecerá aquí</p></div>';
                 return;
             }
-
             renderOrdenesInternet();
         } catch (error) {
             console.error('Error cargando órdenes Internet:', error);
             list.innerHTML = '<div class="empty-state"><span class="icon">❌</span><h4>Error al cargar</h4><p style="font-size:0.75rem;">' + escapeHTML(error.message) + '</p></div>';
         }
     };
-
     function renderOrdenesInternet() {
         var list = document.getElementById('ordenesInternetList');
         if (!list) return;
-
         var filtered = filtroInternet === 'all'
             ? ordenesInternet
             : ordenesInternet.filter(function(o){ return o.estado === filtroInternet; });
-
         if (filtered.length === 0) {
             list.innerHTML = '<div class="empty-state"><span class="icon">📶</span><h4>Sin órdenes en este filtro</h4></div>';
             return;
         }
-
         list.innerHTML = filtered.map(function(o) {
             var info = estadoInfo(o.estado);
             var esActiva = ['activa', 'activada', 'completado'].indexOf(o.estado) !== -1;
@@ -1733,7 +1674,6 @@ document.addEventListener('DOMContentLoaded', function() {
             '</div>';
         }).join('');
     }
-
     window.filtrarOrdenesInternet = function(filtro) {
         filtroInternet = filtro;
         document.querySelectorAll('.internet-filter').forEach(function(btn){
@@ -1741,7 +1681,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         renderOrdenesInternet();
     };
-
     document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.perfil-tabs .tab-btn').forEach(function(btn){
             btn.addEventListener('click', function() {
@@ -1751,7 +1690,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         });
-
         var tabInternet = document.getElementById('tab-internet');
         if (tabInternet && tabInternet.classList.contains('active')) {
             window.cargarOrdenesInternet();
@@ -1761,14 +1699,10 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <script>
-/* ================================================================
-   SINCRONIZACIÓN DE PERFIL — Realtime + Reintentos
-=============================================================== */
+/* SINCRONIZACIÓN DE PERFIL — Realtime + Reintentos */
 (function() {
     'use strict';
-
     var ultimaRecarga = 0;
-
     function actualizarDOM(usuario) {
         try {
             if (!usuario) return;
@@ -1811,7 +1745,6 @@ document.addEventListener('DOMContentLoaded', function() {
             console.warn('[Perfil] Error actualizando el DOM:', error);
         }
     }
-
     async function recargarPerfil(forzar) {
         try {
             var ahora = Date.now();
@@ -1838,9 +1771,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.warn('[Perfil] Error en recargarPerfil():', error);
         }
     }
-
     window.recargarPerfil = recargarPerfil;
-
     function iniciarRecarga() {
         if (window.supabaseClient) {
             recargarPerfil(true);
@@ -1849,16 +1780,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     iniciarRecarga();
-
     setTimeout(function() { recargarPerfil(true); }, 800);
     setTimeout(function() { recargarPerfil(true); }, 1600);
     setTimeout(function() { recargarPerfil(true); }, 3000);
-
     document.addEventListener('visibilitychange', function() {
         if (document.visibilityState === 'visible') recargarPerfil(true);
     });
     window.addEventListener('focus', function() { recargarPerfil(true); });
-
     async function iniciarRealtime() {
         try {
             if (!window.supabaseClient) { setTimeout(iniciarRealtime, 500); return; }
