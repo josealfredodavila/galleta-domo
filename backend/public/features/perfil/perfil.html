@@ -186,6 +186,7 @@
     .comentarios-lista { max-height: 200px; overflow-y: auto; margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px; }
     .comentario-item { display: flex; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line-black-soft); }
     .comentario-item .avatar-mini { width: 24px; height: 24px; border-radius: 50%; overflow: hidden; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; font-weight: 700; background: linear-gradient(135deg, var(--green-deep), var(--gold)); color: white; border: 1px solid var(--line-black); }
+    .comentario-item .avatar-mini img { width: 100%; height: 100%; object-fit: cover; }
     .comentario-item .contenido-comentario { flex: 1; min-width: 0; }
     .comentario-item .contenido-comentario .nombre { color: var(--gold); font-size: 0.7rem; font-weight: 600; }
     .comentario-item .contenido-comentario .texto { font-size: 0.75rem; color: var(--text-secondary); word-wrap: break-word; }
@@ -709,7 +710,8 @@
                     </button>
                     <button type="button" class="accion-btn" onclick="window.insertarHashtagPerfil()" data-clave="perfil_hashtag">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>
-                        Hashtag                    </button>
+                        Hashtag
+                    </button>
                     <button type="button" class="accion-btn" onclick="document.getElementById('inputFotoPerfilPost').click()" data-clave="perfil_foto">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
                         Foto
@@ -1184,7 +1186,6 @@
 <script src="/features/shared/js/idiomas.js?v=7" defer></script>
 <script src="/features/perfil/perfil.js?v=7" defer></script>
 
-<!-- Soporte para abrir tab desde la URL (?tab=qr, ?tab=internet, etc.) -->
 <script>
 (function() {
     'use strict';
@@ -1567,8 +1568,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     /* ============================================================
-       ✅ FIX: Ahora trae nombre, handle y avatar reales del usuario
-       desde la tabla 'usuarios' mediante JOIN
+       Cargar publicaciones con nombre/handle/avatar reales
        ============================================================ */
     window.cargarMisPublicaciones = async function() {
         var container = document.getElementById('misPublicacionesList');
@@ -1584,7 +1584,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            // ✅ FIX 1: JOIN con tabla 'usuarios' para traer nombre, handle y avatar
             var result = await client
                 .from('publicaciones')
                 .select('*, usuarios:usuario_id (id, nombre, handle, avatar_url)')
@@ -1623,8 +1622,6 @@ document.addEventListener('DOMContentLoaded', function() {
             var avatarHtmlFallback = obtenerAvatarActual();
 
             publicaciones.forEach(function(p) {
-
-                // ✅ FIX 2: Extraer nombre, handle y avatar REALES del JOIN
                 var usuario = p.usuarios || {};
                 var nombreReal = escapeHtmlPerfil(usuario.nombre || 'Explorador');
                 var handleReal = usuario.handle ? '@' + escapeHtmlPerfil(usuario.handle) : '';
@@ -1667,7 +1664,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         '</button>' +
                     '</div>';
 
-                // ✅ FIX 3: Usar nombreReal, handleReal y avatarReal en el header de la card
                 card.innerHTML =
                     '<div class="header">' +
                         '<div class="avatar">' + avatarReal + '</div>' +
@@ -1787,6 +1783,10 @@ document.addEventListener('DOMContentLoaded', function() {
         await cargarComentariosPerfil(publicacionId);
     };
 
+    /* ============================================================
+       ✅ FIX: Cargar comentarios con nombre, handle y avatar reales
+       del usuario que comentó (JOIN con tabla 'usuarios')
+       ============================================================ */
     async function cargarComentariosPerfil(publicacionId) {
         var lista = document.getElementById('comentarios-lista-' + publicacionId);
         if (!lista) return;
@@ -1794,7 +1794,14 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             var client = sb();
             if (!client) return;
-            var result = await client.from('publicaciones_comentarios').select('*').eq('publicacion_id', publicacionId).order('created_at', { ascending: true });
+
+            // ✅ FIX: JOIN con tabla 'usuarios' para traer nombre, handle y avatar reales
+            var result = await client
+                .from('publicaciones_comentarios')
+                .select('*, usuarios:usuario_id (id, nombre, handle, avatar_url)')
+                .eq('publicacion_id', publicacionId)
+                .order('created_at', { ascending: true });
+
             if (result.error) throw result.error;
             var comentarios = result.data || [];
             if (comentarios.length === 0) {
@@ -1805,10 +1812,28 @@ document.addEventListener('DOMContentLoaded', function() {
             comentarios.forEach(function(c) {
                 var item = document.createElement('div');
                 item.className = 'comentario-item';
-                var nombre = escapeHtmlPerfil(c.nombre_usuario || c.usuario_nombre || 'Usuario');
+
+                // ✅ FIX: Extraer datos reales del usuario desde el JOIN
+                var usuario = c.usuarios || {};
+                var nombre = escapeHtmlPerfil(usuario.nombre || 'Usuario');
+                var handle = usuario.handle ? '@' + escapeHtmlPerfil(usuario.handle) : '';
+                var avatarUrl = usuario.avatar_url;
+                var avatarHtml = avatarUrl
+                    ? '<img src="' + avatarUrl + '" alt="Avatar" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display=\'none\';this.parentNode.textContent=\'' + (nombre.charAt(0).toUpperCase() || '◈') + '\';" />'
+                    : (nombre.charAt(0).toUpperCase() || '◈');
+
                 var texto = escapeHtmlPerfil(c.contenido || '');
                 var fecha = c.created_at ? new Date(c.created_at).toLocaleString() : '';
-                item.innerHTML = '<div class="avatar-mini">' + (nombre.charAt(0).toUpperCase() || '◈') + '</div><div class="contenido-comentario"><div class="nombre">' + nombre + '</div><div class="texto">' + texto + '</div><div class="fecha">' + fecha + '</div></div>';
+
+                item.innerHTML =
+                    '<div class="avatar-mini">' + avatarHtml + '</div>' +
+                    '<div class="contenido-comentario">' +
+                        '<div class="nombre">' + nombre +
+                            (handle ? ' <span style="color:var(--text-muted);font-weight:400;font-size:0.65rem;">' + handle + '</span>' : '') +
+                        '</div>' +
+                        '<div class="texto">' + texto + '</div>' +
+                        '<div class="fecha">' + fecha + '</div>' +
+                    '</div>';
                 lista.appendChild(item);
             });
         } catch (error) {
