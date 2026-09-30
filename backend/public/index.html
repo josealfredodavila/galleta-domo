@@ -9,9 +9,6 @@
 
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
 
-<!-- =========================================================
-     SUPABASE — Configuración centralizada vía backend
-========================================================== -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
 <script>
@@ -61,25 +58,14 @@
                             const config = await response.json();
                             supabaseUrl = config && config.supabaseUrl;
                             supabaseAnonKey = config && config.supabaseAnonKey;
-                        } else {
-                            console.warn(
-                                '[Index Guardián] /api/config/public respondió HTTP ' +
-                                response.status + '. Usando fallback.'
-                            );
                         }
                     } catch (fetchErr) {
-                        console.warn(
-                            '[Index Guardián] No se pudo consultar /api/config/public. Usando fallback.',
-                            fetchErr
-                        );
+                        console.warn('[Index Guardián] No se pudo consultar /api/config/public.', fetchErr);
                     }
 
                     if (!supabaseUrl || !supabaseAnonKey) {
                         supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
                         supabaseAnonKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
-                        console.warn(
-                            '[Index Guardián] ⚠️ Usando credenciales de respaldo. Migra el backend a /api/config/public.'
-                        );
                     }
 
                     window.SupabaseSDK = window.supabase;
@@ -97,13 +83,10 @@
                     );
 
                     console.log('[Index Guardián] ✅ supabaseClient creado.');
-                } else {
-                    console.log('[Index Guardián] ✅ Reutilizando supabaseClient existente.');
                 }
 
                 const resultado = await window.supabaseClient.auth.getSession();
-                const session =
-                    resultado && resultado.data ? resultado.data.session : null;
+                const session = resultado && resultado.data ? resultado.data.session : null;
 
                 window.__sarielsAuthenticated = !!session;
 
@@ -124,10 +107,7 @@
 
                 return window.supabaseClient;
             } catch (error) {
-                console.error(
-                    '[Index Guardián] Error inicializando Supabase:',
-                    error
-                );
+                console.error('[Index Guardián] Error inicializando Supabase:', error);
                 window.__sarielsAuthenticated = false;
                 window.supabaseError = error;
                 return null;
@@ -135,7 +115,6 @@
         }
 
         window.supabaseReady = inicializarSupabase();
-
         window.__sarielsAuthReady = window.supabaseReady.then(function () {
             return window.__sarielsAuthenticated;
         });
@@ -261,127 +240,132 @@ body {
     background: var(--gold);
     border-radius: 50%;
 }
-.hero {
-    text-align: center;
-    padding: 40px 20px 30px;
+
+/* =========================================
+   LOGIN LIMPIO (estilo Facebook, paleta Sariel's)
+========================================= */
+.login-wrap {
+    max-width: 420px;
+    margin: 40px auto 30px;
+    padding: 0 8px;
+}
+.login-card {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
     border-radius: var(--radius);
-    margin-bottom: 20px;
+    padding: 32px 26px 26px;
+    backdrop-filter: blur(14px);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(212, 175, 55, 0.08);
 }
-.hero h1 {
-    font-family: 'Orbitron', monospace;
-    font-size: 2.2rem;
-    color: var(--gold);
-    margin-bottom: 8px;
-}
-.hero p { color: var(--text-secondary); font-size: 0.95rem; max-width: 600px; margin: 0 auto 16px; }
-.ir-perfil-btn {
-    background: rgba(212, 175, 55, 0.15);
-    border: 1px solid var(--gold);
-    color: var(--gold);
-    padding: 10px 22px;
-    border-radius: 30px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: var(--transition);
-    text-decoration: none;
-    font-family: 'Inter', sans-serif;
-    display: inline-flex;
+.login-logo {
+    display: flex;
+    justify-content: center;
     align-items: center;
-    gap: 6px;
+    gap: 10px;
+    margin-bottom: 26px;
 }
-.ir-perfil-btn:hover { background: rgba(212, 175, 55, 0.25); transform: translateY(-2px); }
-.auth-section {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    margin-bottom: 30px;
-    scroll-margin-top: 90px;
-}
-@media (max-width: 768px) {
-    .auth-section { grid-template-columns: 1fr; }
-}
-.auth-card {
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius);
-    padding: 24px;
-    backdrop-filter: blur(10px);
-}
-.auth-card h3 {
-    font-family: 'Orbitron', monospace;
+.login-logo .logo-hex {
+    font-size: 2.4rem;
     color: var(--gold);
-    font-size: 0.95rem;
-    margin-bottom: 12px;
+    font-family: 'Orbitron', monospace;
+    text-shadow: 0 0 40px rgba(212, 175, 55, 0.45);
 }
-.auth-card .sub {
-    font-size: 0.7rem;
-    color: var(--text-muted);
-    margin-bottom: 14px;
+.login-logo .logo-text {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    letter-spacing: 2px;
 }
-.auth-card input {
+.login-logo .logo-text span { color: var(--gold); }
+
+.login-card input {
     width: 100%;
-    padding: 11px 14px;
-    background: rgba(0,0,0,0.4);
+    padding: 14px 16px;
+    background: rgba(0, 0, 0, 0.35);
     border: 1px solid var(--glass-border);
     border-radius: 10px;
     color: var(--text-primary);
-    font-size: 0.85rem;
-    margin-bottom: 10px;
+    font-size: 0.9rem;
+    margin-bottom: 12px;
     font-family: 'Inter', sans-serif;
     outline: none;
     transition: var(--transition);
 }
-.auth-card input:focus {
+.login-card input::placeholder { color: var(--text-muted); }
+.login-card input:focus {
     border-color: var(--gold);
-    background: rgba(0,0,0,0.55);
-    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.08);
+    background: rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
 }
-.btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 10px 20px;
-    border-radius: 30px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    border: none;
-    cursor: pointer;
-    transition: var(--transition);
-    font-family: 'Inter', sans-serif;
-    text-decoration: none;
-    justify-content: center;
-}
-.btn-gold {
+.login-btn {
+    width: 100%;
+    padding: 14px;
     background: linear-gradient(135deg, var(--gold), var(--gold-dark));
     color: var(--space);
-    box-shadow: 0 4px 20px rgba(212, 175, 55, 0.2);
-    width: 100%;
-    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: var(--transition);
+    margin-top: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
 }
-.btn-gold:hover { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
-.btn-gold:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
-.auth-card .switch-link {
-    font-size: 0.65rem;
-    color: var(--text-muted);
-    margin-top: 10px;
+.login-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
+.login-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+.login-olvide {
+    display: block;
     text-align: center;
-}
-.auth-card .switch-link a {
-    color: var(--gold);
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    margin-top: 16px;
     text-decoration: none;
-    font-weight: 600;
+    transition: var(--transition);
+}
+.login-olvide:hover { color: var(--gold); }
+
+.login-divider {
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--glass-border), transparent);
+    margin: 22px 0;
+}
+
+.crear-cuenta-btn {
+    display: block;
+    width: 100%;
+    padding: 13px;
+    background: transparent;
+    border: 2px solid var(--gold);
+    color: var(--gold);
+    border-radius: 10px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-align: center;
+    text-decoration: none;
+    transition: var(--transition);
     cursor: pointer;
 }
-.auth-card .switch-link a:hover { text-decoration: underline; }
+.crear-cuenta-btn:hover {
+    background: rgba(212, 175, 55, 0.12);
+    box-shadow: 0 0 30px rgba(212, 175, 55, 0.15);
+    transform: translateY(-2px);
+}
+
+/* =========================================
+   CARRUSEL EN VIVO
+========================================= */
 .carrusel-wrapper {
     width: 100%;
     overflow: hidden;
     position: relative;
     padding: 20px 0;
-    margin-bottom: 30px;
+    margin-top: 30px;
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
     border-radius: var(--radius);
@@ -484,6 +468,7 @@ body {
 @media (max-width: 480px) {
     .carrusel-item { width: 160px; height: 95px; }
 }
+
 .footer {
     margin-top: 30px;
     padding-top: 16px;
@@ -542,6 +527,7 @@ body {
     .nebula { display: none; }
     .header { flex-direction: column; align-items: flex-start; gap: 10px; }
     .header-actions { width: 100%; flex-wrap: wrap; }
+    .login-card { padding: 26px 20px 22px; }
 }
 </style>
 </head>
@@ -568,54 +554,17 @@ body {
     </div>
 </header>
 
-<section class="hero">
-    <h1 data-clave="bienvenido_titulo">◈ Bienvenido a Sariel's</h1>
-    <p data-clave="bienvenido_descripcion">
-        Compra domos físicos, acumula <strong>Es.stoks</strong>, canjea NFTs y conecta con tu comunidad en un ecosistema Web3 sin custodia.
-    </p>
-</section>
-
 <!-- =========================================================
-     FORMULARIO DE REGISTRO / LOGIN
+     LOGIN LIMPIO (estilo Facebook, paleta Sariel's)
 ========================================================== -->
-<section class="auth-section" id="authSection">
+<section class="login-wrap">
+    <div class="login-card">
 
-    <!-- REGISTRO -->
-    <div class="auth-card" id="registerCard">
-        <h3 data-clave="registro_titulo">◈ Regístrate gratis</h3>
-        <div class="sub" data-clave="registro_sub">Crea tu cuenta con email</div>
-        <input
-            type="email"
-            id="regEmail"
-            placeholder="Correo electrónico"
-            autocomplete="email"
-            inputmode="email"
-        />
-        <input
-            type="password"
-            id="regPassword"
-            placeholder="Contraseña (mínimo 6 caracteres)"
-            autocomplete="new-password"
-        />
-        <input
-            type="text"
-            id="regName"
-            placeholder="Nombre (opcional)"
-            autocomplete="name"
-        />
-        <button type="button" class="btn btn-gold" id="registerBtn" onclick="registrarDesdeIndex()">
-            ⟡ Crear cuenta
-        </button>
-        <p class="switch-link">
-            <span data-clave="registro_tienes_cuenta">¿Ya tienes cuenta?</span>
-            <a href="#" onclick="mostrarLoginIndex();return false;" data-clave="registro_iniciar_sesion">Inicia sesión</a>
-        </p>
-    </div>
+        <div class="login-logo">
+            <span class="logo-hex">◈</span>
+            <span class="logo-text">Sariel<span>'s</span></span>
+        </div>
 
-    <!-- LOGIN -->
-    <div class="auth-card" id="loginCard" style="display:none;">
-        <h3 data-clave="login_titulo">◈ Iniciar sesión</h3>
-        <div class="sub" data-clave="login_sub">Entra con tu email</div>
         <input
             type="email"
             id="loginEmail"
@@ -629,15 +578,22 @@ body {
             placeholder="Contraseña"
             autocomplete="current-password"
         />
-        <button type="button" class="btn btn-gold" id="loginBtn" onclick="iniciarSesionDesdeIndex()">
+
+        <button type="button" class="login-btn" id="loginBtn" onclick="iniciarSesionDesdeIndex()">
             ◈ Iniciar sesión
         </button>
-        <p class="switch-link">
-            <span data-clave="login_no_tienes_cuenta">¿No tienes cuenta?</span>
-            <a href="#" onclick="mostrarRegistroIndex();return false;" data-clave="login_registrate">Regístrate</a>
-        </p>
-    </div>
 
+        <a href="/recuperar.html" class="login-olvide">
+            ¿Olvidaste tu contraseña?
+        </a>
+
+        <div class="login-divider"></div>
+
+        <a href="/registro.html" class="crear-cuenta-btn">
+            Crear cuenta nueva
+        </a>
+
+    </div>
 </section>
 
 <!-- =========================================================
@@ -680,14 +636,8 @@ body {
     </button>
 </div>
 
-<!-- =========================================================
-     APP.JS
-========================================================== -->
 <script src="/app.js"></script>
 
-<!-- =========================================================
-     LÓGICA DEL INDEX
-========================================================== -->
 <script>
 /* ========================================================
    ESTRELLAS
@@ -779,67 +729,7 @@ async function redirigirSiYaHaySesion() {
 }
 
 /* ========================================================
-   CAMBIO DE CARD (Registro ↔ Login)
-======================================================== */
-function mostrarLoginIndex() {
-    const r = document.getElementById('registerCard');
-    const l = document.getElementById('loginCard');
-    if (r) r.style.display = 'none';
-    if (l) l.style.display = 'block';
-}
-
-function mostrarRegistroIndex() {
-    const r = document.getElementById('registerCard');
-    const l = document.getElementById('loginCard');
-    if (r) r.style.display = 'block';
-    if (l) l.style.display = 'none';
-}
-
-/* ========================================================
-   REGISTRO — usa window.app.registrarUsuario
-   Al terminar → redirige al perfil (sin volver al index)
-======================================================== */
-async function registrarDesdeIndex() {
-    const emailEl = document.getElementById('regEmail');
-    const passEl = document.getElementById('regPassword');
-    const nameEl = document.getElementById('regName');
-    const btn = document.getElementById('registerBtn');
-
-    if (!emailEl || !passEl) return;
-
-    const email = emailEl.value.trim();
-    const password = passEl.value;
-    const name = nameEl ? nameEl.value.trim() : '';
-
-    if (!window.app || typeof window.app.registrarUsuario !== 'function') {
-        if (window.showToast) {
-            window.showToast('⚠️ Sistema de registro no disponible. Recarga la página.', 'error');
-        }
-        return;
-    }
-
-    const originalText = btn ? btn.textContent : '⟡ Crear cuenta';
-    if (btn) { btn.disabled = true; btn.textContent = '⏳ Creando...'; }
-
-    try {
-        await window.app.registrarUsuario(email, password, name);
-
-        if (emailEl) emailEl.value = '';
-        if (passEl) passEl.value = '';
-        if (nameEl) nameEl.value = '';
-
-        /* Redirigir SIEMPRE al perfil, sin dejar el index en el historial */
-        window.location.replace(RUTA_PERFIL);
-
-    } catch (e) {
-        console.error('Error en registrarDesdeIndex:', e);
-        if (btn) { btn.disabled = false; btn.textContent = originalText; }
-    }
-}
-
-/* ========================================================
-   LOGIN — usa window.app.iniciarSesion
-   Al terminar → redirige al perfil (sin volver al index)
+   LOGIN
 ======================================================== */
 async function iniciarSesionDesdeIndex() {
     const emailEl = document.getElementById('loginEmail');
@@ -850,6 +740,13 @@ async function iniciarSesionDesdeIndex() {
 
     const email = emailEl.value.trim();
     const password = passEl.value;
+
+    if (!email || !password) {
+        if (window.showToast) {
+            window.showToast('⚠️ Completa correo y contraseña', 'warning');
+        }
+        return;
+    }
 
     if (!window.app || typeof window.app.iniciarSesion !== 'function') {
         if (window.showToast) {
@@ -867,9 +764,7 @@ async function iniciarSesionDesdeIndex() {
         if (emailEl) emailEl.value = '';
         if (passEl) passEl.value = '';
 
-        /* Redirigir SIEMPRE al perfil */
         window.location.replace(RUTA_PERFIL);
-
     } catch (e) {
         console.error('Error en iniciarSesionDesdeIndex:', e);
         if (btn) { btn.disabled = false; btn.textContent = originalText; }
@@ -1034,9 +929,6 @@ function abrirCanalDesdeCarrusel(grupoId) {
    EXPONER AL WINDOW
 ======================================================== */
 window.mostrarErrorEnPantalla = mostrarErrorEnPantalla;
-window.mostrarLoginIndex = mostrarLoginIndex;
-window.mostrarRegistroIndex = mostrarRegistroIndex;
-window.registrarDesdeIndex = registrarDesdeIndex;
 window.iniciarSesionDesdeIndex = iniciarSesionDesdeIndex;
 window.abrirCanalDesdeCarrusel = abrirCanalDesdeCarrusel;
 window.cargarCarruselEnVivo = cargarCarruselEnVivo;
@@ -1046,22 +938,18 @@ window.cargarCarruselEnVivo = cargarCarruselEnVivo;
 ======================================================== */
 document.addEventListener('DOMContentLoaded', function () {
 
-    /* Si ya hay sesión → directo al perfil */
     redirigirSiYaHaySesion();
 
-    /* Cargar carrusel cuando el cliente esté listo */
     (async function cargarCuandoListo() {
         const client = await window.getSupabaseClient();
         if (!client) return;
 
-        /* Si hay sesión, no pintamos nada: ya se está redirigiendo */
         if (window.__sarielsAuthenticated) return;
 
         await cargarCarruselEnVivo();
         setInterval(cargarCarruselEnVivo, 30000);
     })();
 
-    /* Idiomas */
     setTimeout(async function () {
         try {
             if (typeof window.inicializarIdiomas === 'function') {
