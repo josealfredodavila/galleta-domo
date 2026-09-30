@@ -24,7 +24,7 @@
 // TOTAL del sistema:
 //   - Pausar / reanudar los contratos en emergencias (PAUSER_ROLE).
 //   - Cambiar el backend signer (setBackendSigner), lo que permite
-//     autorizar minteos, ventas del Muro y quemas de NFT.
+//     autorizar minteos y quemas de NFT.
 //   - Actualizar la lógica de los contratos vía upgrade UUPS
 //     (_authorizeUpgrade), es decir, reemplazar el código en producción.
 //
@@ -277,17 +277,34 @@ async function main() {
     // ----------------------------------------------------------------
     header('3. Autorizando al NFT en el Token');
 
-    log('⏳ Llamando a setContratoNFT...', 'yellow');
-    log('');
+    const deployerEsAdmin =
+        deployer.address.toLowerCase() === process.env.ADMIN_ADDRESS.toLowerCase();
 
-    const tx = await token.setContratoNFT(nftProxyAddress);
-    log(`   TX enviada: ${tx.hash}`, 'cyan');
+    if (!deployerEsAdmin) {
+        log('⚠️  El deployer NO coincide con ADMIN_ADDRESS.', 'yellow');
+        log(`   Deployer: ${deployer.address}`, 'yellow');
+        log(`   Admin:    ${process.env.ADMIN_ADDRESS}`, 'yellow');
+        log('');
+        log('   No se puede llamar setContratoNFT automáticamente.', 'yellow');
+        log('   Ejecuta manualmente desde la wallet admin:', 'cyan');
+        log(`   token.setContratoNFT("${nftProxyAddress}")`, 'cyan');
+        log('');
+        log('   ⚠️  SIN ESTE PASO, EL NFT NO PODRÁ QUEMAR ES.TOKS.', 'red');
+        log('   ⚠️  EL CANJE DE NFT (canjearPorTokens) FALLARÁ.', 'red');
+        log('');
+    } else {
+        log('⏳ Llamando a setContratoNFT...', 'yellow');
+        log('');
 
-    await tx.wait();
+        const tx = await token.setContratoNFT(nftProxyAddress);
+        log(`   TX enviada: ${tx.hash}`, 'cyan');
 
-    log('✅ NFT autorizado en el Token', 'green');
-    log(`   El contrato NFT puede quemar ES.TOKS`, 'cyan');
-    log('');
+        await tx.wait();
+
+        log('✅ NFT autorizado en el Token', 'green');
+        log(`   El contrato NFT puede quemar ES.TOKS`, 'cyan');
+        log('');
+    }
 
     // ----------------------------------------------------------------
     // 6. VERIFICACIÓN FINAL
