@@ -496,11 +496,6 @@ app.get('/api/config/public', (req, res) => {
 
 // ================================================================
 // I18N
-// Esquema real:
-//   idiomas_sistema: id, codigo, nombre, activo, ...
-//   traducciones:    idioma_id (uuid -> idiomas_sistema.id), clave, valor
-// Caché en memoria (10 min) para no consultar Supabase en cada visita.
-// Solo se cachean idiomas válidos y activos.
 // ================================================================
 
 const I18N_DEFAULT_LANG = 'es-MX';
@@ -524,7 +519,6 @@ app.get('/api/i18n', async (req, res) => {
             });
         }
 
-        // 1) codigo -> idiomas_sistema.id (solo activos)
         const { data: idioma, error: idiomaError } = await supabaseAdmin
             .from('idiomas_sistema')
             .select('id, codigo')
@@ -543,7 +537,6 @@ app.get('/api/i18n', async (req, res) => {
             return res.status(404).json({ error: 'Idioma no disponible' });
         }
 
-        // 2) traducciones por idioma_id
         const { data, error } = await supabaseAdmin
             .from('traducciones')
             .select('clave, valor')
@@ -580,8 +573,6 @@ app.get('/api/i18n', async (req, res) => {
 
 // ================================================================
 // LIVEKIT TOKEN
-// La identidad SIEMPRE es el usuario autenticado (req.user.id);
-// ya no se acepta "identity" desde el cliente.
 // ================================================================
 
 app.post('/api/livekit/token', authMiddleware, async (req, res) => {
@@ -633,8 +624,6 @@ app.post('/api/livekit/token', authMiddleware, async (req, res) => {
 
 // ================================================================
 // TURNSTILE
-// Hostname esperado derivado de PUBLIC_APP_URL. Si PUBLIC_APP_URL
-// es inválida o el hostname no coincide, la verificación se rechaza.
 // ================================================================
 
 async function verificarTurnstile(token, remoteip) {
@@ -914,6 +903,9 @@ montarRouter('/api/mensajes', './routes/mensajes', 'routes/mensajes');
 
 montarRouter('/api/marketing', './routes/marketing', 'routes/marketing');
 
+// ⬇️ NUEVA LÍNEA AÑADIDA (Sistema de tendencias)
+montarRouter('/api/tendencias', './routes/tendencias', 'routes/tendencias');
+
 montarRouter('/api/video', './routes/video-processor', 'routes/video-processor');
 
 montarRouter('/api/ai', './routes/ai-chat', 'routes/ai-chat');
@@ -991,11 +983,6 @@ app.get('/eliminar-cuenta', (req, res) => {
 // ================================================================
 // ACTUALIZAR CONTRASEÑA (sin tilde)
 // ================================================================
-// El frontend y Supabase Auth redirigen a esta ruta (sin tilde).
-// La página real es public/actualizar-contrasena.html.
-// Se sirve tal cual, NO se delega al SPA fallback, porque procesa
-// el token de recuperación que Supabase pone en la URL.
-// ================================================================
 
 app.get('/actualizar-contrasena', (req, res) => {
     return res.sendFile(
@@ -1066,9 +1053,6 @@ app.use('/api', (req, res) => {
 
 // ================================================================
 // SPA FALLBACK
-// No usar app.get('*'): según la versión de Express/path-to-regexp
-// puede fallar. Solo sirve index.html para rutas GET/HEAD sin
-// extensión que no hayan sido atendidas antes.
 // ================================================================
 
 app.use((req, res, next) => {
