@@ -3,11 +3,12 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>◈ Sariel's · Ecosistema WEB3</title>
 
-<!-- CONSOLA ERUDA PARA PRUEBAS EN MÓVIL (AUTOMÁTICA) -->
+<!-- Consola Eruda para pruebas en móvil -->
 <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
 <script>eruda.init();</script>
+
+<title>◈ Sariel's · Ecosistema WEB3</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet" />
 
@@ -24,46 +25,8 @@
         window.supabaseReady = null;
         window.supabaseError = null;
 
-        /*
-         * Envuelve cualquier promesa con un timeout.
-         * Evita que la UI se quede esperando si Supabase
-         * o la red tardan demasiado.
-         */
-        window.sarielsConTimeout = function (promise, timeoutMs) {
-            return new Promise(function (resolve, reject) {
-                var timer = setTimeout(function () {
-                    reject(new Error(
-                        'Tiempo de espera agotado al conectar con Supabase.'
-                    ));
-                }, timeoutMs);
-
-                Promise.resolve(promise).then(function (value) {
-                    clearTimeout(timer);
-                    resolve(value);
-                }, function (error) {
-                    clearTimeout(timer);
-                    reject(error);
-                });
-            });
-        };
-
         window.getSupabaseClient = function () {
-            if (!window.supabaseReady) {
-                return Promise.resolve(null);
-            }
-
-            return window.sarielsConTimeout(
-                window.supabaseReady,
-                10000
-            ).catch(function (error) {
-                console.error(
-                    "[Sariel's Auth] Supabase no respondió a tiempo:",
-                    error
-                );
-
-                window.supabaseError = error;
-                return null;
-            });
+            return window.supabaseReady;
         };
 
         function esRutaInternaSegura(valor) {
@@ -76,10 +39,7 @@
 
         async function inicializarSupabase() {
             try {
-                if (
-                    !window.supabase ||
-                    typeof window.supabase.createClient !== 'function'
-                ) {
+                if (!window.supabase || typeof window.supabase.createClient !== 'function') {
                     throw new Error('Supabase SDK no disponible.');
                 }
 
@@ -88,20 +48,12 @@
                     var supabaseAnonKey = null;
 
                     try {
-                        var controller = new AbortController();
-                        var fetchTimer = setTimeout(function () {
-                            controller.abort();
-                        }, 8000);
-
                         const response = await fetch('/api/config/public', {
                             method: 'GET',
                             credentials: 'same-origin',
                             cache: 'no-store',
-                            headers: { 'Accept': 'application/json' },
-                            signal: controller.signal
+                            headers: { 'Accept': 'application/json' }
                         });
-
-                        clearTimeout(fetchTimer);
 
                         if (response.ok) {
                             const config = await response.json();
@@ -109,47 +61,34 @@
                             supabaseAnonKey = config && config.supabaseAnonKey;
                         }
                     } catch (fetchErr) {
-                        console.warn(
-                            '[Index] No se pudo consultar /api/config/public.',
-                            fetchErr
-                        );
+                        console.warn('[Index] No se pudo consultar /api/config/public.', fetchErr);
                     }
 
-                    /*
-                     * Fallback de producción.
-                     */
                     if (!supabaseUrl || !supabaseAnonKey) {
-                        supabaseUrl =
-                            'https://zultnlogdoajehbswlih.supabase.co';
-                        supabaseAnonKey =
-                            'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+                        supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
+                        supabaseAnonKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
                     }
 
                     window.SupabaseSDK = window.supabase;
 
-                    window.supabaseClient =
-                        window.SupabaseSDK.createClient(
-                            supabaseUrl,
-                            supabaseAnonKey,
-                            {
-                                auth: {
-                                    persistSession: true,
-                                    autoRefreshToken: true,
-                                    detectSessionInUrl: true
-                                }
+                    window.supabaseClient = window.SupabaseSDK.createClient(
+                        supabaseUrl,
+                        supabaseAnonKey,
+                        {
+                            auth: {
+                                persistSession: true,
+                                autoRefreshToken: true,
+                                detectSessionInUrl: true
                             }
-                        );
+                        }
+                    );
+
+                    /* ✅ Singleton global: todos los scripts comparten el mismo cliente */
+                    window.__sarielsSupabaseSingleton = window.supabaseClient;
                 }
 
-                const resultado = await window.sarielsConTimeout(
-                    window.supabaseClient.auth.getSession(),
-                    8000
-                );
-
-                const session =
-                    resultado && resultado.data
-                        ? resultado.data.session
-                        : null;
+                const resultado = await window.supabaseClient.auth.getSession();
+                const session = resultado && resultado.data ? resultado.data.session : null;
 
                 window.__sarielsAuthenticated = !!session;
 
@@ -157,19 +96,14 @@
                 const returnTo = urlParams.get('returnTo');
 
                 if (returnTo && esRutaInternaSegura(returnTo)) {
-                    try {
-                        localStorage.setItem('wallet_returnTo', returnTo);
-                    } catch (_) {}
+                    try { localStorage.setItem('wallet_returnTo', returnTo); } catch (_) {}
                 }
 
-                window.supabaseClient.auth.onAuthStateChange(
-                    function (_event, sessionActual) {
-                        window.__sarielsAuthenticated = !!sessionActual;
-                    }
-                );
+                window.supabaseClient.auth.onAuthStateChange(function (_event, sessionActual) {
+                    window.__sarielsAuthenticated = !!sessionActual;
+                });
 
                 return window.supabaseClient;
-
             } catch (error) {
                 console.error('[Index] Error inicializando Supabase:', error);
                 window.__sarielsAuthenticated = false;
@@ -178,18 +112,7 @@
             }
         }
 
-        window.supabaseReady = window.sarielsConTimeout(
-            inicializarSupabase(),
-            12000
-        ).catch(function (error) {
-            console.error(
-                '[Index] Inicialización de Supabase agotó el tiempo:',
-                error
-            );
-            window.__sarielsAuthenticated = false;
-            window.supabaseError = error;
-            return null;
-        });
+        window.supabaseReady = inicializarSupabase();
     })();
 </script>
 
@@ -216,9 +139,7 @@
     --warning: #f7d44a;
     --live-red: #ff0044;
 }
-
 * { margin: 0; padding: 0; box-sizing: border-box; }
-
 body {
     background: var(--space);
     color: var(--text-primary);
@@ -228,7 +149,13 @@ body {
         radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%),
         radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
 }
-
+#stars-canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+    pointer-events: none;
+}
 .app {
     position: relative;
     z-index: 1;
@@ -236,7 +163,6 @@ body {
     margin: 0 auto;
     padding: 20px 24px 30px;
 }
-
 .header {
     display: flex;
     justify-content: space-between;
@@ -252,7 +178,6 @@ body {
     gap: 12px;
     flex-wrap: wrap;
 }
-
 .logo { display: flex; align-items: center; gap: 12px; }
 .logo-main { display: flex; align-items: center; gap: 12px; text-decoration: none; }
 .logo-hex {
@@ -873,7 +798,7 @@ window.addEventListener('unhandledrejection', function (event) {
 });
 
 /* ========================================================
-   TRADUCCIÓN DE ERRORES DE SUPABASE
+   TRADUCCIÓN DE ERRORES
 ======================================================== */
 function traducirErrorSupabase(mensaje) {
     if (!mensaje || typeof mensaje !== 'string') {
@@ -912,15 +837,8 @@ async function redirigirSiYaHaySesion() {
         const client = await window.getSupabaseClient();
         if (!client || !client.auth) return;
 
-        const resultado = await window.sarielsConTimeout(
-            client.auth.getSession(),
-            8000
-        );
-
-        const session =
-            resultado && resultado.data
-                ? resultado.data.session
-                : null;
+        const resultado = await client.auth.getSession();
+        const session = resultado && resultado.data ? resultado.data.session : null;
 
         if (session) {
             window.location.replace(RUTA_PERFIL);
@@ -955,37 +873,23 @@ async function iniciarSesionDesdeIndex() {
     }
 
     try {
-        /*
-         * 1) Intentar con el login global si está disponible.
-         */
         if (window.app && typeof window.app.iniciarSesion === 'function') {
-            await window.sarielsConTimeout(
-                window.app.iniciarSesion(email, password),
-                15000
-            );
-
+            await window.app.iniciarSesion(email, password);
             emailEl.value = '';
             passEl.value = '';
-
             window.location.replace(RUTA_PERFIL);
             return;
         }
 
-        /*
-         * 2) Fallback directo con Supabase.
-         */
         const client = await window.getSupabaseClient();
         if (!client) {
             throw new Error('No hay conexión con el servidor. Recarga la página.');
         }
 
-        const resultado = await window.sarielsConTimeout(
-            client.auth.signInWithPassword({
-                email: email,
-                password: password
-            }),
-            15000
-        );
+        const resultado = await client.auth.signInWithPassword({
+            email: email,
+            password: password
+        });
 
         const data = resultado ? resultado.data : null;
         const error = resultado ? resultado.error : null;
@@ -1040,7 +944,7 @@ function abrirModalRecuperar() {
         if (recEl) recEl.focus();
     }, 100);
 }
-window.abrirModalRecuperar() = abrirModalRecuperar;
+window.abrirModalRecuperar = abrirModalRecuperar;
 
 function cerrarModalRecuperar() {
     const modal = document.getElementById('modalRecuperar');
@@ -1082,19 +986,11 @@ async function enviarRecuperacion() {
             throw new Error('No hay conexión con el servidor');
         }
 
-        /*
-         * ✅ IMPORTANTE: ruta SIN tilde para evitar problemas
-         * de codificación UTF-8 en servidores de producción.
-         * El archivo físico debe llamarse: actualizar-contrasena.html
-         */
         const redirectTo = window.location.origin + RUTA_ACTUALIZAR_CONTRASENA;
 
-        const resultado = await window.sarielsConTimeout(
-            client.auth.resetPasswordForEmail(email, {
-                redirectTo: redirectTo
-            }),
-            15000
-        );
+        const resultado = await client.auth.resetPasswordForEmail(email, {
+            redirectTo: redirectTo
+        });
 
         const error = resultado ? resultado.error : null;
 
@@ -1141,43 +1037,37 @@ async function cargarCarruselEnVivo() {
             throw new Error('Cliente Supabase no disponible');
         }
 
-        let { data: transmisiones, error } = await window.sarielsConTimeout(
-            client
-                .from('transmisiones')
-                .select(`
+        let { data: transmisiones, error } = await client
+            .from('transmisiones')
+            .select(`
+                id,
+                titulo,
+                room_name,
+                espectadores,
+                viewers_count,
+                streamer_id,
+                estado,
+                is_live,
+                grupo_id,
+                grupo:grupos_video!transmisiones_grupo_id_fkey (
                     id,
-                    titulo,
-                    room_name,
-                    espectadores,
-                    viewers_count,
-                    streamer_id,
-                    estado,
-                    is_live,
-                    grupo_id,
-                    grupo:grupos_video!transmisiones_grupo_id_fkey (
-                        id,
-                        nombre,
-                        avatar_url,
-                        categoria_id,
-                        ciudad
-                    )
-                `)
-                .eq('is_live', true)
-                .order('created_at', { ascending: false })
-                .limit(12),
-            15000
-        );
+                    nombre,
+                    avatar_url,
+                    categoria_id,
+                    ciudad
+                )
+            `)
+            .eq('is_live', true)
+            .order('created_at', { ascending: false })
+            .limit(12);
 
         if (error) {
-            const fallback = await window.sarielsConTimeout(
-                client
-                    .from('transmisiones')
-                    .select('id, titulo, room_name, espectadores, viewers_count, streamer_id, estado, is_live, grupo_id')
-                    .eq('is_live', true)
-                    .order('created_at', { ascending: false })
-                    .limit(12),
-                15000
-            );
+            const fallback = await client
+                .from('transmisiones')
+                .select('id, titulo, room_name, espectadores, viewers_count, streamer_id, estado, is_live, grupo_id')
+                .eq('is_live', true)
+                .order('created_at', { ascending: false })
+                .limit(12);
 
             if (fallback.error) throw fallback.error;
 
