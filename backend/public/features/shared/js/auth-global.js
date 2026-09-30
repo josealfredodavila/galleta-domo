@@ -3,7 +3,7 @@
    AUTENTICACIÓN GLOBAL DEL FRONTEND
    ================================================================
    ARCHIVO:  backend/public/features/shared/js/auth-global.js
-   VERSIÓN:  2.0.0
+   VERSIÓN:  2.0.1
    ================================================================
 
    RESPONSABILIDAD ÚNICA:
@@ -34,6 +34,23 @@
        b.  Página pública → no hacer nada.
 
    ================================================================
+   CAMBIOS v2.0.1 (fix del bucle infinito login ↔ perfil)
+   ================================================================
+
+   - AUTH_TIMEOUT_MS subió de 10000 a 30000 ms.
+     Motivo: en redes lentas o cuando Supabase tarda, el timeout
+     de 10 s disparaba la redirección a "/" aunque el usuario
+     SÍ tuviera sesión, generando un bucle infinito entre
+     /index.html y /features/perfil/perfil.html.
+
+   - El catch de inicializarAuth() ahora distingue entre:
+       a) Timeout / error de red → NO redirige. Marca auth-ready
+          y deja que perfil.js (que ya sabe manejar la sesión)
+          decida qué hacer.
+       b) Error real de Supabase → sí redirige si la página es
+          privada, como antes.
+
+   ================================================================
    ATRIBUTOS HTML
    ================================================================
 
@@ -61,7 +78,7 @@
    - Valida que la config apunte al proyecto Supabase oficial.
    - Un único cliente Supabase por página.
    - Listener de auth sin fugas de memoria.
-   - Salvaguarda de 10 segundos contra bloqueos.
+   - Salvaguarda de 30 segundos contra bloqueos.
 
    ================================================================
    API PÚBLICA
@@ -114,8 +131,14 @@
        CONSTANTES
     ================================================================ */
 
-    /** @type {number} Tiempo máximo total para resolver la autenticación. */
-    const AUTH_TIMEOUT_MS = 10000;
+    /**
+     * Tiempo máximo total para resolver la autenticación.
+     * v2.0.1: subido de 10000 a 30000 para evitar redirecciones
+     * prematuras en redes lentas que causaban un bucle infinito
+     * entre el login y el perfil.
+     * @type {number}
+     */
+    const AUTH_TIMEOUT_MS = 30000;
 
     /** @type {string} URL del proyecto Supabase oficial. */
     const SUPABASE_PROJECT_URL =
@@ -650,12 +673,46 @@
     ================================================================ */
 
     /**
+     * Determina si un error es de timeout o de red (no es
+     * "el usuario no tiene sesión"). En ese caso NO hay que
+     * redirigir: hay que dejar la página visible y que perfil.js
+     * maneje la sesión con sus propios reintentos.
+     *
+     * @param {*} error
+     * @returns {boolean}
+     */
+    function esErrorDeTimeoutORed(error) {
+
+        if (!error) {
+            return false;
+        }
+
+        const mensaje = String(error.message || error || '');
+
+        if (mensaje.indexOf('Tiempo de espera agotado') !== -1) {
+            return true;
+        }
+
+        if (error.name === 'AbortError') {
+            return true;
+        }
+
+        if (/failed to fetch|networkerror|network request failed/i.test(mensaje)) {
+            return true;
+        }
+
+        return false;
+
+    }
+
+
+    /**
      * Inicializa la autenticación global.
-     * - Si hay sesión: marca auth-ready.
-     * - Si no hay sesión y la página es privada: redirige.
-     * - Si no hay sesión y la página es pública: marca auth-ready.
-     * - Si la verificación falla en página privada: redirige.
-     * - Si la verificación falla en página pública: marca auth-ready.
+     *
+     * v2.0.1: si falla por timeout o error de red, NO redirige.
+     * Solo redirige si Supabase respondió claramente que no hay
+     * sesión (o si hay un error de configuración real). Esto
+     * rompe el bucle infinito entre login y perfil.
      *
      * @returns {Promise<object|null>} Cliente Supabase o null.
      */
@@ -695,14 +752,44 @@
         } catch (error) {
 
             window.supabaseError = error;
-            window.__sarielsAuthenticated = false;
-            window.sarielsSession = null;
-            window.sarielsUser = null;
 
             console.error(
                 '[Auth Global] Error de autenticación:',
                 error
             );
+
+            /*
+             * Fix v2.0.1:
+             * Si el error es de timeout o de red, NO redirigimos.
+             * Solo marcamos auth-ready para que la página se
+             * muestre, y dejamos que perfil.js (que ya sabe
+             * manejar la sesión con reintentos) decida qué hacer.
+             *
+             * Esto evita el bucle infinito login ↔ perfil cuando
+             * Supabase tarda unos segundos en responder.
+             */
+            if (esErrorDeTimeoutORed(error)) {
+
+                console.warn(
+                    '[Auth Global] Timeout o error de red. ' +
+                    'No se redirige para evitar bucles. ' +
+                    'Se marca auth-ready y se deja la página visible.'
+                );
+
+                marcarAuthReady();
+
+                return null;
+
+            }
+
+            /*
+             * Error real (config inválida, SDK no disponible, etc.).
+             * Comportamiento original: si la página es privada,
+             * redirigir a "/".
+             */
+            window.__sarielsAuthenticated = false;
+            window.sarielsSession = null;
+            window.sarielsUser = null;
 
             if (!esPublica) {
                 redirigirSinSesion();
