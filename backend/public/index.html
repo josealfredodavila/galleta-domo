@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>◈ Sariel's · Ecosistema WEB3</title>
 
+<!-- CONSOLA ERUDA PARA PRUEBAS EN MÓVIL (AUTOMÁTICA) -->
+<script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+<script>eruda.init();</script>
+
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet" />
 
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
@@ -1036,7 +1040,7 @@ function abrirModalRecuperar() {
         if (recEl) recEl.focus();
     }, 100);
 }
-window.abrirModalRecuperar = abrirModalRecuperar;
+window.abrirModalRecuperar() = abrirModalRecuperar;
 
 function cerrarModalRecuperar() {
     const modal = document.getElementById('modalRecuperar');
