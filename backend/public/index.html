@@ -83,7 +83,7 @@
                         }
                     );
 
-                    /* ✅ Singleton global: todos los scripts comparten el mismo cliente */
+                    /* Singleton global: todos los scripts comparten el mismo cliente */
                     window.__sarielsSupabaseSingleton = window.supabaseClient;
                 }
 
@@ -798,38 +798,6 @@ window.addEventListener('unhandledrejection', function (event) {
 });
 
 /* ========================================================
-   TRADUCCIÓN DE ERRORES
-======================================================== */
-function traducirErrorSupabase(mensaje) {
-    if (!mensaje || typeof mensaje !== 'string') {
-        return 'Error desconocido';
-    }
-
-    var m = mensaje.toLowerCase();
-
-    if (m.includes('invalid login credentials')) {
-        return 'Correo o contraseña incorrectos.';
-    }
-    if (m.includes('email not confirmed')) {
-        return 'Debes confirmar tu correo antes de iniciar sesión. Revisa tu bandeja.';
-    }
-    if (m.includes('invalid email')) {
-        return 'El correo no tiene un formato válido.';
-    }
-    if (m.includes('user not found')) {
-        return 'No existe una cuenta con ese correo.';
-    }
-    if (m.includes('too many requests') || m.includes('rate limit')) {
-        return 'Demasiados intentos. Espera unos minutos.';
-    }
-    if (m.includes('network') || m.includes('failed to fetch')) {
-        return 'Sin conexión con el servidor. Revisa tu internet.';
-    }
-
-    return mensaje;
-}
-
-/* ========================================================
    REDIRECCIÓN SI YA EXISTE SESIÓN
 ======================================================== */
 async function redirigirSiYaHaySesion() {
@@ -849,7 +817,7 @@ async function redirigirSiYaHaySesion() {
 }
 
 /* ========================================================
-   LOGIN
+   LOGIN — CORREGIDO: usa directamente el cliente Supabase
 ======================================================== */
 async function iniciarSesionDesdeIndex() {
     const emailEl = document.getElementById('loginEmail');
@@ -873,17 +841,16 @@ async function iniciarSesionDesdeIndex() {
     }
 
     try {
-        if (window.app && typeof window.app.iniciarSesion === 'function') {
-            await window.app.iniciarSesion(email, password);
-            emailEl.value = '';
-            passEl.value = '';
-            window.location.replace(RUTA_PERFIL);
-            return;
+        /* ✅ Usar directamente el cliente Supabase.
+           No depender de window.app (que no existe en el index). */
+        let client = window.supabaseClient;
+
+        if (!client) {
+            client = await window.getSupabaseClient();
         }
 
-        const client = await window.getSupabaseClient();
-        if (!client) {
-            throw new Error('No hay conexión con el servidor. Recarga la página.');
+        if (!client || !client.auth) {
+            throw new Error('Supabase no está disponible. Recarga la página.');
         }
 
         const resultado = await client.auth.signInWithPassword({
@@ -891,14 +858,11 @@ async function iniciarSesionDesdeIndex() {
             password: password
         });
 
-        const data = resultado ? resultado.data : null;
-        const error = resultado ? resultado.error : null;
-
-        if (error) {
-            throw new Error(error.message || 'Credenciales inválidas');
+        if (resultado && resultado.error) {
+            throw new Error(resultado.error.message || 'Credenciales inválidas');
         }
 
-        if (!data || !data.session) {
+        if (!resultado || !resultado.data || !resultado.data.session) {
             throw new Error('No se pudo iniciar sesión');
         }
 
@@ -910,11 +874,20 @@ async function iniciarSesionDesdeIndex() {
     } catch (e) {
         console.error('[Login] Error:', e);
 
-        var mensajeAmigable = traducirErrorSupabase(
-            e && e.message ? e.message : ''
-        );
+        var mensaje = (e && e.message) ? e.message : 'Error desconocido';
+        var m = mensaje.toLowerCase();
 
-        showToast('❌ ' + mensajeAmigable, 'error', 5000);
+        if (m.includes('invalid login credentials')) {
+            mensaje = 'Correo o contraseña incorrectos.';
+        } else if (m.includes('email not confirmed')) {
+            mensaje = 'Debes confirmar tu correo antes de iniciar sesión.';
+        } else if (m.includes('network') || m.includes('failed to fetch')) {
+            mensaje = 'Sin conexión con el servidor. Revisa tu internet.';
+        } else if (m.includes('too many requests') || m.includes('rate limit')) {
+            mensaje = 'Demasiados intentos. Espera unos minutos.';
+        }
+
+        showToast('❌ ' + mensaje, 'error', 6000);
 
         if (btn) {
             btn.disabled = false;
@@ -981,7 +954,11 @@ async function enviarRecuperacion() {
     }
 
     try {
-        const client = await window.getSupabaseClient();
+        let client = window.supabaseClient;
+        if (!client) {
+            client = await window.getSupabaseClient();
+        }
+
         if (!client) {
             throw new Error('No hay conexión con el servidor');
         }
@@ -1009,11 +986,8 @@ async function enviarRecuperacion() {
     } catch (e) {
         console.error('[Recuperar] Error:', e);
 
-        var mensajeAmigable = traducirErrorSupabase(
-            e && e.message ? e.message : ''
-        );
-
-        showToast('❌ ' + mensajeAmigable, 'error', 5000);
+        var mensaje = (e && e.message) ? e.message : 'Error al enviar el correo';
+        showToast('❌ ' + mensaje, 'error', 5000);
 
     } finally {
         if (btn) {
@@ -1032,7 +1006,11 @@ async function cargarCarruselEnVivo() {
     if (!wrapper) return;
 
     try {
-        const client = await window.getSupabaseClient();
+        let client = window.supabaseClient;
+        if (!client) {
+            client = await window.getSupabaseClient();
+        }
+
         if (!client || typeof client.from !== 'function') {
             throw new Error('Cliente Supabase no disponible');
         }
