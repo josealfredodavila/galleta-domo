@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nueva contraseña · Sariel's</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0B3D2E;font-family:Inter,system-ui,sans-serif;color:#f5ecd0;padding:16px}
+  .card{width:100%;max-width:400px;background:#0F2D1A;border:1px solid #D4AF37;border-radius:16px;padding:28px 22px}
+  h1{margin:0 0 6px;font-size:22px;color:#D4AF37;text-align:center}
+  p.sub{margin:0 0 20px;text-align:center;font-size:14px;opacity:.85}
+  label{display:block;font-size:13px;margin:12px 0 4px;color:#D4AF37}
+  input{width:100%;padding:12px;border-radius:8px;border:1px solid #D4AF37;background:#05080F;color:#fff;font-size:16px}
+  button{width:100%;margin-top:20px;padding:13px;border:0;border-radius:8px;background:#D4AF37;color:#0B3D2E;font-weight:700;font-size:16px}
+  button:disabled{opacity:.5}
+  #msg{margin-top:16px;font-size:14px;text-align:center;min-height:20px;word-break:break-word}
+  .err{color:#ff8a80}.ok{color:#9be7a6}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Sariel's</h1>
+  <p class="sub">Escribe tu nueva contraseña</p>
+  <div id="form" style="display:none">
+    <label for="p1">Nueva contraseña</label>
+    <input id="p1" type="password" minlength="6" autocomplete="new-password">
+    <label for="p2">Confirmar contraseña</label>
+    <input id="p2" type="password" minlength="6" autocomplete="new-password">
+    <button id="btn" type="button">Guardar contraseña</button>
+  </div>
+  <div id="msg">Verificando enlace...</div>
+</div>
+<script>
+const SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { detectSessionInUrl: false, persistSession: true }
+});
+const msg = document.getElementById('msg');
+const form = document.getElementById('form');
+function show(t, cls){ msg.textContent = t; msg.className = cls || ''; }
+
+(async () => {
+  try {
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const query = new URLSearchParams(window.location.search);
+    if (hash.get('error_description') || query.get('error_description')) {
+      throw new Error((hash.get('error_description') || query.get('error_description')).replace(/\+/g, ' '));
+    }
+    const access_token = hash.get('access_token');
+    const refresh_token = hash.get('refresh_token');
+    if (access_token && refresh_token) {
+      const { error } = await client.auth.setSession({ access_token, refresh_token });
+      if (error) throw error;
+    } else if (query.get('code')) {
+      const { error } = await client.auth.exchangeCodeForSession(query.get('code'));
+      if (error) throw error;
+    } else {
+      throw new Error('Enlace inválido o expirado. Pide un nuevo correo de recuperación.');
+    }
+    history.replaceState(null, '', window.location.pathname);
+    form.style.display = 'block';
+    show('');
+  } catch (e) {
+    show(e.message || String(e), 'err');
+  }
+})();
+
+document.getElementById('btn').addEventListener('click', async () => {
+  const p1 = document.getElementById('p1').value;
+  const p2 = document.getElementById('p2').value;
+  const btn = document.getElementById('btn');
+  if (p1.length < 6) return show('La contraseña debe tener mínimo 6 caracteres.', 'err');
+  if (p1 !== p2) return show('Las contraseñas no coinciden.', 'err');
+  btn.disabled = true;
+  show('Guardando...');
+  const { error } = await client.auth.updateUser({ password: p1 });
+  if (error) {
+    btn.disabled = false;
+    return show(error.message, 'err');
+  }
+  show('¡Contraseña actualizada! Redirigiendo al login...', 'ok');
+  await client.auth.signOut();
+  setTimeout(() => { window.location.href = '/'; }, 2500);
+});
+</script>
+</body>
+</html>
