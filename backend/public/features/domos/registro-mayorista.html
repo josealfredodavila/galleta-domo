@@ -146,7 +146,11 @@
     .mapa-selector {
         height: 240px; border-radius: 12px; overflow: hidden;
         border: 2px solid var(--glass-border); margin-bottom: 10px;
-        position: relative;
+        position: relative; background: #05080f;
+    }
+    /* Filtro oscuro para OSM en el selector del registro */
+    .mapa-selector .leaflet-tile-pane {
+        filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(1.1) saturate(0.7);
     }
     .mapa-info {
         background: rgba(0, 229, 255, 0.08); border: 1px solid rgba(0, 229, 255, 0.3);
@@ -472,22 +476,22 @@ async function initSupabaseAndMap() {
         // Init mapa centrado en México
         mapa = L.map('mapaSelector').setView([19.4326, -99.1332], 11);
 
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '© OpenStreetMap · © CARTO',
-            subdomains: 'abcd',
-            maxZoom: 19
+        // ✅ OpenStreetMap estándar — gratis, sin API key
+        // El filtro oscuro se aplica vía CSS en .mapa-selector .leaflet-tile-pane
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19,
+            crossOrigin: true
         }).addTo(mapa);
 
         // Marcador arrastrable
         marcador = L.marker([19.4326, -99.1332], { draggable: true }).addTo(mapa);
 
-        // Actualizar campos al mover
         marcador.on('dragend', function() {
             var pos = marcador.getLatLng();
             actualizarCamposUbicacion(pos.lat, pos.lng);
         });
 
-        // Click en el mapa mueve el marcador
         mapa.on('click', function(e) {
             marcador.setLatLng(e.latlng);
             actualizarCamposUbicacion(e.latlng.lat, e.latlng.lng);
@@ -616,7 +620,6 @@ async function enviarRegistro() {
     var envio_mxn = parseFloat(document.getElementById('envio_mxn').value) || 0;
     var acepto_terminos = document.getElementById('acepto_terminos').checked;
 
-    // Validaciones
     if (!nombre || nombre.length < 3) { showToast('⚠️ Nombre del negocio muy corto', 'warning'); return; }
     if (!categoria) { showToast('⚠️ Selecciona una categoría', 'warning'); return; }
     if (!telefono || telefono.length < 8) { showToast('⚠️ Teléfono inválido', 'warning'); return; }
@@ -639,7 +642,6 @@ async function enviarRegistro() {
 
         var usuarioId = session.data.session.user.id;
 
-        // Verificar si ya tiene una tienda
         var existente = await client
             .from('mercado_tiendas')
             .select('id')
@@ -650,7 +652,6 @@ async function enviarRegistro() {
             throw new Error('Ya tienes una tienda registrada. Contacta a soporte.');
         }
 
-        // Generar slug único
         var slug = generarSlug(nombre);
         var slugFinal = slug;
         var intento = 0;
@@ -661,13 +662,11 @@ async function enviarRegistro() {
             slugFinal = slug + '-' + intento;
         }
 
-        // Preparar descripción con marca de mayorista
         var descripcionCompleta = descripcion;
         if (!descripcionCompleta) {
             descripcionCompleta = 'Mayorista de domos Sariel\'s';
         }
 
-        // Insertar tienda
         var insert = await client
             .from('mercado_tiendas')
             .insert({
@@ -708,7 +707,6 @@ async function enviarRegistro() {
 
         if (insert.error) throw insert.error;
 
-        // Ocultar formulario, mostrar éxito
         document.getElementById('contenidoRegistro').style.display = 'none';
         document.getElementById('exitoCard').classList.add('activo');
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -724,7 +722,6 @@ async function enviarRegistro() {
 document.addEventListener('DOMContentLoaded', function() {
     initSupabaseAndMap();
 
-    // Toggle clases check-row
     document.querySelectorAll('.check-row').forEach(function(row) {
         var checkbox = row.querySelector('input[type="checkbox"]');
         if (!checkbox) return;
