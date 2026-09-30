@@ -1,13 +1,9 @@
+// === index.html ===
 <!DOCTYPE html>
 <html lang="es" data-public>
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-<!-- Consola Eruda para pruebas en móvil -->
-<script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-<script>eruda.init();</script>
-
 <title>◈ Sariel's · Ecosistema WEB3</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet" />
@@ -20,10 +16,38 @@
     (function () {
         'use strict';
 
+        var SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
+        var SUPABASE_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+
         window.__sarielsAuthenticated = null;
         window.supabaseClient = window.supabaseClient || null;
+        window.__sarielsSupabaseSingleton = window.__sarielsSupabaseSingleton || null;
         window.supabaseReady = null;
         window.supabaseError = null;
+
+        function getSupabase() {
+            if (window.__sarielsSupabaseSingleton) return window.__sarielsSupabaseSingleton;
+            if (window.supabaseClient) {
+                window.__sarielsSupabaseSingleton = window.supabaseClient;
+                return window.supabaseClient;
+            }
+            var SDK = window.SupabaseSDK || window.supabase;
+            if (!SDK || typeof SDK.createClient !== 'function') {
+                throw new Error('Supabase SDK no disponible.');
+            }
+            var c = SDK.createClient(SUPABASE_URL, SUPABASE_KEY, {
+                auth: {
+                    persistSession: true,
+                    autoRefreshToken: true,
+                    detectSessionInUrl: true
+                }
+            });
+            window.supabaseClient = c;
+            window.__sarielsSupabaseSingleton = c;
+            return c;
+        }
+
+        window.getSupabase = getSupabase;
 
         window.getSupabaseClient = function () {
             return window.supabaseReady;
@@ -39,71 +63,25 @@
 
         async function inicializarSupabase() {
             try {
-                if (!window.supabase || typeof window.supabase.createClient !== 'function') {
-                    throw new Error('Supabase SDK no disponible.');
-                }
+                var client = getSupabase();
 
-                if (!window.supabaseClient) {
-                    var supabaseUrl = null;
-                    var supabaseAnonKey = null;
-
-                    try {
-                        const response = await fetch('/api/config/public', {
-                            method: 'GET',
-                            credentials: 'same-origin',
-                            cache: 'no-store',
-                            headers: { 'Accept': 'application/json' }
-                        });
-
-                        if (response.ok) {
-                            const config = await response.json();
-                            supabaseUrl = config && config.supabaseUrl;
-                            supabaseAnonKey = config && config.supabaseAnonKey;
-                        }
-                    } catch (fetchErr) {
-                        console.warn('[Index] No se pudo consultar /api/config/public.', fetchErr);
-                    }
-
-                    if (!supabaseUrl || !supabaseAnonKey) {
-                        supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
-                        supabaseAnonKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
-                    }
-
-                    window.SupabaseSDK = window.supabase;
-
-                    window.supabaseClient = window.SupabaseSDK.createClient(
-                        supabaseUrl,
-                        supabaseAnonKey,
-                        {
-                            auth: {
-                                persistSession: true,
-                                autoRefreshToken: true,
-                                detectSessionInUrl: true
-                            }
-                        }
-                    );
-
-                    /* Singleton global: todos los scripts comparten el mismo cliente */
-                    window.__sarielsSupabaseSingleton = window.supabaseClient;
-                }
-
-                const resultado = await window.supabaseClient.auth.getSession();
-                const session = resultado && resultado.data ? resultado.data.session : null;
+                var resultado = await client.auth.getSession();
+                var session = resultado && resultado.data ? resultado.data.session : null;
 
                 window.__sarielsAuthenticated = !!session;
 
-                const urlParams = new URLSearchParams(window.location.search);
-                const returnTo = urlParams.get('returnTo');
+                var urlParams = new URLSearchParams(window.location.search);
+                var returnTo = urlParams.get('returnTo');
 
                 if (returnTo && esRutaInternaSegura(returnTo)) {
                     try { localStorage.setItem('wallet_returnTo', returnTo); } catch (_) {}
                 }
 
-                window.supabaseClient.auth.onAuthStateChange(function (_event, sessionActual) {
+                client.auth.onAuthStateChange(function (_event, sessionActual) {
                     window.__sarielsAuthenticated = !!sessionActual;
                 });
 
-                return window.supabaseClient;
+                return client;
             } catch (error) {
                 console.error('[Index] Error inicializando Supabase:', error);
                 window.__sarielsAuthenticated = false;
@@ -148,13 +126,6 @@ body {
     background-image:
         radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%),
         radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
-}
-#stars-canvas {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    z-index: 0;
-    pointer-events: none;
 }
 .app {
     position: relative;
@@ -802,7 +773,7 @@ window.addEventListener('unhandledrejection', function (event) {
 ======================================================== */
 async function redirigirSiYaHaySesion() {
     try {
-        const client = await window.getSupabaseClient();
+        const client = window.getSupabase ? window.getSupabase() : null;
         if (!client || !client.auth) return;
 
         const resultado = await client.auth.getSession();
@@ -817,7 +788,7 @@ async function redirigirSiYaHaySesion() {
 }
 
 /* ========================================================
-   LOGIN — CORREGIDO: usa directamente el cliente Supabase
+   LOGIN — usa singleton getSupabase()
 ======================================================== */
 async function iniciarSesionDesdeIndex() {
     const emailEl = document.getElementById('loginEmail');
@@ -841,13 +812,7 @@ async function iniciarSesionDesdeIndex() {
     }
 
     try {
-        /* ✅ Usar directamente el cliente Supabase.
-           No depender de window.app (que no existe en el index). */
-        let client = window.supabaseClient;
-
-        if (!client) {
-            client = await window.getSupabaseClient();
-        }
+        const client = window.getSupabase();
 
         if (!client || !client.auth) {
             throw new Error('Supabase no está disponible. Recarga la página.');
@@ -954,10 +919,7 @@ async function enviarRecuperacion() {
     }
 
     try {
-        let client = window.supabaseClient;
-        if (!client) {
-            client = await window.getSupabaseClient();
-        }
+        const client = window.getSupabase();
 
         if (!client) {
             throw new Error('No hay conexión con el servidor');
@@ -1006,10 +968,7 @@ async function cargarCarruselEnVivo() {
     if (!wrapper) return;
 
     try {
-        let client = window.supabaseClient;
-        if (!client) {
-            client = await window.getSupabaseClient();
-        }
+        const client = window.getSupabase();
 
         if (!client || typeof client.from !== 'function') {
             throw new Error('Cliente Supabase no disponible');
@@ -1169,7 +1128,7 @@ document.addEventListener('DOMContentLoaded', function () {
     redirigirSiYaHaySesion();
 
     (async function cargarCuandoListo() {
-        const client = await window.getSupabaseClient();
+        const client = window.getSupabase ? window.getSupabase() : null;
         if (!client) return;
         if (window.__sarielsAuthenticated) return;
 
@@ -1187,6 +1146,740 @@ document.addEventListener('DOMContentLoaded', function () {
     document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') cerrarModalRecuperar();
     });
+
+    setTimeout(async function () {
+        try {
+            if (typeof window.inicializarIdiomas === 'function') {
+                await window.inicializarIdiomas();
+            }
+        } catch (error) {
+            console.error('Error inicializando idiomas:', error);
+        }
+    }, 300);
+});
+</script>
+
+</body>
+</html>
+
+
+// === registro.html ===
+<!DOCTYPE html>
+<html lang="es" data-public>
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>◈ Crear cuenta · Sariel's</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet" />
+
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+<script>
+    (function () {
+        'use strict';
+
+        var SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
+        var SUPABASE_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+
+        window.__sarielsAuthenticated = null;
+        window.supabaseClient = window.supabaseClient || null;
+        window.__sarielsSupabaseSingleton = window.__sarielsSupabaseSingleton || null;
+        window.supabaseReady = null;
+        window.supabaseError = null;
+
+        function getSupabase() {
+            if (window.__sarielsSupabaseSingleton) return window.__sarielsSupabaseSingleton;
+            if (window.supabaseClient) {
+                window.__sarielsSupabaseSingleton = window.supabaseClient;
+                return window.supabaseClient;
+            }
+            var SDK = window.SupabaseSDK || window.supabase;
+            if (!SDK || typeof SDK.createClient !== 'function') {
+                throw new Error('Supabase SDK no disponible.');
+            }
+            var c = SDK.createClient(SUPABASE_URL, SUPABASE_KEY, {
+                auth: {
+                    persistSession: true,
+                    autoRefreshToken: true,
+                    detectSessionInUrl: true
+                }
+            });
+            window.supabaseClient = c;
+            window.__sarielsSupabaseSingleton = c;
+            return c;
+        }
+
+        window.getSupabase = getSupabase;
+
+        window.getSupabaseClient = function () {
+            return window.supabaseReady;
+        };
+
+        async function inicializarSupabase() {
+            try {
+                var client = getSupabase();
+
+                var resultado = await client.auth.getSession();
+                var session = resultado && resultado.data ? resultado.data.session : null;
+
+                window.__sarielsAuthenticated = !!session;
+
+                client.auth.onAuthStateChange(function (_event, sessionActual) {
+                    window.__sarielsAuthenticated = !!sessionActual;
+                });
+
+                return client;
+            } catch (error) {
+                console.error('[Registro] Error inicializando Supabase:', error);
+                window.__sarielsAuthenticated = false;
+                window.supabaseError = error;
+                return null;
+            }
+        }
+
+        window.supabaseReady = inicializarSupabase();
+    })();
+</script>
+
+<style>
+:root {
+    --gold: #D4AF37;
+    --gold-dark: #b8923a;
+    --gold-light: #e8c84a;
+    --gold-bright: #f0d060;
+    --green-deep: #0F2D1A;
+    --green-mid: #1a4a2a;
+    --green-bright: #2a6a3a;
+    --space: #05080f;
+    --text-primary: #f0f4f8;
+    --text-secondary: #c0d8e8;
+    --text-muted: #8aa8b8;
+    --glass-bg: rgba(15, 45, 26, 0.55);
+    --glass-border: rgba(212, 175, 55, 0.2);
+    --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
+    --radius: 16px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --success: #00d68f;
+    --danger: #ff3366;
+    --warning: #f7d44a;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    background: var(--space);
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    background-image:
+        radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
+}
+
+.app {
+    position: relative;
+    z-index: 1;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 20px 24px 30px;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0 16px;
+    border-bottom: 2px solid var(--glass-border);
+    background: rgba(5, 8, 15, 0.9);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+    border-radius: var(--radius) var(--radius) 0 0;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.logo { display: flex; align-items: center; gap: 12px; }
+.logo-main { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+.logo-hex {
+    font-size: 2rem;
+    color: var(--gold);
+    font-family: 'Orbitron', monospace;
+    text-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
+}
+.logo-text {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.3rem;
+    color: var(--text-primary);
+    letter-spacing: 2px;
+}
+.logo-text span { color: var(--gold); }
+.logo-badge {
+    font-size: 0.5rem;
+    background: linear-gradient(135deg, var(--gold), var(--gold-light));
+    color: var(--space);
+    padding: 2px 12px;
+    border-radius: 20px;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    transition: var(--transition);
+}
+.logo-badge:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+}
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.network-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.65rem;
+    color: var(--gold);
+    background: rgba(212, 175, 55, 0.1);
+    padding: 4px 14px;
+    border-radius: 20px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: var(--transition);
+}
+.network-badge:hover { background: rgba(212, 175, 55, 0.2); transform: scale(1.02); }
+.network-badge .dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background: var(--gold);
+    border-radius: 50%;
+}
+
+.register-wrap {
+    max-width: 460px;
+    margin: 40px auto 30px;
+    padding: 0 8px;
+}
+.register-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    padding: 32px 26px 26px;
+    backdrop-filter: blur(14px);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(212, 175, 55, 0.08);
+}
+.register-logo {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.register-logo .logo-hex {
+    font-size: 2.4rem;
+    color: var(--gold);
+    font-family: 'Orbitron', monospace;
+    text-shadow: 0 0 40px rgba(212, 175, 55, 0.45);
+}
+.register-logo .logo-text {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    letter-spacing: 2px;
+}
+.register-logo .logo-text span { color: var(--gold); }
+
+.register-title {
+    text-align: center;
+    font-family: 'Orbitron', monospace;
+    color: var(--gold);
+    font-size: 1rem;
+    margin-bottom: 6px;
+    letter-spacing: 1px;
+}
+.register-sub {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    margin-bottom: 22px;
+}
+
+.register-card input {
+    width: 100%;
+    padding: 14px 16px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    margin-bottom: 12px;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    transition: var(--transition);
+}
+.register-card input::placeholder { color: var(--text-muted); }
+.register-card input:focus {
+    border-color: var(--gold);
+    background: rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+}
+
+.register-btn {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+    color: var(--space);
+    border: none;
+    border-radius: 10px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: var(--transition);
+    margin-top: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+.register-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
+.register-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+.register-divider {
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--glass-border), transparent);
+    margin: 22px 0;
+}
+
+.login-link {
+    display: block;
+    width: 100%;
+    padding: 13px;
+    background: transparent;
+    border: 2px solid var(--gold);
+    color: var(--gold);
+    border-radius: 10px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-align: center;
+    text-decoration: none;
+    transition: var(--transition);
+    cursor: pointer;
+}
+.login-link:hover {
+    background: rgba(212, 175, 55, 0.12);
+    box-shadow: 0 0 30px rgba(212, 175, 55, 0.15);
+    transform: translateY(-2px);
+}
+
+.terminos-text {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    text-align: center;
+    margin-top: 18px;
+    line-height: 1.5;
+}
+.terminos-text a {
+    color: var(--gold);
+    text-decoration: none;
+}
+.terminos-text a:hover { text-decoration: underline; }
+
+.footer {
+    margin-top: 30px;
+    padding-top: 16px;
+    border-top: 1px solid var(--glass-border);
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.footer .brand { color: var(--gold); font-weight: 600; }
+.footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
+.footer-links a { color: var(--text-muted); text-decoration: none; transition: var(--transition); }
+.footer-links a:hover { color: var(--gold); }
+
+.toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: rgba(5,8,15,0.95);
+    border: 1px solid var(--glass-border);
+    padding: 12px 24px;
+    border-radius: 30px;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+    backdrop-filter: blur(12px);
+    transition: all 0.4s cubic-bezier(0.4,0,0.2,1);
+    z-index: 99999;
+    opacity: 0;
+    pointer-events: none;
+    max-width: 90vw;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.error { border-color: var(--danger); color: var(--danger); }
+.toast.warning { border-color: var(--warning); color: var(--warning); }
+.toast.success { border-color: var(--success); color: var(--success); }
+
+.nebula {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: 0;
+    animation: nebula-drift 25s ease-in-out infinite alternate;
+}
+.nebula-1 { width: 700px; height: 700px; background: #0B3D2E; top: -15%; right: -15%; opacity: .10; }
+.nebula-2 { width: 600px; height: 600px; background: var(--gold); bottom: -15%; left: -15%; opacity: .05; animation-delay: -8s; }
+.nebula-3 { width: 500px; height: 500px; background: #00e5ff; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: .04; animation-delay: -15s; }
+@keyframes nebula-drift {
+    0% { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(40px, -30px) scale(1.15); }
+}
+@media (max-width: 768px) {
+    .nebula { display: none; }
+    .header { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .header-actions { width: 100%; flex-wrap: wrap; }
+    .register-card { padding: 26px 20px 22px; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="nebula nebula-1"></div>
+<div class="nebula nebula-2"></div>
+<div class="nebula nebula-3"></div>
+
+<div class="app">
+
+<header class="header">
+    <div class="logo">
+        <a href="/" class="logo-main" aria-label="Ir al inicio">
+            <span class="logo-hex">◈</span>
+            <span class="logo-text">Sariel<span>'s</span></span>
+        </a>
+        <a href="/info/web3.html" class="logo-badge" target="_blank" rel="noopener noreferrer">
+            ✦ WEB3
+        </a>
+    </div>
+    <div class="header-actions">
+        <a href="https://polygon.technology/" target="_blank" rel="noopener noreferrer" class="network-badge">
+            <span class="dot"></span>
+            Polygon
+        </a>
+    </div>
+</header>
+
+<section class="register-wrap">
+    <div class="register-card">
+
+        <div class="register-logo">
+            <span class="logo-hex">◈</span>
+            <span class="logo-text">Sariel<span>'s</span></span>
+        </div>
+
+        <h1 class="register-title">Crear cuenta</h1>
+        <p class="register-sub">Es rápido y gratis</p>
+
+        <form id="registerForm" onsubmit="event.preventDefault(); registrarDesdeRegistro();">
+            <input
+                type="email"
+                id="regEmail"
+                placeholder="Correo electrónico"
+                autocomplete="email"
+                inputmode="email"
+                required
+            />
+            <input
+                type="password"
+                id="regPassword"
+                placeholder="Contraseña (mínimo 6 caracteres)"
+                autocomplete="new-password"
+                minlength="6"
+                required
+            />
+            <input
+                type="text"
+                id="regName"
+                placeholder="Nombre (opcional)"
+                autocomplete="name"
+            />
+            <button type="submit" class="register-btn" id="registerBtn">
+                ⟡ Crear cuenta
+            </button>
+        </form>
+
+        <p class="terminos-text">
+            Al registrarte aceptas nuestros
+            <a href="/terminos" target="_blank" rel="noopener">Términos</a>
+            y
+            <a href="/privacidad" target="_blank" rel="noopener">Política de privacidad</a>.
+        </p>
+
+        <div class="register-divider"></div>
+
+        <a href="/index.html" class="login-link">
+            Ya tengo cuenta · Iniciar sesión
+        </a>
+
+    </div>
+</section>
+
+<footer class="footer">
+    <span>
+        <span class="brand">◈ Sariel's</span>
+        · Sabor al Paladar · WEB3
+    </span>
+    <div class="footer-links">
+        <a href="/terminos">◈ Términos</a>
+        <a href="/privacidad">◈ Privacidad</a>
+        <a href="/cookies">◈ Cookies</a>
+        <a href="/eliminar-cuenta.html">◈ Eliminar cuenta</a>
+        <a href="/live-terminos">◉ Live Términos</a>
+        <span style="opacity:0.3;">⚡ Polygon</span>
+    </div>
+</footer>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div id="errorBanner" style="display:none; position:fixed; top:0; left:0; right:0; z-index:99999; background:#ff3366; color:#fff; padding:12px 16px; font-family:monospace; font-size:0.75rem; word-break:break-word; box-shadow:0 4px 20px rgba(0,0,0,0.4);">
+    <strong>⚠️ Error detectado:</strong>
+    <span id="errorBannerText"></span>
+    <button onclick="document.getElementById('errorBanner').style.display='none'" style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">
+        Cerrar
+    </button>
+</div>
+
+<script>
+'use strict';
+
+var RUTA_PERFIL = '/features/perfil/perfil.html';
+
+/* ========================================================
+   TOAST
+======================================================== */
+function showToast(msg, type, duration) {
+    var el = document.getElementById('toast');
+    if (!el) return;
+
+    el.textContent = msg;
+    el.className = 'toast show' + (type ? ' ' + type : '');
+
+    clearTimeout(el._timer);
+    el._timer = setTimeout(function () {
+        el.className = 'toast';
+    }, duration || 3500);
+}
+window.showToast = showToast;
+
+/* ========================================================
+   ERRORES EN PANTALLA
+======================================================== */
+function mostrarErrorEnPantalla(mensaje) {
+    const banner = document.getElementById('errorBanner');
+    const texto = document.getElementById('errorBannerText');
+    if (banner && texto) {
+        texto.textContent = mensaje;
+        banner.style.display = 'block';
+    }
+}
+
+window.addEventListener('error', function (event) {
+    mostrarErrorEnPantalla(
+        (event.message || 'Error desconocido') +
+        ' — línea ' + event.lineno
+    );
+});
+
+window.addEventListener('unhandledrejection', function (event) {
+    mostrarErrorEnPantalla(
+        'Promesa rechazada: ' +
+        (event.reason?.message || event.reason)
+    );
+});
+
+/* ========================================================
+   TRADUCCIÓN DE ERRORES DE SUPABASE
+======================================================== */
+function traducirErrorSupabase(mensaje) {
+    if (!mensaje || typeof mensaje !== 'string') {
+        return 'Error desconocido';
+    }
+
+    var m = mensaje.toLowerCase();
+
+    if (m.includes('user already registered') || m.includes('already registered')) {
+        return 'Ese correo ya está registrado. Inicia sesión en su lugar.';
+    }
+    if (m.includes('password should be at least')) {
+        return 'La contraseña es muy corta. Usa al menos 6 caracteres.';
+    }
+    if (m.includes('invalid email')) {
+        return 'El correo no tiene un formato válido.';
+    }
+    if (m.includes('signup is disabled')) {
+        return 'El registro está temporalmente deshabilitado.';
+    }
+    if (m.includes('too many requests') || m.includes('rate limit')) {
+        return 'Demasiados intentos. Espera unos minutos.';
+    }
+    if (m.includes('network') || m.includes('failed to fetch')) {
+        return 'Sin conexión con el servidor. Revisa tu internet.';
+    }
+
+    return mensaje;
+}
+
+/* ========================================================
+   REDIRECCIÓN SI YA EXISTE SESIÓN
+======================================================== */
+async function redirigirSiYaHaySesion() {
+    try {
+        const client = window.getSupabase ? window.getSupabase() : null;
+        if (!client || !client.auth) return;
+
+        const resultado = await client.auth.getSession();
+        const session = resultado && resultado.data ? resultado.data.session : null;
+
+        if (session) {
+            window.location.replace(RUTA_PERFIL);
+        }
+    } catch (e) {
+        console.warn('[Registro] No se pudo verificar sesión:', e);
+    }
+}
+
+/* ========================================================
+   REGISTRO — usa singleton getSupabase()
+======================================================== */
+async function registrarDesdeRegistro() {
+    const emailEl = document.getElementById('regEmail');
+    const passEl = document.getElementById('regPassword');
+    const nameEl = document.getElementById('regName');
+    const btn = document.getElementById('registerBtn');
+
+    if (!emailEl || !passEl) return;
+
+    const email = emailEl.value.trim();
+    const password = passEl.value;
+    const name = nameEl ? nameEl.value.trim() : '';
+
+    if (!email || !password) {
+        showToast('⚠️ Completa correo y contraseña', 'warning');
+        return;
+    }
+
+    if (password.length < 6) {
+        showToast('⚠️ La contraseña debe tener al menos 6 caracteres', 'warning');
+        return;
+    }
+
+    const originalText = btn ? btn.textContent : '⟡ Crear cuenta';
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = '⏳ Creando cuenta...';
+    }
+
+    try {
+        const client = window.getSupabase();
+
+        if (!client) {
+            throw new Error('No hay conexión con el servidor. Recarga la página.');
+        }
+
+        if (window.app && typeof window.app.registrarUsuario === 'function') {
+            await window.app.registrarUsuario(email, password, name);
+
+            emailEl.value = '';
+            passEl.value = '';
+            if (nameEl) nameEl.value = '';
+
+            window.location.replace(RUTA_PERFIL);
+            return;
+        }
+
+        const emailRedirectTo = window.location.origin + RUTA_PERFIL;
+
+        const resultado = await client.auth.signUp({
+            email: email,
+            password: password,
+            options: {
+                data: {
+                    nombre: name || email.split('@')[0]
+                },
+                emailRedirectTo: emailRedirectTo
+            }
+        });
+
+        const data = resultado ? resultado.data : null;
+        const error = resultado ? resultado.error : null;
+
+        if (error) {
+            throw new Error(error.message || 'No se pudo crear la cuenta');
+        }
+
+        if (!data || !data.user) {
+            throw new Error('No se pudo crear la cuenta');
+        }
+
+        if (!data.session) {
+            showToast(
+                '✅ Cuenta creada. Revisa tu correo para confirmar.',
+                'success',
+                6000
+            );
+
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+
+            return;
+        }
+
+        emailEl.value = '';
+        passEl.value = '';
+        if (nameEl) nameEl.value = '';
+
+        window.location.replace(RUTA_PERFIL);
+
+    } catch (e) {
+        console.error('[Registro] Error:', e);
+
+        var mensajeAmigable = traducirErrorSupabase(
+            e && e.message ? e.message : ''
+        );
+
+        showToast('❌ ' + mensajeAmigable, 'error', 5000);
+
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }
+    }
+}
+window.registrarDesdeRegistro = registrarDesdeRegistro;
+
+/* ========================================================
+   DOM READY
+======================================================== */
+document.addEventListener('DOMContentLoaded', function () {
+
+    redirigirSiYaHaySesion();
 
     setTimeout(async function () {
         try {
