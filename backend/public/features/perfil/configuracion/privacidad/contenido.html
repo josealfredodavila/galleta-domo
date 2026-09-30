@@ -236,23 +236,19 @@
             background: rgba(212, 175, 55, 0.15);
             border-color: #D4AF37;
         }
-        .sariels-tema-emoji {
-            font-size: 1.5rem;
-            flex-shrink: 0;
-            width: 32px;
-            text-align: center;
-        }
+        /* ✅ Ya no hay .sariels-tema-emoji - se eliminó del render */
         .sariels-tema-nombre {
             flex: 1;
             color: #f0f4f8;
             font-size: 0.9rem;
             font-weight: 500;
         }
+        /* ✅ Checkbox rediseñado - círculo limpio con borde gris neutro */
         .sariels-tema-check {
             width: 22px;
             height: 22px;
             border-radius: 50%;
-            border: 2px solid rgba(212, 175, 55, 0.3);
+            border: 2px solid rgba(138, 168, 184, 0.5);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -261,6 +257,9 @@
             color: transparent;
             font-size: 0.7rem;
             font-weight: 700;
+        }
+        .sariels-tema-item:hover .sariels-tema-check {
+            border-color: rgba(212, 175, 55, 0.6);
         }
         .sariels-tema-item.selected .sariels-tema-check {
             background: #D4AF37;
@@ -609,10 +608,11 @@
                 return;
             }
 
+            // ✅ Ya NO se renderiza el emoji del tema
+            // ✅ Solo nombre + checkbox rediseñado
             body.innerHTML = filtrados.map(function (t) {
                 var selected = modalEstado.seleccionados.has(t.id);
                 return '<div class="sariels-tema-item' + (selected ? ' selected' : '') + '" data-id="' + t.id + '">' +
-                    '<span class="sariels-tema-emoji">' + (t.emoji || '◈') + '</span>' +
                     '<span class="sariels-tema-nombre">' + (t.nombre || t.slug || '') + '</span>' +
                     '<span class="sariels-tema-check">✓</span>' +
                 '</div>';
@@ -739,13 +739,12 @@
 
                 if (idiomasResult.error) throw idiomasResult.error;
 
-                // Adaptamos la forma para que sea igual que los temas
+                // ✅ Ya NO se usa la bandera. Solo nombre nativo o nombre
                 modalEstado.items = (idiomasResult.data || []).map(function (i) {
                     return {
                         id: i.id,
                         slug: i.codigo,
-                        nombre: (i.bandera || '🌐') + ' ' + (i.nombre_nativo || i.nombre || i.codigo),
-                        emoji: i.bandera || '🌐'
+                        nombre: (i.nombre_nativo || i.nombre || i.codigo),
                     };
                 });
 
