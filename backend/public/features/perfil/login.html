@@ -29,7 +29,7 @@
 </head>
 <body>
 
-    <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-overlay show" id="loadingOverlay">
         <div class="spinner">◈</div>
         <div class="loading-text">Verificando sesión...</div>
     </div>
@@ -38,265 +38,173 @@
         <div class="logo">◈</div>
         <h2>Iniciar Sesión</h2>
         <p class="sub">Ingresa para acceder a tu ecosistema</p>
-        <input type="email" id="email" placeholder="Correo electrónico" autocomplete="email">
+        <input type="email" id="email" placeholder="Correo electrónico" autocomplete="email" inputmode="email">
         <input type="password" id="password" placeholder="Contraseña" autocomplete="current-password">
-        <button id="btnLogin">Entrar</button>
+        <button id="btnLogin" type="button">Entrar</button>
         <div id="errorMsg" class="error"></div>
-        <div class="footer">¿No tienes cuenta? <a href="/">Regístrate</a></div>
+        <div class="footer">¿No tienes cuenta? <a href="/registro.html">Regístrate</a></div>
     </div>
 
-    <!-- =========================================================
-         SUPABASE — Configuración centralizada vía backend
-    ========================================================== -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
     <script>
-        (function () {
-            'use strict';
+    (function () {
+        'use strict';
 
-            window.__sarielsAuthenticated = null;
-            window.supabaseClient = window.supabaseClient || null;
-            window.supabaseReady = null;
+        var RUTA_PERFIL = '/features/perfil/perfil.html';
+        var FALLBACK_URL = 'https://zultnlogdoajehbswlih.supabase.co';
+        var FALLBACK_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
 
-            window.getSupabaseClient = function () {
-                return window.supabaseReady;
-            };
+        var overlay = document.getElementById('loadingOverlay');
+        var card = document.getElementById('loginCard');
+        var errorDiv = document.getElementById('errorMsg');
+        var client = null;
 
-            function esRutaInternaSegura(valor) {
-                if (typeof valor !== 'string') return false;
-                if (!valor.startsWith('/')) return false;
-                if (valor.startsWith('//')) return false;
-                if (valor.startsWith('/\\')) return false;
-                if (valor.indexOf('://') !== -1) return false;
-                if (valor.toLowerCase().startsWith('javascript:')) return false;
-                if (valor.toLowerCase().startsWith('data:')) return false;
-                if (valor.toLowerCase().startsWith('vbscript:')) return false;
-                return true;
+        function conTimeout(promise, ms) {
+            return new Promise(function (resolve, reject) {
+                var t = setTimeout(function () {
+                    reject(new Error('Tiempo de espera agotado. Revisa tu conexión.'));
+                }, ms);
+                Promise.resolve(promise).then(
+                    function (v) { clearTimeout(t); resolve(v); },
+                    function (e) { clearTimeout(t); reject(e); }
+                );
+            });
+        }
+
+        function mostrarCard() {
+            overlay.classList.remove('show');
+            card.style.visibility = 'visible';
+        }
+
+        function lsGet(k) { try { return localStorage.getItem(k); } catch (_) { return null; } }
+        function lsDel(k) { try { localStorage.removeItem(k); } catch (_) {} }
+
+        function esRutaInternaSegura(v) {
+            if (typeof v !== 'string') return false;
+            if (!v.startsWith('/') || v.startsWith('//') || v.startsWith('/\\')) return false;
+            if (v.indexOf('://') !== -1) return false;
+            var l = v.toLowerCase();
+            if (l.startsWith('javascript:') || l.startsWith('data:') || l.startsWith('vbscript:')) return false;
+            // Evita bucles: nunca volver a login / registro / inicio
+            if (l === '/' || l.indexOf('login') !== -1 || l.indexOf('registro') !== -1 || l.indexOf('index.html') !== -1) return false;
+            return true;
+        }
+
+        function calcularDestino() {
+            var raw = new URLSearchParams(window.location.search).get('returnTo') || lsGet('wallet_returnTo');
+            lsDel('wallet_returnTo');
+            return esRutaInternaSegura(raw) ? raw : RUTA_PERFIL;
+        }
+
+        async function obtenerCliente() {
+            if (client) return client;
+            if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+                throw new Error('No se pudo cargar Supabase. Recarga la página.');
             }
 
-            async function inicializarSupabase() {
-                try {
-                    if (
-                        !window.supabase ||
-                        typeof window.supabase.createClient !== 'function'
-                    ) {
-                        throw new Error('Supabase SDK no disponible.');
-                    }
-
-                    if (!window.supabaseClient) {
-                        var supabaseUrl = null;
-                        var supabaseAnonKey = null;
-
-                        try {
-                            const response = await fetch('/api/config/public', {
-                                method: 'GET',
-                                credentials: 'same-origin',
-                                cache: 'no-store',
-                                headers: { 'Accept': 'application/json' }
-                            });
-
-                            if (response.ok) {
-                                const config = await response.json();
-                                supabaseUrl = config && config.supabaseUrl;
-                                supabaseAnonKey = config && config.supabaseAnonKey;
-                            }
-                        } catch (fetchErr) {
-                            console.warn('[Login] No se pudo obtener /api/config/public:', fetchErr);
-                        }
-
-                        if (!supabaseUrl || !supabaseAnonKey) {
-                            throw new Error('La configuración pública de Supabase no está disponible.');
-                        }
-
-                        window.SupabaseSDK = window.supabase;
-
-                        window.supabaseClient = window.SupabaseSDK.createClient(
-                            supabaseUrl,
-                            supabaseAnonKey,
-                            {
-                                auth: {
-                                    persistSession: true,
-                                    autoRefreshToken: true,
-                                    detectSessionInUrl: true
-                                }
-                            }
-                        );
-                    }
-
-                    return window.supabaseClient;
-                } catch (error) {
-                    console.error('[Login] Error inicializando Supabase:', error);
-                    throw error;
+            var url = null, key = null;
+            try {
+                var ctrl = new AbortController();
+                var timer = setTimeout(function () { ctrl.abort(); }, 6000);
+                var r = await fetch('/api/config/public', {
+                    credentials: 'same-origin',
+                    cache: 'no-store',
+                    headers: { 'Accept': 'application/json' },
+                    signal: ctrl.signal
+                });
+                clearTimeout(timer);
+                if (r.ok) {
+                    var cfg = await r.json();
+                    url = cfg && cfg.supabaseUrl;
+                    key = cfg && cfg.supabaseAnonKey;
                 }
+            } catch (e) {
+                console.warn('[Login] /api/config/public falló, uso fallback', e);
             }
 
-            window.supabaseReady = inicializarSupabase();
-        })();
-    </script>
+            client = window.supabase.createClient(url || FALLBACK_URL, key || FALLBACK_KEY, {
+                auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+            });
+            window.supabaseClient = client;
+            return client;
+        }
 
-    <script>
-        (function () {
-            'use strict';
+        function traducir(msg) {
+            var m = (msg || '').toLowerCase();
+            if (m.indexOf('invalid login credentials') !== -1) return 'Correo o contraseña incorrectos';
+            if (m.indexOf('email not confirmed') !== -1) return 'Debes confirmar tu correo antes de iniciar sesión. Revisa tu bandeja.';
+            if (m.indexOf('too many requests') !== -1 || m.indexOf('rate limit') !== -1) return 'Demasiados intentos. Espera unos minutos.';
+            if (m.indexOf('failed to fetch') !== -1 || m.indexOf('network') !== -1) return 'Sin conexión con el servidor. Revisa tu internet.';
+            return msg || 'Error al iniciar sesión';
+        }
 
-            var loadingOverlay = document.getElementById('loadingOverlay');
-            var loginCard = document.getElementById('loginCard');
-
-            function ocultarOverlay() {
-                if (loadingOverlay) loadingOverlay.classList.remove('show');
-            }
-
-            function mostrarOverlay(texto) {
-                if (loadingOverlay) {
-                    var t = loadingOverlay.querySelector('.loading-text');
-                    if (t && texto) t.textContent = texto;
-                    loadingOverlay.classList.add('show');
-                }
-            }
-
-            function mostrarCard() {
-                if (loginCard) loginCard.style.visibility = 'visible';
-            }
-
-            function emailValido(email) {
-                if (!email) return false;
-                return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-            }
-
-            function rutaPerfil() {
-                return '/features/perfil/perfil.html';
-            }
-
-            /* ==========================================================
-               AL CARGAR: Si ya hay sesión → redirigir al returnTo o al perfil
-            ========================================================== */
-            async function verificarSesionExistente() {
-                try {
-                    const client = await window.getSupabaseClient();
-                    if (!client) {
-                        ocultarOverlay();
-                        mostrarCard();
-                        return;
-                    }
-
-                    const resultado = await client.auth.getSession();
-                    const session = resultado && resultado.data ? resultado.data.session : null;
-
-                    if (session) {
-                        // Ya hay sesión → leer returnTo y redirigir
-                        var urlParams = new URLSearchParams(window.location.search);
-                        var returnToRaw = urlParams.get('returnTo') || localStorage.getItem('wallet_returnTo');
-
-                        var destino = esRutaInternaSegura(returnToRaw) ? returnToRaw : rutaPerfil();
-
-                        localStorage.removeItem('wallet_returnTo');
-
-                        window.location.replace(destino);
-                        return;
-                    }
-
-                    ocultarOverlay();
-                    mostrarCard();
-                } catch (error) {
-                    console.warn('[Login] Error verificando sesión:', error);
-                    ocultarOverlay();
-                    mostrarCard();
-                }
-            }
-
-            /* ==========================================================
-               LOGIN
-            ========================================================== */
-            async function hacerLogin() {
-                var btn = document.getElementById('btnLogin');
-                var email = document.getElementById('email').value.trim();
-                var password = document.getElementById('password').value;
-                var errorDiv = document.getElementById('errorMsg');
-
-                errorDiv.textContent = '';
-
-                if (!email || !password) {
-                    errorDiv.textContent = 'Ingresa tu correo y contraseña';
+        async function verificarSesionExistente() {
+            try {
+                var c = await conTimeout(obtenerCliente(), 10000);
+                var res = await conTimeout(c.auth.getSession(), 8000);
+                if (res && res.data && res.data.session) {
+                    window.location.replace(calcularDestino());
                     return;
                 }
+            } catch (e) {
+                console.warn('[Login] No se pudo verificar sesión:', e);
+            }
+            mostrarCard();
+        }
 
-                if (!emailValido(email)) {
-                    errorDiv.textContent = 'Ingresa un correo válido';
-                    return;
-                }
+        async function hacerLogin() {
+            var btn = document.getElementById('btnLogin');
+            var email = document.getElementById('email').value.trim();
+            var password = document.getElementById('password').value;
 
-                btn.disabled = true;
-                btn.textContent = 'Entrando...';
+            errorDiv.textContent = '';
 
-                try {
-                    const client = await window.getSupabaseClient();
-                    if (!client) {
-                        throw new Error('Supabase no está disponible. Recarga la página.');
-                    }
+            if (!email || !password) { errorDiv.textContent = 'Ingresa tu correo y contraseña'; return; }
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { errorDiv.textContent = 'Ingresa un correo válido'; return; }
 
-                    const result = await client.auth.signInWithPassword({
-                        email: email,
-                        password: password
-                    });
+            btn.disabled = true;
+            btn.textContent = 'Entrando...';
+            var redirigiendo = false;
 
-                    if (result.error) {
-                        var msg = result.error.message || 'Error al iniciar sesión';
-                        if (msg.toLowerCase().includes('invalid login credentials')) {
-                            msg = 'Correo o contraseña incorrectos';
-                        } else if (msg.toLowerCase().includes('email not confirmed')) {
-                            msg = 'Debes confirmar tu correo antes de iniciar sesión';
-                        } else if (msg.toLowerCase().includes('too many requests')) {
-                            msg = 'Demasiados intentos. Espera unos minutos.';
-                        }
-                        errorDiv.textContent = msg;
-                        return;
-                    }
+            try {
+                var c = await conTimeout(obtenerCliente(), 10000);
+                var result = await conTimeout(
+                    c.auth.signInWithPassword({ email: email, password: password }),
+                    15000
+                );
 
-                    /* Login exitoso → redirigir */
-                    var urlParams = new URLSearchParams(window.location.search);
-                    var returnToRaw = urlParams.get('returnTo') || localStorage.getItem('wallet_returnTo');
+                if (result.error) throw new Error(result.error.message);
+                if (!result.data || !result.data.session) throw new Error('No se pudo iniciar sesión');
 
-                    var destino = esRutaInternaSegura(returnToRaw) ? returnToRaw : rutaPerfil();
+                // Confirma que la sesión quedó guardada antes de cambiar de página
+                await conTimeout(c.auth.getSession(), 8000);
 
-                    localStorage.removeItem('wallet_returnTo');
-
-                    mostrarOverlay('Entrando...');
-
-                    window.location.replace(destino);
-
-                } catch (err) {
-                    errorDiv.textContent = err.message || 'Error al iniciar sesión';
-                } finally {
+                redirigiendo = true;
+                overlay.classList.add('show');
+                overlay.querySelector('.loading-text').textContent = 'Entrando...';
+                window.location.replace(calcularDestino());
+            } catch (err) {
+                console.error('[Login] Error:', err);
+                errorDiv.textContent = traducir(err && err.message);
+            } finally {
+                if (!redirigiendo) {
                     btn.disabled = false;
                     btn.textContent = 'Entrar';
                 }
             }
+        }
 
-            /* ==========================================================
-               EVENTOS
-            ========================================================== */
-            document.getElementById('btnLogin').addEventListener('click', hacerLogin);
+        document.getElementById('btnLogin').addEventListener('click', hacerLogin);
+        document.getElementById('password').addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') hacerLogin();
+        });
+        document.getElementById('email').addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') document.getElementById('password').focus();
+        });
 
-            document.getElementById('password').addEventListener('keypress', function (e) {
-                if (e.key === 'Enter') {
-                    document.getElementById('btnLogin').click();
-                }
-            });
-
-            document.getElementById('email').addEventListener('keypress', function (e) {
-                if (e.key === 'Enter') {
-                    document.getElementById('password').focus();
-                }
-            });
-
-            /* ==========================================================
-               INICIO
-            ========================================================== */
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', verificarSesionExistente);
-            } else {
-                verificarSesionExistente();
-            }
-        })();
+        verificarSesionExistente();
+    })();
     </script>
 </body>
 </html>
