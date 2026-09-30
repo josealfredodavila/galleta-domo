@@ -94,6 +94,43 @@
             letter-spacing: 1px; margin-bottom: 16px; position: relative; z-index: 1;
         }
 
+        /* BOTONES NUEVOS MAPA + MAYORISTA */
+        .botones-mayorista {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+            margin: 0 0 24px;
+        }
+        .btn-acceso {
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; gap: 8px; padding: 20px 16px;
+            border-radius: 16px; text-decoration: none;
+            transition: all 0.3s ease; cursor: pointer;
+        }
+        .btn-acceso:hover { transform: translateY(-4px); }
+        .btn-acceso .btn-emoji { font-size: 2rem; }
+        .btn-acceso .btn-titulo {
+            font-family: 'Orbitron', monospace; font-size: 0.85rem;
+            font-weight: 700; letter-spacing: 0.5px; text-align: center;
+        }
+        .btn-acceso .btn-desc {
+            color: #8aa8b8; font-size: 0.7rem; text-align: center;
+        }
+        .btn-mapa {
+            background: linear-gradient(135deg, rgba(212,175,55,0.12), rgba(15,45,26,0.6));
+            border: 2px solid rgba(212,175,55,0.4);
+        }
+        .btn-mapa:hover { border-color: #D4AF37; box-shadow: 0 8px 32px rgba(212,175,55,0.3); }
+        .btn-mapa .btn-titulo { color: #D4AF37; }
+        .btn-mayorista {
+            background: linear-gradient(135deg, rgba(168,85,247,0.12), rgba(15,45,26,0.6));
+            border: 2px solid rgba(168,85,247,0.4);
+        }
+        .btn-mayorista:hover { border-color: #a855f7; box-shadow: 0 8px 32px rgba(168,85,247,0.3); }
+        .btn-mayorista .btn-titulo { color: #a855f7; }
+
+        @media (max-width: 480px) {
+            .botones-mayorista { grid-template-columns: 1fr; }
+        }
+
         .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px; }
         .card {
             background: var(--glass-bg); border: 2px solid var(--glass-border);
@@ -213,6 +250,20 @@
                 Junta 12 y canjéalos por un <strong style="color:var(--gold);">domo GRATIS</strong>.
             </p>
         </section>
+
+        <!-- BOTONES NUEVOS: MAPA + MAYORISTA -->
+        <div class="botones-mayorista">
+            <a href="/features/domos/mapa.html" class="btn-acceso btn-mapa">
+                <span class="btn-emoji">🗺️</span>
+                <span class="btn-titulo">MAPA DE MAYORISTAS</span>
+                <span class="btn-desc">Encuentra dónde comprar cerca de ti</span>
+            </a>
+            <a href="/features/domos/registro-mayorista.html" class="btn-acceso btn-mayorista">
+                <span class="btn-emoji">🏪</span>
+                <span class="btn-titulo">SER MAYORISTA</span>
+                <span class="btn-desc">Vende domos en tu negocio</span>
+            </a>
+        </div>
 
         <!-- PRECIOS -->
         <h2 class="section-title">Nuestros Precios</h2>
