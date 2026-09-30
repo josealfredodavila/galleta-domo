@@ -7,7 +7,7 @@
     <title>Es.stoks · Sariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
-    
+
     <link rel="stylesheet" href="../../../shared/config-layout.css" />
 
     <!-- =========================================================
@@ -280,6 +280,342 @@
             transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
             box-shadow: 0 0 12px rgba(212, 175, 55, 0.4);
         }
+
+        /* ============================================================
+           MODALES DE INFORMACIÓN
+           ============================================================ */
+        .estoks-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(5, 8, 15, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 20px;
+            animation: fadeInModal 0.25s ease-out;
+        }
+
+        .estoks-modal-overlay.active {
+            display: flex;
+        }
+
+        @keyframes fadeInModal {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .estoks-modal {
+            background: linear-gradient(145deg, rgba(15, 45, 26, 0.98), rgba(5, 8, 15, 0.98));
+            border: 2px solid rgba(212, 175, 55, 0.35);
+            border-radius: 24px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 88vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.7), 0 0 60px rgba(212, 175, 55, 0.15);
+            animation: slideUpModal 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        @keyframes slideUpModal {
+            from { opacity: 0; transform: translateY(30px) scale(0.96); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .estoks-modal-header {
+            padding: 22px 24px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+        }
+
+        .estoks-modal-title-wrap {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .estoks-modal-icon {
+            font-size: 1.8rem;
+            flex-shrink: 0;
+            filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.4));
+        }
+
+        .estoks-modal-title {
+            font-family: 'Orbitron', monospace;
+            color: var(--cfg-gold);
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            line-height: 1.3;
+        }
+
+        .estoks-modal-subtitle {
+            color: var(--cfg-text-muted);
+            font-size: 0.7rem;
+            margin-top: 3px;
+        }
+
+        .estoks-modal-close {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            color: var(--cfg-text-muted);
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 4px 10px;
+            border-radius: 10px;
+            transition: all 0.2s ease;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+
+        .estoks-modal-close:hover {
+            background: rgba(212, 175, 55, 0.15);
+            color: var(--cfg-gold);
+            border-color: var(--cfg-gold);
+        }
+
+        .estoks-modal-body {
+            padding: 20px 24px 22px;
+            color: var(--cfg-text-secondary);
+            font-size: 0.85rem;
+            line-height: 1.65;
+        }
+
+        .estoks-modal-body p {
+            margin-bottom: 14px;
+        }
+
+        .estoks-modal-body strong {
+            color: var(--cfg-gold);
+            font-weight: 700;
+        }
+
+        .estoks-modal-body ul {
+            list-style: none;
+            padding: 0;
+            margin: 12px 0;
+        }
+
+        .estoks-modal-body ul li {
+            padding: 8px 0 8px 26px;
+            position: relative;
+            color: var(--cfg-text-secondary);
+        }
+
+        .estoks-modal-body ul li::before {
+            content: '◈';
+            color: var(--cfg-gold);
+            position: absolute;
+            left: 0;
+            top: 8px;
+            font-size: 0.9rem;
+        }
+
+        .estoks-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin: 16px 0;
+        }
+
+        .estoks-step {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(212, 175, 55, 0.12);
+            border-radius: 12px;
+            padding: 12px 14px;
+            transition: all 0.2s ease;
+        }
+
+        .estoks-step:hover {
+            border-color: rgba(212, 175, 55, 0.3);
+            background: rgba(212, 175, 55, 0.05);
+        }
+
+        .estoks-step-num {
+            width: 30px;
+            height: 30px;
+            flex-shrink: 0;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--cfg-gold), #b8923a);
+            color: #05080f;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', monospace;
+            font-weight: 900;
+            font-size: 0.85rem;
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+        }
+
+        .estoks-step-content {
+            flex: 1;
+        }
+
+        .estoks-step-title {
+            color: var(--cfg-gold);
+            font-weight: 700;
+            font-size: 0.82rem;
+            margin-bottom: 3px;
+            font-family: 'Orbitron', monospace;
+            letter-spacing: 0.3px;
+        }
+
+        .estoks-step-text {
+            color: var(--cfg-text-secondary);
+            font-size: 0.75rem;
+            line-height: 1.5;
+        }
+
+        .estoks-highlight {
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.12), rgba(0, 214, 143, 0.08));
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin: 16px 0;
+            text-align: center;
+        }
+
+        .estoks-highlight-icon {
+            font-size: 1.6rem;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .estoks-highlight-text {
+            color: var(--cfg-gold);
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+        }
+
+        .estoks-highlight-sub {
+            color: var(--cfg-text-muted);
+            font-size: 0.7rem;
+            margin-top: 4px;
+        }
+
+        .estoks-progress-preview {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 12px;
+            padding: 14px;
+            margin: 16px 0;
+            text-align: center;
+        }
+
+        .estoks-progress-preview .label {
+            color: var(--cfg-text-muted);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .estoks-progress-preview .count {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: var(--cfg-gold);
+            margin-bottom: 6px;
+        }
+
+        .estoks-progress-preview .count small {
+            font-size: 0.5em;
+            color: var(--cfg-text-muted);
+            font-weight: 400;
+        }
+
+        .estoks-progress-preview .bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .estoks-progress-preview .bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--cfg-gold), var(--cfg-gold-light));
+            border-radius: 8px;
+            transition: width 0.8s ease;
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+        }
+
+        .estoks-modal-actions {
+            padding: 16px 24px 22px;
+            border-top: 1px solid rgba(212, 175, 55, 0.15);
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .estoks-modal-btn {
+            flex: 1;
+            min-width: 140px;
+            padding: 12px 20px;
+            border-radius: 30px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            border: 2px solid transparent;
+            letter-spacing: 0.5px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .estoks-modal-btn-primary {
+            background: linear-gradient(135deg, var(--cfg-gold), #b8923a);
+            color: #05080f;
+            box-shadow: 0 4px 20px rgba(212, 175, 55, 0.25);
+        }
+
+        .estoks-modal-btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(212, 175, 55, 0.4);
+        }
+
+        .estoks-modal-btn-secondary {
+            background: transparent;
+            color: var(--cfg-text-muted);
+            border-color: rgba(212, 175, 55, 0.2);
+        }
+
+        .estoks-modal-btn-secondary:hover {
+            color: var(--cfg-gold);
+            border-color: var(--cfg-gold);
+        }
+
+        .estoks-modal-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        @media (max-width: 480px) {
+            .estoks-modal { border-radius: 20px; }
+            .estoks-modal-header { padding: 18px 18px 14px; }
+            .estoks-modal-body { padding: 16px 18px 18px; }
+            .estoks-modal-actions { padding: 14px 18px 18px; }
+            .estoks-modal-title { font-size: 0.9rem; }
+            .estoks-modal-icon { font-size: 1.5rem; }
+        }
     </style>
 </head>
 <body class="cfg-page">
@@ -346,6 +682,175 @@
         </div>
     </main>
 
+    <!-- ============================================================
+         MODAL: ¿QUÉ SON LOS ES.STOKS?
+         ============================================================ -->
+    <div class="estoks-modal-overlay" id="modalQueSon">
+        <div class="estoks-modal">
+            <div class="estoks-modal-header">
+                <div class="estoks-modal-title-wrap">
+                    <span class="estoks-modal-icon">ℹ️</span>
+                    <div>
+                        <div class="estoks-modal-title">¿Qué son los Es.stoks?</div>
+                        <div class="estoks-modal-subtitle">Tokens de utilidad de Sariel's</div>
+                    </div>
+                </div>
+                <button class="estoks-modal-close" onclick="cerrarModalEstoks('modalQueSon')" aria-label="Cerrar">×</button>
+            </div>
+            <div class="estoks-modal-body">
+                <p>
+                    Los <strong>Es.stoks</strong> son tokens digitales de utilidad creados en la red
+                    <strong>Polygon</strong>, una blockchain rápida, segura y con comisiones muy bajas.
+                </p>
+                <p>
+                    Cada Es.stok representa <strong>1 domo de galletas Sariel's</strong> que hayas comprado.
+                    Los tokens viven en tu wallet personal y solo tú tienes acceso a ellos.
+                </p>
+                <p><strong>¿Para qué sirven?</strong></p>
+                <ul>
+                    <li>Acumula <strong>12 Es.stoks</strong> y canjéalos por un <strong>NFT exclusivo</strong></li>
+                    <li>El NFT se quema y tú recibes un <strong>domo de galletas GRATIS</strong></li>
+                    <li>O véndelos en el <strong>Muro P2P</strong> por MXN o USDT</li>
+                    <li>Otros usuarios pueden comprarlos para completar sus 12</li>
+                </ul>
+                <div class="estoks-highlight">
+                    <span class="estoks-highlight-icon">🔗</span>
+                    <div class="estoks-highlight-text">RED POLYGON</div>
+                    <div class="estoks-highlight-sub">Blockchain rápida · Comisiones bajas · Segura</div>
+                </div>
+            </div>
+            <div class="estoks-modal-actions">
+                <button class="estoks-modal-btn estoks-modal-btn-primary" onclick="cerrarModalEstoks('modalQueSon')">
+                    ✅ Entendido
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         MODAL: ¿CÓMO CONSEGUIR ES.STOKS?
+         ============================================================ -->
+    <div class="estoks-modal-overlay" id="modalComoConseguir">
+        <div class="estoks-modal">
+            <div class="estoks-modal-header">
+                <div class="estoks-modal-title-wrap">
+                    <span class="estoks-modal-icon">👑</span>
+                    <div>
+                        <div class="estoks-modal-title">¿Cómo conseguir Es.stoks?</div>
+                        <div class="estoks-modal-subtitle">4 pasos simples</div>
+                    </div>
+                </div>
+                <button class="estoks-modal-close" onclick="cerrarModalEstoks('modalComoConseguir')" aria-label="Cerrar">×</button>
+            </div>
+            <div class="estoks-modal-body">
+                <p>
+                    Conseguir Es.stoks es muy fácil. Solo necesitas comprar nuestros domos
+                    de galletas y escanear el QR que viene dentro.
+                </p>
+                <div class="estoks-steps">
+                    <div class="estoks-step">
+                        <div class="estoks-step-num">1</div>
+                        <div class="estoks-step-content">
+                            <div class="estoks-step-title">Compra tu domo</div>
+                            <div class="estoks-step-text">Cada domo cuesta <strong>$75 MXN</strong>. Puedes pedirlo por WhatsApp o en persona.</div>
+                        </div>
+                    </div>
+                    <div class="estoks-step">
+                        <div class="estoks-step-num">2</div>
+                        <div class="estoks-step-content">
+                            <div class="estoks-step-title">Recíbelo en casa</div>
+                            <div class="estoks-step-text">Entregamos en Puebla, CDMX y Edomex. Envíos a todo México (costo adicional).</div>
+                        </div>
+                    </div>
+                    <div class="estoks-step">
+                        <div class="estoks-step-num">3</div>
+                        <div class="estoks-step-content">
+                            <div class="estoks-step-title">Escanea el QR</div>
+                            <div class="estoks-step-text">Dentro del domo encontrarás un QR único. Escanéalo desde tu perfil.</div>
+                        </div>
+                    </div>
+                    <div class="estoks-step">
+                        <div class="estoks-step-num">4</div>
+                        <div class="estoks-step-content">
+                            <div class="estoks-step-title">Recibe tu Es.stok</div>
+                            <div class="estoks-step-text">Automáticamente se te acredita <strong>1 Es.stok</strong> en tu balance.</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="estoks-highlight">
+                    <span class="estoks-highlight-icon">🎁</span>
+                    <div class="estoks-highlight-text">12 DOMOS = 1 DOMO GRATIS</div>
+                    <div class="estoks-highlight-sub">Junta 12 Es.stoks y canjéalos por un NFT + domo gratis</div>
+                </div>
+            </div>
+            <div class="estoks-modal-actions">
+                <a href="/features/domos/index.html" class="estoks-modal-btn estoks-modal-btn-primary">
+                    🍪 Comprar Domos
+                </a>
+                <button class="estoks-modal-btn estoks-modal-btn-secondary" onclick="cerrarModalEstoks('modalComoConseguir')">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         MODAL: CANJEAR 12 ES.STOKS POR UN NFT
+         ============================================================ -->
+    <div class="estoks-modal-overlay" id="modalCanje">
+        <div class="estoks-modal">
+            <div class="estoks-modal-header">
+                <div class="estoks-modal-title-wrap">
+                    <span class="estoks-modal-icon">🎁</span>
+                    <div>
+                        <div class="estoks-modal-title">Canjear 12 Es.stoks por un NFT</div>
+                        <div class="estoks-modal-subtitle">Recibe un domo GRATIS</div>
+                    </div>
+                </div>
+                <button class="estoks-modal-close" onclick="cerrarModalEstoks('modalCanje')" aria-label="Cerrar">×</button>
+            </div>
+            <div class="estoks-modal-body">
+                <p>
+                    Cuando juntes <strong>12 Es.stoks</strong> podrás canjearlos por un
+                    <strong>NFT exclusivo de Sariel's</strong>. Al hacerlo:
+                </p>
+                <ul>
+                    <li>Se queman tus 12 Es.stoks automáticamente</li>
+                    <li>Recibes un NFT único con un ID exclusivo</li>
+                    <li>Nos entregas el NFT y nosotros lo quemamos</li>
+                    <li>Te enviamos un <strong>domo de galletas GRATIS</strong> a tu domicilio</li>
+                </ul>
+                <p>
+                    El NFT es tu comprobante de canje. Solo puede existir <strong>1 NFT por cada 12 Es.stoks</strong>.
+                </p>
+
+                <div class="estoks-progress-preview">
+                    <div class="label">Tu progreso actual</div>
+                    <div class="count" id="modalCanjeCount">
+                        0 <small>/ 12</small>
+                    </div>
+                    <div class="bar">
+                        <div class="bar-fill" id="modalCanjeBar" style="width: 0%;"></div>
+                    </div>
+                </div>
+
+                <div id="modalCanjeMensaje" class="estoks-highlight" style="display:none;">
+                    <span class="estoks-highlight-icon">🎯</span>
+                    <div class="estoks-highlight-text">¡LISTO PARA CANJEAR!</div>
+                    <div class="estoks-highlight-sub">Tienes 12 o más Es.stoks</div>
+                </div>
+            </div>
+            <div class="estoks-modal-actions">
+                <button class="estoks-modal-btn estoks-modal-btn-primary" id="modalCanjeBtn" onclick="irACanjearDesdeModal()" disabled>
+                    🎁 Canjear Ahora
+                </button>
+                <button class="estoks-modal-btn estoks-modal-btn-secondary" onclick="cerrarModalEstoks('modalCanje')">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="../../../shared/config-icons.js"></script>
     <script src="../../../shared/config-layout.js"></script>
 
@@ -354,6 +859,14 @@
         'use strict';
 
         const $ = (sel) => document.querySelector(sel);
+
+        // Variable global con el balance actual
+        let balanceActual = {
+            tokens: 0,
+            progreso: 0,
+            nfts: 0,
+            puedeCanjear: false
+        };
 
         cfgInitPage({
             title: 'Es.stoks',
@@ -390,6 +903,13 @@
                 const tokens = Number(usuario.tokens) || 0;
                 const progreso = Math.min(tokens, 12);
                 const nfts = Number(usuario.progreso_canje) || 0;
+
+                // Guardar en variable global                balanceActual = {
+                    tokens: tokens,
+                    progreso: progreso,
+                    nfts: nfts,
+                    puedeCanjear: tokens >= 12
+                };
 
                 const balanceEl = $('#balanceTotal');
                 if (balanceEl) {
@@ -456,13 +976,13 @@
                     icon: 'coin',
                     title: 'Comprar domos',
                     desc: 'Compra domos físicos y recibe Es.stoks',
-                    href: '/features/internet/internet.html',
+                    href: '/features/domos/index.html',
                 }),
                 cfgRenderItem({
                     icon: 'camera',
                     title: 'Escanear QR de domo',
                     desc: 'Escanea el QR de un domo físico para recibir Es.stoks',
-                    href: '/features/perfil/perfil.html',
+                    href: '/features/perfil/perfil.html?tab=qr',
                 }),
                 cfgRenderItem({
                     icon: 'wallet',
@@ -488,8 +1008,6 @@
                 const session = sessionData && sessionData.session;
                 if (!session) { mostrarEmptyHistorial(); return; }
 
-                // Intentar con la tabla real de movimientos.
-                // Si no existe, cae en el catch y muestra empty.
                 const { data: transacciones, error } = await client
                     .from('es_toks_movimientos')
                     .select('*')
@@ -558,28 +1076,104 @@
             `;
         }
 
+        // ============================================================
+        // MODALES
+        // ============================================================
+        window.abrirModalEstoks = function (modalId) {
+            const modal = document.getElementById(modalId);
+            if (!modal) return;
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+
+            // Si es el modal de canje, actualizar datos
+            if (modalId === 'modalCanje') {
+                actualizarModalCanje();
+            }
+        };
+
+        window.cerrarModalEstoks = function (modalId) {
+            const modal = document.getElementById(modalId);
+            if (!modal) return;
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+        };
+
+        function actualizarModalCanje() {
+            const countEl = document.getElementById('modalCanjeCount');
+            const barEl = document.getElementById('modalCanjeBar');
+            const btn = document.getElementById('modalCanjeBtn');
+            const msg = document.getElementById('modalCanjeMensaje');
+
+            const progreso = Math.min(balanceActual.tokens, 12);
+            const porcentaje = (progreso / 12) * 100;
+
+            if (countEl) {
+                countEl.innerHTML = progreso + ' <small>/ 12</small>';
+            }
+            if (barEl) {
+                barEl.style.width = porcentaje + '%';
+            }
+
+            if (balanceActual.puedeCanjear) {
+                if (btn) btn.disabled = false;
+                if (msg) msg.style.display = 'block';
+            } else {
+                if (btn) btn.disabled = true;
+                if (msg) msg.style.display = 'none';
+            }
+        }
+
+        window.irACanjearDesdeModal = function () {
+            if (!balanceActual.puedeCanjear) return;
+            window.cerrarModalEstoks('modalCanje');
+            // Ir al perfil y ejecutar el canje
+            window.location.href = '/features/perfil/perfil.html?action=canjear';
+        };
+
+        // Handlers de los items
         window.onQueSonEstoks = () => {
-            cfgToast('ℹ️ Los Es.stoks son tokens de utilidad en Polygon', 'success', 4000);
+            window.abrirModalEstoks('modalQueSon');
         };
 
         window.onComoConseguir = () => {
-            cfgToast('🛒 Compra domos en la sección Internet', 'success', 4000);
+            window.abrirModalEstoks('modalComoConseguir');
         };
 
         window.onInfoCanje = () => {
-            cfgToast('🎁 Junta 12 Es.stoks para canjear tu NFT', 'success', 4000);
+            window.abrirModalEstoks('modalCanje');
         };
 
         window.onConectarWallet = () => {
             window.location.href = '/features/perfil/configuracion/sariels/wallet.html';
         };
 
+        // ============================================================
+        // INICIALIZACIÓN
+        // ============================================================
         window.addEventListener('DOMContentLoaded', async () => {
             await new Promise(resolve => setTimeout(resolve, 400));
             renderInfo();
             renderAcciones();
             await cargarBalance();
             await renderHistorial();
+
+            // Cerrar modal al tocar fuera
+            document.querySelectorAll('.estoks-modal-overlay').forEach(overlay => {
+                overlay.addEventListener('click', function (e) {
+                    if (e.target === overlay) {
+                        window.cerrarModalEstoks(overlay.id);
+                    }
+                });
+            });
+
+            // Cerrar modal con Escape
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') {
+                    document.querySelectorAll('.estoks-modal-overlay.active').forEach(m => {
+                        window.cerrarModalEstoks(m.id);
+                    });
+                }
+            });
         });
 
     })();
