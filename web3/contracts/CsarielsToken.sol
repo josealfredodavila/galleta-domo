@@ -7,24 +7,13 @@ pragma solidity ^0.8.20;
 // Token ERC-20 del ecosistema Csariel's.
 //
 // REGLAS DE NEGOCIO:
-// - Supply máximo: 1,000,000 ES.TOKS (cap duro, no modificable)
-// - Minteo solo con firma EIP-712 del backend (gas pagado por el backend)
-// - 1 QR físico = 1 ES.TOKS (un QR solo se canjea una vez)
-// - Comisión 3% solo en el Muro P2P (transferencias normales son libres)
-// - Compatible con MetaMask, DEX, exchanges (ERC-20 estándar)
+// - Supply máximo: 1,000,000 ES.TOKS (cap duro)
+// - 1 QR físico = 1 ES.TOKS (un QR se canjea una sola vez)
+// - El backend paga el gas al reclamar tokens (gasless para el cliente)
+// - El cliente puede vender ES.TOKS en el Muro P2P (comisión 3%)
+// - El contrato NFT puede quemar 12 ES.TOKS al canjear un NFT
 // - Modificable vía proxy UUPS
 // - Pausable para emergencias
-//
-// MODELO DE GAS:
-// - reclamarTokens: el BACKEND (MINTER_ROLE) paga el gas y mintea a
-//   la wallet del usuario indicada en `usuarioReceptor`. El usuario
-//   no necesita MATIC ni firmar nada.
-// - venderEnMuro: el VENDEDOR interactúa directo desde su wallet
-//   (msg.sender) y paga su propio gas. Sin firma EIP-712, sin relay.
-//
-// INTEGRACIÓN CON NFT:
-// - El contrato del NFT puede llamar a `quemarPorCanje()`
-//   para quemar 12 ES.TOKS cuando el usuario canjea por un NFT.
 // ================================================================
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
@@ -47,58 +36,31 @@ contract CsarielsToken is
     // ROLES
     // ================================================================
 
-    /// @notice Rol para mintear tokens (backend que paga el gas del reclamo QR)
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
-
-    /// @notice Rol para pausar en emergencias
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
-
-    /// @notice Rol para quemar ES.TOKS en nombre de un usuario (contrato NFT)
     bytes32 public constant NFT_ROLE = keccak256("NFT_ROLE");
 
     // ================================================================
     // CONSTANTES
     // ================================================================
 
-    /// @notice Supply máximo: 1,000,000 ES.TOKS (con 18 decimales)
     uint256 public constant MAX_SUPPLY = 1_000_000 * 10**18;
-
-    /// @notice Comisión del Muro P2P: 3% (basis points)
-    /// 100 basis points = 1%
-    uint256 public constant COMISION_MURO_BPS = 300;
-
-    /// @notice Basis points totales (100%)
+    uint256 public constant COMISION_MURO_BPS = 300;      // 3%
     uint256 public constant BPS_DENOMINATOR = 10_000;
-
-    /// @notice Tiempo de validez de las firmas del backend (5 minutos)
-    uint256 public constant FIRMA_VALIDEZ_SEGUNDOS = 5 * 60;
 
     // ================================================================
     // STORAGE
     // ================================================================
 
-    /// @notice Dirección del backend autorizado para firmar
     address public backendSigner;
-
-    /// @notice Wallet que recibe las comisiones del Muro P2P
     address public walletComisiones;
-
-    /// @notice Dirección del contrato de NFT autorizado
     address public contratoNFT;
 
-    /// @notice Registro de QRs usados (1 QR = 1 ES.TOKS)
     mapping(uint256 => bool) public qrUsado;
-
-    /// @notice Nonces usados por usuario (anti-replay de firmas de reclamo)
     mapping(address => uint256) public nonces;
 
-    /// @notice Total de QRs canjeados (estadística)
     uint256 public totalQrCanjeados;
-
-    /// @notice Total de comisiones generadas (histórico)
     uint256 public totalComisionesGeneradas;
-
-    /// @notice Total de tokens quemados por canje de NFT (histórico)
     uint256 public totalTokensQuemadosPorNFT;
 
     // ================================================================
@@ -151,18 +113,10 @@ contract CsarielsToken is
         uint256 timestamp
     );
 
-    event Upgraded(
-        address indexed nuevaImplementacion,
-        uint256 timestamp
-    );
-
     // ================================================================
-    // TIPO EIP-712
+    // EIP-712
     // ================================================================
 
-    /// @notice Hash del tipo EIP-712 para el reclamo de tokens.
-    /// El backend firma: (usuarioReceptor, qrId, cantidad, nonce, deadline).
-    /// El `nonce` es el del `usuarioReceptor`, no el del backend.
     bytes32 public constant CLAIM_TYPEHASH = keccak256(
         "Claim(address usuario,uint256 qrId,uint256 cantidad,uint256 nonce,uint256 deadline)"
     );
@@ -176,12 +130,6 @@ contract CsarielsToken is
         _disableInitializers();
     }
 
-    /**
-     * @notice Inicializa el contrato.
-     * @param admin_            Dirección del admin (owner)
-     * @param backendSigner_    Dirección del backend autorizado para firmar
-     * @param walletComisiones_ Dirección que recibe las comisiones del Muro
-     */
     function initialize(
         address admin_,
         address backendSigner_,
@@ -197,12 +145,9 @@ contract CsarielsToken is
         __ReentrancyGuard_init();
         __UUPSUpgradeable_init();
 
-        // Asignar roles al admin
         _grantRole(DEFAULT_ADMIN_ROLE, admin_);
         _grantRole(PAUSER_ROLE, admin_);
         _grantRole(MINTER_ROLE, admin_);
-
-        // El backend tiene MINTER_ROLE (paga el gas de los reclamos QR)
         _grantRole(MINTER_ROLE, backendSigner_);
 
         backendSigner = backendSigner_;
@@ -211,74 +156,48 @@ contract CsarielsToken is
     }
 
     // ================================================================
-    // FUNCIÓN PRINCIPAL: RECLAMAR ES.TOKS CON QR (BACKEND PAGA GAS)
+    // RECLAMAR TOKENS CON QR
+    // ================================================================
+    // El backend paga el gas. El cliente recibe los tokens en su wallet
+    // sin gastar MATIC.
     // ================================================================
 
-    /**
-     * @notice El backend mintea 1 ES.TOKS a la wallet del usuario tras
-     * escanear un QR físico.
-     * @dev El BACKEND (MINTER_ROLE) paga el gas. El usuario no necesita
-     * MATIC ni firmar nada. La firma EIP-712 del backend garantiza que
-     * el QR fue validado off-chain antes de mintear.
-     *
-     * @param usuarioReceptor  Dirección que recibe los tokens (wallet del usuario)
-     * @param qrId             ID del QR físico (único, 1 QR = 1 ES.TOKS)
-     * @param cantidad         Cantidad de tokens a mintear
-     * @param deadline         Timestamp máximo de validez de la firma
-     * @param firma            Firma EIP-712 del backend autorizando el claim
-     */
     function reclamarTokens(
-        address usuarioReceptor,
+        address usuario,
         uint256 qrId,
         uint256 cantidad,
         uint256 deadline,
         bytes calldata firma
     ) external nonReentrant whenNotPaused onlyRole(MINTER_ROLE) {
-        require(usuarioReceptor != address(0), "Usuario receptor invalido");
+        require(usuario != address(0), "Usuario receptor invalido");
         require(cantidad > 0, "Cantidad debe ser mayor a 0");
         require(block.timestamp <= deadline, "Firma expirada");
         require(!qrUsado[qrId], "QR ya usado");
-
-        // Validar que no exceda el cap
         require(totalSupply() + cantidad <= MAX_SUPPLY, "Cap maximo alcanzado");
 
-        // Validar firma del backend para el usuario receptor
-        _validarFirma(usuarioReceptor, qrId, cantidad, deadline, firma);
+        _validarFirma(usuario, qrId, cantidad, deadline, firma);
 
-        // Marcar QR como usado
         qrUsado[qrId] = true;
         totalQrCanjeados += 1;
+        nonces[usuario] += 1;
 
-        // Incrementar nonce del receptor (anti-replay)
-        nonces[usuarioReceptor] += 1;
+        _mint(usuario, cantidad);
 
-        // Mintear tokens al usuario receptor
-        _mint(usuarioReceptor, cantidad);
-
-        emit QRUsado(qrId, usuarioReceptor, block.timestamp);
-        emit TokensMinteados(usuarioReceptor, qrId, cantidad, block.timestamp);
+        emit QRUsado(qrId, usuario, block.timestamp);
+        emit TokensMinteados(usuario, qrId, cantidad, block.timestamp);
     }
 
     // ================================================================
-    // FUNCIÓN: VENDER EN MURO P2P (VENDEDOR PAGA GAS)
+    // VENDER EN MURO P2P
+    // ================================================================
+    // El vendedor (msg.sender) paga el gas. Comisión 3% al admin.
     // ================================================================
 
-    /**
-     * @notice El vendedor ejecuta una venta directa desde su wallet.
-     * @dev Aplica comisión del 3% al vendedor. El vendedor (msg.sender)
-     * paga su propio gas. Sin firma EIP-712 ni relay.
-     *
-     * ⚠️ Aviso: esta función asume que el vendedor ya coordinó off-chain
-     * el pago con el comprador. La transferencia de tokens y la comisión
-     * son inmediatas e irreversibles en el momento de la llamada.
-     *
-     * @param comprador  Dirección del comprador
-     * @param monto      Monto total de ES.TOKS a transferir
-     */
-    function venderEnMuro(
-        address comprador,
-        uint256 monto
-    ) external nonReentrant whenNotPaused {
+    function venderEnMuro(address comprador, uint256 monto)
+        external
+        nonReentrant
+        whenNotPaused
+    {
         address vendedor = msg.sender;
 
         require(comprador != address(0), "Comprador invalido");
@@ -286,16 +205,12 @@ contract CsarielsToken is
         require(monto > 0, "Monto debe ser mayor a 0");
         require(balanceOf(vendedor) >= monto, "Vendedor sin saldo");
 
-        // Calcular comisión
         uint256 comision = (monto * COMISION_MURO_BPS) / BPS_DENOMINATOR;
         uint256 montoComprador = monto - comision;
 
         require(comision > 0, "Comision demasiado baja");
 
-        // 1. Comisión al wallet de comisiones
         _transfer(vendedor, walletComisiones, comision);
-
-        // 2. Monto neto al comprador
         _transfer(vendedor, comprador, montoComprador);
 
         totalComisionesGeneradas += comision;
@@ -311,16 +226,11 @@ contract CsarielsToken is
     }
 
     // ================================================================
-    // FUNCIÓN: QUEMAR TOKENS POR CANJE DE NFT
+    // QUEMAR POR CANJE DE NFT
+    // ================================================================
+    // Solo el contrato NFT puede llamar (NFT_ROLE).
     // ================================================================
 
-    /**
-     * @notice Quema ES.TOKS del usuario cuando canjea por un NFT.
-     * @dev Solo el contrato de NFT (NFT_ROLE) puede llamar.
-     *
-     * @param usuario  Usuario cuyos tokens se queman
-     * @param cantidad Cantidad de tokens a quemar
-     */
     function quemarPorCanje(address usuario, uint256 cantidad)
         external
         nonReentrant
@@ -339,12 +249,9 @@ contract CsarielsToken is
     }
 
     // ================================================================
-    // FUNCIONES DE ADMINISTRACIÓN
+    // ADMINISTRACIÓN
     // ================================================================
 
-    /**
-     * @notice Cambia la wallet que recibe las comisiones del Muro.
-     */
     function setWalletComisiones(address nueva)
         external
         onlyRole(DEFAULT_ADMIN_ROLE)
@@ -355,9 +262,6 @@ contract CsarielsToken is
         emit WalletComisionesActualizada(anterior, nueva, block.timestamp);
     }
 
-    /**
-     * @notice Cambia la dirección del backend que firma autorizaciones.
-     */
     function setBackendSigner(address nuevo)
         external
         onlyRole(DEFAULT_ADMIN_ROLE)
@@ -371,15 +275,11 @@ contract CsarielsToken is
         }
 
         _grantRole(MINTER_ROLE, nuevo);
-
         backendSigner = nuevo;
 
         emit BackendSignerActualizado(anterior, nuevo, block.timestamp);
     }
 
-    /**
-     * @notice Configura la dirección del contrato de NFT autorizado.
-     */
     function setContratoNFT(address nuevo)
         external
         onlyRole(DEFAULT_ADMIN_ROLE)
@@ -398,22 +298,16 @@ contract CsarielsToken is
         emit ContratoNFTActualizado(anterior, nuevo, block.timestamp);
     }
 
-    /**
-     * @notice Pausa el contrato (emergencias).
-     */
     function pause() external onlyRole(PAUSER_ROLE) {
         _pause();
     }
 
-    /**
-     * @notice Reanuda el contrato.
-     */
     function unpause() external onlyRole(PAUSER_ROLE) {
         _unpause();
     }
 
     // ================================================================
-    // FUNCIONES DE CONSULTA
+    // CONSULTAS
     // ================================================================
 
     function qrYaUsado(uint256 qrId) external view returns (bool) {
@@ -465,7 +359,6 @@ contract CsarielsToken is
         );
 
         bytes32 digest = _hashTypedDataV4(structHash);
-
         address firmante = ECDSA.recover(digest, firma);
 
         require(
@@ -501,13 +394,11 @@ contract CsarielsToken is
     // OVERRIDES
     // ================================================================
 
-    function _authorizeUpgrade(address newImplementation)
+    function _authorizeUpgrade(address)
         internal
         override
         onlyRole(DEFAULT_ADMIN_ROLE)
-    {
-        emit Upgraded(newImplementation, block.timestamp);
-    }
+    {}
 
     function _update(address from, address to, uint256 value)
         internal
