@@ -128,16 +128,23 @@
         }
 
         .cfg-color-selector {
-            display: flex;
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
             gap: 12px;
             padding: 0 16px 20px 16px;
-            justify-content: space-around;
-            flex-wrap: wrap;
+            justify-items: center;
+        }
+
+        @media (max-width: 380px) {
+            .cfg-color-selector {
+                grid-template-columns: repeat(5, 1fr);
+                gap: 10px;
+            }
         }
 
         .cfg-color-dot {
-            width: 44px;
-            height: 44px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             cursor: pointer;
             transition: var(--cfg-transition);
@@ -162,7 +169,7 @@
             align-items: center;
             justify-content: center;
             color: #fff;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: 700;
             text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
         }
@@ -307,6 +314,9 @@
             color_acento: 'mostrar_color_acento',
         };
 
+        // ============================================================
+        // 16 COLORES DE ACENTO
+        // ============================================================
         const COLORES_ACENTO = [
             { valor: '#D4AF37', label: 'Dorado Sariel\'s' },
             { valor: '#1d9bf0', label: 'Azul' },
@@ -316,13 +326,20 @@
             { valor: '#ff3366', label: 'Rojo' },
             { valor: '#ec4899', label: 'Rosa' },
             { valor: '#00e5ff', label: 'Cian' },
+            { valor: '#f97316', label: 'Naranja' },
+            { valor: '#14b8a6', label: 'Turquesa' },
+            { valor: '#6366f1', label: 'Índigo' },
+            { valor: '#f43f5e', label: 'Rosa fuerte' },
+            { valor: '#f59e0b', label: 'Ámbar' },
+            { valor: '#84cc16', label: 'Lima' },
+            { valor: '#10b981', label: 'Esmeralda' },
+            { valor: '#0ea5e9', label: 'Cielo' },
         ];
 
-        // ✅ NUEVO: usar la API global para guardar en localStorage + Supabase
+        // ✅ Usar la API global para guardar en localStorage + Supabase
         function guardarPreferencia(key, valor) {
             const api = window.SarielApariencia;
             if (!api) {
-                // Fallback si el módulo global no cargó
                 try { localStorage.setItem(key, valor); } catch(e) {}
                 return;
             }
@@ -374,9 +391,9 @@
         // COLOR DE ACENTO
         // ============================================================
         function renderColores() {
-            const colorActual = getPref(PREF_KEYS.color_acento, '#D4AF37');
+            const colorActual = (getPref(PREF_KEYS.color_acento, '#D4AF37') || '').toLowerCase();
             $('#seccionAcento').innerHTML = COLORES_ACENTO.map(c => `
-                <div class="cfg-color-dot ${c.valor === colorActual ? 'active' : ''}" 
+                <div class="cfg-color-dot ${c.valor.toLowerCase() === colorActual ? 'active' : ''}" 
                      style="background:${c.valor};"
                      title="${c.label}"
                      onclick="window.onCambiarColor('${c.valor}')">
@@ -423,7 +440,6 @@
         // INICIALIZAR
         // ============================================================
         window.addEventListener('DOMContentLoaded', async () => {
-            // Esperar a que apariencia-global.js esté listo
             await new Promise(resolve => setTimeout(resolve, 500));
 
             renderTemas();
@@ -442,7 +458,7 @@
                 });
             }
 
-            console.log('[Mostrar] ✅ Página inicializada');
+            console.log('[Mostrar] ✅ Página inicializada con 16 colores');
         });
 
     })();
