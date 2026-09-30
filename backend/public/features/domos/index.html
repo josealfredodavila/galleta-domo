@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#05080f" />
+    <title>Domos de Galletas · Sariel's</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --gold: #D4AF37;
+            --gold-dark: #b8923a;
+            --gold-light: #e8c84a;
+            --green-deep: #0F2D1A;
+            --green-mid: #1a4a2a;
+            --space: #05080f;
+            --text-primary: #f0f4f8;
+            --text-secondary: #c0d8e8;
+            --text-muted: #8aa8b8;
+            --glass-bg: rgba(15, 45, 26, 0.55);
+            --glass-border: rgba(212, 175, 55, 0.15);
+            --success: #00d68f;
+            --danger: #ff3366;
+            --warning: #f7d44a;
+            --cyan: #00e5ff;
+            --purple: #a855f7;
+            --radius: 16px;
+            --radius-xl: 24px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: var(--space);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            background-image:
+                radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
+        }
+        .nebula { position: fixed; border-radius: 50%; filter: blur(120px); pointer-events: none; z-index: 0; opacity: 0.12; }
+        .nebula-1 { width: 700px; height: 700px; background: #2a6a3a; top: -15%; right: -15%; }
+        .nebula-2 { width: 600px; height: 600px; background: var(--gold-light); bottom: -15%; left: -15%; opacity: 0.06; }
+
+        .app { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 16px 20px 40px; }
+
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 0 16px; border-bottom: 2px solid var(--glass-border);
+            background: rgba(5, 8, 15, 0.9); border-radius: var(--radius) var(--radius) 0 0;
+            position: sticky; top: 0; z-index: 100; gap: 12px; flex-wrap: wrap;
+        }
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .logo-hex { font-size: 1.8rem; color: var(--gold); font-family: 'Orbitron', monospace; }
+        .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--text-primary); letter-spacing: 2px; }
+        .logo-text span { color: var(--gold); }
+        .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; }
+        .network-badge { display: flex; align-items: center; gap: 6px; font-size: 0.6rem; color: var(--gold); background: rgba(212,175,55,0.1); padding: 4px 12px; border-radius: 20px; }
+
+        .main-nav {
+            display: flex; gap: 4px; background: rgba(15,45,26,0.3); border-radius: var(--radius);
+            padding: 4px; border: 1px solid var(--glass-border); margin: 16px 0 24px;
+            overflow-x: auto;
+        }
+        .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; white-space: nowrap; }
+        .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212,175,55,0.05); }
+        .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); }
+
+        .hero {
+            background: var(--glass-bg); border: 2px solid var(--glass-border);
+            border-radius: var(--radius-xl); padding: 40px 24px; margin-bottom: 24px;
+            text-align: center; position: relative; overflow: hidden;
+            backdrop-filter: blur(12px);
+        }
+        .hero::before {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle, rgba(212, 175, 55, 0.08) 0%, transparent 70%);
+            animation: rotate 20s linear infinite; pointer-events: none;
+        }
+        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .hero-icon { font-size: 4rem; display: block; margin-bottom: 16px; position: relative; z-index: 1; filter: drop-shadow(0 0 30px rgba(212, 175, 55, 0.5)); }
+        .hero h1 {
+            font-family: 'Orbitron', monospace; font-size: 1.6rem; color: var(--gold);
+            margin-bottom: 8px; position: relative; z-index: 1; letter-spacing: 1px;
+        }
+        .hero p { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6; max-width: 500px; margin: 0 auto; position: relative; z-index: 1; }
+
+        .badge-proximamente {
+            display: inline-block; background: linear-gradient(135deg, var(--warning), #e8a800);
+            color: var(--space); padding: 6px 20px; border-radius: 20px;
+            font-family: 'Orbitron', monospace; font-weight: 700; font-size: 0.7rem;
+            letter-spacing: 1px; margin-bottom: 16px; position: relative; z-index: 1;
+        }
+
+        .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .card {
+            background: var(--glass-bg); border: 2px solid var(--glass-border);
+            border-radius: var(--radius-xl); padding: 24px 20px;
+            transition: var(--transition); position: relative; overflow: hidden;
+        }
+        .card:hover { border-color: var(--gold); transform: translateY(-2px); }
+        .card .icon { font-size: 2.4rem; display: block; margin-bottom: 12px; }
+        .card h3 { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 1rem; margin-bottom: 8px; letter-spacing: 0.5px; }
+        .card p { color: var(--text-secondary); font-size: 0.82rem; line-height: 1.6; margin-bottom: 16px; }
+        .card .precio { font-family: 'Orbitron', monospace; font-size: 1.8rem; color: var(--gold); font-weight: 900; margin-bottom: 4px; }
+        .card .precio small { font-size: 0.7rem; color: var(--text-muted); font-weight: 400; }
+
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            width: 100%; padding: 14px 20px; border-radius: 30px;
+            font-family: 'Orbitron', monospace; font-weight: 700; font-size: 0.8rem;
+            border: 2px solid var(--glass-border); cursor: pointer;
+            text-decoration: none; transition: var(--transition); letter-spacing: 0.5px;
+        }
+        .btn-gold {
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space); border-color: var(--gold);
+            box-shadow: 0 4px 20px rgba(212, 175, 55, 0.2);
+        }
+        .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(212, 175, 55, 0.35); }
+        .btn-outline {
+            background: rgba(0,0,0,0.3); color: var(--text-secondary);
+            border-color: var(--glass-border);
+        }
+        .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
+        .btn-whatsapp {
+            background: linear-gradient(135deg, #25D366, #128C7E);
+            color: white; border-color: #25D366;
+        }
+        .btn-whatsapp:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(37, 211, 102, 0.35); }
+
+        .section-title {
+            font-family: 'Orbitron', monospace; color: var(--gold); font-size: 1rem;
+            margin: 32px 0 16px; letter-spacing: 1px; display: flex; align-items: center; gap: 8px;
+        }
+        .section-title::before { content: '◈'; }
+
+        .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+        .step {
+            background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border);
+            border-radius: var(--radius); padding: 18px 16px; position: relative;
+        }
+        .step-num {
+            position: absolute; top: -12px; left: 16px;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space); width: 28px; height: 28px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Orbitron', monospace; font-weight: 900; font-size: 0.75rem;
+        }
+        .step h4 { color: var(--gold); font-size: 0.85rem; margin-bottom: 6px; margin-top: 8px; font-family: 'Orbitron', monospace; }
+        .step p { color: var(--text-secondary); font-size: 0.75rem; line-height: 1.5; }
+
+        .aviso {
+            background: linear-gradient(135deg, rgba(0, 229, 255, 0.06), rgba(15, 45, 26, 0.4));
+            border-left: 3px solid var(--cyan); padding: 14px 18px;
+            border-radius: 12px; margin-top: 24px; font-size: 0.82rem;
+            color: var(--text-secondary); line-height: 1.6;
+        }
+        .aviso strong { color: var(--cyan); }
+
+        .footer {
+            margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--glass-border);
+            display: flex; justify-content: space-between; align-items: center;
+            flex-wrap: wrap; gap: 10px; font-size: 0.7rem; color: var(--text-muted);
+        }
+        .footer .brand { color: var(--gold); font-weight: 600; }
+        .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; }
+        .footer-links a:hover { color: var(--gold); }
+
+        @media (max-width: 600px) {
+            .hero { padding: 30px 20px; }
+            .hero h1 { font-size: 1.3rem; }
+            .hero-icon { font-size: 3rem; }
+            .card { padding: 20px 16px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="nebula nebula-1"></div>
+    <div class="nebula nebula-2"></div>
+
+    <div class="app">
+
+        <header class="header">
+            <a href="/" class="logo">
+                <span class="logo-hex">◈</span>
+                <span class="logo-text">Sariel<span>'s</span></span>
+                <span class="logo-badge">✦ DOMOS</span>
+            </a>
+            <span class="network-badge">✦ Repostería Fina</span>
+        </header>
+
+        <nav class="main-nav">
+            <a href="/" class="nav-link">⌂ Inicio</a>
+            <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
+            <a href="/features/perfil/perfil.html" class="nav-link">◆ Perfil</a>
+            <a href="/features/perfil/configuracion/sariels/estoks.html" class="nav-link">⟡ Es.stoks</a>
+            <a href="/features/domos/index.html" class="nav-link active">🍪 Domos</a>
+        </nav>
+
+        <!-- HERO -->
+        <section class="hero">
+            <span class="hero-icon">🍪</span>
+            <span class="badge-proximamente">✦ PRÓXIMAMENTE</span>
+            <h1>Domos de Galletas Sariel's</h1>
+            <p>
+                Nuestros deliciosos domos de galletas artesanales están por llegar a tu pantalla.
+                Cada domo viene con un QR único que te da <strong style="color:var(--gold);">1 Es.stok</strong> en Polygon.
+                Junta 12 y canjéalos por un <strong style="color:var(--gold);">domo GRATIS</strong>.
+            </p>
+        </section>
+
+        <!-- PRECIOS -->
+        <h2 class="section-title">Nuestros Precios</h2>
+
+        <div class="cards">
+
+            <div class="card">
+                <span class="icon">🍪</span>
+                <h3>DOMO INDIVIDUAL</h3>
+                <div class="precio">$75 <small>MXN</small></div>
+                <p>Un delicioso domo de galletas artesanal. Incluye 1 Es.stok para acumular.</p>
+                <a href="https://wa.me/521234567890?text=Hola,%20quiero%20comprar%20un%20domo%20de%20galletas" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp">
+                    📱 Pedir por WhatsApp
+                </a>
+            </div>
+
+            <div class="card">
+                <span class="icon">📦</span>
+                <h3>PAQUETE 6 DOMOS</h3>
+                <div class="precio">$400 <small>MXN</small></div>
+                <p>Ahorra $50. 6 domos con 6 Es.stoks. Media docena para compartir.</p>
+                <a href="https://wa.me/521234567890?text=Hola,%20quiero%20comprar%206%20domos%20de%20galletas" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp">
+                    📱 Pedir por WhatsApp
+                </a>
+            </div>
+
+            <div class="card">
+                <span class="icon">🎁</span>
+                <h3>DOCENA COMPLETA</h3>
+                <div class="precio">$800 <small>MXN</small></div>
+                <p>Ahorra $100. 12 domos con 12 Es.stoks. <strong style="color:var(--gold);">¡Listo para canjear NFT!</strong></p>
+                <a href="https://wa.me/521234567890?text=Hola,%20quiero%20comprar%2012%20domos%20de%20galletas" target="_blank" rel="noopener noreferrer" class="btn btn-gold">
+                    ⭐ Pedir Docena
+                </a>
+            </div>
+
+        </div>
+
+        <!-- MAYOREO -->
+        <h2 class="section-title">¿Compras por Mayoreo?</h2>
+
+        <div class="card" style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.08), rgba(15, 45, 26, 0.5)); border-color: rgba(168, 85, 247, 0.3);">
+            <span class="icon">🏪</span>
+            <h3 style="color: var(--purple);">VENTA POR MAYOREO</h3>
+            <p>
+                ¿Tienes un negocio, cafetería, tienda o evento? Manejamos precios especiales
+                desde 24 domos en adelante. Consulta disponibilidad y descuentos.
+            </p>
+            <a href="https://wa.me/521234567890?text=Hola,%20quiero%20información%20sobre%20mayoreo%20de%20domos" target="_blank" rel="noopener noreferrer" class="btn btn-outline" style="border-color: var(--purple); color: var(--purple);">
+                🏪 Contactar Mayoreo
+            </a>
+        </div>
+
+        <!-- CÓMO FUNCIONA -->
+        <h2 class="section-title">¿Cómo funciona?</h2>
+
+        <div class="steps">
+            <div class="step">
+                <span class="step-num">1</span>
+                <h4>Compra tu domo</h4>
+                <p>Pide por WhatsApp o en persona. $75 MXN por domo individual.</p>
+            </div>
+            <div class="step">
+                <span class="step-num">2</span>
+                <h4>Recibe en casa</h4>
+                <p>Entrega en Puebla, CDMX y Edomex. Envíos a todo México (costo extra).</p>
+            </div>
+            <div class="step">
+                <span class="step-num">3</span>
+                <h4>Escanea el QR</h4>
+                <p>Cada domo trae un QR único. Escanéalo desde tu perfil para recibir 1 Es.stok.</p>
+            </div>
+            <div class="step">
+                <span class="step-num">4</span>
+                <h4>Acumula y canjea</h4>
+                <p>Junta 12 Es.stoks → canjea por 1 NFT → recibe un domo GRATIS.</p>
+            </div>
+        </div>
+
+        <!-- AVISO -->
+        <div class="aviso">
+            <strong>ℹ️ Próximamente:</strong> Estamos trabajando en la tienda online completa con
+            pagos con tarjeta, cripto y envío a domicilio. Por ahora, pide por WhatsApp
+            y coordinamos la entrega.
+        </div>
+
+        <!-- FOOTER -->
+        <footer class="footer">
+            <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
+            <div class="footer-links">
+                <a href="/features/muro/muro.html">◇ Muro</a>
+                <a href="/features/perfil/configuracion/sariels/estoks.html">⟡ Es.stoks</a>
+                <a href="/terminos">◈ Términos</a>
+                <a href="/privacidad">◈ Privacidad</a>
+            </div>
+        </footer>
+
+    </div>
+
+</body>
+</html>
