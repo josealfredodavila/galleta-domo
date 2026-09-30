@@ -16,7 +16,6 @@
         'use strict';
 
         window.__sarielsAuthenticated = null;
-        window.__sarielsAuthReady = null;
         window.supabaseClient = window.supabaseClient || null;
         window.supabaseReady = null;
         window.supabaseError = null;
@@ -35,10 +34,7 @@
 
         async function inicializarSupabase() {
             try {
-                if (
-                    !window.supabase ||
-                    typeof window.supabase.createClient !== 'function'
-                ) {
+                if (!window.supabase || typeof window.supabase.createClient !== 'function') {
                     throw new Error('Supabase SDK no disponible.');
                 }
 
@@ -60,7 +56,7 @@
                             supabaseAnonKey = config && config.supabaseAnonKey;
                         }
                     } catch (fetchErr) {
-                        console.warn('[Index Guardián] No se pudo consultar /api/config/public.', fetchErr);
+                        console.warn('[Index] No se pudo consultar /api/config/public.', fetchErr);
                     }
 
                     if (!supabaseUrl || !supabaseAnonKey) {
@@ -81,8 +77,6 @@
                             }
                         }
                     );
-
-                    console.log('[Index Guardián] ✅ supabaseClient creado.');
                 }
 
                 const resultado = await window.supabaseClient.auth.getSession();
@@ -94,20 +88,16 @@
                 const returnTo = urlParams.get('returnTo');
 
                 if (returnTo && esRutaInternaSegura(returnTo)) {
-                    try {
-                        localStorage.setItem('wallet_returnTo', returnTo);
-                    } catch (_) {}
+                    try { localStorage.setItem('wallet_returnTo', returnTo); } catch (_) {}
                 }
 
-                window.supabaseClient.auth.onAuthStateChange(
-                    function (_event, sessionActual) {
-                        window.__sarielsAuthenticated = !!sessionActual;
-                    }
-                );
+                window.supabaseClient.auth.onAuthStateChange(function (_event, sessionActual) {
+                    window.__sarielsAuthenticated = !!sessionActual;
+                });
 
                 return window.supabaseClient;
             } catch (error) {
-                console.error('[Index Guardián] Error inicializando Supabase:', error);
+                console.error('[Index] Error inicializando Supabase:', error);
                 window.__sarielsAuthenticated = false;
                 window.supabaseError = error;
                 return null;
@@ -115,9 +105,6 @@
         }
 
         window.supabaseReady = inicializarSupabase();
-        window.__sarielsAuthReady = window.supabaseReady.then(function () {
-            return window.__sarielsAuthenticated;
-        });
     })();
 </script>
 
@@ -241,9 +228,6 @@ body {
     border-radius: 50%;
 }
 
-/* =========================================
-   LOGIN LIMPIO (estilo Facebook, paleta Sariel's)
-========================================= */
 .login-wrap {
     max-width: 420px;
     margin: 40px auto 30px;
@@ -326,6 +310,11 @@ body {
     margin-top: 16px;
     text-decoration: none;
     transition: var(--transition);
+    background: none;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+    font-family: 'Inter', sans-serif;
 }
 .login-olvide:hover { color: var(--gold); }
 
@@ -357,9 +346,98 @@ body {
     transform: translateY(-2px);
 }
 
-/* =========================================
-   CARRUSEL EN VIVO
-========================================= */
+/* Modal recuperar contraseña */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 20px;
+}
+.modal-overlay.active { display: flex; }
+.modal-box {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    padding: 28px 24px;
+    max-width: 400px;
+    width: 100%;
+    backdrop-filter: blur(14px);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    animation: modalIn 0.25s ease-out;
+}
+@keyframes modalIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+.modal-box h3 {
+    font-family: 'Orbitron', monospace;
+    color: var(--gold);
+    font-size: 1.05rem;
+    margin-bottom: 8px;
+    text-align: center;
+}
+.modal-box p {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    text-align: center;
+    margin-bottom: 18px;
+    line-height: 1.5;
+}
+.modal-box input {
+    width: 100%;
+    padding: 14px 16px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    margin-bottom: 14px;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    transition: var(--transition);
+}
+.modal-box input:focus {
+    border-color: var(--gold);
+    background: rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+}
+.modal-box .modal-btn {
+    width: 100%;
+    padding: 13px;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+    color: var(--space);
+    border: none;
+    border-radius: 10px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: var(--transition);
+}
+.modal-box .modal-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
+.modal-box .modal-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+.modal-box .modal-cerrar {
+    display: block;
+    width: 100%;
+    margin-top: 10px;
+    padding: 10px;
+    background: transparent;
+    border: 1px solid var(--text-muted);
+    color: var(--text-muted);
+    border-radius: 10px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: var(--transition);
+}
+.modal-box .modal-cerrar:hover { border-color: var(--gold); color: var(--gold); }
+
 .carrusel-wrapper {
     width: 100%;
     overflow: hidden;
@@ -498,7 +576,7 @@ body {
     box-shadow: 0 8px 40px rgba(0,0,0,0.5);
     backdrop-filter: blur(12px);
     transition: all 0.4s cubic-bezier(0.4,0,0.2,1);
-    z-index: 999;
+    z-index: 99999;
     opacity: 0;
     pointer-events: none;
     max-width: 90vw;
@@ -554,9 +632,6 @@ body {
     </div>
 </header>
 
-<!-- =========================================================
-     LOGIN LIMPIO (estilo Facebook, paleta Sariel's)
-========================================================== -->
 <section class="login-wrap">
     <div class="login-card">
 
@@ -565,27 +640,32 @@ body {
             <span class="logo-text">Sariel<span>'s</span></span>
         </div>
 
-        <input
-            type="email"
-            id="loginEmail"
-            placeholder="Correo electrónico"
-            autocomplete="email"
-            inputmode="email"
-        />
-        <input
-            type="password"
-            id="loginPassword"
-            placeholder="Contraseña"
-            autocomplete="current-password"
-        />
+        <!-- Formulario con onsubmit para que Enter también funcione -->
+        <form id="loginForm" onsubmit="event.preventDefault(); iniciarSesionDesdeIndex();">
+            <input
+                type="email"
+                id="loginEmail"
+                placeholder="Correo electrónico"
+                autocomplete="email"
+                inputmode="email"
+                required
+            />
+            <input
+                type="password"
+                id="loginPassword"
+                placeholder="Contraseña"
+                autocomplete="current-password"
+                required
+            />
 
-        <button type="button" class="login-btn" id="loginBtn" onclick="iniciarSesionDesdeIndex()">
-            ◈ Iniciar sesión
-        </button>
+            <button type="submit" class="login-btn" id="loginBtn">
+                ◈ Iniciar sesión
+            </button>
+        </form>
 
-        <a href="/recuperar.html" class="login-olvide">
+        <button type="button" class="login-olvide" onclick="abrirModalRecuperar()">
             ¿Olvidaste tu contraseña?
-        </a>
+        </button>
 
         <div class="login-divider"></div>
 
@@ -596,9 +676,30 @@ body {
     </div>
 </section>
 
-<!-- =========================================================
-     CARRUSEL EN VIVO
-========================================================== -->
+<!-- Modal recuperar contraseña -->
+<div class="modal-overlay" id="modalRecuperar">
+    <div class="modal-box">
+        <h3>◈ Recuperar contraseña</h3>
+        <p>Escribe tu correo y te enviaremos un enlace para restablecer tu contraseña.</p>
+        <form id="formRecuperar" onsubmit="event.preventDefault(); enviarRecuperacion();">
+            <input
+                type="email"
+                id="recuperarEmail"
+                placeholder="Tu correo electrónico"
+                autocomplete="email"
+                inputmode="email"
+                required
+            />
+            <button type="submit" class="modal-btn" id="recuperarBtn">
+                Enviar enlace
+            </button>
+        </form>
+        <button type="button" class="modal-cerrar" onclick="cerrarModalRecuperar()">
+            Cancelar
+        </button>
+    </div>
+</div>
+
 <div class="carrusel-wrapper" id="carruselEnVivo">
     <div class="carrusel-titulo">
         <span class="dot"></span>
@@ -615,11 +716,11 @@ body {
         <span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3
     </span>
     <div class="footer-links">
-        <a href="/terminos" data-clave="footer_terminos">◈ Términos</a>
-        <a href="/privacidad" data-clave="footer_privacidad">◈ Privacidad</a>
-        <a href="/cookies" data-clave="footer_cookies">◈ Cookies</a>
-        <a href="/eliminar-cuenta.html" data-clave="footer_eliminar_cuenta">◈ Eliminar cuenta</a>
-        <a href="/live-terminos" data-clave="footer_live_terminos">◉ Live Términos</a>
+        <a href="/terminos">◈ Términos</a>
+        <a href="/privacidad">◈ Privacidad</a>
+        <a href="/cookies">◈ Cookies</a>
+        <a href="/eliminar-cuenta.html">◈ Eliminar cuenta</a>
+        <a href="/live-terminos">◉ Live Términos</a>
         <span style="opacity:0.3;">⚡ Polygon</span>
     </div>
 </footer>
@@ -636,9 +737,26 @@ body {
     </button>
 </div>
 
-<script src="/app.js"></script>
-
 <script>
+'use strict';
+
+var RUTA_PERFIL = '/features/perfil/perfil.html';
+
+/* ========================================================
+   TOAST
+======================================================== */
+function showToast(msg, type, duration) {
+    var el = document.getElementById('toast');
+    if (!el) return;
+    el.textContent = msg;
+    el.className = 'toast show' + (type ? ' ' + type : '');
+    clearTimeout(el._timer);
+    el._timer = setTimeout(function () {
+        el.className = 'toast';
+    }, duration || 3500);
+}
+window.showToast = showToast;
+
 /* ========================================================
    ESTRELLAS
 ======================================================== */
@@ -698,28 +816,22 @@ function mostrarErrorEnPantalla(mensaje) {
         banner.style.display = 'block';
     }
 }
-
 window.addEventListener('error', function (event) {
     mostrarErrorEnPantalla((event.message || 'Error desconocido') + ' — línea ' + event.lineno);
 });
-
 window.addEventListener('unhandledrejection', function (event) {
     mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason?.message || event.reason));
 });
 
 /* ========================================================
-   REDIRECCIÓN AUTOMÁTICA AL PERFIL SI YA HAY SESIÓN
+   REDIRECCIÓN AUTOMÁTICA AL PERFIL
 ======================================================== */
-const RUTA_PERFIL = '/features/perfil/perfil.html';
-
 async function redirigirSiYaHaySesion() {
     try {
         const client = await window.getSupabaseClient();
         if (!client) return;
-
         const resultado = await client.auth.getSession();
         const session = resultado && resultado.data ? resultado.data.session : null;
-
         if (session) {
             window.location.replace(RUTA_PERFIL);
         }
@@ -729,7 +841,7 @@ async function redirigirSiYaHaySesion() {
 }
 
 /* ========================================================
-   LOGIN
+   LOGIN — DIRECTO CON SUPABASE (no depende de /app.js)
 ======================================================== */
 async function iniciarSesionDesdeIndex() {
     const emailEl = document.getElementById('loginEmail');
@@ -742,16 +854,7 @@ async function iniciarSesionDesdeIndex() {
     const password = passEl.value;
 
     if (!email || !password) {
-        if (window.showToast) {
-            window.showToast('⚠️ Completa correo y contraseña', 'warning');
-        }
-        return;
-    }
-
-    if (!window.app || typeof window.app.iniciarSesion !== 'function') {
-        if (window.showToast) {
-            window.showToast('⚠️ Sistema de login no disponible. Recarga la página.', 'error');
-        }
+        showToast('⚠️ Completa correo y contraseña', 'warning');
         return;
     }
 
@@ -759,17 +862,113 @@ async function iniciarSesionDesdeIndex() {
     if (btn) { btn.disabled = true; btn.textContent = '⏳ Entrando...'; }
 
     try {
-        await window.app.iniciarSesion(email, password);
+        // 1) Intentar con el login global de /app.js si está disponible
+        if (window.app && typeof window.app.iniciarSesion === 'function') {
+            await window.app.iniciarSesion(email, password);
+            emailEl.value = '';
+            passEl.value = '';
+            window.location.replace(RUTA_PERFIL);
+            return;
+        }
 
-        if (emailEl) emailEl.value = '';
-        if (passEl) passEl.value = '';
+        // 2) Fallback: login directo con Supabase
+        const client = await window.getSupabaseClient();
+        if (!client) {
+            throw new Error('No hay conexión con el servidor. Recarga la página.');
+        }
+
+        const { data, error } = await client.auth.signInWithPassword({
+            email: email,
+            password: password
+        });
+
+        if (error) {
+            throw new Error(error.message || 'Credenciales inválidas');
+        }
+
+        if (!data || !data.session) {
+            throw new Error('No se pudo iniciar sesión');
+        }
+
+        emailEl.value = '';
+        passEl.value = '';
 
         window.location.replace(RUTA_PERFIL);
+
     } catch (e) {
-        console.error('Error en iniciarSesionDesdeIndex:', e);
+        console.error('[Login] Error:', e);
+        showToast('❌ ' + (e && e.message ? e.message : 'Error al iniciar sesión'), 'error', 5000);
         if (btn) { btn.disabled = false; btn.textContent = originalText; }
     }
 }
+window.iniciarSesionDesdeIndex = iniciarSesionDesdeIndex;
+
+/* ========================================================
+   MODAL RECUPERAR CONTRASEÑA
+======================================================== */
+function abrirModalRecuperar() {
+    const modal = document.getElementById('modalRecuperar');
+    if (!modal) return;
+    const emailEl = document.getElementById('loginEmail');
+    const recEl = document.getElementById('recuperarEmail');
+    if (emailEl && recEl && emailEl.value && emailEl.value.trim()) {
+        recEl.value = emailEl.value.trim();
+    }
+    modal.classList.add('active');
+    setTimeout(function () {
+        if (recEl) recEl.focus();
+    }, 100);
+}
+window.abrirModalRecuperar = abrirModalRecuperar;
+
+function cerrarModalRecuperar() {
+    const modal = document.getElementById('modalRecuperar');
+    if (modal) modal.classList.remove('active');
+}
+window.cerrarModalRecuperar = cerrarModalRecuperar;
+
+async function enviarRecuperacion() {
+    const emailEl = document.getElementById('recuperarEmail');
+    const btn = document.getElementById('recuperarBtn');
+
+    if (!emailEl) return;
+    const email = emailEl.value.trim();
+
+    if (!email) {
+        showToast('⚠️ Escribe tu correo', 'warning');
+        return;
+    }
+
+    const originalText = btn ? btn.textContent : 'Enviar enlace';
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Enviando...'; }
+
+    try {
+        const client = await window.getSupabaseClient();
+        if (!client) {
+            throw new Error('No hay conexión con el servidor');
+        }
+
+        const redirectTo = window.location.origin + '/actualizar-contraseña.html';
+
+        const { error } = await client.auth.resetPasswordForEmail(email, {
+            redirectTo: redirectTo
+        });
+
+        if (error) {
+            throw new Error(error.message || 'No se pudo enviar el correo');
+        }
+
+        showToast('✅ Revisa tu correo. Te enviamos un enlace para restablecer tu contraseña.', 'success', 6000);
+        cerrarModalRecuperar();
+
+    } catch (e) {
+        console.error('[Recuperar] Error:', e);
+        showToast('❌ ' + (e && e.message ? e.message : 'Error al enviar el correo'), 'error', 5000);
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = originalText; }
+    }
+}
+window.enviarRecuperacion = enviarRecuperacion;
 
 /* ========================================================
    CARRUSEL EN VIVO
@@ -779,11 +978,12 @@ async function cargarCarruselEnVivo() {
     if (!wrapper) return;
 
     try {
-        if (!window.supabaseClient || typeof window.supabaseClient.from !== 'function') {
+        const client = await window.getSupabaseClient();
+        if (!client || typeof client.from !== 'function') {
             throw new Error('Cliente Supabase no disponible');
         }
 
-        let { data: transmisiones, error } = await window.supabaseClient
+        let { data: transmisiones, error } = await client
             .from('transmisiones')
             .select(`
                 id,
@@ -808,9 +1008,7 @@ async function cargarCarruselEnVivo() {
             .limit(12);
 
         if (error) {
-            console.warn('[Carrusel] Falló consulta con join, reintentando sin join:', error.message);
-
-            const fallback = await window.supabaseClient
+            const fallback = await client
                 .from('transmisiones')
                 .select('id, titulo, room_name, espectadores, viewers_count, streamer_id, estado, is_live, grupo_id')
                 .eq('is_live', true)
@@ -919,19 +1117,13 @@ async function cargarCarruselEnVivo() {
         `;
     }
 }
+window.cargarCarruselEnVivo = cargarCarruselEnVivo;
 
 function abrirCanalDesdeCarrusel(grupoId) {
     if (!grupoId || grupoId === '') return;
     window.location.href = '/features/grupos/grupos.html?grupo=' + grupoId;
 }
-
-/* ========================================================
-   EXPONER AL WINDOW
-======================================================== */
-window.mostrarErrorEnPantalla = mostrarErrorEnPantalla;
-window.iniciarSesionDesdeIndex = iniciarSesionDesdeIndex;
 window.abrirCanalDesdeCarrusel = abrirCanalDesdeCarrusel;
-window.cargarCarruselEnVivo = cargarCarruselEnVivo;
 
 /* ========================================================
    DOM READY
@@ -943,12 +1135,23 @@ document.addEventListener('DOMContentLoaded', function () {
     (async function cargarCuandoListo() {
         const client = await window.getSupabaseClient();
         if (!client) return;
-
         if (window.__sarielsAuthenticated) return;
-
         await cargarCarruselEnVivo();
         setInterval(cargarCarruselEnVivo, 30000);
     })();
+
+    // Cerrar modal al tocar fuera
+    const modal = document.getElementById('modalRecuperar');
+    if (modal) {
+        modal.addEventListener('click', function (e) {
+            if (e.target === modal) cerrarModalRecuperar();
+        });
+    }
+
+    // Cerrar modal con Escape
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') cerrarModalRecuperar();
+    });
 
     setTimeout(async function () {
         try {
