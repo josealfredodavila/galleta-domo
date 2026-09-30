@@ -676,26 +676,31 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script>window.__SB_SDK_VIDEOS = window.supabase;</script>
     <script src="/features/shared/js/idiomas.js"></script>
     <script src="/app.js"></script>
 
     <script>
         // ================================================================
-        // VIDEOS - v8 (con fallback y diagnóstico)
-        // Límites alineados con la config real del bucket 'videos' de Supabase:
-        //   - Máximo: 100 MB
-        //   - MIME permitidos: video/mp4, video/webm, video/quicktime
-        //   - Extensiones permitidas: .mp4, .webm, .mov
-        //   - NO AVI
+        // VIDEOS - v9 (auditoría quirúrgica aplicada)
+        // Cambios respecto a v8:
+        //  - FIX 1: Capturar window.supabase antes de /app.js (__SB_SDK_VIDEOS)
+        //  - FIX 2: escapeHTML() ahora escapa & < > " '
+        //  - FIX 3: safeAttr() solo acepta https://
+        //  - FIX 4: guarda del SDK valida typeof .from === 'function'
         // ================================================================
 
-        if (typeof window.supabase === 'undefined') {
-            console.error('❌ Supabase no está disponible.');
+        // ✅ FIX 1: restaurar window.supabase si /app.js lo pisó
+        window.supabase = window.__SB_SDK_VIDEOS || window.supabase;
+
+        // ✅ FIX 4: guarda robusta del SDK
+        if (!window.supabase || typeof window.supabase.from !== 'function') {
+            console.error('❌ Supabase SDK no está bien cargado. window.supabase.from =', typeof window.supabase?.from);
             document.addEventListener('DOMContentLoaded', function() {
                 var banner = document.getElementById('errorBanner');
                 var texto = document.getElementById('errorBannerText');
                 if (banner && texto) {
-                    texto.textContent = 'No se pudo cargar la conexión a la base de datos (Supabase).';
+                    texto.textContent = 'Supabase SDK no está bien cargado (window.supabase.from no es función). ¿/app.js lo está sobrescribiendo?';
                     banner.style.display = 'block';
                 }
             });
@@ -762,24 +767,33 @@
 
         async function getSession() {
             try {
-                if (typeof window.supabase === 'undefined') return null;
+                if (!window.supabase || typeof window.supabase.auth?.getSession !== 'function') return null;
                 var r = await window.supabase.auth.getSession();
                 return r.data.session;
             } catch (e) { return null; }
         }
 
+        // ✅ FIX 2: escapeHTML ahora escapa & < > " '
         function escapeHTML(texto) {
-            if (!texto) return '';
-            var div = document.createElement('div');
-            div.textContent = texto;
-            return div.innerHTML;
+            if (texto === null || texto === undefined) return '';
+            return String(texto)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
         }
         function esURLValida(url) {
             if (!url || typeof url !== 'string') return false;
             try { var u = new URL(url); return u.protocol === 'http:' || u.protocol === 'https:'; }
             catch (e) { return false; }
         }
-        function safeAttr(url) { return esURLValida(url) ? url : '#'; }
+        // ✅ FIX 3: safeAttr solo acepta https://
+        function safeAttr(url) {
+            if (!url || typeof url !== 'string') return '#';
+            if (!url.startsWith('https://')) return '#';
+            return url;
+        }
         function extraerPathStorage(url) {
             if (!url || typeof url !== 'string') return null;
             try {
@@ -926,7 +940,6 @@
         async function cargarVideos() {
             var container = document.getElementById('videosContainer');
             try {
-                // Intento 1: con JOIN de usuarios (lo normal)
                 var result = await window.supabase
                     .from('videos')
                     .select('id, titulo, descripcion, url_video, url_miniatura, usuario_id, reproducciones, likes, comentarios, created_at, usuarios:usuario_id (id, nombre, handle, avatar_url)')
@@ -937,7 +950,6 @@
                 var data = null;
 
                 if (result.error) {
-                    // Intento 2: sin JOIN (por si RLS de usuarios falla)
                     console.warn('[Videos] Falló con JOIN, reintentando sin JOIN...', result.error);
                     var result2 = await window.supabase
                         .from('videos')
@@ -947,7 +959,6 @@
                         .limit(20);
 
                     if (result2.error) {
-                        // Ambos fallaron → mostrar el error real
                         throw new Error(
                             'Con JOIN: ' + (result.error.message || JSON.stringify(result.error)) +
                             ' || Sin JOIN: ' + (result2.error.message || JSON.stringify(result2.error))
@@ -1008,7 +1019,6 @@
                 var errMsg = (e && e.message) ? e.message : String(e);
                 console.error('[Videos] ❌ Error al cargar:', e);
 
-                // Mostrar en el banner rojo (el que ya tienes en el HTML)
                 var banner = document.getElementById('errorBanner');
                 var bannerText = document.getElementById('errorBannerText');
                 if (banner && bannerText) {
@@ -1016,7 +1026,6 @@
                     banner.style.display = 'block';
                 }
 
-                // Toast más descriptivo
                 showToast('Error al cargar videos: ' + errMsg, 'error', 6000);
 
                 if (container) {
@@ -1032,6 +1041,9 @@
         async function diagnosticarVideos() {
             console.log('%c◈ Diagnóstico de Videos', 'color:#D4AF37;font-weight:bold;font-size:14px;');
             var resultados = [];
+
+            resultados.push('0. window.supabase.from es: ' + typeof window.supabase?.from);
+            resultados.push('0b. window.__SB_SDK_VIDEOS.from es: ' + typeof window.__SB_SDK_VIDEOS?.from);
 
             try {
                 var r1 = await window.supabase.from('videos').select('id, titulo, estado').limit(3);
@@ -1133,10 +1145,6 @@
 
         // ================================================================
         // ✅ SUBIR VIDEO
-        // Límites alineados con el bucket real de Supabase:
-        //   - 100 MB máximo
-        //   - Solo MP4/WebM/MOV
-        //   - NO AVI
         // ================================================================
         var subiendoVideo = false;
 
@@ -1838,7 +1846,7 @@
         });
 
         document.addEventListener('DOMContentLoaded', function() {
-            console.log("◈ Sariel's - Videos v8 (con fallback y diagnóstico)");
+            console.log("◈ Sariel's - Videos v9 (auditoría aplicada)");
             aplicarI18N();
             actualizarIconoMute();
             actualizarIconoPausa(true);
