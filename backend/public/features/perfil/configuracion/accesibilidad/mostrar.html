@@ -51,6 +51,12 @@
             background: rgba(212, 175, 55, 0.08);
         }
 
+        /* ============================================
+           PREVIEW DEL TEMA - Ahora contiene SVGs limpios
+           en lugar de emojis. El SVG hereda el color:
+           - Gris cuando inactivo
+           - Dorado (o color de acento) cuando activo
+           ============================================ */
         .cfg-tema-card .preview {
             width: 60px;
             height: 40px;
@@ -58,13 +64,37 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.4rem;
             border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--cfg-text-muted); /* Color por defecto: gris */
         }
 
+        .cfg-tema-card.active .preview {
+            color: var(--cfg-gold); /* Color activo: dorado (o acento) */
+        }
+
+        /* El SVG siempre hereda el color del contenedor */
+        .cfg-tema-card .preview svg {
+            width: 22px;
+            height: 22px;
+            stroke: currentColor;
+            stroke-width: 2;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        /* Fondos de los 3 previews (se mantienen los gradientes visuales) */
         .cfg-tema-card .preview.sistema { background: linear-gradient(135deg, #000 50%, #fff 50%); }
         .cfg-tema-card .preview.dia     { background: #f5f5f5; }
         .cfg-tema-card .preview.noche   { background: #0a0a0a; }
+
+        /* Ajuste específico: en Día el fondo es claro, así que el SVG inactivo debe ser oscuro */
+        .cfg-tema-card .preview.dia {
+            color: #666;
+        }
+        .cfg-tema-card.active .preview.dia {
+            color: var(--cfg-gold);
+        }
 
         .cfg-tema-card .label {
             font-size: 0.72rem;
@@ -336,6 +366,36 @@
             { valor: '#0ea5e9', label: 'Cielo' },
         ];
 
+        // ============================================================
+        // SVGs LIMPIOS PARA LOS TEMAS (reemplazan los emojis de juguete)
+        // Todos usan stroke: currentColor para heredar el color del contenedor
+        // ============================================================
+        const SVG_ICONS = {
+            // Sistema: teléfono + engranaje (representa "automático")
+            sistema: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <rect x="7" y="2" width="10" height="20" rx="2" ry="2"/>
+                <line x1="11" y1="18" x2="13" y2="18"/>
+                <circle cx="12" cy="10" r="3"/>
+                <path d="M12 7v1M12 12v1M9 10h1M14 10h1"/>
+            </svg>`,
+            // Día: sol outline lineal
+            dia: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="4"/>
+                <line x1="12" y1="2" x2="12" y2="4"/>
+                <line x1="12" y1="20" x2="12" y2="22"/>
+                <line x1="4.93" y1="4.93" x2="6.34" y2="6.34"/>
+                <line x1="17.66" y1="17.66" x2="19.07" y2="19.07"/>
+                <line x1="2" y1="12" x2="4" y2="12"/>
+                <line x1="20" y1="12" x2="22" y2="12"/>
+                <line x1="4.93" y1="19.07" x2="6.34" y2="17.66"/>
+                <line x1="17.66" y1="6.34" x2="19.07" y2="4.93"/>
+            </svg>`,
+            // Noche: luna creciente outline lineal
+            noche: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>`,
+        };
+
         // ✅ Usar la API global para guardar en localStorage + Supabase
         function guardarPreferencia(key, valor) {
             const api = window.SarielApariencia;
@@ -363,14 +423,14 @@
         function renderTemas() {
             const temaActual = getPref(PREF_KEYS.tema, 'sistema');
             const temas = [
-                { id: 'sistema', label: 'Sistema', icon: '📱' },
-                { id: 'dia',     label: 'Día',     icon: '☀️' },
-                { id: 'noche',   label: 'Noche',   icon: '🌙' },
+                { id: 'sistema', label: 'Sistema', svg: SVG_ICONS.sistema },
+                { id: 'dia',     label: 'Día',     svg: SVG_ICONS.dia },
+                { id: 'noche',   label: 'Noche',   svg: SVG_ICONS.noche },
             ];
 
             $('#seccionTema').innerHTML = temas.map(t => `
                 <div class="cfg-tema-card ${t.id === temaActual ? 'active' : ''}" onclick="window.onCambiarTema('${t.id}')">
-                    <div class="preview ${t.id}">${t.icon}</div>
+                    <div class="preview ${t.id}">${t.svg}</div>
                     <div class="label">${t.label}</div>
                 </div>
             `).join('');
@@ -458,7 +518,7 @@
                 });
             }
 
-            console.log('[Mostrar] ✅ Página inicializada con 16 colores');
+            console.log('[Mostrar] ✅ Página inicializada con 16 colores y SVGs en temas');
         });
 
     })();
