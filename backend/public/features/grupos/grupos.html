@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>◈ Canales · Sariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
-    <!-- ✅ Cambio 4: banner de diagnóstico como PRIMER elemento del head -->
     <script>
     (function(){
     function show(t){var b=document.getElementById('dbgErr');if(!b){b=document.createElement('div');b.id='dbgErr';b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:999999;background:#b00020;color:#fff;font:12px monospace;padding:8px;max-height:40vh;overflow:auto;white-space:pre-wrap';(document.body||document.documentElement).appendChild(b);}b.textContent+=t+'\n';}
@@ -990,9 +989,8 @@
                 </span>
             </div>
         </footer>
-    </div><!-- ✅ SUPABASE + IDIOMAS -->
+    </div><!-- cierra .app --><!-- ✅ SUPABASE + IDIOMAS -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<!-- ✅ Cambio 2: proteger el SDK ANTES de que app.js pueda sobrescribirlo -->
 <script>window.__SB_SDK = window.supabase;</script>
 <script src="/features/shared/js/idiomas.js"></script>
 <script src="/app.js"></script>
@@ -1031,12 +1029,14 @@
     })();
 
     // ================================================================
-    // ✅ Cambio 2: usar __SB_SDK si existe
-    // ✅ Cambio 4: reportar errores al banner
+    // ✅ Inicializar Supabase SIN chocar con /app.js
+    // - Usa window.__SB_SDK (capturado antes de app.js)
+    // - NO declara var supabaseClient a nivel global (ya existe en /app.js)
+    // - Todos los usos internos leen window.supabaseClient
     // ================================================================
     (function inicializarSupabase() {
         try {
-            if (window.supabaseClient) {
+            if (window.supabaseClient && typeof window.supabaseClient.from === 'function') {
                 console.log('[Grupos] ✅ supabaseClient ya existía');
                 return;
             }
@@ -1066,11 +1066,9 @@
         }
     })();
 
-    // Alias para todos los usos internos
-    var supabaseClient = window.supabaseClient;
     window.supabaseReady = Promise.resolve(window.supabaseClient);
 
-    // ✅ Cambio 3: esperar a que supabaseClient esté disponible
+    // ✅ esperarSupabase: reintenta hasta 3s
     async function esperarSupabase() {
         for (var i = 0; i < 10; i++) {
             if (window.supabaseClient) return true;
@@ -1106,7 +1104,7 @@
     var adVistaTimer = null;
     var adCerrado = false;
 
-    // ✅ Cambio 1: renombrados para evitar choques con app.js
+    // ✅ Paginación renombrada con grp* para no chocar
     var grpPagina = 0;
     var grpPaginaSize = 24;
     var grpHayMas = false;
@@ -1124,7 +1122,7 @@
     var esStreamerDelLiveGrupo = false;
 
     // ================================================================
-    // ✅ Cambio 1: helper renombrado a grpOk
+    // ✅ Helper ok() renombrado a grpOk
     // ================================================================
     function grpOk(r) {
         if (r && r.error) throw r.error;
@@ -1199,18 +1197,8 @@
 
     function contienePalabrasCripto(texto) { return contienePalabrasDeCategoria(texto, 'activos_digitales'); }
 
-    function validarTextoPermitido(texto, nombreCampo) {
-        if (!texto) return true;
-        var inf = detectarInfraccion(texto);
-        if (inf.bloqueado) {
-            var cats = inf.categorias.join(', ');
-            showToast('🚫 ' + (nombreCampo || 'Contenido') + ' bloqueado: ' + cats, 'error', 6000);
-            return false;
-        }
-        return true;
-    }
-
-    function showToast(msg, type, ms) {
+    // ✅ grpShowToast: renombrado para no chocar con /app.js
+    function grpShowToast(msg, type, ms) {
         var t = document.getElementById('toast');
         if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); }
         t.textContent = msg;
@@ -1223,7 +1211,19 @@
         t._timeout = setTimeout(function() { t.classList.remove('show'); }, ms || 3500);
     }
 
-    async function getSession() {
+    function validarTextoPermitido(texto, nombreCampo) {
+        if (!texto) return true;
+        var inf = detectarInfraccion(texto);
+        if (inf.bloqueado) {
+            var cats = inf.categorias.join(', ');
+            grpShowToast('🚫 ' + (nombreCampo || 'Contenido') + ' bloqueado: ' + cats, 'error', 6000);
+            return false;
+        }
+        return true;
+    }
+
+    // ✅ grpGetSession: renombrado
+    async function grpGetSession() {
         try {
             if (!window.supabaseClient) { console.warn('[Grupos] supabaseClient no disponible'); return null; }
             var r = await window.supabaseClient.auth.getSession();
@@ -1231,7 +1231,8 @@
         } catch (e) { console.error('[Grupos] Error sesión:', e); return null; }
     }
 
-    function escapeHTML(texto) {
+    // ✅ grpEscapeHTML: renombrado
+    function grpEscapeHTML(texto) {
         if (texto === null || texto === undefined) return '';
         return String(texto)
             .replace(/&/g, '&amp;')
@@ -1241,19 +1242,19 @@
             .replace(/'/g, '&#39;');
     }
 
-    // ✅ Cambio 1: renombrado a grpSafeUrl
     function grpSafeUrl(u) {
         if (!u) return '';
         return (typeof u === 'string' && u.startsWith('https://')) ? u : '';
     }
 
-    async function cargarLiveKit() {
+    // ✅ grpCargarLiveKit: renombrado
+    async function grpCargarLiveKit() {
         return await import('https://cdn.jsdelivr.net/npm/livekit-client@2/dist/livekit-client.esm.mjs');
     }
 
     async function cargarUsuarioActual() {
         try {
-            var session = await getSession();
+            var session = await grpGetSession();
             if (!session) { sessionUser = null; return null; }
             sessionUser = session.user;
             var result = await window.supabaseClient.from('usuarios').select('nombre, handle, tokens').eq('id', session.user.id).single();
@@ -1284,7 +1285,7 @@
     async function cargarAnuncioGrupo() {
         if (!grupoActualId) return;
         if (adCerrado) return;
-        const session = await getSession();
+        const session = await grpGetSession();
         if (!session) return;
         try {
             const response = await fetch('/api/marketing/get-ad', {
@@ -1316,9 +1317,9 @@
         var img = grpSafeUrl(ad.imagen_url);
         var vid = grpSafeUrl(ad.video_url);
         if (img) {
-            media.innerHTML = `<img src="${escapeHTML(img)}" alt="${escapeHTML(ad.titulo)}" loading="lazy" onerror="this.parentElement.innerHTML='<span>◈</span>'">`;
+            media.innerHTML = `<img src="${grpEscapeHTML(img)}" alt="${grpEscapeHTML(ad.titulo)}" loading="lazy" onerror="this.parentElement.innerHTML='<span>◈</span>'">`;
         } else if (vid) {
-            media.innerHTML = `<video src="${escapeHTML(vid)}" muted autoplay loop playsinline></video>`;
+            media.innerHTML = `<video src="${grpEscapeHTML(vid)}" muted autoplay loop playsinline></video>`;
         } else {
             media.innerHTML = '<span>◈</span>';
         }
@@ -1331,7 +1332,7 @@
 
     async function registrarVistaAnuncio() {
         if (!anuncioActual) return;
-        const session = await getSession();
+        const session = await grpGetSession();
         if (!session) return;
         try {
             await fetch('/api/marketing/register-event', {
@@ -1344,7 +1345,7 @@
 
     async function registrarClicAnuncio() {
         if (!anuncioActual) return;
-        const session = await getSession();
+        const session = await grpGetSession();
         if (!session) return;
         try {
             await fetch('/api/marketing/register-event', {
@@ -1434,14 +1435,12 @@
 
     // ================================================================
     // DASHBOARD
-    // ✅ Cambio 3: esperarSupabase al inicio
     // ================================================================
     async function cargarDashboard() {
         var misCanalesDiv = document.getElementById('misCanalesLista');
         var enVivoDiv = document.getElementById('enVivoGrid');
         if (!misCanalesDiv || !enVivoDiv) return;
 
-        // ✅ Cambio 3: esperar a que supabaseClient esté listo
         if (!(await esperarSupabase())) {
             console.warn('[Grupos] cargarDashboard: supabaseClient no disponible tras esperar');
             return;
@@ -1461,12 +1460,12 @@
                     misCanalesCache = misCanalesData.data || [];
                     
                     misCanalesDiv.innerHTML = misCanalesCache.map(function(g) {
-                        var avatar = g.avatar_url ? '<img src="' + escapeHTML(grpSafeUrl(g.avatar_url)) + '">' : '◈';
+                        var avatar = g.avatar_url ? '<img src="' + grpEscapeHTML(grpSafeUrl(g.avatar_url)) + '">' : '◈';
                         var precio = g.precio_usdt > 0 ? '$' + g.precio_usdt + ' USDT' : 'Gratis';
                         var mkIcon = g.marketplace_activo ? '<svg class="icon icon-sm" viewBox="0 0 24 24" style="vertical-align:middle;"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>' : '';
                         return '<div class="canal-item" onclick="abrirGrupo(\'' + g.id + '\')">' +
                             '<div class="avatar-mini">' + avatar + '</div>' +
-                            '<div class="info"><div class="nombre">' + escapeHTML(g.nombre) + ' ' + mkIcon + '</div>' +
+                            '<div class="info"><div class="nombre">' + grpEscapeHTML(g.nombre) + ' ' + mkIcon + '</div>' +
                             '<div class="stats">' + precio + '</div></div></div>';
                     }).join('');
                 } else {
@@ -1487,7 +1486,7 @@
                 if (misCanalesCache && misCanalesCache.length > 0) {
                     botonAireHTML = '<button class="btn-salir-aire" onclick="abrirGrupo(\'' + misCanalesCache[0].id + '\')">' +
                         '<svg class="icon icon-sm" viewBox="0 0 24 24" style="fill:currentColor;stroke:none;"><circle cx="12" cy="12" r="6"/></svg>' +
-                        'SALIR AL AIRE EN ' + escapeHTML(misCanalesCache[0].nombre).toUpperCase() +
+                        'SALIR AL AIRE EN ' + grpEscapeHTML(misCanalesCache[0].nombre).toUpperCase() +
                         '</button>';
                 } else {
                     botonAireHTML = '<button class="btn-salir-aire" onclick="abrirModalCrearGrupo()">' +
@@ -1511,11 +1510,11 @@
                             EN VIVO
                         </div>
                         <div style="width:100%; height:130px; background:#000; display:flex; align-items:center; justify-content:center; color:#fff; font-size:2rem; position:relative;">
-                            ${img ? `<img src="${escapeHTML(img)}" style="width:60px; height:60px; border-radius:50%; border:2px solid var(--gold);">` : '◈'}
+                            ${img ? `<img src="${grpEscapeHTML(img)}" style="width:60px; height:60px; border-radius:50%; border:2px solid var(--gold);">` : '◈'}
                         </div>
                         <div class="info">
-                            <div class="titulo">${escapeHTML(l.titulo || 'Sin título')}</div>
-                            <div class="canal">${escapeHTML(g.nombre || 'Canal')}</div>
+                            <div class="titulo">${grpEscapeHTML(l.titulo || 'Sin título')}</div>
+                            <div class="canal">${grpEscapeHTML(g.nombre || 'Canal')}</div>
                             <div class="stats">
                                 <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                                 ${l.espectadores || 0} viendo
@@ -1541,12 +1540,9 @@
             colVivo.style.display = 'block'; colMis.style.display = 'none';
         }
     }
-</script>
-<script>
+</script><script>
     // ================================================================
     // CARGAR GRUPOS — VERSIÓN ROBUSTA
-    // ✅ Cambio 1: renombrados
-    // ✅ Cambio 3: esperarSupabase
     // ================================================================
     
     function buscarGruposDebounce() {
@@ -1566,9 +1562,8 @@
         var grid = document.getElementById('gruposGrid');
         if (!grid) return;
         
-        // ✅ Cambio 3: esperar a supabaseClient
         if (!(await esperarSupabase())) {
-            console.error('[Grupos] cargarGrupos: supabaseClient no disponible tras esperar 3s');
+            console.error('[Grupos] cargarGrupos: supabaseClient no disponible tras esperar');
             grid.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><h3>Sin conexión a Supabase</h3></div>';
             return;
         }
@@ -1688,10 +1683,10 @@
                 var ubicacionTexto = ubicacion.length > 0 ? ubicacion.join(', ') : 'Sin ubicación';
                 var img = grpSafeUrl(g.avatar_url);
                 return '<div class="grupo-card ' + liveClass + '" onclick="abrirGrupo(\'' + g.id + '\')">' +
-                    '<div class="avatar">' + (img ? '<img src="' + escapeHTML(img) + '">' : '◈') + '</div>' +
-                    '<div class="nombre">' + escapeHTML(g.nombre) + '</div>' +
-                    '<div class="descripcion">' + escapeHTML((g.descripcion || '').substring(0, 80)) + '</div>' +
-                    '<div class="meta"><span class="ciudad"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>' + escapeHTML(ubicacionTexto) + '</span>' + visBadge + precio + mkBadge +
+                    '<div class="avatar">' + (img ? '<img src="' + grpEscapeHTML(img) + '">' : '◈') + '</div>' +
+                    '<div class="nombre">' + grpEscapeHTML(g.nombre) + '</div>' +
+                    '<div class="descripcion">' + grpEscapeHTML((g.descripcion || '').substring(0, 80)) + '</div>' +
+                    '<div class="meta"><span class="ciudad"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>' + grpEscapeHTML(ubicacionTexto) + '</span>' + visBadge + precio + mkBadge +
                     (tieneLive ? ' <span class="live-badge"><svg class="icon icon-sm" viewBox="0 0 24 24" style="color:#fff;fill:currentColor;stroke:none;"><circle cx="12" cy="12" r="5"/></svg>EN VIVO</span>' : '') +
                     '</div></div>';
             }).join('');
@@ -1710,7 +1705,7 @@
         } catch (e) {
             clearTimeout(timeoutId);
             console.error('[Grupos] ❌ ERROR cargando canales:', e);
-            grid.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><h3>Error cargando canales</h3><p style="font-size:0.7rem;">' + escapeHTML(e.message || 'Error desconocido') + '</p></div>';
+            grid.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><h3>Error cargando canales</h3><p style="font-size:0.7rem;">' + grpEscapeHTML(e.message || 'Error desconocido') + '</p></div>';
         }
     }
 
@@ -1785,13 +1780,13 @@
 
             var avatarEl = document.getElementById('grupoAvatar');
             var avatarImg = grpSafeUrl(grupoActual.avatar_url);
-            if (avatarImg) avatarEl.innerHTML = '<img src="' + escapeHTML(avatarImg) + '">';
+            if (avatarImg) avatarEl.innerHTML = '<img src="' + grpEscapeHTML(avatarImg) + '">';
             else avatarEl.textContent = '◈';
 
             var portadaEl = document.getElementById('grupoPortada');
             var portadaImg = grpSafeUrl(grupoActual.portada_url);
             if (portadaImg) {
-                portadaEl.innerHTML = `<video src="${escapeHTML(portadaImg)}" autoplay loop muted playsinline style="width:100%; height:100%; object-fit:cover;"></video>`;
+                portadaEl.innerHTML = `<video src="${grpEscapeHTML(portadaImg)}" autoplay loop muted playsinline style="width:100%; height:100%; object-fit:cover;"></video>`;
             } else {
                 portadaEl.textContent = '◈';
             }
@@ -1806,7 +1801,7 @@
             iniciarRefrescoAnuncios();
         } catch (e) {
             console.error('[Grupos] Error abriendo canal:', e);
-            showToast('Error al abrir canal', 'error');
+            grpShowToast('Error al abrir canal', 'error');
         }
     }
 
@@ -1864,7 +1859,7 @@
     }
 
     async function unirseAlGrupo() {
-        if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
+        if (!sessionUser) { grpShowToast('Inicia sesión', 'error'); return; }
         if (!grupoActualId) return;
         try {
             var r = await window.supabaseClient.from('grupos_video_miembros').insert({
@@ -1874,15 +1869,15 @@
                 estado: 'activo'
             });
             grpOk(r);
-            showToast('Te has unido al canal', 'success');
+            grpShowToast('Te has unido al canal', 'success');
             await abrirGrupo(grupoActualId);
         } catch (e) {
-            showToast('Error al unirse: ' + (e.message || e), 'error');
+            grpShowToast('Error al unirse: ' + (e.message || e), 'error');
         }
     }
 
     async function solicitarUnirseAlGrupo() {
-        if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
+        if (!sessionUser) { grpShowToast('Inicia sesión', 'error'); return; }
         if (!grupoActualId) return;
         try {
             var existente = await window.supabaseClient.from('grupos_video_solicitudes')
@@ -1892,7 +1887,7 @@
                 .eq('estado', 'pendiente')
                 .maybeSingle();
             if (existente.data) {
-                showToast('Solicitud enviada', 'info');
+                grpShowToast('Solicitud enviada', 'info');
                 return;
             }
             var r = await window.supabaseClient.from('grupos_video_solicitudes').insert({
@@ -1900,9 +1895,9 @@
                 usuario_id: sessionUser.id
             });
             grpOk(r);
-            showToast('Solicitud enviada', 'success');
+            grpShowToast('Solicitud enviada', 'success');
         } catch (e) {
-            showToast('Error: ' + (e.message || e), 'error');
+            grpShowToast('Error: ' + (e.message || e), 'error');
         }
     }
 
@@ -1997,13 +1992,13 @@
 
     function renderizarPublicacionHTML(p) {
         var u = p.usuarios || {};
-        var avatar = u.avatar_url && grpSafeUrl(u.avatar_url) ? '<img src="' + escapeHTML(grpSafeUrl(u.avatar_url)) + '">' : '◈';
-        var nombre = escapeHTML(u.nombre || 'Usuario');
-        var contenido = escapeHTML(p.contenido || '');
+        var avatar = u.avatar_url && grpSafeUrl(u.avatar_url) ? '<img src="' + grpEscapeHTML(grpSafeUrl(u.avatar_url)) + '">' : '◈';
+        var nombre = grpEscapeHTML(u.nombre || 'Usuario');
+        var contenido = grpEscapeHTML(p.contenido || '');
         var imgUrl = grpSafeUrl(p.imagen_url);
         var vidUrl = grpSafeUrl(p.video_url);
-        if (imgUrl) contenido += '<br><img src="' + escapeHTML(imgUrl) + '" loading="lazy" />';
-        if (vidUrl) contenido += '<br><video src="' + escapeHTML(vidUrl) + '" controls preload="metadata"></video>';
+        if (imgUrl) contenido += '<br><img src="' + grpEscapeHTML(imgUrl) + '" loading="lazy" />';
+        if (vidUrl) contenido += '<br><video src="' + grpEscapeHTML(vidUrl) + '" controls preload="metadata"></video>';
         var likesCount = p.likes_count || 0;
         var comentariosCount = p.comentarios_count || 0;
 
@@ -2021,7 +2016,7 @@
             var ubiParts = [];
             if (p.municipio) ubiParts.push(p.municipio);
             if (p.estado_region) ubiParts.push(p.estado_region);
-            if (ubiParts.length > 0) ubicacionHTML = '<div class="ubicacion"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>' + escapeHTML(ubiParts.join(', ')) + '</div>';
+            if (ubiParts.length > 0) ubicacionHTML = '<div class="ubicacion"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>' + grpEscapeHTML(ubiParts.join(', ')) + '</div>';
             
             var contactoHTML = '';
             if (p.whatsapp) {
@@ -2092,7 +2087,7 @@
     });
 
     async function toggleInteraccion(publicacionId, tipo) {
-        if (!sessionUser) { showToast('Inicia sesión para interactuar', 'error'); return false; }
+        if (!sessionUser) { grpShowToast('Inicia sesión para interactuar', 'error'); return false; }
         try {
             var tieneActual = misInteracciones[publicacionId] && misInteracciones[publicacionId][tipo];
             if (tieneActual) {
@@ -2112,7 +2107,7 @@
                 misInteracciones[publicacionId][tipo] = true;
             }
             return true;
-        } catch (e) { console.error('Error interacción:', e); showToast('Error: ' + (e.message || e), 'error'); return false; }
+        } catch (e) { console.error('Error interacción:', e); grpShowToast('Error: ' + (e.message || e), 'error'); return false; }
     }
 
     async function toggleMeInteresa(publicacionId) {
@@ -2120,7 +2115,7 @@
         var exitoso = await toggleInteraccion(publicacionId, 'me_interesa');
         if (exitoso) {
             var esta = misInteracciones[publicacionId] && misInteracciones[publicacionId].me_interesa;
-            showToast(esta ? 'Marcado como interesado' : 'Interacción quitada', esta ? 'success' : '');
+            grpShowToast(esta ? 'Marcado como interesado' : 'Interacción quitada', esta ? 'success' : '');
             renderizarPublicacionesCache();
         }
     }
@@ -2130,7 +2125,7 @@
         var exitoso = await toggleInteraccion(publicacionId, 'no_me_interesa');
         if (exitoso) {
             var esta = misInteracciones[publicacionId] && misInteracciones[publicacionId].no_me_interesa;
-            showToast(esta ? 'Marcado como "no me interesa"' : 'Interacción quitada', esta ? 'warning' : '');
+            grpShowToast(esta ? 'Marcado como "no me interesa"' : 'Interacción quitada', esta ? 'warning' : '');
             renderizarPublicacionesCache();
         }
     }
@@ -2139,40 +2134,40 @@
         document.querySelectorAll('.post-menu-dropdown.show').forEach(function(m) { m.classList.remove('show'); });
         var exitoso = await toggleInteraccion(publicacionId, 'no_quiero_ver');
         if (exitoso) {
-            showToast('Publicación oculta', 'success');
+            grpShowToast('Publicación oculta', 'success');
             renderizarPublicacionesCache();
         }
     }
 
     async function toggleNotificacion(publicacionId) {
         document.querySelectorAll('.post-menu-dropdown.show').forEach(function(m) { m.classList.remove('show'); });
-        if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
+        if (!sessionUser) { grpShowToast('Inicia sesión', 'error'); return; }
         try {
             var tiene = misNotificaciones[publicacionId];
             if (tiene) {
                 grpOk(await window.supabaseClient.from('grupos_video_notificaciones').delete().eq('publicacion_id', publicacionId).eq('usuario_id', sessionUser.id));
                 delete misNotificaciones[publicacionId];
-                showToast('Notificaciones desactivadas', '');
+                grpShowToast('Notificaciones desactivadas', '');
             } else {
                 grpOk(await window.supabaseClient.from('grupos_video_notificaciones').insert({ publicacion_id: publicacionId, usuario_id: sessionUser.id }));
                 misNotificaciones[publicacionId] = true;
-                showToast('Notificaciones activadas', 'success');
+                grpShowToast('Notificaciones activadas', 'success');
             }
             renderizarPublicacionesCache();
-        } catch (e) { showToast('Error: ' + (e.message || e), 'error'); }
+        } catch (e) { grpShowToast('Error: ' + (e.message || e), 'error'); }
     }
 
     function copiarEnlacePost(publicacionId) {
         document.querySelectorAll('.post-menu-dropdown.show').forEach(function(m) { m.classList.remove('show'); });
         var url = window.location.origin + '/features/grupos/grupos.html?grupo=' + grupoActualId + '&publicacion=' + publicacionId;
         if (navigator.clipboard) {
-            navigator.clipboard.writeText(url).then(function() { showToast('Enlace copiado', 'success'); }).catch(function() { prompt('Copia el enlace:', url); });
+            navigator.clipboard.writeText(url).then(function() { grpShowToast('Enlace copiado', 'success'); }).catch(function() { prompt('Copia el enlace:', url); });
         } else { prompt('Copia el enlace:', url); }
     }
 
     function abrirModalReportar(publicacionId) {
         document.querySelectorAll('.post-menu-dropdown.show').forEach(function(m) { m.classList.remove('show'); });
-        if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
+        if (!sessionUser) { grpShowToast('Inicia sesión', 'error'); return; }
         publicacionReportando = publicacionId;
         document.getElementById('inputMotivoReporte').value = '';
         document.getElementById('inputDescripcionReporte').value = '';
@@ -2201,14 +2196,14 @@
             if (result.error) throw result.error;
             statusEl.textContent = '✅ Reporte enviado. Gracias.';
             statusEl.style.color = 'var(--success)';
-            showToast('Reporte enviado', 'success');
+            grpShowToast('Reporte enviado', 'success');
             setTimeout(cerrarModalReportar, 1500);
         } catch (e) { statusEl.textContent = '❌ Error: ' + e.message; statusEl.style.color = 'var(--danger)'; }
     }
 
     function abrirModalReportarAdmin(publicacionId) {
         document.querySelectorAll('.post-menu-dropdown.show').forEach(function(m) { m.classList.remove('show'); });
-        if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
+        if (!sessionUser) { grpShowToast('Inicia sesión', 'error'); return; }
         publicacionReportando = publicacionId;
         document.getElementById('inputTipoReporteAdmin').value = '';
         document.getElementById('inputMotivoReporteAdmin').value = '';
@@ -2237,16 +2232,16 @@
             if (result.error) throw result.error;
             statusEl.textContent = '✅ Reporte enviado al administrador.';
             statusEl.style.color = 'var(--success)';
-            showToast('Reporte al admin enviado', 'success');
+            grpShowToast('Reporte al admin enviado', 'success');
             setTimeout(cerrarModalReportarAdmin, 1500);
         } catch (e) { statusEl.textContent = '❌ Error: ' + e.message; statusEl.style.color = 'var(--danger)'; }
     }
 
     function abrirModalEtiquetar(publicacionId) {
         document.querySelectorAll('.post-menu-dropdown.show').forEach(function(m) { m.classList.remove('show'); });
-        if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
+        if (!sessionUser) { grpShowToast('Inicia sesión', 'error'); return; }
         var pub = publicacionesCache.find(function(p) { return p.id === publicacionId; });
-        if (!pub || !pub.imagen_url) { showToast('Esta publicación no tiene foto para etiquetar', 'warning'); return; }
+        if (!pub || !pub.imagen_url) { grpShowToast('Esta publicación no tiene foto para etiquetar', 'warning'); return; }
         publicacionReportando = publicacionId;
         etiquetadosSeleccionados = [];
         document.getElementById('imagenEtiquetar').src = grpSafeUrl(pub.imagen_url);
@@ -2269,11 +2264,11 @@
             if (result.error || !result.data) { container.innerHTML = '<div style="color:var(--text-muted);font-size:0.7rem;padding:8px;">Sin resultados</div>'; return; }
             container.innerHTML = result.data.map(function(u) {
                 var yaSel = etiquetadosSeleccionados.find(function(e) { return e.id === u.id; });
-                var avatar = u.avatar_url && grpSafeUrl(u.avatar_url) ? '<img src="' + escapeHTML(grpSafeUrl(u.avatar_url)) + '" style="width:100%;height:100%;object-fit:cover;">' : '◈';
-                return '<div class="usuario-etiqueta-item" data-id="' + escapeHTML(u.id) + '" data-nombre="' + escapeHTML(u.nombre || '') + '" data-handle="' + escapeHTML(u.handle || '') + '" data-avatar="' + escapeHTML(grpSafeUrl(u.avatar_url) || '') + '" style="display:flex;align-items:center;gap:10px;padding:8px;border-bottom:1px solid rgba(212,175,55,0.05);cursor:pointer;' + (yaSel ? 'opacity:0.4;pointer-events:none;' : '') + '">' +
+                var avatar = u.avatar_url && grpSafeUrl(u.avatar_url) ? '<img src="' + grpEscapeHTML(grpSafeUrl(u.avatar_url)) + '" style="width:100%;height:100%;object-fit:cover;">' : '◈';
+                return '<div class="usuario-etiqueta-item" data-id="' + grpEscapeHTML(u.id) + '" data-nombre="' + grpEscapeHTML(u.nombre || '') + '" data-handle="' + grpEscapeHTML(u.handle || '') + '" data-avatar="' + grpEscapeHTML(grpSafeUrl(u.avatar_url) || '') + '" style="display:flex;align-items:center;gap:10px;padding:8px;border-bottom:1px solid rgba(212,175,55,0.05);cursor:pointer;' + (yaSel ? 'opacity:0.4;pointer-events:none;' : '') + '">' +
                     '<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--green-deep),var(--gold));display:flex;align-items:center;justify-content:center;overflow:hidden;font-weight:700;">' + avatar + '</div>' +
-                    '<div><div style="font-size:0.75rem;font-weight:600;">' + escapeHTML(u.nombre || 'Usuario') + '</div>' +
-                    '<div style="font-size:0.6rem;color:var(--text-muted);">@' + escapeHTML(u.handle || 'usuario') + '</div></div></div>';
+                    '<div><div style="font-size:0.75rem;font-weight:600;">' + grpEscapeHTML(u.nombre || 'Usuario') + '</div>' +
+                    '<div style="font-size:0.6rem;color:var(--text-muted);">@' + grpEscapeHTML(u.handle || 'usuario') + '</div></div></div>';
             }).join('');
             
             container.querySelectorAll('.usuario-etiqueta-item').forEach(function(el) {
@@ -2301,7 +2296,7 @@
         var container = document.getElementById('etiquetadosSeleccionados');
         if (etiquetadosSeleccionados.length === 0) { container.innerHTML = ''; return; }
         container.innerHTML = etiquetadosSeleccionados.map(function(e) {
-            return '<span style="background:rgba(212,175,55,0.15);color:var(--gold);padding:4px 10px;border-radius:20px;font-size:0.65rem;display:inline-flex;align-items:center;gap:6px;">@' + escapeHTML(e.handle) + ' <button class="quitar-etiqueta-btn" data-id="' + escapeHTML(e.id) + '" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:0.8rem;padding:0;">×</button></span>';
+            return '<span style="background:rgba(212,175,55,0.15);color:var(--gold);padding:4px 10px;border-radius:20px;font-size:0.65rem;display:inline-flex;align-items:center;gap:6px;">@' + grpEscapeHTML(e.handle) + ' <button class="quitar-etiqueta-btn" data-id="' + grpEscapeHTML(e.id) + '" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:0.8rem;padding:0;">×</button></span>';
         }).join('');
         
         container.querySelectorAll('.quitar-etiqueta-btn').forEach(function(btn) {
@@ -2317,16 +2312,16 @@
     }
 
     async function guardarEtiquetas() {
-        if (etiquetadosSeleccionados.length === 0) { showToast('Selecciona al menos una persona', 'warning'); return; }
+        if (etiquetadosSeleccionados.length === 0) { grpShowToast('Selecciona al menos una persona', 'warning'); return; }
         if (!publicacionReportando) return;
-        showToast('Guardando etiquetas...', '');
+        grpShowToast('Guardando etiquetas...', '');
         try {
             var inserts = etiquetadosSeleccionados.map(function(e) { return { publicacion_id: publicacionReportando, etiquetado_id: e.id, etiquetado_por: sessionUser.id }; });
             var result = await window.supabaseClient.from('grupos_video_etiquetas').upsert(inserts, { onConflict: 'publicacion_id,etiquetado_id', ignoreDuplicates: true });
             if (result.error) throw result.error;
-            showToast('Personas etiquetadas', 'success');
+            grpShowToast('Personas etiquetadas', 'success');
             cerrarModalEtiquetar();
-        } catch (e) { showToast('Error: ' + e.message, 'error'); }
+        } catch (e) { grpShowToast('Error: ' + e.message, 'error'); }
     }
 
     async function cargarPublicacionesGrupo(grupoId) {
@@ -2341,35 +2336,35 @@
     }
 
     async function publicarEnGrupo() {
-        if (publicando) { showToast('Ya estás publicando...', 'warning'); return; }
-        if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
-        if (!grupoActualId) { showToast('No hay canal', 'error'); return; }
-        if (!esMiembro()) { showToast('Debes ser miembro', 'error'); return; }
+        if (publicando) { grpShowToast('Ya estás publicando...', 'warning'); return; }
+        if (!sessionUser) { grpShowToast('Inicia sesión', 'error'); return; }
+        if (!grupoActualId) { grpShowToast('No hay canal', 'error'); return; }
+        if (!esMiembro()) { grpShowToast('Debes ser miembro', 'error'); return; }
         var input = document.getElementById('inputPublicacion');
         var contenido = input.value.trim();
-        if (!contenido) { showToast('Escribe algo', 'warning'); return; }
+        if (!contenido) { grpShowToast('Escribe algo', 'warning'); return; }
         if (!validarTextoPermitido(contenido, 'Publicación')) return;
         publicando = true;
         try {
             var result = await window.supabaseClient.from('grupos_video_publicaciones').insert({ grupo_id: grupoActualId, usuario_id: sessionUser.id, contenido: contenido, tipo: 'texto', estado: 'publicado' }).select().single();
             if (result.error) throw result.error;
             input.value = '';
-            showToast('Publicación creada', 'success');
+            grpShowToast('Publicación creada', 'success');
             await cargarPublicacionesGrupo(grupoActualId);
-        } catch (e) { showToast('Error: ' + e.message, 'error'); }
+        } catch (e) { grpShowToast('Error: ' + e.message, 'error'); }
         finally { publicando = false; }
     }
 
     async function subirFotoGrupo() {
-        if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
-        if (!grupoActualId) { showToast('No hay canal', 'error'); return; }
-        if (!esMiembro()) { showToast('Debes ser miembro', 'error'); return; }
+        if (!sessionUser) { grpShowToast('Inicia sesión', 'error'); return; }
+        if (!grupoActualId) { grpShowToast('No hay canal', 'error'); return; }
+        if (!esMiembro()) { grpShowToast('Debes ser miembro', 'error'); return; }
         var input = document.createElement('input');
         input.type = 'file'; input.accept = 'image/*';
         input.onchange = async function(e) {
             var file = e.target.files[0]; if (!file) return;
-            if (file.size > 10 * 1024 * 1024) { showToast('Imagen > 10MB', 'error'); return; }
-            showToast('Subiendo imagen...', '');
+            if (file.size > 10 * 1024 * 1024) { grpShowToast('Imagen > 10MB', 'error'); return; }
+            grpShowToast('Subiendo imagen...', '');
             try {
                 var fileExt = file.name.split('.').pop();
                 var filePath = grupoActualId + '/' + sessionUser.id + '/' + Date.now() + '.' + fileExt;
@@ -2378,23 +2373,23 @@
                 var urlData = window.supabaseClient.storage.from('grupos-publicaciones').getPublicUrl(filePath);
                 var result = await window.supabaseClient.from('grupos_video_publicaciones').insert({ grupo_id: grupoActualId, usuario_id: sessionUser.id, imagen_url: urlData.data.publicUrl, tipo: 'imagen', estado: 'publicado' }).select().single();
                 if (result.error) throw result.error;
-                showToast('Foto publicada', 'success');
+                grpShowToast('Foto publicada', 'success');
                 await cargarPublicacionesGrupo(grupoActualId);
-            } catch (error) { showToast('Error: ' + error.message, 'error'); }
+            } catch (error) { grpShowToast('Error: ' + error.message, 'error'); }
         };
         input.click();
     }
 
     async function subirVideoGrupo() {
-        if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
-        if (!grupoActualId) { showToast('No hay canal', 'error'); return; }
-        if (!esMiembro()) { showToast('Debes ser miembro', 'error'); return; }
+        if (!sessionUser) { grpShowToast('Inicia sesión', 'error'); return; }
+        if (!grupoActualId) { grpShowToast('No hay canal', 'error'); return; }
+        if (!esMiembro()) { grpShowToast('Debes ser miembro', 'error'); return; }
         var input = document.createElement('input');
         input.type = 'file'; input.accept = 'video/*';
         input.onchange = async function(e) {
             var file = e.target.files[0]; if (!file) return;
-            if (file.size > 100 * 1024 * 1024) { showToast('Video > 100MB', 'error'); return; }
-            showToast('Subiendo video...', '');
+            if (file.size > 100 * 1024 * 1024) { grpShowToast('Video > 100MB', 'error'); return; }
+            grpShowToast('Subiendo video...', '');
             try {
                 var fileExt = file.name.split('.').pop();
                 var filePath = grupoActualId + '/' + sessionUser.id + '/' + Date.now() + '.' + fileExt;
@@ -2403,18 +2398,18 @@
                 var urlData = window.supabaseClient.storage.from('grupos-publicaciones').getPublicUrl(filePath);
                 var result = await window.supabaseClient.from('grupos_video_publicaciones').insert({ grupo_id: grupoActualId, usuario_id: sessionUser.id, video_url: urlData.data.publicUrl, tipo: 'video', estado: 'publicado' }).select().single();
                 if (result.error) throw result.error;
-                showToast('Video publicado', 'success');
+                grpShowToast('Video publicado', 'success');
                 await cargarPublicacionesGrupo(grupoActualId);
-            } catch (error) { showToast('Error: ' + error.message, 'error'); }
+            } catch (error) { grpShowToast('Error: ' + error.message, 'error'); }
         };
         input.click();
     }
 
     function abrirModalMarketplace() {
-        if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
-        if (!grupoActualId) { showToast('No hay canal', 'error'); return; }
-        if (!esMiembro()) { showToast('Debes ser miembro del grupo para vender', 'error'); return; }
-        if (!grupoActual.marketplace_activo) { showToast('El Marketplace no está activo en este grupo', 'warning'); return; }
+        if (!sessionUser) { grpShowToast('Inicia sesión', 'error'); return; }
+        if (!grupoActualId) { grpShowToast('No hay canal', 'error'); return; }
+        if (!esMiembro()) { grpShowToast('Debes ser miembro del grupo para vender', 'error'); return; }
+        if (!grupoActual.marketplace_activo) { grpShowToast('El Marketplace no está activo en este grupo', 'warning'); return; }
         document.getElementById('inputTipoMarketplace').value = '';
         document.getElementById('inputTituloMarketplace').value = '';
         document.getElementById('inputDescripcionMarketplace').value = '';
@@ -2443,9 +2438,9 @@
     }
 
     async function publicarMarketplace() {
-        if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
-        if (!esMiembro()) { showToast('Debes ser miembro del grupo', 'error'); return; }
-        if (!grupoActual.marketplace_activo) { showToast('El Marketplace no está activo', 'error'); return; }
+        if (!sessionUser) { grpShowToast('Inicia sesión', 'error'); return; }
+        if (!esMiembro()) { grpShowToast('Debes ser miembro del grupo', 'error'); return; }
+        if (!grupoActual.marketplace_activo) { grpShowToast('El Marketplace no está activo', 'error'); return; }
         var tipo = document.getElementById('inputTipoMarketplace').value;
         var titulo = document.getElementById('inputTituloMarketplace').value.trim();
         var descripcion = document.getElementById('inputDescripcionMarketplace').value.trim();
@@ -2501,14 +2496,14 @@
             if (result.error) throw result.error;
             statusEl.textContent = '✅ Publicado';
             statusEl.style.color = 'var(--success)';
-            showToast('Publicación creada', 'success');
+            grpShowToast('Publicación creada', 'success');
             setTimeout(function() { cerrarModalMarketplace(); cargarPublicacionesGrupo(grupoActualId); }, 800);
         } catch (e) { statusEl.textContent = '❌ Error: ' + e.message; statusEl.style.color = 'var(--danger)'; }
         finally { btn.disabled = false; btn.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> Publicar en Marketplace'; }
     }
 
     async function reaccionarPublicacion(publicacionId) {
-        if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
+        if (!sessionUser) { grpShowToast('Inicia sesión', 'error'); return; }
         try {
             var existing = await window.supabaseClient.from('grupos_video_reacciones').select('id').eq('publicacion_id', publicacionId).eq('usuario_id', sessionUser.id).maybeSingle();
             var likesSpan = document.getElementById('likes-' + publicacionId);
@@ -2520,7 +2515,7 @@
                 grpOk(await window.supabaseClient.from('grupos_video_reacciones').insert({ publicacion_id: publicacionId, usuario_id: sessionUser.id, tipo: 'like' }));
                 if (likesSpan) likesSpan.textContent = currentLikes + 1;
             }
-        } catch (e) { console.warn('Error reaccionando:', e); showToast('Error: ' + (e.message || e), 'error'); }
+        } catch (e) { console.warn('Error reaccionando:', e); grpShowToast('Error: ' + (e.message || e), 'error'); }
     }
 
     function toggleComentariosPublicacion(publicacionId) {
@@ -2541,17 +2536,17 @@
             if (data.length === 0) { lista.innerHTML = '<div style="color:var(--text-muted);font-size:0.65rem;padding:4px 0;">Sin comentarios</div>'; return; }
             lista.innerHTML = data.map(function(c) {
                 var u = c.usuarios || {};
-                var avatar = u.avatar_url && grpSafeUrl(u.avatar_url) ? '<img src="' + escapeHTML(grpSafeUrl(u.avatar_url)) + '">' : '◈';
+                var avatar = u.avatar_url && grpSafeUrl(u.avatar_url) ? '<img src="' + grpEscapeHTML(grpSafeUrl(u.avatar_url)) + '">' : '◈';
                 return '<div style="display:flex;gap:6px;padding:4px 0;border-bottom:1px solid rgba(212,175,55,0.04);">' +
                     '<div style="width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,var(--green-deep),var(--gold));display:flex;align-items:center;justify-content:center;font-size:0.5rem;color:#fff;overflow:hidden;flex-shrink:0;">' + avatar + '</div>' +
-                    '<div style="flex:1;font-size:0.65rem;"><strong style="color:var(--gold);">' + escapeHTML(u.nombre || 'Usuario') + '</strong> ' + escapeHTML(c.contenido || '') +
+                    '<div style="flex:1;font-size:0.65rem;"><strong style="color:var(--gold);">' + grpEscapeHTML(u.nombre || 'Usuario') + '</strong> ' + grpEscapeHTML(c.contenido || '') +
                     '<div style="font-size:0.5rem;color:var(--text-muted);">' + new Date(c.created_at).toLocaleString() + '</div></div></div>';
             }).join('');
         } catch (e) { lista.innerHTML = '<div style="color:var(--danger);font-size:0.65rem;">Error</div>'; }
     }
 
     async function enviarComentarioPublicacion(publicacionId) {
-        if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
+        if (!sessionUser) { grpShowToast('Inicia sesión', 'error'); return; }
         var input = document.getElementById('inputComentario-' + publicacionId);
         var texto = input.value.trim();
         if (!texto) return;
@@ -2562,14 +2557,14 @@
             var countSpan = document.getElementById('comentarios-' + publicacionId);
             if (countSpan) countSpan.textContent = (parseInt(countSpan.textContent) || 0) + 1;
             cargarComentariosPublicacion(publicacionId);
-        } catch (e) { showToast('Error: ' + (e.message || e), 'error'); }
+        } catch (e) { grpShowToast('Error: ' + (e.message || e), 'error'); }
     }
 
     function compartirPublicacion(publicacionId) {
         document.querySelectorAll('.post-menu-dropdown.show').forEach(function(m) { m.classList.remove('show'); });
         var url = window.location.origin + '/features/grupos/grupos.html?grupo=' + grupoActualId + '&publicacion=' + publicacionId;
         if (navigator.share) { navigator.share({ title: 'Sariel\'s', text: 'Mira esto', url: url }).catch(function() {}); }
-        else { navigator.clipboard.writeText(url).then(function() { showToast('Enlace copiado', 'success'); }); }
+        else { navigator.clipboard.writeText(url).then(function() { grpShowToast('Enlace copiado', 'success'); }); }
     }
 
     function abrirAjustesCanal() {
@@ -2581,14 +2576,14 @@
 
     async function cambiarAvatarGrupo() {
         cerrarAjustesCanal();
-        if (!sessionUser || !grupoActualId) { showToast('Error de sesión', 'error'); return; }
-        if (!esAdmin && !esCreador) { showToast('Solo administradores', 'error'); return; }
+        if (!sessionUser || !grupoActualId) { grpShowToast('Error de sesión', 'error'); return; }
+        if (!esAdmin && !esCreador) { grpShowToast('Solo administradores', 'error'); return; }
         var input = document.createElement('input');
         input.type = 'file'; input.accept = 'image/*';
         input.onchange = async function(e) {
             var file = e.target.files[0]; if (!file) return;
-            if (file.size > 5 * 1024 * 1024) { showToast('Imagen > 5MB', 'error'); return; }
-            showToast('Subiendo avatar...', '');
+            if (file.size > 5 * 1024 * 1024) { grpShowToast('Imagen > 5MB', 'error'); return; }
+            grpShowToast('Subiendo avatar...', '');
             try {
                 var fileExt = file.name.split('.').pop();
                 var filePath = `avatares/${grupoActualId}/${Date.now()}.${fileExt}`;
@@ -2597,23 +2592,23 @@
                 var urlData = window.supabaseClient.storage.from('grupos-publicaciones').getPublicUrl(filePath);
                 var updateResult = await window.supabaseClient.from('grupos_video').update({ avatar_url: urlData.data.publicUrl }).eq('id', grupoActualId);
                 if (updateResult.error) throw updateResult.error;
-                document.getElementById('grupoAvatar').innerHTML = '<img src="' + escapeHTML(grpSafeUrl(urlData.data.publicUrl)) + '">';
-                showToast('Foto actualizada', 'success');
-            } catch (error) { showToast('Error: ' + error.message, 'error'); }
+                document.getElementById('grupoAvatar').innerHTML = '<img src="' + grpEscapeHTML(grpSafeUrl(urlData.data.publicUrl)) + '">';
+                grpShowToast('Foto actualizada', 'success');
+            } catch (error) { grpShowToast('Error: ' + error.message, 'error'); }
         };
         input.click();
     }
 
     async function cambiarPortadaGrupo() {
         cerrarAjustesCanal();
-        if (!sessionUser || !grupoActualId) { showToast('Error de sesión', 'error'); return; }
-        if (!esAdmin && !esCreador) { showToast('Solo administradores', 'error'); return; }
+        if (!sessionUser || !grupoActualId) { grpShowToast('Error de sesión', 'error'); return; }
+        if (!esAdmin && !esCreador) { grpShowToast('Solo administradores', 'error'); return; }
         var input = document.createElement('input');
         input.type = 'file'; input.accept = 'video/mp4,video/webm,image/*';
         input.onchange = async function(e) {
             var file = e.target.files[0]; if (!file) return;
-            if (file.size > 20 * 1024 * 1024) { showToast('Archivo > 20MB', 'error'); return; }
-            showToast('Subiendo portada...', '');
+            if (file.size > 20 * 1024 * 1024) { grpShowToast('Archivo > 20MB', 'error'); return; }
+            grpShowToast('Subiendo portada...', '');
             try {
                 var fileExt = file.name.split('.').pop();
                 var filePath = `portadas/${grupoActualId}/${Date.now()}.${fileExt}`;
@@ -2625,19 +2620,19 @@
                 var portadaEl = document.getElementById('grupoPortada');
                 var safePortada = grpSafeUrl(urlData.data.publicUrl);
                 if (file.type.startsWith('video/')) {
-                    portadaEl.innerHTML = `<video src="${escapeHTML(safePortada)}" autoplay loop muted playsinline style="width:100%; height:100%; object-fit:cover;"></video>`;
+                    portadaEl.innerHTML = `<video src="${grpEscapeHTML(safePortada)}" autoplay loop muted playsinline style="width:100%; height:100%; object-fit:cover;"></video>`;
                 } else {
-                    portadaEl.innerHTML = `<img src="${escapeHTML(safePortada)}" style="width:100%; height:100%; object-fit:cover;">`;
+                    portadaEl.innerHTML = `<img src="${grpEscapeHTML(safePortada)}" style="width:100%; height:100%; object-fit:cover;">`;
                 }
-                showToast('Portada actualizada', 'success');
-            } catch (error) { showToast('Error: ' + error.message, 'error'); }
+                grpShowToast('Portada actualizada', 'success');
+            } catch (error) { grpShowToast('Error: ' + error.message, 'error'); }
         };
         input.click();
     }
 
     async function abrirAdminGrupo() {
         cerrarAjustesCanal();
-        if (!esAdmin && !esModerador) { showToast('Sin permisos', 'error'); return; }
+        if (!esAdmin && !esModerador) { grpShowToast('Sin permisos', 'error'); return; }
         if (!grupoActualId) return;
         document.getElementById('modalAdminGrupo').classList.add('show');
         await cargarAdminMiembros();
@@ -2660,7 +2655,7 @@
                 var estado = m.estado || 'activo';
                 var estadoColor = estado === 'activo' ? 'var(--success)' : estado === 'bloqueado' ? 'var(--danger)' : 'var(--warning)';
                 html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--glass-border);">' +
-                    '<div><span style="font-weight:600;">' + escapeHTML(u.nombre || 'Usuario') + '</span>' +
+                    '<div><span style="font-weight:600;">' + grpEscapeHTML(u.nombre || 'Usuario') + '</span>' +
                     (esCreadorDelGrupo ? ' <span style="color:var(--gold);font-size:0.6rem;">Admin</span>' : '') +
                     (m.rol === 'moderador' ? ' <span style="color:var(--cyan);font-size:0.6rem;">Mod</span>' : '') +
                     (esYo ? ' <span style="color:var(--text-muted);font-size:0.6rem;">(tú)</span>' : '') +
@@ -2689,10 +2684,10 @@
                 var u = p.usuarios || {};
                 var estado = p.estado || 'publicado';
                 var estadoColor = estado === 'publicado' ? 'var(--success)' : estado === 'oculto' ? 'var(--warning)' : 'var(--danger)';
-                var contenido = escapeHTML((p.contenido || '').substring(0, 60));
+                var contenido = grpEscapeHTML((p.contenido || '').substring(0, 60));
                 var tipoBadge = p.tipo_marketplace ? '<span style="color:var(--success);font-size:0.55rem;">MK ' + p.tipo_marketplace + '</span>' : '';
                 html += '<div style="padding:8px 0;border-bottom:1px solid var(--glass-border);">' +
-                    '<div style="font-weight:600;font-size:0.75rem;">' + escapeHTML(u.nombre || 'Usuario') + ' ' + tipoBadge + ' <span style="color:' + estadoColor + ';font-size:0.5rem;">● ' + estado + '</span></div>' +
+                    '<div style="font-weight:600;font-size:0.75rem;">' + grpEscapeHTML(u.nombre || 'Usuario') + ' ' + tipoBadge + ' <span style="color:' + estadoColor + ';font-size:0.5rem;">● ' + estado + '</span></div>' +
                     '<div style="font-size:0.7rem;color:var(--text-secondary);">' + contenido + '</div>' +
                     '<div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap;">' +
                     (estado === 'publicado' && (esAdmin || esModerador) ? '<button class="btn-outline btn-sm" onclick="ocultarPublicacion(\'' + p.id + '\')">Ocultar</button>' : '') +
@@ -2716,7 +2711,7 @@
             solicitudes.forEach(function(s) {
                 var u = s.usuarios || {};
                 html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--glass-border);">' +
-                    '<div><span style="font-weight:600;">' + escapeHTML(u.nombre || 'Usuario') + '</span></div>' +
+                    '<div><span style="font-weight:600;">' + grpEscapeHTML(u.nombre || 'Usuario') + '</span></div>' +
                     '<div style="display:flex;gap:4px;">' +
                     '<button class="btn-gold btn-sm" onclick="aceptarSolicitud(\'' + s.id + '\')">Aceptar</button>' +
                     '<button class="btn-danger btn-sm" onclick="rechazarSolicitud(\'' + s.id + '\')">Rechazar</button>' +
@@ -2738,9 +2733,9 @@
             reportes.forEach(function(r) {
                 var u = r.usuarios || {};
                 html += '<div style="padding:10px 0;border-bottom:1px solid var(--glass-border);">' +
-                    '<div style="font-size:0.7rem;"><strong style="color:var(--gold);">Tipo:</strong> ' + escapeHTML(r.tipo) + ' · <strong style="color:var(--gold);">Motivo:</strong> ' + escapeHTML(r.motivo) + '</div>' +
-                    '<div style="font-size:0.65rem;color:var(--text-secondary);margin-top:4px;">Por: ' + escapeHTML(u.nombre || 'Usuario') + '</div>' +
-                    (r.descripcion ? '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:4px;font-style:italic;">"' + escapeHTML(r.descripcion) + '"</div>' : '') +
+                    '<div style="font-size:0.7rem;"><strong style="color:var(--gold);">Tipo:</strong> ' + grpEscapeHTML(r.tipo) + ' · <strong style="color:var(--gold);">Motivo:</strong> ' + grpEscapeHTML(r.motivo) + '</div>' +
+                    '<div style="font-size:0.65rem;color:var(--text-secondary);margin-top:4px;">Por: ' + grpEscapeHTML(u.nombre || 'Usuario') + '</div>' +
+                    (r.descripcion ? '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:4px;font-style:italic;">"' + grpEscapeHTML(r.descripcion) + '"</div>' : '') +
                     '<div style="display:flex;gap:4px;margin-top:6px;">' +
                     '<button class="btn-outline btn-sm" onclick="marcarReporte(\'' + r.id + '\', \'resuelto\')">Resuelto</button>' +
                     '<button class="btn-outline btn-sm" onclick="marcarReporte(\'' + r.id + '\', \'descartado\')">Descartar</button>' +
@@ -2753,9 +2748,9 @@
     async function marcarReporte(reporteId, estado) {
         try {
             grpOk(await window.supabaseClient.from('grupos_video_reportes').update({ estado: estado, revisado_por: sessionUser.id, revisado_at: new Date().toISOString() }).eq('id', reporteId));
-            showToast('Reporte ' + estado, 'success');
+            grpShowToast('Reporte ' + estado, 'success');
             cargarAdminReportes();
-        } catch (e) { showToast('Error: ' + (e.message || e), 'error'); }
+        } catch (e) { grpShowToast('Error: ' + (e.message || e), 'error'); }
     }
 
     async function cargarAdminEditar() {
@@ -2766,11 +2761,11 @@
             if (result.error) throw result.error;
             var g = result.data;
             var html = '<h4 style="color:var(--gold);font-size:0.8rem;margin-bottom:12px;">Editar canal</h4>' +
-                '<div class="form-group"><label>Nombre</label><input type="text" id="editGrupoNombre" value="' + escapeHTML(g.nombre || '') + '" /></div>' +
-                '<div class="form-group"><label>Descripción</label><textarea id="editGrupoDescripcion" rows="2">' + escapeHTML(g.descripcion || '') + '</textarea></div>' +
-                '<div class="form-group"><label>Estado</label><input type="text" id="editGrupoEstado" value="' + escapeHTML(g.estado_region || '') + '" /></div>' +
-                '<div class="form-group"><label>Municipio</label><input type="text" id="editGrupoMunicipio" value="' + escapeHTML(g.municipio || '') + '" /></div>' +
-                '<div class="form-group"><label>Ciudad</label><input type="text" id="editGrupoCiudad" value="' + escapeHTML(g.ciudad || '') + '" /></div>' +
+                '<div class="form-group"><label>Nombre</label><input type="text" id="editGrupoNombre" value="' + grpEscapeHTML(g.nombre || '') + '" /></div>' +
+                '<div class="form-group"><label>Descripción</label><textarea id="editGrupoDescripcion" rows="2">' + grpEscapeHTML(g.descripcion || '') + '</textarea></div>' +
+                '<div class="form-group"><label>Estado</label><input type="text" id="editGrupoEstado" value="' + grpEscapeHTML(g.estado_region || '') + '" /></div>' +
+                '<div class="form-group"><label>Municipio</label><input type="text" id="editGrupoMunicipio" value="' + grpEscapeHTML(g.municipio || '') + '" /></div>' +
+                '<div class="form-group"><label>Ciudad</label><input type="text" id="editGrupoCiudad" value="' + grpEscapeHTML(g.ciudad || '') + '" /></div>' +
                 '<div class="form-group"><label>Precio Búho (USDT)</label><input type="number" id="editGrupoPrecio" value="' + (g.precio_usdt || 0) + '" min="0" step="1" /></div>' +
                 '<div class="form-group"><label>Visibilidad</label><select id="editGrupoVisibilidad"><option value="publico"' + (g.visibilidad === 'publico' ? ' selected' : '') + '>Público</option><option value="privado"' + (g.visibilidad === 'privado' ? ' selected' : '') + '>Privado</option></select></div>' +
                 '<div class="form-group"><label>Modo ingreso</label><select id="editGrupoModoIngreso"><option value="abierto"' + (g.modo_ingreso === 'abierto' ? ' selected' : '') + '>Abierto</option><option value="solicitud"' + (g.modo_ingreso === 'solicitud' ? ' selected' : '') + '>Solicitud</option><option value="invitacion"' + (g.modo_ingreso === 'invitacion' ? ' selected' : '') + '>Invitación</option></select></div>' +
@@ -2788,7 +2783,7 @@
         var precio = document.getElementById('editGrupoPrecio')?.value;
         var visibilidad = document.getElementById('editGrupoVisibilidad')?.value;
         var modoIngreso = document.getElementById('editGrupoModoIngreso')?.value;
-        if (!nombre) { showToast('El nombre es requerido', 'warning'); return; }
+        if (!nombre) { grpShowToast('El nombre es requerido', 'warning'); return; }
         if (!validarTextoPermitido(nombre, 'Nombre del canal')) return;
         if (!validarTextoPermitido(descripcion, 'Descripción del canal')) return;
         try {
@@ -2798,85 +2793,85 @@
                 visibilidad: visibilidad, modo_ingreso: modoIngreso
             }).eq('id', grupoActualId).select().single();
             if (result.error) throw result.error;
-            showToast('Canal actualizado', 'success');
+            grpShowToast('Canal actualizado', 'success');
             cerrarModalAdmin();
             await abrirGrupo(grupoActualId);
             await cargarGrupos();
-        } catch (e) { showToast('Error: ' + e.message, 'error'); }
+        } catch (e) { grpShowToast('Error: ' + e.message, 'error'); }
     }
 
     async function aceptarSolicitud(solicitudId) {
         try {
             grpOk(await window.supabaseClient.rpc('aceptar_solicitud_grupo', { p_solicitud_id: solicitudId }));
-            showToast('Solicitud aceptada', 'success');
+            grpShowToast('Solicitud aceptada', 'success');
             await cargarAdminSolicitudes();
-        } catch (e) { showToast('Error: ' + (e.message || e), 'error'); }
+        } catch (e) { grpShowToast('Error: ' + (e.message || e), 'error'); }
     }
     async function rechazarSolicitud(solicitudId) {
         try {
             var motivo = prompt('Motivo:', '');
             grpOk(await window.supabaseClient.rpc('rechazar_solicitud_grupo', { p_solicitud_id: solicitudId, p_motivo: motivo || 'Rechazado' }));
-            showToast('Rechazada', 'success');
+            grpShowToast('Rechazada', 'success');
             await cargarAdminSolicitudes();
-        } catch (e) { showToast('Error: ' + (e.message || e), 'error'); }
+        } catch (e) { grpShowToast('Error: ' + (e.message || e), 'error'); }
     }
     async function asignarModerador(usuarioId) {
         if (!confirm('¿Asignar moderador?')) return;
         try {
             grpOk(await window.supabaseClient.rpc('asignar_moderador_grupo', { p_grupo_id: grupoActualId, p_usuario_id: usuarioId }));
-            showToast('Moderador asignado', 'success');
+            grpShowToast('Moderador asignado', 'success');
             await cargarAdminMiembros();
-        } catch (e) { showToast('Error: ' + (e.message || e), 'error'); }
+        } catch (e) { grpShowToast('Error: ' + (e.message || e), 'error'); }
     }
     async function quitarModerador(usuarioId) {
         if (!confirm('¿Quitar moderador?')) return;
         try {
             grpOk(await window.supabaseClient.rpc('quitar_moderador_grupo', { p_grupo_id: grupoActualId, p_usuario_id: usuarioId }));
-            showToast('Quitado', 'success');
+            grpShowToast('Quitado', 'success');
             await cargarAdminMiembros();
-        } catch (e) { showToast('Error: ' + (e.message || e), 'error'); }
+        } catch (e) { grpShowToast('Error: ' + (e.message || e), 'error'); }
     }
     async function expulsarMiembro(usuarioId) {
         if (!confirm('¿Expulsar?')) return;
         var motivo = prompt('Motivo:', ''); if (motivo === null) return;
         try {
             grpOk(await window.supabaseClient.rpc('expulsar_miembro_grupo', { p_grupo_id: grupoActualId, p_usuario_id: usuarioId, p_motivo: motivo || 'Expulsado' }));
-            showToast('Expulsado', 'success');
+            grpShowToast('Expulsado', 'success');
             await cargarAdminMiembros();
-        } catch (e) { showToast('Error: ' + (e.message || e), 'error'); }
+        } catch (e) { grpShowToast('Error: ' + (e.message || e), 'error'); }
     }
     async function bloquearMiembro(usuarioId) {
         if (!confirm('¿Bloquear?')) return;
         var motivo = prompt('Motivo:', ''); if (motivo === null) return;
         try {
             grpOk(await window.supabaseClient.rpc('bloquear_miembro_grupo', { p_grupo_id: grupoActualId, p_usuario_id: usuarioId, p_motivo: motivo || 'Bloqueado' }));
-            showToast('Bloqueado', 'success');
+            grpShowToast('Bloqueado', 'success');
             await cargarAdminMiembros();
-        } catch (e) { showToast('Error: ' + (e.message || e), 'error'); }
+        } catch (e) { grpShowToast('Error: ' + (e.message || e), 'error'); }
     }
     async function ocultarPublicacion(publicacionId) {
         var motivo = prompt('Motivo:', 'Inapropiado'); if (motivo === null) return;
         try {
             grpOk(await window.supabaseClient.rpc('ocultar_publicacion_grupo', { p_publicacion_id: publicacionId, p_motivo: motivo }));
-            showToast('Ocultada', 'success');
+            grpShowToast('Ocultada', 'success');
             await cargarAdminPublicaciones();
-        } catch (e) { showToast('Error: ' + (e.message || e), 'error'); }
+        } catch (e) { grpShowToast('Error: ' + (e.message || e), 'error'); }
     }
     async function mostrarPublicacion(publicacionId) {
         try {
             grpOk(await window.supabaseClient.rpc('mostrar_publicacion_grupo', { p_publicacion_id: publicacionId }));
-            showToast('Visible', 'success');
+            grpShowToast('Visible', 'success');
             await cargarAdminPublicaciones();
-        } catch (e) { showToast('Error: ' + (e.message || e), 'error'); }
+        } catch (e) { grpShowToast('Error: ' + (e.message || e), 'error'); }
     }
     async function eliminarPublicacion(publicacionId) {
         if (!confirm('¿Eliminar?')) return;
         var motivo = prompt('Motivo:', 'Inapropiado'); if (motivo === null) return;
         try {
             grpOk(await window.supabaseClient.rpc('eliminar_publicacion_grupo', { p_publicacion_id: publicacionId, p_motivo: motivo }));
-            showToast('Eliminada', 'success');
+            grpShowToast('Eliminada', 'success');
             await cargarAdminPublicaciones();
-        } catch (e) { showToast('Error: ' + (e.message || e), 'error'); }
+        } catch (e) { grpShowToast('Error: ' + (e.message || e), 'error'); }
     }
 
     function abrirModalRegalos(streamerId, streamerNombre) {
@@ -2887,12 +2882,12 @@
     function cerrarModalRegalos() { document.getElementById('modalRegalos').classList.remove('show'); }
 
     async function enviarRegalo(monto) {
-        if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
+        if (!sessionUser) { grpShowToast('Inicia sesión', 'error'); return; }
         if (!grupoActualId) return;
         var statusEl = document.getElementById('giftStatus');
         statusEl.textContent = 'Procesando...';
         try {
-            var session = await getSession();
+            var session = await grpGetSession();
             var response = await fetch('/api/payments/gift/create', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (session?.access_token || '') },
@@ -2909,7 +2904,7 @@
         var statusEl = document.getElementById('giftStatus');
         statusEl.textContent = 'Verificando...';
         try {
-            var session = await getSession();
+            var session = await grpGetSession();
             var response = await fetch('/api/payments/gift/status/' + paymentId, { method: 'GET', headers: { 'Authorization': 'Bearer ' + (session?.access_token || '') } });
             var data = await response.json();
             if (data.estado === 'finished') { statusEl.textContent = 'Regalo enviado'; statusEl.style.color = 'var(--success)'; }
@@ -2922,7 +2917,7 @@
     function cerrarModalCrearGrupo() { document.getElementById('modalCrearGrupo').classList.remove('show'); }
 
     async function crearGrupo() {
-        if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
+        if (!sessionUser) { grpShowToast('Inicia sesión', 'error'); return; }
         var nombre = document.getElementById('inputNombreGrupo').value.trim();
         var descripcion = document.getElementById('inputDescripcionGrupo').value.trim();
         var categoriaNombre = document.getElementById('inputCategoriaGrupo').value;
@@ -2934,8 +2929,8 @@
         var marketplaceActivo = document.getElementById('inputMarketplaceActivo').checked;
         var visibilidad = document.getElementById('inputVisibilidadGrupo').value;
         var modoIngreso = document.getElementById('inputModoIngresoGrupo').value;
-        if (!nombre) { showToast('Nombre requerido', 'warning'); return; }
-        if (!municipio) { showToast('Municipio requerido', 'warning'); return; }
+        if (!nombre) { grpShowToast('Nombre requerido', 'warning'); return; }
+        if (!municipio) { grpShowToast('Municipio requerido', 'warning'); return; }
         if (!validarTextoPermitido(nombre, 'Nombre del canal')) return;
         if (!validarTextoPermitido(descripcion, 'Descripción del canal')) return;
         var btn = document.getElementById('btnCrearGrupo');
@@ -2952,7 +2947,7 @@
                 creador_id: sessionUser.id, activo: true
             }).select().single();
             if (groupResult.error) throw groupResult.error;
-            showToast('Comunidad Creada', 'success');
+            grpShowToast('Comunidad Creada', 'success');
             cerrarModalCrearGrupo();
             document.getElementById('inputNombreGrupo').value = '';
             document.getElementById('inputDescripcionGrupo').value = '';
@@ -2963,7 +2958,7 @@
             if (groupResult.data?.id) { await abrirGrupo(groupResult.data.id); }
             else { cargarGrupos(); }
             await cargarDashboard();
-        } catch (e) { showToast('Error: ' + e.message, 'error'); }
+        } catch (e) { grpShowToast('Error: ' + e.message, 'error'); }
         finally { btn.disabled = false; btn.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg> Crear Comunidad'; }
     }
 
@@ -3015,9 +3010,9 @@
 
     function mostrarConfirmacionEliminarGrupo() {
         cerrarAjustesCanal();
-        if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
+        if (!sessionUser) { grpShowToast('Inicia sesión', 'error'); return; }
         if (!grupoActualId) return;
-        if (!esAdmin && !esCreador) { showToast('Sin permisos', 'error'); return; }
+        if (!esAdmin && !esCreador) { grpShowToast('Sin permisos', 'error'); return; }
         document.getElementById('modalConfirmarEliminarGrupo').classList.add('show');
         document.getElementById('eliminarGrupoStatus').textContent = '';
     }
@@ -3034,7 +3029,7 @@
             const { data, error } = await window.supabaseClient.rpc('eliminar_grupo', { p_grupo_id: grupoActualId });
             if (error) throw error;
             if (data && data.error) throw new Error(data.error);
-            showToast('Canal eliminado', 'success');
+            grpShowToast('Canal eliminado', 'success');
             cerrarConfirmacionEliminarGrupo();
             cerrarModalAdmin();
             document.getElementById('vistaGrupo').classList.remove('show');
@@ -3050,16 +3045,16 @@
     }
 
     async function iniciarLiveEnGrupo() {
-        if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
-        if (!grupoActualId) { showToast('No hay canal seleccionado', 'error'); return; }
-        if (!esMiembro()) { showToast('Debes ser miembro del canal', 'error'); return; }
-        if (isLiveGrupoActivo) { showToast('Ya hay un LIVE activo', 'warning'); return; }
+        if (!sessionUser) { grpShowToast('Inicia sesión', 'error'); return; }
+        if (!grupoActualId) { grpShowToast('No hay canal seleccionado', 'error'); return; }
+        if (!esMiembro()) { grpShowToast('Debes ser miembro del canal', 'error'); return; }
+        if (isLiveGrupoActivo) { grpShowToast('Ya hay un LIVE activo', 'warning'); return; }
         var liveExistente = await verificarLiveActivoGrupo(grupoActualId);
-        if (liveExistente) { showToast('Ya hay un LIVE activo', 'warning'); return; }
+        if (liveExistente) { grpShowToast('Ya hay un LIVE activo', 'warning'); return; }
         try {
             var titulo = prompt('Título del LIVE:', 'Saliendo al aire en ' + (grupoActual.nombre || 'canal')) || 'Live en canal';
             if (!validarTextoPermitido(titulo, 'Título del Live')) return;
-            showToast('Saliendo al aire...', '');
+            grpShowToast('Saliendo al aire...', '');
             const { data: rpcResult, error } = await window.supabaseClient.rpc('crear_transmision', {
                 p_titulo: titulo, p_categoria: 'grupo', p_room_name: null, p_grupo_id: grupoActualId
             });
@@ -3080,8 +3075,8 @@
             document.getElementById('grupoLiveEndBtn').style.display = 'flex';
             await cargarDashboard();
             try {
-                showToast('Conectando a LiveKit...', '', 2000);
-                const { Room, Track } = await cargarLiveKit();
+                grpShowToast('Conectando a LiveKit...', '', 2000);
+                const { Room, Track } = await grpCargarLiveKit();
                 liveKitRoomGrupo = new Room();
                 const token = await obtenerTokenLiveKitGrupo(transmision.room_name, sessionUser.id, 'publisher');
                 await liveKitRoomGrupo.connect(LIVEKIT_CONFIG.url, token);
@@ -3090,7 +3085,7 @@
                 const localVideoTrack = liveKitRoomGrupo.localParticipant.getTrackPublication(Track.Source.Camera)?.videoTrack;
                 if (localVideoTrack) localVideoTrack.attach(document.getElementById('grupoLiveVideo'));
                 document.getElementById('grupoLiveEstado').innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24" style="fill:currentColor;stroke:none;"><circle cx="12" cy="12" r="6"/></svg> En vivo';
-                showToast('Transmitiendo en el canal', 'success');
+                grpShowToast('Transmitiendo en el canal', 'success');
             } catch (e) {
                 console.error('[LiveKit] Error al conectar:', e);
                 try {
@@ -3117,15 +3112,15 @@
                 if (e && e.name === 'NotAllowedError') msj = 'Permite cámara y micrófono en el navegador';
                 else if (e && e.name === 'NotReadableError') msj = 'La cámara está en uso por otra app';
                 else if (e && e.message) msj = e.message;
-                showToast(msj, 'error', 6000);
+                grpShowToast(msj, 'error', 6000);
                 return;
             }
             suscribirseAlChatGrupo();
-        } catch (e) { showToast('Error: ' + e.message, 'error'); isLiveGrupoActivo = false; }
+        } catch (e) { grpShowToast('Error: ' + e.message, 'error'); isLiveGrupoActivo = false; }
     }
 
     async function obtenerTokenLiveKitGrupo(roomName, participantName, role) {
-        const session = await getSession();
+        const session = await grpGetSession();
         if (!session) throw new Error('No autenticado');
         const response = await fetch('/api/livekit/token', {
             method: 'POST',
@@ -3156,7 +3151,7 @@
     }
 
     async function verLiveActivo() {
-        if (!liveActivoEnGrupo) { showToast('No hay LIVE activo', 'warning'); return; }
+        if (!liveActivoEnGrupo) { grpShowToast('No hay LIVE activo', 'warning'); return; }
         mostrarLiveGrupoInline(liveActivoEnGrupo);
         esStreamerDelLiveGrupo = (sessionUser && liveActivoEnGrupo.streamer_id === sessionUser.id);
         
@@ -3168,7 +3163,7 @@
         }
         
         try {
-            const { Room } = await cargarLiveKit();
+            const { Room } = await grpCargarLiveKit();
             if (liveKitRoomGrupo) {
                 try { await liveKitRoomGrupo.disconnect(); } catch(e) {}
                 liveKitRoomGrupo = null;
@@ -3200,9 +3195,9 @@
             liveKitRoomGrupo.on('participantDisconnected', actualizarEspectadores);
             
             document.getElementById('grupoLiveEstado').innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24" style="fill:currentColor;stroke:none;"><circle cx="12" cy="12" r="6"/></svg> En vivo';
-            showToast('Conectado al LIVE', 'success');
+            grpShowToast('Conectado al LIVE', 'success');
             suscribirseAlChatGrupo();
-        } catch (e) { showToast('Error al conectar: ' + e.message, 'warning'); }
+        } catch (e) { grpShowToast('Error al conectar: ' + e.message, 'warning'); }
     }
     
     function adjuntarTrackGrupo(track) {
@@ -3236,8 +3231,8 @@
         const input = document.getElementById('grupoLiveChatInput');
         const mensaje = (input?.value || '').trim();
         if (!mensaje) return;
-        if (!sessionUser) { showToast('Inicia sesión para chatear', 'error'); return; }
-        if (!currentStreamGrupoId) { showToast('No hay LIVE activo', 'error'); return; }
+        if (!sessionUser) { grpShowToast('Inicia sesión para chatear', 'error'); return; }
+        if (!currentStreamGrupoId) { grpShowToast('No hay LIVE activo', 'error'); return; }
         if (!validarTextoPermitido(mensaje, 'Mensaje del Live')) return;
         try {
             grpOk(await window.supabaseClient.from('mensajes_live').insert({
@@ -3245,7 +3240,7 @@
                 nombre_usuario: sessionUser.user_metadata?.nombre || 'Usuario', creado_en: new Date().toISOString()
             }));
             input.value = '';
-        } catch (e) { showToast('Error al enviar: ' + (e.message || e), 'error'); }
+        } catch (e) { grpShowToast('Error al enviar: ' + (e.message || e), 'error'); }
     }
 
     function agregarMensajeChatGrupo(mensaje) {
@@ -3253,34 +3248,34 @@
         if (!container) return;
         const div = document.createElement('div');
         div.className = 'chat-msg';
-        div.innerHTML = `<strong>${escapeHTML(mensaje.nombre_usuario || 'Usuario')}:</strong> ${escapeHTML(mensaje.mensaje)}`;
+        div.innerHTML = `<strong>${grpEscapeHTML(mensaje.nombre_usuario || 'Usuario')}:</strong> ${grpEscapeHTML(mensaje.mensaje)}`;
         container.appendChild(div);
         container.scrollTop = container.scrollHeight;
     }
 
     async function toggleMuteGrupoLive() {
-        if (!liveKitRoomGrupo || !esStreamerDelLiveGrupo) { showToast('Solo el streamer', 'warning'); return; }
+        if (!liveKitRoomGrupo || !esStreamerDelLiveGrupo) { grpShowToast('Solo el streamer', 'warning'); return; }
         try {
             const enabled = liveKitRoomGrupo.localParticipant.isMicrophoneEnabled;
             await liveKitRoomGrupo.localParticipant.setMicrophoneEnabled(!enabled);
-            showToast(enabled ? 'Micrófono silenciado' : 'Micrófono activado', 'success', 2000);
+            grpShowToast(enabled ? 'Micrófono silenciado' : 'Micrófono activado', 'success', 2000);
         } catch (e) { console.warn('Error micrófono:', e); }
     }
 
     async function finalizarLiveGrupo() {
-        if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
-        if (!grupoActualId) { showToast('No hay canal', 'error'); return; }
+        if (!sessionUser) { grpShowToast('Inicia sesión', 'error'); return; }
+        if (!grupoActualId) { grpShowToast('No hay canal', 'error'); return; }
         const { data: transmisionActiva } = await window.supabaseClient.from('transmisiones').select('*').eq('grupo_id', grupoActualId).eq('estado', 'en_vivo').eq('is_live', true).maybeSingle();
-        if (!transmisionActiva) { showToast('No hay LIVE activo', 'warning'); return; }
-        if (transmisionActiva.streamer_id !== sessionUser.id) { showToast('Solo el streamer', 'error'); return; }
+        if (!transmisionActiva) { grpShowToast('No hay LIVE activo', 'warning'); return; }
+        if (transmisionActiva.streamer_id !== sessionUser.id) { grpShowToast('Solo el streamer', 'error'); return; }
         if (!confirm('¿Finalizar el LIVE del canal?')) return;
-        showToast('Finalizando...', '');
+        grpShowToast('Finalizando...', '');
         try {
             const { error } = await window.supabaseClient.rpc('finalizar_transmision', { p_transmision_id: transmisionActiva.id });
             if (error) {
                 await window.supabaseClient.from('transmisiones').update({ estado: 'finalizada', is_live: false, fecha_fin: new Date().toISOString() }).eq('id', transmisionActiva.id);
             }
-            showToast('LIVE finalizado', 'success');
+            grpShowToast('LIVE finalizado', 'success');
             if (liveKitRoomGrupo) { try { await liveKitRoomGrupo.disconnect(); } catch (e) {} liveKitRoomGrupo = null; }
             if (channelChatGrupo) { try { window.supabaseClient.removeChannel(channelChatGrupo); } catch (e) {} channelChatGrupo = null; }
             liveActivoEnGrupo = null; isLiveGrupoActivo = false; currentStreamGrupoId = null; esStreamerDelLiveGrupo = false;
@@ -3293,7 +3288,7 @@
             await cargarPublicacionesGrupo(grupoActualId);
             await cargarDashboard();
             await cargarGrupos();
-        } catch (e) { showToast('Error: ' + e.message, 'error'); }
+        } catch (e) { grpShowToast('Error: ' + e.message, 'error'); }
     }
 
     function volverALista() {
@@ -3317,14 +3312,12 @@
     function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
 
     // ================================================================
-    // INIT CON TIMEOUT DE SEGURIDAD
-    // ✅ Cambio 3: esperar supabaseClient antes de fallar
+    // INIT
     // ================================================================
     document.addEventListener('DOMContentLoaded', async function() {
         console.log('◈ Sariel\'s - Cablera Descentralizada');
         console.log('[Grupos] supabaseClient:', !!window.supabaseClient);
         
-        // ✅ Cambio 4: reportar estado del SDK al banner si no está
         if (!window.supabaseClient) {
             if (window.__dbgShow) window.__dbgShow('Init: supabaseClient no disponible (SDK=' + (typeof (window.__SB_SDK || window.supabase)) + ')');
         }
@@ -3338,7 +3331,6 @@
         }, 8000);
         
         try {
-            // ✅ Cambio 3: esperar a que el cliente esté listo
             await esperarSupabase();
             
             try { await cargarUsuarioActual(); } catch (e) { console.warn('[Grupos] Usuario:', e.message); }
@@ -3453,7 +3445,9 @@
     window.toggleMisGrupos = toggleMisGrupos;
     window.switchTab = switchTab;
     window.verTokens = verTokens;
-    window.showToast = showToast;
+    // ✅ Compatibilidad con nombres viejos que otros módulos puedan llamar
+    window.showToast = grpShowToast;
+    window.escapeHTML = grpEscapeHTML;
     window.abrirModalRegalos = abrirModalRegalos;
     window.cerrarModalRegalos = cerrarModalRegalos;
     window.enviarRegalo = enviarRegalo;
