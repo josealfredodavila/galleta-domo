@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#05080f" />
+<title>◈ Registro Mayorista · Sariel's</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+(function () {
+    'use strict';
+    var SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
+    var SUPABASE_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+    window.__sarielsAuthenticated = null;
+    window.supabaseClient = window.supabaseClient || null;
+    window.__sarielsSupabaseSingleton = window.__sarielsSupabaseSingleton || null;
+    window.supabaseReady = null;
+
+    function getSupabase() {
+        if (window.__sarielsSupabaseSingleton) return window.__sarielsSupabaseSingleton;
+        if (window.supabaseClient) {
+            window.__sarielsSupabaseSingleton = window.supabaseClient;
+            return window.supabaseClient;
+        }
+        var SDK = window.SupabaseSDK || window.supabase;
+        if (!SDK || typeof SDK.createClient !== 'function') throw new Error('Supabase SDK no disponible.');
+        var c = SDK.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
+        window.supabaseClient = c;
+        window.__sarielsSupabaseSingleton = c;
+        return c;
+    }
+    window.getSupabase = getSupabase;
+
+    function revelarPagina() {
+        document.documentElement.classList.add('auth-ready');
+    }
+
+    async function inicializar() {
+        try {
+            var client = getSupabase();
+            var r = await client.auth.getSession();
+            var session = r && r.data ? r.data.session : null;
+            window.__sarielsAuthenticated = !!session;
+
+            if (!session) {
+                sessionStorage.setItem('sariels_return_to', window.location.pathname + window.location.search);
+                window.location.replace('/');
+                return null;
+            }
+            revelarPagina();
+            return client;
+        } catch (e) {
+            console.error('[Registro Mayorista] Error:', e);
+            revelarPagina();
+            return null;
+        }
+    }
+    window.supabaseReady = inicializar();
+})();
+</script>
+
+<style>
+    html:not(.auth-ready) body { visibility: hidden; }
+    html.auth-ready body { visibility: visible; }
+
+    :root {
+        --gold: #D4AF37; --gold-dark: #b8923a; --gold-light: #e8c84a;
+        --space: #05080f; --text-primary: #f0f4f8; --text-secondary: #c0d8e8;
+        --text-muted: #8aa8b8; --glass-bg: rgba(15, 45, 26, 0.55);
+        --glass-border: rgba(212, 175, 55, 0.2); --radius: 16px;
+        --radius-xl: 24px; --success: #00d68f; --danger: #ff3366;
+        --warning: #f7d44a; --cyan: #00e5ff; --purple: #a855f7;
+        --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+        background: var(--space); color: var(--text-primary);
+        font-family: 'Inter', sans-serif; min-height: 100vh;
+        background-image: radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%),
+                          radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
+    }
+
+    .app { max-width: 720px; margin: 0 auto; padding: 16px 16px 40px; }
+
+    .header {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 12px 0 16px; border-bottom: 2px solid var(--glass-border);
+        background: rgba(5, 8, 15, 0.9); position: sticky; top: 0; z-index: 100;
+        border-radius: var(--radius) var(--radius) 0 0; gap: 12px; flex-wrap: wrap;
+    }
+    .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .logo-hex { font-size: 1.8rem; color: var(--gold); font-family: 'Orbitron', monospace; }
+    .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--text-primary); letter-spacing: 2px; }
+    .logo-text span { color: var(--gold); }
+    .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; }
+
+    .hero {
+        text-align: center; padding: 30px 20px;
+        background: var(--glass-bg); border: 2px solid var(--glass-border);
+        border-radius: var(--radius-xl); margin: 20px 0 24px;
+        backdrop-filter: blur(12px);
+    }
+    .hero-icon { font-size: 3.5rem; display: block; margin-bottom: 14px; filter: drop-shadow(0 0 20px rgba(212, 175, 55, 0.5)); }
+    .hero h1 {
+        font-family: 'Orbitron', monospace; font-size: 1.4rem; color: var(--gold);
+        letter-spacing: 1px; margin-bottom: 8px;
+    }
+    .hero p { color: var(--text-secondary); font-size: 0.85rem; line-height: 1.6; max-width: 500px; margin: 0 auto; }
+
+    .form-card {
+        background: var(--glass-bg); border: 2px solid var(--glass-border);
+        border-radius: var(--radius-xl); padding: 24px 20px; margin-bottom: 20px;
+        backdrop-filter: blur(12px);
+    }
+
+    .form-group { margin-bottom: 18px; }
+    .form-group label {
+        display: block; font-size: 0.75rem; color: var(--text-muted);
+        margin-bottom: 6px; font-weight: 600; letter-spacing: 0.3px;
+    }
+    .form-group label .required { color: var(--danger); }
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+        width: 100%; padding: 13px 16px; background: rgba(0, 0, 0, 0.35);
+        border: 1px solid var(--glass-border); border-radius: 12px;
+        color: var(--text-primary); font-size: 0.9rem; outline: none;
+        font-family: 'Inter', sans-serif; transition: var(--transition);
+    }
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+        border-color: var(--gold); background: rgba(0, 0, 0, 0.5);
+        box-shadow: 0 0 20px rgba(212, 175, 55, 0.1);
+    }
+    .form-group textarea { resize: vertical; min-height: 80px; }
+    .form-group .helper { font-size: 0.65rem; color: var(--text-muted); margin-top: 5px; }
+
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 480px) { .form-row { grid-template-columns: 1fr; } }
+
+    .mapa-selector {
+        height: 240px; border-radius: 12px; overflow: hidden;
+        border: 2px solid var(--glass-border); margin-bottom: 10px;
+        position: relative;
+    }
+    .mapa-info {
+        background: rgba(0, 229, 255, 0.08); border: 1px solid rgba(0, 229, 255, 0.3);
+        border-radius: 10px; padding: 10px 14px; font-size: 0.7rem;
+        color: var(--cyan); margin-bottom: 12px; line-height: 1.5;
+    }
+    .mapa-btn-gps {
+        display: inline-flex; align-items: center; gap: 6px;
+        background: rgba(0, 229, 255, 0.1); border: 1px solid rgba(0, 229, 255, 0.4);
+        color: var(--cyan); padding: 8px 16px; border-radius: 20px;
+        font-size: 0.7rem; font-weight: 600; cursor: pointer;
+        transition: var(--transition); margin-bottom: 10px;
+    }
+    .mapa-btn-gps:hover { background: rgba(0, 229, 255, 0.2); }
+
+    .foto-upload {
+        background: rgba(0, 0, 0, 0.25); border: 2px dashed var(--glass-border);
+        border-radius: 14px; padding: 20px; text-align: center;
+        cursor: pointer; transition: var(--transition); margin-bottom: 8px;
+        position: relative;
+    }
+    .foto-upload:hover { border-color: var(--gold); background: rgba(212, 175, 55, 0.05); }
+    .foto-upload.tiene-foto { border-style: solid; border-color: var(--success); }
+    .foto-upload .preview {
+        max-width: 100%; max-height: 200px; border-radius: 10px;
+        display: block; margin: 0 auto 10px;
+    }
+    .foto-upload .icono { font-size: 2rem; color: var(--gold); margin-bottom: 8px; display: block; }
+    .foto-upload .txt { color: var(--text-muted); font-size: 0.75rem; }
+    .foto-upload input[type="file"] { display: none; }
+
+    .check-row {
+        display: flex; align-items: flex-start; gap: 10px;
+        padding: 12px; background: rgba(0, 0, 0, 0.2);
+        border: 1px solid var(--glass-border); border-radius: 12px;
+        cursor: pointer; transition: var(--transition); margin-bottom: 10px;
+    }
+    .check-row:hover { border-color: var(--gold); }
+    .check-row.checked { border-color: var(--gold); background: rgba(212, 175, 55, 0.08); }
+    .check-row input[type="checkbox"] { margin-top: 2px; accent-color: var(--gold); cursor: pointer; width: 18px; height: 18px; flex-shrink: 0; }
+    .check-row .txt-check { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.5; }
+    .check-row .txt-check strong { color: var(--text-primary); display: block; margin-bottom: 2px; }
+
+    .btn-primario {
+        width: 100%; padding: 16px; border-radius: 30px; border: none;
+        background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+        color: var(--space); font-family: 'Orbitron', monospace;
+        font-weight: 700; font-size: 0.9rem; cursor: pointer;
+        letter-spacing: 0.5px; transition: var(--transition);
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-primario:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 32px rgba(212, 175, 55, 0.35);
+    }
+    .btn-primario:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-secundario {
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        width: 100%; padding: 14px; border-radius: 30px;
+        background: transparent; border: 2px solid var(--glass-border);
+        color: var(--text-secondary); font-family: 'Orbitron', monospace;
+        font-weight: 700; font-size: 0.8rem; cursor: pointer;
+        text-decoration: none; transition: var(--transition);
+        margin-top: 12px;
+    }
+    .btn-secundario:hover { border-color: var(--gold); color: var(--gold); }
+
+    .toast {
+        position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(80px);
+        background: rgba(5, 8, 15, 0.98); border: 1px solid var(--gold);
+        color: var(--gold); padding: 14px 28px; border-radius: 30px;
+        font-size: 0.85rem; z-index: 99999; opacity: 0; pointer-events: none;
+        max-width: 90vw; text-align: center; transition: all 0.4s;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.error { border-color: var(--danger); color: var(--danger); }
+    .toast.warning { border-color: var(--warning); color: var(--warning); }
+    .toast.success { border-color: var(--success); color: var(--success); }
+
+    .exito-card {
+        text-align: center; padding: 50px 20px;
+        background: linear-gradient(135deg, rgba(0, 214, 143, 0.08), rgba(15, 45, 26, 0.6));
+        border: 2px solid var(--success); border-radius: var(--radius-xl);
+        display: none;
+    }
+    .exito-card.activo { display: block; }
+    .exito-card .icono-exito { font-size: 4rem; color: var(--success); display: block; margin-bottom: 16px; }
+    .exito-card h2 {
+        font-family: 'Orbitron', monospace; color: var(--success);
+        font-size: 1.3rem; margin-bottom: 12px;
+    }
+    .exito-card p { color: var(--text-secondary); font-size: 0.85rem; line-height: 1.6; margin-bottom: 24px; }
+
+    @media (max-width: 480px) {
+        .hero { padding: 24px 16px; }
+        .hero h1 { font-size: 1.15rem; }
+        .hero-icon { font-size: 2.8rem; }
+        .form-card { padding: 20px 16px; }
+    }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+    <header class="header">
+        <a href="/features/domos/index.html" class="logo">
+            <span class="logo-hex">◈</span>
+            <span class="logo-text">Sariel<span>'s</span></span>
+            <span class="logo-badge">✦ MAYORISTA</span>
+        </a>
+    </header>
+
+    <div id="contenidoRegistro">
+
+        <section class="hero">
+            <span class="hero-icon">🏪</span>
+            <h1>Regístrate como Mayorista</h1>
+            <p>
+                Vende los domos de galletas Sariel's en tu negocio.
+                Aparecerás en nuestro mapa público y tus clientes podrán encontrarte.
+            </p>
+        </section>
+
+        <form id="formRegistro" onsubmit="event.preventDefault(); enviarRegistro();">
+
+            <div class="form-card">
+                <h3 style="font-family: 'Orbitron', monospace; color: var(--gold); font-size: 0.9rem; margin-bottom: 16px; letter-spacing: 1px;">📋 Datos del Negocio</h3>
+
+                <div class="form-group">
+                    <label>Nombre del negocio <span class="required">*</span></label>
+                    <input type="text" id="nombre" maxlength="80" placeholder="Ej: Abarrotes Don José" required />
+                </div>
+
+                <div class="form-group">
+                    <label>Categoría <span class="required">*</span></label>
+                    <select id="categoria" required>
+                        <option value="">— Selecciona —</option>
+                        <option value="1">🌮 Comida</option>
+                        <option value="2">🥤 Bebidas</option>
+                        <option value="3">🍰 Postres</option>
+                        <option value="4">🛒 Abarrotes</option>
+                        <option value="5">🔧 Servicios</option>
+                        <option value="6">💻 Tecnología</option>
+                        <option value="7">👕 Ropa</option>
+                        <option value="8">🏠 Hogar</option>
+                        <option value="9">◈ Otros</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Descripción de tu negocio</label>
+                    <textarea id="descripcion" maxlength="300" placeholder="Cuéntanos qué vendes y desde cuándo..."></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Teléfono <span class="required">*</span></label>
+                        <input type="tel" id="telefono" maxlength="20" placeholder="+52 123 456 7890" required />
+                    </div>
+                    <div class="form-group">
+                        <label>WhatsApp</label>
+                        <input type="tel" id="whatsapp" maxlength="20" placeholder="+52 123 456 7890" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-card">
+                <h3 style="font-family: 'Orbitron', monospace; color: var(--gold); font-size: 0.9rem; margin-bottom: 16px; letter-spacing: 1px;">📍 Ubicación</h3>
+
+                <div class="mapa-info">
+                    <strong>💡 ¿Cómo funciona?</strong><br>
+                    Mueve el pin en el mapa para marcar la ubicación exacta de tu negocio. Así aparecerás en el mapa público de Sariel's.
+                </div>
+
+                <button type="button" class="mapa-btn-gps" onclick="usarMiUbicacion()">
+                    📍 Usar mi ubicación actual
+                </button>
+
+                <div id="mapaSelector" class="mapa-selector"></div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Latitud</label>
+                        <input type="text" id="latitud" readonly placeholder="Selecciona en el mapa" style="font-family: monospace;" />
+                    </div>
+                    <div class="form-group">
+                        <label>Longitud</label>
+                        <input type="text" id="longitud" readonly placeholder="Selecciona en el mapa" style="font-family: monospace;" />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Dirección completa <span class="required">*</span></label>
+                    <input type="text" id="direccion" maxlength="150" placeholder="Calle, número, colonia, ciudad" required />
+                </div>
+            </div>
+
+            <div class="form-card">
+                <h3 style="font-family: 'Orbitron', monospace; color: var(--gold); font-size: 0.9rem; margin-bottom: 16px; letter-spacing: 1px;">🖼️ Fotos de tu Negocio</h3>
+
+                <div class="form-group">
+                    <label>Foto de la fachada <span class="required">*</span></label>
+                    <div class="foto-upload" id="uploadFachada" onclick="document.getElementById('inputFachada').click()">
+                        <span class="icono">📸</span>
+                        <span class="txt">Toca para subir foto de la fachada</span>
+                    </div>
+                    <input type="file" id="inputFachada" accept="image/*" onchange="subirFoto(event, 'fachada')" />
+                </div>
+
+                <div class="form-group">
+                    <label>Logo o foto interior (opcional)</label>
+                    <div class="foto-upload" id="uploadLogo" onclick="document.getElementById('inputLogo').click()">
+                        <span class="icono">🎨</span>
+                        <span class="txt">Toca para subir logo o foto interior</span>
+                    </div>
+                    <input type="file" id="inputLogo" accept="image/*" onchange="subirFoto(event, 'logo')" />
+                </div>
+            </div>
+
+            <div class="form-card">
+                <h3 style="font-family: 'Orbitron', monospace; color: var(--gold); font-size: 0.9rem; margin-bottom: 16px; letter-spacing: 1px;">⏰ Horarios y Modalidades</h3>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Apertura</label>
+                        <input type="time" id="horario_apertura" value="09:00" />
+                    </div>
+                    <div class="form-group">
+                        <label>Cierre</label>
+                        <input type="time" id="horario_cierre" value="21:00" />
+                    </div>
+                </div>
+
+                <label class="check-row" id="checkDelivery">
+                    <input type="checkbox" id="acepta_delivery" checked />
+                    <span class="txt-check">
+                        <strong>◆ Acepto delivery</strong>
+                        Clientes pueden pedir a domicilio
+                    </span>
+                </label>
+
+                <label class="check-row" id="checkPickup">
+                    <input type="checkbox" id="acepta_pickup" checked />
+                    <span class="txt-check">
+                        <strong>◇ Acepto pickup</strong>
+                        Clientes pueden recoger en tienda
+                    </span>
+                </label>
+
+                <div class="form-group">
+                    <label>Costo de envío (MXN)</label>
+                    <input type="number" id="envio_mxn" min="0" step="0.01" value="35" />
+                </div>
+            </div>
+
+            <div class="form-card">
+                <h3 style="font-family: 'Orbitron', monospace; color: var(--gold); font-size: 0.9rem; margin-bottom: 16px; letter-spacing: 1px;">✅ Confirmación</h3>
+
+                <label class="check-row" id="checkTerminos">
+                    <input type="checkbox" id="acepto_terminos" required />
+                    <span class="txt-check">
+                        <strong>Acepto los términos</strong>
+                        Autorizo a Sariel's a mostrarme en el mapa público y acepto vender domos al mayoreo.
+                    </span>
+                </label>
+
+                <button type="submit" class="btn-primario" id="btnEnviar" style="margin-top: 16px;">
+                    🚀 Registrarme como mayorista
+                </button>
+            </div>
+
+        </form>
+
+    </div>
+
+    <div class="exito-card" id="exitoCard">
+        <span class="icono-exito">🎉</span>
+        <h2>¡Registro Exitoso!</h2>
+        <p>
+            Tu negocio ya forma parte de la red de mayoristas Sariel's.<br><br>
+            Aparecerás en el mapa público para que tus clientes puedan encontrarte.
+        </p>
+        <a href="/features/domos/mapa.html" class="btn-primario" style="text-decoration: none; display: inline-flex;">
+            🗺️ Ver el mapa de mayoristas
+        </a>
+        <a href="/features/domos/index.html" class="btn-secundario">
+            ← Volver al inicio
+        </a>
+    </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+'use strict';
+
+var mapa = null;
+var marcador = null;
+var fotosSubidas = {
+    fachada: null,
+    logo: null
+};
+
+function showToast(msg, type, duration) {
+    var el = document.getElementById('toast');
+    if (!el) return;
+    el.textContent = msg;
+    el.className = 'toast show' + (type ? ' ' + type : '');
+    clearTimeout(el._timer);
+    el._timer = setTimeout(function() { el.className = 'toast'; }, duration || 3500);
+}
+
+async function initSupabaseAndMap() {
+    try {
+        var client = await window.supabaseReady;
+        if (!client) return;
+
+        // Init mapa centrado en México
+        mapa = L.map('mapaSelector').setView([19.4326, -99.1332], 11);
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '© OpenStreetMap · © CARTO',
+            subdomains: 'abcd',
+            maxZoom: 19
+        }).addTo(mapa);
+
+        // Marcador arrastrable
+        marcador = L.marker([19.4326, -99.1332], { draggable: true }).addTo(mapa);
+
+        // Actualizar campos al mover
+        marcador.on('dragend', function() {
+            var pos = marcador.getLatLng();
+            actualizarCamposUbicacion(pos.lat, pos.lng);
+        });
+
+        // Click en el mapa mueve el marcador
+        mapa.on('click', function(e) {
+            marcador.setLatLng(e.latlng);
+            actualizarCamposUbicacion(e.latlng.lat, e.latlng.lng);
+        });
+
+        actualizarCamposUbicacion(19.4326, -99.1332);
+
+    } catch (e) {
+        console.error('Error inicializando mapa:', e);
+        showToast('❌ Error cargando el mapa', 'error');
+    }
+}
+
+function actualizarCamposUbicacion(lat, lng) {
+    document.getElementById('latitud').value = lat.toFixed(6);
+    document.getElementById('longitud').value = lng.toFixed(6);
+}
+
+function usarMiUbicacion() {
+    if (!navigator.geolocation) {
+        showToast('⚠️ Tu navegador no soporta GPS', 'warning');
+        return;
+    }
+
+    showToast('📍 Obteniendo tu ubicación...', '', 2000);
+
+    navigator.geolocation.getCurrentPosition(
+        function(pos) {
+            var lat = pos.coords.latitude;
+            var lng = pos.coords.longitude;
+
+            if (mapa && marcador) {
+                mapa.setView([lat, lng], 16);
+                marcador.setLatLng([lat, lng]);
+                actualizarCamposUbicacion(lat, lng);
+                showToast('✅ Ubicación obtenida', 'success');
+            }
+        },
+        function(err) {
+            var msg = '❌ No se pudo obtener ubicación';
+            if (err.code === 1) msg = '⚠️ Permiso denegado';
+            showToast(msg, 'error');
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+}
+
+async function subirFoto(event, tipo) {
+    var file = event.target.files[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+        showToast('⚠️ Máximo 5 MB por foto', 'warning');
+        return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+        showToast('⚠️ Solo imágenes', 'warning');
+        return;
+    }
+
+    showToast('⏳ Subiendo foto...', '', 3000);
+
+    try {
+        var client = await window.supabaseReady;
+        if (!client) throw new Error('Sin conexión');
+
+        var session = await client.auth.getSession();
+        if (!session || !session.data || !session.data.session) {
+            throw new Error('Sesión no válida');
+        }
+
+        var usuarioId = session.data.session.user.id;
+        var ext = file.name.split('.').pop().toLowerCase();
+        var ruta = 'mayoristas/' + usuarioId + '/' + tipo + '_' + Date.now() + '.' + ext;
+
+        var upload = await client.storage
+            .from('mercado')
+            .upload(ruta, file, { upsert: true, cacheControl: '3600', contentType: file.type });
+
+        if (upload.error) throw upload.error;
+
+        var urlData = client.storage.from('mercado').getPublicUrl(ruta);
+        var publicUrl = urlData.data.publicUrl;
+
+        fotosSubidas[tipo] = publicUrl;
+
+        var uploadDiv = document.getElementById(tipo === 'fachada' ? 'uploadFachada' : 'uploadLogo');
+        uploadDiv.classList.add('tiene-foto');
+        uploadDiv.innerHTML = '<img src="' + publicUrl + '" class="preview" alt="' + tipo + '" /><span class="txt">✅ ' + tipo.charAt(0).toUpperCase() + tipo.slice(1) + ' subida. Toca para cambiar.</span>';
+
+        showToast('✅ Foto subida', 'success');
+
+    } catch (e) {
+        console.error('Error subiendo foto:', e);
+        showToast('❌ ' + e.message, 'error');
+    }
+}
+
+function generarSlug(nombre) {
+    return nombre
+        .toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9\s-]/g, '')
+        .trim()
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .substring(0, 60);
+}
+
+async function enviarRegistro() {
+    var btn = document.getElementById('btnEnviar');
+
+    var nombre = document.getElementById('nombre').value.trim();
+    var categoria = document.getElementById('categoria').value;
+    var descripcion = document.getElementById('descripcion').value.trim();
+    var telefono = document.getElementById('telefono').value.trim();
+    var whatsapp = document.getElementById('whatsapp').value.trim();
+    var direccion = document.getElementById('direccion').value.trim();
+    var latitud = document.getElementById('latitud').value;
+    var longitud = document.getElementById('longitud').value;
+    var horario_apertura = document.getElementById('horario_apertura').value;
+    var horario_cierre = document.getElementById('horario_cierre').value;
+    var acepta_delivery = document.getElementById('acepta_delivery').checked;
+    var acepta_pickup = document.getElementById('acepta_pickup').checked;
+    var envio_mxn = parseFloat(document.getElementById('envio_mxn').value) || 0;
+    var acepto_terminos = document.getElementById('acepto_terminos').checked;
+
+    // Validaciones
+    if (!nombre || nombre.length < 3) { showToast('⚠️ Nombre del negocio muy corto', 'warning'); return; }
+    if (!categoria) { showToast('⚠️ Selecciona una categoría', 'warning'); return; }
+    if (!telefono || telefono.length < 8) { showToast('⚠️ Teléfono inválido', 'warning'); return; }
+    if (!direccion || direccion.length < 5) { showToast('⚠️ Dirección muy corta', 'warning'); return; }
+    if (!latitud || !longitud) { showToast('⚠️ Selecciona la ubicación en el mapa', 'warning'); return; }
+    if (!fotosSubidas.fachada) { showToast('⚠️ Sube la foto de la fachada', 'warning'); return; }
+    if (!acepto_terminos) { showToast('⚠️ Acepta los términos', 'warning'); return; }
+
+    btn.disabled = true;
+    btn.textContent = '⏳ Registrando...';
+
+    try {
+        var client = await window.supabaseReady;
+        if (!client) throw new Error('Sin conexión');
+
+        var session = await client.auth.getSession();
+        if (!session || !session.data || !session.data.session) {
+            throw new Error('Sesión no válida');
+        }
+
+        var usuarioId = session.data.session.user.id;
+
+        // Verificar si ya tiene una tienda
+        var existente = await client
+            .from('mercado_tiendas')
+            .select('id')
+            .eq('usuario_id', usuarioId)
+            .maybeSingle();
+
+        if (existente.data) {
+            throw new Error('Ya tienes una tienda registrada. Contacta a soporte.');
+        }
+
+        // Generar slug único
+        var slug = generarSlug(nombre);
+        var slugFinal = slug;
+        var intento = 0;
+        while (intento < 5) {
+            var check = await client.from('mercado_tiendas').select('id').eq('slug', slugFinal).maybeSingle();
+            if (!check.data) break;
+            intento++;
+            slugFinal = slug + '-' + intento;
+        }
+
+        // Preparar descripción con marca de mayorista
+        var descripcionCompleta = descripcion;
+        if (!descripcionCompleta) {
+            descripcionCompleta = 'Mayorista de domos Sariel\'s';
+        }
+
+        // Insertar tienda
+        var insert = await client
+            .from('mercado_tiendas')
+            .insert({
+                usuario_id: usuarioId,
+                slug: slugFinal,
+                nombre_negocio: nombre,
+                descripcion: descripcionCompleta,
+                categoria_id: parseInt(categoria),
+                telefono: telefono,
+                whatsapp: whatsapp || telefono,
+                direccion: direccion,
+                latitud: parseFloat(latitud),
+                longitud: parseFloat(longitud),
+                horario_apertura: horario_apertura,
+                horario_cierre: horario_cierre,
+                acepta_delivery: acepta_delivery,
+                acepta_pickup: acepta_pickup,
+                envio_mxn: envio_mxn,
+                portada_url: fotosSubidas.fachada,
+                logo_url: fotosSubidas.logo || fotosSubidas.fachada,
+                nivel: 'basico',
+                estado: 'activa',
+                es_mayorista: true,
+                estado_verificacion_mayorista: 'activo',
+                verificado_mayorista_en: new Date().toISOString(),
+                rfc_validado: false,
+                calificacion_promedio: 0,
+                total_resenas: 0,
+                total_pedidos: 0,
+                total_ventas_mxn: 0,
+                documentos_mayorista: {
+                    foto_fachada: fotosSubidas.fachada,
+                    foto_logo: fotosSubidas.logo
+                }
+            })
+            .select()
+            .single();
+
+        if (insert.error) throw insert.error;
+
+        // Ocultar formulario, mostrar éxito
+        document.getElementById('contenidoRegistro').style.display = 'none';
+        document.getElementById('exitoCard').classList.add('activo');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    } catch (e) {
+        console.error('Error en registro:', e);
+        showToast('❌ ' + (e.message || 'Error al registrar'), 'error', 5000);
+        btn.disabled = false;
+        btn.textContent = '🚀 Registrarme como mayorista';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    initSupabaseAndMap();
+
+    // Toggle clases check-row
+    document.querySelectorAll('.check-row').forEach(function(row) {
+        var checkbox = row.querySelector('input[type="checkbox"]');
+        if (!checkbox) return;
+        function update() {
+            if (checkbox.checked) row.classList.add('checked');
+            else row.classList.remove('checked');
+        }
+        checkbox.addEventListener('change', update);
+        update();
+    });
+});
+</script>
+</body>
+</html>
