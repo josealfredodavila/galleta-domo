@@ -43,9 +43,6 @@
     ::-webkit-scrollbar-track { background: var(--space); }
     ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
 
-    /* ============================================================
-       ICONOS SVG - Sistema limpio (reemplaza emojis de UI)
-       ============================================================ */
     .icon {
         display: inline-block;
         width: 1em;
@@ -158,6 +155,7 @@
     .publicacion-card:hover { border-color: var(--gold); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.55); }
     .publicacion-card .header { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
     .publicacion-card .header .avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold)); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; color: #fff; overflow: hidden; flex-shrink: 0; font-weight: 700; border: 1px solid var(--line-black); }
+    .publicacion-card .header .avatar img { width: 100%; height: 100%; object-fit: cover; }
     .publicacion-card .header .nombre { font-weight: 600; color: var(--gold); font-size: 0.8rem; }
     .publicacion-card .header .fecha { font-size: 0.6rem; color: var(--text-muted); }
     .publicacion-card .contenido { color: var(--text-secondary); font-size: 0.85rem; line-height: 1.6; margin-bottom: 10px; word-wrap: break-word; }
@@ -330,7 +328,6 @@
     #qrReaderContainer { display: none; margin-top: 10px; text-align: center; }
     #qrReaderContainer video { width: 100%; max-width: 300px; border-radius: 10px; background: black; border: 2px solid var(--line-black); }
 
-    /* ===== TEMA DÍA ===== */
     html.tema-dia, html[data-tema="dia"] {
         --space: #f5f7fa;
         --bg-card: rgba(255, 255, 255, 0.95);
@@ -1187,10 +1184,7 @@
 <script src="/features/shared/js/idiomas.js?v=7" defer></script>
 <script src="/features/perfil/perfil.js?v=7" defer></script>
 
-<!-- ============================================================
-     Soporte para abrir tab desde la URL (?tab=qr, ?tab=internet, etc.)
-     Y soporte para ejecutar acción desde la URL (?action=canjear)
-     ============================================================ -->
+<!-- Soporte para abrir tab desde la URL (?tab=qr, ?tab=internet, etc.) -->
 <script>
 (function() {
     'use strict';
@@ -1572,6 +1566,10 @@ document.addEventListener('DOMContentLoaded', function() {
         return '◈';
     }
 
+    /* ============================================================
+       ✅ FIX: Ahora trae nombre, handle y avatar reales del usuario
+       desde la tabla 'usuarios' mediante JOIN
+       ============================================================ */
     window.cargarMisPublicaciones = async function() {
         var container = document.getElementById('misPublicacionesList');
         var contador = document.getElementById('misPostsCount');
@@ -1585,7 +1583,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 container.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/></svg><h4>Inicia sesión</h4><p>Para ver tus publicaciones</p></div>';
                 return;
             }
-            var result = await client.from('publicaciones').select('*').eq('usuario_id', session.user.id).order('created_at', { ascending: false }).limit(50);
+
+            // ✅ FIX 1: JOIN con tabla 'usuarios' para traer nombre, handle y avatar
+            var result = await client
+                .from('publicaciones')
+                .select('*, usuarios:usuario_id (id, nombre, handle, avatar_url)')
+                .eq('usuario_id', session.user.id)
+                .order('created_at', { ascending: false })
+                .limit(50);
+
             if (result.error) throw result.error;
             var publicaciones = result.data || [];
             if (contador) contador.textContent = publicaciones.length;
@@ -1614,9 +1620,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } catch(e) {}
 
-            var avatarHtml = obtenerAvatarActual();
+            var avatarHtmlFallback = obtenerAvatarActual();
 
             publicaciones.forEach(function(p) {
+
+                // ✅ FIX 2: Extraer nombre, handle y avatar REALES del JOIN
+                var usuario = p.usuarios || {};
+                var nombreReal = escapeHtmlPerfil(usuario.nombre || 'Explorador');
+                var handleReal = usuario.handle ? '@' + escapeHtmlPerfil(usuario.handle) : '';
+                var avatarReal = usuario.avatar_url
+                    ? '<img src="' + usuario.avatar_url + '" alt="Avatar" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display=\'none\';this.parentNode.textContent=\'◈\';" />'
+                    : (avatarHtmlFallback || '◈');
+
                 var card = document.createElement('div');
                 card.className = 'publicacion-card';
                 var contenidoHtml = escapeHtmlPerfil(p.contenido || '');
@@ -1652,8 +1667,17 @@ document.addEventListener('DOMContentLoaded', function() {
                         '</button>' +
                     '</div>';
 
+                // ✅ FIX 3: Usar nombreReal, handleReal y avatarReal en el header de la card
                 card.innerHTML =
-                    '<div class="header"><div class="avatar">' + avatarHtml + '</div><div><div class="nombre" data-no-traducir="1">Mi publicación</div><div class="fecha" data-no-traducir="1">' + fecha + '</div></div></div>' +
+                    '<div class="header">' +
+                        '<div class="avatar">' + avatarReal + '</div>' +
+                        '<div>' +
+                            '<div class="nombre" data-no-traducir="1">' + nombreReal +
+                                (handleReal ? ' <span style="color:var(--text-muted);font-weight:400;font-size:0.75rem;">' + handleReal + '</span>' : '') +
+                            '</div>' +
+                            '<div class="fecha" data-no-traducir="1">' + fecha + '</div>' +
+                        '</div>' +
+                    '</div>' +
                     '<div class="contenido" data-no-traducir="1">' + contenidoHtml + '</div>' + triggerHtml +
                     '<div class="stats" data-no-traducir="1">' +
                         '<button type="button" data-no-traducir="1" class="btn-accion-pub" onclick="event.stopPropagation(); window.toggleComentariosPerfil(\'' + p.id + '\')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Comentarios</button>' +
