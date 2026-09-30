@@ -4,28 +4,40 @@
    POLYGON AMOY 80002
    SIN CLAVES HARDCODEADAS
 
-   CORREGIDO:
+   v2.0.1 — Fix del bucle login ↔ perfil
+   - Un solo cliente Supabase compartido por todos los scripts
+     vía window.__sarielsSupabaseSingleton.
    - NO sobrescribe window.supabase (SDK). Solo expone window.supabaseClient.
-   - vincularWallet usa la columna real 'wallet_address'.
 ================================================================ */
 
 'use strict';
 
 /* ================================================================
    CONFIGURACIÓN PÚBLICA DESDE BACKEND
+   — Singleton: reutiliza window.__sarielsSupabaseSingleton si existe
 ================================================================ */
 
-let supabaseClient = window.supabaseClient || null;
+let supabaseClient = window.supabaseClient || window.__sarielsSupabaseSingleton || null;
 
 let supabaseConfigPromise = null;
 
 async function cargarConfiguracionPublica() {
 
-    if (supabaseClient) {
+    /* 1) Reutilizar singleton global si ya existe */
+    if (window.__sarielsSupabaseSingleton) {
+        supabaseClient = window.__sarielsSupabaseSingleton;
         window.supabaseClient = supabaseClient;
         return supabaseClient;
     }
 
+    /* 2) Reutilizar window.supabaseClient existente */
+    if (window.supabaseClient) {
+        supabaseClient = window.supabaseClient;
+        window.__sarielsSupabaseSingleton = supabaseClient;
+        return supabaseClient;
+    }
+
+    /* 3) Evitar llamadas paralelas */
     if (supabaseConfigPromise) {
         return supabaseConfigPromise;
     }
@@ -79,30 +91,26 @@ async function cargarConfiguracionPublica() {
                 );
             }
 
-            /*
-             * Guardamos la referencia al SDK en window.SupabaseSDK
-             * para que otros módulos puedan reutilizarlo.
-             *
-             * IMPORTANTE:
-             * NO sobrescribimos window.supabase.
-             * El SDK debe permanecer intacto en window.supabase
-             * para que cualquier otro script que llame a
-             * window.supabase.createClient() siga funcionando.
-             */
             window.SupabaseSDK =
                 SupabaseSDK;
 
             supabaseClient =
                 SupabaseSDK.createClient(
                     config.supabaseUrl,
-                    config.supabaseAnonKey
+                    config.supabaseAnonKey,
+                    {
+                        auth: {
+                            persistSession: true,
+                            autoRefreshToken: true,
+                            detectSessionInUrl: true
+                        }
+                    }
                 );
 
-            /*
-             * Exponemos el cliente en window.supabaseClient.
-             * NO tocamos window.supabase.
-             */
+            /* Exponer a todos los scripts */
             window.supabaseClient =
+                supabaseClient;
+            window.__sarielsSupabaseSingleton =
                 supabaseClient;
 
             return supabaseClient;
@@ -1009,6 +1017,10 @@ class GalletaDomoApp {
                 return null;
             }
 
+            const redirectTo =
+                window.location.origin +
+                '/features/perfil/perfil.html';
+
             const {
                 data,
                 error
@@ -1028,7 +1040,10 @@ class GalletaDomoApp {
 
                             role:
                                 'user'
-                        }
+                        },
+
+                        emailRedirectTo:
+                            redirectTo
                     }
                 });
 
