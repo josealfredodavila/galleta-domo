@@ -135,6 +135,193 @@
         html.auth-ready body {
             visibility: visible;
         }
+
+        /* ============================================================
+           MODAL DE TEMAS E IDIOMAS
+           ============================================================ */
+        .sariels-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(5, 8, 15, 0.85);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 20px;
+        }
+        .sariels-modal-overlay.active {
+            display: flex;
+        }
+        .sariels-modal {
+            background: rgba(15, 25, 20, 0.98);
+            border: 1px solid rgba(212, 175, 55, 0.25);
+            border-radius: 20px;
+            max-width: 480px;
+            width: 100%;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+        .sariels-modal-header {
+            padding: 20px 22px 14px;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+        .sariels-modal-header h3 {
+            font-family: 'Orbitron', monospace;
+            color: #D4AF37;
+            font-size: 1rem;
+            letter-spacing: 0.5px;
+            margin: 0;
+        }
+        .sariels-modal-close {
+            background: transparent;
+            border: none;
+            color: #8aa8b8;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0 8px;
+            line-height: 1;
+        }
+        .sariels-modal-close:hover {
+            color: #D4AF37;
+        }
+        .sariels-modal-search {
+            padding: 12px 20px;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+        }
+        .sariels-modal-search input {
+            width: 100%;
+            padding: 10px 14px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(212, 175, 55, 0.15);
+            border-radius: 10px;
+            color: #f0f4f8;
+            font-size: 0.85rem;
+            outline: none;
+            font-family: 'Inter', sans-serif;
+        }
+        .sariels-modal-search input:focus {
+            border-color: #D4AF37;
+        }
+        .sariels-modal-body {
+            padding: 14px 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .sariels-tema-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            margin-bottom: 6px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(212, 175, 55, 0.1);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .sariels-tema-item:hover {
+            background: rgba(212, 175, 55, 0.08);
+            border-color: rgba(212, 175, 55, 0.25);
+        }
+        .sariels-tema-item.selected {
+            background: rgba(212, 175, 55, 0.15);
+            border-color: #D4AF37;
+        }
+        .sariels-tema-emoji {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+            width: 32px;
+            text-align: center;
+        }
+        .sariels-tema-nombre {
+            flex: 1;
+            color: #f0f4f8;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .sariels-tema-check {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+            color: transparent;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+        .sariels-tema-item.selected .sariels-tema-check {
+            background: #D4AF37;
+            border-color: #D4AF37;
+            color: #05080f;
+        }
+        .sariels-modal-footer {
+            padding: 14px 20px 18px;
+            border-top: 1px solid rgba(212, 175, 55, 0.15);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .sariels-modal-contador {
+            flex: 1;
+            color: #8aa8b8;
+            font-size: 0.75rem;
+        }
+        .sariels-modal-btn-cancel {
+            background: transparent;
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            color: #c0d8e8;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+        }
+        .sariels-modal-btn-cancel:hover {
+            border-color: #D4AF37;
+            color: #D4AF37;
+        }
+        .sariels-modal-btn-save {
+            background: linear-gradient(135deg, #D4AF37, #b8923a);
+            color: #05080f;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'Orbitron', monospace;
+            letter-spacing: 0.5px;
+        }
+        .sariels-modal-btn-save:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .sariels-modal-loading {
+            text-align: center;
+            padding: 40px 20px;
+            color: #8aa8b8;
+            font-size: 0.85rem;
+        }
+        .sariels-modal-empty {
+            text-align: center;
+            padding: 40px 20px;
+            color: #8aa8b8;
+            font-size: 0.85rem;
+        }
     </style>
 </head>
 <body class="cfg-page">
@@ -163,6 +350,29 @@
             <strong>◈ Sariel's</strong> · Privacidad · Contenido que ves
         </div>
     </main>
+
+    <!-- ============================================================
+         MODAL DE TEMAS / IDIOMAS
+         ============================================================ -->
+    <div class="sariels-modal-overlay" id="sarielsModal">
+        <div class="sariels-modal">
+            <div class="sariels-modal-header">
+                <h3 id="sarielsModalTitulo">Temas que me interesan</h3>
+                <button class="sariels-modal-close" onclick="cerrarModalTemas()" aria-label="Cerrar">×</button>
+            </div>
+            <div class="sariels-modal-search">
+                <input type="text" id="sarielsModalSearch" placeholder="Buscar..." autocomplete="off" />
+            </div>
+            <div class="sariels-modal-body" id="sarielsModalBody">
+                <div class="sariels-modal-loading">Cargando...</div>
+            </div>
+            <div class="sariels-modal-footer">
+                <span class="sariels-modal-contador" id="sarielsModalContador">0 seleccionados</span>
+                <button class="sariels-modal-btn-cancel" onclick="cerrarModalTemas()">Cancelar</button>
+                <button class="sariels-modal-btn-save" id="sarielsModalBtnGuardar" onclick="guardarSeleccionTemas()">Guardar</button>
+            </div>
+        </div>
+    </div>
 
     <script src="../../../shared/config-icons.js"></script>
     <script src="../../../shared/config-layout.js"></script>
@@ -303,17 +513,347 @@
             );
         };
 
+        // ============================================================
+        // MODAL DE TEMAS E IDIOMAS - LÓGICA
+        // ============================================================
+
+        var modalEstado = {
+            tipo: null,          // 'interes' | 'bloqueado' | 'idioma'
+            items: [],           // lista completa de temas o idiomas
+            seleccionados: new Set(),
+            guardando: false
+        };
+
         window.onConfigurarIntereses = () => {
-            cfgToast('⏳ Configuración de intereses próximamente', 'warning');
+            abrirModalTemas('interes');
         };
 
         window.onConfigurarNoIntereses = () => {
-            cfgToast('⏳ Filtros de temas próximamente', 'warning');
+            abrirModalTemas('bloqueado');
         };
 
         window.onConfigurarIdiomasContenido = () => {
-            cfgToast('⏳ Selección de idiomas próximamente', 'warning');
+            abrirModalIdiomas();
         };
+
+        async function abrirModalTemas(tipo) {
+            var client = await esperarCliente();
+            if (!client) {
+                cfgToast('❌ Sin conexión', 'error');
+                return;
+            }
+
+            var sessionResult = await client.auth.getSession();
+            var session = sessionResult && sessionResult.data ? sessionResult.data.session : null;
+            if (!session) {
+                cfgToast('⚠️ Inicia sesión', 'warning');
+                return;
+            }
+
+            modalEstado.tipo = tipo;
+            modalEstado.guardando = false;
+            modalEstado.seleccionados = new Set();
+            modalEstado.items = [];
+
+            var titulo = tipo === 'interes' ? 'Temas que me interesan' : 'Temas que no me interesan';
+            document.getElementById('sarielsModalTitulo').textContent = titulo;
+            document.getElementById('sarielsModalBody').innerHTML = '<div class="sariels-modal-loading">Cargando temas...</div>';
+            document.getElementById('sarielsModalContador').textContent = '0 seleccionados';
+            document.getElementById('sarielsModalSearch').value = '';
+
+            document.getElementById('sarielsModal').classList.add('active');
+
+            try {
+                // Cargar temas
+                var temasResult = await client
+                    .from('temas')
+                    .select('id, slug, nombre, emoji')
+                    .eq('activo', true)
+                    .order('orden', { ascending: true });
+
+                if (temasResult.error) throw temasResult.error;
+                modalEstado.items = temasResult.data || [];
+
+                // Cargar selección actual del usuario
+                var tabla = tipo === 'interes' ? 'usuarios_temas_interes' : 'usuarios_temas_bloqueados';
+                var selResult = await client
+                    .from(tabla)
+                    .select('tema_id')
+                    .eq('usuario_id', session.user.id);
+
+                if (selResult.error) throw selResult.error;
+                (selResult.data || []).forEach(function (row) {
+                    modalEstado.seleccionados.add(row.tema_id);
+                });
+
+                renderListaTemas();
+            } catch (e) {
+                console.error('Error cargando temas:', e);
+                document.getElementById('sarielsModalBody').innerHTML =
+                    '<div class="sariels-modal-empty">❌ Error al cargar: ' + (e.message || 'Desconocido') + '</div>';
+            }
+        }
+
+        function renderListaTemas() {
+            var body = document.getElementById('sarielsModalBody');
+            var busqueda = (document.getElementById('sarielsModalSearch').value || '').toLowerCase().trim();
+
+            var filtrados = modalEstado.items.filter(function (t) {
+                if (!busqueda) return true;
+                return (t.nombre || '').toLowerCase().indexOf(busqueda) !== -1 ||
+                       (t.slug || '').toLowerCase().indexOf(busqueda) !== -1;
+            });
+
+            if (filtrados.length === 0) {
+                body.innerHTML = '<div class="sariels-modal-empty">Sin resultados</div>';
+                return;
+            }
+
+            body.innerHTML = filtrados.map(function (t) {
+                var selected = modalEstado.seleccionados.has(t.id);
+                return '<div class="sariels-tema-item' + (selected ? ' selected' : '') + '" data-id="' + t.id + '">' +
+                    '<span class="sariels-tema-emoji">' + (t.emoji || '◈') + '</span>' +
+                    '<span class="sariels-tema-nombre">' + (t.nombre || t.slug || '') + '</span>' +
+                    '<span class="sariels-tema-check">✓</span>' +
+                '</div>';
+            }).join('');
+
+            // Conectar click
+            body.querySelectorAll('.sariels-tema-item').forEach(function (el) {
+                el.addEventListener('click', function () {
+                    toggleSeleccionTema(el.dataset.id, el);
+                });
+            });
+
+            actualizarContador();
+        }
+
+        function toggleSeleccionTema(id, el) {
+            if (modalEstado.seleccionados.has(id)) {
+                modalEstado.seleccionados.delete(id);
+                el.classList.remove('selected');
+            } else {
+                modalEstado.seleccionados.add(id);
+                el.classList.add('selected');
+            }
+            actualizarContador();
+        }
+
+        function actualizarContador() {
+            var n = modalEstado.seleccionados.size;
+            document.getElementById('sarielsModalContador').textContent =
+                n + ' seleccionado' + (n !== 1 ? 's' : '');
+        }
+
+        window.cerrarModalTemas = function () {
+            document.getElementById('sarielsModal').classList.remove('active');
+            modalEstado.items = [];
+            modalEstado.seleccionados = new Set();
+            modalEstado.tipo = null;
+        };
+
+        window.guardarSeleccionTemas = async function () {
+            if (modalEstado.guardando) return;
+            if (!modalEstado.tipo) return;
+
+            var client = await esperarCliente();
+            if (!client) return;
+
+            var sessionResult = await client.auth.getSession();
+            var session = sessionResult && sessionResult.data ? sessionResult.data.session : null;
+            if (!session) return;
+
+            modalEstado.guardando = true;
+            var btn = document.getElementById('sarielsModalBtnGuardar');
+            btn.disabled = true;
+            btn.textContent = '⏳';
+
+            var tabla = modalEstado.tipo === 'interes' ? 'usuarios_temas_interes' : 'usuarios_temas_bloqueados';
+
+            try {
+                // 1. Borrar la selección actual
+                var del = await client
+                    .from(tabla)
+                    .delete()
+                    .eq('usuario_id', session.user.id);
+                if (del.error) throw del.error;
+
+                // 2. Insertar la nueva selección (si hay)
+                var ids = Array.from(modalEstado.seleccionados);
+                if (ids.length > 0) {
+                    var rows = ids.map(function (temaId) {
+                        return { usuario_id: session.user.id, tema_id: temaId };
+                    });
+                    var ins = await client.from(tabla).insert(rows);
+                    if (ins.error) throw ins.error;
+                }
+
+                cfgToast('✅ Guardado correctamente', 'success');
+                window.cerrarModalTemas();
+            } catch (e) {
+                console.error('Error guardando:', e);
+                cfgToast('❌ Error: ' + (e.message || 'Desconocido'), 'error');
+            } finally {
+                modalEstado.guardando = false;
+                btn.disabled = false;
+                btn.textContent = 'Guardar';
+            }
+        };
+
+        // ============================================================
+        // MODAL DE IDIOMAS (usa el mismo modal)
+        // ============================================================
+
+        async function abrirModalIdiomas() {
+            var client = await esperarCliente();
+            if (!client) {
+                cfgToast('❌ Sin conexión', 'error');
+                return;
+            }
+
+            var sessionResult = await client.auth.getSession();
+            var session = sessionResult && sessionResult.data ? sessionResult.data.session : null;
+            if (!session) {
+                cfgToast('⚠️ Inicia sesión', 'warning');
+                return;
+            }
+
+            modalEstado.tipo = 'idioma';
+            modalEstado.guardando = false;
+            modalEstado.seleccionados = new Set();
+            modalEstado.items = [];
+
+            document.getElementById('sarielsModalTitulo').textContent = 'Idiomas del contenido';
+            document.getElementById('sarielsModalBody').innerHTML = '<div class="sariels-modal-loading">Cargando idiomas...</div>';
+            document.getElementById('sarielsModalContador').textContent = '0 seleccionados';
+            document.getElementById('sarielsModalSearch').value = '';
+
+            document.getElementById('sarielsModal').classList.add('active');
+
+            try {
+                var idiomasResult = await client
+                    .from('idiomas_sistema')
+                    .select('id, codigo, nombre, nombre_nativo, bandera')
+                    .eq('activo', true)
+                    .order('nombre', { ascending: true });
+
+                if (idiomasResult.error) throw idiomasResult.error;
+
+                // Adaptamos la forma para que sea igual que los temas
+                modalEstado.items = (idiomasResult.data || []).map(function (i) {
+                    return {
+                        id: i.id,
+                        slug: i.codigo,
+                        nombre: (i.bandera || '🌐') + ' ' + (i.nombre_nativo || i.nombre || i.codigo),
+                        emoji: i.bandera || '🌐'
+                    };
+                });
+
+                var selResult = await client
+                    .from('usuarios_idiomas_contenido')
+                    .select('idioma_id')
+                    .eq('usuario_id', session.user.id);
+
+                if (selResult.error) throw selResult.error;
+                (selResult.data || []).forEach(function (row) {
+                    modalEstado.seleccionados.add(row.idioma_id);
+                });
+
+                renderListaTemas(); // reutiliza la misma función de render
+            } catch (e) {
+                console.error('Error cargando idiomas:', e);
+                document.getElementById('sarielsModalBody').innerHTML =
+                    '<div class="sariels-modal-empty">❌ Error al cargar: ' + (e.message || 'Desconocido') + '</div>';
+            }
+        }
+
+        // Sobrescribir guardar para idiomas (la lógica cambia la tabla y el campo)
+        var guardarOriginal = window.guardarSeleccionTemas;
+        window.guardarSeleccionTemas = async function () {
+            if (modalEstado.guardando) return;
+            if (!modalEstado.tipo) return;
+
+            var client = await esperarCliente();
+            if (!client) return;
+
+            var sessionResult = await client.auth.getSession();
+            var session = sessionResult && sessionResult.data ? sessionResult.data.session : null;
+            if (!session) return;
+
+            modalEstado.guardando = true;
+            var btn = document.getElementById('sarielsModalBtnGuardar');
+            btn.disabled = true;
+            btn.textContent = '⏳';
+
+            try {
+                if (modalEstado.tipo === 'idioma') {
+                    var del2 = await client
+                        .from('usuarios_idiomas_contenido')
+                        .delete()
+                        .eq('usuario_id', session.user.id);
+                    if (del2.error) throw del2.error;
+
+                    var ids2 = Array.from(modalEstado.seleccionados);
+                    if (ids2.length > 0) {
+                        var rows2 = ids2.map(function (idiomaId) {
+                            return { usuario_id: session.user.id, idioma_id: idiomaId };
+                        });
+                        var ins2 = await client.from('usuarios_idiomas_contenido').insert(rows2);
+                        if (ins2.error) throw ins2.error;
+                    }
+                } else {
+                    var tabla = modalEstado.tipo === 'interes' ? 'usuarios_temas_interes' : 'usuarios_temas_bloqueados';
+                    var del = await client.from(tabla).delete().eq('usuario_id', session.user.id);
+                    if (del.error) throw del.error;
+
+                    var ids = Array.from(modalEstado.seleccionados);
+                    if (ids.length > 0) {
+                        var rows = ids.map(function (temaId) {
+                            return { usuario_id: session.user.id, tema_id: temaId };
+                        });
+                        var ins = await client.from(tabla).insert(rows);
+                        if (ins.error) throw ins.error;
+                    }
+                }
+
+                cfgToast('✅ Guardado correctamente', 'success');
+                window.cerrarModalTemas();
+            } catch (e) {
+                console.error('Error guardando:', e);
+                cfgToast('❌ Error: ' + (e.message || 'Desconocido'), 'error');
+            } finally {
+                modalEstado.guardando = false;
+                btn.disabled = false;
+                btn.textContent = 'Guardar';
+            }
+        };
+
+        // Buscador
+        document.addEventListener('DOMContentLoaded', function () {
+            var searchInput = document.getElementById('sarielsModalSearch');
+            if (searchInput) {
+                searchInput.addEventListener('input', function () {
+                    renderListaTemas();
+                });
+            }
+
+            // Cerrar al hacer click en el overlay
+            var overlay = document.getElementById('sarielsModal');
+            if (overlay) {
+                overlay.addEventListener('click', function (e) {
+                    if (e.target === overlay) window.cerrarModalTemas();
+                });
+            }
+
+            // Cerrar con Escape
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') window.cerrarModalTemas();
+            });
+        });
+
+        // ============================================================
+        // ARRANQUE
+        // ============================================================
 
         window.addEventListener('DOMContentLoaded', async () => {
             await new Promise(resolve => setTimeout(resolve, 400));
