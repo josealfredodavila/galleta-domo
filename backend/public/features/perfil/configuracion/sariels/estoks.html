@@ -8,12 +8,8 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="../../../shared/config-layout.css" />
+    <link rel="stylesheet" href="../../../../shared/config-layout.css" />
 
-    <!-- =========================================================
-         SUPABASE — Configuración centralizada vía backend
-         Guard: si no hay sesión → redirige al index
-    ========================================================== -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script>
         (function () {
@@ -851,8 +847,8 @@
         </div>
     </div>
 
-    <script src="../../../shared/config-icons.js"></script>
-    <script src="../../../shared/config-layout.js"></script>
+    <script src="../../../../shared/config-icons.js"></script>
+    <script src="../../../../shared/config-layout.js"></script>
 
     <script>
     (function () {
@@ -860,7 +856,6 @@
 
         const $ = (sel) => document.querySelector(sel);
 
-        // Variable global con el balance actual
         let balanceActual = {
             tokens: 0,
             progreso: 0,
@@ -904,7 +899,7 @@
                 const progreso = Math.min(tokens, 12);
                 const nfts = Number(usuario.progreso_canje) || 0;
 
-                // Guardar en variable global                balanceActual = {
+                balanceActual = {
                     tokens: tokens,
                     progreso: progreso,
                     nfts: nfts,
@@ -1076,16 +1071,12 @@
             `;
         }
 
-        // ============================================================
-        // MODALES
-        // ============================================================
         window.abrirModalEstoks = function (modalId) {
             const modal = document.getElementById(modalId);
             if (!modal) return;
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
 
-            // Si es el modal de canje, actualizar datos
             if (modalId === 'modalCanje') {
                 actualizarModalCanje();
             }
@@ -1126,11 +1117,9 @@
         window.irACanjearDesdeModal = function () {
             if (!balanceActual.puedeCanjear) return;
             window.cerrarModalEstoks('modalCanje');
-            // Ir al perfil y ejecutar el canje
             window.location.href = '/features/perfil/perfil.html?action=canjear';
         };
 
-        // Handlers de los items
         window.onQueSonEstoks = () => {
             window.abrirModalEstoks('modalQueSon');
         };
@@ -1147,9 +1136,6 @@
             window.location.href = '/features/perfil/configuracion/sariels/wallet.html';
         };
 
-        // ============================================================
-        // INICIALIZACIÓN
-        // ============================================================
         window.addEventListener('DOMContentLoaded', async () => {
             await new Promise(resolve => setTimeout(resolve, 400));
             renderInfo();
@@ -1157,7 +1143,6 @@
             await cargarBalance();
             await renderHistorial();
 
-            // Cerrar modal al tocar fuera
             document.querySelectorAll('.estoks-modal-overlay').forEach(overlay => {
                 overlay.addEventListener('click', function (e) {
                     if (e.target === overlay) {
@@ -1166,7 +1151,6 @@
                 });
             });
 
-            // Cerrar modal con Escape
             document.addEventListener('keydown', function (e) {
                 if (e.key === 'Escape') {
                     document.querySelectorAll('.estoks-modal-overlay.active').forEach(m => {
