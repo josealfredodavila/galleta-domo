@@ -954,6 +954,78 @@
 <script src="/features/shared/js/idiomas.js?v=7" defer></script>
 <script src="/features/perfil/perfil.js?v=7" defer></script>
 
+<!-- ============================================================
+     NUEVO: Soporte para abrir tab desde la URL (?tab=qr, ?tab=internet, etc.)
+     Y soporte para ejecutar acción desde la URL (?action=canjear)
+     ============================================================ -->
+<script>
+(function() {
+    'use strict';
+
+    function aplicarParametrosURL() {
+        var params = new URLSearchParams(window.location.search);
+        var tab = params.get('tab');
+        var action = params.get('action');
+
+        // Abrir tab específica
+        if (tab && typeof window.cambiarTab === 'function') {
+            setTimeout(function() {
+                window.cambiarTab(tab);
+                console.log('✅ [Perfil] Tab cambiada a:', tab);
+
+                // Si es la tab QR, hacer scroll a ella
+                if (tab === 'qr') {
+                    var tabContent = document.getElementById('tab-qr');
+                    if (tabContent) {
+                        setTimeout(function() {
+                            tabContent.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }, 300);
+                    }
+                }
+            }, 600);
+        }
+
+        // Ejecutar acción específica
+        if (action === 'canjear') {
+            setTimeout(function() {
+                // Primero cambiar a la tab de tokens
+                if (typeof window.cambiarTab === 'function') {
+                    window.cambiarTab('tokens');
+                }
+                // Luego abrir el canje
+                setTimeout(function() {
+                    if (typeof window.canjearNFT === 'function') {
+                        window.canjearNFT();
+                        console.log('✅ [Perfil] Acción canjear ejecutada');
+                    }
+                }, 500);
+            }, 800);
+        }
+
+        // Limpiar los parámetros de la URL después de procesarlos
+        if (tab || action) {
+            setTimeout(function() {
+                try {
+                    var urlLimpia = window.location.pathname;
+                    window.history.replaceState({}, document.title, urlLimpia);
+                } catch (e) {
+                    console.warn('[Perfil] No se pudo limpiar la URL:', e);
+                }
+            }, 2000);
+        }
+    }
+
+    // Ejecutar cuando el DOM esté listo
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(aplicarParametrosURL, 500);
+        });
+    } else {
+        setTimeout(aplicarParametrosURL, 500);
+    }
+})();
+</script>
+
 <script>
 var CONFIG_LEGAL = {
     nombre_comercial: 'Csariel\'s',
@@ -1101,7 +1173,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
-</script><script>
+</script>
+<script>
 /* PUBLICACIONES DEL PERFIL */
 (function() {
     'use strict';
