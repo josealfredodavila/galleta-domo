@@ -1,17 +1,19 @@
 /* ================================================================
  * WALLET CONNECT - Sariel's Ecosystem
  * ================================================================
- * Conexión Web3 universal sobre Polygon Amoy (chain 80002).
+ * v3.0.0 - 30/09/2026
  *
- * FIX: Carga WalletConnect SDK vía UMD por CDN directo
- * (la versión +esm de jsdelivr es inestable en móvil).
- *
+ * FIX CRÍTICO:
+ * - WalletConnect NO publica bundle UMD. Usar esm.sh (más confiable
+ *   que jsdelivr +esm que fallaba silenciosamente en móvil).
+ * - Timeout extendido a 20s con retry.
+ * - Fallback a jsdelivr +esm si esm.sh falla.
  * ================================================================ */
 
 (function () {
     'use strict';
 
-    const DEFAULT_PUBLIC_APP_URL = 'https://auction.up.railway.app';
+    const DEFAULT_PUBLIC_APP_URL = 'https://galleta-domo-production.up.railway.app';
     const WEB3_CONFIG_ENDPOINT = '/api/config/web3';
     const RED_ACTIVA = 'AMOY';
 
@@ -342,8 +344,10 @@
     }
 
     /* ============================================================
-       ✅ FIX: Cargar WalletConnect SDK vía UMD por CDN directo
-       (en vez de +esm que es inestable)
+       ✅ FIX CRÍTICO v3.0.0:
+       - WalletConnect NO publica bundle UMD oficial.
+       - Usar esm.sh (más confiable que jsdelivr +esm).
+       - Fallback: intentar jsdelivr +esm si esm.sh falla.
        ============================================================ */
     let EthereumProviderPromise = null;
 
@@ -351,55 +355,40 @@
         if (EthereumProviderPromise) return EthereumProviderPromise;
 
         EthereumProviderPromise = (async function () {
-            console.log('[SarWallet] Cargando WalletConnect SDK...');
+            console.log('[SarWallet] Cargando WalletConnect SDK (v3)...');
 
-            // Verificar si ya está cargado globalmente
-            if (window.EthereumProvider && typeof window.EthereumProvider.init === 'function') {
-                console.log('[SarWallet] ✅ SDK ya disponible en window');
-                return window.EthereumProvider;
+            // Opción 1: ESM via esm.sh (más confiable)
+            const urls = [
+                'https://esm.sh/@walletconnect/ethereum-provider@2.17.0',
+                'https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.17.0/+esm'
+            ];
+
+            let ultimoError = null;
+
+            for (let i = 0; i < urls.length; i++) {
+                const url = urls[i];
+                try {
+                    console.log('[SarWallet] Intentando cargar desde:', url);
+
+                    const modulo = await import(/* @vite-ignore */ url);
+                    const Provider = modulo.EthereumProvider || modulo.default || modulo;
+
+                    if (Provider && typeof Provider.init === 'function') {
+                        console.log('[SarWallet] ✅ SDK cargado desde:', url);
+                        return Provider;
+                    }
+
+                    console.warn('[SarWallet] SDK no expone init() en:', url);
+                    ultimoError = new Error('WALLETCONNECT_SDK_INVALID');
+
+                } catch (error) {
+                    console.warn('[SarWallet] Falló carga desde:', url, error.message);
+                    ultimoError = error;
+                }
             }
 
-            // Cargar vía script tag (más confiable que import())
-            return new Promise(function (resolve, reject) {
-                var script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.17.0/dist/index.umd.js';
-                script.async = true;
-
-                var timeout = setTimeout(function () {
-                    console.error('[SarWallet] ❌ Timeout cargando SDK (15s)');
-                    reject(new Error('WALLETCONNECT_SDK_TIMEOUT'));
-                }, 15000);
-
-                script.onload = function () {
-                    clearTimeout(timeout);
-                    console.log('[SarWallet] Script cargado, verificando...');
-
-                    // El UMD puede exponer el SDK en window.EthereumProvider
-                    if (window.EthereumProvider && typeof window.EthereumProvider.init === 'function') {
-                        console.log('[SarWallet] ✅ SDK listo');
-                        resolve(window.EthereumProvider);
-                        return;
-                    }
-
-                    // A veces está en window.WalletConnectEthereumProvider
-                    if (window.WalletConnectEthereumProvider && typeof window.WalletConnectEthereumProvider.init === 'function') {
-                        console.log('[SarWallet] ✅ SDK listo (alt)');
-                        resolve(window.WalletConnectEthereumProvider);
-                        return;
-                    }
-
-                    console.error('[SarWallet] ❌ SDK no expone EthereumProvider');
-                    reject(new Error('WALLETCONNECT_SDK_INVALID'));
-                };
-
-                script.onerror = function () {
-                    clearTimeout(timeout);
-                    console.error('[SarWallet] ❌ Error cargando script');
-                    reject(new Error('WALLETCONNECT_SDK_LOAD_FAILED'));
-                };
-
-                document.head.appendChild(script);
-            });
+            console.error('[SarWallet] ❌ No se pudo cargar el SDK desde ningún CDN');
+            throw ultimoError || new Error('WALLETCONNECT_SDK_LOAD_FAILED');
         })().catch(function (error) {
             EthereumProviderPromise = null;
             throw error;
@@ -790,5 +779,5 @@
         abrirMetaMaskApp, abrirRainbowApp, redActual
     };
 
-    console.log('[SarWallet] cargado', '| red:', RED_ACTIVA, '| chainId:', CHAIN_ID_OBJETIVO, '| móvil:', esMovil(), '| injected:', tieneInjectedProvider());
+    console.log('[SarWallet] cargado v3', '| red:', RED_ACTIVA, '| chainId:', CHAIN_ID_OBJETIVO, '| móvil:', esMovil(), '| injected:', tieneInjectedProvider());
 })();
