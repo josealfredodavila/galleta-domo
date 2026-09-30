@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-public>
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -20,13 +20,48 @@
         window.supabaseReady = null;
         window.supabaseError = null;
 
+        window.sarielsConTimeout = function (promise, timeoutMs) {
+            return new Promise(function (resolve, reject) {
+                var timer = setTimeout(function () {
+                    reject(new Error(
+                        'Tiempo de espera agotado al conectar con Supabase.'
+                    ));
+                }, timeoutMs);
+
+                Promise.resolve(promise).then(function (value) {
+                    clearTimeout(timer);
+                    resolve(value);
+                }, function (error) {
+                    clearTimeout(timer);
+                    reject(error);
+                });
+            });
+        };
+
         window.getSupabaseClient = function () {
-            return window.supabaseReady;
+            if (!window.supabaseReady) {
+                return Promise.resolve(null);
+            }
+
+            return window.sarielsConTimeout(
+                window.supabaseReady,
+                10000
+            ).catch(function (error) {
+                console.error(
+                    "[Sariel's Auth] Supabase no respondió a tiempo:",
+                    error
+                );
+                window.supabaseError = error;
+                return null;
+            });
         };
 
         async function inicializarSupabase() {
             try {
-                if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+                if (
+                    !window.supabase ||
+                    typeof window.supabase.createClient !== 'function'
+                ) {
                     throw new Error('Supabase SDK no disponible.');
                 }
 
@@ -35,12 +70,20 @@
                     var supabaseAnonKey = null;
 
                     try {
+                        var controller = new AbortController();
+                        var fetchTimer = setTimeout(function () {
+                            controller.abort();
+                        }, 8000);
+
                         const response = await fetch('/api/config/public', {
                             method: 'GET',
                             credentials: 'same-origin',
                             cache: 'no-store',
-                            headers: { 'Accept': 'application/json' }
+                            headers: { 'Accept': 'application/json' },
+                            signal: controller.signal
                         });
+
+                        clearTimeout(fetchTimer);
 
                         if (response.ok) {
                             const config = await response.json();
@@ -48,43 +91,78 @@
                             supabaseAnonKey = config && config.supabaseAnonKey;
                         }
                     } catch (fetchErr) {
-                        console.warn('[Registro] No se pudo consultar /api/config/public.', fetchErr);
+                        console.warn(
+                            '[Registro] No se pudo consultar /api/config/public.',
+                            fetchErr
+                        );
                     }
 
                     if (!supabaseUrl || !supabaseAnonKey) {
-                        supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
-                        supabaseAnonKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+                        supabaseUrl =
+                            'https://zultnlogdoajehbswlih.supabase.co';
+                        supabaseAnonKey =
+                            'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
                     }
 
                     window.SupabaseSDK = window.supabase;
 
-                    window.supabaseClient = window.SupabaseSDK.createClient(
-                        supabaseUrl,
-                        supabaseAnonKey,
-                        {
-                            auth: {
-                                persistSession: true,
-                                autoRefreshToken: true,
-                                detectSessionInUrl: true
+                    window.supabaseClient =
+                        window.SupabaseSDK.createClient(
+                            supabaseUrl,
+                            supabaseAnonKey,
+                            {
+                                auth: {
+                                    persistSession: true,
+                                    autoRefreshToken: true,
+                                    detectSessionInUrl: true
+                                }
                             }
-                        }
-                    );
+                        );
                 }
 
-                const resultado = await window.supabaseClient.auth.getSession();
-                const session = resultado && resultado.data ? resultado.data.session : null;
+                const resultado = await window.sarielsConTimeout(
+                    window.supabaseClient.auth.getSession(),
+                    8000
+                );
+
+                const session =
+                    resultado && resultado.data
+                        ? resultado.data.session
+                        : null;
+
                 window.__sarielsAuthenticated = !!session;
 
+                window.supabaseClient.auth.onAuthStateChange(
+                    function (_event, sessionActual) {
+                        window.__sarielsAuthenticated = !!sessionActual;
+                    }
+                );
+
                 return window.supabaseClient;
+
             } catch (error) {
-                console.error('[Registro] Error inicializando Supabase:', error);
+                console.error(
+                    '[Registro] Error inicializando Supabase:',
+                    error
+                );
                 window.__sarielsAuthenticated = false;
                 window.supabaseError = error;
                 return null;
             }
         }
 
-        window.supabaseReady = inicializarSupabase();
+        window.supabaseReady = window.sarielsConTimeout(
+            inicializarSupabase(),
+            12000
+        ).catch(function (error) {
+            console.error(
+                '[Registro] Inicialización de Supabase agotó el tiempo:',
+                error
+            );
+            window.__sarielsAuthenticated = false;
+            window.supabaseError = error;
+            return null;
+        });
     })();
 </script>
 
@@ -110,7 +188,9 @@
     --danger: #ff3366;
     --warning: #f7d44a;
 }
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
+
 body {
     background: var(--space);
     color: var(--text-primary);
@@ -120,6 +200,7 @@ body {
         radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%),
         radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
 }
+
 .app {
     position: relative;
     z-index: 1;
@@ -127,6 +208,7 @@ body {
     margin: 0 auto;
     padding: 20px 24px 30px;
 }
+
 .header {
     display: flex;
     justify-content: space-between;
@@ -142,6 +224,7 @@ body {
     gap: 12px;
     flex-wrap: wrap;
 }
+
 .logo { display: flex; align-items: center; gap: 12px; }
 .logo-main { display: flex; align-items: center; gap: 12px; text-decoration: none; }
 .logo-hex {
@@ -394,6 +477,7 @@ body {
 }
 </style>
 </head>
+
 <body>
 
 <div class="nebula nebula-1"></div>
@@ -408,11 +492,14 @@ body {
             <span class="logo-hex">◈</span>
             <span class="logo-text">Sariel<span>'s</span></span>
         </a>
-        <a href="/info/web3.html" class="logo-badge" target="_blank" rel="noopener noreferrer">✦ WEB3</a>
+        <a href="/info/web3.html" class="logo-badge" target="_blank" rel="noopener noreferrer">
+            ✦ WEB3
+        </a>
     </div>
     <div class="header-actions">
         <a href="https://polygon.technology/" target="_blank" rel="noopener noreferrer" class="network-badge">
-            <span class="dot"></span> Polygon
+            <span class="dot"></span>
+            Polygon
         </a>
     </div>
 </header>
@@ -451,7 +538,6 @@ body {
                 placeholder="Nombre (opcional)"
                 autocomplete="name"
             />
-
             <button type="submit" class="register-btn" id="registerBtn">
                 ⟡ Crear cuenta
             </button>
@@ -459,7 +545,8 @@ body {
 
         <p class="terminos-text">
             Al registrarte aceptas nuestros
-            <a href="/terminos" target="_blank" rel="noopener">Términos</a> y
+            <a href="/terminos" target="_blank" rel="noopener">Términos</a>
+            y
             <a href="/privacidad" target="_blank" rel="noopener">Política de privacidad</a>.
         </p>
 
@@ -474,7 +561,8 @@ body {
 
 <footer class="footer">
     <span>
-        <span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3
+        <span class="brand">◈ Sariel's</span>
+        · Sabor al Paladar · WEB3
     </span>
     <div class="footer-links">
         <a href="/terminos">◈ Términos</a>
@@ -503,11 +591,16 @@ body {
 
 var RUTA_PERFIL = '/features/perfil/perfil.html';
 
+/* ========================================================
+   TOAST
+======================================================== */
 function showToast(msg, type, duration) {
     var el = document.getElementById('toast');
     if (!el) return;
+
     el.textContent = msg;
     el.className = 'toast show' + (type ? ' ' + type : '');
+
     clearTimeout(el._timer);
     el._timer = setTimeout(function () {
         el.className = 'toast';
@@ -515,6 +608,9 @@ function showToast(msg, type, duration) {
 }
 window.showToast = showToast;
 
+/* ========================================================
+   ERRORES EN PANTALLA
+======================================================== */
 function mostrarErrorEnPantalla(mensaje) {
     const banner = document.getElementById('errorBanner');
     const texto = document.getElementById('errorBannerText');
@@ -523,19 +619,71 @@ function mostrarErrorEnPantalla(mensaje) {
         banner.style.display = 'block';
     }
 }
+
 window.addEventListener('error', function (event) {
-    mostrarErrorEnPantalla((event.message || 'Error desconocido') + ' — línea ' + event.lineno);
-});
-window.addEventListener('unhandledrejection', function (event) {
-    mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason?.message || event.reason));
+    mostrarErrorEnPantalla(
+        (event.message || 'Error desconocido') +
+        ' — línea ' + event.lineno
+    );
 });
 
+window.addEventListener('unhandledrejection', function (event) {
+    mostrarErrorEnPantalla(
+        'Promesa rechazada: ' +
+        (event.reason?.message || event.reason)
+    );
+});
+
+/* ========================================================
+   TRADUCCIÓN DE ERRORES DE SUPABASE
+======================================================== */
+function traducirErrorSupabase(mensaje) {
+    if (!mensaje || typeof mensaje !== 'string') {
+        return 'Error desconocido';
+    }
+
+    var m = mensaje.toLowerCase();
+
+    if (m.includes('user already registered') || m.includes('already registered')) {
+        return 'Ese correo ya está registrado. Inicia sesión en su lugar.';
+    }
+    if (m.includes('password should be at least')) {
+        return 'La contraseña es muy corta. Usa al menos 6 caracteres.';
+    }
+    if (m.includes('invalid email')) {
+        return 'El correo no tiene un formato válido.';
+    }
+    if (m.includes('signup is disabled')) {
+        return 'El registro está temporalmente deshabilitado.';
+    }
+    if (m.includes('too many requests') || m.includes('rate limit')) {
+        return 'Demasiados intentos. Espera unos minutos.';
+    }
+    if (m.includes('network') || m.includes('failed to fetch')) {
+        return 'Sin conexión con el servidor. Revisa tu internet.';
+    }
+
+    return mensaje;
+}
+
+/* ========================================================
+   REDIRECCIÓN SI YA EXISTE SESIÓN
+======================================================== */
 async function redirigirSiYaHaySesion() {
     try {
         const client = await window.getSupabaseClient();
-        if (!client) return;
-        const resultado = await client.auth.getSession();
-        const session = resultado && resultado.data ? resultado.data.session : null;
+        if (!client || !client.auth) return;
+
+        const resultado = await window.sarielsConTimeout(
+            client.auth.getSession(),
+            8000
+        );
+
+        const session =
+            resultado && resultado.data
+                ? resultado.data.session
+                : null;
+
         if (session) {
             window.location.replace(RUTA_PERFIL);
         }
@@ -544,6 +692,9 @@ async function redirigirSiYaHaySesion() {
     }
 }
 
+/* ========================================================
+   REGISTRO
+======================================================== */
 async function registrarDesdeRegistro() {
     const emailEl = document.getElementById('regEmail');
     const passEl = document.getElementById('regPassword');
@@ -567,34 +718,58 @@ async function registrarDesdeRegistro() {
     }
 
     const originalText = btn ? btn.textContent : '⟡ Crear cuenta';
-    if (btn) { btn.disabled = true; btn.textContent = '⏳ Creando cuenta...'; }
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = '⏳ Creando cuenta...';
+    }
 
     try {
-        // 1) Intentar con el registro global de /app.js si está disponible
+        /*
+         * 1) Registro global de /app.js si está disponible.
+         */
         if (window.app && typeof window.app.registrarUsuario === 'function') {
-            await window.app.registrarUsuario(email, password, name);
+            await window.sarielsConTimeout(
+                window.app.registrarUsuario(email, password, name),
+                15000
+            );
+
             emailEl.value = '';
             passEl.value = '';
             if (nameEl) nameEl.value = '';
+
             window.location.replace(RUTA_PERFIL);
             return;
         }
 
-        // 2) Fallback: registro directo con Supabase
+        /*
+         * 2) Fallback: registro directo con Supabase.
+         * ✅ Incluye emailRedirectTo apuntando al perfil,
+         * para que el enlace de confirmación del correo
+         * lleve al usuario directamente al perfil.
+         */
         const client = await window.getSupabaseClient();
         if (!client) {
             throw new Error('No hay conexión con el servidor. Recarga la página.');
         }
 
-        const { data, error } = await client.auth.signUp({
-            email: email,
-            password: password,
-            options: {
-                data: {
-                    nombre: name || email.split('@')[0]
+        const emailRedirectTo = window.location.origin + RUTA_PERFIL;
+
+        const resultado = await window.sarielsConTimeout(
+            client.auth.signUp({
+                email: email,
+                password: password,
+                options: {
+                    data: {
+                        nombre: name || email.split('@')[0]
+                    },
+                    emailRedirectTo: emailRedirectTo
                 }
-            }
-        });
+            }),
+            15000
+        );
+
+        const data = resultado ? resultado.data : null;
+        const error = resultado ? resultado.error : null;
 
         if (error) {
             throw new Error(error.message || 'No se pudo crear la cuenta');
@@ -604,13 +779,28 @@ async function registrarDesdeRegistro() {
             throw new Error('No se pudo crear la cuenta');
         }
 
-        // Si Supabase pide confirmación por email, no hay sesión todavía
+        /*
+         * Si Supabase exige confirmación por correo,
+         * el usuario se crea pero todavía no hay sesión.
+         */
         if (!data.session) {
-            showToast('✅ Cuenta creada. Revisa tu correo para confirmar.', 'success', 6000);
-            if (btn) { btn.disabled = false; btn.textContent = originalText; }
+            showToast(
+                '✅ Cuenta creada. Revisa tu correo para confirmar.',
+                'success',
+                6000
+            );
+
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+
             return;
         }
 
+        /*
+         * Registro completado y sesión activa.
+         */
         emailEl.value = '';
         passEl.value = '';
         if (nameEl) nameEl.value = '';
@@ -619,13 +809,26 @@ async function registrarDesdeRegistro() {
 
     } catch (e) {
         console.error('[Registro] Error:', e);
-        showToast('❌ ' + (e && e.message ? e.message : 'Error al crear la cuenta'), 'error', 5000);
-        if (btn) { btn.disabled = false; btn.textContent = originalText; }
+
+        var mensajeAmigable = traducirErrorSupabase(
+            e && e.message ? e.message : ''
+        );
+
+        showToast('❌ ' + mensajeAmigable, 'error', 5000);
+
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }
     }
 }
 window.registrarDesdeRegistro = registrarDesdeRegistro;
 
+/* ========================================================
+   DOM READY
+======================================================== */
 document.addEventListener('DOMContentLoaded', function () {
+
     redirigirSiYaHaySesion();
 
     setTimeout(async function () {
@@ -639,5 +842,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 300);
 });
 </script>
+
 </body>
 </html>
