@@ -15,154 +15,66 @@
     (function () {
         'use strict';
 
+        var SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
+        var SUPABASE_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+
         window.__sarielsAuthenticated = null;
         window.supabaseClient = window.supabaseClient || null;
+        window.__sarielsSupabaseSingleton = window.__sarielsSupabaseSingleton || null;
         window.supabaseReady = null;
         window.supabaseError = null;
 
-        window.sarielsConTimeout = function (promise, timeoutMs) {
-            return new Promise(function (resolve, reject) {
-                var timer = setTimeout(function () {
-                    reject(new Error(
-                        'Tiempo de espera agotado al conectar con Supabase.'
-                    ));
-                }, timeoutMs);
-
-                Promise.resolve(promise).then(function (value) {
-                    clearTimeout(timer);
-                    resolve(value);
-                }, function (error) {
-                    clearTimeout(timer);
-                    reject(error);
-                });
+        function getSupabase() {
+            if (window.__sarielsSupabaseSingleton) return window.__sarielsSupabaseSingleton;
+            if (window.supabaseClient) {
+                window.__sarielsSupabaseSingleton = window.supabaseClient;
+                return window.supabaseClient;
+            }
+            var SDK = window.SupabaseSDK || window.supabase;
+            if (!SDK || typeof SDK.createClient !== 'function') {
+                throw new Error('Supabase SDK no disponible.');
+            }
+            var c = SDK.createClient(SUPABASE_URL, SUPABASE_KEY, {
+                auth: {
+                    persistSession: true,
+                    autoRefreshToken: true,
+                    detectSessionInUrl: true
+                }
             });
-        };
+            window.supabaseClient = c;
+            window.__sarielsSupabaseSingleton = c;
+            return c;
+        }
+
+        window.getSupabase = getSupabase;
 
         window.getSupabaseClient = function () {
-            if (!window.supabaseReady) {
-                return Promise.resolve(null);
-            }
-
-            return window.sarielsConTimeout(
-                window.supabaseReady,
-                10000
-            ).catch(function (error) {
-                console.error(
-                    "[Sariel's Auth] Supabase no respondió a tiempo:",
-                    error
-                );
-                window.supabaseError = error;
-                return null;
-            });
+            return window.supabaseReady;
         };
 
         async function inicializarSupabase() {
             try {
-                if (
-                    !window.supabase ||
-                    typeof window.supabase.createClient !== 'function'
-                ) {
-                    throw new Error('Supabase SDK no disponible.');
-                }
+                var client = getSupabase();
 
-                if (!window.supabaseClient) {
-                    var supabaseUrl = null;
-                    var supabaseAnonKey = null;
-
-                    try {
-                        var controller = new AbortController();
-                        var fetchTimer = setTimeout(function () {
-                            controller.abort();
-                        }, 8000);
-
-                        const response = await fetch('/api/config/public', {
-                            method: 'GET',
-                            credentials: 'same-origin',
-                            cache: 'no-store',
-                            headers: { 'Accept': 'application/json' },
-                            signal: controller.signal
-                        });
-
-                        clearTimeout(fetchTimer);
-
-                        if (response.ok) {
-                            const config = await response.json();
-                            supabaseUrl = config && config.supabaseUrl;
-                            supabaseAnonKey = config && config.supabaseAnonKey;
-                        }
-                    } catch (fetchErr) {
-                        console.warn(
-                            '[Registro] No se pudo consultar /api/config/public.',
-                            fetchErr
-                        );
-                    }
-
-                    if (!supabaseUrl || !supabaseAnonKey) {
-                        supabaseUrl =
-                            'https://zultnlogdoajehbswlih.supabase.co';
-                        supabaseAnonKey =
-                            'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
-                    }
-
-                    window.SupabaseSDK = window.supabase;
-
-                    window.supabaseClient =
-                        window.SupabaseSDK.createClient(
-                            supabaseUrl,
-                            supabaseAnonKey,
-                            {
-                                auth: {
-                                    persistSession: true,
-                                    autoRefreshToken: true,
-                                    detectSessionInUrl: true
-                                }
-                            }
-                        );
-                }
-
-                const resultado = await window.sarielsConTimeout(
-                    window.supabaseClient.auth.getSession(),
-                    8000
-                );
-
-                const session =
-                    resultado && resultado.data
-                        ? resultado.data.session
-                        : null;
+                var resultado = await client.auth.getSession();
+                var session = resultado && resultado.data ? resultado.data.session : null;
 
                 window.__sarielsAuthenticated = !!session;
 
-                window.supabaseClient.auth.onAuthStateChange(
-                    function (_event, sessionActual) {
-                        window.__sarielsAuthenticated = !!sessionActual;
-                    }
-                );
+                client.auth.onAuthStateChange(function (_event, sessionActual) {
+                    window.__sarielsAuthenticated = !!sessionActual;
+                });
 
-                return window.supabaseClient;
-
+                return client;
             } catch (error) {
-                console.error(
-                    '[Registro] Error inicializando Supabase:',
-                    error
-                );
+                console.error('[Registro] Error inicializando Supabase:', error);
                 window.__sarielsAuthenticated = false;
                 window.supabaseError = error;
                 return null;
             }
         }
 
-        window.supabaseReady = window.sarielsConTimeout(
-            inicializarSupabase(),
-            12000
-        ).catch(function (error) {
-            console.error(
-                '[Registro] Inicialización de Supabase agotó el tiempo:',
-                error
-            );
-            window.__sarielsAuthenticated = false;
-            window.supabaseError = error;
-            return null;
-        });
+        window.supabaseReady = inicializarSupabase();
     })();
 </script>
 
@@ -591,9 +503,6 @@ body {
 
 var RUTA_PERFIL = '/features/perfil/perfil.html';
 
-/* ========================================================
-   TOAST
-======================================================== */
 function showToast(msg, type, duration) {
     var el = document.getElementById('toast');
     if (!el) return;
@@ -608,9 +517,6 @@ function showToast(msg, type, duration) {
 }
 window.showToast = showToast;
 
-/* ========================================================
-   ERRORES EN PANTALLA
-======================================================== */
 function mostrarErrorEnPantalla(mensaje) {
     const banner = document.getElementById('errorBanner');
     const texto = document.getElementById('errorBannerText');
@@ -634,9 +540,6 @@ window.addEventListener('unhandledrejection', function (event) {
     );
 });
 
-/* ========================================================
-   TRADUCCIÓN DE ERRORES DE SUPABASE
-======================================================== */
 function traducirErrorSupabase(mensaje) {
     if (!mensaje || typeof mensaje !== 'string') {
         return 'Error desconocido';
@@ -666,23 +569,13 @@ function traducirErrorSupabase(mensaje) {
     return mensaje;
 }
 
-/* ========================================================
-   REDIRECCIÓN SI YA EXISTE SESIÓN
-======================================================== */
 async function redirigirSiYaHaySesion() {
     try {
-        const client = await window.getSupabaseClient();
+        const client = window.getSupabase ? window.getSupabase() : null;
         if (!client || !client.auth) return;
 
-        const resultado = await window.sarielsConTimeout(
-            client.auth.getSession(),
-            8000
-        );
-
-        const session =
-            resultado && resultado.data
-                ? resultado.data.session
-                : null;
+        const resultado = await client.auth.getSession();
+        const session = resultado && resultado.data ? resultado.data.session : null;
 
         if (session) {
             window.location.replace(RUTA_PERFIL);
@@ -692,9 +585,6 @@ async function redirigirSiYaHaySesion() {
     }
 }
 
-/* ========================================================
-   REGISTRO
-======================================================== */
 async function registrarDesdeRegistro() {
     const emailEl = document.getElementById('regEmail');
     const passEl = document.getElementById('regPassword');
@@ -724,14 +614,14 @@ async function registrarDesdeRegistro() {
     }
 
     try {
-        /*
-         * 1) Registro global de /app.js si está disponible.
-         */
+        const client = window.getSupabase();
+
+        if (!client) {
+            throw new Error('No hay conexión con el servidor. Recarga la página.');
+        }
+
         if (window.app && typeof window.app.registrarUsuario === 'function') {
-            await window.sarielsConTimeout(
-                window.app.registrarUsuario(email, password, name),
-                15000
-            );
+            await window.app.registrarUsuario(email, password, name);
 
             emailEl.value = '';
             passEl.value = '';
@@ -741,32 +631,18 @@ async function registrarDesdeRegistro() {
             return;
         }
 
-        /*
-         * 2) Fallback: registro directo con Supabase.
-         * ✅ Incluye emailRedirectTo apuntando al perfil,
-         * para que el enlace de confirmación del correo
-         * lleve al usuario directamente al perfil.
-         */
-        const client = await window.getSupabaseClient();
-        if (!client) {
-            throw new Error('No hay conexión con el servidor. Recarga la página.');
-        }
-
         const emailRedirectTo = window.location.origin + RUTA_PERFIL;
 
-        const resultado = await window.sarielsConTimeout(
-            client.auth.signUp({
-                email: email,
-                password: password,
-                options: {
-                    data: {
-                        nombre: name || email.split('@')[0]
-                    },
-                    emailRedirectTo: emailRedirectTo
-                }
-            }),
-            15000
-        );
+        const resultado = await client.auth.signUp({
+            email: email,
+            password: password,
+            options: {
+                data: {
+                    nombre: name || email.split('@')[0]
+                },
+                emailRedirectTo: emailRedirectTo
+            }
+        });
 
         const data = resultado ? resultado.data : null;
         const error = resultado ? resultado.error : null;
@@ -779,10 +655,6 @@ async function registrarDesdeRegistro() {
             throw new Error('No se pudo crear la cuenta');
         }
 
-        /*
-         * Si Supabase exige confirmación por correo,
-         * el usuario se crea pero todavía no hay sesión.
-         */
         if (!data.session) {
             showToast(
                 '✅ Cuenta creada. Revisa tu correo para confirmar.',
@@ -798,9 +670,6 @@ async function registrarDesdeRegistro() {
             return;
         }
 
-        /*
-         * Registro completado y sesión activa.
-         */
         emailEl.value = '';
         passEl.value = '';
         if (nameEl) nameEl.value = '';
@@ -824,9 +693,6 @@ async function registrarDesdeRegistro() {
 }
 window.registrarDesdeRegistro = registrarDesdeRegistro;
 
-/* ========================================================
-   DOM READY
-======================================================== */
 document.addEventListener('DOMContentLoaded', function () {
 
     redirigirSiYaHaySesion();
