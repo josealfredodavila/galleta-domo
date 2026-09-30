@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#05080f" />
+<title>◈ Mapa de Mayoristas · Sariel's</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+(function () {
+    'use strict';
+    var SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
+    var SUPABASE_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+    window.supabaseClient = window.supabaseClient || null;
+
+    function getSupabase() {
+        if (window.supabaseClient) return window.supabaseClient;
+        var SDK = window.SupabaseSDK || window.supabase;
+        if (!SDK || typeof SDK.createClient !== 'function') throw new Error('Supabase SDK no disponible.');
+        window.supabaseClient = SDK.createClient(SUPABASE_URL, SUPABASE_KEY, {
+            auth: { persistSession: true, autoRefreshToken: true }
+        });
+        return window.supabaseClient;
+    }
+    window.getSupabase = getSupabase;
+    window.supabaseReady = Promise.resolve(getSupabase());
+})();
+</script>
+
+<style>
+    :root {
+        --gold: #D4AF37; --gold-dark: #b8923a; --gold-light: #e8c84a;
+        --space: #05080f; --text-primary: #f0f4f8; --text-secondary: #c0d8e8;
+        --text-muted: #8aa8b8; --glass-bg: rgba(15, 45, 26, 0.85);
+        --glass-border: rgba(212, 175, 55, 0.2); --radius: 16px;
+        --radius-xl: 24px; --success: #00d68f; --danger: #ff3366;
+        --warning: #f7d44a; --cyan: #00e5ff; --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+        background: var(--space); color: var(--text-primary);
+        font-family: 'Inter', sans-serif; position: relative;
+    }
+
+    #mapa { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+
+    .header-flotante {
+        position: absolute; top: 0; left: 0; right: 0; z-index: 400;
+        padding: 12px 16px;
+        background: linear-gradient(to bottom, rgba(5, 8, 15, 0.95), transparent);
+        display: flex; justify-content: space-between; align-items: center;
+        gap: 12px; pointer-events: none;
+    }
+    .header-flotante > * { pointer-events: auto; }
+
+    .logo-flotante {
+        display: flex; align-items: center; gap: 10px;
+        text-decoration: none;
+        background: rgba(5, 8, 15, 0.9);
+        padding: 8px 16px; border-radius: 30px;
+        border: 1px solid var(--glass-border);
+        backdrop-filter: blur(10px);
+    }
+    .logo-hex { font-size: 1.4rem; color: var(--gold); font-family: 'Orbitron', monospace; }
+    .logo-text { font-family: 'Orbitron', monospace; font-size: 0.95rem; color: var(--text-primary); letter-spacing: 1.5px; }
+    .logo-text span { color: var(--gold); }
+    .logo-badge { font-size: 0.5rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; }
+
+    .btn-registrar-flotante {
+        display: inline-flex; align-items: center; gap: 6px;
+        background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+        color: var(--space); padding: 10px 20px; border-radius: 30px;
+        font-family: 'Orbitron', monospace; font-weight: 700; font-size: 0.7rem;
+        text-decoration: none; box-shadow: 0 4px 20px rgba(212, 175, 55, 0.3);
+        transition: var(--transition);
+    }
+    .btn-registrar-flotante:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(212, 175, 55, 0.5); }
+
+    .filtros-flotante {
+        position: absolute; top: 80px; left: 0; right: 0; z-index: 400;
+        padding: 0 16px; display: flex; gap: 8px; overflow-x: auto;
+        scrollbar-width: none; pointer-events: auto;
+    }
+    .filtros-flotante::-webkit-scrollbar { display: none; }
+    .chip-filtro {
+        flex-shrink: 0; background: rgba(5, 8, 15, 0.9);
+        border: 1px solid var(--glass-border);
+        color: var(--text-secondary); padding: 8px 16px;
+        border-radius: 20px; font-size: 0.72rem; cursor: pointer;
+        transition: var(--transition); white-space: nowrap;
+        backdrop-filter: blur(10px);
+        display: flex; align-items: center; gap: 6px;
+    }
+    .chip-filtro:hover { border-color: var(--gold); color: var(--gold); }
+    .chip-filtro.activo {
+        background: rgba(212, 175, 55, 0.2);
+        border-color: var(--gold); color: var(--gold);
+        font-weight: 600;
+    }
+
+    .contador-flotante {
+        position: absolute; bottom: 100px; left: 16px; z-index: 400;
+        background: rgba(5, 8, 15, 0.9);
+        border: 1px solid var(--glass-border);
+        color: var(--text-secondary); padding: 8px 14px;
+        border-radius: 20px; font-size: 0.7rem;
+        backdrop-filter: blur(10px);
+        font-family: 'Orbitron', monospace;
+    }
+    .contador-flotante strong { color: var(--gold); }
+
+    .btn-gps {
+        position: absolute; bottom: 30px; right: 16px; z-index: 400;
+        width: 48px; height: 48px; border-radius: 50%;
+        background: rgba(5, 8, 15, 0.95);
+        border: 1px solid var(--glass-border);
+        color: var(--gold); font-size: 1.2rem;
+        cursor: pointer; transition: var(--transition);
+        display: flex; align-items: center; justify-content: center;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+    .btn-gps:hover { border-color: var(--gold); background: rgba(212, 175, 55, 0.15); transform: scale(1.1); }
+    .btn-gps:disabled { opacity: 0.5; cursor: wait; }
+
+    .btn-volver {
+        position: absolute; bottom: 30px; left: 16px; z-index: 400;
+        display: inline-flex; align-items: center; gap: 6px;
+        background: rgba(5, 8, 15, 0.95);
+        border: 1px solid var(--glass-border);
+        color: var(--text-secondary); padding: 12px 20px;
+        border-radius: 30px; font-size: 0.72rem; text-decoration: none;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        transition: var(--transition);
+    }
+    .btn-volver:hover { border-color: var(--gold); color: var(--gold); }
+
+    .leaflet-container { background: #05080f; }
+    .leaflet-control-attribution { background: rgba(5, 8, 15, 0.8) !important; color: var(--text-muted) !important; font-size: 0.55rem !important; }
+    .leaflet-control-attribution a { color: var(--text-muted) !important; }
+    .leaflet-control-zoom a {
+        background: rgba(5, 8, 15, 0.9) !important;
+        color: var(--gold) !important;
+        border: 1px solid var(--glass-border) !important;
+    }
+    .leaflet-control-zoom a:hover { background: rgba(212, 175, 55, 0.15) !important; }
+
+    .marcador-mayorista {
+        background: none; border: none;
+    }
+    .marcador-pin {
+        width: 42px; height: 42px; border-radius: 50%;
+        background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.2rem;
+        border: 3px solid #fff;
+        box-shadow: 0 4px 16px rgba(212, 175, 55, 0.6);
+        transition: transform 0.2s ease;
+        cursor: pointer;
+    }
+    .marcador-pin:hover { transform: scale(1.2); }
+
+    .popup-tienda {
+        text-align: center; padding: 4px; min-width: 200px;
+        font-family: 'Inter', sans-serif;
+    }
+    .popup-tienda .popup-logo {
+        width: 60px; height: 60px; border-radius: 50%;
+        object-fit: cover; border: 2px solid var(--gold);
+        margin-bottom: 8px; background: var(--space);
+    }
+    .popup-tienda .popup-nombre {
+        font-weight: 700; color: var(--gold); font-size: 0.9rem;
+        margin-bottom: 4px;
+        font-family: 'Orbitron', monospace;
+    }
+    .popup-tienda .popup-cat {
+        font-size: 0.7rem; color: #666;
+        margin-bottom: 6px;
+    }
+    .popup-tienda .popup-rating {
+        font-size: 0.72rem; color: #D4AF37;
+        margin-bottom: 8px;
+    }
+    .popup-tienda .popup-btn {
+        display: inline-block; background: linear-gradient(135deg, #D4AF37, #b8923a);
+        color: #05080f; padding: 8px 20px; border-radius: 20px;
+        font-size: 0.72rem; font-weight: 700; text-decoration: none;
+        font-family: 'Orbitron', monospace;
+        transition: all 0.2s ease;
+    }
+    .popup-tienda .popup-btn:hover { transform: scale(1.05); }
+
+    .leaflet-popup-content-wrapper {
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+    .leaflet-popup-tip { background: #fff; }
+
+    .toast {
+        position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(80px);
+        background: rgba(5, 8, 15, 0.98); border: 1px solid var(--gold);
+        color: var(--gold); padding: 14px 28px; border-radius: 30px;
+        font-size: 0.85rem; z-index: 9999; opacity: 0; pointer-events: none;
+        max-width: 90vw; text-align: center; transition: all 0.4s;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.error { border-color: var(--danger); color: var(--danger); }
+    .toast.warning { border-color: var(--warning); color: var(--warning); }
+    .toast.success { border-color: var(--success); color: var(--success); }
+
+    @media (max-width: 480px) {
+        .logo-text { font-size: 0.8rem; }
+        .logo-badge { display: none; }
+        .btn-registrar-flotante { padding: 8px 14px; font-size: 0.62rem; }
+        .contador-flotante { display: none; }
+    }
+</style>
+</head>
+<body>
+
+<div class="header-flotante">
+    <a href="/features/domos/index.html" class="logo-flotante">
+        <span class="logo-hex">◈</span>
+        <span class="logo-text">Sariel<span>'s</span></span>
+        <span class="logo-badge">✦ MAYORISTAS</span>
+    </a>
+    <a href="/features/domos/registro-mayorista.html" class="btn-registrar-flotante">
+        ✦ Registrarme
+    </a>
+</div>
+
+<div class="filtros-flotante" id="filtros">
+    <button class="chip-filtro activo" data-categoria="" onclick="filtrarPorCategoria('', this)">
+        ◈ Todos
+    </button>
+    <button class="chip-filtro" data-categoria="1" onclick="filtrarPorCategoria(1, this)">
+        🌮 Comida
+    </button>
+    <button class="chip-filtro" data-categoria="2" onclick="filtrarPorCategoria(2, this)">
+        🥤 Bebidas
+    </button>
+    <button class="chip-filtro" data-categoria="3" onclick="filtrarPorCategoria(3, this)">
+        🍰 Postres
+    </button>
+    <button class="chip-filtro" data-categoria="4" onclick="filtrarPorCategoria(4, this)">
+        🛒 Abarrotes
+    </button>
+    <button class="chip-filtro" data-categoria="5" onclick="filtrarPorCategoria(5, this)">
+        🔧 Servicios
+    </button>
+    <button class="chip-filtro" data-categoria="6" onclick="filtrarPorCategoria(6, this)">
+        💻 Tecnología
+    </button>
+    <button class="chip-filtro" data-categoria="7" onclick="filtrarPorCategoria(7, this)">
+        👕 Ropa
+    </button>
+    <button class="chip-filtro" data-categoria="8" onclick="filtrarPorCategoria(8, this)">
+        🏠 Hogar
+    </button>
+</div>
+
+<div id="mapa"></div>
+
+<div class="contador-flotante" id="contador">
+    <strong>0</strong> mayoristas
+</div>
+
+<button class="btn-gps" id="btnGps" onclick="centrarEnMiUbicacion()" title="Centrar en mi ubicación">
+    📍
+</button>
+
+<a href="/features/domos/index.html" class="btn-volver">
+    ← Volver
+</a>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+'use strict';
+
+var mapa = null;
+var marcadores = [];
+var ubicacionUsuario = null;
+var marcadorUsuario = null;
+var categoriaFiltro = '';
+var tiendasCache = [];
+
+var CATEGORIAS = {
+    1: { nombre: 'Comida', emoji: '🌮' },
+    2: { nombre: 'Bebidas', emoji: '🥤' },
+    3: { nombre: 'Postres', emoji: '🍰' },
+    4: { nombre: 'Abarrotes', emoji: '🛒' },
+    5: { nombre: 'Servicios', emoji: '🔧' },
+    6: { nombre: 'Tecnología', emoji: '💻' },
+    7: { nombre: 'Ropa', emoji: '👕' },
+    8: { nombre: 'Hogar', emoji: '🏠' },
+    9: { nombre: 'Otros', emoji: '◈' }
+};
+
+function showToast(msg, type, duration) {
+    var el = document.getElementById('toast');
+    if (!el) return;
+    el.textContent = msg;
+    el.className = 'toast show' + (type ? ' ' + type : '');
+    clearTimeout(el._timer);
+    el._timer = setTimeout(function() { el.className = 'toast'; }, duration || 3500);
+}
+
+function initMapa() {
+    mapa = L.map('mapa', {
+        center: [23.6345, -102.5528],
+        zoom: 5,
+        zoomControl: true
+    });
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap · © CARTO',
+        subdomains: 'abcd',
+        maxZoom: 19
+    }).addTo(mapa);
+}
+
+function crearIconoMayorista(categoriaId) {
+    var cat = CATEGORIAS[categoriaId] || CATEGORIAS[9];
+    return L.divIcon({
+        className: 'marcador-mayorista',
+        html: '<div class="marcador-pin">' + cat.emoji + '</div>',
+        iconSize: [42, 42],
+        iconAnchor: [21, 21],
+        popupAnchor: [0, -21]
+    });
+}
+
+function crearPopupHTML(tienda) {
+    var cat = CATEGORIAS[tienda.categoria_id] || CATEGORIAS[9];
+    var rating = parseFloat(tienda.calificacion_promedio || 0);
+    var totalResenas = parseInt(tienda.total_resenas || 0);
+    var ratingHTML = totalResenas > 0
+        ? '★ ' + rating.toFixed(1) + ' (' + totalResenas + ')'
+        : 'Sin reseñas';
+
+    var logoUrl = tienda.logo_url || tienda.portada_url || '';
+
+    return '<div class="popup-tienda">' +
+        (logoUrl ? '<img src="' + logoUrl + '" class="popup-logo" alt="" onerror="this.style.display=\'none\';" />' : '') +
+        '<div class="popup-nombre">' + escapeHTML(tienda.nombre_negocio || 'Sin nombre') + '</div>' +
+        '<div class="popup-cat">' + cat.emoji + ' ' + cat.nombre + '</div>' +
+        '<div class="popup-rating">' + ratingHTML + '</div>' +
+        '<a href="/features/mercado/tienda.html?id=' + tienda.id + '" class="popup-btn">Ver tienda →</a>' +
+    '</div>';
+}
+
+function escapeHTML(texto) {
+    if (!texto) return '';
+    var div = document.createElement('div');
+    div.textContent = texto;
+    return div.innerHTML;
+}
+
+async function cargarMayoristas() {
+    try {
+        var client = await window.supabaseReady;
+        if (!client) {
+            showToast('❌ Error cargando mapa', 'error');
+            return;
+        }
+
+        var query = client
+            .from('mercado_tiendas')
+            .select('id, nombre_negocio, slug, categoria_id, logo_url, portada_url, latitud, longitud, calificacion_promedio, total_resenas, direccion')
+            .eq('es_mayorista', true)
+            .eq('estado_verificacion_mayorista', 'activo')
+            .eq('estado', 'activa')
+            .not('latitud', 'is', null)
+            .not('longitud', 'is', null);
+
+        if (categoriaFiltro) {
+            query = query.eq('categoria_id', parseInt(categoriaFiltro));
+        }
+
+        var result = await query;
+
+        if (result.error) throw result.error;
+
+        tiendasCache = result.data || [];
+        renderizarMarcadores();
+
+    } catch (e) {
+        console.error('Error:', e);
+        showToast('❌ ' + e.message, 'error');
+    }
+}
+
+function renderizarMarcadores() {
+    marcadores.forEach(function(m) { mapa.removeLayer(m); });
+    marcadores = [];
+
+    if (tiendasCache.length === 0) {
+        document.getElementById('contador').innerHTML = '<strong>0</strong> mayoristas';
+        return;
+    }
+
+    var bounds = [];
+
+    tiendasCache.forEach(function(tienda) {
+        var lat = parseFloat(tienda.latitud);
+        var lng = parseFloat(tienda.longitud);
+
+        if (!isFinite(lat) || !isFinite(lng)) return;
+
+        var icono = crearIconoMayorista(tienda.categoria_id);
+        var marker = L.marker([lat, lng], { icon: icono });
+
+        marker.bindPopup(crearPopupHTML(tienda), { maxWidth: 250 });
+        marker.addTo(mapa);
+
+        marcadores.push(marker);
+        bounds.push([lat, lng]);
+    });
+
+    if (bounds.length > 0) {
+        mapa.fitBounds(bounds, { padding: [60, 60], maxZoom: 14 });
+    }
+
+    document.getElementById('contador').innerHTML = '<strong>' + tiendasCache.length + '</strong> mayorista' + (tiendasCache.length === 1 ? '' : 's');
+}
+
+function filtrarPorCategoria(catId, btn) {
+    categoriaFiltro = catId;
+
+    document.querySelectorAll('.chip-filtro').forEach(function(c) { c.classList.remove('activo'); });
+    if (btn) btn.classList.add('activo');
+
+    cargarMayoristas();
+}
+
+function centrarEnMiUbicacion() {
+    if (!navigator.geolocation) {
+        showToast('⚠️ Tu navegador no soporta GPS', 'warning');
+        return;
+    }
+
+    var btn = document.getElementById('btnGps');
+    btn.disabled = true;
+    btn.textContent = '⏳';
+
+    navigator.geolocation.getCurrentPosition(
+        function(pos) {
+            var lat = pos.coords.latitude;
+            var lng = pos.coords.longitude;
+
+            ubicacionUsuario = { lat: lat, lng: lng };
+
+            if (marcadorUsuario) {
+                marcadorUsuario.setLatLng([lat, lng]);
+            } else {
+                var iconoUsuario = L.divIcon({
+                    className: '',
+                    html: '<div style="width: 20px; height: 20px; border-radius: 50%; background: #00e5ff; border: 4px solid #fff; box-shadow: 0 0 20px #00e5ff;"></div>',
+                    iconSize: [20, 20],
+                    iconAnchor: [10, 10]
+                });
+                marcadorUsuario = L.marker([lat, lng], { icon: iconoUsuario }).addTo(mapa);
+                marcadorUsuario.bindPopup('<b>Tu ubicación</b>');
+            }
+
+            mapa.setView([lat, lng], 14);
+            showToast('📍 Ubicación centrada', 'success');
+
+            btn.disabled = false;
+            btn.textContent = '📍';
+        },
+        function(err) {
+            var msg = '❌ No se pudo obtener ubicación';
+            if (err.code === 1) msg = '⚠️ Permiso denegado';
+            showToast(msg, 'error');
+            btn.disabled = false;
+            btn.textContent = '📍';
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+    );
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    initMapa();
+    cargarMayoristas();
+});
+</script>
+</body>
+</html>
