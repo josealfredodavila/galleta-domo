@@ -247,6 +247,11 @@ app.use(
                     "https://s.ytimg.com"
                 ],
 
+                // ⚠️ FIX: permite handlers inline (onclick=, onsubmit=, onchange=)
+                // Sin esto, helmet aplica script-src-attr 'none' por defecto
+                // y BLOQUEA todos los handlers inline del HTML.
+                scriptSrcAttr: ["'unsafe-inline'"],
+
                 styleSrc: [
                     "'self'",
                     "'unsafe-inline'",
