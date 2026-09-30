@@ -4,6 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <meta name="theme-color" content="#05080f" />
+<!-- ✅ FIX 1: Fuerza el header Referer para OpenStreetMap -->
+<meta name="referrer" content="strict-origin-when-cross-origin" />
 <title>◈ Registro Mayorista · Sariel's</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet" />
@@ -477,11 +479,13 @@ async function initSupabaseAndMap() {
         mapa = L.map('mapaSelector').setView([19.4326, -99.1332], 11);
 
         // ✅ OpenStreetMap estándar — gratis, sin API key
-        // El filtro oscuro se aplica vía CSS en .mapa-selector .leaflet-tile-pane
+        // ✅ FIX 2: Sin crossOrigin (causaba rechazos CORS)
+        // ✅ FIX 3: keepBuffer + updateWhenIdle (más tiles en memoria, menos rechazos)
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors',
             maxZoom: 19,
-            crossOrigin: true
+            keepBuffer: 4,
+            updateWhenIdle: false
         }).addTo(mapa);
 
         // Marcador arrastrable
