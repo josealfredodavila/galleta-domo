@@ -4,1138 +4,376 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>◈ Sariel's · Ecosistema WEB3</title>
-
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet" />
-
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-
-<script>
-    (function () {
-        'use strict';
-
-        var SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
-        var SUPABASE_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
-
-        window.__sarielsAuthenticated = null;
-        window.supabaseClient = window.supabaseClient || null;
-        window.__sarielsSupabaseSingleton = window.__sarielsSupabaseSingleton || null;
-        window.supabaseReady = null;
-        window.supabaseError = null;
-
-        function getSupabase() {
-            if (window.__sarielsSupabaseSingleton) return window.__sarielsSupabaseSingleton;
-            if (window.supabaseClient) {
-                window.__sarielsSupabaseSingleton = window.supabaseClient;
-                return window.supabaseClient;
-            }
-            var SDK = window.SupabaseSDK || window.supabase;
-            if (!SDK || typeof SDK.createClient !== 'function') {
-                throw new Error('Supabase SDK no disponible.');
-            }
-            var c = SDK.createClient(SUPABASE_URL, SUPABASE_KEY, {
-                auth: {
-                    persistSession: true,
-                    autoRefreshToken: true,
-                    detectSessionInUrl: true
-                }
-            });
-            window.supabaseClient = c;
-            window.__sarielsSupabaseSingleton = c;
-            return c;
-        }
-
-        window.getSupabase = getSupabase;
-
-        window.getSupabaseClient = function () {
-            return window.supabaseReady;
-        };
-
-        function esRutaInternaSegura(valor) {
-            if (typeof valor !== 'string') return false;
-            if (!valor.startsWith('/')) return false;
-            if (valor.startsWith('//')) return false;
-            if (valor.startsWith('/\\')) return false;
-            return true;
-        }
-
-        async function inicializarSupabase() {
-            try {
-                var client = getSupabase();
-
-                var resultado = await client.auth.getSession();
-                var session = resultado && resultado.data ? resultado.data.session : null;
-
-                window.__sarielsAuthenticated = !!session;
-
-                var urlParams = new URLSearchParams(window.location.search);
-                var returnTo = urlParams.get('returnTo');
-
-                if (returnTo && esRutaInternaSegura(returnTo)) {
-                    try { localStorage.setItem('wallet_returnTo', returnTo); } catch (_) {}
-                }
-
-                client.auth.onAuthStateChange(function (_event, sessionActual) {
-                    window.__sarielsAuthenticated = !!sessionActual;
-                });
-
-                return client;
-            } catch (error) {
-                console.error('[Index] Error inicializando Supabase:', error);
-                window.__sarielsAuthenticated = false;
-                window.supabaseError = error;
-                return null;
-            }
-        }
-
-        window.supabaseReady = inicializarSupabase();
-    })();
-</script>
-
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root {
-    --gold: #D4AF37;
-    --gold-dark: #b8923a;
-    --gold-light: #e8c84a;
-    --gold-bright: #f0d060;
-    --green-deep: #0F2D1A;
-    --green-mid: #1a4a2a;
-    --green-bright: #2a6a3a;
-    --space: #05080f;
-    --text-primary: #f0f4f8;
-    --text-secondary: #c0d8e8;
-    --text-muted: #8aa8b8;
-    --glass-bg: rgba(15, 45, 26, 0.55);
-    --glass-border: rgba(212, 175, 55, 0.2);
-    --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
-    --radius: 16px;
-    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --success: #00d68f;
-    --danger: #ff3366;
-    --warning: #f7d44a;
-    --live-red: #ff0044;
-}
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body {
-    background: var(--space);
-    color: var(--text-primary);
-    font-family: 'Inter', sans-serif;
-    min-height: 100vh;
-    background-image:
-        radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%),
-        radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
-}
-.app {
-    position: relative;
-    z-index: 1;
-    max-width: 1280px;
-    margin: 0 auto;
-    padding: 20px 24px 30px;
-}
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 0 16px;
-    border-bottom: 2px solid var(--glass-border);
-    background: rgba(5, 8, 15, 0.9);
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
-    border-radius: var(--radius) var(--radius) 0 0;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-.logo { display: flex; align-items: center; gap: 12px; }
-.logo-main { display: flex; align-items: center; gap: 12px; text-decoration: none; }
-.logo-hex {
-    font-size: 2rem;
-    color: var(--gold);
-    font-family: 'Orbitron', monospace;
-    text-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
-}
-.logo-text {
-    font-family: 'Orbitron', monospace;
-    font-size: 1.3rem;
-    color: var(--text-primary);
-    letter-spacing: 2px;
-}
-.logo-text span { color: var(--gold); }
-.logo-badge {
-    font-size: 0.5rem;
-    background: linear-gradient(135deg, var(--gold), var(--gold-light));
-    color: var(--space);
-    padding: 2px 12px;
-    border-radius: 20px;
-    font-weight: 700;
-    text-decoration: none;
-    cursor: pointer;
-    transition: var(--transition);
-}
-.logo-badge:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
-}
-.header-actions {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-.network-badge {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.65rem;
-    color: var(--gold);
-    background: rgba(212, 175, 55, 0.1);
-    padding: 4px 14px;
-    border-radius: 20px;
-    text-decoration: none;
-    cursor: pointer;
-    transition: var(--transition);
-}
-.network-badge:hover { background: rgba(212, 175, 55, 0.2); transform: scale(1.02); }
-.network-badge .dot {
-    display: inline-block;
-    width: 6px;
-    height: 6px;
-    background: var(--gold);
-    border-radius: 50%;
-}
-
-.login-wrap {
-    max-width: 420px;
-    margin: 40px auto 30px;
-    padding: 0 8px;
-}
-.login-card {
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius);
-    padding: 32px 26px 26px;
-    backdrop-filter: blur(14px);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(212, 175, 55, 0.08);
-}
-.login-logo {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 26px;
-}
-.login-logo .logo-hex {
-    font-size: 2.4rem;
-    color: var(--gold);
-    font-family: 'Orbitron', monospace;
-    text-shadow: 0 0 40px rgba(212, 175, 55, 0.45);
-}
-.login-logo .logo-text {
-    font-family: 'Orbitron', monospace;
-    font-size: 1.5rem;
-    color: var(--text-primary);
-    letter-spacing: 2px;
-}
-.login-logo .logo-text span { color: var(--gold); }
-
-.login-card input {
-    width: 100%;
-    padding: 14px 16px;
-    background: rgba(0, 0, 0, 0.35);
-    border: 1px solid var(--glass-border);
-    border-radius: 10px;
-    color: var(--text-primary);
-    font-size: 0.9rem;
-    margin-bottom: 12px;
-    font-family: 'Inter', sans-serif;
-    outline: none;
-    transition: var(--transition);
-}
-.login-card input::placeholder { color: var(--text-muted); }
-.login-card input:focus {
-    border-color: var(--gold);
-    background: rgba(0, 0, 0, 0.5);
-    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
-}
-.login-btn {
-    width: 100%;
-    padding: 14px;
-    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
-    color: var(--space);
-    border: none;
-    border-radius: 10px;
-    font-family: 'Inter', sans-serif;
-    font-weight: 700;
-    font-size: 0.95rem;
-    cursor: pointer;
-    transition: var(--transition);
-    margin-top: 6px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-}
-.login-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
-.login-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
-
-.login-olvide {
-    display: block;
-    text-align: center;
-    color: var(--text-secondary);
-    font-size: 0.8rem;
-    margin-top: 16px;
-    text-decoration: none;
-    transition: var(--transition);
-    background: none;
-    border: none;
-    cursor: pointer;
-    width: 100%;
-    font-family: 'Inter', sans-serif;
-}
-.login-olvide:hover { color: var(--gold); }
-
-.login-divider {
-    height: 1px;
-    background: linear-gradient(to right, transparent, var(--glass-border), transparent);
-    margin: 22px 0;
-}
-
-.crear-cuenta-btn {
-    display: block;
-    width: 100%;
-    padding: 13px;
-    background: transparent;
-    border: 2px solid var(--gold);
-    color: var(--gold);
-    border-radius: 10px;
-    font-family: 'Inter', sans-serif;
-    font-weight: 700;
-    font-size: 0.85rem;
-    text-align: center;
-    text-decoration: none;
-    transition: var(--transition);
-    cursor: pointer;
-}
-.crear-cuenta-btn:hover {
-    background: rgba(212, 175, 55, 0.12);
-    box-shadow: 0 0 30px rgba(212, 175, 55, 0.15);
-    transform: translateY(-2px);
-}
-
-.modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.75);
-    backdrop-filter: blur(8px);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-    padding: 20px;
-}
-.modal-overlay.active { display: flex; }
-.modal-box {
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius);
-    padding: 28px 24px;
-    max-width: 400px;
-    width: 100%;
-    backdrop-filter: blur(14px);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-    animation: modalIn 0.25s ease-out;
-}
-@keyframes modalIn {
-    from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 1; transform: scale(1); }
-}
-.modal-box h3 {
-    font-family: 'Orbitron', monospace;
-    color: var(--gold);
-    font-size: 1.05rem;
-    margin-bottom: 8px;
-    text-align: center;
-}
-.modal-box p {
-    color: var(--text-muted);
-    font-size: 0.8rem;
-    text-align: center;
-    margin-bottom: 18px;
-    line-height: 1.5;
-}
-.modal-box input {
-    width: 100%;
-    padding: 14px 16px;
-    background: rgba(0, 0, 0, 0.35);
-    border: 1px solid var(--glass-border);
-    border-radius: 10px;
-    color: var(--text-primary);
-    font-size: 0.9rem;
-    margin-bottom: 14px;
-    font-family: 'Inter', sans-serif;
-    outline: none;
-    transition: var(--transition);
-}
-.modal-box input:focus {
-    border-color: var(--gold);
-    background: rgba(0, 0, 0, 0.5);
-    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
-}
-.modal-box .modal-btn {
-    width: 100%;
-    padding: 13px;
-    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
-    color: var(--space);
-    border: none;
-    border-radius: 10px;
-    font-family: 'Inter', sans-serif;
-    font-weight: 700;
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: var(--transition);
-}
-.modal-box .modal-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
-.modal-box .modal-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
-.modal-box .modal-cerrar {
-    display: block;
-    width: 100%;
-    margin-top: 10px;
-    padding: 10px;
-    background: transparent;
-    border: 1px solid var(--text-muted);
-    color: var(--text-muted);
-    border-radius: 10px;
-    font-family: 'Inter', sans-serif;
-    font-weight: 600;
-    font-size: 0.8rem;
-    cursor: pointer;
-    transition: var(--transition);
-}
-.modal-box .modal-cerrar:hover { border-color: var(--gold); color: var(--gold); }
-
-.carrusel-wrapper {
-    width: 100%;
-    overflow: hidden;
-    position: relative;
-    padding: 20px 0;
-    margin-top: 30px;
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius);
-    mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
-    -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
-}
-.carrusel-titulo {
-    font-family: 'Orbitron', monospace;
-    color: var(--gold);
-    font-size: 0.9rem;
-    padding: 0 20px;
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-.carrusel-titulo .dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--live-red);
-    animation: pulse-live 1s infinite;
-}
-.carrusel-titulo .dot.static {
-    background: #8aa8b8;
-    animation: none;
-}
-@keyframes pulse-live { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-.carrusel-fila { display: flex; gap: 16px; width: max-content; margin-bottom: 16px; }
-.carrusel-fila:last-child { margin-bottom: 0; }
-@keyframes scroll-derecha { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-@keyframes scroll-izquierda { 0% { transform: translateX(-50%); } 100% { transform: translateX(0); } }
-.carrusel-fila.derecha { animation: scroll-derecha 60s linear infinite; }
-.carrusel-fila.izquierda { animation: scroll-izquierda 60s linear infinite; }
-.carrusel-wrapper:hover .carrusel-fila { animation-play-state: paused; }
-.carrusel-item {
-    width: 220px;
-    height: 130px;
-    border-radius: 12px;
-    overflow: hidden;
-    flex-shrink: 0;
-    border: 1px solid var(--glass-border);
-    position: relative;
-    cursor: pointer;
-    transition: var(--transition);
-    background: #000;
-}
-.carrusel-item:hover {
-    transform: scale(1.05);
-    border-color: var(--gold);
-    box-shadow: 0 8px 30px rgba(212, 175, 55, 0.3);
-    z-index: 10;
-}
-.carrusel-item img,
-.carrusel-item video { width: 100%; height: 100%; object-fit: cover; display: block; }
-.carrusel-item .live-tag {
-    position: absolute;
-    top: 8px;
-    left: 8px;
-    background: var(--live-red);
-    color: #fff;
-    font-size: 0.5rem;
-    font-weight: 700;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-family: 'Orbitron', monospace;
-    animation: pulse-live 1s infinite;
-    z-index: 2;
-}
-.carrusel-item .espectadores-tag {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: rgba(0, 0, 0, 0.75);
-    color: #fff;
-    font-size: 0.5rem;
-    font-weight: 600;
-    padding: 2px 8px;
-    border-radius: 10px;
-    z-index: 2;
-    backdrop-filter: blur(4px);
-}
-.carrusel-item .etiqueta {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: linear-gradient(to top, rgba(0,0,0,0.95), transparent);
-    color: #fff;
-    font-size: 0.65rem;
-    font-weight: 600;
-    padding: 25px 10px 8px;
-    font-family: 'Inter', sans-serif;
-    z-index: 2;
-}
-.carrusel-item .etiqueta .canal { color: var(--gold); font-weight: 700; display: block; margin-bottom: 2px; }
-.carrusel-item .etiqueta .titulo { color: #fff; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.carrusel-vacio { width: 100%; text-align: center; padding: 30px 20px; color: var(--text-muted); }
-.carrusel-vacio .icon { font-size: 2rem; display: block; margin-bottom: 10px; color: var(--gold); opacity: 0.5; }
-@media (max-width: 480px) {
-    .carrusel-item { width: 160px; height: 95px; }
-}
-
-.footer {
-    margin-top: 30px;
-    padding-top: 16px;
-    border-top: 1px solid var(--glass-border);
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.7rem;
-    color: var(--text-muted);
-    flex-wrap: wrap;
-    gap: 10px;
-}
-.footer .brand { color: var(--gold); font-weight: 600; }
-.footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
-.footer-links a { color: var(--text-muted); text-decoration: none; transition: var(--transition); }
-.footer-links a:hover { color: var(--gold); }
-.toast {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%) translateY(80px);
-    background: rgba(5,8,15,0.95);
-    border: 1px solid var(--glass-border);
-    padding: 12px 24px;
-    border-radius: 30px;
-    color: var(--text-primary);
-    font-size: 0.85rem;
-    box-shadow: 0 8px 40px rgba(0,0,0,0.5);
-    backdrop-filter: blur(12px);
-    transition: all 0.4s cubic-bezier(0.4,0,0.2,1);
-    z-index: 99999;
-    opacity: 0;
-    pointer-events: none;
-    max-width: 90vw;
-}
-.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-.toast.error { border-color: var(--danger); color: var(--danger); }
-.toast.warning { border-color: var(--warning); color: var(--warning); }
-.toast.success { border-color: var(--success); color: var(--success); }
-.nebula {
-    position: fixed;
-    border-radius: 50%;
-    filter: blur(120px);
-    pointer-events: none;
-    z-index: 0;
-    animation: nebula-drift 25s ease-in-out infinite alternate;
-}
-.nebula-1 { width: 700px; height: 700px; background: #0B3D2E; top: -15%; right: -15%; opacity: .10; }
-.nebula-2 { width: 600px; height: 600px; background: var(--gold); bottom: -15%; left: -15%; opacity: .05; animation-delay: -8s; }
-.nebula-3 { width: 500px; height: 500px; background: #00e5ff; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: .04; animation-delay: -15s; }
-@keyframes nebula-drift {
-    0% { transform: translate(0, 0) scale(1); }
-    100% { transform: translate(40px, -30px) scale(1.15); }
-}
-@media (max-width: 768px) {
-    .nebula { display: none; }
-    .header { flex-direction: column; align-items: flex-start; gap: 10px; }
-    .header-actions { width: 100%; flex-wrap: wrap; }
-    .login-card { padding: 26px 20px 22px; }
+:root { --gold:#D4AF37; --gold-dark:#b8923a; --gold-light:#e8c84a; --space:#05080f; --text-primary:#f0f4f8; --text-secondary:#c0d8e8; --text-muted:#8aa8b8; --glass-bg:rgba(15,45,26,0.55); --glass-border:rgba(212,175,55,0.2); --shadow-gold:0 8px 32px rgba(212,175,55,0.25); --radius:16px; --transition:all .3s cubic-bezier(.4,0,.2,1); --success:#00d68f; --danger:#ff3366; --warning:#f7d44a; --live-red:#ff0044; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--space); color:var(--text-primary); font-family:'Inter',sans-serif; min-height:100vh; background-image:radial-gradient(ellipse at 20% 50%,rgba(26,74,42,.4) 0%,transparent 60%),radial-gradient(ellipse at 80% 50%,rgba(212,175,55,.08) 0%,transparent 60%); }
+.app { position:relative; z-index:1; max-width:1280px; margin:0 auto; padding:20px 24px 30px; }
+.header { display:flex; justify-content:space-between; align-items:center; padding:12px 0 16px; border-bottom:2px solid var(--glass-border); background:rgba(5,8,15,.9); position:sticky; top:0; z-index:100; box-shadow:0 4px 30px rgba(0,0,0,.3); border-radius:var(--radius) var(--radius) 0 0; gap:12px; flex-wrap:wrap; }
+.logo { display:flex; align-items:center; gap:12px; }
+.logo-main { display:flex; align-items:center; gap:12px; text-decoration:none; }
+.logo-hex { font-size:2rem; color:var(--gold); font-family:'Orbitron',monospace; text-shadow:0 0 30px rgba(212,175,55,.3); }
+.logo-text { font-family:'Orbitron',monospace; font-size:1.3rem; color:var(--text-primary); letter-spacing:2px; }
+.logo-text span { color:var(--gold); }
+.logo-badge { font-size:.5rem; background:linear-gradient(135deg,var(--gold),var(--gold-light)); color:var(--space); padding:2px 12px; border-radius:20px; font-weight:700; text-decoration:none; }
+.header-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.network-badge { display:flex; align-items:center; gap:6px; font-size:.65rem; color:var(--gold); background:rgba(212,175,55,.1); padding:4px 14px; border-radius:20px; text-decoration:none; }
+.network-badge .dot { display:inline-block; width:6px; height:6px; background:var(--gold); border-radius:50%; }
+.login-wrap { max-width:420px; margin:40px auto 30px; padding:0 8px; }
+.login-card { background:var(--glass-bg); border:1px solid var(--glass-border); border-radius:var(--radius); padding:32px 26px 26px; backdrop-filter:blur(14px); box-shadow:0 20px 60px rgba(0,0,0,.35),inset 0 0 0 1px rgba(212,175,55,.08); }
+.login-logo { display:flex; justify-content:center; align-items:center; gap:10px; margin-bottom:26px; }
+.login-logo .logo-hex { font-size:2.4rem; }
+.login-logo .logo-text { font-size:1.5rem; }
+.login-card input { width:100%; padding:14px 16px; background:rgba(0,0,0,.35); border:1px solid var(--glass-border); border-radius:10px; color:var(--text-primary); font-size:.9rem; margin-bottom:12px; outline:none; }
+.login-card input:focus { border-color:var(--gold); background:rgba(0,0,0,.5); }
+.login-btn { width:100%; padding:14px; background:linear-gradient(135deg,var(--gold),var(--gold-dark)); color:var(--space); border:none; border-radius:10px; font-weight:700; font-size:.95rem; cursor:pointer; margin-top:6px; }
+.login-btn:disabled { opacity:.55; cursor:not-allowed; }
+.login-olvide { display:block; text-align:center; color:var(--text-secondary); font-size:.8rem; margin-top:16px; background:none; border:none; cursor:pointer; width:100%; font-family:'Inter',sans-serif; padding:8px; }
+.login-olvide:hover { color:var(--gold); }
+.login-divider { height:1px; background:linear-gradient(to right,transparent,var(--glass-border),transparent); margin:22px 0; }
+.crear-cuenta-btn { display:block; width:100%; padding:13px; background:transparent; border:2px solid var(--gold); color:var(--gold); border-radius:10px; font-weight:700; font-size:.85rem; text-align:center; text-decoration:none; cursor:pointer; }
+.crear-cuenta-btn:hover { background:rgba(212,175,55,.12); }
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.75); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); display:none; align-items:center; justify-content:center; z-index:9999; padding:20px; }
+.modal-overlay.active { display:flex !important; }
+.modal-box { background:var(--glass-bg); border:1px solid var(--glass-border); border-radius:var(--radius); padding:28px 24px; max-width:400px; width:100%; }
+.modal-box h3 { font-family:'Orbitron',monospace; color:var(--gold); font-size:1.05rem; margin-bottom:8px; text-align:center; }
+.modal-box p { color:var(--text-muted); font-size:.8rem; text-align:center; margin-bottom:18px; }
+.modal-box input { width:100%; padding:14px 16px; background:rgba(0,0,0,.35); border:1px solid var(--glass-border); border-radius:10px; color:var(--text-primary); font-size:.9rem; margin-bottom:14px; outline:none; }
+.modal-box .modal-btn { width:100%; padding:13px; background:linear-gradient(135deg,var(--gold),var(--gold-dark)); color:var(--space); border:none; border-radius:10px; font-weight:700; font-size:.9rem; cursor:pointer; }
+.modal-box .modal-btn:disabled { opacity:.55; }
+.modal-box .modal-cerrar { display:block; width:100%; margin-top:10px; padding:10px; background:transparent; border:1px solid var(--text-muted); color:var(--text-muted); border-radius:10px; font-weight:600; font-size:.8rem; cursor:pointer; }
+.modal-box .modal-cerrar:hover { border-color:var(--gold); color:var(--gold); }
+.carrusel-wrapper { width:100%; overflow:hidden; padding:20px 0; margin-top:30px; background:var(--glass-bg); border:1px solid var(--glass-border); border-radius:var(--radius); }
+.carrusel-titulo { font-family:'Orbitron',monospace; color:var(--gold); font-size:.9rem; padding:0 20px; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+.carrusel-titulo .dot { width:8px; height:8px; border-radius:50%; background:var(--live-red); animation:pulse-live 1s infinite; }
+.carrusel-titulo .dot.static { background:#8aa8b8; animation:none; }
+@keyframes pulse-live { 0%,100%{opacity:1} 50%{opacity:.4} }
+.carrusel-vacio { width:100%; text-align:center; padding:30px 20px; color:var(--text-muted); }
+.carrusel-vacio .icon { font-size:2rem; display:block; margin-bottom:10px; color:var(--gold); opacity:.5; }
+.footer { margin-top:30px; padding-top:16px; border-top:1px solid var(--glass-border); display:flex; justify-content:space-between; font-size:.7rem; color:var(--text-muted); flex-wrap:wrap; gap:10px; }
+.footer .brand { color:var(--gold); font-weight:600; }
+.footer-links { display:flex; gap:12px; flex-wrap:wrap; }
+.footer-links a { color:var(--text-muted); text-decoration:none; }
+.footer-links a:hover { color:var(--gold); }
+.toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(80px); background:rgba(5,8,15,.95); border:1px solid var(--glass-border); padding:12px 24px; border-radius:30px; color:var(--text-primary); font-size:.85rem; z-index:99999; opacity:0; pointer-events:none; max-width:90vw; transition:all .4s; text-align:center; }
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+.toast.error { border-color:var(--danger); color:var(--danger); }
+.toast.warning { border-color:var(--warning); color:var(--warning); }
+.toast.success { border-color:var(--success); color:var(--success); }
+.nebula { position:fixed; border-radius:50%; filter:blur(120px); pointer-events:none; z-index:0; }
+.nebula-1 { width:700px; height:700px; background:#0B3D2E; top:-15%; right:-15%; opacity:.10; }
+.nebula-2 { width:600px; height:600px; background:var(--gold); bottom:-15%; left:-15%; opacity:.05; }
+.nebula-3 { width:500px; height:500px; background:#00e5ff; top:50%; left:50%; transform:translate(-50%,-50%); opacity:.04; }
+@media (max-width:768px) {
+    .nebula { display:none; }
+    .header { flex-direction:column; align-items:flex-start; gap:10px; }
+    .header-actions { width:100%; flex-wrap:wrap; }
+    .login-card { padding:26px 20px 22px; }
 }
 </style>
 </head>
-
 <body>
-
 <div class="nebula nebula-1"></div>
 <div class="nebula nebula-2"></div>
 <div class="nebula nebula-3"></div>
-
 <div class="app">
-
 <header class="header">
     <div class="logo">
-        <a href="/" class="logo-main" aria-label="Ir al inicio">
-            <span class="logo-hex">◈</span>
-            <span class="logo-text">Sariel<span>'s</span></span>
-        </a>
-        <a href="/info/web3.html" class="logo-badge" target="_blank" rel="noopener noreferrer">
-            ✦ WEB3
-        </a>
+        <a href="/" class="logo-main"><span class="logo-hex">◈</span><span class="logo-text">Sariel<span>'s</span></span></a>
+        <a href="/info/web3.html" class="logo-badge" target="_blank" rel="noopener noreferrer">✦ WEB3</a>
     </div>
     <div class="header-actions">
-        <a href="https://polygon.technology/" target="_blank" rel="noopener noreferrer" class="network-badge">
-            <span class="dot"></span>
-            Polygon
-        </a>
+        <a href="https://polygon.technology/" target="_blank" rel="noopener noreferrer" class="network-badge"><span class="dot"></span> Polygon</a>
     </div>
 </header>
-
 <section class="login-wrap">
     <div class="login-card">
-
-        <div class="login-logo">
-            <span class="logo-hex">◈</span>
-            <span class="logo-text">Sariel<span>'s</span></span>
-        </div>
-
-        <form id="loginForm" onsubmit="event.preventDefault(); iniciarSesionDesdeIndex();">
-            <input
-                type="email"
-                id="loginEmail"
-                placeholder="Correo electrónico"
-                autocomplete="email"
-                inputmode="email"
-                required
-            />
-            <input
-                type="password"
-                id="loginPassword"
-                placeholder="Contraseña"
-                autocomplete="current-password"
-                required
-            />
-            <button type="submit" class="login-btn" id="loginBtn">
-                ◈ Iniciar sesión
-            </button>
+        <div class="login-logo"><span class="logo-hex">◈</span><span class="logo-text">Sariel<span>'s</span></span></div>
+        <form id="loginForm">
+            <input type="email" id="loginEmail" placeholder="Correo electrónico" autocomplete="email" inputmode="email" required />
+            <input type="password" id="loginPassword" placeholder="Contraseña" autocomplete="current-password" required />
+            <button type="submit" class="login-btn" id="loginBtn">◈ Iniciar sesión</button>
         </form>
-
-        <button type="button" class="login-olvide" onclick="abrirModalRecuperar()">
-            ¿Olvidaste tu contraseña?
-        </button>
-
+        <button type="button" class="login-olvide" id="btnOlvidePass">¿Olvidaste tu contraseña?</button>
         <div class="login-divider"></div>
-
-        <a href="/registro.html" class="crear-cuenta-btn">
-            Crear cuenta nueva
-        </a>
-
+        <a href="/registro.html" class="crear-cuenta-btn">Crear cuenta nueva</a>
     </div>
 </section>
-
 <div class="modal-overlay" id="modalRecuperar">
     <div class="modal-box">
         <h3>◈ Recuperar contraseña</h3>
-        <p>
-            Escribe tu correo y te enviaremos un enlace
-            para restablecer tu contraseña.
-        </p>
-        <form id="formRecuperar" onsubmit="event.preventDefault(); enviarRecuperacion();">
-            <input
-                type="email"
-                id="recuperarEmail"
-                placeholder="Tu correo electrónico"
-                autocomplete="email"
-                inputmode="email"
-                required
-            />
-            <button type="submit" class="modal-btn" id="recuperarBtn">
-                Enviar enlace
-            </button>
+        <p>Escribe tu correo y te enviaremos un enlace para restablecer tu contraseña.</p>
+        <form id="formRecuperar">
+            <input type="email" id="recuperarEmail" placeholder="Tu correo electrónico" autocomplete="email" inputmode="email" required />
+            <button type="submit" class="modal-btn" id="recuperarBtn">Enviar enlace</button>
         </form>
-        <button type="button" class="modal-cerrar" onclick="cerrarModalRecuperar()">
-            Cancelar
-        </button>
+        <button type="button" class="modal-cerrar" id="btnCerrarModal">Cancelar</button>
     </div>
 </div>
-
 <div class="carrusel-wrapper" id="carruselEnVivo">
-    <div class="carrusel-titulo">
-        <span class="dot"></span>
-        <span>EN VIVO AHORA</span>
-    </div>
-    <div class="carrusel-vacio">
-        <span class="icon">◈</span>
-        <p>Cargando lo que está al aire...</p>
-    </div>
+    <div class="carrusel-titulo"><span class="dot"></span><span>EN VIVO AHORA</span></div>
+    <div class="carrusel-vacio"><span class="icon">◈</span><p>Nadie al aire por ahora... sé el primero en transmitir</p></div>
 </div>
-
 <footer class="footer">
-    <span>
-        <span class="brand">◈ Sariel's</span>
-        · Sabor al Paladar · WEB3
-    </span>
+    <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
     <div class="footer-links">
         <a href="/terminos">◈ Términos</a>
         <a href="/privacidad">◈ Privacidad</a>
         <a href="/cookies">◈ Cookies</a>
         <a href="/eliminar-cuenta.html">◈ Eliminar cuenta</a>
         <a href="/live-terminos">◉ Live Términos</a>
-        <span style="opacity:0.3;">⚡ Polygon</span>
     </div>
 </footer>
-
 </div>
-
 <div class="toast" id="toast"></div>
-
-<div id="errorBanner" style="display:none; position:fixed; top:0; left:0; right:0; z-index:99999; background:#ff3366; color:#fff; padding:12px 16px; font-family:monospace; font-size:0.75rem; word-break:break-word; box-shadow:0 4px 20px rgba(0,0,0,0.4);">
-    <strong>⚠️ Error detectado:</strong>
-    <span id="errorBannerText"></span>
-    <button onclick="document.getElementById('errorBanner').style.display='none'" style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">
-        Cerrar
-    </button>
-</div>
-
 <script>
 'use strict';
 
+// ================================================================
+// CONFIGURACIÓN
+// ================================================================
+var SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
+var SUPABASE_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
 var RUTA_PERFIL = '/features/perfil/perfil.html';
 var RUTA_ACTUALIZAR_CONTRASENA = '/actualizar-contrasena.html';
 
+// ================================================================
+// SUPABASE CLIENT
+// ================================================================
+var supabaseClient = null;
+
+function initSupabase() {
+    if (supabaseClient) return supabaseClient;
+    try {
+        if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+            throw new Error('Supabase SDK no cargó');
+        }
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+            auth: {
+                persistSession: true,
+                autoRefreshToken: true,
+                detectSessionInUrl: true
+            }
+        });
+        window.__sarielsSupabaseSingleton = supabaseClient;
+        console.log('✅ Supabase client listo');
+        return supabaseClient;
+    } catch (e) {
+        console.error('❌ Error inicializando Supabase:', e);
+        return null;
+    }
+}
+
+// ================================================================
+// TOAST
+// ================================================================
 function showToast(msg, type, duration) {
     var el = document.getElementById('toast');
     if (!el) return;
-
     el.textContent = msg;
     el.className = 'toast show' + (type ? ' ' + type : '');
-
     clearTimeout(el._timer);
-    el._timer = setTimeout(function () {
-        el.className = 'toast';
-    }, duration || 3500);
+    el._timer = setTimeout(function () { el.className = 'toast'; }, duration || 3500);
 }
-window.showToast = showToast;
 
-function mostrarErrorEnPantalla(mensaje) {
-    const banner = document.getElementById('errorBanner');
-    const texto = document.getElementById('errorBannerText');
-    if (banner && texto) {
-        texto.textContent = mensaje;
-        banner.style.display = 'block';
+// ================================================================
+// MODAL RECUPERAR
+// ================================================================
+function abrirModalRecuperar() {
+    console.log('🔓 abrirModalRecuperar() llamado');
+    var modal = document.getElementById('modalRecuperar');
+    if (!modal) {
+        console.error('❌ modalRecuperar NO existe en el DOM');
+        alert('Error: modal no encontrado');
+        return;
     }
-}
-
-window.addEventListener('error', function (event) {
-    mostrarErrorEnPantalla(
-        (event.message || 'Error desconocido') +
-        ' — línea ' + event.lineno
-    );
-});
-
-window.addEventListener('unhandledrejection', function (event) {
-    mostrarErrorEnPantalla(
-        'Promesa rechazada: ' +
-        (event.reason?.message || event.reason)
-    );
-});
-
-async function redirigirSiYaHaySesion() {
-    try {
-        const client = window.getSupabase ? window.getSupabase() : null;
-        if (!client || !client.auth) return;
-
-        const resultado = await client.auth.getSession();
-        const session = resultado && resultado.data ? resultado.data.session : null;
-
-        if (session) {
-            window.location.replace(RUTA_PERFIL);
-        }
-    } catch (e) {
-        console.warn('[Index] No se pudo verificar sesión:', e);
+    var a = document.getElementById('loginEmail');
+    var b = document.getElementById('recuperarEmail');
+    if (a && b && a.value && a.value.trim()) {
+        b.value = a.value.trim();
     }
+    modal.classList.add('active');
+    console.log('✅ Modal abierto');
+    setTimeout(function () { if (b) b.focus(); }, 150);
 }
 
+function cerrarModalRecuperar() {
+    var modal = document.getElementById('modalRecuperar');
+    if (modal) modal.classList.remove('active');
+}
+
+// ================================================================
+// LOGIN
+// ================================================================
 async function iniciarSesionDesdeIndex() {
-    const emailEl = document.getElementById('loginEmail');
-    const passEl = document.getElementById('loginPassword');
-    const btn = document.getElementById('loginBtn');
-
+    var emailEl = document.getElementById('loginEmail');
+    var passEl = document.getElementById('loginPassword');
+    var btn = document.getElementById('loginBtn');
     if (!emailEl || !passEl) return;
 
-    const email = emailEl.value.trim();
-    const password = passEl.value;
+    var email = emailEl.value.trim();
+    var password = passEl.value;
 
     if (!email || !password) {
         showToast('⚠️ Completa correo y contraseña', 'warning');
         return;
     }
 
-    const originalText = btn ? btn.textContent : '◈ Iniciar sesión';
-    if (btn) {
-        btn.disabled = true;
-        btn.textContent = '⏳ Entrando...';
-    }
+    var orig = btn ? btn.textContent : '◈ Iniciar sesión';
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Entrando...'; }
 
     try {
-        const client = window.getSupabase();
+        var client = initSupabase();
+        if (!client) throw new Error('Supabase no disponible. Revisa tu conexión.');
 
-        if (!client || !client.auth) {
-            throw new Error('Supabase no está disponible. Recarga la página.');
-        }
-
-        const resultado = await client.auth.signInWithPassword({
-            email: email,
-            password: password
-        });
-
-        if (resultado && resultado.error) {
-            throw new Error(resultado.error.message || 'Credenciales inválidas');
-        }
-
-        if (!resultado || !resultado.data || !resultado.data.session) {
-            throw new Error('No se pudo iniciar sesión');
-        }
+        var r = await client.auth.signInWithPassword({ email: email, password: password });
+        if (r && r.error) throw new Error(r.error.message);
+        if (!r || !r.data || !r.data.session) throw new Error('No se pudo iniciar sesión');
 
         emailEl.value = '';
         passEl.value = '';
-
         window.location.replace(RUTA_PERFIL);
 
     } catch (e) {
-        console.error('[Login] Error:', e);
-
-        var mensaje = (e && e.message) ? e.message : 'Error desconocido';
-        var m = mensaje.toLowerCase();
-
-        if (m.includes('invalid login credentials')) {
-            mensaje = 'Correo o contraseña incorrectos.';
-        } else if (m.includes('email not confirmed')) {
-            mensaje = 'Debes confirmar tu correo antes de iniciar sesión.';
-        } else if (m.includes('network') || m.includes('failed to fetch')) {
-            mensaje = 'Sin conexión con el servidor. Revisa tu internet.';
-        } else if (m.includes('too many requests') || m.includes('rate limit')) {
-            mensaje = 'Demasiados intentos. Espera unos minutos.';
-        }
-
-        showToast('❌ ' + mensaje, 'error', 6000);
-
-        if (btn) {
-            btn.disabled = false;
-            btn.textContent = originalText;
-        }
+        var m = (e && e.message) ? e.message : 'Error';
+        var lm = m.toLowerCase();
+        if (lm.includes('invalid login credentials')) m = 'Correo o contraseña incorrectos.';
+        else if (lm.includes('email not confirmed')) m = 'Debes confirmar tu correo antes de iniciar sesión.';
+        else if (lm.includes('failed to fetch')) m = 'Sin conexión. Revisa tu internet.';
+        showToast('❌ ' + m, 'error', 6000);
+        if (btn) { btn.disabled = false; btn.textContent = orig; }
     }
 }
-window.iniciarSesionDesdeIndex = iniciarSesionDesdeIndex;
 
-function abrirModalRecuperar() {
-    const modal = document.getElementById('modalRecuperar');
-    if (!modal) return;
-
-    const emailEl = document.getElementById('loginEmail');
-    const recEl = document.getElementById('recuperarEmail');
-
-    if (emailEl && recEl && emailEl.value && emailEl.value.trim()) {
-        recEl.value = emailEl.value.trim();
-    }
-
-    modal.classList.add('active');
-
-    setTimeout(function () {
-        if (recEl) recEl.focus();
-    }, 100);
-}
-window.abrirModalRecuperar = abrirModalRecuperar;
-
-function cerrarModalRecuperar() {
-    const modal = document.getElementById('modalRecuperar');
-    if (modal) modal.classList.remove('active');
-}
-window.cerrarModalRecuperar = cerrarModalRecuperar;
-
-function emailValido(email) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
+// ================================================================
+// RECUPERAR CONTRASEÑA
+// ================================================================
 async function enviarRecuperacion() {
-    const emailEl = document.getElementById('recuperarEmail');
-    const btn = document.getElementById('recuperarBtn');
-
+    var emailEl = document.getElementById('recuperarEmail');
+    var btn = document.getElementById('recuperarBtn');
     if (!emailEl) return;
 
-    const email = emailEl.value.trim();
+    var email = emailEl.value.trim();
+    if (!email) { showToast('⚠️ Escribe tu correo', 'warning'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('⚠️ Correo inválido', 'warning'); return; }
 
-    if (!email) {
-        showToast('⚠️ Escribe tu correo', 'warning');
-        return;
-    }
-
-    if (!emailValido(email)) {
-        showToast('⚠️ El correo no tiene un formato válido', 'warning');
-        return;
-    }
-
-    const originalText = btn ? btn.textContent : 'Enviar enlace';
-    if (btn) {
-        btn.disabled = true;
-        btn.textContent = '⏳ Enviando...';
-    }
+    var orig = btn ? btn.textContent : 'Enviar enlace';
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Enviando...'; }
 
     try {
-        const client = window.getSupabase();
+        var client = initSupabase();
+        if (!client) throw new Error('Sin conexión');
 
-        if (!client) {
-            throw new Error('No hay conexión con el servidor');
-        }
+        var redirectTo = window.location.origin + RUTA_ACTUALIZAR_CONTRASENA;
+        var r = await client.auth.resetPasswordForEmail(email, { redirectTo });
+        if (r && r.error) throw new Error(r.error.message);
 
-        const redirectTo = window.location.origin + RUTA_ACTUALIZAR_CONTRASENA;
-
-        const resultado = await client.auth.resetPasswordForEmail(email, {
-            redirectTo: redirectTo
-        });
-
-        const error = resultado ? resultado.error : null;
-
-        if (error) {
-            throw new Error(error.message || 'No se pudo enviar el correo');
-        }
-
-        showToast(
-            '✅ Revisa tu correo. Te enviamos un enlace para restablecer tu contraseña.',
-            'success',
-            6000
-        );
-
+        showToast('✅ Revisa tu correo. Te enviamos un enlace.', 'success', 6000);
         cerrarModalRecuperar();
-
     } catch (e) {
-        console.error('[Recuperar] Error:', e);
-
-        var mensaje = (e && e.message) ? e.message : 'Error al enviar el correo';
-        showToast('❌ ' + mensaje, 'error', 5000);
-
+        showToast('❌ ' + (e && e.message ? e.message : 'Error'), 'error', 5000);
     } finally {
-        if (btn) {
-            btn.disabled = false;
-            btn.textContent = originalText;
-        }
+        if (btn) { btn.disabled = false; btn.textContent = orig; }
     }
 }
-window.enviarRecuperacion = enviarRecuperacion;
 
-async function cargarCarruselEnVivo() {
-    const wrapper = document.getElementById('carruselEnVivo');
-    if (!wrapper) return;
-
+// ================================================================
+// REDIRIGIR SI YA HAY SESIÓN
+// ================================================================
+async function redirigirSiYaHaySesion() {
     try {
-        const client = window.getSupabase();
-
-        if (!client || typeof client.from !== 'function') {
-            throw new Error('Cliente Supabase no disponible');
+        var client = initSupabase();
+        if (!client) return;
+        var r = await client.auth.getSession();
+        var s = r && r.data ? r.data.session : null;
+        if (s) {
+            console.log('✅ Sesión activa detectada, redirigiendo al perfil');
+            window.location.replace(RUTA_PERFIL);
         }
-
-        let { data: transmisiones, error } = await client
-            .from('transmisiones')
-            .select(`
-                id,
-                titulo,
-                room_name,
-                espectadores,
-                viewers_count,
-                streamer_id,
-                estado,
-                is_live,
-                grupo_id,
-                grupo:grupos_video!transmisiones_grupo_id_fkey (
-                    id,
-                    nombre,
-                    avatar_url,
-                    categoria_id,
-                    ciudad
-                )
-            `)
-            .eq('is_live', true)
-            .order('created_at', { ascending: false })
-            .limit(12);
-
-        if (error) {
-            const fallback = await client
-                .from('transmisiones')
-                .select('id, titulo, room_name, espectadores, viewers_count, streamer_id, estado, is_live, grupo_id')
-                .eq('is_live', true)
-                .order('created_at', { ascending: false })
-                .limit(12);
-
-            if (fallback.error) throw fallback.error;
-
-            transmisiones = (fallback.data || []).map(function (t) {
-                return Object.assign({}, t, { grupo: null });
-            });
-        }
-
-        const ESTADOS_VALIDOS = ['en_vivo', 'en vivo', 'live', 'EN_VIVO', 'EN VIVO', 'activo', 'activa'];
-
-        const activas = (transmisiones || []).filter(function (t) {
-            if (!t.is_live) return false;
-            if (!t.estado) return true;
-            return ESTADOS_VALIDOS.indexOf(t.estado) !== -1;
-        });
-
-        if (activas.length === 0) {
-            wrapper.innerHTML = `
-                <div class="carrusel-titulo">
-                    <span class="dot static"></span>
-                    <span>EN VIVO AHORA</span>
-                </div>
-                <div class="carrusel-vacio">
-                    <span class="icon">◈</span>
-                    <p>Nadie al aire por ahora... sé el primero en transmitir</p>
-                </div>
-            `;
-            return;
-        }
-
-        const escaparHTML = function (valor) {
-            return String(valor == null ? '' : valor)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#039;');
-        };
-
-        const generarItemHTML = function (t) {
-            const g = t.grupo || {};
-            const avatar = g.avatar_url || '';
-            const nombre = escaparHTML(g.nombre || 'Canal');
-            const titulo = escaparHTML(t.titulo || 'Transmisión en vivo');
-            const grupoId = encodeURIComponent(t.grupo_id || g.id || '');
-            const espectadores = Number(
-                t.espectadores != null
-                    ? t.espectadores
-                    : (t.viewers_count || 0)
-            );
-
-            const fondoHTML = avatar
-                ? `<img src="${escaparHTML(avatar)}" alt="${nombre}" loading="lazy" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; opacity:0.55;">`
-                : `<div style="position:absolute; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:3rem; color:var(--gold); opacity:0.3;">◈</div>`;
-
-            return `
-                <div class="carrusel-item" onclick="abrirCanalDesdeCarrusel('${grupoId}')">
-                    <div class="live-tag">🔴 EN VIVO</div>
-                    ${espectadores > 0 ? `<div class="espectadores-tag">👁 ${espectadores}</div>` : ''}
-                    ${fondoHTML}
-                    <div class="etiqueta">
-                        <span class="canal">◈ ${nombre}</span>
-                        <span class="titulo">${titulo}</span>
-                    </div>
-                </div>
-            `;
-        };
-
-        const mitad = Math.ceil(activas.length / 2);
-        const fila1 = activas.slice(0, mitad);
-        const fila2 = activas.slice(mitad);
-
-        const construirFila = function (items, clase) {
-            const itemsFila = items.length > 0 ? items : activas;
-            const itemsHTML = itemsFila.map(generarItemHTML).join('');
-            const itemsDuplicados = itemsFila.map(generarItemHTML).join('');
-            return `
-                <div class="carrusel-fila ${clase}">
-                    ${itemsHTML}
-                    ${itemsDuplicados}
-                </div>
-            `;
-        };
-
-        wrapper.innerHTML = `
-            <div class="carrusel-titulo">
-                <span class="dot"></span>
-                <span>EN VIVO AHORA</span>
-            </div>
-            ${construirFila(fila1, 'derecha')}
-            ${construirFila(fila2, 'izquierda')}
-        `;
-
     } catch (e) {
-        console.error('Error cargando carrusel en vivo:', e);
-        wrapper.innerHTML = `
-            <div class="carrusel-titulo">
-                <span class="dot static"></span>
-                <span>EN VIVO AHORA</span>
-            </div>
-            <div class="carrusel-vacio">
-                <span class="icon">◈</span>
-                <p>Error al cargar transmisiones. Reintentando...</p>
-            </div>
-        `;
+        console.error('Error verificando sesión:', e);
     }
 }
-window.cargarCarruselEnVivo = cargarCarruselEnVivo;
 
-function abrirCanalDesdeCarrusel(grupoId) {
-    if (!grupoId || grupoId === '') return;
-    window.location.href = '/features/grupos/grupos.html?grupo=' + grupoId;
-}
-window.abrirCanalDesdeCarrusel = abrirCanalDesdeCarrusel;
-
+// ================================================================
+// INICIALIZACIÓN - CONECTAR TODO
+// ================================================================
 document.addEventListener('DOMContentLoaded', function () {
+    console.log('🚀 Inicializando Sariel\'s...');
 
-    redirigirSiYaHaySesion();
+    // 1. Inicializar Supabase
+    initSupabase();
 
-    (async function cargarCuandoListo() {
-        const client = window.getSupabase ? window.getSupabase() : null;
-        if (!client) return;
-        if (window.__sarielsAuthenticated) return;
+    // 2. Conectar form de login
+    var loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            iniciarSesionDesdeIndex();
+        });
+        console.log('✅ Form login conectado');
+    }
 
-        await cargarCarruselEnVivo();
-        setInterval(cargarCarruselEnVivo, 30000);
-    })();
+    // 3. Conectar botón "olvidé contraseña"
+    var btnOlvide = document.getElementById('btnOlvidePass');
+    if (btnOlvide) {
+        btnOlvide.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            abrirModalRecuperar();
+        });
+        console.log('✅ Botón "olvidé contraseña" conectado');
+    } else {
+        console.error('❌ No se encontró btnOlvidePass');
+    }
 
-    const modal = document.getElementById('modalRecuperar');
+    // 4. Conectar form de recuperación
+    var formRecuperar = document.getElementById('formRecuperar');
+    if (formRecuperar) {
+        formRecuperar.addEventListener('submit', function (e) {
+            e.preventDefault();
+            enviarRecuperacion();
+        });
+        console.log('✅ Form recuperación conectado');
+    }
+
+    // 5. Conectar botón cerrar modal
+    var btnCerrar = document.getElementById('btnCerrarModal');
+    if (btnCerrar) {
+        btnCerrar.addEventListener('click', function (e) {
+            e.preventDefault();
+            cerrarModalRecuperar();
+        });
+    }
+
+    // 6. Cerrar modal al hacer click fuera
+    var modal = document.getElementById('modalRecuperar');
     if (modal) {
         modal.addEventListener('click', function (e) {
             if (e.target === modal) cerrarModalRecuperar();
         });
     }
 
+    // 7. Cerrar modal con Escape
     document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') cerrarModalRecuperar();
     });
 
-    setTimeout(async function () {
-        try {
-            if (typeof window.inicializarIdiomas === 'function') {
-                await window.inicializarIdiomas();
-            }
-        } catch (error) {
-            console.error('Error inicializando idiomas:', error);
-        }
-    }, 300);
+    // 8. Redirigir si ya hay sesión
+    redirigirSiYaHaySesion();
+
+    // 9. Exponer funciones globalmente por si algo las necesita
+    window.abrirModalRecuperar = abrirModalRecuperar;
+    window.cerrarModalRecuperar = cerrarModalRecuperar;
+    window.iniciarSesionDesdeIndex = iniciarSesionDesdeIndex;
+    window.enviarRecuperacion = enviarRecuperacion;
+    window.showToast = showToast;
+
+    console.log('✅ Todo conectado. Esperando interacción del usuario.');
 });
 </script>
-
 </body>
 </html>
