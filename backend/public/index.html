@@ -150,12 +150,12 @@ body { background:var(--space); color:var(--text-primary); font-family:'Inter',s
 <section class="login-wrap">
     <div class="login-card">
         <div class="login-logo"><span class="logo-hex">◈</span><span class="logo-text">Sariel<span>'s</span></span></div>
-        <form id="loginForm" onsubmit="event.preventDefault(); iniciarSesionDesdeIndex();">
+        <form id="loginForm">
             <input type="email" id="loginEmail" placeholder="Correo electrónico" autocomplete="email" inputmode="email" required />
             <input type="password" id="loginPassword" placeholder="Contraseña" autocomplete="current-password" required />
             <button type="submit" class="login-btn" id="loginBtn">◈ Iniciar sesión</button>
         </form>
-        <button type="button" class="login-olvide" onclick="abrirModalRecuperar()">¿Olvidaste tu contraseña?</button>
+        <button type="button" class="login-olvide" id="btnOlvidePass">¿Olvidaste tu contraseña?</button>
         <div class="login-divider"></div>
         <a href="/registro.html" class="crear-cuenta-btn">Crear cuenta nueva</a>
     </div>
@@ -164,11 +164,11 @@ body { background:var(--space); color:var(--text-primary); font-family:'Inter',s
     <div class="modal-box">
         <h3>◈ Recuperar contraseña</h3>
         <p>Escribe tu correo y te enviaremos un enlace para restablecer tu contraseña.</p>
-        <form id="formRecuperar" onsubmit="event.preventDefault(); enviarRecuperacion();">
+        <form id="formRecuperar">
             <input type="email" id="recuperarEmail" placeholder="Tu correo electrónico" autocomplete="email" inputmode="email" required />
             <button type="submit" class="modal-btn" id="recuperarBtn">Enviar enlace</button>
         </form>
-        <button type="button" class="modal-cerrar" onclick="cerrarModalRecuperar()">Cancelar</button>
+        <button type="button" class="modal-cerrar" id="btnCerrarModal">Cancelar</button>
     </div>
 </div>
 <div class="carrusel-wrapper" id="carruselEnVivo">
@@ -285,6 +285,40 @@ window.enviarRecuperacion = enviarRecuperacion;
 
 document.addEventListener('DOMContentLoaded', function () {
     redirigirSiYaHaySesion();
+
+    // Conexión de listeners (sin handlers inline)
+    var loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            iniciarSesionDesdeIndex();
+        });
+    }
+
+    var formRecuperar = document.getElementById('formRecuperar');
+    if (formRecuperar) {
+        formRecuperar.addEventListener('submit', function (e) {
+            e.preventDefault();
+            enviarRecuperacion();
+        });
+    }
+
+    var btnOlvidePass = document.getElementById('btnOlvidePass');
+    if (btnOlvidePass) {
+        btnOlvidePass.addEventListener('click', function (e) {
+            e.preventDefault();
+            abrirModalRecuperar();
+        });
+    }
+
+    var btnCerrarModal = document.getElementById('btnCerrarModal');
+    if (btnCerrarModal) {
+        btnCerrarModal.addEventListener('click', function (e) {
+            e.preventDefault();
+            cerrarModalRecuperar();
+        });
+    }
+
     const modal = document.getElementById('modalRecuperar');
     if (modal) modal.addEventListener('click', function (e) { if (e.target === modal) cerrarModalRecuperar(); });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') cerrarModalRecuperar(); });
