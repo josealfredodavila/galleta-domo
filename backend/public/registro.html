@@ -200,9 +200,6 @@ body {
     border-radius: 50%;
 }
 
-/* =========================================
-   REGISTRO LIMPIO (misma paleta Sariel's)
-========================================= */
 .register-wrap {
     max-width: 460px;
     margin: 40px auto 30px;
@@ -364,7 +361,7 @@ body {
     box-shadow: 0 8px 40px rgba(0,0,0,0.5);
     backdrop-filter: blur(12px);
     transition: all 0.4s cubic-bezier(0.4,0,0.2,1);
-    z-index: 999;
+    z-index: 99999;
     opacity: 0;
     pointer-events: none;
     max-width: 90vw;
@@ -431,29 +428,34 @@ body {
         <h1 class="register-title">Crear cuenta</h1>
         <p class="register-sub">Es rápido y gratis</p>
 
-        <input
-            type="email"
-            id="regEmail"
-            placeholder="Correo electrónico"
-            autocomplete="email"
-            inputmode="email"
-        />
-        <input
-            type="password"
-            id="regPassword"
-            placeholder="Contraseña (mínimo 6 caracteres)"
-            autocomplete="new-password"
-        />
-        <input
-            type="text"
-            id="regName"
-            placeholder="Nombre (opcional)"
-            autocomplete="name"
-        />
+        <form id="registerForm" onsubmit="event.preventDefault(); registrarDesdeRegistro();">
+            <input
+                type="email"
+                id="regEmail"
+                placeholder="Correo electrónico"
+                autocomplete="email"
+                inputmode="email"
+                required
+            />
+            <input
+                type="password"
+                id="regPassword"
+                placeholder="Contraseña (mínimo 6 caracteres)"
+                autocomplete="new-password"
+                minlength="6"
+                required
+            />
+            <input
+                type="text"
+                id="regName"
+                placeholder="Nombre (opcional)"
+                autocomplete="name"
+            />
 
-        <button type="button" class="register-btn" id="registerBtn" onclick="registrarDesdeRegistro()">
-            ⟡ Crear cuenta
-        </button>
+            <button type="submit" class="register-btn" id="registerBtn">
+                ⟡ Crear cuenta
+            </button>
+        </form>
 
         <p class="terminos-text">
             Al registrarte aceptas nuestros
@@ -496,9 +498,23 @@ body {
     </button>
 </div>
 
-<script src="/app.js"></script>
-
 <script>
+'use strict';
+
+var RUTA_PERFIL = '/features/perfil/perfil.html';
+
+function showToast(msg, type, duration) {
+    var el = document.getElementById('toast');
+    if (!el) return;
+    el.textContent = msg;
+    el.className = 'toast show' + (type ? ' ' + type : '');
+    clearTimeout(el._timer);
+    el._timer = setTimeout(function () {
+        el.className = 'toast';
+    }, duration || 3500);
+}
+window.showToast = showToast;
+
 function mostrarErrorEnPantalla(mensaje) {
     const banner = document.getElementById('errorBanner');
     const texto = document.getElementById('errorBannerText');
@@ -507,26 +523,19 @@ function mostrarErrorEnPantalla(mensaje) {
         banner.style.display = 'block';
     }
 }
-
 window.addEventListener('error', function (event) {
     mostrarErrorEnPantalla((event.message || 'Error desconocido') + ' — línea ' + event.lineno);
 });
-
 window.addEventListener('unhandledrejection', function (event) {
     mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason?.message || event.reason));
 });
 
-const RUTA_PERFIL = '/features/perfil/perfil.html';
-
-/* Si ya hay sesión → directo al perfil */
 async function redirigirSiYaHaySesion() {
     try {
         const client = await window.getSupabaseClient();
         if (!client) return;
-
         const resultado = await client.auth.getSession();
         const session = resultado && resultado.data ? resultado.data.session : null;
-
         if (session) {
             window.location.replace(RUTA_PERFIL);
         }
@@ -535,7 +544,6 @@ async function redirigirSiYaHaySesion() {
     }
 }
 
-/* Registro */
 async function registrarDesdeRegistro() {
     const emailEl = document.getElementById('regEmail');
     const passEl = document.getElementById('regPassword');
@@ -549,23 +557,12 @@ async function registrarDesdeRegistro() {
     const name = nameEl ? nameEl.value.trim() : '';
 
     if (!email || !password) {
-        if (window.showToast) {
-            window.showToast('⚠️ Completa correo y contraseña', 'warning');
-        }
+        showToast('⚠️ Completa correo y contraseña', 'warning');
         return;
     }
 
     if (password.length < 6) {
-        if (window.showToast) {
-            window.showToast('⚠️ La contraseña debe tener al menos 6 caracteres', 'warning');
-        }
-        return;
-    }
-
-    if (!window.app || typeof window.app.registrarUsuario !== 'function') {
-        if (window.showToast) {
-            window.showToast('⚠️ Sistema de registro no disponible. Recarga la página.', 'error');
-        }
+        showToast('⚠️ La contraseña debe tener al menos 6 caracteres', 'warning');
         return;
     }
 
@@ -573,20 +570,59 @@ async function registrarDesdeRegistro() {
     if (btn) { btn.disabled = true; btn.textContent = '⏳ Creando cuenta...'; }
 
     try {
-        await window.app.registrarUsuario(email, password, name);
+        // 1) Intentar con el registro global de /app.js si está disponible
+        if (window.app && typeof window.app.registrarUsuario === 'function') {
+            await window.app.registrarUsuario(email, password, name);
+            emailEl.value = '';
+            passEl.value = '';
+            if (nameEl) nameEl.value = '';
+            window.location.replace(RUTA_PERFIL);
+            return;
+        }
 
-        if (emailEl) emailEl.value = '';
-        if (passEl) passEl.value = '';
+        // 2) Fallback: registro directo con Supabase
+        const client = await window.getSupabaseClient();
+        if (!client) {
+            throw new Error('No hay conexión con el servidor. Recarga la página.');
+        }
+
+        const { data, error } = await client.auth.signUp({
+            email: email,
+            password: password,
+            options: {
+                data: {
+                    nombre: name || email.split('@')[0]
+                }
+            }
+        });
+
+        if (error) {
+            throw new Error(error.message || 'No se pudo crear la cuenta');
+        }
+
+        if (!data || !data.user) {
+            throw new Error('No se pudo crear la cuenta');
+        }
+
+        // Si Supabase pide confirmación por email, no hay sesión todavía
+        if (!data.session) {
+            showToast('✅ Cuenta creada. Revisa tu correo para confirmar.', 'success', 6000);
+            if (btn) { btn.disabled = false; btn.textContent = originalText; }
+            return;
+        }
+
+        emailEl.value = '';
+        passEl.value = '';
         if (nameEl) nameEl.value = '';
 
         window.location.replace(RUTA_PERFIL);
+
     } catch (e) {
-        console.error('Error en registrarDesdeRegistro:', e);
+        console.error('[Registro] Error:', e);
+        showToast('❌ ' + (e && e.message ? e.message : 'Error al crear la cuenta'), 'error', 5000);
         if (btn) { btn.disabled = false; btn.textContent = originalText; }
     }
 }
-
-window.mostrarErrorEnPantalla = mostrarErrorEnPantalla;
 window.registrarDesdeRegistro = registrarDesdeRegistro;
 
 document.addEventListener('DOMContentLoaded', function () {
