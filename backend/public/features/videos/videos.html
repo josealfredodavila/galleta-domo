@@ -20,7 +20,6 @@
             --success: #00d68f; --danger: #ff3366; --warning: #f7d44a; --cyan: #00e5ff;
             --purple: #a855f7; --pink: #ec4899;
             --bg-card: rgba(15, 45, 26, 0.4); --bg-dark: rgba(5, 8, 15, 0.8); --border-color: rgba(212, 175, 55, 0.08);
-            --line-black: #000000; --line-black-soft: rgba(0, 0, 0, 0.85); --line-black-mid: rgba(0, 0, 0, 0.65); --line-black-light: rgba(0, 0, 0, 0.45);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -89,10 +88,8 @@
         .marketing-ad-container { display: none; margin-bottom: 20px; background: linear-gradient(155deg, rgba(15, 45, 26, 0.55), rgba(8, 15, 26, 0.75)); border: 1px solid rgba(212, 175, 55, 0.25); border-radius: var(--radius-xl); overflow: hidden; backdrop-filter: blur(14px); position: relative; box-shadow: 0 10px 40px rgba(212, 175, 55, 0.08); animation: adFadeIn 0.5s ease; }
         .marketing-ad-container.visible { display: block; }
         @keyframes adFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .marketing-ad-container::before { content: ''; position: absolute; top: 0; left: 20%; width: 60%; height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); opacity: 0.5; }
         .marketing-ad-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; border-bottom: 1px solid rgba(212, 175, 55, 0.1); }
         .marketing-ad-label { font-family: 'Orbitron', monospace; font-size: 0.55rem; color: var(--gold); letter-spacing: 3px; text-transform: uppercase; display: flex; align-items: center; gap: 8px; opacity: 0.85; }
-        .marketing-ad-label::before { content: '◈'; color: var(--gold); font-size: 0.7rem; }
         .marketing-ad-close { background: transparent; border: none; color: var(--text-muted); font-size: 1.1rem; cursor: pointer; line-height: 1; padding: 4px 8px; transition: var(--transition); }
         .marketing-ad-close:hover { color: var(--gold); }
         .marketing-ad-body { display: flex; gap: 14px; padding: 14px 16px 16px; align-items: flex-start; }
@@ -185,7 +182,6 @@
             padding: 10px 16px;
             flex-shrink: 0;
             border-bottom: 1px solid rgba(212, 175, 55, 0.08);
-            transition: opacity 0.2s ease, max-height 0.2s ease;
             max-height: 200px;
             overflow: hidden;
         }
@@ -445,8 +441,6 @@
             --space: #f5f7fa; --bg-card: rgba(255,255,255,0.95); --bg-dark: rgba(240,244,248,0.9);
             --glass-bg: rgba(255,255,255,0.85); --glass-border: rgba(0,0,0,0.1);
             --text-primary: #1a2332; --text-secondary: #4a5568; --text-muted: #718096;
-            --line-black: rgba(0,0,0,0.15); --line-black-soft: rgba(0,0,0,0.12);
-            --line-black-mid: rgba(0,0,0,0.18); --line-black-light: rgba(0,0,0,0.1);
         }
         html.tema-dia body, html[data-tema="dia"] body {
             background: #f5f7fa !important;
@@ -474,8 +468,7 @@
             .modal-video .btn-control { width: 34px; height: 34px; }
         }
     </style>
-</head>
-<body>
+</head><body>
 
     <div class="nebula nebula-1"></div>
     <div class="nebula nebula-2"></div>
@@ -673,677 +666,652 @@
         <strong>◈ Error detectado:</strong>
         <span id="errorBannerText"></span>
         <button onclick="document.getElementById('errorBanner').style.display='none'" style="float:right;background:none;border:1px solid #fff;color:#fff;border-radius:6px;padding:2px 10px;cursor:pointer;">Cerrar</button>
-    </div>
+    </div><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/features/shared/js/idiomas.js"></script>
+<script src="/app.js"></script>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script>window.__SB_SDK_VIDEOS = window.supabase;</script>
-    <script src="/features/shared/js/idiomas.js"></script>
-    <script src="/app.js"></script>
+<script>
+    // ================================================================
+    // VIDEOS - v10 (cliente Supabase propio, sin depender de window.supabase)
+    // ================================================================
 
-    <script>
-        // ================================================================
-        // VIDEOS - v9 (auditoría quirúrgica aplicada)
-        // Cambios respecto a v8:
-        //  - FIX 1: Capturar window.supabase antes de /app.js (__SB_SDK_VIDEOS)
-        //  - FIX 2: escapeHTML() ahora escapa & < > " '
-        //  - FIX 3: safeAttr() solo acepta https://
-        //  - FIX 4: guarda del SDK valida typeof .from === 'function'
-        // ================================================================
-
-        // ✅ FIX 1: restaurar window.supabase si /app.js lo pisó
-        window.supabase = window.__SB_SDK_VIDEOS || window.supabase;
-
-        // ✅ FIX 4: guarda robusta del SDK
-        if (!window.supabase || typeof window.supabase.from !== 'function') {
-            console.error('❌ Supabase SDK no está bien cargado. window.supabase.from =', typeof window.supabase?.from);
+    // ✅ CLAVE: crear nuestro PROPIO cliente Supabase aquí mismo.
+    // No dependemos de window.supabase porque /app.js lo pisa.
+    var sbVideos = null;
+    (function crearClienteVideos() {
+        try {
+            var SDK = window.supabase;
+            if (!SDK || typeof SDK.createClient !== 'function') {
+                console.error('[Videos] SDK de Supabase no disponible al crear cliente.');
+                document.addEventListener('DOMContentLoaded', function() {
+                    var banner = document.getElementById('errorBanner');
+                    var texto = document.getElementById('errorBannerText');
+                    if (banner && texto) {
+                        texto.textContent = 'SDK de Supabase no disponible (window.supabase.createClient no es función).';
+                        banner.style.display = 'block';
+                    }
+                });
+                return;
+            }
+            sbVideos = SDK.createClient(
+                'https://zultnlogdoajehbswlih.supabase.co',
+                'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu',
+                {
+                    auth: {
+                        persistSession: true,
+                        autoRefreshToken: true,
+                        detectSessionInUrl: true
+                    }
+                }
+            );
+            console.log('[Videos] ✅ Cliente Supabase propio creado correctamente');
+        } catch (e) {
+            console.error('[Videos] Error creando cliente Supabase:', e);
             document.addEventListener('DOMContentLoaded', function() {
                 var banner = document.getElementById('errorBanner');
                 var texto = document.getElementById('errorBannerText');
                 if (banner && texto) {
-                    texto.textContent = 'Supabase SDK no está bien cargado (window.supabase.from no es función). ¿/app.js lo está sobrescribiendo?';
+                    texto.textContent = 'Error creando cliente Supabase: ' + (e.message || e);
                     banner.style.display = 'block';
                 }
             });
         }
+    })();
 
-        function tr(clave, fallback) {
-            if (typeof window.tConFallback === 'function') return window.tConFallback(clave, fallback);
-            return fallback !== undefined ? fallback : clave;
-        }
-        function aplicarI18N(raiz) {
-            try { if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(raiz || document); } catch (e) {}
-        }
+    function tr(clave, fallback) {
+        if (typeof window.tConFallback === 'function') return window.tConFallback(clave, fallback);
+        return fallback !== undefined ? fallback : clave;
+    }
+    function aplicarI18N(raiz) {
+        try { if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(raiz || document); } catch (e) {}
+    }
 
-        var sessionUser = null;
-        var videoActual = null;
-        var videosPublicados = [];
-        var likeCache = new Map();
-        var likeCacheOrden = [];
+    var sessionUser = null;
+    var videoActual = null;
+    var videosPublicados = [];
+    var likeCache = new Map();
+    var likeCacheOrden = [];
 
-        var anuncioActualVideo = null;
-        var adRefreshIntervalVideo = null;
-        var adSessionIdVideo = null;
-        var adVistaTimerVideo = null;
-        var adCerradoVideo = false;
+    var anuncioActualVideo = null;
+    var adRefreshIntervalVideo = null;
+    var adSessionIdVideo = null;
+    var adVistaTimerVideo = null;
+    var adCerradoVideo = false;
 
-        var observerVideos = null;
-        var observerCarga = null;
-        var videoPausadoManualmente = null;
+    var observerVideos = null;
+    var observerCarga = null;
+    var videoPausadoManualmente = null;
 
-        var pollingVideoInterval = null;
-        var videoEnProcesamiento = null;
+    var pollingVideoInterval = null;
+    var videoEnProcesamiento = null;
 
-        var estadoMute = false;
-        var cambiandoVideo = false;
-        var ocultarControlesTimeout = null;
-        var arrastrandoProgreso = false;
+    var estadoMute = false;
+    var cambiandoVideo = false;
+    var ocultarControlesTimeout = null;
+    var arrastrandoProgreso = false;
 
-        var autoAvanzados = 0;
-        var MAX_AUTOAVANCE = 3;
+    var autoAvanzados = 0;
+    var MAX_AUTOAVANCE = 3;
 
-        try { estadoMute = localStorage.getItem('videos_muted') === '1'; } catch (e) { estadoMute = false; }
+    try { estadoMute = localStorage.getItem('videos_muted') === '1'; } catch (e) { estadoMute = false; }
 
-        function showToast(msg, type, duration) {
-            var t = document.getElementById('toast');
-            if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); }
-            t.textContent = msg;
-            t.className = 'toast show';
-            if (type === 'error') t.classList.add('error');
-            else if (type === 'warning') t.classList.add('warning');
-            else if (type === 'success') t.classList.add('success');
-            else t.classList.remove('error', 'warning', 'success');
-            var dur = (typeof duration === 'number' && duration > 0) ? duration : 3500;
-            clearTimeout(t._timeout);
-            t._timeout = setTimeout(function() { t.classList.remove('show'); }, dur);
-        }
+    function showToast(msg, type, duration) {
+        var t = document.getElementById('toast');
+        if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); }
+        t.textContent = msg;
+        t.className = 'toast show';
+        if (type === 'error') t.classList.add('error');
+        else if (type === 'warning') t.classList.add('warning');
+        else if (type === 'success') t.classList.add('success');
+        else t.classList.remove('error', 'warning', 'success');
+        var dur = (typeof duration === 'number' && duration > 0) ? duration : 3500;
+        clearTimeout(t._timeout);
+        t._timeout = setTimeout(function() { t.classList.remove('show'); }, dur);
+    }
 
-        function mostrarToastSiguiente(texto) {
-            var el = document.getElementById('toastSiguiente');
-            if (!el) return;
-            el.textContent = texto;
-            el.classList.add('visible');
-            setTimeout(function() { el.classList.remove('visible'); }, 1200);
-        }
+    function mostrarToastSiguiente(texto) {
+        var el = document.getElementById('toastSiguiente');
+        if (!el) return;
+        el.textContent = texto;
+        el.classList.add('visible');
+        setTimeout(function() { el.classList.remove('visible'); }, 1200);
+    }
 
-        async function getSession() {
-            try {
-                if (!window.supabase || typeof window.supabase.auth?.getSession !== 'function') return null;
-                var r = await window.supabase.auth.getSession();
-                return r.data.session;
-            } catch (e) { return null; }
-        }
+    async function getSession() {
+        try {
+            if (!sbVideos) return null;
+            var r = await sbVideos.auth.getSession();
+            return r.data.session;
+        } catch (e) { return null; }
+    }
 
-        // ✅ FIX 2: escapeHTML ahora escapa & < > " '
-        function escapeHTML(texto) {
-            if (texto === null || texto === undefined) return '';
-            return String(texto)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;');
-        }
-        function esURLValida(url) {
-            if (!url || typeof url !== 'string') return false;
-            try { var u = new URL(url); return u.protocol === 'http:' || u.protocol === 'https:'; }
-            catch (e) { return false; }
-        }
-        // ✅ FIX 3: safeAttr solo acepta https://
-        function safeAttr(url) {
-            if (!url || typeof url !== 'string') return '#';
-            if (!url.startsWith('https://')) return '#';
-            return url;
-        }
-        function extraerPathStorage(url) {
-            if (!url || typeof url !== 'string') return null;
-            try {
-                var marcador = '/storage/v1/object/public/videos/';
-                var idx = url.indexOf(marcador);
-                if (idx === -1) return null;
-                var path = url.substring(idx + marcador.length);
-                var q = path.indexOf('?');
-                if (q !== -1) path = path.substring(0, q);
-                return path || null;
-            } catch (e) { return null; }
-        }
-        function formatearTiempo(seg) {
-            if (!seg || !isFinite(seg)) return '0:00';
-            var m = Math.floor(seg / 60);
-            var s = Math.floor(seg % 60);
-            if (s < 10) s = '0' + s;
-            return m + ':' + s;
-        }
+    function escapeHTML(texto) {
+        if (texto === null || texto === undefined) return '';
+        return String(texto)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+    function esURLValida(url) {
+        if (!url || typeof url !== 'string') return false;
+        try { var u = new URL(url); return u.protocol === 'http:' || u.protocol === 'https:'; }
+        catch (e) { return false; }
+    }
+    function safeAttr(url) {
+        if (!url || typeof url !== 'string') return '#';
+        if (!url.startsWith('https://')) return '#';
+        return url;
+    }
+    function extraerPathStorage(url) {
+        if (!url || typeof url !== 'string') return null;
+        try {
+            var marcador = '/storage/v1/object/public/videos/';
+            var idx = url.indexOf(marcador);
+            if (idx === -1) return null;
+            var path = url.substring(idx + marcador.length);
+            var q = path.indexOf('?');
+            if (q !== -1) path = path.substring(0, q);
+            return path || null;
+        } catch (e) { return null; }
+    }
+    function formatearTiempo(seg) {
+        if (!seg || !isFinite(seg)) return '0:00';
+        var m = Math.floor(seg / 60);
+        var s = Math.floor(seg % 60);
+        if (s < 10) s = '0' + s;
+        return m + ':' + s;
+    }
 
-        async function cargarUsuarioActual() {
-            try {
-                var session = await getSession();
-                if (!session) { sessionUser = null; return null; }
-                sessionUser = session.user;
-                var result = await window.supabase.from('usuarios').select('nombre, handle, tokens').eq('id', session.user.id).single();
-                if (!result.error && result.data) {
-                    var badgeCant = document.getElementById('tokenBadgeCantidad');
-                    if (badgeCant) badgeCant.textContent = result.data.tokens || 0;
-                }
-                return result.data || null;
-            } catch (e) { return null; }
-        }
-
-        // ===== ANUNCIOS =====
-        function getOrCreateAdSessionIdVideo() {
-            if (adSessionIdVideo) return adSessionIdVideo;
-            adSessionIdVideo = 'ads_video_' + Date.now() + '_' + Math.random().toString(36).substring(2, 10);
-            return adSessionIdVideo;
-        }
-        function cerrarAnuncioVideo() {
-            adCerradoVideo = true;
-            var container = document.getElementById('marketingAdContainer');
-            if (container) container.classList.remove('visible');
-            anuncioActualVideo = null;
-        }
-        async function cargarAnuncioVideo(videoId) {
-            if (!videoId || adCerradoVideo) return;
+    async function cargarUsuarioActual() {
+        try {
             var session = await getSession();
-            if (!session) return;
-            try {
-                var response = await fetch('/api/marketing/get-ad', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
-                    body: JSON.stringify({ target_tipo: 'video', target_id: String(videoId), session_id: getOrCreateAdSessionIdVideo() })
-                });
-                if (!response.ok) return;
-                var data = await response.json();
-                if (!data.success || !data.ad) {
-                    var container = document.getElementById('marketingAdContainer');
-                    if (container) container.classList.remove('visible');
-                    return;
-                }
-                mostrarAnuncioVideo(data.ad);
-                anuncioActualVideo = data.ad;
-                if (adVistaTimerVideo) clearTimeout(adVistaTimerVideo);
-                adVistaTimerVideo = setTimeout(function() { registrarVistaAnuncioVideo(videoId); }, 3000);
-            } catch (error) {}
-        }
-        function mostrarAnuncioVideo(ad) {
-            var container = document.getElementById('marketingAdContainer');
-            if (!container) return;
-            if (anuncioActualVideo && anuncioActualVideo.id === ad.id && container.classList.contains('visible')) return;
-
-            var media = document.getElementById('marketingAdMediaVideo');
-            var title = document.getElementById('marketingAdTitleVideo');
-            var desc = document.getElementById('marketingAdDescVideo');
-            var cta = document.getElementById('marketingAdCtaVideo');
-            if (!media || !title || !desc || !cta) return;
-            var imgUrlValida = esURLValida(ad.imagen_url);
-            var videoUrlValida = esURLValida(ad.video_url);
-            while (media.firstChild) media.removeChild(media.firstChild);
-            if (imgUrlValida) {
-                var img = document.createElement('img');
-                img.src = ad.imagen_url; img.alt = ad.titulo || 'Anuncio'; img.loading = 'lazy';
-                img.onerror = function() {
-                    while (media.firstChild) media.removeChild(media.firstChild);
-                    var span = document.createElement('span'); span.textContent = '◈'; media.appendChild(span);
-                };
-                media.appendChild(img);
-            } else if (videoUrlValida) {
-                var vid = document.createElement('video');
-                vid.src = ad.video_url; vid.muted = true; vid.autoplay = true; vid.loop = true; vid.playsInline = true;
-                vid.preload = 'metadata';
-                media.appendChild(vid);
-            } else {
-                var span2 = document.createElement('span'); span2.textContent = '◈'; media.appendChild(span2);
+            if (!session) { sessionUser = null; return null; }
+            sessionUser = session.user;
+            var result = await sbVideos.from('usuarios').select('nombre, handle, tokens').eq('id', session.user.id).single();
+            if (!result.error && result.data) {
+                var badgeCant = document.getElementById('tokenBadgeCantidad');
+                if (badgeCant) badgeCant.textContent = result.data.tokens || 0;
             }
-            title.textContent = ad.titulo || tr('videos_patrocinado', 'Patrocinado');
-            desc.textContent = ad.descripcion || '';
-            cta.textContent = ad.cta_texto || tr('videos_ver_mas', 'Ver más');
-            desc.style.display = ad.descripcion ? 'block' : 'none';
-            container.classList.add('visible');
-        }
-        async function registrarVistaAnuncioVideo(videoId) {
-            if (!anuncioActualVideo) return;
-            var session = await getSession();
-            if (!session) return;
-            try {
-                await fetch('/api/marketing/register-event', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
-                    body: JSON.stringify({
-                        ad_id: anuncioActualVideo.id, campaign_id: anuncioActualVideo.campaign_id,
-                        target_tipo: 'video', target_id: String(videoId),
-                        evento: 'vista', session_id: getOrCreateAdSessionIdVideo()
-                    })
-                });
-            } catch (error) {}
-        }
-        async function registrarClicAnuncioVideo() {
-            if (!anuncioActualVideo) return;
-            var session = await getSession();
-            if (!session) return;
-            try {
-                var videoId = videoActual ? videoActual.id : null;
-                await fetch('/api/marketing/register-event', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
-                    body: JSON.stringify({
-                        ad_id: anuncioActualVideo.id, campaign_id: anuncioActualVideo.campaign_id,
-                        target_tipo: 'video', target_id: String(videoId),
-                        evento: 'clic', session_id: getOrCreateAdSessionIdVideo()
-                    })
-                });
-                if (esURLValida(anuncioActualVideo.video_url)) window.open(anuncioActualVideo.video_url, '_blank', 'noopener,noreferrer');
-                else if (esURLValida(anuncioActualVideo.imagen_url)) window.open(anuncioActualVideo.imagen_url, '_blank', 'noopener,noreferrer');
-            } catch (error) {}
-        }
+            return result.data || null;
+        } catch (e) { return null; }
+    }
 
-        // ================================================================
-        // ✅ CARGAR VIDEOS (con fallback sin JOIN + error real visible)
-        // ================================================================
-        async function cargarVideos() {
-            var container = document.getElementById('videosContainer');
-            try {
-                var result = await window.supabase
+    // ===== ANUNCIOS =====
+    function getOrCreateAdSessionIdVideo() {
+        if (adSessionIdVideo) return adSessionIdVideo;
+        adSessionIdVideo = 'ads_video_' + Date.now() + '_' + Math.random().toString(36).substring(2, 10);
+        return adSessionIdVideo;
+    }
+    function cerrarAnuncioVideo() {
+        adCerradoVideo = true;
+        var container = document.getElementById('marketingAdContainer');
+        if (container) container.classList.remove('visible');
+        anuncioActualVideo = null;
+    }
+    async function cargarAnuncioVideo(videoId) {
+        if (!videoId || adCerradoVideo) return;
+        var session = await getSession();
+        if (!session) return;
+        try {
+            var response = await fetch('/api/marketing/get-ad', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+                body: JSON.stringify({ target_tipo: 'video', target_id: String(videoId), session_id: getOrCreateAdSessionIdVideo() })
+            });
+            if (!response.ok) return;
+            var data = await response.json();
+            if (!data.success || !data.ad) {
+                var container = document.getElementById('marketingAdContainer');
+                if (container) container.classList.remove('visible');
+                return;
+            }
+            mostrarAnuncioVideo(data.ad);
+            anuncioActualVideo = data.ad;
+            if (adVistaTimerVideo) clearTimeout(adVistaTimerVideo);
+            adVistaTimerVideo = setTimeout(function() { registrarVistaAnuncioVideo(videoId); }, 3000);
+        } catch (error) {}
+    }
+    function mostrarAnuncioVideo(ad) {
+        var container = document.getElementById('marketingAdContainer');
+        if (!container) return;
+        if (anuncioActualVideo && anuncioActualVideo.id === ad.id && container.classList.contains('visible')) return;
+
+        var media = document.getElementById('marketingAdMediaVideo');
+        var title = document.getElementById('marketingAdTitleVideo');
+        var desc = document.getElementById('marketingAdDescVideo');
+        var cta = document.getElementById('marketingAdCtaVideo');
+        if (!media || !title || !desc || !cta) return;
+        var imgUrlValida = esURLValida(ad.imagen_url);
+        var videoUrlValida = esURLValida(ad.video_url);
+        while (media.firstChild) media.removeChild(media.firstChild);
+        if (imgUrlValida) {
+            var img = document.createElement('img');
+            img.src = ad.imagen_url; img.alt = ad.titulo || 'Anuncio'; img.loading = 'lazy';
+            img.onerror = function() {
+                while (media.firstChild) media.removeChild(media.firstChild);
+                var span = document.createElement('span'); span.textContent = '◈'; media.appendChild(span);
+            };
+            media.appendChild(img);
+        } else if (videoUrlValida) {
+            var vid = document.createElement('video');
+            vid.src = ad.video_url; vid.muted = true; vid.autoplay = true; vid.loop = true; vid.playsInline = true;
+            vid.preload = 'metadata';
+            media.appendChild(vid);
+        } else {
+            var span2 = document.createElement('span'); span2.textContent = '◈'; media.appendChild(span2);
+        }
+        title.textContent = ad.titulo || tr('videos_patrocinado', 'Patrocinado');
+        desc.textContent = ad.descripcion || '';
+        cta.textContent = ad.cta_texto || tr('videos_ver_mas', 'Ver más');
+        desc.style.display = ad.descripcion ? 'block' : 'none';
+        container.classList.add('visible');
+    }
+    async function registrarVistaAnuncioVideo(videoId) {
+        if (!anuncioActualVideo) return;
+        var session = await getSession();
+        if (!session) return;
+        try {
+            await fetch('/api/marketing/register-event', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+                body: JSON.stringify({
+                    ad_id: anuncioActualVideo.id, campaign_id: anuncioActualVideo.campaign_id,
+                    target_tipo: 'video', target_id: String(videoId),
+                    evento: 'vista', session_id: getOrCreateAdSessionIdVideo()
+                })
+            });
+        } catch (error) {}
+    }
+    async function registrarClicAnuncioVideo() {
+        if (!anuncioActualVideo) return;
+        var session = await getSession();
+        if (!session) return;
+        try {
+            var videoId = videoActual ? videoActual.id : null;
+            await fetch('/api/marketing/register-event', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+                body: JSON.stringify({
+                    ad_id: anuncioActualVideo.id, campaign_id: anuncioActualVideo.campaign_id,
+                    target_tipo: 'video', target_id: String(videoId),
+                    evento: 'clic', session_id: getOrCreateAdSessionIdVideo()
+                })
+            });
+            if (esURLValida(anuncioActualVideo.video_url)) window.open(anuncioActualVideo.video_url, '_blank', 'noopener,noreferrer');
+            else if (esURLValida(anuncioActualVideo.imagen_url)) window.open(anuncioActualVideo.imagen_url, '_blank', 'noopener,noreferrer');
+        } catch (error) {}
+    }
+
+    // ================================================================
+    // ✅ CARGAR VIDEOS
+    // ================================================================
+    async function cargarVideos() {
+        var container = document.getElementById('videosContainer');
+        try {
+            if (!sbVideos) throw new Error('Cliente Supabase no disponible (sbVideos=null)');
+
+            var result = await sbVideos
+                .from('videos')
+                .select('id, titulo, descripcion, url_video, url_miniatura, usuario_id, reproducciones, likes, comentarios, created_at, usuarios:usuario_id (id, nombre, handle, avatar_url)')
+                .eq('estado', 'publicado')
+                .order('created_at', { ascending: false })
+                .limit(20);
+
+            var data = null;
+
+            if (result.error) {
+                console.warn('[Videos] Falló con JOIN, reintentando sin JOIN...', result.error);
+                var result2 = await sbVideos
                     .from('videos')
-                    .select('id, titulo, descripcion, url_video, url_miniatura, usuario_id, reproducciones, likes, comentarios, created_at, usuarios:usuario_id (id, nombre, handle, avatar_url)')
+                    .select('id, titulo, descripcion, url_video, url_miniatura, usuario_id, reproducciones, likes, comentarios, created_at')
                     .eq('estado', 'publicado')
                     .order('created_at', { ascending: false })
                     .limit(20);
 
-                var data = null;
-
-                if (result.error) {
-                    console.warn('[Videos] Falló con JOIN, reintentando sin JOIN...', result.error);
-                    var result2 = await window.supabase
-                        .from('videos')
-                        .select('id, titulo, descripcion, url_video, url_miniatura, usuario_id, reproducciones, likes, comentarios, created_at')
-                        .eq('estado', 'publicado')
-                        .order('created_at', { ascending: false })
-                        .limit(20);
-
-                    if (result2.error) {
-                        throw new Error(
-                            'Con JOIN: ' + (result.error.message || JSON.stringify(result.error)) +
-                            ' || Sin JOIN: ' + (result2.error.message || JSON.stringify(result2.error))
-                        );
-                    }
-                    data = result2.data || [];
-                    console.warn('[Videos] Cargó sin JOIN. Los videos no mostrarán nombre del autor.');
-                } else {
-                    data = result.data || [];
+                if (result2.error) {
+                    throw new Error(
+                        'Con JOIN: ' + (result.error.message || JSON.stringify(result.error)) +
+                        ' || Sin JOIN: ' + (result2.error.message || JSON.stringify(result2.error))
+                    );
                 }
-
-                videosPublicados = data.slice();
-
-                if (data.length === 0) {
-                    container.className = '';
-                    container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3 data-clave="videos_empty">' + escapeHTML(tr('videos_empty', 'No hay videos aún')) + '</h3><p data-clave="videos_empty_desc">' + escapeHTML(tr('videos_empty_desc', "Sé el primero en compartir un video en Sariel's.")) + '</p></div>';
-                    return;
-                }
-
-                var vistasT = escapeHTML(tr('videos_vistas', 'vistas'));
-                var likesT = escapeHTML(tr('videos_likes', 'likes'));
-                var comentariosT = escapeHTML(tr('videos_comentarios_count', 'comentarios'));
-                var verCompletoT = escapeHTML(tr('videos_ver_completo', '⛶ Ver completo'));
-                var usuarioT = escapeHTML(tr('videos_autor_desconocido', 'Usuario'));
-                var eliminarT = escapeHTML(tr('videos_eliminar', 'Eliminar'));
-
-                container.className = 'videos-grid';
-                container.innerHTML = data.map(function(v) {
-                    var autor = v.usuarios || {};
-                    var vistas = v.reproducciones || 0;
-                    var likes = v.likes || 0;
-                    var videoUrl = safeAttr(v.url_video);
-                    var posterUrl = v.url_miniatura ? safeAttr(v.url_miniatura) : '';
-                    var esMio = !!(sessionUser && v.usuario_id === sessionUser.id);
-                    var botonEliminar = esMio
-                        ? '<button class="btn-eliminar-card" onclick="event.stopPropagation(); eliminarMiVideo(\'' + v.id + '\')" title="' + eliminarT + '" aria-label="' + eliminarT + '">🗑️</button>'
-                        : '';
-                    return '<div class="video-card" data-video-id="' + v.id + '">' +
-                        botonEliminar +
-                        '<div class="thumbnail">' +
-                        '<video preload="none" muted playsinline data-src="' + videoUrl + '" poster="' + posterUrl + '"></video>' +
-                        '<div class="play-btn" onclick="togglePlayCard(event, \'' + v.id + '\')">▶</div>' +
-                        '</div>' +
-                        '<div class="info">' +
-                        '<div class="titulo">' + escapeHTML(v.titulo) + '</div>' +
-                        '<div class="autor">' + escapeHTML(autor.nombre || usuarioT) + ' · ' + new Date(v.created_at).toLocaleDateString() + '</div>' +
-                        '<div class="descripcion">' + escapeHTML((v.descripcion || '').substring(0, 100)) + '</div>' +
-                        '<div class="stats">' +
-                        '<span onclick="event.stopPropagation(); abrirVideo(\'' + v.id + '\')" style="cursor:pointer;">◈ ' + vistas + ' ' + vistasT + '</span>' +
-                        '<span onclick="event.stopPropagation(); abrirVideo(\'' + v.id + '\')" style="cursor:pointer;">◈ ' + likes + ' ' + likesT + '</span>' +
-                        '<span onclick="event.stopPropagation(); abrirVideo(\'' + v.id + '\')" style="cursor:pointer;">◈ ' + (v.comentarios || 0) + ' ' + comentariosT + '</span>' +
-                        '<span onclick="event.stopPropagation(); abrirVideo(\'' + v.id + '\')" style="cursor:pointer;margin-left:auto;color:var(--gold);">' + verCompletoT + '</span>' +
-                        '</div></div></div>';
-                }).join('');
-
-                activarAutoplayScroll();
-            } catch (e) {
-                var errMsg = (e && e.message) ? e.message : String(e);
-                console.error('[Videos] ❌ Error al cargar:', e);
-
-                var banner = document.getElementById('errorBanner');
-                var bannerText = document.getElementById('errorBannerText');
-                if (banner && bannerText) {
-                    bannerText.textContent = 'cargarVideos: ' + errMsg;
-                    banner.style.display = 'block';
-                }
-
-                showToast('Error al cargar videos: ' + errMsg, 'error', 6000);
-
-                if (container) {
-                    container.className = '';
-                    container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>Error al cargar videos</h3><p style="font-size:0.7rem;color:var(--danger);word-break:break-word;">' + escapeHTML(errMsg) + '</p></div>';
-                }
+                data = result2.data || [];
+            } else {
+                data = result.data || [];
             }
-        }
 
-        // ================================================================
-        // ✅ DIAGNÓSTICO MANUAL (llamar desde consola: diagnosticarVideos())
-        // ================================================================
-        async function diagnosticarVideos() {
-            console.log('%c◈ Diagnóstico de Videos', 'color:#D4AF37;font-weight:bold;font-size:14px;');
-            var resultados = [];
+            videosPublicados = data.slice();
 
-            resultados.push('0. window.supabase.from es: ' + typeof window.supabase?.from);
-            resultados.push('0b. window.__SB_SDK_VIDEOS.from es: ' + typeof window.__SB_SDK_VIDEOS?.from);
+            if (data.length === 0) {
+                container.className = '';
+                container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3 data-clave="videos_empty">' + escapeHTML(tr('videos_empty', 'No hay videos aún')) + '</h3><p data-clave="videos_empty_desc">' + escapeHTML(tr('videos_empty_desc', "Sé el primero en compartir un video en Sariel's.")) + '</p></div>';
+                return;
+            }
 
-            try {
-                var r1 = await window.supabase.from('videos').select('id, titulo, estado').limit(3);
-                resultados.push('1. SELECT videos simple: ' + (r1.error ? '❌ ' + r1.error.message : '✅ ' + (r1.data?.length || 0) + ' filas'));
-            } catch (e) { resultados.push('1. SELECT videos simple: ❌ ' + e.message); }
+            var vistasT = escapeHTML(tr('videos_vistas', 'vistas'));
+            var likesT = escapeHTML(tr('videos_likes', 'likes'));
+            var comentariosT = escapeHTML(tr('videos_comentarios_count', 'comentarios'));
+            var verCompletoT = escapeHTML(tr('videos_ver_completo', '⛶ Ver completo'));
+            var usuarioT = escapeHTML(tr('videos_autor_desconocido', 'Usuario'));
+            var eliminarT = escapeHTML(tr('videos_eliminar', 'Eliminar'));
 
-            try {
-                var r2 = await window.supabase.from('videos').select('id, titulo, usuarios:usuario_id (id, nombre, handle)').limit(3);
-                resultados.push('2. SELECT videos + JOIN usuarios: ' + (r2.error ? '❌ ' + r2.error.message : '✅ ' + (r2.data?.length || 0) + ' filas'));
-            } catch (e) { resultados.push('2. SELECT videos + JOIN usuarios: ❌ ' + e.message); }
+            container.className = 'videos-grid';
+            container.innerHTML = data.map(function(v) {
+                var autor = v.usuarios || {};
+                var vistas = v.reproducciones || 0;
+                var likes = v.likes || 0;
+                var videoUrl = safeAttr(v.url_video);
+                var posterUrl = v.url_miniatura ? safeAttr(v.url_miniatura) : '';
+                var esMio = !!(sessionUser && v.usuario_id === sessionUser.id);
+                var botonEliminar = esMio
+                    ? '<button class="btn-eliminar-card" onclick="event.stopPropagation(); eliminarMiVideo(\'' + v.id + '\')" title="' + eliminarT + '" aria-label="' + eliminarT + '">🗑️</button>'
+                    : '';
+                return '<div class="video-card" data-video-id="' + v.id + '">' +
+                    botonEliminar +
+                    '<div class="thumbnail">' +
+                    '<video preload="none" muted playsinline data-src="' + videoUrl + '" poster="' + posterUrl + '"></video>' +
+                    '<div class="play-btn" onclick="togglePlayCard(event, \'' + v.id + '\')">▶</div>' +
+                    '</div>' +
+                    '<div class="info">' +
+                    '<div class="titulo">' + escapeHTML(v.titulo) + '</div>' +
+                    '<div class="autor">' + escapeHTML(autor.nombre || usuarioT) + ' · ' + new Date(v.created_at).toLocaleDateString() + '</div>' +
+                    '<div class="descripcion">' + escapeHTML((v.descripcion || '').substring(0, 100)) + '</div>' +
+                    '<div class="stats">' +
+                    '<span onclick="event.stopPropagation(); abrirVideo(\'' + v.id + '\')" style="cursor:pointer;">◈ ' + vistas + ' ' + vistasT + '</span>' +
+                    '<span onclick="event.stopPropagation(); abrirVideo(\'' + v.id + '\')" style="cursor:pointer;">◈ ' + likes + ' ' + likesT + '</span>' +
+                    '<span onclick="event.stopPropagation(); abrirVideo(\'' + v.id + '\')" style="cursor:pointer;">◈ ' + (v.comentarios || 0) + ' ' + comentariosT + '</span>' +
+                    '<span onclick="event.stopPropagation(); abrirVideo(\'' + v.id + '\')" style="cursor:pointer;margin-left:auto;color:var(--gold);">' + verCompletoT + '</span>' +
+                    '</div></div></div>';
+            }).join('');
 
-            try {
-                var r3 = await window.supabase.from('usuarios').select('id, nombre, handle').limit(3);
-                resultados.push('3. SELECT usuarios: ' + (r3.error ? '❌ ' + r3.error.message : '✅ ' + (r3.data?.length || 0) + ' filas'));
-            } catch (e) { resultados.push('3. SELECT usuarios: ❌ ' + e.message); }
-
-            try {
-                var ses = await getSession();
-                resultados.push('4. Sesión: ' + (ses ? '✅ user_id=' + ses.user.id : '⚠️ sin sesión (anon)'));
-            } catch (e) { resultados.push('4. Sesión: ❌ ' + e.message); }
-
-            try {
-                var r5 = await window.supabase.from('videos').select('*', { count: 'exact', head: true }).eq('estado', 'publicado');
-                resultados.push('5. Count videos publicados: ' + (r5.error ? '❌ ' + r5.error.message : '✅ ' + r5.count));
-            } catch (e) { resultados.push('5. Count videos publicados: ❌ ' + e.message); }
-
-            var texto = resultados.join('\n');
-            console.log(texto);
+            activarAutoplayScroll();
+        } catch (e) {
+            var errMsg = (e && e.message) ? e.message : String(e);
+            console.error('[Videos] ❌ Error al cargar:', e);
 
             var banner = document.getElementById('errorBanner');
             var bannerText = document.getElementById('errorBannerText');
             if (banner && bannerText) {
-                bannerText.textContent = texto;
+                bannerText.textContent = 'cargarVideos: ' + errMsg;
                 banner.style.display = 'block';
             }
-            return resultados;
+
+            showToast('Error al cargar videos: ' + errMsg, 'error', 6000);
+
+            if (container) {
+                container.className = '';
+                container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>Error al cargar videos</h3><p style="font-size:0.7rem;color:var(--danger);word-break:break-word;">' + escapeHTML(errMsg) + '</p></div>';
+            }
+        }
+    }
+
+    // ================================================================
+    // ✅ AUTOPLAY SCROLL
+    // ================================================================
+    function activarAutoplayScroll() {
+        if (observerVideos) { observerVideos.disconnect(); observerVideos = null; }
+        if (observerCarga) { observerCarga.disconnect(); observerCarga = null; }
+        var contenedor = document.getElementById('videosContainer');
+        var cards = document.querySelectorAll('.video-card');
+
+        function asegurarSrc(video) {
+            if (video && !video.getAttribute('src') && video.dataset.src) {
+                video.preload = 'metadata';
+                video.src = video.dataset.src;
+            }
         }
 
-        // ================================================================
-        // ✅ AUTOPLAY SCROLL
-        // ================================================================
-        function activarAutoplayScroll() {
-            if (observerVideos) { observerVideos.disconnect(); observerVideos = null; }
-            if (observerCarga) { observerCarga.disconnect(); observerCarga = null; }
-            var contenedor = document.getElementById('videosContainer');
-            var cards = document.querySelectorAll('.video-card');
-
-            function asegurarSrc(video) {
-                if (video && !video.getAttribute('src') && video.dataset.src) {
-                    video.preload = 'metadata';
-                    video.src = video.dataset.src;
-                }
-            }
-
-            observerCarga = new IntersectionObserver(function (entries) {
-                entries.forEach(function (entry) {
-                    if (!entry.isIntersecting) return;
-                    asegurarSrc(entry.target.querySelector('video'));
-                    observerCarga.unobserve(entry.target);
-                });
-            }, { root: contenedor, rootMargin: '200px 0px', threshold: 0.01 });
-
-            observerVideos = new IntersectionObserver(function(entries) {
-                entries.forEach(function(entry) {
-                    var card = entry.target;
-                    var video = card.querySelector('video');
-                    if (!video) return;
-                    if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
-                        card.classList.add('visible');
-                        asegurarSrc(video);
-                        if (videoPausadoManualmente !== card.dataset.videoId) {
-                            video.play().then(function() { card.classList.add('playing'); }).catch(function() {});
-                        }
-                    } else {
-                        card.classList.remove('visible');
-                        video.pause();
-                        card.classList.remove('playing');
-                        if (videoPausadoManualmente === card.dataset.videoId) videoPausadoManualmente = null;
-                    }
-                });
-            }, { threshold: [0.3, 0.6, 0.9], rootMargin: '-10% 0px -10% 0px' });
-
-            cards.forEach(function(card) {
-                observerCarga.observe(card);
-                observerVideos.observe(card);
+        observerCarga = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+                if (!entry.isIntersecting) return;
+                asegurarSrc(entry.target.querySelector('video'));
+                observerCarga.unobserve(entry.target);
             });
+        }, { root: contenedor, rootMargin: '200px 0px', threshold: 0.01 });
+
+        observerVideos = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+                var card = entry.target;
+                var video = card.querySelector('video');
+                if (!video) return;
+                if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
+                    card.classList.add('visible');
+                    asegurarSrc(video);
+                    if (videoPausadoManualmente !== card.dataset.videoId) {
+                        video.play().then(function() { card.classList.add('playing'); }).catch(function() {});
+                    }
+                } else {
+                    card.classList.remove('visible');
+                    video.pause();
+                    card.classList.remove('playing');
+                    if (videoPausadoManualmente === card.dataset.videoId) videoPausadoManualmente = null;
+                }
+            });
+        }, { threshold: [0.3, 0.6, 0.9], rootMargin: '-10% 0px -10% 0px' });
+
+        cards.forEach(function(card) {
+            observerCarga.observe(card);
+            observerVideos.observe(card);
+        });
+    }
+
+    function togglePlayCard(event, videoId) {
+        event.stopPropagation();
+        var card = document.querySelector('.video-card[data-video-id="' + videoId + '"]');
+        if (!card) return;
+        var video = card.querySelector('video');
+        if (!video) return;
+        if (!video.getAttribute('src') && video.dataset.src) { video.preload = 'metadata'; video.src = video.dataset.src; }
+        if (video.paused) { video.play().catch(function() {}); card.classList.add('playing'); videoPausadoManualmente = null; }
+        else { video.pause(); card.classList.remove('playing'); videoPausadoManualmente = videoId; }
+    }
+
+    // ================================================================
+    // ✅ SUBIR VIDEO
+    // ================================================================
+    var subiendoVideo = false;
+
+    async function subirVideo() {
+        if (subiendoVideo) return;
+        subiendoVideo = true;
+
+        var btn = document.getElementById('btnSubirVideo');
+        var fileInput = document.getElementById('inputArchivoVideo');
+        var progressEl = document.getElementById('uploadProgress');
+        var progressFill = document.getElementById('progressFill');
+        var progressText = document.getElementById('progressText');
+        var filePath = null;
+        var videoId = null;
+        var encolado = false;
+
+        function liberar() {
+            subiendoVideo = false;
+            btn.disabled = false;
+            btn.textContent = tr('videos_subir', '◈ Subir video');
+            progressEl.style.display = 'none';
+            progressFill.style.width = '0%';
         }
 
-        function togglePlayCard(event, videoId) {
-            event.stopPropagation();
-            var card = document.querySelector('.video-card[data-video-id="' + videoId + '"]');
-            if (!card) return;
-            var video = card.querySelector('video');
-            if (!video) return;
-            if (!video.getAttribute('src') && video.dataset.src) { video.preload = 'metadata'; video.src = video.dataset.src; }
-            if (video.paused) { video.play().catch(function() {}); card.classList.add('playing'); videoPausadoManualmente = null; }
-            else { video.pause(); card.classList.remove('playing'); videoPausadoManualmente = videoId; }
-        }
+        btn.disabled = true;
+        try {
+            if (!sbVideos) throw new Error('Cliente Supabase no disponible');
+            var titulo = document.getElementById('inputTituloVideo').value.trim();
+            var descripcion = document.getElementById('inputDescripcionVideo').value.trim();
+            if (!titulo) throw new Error(tr('videos_titulo_requerido', 'Escribe un título'));
+            if (!fileInput.files || fileInput.files.length === 0) throw new Error(tr('videos_video_requerido', 'Selecciona un video'));
+            var file = fileInput.files[0];
 
-        // ================================================================
-        // ✅ SUBIR VIDEO
-        // ================================================================
-        var subiendoVideo = false;
-
-        async function subirVideo() {
-            if (subiendoVideo) return;
-            subiendoVideo = true;
-
-            var btn = document.getElementById('btnSubirVideo');
-            var fileInput = document.getElementById('inputArchivoVideo');
-            var progressEl = document.getElementById('uploadProgress');
-            var progressFill = document.getElementById('progressFill');
-            var progressText = document.getElementById('progressText');
-            var filePath = null;
-            var videoId = null;
-            var encolado = false;
-
-            function liberar() {
-                subiendoVideo = false;
-                btn.disabled = false;
-                btn.textContent = tr('videos_subir', '◈ Subir video');
-                progressEl.style.display = 'none';
-                progressFill.style.width = '0%';
+            if (file.size > 100 * 1024 * 1024) {
+                throw new Error(tr('videos_video_grande', 'El video es demasiado grande (máx 100 MB)'));
             }
 
-            btn.disabled = true;
-            try {
-                var titulo = document.getElementById('inputTituloVideo').value.trim();
-                var descripcion = document.getElementById('inputDescripcionVideo').value.trim();
-                if (!titulo) throw new Error(tr('videos_titulo_requerido', 'Escribe un título'));
-                if (!fileInput.files || fileInput.files.length === 0) throw new Error(tr('videos_video_requerido', 'Selecciona un video'));
-                var file = fileInput.files[0];
+            var allowedTypes = ['video/mp4', 'video/webm', 'video/quicktime'];
+            if (allowedTypes.indexOf(file.type) === -1) {
+                throw new Error(tr('videos_video_formato', 'Formato no soportado. Usa MP4, WebM o MOV'));
+            }
 
-                if (file.size > 100 * 1024 * 1024) {
-                    throw new Error(tr('videos_video_grande', 'El video es demasiado grande (máx 100 MB)'));
-                }
+            var nombreArchivo = file.name.toLowerCase();
+            if (!['.mp4', '.webm', '.mov'].some(function (ext) { return nombreArchivo.endsWith(ext); })) {
+                throw new Error(tr('videos_video_formato', 'Formato no soportado. Usa MP4, WebM o MOV'));
+            }
 
-                var allowedTypes = ['video/mp4', 'video/webm', 'video/quicktime'];
-                if (allowedTypes.indexOf(file.type) === -1) {
-                    throw new Error(tr('videos_video_formato', 'Formato no soportado. Usa MP4, WebM o MOV'));
-                }
+            var session = await getSession();
+            if (!session) throw new Error(tr('videos_sesion_requerida', 'Inicia sesión'));
 
-                var nombreArchivo = file.name.toLowerCase();
-                if (!['.mp4', '.webm', '.mov'].some(function (ext) { return nombreArchivo.endsWith(ext); })) {
-                    throw new Error(tr('videos_video_formato', 'Formato no soportado. Usa MP4, WebM o MOV'));
-                }
-
-                var session = await getSession();
-                if (!session) throw new Error(tr('videos_sesion_requerida', 'Inicia sesión'));
-
-                var huella = file.name + '|' + file.size + '|' + file.lastModified;
-                var huellas = [];
-                try { huellas = JSON.parse(localStorage.getItem('videos_huellas') || '[]'); } catch (e) { huellas = []; }
-                if (huellas.indexOf(huella) !== -1 &&
-                    !confirm(tr('videos_ya_subido', 'Ya subiste este mismo video antes. ¿Quieres subirlo otra vez?'))) {
-                    liberar();
-                    return;
-                }
-
-                btn.textContent = tr('videos_subiendo', 'Subiendo...');
-                progressEl.style.display = 'block';
-                progressFill.style.width = '30%';
-                progressText.textContent = tr('videos_subiendo', 'Subiendo...');
-
-                var fileExt = file.name.split('.').pop().toLowerCase();
-
-                filePath = session.user.id + '/' + Date.now() + '.' + fileExt;
-
-                var up = await window.supabase.storage.from('videos').upload(filePath, file, {
-                    cacheControl: '31536000', upsert: false, contentType: file.type
-                });
-                if (up.error) { filePath = null; throw up.error; }
-
-                var videoUrl = window.supabase.storage.from('videos').getPublicUrl(filePath).data.publicUrl;
-                progressFill.style.width = '60%';
-                progressText.textContent = tr('videos_creando_registro', 'Creando registro...');
-
-                var ins = await window.supabase.from('videos').insert({
-                    usuario_id: session.user.id, titulo: titulo, descripcion: descripcion || null,
-                    url_video: videoUrl, url_miniatura: null, estado: 'procesando', duracion: 0
-                }).select().single();
-                if (ins.error) throw ins.error;
-                videoId = ins.data.id;
-                videoEnProcesamiento = videoId;
-
-                progressFill.style.width = '85%';
-                progressText.textContent = tr('videos_enviando_procesar', 'Enviando a procesar...');
-                var queueResponse = await fetch('/api/video/queue', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
-                    body: JSON.stringify({ videoId: videoId, videoUrl: videoUrl, bucket: 'videos', filePath: filePath })
-                });
-                var queueData = await queueResponse.json();
-                if (!queueData.success) throw new Error(queueData.error || 'Error enviando a procesar');
-                encolado = true;
-
-                huellas.push(huella);
-                try { localStorage.setItem('videos_huellas', JSON.stringify(huellas.slice(-50))); } catch (e) {}
-
-                document.getElementById('uploadSection').style.display = 'none';
-                document.getElementById('processingState').classList.add('visible');
-                showToast('◈ ' + tr('videos_procesando_titulo', 'Procesando video'), 'success', 3000);
-                document.getElementById('inputTituloVideo').value = '';
-                document.getElementById('inputDescripcionVideo').value = '';
-                fileInput.value = '';
-                progressEl.style.display = 'none';
-                progressFill.style.width = '0%';
-                progressText.textContent = '0%';
-                subiendoVideo = false;
-                iniciarPollingProcesamiento(queueData.jobId, videoId);
-            } catch (e) {
-                if (!encolado) {
-                    if (videoId) { try { await window.supabase.from('videos').delete().eq('id', videoId); } catch (x) {} }
-                    if (filePath) { try { await window.supabase.storage.from('videos').remove([filePath]); } catch (x) {} }
-                    videoEnProcesamiento = null;
-                }
-                showToast('❌ ' + (e.message || 'Error'), 'error');
+            var huella = file.name + '|' + file.size + '|' + file.lastModified;
+            var huellas = [];
+            try { huellas = JSON.parse(localStorage.getItem('videos_huellas') || '[]'); } catch (e) { huellas = []; }
+            if (huellas.indexOf(huella) !== -1 &&
+                !confirm(tr('videos_ya_subido', 'Ya subiste este mismo video antes. ¿Quieres subirlo otra vez?'))) {
                 liberar();
+                return;
             }
-        }
 
-        // ===== POLLING =====
-        function iniciarPollingProcesamiento(jobId, videoId) {
-            if (pollingVideoInterval) clearInterval(pollingVideoInterval);
-            var progressFill = document.getElementById('processingProgressFill');
-            var progressText = document.getElementById('processingProgressText');
-            var message = document.getElementById('processingMessage');
-            var intentos = 0;
-            var maxIntentos = 120;
-            pollingVideoInterval = setInterval(async function() {
-                intentos++;
-                if (intentos > maxIntentos) {
-                    clearInterval(pollingVideoInterval); pollingVideoInterval = null;
-                    mostrarErrorProcesamiento(tr('videos_procesando_tardando', 'El procesamiento está tardando demasiado.'));
-                    return;
-                }
-                try {
-                    var session = await getSession();
-                    if (!session) return;
-                    var response = await fetch('/api/video/status/' + jobId, { headers: { 'Authorization': 'Bearer ' + session.access_token } });
-                    var data = await response.json();
-                    if (!data.success) return;
-                    var progreso = data.progreso || 0;
-                    progressFill.style.width = progreso + '%'; progressText.textContent = progreso + '%';
-                    if (progreso < 15) message.textContent = tr('videos_procesando_descargando', 'Descargando video original...');
-                    else if (progreso < 25) message.textContent = tr('videos_procesando_analizando', 'Analizando video...');
-                    else if (progreso < 80) message.textContent = tr('videos_procesando_eliminando', "Eliminando marca de agua externa y aplicando marca de Sariel's...");
-                    else if (progreso < 95) message.textContent = tr('videos_procesando_subiendo', 'Subiendo video procesado...');
-                    else message.textContent = tr('videos_procesando_finalizando', 'Finalizando...');
+            btn.textContent = tr('videos_subiendo', 'Subiendo...');
+            progressEl.style.display = 'block';
+            progressFill.style.width = '30%';
+            progressText.textContent = tr('videos_subiendo', 'Subiendo...');
 
-                    if (data.estado === 'completado') {
-                        clearInterval(pollingVideoInterval); pollingVideoInterval = null;
-                        progressFill.style.width = '100%'; progressText.textContent = '100%';
-                        message.textContent = tr('videos_procesando_exito', '◈ ¡Video procesado con éxito!');
-                        showToast(tr('videos_procesando_exito', '◈ ¡Video procesado con éxito!'), 'success', 4000);
-                        setTimeout(function() {
-                            document.getElementById('processingState').classList.remove('visible');
-                            document.getElementById('uploadSection').style.display = 'block';
-                            document.getElementById('btnSubirVideo').disabled = false;
-                            document.getElementById('btnSubirVideo').textContent = tr('videos_subir', '◈ Subir video');
-                            progressFill.style.width = '0%'; progressText.textContent = '0%';
-                            videoEnProcesamiento = null;
-                            cargarVideos();
-                        }, 1500);
-                    }
-                    if (data.estado === 'fallido') {
-                        clearInterval(pollingVideoInterval); pollingVideoInterval = null;
-                        mostrarErrorProcesamiento(data.error || tr('videos_procesando_error', 'Error procesando el video'));
-                    }
-                } catch (error) {}
-            }, 3000);
+            var fileExt = file.name.split('.').pop().toLowerCase();
+            filePath = session.user.id + '/' + Date.now() + '.' + fileExt;
+
+            var up = await sbVideos.storage.from('videos').upload(filePath, file, {
+                cacheControl: '31536000', upsert: false, contentType: file.type
+            });
+            if (up.error) { filePath = null; throw up.error; }
+
+            var videoUrl = sbVideos.storage.from('videos').getPublicUrl(filePath).data.publicUrl;
+            progressFill.style.width = '60%';
+            progressText.textContent = tr('videos_creando_registro', 'Creando registro...');
+
+            var ins = await sbVideos.from('videos').insert({
+                usuario_id: session.user.id, titulo: titulo, descripcion: descripcion || null,
+                url_video: videoUrl, url_miniatura: null, estado: 'procesando', duracion: 0
+            }).select().single();
+            if (ins.error) throw ins.error;
+            videoId = ins.data.id;
+            videoEnProcesamiento = videoId;
+
+            progressFill.style.width = '85%';
+            progressText.textContent = tr('videos_enviando_procesar', 'Enviando a procesar...');
+            var queueResponse = await fetch('/api/video/queue', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+                body: JSON.stringify({ videoId: videoId, videoUrl: videoUrl, bucket: 'videos', filePath: filePath })
+            });
+            var queueData = await queueResponse.json();
+            if (!queueData.success) throw new Error(queueData.error || 'Error enviando a procesar');
+            encolado = true;
+
+            huellas.push(huella);
+            try { localStorage.setItem('videos_huellas', JSON.stringify(huellas.slice(-50))); } catch (e) {}
+
+            document.getElementById('uploadSection').style.display = 'none';
+            document.getElementById('processingState').classList.add('visible');
+            showToast('◈ ' + tr('videos_procesando_titulo', 'Procesando video'), 'success', 3000);
+            document.getElementById('inputTituloVideo').value = '';
+            document.getElementById('inputDescripcionVideo').value = '';
+            fileInput.value = '';
+            progressEl.style.display = 'none';
+            progressFill.style.width = '0%';
+            progressText.textContent = '0%';
+            subiendoVideo = false;
+            iniciarPollingProcesamiento(queueData.jobId, videoId);
+        } catch (e) {
+            if (!encolado) {
+                if (videoId) { try { await sbVideos.from('videos').delete().eq('id', videoId); } catch (x) {} }
+                if (filePath) { try { await sbVideos.storage.from('videos').remove([filePath]); } catch (x) {} }
+                videoEnProcesamiento = null;
+            }
+            showToast('❌ ' + (e.message || 'Error'), 'error');
+            liberar();
         }
-        function mostrarErrorProcesamiento(msg) {
-            document.getElementById('processingState').classList.remove('visible');
-            document.getElementById('uploadSection').style.display = 'block';
-            document.getElementById('btnSubirVideo').disabled = false;
-            document.getElementById('btnSubirVideo').textContent = tr('videos_subir', '◈ Subir video');
-            document.getElementById('processingProgressFill').style.width = '0%';
-            document.getElementById('processingProgressText').textContent = '0%';
-            videoEnProcesamiento = null;
-            showToast('❌ ' + msg, 'error', 6000);
-        }
-        async function reanudarProcesamientoPendiente() {
-            if (!sessionUser) return;
+    }
+
+    // ===== POLLING =====
+    function iniciarPollingProcesamiento(jobId, videoId) {
+        if (pollingVideoInterval) clearInterval(pollingVideoInterval);
+        var progressFill = document.getElementById('processingProgressFill');
+        var progressText = document.getElementById('processingProgressText');
+        var message = document.getElementById('processingMessage');
+        var intentos = 0;
+        var maxIntentos = 120;
+        pollingVideoInterval = setInterval(async function() {
+            intentos++;
+            if (intentos > maxIntentos) {
+                clearInterval(pollingVideoInterval); pollingVideoInterval = null;
+                mostrarErrorProcesamiento(tr('videos_procesando_tardando', 'El procesamiento está tardando demasiado.'));
+                return;
+            }
             try {
                 var session = await getSession();
                 if (!session) return;
-                var resp = await fetch('/api/video/jobs', { headers: { 'Authorization': 'Bearer ' + session.access_token } });
-                if (!resp.ok) return;
-                var data = await resp.json();
-                var activo = (data.jobs || []).find(function (j) { return j.estado === 'pendiente' || j.estado === 'procesando'; });
-                if (!activo) return;
-                var v = await window.supabase.from('videos').select('titulo').eq('id', activo.video_id).maybeSingle();
-                document.getElementById('uploadSection').style.display = 'none';
-                document.getElementById('processingState').classList.add('visible');
-                document.getElementById('processingMessage').textContent =
-                    tr('videos_procesando_msg', 'Reanudando procesamiento') + (v.data ? ': ' + v.data.titulo : '');
-                iniciarPollingProcesamiento(activo.job_id, activo.video_id);
-            } catch (e) {}
-        }
+                var response = await fetch('/api/video/status/' + jobId, { headers: { 'Authorization': 'Bearer ' + session.access_token } });
+                var data = await response.json();
+                if (!data.success) return;
+                var progreso = data.progreso || 0;
+                progressFill.style.width = progreso + '%'; progressText.textContent = progreso + '%';
+                if (progreso < 15) message.textContent = tr('videos_procesando_descargando', 'Descargando video original...');
+                else if (progreso < 25) message.textContent = tr('videos_procesando_analizando', 'Analizando video...');
+                else if (progreso < 80) message.textContent = tr('videos_procesando_eliminando', "Eliminando marca de agua externa y aplicando marca de Sariel's...");
+                else if (progreso < 95) message.textContent = tr('videos_procesando_subiendo', 'Subiendo video procesado...');
+                else message.textContent = tr('videos_procesando_finalizando', 'Finalizando...');
+
+                if (data.estado === 'completado') {
+                    clearInterval(pollingVideoInterval); pollingVideoInterval = null;
+                    progressFill.style.width = '100%'; progressText.textContent = '100%';
+                    message.textContent = tr('videos_procesando_exito', '◈ ¡Video procesado con éxito!');
+                    showToast(tr('videos_procesando_exito', '◈ ¡Video procesado con éxito!'), 'success', 4000);
+                    setTimeout(function() {
+                        document.getElementById('processingState').classList.remove('visible');
+                        document.getElementById('uploadSection').style.display = 'block';
+                        document.getElementById('btnSubirVideo').disabled = false;
+                        document.getElementById('btnSubirVideo').textContent = tr('videos_subir', '◈ Subir video');
+                        progressFill.style.width = '0%'; progressText.textContent = '0%';
+                        videoEnProcesamiento = null;
+                        cargarVideos();
+                    }, 1500);
+                }
+                if (data.estado === 'fallido') {
+                    clearInterval(pollingVideoInterval); pollingVideoInterval = null;
+                    mostrarErrorProcesamiento(data.error || tr('videos_procesando_error', 'Error procesando el video'));
+                }
+            } catch (error) {}
+        }, 3000);
+    }
+    function mostrarErrorProcesamiento(msg) {
+        document.getElementById('processingState').classList.remove('visible');
+        document.getElementById('uploadSection').style.display = 'block';
+        document.getElementById('btnSubirVideo').disabled = false;
+        document.getElementById('btnSubirVideo').textContent = tr('videos_subir', '◈ Subir video');
+        document.getElementById('processingProgressFill').style.width = '0%';
+        document.getElementById('processingProgressText').textContent = '0%';
+        videoEnProcesamiento = null;
+        showToast('❌ ' + msg, 'error', 6000);
+    }
+    async function reanudarProcesamientoPendiente() {
+        if (!sessionUser) return;
+        try {
+            var session = await getSession();
+            if (!session) return;
+            var resp = await fetch('/api/video/jobs', { headers: { 'Authorization': 'Bearer ' + session.access_token } });
+            if (!resp.ok) return;
+            var data = await resp.json();
+            var activo = (data.jobs || []).find(function (j) { return j.estado === 'pendiente' || j.estado === 'procesando'; });
+            if (!activo) return;
+            var v = await sbVideos.from('videos').select('titulo').eq('id', activo.video_id).maybeSingle();
+            document.getElementById('uploadSection').style.display = 'none';
+            document.getElementById('processingState').classList.add('visible');
+            document.getElementById('processingMessage').textContent =
+                tr('videos_procesando_msg', 'Reanudando procesamiento') + (v.data ? ': ' + v.data.titulo : '');
+            iniciarPollingProcesamiento(activo.job_id, activo.video_id);
+        } catch (e) {}
+    }
+</script>    <script>
+        // ================================================================
+        // PARTE 2 DEL SCRIPT DE VIDEOS
+        // ================================================================
 
         // ================================================================
         // ✅ ABRIR VIDEO
@@ -1354,7 +1322,8 @@
             var videoPlayer = document.getElementById('modalVideoPlayer');
             var btnEliminarModal = document.getElementById('btnEliminarModal');
             try {
-                var result = await window.supabase.from('videos')
+                if (!sbVideos) throw new Error('Cliente Supabase no disponible');
+                var result = await sbVideos.from('videos')
                     .select('*, usuarios:usuario_id (id, nombre, handle, avatar_url)')
                     .eq('id', videoId).single();
                 if (result.error) throw result.error;
@@ -1628,15 +1597,16 @@
             var session = await getSession();
             if (!session) { showToast(tr('videos_sesion_requerida', 'Inicia sesión'), 'error'); return; }
             try {
-                var r = await window.supabase.from('videos').select('id, usuario_id, url_video').eq('id', videoId).maybeSingle();
+                if (!sbVideos) throw new Error('Cliente Supabase no disponible');
+                var r = await sbVideos.from('videos').select('id, usuario_id, url_video').eq('id', videoId).maybeSingle();
                 if (r.error) throw r.error;
                 if (!r.data) { showToast(tr('videos_error_eliminar', 'Error al eliminar video'), 'error'); return; }
                 if (r.data.usuario_id !== session.user.id) return;
                 var path = extraerPathStorage(r.data.url_video);
                 if (path) {
-                    try { await window.supabase.storage.from('videos').remove([path]); } catch (storageErr) {}
+                    try { await sbVideos.storage.from('videos').remove([path]); } catch (storageErr) {}
                 }
-                var delResult = await window.supabase.from('videos').delete().eq('id', videoId);
+                var delResult = await sbVideos.from('videos').delete().eq('id', videoId);
                 if (delResult.error) throw delResult.error;
                 if (videoActual && videoActual.id === videoId) cerrarModalVideo();
                 showToast(tr('videos_eliminado', '🗑️ Video eliminado'), 'success');
@@ -1655,7 +1625,8 @@
             try {
                 var session = await getSession();
                 if (!session) return;
-                await window.supabase.rpc('registrar_vista_video', { p_video_id: videoId });
+                if (!sbVideos) return;
+                await sbVideos.rpc('registrar_vista_video', { p_video_id: videoId });
             } catch (e) {}
         }
         async function verificarLikeVideo(videoId) {
@@ -1663,7 +1634,8 @@
             var key = videoId + '_' + sessionUser.id;
             if (likeCache.has(key)) return likeCache.get(key);
             try {
-                var result = await window.supabase.from('videos_likes')
+                if (!sbVideos) return false;
+                var result = await sbVideos.from('videos_likes')
                     .select('id').eq('video_id', videoId).eq('usuario_id', sessionUser.id).maybeSingle();
                 var liked = !!result.data;
                 likeCache.set(key, liked);
@@ -1680,16 +1652,17 @@
             var likesSpan = document.getElementById('modalLikes');
             var key = videoId + '_' + sessionUser.id;
             try {
+                if (!sbVideos) throw new Error('Cliente Supabase no disponible');
                 var liked = await verificarLikeVideo(videoId);
                 if (liked) {
-                    var result = await window.supabase.from('videos_likes').delete().eq('video_id', videoId).eq('usuario_id', sessionUser.id);
+                    var result = await sbVideos.from('videos_likes').delete().eq('video_id', videoId).eq('usuario_id', sessionUser.id);
                     if (result.error) throw result.error;
                     likeCache.set(key, false);
                     var current = parseInt(likesSpan.textContent) || 0;
                     likesSpan.textContent = Math.max(0, current - 1);
                     likeBtn.classList.remove('liked');
                 } else {
-                    var result2 = await window.supabase.from('videos_likes').insert({ video_id: videoId, usuario_id: sessionUser.id });
+                    var result2 = await sbVideos.from('videos_likes').insert({ video_id: videoId, usuario_id: sessionUser.id });
                     if (result2.error) {
                         if (result2.error.code === '23505') { showToast(tr('videos_like_ya', 'Ya diste like'), 'warning'); return; }
                         throw result2.error;
@@ -1703,7 +1676,8 @@
         }
         async function cargarComentariosVideo(videoId) {
             try {
-                var result = await window.supabase.from('videos_comentarios')
+                if (!sbVideos) throw new Error('Cliente Supabase no disponible');
+                var result = await sbVideos.from('videos_comentarios')
                     .select('*, usuarios:usuario_id (id, nombre, handle, avatar_url)')
                     .eq('video_id', videoId).order('created_at', { ascending: true });
                 if (result.error) throw result.error;
@@ -1732,7 +1706,8 @@
             if (!texto) { showToast(tr('videos_comentario_vacio', 'Escribe un comentario'), 'warning'); return; }
             if (texto.length > 2000) { showToast(tr('videos_comentario_largo', 'El comentario es demasiado largo'), 'error'); return; }
             try {
-                var result = await window.supabase.from('videos_comentarios').insert({ video_id: videoActual.id, usuario_id: sessionUser.id, contenido: texto });
+                if (!sbVideos) throw new Error('Cliente Supabase no disponible');
+                var result = await sbVideos.from('videos_comentarios').insert({ video_id: videoActual.id, usuario_id: sessionUser.id, contenido: texto });
                 if (result.error) throw result.error;
                 input.value = '';
                 showToast(tr('videos_comentario_agregado', 'Comentario agregado'), 'success');
@@ -1846,7 +1821,7 @@
         });
 
         document.addEventListener('DOMContentLoaded', function() {
-            console.log("◈ Sariel's - Videos v9 (auditoría aplicada)");
+            console.log("◈ Sariel's - Videos v10 (cliente propio)");
             aplicarI18N();
             actualizarIconoMute();
             actualizarIconoPausa(true);
@@ -1865,7 +1840,6 @@
 
         window.subirVideo = subirVideo;
         window.cargarVideos = cargarVideos;
-        window.diagnosticarVideos = diagnosticarVideos;
         window.abrirVideo = abrirVideo;
         window.cerrarModalVideo = cerrarModalVideo;
         window.toggleLikeVideo = toggleLikeVideo;
