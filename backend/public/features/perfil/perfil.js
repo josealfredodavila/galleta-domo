@@ -1,6 +1,7 @@
 /* ================================================================
    PERFIL.JS - SARIEL'S ECOSYSTEM
    VERSIÓN PRODUCCIÓN — 100% SUPABASE DIRECTO
+   CON VISTAS _PUBLICAS (sin fuga de usuarios)
    ================================================================ */
 
 (function () {
@@ -608,12 +609,8 @@ async function cargarAmigosEnLinea() {
             if (error) throw error;
             todosContactos = data || [];
         } catch (e) {
-            const { data, error } = await supabaseClient
-                .from('usuarios')
-                .select('id, nombre, handle, avatar_url, online, ultima_conexion')
-                .in('id', idsContactos);
-            if (error) todosContactos = [];
-            else todosContactos = data || [];
+            console.warn('[Perfil] Error cargando perfiles públicos:', e);
+            todosContactos = [];
         }
         const enLinea = todosContactos.filter(u => u.online === true);
         actualizarUIAmigos(todosContactos, enLinea);
@@ -741,9 +738,7 @@ function aplicarContadoresSociales(c) {
     const sigEl = document.getElementById('statSiguiendo');
     if (segEl) segEl.textContent = String(c?.seguidores ?? 0);
     if (sigEl) sigEl.textContent = String(c?.siguiendo ?? 0);
-}
-
-let estadoConexion = {
+}let estadoConexion = {
     tipo: 'wifi', activa: true, velocidad: '0 Mbps', señal: 100,
     operador: "Sariel's Net", datos_usados: 0, datos_limite: 0, datos_restantes: 0
 };
@@ -895,7 +890,9 @@ function iniciarEscuchaConexion() {
     if (navigator.connection && navigator.connection.addEventListener) {
         navigator.connection.addEventListener('change', async () => { await cargarEstadoConexion(); });
     }
-}function actualizarUIESIM(data) {
+}
+
+function actualizarUIESIM(data) {
     const esimStatus = document.getElementById('esimStatus');
     const esimDataUsed = document.getElementById('esimDataUsed');
     const esimDataLimit = document.getElementById('esimDataLimit');
@@ -1291,9 +1288,7 @@ function actualizarUIHistorialQR(historial = []) {
         const qrId = item.qr_id ? escaparHTML(String(item.qr_id).slice(0, 15)) : 'N/A';
         return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(212,175,55,0.05);font-size:0.7rem;color:var(--text-muted);"><span>📱 QR: ' + qrId + '</span><span>' + fecha + '</span></div>';
     }).join('');
-}
-
-function actualizarUI(data) {
+}function actualizarUI(data) {
     if (!data) return;
     const nombreEl = document.getElementById('perfilNombre');
     const handleEl = document.getElementById('perfilHandle');
@@ -1832,9 +1827,7 @@ function iniciarNotificacionesRealtime() {
         })
         .subscribe();
     return canalNotificaciones;
-}
-
-function publicarFuncionesGlobales() {
+}function publicarFuncionesGlobales() {
     window.cambiarTab = cambiarTab;
     window.cargarPerfil = cargarPerfil;
     window.guardarPerfil = guardarPerfil;
