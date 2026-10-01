@@ -5,54 +5,70 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Eliminación de cuenta y datos de Sariel's." />
     <meta name="robots" content="noindex, follow" />
-    <title>Eliminar Cuenta · Sariel's</title>
+    <title>Eliminar cuenta · Sariel's</title>
 
     <meta name="turnstile-sitekey" content="0x4AAAAAAEqg1T_4FkpM9FDg">
 
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%23000' stroke='%23fff' stroke-width='4'/><text x='50' y='68' font-family='system-ui' font-size='50' font-weight='700' fill='%23fff' text-anchor='middle'>S</text></svg>" />
 
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            --gold-cosmic: #D4AF37;
-            --gold-dim: rgba(212, 168, 87, 0.25);
-            --text-primary: #FFFFFF;
-            --text-secondary: #E2E8F0;
-            --text-muted: #94A3B8;
-            --space-deep: #05080f;
-            --danger: #ff5c5c;
-            --success: #4ade80;
-            --radius: 16px;
+            --bg: #000000;
+            --surface: #0a0a0a;
+            --surface-2: #141414;
+            --border: #262626;
+            --border-subtle: #1a1a1a;
+            --text: #ffffff;
+            --text-secondary: #a1a1a1;
+            --text-muted: #737373;
+            --accent: #ffffff;
+            --danger: #ff3b30;
+            --danger-hover: #e0342b;
+            --danger-bg: rgba(255, 59, 48, 0.08);
+            --success: #30d158;
+            --radius: 12px;
+            --radius-lg: 16px;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
 
         body {
-            background: var(--space-deep);
-            color: var(--text-primary);
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            min-height: 100vh;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            font-size: 15px;
             line-height: 1.6;
-            background-image:
-                radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.35) 0%, transparent 60%),
-                radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
+            min-height: 100vh;
         }
 
-        .main { position: relative; z-index: 1; }
+        /* ============================================================
+           HEADER
+           ============================================================ */
 
         .header {
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 20px 24px;
+        }
+
+        .header-inner {
+            max-width: 640px;
+            margin: 0 auto;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 16px 20px;
-            border-bottom: 1px solid var(--gold-dim);
-            max-width: 900px;
-            margin: 0 auto 16px;
-            flex-wrap: wrap;
-            gap: 10px;
         }
 
         .logo {
@@ -60,466 +76,611 @@
             align-items: center;
             gap: 10px;
             text-decoration: none;
+            color: var(--text);
         }
 
-        .logo-icon {
-            font-size: 1.8rem;
-            color: var(--gold-cosmic);
+        .logo-mark {
+            width: 28px;
+            height: 28px;
+            border: 1px solid var(--text);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 13px;
         }
 
         .logo-text {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.2rem;
-            font-weight: 900;
-            letter-spacing: 2px;
-            background: linear-gradient(135deg, var(--gold-cosmic), #b8923a);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            font-weight: 600;
+            font-size: 15px;
+            letter-spacing: -0.01em;
         }
 
-        .logo-badge {
-            font-size: .5rem;
-            background: linear-gradient(135deg, var(--gold-cosmic), #b8923a);
-            color: #0a0c10;
-            padding: 2px 12px;
-            border-radius: 20px;
-            font-weight: 700;
-            letter-spacing: 1px;
+        .header-meta {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 500;
         }
 
-        .network-badge {
-            font-size: .7rem;
-            color: var(--gold-cosmic);
-            background: rgba(212, 168, 87, .1);
-            padding: 4px 14px;
-            border-radius: 20px;
-            border: 1px solid rgba(212, 168, 87, .2);
-        }
+        /* ============================================================
+           LAYOUT
+           ============================================================ */
 
         .container {
-            max-width: 720px;
+            max-width: 640px;
             margin: 0 auto;
-            padding: 0 20px 60px;
-        }
-
-        .card {
-            padding: 36px 28px;
-            background: rgba(15, 45, 26, .35);
-            border: 1px solid var(--gold-dim);
-            border-radius: var(--radius);
-            box-shadow: 0 8px 40px rgba(0, 0, 0, .5);
+            padding: 48px 24px 80px;
         }
 
         h1 {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.7rem;
-            color: var(--gold-cosmic);
-            text-align: center;
+            font-size: 28px;
+            font-weight: 600;
+            letter-spacing: -0.02em;
             margin-bottom: 8px;
-            letter-spacing: 1px;
+            color: var(--text);
         }
 
         .subtitle {
-            text-align: center;
-            color: var(--text-muted);
-            font-size: .85rem;
-            margin-bottom: 32px;
+            font-size: 15px;
+            color: var(--text-secondary);
+            margin-bottom: 40px;
         }
 
         h2 {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.05rem;
-            color: var(--gold-cosmic);
-            margin-top: 28px;
-            margin-bottom: 12px;
-            letter-spacing: .5px;
+            font-size: 15px;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            color: var(--text);
+            margin-top: 36px;
+            margin-bottom: 14px;
         }
 
         p {
             color: var(--text-secondary);
-            line-height: 1.7;
-            margin-bottom: 12px;
-            font-size: .92rem;
+            font-size: 14px;
+            line-height: 1.65;
+            margin-bottom: 14px;
         }
 
         ul {
             list-style: none;
-            padding-left: 4px;
-            margin: 12px 0 18px;
+            margin: 12px 0 16px;
         }
 
         ul li {
-            padding: 6px 0 6px 24px;
+            padding: 4px 0 4px 20px;
             position: relative;
             color: var(--text-secondary);
-            font-size: .9rem;
+            font-size: 14px;
+            line-height: 1.6;
         }
 
         ul li::before {
             content: "";
             position: absolute;
             left: 4px;
-            top: 13px;
-            width: 6px;
-            height: 6px;
-            background: var(--gold-cosmic);
+            top: 14px;
+            width: 4px;
+            height: 4px;
             border-radius: 50%;
+            background: var(--text-muted);
         }
 
-        .info-box {
-            background: rgba(255, 255, 255, .03);
-            border-left: 3px solid var(--gold-cosmic);
-            padding: 16px 20px;
-            border-radius: 8px;
-            margin: 18px 0;
+        /* ============================================================
+           BLOCK
+           ============================================================ */
+
+        .block {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 20px 22px;
+            margin-bottom: 14px;
         }
 
-        .info-box p { margin-bottom: 8px; font-size: .9rem; }
-        .info-box p:last-child { margin-bottom: 0; }
-        .info-box strong { color: #FFE066; }
-
-        .danger-box {
-            background: rgba(255, 92, 92, .06);
-            border: 1px solid rgba(255, 92, 92, .3);
-            border-left: 3px solid var(--danger);
+        .block p:last-child {
+            margin-bottom: 0;
         }
 
-        .danger-box strong { color: #ff8b8b; }
+        .block ul:last-child {
+            margin-bottom: 0;
+        }
+
+        .block strong {
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        /* ============================================================
+           DELETE PANEL
+           ============================================================ */
 
         .delete-panel {
-            margin-top: 32px;
-            padding: 24px;
-            border-radius: 14px;
-            border: 1px solid rgba(255, 92, 92, .3);
-            background: rgba(20, 8, 10, .6);
+            margin-top: 40px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
         }
 
-        .delete-panel h2 {
-            margin-top: 0;
-            color: #ff8585;
+        .delete-panel-header {
+            background: var(--danger-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 18px 22px;
         }
 
-        .confirmation-row {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            margin: 18px 0;
+        .delete-panel-header h2 {
+            margin: 0;
+            color: var(--danger);
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .delete-panel-body {
+            padding: 22px;
+        }
+
+        .delete-warning {
+            background: var(--surface-2);
+            border-radius: var(--radius);
+            padding: 16px 18px;
+            margin-bottom: 22px;
+            font-size: 13.5px;
             color: var(--text-secondary);
-            font-size: .9rem;
-            cursor: pointer;
+            line-height: 1.65;
         }
 
-        .confirmation-row input {
-            width: 20px;
-            height: 20px;
-            margin-top: 2px;
-            accent-color: var(--danger);
-            cursor: pointer;
-            flex-shrink: 0;
+        .delete-warning strong {
+            color: var(--danger);
+            font-weight: 600;
         }
 
-        .delete-word { margin-top: 18px; }
+        .delete-warning ul {
+            margin: 10px 0 0;
+        }
 
-        .delete-word label {
+        .delete-warning ul li {
+            padding: 3px 0 3px 18px;
+            font-size: 13.5px;
+        }
+
+        .delete-warning ul li::before {
+            top: 12px;
+            background: var(--danger);
+        }
+
+        /* ============================================================
+           FORM
+           ============================================================ */
+
+        .form-field {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
             display: block;
-            color: var(--text-secondary);
-            font-size: .88rem;
+            font-size: 13.5px;
+            font-weight: 500;
+            color: var(--text);
             margin-bottom: 8px;
         }
 
-        .delete-word input {
+        .form-label-code {
+            font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
+            background: var(--surface-2);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12.5px;
+            color: var(--danger);
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .checkbox-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 14px 0;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .checkbox-row input[type="checkbox"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 1.5px solid var(--border);
+            border-radius: 5px;
+            background: var(--surface);
+            cursor: pointer;
+            flex-shrink: 0;
+            margin-top: 2px;
+            position: relative;
+            transition: all 0.15s ease;
+        }
+
+        .checkbox-row input[type="checkbox"]:hover {
+            border-color: var(--text-muted);
+        }
+
+        .checkbox-row input[type="checkbox"]:checked {
+            background: var(--danger);
+            border-color: var(--danger);
+        }
+
+        .checkbox-row input[type="checkbox"]:checked::after {
+            content: "";
+            position: absolute;
+            left: 5px;
+            top: 1px;
+            width: 5px;
+            height: 10px;
+            border: solid #fff;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        .checkbox-row span {
+            font-size: 13.5px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        input[type="text"] {
             width: 100%;
-            padding: 13px 15px;
-            border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, .15);
-            background: rgba(255, 255, 255, .04);
-            color: white;
-            outline: none;
-            font-size: 1rem;
-            font-family: 'Orbitron', monospace;
-            letter-spacing: 3px;
+            padding: 11px 14px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            color: var(--text);
+            font-size: 14px;
+            font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
+            letter-spacing: 2px;
             text-align: center;
             text-transform: uppercase;
+            outline: none;
+            transition: all 0.15s ease;
         }
 
-        .delete-word input:focus {
-            border-color: var(--gold-cosmic);
-            box-shadow: 0 0 0 3px rgba(212, 168, 87, .1);
+        input[type="text"]:focus {
+            border-color: var(--text-muted);
+            background: var(--surface-2);
         }
 
-        .turnstile-wrapper {
+        input[type="text"]::placeholder {
+            color: var(--text-muted);
+            letter-spacing: 2px;
+        }
+
+        /* ============================================================
+           TURNSTILE
+           ============================================================ */
+
+        .turnstile-container {
             margin: 22px 0;
             display: flex;
             justify-content: center;
-            min-height: 65px;
         }
+
+        /* ============================================================
+           STATUS
+           ============================================================ */
 
         .status {
             display: none;
-            padding: 14px 16px;
-            border-radius: 10px;
-            margin: 16px 0;
-            font-size: .88rem;
+            padding: 12px 14px;
+            border-radius: var(--radius);
+            font-size: 13.5px;
+            margin-bottom: 16px;
+            line-height: 1.5;
         }
 
-        .status.show { display: block; }
+        .status.show {
+            display: block;
+        }
 
         .status.error {
-            background: rgba(255, 92, 92, .1);
-            border: 1px solid rgba(255, 92, 92, .3);
-            color: #ffb0b0;
+            background: rgba(255, 59, 48, 0.1);
+            color: #ff6961;
+            border: 1px solid rgba(255, 59, 48, 0.2);
         }
 
         .status.success {
-            background: rgba(74, 222, 128, .1);
-            border: 1px solid rgba(74, 222, 128, .3);
-            color: #9af0b5;
+            background: rgba(48, 209, 88, 0.1);
+            color: #4cd964;
+            border: 1px solid rgba(48, 209, 88, 0.2);
         }
 
         .status.loading {
-            background: rgba(212, 168, 87, .08);
-            border: 1px solid var(--gold-dim);
-            color: #ffe699;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
         }
 
-        .btn-delete {
+        /* ============================================================
+           BUTTONS
+           ============================================================ */
+
+        .btn {
             display: block;
             width: 100%;
-            padding: 15px 28px;
-            border-radius: 40px;
-            font-size: .9rem;
-            font-weight: 700;
-            font-family: 'Orbitron', monospace;
-            letter-spacing: 1px;
+            padding: 13px 24px;
+            border-radius: var(--radius);
+            font-size: 14px;
+            font-weight: 600;
+            font-family: inherit;
+            letter-spacing: -0.01em;
             cursor: pointer;
-            transition: all .3s ease;
-            border: 1px solid rgba(255, 92, 92, .5);
-            background: linear-gradient(135deg, #a92323, #6f1515);
-            color: white;
-            text-transform: uppercase;
+            transition: all 0.15s ease;
+            border: none;
+            text-align: center;
         }
 
-        .btn-delete:hover:not(:disabled) {
-            transform: translateY(-1px);
-            box-shadow: 0 8px 24px rgba(255, 92, 92, .25);
+        .btn-danger {
+            background: var(--danger);
+            color: #ffffff;
         }
 
-        .btn-delete:disabled {
-            opacity: .4;
+        .btn-danger:hover:not(:disabled) {
+            background: var(--danger-hover);
+        }
+
+        .btn-danger:disabled {
+            background: var(--surface-2);
+            color: var(--text-muted);
             cursor: not-allowed;
         }
 
         .btn-secondary {
-            display: inline-block;
-            padding: 12px 28px;
-            border-radius: 40px;
-            font-size: .85rem;
-            font-weight: 700;
-            font-family: 'Orbitron', monospace;
-            cursor: pointer;
-            transition: all .3s ease;
-            background: linear-gradient(135deg, var(--gold-cosmic), #b8923a);
-            color: #0a0c10;
+            background: var(--surface-2);
+            color: var(--text);
+            border: 1px solid var(--border);
             text-decoration: none;
-            border: none;
+            display: inline-block;
+            width: auto;
+            padding: 12px 24px;
         }
 
-        .btn-secondary:hover { transform: translateY(-1px); }
+        .btn-secondary:hover {
+            background: #1f1f1f;
+            border-color: var(--text-muted);
+        }
+
+        /* ============================================================
+           SUCCESS SCREEN
+           ============================================================ */
 
         .success-screen {
             display: none;
             text-align: center;
-            padding: 20px 10px;
+            padding: 40px 20px;
         }
 
-        .success-screen.show { display: block; }
+        .success-screen.show {
+            display: block;
+        }
 
         .success-icon {
-            font-size: 3.5rem;
-            margin-bottom: 16px;
-            color: var(--success);
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: var(--success);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            color: #ffffff;
+            font-size: 26px;
+            font-weight: 700;
         }
 
         .success-screen h2 {
-            color: var(--success);
-            margin-bottom: 16px;
-            text-align: center;
+            color: var(--text);
+            margin-top: 0;
+            margin-bottom: 12px;
+            font-size: 20px;
+            font-weight: 600;
         }
 
         .success-screen p {
-            text-align: center;
-            margin-bottom: 12px;
+            max-width: 400px;
+            margin: 0 auto 12px;
         }
 
-        .divisor {
-            border: none;
-            border-top: 1px solid rgba(212, 168, 87, .1);
-            margin: 36px 0 20px;
+        .success-actions {
+            margin-top: 28px;
         }
+
+        /* ============================================================
+           FOOTER
+           ============================================================ */
 
         .footer {
-            text-align: center;
-            padding: 24px 20px;
-            font-size: .78rem;
+            margin-top: 40px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border-subtle);
+            font-size: 12.5px;
             color: var(--text-muted);
+            text-align: center;
+            line-height: 1.7;
         }
 
-        .footer strong { color: var(--gold-cosmic); }
+        .footer a {
+            color: var(--text-secondary);
+            text-decoration: none;
+        }
 
-        .hidden { display: none !important; }
+        .footer a:hover {
+            color: var(--text);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* ============================================================
+           RESPONSIVE
+           ============================================================ */
 
         @media (max-width: 600px) {
-            .card { padding: 26px 18px; }
-            h1 { font-size: 1.35rem; }
-            h2 { font-size: .95rem; }
-            .logo-badge { display: none; }
+            .container {
+                padding: 32px 20px 60px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .block {
+                padding: 18px;
+            }
+
+            .delete-panel-body {
+                padding: 18px;
+            }
         }
     </style>
 </head>
 <body>
+
     <header class="header">
-        <a href="/" class="logo">
-            <span class="logo-icon">◈</span>
-            <span class="logo-text">Sariel's</span>
-            <span class="logo-badge">WEB3</span>
-        </a>
-        <span class="network-badge">Polygon</span>
+        <div class="header-inner">
+            <a href="/" class="logo">
+                <span class="logo-mark">S</span>
+                <span class="logo-text">Sariel's</span>
+            </a>
+            <span class="header-meta">Eliminación de cuenta</span>
+        </div>
     </header>
 
-    <main class="main">
-        <div class="container">
-            <div class="card">
+    <main class="container">
 
-                <h1>Eliminar cuenta</h1>
-                <p class="subtitle">Gestión de datos personales y eliminación de cuenta</p>
+        <div id="contentBlock">
 
-                <div id="contentBlock">
+            <h1>Eliminar cuenta</h1>
+            <p class="subtitle">Esta página te permite solicitar la eliminación permanente de tu cuenta y de los datos personales asociados.</p>
 
-                    <h2>1. Qué eliminamos</h2>
+            <h2>Datos que se eliminarán</h2>
 
-                    <div class="info-box">
-                        <p><strong>Cuando confirmes la eliminación, procesaremos de inmediato:</strong></p>
-                        <ul>
-                            <li>Correo electrónico</li>
-                            <li>Nombre y biografía</li>
-                            <li>Handle público</li>
-                            <li>Foto de perfil</li>
-                            <li>Número de teléfono</li>
-                            <li>Vinculación de wallet</li>
-                            <li>Publicaciones y contenido eliminable</li>
-                        </ul>
-                        <p>Algunos datos podrán conservarse temporalmente por obligación legal, fiscal o de seguridad.</p>
-                    </div>
-
-                    <h2>2. Qué NO eliminamos</h2>
-
-                    <div class="info-box">
-                        <ul>
-                            <li>Registros públicos en la blockchain de Polygon</li>
-                            <li>Transacciones confirmadas en blockchain</li>
-                            <li>Minteos y registros on-chain</li>
-                            <li>Tokens y NFTs en tu wallet personal</li>
-                        </ul>
-                        <p>Tus ES.TOKS y NFTs viven en tu wallet de Polygon. Son inmutables y permanecerán ahí. Solo se desvincula tu wallet de nuestra aplicación.</p>
-                    </div>
-
-                    <h2>3. Plazos</h2>
-
-                    <div class="info-box">
-                        <p><strong>Eliminación inmediata:</strong> tu perfil y contenido dejan de ser visibles al instante.</p>
-                        <p><strong>Conservación temporal:</strong> durante 30 días conservamos un registro mínimo para cumplimiento legal.</p>
-                        <p><strong>Eliminación definitiva:</strong> a los 30 días se elimina por completo la información restante.</p>
-                    </div>
-
-                    <h2>4. Seguridad</h2>
-
-                    <div class="info-box">
-                        <p>Para prevenir solicitudes automatizadas, este formulario utiliza Cloudflare Turnstile.</p>
-                        <p>La validación se realiza en el servidor. Completar el desafío no autoriza por sí solo la eliminación: el servidor valida también la sesión y la confirmación escrita.</p>
-                    </div>
-
-                </div>
-
-                <section class="delete-panel" id="deletePanel">
-                    <h2>Confirmar eliminación</h2>
-
-                    <div class="info-box danger-box">
-                        <p><strong>Esta acción es irreversible.</strong></p>
-                        <p>Al confirmar:</p>
-                        <ul>
-                            <li>Se eliminarán tus publicaciones y tu perfil de Sariel's</li>
-                            <li>Se cerrará tu sesión en todos los dispositivos</li>
-                            <li>Tus ES.TOKS y NFTs no se borran: viven en tu wallet de Polygon</li>
-                        </ul>
-                    </div>
-
-                    <label class="confirmation-row">
-                        <input type="checkbox" id="confirmDelete" autocomplete="off" />
-                        <span>Entiendo que estoy solicitando la eliminación definitiva de mi cuenta y de los datos personales eliminables asociados.</span>
-                    </label>
-
-                    <div class="delete-word">
-                        <label for="deleteConfirmation">
-                            Para continuar escribe exactamente:
-                            <strong style="color: #ff8b8b;">ELIMINAR</strong>
-                        </label>
-                        <input
-                            type="text"
-                            id="deleteConfirmation"
-                            autocomplete="off"
-                            autocapitalize="characters"
-                            spellcheck="false"
-                            maxlength="8"
-                            placeholder="ELIMINAR"
-                        />
-                    </div>
-
-                    <div class="turnstile-wrapper">
-                        <div
-                            id="turnstile-container"
-                            class="cf-turnstile"
-                            data-sitekey="0x4AAAAAAEqg1T_4FkpM9FDg"
-                            data-theme="dark"
-                            data-size="normal"
-                            data-action="delete_account"
-                            data-callback="onTurnstileSuccess"
-                            data-expired-callback="onTurnstileExpired"
-                            data-error-callback="onTurnstileError">
-                        </div>
-                    </div>
-
-                    <div id="status" class="status" role="alert" aria-live="polite"></div>
-
-                    <button type="button" id="btnDelete" class="btn-delete" disabled aria-label="Eliminar cuenta definitivamente">
-                        Verificación requerida
-                    </button>
-                </section>
-
-                <section id="successScreen" class="success-screen">
-                    <div class="success-icon">✓</div>
-                    <h2>Solicitud recibida</h2>
-                    <p>Tu cuenta ha sido eliminada y ya no es visible en la plataforma.</p>
-                    <p>Tus ES.TOKS y NFTs siguen seguros en tu wallet de Polygon.</p>
-                    <p>Tienes 30 días para contactarnos si deseas revertir la eliminación.</p>
-                    <div style="margin-top: 24px;">
-                        <a href="/" class="btn-secondary">Volver al inicio</a>
-                    </div>
-                </section>
-
-                <hr class="divisor" />
-
-                <div class="info-box">
-                    <p><strong>Contacto:</strong></p>
-                    <p>csarielscontacto@gmail.com</p>
-                    <p>Puebla, México</p>
-                </div>
-
+            <div class="block">
+                <p><strong>Cuando confirmes la eliminación, procesaremos de inmediato:</strong></p>
+                <ul>
+                    <li>Correo electrónico</li>
+                    <li>Nombre y biografía</li>
+                    <li>Handle público</li>
+                    <li>Foto de perfil</li>
+                    <li>Número de teléfono</li>
+                    <li>Vinculación de wallet</li>
+                    <li>Publicaciones y contenido eliminable</li>
+                </ul>
+                <p>Algunos datos podrán conservarse temporalmente por obligación legal, fiscal o de seguridad.</p>
             </div>
 
-            <div class="footer">
-                <p>© <strong>Sariel's</strong> · Todos los derechos reservados · Puebla, México 🇲🇽</p>
+            <h2>Datos que no se eliminan</h2>
+
+            <div class="block">
+                <ul>
+                    <li>Registros públicos en la blockchain de Polygon</li>
+                    <li>Transacciones confirmadas en blockchain</li>
+                    <li>Minteos y registros on-chain</li>
+                    <li>Tokens y NFTs en tu wallet personal</li>
+                </ul>
+                <p>Tus ES.TOKS y NFTs viven en tu wallet de Polygon. Son inmutables y permanecerán ahí. Solo se desvincula tu wallet de nuestra aplicación.</p>
             </div>
+
+            <h2>Plazos</h2>
+
+            <div class="block">
+                <p><strong>Eliminación inmediata:</strong> tu perfil y contenido dejan de ser visibles al instante.</p>
+                <p><strong>Conservación temporal:</strong> durante 30 días conservamos un registro mínimo para cumplimiento legal.</p>
+                <p><strong>Eliminación definitiva:</strong> a los 30 días se elimina por completo la información restante.</p>
+            </div>
+
+            <h2>Seguridad</h2>
+
+            <div class="block">
+                <p>Para prevenir solicitudes automatizadas, este formulario utiliza Cloudflare Turnstile. La validación se realiza en el servidor.</p>
+                <p>Completar el desafío no autoriza por sí solo la eliminación: el servidor valida también la sesión y la confirmación escrita.</p>
+            </div>
+
         </div>
+
+        <section class="delete-panel" id="deletePanel">
+            <div class="delete-panel-header">
+                <h2>Confirmar eliminación</h2>
+            </div>
+
+            <div class="delete-panel-body">
+
+                <div class="delete-warning">
+                    <strong>Esta acción es irreversible.</strong>
+                    <ul>
+                        <li>Se eliminarán tus publicaciones y tu perfil</li>
+                        <li>Se cerrará tu sesión en todos los dispositivos</li>
+                        <li>Tus ES.TOKS y NFTs no se borran: viven en tu wallet de Polygon</li>
+                    </ul>
+                </div>
+
+                <label class="checkbox-row">
+                    <input type="checkbox" id="confirmDelete" autocomplete="off" />
+                    <span>Entiendo que estoy solicitando la eliminación definitiva de mi cuenta y de los datos personales eliminables asociados.</span>
+                </label>
+
+                <div class="form-field">
+                    <label for="deleteConfirmation" class="form-label">
+                        Escribe <span class="form-label-code">ELIMINAR</span> para confirmar
+                    </label>
+                    <input
+                        type="text"
+                        id="deleteConfirmation"
+                        autocomplete="off"
+                        autocapitalize="characters"
+                        spellcheck="false"
+                        maxlength="8"
+                        placeholder="ELIMINAR"
+                    />
+                </div>
+
+                <div class="turnstile-container">
+                    <div
+                        id="turnstile-container"
+                        class="cf-turnstile"
+                        data-sitekey="0x4AAAAAAEqg1T_4FkpM9FDg"
+                        data-theme="dark"
+                        data-size="normal"
+                        data-action="delete_account"
+                        data-callback="onTurnstileSuccess"
+                        data-expired-callback="onTurnstileExpired"
+                        data-error-callback="onTurnstileError">
+                    </div>
+                </div>
+
+                <div id="status" class="status" role="alert" aria-live="polite"></div>
+
+                <button type="button" id="btnDelete" class="btn btn-danger" disabled>
+                    Verificación requerida
+                </button>
+
+            </div>
+        </section>
+
+        <section id="successScreen" class="success-screen">
+            <div class="success-icon">✓</div>
+            <h2>Solicitud recibida</h2>
+            <p>Tu cuenta ha sido eliminada y ya no es visible en la plataforma.</p>
+            <p>Tus ES.TOKS y NFTs siguen seguros en tu wallet de Polygon.</p>
+            <p>Tienes 30 días para contactarnos si deseas revertir la eliminación.</p>
+            <div class="success-actions">
+                <a href="/" class="btn btn-secondary">Volver al inicio</a>
+            </div>
+        </section>
+
+        <div class="footer">
+            <p>¿Dudas? Escríbenos a <a href="mailto:csarielscontacto@gmail.com">csarielscontacto@gmail.com</a></p>
+            <p>© Sariel's · Puebla, México</p>
+        </div>
+
     </main>
 
     <script>
@@ -543,7 +704,7 @@
         let supabaseClient = null;
 
         // ============================================================
-        // CREAR CLIENTE SUPABASE (con fallbacks)
+        // CLIENTE SUPABASE
         // ============================================================
         function crearClienteSupabase() {
             if (window.supabaseClient && window.supabaseClient.auth) {
@@ -606,7 +767,7 @@
                 return;
             }
             btnDelete.disabled = false;
-            btnDelete.textContent = 'Eliminar cuenta definitivamente';
+            btnDelete.textContent = 'Eliminar cuenta';
         }
 
         window.onTurnstileSuccess = function (token) {
@@ -635,7 +796,7 @@
         });
 
         // ============================================================
-        // VERIFICAR SESIÓN AL CARGAR
+        // VERIFICAR SESIÓN
         // ============================================================
         async function verificarSesion() {
             supabaseClient = crearClienteSupabase();
@@ -660,7 +821,7 @@
         }
 
         // ============================================================
-        // BOTÓN ELIMINAR
+        // ELIMINAR
         // ============================================================
         btnDelete.addEventListener('click', async function () {
             if (!formIsValid()) {
@@ -726,9 +887,10 @@
                     localStorage.setItem(STORAGE_KEY, Date.now().toString());
                 } catch (_) {}
 
+                document.getElementById('contentBlock').classList.add('hidden');
                 deletePanel.classList.add('hidden');
                 successScreen.classList.add('show');
-                setStatus('success', 'Solicitud recibida correctamente.');
+                clearStatus();
 
                 try { await supabaseClient.auth.signOut(); } catch (_) {}
 
@@ -756,9 +918,6 @@
             updateButton();
         }
 
-        // ============================================================
-        // ESTADO PERSISTENTE
-        // ============================================================
         function verificarSolicitudPrevia() {
             try {
                 const previa = localStorage.getItem(STORAGE_KEY);
@@ -766,6 +925,7 @@
                     const transcurrido = Date.now() - parseInt(previa, 10);
                     const treintaDias = 30 * 24 * 60 * 60 * 1000;
                     if (transcurrido < treintaDias) {
+                        document.getElementById('contentBlock').classList.add('hidden');
                         deletePanel.classList.add('hidden');
                         successScreen.classList.add('show');
                     } else {
@@ -775,9 +935,6 @@
             } catch (_) {}
         }
 
-        // ============================================================
-        // INIT
-        // ============================================================
         window.addEventListener('DOMContentLoaded', async function () {
             await verificarSesion();
             verificarSolicitudPrevia();
