@@ -264,6 +264,8 @@ app.use(
                     "https://js.stripe.com",
                     "https://hooks.stripe.com",
                     "https://api.telnyx.com",
+                    "https://rtc.telnyx.com",
+                    "wss://rtc.telnyx.com",
                     "https://csariels-domo-57ujk04t.livekit.cloud",
                     "wss://csariels-domo-57ujk04t.livekit.cloud",
                     "https://esm.sh",
@@ -376,6 +378,14 @@ app.use(
         ]
     })
 );
+
+// ================================================================
+// WEBHOOK TELNYX — ANTES de express.json() y rate limit
+// ================================================================
+// Debe recibir el raw body para validar la firma con TELNYX_PUBLIC_KEY.
+// ================================================================
+
+app.use('/api/telnyx/webhook', require('./routes/telnyx-webhook'));
 
 // ================================================================
 // RATE LIMIT
@@ -807,6 +817,8 @@ montarRouter('/api/ai', './routes/ai-chat', 'routes/ai-chat');
 
 montarRouter('/api/ai/voice', './routes/ai-voice', 'routes/ai-voice');
 
+montarRouter('/api/telnyx', './routes/telnyx', 'routes/telnyx');
+
 // ================================================================
 // HTML ROUTES
 // ================================================================
@@ -1105,6 +1117,14 @@ async function ejecutarLimpiezaCuentas() {
 setTimeout(ejecutarLimpiezaCuentas, 5 * 60 * 1000);
 
 setInterval(ejecutarLimpiezaCuentas, 24 * 60 * 60 * 1000);
+
+// ================================================================
+// CRON — Mantenimiento eSIMs Telnyx
+// ================================================================
+
+const { cicloMantenimientoEsims } = require('./services/telnyx/esim');
+setTimeout(cicloMantenimientoEsims, 2 * 60 * 1000);
+setInterval(cicloMantenimientoEsims, 10 * 60 * 1000);
 
 // ================================================================
 // EXPORT
