@@ -612,7 +612,8 @@ function avatar(name,url,cls='avatar'){return `<div class="${cls}">${url?`<img s
 async function profile(id){if(id===BOT_ID)return{id:BOT_ID,nombre:"Marquinhos",handle:'marquinhos',avatar_url:null,online:true,bot:true};const r=await db.from('perfiles_publicos').select('id,nombre,handle,avatar_url,online,ultima_conexion').eq('id',id).maybeSingle();return r.data||{id,nombre:'Usuario',avatar_url:null,online:false}}
 
 async function cargarFotoHeader(){
-    if(!user) return;
+    /* ✅ FIX: protección adicional — si no hay user o user.id, salir */
+    if(!user || !user.id) return;
     try {
         const { data, error } = await db.from('usuarios').select('avatar_url, nombre, handle').eq('id', user.id).maybeSingle();
         if(error) { console.warn('No se pudo cargar perfil:', error.message); return; }
