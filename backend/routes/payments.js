@@ -25,6 +25,15 @@ const logger = require('../utils/logger');
 const axios = require('axios');
 
 // ================================================================
+// HANDLER DE APROVISIONAMIENTO eSIM TELNYX (PARCHE 3 - a)
+// ================================================================
+// Se invoca cuando NOWPayments confirma el pago de un paquete de
+// Internet (order_id = NET-xxx) y la orden pasó a estado "pagada".
+// Se encarga de crear/activar la eSIM en Telnyx.
+// ================================================================
+const { procesarOrdenInternet } = require('../services/telnyx/esim');
+
+// ================================================================
 // SUPABASE ADMIN Y ANON
 // Instanciación directa para hacer el router 100% autónomo.
 // El cliente anon se usa en /status/:ordenId (pagos_transmision).
@@ -1432,6 +1441,19 @@ router.get(
                         activated: false,
                         message: 'Pago confirmado. La activación está pendiente de procesamiento.'
                     });
+                }
+
+                // ============================================================
+                // PARCHE 3 (b): Aprovisionamiento eSIM Telnyx
+                // ============================================================
+                // Se ejecuta SOLO si activar_orden_internet no dio error.
+                // Va ANTES de leer ordenFinal para no devolver datos antes
+                // de que el aprovisionamiento termine (o falle y se loguee).
+                // No bloquea la respuesta: si falla, se loguea y sigue.
+                try {
+                    await procesarOrdenInternet(orden.id);
+                } catch (e) {
+                    logger.error(`Aprovisionamiento eSIM orden ${orden.id}: ${e.message}`);
                 }
 
                 const { data: ordenFinal } = await supabaseAdmin
