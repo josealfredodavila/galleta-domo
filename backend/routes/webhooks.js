@@ -29,6 +29,14 @@ const {
 } = require('./membresia-webhook-handler');
 
 // ================================================================
+// HANDLER DE NOWPAYMENTS PARA INTERNET (PARCHE 2 - a)
+// ================================================================
+// Procesa los IPN de NOWPayments cuyo order_id empieza con "NET-".
+// Se encarga de activar el paquete de Internet / eSIM del usuario.
+// ================================================================
+const { handleWebhookInternet } = require('./webhooks/nowpayments-internet');
+
+// ================================================================
 // HANDLER DE NOWPAYMENTS PARA EL MURO
 // ================================================================
 // routes/webhooks/nowpayments.js exporta un Express Router.
@@ -71,6 +79,7 @@ try {
 //
 // Según order_id:
 //   - order_id empieza con "PRO-" (case-insensitive) → Membresía Pro
+//   - order_id empieza con "NET-" (case-insensitive) → Paquete Internet
 //   - cualquier otro order_id → Muro P2P
 //
 // IMPORTANTE:
@@ -118,9 +127,19 @@ router.post('/nowpayments', async (req, res) => {
         }
 
         // ============================================================
-        // 2) MURO P2P
+        // 2) PAQUETE DE INTERNET (eSIM Telnyx) — PARCHE 2 (b)
         // ============================================================
-        // Cubre muro_, MKT- y NET- (todos los que no son PRO-).
+        // Debe ir DESPUÉS de membresía PRO y ANTES del Muro P2P,
+        // porque el prefijo "NET-" no debe caer en el handler del Muro.
+        if (orderId.toUpperCase().startsWith('NET-')) {
+            console.log('🌐 Webhook identificado como paquete de Internet:', orderId);
+            return await handleWebhookInternet(req, res);
+        }
+
+        // ============================================================
+        // 3) MURO P2P
+        // ============================================================
+        // Cubre muro_, MKT- y cualquier otro que no sea PRO- ni NET-.
         //
         // IMPORTANTE:
         // Se delega el Router COMPLETO con (req, res) para que el
@@ -135,7 +154,7 @@ router.post('/nowpayments', async (req, res) => {
         }
 
         // ============================================================
-        // 3) FALLBACK
+        // 4) FALLBACK
         // ============================================================
         console.warn(
             '⚠️ Webhook sin handler específico:',
