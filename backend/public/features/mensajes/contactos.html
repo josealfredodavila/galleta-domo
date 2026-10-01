@@ -749,6 +749,45 @@
         }
 
         /* ========================================================
+           ✅ SKELETON LOADER (NUEVO)
+        ======================================================== */
+
+        .contacto-card.skeleton {
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        .contacto-card.skeleton .contacto-avatar {
+            background: linear-gradient(
+                90deg,
+                rgba(255,255,255,0.04) 0%,
+                rgba(255,255,255,0.08) 50%,
+                rgba(255,255,255,0.04) 100%
+            );
+            background-size: 200% 100%;
+            animation: skeleton-shimmer 1.5s infinite;
+        }
+
+        .skeleton-line {
+            height: 12px;
+            border-radius: 6px;
+            background: linear-gradient(
+                90deg,
+                rgba(255,255,255,0.04) 0%,
+                rgba(255,255,255,0.08) 50%,
+                rgba(255,255,255,0.04) 100%
+            );
+            background-size: 200% 100%;
+            animation: skeleton-shimmer 1.5s infinite;
+            margin-top: 6px;
+        }
+
+        @keyframes skeleton-shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* ========================================================
            EMPTY STATE
         ======================================================== */
 
@@ -843,6 +882,12 @@
             visibility: visible;
         }
 
+        /* ✅ FIX MODALES — soporte para clase .show (NUEVO) */
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
         .modal {
             width: min(100%, 520px);
 
@@ -875,6 +920,11 @@
         }
 
         .modal-overlay.active .modal {
+            transform: translateY(0) scale(1);
+        }
+
+        /* ✅ FIX MODALES — también con .show (NUEVO) */
+        .modal-overlay.show .modal {
             transform: translateY(0) scale(1);
         }
 
@@ -2186,10 +2236,11 @@
          CONTACTOS.JS
          Se carga DESPUÉS de Supabase y apariencia-global.
          defer mantiene el DOM disponible al ejecutarse.
+         ✅ v5: versión escala + fix modales + skeleton
     =========================================================== -->
 
     <script
-        src="/features/mensajes/contactos.js?v=4"
+        src="/features/mensajes/contactos.js?v=5"
         defer
     ></script>
 
