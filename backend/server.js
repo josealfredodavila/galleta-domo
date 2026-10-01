@@ -25,8 +25,6 @@ const app = express();
 
 app.disable('x-powered-by');
 
-// Railway corre detrás de un proxy. Sin esto req.ip sería la IP del
-// proxy (rate limit global para todos y remoteip incorrecta en Turnstile).
 app.set('trust proxy', 1);
 
 const PORT = process.env.PORT || 8080;
@@ -55,8 +53,6 @@ const LIVEKIT_WS_URL = process.env.LIVEKIT_WS_URL || '';
 const WALLETCONNECT_PROJECT_ID =
     process.env.WALLETCONNECT_PROJECT_ID || '';
 
-// Cadena Polygon: se lee de POLYGON_CHAIN_ID; si no existe o es
-// inválida se usa 80002 (Amoy), el valor que tenía el archivo original.
 const WEB3_CHAIN_ID =
     parseInt(process.env.POLYGON_CHAIN_ID, 10) || 80002;
 
@@ -75,7 +71,6 @@ const missingEnvironment = [
     .filter(([, value]) => !value)
     .map(([name]) => name);
 
-// Hostname y origen públicos, derivados de PUBLIC_APP_URL.
 let PUBLIC_APP_HOSTNAME = '';
 let PUBLIC_APP_ORIGIN = '';
 
@@ -118,10 +113,8 @@ if (!process.env.NODE_ENV) console.warn('⚠️ NODE_ENV no está definido');
 // SUPABASE
 // ================================================================
 
-// Cliente público
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Cliente administrativo (SERVICE_ROLE: solo backend)
 const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 // ================================================================
@@ -186,7 +179,6 @@ async function authMiddleware(req, res, next) {
 
 // ================================================================
 // ADMIN MIDDLEWARE
-// Esquema real: usuarios.es_admin (boolean). No existe perfiles.rol.
 // ================================================================
 
 async function adminMiddleware(req, res, next) {
@@ -233,23 +225,15 @@ app.use(
                     "'self'",
                     "'unsafe-inline'",
                     "'unsafe-eval'",
-
                     "https://cdn.jsdelivr.net",
                     "https://unpkg.com",
                     "https://esm.sh",
-
                     "https://challenges.cloudflare.com",
-
-                    // Stripe (Csariel's Pay)
                     "https://js.stripe.com",
-
                     "https://www.youtube.com",
                     "https://s.ytimg.com"
                 ],
 
-                // ⚠️ FIX: permite handlers inline (onclick=, onsubmit=, onchange=)
-                // Sin esto, helmet aplica script-src-attr 'none' por defecto
-                // y BLOQUEA todos los handlers inline del HTML.
                 scriptSrcAttr: ["'unsafe-inline'"],
 
                 styleSrc: [
@@ -270,85 +254,50 @@ app.use(
 
                 connectSrc: [
                     "'self'",
-
-                    // Supabase
                     "https://zultnlogdoajehbswlih.supabase.co",
                     "wss://zultnlogdoajehbswlih.supabase.co",
-
-                    // QR
                     "https://api.qrserver.com",
-
-                    // Cloudflare
                     "https://challenges.cloudflare.com",
-
-                    // NOWPayments
                     "https://api.nowpayments.io",
                     "https://api-sandbox.nowpayments.io",
-
-                    // Stripe (Csariel's Pay)
                     "https://api.stripe.com",
                     "https://js.stripe.com",
                     "https://hooks.stripe.com",
-
-                    // Telnyx
                     "https://api.telnyx.com",
-
-                    // LiveKit
                     "https://csariels-domo-57ujk04t.livekit.cloud",
                     "wss://csariels-domo-57ujk04t.livekit.cloud",
-
-                    // WalletConnect
                     "https://esm.sh",
                     "https://api.web3modal.com",
                     "https://api.web3modal.org",
-
                     "https://explorer-api.walletconnect.com",
                     "https://explorer-api.walletconnect.org",
-
                     "https://relay.walletconnect.com",
                     "wss://relay.walletconnect.com",
-
                     "wss://relay.walletconnect.org",
-
                     "https://pulse.walletconnect.com",
                     "https://pulse.walletconnect.org",
-
                     "https://verify.walletconnect.com",
                     "https://verify.walletconnect.org",
-
                     "https://rpc.walletconnect.com",
                     "wss://rpc.walletconnect.com",
-
                     "https://keys.walletconnect.com",
-
-                    // Polygon
                     "https://rpc-amoy.polygon.technology",
                     "https://polygon-rpc.com",
                     "https://polygon.llamarpc.com",
                     "https://polygon-bor-rpc.publicnode.com",
                     "https://1rpc.io",
                     "https://rpc.ankr.com",
-
-                    // Explorers
                     "https://amoy.polygonscan.com",
                     "https://polygonscan.com",
                     "https://api.polygonscan.com",
                     "https://api-amoy.polygonscan.com",
-
-                    // Coinbase
                     "https://api.wallet.coinbase.com",
                     "https://mainnet.optimism.io",
                     "wss://www.walletlink.org",
-
-                    // Rainbow
                     "https://rnbwapp.com",
                     "https://api.rainbow.me",
-
-                    // MetaMask
                     "https://metamask.app.link",
                     "https://api.metamask.io",
-
-                    // RPC fallback
                     "https://cloudflare-eth.com",
                     "https://eth.llamarpc.com"
                 ],
@@ -385,10 +334,6 @@ app.use(morgan(isProduction ? 'combined' : 'dev'));
 
 // ================================================================
 // CORS
-// Solo se permiten: los orígenes de CORS_ORIGINS y el origen público
-// derivado de PUBLIC_APP_URL. Si CORS_ORIGINS está vacía NO se abre
-// a cualquiera. Las peticiones sin Origin (webhooks, apps nativas)
-// pasan como antes.
 // ================================================================
 
 const corsOrigins = (process.env.CORS_ORIGINS || '')
@@ -450,8 +395,6 @@ app.use('/api/', apiLimiter);
 
 // ================================================================
 // BODY PARSERS
-// NO modificar el orden ni el verify de express.json():
-// los webhooks firmados (HMAC) dependen de req.rawBody.
 // ================================================================
 
 app.use(
@@ -483,8 +426,6 @@ app.get('/api/config/web3', (req, res) => {
     });
 });
 
-// Configuración pública de Supabase para el frontend (auth-global.js).
-// La clave anon es pública por diseño. NUNCA devolver SERVICE_ROLE.
 app.get('/api/config/public', (req, res) => {
     return res.status(200).json({
         success: true,
@@ -689,45 +630,6 @@ async function verificarTurnstile(token, remoteip) {
 }
 
 // ================================================================
-// DELETE ACCOUNT
-// ================================================================
-
-app.post('/api/account/delete', authMiddleware, async (req, res) => {
-    try {
-        const { turnstileToken } = req.body;
-
-        const turnstile = await verificarTurnstile(turnstileToken, req.ip);
-
-        if (!turnstile.success) {
-            return res.status(400).json({
-                error: 'Verificación de seguridad fallida'
-            });
-        }
-
-        const userId = req.user.id;
-
-        const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
-
-        if (error) {
-            console.error('❌ Error eliminando usuario:', error);
-            return res.status(500).json({
-                error: 'No se pudo eliminar la cuenta'
-            });
-        }
-
-        return res.json({
-            success: true,
-            message: 'Cuenta eliminada correctamente'
-        });
-    } catch (error) {
-        console.error('❌ Error /api/account/delete:', error);
-        return res.status(500).json({
-            error: 'Error interno eliminando cuenta'
-        });
-    }
-});
-
-// ================================================================
 // STATIC FILES
 // ================================================================
 
@@ -767,12 +669,10 @@ function enviarArchivoPublico(relativePath, req, res, next) {
     return res.sendFile(filePath);
 }
 
-// Perfil
 app.get('/features/perfil/perfil.html', (req, res, next) => {
     enviarArchivoPublico('features/perfil/perfil.html', req, res, next);
 });
 
-// Wallet
 app.get(
     '/features/perfil/configuracion/sariels/wallet.html',
     (req, res, next) => {
@@ -785,7 +685,6 @@ app.get(
     }
 );
 
-// Configuración
 app.get('/features/perfil/configuracion/index.html', (req, res, next) => {
     enviarArchivoPublico(
         'features/perfil/configuracion/index.html',
@@ -795,7 +694,6 @@ app.get('/features/perfil/configuracion/index.html', (req, res, next) => {
     );
 });
 
-// Wallet Connect JS
 app.get('/features/perfil/shared/js/wallet-connect.js', (req, res, next) => {
     enviarArchivoPublico(
         'features/perfil/shared/js/wallet-connect.js',
@@ -805,17 +703,14 @@ app.get('/features/perfil/shared/js/wallet-connect.js', (req, res, next) => {
     );
 });
 
-// Config layout
 app.get('/features/shared/config-layout.js', (req, res, next) => {
     enviarArchivoPublico('features/shared/config-layout.js', req, res, next);
 });
 
-// Config icons
 app.get('/features/shared/config-icons.js', (req, res, next) => {
     enviarArchivoPublico('features/shared/config-icons.js', req, res, next);
 });
 
-// mensajes.js explícito
 app.get('/features/mensajes/js/mensajes.js', (req, res) => {
     const filePath = path.join(
         publicPath,
@@ -885,10 +780,11 @@ function montarRouter(mountPath, requirePath, nombre) {
 
 montarRouter('/api/auth', './routes/auth', 'routes/auth');
 
+// ✅ NUEVO: Router modular de eliminación de cuenta
+montarRouter('/api/account', './routes/account', 'routes/account');
+
 montarRouter('/api/payments', './routes/payments', 'routes/payments');
 
-// Membresía: existe y estaba montada en producción (log de Railway).
-// Debe ir DESPUÉS de /api/payments, igual que en el despliegue anterior.
 montarRouter(
     '/api/payments/membresia',
     './routes/membresia',
@@ -903,7 +799,6 @@ montarRouter('/api/mensajes', './routes/mensajes', 'routes/mensajes');
 
 montarRouter('/api/marketing', './routes/marketing', 'routes/marketing');
 
-// ⬇️ NUEVA LÍNEA AÑADIDA (Sistema de tendencias)
 montarRouter('/api/tendencias', './routes/tendencias', 'routes/tendencias');
 
 montarRouter('/api/video', './routes/video-processor', 'routes/video-processor');
@@ -979,10 +874,6 @@ app.get('/privacidad', (req, res) => {
 app.get('/eliminar-cuenta', (req, res) => {
     return res.sendFile(path.join(publicPath, 'eliminar-cuenta.html'));
 });
-
-// ================================================================
-// ACTUALIZAR CONTRASEÑA (sin tilde)
-// ================================================================
 
 app.get('/actualizar-contrasena', (req, res) => {
     return res.sendFile(
@@ -1143,6 +1034,77 @@ app.listen(PORT, () => {
     console.log('================================================');
     console.log('');
 });
+
+// ================================================================
+// CRON — Limpieza de cuentas eliminadas hace más de 30 días
+// ================================================================
+// Ejecuta cada 24 horas. Busca usuarios con activo = false y
+// deleted_at mayor a 30 días, y los borra físicamente de la DB.
+// Marca la solicitud en solicitudes_eliminacion como "completada".
+//
+// Los datos on-chain (ES.TOKS, NFTs) NO se tocan.
+// ================================================================
+
+async function ejecutarLimpiezaCuentas() {
+    try {
+        const DIAS_GRACIA = 30;
+        const fechaLimite = new Date();
+        fechaLimite.setDate(fechaLimite.getDate() - DIAS_GRACIA);
+
+        const { data: cuentas, error } = await supabaseAdmin
+            .from('usuarios')
+            .select('id')
+            .eq('activo', false)
+            .not('deleted_at', 'is', null)
+            .lt('deleted_at', fechaLimite.toISOString());
+
+        if (error) {
+            console.error('❌ Cron limpieza — error consultando:', error);
+            return;
+        }
+
+        if (!cuentas || cuentas.length === 0) {
+            console.log('🕒 Cron limpieza: sin cuentas para borrar.');
+            return;
+        }
+
+        let eliminadas = 0;
+        for (const cuenta of cuentas) {
+            const { error: delError } = await supabaseAdmin
+                .from('usuarios')
+                .delete()
+                .eq('id', cuenta.id);
+
+            if (delError) {
+                console.error(
+                    `❌ Cron — error borrando ${cuenta.id}:`,
+                    delError.message
+                );
+                continue;
+            }
+
+            await supabaseAdmin
+                .from('solicitudes_eliminacion')
+                .update({
+                    estado: 'completada',
+                    procesado_en: new Date().toISOString()
+                })
+                .eq('usuario_id', cuenta.id);
+
+            eliminadas++;
+        }
+
+        console.log(
+            `🕒 Cron limpieza: ${eliminadas} cuentas borradas definitivamente.`
+        );
+    } catch (err) {
+        console.error('❌ Cron limpieza — error fatal:', err);
+    }
+}
+
+setTimeout(ejecutarLimpiezaCuentas, 5 * 60 * 1000);
+
+setInterval(ejecutarLimpiezaCuentas, 24 * 60 * 60 * 1000);
 
 // ================================================================
 // EXPORT
