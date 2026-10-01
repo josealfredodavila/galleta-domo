@@ -1,7 +1,3 @@
-<!-- ================================================================
-     MURO - SARIEL'S ECOSYSTEM
-     VERSIÓN FINAL - CON TENDENCIAS DINÁMICAS + TOKENS DESTACADOS + TEMAS
-     ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -45,9 +41,6 @@
         .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); }
         .main-nav .nav-link.live { color: var(--danger); }
 
-        /* ============================================================
-           ICONOS SVG - Sistema limpio (reemplaza emojis de UI)
-           ============================================================ */
         .icon {
             display: inline-block;
             width: 1em;
@@ -63,9 +56,6 @@
         .icon-sm { width: 0.85em; height: 0.85em; }
         .icon-lg { width: 1.25em; height: 1.25em; }
 
-        /* ============================================================
-           BOTONES CON ICONOS
-           ============================================================ */
         .btn-icon-inline {
             display: inline-flex;
             align-items: center;
@@ -78,9 +68,6 @@
         .valor-mercado .info .detalles { display: flex; gap: 16px; font-size: 0.65rem; color: var(--text-muted); margin-top: 4px; flex-wrap: wrap; }
         .valor-mercado .btn-vender-token { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border: none; padding: 10px 20px; border-radius: 30px; font-family: 'Orbitron', monospace; font-weight: 700; font-size: 0.7rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
 
-        /* ============================================================
-           TENDENCIAS DINÁMICAS
-           ============================================================ */
         .trending-section { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 16px 20px; margin-bottom: 20px; }
         .trending-section .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .trending-section .header h3 { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 0.85rem; display: inline-flex; align-items: center; gap: 8px; }
@@ -91,9 +78,6 @@
         .trending-tags .tag.tema:hover { background: rgba(168,85,247,0.2); color: #d8b4fe; }
         .trending-tags .tag.loading { opacity: 0.5; cursor: wait; }
 
-        /* ============================================================
-           TOKENS DESTACADOS
-           ============================================================ */
         .tokens-destacados { background: linear-gradient(135deg, rgba(212,175,55,0.08), rgba(15,45,26,0.6)); border: 1px solid rgba(212,175,55,0.25); border-radius: var(--radius-xl); padding: 16px 20px; margin-bottom: 20px; }
         .tokens-destacados .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
         .tokens-destacados .header h3 { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 0.85rem; display: inline-flex; align-items: center; gap: 8px; }
@@ -109,18 +93,12 @@
         .tokens-destacados .token-item .valor .label { display: block; font-size: 0.55rem; color: var(--text-muted); font-weight: 400; }
         .tokens-destacados .empty { color: var(--text-muted); font-size: 0.75rem; text-align: center; padding: 10px; }
 
-        /* ============================================================
-           FILTRO DE TEMAS
-           ============================================================ */
         .filtro-temas { display: flex; align-items: center; gap: 8px; background: rgba(212,175,55,0.05); border: 1px solid rgba(212,175,55,0.15); border-radius: 20px; padding: 6px 12px; margin-bottom: 12px; font-size: 0.7rem; }
         .filtro-temas .label { color: var(--text-muted); }
         .filtro-temas .toggle-btn { background: transparent; border: 1px solid var(--gold); color: var(--gold); padding: 3px 10px; border-radius: 12px; cursor: pointer; font-size: 0.65rem; font-weight: 600; transition: var(--transition); display: inline-flex; align-items: center; gap: 5px; }
         .filtro-temas .toggle-btn.active { background: var(--gold); color: var(--space); }
         .filtro-temas .info { color: var(--text-muted); font-size: 0.6rem; }
 
-        /* ============================================================
-           SELECTOR DE TEMA AL PUBLICAR
-           ============================================================ */
         .tema-selector { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; position: relative; }
         .tema-selector label { font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; }
         .tema-selector .btn-tema { background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); color: var(--text-secondary); padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 0.7rem; display: flex; align-items: center; gap: 6px; transition: var(--transition); }
@@ -132,10 +110,8 @@
         .tema-dropdown .tema-opt:hover { background: rgba(212,175,55,0.15); }
         .tema-dropdown .tema-opt.selected { background: rgba(212,175,55,0.2); color: var(--gold); }
 
-        /* Badge del tema en el post */
         .post-card .post-tema-badge { display: inline-flex; align-items: center; gap: 4px; background: rgba(168,85,247,0.15); border: 1px solid rgba(168,85,247,0.3); color: #d8b4fe; padding: 2px 10px; border-radius: 12px; font-size: 0.6rem; font-weight: 600; margin-bottom: 8px; }
 
-        /* ===== POST FORM ===== */
         .post-form { background: rgba(15, 25, 20, 0.85) !important; border: 1px solid rgba(212, 175, 55, 0.3) !important; border-radius: 20px; padding: 16px; margin-bottom: 20px; width: 100%; }
         .post-form .form-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
         .post-form .form-header .avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--green-mid), var(--gold)); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: #fff; font-family: 'Orbitron', monospace; overflow: hidden; }
@@ -160,7 +136,6 @@
         .btn-publicar:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(212,175,55,0.4); }
         .btn-publicar:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-        /* ===== POST CARD ===== */
         .post-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 20px 24px; margin-bottom: 16px; transition: var(--transition); }
         .post-card:hover { border-color: rgba(212, 175, 55, 0.3); }
         .post-card .post-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
@@ -202,7 +177,6 @@
         .footer-links a { color: var(--text-muted); text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
         .footer-links a:hover { color: var(--gold); }
 
-        /* ===== MODALES ===== */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5,8,15,0.9); display: none; align-items: center; justify-content: center; z-index: 1000; }
         .modal-overlay.show { display: flex; }
         .modal { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 32px; max-width: 480px; width: 92%; max-height: 85vh; overflow-y: auto; }
@@ -241,7 +215,6 @@
         #cryptoPaymentModal .actions button { display: inline-flex; align-items: center; gap: 6px; }
         #cryptoPaymentModal .status { margin-top: 10px; font-size: 0.8rem; color: var(--text-muted); }
 
-        /* ===== TEMA DÍA ===== */
         html.tema-dia, html[data-tema="dia"] { --space: #f5f7fa; --text-primary: #1a2332; --text-secondary: #4a5568; --text-muted: #718096; --glass-bg: rgba(255, 255, 255, 0.9); --glass-border: rgba(0, 0, 0, 0.1); }
         html.tema-dia body, html[data-tema="dia"] body { background: #f5f7fa !important; background-image: radial-gradient(ellipse at 20% 50%, rgba(212, 175, 55, 0.05) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(42, 106, 58, 0.05) 0%, transparent 60%) !important; color: var(--text-primary) !important; }
         html.tema-dia .nebula, html[data-tema="dia"] .nebula { display: none !important; }
@@ -279,8 +252,7 @@
             .emoji-picker { width: 180px; }
         }
     </style>
-</head>
-<body>
+</head><body>
     <div class="nebula nebula-1" aria-hidden="true"></div>
     <div class="nebula nebula-2" aria-hidden="true"></div>
     <div class="nebula nebula-3" aria-hidden="true"></div>
@@ -311,9 +283,9 @@
             <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
             <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
             <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
-            <a href="/features/videos/videos.html" class="nav-link">🎬 Videos</a>
-            <a href="/features/grupos/grupos.html" class="nav-link">👥 Grupos</a>
-            <a href="/features/mercado/index.html" class="nav-link">🛒 Mercado</a>
+            <a href="/features/videos/videos.html" class="nav-link">Videos</a>
+            <a href="/features/grupos/grupos.html" class="nav-link">Grupos</a>
+            <a href="/features/mercado/index.html" class="nav-link">Mercado</a>
         </nav>
 
         <div class="valor-mercado" id="valorMercado">
@@ -332,7 +304,6 @@
             </button>
         </div>
 
-        <!-- ===== TENDENCIAS DINÁMICAS ===== -->
         <div class="trending-section">
             <div class="header">
                 <h3 data-clave="muro_tendencia_ahora">
@@ -346,7 +317,6 @@
             </div>
         </div>
 
-        <!-- ===== TOKENS DESTACADOS ===== -->
         <div class="tokens-destacados" id="tokensDestacados" style="display:none;">
             <div class="header">
                 <h3>
@@ -357,7 +327,6 @@
             <div id="tokensDestacadosLista"></div>
         </div>
 
-        <!-- ===== FILTRO DE TEMAS ===== -->
         <div class="filtro-temas" id="filtroTemas">
             <span class="label">Filtro:</span>
             <button class="toggle-btn active" id="btnFiltroToggle" onclick="toggleFiltroTemas()">
@@ -376,7 +345,6 @@
                 </div>
             </div>
 
-            <!-- ===== SELECTOR DE TEMA ===== -->
             <div class="tema-selector">
                 <label>
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg>
@@ -450,7 +418,6 @@
         </footer>
     </div>
 
-    <!-- ===== MODAL VENDER ===== -->
     <div class="modal-overlay" id="modalVender">
         <div class="modal">
             <div class="modal-header">
@@ -477,8 +444,8 @@
                     <span id="ventaTotalVendedor" style="font-family:'Orbitron',monospace;color:var(--success);font-weight:700;">$4.50 MXN</span>
                 </div>
                 <div style="display:flex;justify-content:space-between;font-size:0.6rem;">
-                    <span style="color:var(--text-muted);">Comisión Sariel's (2%):</span>
-                    <span id="ventaComisionPlataforma" style="color:var(--warning);">$0.09 MXN</span>
+                    <span style="color:var(--text-muted);">Comisión Sariel's (3%):</span>
+                    <span id="ventaComisionPlataforma" style="color:var(--warning);">$0.14 MXN</span>
                 </div>
             </div>
             <button class="btn-guardar" id="btnPublicarVenta" data-clave="muro_publicar_venta">
@@ -488,7 +455,6 @@
         </div>
     </div>
 
-    <!-- ===== MODAL CONFIRMAR COMPRA ===== -->
     <div class="modal-overlay" id="modalConfirmarCompra">
         <div class="modal">
             <div class="modal-header">
@@ -522,7 +488,7 @@
                             <span id="confirmTotal" style="font-family:'Orbitron',monospace;color:var(--gold);font-weight:700;">$0.00 MXN</span>
                         </div>
                         <div style="display:flex;justify-content:space-between;font-size:0.6rem;margin-bottom:4px;">
-                            <span style="color:var(--text-muted);">Comisión Sariel's (2%):</span>
+                            <span style="color:var(--text-muted);">Comisión Sariel's (3%):</span>
                             <span id="confirmComision" style="color:var(--warning);">$0.00 MXN</span>
                         </div>
                         <div style="display:flex;justify-content:space-between;font-size:0.6rem;">
@@ -558,7 +524,6 @@
         </div>
     </div>
 
-    <!-- ===== MODAL PAGO CRYPTO ===== -->
     <div class="modal-overlay" id="cryptoPaymentModal">
         <div class="modal modal-content">
             <div class="modal-header">
@@ -619,7 +584,7 @@ window.supabaseClient = supabaseClient;
 var supabase = supabaseClient;
 
 var BACKEND_URL = 'https://galleta-domo-production.up.railway.app';
-var COMISION_PORCENTAJE = 0.02;
+var COMISION_PORCENTAJE = 0.03;
 var TIMEOUT_MINUTOS = 30;
 
 // ================================================================
@@ -660,7 +625,7 @@ var isRealtimeProcessing = false;
 var likeCache = new Map();
 var likeCacheOrden = [];
 var observerGlobal = null;
-var emojisDisponibles = ['🧌','🫨','🪭','🐋','🧰','💥','🫩','👈','👉','🦋','🥒','🗼','☄️','🧽','🪤','🩹','💸','💵','💴','💶','💷','🪙','💰','💳','💎','🔥','⚡','✨','🌟','💫','🚀','🪐','👀','👁️','👁️‍🗨️','🤩','😍','😳','🫣','☝️','👇','🫵','🤏','✋','🤚','👋','🥹','🥺','🤤','😎','😏','🤗','🫶','🥰','😘','⏰','⏳','⌛','⏲️','🚨','⚠️','✅','☑️','✔️','🔒','📌','📍','📝','📦','📤','📥','🚚','🏍️','💨','❤️','🧡','💛','💚','💙','💜','🖤','🤍','💖','💝','💘','💗'];
+var emojisDisponibles = ['😀','😁','😂','🤣','😃','😄','😅','😊','😇','🙂','😉','😍','🥰','😘','😗','😙','😚','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🤐','🤨','😐','😑','😶','😏','😒','🙄','😬','🤥','😌','😔','😪','🤤','😴','😷','🤒','🤕','🤢','🤮','🤧','🥵','🥶','😵','🤯','🤠','🥳','😎','🤓','🧐','😕','😟','🙁','😮','😯','😲','😳','🥺','😦','😧','😨','😰','😥','😢','😭','😱','😖','😣','😞','😓','😩','😫','🥱','😤','😡','😠','🤬','😈','👿','💀','💩','🤡','👹','👺','👻','👽','👾','🤖','❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','🔥','✨','🌟','💫','⭐','⚡','💥','💢','🌈','☀️','🌤️','⛅','🌥️','☁️','🌦️','🌧️','⛈️','🌩️','🌨️','❄️','☃️','⛄','🌬️','💨','🌪️','🌫️','🌊','💧','💦','☔','☂️','🌂','🎉','🎊','🎈','🎁','🎂','🍰','🧁','🍕','🍔','🍟','🌮','🌯','🍿','🍩','🍪','🍫','🍬','🍭','🍮','🍯','🍷','🍸','🍹','🍺','🍻','🥂','🥃','🍾','☕','🍵','🧃','🥤','🧋','🍼','🥛','💊','🌿','🍃','🍀','🍁','🍂','🌸','🌺','🌻','🌹','🌷','🌼','💐','🌱','🌲','🌳','🌴','🌵','🌾','🍄','🐚','🪨','🌍','🌎','🌏','🌕','🌖','🌗','🌘','🌑','🌒','🌓','🌔','🌙','🌚','🌝','🌞','🪐','☄️','🌠','🌌'];
 
 var pagoActual = { ventaId: null, paymentId: null, expiresAt: null, contadorInterval: null, pollingInterval: null, postId: null };
 
@@ -682,10 +647,13 @@ function showToast(mensaje, tipo) {
 }
 
 function escapeHTML(texto) {
-    if (!texto) return '';
-    var div = document.createElement('div');
-    div.textContent = texto;
-    return div.innerHTML;
+    if (texto === null || texto === undefined) return '';
+    return String(texto)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 function formatearTiempoRestante(segundos) {
@@ -800,7 +768,6 @@ async function cargarTemasDisponibles() {
 function renderTemaDropdown() {
     var dd = document.getElementById('temaDropdown');
     if (!dd) return;
-    // ✅ Sin emojis: solo nombre del tema
     var html = '<div class="tema-opt' + (temaSeleccionado === null ? ' selected' : '') + '" onclick="seleccionarTema(null)">Sin tema</div>';
     temasDisponibles.forEach(function(t) {
         html += '<div class="tema-opt' + (temaSeleccionado === t.id ? ' selected' : '') + '" onclick="seleccionarTema(\'' + t.id + '\', \'' + escapeHTML(t.nombre) + '\')">' +
@@ -948,15 +915,15 @@ function sanitizarHTML(texto) {
 }
 
 // ================================================================
-// RENDERIZAR POST (con SVGs, sin emojis)
+// RENDERIZAR POST — con vistas _publicas
 // ================================================================
 function renderizarPost(post) {
     var div = document.createElement('div');
     div.className = 'post-card';
     div.dataset.postId = post.id;
-    var usuario = post.usuarios || {};
-    var avatar = usuario.avatar_url ? '<img src="' + escapeHTML(usuario.avatar_url) + '">' : '◈';
-    var nombre = escapeHTML(usuario.nombre || 'Explorador');
+    var avatarUrl = post.usuario_avatar_url;
+    var avatar = avatarUrl ? '<img src="' + escapeHTML(avatarUrl) + '">' : '◈';
+    var nombre = escapeHTML(post.usuario_nombre || 'Explorador');
     var likesCount = (post.muro_likes && post.muro_likes[0]) ? post.muro_likes[0].count || 0 : 0;
     var comentariosCount = (post.muro_comentarios && post.muro_comentarios[0]) ? post.muro_comentarios[0].count || 0 : 0;
     var contenidoSanitizado = sanitizarHTML(post.contenido || '');
@@ -1050,17 +1017,21 @@ function toggleComentarios(postId) {
     if (!isVisible) { cargarComentarios(postId); setTimeout(function() { var input = document.getElementById('input-comentario-' + postId); if (input) input.focus(); }, 200); }
 }
 
+// ================================================================
+// CARGAR COMENTARIOS — con vista _publicas
+// ================================================================
 async function cargarComentarios(postId) {
     var lista = document.getElementById('comentarios-lista-' + postId);
     if (!lista) return;
     try {
-        var result = await supabase.from('muro_comentarios').select('*, usuarios:usuario_id (id, nombre, handle, avatar_url)').eq('post_id', postId).order('created_at', { ascending: true });
+        var result = await supabase.from('muro_comentarios_publicos').select('*').eq('post_id', postId).order('created_at', { ascending: true });
         if (result.error) throw result.error;
         var data = result.data;
         if (!data || data.length === 0) { lista.innerHTML = '<div style="color:var(--text-muted);font-size:0.7rem;padding:8px 0;">Sin comentarios. Sé el primero.</div>'; return; }
         lista.innerHTML = data.map(function(c) {
-            var avatar = (c.usuarios && c.usuarios.avatar_url) ? '<img src="' + escapeHTML(c.usuarios.avatar_url) + '">' : '◈';
-            var nombre = escapeHTML((c.usuarios && c.usuarios.nombre) || 'Usuario');
+            var avatarUrl = c.usuario_avatar_url;
+            var avatar = avatarUrl ? '<img src="' + escapeHTML(avatarUrl) + '">' : '◈';
+            var nombre = escapeHTML(c.usuario_nombre || 'Usuario');
             var esPropietario = sessionUser && c.usuario_id === sessionUser.id;
             return '<div class="comentario"><div class="avatar">' + avatar + '</div><div class="texto"><strong>' + nombre + '</strong> ' + sanitizarHTML(c.contenido || '') + '<div class="fecha">' + new Date(c.created_at).toLocaleString() + '</div>' + (esPropietario ? '<button class="btn-eliminar-comentario" onclick="eliminarComentario(\'' + c.id + '\', \'' + postId + '\')"><svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Eliminar</button>' : '') + '</div></div>';
         }).join('');
@@ -1109,7 +1080,7 @@ async function eliminarPublicacion(postId) {
 }
 
 // ================================================================
-// CARGAR PUBLICACIONES
+// CARGAR PUBLICACIONES — con vista _publicas
 // ================================================================
 async function cargarPublicaciones(reset) {
     if (reset === undefined) reset = true;
@@ -1122,8 +1093,8 @@ async function cargarPublicaciones(reset) {
         var from = currentPage * POSTS_PER_PAGE;
         var to = from + POSTS_PER_PAGE - 1;
         var query = supabase
-            .from('muro_posts')
-            .select('*, usuarios:usuario_id (id, nombre, handle, avatar_url), temas:tema_id (id, nombre, emoji, slug), muro_likes(count), muro_comentarios(count)')
+            .from('muro_posts_publicos')
+            .select('*, temas:tema_id (id, nombre, emoji, slug), muro_likes(count), muro_comentarios(count)')
             .order('created_at', { ascending: false })
             .range(from, to);
 
@@ -1220,12 +1191,12 @@ async function reportarPublicacion(postId) {
 }
 
 // ================================================================
-// BUSCAR HASHTAG
+// BUSCAR HASHTAG — con vista _publicas
 // ================================================================
 async function buscarHashtag(tag) {
     if (!tag) return;
     try {
-        var result = await supabase.from('muro_posts').select('*, usuarios:usuario_id (id, nombre, handle, avatar_url), temas:tema_id (id, nombre, emoji, slug), muro_likes(count), muro_comentarios(count)').ilike('contenido', '%#' + tag + '%').order('created_at', { ascending: false }).limit(50);
+        var result = await supabase.from('muro_posts_publicos').select('*, temas:tema_id (id, nombre, emoji, slug), muro_likes(count), muro_comentarios(count)').ilike('contenido', '%#' + tag + '%').order('created_at', { ascending: false }).limit(50);
         if (result.error) throw result.error;
         var data = result.data;
         var feedContainer = document.getElementById('feedContainer');
@@ -1243,13 +1214,13 @@ async function buscarHashtag(tag) {
 }
 
 // ================================================================
-// BUSCAR POR TEMA (slug)
+// BUSCAR POR TEMA (slug) — con vista _publicas
 // ================================================================
 async function buscarPorTemaSlug(slug) {
     try {
         var tema = temasDisponibles.find(function(t) { return t.slug === slug; });
         if (!tema) { showToast('Tema no encontrado', 'error'); return; }
-        var result = await supabase.from('muro_posts').select('*, usuarios:usuario_id (id, nombre, handle, avatar_url), temas:tema_id (id, nombre, emoji, slug), muro_likes(count), muro_comentarios(count)').eq('tema_id', tema.id).order('created_at', { ascending: false }).limit(50);
+        var result = await supabase.from('muro_posts_publicos').select('*, temas:tema_id (id, nombre, emoji, slug), muro_likes(count), muro_comentarios(count)').eq('tema_id', tema.id).order('created_at', { ascending: false }).limit(50);
         if (result.error) throw result.error;
         var data = result.data;
         var feedContainer = document.getElementById('feedContainer');
@@ -1265,462 +1236,468 @@ async function buscarPorTemaSlug(slug) {
         data.forEach(function(post) { feedContainer.appendChild(renderizarPost(post)); });
     } catch (e) { showToast('Error al buscar', 'error'); }
 }
-
-// ================================================================
-// VENTA DE TOKENS
-// ================================================================
-function abrirModalVenta() {
-    var modal = document.getElementById('modalVender');
-    if (modal) {
-        modal.classList.add('show');
-        var tokensDisp = document.getElementById('tokensDisponibles');
-        if (tokensDisp) tokensDisp.textContent = (sessionUser && sessionUser.tokens) || 0;
-        document.getElementById('inputCantidadTokens').value = 1;
-        document.getElementById('inputPrecioToken').value = precioActual.toFixed(2);
-        actualizarResumenVenta();
-    }
-}
-
-function actualizarResumenVenta() {
-    var cantidad = parseInt(document.getElementById('inputCantidadTokens').value) || 0;
-    var precio = parseFloat(document.getElementById('inputPrecioToken').value) || 0;
-    var total = cantidad * precio;
-    var comision = total * COMISION_PORCENTAJE;
-    var vendedorRecibe = total - comision;
-    document.getElementById('ventaTotalVendedor').textContent = '$' + vendedorRecibe.toFixed(2) + ' MXN';
-    document.getElementById('ventaComisionPlataforma').textContent = '$' + comision.toFixed(2) + ' MXN';
-}
-
-function cerrarModalVenta() {
-    var modal = document.getElementById('modalVender');
-    if (modal) modal.classList.remove('show');
-}
-
-async function publicarVenta() {
-    var cantidad = parseInt(document.getElementById('inputCantidadTokens').value);
-    var precio = parseFloat(document.getElementById('inputPrecioToken').value);
-    var btn = document.getElementById('btnPublicarVenta');
-    if (!cantidad || cantidad <= 0 || !Number.isInteger(cantidad)) { showToast('Cantidad inválida', 'error'); return; }
-    if (cantidad > 100) { showToast('Máximo 100 tokens', 'error'); return; }
-    if (!precio || precio <= 0) { showToast('Precio inválido', 'error'); return; }
-    if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
-    btn.disabled = true; btn.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Publicando...';
-    try {
-        var userResult = await supabase.from('usuarios').select('tokens').eq('id', sessionUser.id).single();
-        if (userResult.error) throw userResult.error;
-        if (userResult.data.tokens < cantidad) { showToast('Sin tokens suficientes', 'error'); btn.disabled = false; btn.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/><polygon points="12 7 16 9.5 16 14.5 12 17 8 14.5 8 9.5 12 7"/></svg> Publicar venta'; return; }
-        var result = await supabase.from('muro_posts').insert({ usuario_id: sessionUser.id, contenido: 'Venta de ' + cantidad + ' tokens a $' + precio.toFixed(2) + ' c/u', cantidad_venta: cantidad, precio_venta: precio, tema_id: temaSeleccionado || null });
-        if (result.error) throw result.error;
-        showToast('Venta publicada', 'success');
-        cerrarModalVenta();
-        await cargarPublicaciones(true);
-        await cargarTokensDestacados();
-    } catch (e) { showToast('Error: ' + e.message, 'error'); }
-    finally { btn.disabled = false; btn.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/><polygon points="12 7 16 9.5 16 14.5 12 17 8 14.5 8 9.5 12 7"/></svg> Publicar venta'; }
-}
-
-// ================================================================
-// COMPRA
-// ================================================================
-function abrirModalCompra(postId) {
-    var postCard = document.querySelector('[data-post-id="' + postId + '"]');
-    if (!postCard) { showToast('No encontrada', 'error'); return; }
-    var modal = document.getElementById('modalConfirmarCompra');
-    var seccionVenta = postCard.querySelector('.post-venta');
-    if (!seccionVenta) { showToast('Sin tokens', 'error'); return; }
-    var textoVenta = seccionVenta.querySelector('div').textContent || '';
-    var matchDisp = textoVenta.match(/(\d+)\s*tokens disponibles/);
-    var matchPrecio = textoVenta.match(/\$([\d.]+)\s*MXN/);
-    if (!matchDisp || !matchPrecio) { showToast('Error leyendo info', 'error'); return; }
-    var disponibles = parseInt(matchDisp[1]);
-    var precioUnitario = parseFloat(matchPrecio[1]);
-    modal.dataset.postId = postId;
-    modal.dataset.disponibles = disponibles;
-    modal.dataset.precioUnitario = precioUnitario;
-    var inputCantidad = document.getElementById('inputCantidadCompra');
-    inputCantidad.value = 1; inputCantidad.max = disponibles;
-    document.getElementById('confirmDisponibles').textContent = disponibles + ' tokens';
-    actualizarResumenCompra();
-    modal.classList.add('show');
-}
-
-function seleccionarTodosTokens() {
-    var modal = document.getElementById('modalConfirmarCompra');
-    var disponibles = parseInt(modal.dataset.disponibles) || 1;
-    document.getElementById('inputCantidadCompra').value = disponibles;
-    actualizarResumenCompra();
-}
-
-function actualizarResumenCompra() {
-    var modal = document.getElementById('modalConfirmarCompra');
-    var precioUnitario = parseFloat(modal.dataset.precioUnitario) || 0;
-    var disponibles = parseInt(modal.dataset.disponibles) || 0;
-    var cantidad = parseInt(document.getElementById('inputCantidadCompra').value) || 0;
-    if (cantidad < 1) { cantidad = 1; document.getElementById('inputCantidadCompra').value = 1; }
-    if (cantidad > disponibles) { cantidad = disponibles; document.getElementById('inputCantidadCompra').value = disponibles; }
-    var total = cantidad * precioUnitario;
-    var comision = total * COMISION_PORCENTAJE;
-    var vendedorRecibe = total - comision;
-    document.getElementById('confirmPrecioUnitario').textContent = '$' + precioUnitario.toFixed(2) + ' MXN';
-    document.getElementById('confirmCantidadLabel').textContent = cantidad + ' token' + (cantidad !== 1 ? 's' : '');
-    document.getElementById('confirmTotal').textContent = '$' + total.toFixed(2) + ' MXN';
-    document.getElementById('confirmComision').textContent = '$' + comision.toFixed(2) + ' MXN';
-    document.getElementById('confirmVendedor').textContent = '$' + vendedorRecibe.toFixed(2) + ' MXN';
-}
-
-function cerrarModalConfirmacion() {
-    var modal = document.getElementById('modalConfirmarCompra');
-    if (modal) modal.classList.remove('show');
-}
-
-async function confirmarCompraCrypto() {
-    var modal = document.getElementById('modalConfirmarCompra');
-    var postId = modal.dataset.postId;
-    var disponibles = parseInt(modal.dataset.disponibles);
-    var btn = document.getElementById('btnConfirmarCompra');
-    var cantidad = parseInt(document.getElementById('inputCantidadCompra').value) || 0;
-    if (cantidad < 1 || cantidad > disponibles) { showToast('Cantidad inválida', 'error'); return; }
-    var payCurrency = document.getElementById('muro-pay-currency').value;
-    btn.disabled = true; btn.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Creando pago...';
-    try {
-        var sessionResult = await supabase.auth.getSession();
-        var accessToken = sessionResult.data.session.access_token;
-        var resp = await fetch(BACKEND_URL + '/api/payments/muro/create', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + accessToken },
-            body: JSON.stringify({ postId: postId, cantidad: cantidad, payCurrency: payCurrency })
-        });
-        var pagoData = await resp.json();
-        if (!resp.ok || !pagoData.success || !pagoData.data) { showToast((pagoData.error || 'Error'), 'error'); return; }
-        pagoActual.ventaId = pagoData.data.venta_id;
-        pagoActual.paymentId = pagoData.data.payment_id;
-        pagoActual.postId = postId;
-        pagoActual.expiresAt = pagoData.data.expires_at ? new Date(pagoData.data.expires_at) : new Date(Date.now() + TIMEOUT_MINUTOS * 60 * 1000);
-        cerrarModalConfirmacion();
-        mostrarModalPagoReal(pagoData.data);
-    } catch (e) { showToast(e.message, 'error'); }
-    finally { btn.disabled = false; btn.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Ir a pagar'; }
-}
-
-function mostrarModalPagoReal(pagoData) {
-    var modal = document.getElementById('cryptoPaymentModal');
-    modal.dataset.ventaId = pagoData.venta_id;
-    modal.dataset.paymentId = pagoData.payment_id;
-    document.getElementById('cryptoAddress').textContent = pagoData.pay_address || 'Ver en NOWPayments';
-    document.getElementById('cryptoMonto').textContent = parseFloat(pagoData.pay_amount || 0).toFixed(8);
-    document.getElementById('cryptoMoneda').textContent = (pagoData.pay_currency || 'USDT').toUpperCase();
-    var qrImg = document.getElementById('cryptoQR');
-    if (pagoData.pay_address) qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(pagoData.pay_address);
-    document.getElementById('cryptoStatus').textContent = 'Esperando pago en ' + (pagoData.pay_currency || '').toUpperCase();
-    iniciarContadorTiempo(pagoActual.expiresAt);
-    if (pagoData.payment_url) { try { window.open(pagoData.payment_url, '_blank'); } catch (e) {} }
-    modal.classList.add('show');
-    iniciarPollingMuro(pagoData.venta_id);
-}
-
-function iniciarContadorTiempo(expiresAt) {
-    if (pagoActual.contadorInterval) clearInterval(pagoActual.contadorInterval);
-    var contadorEl = document.getElementById('contadorPago');
-    var tiempoEl = document.getElementById('tiempoRestante');
-    function tick() {
-        var restante = Math.floor((expiresAt.getTime() - Date.now()) / 1000);
-        if (restante <= 0) {
-            if (tiempoEl) tiempoEl.textContent = '00:00';
-            if (contadorEl) contadorEl.classList.add('urgente');
-            clearInterval(pagoActual.contadorInterval);
-            var statusEl = document.getElementById('cryptoStatus');
-            if (statusEl) { statusEl.textContent = 'Orden expirada'; statusEl.style.color = 'var(--danger)'; }
-            return;
+</script>    <script>
+    // ================================================================
+    // VENTA DE TOKENS
+    // ================================================================
+    function abrirModalVenta() {
+        var modal = document.getElementById('modalVender');
+        if (modal) {
+            modal.classList.add('show');
+            var tokensDisp = document.getElementById('tokensDisponibles');
+            if (tokensDisp) tokensDisp.textContent = (sessionUser && sessionUser.tokens) || 0;
+            document.getElementById('inputCantidadTokens').value = 1;
+            document.getElementById('inputPrecioToken').value = precioActual.toFixed(2);
+            actualizarResumenVenta();
         }
-        if (tiempoEl) tiempoEl.textContent = formatearTiempoRestante(restante);
-        if (restante < 300) { if (contadorEl) contadorEl.classList.add('urgente'); }
-        else { if (contadorEl) contadorEl.classList.remove('urgente'); }
     }
-    tick();
-    pagoActual.contadorInterval = setInterval(tick, 1000);
-}
 
-function iniciarPollingMuro(ventaId) {
-    if (pagoActual.pollingInterval) clearInterval(pagoActual.pollingInterval);
-    var intentos = 0;
-    var statusEl = document.getElementById('cryptoStatus');
-    pagoActual.pollingInterval = setInterval(async function() {
-        intentos++;
-        if (intentos >= 180) { clearInterval(pagoActual.pollingInterval); return; }
-        if (pagoActual.expiresAt && Date.now() > pagoActual.expiresAt.getTime() + 60000) { clearInterval(pagoActual.pollingInterval); return; }
+    function actualizarResumenVenta() {
+        var cantidad = parseInt(document.getElementById('inputCantidadTokens').value) || 0;
+        var precio = parseFloat(document.getElementById('inputPrecioToken').value) || 0;
+        var total = cantidad * precio;
+        var comision = total * COMISION_PORCENTAJE;
+        var vendedorRecibe = total - comision;
+        document.getElementById('ventaTotalVendedor').textContent = '$' + vendedorRecibe.toFixed(2) + ' MXN';
+        document.getElementById('ventaComisionPlataforma').textContent = '$' + comision.toFixed(2) + ' MXN';
+    }
+
+    function cerrarModalVenta() {
+        var modal = document.getElementById('modalVender');
+        if (modal) modal.classList.remove('show');
+    }
+
+    async function publicarVenta() {
+        var cantidad = parseInt(document.getElementById('inputCantidadTokens').value);
+        var precio = parseFloat(document.getElementById('inputPrecioToken').value);
+        var btn = document.getElementById('btnPublicarVenta');
+        if (!cantidad || cantidad <= 0 || !Number.isInteger(cantidad)) { showToast('Cantidad inválida', 'error'); return; }
+        if (cantidad > 100) { showToast('Máximo 100 tokens', 'error'); return; }
+        if (!precio || precio <= 0) { showToast('Precio inválido', 'error'); return; }
+        if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
+        btn.disabled = true; btn.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Publicando...';
+        try {
+            var userResult = await supabase.from('usuarios').select('tokens').eq('id', sessionUser.id).single();
+            if (userResult.error) throw userResult.error;
+            if (userResult.data.tokens < cantidad) { showToast('Sin tokens suficientes', 'error'); btn.disabled = false; btn.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/><polygon points="12 7 16 9.5 16 14.5 12 17 8 14.5 8 9.5 12 7"/></svg> Publicar venta'; return; }
+            var result = await supabase.from('muro_posts').insert({ usuario_id: sessionUser.id, contenido: 'Venta de ' + cantidad + ' tokens a $' + precio.toFixed(2) + ' c/u', cantidad_venta: cantidad, precio_venta: precio, tema_id: temaSeleccionado || null });
+            if (result.error) throw result.error;
+            showToast('Venta publicada', 'success');
+            cerrarModalVenta();
+            await cargarPublicaciones(true);
+            await cargarTokensDestacados();
+        } catch (e) { showToast('Error: ' + e.message, 'error'); }
+        finally { btn.disabled = false; btn.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/><polygon points="12 7 16 9.5 16 14.5 12 17 8 14.5 8 9.5 12 7"/></svg> Publicar venta'; }
+    }
+
+    // ================================================================
+    // COMPRA
+    // ================================================================
+    function abrirModalCompra(postId) {
+        var postCard = document.querySelector('[data-post-id="' + postId + '"]');
+        if (!postCard) { showToast('No encontrada', 'error'); return; }
+        var modal = document.getElementById('modalConfirmarCompra');
+        var seccionVenta = postCard.querySelector('.post-venta');
+        if (!seccionVenta) { showToast('Sin tokens', 'error'); return; }
+        var textoVenta = seccionVenta.querySelector('div').textContent || '';
+        var matchDisp = textoVenta.match(/(\d+)\s*tokens disponibles/);
+        var matchPrecio = textoVenta.match(/\$([\d.]+)\s*MXN/);
+        if (!matchDisp || !matchPrecio) { showToast('Error leyendo info', 'error'); return; }
+        var disponibles = parseInt(matchDisp[1]);
+        var precioUnitario = parseFloat(matchPrecio[1]);
+        modal.dataset.postId = postId;
+        modal.dataset.disponibles = disponibles;
+        modal.dataset.precioUnitario = precioUnitario;
+        var inputCantidad = document.getElementById('inputCantidadCompra');
+        inputCantidad.value = 1; inputCantidad.max = disponibles;
+        document.getElementById('confirmDisponibles').textContent = disponibles + ' tokens';
+        actualizarResumenCompra();
+        modal.classList.add('show');
+    }
+
+    function seleccionarTodosTokens() {
+        var modal = document.getElementById('modalConfirmarCompra');
+        var disponibles = parseInt(modal.dataset.disponibles) || 1;
+        document.getElementById('inputCantidadCompra').value = disponibles;
+        actualizarResumenCompra();
+    }
+
+    function actualizarResumenCompra() {
+        var modal = document.getElementById('modalConfirmarCompra');
+        var precioUnitario = parseFloat(modal.dataset.precioUnitario) || 0;
+        var disponibles = parseInt(modal.dataset.disponibles) || 0;
+        var cantidad = parseInt(document.getElementById('inputCantidadCompra').value) || 0;
+        if (cantidad < 1) { cantidad = 1; document.getElementById('inputCantidadCompra').value = 1; }
+        if (cantidad > disponibles) { cantidad = disponibles; document.getElementById('inputCantidadCompra').value = disponibles; }
+        var total = cantidad * precioUnitario;
+        var comision = total * COMISION_PORCENTAJE;
+        var vendedorRecibe = total - comision;
+        document.getElementById('confirmPrecioUnitario').textContent = '$' + precioUnitario.toFixed(2) + ' MXN';
+        document.getElementById('confirmCantidadLabel').textContent = cantidad + ' token' + (cantidad !== 1 ? 's' : '');
+        document.getElementById('confirmTotal').textContent = '$' + total.toFixed(2) + ' MXN';
+        document.getElementById('confirmComision').textContent = '$' + comision.toFixed(2) + ' MXN';
+        document.getElementById('confirmVendedor').textContent = '$' + vendedorRecibe.toFixed(2) + ' MXN';
+    }
+
+    function cerrarModalConfirmacion() {
+        var modal = document.getElementById('modalConfirmarCompra');
+        if (modal) modal.classList.remove('show');
+    }
+
+    async function confirmarCompraCrypto() {
+        var modal = document.getElementById('modalConfirmarCompra');
+        var postId = modal.dataset.postId;
+        var disponibles = parseInt(modal.dataset.disponibles);
+        var btn = document.getElementById('btnConfirmarCompra');
+        var cantidad = parseInt(document.getElementById('inputCantidadCompra').value) || 0;
+        if (cantidad < 1 || cantidad > disponibles) { showToast('Cantidad inválida', 'error'); return; }
+        var payCurrency = document.getElementById('muro-pay-currency').value;
+        btn.disabled = true; btn.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Creando pago...';
         try {
             var sessionResult = await supabase.auth.getSession();
-            if (!sessionResult.data.session) return;
+            var accessToken = sessionResult.data.session.access_token;
+            var resp = await fetch(BACKEND_URL + '/api/payments/muro/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + accessToken },
+                body: JSON.stringify({ postId: postId, cantidad: cantidad, payCurrency: payCurrency })
+            });
+            var pagoData = await resp.json();
+            if (!resp.ok || !pagoData.success || !pagoData.data) { showToast((pagoData.error || 'Error'), 'error'); return; }
+            pagoActual.ventaId = pagoData.data.venta_id;
+            pagoActual.paymentId = pagoData.data.payment_id;
+            pagoActual.postId = postId;
+            pagoActual.expiresAt = pagoData.data.expires_at ? new Date(pagoData.data.expires_at) : new Date(Date.now() + TIMEOUT_MINUTOS * 60 * 1000);
+            cerrarModalConfirmacion();
+            mostrarModalPagoReal(pagoData.data);
+        } catch (e) { showToast(e.message, 'error'); }
+        finally { btn.disabled = false; btn.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Ir a pagar'; }
+    }
+
+    function mostrarModalPagoReal(pagoData) {
+        var modal = document.getElementById('cryptoPaymentModal');
+        modal.dataset.ventaId = pagoData.venta_id;
+        modal.dataset.paymentId = pagoData.payment_id;
+        document.getElementById('cryptoAddress').textContent = pagoData.pay_address || 'Ver en NOWPayments';
+        document.getElementById('cryptoMonto').textContent = parseFloat(pagoData.pay_amount || 0).toFixed(8);
+        document.getElementById('cryptoMoneda').textContent = (pagoData.pay_currency || 'USDT').toUpperCase();
+        var qrImg = document.getElementById('cryptoQR');
+        if (pagoData.pay_address) qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(pagoData.pay_address);
+        document.getElementById('cryptoStatus').textContent = 'Esperando pago en ' + (pagoData.pay_currency || '').toUpperCase();
+        iniciarContadorTiempo(pagoActual.expiresAt);
+        if (pagoData.payment_url) { try { window.open(pagoData.payment_url, '_blank'); } catch (e) {} }
+        modal.classList.add('show');
+        iniciarPollingMuro(pagoData.venta_id);
+    }
+
+    function iniciarContadorTiempo(expiresAt) {
+        if (pagoActual.contadorInterval) clearInterval(pagoActual.contadorInterval);
+        var contadorEl = document.getElementById('contadorPago');
+        var tiempoEl = document.getElementById('tiempoRestante');
+        function tick() {
+            var restante = Math.floor((expiresAt.getTime() - Date.now()) / 1000);
+            if (restante <= 0) {
+                if (tiempoEl) tiempoEl.textContent = '00:00';
+                if (contadorEl) contadorEl.classList.add('urgente');
+                clearInterval(pagoActual.contadorInterval);
+                var statusEl = document.getElementById('cryptoStatus');
+                if (statusEl) { statusEl.textContent = 'Orden expirada'; statusEl.style.color = 'var(--danger)'; }
+                return;
+            }
+            if (tiempoEl) tiempoEl.textContent = formatearTiempoRestante(restante);
+            if (restante < 300) { if (contadorEl) contadorEl.classList.add('urgente'); }
+            else { if (contadorEl) contadorEl.classList.remove('urgente'); }
+        }
+        tick();
+        pagoActual.contadorInterval = setInterval(tick, 1000);
+    }
+
+    function iniciarPollingMuro(ventaId) {
+        if (pagoActual.pollingInterval) clearInterval(pagoActual.pollingInterval);
+        var intentos = 0;
+        var statusEl = document.getElementById('cryptoStatus');
+        pagoActual.pollingInterval = setInterval(async function() {
+            intentos++;
+            if (intentos >= 180) { clearInterval(pagoActual.pollingInterval); return; }
+            if (pagoActual.expiresAt && Date.now() > pagoActual.expiresAt.getTime() + 60000) { clearInterval(pagoActual.pollingInterval); return; }
+            try {
+                var sessionResult = await supabase.auth.getSession();
+                if (!sessionResult.data.session) return;
+                var accessToken = sessionResult.data.session.access_token;
+                var resp = await fetch(BACKEND_URL + '/api/payments/muro/status/' + ventaId, { headers: { 'Authorization': 'Bearer ' + accessToken } });
+                var statusData = await resp.json();
+                if (!statusData.success) return;
+                var estado = statusData.data.estado;
+                if (estado === 'pagado' || estado === 'completado') {
+                    clearInterval(pagoActual.pollingInterval);
+                    if (pagoActual.contadorInterval) clearInterval(pagoActual.contadorInterval);
+                    if (statusEl) { statusEl.textContent = 'Pago confirmado'; statusEl.style.color = 'var(--success)'; }
+                    showToast('Tokens acreditados', 'success');
+                    setTimeout(function() { cerrarModalPago(); cargarPublicaciones(); cargarPreciosMercado(); cargarUsuarioActual(); cargarTokensDestacados(); }, 2500);
+                    return;
+                }
+                if (estado === 'cancelado' || estado === 'expirado' || estado === 'expirada') {
+                    clearInterval(pagoActual.pollingInterval);
+                    if (pagoActual.contadorInterval) clearInterval(pagoActual.contadorInterval);
+                    if (statusEl) { statusEl.textContent = 'Pago cancelado o expirado'; statusEl.style.color = 'var(--danger)'; }
+                    return;
+                }
+            } catch (e) {}
+        }, 10000);
+    }
+
+    async function verificarPagoCrypto() {
+        var modal = document.getElementById('cryptoPaymentModal');
+        var ventaId = modal.dataset.ventaId;
+        var btn = document.getElementById('btnVerificarPago');
+        btn.disabled = true; btn.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Verificando...';
+        try {
+            var sessionResult = await supabase.auth.getSession();
             var accessToken = sessionResult.data.session.access_token;
             var resp = await fetch(BACKEND_URL + '/api/payments/muro/status/' + ventaId, { headers: { 'Authorization': 'Bearer ' + accessToken } });
             var statusData = await resp.json();
-            if (!statusData.success) return;
+            if (!statusData.success) { showToast('Error', 'error'); return; }
             var estado = statusData.data.estado;
             if (estado === 'pagado' || estado === 'completado') {
-                clearInterval(pagoActual.pollingInterval);
-                if (pagoActual.contadorInterval) clearInterval(pagoActual.contadorInterval);
-                if (statusEl) { statusEl.textContent = 'Pago confirmado'; statusEl.style.color = 'var(--success)'; }
+                document.getElementById('cryptoStatus').textContent = 'Pago confirmado';
+                document.getElementById('cryptoStatus').style.color = 'var(--success)';
                 showToast('Tokens acreditados', 'success');
-                setTimeout(function() { cerrarModalPago(); cargarPublicaciones(); cargarPreciosMercado(); cargarUsuarioActual(); cargarTokensDestacados(); }, 2500);
-                return;
-            }
-            if (estado === 'cancelado' || estado === 'expirado' || estado === 'expirada') {
-                clearInterval(pagoActual.pollingInterval);
                 if (pagoActual.contadorInterval) clearInterval(pagoActual.contadorInterval);
-                if (statusEl) { statusEl.textContent = 'Pago cancelado o expirado'; statusEl.style.color = 'var(--danger)'; }
-                return;
+                if (pagoActual.pollingInterval) clearInterval(pagoActual.pollingInterval);
+                setTimeout(function() { cerrarModalPago(); cargarPublicaciones(); cargarPreciosMercado(); cargarUsuarioActual(); cargarTokensDestacados(); }, 2000);
+            } else {
+                document.getElementById('cryptoStatus').textContent = 'Estado: ' + estado;
+                showToast('Aún sin confirmar', 'warning');
             }
-        } catch (e) {}
-    }, 10000);
-}
-
-async function verificarPagoCrypto() {
-    var modal = document.getElementById('cryptoPaymentModal');
-    var ventaId = modal.dataset.ventaId;
-    var btn = document.getElementById('btnVerificarPago');
-    btn.disabled = true; btn.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Verificando...';
-    try {
-        var sessionResult = await supabase.auth.getSession();
-        var accessToken = sessionResult.data.session.access_token;
-        var resp = await fetch(BACKEND_URL + '/api/payments/muro/status/' + ventaId, { headers: { 'Authorization': 'Bearer ' + accessToken } });
-        var statusData = await resp.json();
-        if (!statusData.success) { showToast('Error', 'error'); return; }
-        var estado = statusData.data.estado;
-        if (estado === 'pagado' || estado === 'completado') {
-            document.getElementById('cryptoStatus').textContent = 'Pago confirmado';
-            document.getElementById('cryptoStatus').style.color = 'var(--success)';
-            showToast('Tokens acreditados', 'success');
-            if (pagoActual.contadorInterval) clearInterval(pagoActual.contadorInterval);
-            if (pagoActual.pollingInterval) clearInterval(pagoActual.pollingInterval);
-            setTimeout(function() { cerrarModalPago(); cargarPublicaciones(); cargarPreciosMercado(); cargarUsuarioActual(); cargarTokensDestacados(); }, 2000);
-        } else {
-            document.getElementById('cryptoStatus').textContent = 'Estado: ' + estado;
-            showToast('Aún sin confirmar', 'warning');
-        }
-    } catch (e) { showToast(e.message, 'error'); }
-    finally { btn.disabled = false; btn.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Verificar pago'; }
-}
-
-function cerrarModalPago() {
-    var modal = document.getElementById('cryptoPaymentModal');
-    if (modal) modal.classList.remove('show');
-    if (pagoActual.contadorInterval) clearInterval(pagoActual.contadorInterval);
-}
-
-function copiarDireccionCrypto() {
-    var address = document.getElementById('cryptoAddress').textContent;
-    if (!address || address === 'Cargando...') return;
-    navigator.clipboard.writeText(address).then(function() { showToast('Copiada', 'success'); }).catch(function() { showToast('Copiada', 'success'); });
-}
-
-document.addEventListener('visibilitychange', function() {
-    if (document.visibilityState === 'visible') {
-        if (pagoActual.ventaId && !pagoActual.pollingInterval) {
-            var modal = document.getElementById('cryptoPaymentModal');
-            if (modal && modal.classList.contains('show')) {
-                iniciarPollingMuro(pagoActual.ventaId);
-                if (pagoActual.expiresAt) iniciarContadorTiempo(pagoActual.expiresAt);
-            }
-        }
+        } catch (e) { showToast(e.message, 'error'); }
+        finally { btn.disabled = false; btn.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Verificar pago'; }
     }
-});
 
-// ================================================================
-// UTILIDADES
-// ================================================================
-function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
-
-function insertarHashtag() {
-    var input = document.getElementById('postContent');
-    var start = input.selectionStart || 0;
-    var end = input.selectionEnd || 0;
-    input.value = input.value.substring(0, start) + '#' + input.value.substring(end);
-    input.focus();
-    input.selectionStart = input.selectionEnd = start + 1;
-}
-
-function toggleEmojiPicker() {
-    var picker = document.getElementById('emojiPicker');
-    if (picker.classList.contains('show')) { picker.classList.remove('show'); return; }
-    var grid = document.getElementById('emojiGrid');
-    if (grid && grid.children.length === 0) {
-        emojisDisponibles.forEach(function(emoji) {
-            var btn = document.createElement('button');
-            btn.textContent = emoji;
-            btn.addEventListener('click', function(e) { e.stopPropagation(); insertarEmojiSeleccionado(emoji); picker.classList.remove('show'); });
-            grid.appendChild(btn);
-        });
+    function cerrarModalPago() {
+        var modal = document.getElementById('cryptoPaymentModal');
+        if (modal) modal.classList.remove('show');
+        if (pagoActual.contadorInterval) clearInterval(pagoActual.contadorInterval);
     }
-    picker.classList.add('show');
-}
 
-function insertarEmojiSeleccionado(emoji) {
-    var input = document.getElementById('postContent');
-    var start = input.selectionStart || 0;
-    var end = input.selectionEnd || 0;
-    input.value = input.value.substring(0, start) + emoji + input.value.substring(end);
-    input.focus();
-    input.selectionStart = input.selectionEnd = start + emoji.length;
-}
+    function copiarDireccionCrypto() {
+        var address = document.getElementById('cryptoAddress').textContent;
+        if (!address || address === 'Cargando...') return;
+        navigator.clipboard.writeText(address).then(function() { showToast('Copiada', 'success'); }).catch(function() { showToast('Copiada', 'success'); });
+    }
 
-function abrirSelectorImagen() { document.getElementById('inputImagen').click(); }
-
-async function subirImagenMuro(event) {
-    var file = event.target.files[0];
-    if (!file) return;
-    if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
-    if (!file.type.startsWith('image/')) { showToast('Solo imágenes', 'error'); return; }
-    if (file.size > 5 * 1024 * 1024) { showToast('Máximo 5MB', 'error'); return; }
-    var fileExt = file.name.split('.').pop();
-    var filePath = sessionUser.id + '/' + Date.now() + '.' + fileExt;
-    try {
-        showToast('Subiendo...', '');
-        var uploadResult = await supabase.storage.from('muro-imagenes').upload(filePath, file, { cacheControl: '3600', upsert: true });
-        if (uploadResult.error) throw uploadResult.error;
-        var publicUrl = supabase.storage.from('muro-imagenes').getPublicUrl(filePath).data.publicUrl;
-        var contenido = document.getElementById('postContent').value.trim();
-        var insertData = { usuario_id: sessionUser.id, contenido: contenido, imagen_url: publicUrl };
-        if (temaSeleccionado) insertData.tema_id = temaSeleccionado;
-        var insertResult = await supabase.from('muro_posts').insert(insertData);
-        if (insertResult.error) throw insertResult.error;
-        document.getElementById('postContent').value = '';
-        temaSeleccionado = null; seleccionarTema(null);
-        showToast('Publicación con imagen creada', 'success');
-        event.target.value = '';
-        await cargarPublicaciones(true);
-    } catch (e) { showToast(e.message, 'error'); }
-}
-
-async function suscribirseARealtime() {
-    if (muroChannel) { try { await supabase.removeChannel(muroChannel); } catch (e) {} }
-    muroChannel = supabase.channel('muro-realtime')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'muro_posts' }, function(payload) {
-            if (isRealtimeProcessing) return;
-            if (sessionUser && payload.new.usuario_id === sessionUser.id) return;
-            isRealtimeProcessing = true;
-            try {
-                var fc = document.getElementById('feedContainer');
-                if (fc) {
-                    var empty = fc.querySelector('.empty-state');
-                    if (empty) empty.remove();
-                    fc.insertBefore(renderizarPost(payload.new), fc.firstChild);
+    document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'visible') {
+            if (pagoActual.ventaId && !pagoActual.pollingInterval) {
+                var modal = document.getElementById('cryptoPaymentModal');
+                if (modal && modal.classList.contains('show')) {
+                    iniciarPollingMuro(pagoActual.ventaId);
+                    if (pagoActual.expiresAt) iniciarContadorTiempo(pagoActual.expiresAt);
                 }
-            } catch (e) {}
-            finally { isRealtimeProcessing = false; }
-        })
-        .subscribe();
-    return muroChannel;
-}
-
-function limpiarRecursosMuro() {
-    if (muroChannel) { try { supabase.removeChannel(muroChannel); } catch(e) {} }
-    if (observerGlobal) observerGlobal.disconnect();
-    if (pagoActual.pollingInterval) clearInterval(pagoActual.pollingInterval);
-    if (pagoActual.contadorInterval) clearInterval(pagoActual.contadorInterval);
-}
-window.addEventListener('beforeunload', limpiarRecursosMuro);
-
-// ================================================================
-// INICIALIZACIÓN
-// ================================================================
-document.addEventListener('DOMContentLoaded', async function() {
-    await cargarUsuarioActual();
-    await cargarTemasDisponibles();
-    await cargarTemasUsuario();
-    await cargarPreciosMercado();
-    await cargarTendencias();
-    await cargarTokensDestacados();
-    await cargarPublicaciones(true);
-    await suscribirseARealtime();
-
-    setInterval(cargarTendencias, 5 * 60 * 1000);
-    setInterval(cargarTokensDestacados, 5 * 60 * 1000);
-
-    setTimeout(async function() {
-        try { if (typeof window.inicializarIdiomas === 'function') await window.inicializarIdiomas(); }
-        catch (e) {}
-    }, 500);
-
-    var btnPublicar = document.getElementById('btnPublicar');
-    if (btnPublicar) btnPublicar.addEventListener('click', function(e) { e.preventDefault(); publicar(); });
-
-    var btnPublicarVenta = document.getElementById('btnPublicarVenta');
-    if (btnPublicarVenta) btnPublicarVenta.addEventListener('click', function(e) { e.preventDefault(); publicarVenta(); });
-
-    var inputCantidadTokens = document.getElementById('inputCantidadTokens');
-    var inputPrecioToken = document.getElementById('inputPrecioToken');
-    if (inputCantidadTokens) inputCantidadTokens.addEventListener('input', actualizarResumenVenta);
-    if (inputPrecioToken) inputPrecioToken.addEventListener('input', actualizarResumenVenta);
-
-    var inputCantidadCompra = document.getElementById('inputCantidadCompra');
-    if (inputCantidadCompra) inputCantidadCompra.addEventListener('input', actualizarResumenCompra);
-
-    document.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            var input = e.target;
-            if (input && input.id && input.id.indexOf('input-comentario-') === 0) {
-                e.preventDefault();
-                enviarComentario(input.id.replace('input-comentario-', ''));
             }
         }
     });
 
-    document.querySelectorAll('.modal-overlay').forEach(function(modal) {
-        modal.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('show'); });
-    });
+    // ================================================================
+    // UTILIDADES
+    // ================================================================
+    function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
 
-    document.addEventListener('click', function(e) {
+    function insertarHashtag() {
+        var input = document.getElementById('postContent');
+        var start = input.selectionStart || 0;
+        var end = input.selectionEnd || 0;
+        input.value = input.value.substring(0, start) + '#' + input.value.substring(end);
+        input.focus();
+        input.selectionStart = input.selectionEnd = start + 1;
+    }
+
+    function toggleEmojiPicker() {
         var picker = document.getElementById('emojiPicker');
-        var btnEmoji = document.getElementById('btnEmoji');
-        if (picker && btnEmoji && !picker.contains(e.target) && !btnEmoji.contains(e.target)) picker.classList.remove('show');
+        if (picker.classList.contains('show')) { picker.classList.remove('show'); return; }
+        var grid = document.getElementById('emojiGrid');
+        if (grid && grid.children.length === 0) {
+            emojisDisponibles.forEach(function(emoji) {
+                var btn = document.createElement('button');
+                btn.textContent = emoji;
+                btn.addEventListener('click', function(e) { e.stopPropagation(); insertarEmojiSeleccionado(emoji); picker.classList.remove('show'); });
+                grid.appendChild(btn);
+            });
+        }
+        picker.classList.add('show');
+    }
+
+    function insertarEmojiSeleccionado(emoji) {
+        var input = document.getElementById('postContent');
+        var start = input.selectionStart || 0;
+        var end = input.selectionEnd || 0;
+        input.value = input.value.substring(0, start) + emoji + input.value.substring(end);
+        input.focus();
+        input.selectionStart = input.selectionEnd = start + emoji.length;
+    }
+
+    function abrirSelectorImagen() { document.getElementById('inputImagen').click(); }
+
+    async function subirImagenMuro(event) {
+        var file = event.target.files[0];
+        if (!file) return;
+        if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
+        if (!file.type.startsWith('image/')) { showToast('Solo imágenes', 'error'); return; }
+        if (file.size > 5 * 1024 * 1024) { showToast('Máximo 5MB', 'error'); return; }
+        var fileExt = file.name.split('.').pop();
+        var filePath = sessionUser.id + '/' + Date.now() + '.' + fileExt;
+        try {
+            showToast('Subiendo...', '');
+            var uploadResult = await supabase.storage.from('muro-imagenes').upload(filePath, file, { cacheControl: '3600', upsert: true });
+            if (uploadResult.error) throw uploadResult.error;
+            var publicUrl = supabase.storage.from('muro-imagenes').getPublicUrl(filePath).data.publicUrl;
+            var contenido = document.getElementById('postContent').value.trim();
+            var insertData = { usuario_id: sessionUser.id, contenido: contenido, imagen_url: publicUrl };
+            if (temaSeleccionado) insertData.tema_id = temaSeleccionado;
+            var insertResult = await supabase.from('muro_posts').insert(insertData);
+            if (insertResult.error) throw insertResult.error;
+            document.getElementById('postContent').value = '';
+            temaSeleccionado = null; seleccionarTema(null);
+            showToast('Publicación con imagen creada', 'success');
+            event.target.value = '';
+            await cargarPublicaciones(true);
+        } catch (e) { showToast(e.message, 'error'); }
+    }
+
+    async function suscribirseARealtime() {
+        if (muroChannel) { try { await supabase.removeChannel(muroChannel); } catch (e) {} }
+        muroChannel = supabase.channel('muro-realtime')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'muro_posts' }, function(payload) {
+                if (isRealtimeProcessing) return;
+                if (sessionUser && payload.new.usuario_id === sessionUser.id) return;
+                isRealtimeProcessing = true;
+                setTimeout(async function() {
+                    try {
+                        var fc = document.getElementById('feedContainer');
+                        if (fc) {
+                            var empty = fc.querySelector('.empty-state');
+                            if (empty) empty.remove();
+                            var postId = payload.new.id;
+                            var result = await supabase.from('muro_posts_publicos').select('*, temas:tema_id (id, nombre, emoji, slug), muro_likes(count), muro_comentarios(count)').eq('id', postId).single();
+                            if (!result.error && result.data) {
+                                fc.insertBefore(renderizarPost(result.data), fc.firstChild);
+                            }
+                        }
+                    } catch (e) { console.warn('Error realtime:', e); }
+                    finally { isRealtimeProcessing = false; }
+                }, 500);
+            })
+            .subscribe();
+        return muroChannel;
+    }
+
+    function limpiarRecursosMuro() {
+        if (muroChannel) { try { supabase.removeChannel(muroChannel); } catch(e) {} }
+        if (observerGlobal) observerGlobal.disconnect();
+        if (pagoActual.pollingInterval) clearInterval(pagoActual.pollingInterval);
+        if (pagoActual.contadorInterval) clearInterval(pagoActual.contadorInterval);
+    }
+    window.addEventListener('beforeunload', limpiarRecursosMuro);
+
+    // ================================================================
+    // INICIALIZACIÓN
+    // ================================================================
+    document.addEventListener('DOMContentLoaded', async function() {
+        await cargarUsuarioActual();
+        await cargarTemasDisponibles();
+        await cargarTemasUsuario();
+        await cargarPreciosMercado();
+        await cargarTendencias();
+        await cargarTokensDestacados();
+        await cargarPublicaciones(true);
+        await suscribirseARealtime();
+
+        setInterval(cargarTendencias, 5 * 60 * 1000);
+        setInterval(cargarTokensDestacados, 5 * 60 * 1000);
+
+        setTimeout(async function() {
+            try { if (typeof window.inicializarIdiomas === 'function') await window.inicializarIdiomas(); }
+            catch (e) {}
+        }, 500);
+
+        var btnPublicar = document.getElementById('btnPublicar');
+        if (btnPublicar) btnPublicar.addEventListener('click', function(e) { e.preventDefault(); publicar(); });
+
+        var btnPublicarVenta = document.getElementById('btnPublicarVenta');
+        if (btnPublicarVenta) btnPublicarVenta.addEventListener('click', function(e) { e.preventDefault(); publicarVenta(); });
+
+        var inputCantidadTokens = document.getElementById('inputCantidadTokens');
+        var inputPrecioToken = document.getElementById('inputPrecioToken');
+        if (inputCantidadTokens) inputCantidadTokens.addEventListener('input', actualizarResumenVenta);
+        if (inputPrecioToken) inputPrecioToken.addEventListener('input', actualizarResumenVenta);
+
+        var inputCantidadCompra = document.getElementById('inputCantidadCompra');
+        if (inputCantidadCompra) inputCantidadCompra.addEventListener('input', actualizarResumenCompra);
+
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                var input = e.target;
+                if (input && input.id && input.id.indexOf('input-comentario-') === 0) {
+                    e.preventDefault();
+                    enviarComentario(input.id.replace('input-comentario-', ''));
+                }
+            }
+        });
+
+        document.querySelectorAll('.modal-overlay').forEach(function(modal) {
+            modal.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('show'); });
+        });
+
+        document.addEventListener('click', function(e) {
+            var picker = document.getElementById('emojiPicker');
+            var btnEmoji = document.getElementById('btnEmoji');
+            if (picker && btnEmoji && !picker.contains(e.target) && !btnEmoji.contains(e.target)) picker.classList.remove('show');
+        });
+
+        console.log('◈ Muro inicializado con vistas _publicas y SVGs');
     });
 
-    console.log('◈ Muro inicializado con tendencias dinámicas y SVGs');
-});
-
-// ================================================================
-// EXPOSICIÓN GLOBAL
-// ================================================================
-window.publicar = publicar;
-window.cargarPublicaciones = cargarPublicaciones;
-window.cargarTendencias = cargarTendencias;
-window.cargarTokensDestacados = cargarTokensDestacados;
-window.cargarTemasDisponibles = cargarTemasDisponibles;
-window.cargarTemasUsuario = cargarTemasUsuario;
-window.toggleFiltroTemas = toggleFiltroTemas;
-window.toggleTemaDropdown = toggleTemaDropdown;
-window.seleccionarTema = seleccionarTema;
-window.buscarPorTema = buscarPorTema;
-window.irAPost = irAPost;
-window.toggleLike = toggleLike;
-window.toggleComentarios = toggleComentarios;
-window.enviarComentario = enviarComentario;
-window.eliminarComentario = eliminarComentario;
-window.eliminarPublicacion = eliminarPublicacion;
-window.compartirPublicacion = compartirPublicacion;
-window.reportarPublicacion = reportarPublicacion;
-window.buscarHashtag = buscarHashtag;
-window.subirImagenMuro = subirImagenMuro;
-window.abrirSelectorImagen = abrirSelectorImagen;
-window.insertarHashtag = insertarHashtag;
-window.toggleEmojiPicker = toggleEmojiPicker;
-window.verTokens = verTokens;
-window.showToast = showToast;
-window.abrirModalVenta = abrirModalVenta;
-window.cerrarModalVenta = cerrarModalVenta;
-window.publicarVenta = publicarVenta;
-window.abrirModalCompra = abrirModalCompra;
-window.cerrarModalConfirmacion = cerrarModalConfirmacion;
-window.confirmarCompraCrypto = confirmarCompraCrypto;
-window.cerrarModalPago = cerrarModalPago;
-window.copiarDireccionCrypto = copiarDireccionCrypto;
-window.verificarPagoCrypto = verificarPagoCrypto;
-window.cargarUsuarioActual = cargarUsuarioActual;
-window.mostrarModalPagoReal = mostrarModalPagoReal;
-window.iniciarPollingMuro = iniciarPollingMuro;
-window.actualizarResumenCompra = actualizarResumenCompra;
-window.actualizarResumenVenta = actualizarResumenVenta;
-window.seleccionarTodosTokens = seleccionarTodosTokens;
-</script>
+    // ================================================================
+    // EXPOSICIÓN GLOBAL
+    // ================================================================
+    window.publicar = publicar;
+    window.cargarPublicaciones = cargarPublicaciones;
+    window.cargarTendencias = cargarTendencias;
+    window.cargarTokensDestacados = cargarTokensDestacados;
+    window.cargarTemasDisponibles = cargarTemasDisponibles;
+    window.cargarTemasUsuario = cargarTemasUsuario;
+    window.toggleFiltroTemas = toggleFiltroTemas;
+    window.toggleTemaDropdown = toggleTemaDropdown;
+    window.seleccionarTema = seleccionarTema;
+    window.buscarPorTema = buscarPorTema;
+    window.irAPost = irAPost;
+    window.toggleLike = toggleLike;
+    window.toggleComentarios = toggleComentarios;
+    window.enviarComentario = enviarComentario;
+    window.eliminarComentario = eliminarComentario;
+    window.eliminarPublicacion = eliminarPublicacion;
+    window.compartirPublicacion = compartirPublicacion;
+    window.reportarPublicacion = reportarPublicacion;
+    window.buscarHashtag = buscarHashtag;
+    window.subirImagenMuro = subirImagenMuro;
+    window.abrirSelectorImagen = abrirSelectorImagen;
+    window.insertarHashtag = insertarHashtag;
+    window.toggleEmojiPicker = toggleEmojiPicker;
+    window.verTokens = verTokens;
+    window.showToast = showToast;
+    window.abrirModalVenta = abrirModalVenta;
+    window.cerrarModalVenta = cerrarModalVenta;
+    window.publicarVenta = publicarVenta;
+    window.abrirModalCompra = abrirModalCompra;
+    window.cerrarModalConfirmacion = cerrarModalConfirmacion;
+    window.confirmarCompraCrypto = confirmarCompraCrypto;
+    window.cerrarModalPago = cerrarModalPago;
+    window.copiarDireccionCrypto = copiarDireccionCrypto;
+    window.verificarPagoCrypto = verificarPagoCrypto;
+    window.cargarUsuarioActual = cargarUsuarioActual;
+    window.mostrarModalPagoReal = mostrarModalPagoReal;
+    window.iniciarPollingMuro = iniciarPollingMuro;
+    window.actualizarResumenCompra = actualizarResumenCompra;
+    window.actualizarResumenVenta = actualizarResumenVenta;
+    window.seleccionarTodosTokens = seleccionarTodosTokens;
+    </script>
 </body>
 </html>
