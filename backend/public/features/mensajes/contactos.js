@@ -15,6 +15,8 @@
    - ✅ Sin fugas de datos (RLS cerrado)
    - ✅ Skeleton loader
    - ✅ Sin memory leaks (cleanup de observers)
+   - ✅ LOCK GLOBAL: evita cargas simultáneas
+   - ✅ Contador online proporcional
 
    Tablas/vistas:
    - public.contactos
@@ -67,6 +69,9 @@
     const state = {
         initialized: false,
 
+        // ✅ LOCK GLOBAL: evita que dos cargas corran a la vez
+        cargando: false,
+
         // Sesión cacheada
         session: null,
         sessionExpira: 0,
@@ -76,7 +81,6 @@
         totalContactos: 0,
         paginaActual: 0,
         hayMas: true,
-        cargandoMas: false,
 
         // Filtros
         filtroActual: 'todos',
@@ -537,11 +541,15 @@
     }
 
     /* ============================================================
-       CARGAR CONTACTOS (PAGINADO)
+       ✅ CARGAR CONTACTOS (PAGINADO) — CON LOCK GLOBAL
+       ============================================================
+       El lock `state.cargando` evita que dos cargas corran a la
+       vez, sea cual sea el origen (reset o scroll infinito).
        ============================================================ */
 
     async function cargarContactos({ reset = false } = {}) {
-        if (state.cargandoMas) return;
+        /* ✅ LOCK GLOBAL */
+        if (state.cargando) return;
 
         const client = sb();
         const session = await getSession();
@@ -560,6 +568,9 @@
             return;
         }
 
+        /* ✅ Activar lock */
+        state.cargando = true;
+
         if (reset) {
             state.paginaActual = 0;
             state.contactos = [];
@@ -569,7 +580,6 @@
 
             mostrarCargando();
         } else {
-            state.cargandoMas = true;
             mostrarCargandoMas();
         }
 
@@ -707,7 +717,8 @@
                 );
             }
         } finally {
-            state.cargandoMas = false;
+            /* ✅ Liberar lock SIEMPRE */
+            state.cargando = false;
         }
     }
 
@@ -952,7 +963,7 @@
                 if (
                     entries[0].isIntersecting &&
                     state.hayMas &&
-                    !state.cargandoMas
+                    !state.cargando
                 ) {
                     cargarContactos({ reset: false });
                 }
@@ -1515,11 +1526,29 @@
             return;
 
         const backup = [...state.contactos];
+        const backupSet = new Set(state.idsContactosSet);
+        const backupTotal = state.totalContactos;
 
         // Optimistic UI
         state.contactos = state.contactos.filter(
             (c) => c.id !== contactoRowId
         );
+
+        const eliminado = backup.find(
+            (c) => c.id === contactoRowId
+        );
+
+        if (eliminado?.contacto_id) {
+            state.idsContactosSet.delete(
+                eliminado.contacto_id
+            );
+        }
+
+        state.totalContactos = Math.max(
+            0,
+            state.totalContactos - 1
+        );
+
         renderizarContactos();
         recalcularEstadisticas();
 
@@ -1537,27 +1566,14 @@
             if (error) throw error;
 
             showToast('✅ Contacto eliminado', 'success');
-
-            // Actualizar set
-            const eliminado = backup.find(
-                (c) => c.id === contactoRowId
-            );
-
-            if (eliminado?.contacto_id) {
-                state.idsContactosSet.delete(
-                    eliminado.contacto_id
-                );
-            }
-
-            state.totalContactos = Math.max(
-                0,
-                state.totalContactos - 1
-            );
         } catch (error) {
             console.error('Error eliminando contacto:', error);
 
-            // Revertir
+            // Revertir todo
             state.contactos = backup;
+            state.idsContactosSet = backupSet;
+            state.totalContactos = backupTotal;
+
             renderizarContactos();
             recalcularEstadisticas();
 
