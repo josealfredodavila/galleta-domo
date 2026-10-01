@@ -41,26 +41,11 @@
         .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); }
         .main-nav .nav-link.live { color: var(--danger); }
 
-        .icon {
-            display: inline-block;
-            width: 1em;
-            height: 1em;
-            stroke: currentColor;
-            stroke-width: 2;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            fill: none;
-            vertical-align: -0.125em;
-            flex-shrink: 0;
-        }
+        .icon { display: inline-block; width: 1em; height: 1em; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; vertical-align: -0.125em; flex-shrink: 0; }
         .icon-sm { width: 0.85em; height: 0.85em; }
         .icon-lg { width: 1.25em; height: 1.25em; }
 
-        .btn-icon-inline {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
+        .btn-icon-inline { display: inline-flex; align-items: center; gap: 6px; }
 
         .valor-mercado { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 16px 20px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; }
         .valor-mercado .info .titulo { font-family: 'Orbitron', monospace; color: var(--text-muted); font-size: 0.6rem; letter-spacing: 1px; text-transform: uppercase; }
@@ -68,9 +53,11 @@
         .valor-mercado .info .detalles { display: flex; gap: 16px; font-size: 0.65rem; color: var(--text-muted); margin-top: 4px; flex-wrap: wrap; }
         .valor-mercado .btn-vender-token { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border: none; padding: 10px 20px; border-radius: 30px; font-family: 'Orbitron', monospace; font-weight: 700; font-size: 0.7rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
 
+        /* ===== TENDENCIAS (FIX hora cortada) ===== */
         .trending-section { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 16px 20px; margin-bottom: 20px; }
-        .trending-section .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .trending-section .header h3 { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 0.85rem; display: inline-flex; align-items: center; gap: 8px; }
+        .trending-section .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 12px; flex-wrap: wrap; }
+        .trending-section .header h3 { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 0.85rem; display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0; }
+        .trending-section .header .actualizado { font-size: 0.65rem; color: var(--text-muted); white-space: nowrap; flex-shrink: 0; }
         .trending-tags { display: flex; gap: 8px; flex-wrap: wrap; }
         .trending-tags .tag { padding: 4px 14px; border-radius: 20px; font-size: 0.7rem; background: rgba(212,175,55,0.08); border: 1px solid rgba(212,175,55,0.08); color: var(--text-secondary); cursor: pointer; transition: var(--transition); }
         .trending-tags .tag:hover { background: rgba(212,175,55,0.15); color: var(--gold); }
@@ -93,7 +80,7 @@
         .tokens-destacados .token-item .valor .label { display: block; font-size: 0.55rem; color: var(--text-muted); font-weight: 400; }
         .tokens-destacados .empty { color: var(--text-muted); font-size: 0.75rem; text-align: center; padding: 10px; }
 
-        .filtro-temas { display: flex; align-items: center; gap: 8px; background: rgba(212,175,55,0.05); border: 1px solid rgba(212,175,55,0.15); border-radius: 20px; padding: 6px 12px; margin-bottom: 12px; font-size: 0.7rem; }
+        .filtro-temas { display: flex; align-items: center; gap: 8px; background: rgba(212,175,55,0.05); border: 1px solid rgba(212,175,55,0.15); border-radius: 20px; padding: 6px 12px; margin-bottom: 12px; font-size: 0.7rem; flex-wrap: wrap; }
         .filtro-temas .label { color: var(--text-muted); }
         .filtro-temas .toggle-btn { background: transparent; border: 1px solid var(--gold); color: var(--gold); padding: 3px 10px; border-radius: 12px; cursor: pointer; font-size: 0.65rem; font-weight: 600; transition: var(--transition); display: inline-flex; align-items: center; gap: 5px; }
         .filtro-temas .toggle-btn.active { background: var(--gold); color: var(--space); }
@@ -957,7 +944,7 @@ function renderizarPost(post) {
         '<div class="post-content">' + contenidoSanitizado + '</div>' + imagenHtml + seccionVenta +
         '<div class="post-stats"><span class="like-btn" onclick="toggleLike(\'' + post.id + '\')" data-liked="false"><svg class="icon" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> <span class="count">' + likesCount + '</span></span><span onclick="toggleComentarios(\'' + post.id + '\')"><svg class="icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> <span class="count">' + comentariosCount + '</span></span>' +
         (post.cantidad_venta ? '<span style="color:var(--gold);font-size:0.7rem;display:inline-flex;align-items:center;gap:4px;"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/></svg> ' + post.cantidad_venta + ' tokens en venta</span>' : '') + '</div>' +
-        '<div class="post-comentarios" id="comentarios-' + post.id + '" style="display:none;"><div class="comentarios-lista" id="comentarios-lista-' + post.id + '"></div><div class="input-comentario"><input type="text" id="input-comentario-' + post.id + '" placeholder="Escribe un comentario..." /><button onclick="enviarComentario(\'' + post.id + '\')">Enviar</button></div></div>';
+        '<div class="post-comentarios" id="comentarios-' + post.id + '" style="display:none;"><div class="comentarios-lista" id="comentarios-lista-' + post.id + '"></div><div class="input-comentario"><input type="text" id="input-comentario-' + post.id + '" placeholder="Escribe un comentario..." /><button type="button" class="btn-enviar-comentario" data-post-id="' + post.id + '">Enviar</button></div></div>';
 
     if (sessionUser) {
         verificarLike(post.id).then(function(liked) {
@@ -1047,13 +1034,19 @@ async function enviarComentario(postId) {
     if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
     try {
         var result = await supabase.from('muro_comentarios').insert({ post_id: postId, usuario_id: sessionUser.id, contenido: texto });
-        if (result.error) throw result.error;
+        if (result.error) {
+            console.error('Error insertando comentario:', result.error);
+            throw new Error(result.error.message || 'Error al insertar');
+        }
         input.value = '';
         showToast('Comentario agregado', 'success');
         cargarComentarios(postId);
         var countSpan = document.querySelector('[data-post-id="' + postId + '"] .post-stats span:nth-child(2) .count');
         if (countSpan) countSpan.textContent = parseInt(countSpan.textContent) + 1;
-    } catch (e) { console.error('Error enviando comentario:', e); showToast('Error al comentar', 'error'); }
+    } catch (e) {
+        console.error('Error enviando comentario:', e);
+        showToast('Error al comentar: ' + e.message, 'error');
+    }
 }
 
 async function eliminarComentario(comentarioId, postId) {
@@ -1598,9 +1591,12 @@ async function buscarPorTemaSlug(slug) {
     window.addEventListener('beforeunload', limpiarRecursosMuro);
 
     // ================================================================
-    // INICIALIZACIÓN
+    // INICIALIZACIÓN — CON DELEGACIÓN DE EVENTOS (FIX CRÍTICO)
     // ================================================================
     document.addEventListener('DOMContentLoaded', async function() {
+        console.log('◈ Muro inicializando...');
+
+        // Cargar datos iniciales
         await cargarUsuarioActual();
         await cargarTemasDisponibles();
         await cargarTemasUsuario();
@@ -1618,41 +1614,133 @@ async function buscarPorTemaSlug(slug) {
             catch (e) {}
         }, 500);
 
-        var btnPublicar = document.getElementById('btnPublicar');
-        if (btnPublicar) btnPublicar.addEventListener('click', function(e) { e.preventDefault(); publicar(); });
+        // ============================================================
+        // FIX CRÍTICO: DELEGACIÓN DE EVENTOS
+        // ============================================================
+        // Todos los botones se manejan con UN SOLO listener en document.body.
+        // Esto funciona aunque los elementos se creen dinámicamente.
+        // ============================================================
 
-        var btnPublicarVenta = document.getElementById('btnPublicarVenta');
-        if (btnPublicarVenta) btnPublicarVenta.addEventListener('click', function(e) { e.preventDefault(); publicarVenta(); });
+        document.body.addEventListener('click', function(e) {
+            var target = e.target;
 
-        var inputCantidadTokens = document.getElementById('inputCantidadTokens');
-        var inputPrecioToken = document.getElementById('inputPrecioToken');
-        if (inputCantidadTokens) inputCantidadTokens.addEventListener('input', actualizarResumenVenta);
-        if (inputPrecioToken) inputPrecioToken.addEventListener('input', actualizarResumenVenta);
+            // ===== BOTÓN PUBLICAR =====
+            if (target.closest('#btnPublicar')) {
+                e.preventDefault();
+                console.log('🖱️ Click en Publicar');
+                window.publicar();
+                return;
+            }
 
-        var inputCantidadCompra = document.getElementById('inputCantidadCompra');
-        if (inputCantidadCompra) inputCantidadCompra.addEventListener('input', actualizarResumenCompra);
+            // ===== BOTÓN PUBLICAR VENTA =====
+            if (target.closest('#btnPublicarVenta')) {
+                e.preventDefault();
+                console.log('🖱️ Click en Publicar venta');
+                window.publicarVenta();
+                return;
+            }
 
-        document.addEventListener('keypress', function(e) {
+            // ===== BOTÓN ENVIAR COMENTARIO =====
+            var btnComentario = target.closest('.btn-enviar-comentario');
+            if (btnComentario) {
+                e.preventDefault();
+                var postId = btnComentario.dataset.postId;
+                console.log('🖱️ Click en Enviar comentario del post:', postId);
+                window.enviarComentario(postId);
+                return;
+            }
+
+            // ===== BOTÓN ENVIAR COMENTARIO (compatibilidad legacy) =====
+            if (target.closest('.post-comentarios .input-comentario button')) {
+                e.preventDefault();
+                var inputContainer = target.closest('.input-comentario');
+                if (inputContainer) {
+                    var inputEl = inputContainer.querySelector('input');
+                    if (inputEl && inputEl.id) {
+                        var pid = inputEl.id.replace('input-comentario-', '');
+                        console.log('🖱️ Click en Enviar comentario (legacy) del post:', pid);
+                        window.enviarComentario(pid);
+                    }
+                }
+                return;
+            }
+
+            // ===== BOTÓN CONFIRMAR COMPRA =====
+            if (target.closest('#btnConfirmarCompra')) {
+                e.preventDefault();
+                console.log('🖱️ Click en Confirmar compra');
+                window.confirmarCompraCrypto();
+                return;
+            }
+
+            // ===== BOTÓN VERIFICAR PAGO =====
+            if (target.closest('#btnVerificarPago')) {
+                e.preventDefault();
+                console.log('🖱️ Click en Verificar pago');
+                window.verificarPagoCrypto();
+                return;
+            }
+
+            // ===== BOTÓN VENDER TOKENS (valor mercado) =====
+            if (target.closest('.btn-vender-token')) {
+                e.preventDefault();
+                console.log('🖱️ Click en Vender tokens');
+                window.abrirModalVenta();
+                return;
+            }
+
+            // ===== CERRAR MODALES =====
+            if (target.closest('.btn-cerrar')) {
+                var modal = target.closest('.modal-overlay');
+                if (modal) modal.classList.remove('show');
+                return;
+            }
+
+            // ===== CERRAR MODAL AL HACER CLICK FUERA =====
+            if (target.classList && target.classList.contains('modal-overlay')) {
+                target.classList.remove('show');
+                return;
+            }
+
+            // ===== CERRAR EMOJI PICKER AL HACER CLICK FUERA =====
+            var picker = document.getElementById('emojiPicker');
+            var btnEmoji = document.getElementById('btnEmoji');
+            if (picker && btnEmoji && !picker.contains(target) && !btnEmoji.contains(target)) {
+                picker.classList.remove('show');
+            }
+
+            // ===== CERRAR TEMA DROPDOWN AL HACER CLICK FUERA =====
+            var dd = document.getElementById('temaDropdown');
+            var btnTema = document.getElementById('btnTemaSelector');
+            if (dd && btnTema && !dd.contains(target) && !btnTema.contains(target)) {
+                dd.classList.remove('show');
+            }
+        });
+
+        // ===== ENTER EN INPUT DE COMENTARIO =====
+        document.body.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 var input = e.target;
                 if (input && input.id && input.id.indexOf('input-comentario-') === 0) {
                     e.preventDefault();
-                    enviarComentario(input.id.replace('input-comentario-', ''));
+                    var postId = input.id.replace('input-comentario-', '');
+                    window.enviarComentario(postId);
                 }
             }
         });
 
-        document.querySelectorAll('.modal-overlay').forEach(function(modal) {
-            modal.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('show'); });
+        // ===== INPUTS QUE ACTUALIZAN RESUMEN =====
+        document.body.addEventListener('input', function(e) {
+            var target = e.target;
+            if (target.id === 'inputCantidadTokens' || target.id === 'inputPrecioToken') {
+                actualizarResumenVenta();
+            }
+            if (target.id === 'inputCantidadCompra') {
+                actualizarResumenCompra();
+            }
         });
 
-        document.addEventListener('click', function(e) {
-            var picker = document.getElementById('emojiPicker');
-            var btnEmoji = document.getElementById('btnEmoji');
-            if (picker && btnEmoji && !picker.contains(e.target) && !btnEmoji.contains(e.target)) picker.classList.remove('show');
-        });
-
-        console.log('◈ Muro inicializado con vistas _publicas y SVGs');
+        console.log('◈ Muro inicializado con delegación de eventos');
     });
 
     // ================================================================
