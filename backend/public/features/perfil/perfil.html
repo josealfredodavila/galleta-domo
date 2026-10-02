@@ -895,7 +895,7 @@
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
                 <div style="background:rgba(0,0,0,0.4);padding:10px;border-radius:10px;border:2px solid var(--line-black);">
                     <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_esim_estado">ESTADO</span>
-                    <div id="esimStatus" style="font-weight:600;font-size:0.9rem;">Sin eSIM</div>
+                    <div id="esimStatus" style="font-weight:600;font-size:0.9rem;">Cargando…</div>
                 </div>
                 <div style="background:rgba(0,0,0,0.4);padding:10px;border-radius:10px;border:2px solid var(--line-black);">
                     <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_datos_consumidos">DATOS USADOS</span>
@@ -911,7 +911,7 @@
                 </div>
                 <div style="background:rgba(0,0,0,0.4);padding:10px;border-radius:10px;border:2px solid var(--line-black);grid-column:span 2;">
                     <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_iccid">ICCID</span>
-                    <div id="esimIccid" style="font-weight:600;font-size:0.8rem;font-family:monospace;" data-clave="perfil_no_asignado">No asignado</div>
+                    <div id="esimIccid" style="font-weight:600;font-size:0.8rem;font-family:monospace;">—</div>
                 </div>
             </div>
 
@@ -921,35 +921,37 @@
                 </div>
             </div>
 
+            <div id="esimAvisoSinSaldo" style="display:none;margin-top:12px;padding:10px;border-radius:10px;background:rgba(255,51,102,0.12);border:1px solid var(--danger);color:var(--danger);font-size:0.75rem;">
+                Se acabaron tus datos. Recarga y tu eSIM se reactiva sola.
+            </div>
+
             <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
-                <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" onclick="window.irAComprarInternet()" data-clave="perfil_adquirir_esim">
+                <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" id="btnComprarEsim" onclick="window.irAComprarInternet()" data-clave="perfil_adquirir_esim">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
                     Comprar eSIM
                 </button>
-                <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="window.verQREsimNuevo()" data-clave="perfil_obtener_qr">
+                <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" id="btnQrEsim" onclick="window.verQREsimNuevo()" data-clave="perfil_obtener_qr">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="17"/><line x1="17" y1="14" x2="21" y2="14"/><line x1="14" y1="21" x2="21" y2="21"/></svg>
                     QR Activación
                 </button>
-                <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="window.sincronizarEsimNuevo()" data-clave="perfil_sincronizar">
+                <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" id="btnSyncEsim" onclick="window.sincronizarEsimNuevo()" data-clave="perfil_sincronizar">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
                     Sincronizar
                 </button>
             </div>
 
-            <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
-                <button class="btn btn-outline btn-sm" onclick="window.activarESIM()" style="border-color:var(--success);color:var(--success);" data-clave="perfil_activar_esim">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                    Activar
-                </button>
-                <button class="btn btn-danger btn-sm" onclick="window.desactivarESIM()" data-clave="perfil_desactivar_esim">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
-                    Desactivar
-                </button>
+            <div style="margin-top:12px;">
+                <a href="/features/internet/internet.html" class="btn btn-outline btn-sm" style="border-color:var(--cyan);color:var(--cyan);" data-clave="perfil_cambiar_celular">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
+                    Cambiar de celular
+                </a>
             </div>
 
             <div style="margin-top:10px;font-size:0.6rem;color:var(--text-muted);">
                 <span data-clave="perfil_apn_requerido">APN:</span> <span id="esimApn" style="font-family:monospace;color:var(--text-secondary);">data00.telnyx</span>
             </div>
+
+            <div id="esimError" style="display:none;margin-top:12px;padding:10px;border-radius:10px;background:rgba(255,51,102,0.12);border:1px solid var(--danger);color:var(--danger);font-size:0.75rem;"></div>
         </div>
     </div>
 </div>
@@ -1029,7 +1031,7 @@
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
                     Activas
                 </button>
-                <button class="btn btn-outline btn-sm internet-filter" data-filter="pagando" onclick="window.filtrarOrdenesInternet('pagando')" data-clave="perfil_filtro_pendientes">
+                <button class="btn btn-outline btn-sm internet-filter" data-filter="pendiente" onclick="window.filtrarOrdenesInternet('pendiente')" data-clave="perfil_filtro_pendientes">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                     Pendientes
                 </button>
@@ -1129,7 +1131,12 @@
     <span id="errorBannerText"></span>
     <button onclick="document.getElementById('errorBanner').style.display='none'" style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">Cerrar</button>
 </div><script>
+    var DEBUG_MODE = (function () {
+        try { return new URLSearchParams(window.location.search).get('debug') === '1'; }
+        catch (e) { return false; }
+    })();
     function mostrarErrorEnPantalla(mensaje) {
+        if (!DEBUG_MODE) { console.error('[Perfil]', mensaje); return; }
         const banner = document.getElementById('errorBanner');
         const texto = document.getElementById('errorBannerText');
         if (banner && texto) { texto.textContent = mensaje; banner.style.display = 'block'; }
@@ -1174,7 +1181,7 @@
 </script>
 
 <script src="/features/shared/js/idiomas.js?v=7" defer></script>
-<script src="/features/perfil/perfil.js?v=7" defer></script>
+<script src="/features/perfil/perfil.js?v=8" defer></script>
 
 <script>
 (function() {
@@ -1265,6 +1272,12 @@ function cerrarAvatarMenu() {
 window.toggleAvatarMenu = toggleAvatarMenu;
 window.cerrarAvatarMenu = cerrarAvatarMenu;
 
+function escapeHtmlPerfil(texto) {
+    if (!texto) return '';
+    return String(texto).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;').replace(/\n/g, '<br>');
+}
+window.escapeHtmlPerfil = window.escapeHtmlPerfil || escapeHtmlPerfil;
+
 async function verificarEstadoRepartidorPerfil() {
     try {
         var section = document.getElementById('repartidorSection');
@@ -1295,7 +1308,7 @@ async function verificarEstadoRepartidorPerfil() {
         if (estado === 'activo') {
             badge.textContent = 'Verificado';
             badge.className = 'rep-badge activo';
-            info.innerHTML = 'Eres repartidor verificado. Puedes recibir pedidos ahora mismo. <strong>Score: ' + (result.data.score_confianza || 100) + '</strong>';
+            info.innerHTML = 'Eres repartidor verificado. Puedes recibir pedidos ahora mismo. <strong>Score: ' + (Number(result.data.score_confianza) || 100) + '</strong>';
             btn.textContent = 'Ir a mi panel de repartidor';
             btn.className = 'rep-btn ir-panel';
         } else if (estado === 'procesando' || estado === 'revision_manual') {
@@ -1307,7 +1320,7 @@ async function verificarEstadoRepartidorPerfil() {
         } else if (estado === 'rechazado') {
             badge.textContent = 'Rechazado';
             badge.className = 'rep-badge rechazado';
-            var motivo = result.data.motivo_rechazo || 'Revisa los requisitos';
+            var motivo = result.data.motivo_rechazo ? escapeHtmlPerfil(result.data.motivo_rechazo) : 'Revisa los requisitos';
             info.innerHTML = 'Tu registro fue rechazado. <strong>Motivo:</strong> ' + motivo;
             btn.textContent = 'Volver a intentar';
             btn.className = 'rep-btn reintentar';
@@ -1394,6 +1407,43 @@ document.addEventListener('DOMContentLoaded', function() {
     'use strict';
 
     function sb() { return window.supabaseClient; }
+
+    var SUPABASE_PUBLIC_PREFIX = 'https://zultnlogdoajehbswlih.supabase.co/storage/v1/object/public/';
+
+    function esUrlSegura(url) {
+        return typeof url === 'string' && url.indexOf(SUPABASE_PUBLIC_PREFIX) === 0;
+    }
+
+    function escapeHtmlPerfil(texto) {
+        if (!texto) return '';
+        return String(texto).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;').replace(/\n/g, '<br>');
+    }
+
+    function crearAvatar(usuarioNombre, avatarUrl, size) {
+        var letra = (usuarioNombre || '◈').charAt(0).toUpperCase() || '◈';
+        if (!esUrlSegura(avatarUrl)) return letra;
+        var img = document.createElement('img');
+        img.alt = 'Avatar';
+        img.loading = 'lazy';
+        if (size) {
+            img.style.width = size + 'px';
+            img.style.height = size + 'px';
+            img.style.objectFit = 'cover';
+            img.style.borderRadius = '50%';
+        } else {
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = 'cover';
+        }
+        img.addEventListener('error', function() {
+            var parent = img.parentNode;
+            if (!parent) return;
+            img.remove();
+            parent.textContent = letra;
+        });
+        img.src = avatarUrl;
+        return img;
+    }
 
     var archivosSeleccionados = { imagen: null, video: null };
     var EMOJIS_REACCION = ['❤️', '😊', '🔥', '👏', '🎉', '💎', '🤩', '😍', '😂'];
@@ -1545,17 +1595,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    function obtenerAvatarActual() {
-        if (window.perfilCache && window.perfilCache.avatar_url) {
-            return '<img src="' + window.perfilCache.avatar_url + '" alt="Avatar" style="width:100%;height:100%;object-fit:cover;">';
-        }
-        var imgHeader = document.querySelector('#perfilAvatar img');
-        if (imgHeader && imgHeader.src) {
-            return '<img src="' + imgHeader.src + '" alt="Avatar" style="width:100%;height:100%;object-fit:cover;">';
-        }
-        return '◈';
-    }
-
     window.cargarMisPublicaciones = async function() {
         var container = document.getElementById('misPublicacionesList');
         var contador = document.getElementById('misPostsCount');
@@ -1605,80 +1644,155 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } catch(e) {}
 
-            var avatarHtmlFallback = obtenerAvatarActual();
-
             publicaciones.forEach(function(p) {
                 var nombreReal = escapeHtmlPerfil(p.usuario_nombre || 'Explorador');
                 var handleReal = p.usuario_handle ? '@' + escapeHtmlPerfil(p.usuario_handle) : '';
-                var avatarReal = p.usuario_avatar_url
-                    ? '<img src="' + p.usuario_avatar_url + '" alt="Avatar" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display=\'none\';this.parentNode.textContent=\'◈\';" />'
-                    : (avatarHtmlFallback || '◈');
 
                 var card = document.createElement('div');
                 card.className = 'publicacion-card';
-                var contenidoHtml = escapeHtmlPerfil(p.contenido || '');
-                if (p.media_url) {
+
+                var header = document.createElement('div');
+                header.className = 'header';
+                var avatarBox = document.createElement('div');
+                avatarBox.className = 'avatar';
+                avatarBox.appendChild(crearAvatar(p.usuario_nombre, p.usuario_avatar_url));
+                header.appendChild(avatarBox);
+
+                var headerMeta = document.createElement('div');
+                headerMeta.innerHTML =
+                    '<div class="nombre" data-no-traducir="1">' + nombreReal +
+                        (handleReal ? ' <span style="color:var(--text-muted);font-weight:400;font-size:0.75rem;">' + handleReal + '</span>' : '') +
+                    '</div>' +
+                    '<div class="fecha" data-no-traducir="1">' + (p.created_at ? new Date(p.created_at).toLocaleString() : '') + '</div>';
+                header.appendChild(headerMeta);
+                card.appendChild(header);
+
+                var contenido = document.createElement('div');
+                contenido.className = 'contenido';
+                contenido.setAttribute('data-no-traducir', '1');
+                contenido.appendChild(document.createTextNode(p.contenido || ''));
+                if (esUrlSegura(p.media_url)) {
                     if (p.media_type === 'video') {
-                        contenidoHtml += '<video src="' + p.media_url + '" controls preload="metadata"></video>';
+                        var video = document.createElement('video');
+                        video.controls = true;
+                        video.preload = 'metadata';
+                        video.src = p.media_url;
+                        contenido.appendChild(video);
                     } else if (p.media_type === 'imagen') {
-                        contenidoHtml += '<img src="' + p.media_url + '" alt="Imagen" loading="lazy" style="cursor:pointer;" onclick="window.expandirFotoPublicacion(this.src)" />';
+                        var img = document.createElement('img');
+                        img.alt = 'Imagen';
+                        img.loading = 'lazy';
+                        img.style.cursor = 'pointer';
+                        img.addEventListener('click', function(){ if (typeof window.expandirFotoPublicacion === 'function') window.expandirFotoPublicacion(img.src); });
+                        img.src = p.media_url;
+                        contenido.appendChild(img);
                     }
                 }
-                var fecha = p.created_at ? new Date(p.created_at).toLocaleString() : '';
+                card.appendChild(contenido);
+
                 var reaccionUsuario = reaccionesUsuario[p.id] || null;
                 var conteos = conteosReacciones[p.id] || {};
                 var totalReacciones = 0;
                 Object.keys(conteos).forEach(function(k) { totalReacciones += (conteos[k] || 0); });
                 var emojiMostrado = reaccionUsuario || '❤️';
 
-                var dropdownHtml = '<div class="reaccion-dropdown" id="reaccion-dropdown-' + p.id + '" data-no-traducir="1">';
+                var wrap = document.createElement('div');
+                wrap.className = 'reaccion-wrap';
+                wrap.setAttribute('data-no-traducir', '1');
+
+                var dropdown = document.createElement('div');
+                dropdown.className = 'reaccion-dropdown';
+                dropdown.id = 'reaccion-dropdown-' + p.id;
+                dropdown.setAttribute('data-no-traducir', '1');
                 EMOJIS_REACCION.forEach(function(emoji) {
+                    var b = document.createElement('button');
+                    b.type = 'button';
+                    b.setAttribute('data-no-traducir', '1');
+                    if (reaccionUsuario === emoji) b.classList.add('activa');
+                    b.title = 'Reaccionar ' + emoji;
+                    b.textContent = emoji;
+                    b.addEventListener('click', function(ev){
+                        ev.stopPropagation();
+                        window.reaccionarPublicacionPerfil(p.id, emoji);
+                    });
                     var count = conteos[emoji] || 0;
-                    var activo = reaccionUsuario === emoji ? ' activa' : '';
-                    dropdownHtml += '<button type="button" data-no-traducir="1" class="' + activo.trim() + '" onclick="event.stopPropagation(); window.reaccionarPublicacionPerfil(\'' + p.id + '\', \'' + emoji + '\')" title="Reaccionar ' + emoji + '">' + emoji + (count > 0 ? '<span class="mini-count" data-no-traducir="1">' + count + '</span>' : '') + '</button>';
+                    if (count > 0) {
+                        var mini = document.createElement('span');
+                        mini.className = 'mini-count';
+                        mini.setAttribute('data-no-traducir', '1');
+                        mini.textContent = count;
+                        b.appendChild(mini);
+                    }
+                    dropdown.appendChild(b);
                 });
-                dropdownHtml += '</div>';
 
-                var triggerClass = 'reaccion-trigger' + (reaccionUsuario ? ' activa' : '');
-                var triggerHtml =
-                    '<div class="reaccion-wrap" data-no-traducir="1">' +
-                        dropdownHtml +
-                        '<button type="button" data-no-traducir="1" class="' + triggerClass + '" onclick="event.stopPropagation(); window.toggleReaccionDropdown(\'' + p.id + '\')" title="Reaccionar">' +
-                            '<span class="emoji-actual" data-no-traducir="1">' + emojiMostrado + '</span>' +
-                            (totalReacciones > 0 ? '<span class="count" data-no-traducir="1">' + totalReacciones + '</span>' : '<span class="count" data-no-traducir="1">Reaccionar</span>') +
-                        '</button>' +
-                    '</div>';
+                var trigger = document.createElement('button');
+                trigger.type = 'button';
+                trigger.setAttribute('data-no-traducir', '1');
+                trigger.className = 'reaccion-trigger' + (reaccionUsuario ? ' activa' : '');
+                trigger.title = 'Reaccionar';
+                trigger.innerHTML =
+                    '<span class="emoji-actual" data-no-traducir="1">' + emojiMostrado + '</span>' +
+                    (totalReacciones > 0
+                        ? '<span class="count" data-no-traducir="1">' + totalReacciones + '</span>'
+                        : '<span class="count" data-no-traducir="1">Reaccionar</span>');
+                trigger.addEventListener('click', function(ev){
+                    ev.stopPropagation();
+                    window.toggleReaccionDropdown(p.id);
+                });
 
-                card.innerHTML =
-                    '<div class="header">' +
-                        '<div class="avatar">' + avatarReal + '</div>' +
-                        '<div>' +
-                            '<div class="nombre" data-no-traducir="1">' + nombreReal +
-                                (handleReal ? ' <span style="color:var(--text-muted);font-weight:400;font-size:0.75rem;">' + handleReal + '</span>' : '') +
-                            '</div>' +
-                            '<div class="fecha" data-no-traducir="1">' + fecha + '</div>' +
-                        '</div>' +
-                    '</div>' +
-                    '<div class="contenido" data-no-traducir="1">' + contenidoHtml + '</div>' + triggerHtml +
-                    '<div class="stats" data-no-traducir="1">' +
-                        '<button type="button" data-no-traducir="1" class="btn-accion-pub" onclick="event.stopPropagation(); window.toggleComentariosPerfil(\'' + p.id + '\')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Comentarios</button>' +
-                        '<button type="button" data-no-traducir="1" class="btn-accion-pub danger" onclick="event.stopPropagation(); window.eliminarMiPublicacion(\'' + p.id + '\', event)"><svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg> Eliminar</button>' +
-                    '</div>' +
-                    '<div class="comentarios-container" data-no-traducir="1" id="comentarios-container-' + p.id + '">' +
-                        '<div class="comentarios-lista" data-no-traducir="1" id="comentarios-lista-' + p.id + '"></div>' +
-                        '<div class="comentario-input-row" data-no-traducir="1">' +
-                            '<input type="text" id="comentario-input-' + p.id + '" placeholder="Escribe un comentario..." />' +
-                            '<button type="button" data-no-traducir="1" onclick="window.enviarComentarioPerfil(\'' + p.id + '\')">Enviar</button>' +
-                        '</div>' +
+                wrap.appendChild(dropdown);
+                wrap.appendChild(trigger);
+                card.appendChild(wrap);
+
+                var stats = document.createElement('div');
+                stats.className = 'stats';
+                stats.setAttribute('data-no-traducir', '1');
+
+                var btnComentarios = document.createElement('button');
+                btnComentarios.type = 'button';
+                btnComentarios.className = 'btn-accion-pub';
+                btnComentarios.setAttribute('data-no-traducir', '1');
+                btnComentarios.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Comentarios';
+                btnComentarios.addEventListener('click', function(ev){
+                    ev.stopPropagation();
+                    window.toggleComentariosPerfil(p.id);
+                });
+
+                var btnEliminar = document.createElement('button');
+                btnEliminar.type = 'button';
+                btnEliminar.className = 'btn-accion-pub danger';
+                btnEliminar.setAttribute('data-no-traducir', '1');
+                btnEliminar.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg> Eliminar';
+                btnEliminar.addEventListener('click', function(ev){
+                    ev.stopPropagation();
+                    window.eliminarMiPublicacion(p.id, ev);
+                });
+
+                stats.appendChild(btnComentarios);
+                stats.appendChild(btnEliminar);
+                card.appendChild(stats);
+
+                var comentariosContainer = document.createElement('div');
+                comentariosContainer.className = 'comentarios-container';
+                comentariosContainer.id = 'comentarios-container-' + p.id;
+                comentariosContainer.setAttribute('data-no-traducir', '1');
+                comentariosContainer.innerHTML =
+                    '<div class="comentarios-lista" data-no-traducir="1" id="comentarios-lista-' + p.id + '"></div>' +
+                    '<div class="comentario-input-row" data-no-traducir="1">' +
+                        '<input type="text" id="comentario-input-' + p.id + '" placeholder="Escribe un comentario..." />' +
+                        '<button type="button" data-no-traducir="1">Enviar</button>' +
                     '</div>';
+                comentariosContainer.querySelector('button').addEventListener('click', function(){
+                    window.enviarComentarioPerfil(p.id);
+                });
+                card.appendChild(comentariosContainer);
+
                 container.appendChild(card);
-                card.querySelectorAll('.btn-accion-pub, .reaccion-trigger, .reaccion-dropdown button, .stats, .comentarios-container').forEach(function(btn) {
-                    btn.setAttribute('data-no-traducir', '1');
-                });
             });
         } catch (error) {
             console.error('Error cargando mis publicaciones:', error);
-            container.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><h4>Error al cargar</h4><p>' + error.message + '</p></div>';
+            container.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><h4>Error al cargar</h4><p>' + escapeHtmlPerfil(error.message) + '</p></div>';
         }
     };
 
@@ -1743,19 +1857,36 @@ document.addEventListener('DOMContentLoaded', function() {
             var total = 0;
             Object.keys(conteos).forEach(function(k) { total += conteos[k]; });
             var emojiMostrado = reaccionUsuario || '❤️';
-            var ddHtml = '';
+            dd.innerHTML = '';
             EMOJIS_REACCION.forEach(function(emoji) {
+                var b = document.createElement('button');
+                b.type = 'button';
+                b.setAttribute('data-no-traducir', '1');
+                if (reaccionUsuario === emoji) b.classList.add('activa');
+                b.title = 'Reaccionar ' + emoji;
+                b.textContent = emoji;
+                b.addEventListener('click', function(ev){
+                    ev.stopPropagation();
+                    window.reaccionarPublicacionPerfil(postId, emoji);
+                });
                 var count = conteos[emoji] || 0;
-                var activo = reaccionUsuario === emoji ? ' activa' : '';
-                ddHtml += '<button type="button" data-no-traducir="1" class="' + activo.trim() + '" onclick="event.stopPropagation(); window.reaccionarPublicacionPerfil(\'' + postId + '\', \'' + emoji + '\')" title="Reaccionar ' + emoji + '">' + emoji + (count > 0 ? '<span class="mini-count" data-no-traducir="1">' + count + '</span>' : '') + '</button>';
+                if (count > 0) {
+                    var mini = document.createElement('span');
+                    mini.className = 'mini-count';
+                    mini.setAttribute('data-no-traducir', '1');
+                    mini.textContent = count;
+                    b.appendChild(mini);
+                }
+                dd.appendChild(b);
             });
-            dd.innerHTML = ddHtml;
             var trigger = wrap.querySelector('.reaccion-trigger');
             if (trigger) {
                 trigger.className = 'reaccion-trigger' + (reaccionUsuario ? ' activa' : '');
                 trigger.innerHTML =
                     '<span class="emoji-actual" data-no-traducir="1">' + emojiMostrado + '</span>' +
-                    (total > 0 ? '<span class="count" data-no-traducir="1">' + total + '</span>' : '<span class="count" data-no-traducir="1">Reaccionar</span>');
+                    (total > 0
+                        ? '<span class="count" data-no-traducir="1">' + total + '</span>'
+                        : '<span class="count" data-no-traducir="1">Reaccionar</span>');
             }
         } catch(e) {}
     }
@@ -1795,23 +1926,28 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 var nombre = escapeHtmlPerfil(c.usuario_nombre || 'Usuario');
                 var handle = c.usuario_handle ? '@' + escapeHtmlPerfil(c.usuario_handle) : '';
-                var avatarUrl = c.usuario_avatar_url;
-                var avatarHtml = avatarUrl
-                    ? '<img src="' + avatarUrl + '" alt="Avatar" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display=\'none\';this.parentNode.textContent=\'' + (nombre.charAt(0).toUpperCase() || '◈') + '\';" />'
-                    : (nombre.charAt(0).toUpperCase() || '◈');
 
-                var texto = escapeHtmlPerfil(c.contenido || '');
-                var fecha = c.created_at ? new Date(c.created_at).toLocaleString() : '';
+                var avatarMini = document.createElement('div');
+                avatarMini.className = 'avatar-mini';
+                avatarMini.appendChild(crearAvatar(c.usuario_nombre, c.usuario_avatar_url));
+                item.appendChild(avatarMini);
 
-                item.innerHTML =
-                    '<div class="avatar-mini">' + avatarHtml + '</div>' +
-                    '<div class="contenido-comentario">' +
-                        '<div class="nombre">' + nombre +
-                            (handle ? ' <span style="color:var(--text-muted);font-weight:400;font-size:0.65rem;">' + handle + '</span>' : '') +
-                        '</div>' +
-                        '<div class="texto">' + texto + '</div>' +
-                        '<div class="fecha">' + fecha + '</div>' +
+                var contenidoDiv = document.createElement('div');
+                contenidoDiv.className = 'contenido-comentario';
+                var textoDiv = document.createElement('div');
+                textoDiv.className = 'texto';
+                textoDiv.textContent = c.contenido || '';
+                contenidoDiv.innerHTML =
+                    '<div class="nombre">' + nombre +
+                        (handle ? ' <span style="color:var(--text-muted);font-weight:400;font-size:0.65rem;">' + handle + '</span>' : '') +
                     '</div>';
+                contenidoDiv.appendChild(textoDiv);
+                var fechaDiv = document.createElement('div');
+                fechaDiv.className = 'fecha';
+                fechaDiv.textContent = c.created_at ? new Date(c.created_at).toLocaleString() : '';
+                contenidoDiv.appendChild(fechaDiv);
+                item.appendChild(contenidoDiv);
+
                 lista.appendChild(item);
             });
         } catch (error) {
@@ -1881,11 +2017,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    function escapeHtmlPerfil(texto) {
-        if (!texto) return '';
-        return String(texto).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;').replace(/\n/g, '<br>');
-    }
-
     document.addEventListener('DOMContentLoaded', function() {
         var intentos = 0;
         function intentarCargar() {
@@ -1937,6 +2068,11 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         return map[estado] || { color: '#8aa8b8', texto: estado || 'Desconocido', bg: 'rgba(138, 168, 184, 0.12)' };
     }
+    var GRUPOS_ESTADO = {
+        activa:   ['activa', 'activada', 'completado', 'pagada'],
+        pendiente: ['pendiente', 'pagando', 'confirmando'],
+        cancelada: ['cancelada', 'cancelado']
+    };
     window.cargarOrdenesInternet = async function() {
         var list = document.getElementById('ordenesInternetList');
         var contador = document.getElementById('internetOrdenesCount');
@@ -1973,16 +2109,18 @@ document.addEventListener('DOMContentLoaded', function() {
     function renderOrdenesInternet() {
         var list = document.getElementById('ordenesInternetList');
         if (!list) return;
-        var filtered = filtroInternet === 'all'
-            ? ordenesInternet
-            : ordenesInternet.filter(function(o){ return o.estado === filtroInternet; });
+        var filtered = ordenesInternet;
+        if (filtroInternet !== 'all') {
+            var grupo = GRUPOS_ESTADO[filtroInternet] || [filtroInternet];
+            filtered = ordenesInternet.filter(function(o){ return grupo.indexOf(o.estado) !== -1; });
+        }
         if (filtered.length === 0) {
             list.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg><h4>Sin órdenes en este filtro</h4></div>';
             return;
         }
         list.innerHTML = filtered.map(function(o) {
             var info = estadoInfo(o.estado);
-            var esActiva = ['activa', 'activada', 'completado'].indexOf(o.estado) !== -1;
+            var esActiva = ['activa', 'activada', 'completado', 'pagada'].indexOf(o.estado) !== -1;
             return '<div class="publicacion-card" style="border-left:3px solid ' + info.color + ';">' +
                 '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">' +
                     '<div style="flex:1;min-width:180px;">' +
@@ -2035,6 +2173,12 @@ document.addEventListener('DOMContentLoaded', function() {
    ═══════════════════════════════════════════════════════════════ */
 (function() {
     'use strict';
+
+    function escapeHtmlPerfilSimple(texto) {
+        if (!texto) return '';
+        return String(texto).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+
     var ultimaRecarga = 0;
     function actualizarDOM(usuario) {
         try {
@@ -2066,12 +2210,16 @@ document.addEventListener('DOMContentLoaded', function() {
             if (avatarElement) {
                 if (usuario.avatar_url) {
                     avatarElement.innerHTML =
-                        '<img src="' + usuario.avatar_url + '" alt="Avatar">' +
-                        '<span class="avatar-menu-toggle" onclick="event.stopPropagation(); window.toggleAvatarMenu(event)" title="Opciones de foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></span>';
+                        '<img src="' + escapeHtmlPerfilSimple(usuario.avatar_url) + '" alt="Avatar">' +
+                        '<span class="avatar-menu-toggle" title="Opciones de foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></span>';
                 } else {
                     avatarElement.innerHTML =
                         '◈' +
-                        '<span class="avatar-menu-toggle" onclick="event.stopPropagation(); window.toggleAvatarMenu(event)" title="Opciones de foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></span>';
+                        '<span class="avatar-menu-toggle" title="Opciones de foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></span>';
+                }
+                var toggle = avatarElement.querySelector('.avatar-menu-toggle');
+                if (toggle) {
+                    toggle.onclick = function(ev) { ev.stopPropagation(); if (typeof window.toggleAvatarMenu === 'function') window.toggleAvatarMenu(ev); };
                 }
             }
         } catch (error) {
@@ -2144,13 +2292,14 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <!-- ═══════════════════════════════════════════════════════════════
-     AGREGADO: Integración con el sistema nuevo de Telnyx/eSIM
+     Integración con el sistema nuevo de Telnyx/eSIM
      ═══════════════════════════════════════════════════════════════ -->
 <script>
 (function() {
     'use strict';
 
     var BACKEND_URL = window.location.origin;
+    var LPA_REGEX = /^LPA:/;
 
     async function getToken() {
         try {
@@ -2180,7 +2329,107 @@ document.addEventListener('DOMContentLoaded', function() {
         window.location.href = '/features/internet/internet.html';
     };
 
+    function formatearMB(mb) {
+        var n = Number(mb);
+        if (!Number.isFinite(n) || n <= 0) return '0 MB';
+        if (n >= 1000) return (n / 1000).toFixed(2) + ' GB';
+        return Math.round(n) + ' MB';
+    }
+
+    function obtenerElementosEsim() {
+        return {
+            estado: document.getElementById('esimStatus'),
+            used: document.getElementById('esimDataUsed'),
+            limit: document.getElementById('esimDataLimit'),
+            rest: document.getElementById('esimDataRestante'),
+            iccid: document.getElementById('esimIccid'),
+            progress: document.getElementById('esimDataProgress'),
+            avisoSinSaldo: document.getElementById('esimAvisoSinSaldo'),
+            error: document.getElementById('esimError'),
+            btnComprar: document.getElementById('btnComprarEsim'),
+            btnQr: document.getElementById('btnQrEsim'),
+            btnSync: document.getElementById('btnSyncEsim'),
+            wrap: document.getElementById('tab-esim')
+        };
+    }
+
+    function mostrarErrorEsim(mensaje) {
+        var el = document.getElementById('esimError');
+        if (!el) return;
+        el.textContent = mensaje;
+        el.style.display = 'block';
+    }
+
+    function limpiarErrorEsim() {
+        var el = document.getElementById('esimError');
+        if (!el) return;
+        el.style.display = 'none';
+        el.textContent = '';
+    }
+
+    function resetUISinEsim() {
+        var e = obtenerElementosEsim();
+        if (e.estado) { e.estado.textContent = 'Sin eSIM'; e.estado.style.color = 'var(--text-muted)'; }
+        if (e.used) e.used.textContent = '0 MB';
+        if (e.limit) e.limit.textContent = '0 MB';
+        if (e.rest) { e.rest.textContent = '0 MB'; e.rest.style.color = 'var(--text-muted)'; }
+        if (e.iccid) e.iccid.textContent = '—';
+        if (e.progress) { e.progress.style.width = '0%'; e.progress.style.background = 'var(--success)'; }
+        if (e.avisoSinSaldo) e.avisoSinSaldo.style.display = 'none';
+        if (e.btnQr) e.btnQr.style.display = 'none';
+        if (e.btnSync) e.btnSync.style.display = 'none';
+        if (e.btnComprar) e.btnComprar.style.display = '';
+        limpiarErrorEsim();
+    }
+
+    function mostrarUIEsim(esim) {
+        var e = obtenerElementosEsim();
+        if (!e.estado) return;
+
+        var estado = esim.estado || 'pendiente';
+        var mapTexto = { activa: 'Activa', sin_saldo: 'Sin saldo', pendiente: 'Pendiente', aprovisionando: 'Aprovisionando', reemplazando: 'Reemplazando' };
+        var mapColor = {
+            activa: 'var(--success)',
+            sin_saldo: 'var(--danger)',
+            pendiente: 'var(--warning)',
+            aprovisionando: 'var(--warning)',
+            reemplazando: 'var(--warning)'
+        };
+        e.estado.textContent = mapTexto[estado] || estado;
+        e.estado.style.color = mapColor[estado] || 'var(--text-secondary)';
+
+        var totalMb = Number(esim.datos_total_mb) || 0;
+        var usadosMb = Number(esim.datos_usados_mb) || 0;
+        var restanteMb = Math.max(totalMb - usadosMb, 0);
+        var pct = totalMb > 0 ? Math.min((usadosMb / totalMb) * 100, 100) : 0;
+
+        if (e.used) e.used.textContent = formatearMB(usadosMb);
+        if (e.limit) e.limit.textContent = formatearMB(totalMb);
+        if (e.rest) {
+            e.rest.textContent = formatearMB(restanteMb);
+            e.rest.style.color = restanteMb < 1000 ? 'var(--danger)' : 'var(--success)';
+        }
+        if (e.iccid) {
+            var iccid = esim.iccid ? String(esim.iccid) : '—';
+            e.iccid.textContent = iccid.length > 16 ? iccid.slice(0, 10) + '…' + iccid.slice(-4) : iccid;
+        }
+        if (e.progress) {
+            e.progress.style.width = pct + '%';
+            e.progress.style.background = pct > 80 ? 'var(--danger)' : (pct > 50 ? 'var(--warning)' : 'var(--success)');
+        }
+        if (e.avisoSinSaldo) e.avisoSinSaldo.style.display = (estado === 'sin_saldo') ? 'block' : 'none';
+        if (e.btnQr) e.btnQr.style.display = '';
+        if (e.btnSync) e.btnSync.style.display = '';
+        if (e.btnComprar) {
+            var label = e.btnComprar.querySelector('span');
+            if (label) label.textContent = 'Recargar gigas';
+            e.btnComprar.style.display = '';
+        }
+        limpiarErrorEsim();
+    }
+
     window.verQREsimNuevo = async function() {
+        limpiarErrorEsim();
         if (window.showToast) window.showToast('⏳ Cargando eSIM...', '', 3000);
         try {
             var resp = await fetchAuth(BACKEND_URL + '/api/telnyx/esim/mia');
@@ -2192,18 +2441,20 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             var esim = data.data;
             var code = esim.activation_code || '';
-            if (!code) {
+            if (!code || !LPA_REGEX.test(code)) {
                 if (window.showToast) window.showToast('⚠️ La eSIM no tiene código QR disponible', 'warning', 4000);
                 return;
             }
             mostrarModalQREsim(code);
-        } catch (e) {
-            console.error('[Perfil] Error verQREsimNuevo:', e);
-            if (window.showToast) window.showToast('❌ Error al cargar la eSIM: ' + e.message, 'error', 5000);
+        } catch (err) {
+            console.error('[Perfil] Error verQREsimNuevo:', err);
+            mostrarErrorEsim('Error al cargar la eSIM: ' + (err && err.message ? err.message : 'desconocido'));
+            if (window.showToast) window.showToast('❌ Error al cargar la eSIM', 'error', 4000);
         }
     };
 
     window.sincronizarEsimNuevo = async function() {
+        limpiarErrorEsim();
         if (window.showToast) window.showToast('⏳ Sincronizando consumo...', '', 3000);
         try {
             var resp = await fetchAuth(BACKEND_URL + '/api/telnyx/esim/sync', { method: 'POST' });
@@ -2214,36 +2465,224 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             if (window.showToast) window.showToast('✅ Datos actualizados', 'success', 3000);
-            actualizarUIEsimNueva(data.data);
-        } catch (e) {
-            console.error('[Perfil] Error sincronizarEsimNuevo:', e);
-            if (window.showToast) window.showToast('❌ Error: ' + e.message, 'error', 5000);
+            if (data.data && data.data.tiene_esim) mostrarUIEsim(data.data);
+        } catch (err) {
+            console.error('[Perfil] Error sincronizarEsimNuevo:', err);
+            mostrarErrorEsim('Error al sincronizar: ' + (err && err.message ? err.message : 'desconocido'));
+            if (window.showToast) window.showToast('❌ Error al sincronizar', 'error', 4000);
         }
     };
+
+    window.cargarEsimNueva = async function() {
+        var e = obtenerElementosEsim();
+        if (e.estado) { e.estado.textContent = 'Cargando…'; e.estado.style.color = 'var(--text-secondary)'; }
+        limpiarErrorEsim();
+        try {
+            var resp = await fetchAuth(BACKEND_URL + '/api/telnyx/esim/mia');
+            if (!resp) {
+                resetUISinEsim();
+                mostrarErrorEsim('No se pudo conectar. Inicia sesión e intenta de nuevo.');
+                return;
+            }
+            if (resp.status === 401) {
+                resetUISinEsim();
+                mostrarErrorEsim('Tu sesión expiró. Inicia sesión de nuevo.');
+                return;
+            }
+            var data = await resp.json();
+            if (!resp.ok || !data || !data.success) {
+                resetUISinEsim();
+                mostrarErrorEsim('No se pudo obtener tu eSIM: ' + ((data && data.error) || ('HTTP ' + resp.status)));
+                return;
+            }
+            var esim = data.data || {};
+            if (!esim.tiene_esim) {
+                resetUISinEsim();
+                return;
+            }
+            mostrarUIEsim(esim);
+        } catch (err) {
+            console.warn('[Perfil] Error cargando eSIM nueva:', err);
+            resetUISinEsim();
+            mostrarErrorEsim('Error de red al cargar tu eSIM. Intenta de nuevo.');
+        }
+    };
+
+    function crearModalEsim() {
+        var modal = document.createElement('div');
+        modal.id = 'esimQrModalNuevo';
+        modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);backdrop-filter:blur(10px);display:flex;justify-content:center;align-items:center;z-index:99999;padding:20px;';
+
+        var card = document.createElement('div');
+        card.style.cssText = 'background:linear-gradient(135deg,var(--bg-card),var(--bg-dark));border:2px solid var(--gold);border-radius:20px;padding:30px;max-width:420px;width:100%;text-align:center;position:relative;max-height:90vh;overflow-y:auto;';
+
+        var btnCerrar = document.createElement('button');
+        btnCerrar.textContent = '✕';
+        btnCerrar.setAttribute('aria-label', 'Cerrar');
+        btnCerrar.style.cssText = 'position:absolute;top:10px;right:15px;background:transparent;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;';
+        btnCerrar.addEventListener('click', cerrarModalEsim);
+
+        var h = document.createElement('h3');
+        h.textContent = '📱 Activar eSIM';
+        h.style.cssText = 'color:var(--gold);margin-bottom:12px;font-family:Orbitron,monospace;font-size:1rem;';
+
+        var p = document.createElement('p');
+        p.textContent = 'Escanea este código con la cámara de tu celular';
+        p.style.cssText = 'color:var(--text-secondary);font-size:0.8rem;margin-bottom:14px;';
+
+        var qrBox = document.createElement('div');
+        qrBox.style.cssText = 'background:#fff;border-radius:12px;padding:15px;display:inline-block;margin-bottom:14px;';
+        var canvas = document.createElement('canvas');
+        canvas.id = 'esimQrCanvasNuevo';
+        qrBox.appendChild(canvas);
+
+        var lpaBox = document.createElement('div');
+        lpaBox.style.cssText = 'background:rgba(0,0,0,0.6);border:1px solid var(--glass-border);border-radius:8px;padding:10px;word-break:break-all;margin-bottom:12px;text-align:left;';
+        var lpaLabel = document.createElement('div');
+        lpaLabel.textContent = 'CÓDIGO LPA';
+        lpaLabel.style.cssText = 'font-size:0.55rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;';
+        var lpaValue = document.createElement('div');
+        lpaValue.id = 'esimLpaValue';
+        lpaValue.style.cssText = 'font-family:monospace;font-size:0.65rem;color:var(--gold);line-height:1.4;word-break:break-all;';
+        lpaBox.appendChild(lpaLabel);
+        lpaBox.appendChild(lpaValue);
+
+        var smdpBox = document.createElement('div');
+        smdpBox.style.cssText = 'background:rgba(0,0,0,0.6);border:1px solid var(--glass-border);border-radius:8px;padding:10px;word-break:break-all;margin-bottom:8px;text-align:left;';
+        var smdpLabel = document.createElement('div');
+        smdpLabel.textContent = 'SM-DP+';
+        smdpLabel.style.cssText = 'font-size:0.55rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;';
+        var smdpValue = document.createElement('div');
+        smdpValue.id = 'esimSmdpValue';
+        smdpValue.style.cssText = 'font-family:monospace;font-size:0.7rem;color:var(--text-secondary);word-break:break-all;';
+        smdpBox.appendChild(smdpLabel);
+        smdpBox.appendChild(smdpValue);
+
+        var actBox = document.createElement('div');
+        actBox.style.cssText = 'background:rgba(0,0,0,0.6);border:1px solid var(--glass-border);border-radius:8px;padding:10px;word-break:break-all;margin-bottom:12px;text-align:left;';
+        var actLabel = document.createElement('div');
+        actLabel.textContent = 'CÓDIGO DE ACTIVACIÓN';
+        actLabel.style.cssText = 'font-size:0.55rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;';
+        var actValue = document.createElement('div');
+        actValue.id = 'esimActValue';
+        actValue.style.cssText = 'font-family:monospace;font-size:0.7rem;color:var(--gold);word-break:break-all;';
+        actBox.appendChild(actLabel);
+        actBox.appendChild(actValue);
+
+        var notaLbl = document.createElement('div');
+        notaLbl.textContent = 'No puedes escanear el QR con el mismo celular donde lo ves; usa el botón o el código copiado.';
+        notaLbl.style.cssText = 'color:var(--text-muted);font-size:0.65rem;margin:6px 0 12px;line-height:1.4;';
+
+        var actions = document.createElement('div');
+        actions.style.cssText = 'display:flex;gap:8px;justify-content:center;flex-wrap:wrap;';
+
+        var btnCopiar = document.createElement('button');
+        btnCopiar.textContent = '📋 Copiar código';
+        btnCopiar.style.cssText = 'background:rgba(212,175,55,0.1);border:1px solid var(--gold);color:var(--gold);padding:8px 18px;border-radius:30px;font-size:0.7rem;font-weight:600;cursor:pointer;';
+
+        var btnInstalar = document.createElement('button');
+        btnInstalar.textContent = '📲 Instalar en este iPhone';
+        btnInstalar.style.cssText = 'background:linear-gradient(135deg,var(--gold),var(--gold-dark));border:1px solid var(--line-black);color:var(--space);padding:8px 18px;border-radius:30px;font-size:0.7rem;font-weight:700;cursor:pointer;display:none;';
+
+        var btnCerrarSec = document.createElement('button');
+        btnCerrarSec.textContent = 'Cerrar';
+        btnCerrarSec.style.cssText = 'background:transparent;border:1px solid var(--text-muted);color:var(--text-muted);padding:8px 18px;border-radius:30px;font-size:0.7rem;cursor:pointer;';
+        btnCerrarSec.addEventListener('click', cerrarModalEsim);
+
+        actions.appendChild(btnCopiar);
+        actions.appendChild(btnInstalar);
+        actions.appendChild(btnCerrarSec);
+
+        card.appendChild(btnCerrar);
+        card.appendChild(h);
+        card.appendChild(p);
+        card.appendChild(qrBox);
+        card.appendChild(lpaBox);
+        card.appendChild(smdpBox);
+        card.appendChild(actBox);
+        card.appendChild(notaLbl);
+        card.appendChild(actions);
+        modal.appendChild(card);
+
+        btnCopiar.addEventListener('click', function() {
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(modal.dataset.lpa).then(function() {
+                        if (window.showToast) window.showToast('📋 Código copiado', 'success');
+                    }).catch(function() {
+                        copiarConFallback(modal.dataset.lpa);
+                    });
+                } else {
+                    copiarConFallback(modal.dataset.lpa);
+                }
+            } catch (e) {
+                copiarConFallback(modal.dataset.lpa);
+            }
+        });
+
+        return modal;
+    }
+
+    function copiarConFallback(texto) {
+        try {
+            var ta = document.createElement('textarea');
+            ta.value = texto;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            var ok = document.execCommand('copy');
+            document.body.removeChild(ta);
+            if (ok && window.showToast) window.showToast('📋 Código copiado', 'success');
+            else if (window.showToast) window.showToast('No se pudo copiar. Selecciona el texto manualmente.', 'warning', 4000);
+        } catch (e) {
+            if (window.showToast) window.showToast('No se pudo copiar. Selecciona el texto manualmente.', 'warning', 4000);
+        }
+    }
+
+    function cerrarModalEsim() {
+        var m = document.getElementById('esimQrModalNuevo');
+        if (m) m.remove();
+        document.removeEventListener('keydown', onKeyEsc);
+    }
+
+    function onKeyEsc(ev) {
+        if (ev.key === 'Escape') cerrarModalEsim();
+    }
 
     function mostrarModalQREsim(code) {
         var previo = document.getElementById('esimQrModalNuevo');
         if (previo) previo.remove();
 
-        var codeSafe = code.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        var modal = crearModalEsim();
+        modal.dataset.lpa = code;
 
-        var modal = document.createElement('div');
-        modal.id = 'esimQrModalNuevo';
-        modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);backdrop-filter:blur(10px);display:flex;justify-content:center;align-items:center;z-index:99999;padding:20px;';
-        modal.innerHTML =
-            '<div style="background:linear-gradient(135deg,var(--bg-card),var(--bg-dark));border:2px solid var(--gold);border-radius:20px;padding:30px;max-width:420px;width:100%;text-align:center;position:relative;">' +
-                '<button onclick="document.getElementById(\'esimQrModalNuevo\').remove()" style="position:absolute;top:10px;right:15px;background:transparent;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;">✕</button>' +
-                '<h3 style="color:var(--gold);margin-bottom:12px;font-family:Orbitron,monospace;font-size:1rem;">📱 Activar eSIM</h3>' +
-                '<p style="color:var(--text-secondary);font-size:0.8rem;margin-bottom:14px;">Escanea este código con la cámara de tu celular</p>' +
-                '<div style="background:#fff;border-radius:12px;padding:15px;display:inline-block;margin-bottom:14px;"><canvas id="esimQrCanvasNuevo"></canvas></div>' +
-                '<div style="background:rgba(0,0,0,0.6);border:1px solid var(--glass-border);border-radius:8px;padding:10px;word-break:break-all;margin-bottom:12px;text-align:left;">' +
-                    '<div style="font-size:0.55rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Código LPA</div>' +
-                    '<div style="font-family:monospace;font-size:0.65rem;color:var(--gold);line-height:1.4;">' + code + '</div>' +
-                '</div>' +
-                '<button onclick="navigator.clipboard.writeText(\'' + codeSafe + '\').then(function(){window.showToast&&window.showToast(\'📋 Código copiado\',\'success\')})" style="background:rgba(212,175,55,0.1);border:1px solid var(--gold);color:var(--gold);padding:8px 18px;border-radius:30px;font-size:0.7rem;font-weight:600;cursor:pointer;margin-right:6px;">📋 Copiar código</button>' +
-                '<button onclick="document.getElementById(\'esimQrModalNuevo\').remove()" style="background:transparent;border:1px solid var(--text-muted);color:var(--text-muted);padding:8px 18px;border-radius:30px;font-size:0.7rem;cursor:pointer;">Cerrar</button>' +
-                '<p style="color:var(--text-muted);font-size:0.65rem;margin-top:14px;">📲 Ajustes › Datos móviles › Agregar eSIM</p>' +
-            '</div>';
+        var partes = String(code).split('$');
+        var smdp = partes[1] || '';
+        var actCode = partes[2] || '';
+
+        modal.querySelector('#esimLpaValue').textContent = code;
+        modal.querySelector('#esimSmdpValue').textContent = smdp || '—';
+        modal.querySelector('#esimActValue').textContent = actCode || '—';
+
+        var esIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+        if (esIOS) {
+            var btnInstalar = modal.querySelectorAll('button');
+            btnInstalar.forEach(function(b){
+                if (b.textContent.indexOf('Instalar') !== -1) {
+                    b.style.display = '';
+                    b.addEventListener('click', function() {
+                        var url = 'https://esimsetup.apple.com/esim_qrcode_provisioning?carddata=' + encodeURIComponent(code);
+                        window.location.href = url;
+                    });
+                }
+            });
+        }
+
+        modal.addEventListener('click', function(ev) {
+            if (ev.target === modal) cerrarModalEsim();
+        });
+        document.addEventListener('keydown', onKeyEsc);
 
         document.body.appendChild(modal);
 
@@ -2267,78 +2706,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    function actualizarUIEsimNueva(esim) {
-        if (!esim) return;
-        try {
-            var estadoEl = document.getElementById('esimStatus');
-            if (estadoEl) {
-                var estado = esim.estado || 'pendiente';
-                var map = {
-                    'activa': '✅ Activa',
-                    'activada': '✅ Activa',
-                    'sin_saldo': '❌ Sin saldo',
-                    'pendiente': '⏳ Pendiente',
-                    'aprovisionando': '🔄 Aprovisionando',
-                    'reemplazando': '🔄 Reemplazando'
-                };
-                estadoEl.textContent = map[estado] || estado;
-                estadoEl.style.color = (estado === 'activa' || estado === 'activada') ? 'var(--success)' : 'var(--warning)';
-            }
-
-            var fmt = function(mb) {
-                var n = Number(mb);
-                if (!Number.isFinite(n) || n <= 0) return '0 GB';
-                if (n >= 1000) return (n / 1000).toFixed(2) + ' GB';
-                return Math.round(n) + ' MB';
-            };
-
-            var totalMb = Number(esim.datos_total_mb) || 0;
-            var usadosMb = Number(esim.datos_usados_mb) || 0;
-            var restanteMb = Math.max(totalMb - usadosMb, 0);
-            var pct = totalMb > 0 ? Math.min((usadosMb / totalMb) * 100, 100) : 0;
-
-            var usedEl = document.getElementById('esimDataUsed');
-            if (usedEl) usedEl.textContent = fmt(usadosMb);
-
-            var limitEl = document.getElementById('esimDataLimit');
-            if (limitEl) limitEl.textContent = fmt(totalMb);
-
-            var restEl = document.getElementById('esimDataRestante');
-            if (restEl) {
-                restEl.textContent = fmt(restanteMb);
-                restEl.style.color = restanteMb < 1000 ? 'var(--danger)' : 'var(--success)';
-            }
-
-            var iccidEl = document.getElementById('esimIccid');
-            if (iccidEl) {
-                iccidEl.removeAttribute('data-clave');
-                var iccid = esim.iccid || 'No asignado';
-                iccidEl.textContent = iccid.length > 16 ? iccid.slice(0, 10) + '...' + iccid.slice(-4) : iccid;
-            }
-
-            var barEl = document.getElementById('esimDataProgress');
-            if (barEl) {
-                barEl.style.width = pct + '%';
-                barEl.style.background = pct > 80 ? 'var(--danger)' : (pct > 50 ? 'var(--warning)' : 'var(--success)');
-            }
-        } catch (e) {
-            console.warn('[Perfil] Error actualizarUIEsimNueva:', e);
-        }
-    }
-
-    async function cargarEsimNueva() {
-        try {
-            var resp = await fetchAuth(BACKEND_URL + '/api/telnyx/esim/mia');
-            if (!resp) return;
-            var data = await resp.json();
-            if (resp.ok && data.success && data.data && data.data.tiene_esim) {
-                actualizarUIEsimNueva(data.data);
-            }
-        } catch (e) {
-            console.warn('[Perfil] Error cargando eSIM nueva:', e);
-        }
-    }
-
     document.addEventListener('DOMContentLoaded', function() {
         var intervalCheck = setInterval(function() {
             var btns = document.querySelectorAll('.perfil-tabs .tab-btn');
@@ -2348,14 +2715,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 var onclick = btn.getAttribute('onclick') || '';
                 if (onclick.indexOf("'esim'") !== -1) {
                     btn.addEventListener('click', function() {
-                        setTimeout(cargarEsimNueva, 200);
+                        setTimeout(window.cargarEsimNueva, 150);
                     });
                 }
             });
         }, 300);
     });
-
-    window.cargarEsimNueva = cargarEsimNueva;
 
     console.log('[Perfil] Integración eSIM nueva cargada ✅');
 })();
