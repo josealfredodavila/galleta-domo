@@ -7,10 +7,10 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet" />
 
-    <!-- ✅ APARIENCIA GLOBAL v2.0 - Se carga PRIMERO -->
+    <!-- APARIENCIA GLOBAL v2.0 - Se carga PRIMERO -->
     <script src="/features/shared/js/apariencia-global.js"></script>
 
-    <!-- ✅ AGREGADO: Librería QRCode para el QR de la eSIM -->
+    <!-- Librería QRCode (se genera en el navegador; el código de la eSIM nunca sale a terceros) -->
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 
     <style>
@@ -19,12 +19,9 @@
             --space-mid: #0a1428;
             --verde-bosque: #0F2D1A;
             --verde-bosque-light: #1a4a2a;
-
-            /* ✅ CONECTADO AL COLOR DE ACENTO GLOBAL */
             --gold-cosmic: var(--accent, #D4AF37);
             --gold-dim: color-mix(in srgb, var(--accent, #D4AF37) 15%, transparent);
             --gold-glow: color-mix(in srgb, var(--accent, #D4AF37) 25%, transparent);
-
             --text-primary: #e8f0f8;
             --text-secondary: #8ba3c7;
             --text-muted: #4a6a8a;
@@ -56,85 +53,38 @@
             -moz-osx-font-smoothing: grayscale;
         }
 
-        #stars-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-            pointer-events: none;
-        }
+        #stars-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
 
         .nebula {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(120px);
-            opacity: 0.10;
-            pointer-events: none;
-            z-index: 0;
-            animation: nebula-drift 25s ease-in-out infinite alternate;
+            position: fixed; border-radius: 50%; filter: blur(120px); opacity: 0.10;
+            pointer-events: none; z-index: 0; animation: nebula-drift 25s ease-in-out infinite alternate;
         }
         .nebula-1 { width: 700px; height: 700px; background: var(--verde-bosque); top: -15%; right: -15%; }
         .nebula-2 { width: 600px; height: 600px; background: var(--gold-cosmic); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.05; }
         .nebula-3 { width: 500px; height: 500px; background: var(--quantum); top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -15s; opacity: 0.04; }
-
-        @keyframes nebula-drift {
-            0% { transform: translate(0, 0) scale(1); }
-            100% { transform: translate(40px, -30px) scale(1.15); }
-        }
+        @keyframes nebula-drift { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(40px, -30px) scale(1.15); } }
 
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: var(--space-deep); }
         ::-webkit-scrollbar-thumb { background: var(--gold-cosmic); border-radius: 2px; }
 
-        .app {
-            position: relative;
-            z-index: 1;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 16px 20px 30px;
-        }
+        .app { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 16px 20px 30px; }
 
         .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0 14px;
-            border-bottom: 1px solid var(--glass-border);
-            flex-wrap: wrap;
-            gap: 10px;
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            background: rgba(5, 8, 15, 0.92);
+            display: flex; justify-content: space-between; align-items: center; padding: 10px 0 14px;
+            border-bottom: 1px solid var(--glass-border); flex-wrap: wrap; gap: 10px;
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            position: sticky; top: 0; z-index: 100; background: rgba(5, 8, 15, 0.92);
             border-radius: var(--radius) var(--radius) 0 0;
         }
         .header::after {
-            content: '';
-            position: absolute;
-            bottom: -1px;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, var(--gold-cosmic), transparent);
-            opacity: 0.2;
+            content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold-cosmic), transparent); opacity: 0.2;
         }
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            text-decoration: none;
-            transition: var(--transition);
-        }
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; transition: var(--transition); }
         .logo:hover { opacity: 0.85; }
         .logo-hex {
-            font-size: 1.8rem;
-            color: var(--gold-cosmic);
-            font-weight: 800;
-            font-family: 'Orbitron', monospace;
+            font-size: 1.8rem; color: var(--gold-cosmic); font-weight: 800; font-family: 'Orbitron', monospace;
             text-shadow: 0 0 30px color-mix(in srgb, var(--accent, #D4AF37) 30%, transparent);
             animation: glow-pulse 3s ease-in-out infinite;
         }
@@ -142,48 +92,20 @@
             0%, 100% { text-shadow: 0 0 30px color-mix(in srgb, var(--accent, #D4AF37) 30%, transparent); }
             50% { text-shadow: 0 0 60px color-mix(in srgb, var(--accent, #D4AF37) 60%, transparent); }
         }
-        .logo-text {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            letter-spacing: 2px;
-        }
+        .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; font-weight: 700; color: var(--text-primary); letter-spacing: 2px; }
         .logo-text span { color: var(--gold-cosmic); }
         .logo-badge {
-            font-size: 0.45rem;
-            background: linear-gradient(135deg, var(--gold-cosmic), var(--verde-bosque-light));
-            color: white;
-            padding: 2px 10px;
-            border-radius: 20px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            border: 1px solid color-mix(in srgb, var(--accent, #D4AF37) 20%, transparent);
+            font-size: 0.45rem; background: linear-gradient(135deg, var(--gold-cosmic), var(--verde-bosque-light));
+            color: white; padding: 2px 10px; border-radius: 20px; font-weight: 700; letter-spacing: 1px;
+            text-transform: uppercase; border: 1px solid color-mix(in srgb, var(--accent, #D4AF37) 20%, transparent);
         }
-        .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
+        .header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
         .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 16px;
-            border: 1px solid var(--glass-border);
-            border-radius: 30px;
-            background: transparent;
-            color: var(--text-muted);
-            font-family: 'Inter', sans-serif;
-            font-size: 0.65rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: var(--transition);
-            text-decoration: none;
-            letter-spacing: 0.3px;
+            display: inline-flex; align-items: center; gap: 6px; padding: 6px 16px;
+            border: 1px solid var(--glass-border); border-radius: 30px; background: transparent;
+            color: var(--text-muted); font-family: 'Inter', sans-serif; font-size: 0.65rem; font-weight: 500;
+            cursor: pointer; transition: var(--transition); text-decoration: none; letter-spacing: 0.3px;
         }
         .btn:hover { color: var(--text-primary); border-color: var(--gold-cosmic); }
         .btn-primary { background: color-mix(in srgb, var(--accent, #D4AF37) 8%, transparent); color: var(--gold-cosmic); border-color: color-mix(in srgb, var(--accent, #D4AF37) 15%, transparent); }
@@ -192,11 +114,8 @@
         .btn-outline:hover { background: color-mix(in srgb, var(--accent, #D4AF37) 5%, transparent); border-color: var(--gold-cosmic); }
         .btn-sm { padding: 4px 12px; font-size: 0.55rem; }
         .btn-internet {
-            background: linear-gradient(135deg, var(--gold-cosmic), #00d68f);
-            border-color: transparent;
-            color: #0a0c10;
-            box-shadow: 0 0 20px rgba(0, 214, 143, 0.2);
-            animation: pulse-internet 2s ease-in-out infinite;
+            background: linear-gradient(135deg, var(--gold-cosmic), #00d68f); border-color: transparent; color: #0a0c10;
+            box-shadow: 0 0 20px rgba(0, 214, 143, 0.2); animation: pulse-internet 2s ease-in-out infinite;
         }
         .btn-internet:hover { box-shadow: 0 0 40px rgba(0, 214, 143, 0.4); transform: scale(1.03); }
         @keyframes pulse-internet {
@@ -205,380 +124,139 @@
         }
 
         .main-nav {
-            display: flex;
-            gap: 4px;
-            background: rgba(15,45,26,0.3);
-            border-radius: var(--radius);
-            padding: 4px;
-            border: 1px solid var(--glass-border);
-            margin: 16px 0 20px;
-            overflow-x: auto;
-            flex-wrap: nowrap;
+            display: flex; gap: 4px; background: rgba(15,45,26,0.3); border-radius: var(--radius); padding: 4px;
+            border: 1px solid var(--glass-border); margin: 16px 0 20px; overflow-x: auto; flex-wrap: nowrap;
             -webkit-overflow-scrolling: touch;
         }
         .main-nav .nav-link {
-            padding: 8px 16px;
-            border-radius: 12px;
-            color: var(--text-muted);
-            text-decoration: none;
-            font-size: 0.7rem;
-            font-weight: 500;
-            transition: var(--transition);
-            white-space: nowrap;
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            position: relative;
+            padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem;
+            font-weight: 500; transition: var(--transition); white-space: nowrap; background: transparent; border: none;
+            cursor: pointer; position: relative;
         }
         .main-nav .nav-link::after {
-            content: '';
-            position: absolute;
-            bottom: 2px;
-            left: 50%;
-            width: 0;
-            height: 2px;
-            background: var(--gold-cosmic);
-            transition: var(--transition);
-            transform: translateX(-50%);
-            border-radius: 2px;
+            content: ''; position: absolute; bottom: 2px; left: 50%; width: 0; height: 2px; background: var(--gold-cosmic);
+            transition: var(--transition); transform: translateX(-50%); border-radius: 2px;
         }
-        .main-nav .nav-link:hover::after,
-        .main-nav .nav-link.active::after { width: 60%; }
+        .main-nav .nav-link:hover::after, .main-nav .nav-link.active::after { width: 60%; }
         .main-nav .nav-link:hover { color: var(--text-primary); background: color-mix(in srgb, var(--accent, #D4AF37) 5%, transparent); }
         .main-nav .nav-link.active { background: color-mix(in srgb, var(--accent, #D4AF37) 12%, transparent); color: var(--gold-cosmic); }
         .main-nav .nav-link.live { color: #ff0044; }
         .main-nav .nav-link.live:hover { background: rgba(255,0,68,0.08); }
 
         .internet-container {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-xl);
-            padding: 24px 20px;
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            transition: var(--transition-slow);
-            box-shadow: var(--shadow-gold);
+            background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl);
+            padding: 24px 20px; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            transition: var(--transition-slow); box-shadow: var(--shadow-gold);
         }
-        .internet-container:hover {
-            border-color: color-mix(in srgb, var(--accent, #D4AF37) 20%, transparent);
-            box-shadow: var(--shadow-gold-strong);
-        }
+        .internet-container:hover { border-color: color-mix(in srgb, var(--accent, #D4AF37) 20%, transparent); box-shadow: var(--shadow-gold-strong); }
 
         .internet-header { text-align: center; margin-bottom: 20px; }
         .internet-header h2 {
-            font-family: 'Orbitron', monospace;
-            color: var(--gold-cosmic);
-            font-size: 1.2rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            flex-wrap: wrap;
-            letter-spacing: 1px;
+            font-family: 'Orbitron', monospace; color: var(--gold-cosmic); font-size: 1.2rem; display: flex;
+            align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; letter-spacing: 1px;
         }
         .internet-header .badge {
-            background: #00ff88;
-            color: #000;
-            padding: 2px 10px;
-            border-radius: 8px;
-            font-size: 0.55rem;
-            font-family: 'Orbitron', monospace;
-            letter-spacing: 0.5px;
+            background: #00ff88; color: #000; padding: 2px 10px; border-radius: 8px; font-size: 0.55rem;
+            font-family: 'Orbitron', monospace; letter-spacing: 0.5px;
         }
-        .internet-header p {
-            color: var(--text-secondary);
-            font-size: 0.8rem;
-            letter-spacing: 0.3px;
-        }
+        .internet-header p { color: var(--text-secondary); font-size: 0.8rem; letter-spacing: 0.3px; }
 
-        .internet-grid {
-            display: grid;
-            grid-template-columns: 1fr 340px;
-            gap: 14px;
-        }
-        .pack-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 10px;
-        }
+        .internet-grid { display: grid; grid-template-columns: 1fr 340px; gap: 14px; }
+        .pack-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
 
         .pack-card {
-            background: rgba(0,0,0,0.3);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius);
-            padding: 14px;
-            cursor: pointer;
-            transition: var(--transition-slow);
-            position: relative;
+            background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: var(--radius);
+            padding: 14px; cursor: pointer; transition: var(--transition-slow); position: relative;
         }
-        .pack-card:hover {
-            transform: translateY(-3px);
-            border-color: color-mix(in srgb, var(--accent, #D4AF37) 30%, transparent);
-            box-shadow: var(--shadow-gold);
-        }
-        .pack-card.selected {
-            border-color: var(--gold-cosmic);
-            box-shadow: 0 0 30px color-mix(in srgb, var(--accent, #D4AF37) 25%, transparent);
-            transform: scale(1.02);
-        }
+        .pack-card:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--accent, #D4AF37) 30%, transparent); box-shadow: var(--shadow-gold); }
+        .pack-card.selected { border-color: var(--gold-cosmic); box-shadow: 0 0 30px color-mix(in srgb, var(--accent, #D4AF37) 25%, transparent); transform: scale(1.02); }
         .pack-card.popular { border: 2px solid var(--gold-cosmic); }
         .pack-card .popular-badge {
-            position: absolute;
-            top: -8px;
-            left: 12px;
-            background: var(--gold-cosmic);
-            color: #000;
-            font-size: 0.55rem;
-            font-family: 'Orbitron', monospace;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
+            position: absolute; top: -8px; left: 12px; background: var(--gold-cosmic); color: #000; font-size: 0.55rem;
+            font-family: 'Orbitron', monospace; padding: 2px 8px; border-radius: 10px; font-weight: 700; letter-spacing: 0.5px;
         }
-        .pack-card .pack-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .pack-card .pack-name {
-            font-family: 'Orbitron', monospace;
-            font-size: 0.9rem;
-            letter-spacing: 0.5px;
-            color: var(--gold-cosmic);
-        }
-        .pack-card .pack-vel {
-            font-size: 0.55rem;
-            background: rgba(255,255,255,0.06);
-            padding: 2px 8px;
-            border-radius: 10px;
-            color: var(--text-secondary);
-            letter-spacing: 0.3px;
-        }
+        .pack-card .pack-header { display: flex; justify-content: space-between; align-items: center; }
+        .pack-card .pack-name { font-family: 'Orbitron', monospace; font-size: 0.9rem; letter-spacing: 0.5px; color: var(--gold-cosmic); }
+        .pack-card .pack-vel { font-size: 0.55rem; background: rgba(255,255,255,0.06); padding: 2px 8px; border-radius: 10px; color: var(--text-secondary); letter-spacing: 0.3px; }
         .pack-card .pack-data { margin: 10px 0; }
-        .pack-card .pack-data .size {
-            font-size: 2rem;
-            font-weight: 800;
-            color: white;
-            font-family: 'Orbitron', monospace;
-        }
-        .pack-card .pack-data .days {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-        }
-        .pack-card .pack-price {
-            font-size: 1.1rem;
-            color: var(--gold-cosmic);
-            font-family: 'Orbitron', monospace;
-            letter-spacing: 0.5px;
-        }
-        .pack-card .pack-features {
-            margin-top: 10px;
-            font-size: 0.55rem;
-            color: var(--text-muted);
-        }
+        .pack-card .pack-data .size { font-size: 2rem; font-weight: 800; color: white; font-family: 'Orbitron', monospace; }
+        .pack-card .pack-data .days { font-size: 0.8rem; color: var(--text-secondary); }
+        .pack-card .pack-price { font-size: 1.1rem; color: var(--gold-cosmic); font-family: 'Orbitron', monospace; letter-spacing: 0.5px; }
+        .pack-card .pack-features { margin-top: 10px; font-size: 0.55rem; color: var(--text-muted); }
         .pack-card .pack-features span { margin-right: 8px; }
 
         .checkout-card {
-            background: rgba(0,0,0,0.3);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius);
-            padding: 14px;
-            position: sticky;
-            top: 10px;
-            height: fit-content;
-            transition: var(--transition-slow);
+            background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: var(--radius);
+            padding: 14px; position: sticky; top: 10px; height: fit-content; transition: var(--transition-slow);
         }
         .checkout-card:hover { border-color: color-mix(in srgb, var(--accent, #D4AF37) 20%, transparent); }
-        .checkout-card .checkout-title {
-            font-family: 'Orbitron', monospace;
-            font-size: 0.75rem;
-            color: var(--gold-cosmic);
-            margin-bottom: 8px;
-            letter-spacing: 1px;
-        }
+        .checkout-card .checkout-title { font-family: 'Orbitron', monospace; font-size: 0.75rem; color: var(--gold-cosmic); margin-bottom: 8px; letter-spacing: 1px; }
         .checkout-card .checkout-resumen {
-            background: rgba(0,0,0,0.4);
-            border-radius: 10px;
-            padding: 10px;
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            min-height: 80px;
-            line-height: 1.6;
+            background: rgba(0,0,0,0.4); border-radius: 10px; padding: 10px; font-size: 0.8rem;
+            color: var(--text-secondary); min-height: 80px; line-height: 1.6;
         }
         .checkout-card .checkout-resumen strong { color: white; }
-        .checkout-card .checkout-resumen .precio-final {
-            color: var(--gold-cosmic);
-            font-family: 'Orbitron', monospace;
-            font-size: 1rem;
-            letter-spacing: 0.5px;
-        }
+        .checkout-card .checkout-resumen .precio-final { color: var(--gold-cosmic); font-family: 'Orbitron', monospace; font-size: 1rem; letter-spacing: 0.5px; }
 
         .checkout-card .terms-row {
             background: color-mix(in srgb, var(--accent, #D4AF37) 6%, transparent);
             border: 1px solid color-mix(in srgb, var(--accent, #D4AF37) 10%, transparent);
-            border-radius: 8px;
-            padding: 8px;
-            margin-top: 12px;
-            display: flex;
-            gap: 6px;
-            align-items: flex-start;
+            border-radius: 8px; padding: 8px; margin-top: 12px; display: flex; gap: 6px; align-items: flex-start;
         }
-        .checkout-card .terms-row input {
-            margin-top: 2px;
-            accent-color: var(--gold-cosmic);
-            cursor: pointer;
-        }
-        .checkout-card .terms-row label {
-            font-size: 0.6rem;
-            color: var(--text-secondary);
-            line-height: 1.3;
-            letter-spacing: 0.3px;
-        }
-        .checkout-card .terms-row label a {
-            color: var(--gold-cosmic);
-            text-decoration: underline;
-        }
+        .checkout-card .terms-row input { margin-top: 2px; accent-color: var(--gold-cosmic); cursor: pointer; }
+        .checkout-card .terms-row label { font-size: 0.6rem; color: var(--text-secondary); line-height: 1.3; letter-spacing: 0.3px; }
+        .checkout-card .terms-row label a { color: var(--gold-cosmic); text-decoration: underline; }
 
-        .red-selector {
-            margin-top: 12px;
-        }
-        .red-selector label {
-            font-size: 0.65rem;
-            color: var(--text-secondary);
-            display: block;
-            margin-bottom: 4px;
-            letter-spacing: 0.3px;
-            text-transform: uppercase;
-            font-weight: 600;
-        }
+        .red-selector { margin-top: 12px; }
+        .red-selector label { font-size: 0.65rem; color: var(--text-secondary); display: block; margin-bottom: 4px; letter-spacing: 0.3px; text-transform: uppercase; font-weight: 600; }
         .red-selector select {
-            width: 100%;
-            padding: 8px 12px;
-            background: rgba(0,0,0,0.4);
-            border: 1px solid var(--glass-border);
-            border-radius: 10px;
-            color: white;
-            outline: none;
-            font-size: 0.75rem;
-            font-family: 'Inter', sans-serif;
-            cursor: pointer;
+            width: 100%; padding: 8px 12px; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border);
+            border-radius: 10px; color: white; outline: none; font-size: 0.75rem; font-family: 'Inter', sans-serif; cursor: pointer;
         }
         .red-selector select option { background: #0a1428; color: white; }
         .red-info {
-            background: rgba(0, 214, 143, 0.06);
-            border: 1px solid rgba(0, 214, 143, 0.2);
-            border-radius: 8px;
-            padding: 8px 10px;
-            font-size: 0.6rem;
-            color: var(--text-secondary);
-            line-height: 1.5;
-            margin-top: 6px;
+            background: rgba(0, 214, 143, 0.06); border: 1px solid rgba(0, 214, 143, 0.2); border-radius: 8px;
+            padding: 8px 10px; font-size: 0.6rem; color: var(--text-secondary); line-height: 1.5; margin-top: 6px;
         }
         .red-info strong { color: var(--gold-cosmic); }
         .red-info .warn { color: #f59e0b; }
 
         .btn-pagar {
-            width: 100%;
-            margin-top: 12px;
-            background: linear-gradient(135deg, #00ff88, #00b894);
-            color: #000;
-            border: none;
-            padding: 12px;
-            border-radius: 30px;
-            font-family: 'Orbitron', monospace;
-            font-weight: 700;
-            font-size: 0.75rem;
-            cursor: pointer;
-            transition: var(--transition);
-            letter-spacing: 0.5px;
+            width: 100%; margin-top: 12px; background: linear-gradient(135deg, #00ff88, #00b894); color: #000; border: none;
+            padding: 12px; border-radius: 30px; font-family: 'Orbitron', monospace; font-weight: 700; font-size: 0.75rem;
+            cursor: pointer; transition: var(--transition); letter-spacing: 0.5px;
         }
         .btn-pagar:hover { transform: scale(1.01); box-shadow: 0 0 30px rgba(0,255,136,0.3); }
         .btn-pagar:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-        .cobertura-box {
-            margin-top: 14px;
-            border-top: 1px solid var(--glass-border);
-            padding-top: 8px;
-        }
-        .cobertura-box .cobertura-title {
-            font-size: 0.65rem;
-            color: var(--text-secondary);
-            font-family: 'Orbitron', monospace;
-            letter-spacing: 0.5px;
-        }
-        .cobertura-box .cobertura-items {
-            font-size: 0.6rem;
-            color: var(--text-muted);
-            margin-top: 4px;
-            line-height: 1.8;
-        }
+        .cobertura-box { margin-top: 14px; border-top: 1px solid var(--glass-border); padding-top: 8px; }
+        .cobertura-box .cobertura-title { font-size: 0.65rem; color: var(--text-secondary); font-family: 'Orbitron', monospace; letter-spacing: 0.5px; }
+        .cobertura-box .cobertura-items { font-size: 0.6rem; color: var(--text-muted); margin-top: 4px; line-height: 1.8; }
         .cobertura-box .cobertura-items .check { color: var(--success); }
         .cobertura-box .cobertura-items .quantum { color: var(--quantum); }
 
-        .features-box {
-            margin-top: 14px;
-            border-top: 1px solid var(--glass-border);
-            padding-top: 10px;
-        }
-        .features-box .features-title {
-            font-size: 0.65rem;
-            color: var(--text-secondary);
-            font-family: 'Orbitron', monospace;
-            letter-spacing: 0.5px;
-            margin-bottom: 6px;
-        }
-        .features-box .features-items {
-            font-size: 0.6rem;
-            color: var(--text-muted);
-            line-height: 1.8;
-        }
-        .features-box .features-items div {
-            display: flex;
-            gap: 4px;
-            align-items: flex-start;
-        }
-        .features-box .features-items div::first-letter {
-            color: var(--success);
-            font-weight: 700;
-        }
+        .features-box { margin-top: 14px; border-top: 1px solid var(--glass-border); padding-top: 10px; }
+        .features-box .features-title { font-size: 0.65rem; color: var(--text-secondary); font-family: 'Orbitron', monospace; letter-spacing: 0.5px; margin-bottom: 6px; }
+        .features-box .features-items { font-size: 0.6rem; color: var(--text-muted); line-height: 1.8; }
+        .features-box .features-items div { display: flex; gap: 4px; align-items: flex-start; }
+        .features-box .features-items div::first-letter { color: var(--success); font-weight: 700; }
 
         .toast {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            background: var(--verde-bosque);
-            border: 1px solid var(--gold-cosmic);
-            color: var(--gold-cosmic);
-            padding: 14px 28px;
-            border-radius: 14px;
-            font-size: 0.8rem;
-            font-weight: 500;
-            box-shadow: var(--shadow-gold-strong);
-            transform: translateY(100px);
-            opacity: 0;
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 9999;
-            max-width: 400px;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            letter-spacing: 0.3px;
+            position: fixed; bottom: 30px; right: 30px; background: var(--verde-bosque); border: 1px solid var(--gold-cosmic);
+            color: var(--gold-cosmic); padding: 14px 28px; border-radius: 14px; font-size: 0.8rem; font-weight: 500;
+            box-shadow: var(--shadow-gold-strong); transform: translateY(100px); opacity: 0;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); z-index: 9999; max-width: 400px;
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); letter-spacing: 0.3px;
         }
         .toast.show { transform: translateY(0); opacity: 1; }
         .toast.error { border-color: var(--danger); color: var(--danger); }
         .toast.success { border-color: var(--success); color: var(--success); }
+        .toast.warning { border-color: #f59e0b; color: #f59e0b; }
 
         .footer {
-            margin-top: 24px;
-            padding-top: 14px;
-            border-top: 1px solid var(--glass-border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
-            font-size: 0.6rem;
-            color: var(--text-muted);
-            letter-spacing: 0.3px;
+            margin-top: 24px; padding-top: 14px; border-top: 1px solid var(--glass-border); display: flex;
+            justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; font-size: 0.6rem;
+            color: var(--text-muted); letter-spacing: 0.3px;
         }
         .footer .brand { color: var(--gold-cosmic); font-weight: 600; letter-spacing: 1px; }
         .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
@@ -586,288 +264,121 @@
         .footer-links a:hover { color: var(--gold-cosmic); }
 
         /* ============================================================ */
-        /* AGREGADO: Estilos para las vistas nuevas                    */
+        /* VISTAS: compra / esperando / eSIM                           */
         /* ============================================================ */
         .vista { display: none; animation: fadeInVista 0.4s ease-out; }
         .vista.active { display: block; }
         @keyframes fadeInVista { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Vista 2: Esperando pago */
-        .esperando-wrap { max-width: 560px; margin: 30px auto; text-align: center; padding: 20px; }
-        .esperando-icon {
-            font-size: 3.5rem;
-            color: var(--gold-cosmic);
-            margin-bottom: 20px;
-            display: inline-block;
-            animation: spin-pulse 2s ease-in-out infinite;
+        .banner-esim {
+            display: none; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+            background: rgba(0, 229, 255, 0.06); border: 1px solid rgba(0, 229, 255, 0.2);
+            border-radius: var(--radius); padding: 10px 14px; margin-bottom: 14px; font-size: 0.75rem; color: var(--text-secondary);
         }
+        .banner-esim.show { display: flex; }
+
+        .esperando-wrap { max-width: 560px; margin: 30px auto; text-align: center; padding: 20px; }
+        .esperando-icon { font-size: 3.5rem; color: var(--gold-cosmic); margin-bottom: 20px; display: inline-block; animation: spin-pulse 2s ease-in-out infinite; }
         @keyframes spin-pulse {
             0%, 100% { transform: rotate(0deg) scale(1); opacity: 0.8; }
             50% { transform: rotate(180deg) scale(1.15); opacity: 1; }
         }
-        .esperando-title {
-            font-family: 'Orbitron', monospace;
-            color: var(--gold-cosmic);
-            font-size: 1.3rem;
-            letter-spacing: 1px;
-            margin-bottom: 10px;
-        }
+        .esperando-title { font-family: 'Orbitron', monospace; color: var(--gold-cosmic); font-size: 1.3rem; letter-spacing: 1px; margin-bottom: 10px; }
         .esperando-sub { color: var(--text-secondary); font-size: 0.85rem; line-height: 1.7; margin-bottom: 20px; }
+        .esperando-estado { color: var(--quantum); font-size: 0.8rem; font-weight: 600; margin: 8px 0 0; min-height: 20px; }
         .esperando-orden {
-            background: rgba(0,0,0,0.4);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius);
-            padding: 14px;
-            margin: 16px 0;
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            text-align: left;
+            background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: var(--radius);
+            padding: 14px; margin: 16px 0; font-size: 0.8rem; color: var(--text-secondary); text-align: left;
         }
-        .esperando-orden .row { display: flex; justify-content: space-between; padding: 4px 0; }
-        .esperando-orden .row strong { color: var(--gold-cosmic); font-family: 'Orbitron', monospace; }
-        .esperando-progress {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin: 20px 0 10px;
-            color: var(--text-muted);
-            font-size: 0.7rem;
-        }
+        .esperando-orden .row { display: flex; justify-content: space-between; padding: 4px 0; gap: 10px; }
+        .esperando-orden .row strong { color: var(--gold-cosmic); font-family: 'Orbitron', monospace; word-break: break-all; text-align: right; }
+        .esperando-progress { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 20px 0 10px; color: var(--text-muted); font-size: 0.7rem; }
         .dots { display: inline-flex; gap: 4px; }
-        .dots span {
-            width: 6px; height: 6px;
-            border-radius: 50%;
-            background: var(--gold-cosmic);
-            animation: dot-bounce 1.4s infinite ease-in-out both;
-        }
+        .dots span { width: 6px; height: 6px; border-radius: 50%; background: var(--gold-cosmic); animation: dot-bounce 1.4s infinite ease-in-out both; }
         .dots span:nth-child(1) { animation-delay: -0.32s; }
         .dots span:nth-child(2) { animation-delay: -0.16s; }
         .dots span:nth-child(3) { animation-delay: 0s; }
-        @keyframes dot-bounce {
-            0%, 80%, 100% { transform: scale(0.5); opacity: 0.4; }
-            40% { transform: scale(1); opacity: 1; }
-        }
-        .esperando-acciones {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin-top: 24px;
-        }
+        @keyframes dot-bounce { 0%, 80%, 100% { transform: scale(0.5); opacity: 0.4; } 40% { transform: scale(1); opacity: 1; } }
+        .esperando-acciones { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 24px; }
         .btn-reintentar {
-            background: color-mix(in srgb, var(--accent, #D4AF37) 10%, transparent);
-            border: 1px solid var(--gold-cosmic);
-            color: var(--gold-cosmic);
-            padding: 10px 24px;
-            border-radius: 30px;
-            font-family: 'Inter', sans-serif;
-            font-weight: 600;
-            font-size: 0.75rem;
-            cursor: pointer;
-            transition: var(--transition);
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
+            background: color-mix(in srgb, var(--accent, #D4AF37) 10%, transparent); border: 1px solid var(--gold-cosmic);
+            color: var(--gold-cosmic); padding: 10px 24px; border-radius: 30px; font-family: 'Inter', sans-serif;
+            font-weight: 600; font-size: 0.75rem; cursor: pointer; transition: var(--transition);
+            display: inline-flex; align-items: center; gap: 6px; text-decoration: none;
         }
         .btn-reintentar:hover { background: color-mix(in srgb, var(--accent, #D4AF37) 20%, transparent); transform: translateY(-2px); }
         .btn-reintentar:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
         .btn-cancelar {
-            background: transparent;
-            border: 1px solid var(--text-muted);
-            color: var(--text-muted);
-            padding: 10px 24px;
-            border-radius: 30px;
-            font-family: 'Inter', sans-serif;
-            font-weight: 500;
-            font-size: 0.75rem;
-            cursor: pointer;
-            transition: var(--transition);
+            background: transparent; border: 1px solid var(--text-muted); color: var(--text-muted); padding: 10px 24px;
+            border-radius: 30px; font-family: 'Inter', sans-serif; font-weight: 500; font-size: 0.75rem; cursor: pointer; transition: var(--transition);
         }
         .btn-cancelar:hover { border-color: var(--danger); color: var(--danger); }
 
-        /* Vista 3: eSIM */
         .esim-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .esim-qr-card {
-            background: rgba(0,0,0,0.4);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius);
-            padding: 20px;
-            text-align: center;
-        }
-        .esim-qr-title {
-            font-family: 'Orbitron', monospace;
-            color: var(--gold-cosmic);
-            font-size: 0.85rem;
-            letter-spacing: 1px;
-            margin-bottom: 14px;
-        }
-        .esim-qr-box {
-            background: #fff;
-            border-radius: 12px;
-            padding: 14px;
-            display: inline-block;
-            margin: 8px 0 14px;
-            box-shadow: 0 0 40px rgba(212, 175, 55, 0.2);
-        }
+        .esim-qr-card { background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 20px; text-align: center; }
+        .esim-qr-title { font-family: 'Orbitron', monospace; color: var(--gold-cosmic); font-size: 0.85rem; letter-spacing: 1px; margin-bottom: 14px; }
+        .esim-qr-box { background: #fff; border-radius: 12px; padding: 14px; display: inline-block; margin: 8px 0 14px; box-shadow: 0 0 40px rgba(212, 175, 55, 0.2); }
         .esim-qr-box img, .esim-qr-box canvas { display: block; max-width: 220px; width: 100%; height: auto; }
-        .esim-lpa {
-            background: rgba(0,0,0,0.6);
-            border: 1px solid var(--glass-border);
-            border-radius: 8px;
-            padding: 10px;
-            margin-top: 10px;
-            text-align: left;
-            word-break: break-all;
-        }
-        .esim-lpa .label {
-            font-size: 0.55rem;
-            color: var(--text-muted);
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-            display: block;
-            margin-bottom: 4px;
-        }
-        .esim-lpa .value {
-            font-family: monospace;
-            font-size: 0.65rem;
-            color: var(--gold-cosmic);
-            line-height: 1.4;
-        }
+        .esim-lpa { background: rgba(0,0,0,0.6); border: 1px solid var(--glass-border); border-radius: 8px; padding: 10px; margin-top: 10px; text-align: left; word-break: break-all; }
+        .esim-lpa .label { font-size: 0.55rem; color: var(--text-muted); letter-spacing: 0.5px; text-transform: uppercase; display: block; margin-bottom: 4px; }
+        .esim-lpa .value { font-family: monospace; font-size: 0.65rem; color: var(--gold-cosmic); line-height: 1.4; }
+        .esim-lpa .value + .label { margin-top: 8px; }
         .btn-copiar {
-            background: color-mix(in srgb, var(--accent, #D4AF37) 10%, transparent);
-            border: 1px solid var(--gold-cosmic);
-            color: var(--gold-cosmic);
-            padding: 8px 18px;
-            border-radius: 30px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: var(--transition);
-            margin-top: 10px;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
+            background: color-mix(in srgb, var(--accent, #D4AF37) 10%, transparent); border: 1px solid var(--gold-cosmic);
+            color: var(--gold-cosmic); padding: 8px 18px; border-radius: 30px; font-size: 0.7rem; font-weight: 600;
+            cursor: pointer; transition: var(--transition); margin-top: 10px; display: inline-flex; align-items: center; gap: 6px;
         }
         .btn-copiar:hover { background: color-mix(in srgb, var(--accent, #D4AF37) 20%, transparent); }
+        .btn-ios {
+            display: none; align-items: center; justify-content: center; gap: 6px; margin-top: 10px; padding: 8px 18px;
+            border-radius: 30px; font-size: 0.7rem; font-weight: 700; text-decoration: none; background: var(--gold-cosmic); color: #000;
+        }
 
-        .esim-info-card {
-            background: rgba(0,0,0,0.4);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius);
-            padding: 20px;
-        }
-        .esim-info-title {
-            font-family: 'Orbitron', monospace;
-            color: var(--gold-cosmic);
-            font-size: 0.85rem;
-            letter-spacing: 1px;
-            margin-bottom: 14px;
-        }
-        .esim-stat {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            font-size: 0.8rem;
-        }
+        .esim-info-card { background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 20px; }
+        .esim-info-title { font-family: 'Orbitron', monospace; color: var(--gold-cosmic); font-size: 0.85rem; letter-spacing: 1px; margin-bottom: 14px; }
+        .esim-stat { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.8rem; gap: 10px; }
         .esim-stat:last-child { border-bottom: none; }
         .esim-stat .label { color: var(--text-secondary); }
-        .esim-stat .value {
-            color: var(--text-primary);
-            font-weight: 600;
-            font-family: 'Orbitron', monospace;
-            font-size: 0.85rem;
-        }
+        .esim-stat .value { color: var(--text-primary); font-weight: 600; font-family: 'Orbitron', monospace; font-size: 0.85rem; word-break: break-all; text-align: right; }
         .esim-stat .value.gold { color: var(--gold-cosmic); }
         .esim-stat .value.success { color: var(--success); }
         .esim-stat .value.danger { color: var(--danger); }
 
-        .esim-progress-bar {
-            width: 100%;
-            height: 8px;
-            background: rgba(0,0,0,0.7);
-            border-radius: 10px;
-            overflow: hidden;
-            margin: 12px 0 6px;
-        }
-        .esim-progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--gold-cosmic), var(--success));
-            border-radius: 10px;
-            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-        }
+        .esim-progress-bar { width: 100%; height: 8px; background: rgba(0,0,0,0.7); border-radius: 10px; overflow: hidden; margin: 12px 0 6px; }
+        .esim-progress-fill { height: 100%; background: linear-gradient(90deg, var(--gold-cosmic), var(--success)); border-radius: 10px; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
         .esim-progress-fill.warn { background: linear-gradient(90deg, #f59e0b, #f7d44a); }
         .esim-progress-fill.danger { background: linear-gradient(90deg, var(--danger), #dc2626); }
 
-        .esim-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 3px 12px;
-            border-radius: 20px;
-            font-size: 0.6rem;
-            font-weight: 700;
-            font-family: 'Orbitron', monospace;
-            letter-spacing: 0.5px;
-        }
+        .esim-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 12px; border-radius: 20px; font-size: 0.6rem; font-weight: 700; font-family: 'Orbitron', monospace; letter-spacing: 0.5px; }
         .esim-badge.activa { background: rgba(0, 184, 148, 0.15); color: var(--success); border: 1px solid rgba(0, 184, 148, 0.3); }
         .esim-badge.sin_saldo { background: rgba(255, 51, 102, 0.15); color: var(--danger); border: 1px solid rgba(255, 51, 102, 0.3); }
         .esim-badge.pendiente { background: rgba(247, 212, 74, 0.15); color: #f7d44a; border: 1px solid rgba(247, 212, 74, 0.3); }
         .esim-badge.aprovisionando { background: rgba(0, 229, 255, 0.15); color: var(--quantum); border: 1px solid rgba(0, 229, 255, 0.3); }
 
-        .esim-acciones {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-top: 16px;
-        }
+        .esim-aviso { display: none; margin-top: 12px; padding: 10px 12px; border-radius: 10px; font-size: 0.7rem; line-height: 1.5; }
+        .esim-aviso.show { display: block; }
+        .esim-aviso.sin_saldo { background: rgba(255, 51, 102, 0.1); border: 1px solid rgba(255, 51, 102, 0.3); color: var(--danger); }
+        .esim-aviso.poco { background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; }
+
+        .esim-acciones { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
         .esim-acciones .btn-accion {
-            flex: 1;
-            min-width: 130px;
-            padding: 10px 14px;
-            border-radius: 30px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: var(--transition);
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            font-family: 'Inter', sans-serif;
+            flex: 1; min-width: 130px; padding: 10px 14px; border-radius: 30px; font-size: 0.7rem; font-weight: 600;
+            cursor: pointer; transition: var(--transition); display: inline-flex; align-items: center;
+            justify-content: center; gap: 6px; font-family: 'Inter', sans-serif;
         }
-        .btn-sync {
-            background: color-mix(in srgb, var(--accent, #D4AF37) 10%, transparent);
-            border: 1px solid var(--gold-cosmic);
-            color: var(--gold-cosmic);
-        }
+        .btn-sync { background: color-mix(in srgb, var(--accent, #D4AF37) 10%, transparent); border: 1px solid var(--gold-cosmic); color: var(--gold-cosmic); }
         .btn-sync:hover { background: color-mix(in srgb, var(--accent, #D4AF37) 20%, transparent); }
-        .btn-cambiar {
-            background: rgba(168, 85, 247, 0.1);
-            border: 1px solid #a855f7;
-            color: #a855f7;
-        }
+        .btn-recargar { background: linear-gradient(135deg, #00ff88, #00b894); border: none; color: #000; }
+        .btn-recargar:hover { box-shadow: 0 0 30px rgba(0,255,136,0.3); }
+        .btn-cambiar { background: rgba(168, 85, 247, 0.1); border: 1px solid #a855f7; color: #a855f7; }
         .btn-cambiar:hover { background: rgba(168, 85, 247, 0.2); }
         .btn-cambiar:disabled { opacity: 0.4; cursor: not-allowed; }
 
-        .esim-pasos {
-            margin-top: 16px;
-            padding: 14px;
-            background: rgba(0, 229, 255, 0.05);
-            border: 1px solid rgba(0, 229, 255, 0.15);
-            border-radius: var(--radius);
-        }
-        .esim-pasos .pasos-title {
-            font-size: 0.7rem;
-            color: var(--quantum);
-            font-family: 'Orbitron', monospace;
-            letter-spacing: 0.5px;
-            margin-bottom: 8px;
-        }
+        .esim-pasos { margin-top: 16px; padding: 14px; background: rgba(0, 229, 255, 0.05); border: 1px solid rgba(0, 229, 255, 0.15); border-radius: var(--radius); }
+        .esim-pasos .pasos-title { font-size: 0.7rem; color: var(--quantum); font-family: 'Orbitron', monospace; letter-spacing: 0.5px; margin-bottom: 8px; }
         .esim-pasos ol { margin-left: 18px; font-size: 0.7rem; color: var(--text-secondary); line-height: 1.8; }
         .esim-pasos ol li { padding: 2px 0; }
+        .esim-pasos p { font-size: 0.65rem; color: var(--text-muted); line-height: 1.6; margin-top: 8px; }
 
         @media (max-width: 900px) {
             .internet-grid { grid-template-columns: 1fr; }
@@ -875,125 +386,38 @@
             .esim-wrap { grid-template-columns: 1fr; }
         }
 
-        /* ============================================================ */
-        /* TEMA DÍA - COMPLETO para internet                            */
-        /* ============================================================ */
-        html.tema-dia,
-        html[data-tema="dia"] {
-            --space-deep: #f5f7fa;
-            --space-mid: #e8ecf0;
-            --text-primary: #1a2332;
-            --text-secondary: #4a5568;
-            --text-muted: #718096;
-            --glass-bg: rgba(255, 255, 255, 0.9);
-            --glass-border: rgba(0, 0, 0, 0.1);
-            --border: rgba(0, 0, 0, 0.08);
+        /* TEMA DÍA */
+        html.tema-dia, html[data-tema="dia"] {
+            --space-deep: #f5f7fa; --space-mid: #e8ecf0; --text-primary: #1a2332; --text-secondary: #4a5568; --text-muted: #718096;
+            --glass-bg: rgba(255, 255, 255, 0.9); --glass-border: rgba(0, 0, 0, 0.1); --border: rgba(0, 0, 0, 0.08);
             --border-glow: color-mix(in srgb, var(--accent, #D4AF37) 30%, transparent);
-            --shadow-gold: 0 8px 32px rgba(0, 0, 0, 0.08);
-            --shadow-gold-strong: 0 0 60px rgba(0, 0, 0, 0.05);
+            --shadow-gold: 0 8px 32px rgba(0, 0, 0, 0.08); --shadow-gold-strong: 0 0 60px rgba(0, 0, 0, 0.05);
         }
-        html.tema-dia body,
-        html[data-tema="dia"] body {
-            background: #f5f7fa !important;
-            color: var(--text-primary) !important;
+        html.tema-dia body, html[data-tema="dia"] body { background: #f5f7fa !important; color: var(--text-primary) !important; }
+        html.tema-dia #stars-canvas, html.tema-dia .nebula, html[data-tema="dia"] #stars-canvas, html[data-tema="dia"] .nebula { display: none !important; }
+        html.tema-dia .header, html[data-tema="dia"] .header { background: rgba(255, 255, 255, 0.95) !important; border-bottom-color: rgba(0, 0, 0, 0.1) !important; }
+        html.tema-dia .logo-text, html[data-tema="dia"] .logo-text { color: var(--text-primary) !important; }
+        html.tema-dia .main-nav, html[data-tema="dia"] .main-nav { background: rgba(255, 255, 255, 0.7) !important; border-color: rgba(0, 0, 0, 0.1) !important; }
+        html.tema-dia .main-nav .nav-link, html[data-tema="dia"] .main-nav .nav-link { color: #718096 !important; }
+        html.tema-dia .main-nav .nav-link.active, html[data-tema="dia"] .main-nav .nav-link.active { background: color-mix(in srgb, var(--accent, #D4AF37) 15%, transparent) !important; color: var(--gold-cosmic) !important; }
+        html.tema-dia .internet-container, html.tema-dia .pack-card, html.tema-dia .checkout-card, html.tema-dia .esim-qr-card,
+        html.tema-dia .esim-info-card, html.tema-dia .esperando-orden, html.tema-dia .banner-esim,
+        html[data-tema="dia"] .internet-container, html[data-tema="dia"] .pack-card, html[data-tema="dia"] .checkout-card,
+        html[data-tema="dia"] .esim-qr-card, html[data-tema="dia"] .esim-info-card, html[data-tema="dia"] .esperando-orden, html[data-tema="dia"] .banner-esim {
+            background: rgba(255, 255, 255, 0.9) !important; border-color: rgba(0, 0, 0, 0.1) !important;
         }
-        html.tema-dia #stars-canvas,
-        html.tema-dia .nebula,
-        html[data-tema="dia"] #stars-canvas,
-        html[data-tema="dia"] .nebula {
-            display: none !important;
-        }
-        html.tema-dia .header,
-        html[data-tema="dia"] .header {
-            background: rgba(255, 255, 255, 0.95) !important;
-            border-bottom-color: rgba(0, 0, 0, 0.1) !important;
-        }
-        html.tema-dia .logo-text,
-        html[data-tema="dia"] .logo-text {
-            color: var(--text-primary) !important;
-        }
-        html.tema-dia .main-nav,
-        html[data-tema="dia"] .main-nav {
-            background: rgba(255, 255, 255, 0.7) !important;
-            border-color: rgba(0, 0, 0, 0.1) !important;
-        }
-        html.tema-dia .main-nav .nav-link,
-        html[data-tema="dia"] .main-nav .nav-link {
-            color: #718096 !important;
-        }
-        html.tema-dia .main-nav .nav-link.active,
-        html[data-tema="dia"] .main-nav .nav-link.active {
-            background: color-mix(in srgb, var(--accent, #D4AF37) 15%, transparent) !important;
-            color: var(--gold-cosmic) !important;
-        }
-        html.tema-dia .internet-container,
-        html.tema-dia .pack-card,
-        html.tema-dia .checkout-card,
-        html.tema-dia .esim-qr-card,
-        html.tema-dia .esim-info-card,
-        html.tema-dia .esperando-orden,
-        html[data-tema="dia"] .internet-container,
-        html[data-tema="dia"] .pack-card,
-        html[data-tema="dia"] .checkout-card,
-        html[data-tema="dia"] .esim-qr-card,
-        html[data-tema="dia"] .esim-info-card,
-        html[data-tema="dia"] .esperando-orden {
-            background: rgba(255, 255, 255, 0.9) !important;
-            border-color: rgba(0, 0, 0, 0.1) !important;
-        }
-        html.tema-dia .pack-card .pack-data .size,
-        html[data-tema="dia"] .pack-card .pack-data .size {
-            color: var(--text-primary) !important;
-        }
-        html.tema-dia .pack-card .pack-vel,
-        html[data-tema="dia"] .pack-card .pack-vel {
-            background: rgba(0, 0, 0, 0.05) !important;
-            color: #4a5568 !important;
-        }
-        html.tema-dia .checkout-card .checkout-resumen,
-        html.tema-dia .esim-stat .value,
-        html[data-tema="dia"] .checkout-card .checkout-resumen,
-        html[data-tema="dia"] .esim-stat .value {
-            color: var(--text-primary) !important;
-        }
-        html.tema-dia #netPhone,
-        html[data-tema="dia"] #netPhone {
-            background: rgba(0, 0, 0, 0.03) !important;
-            color: var(--text-primary) !important;
-            border-color: rgba(0, 0, 0, 0.15) !important;
-        }
-        html.tema-dia #netPhone::placeholder,
-        html[data-tema="dia"] #netPhone::placeholder {
-            color: #a0aec0 !important;
-        }
-        html.tema-dia .red-selector select,
-        html[data-tema="dia"] .red-selector select {
-            background: rgba(0, 0, 0, 0.03) !important;
-            color: var(--text-primary) !important;
-            border-color: rgba(0, 0, 0, 0.15) !important;
-        }
-        html.tema-dia .red-selector select option,
-        html[data-tema="dia"] .red-selector select option {
-            background: white !important;
-            color: var(--text-primary) !important;
-        }
-        html.tema-dia .footer,
-        html[data-tema="dia"] .footer {
-            color: #718096 !important;
-            border-top-color: rgba(0, 0, 0, 0.1) !important;
-        }
-        html.tema-dia .footer-links a,
-        html[data-tema="dia"] .footer-links a {
-            color: #718096 !important;
-        }
-        html.tema-dia .footer-links a:hover,
-        html[data-tema="dia"] .footer-links a:hover {
-            color: var(--gold-cosmic) !important;
-        }
-        html.tema-dia .esim-lpa,
-        html[data-tema="dia"] .esim-lpa {
-            background: rgba(0, 0, 0, 0.05) !important;
-        }
+        html.tema-dia .pack-card .pack-data .size, html[data-tema="dia"] .pack-card .pack-data .size { color: var(--text-primary) !important; }
+        html.tema-dia .pack-card .pack-vel, html[data-tema="dia"] .pack-card .pack-vel { background: rgba(0, 0, 0, 0.05) !important; color: #4a5568 !important; }
+        html.tema-dia .checkout-card .checkout-resumen, html.tema-dia .esim-stat .value,
+        html[data-tema="dia"] .checkout-card .checkout-resumen, html[data-tema="dia"] .esim-stat .value { color: var(--text-primary) !important; }
+        html.tema-dia #netPhone, html[data-tema="dia"] #netPhone { background: rgba(0, 0, 0, 0.03) !important; color: var(--text-primary) !important; border-color: rgba(0, 0, 0, 0.15) !important; }
+        html.tema-dia #netPhone::placeholder, html[data-tema="dia"] #netPhone::placeholder { color: #a0aec0 !important; }
+        html.tema-dia .red-selector select, html[data-tema="dia"] .red-selector select { background: rgba(0, 0, 0, 0.03) !important; color: var(--text-primary) !important; border-color: rgba(0, 0, 0, 0.15) !important; }
+        html.tema-dia .red-selector select option, html[data-tema="dia"] .red-selector select option { background: white !important; color: var(--text-primary) !important; }
+        html.tema-dia .footer, html[data-tema="dia"] .footer { color: #718096 !important; border-top-color: rgba(0, 0, 0, 0.1) !important; }
+        html.tema-dia .footer-links a, html[data-tema="dia"] .footer-links a { color: #718096 !important; }
+        html.tema-dia .footer-links a:hover, html[data-tema="dia"] .footer-links a:hover { color: var(--gold-cosmic) !important; }
+        html.tema-dia .esim-lpa, html[data-tema="dia"] .esim-lpa { background: rgba(0, 0, 0, 0.05) !important; }
 
         @media (max-width: 768px) {
             .app { padding: 12px 14px; }
@@ -1005,6 +429,7 @@
             .esperando-wrap { padding: 10px; }
             .esperando-icon { font-size: 2.5rem; }
             .esperando-title { font-size: 1rem; }
+            .toast { left: 14px; right: 14px; bottom: 16px; max-width: none; }
         }
         @media (max-width: 480px) {
             .pack-grid { grid-template-columns: 1fr; }
@@ -1054,13 +479,16 @@
         <div class="internet-container">
             <div class="internet-header">
                 <h2>◈ Internet de alta velocidad <span class="badge">Pago USDT / USDC</span></h2>
-                <p>Paquetes Sariel's Net · Activación en 2 minutos</p>
+                <p>Paquetes Sariel's Net · Tus gigas se suman a tu eSIM</p>
             </div>
 
-            <!-- ============================================== -->
-            <!-- AGREGADO: Vista 1 - Compra (la que ya existía) -->
-            <!-- ============================================== -->
+            <!-- ============ VISTA 1: COMPRA ============ -->
             <div class="vista active" id="vista-compra">
+                <div class="banner-esim" id="bannerMiEsim">
+                    <span>◈ Ya tienes una eSIM. Lo que compres se suma a tu saldo.</span>
+                    <button class="btn-reintentar" onclick="abrirMiEsim()">Ver mi eSIM</button>
+                </div>
+
                 <div class="internet-grid">
                     <div class="pack-grid" id="internetGrid"></div>
 
@@ -1069,8 +497,8 @@
                         <div class="checkout-resumen" id="internetResumen">Selecciona un paquete</div>
 
                         <div style="margin-top:12px;">
-                            <label style="font-size:0.7rem;color:var(--text-secondary);display:block;margin-bottom:4px;letter-spacing:0.3px;">Número o ID para activar</label>
-                            <input id="netPhone" placeholder="55 1234 5678" style="width:100%;padding:8px 12px;background:rgba(0,0,0,0.4);border:1px solid var(--glass-border);border-radius:10px;color:white;outline:none;font-size:0.8rem;font-family:'Inter',sans-serif;" />
+                            <label for="netPhone" style="font-size:0.7rem;color:var(--text-secondary);display:block;margin-bottom:4px;letter-spacing:0.3px;">Tu número de celular (contacto)</label>
+                            <input id="netPhone" inputmode="tel" autocomplete="tel" placeholder="55 1234 5678" style="width:100%;padding:8px 12px;background:rgba(0,0,0,0.4);border:1px solid var(--glass-border);border-radius:10px;color:white;outline:none;font-size:0.8rem;font-family:'Inter',sans-serif;" />
                         </div>
 
                         <div class="red-selector">
@@ -1098,6 +526,7 @@
                                 <div><span class="check">✓</span> 4G / 5G donde haya</div>
                                 <div><span class="check">✓</span> Tethering incluido</div>
                                 <div><span class="quantum">◉</span> Activación automática</div>
+                                <div><span class="quantum">◉</span> Requiere celular compatible con eSIM</div>
                             </div>
                         </div>
 
@@ -1116,14 +545,14 @@
                 </div>
             </div>
 
-            <!-- ============================================== -->
-            <!-- AGREGADO: Vista 2 - Esperando pago              -->
-            <!-- ============================================== -->
+            <!-- ============ VISTA 2: ESPERANDO PAGO ============ -->
             <div class="vista" id="vista-esperando">
                 <div class="esperando-wrap">
                     <div class="esperando-icon">◈</div>
                     <div class="esperando-title">⏳ Verificando pago</div>
-                    <div class="esperando-sub">Estamos esperando la confirmación de NOWPayments.<br>No cierres esta ventana — se actualiza automáticamente.</div>
+                    <div class="esperando-sub">Paga desde tu wallet y regresa aquí. Si cierras esta página no pasa nada: tu eSIM se activa sola cuando se confirme el pago.</div>
+
+                    <a class="btn-reintentar" id="btnAbrirPago" href="#" target="_blank" rel="noopener noreferrer" style="display:none;">💳 Abrir página de pago</a>
 
                     <div class="esperando-orden" id="esperandoOrden">
                         <div class="row"><span>Paquete:</span> <strong id="espPlan">—</strong></div>
@@ -1131,6 +560,8 @@
                         <div class="row"><span>Total:</span> <strong id="espMonto">—</strong></div>
                         <div class="row"><span>Orden:</span> <strong id="espOrden">—</strong></div>
                     </div>
+
+                    <div class="esperando-estado" id="espEstadoTexto">Esperando tu pago…</div>
 
                     <div class="esperando-progress">
                         <span>Consultando estado</span>
@@ -1148,19 +579,24 @@
                 </div>
             </div>
 
-            <!-- ============================================== -->
-            <!-- AGREGADO: Vista 3 - eSIM activa                 -->
-            <!-- ============================================== -->
+            <!-- ============ VISTA 3: MI eSIM ============ -->
             <div class="vista" id="vista-esim">
                 <div class="esim-wrap">
                     <div class="esim-qr-card">
-                        <div class="esim-qr-title">◈ Escanea este código</div>
+                        <div class="esim-qr-title">◈ Instala tu eSIM</div>
                         <div class="esim-qr-box">
                             <canvas id="qrCanvas"></canvas>
                         </div>
+
+                        <a class="btn-ios" id="btnInstalarIos" href="#">📲 Instalar en este iPhone</a>
+
                         <div class="esim-lpa" id="esimLpaBox" style="display:none;">
-                            <span class="label">Código de activación (LPA)</span>
+                            <span class="label">Código de activación completo (LPA)</span>
                             <div class="value" id="esimLpaValue">—</div>
+                            <span class="label">Dirección SM-DP+ (instalación manual)</span>
+                            <div class="value" id="esimSmdp">—</div>
+                            <span class="label">Código de activación (instalación manual)</span>
+                            <div class="value" id="esimMatching">—</div>
                         </div>
                         <button class="btn-copiar" onclick="copiarLPA()">📋 Copiar código</button>
                     </div>
@@ -1172,13 +608,13 @@
                         </div>
 
                         <div class="esim-stat">
-                            <span class="label">Paquete activo</span>
-                            <span class="value gold" id="esimPlanNombre">—</span>
+                            <span class="label">Servicio</span>
+                            <span class="value gold">Sariel's Net</span>
                         </div>
 
                         <div class="esim-stat">
                             <span class="label">Datos consumidos</span>
-                            <span class="value" id="esimUsados">0 GB</span>
+                            <span class="value" id="esimUsados">0 MB</span>
                         </div>
 
                         <div class="esim-progress-bar">
@@ -1186,12 +622,12 @@
                         </div>
                         <div style="display:flex;justify-content:space-between;font-size:0.6rem;color:var(--text-muted);">
                             <span id="esimPctText">0% usado</span>
-                            <span id="esimRestanteText">0 GB restantes</span>
+                            <span id="esimRestanteText">0 MB restantes</span>
                         </div>
 
                         <div class="esim-stat" style="margin-top:12px;">
-                            <span class="label">Total del plan</span>
-                            <span class="value" id="esimTotal">0 GB</span>
+                            <span class="label">Total comprado</span>
+                            <span class="value" id="esimTotal">0 MB</span>
                         </div>
 
                         <div class="esim-stat">
@@ -1204,8 +640,13 @@
                             <span class="value" id="esimUltimoSync" style="font-size:0.7rem;">—</span>
                         </div>
 
+                        <div class="esim-aviso" id="esimAviso"></div>
+
                         <div class="esim-acciones">
-                            <button class="btn-accion btn-sync" onclick="sincronizarEsim()">
+                            <button class="btn-accion btn-recargar" onclick="volverACompra()">
+                                ➕ Recargar gigas
+                            </button>
+                            <button class="btn-accion btn-sync" id="btnSync" onclick="sincronizarEsim()">
                                 🔄 Actualizar consumo
                             </button>
                             <button class="btn-accion btn-cambiar" id="btnCambiarCelular" onclick="cambiarCelular()">
@@ -1216,21 +657,14 @@
                         <div class="esim-pasos">
                             <div class="pasos-title">◈ Cómo instalar la eSIM</div>
                             <ol>
-                                <li>Abre <strong>Ajustes</strong> en tu celular</li>
-                                <li>Entra a <strong>Datos móviles / Red celular</strong></li>
-                                <li>Toca <strong>Agregar eSIM / Añadir plan</strong></li>
-                                <li>Elige <strong>Escanear código QR</strong></li>
-                                <li>Apunta la cámara al código de arriba</li>
-                                <li>Confirma la instalación y actívala</li>
+                                <li><strong>iPhone (iOS 17.4 o más):</strong> toca "Instalar en este iPhone".</li>
+                                <li><strong>Android:</strong> Ajustes → Red e internet (o Conexiones) → SIM → Agregar eSIM → ingresar manualmente, y pega el código copiado.</li>
+                                <li>Si tienes otro dispositivo, también puedes escanear el QR desde él.</li>
+                                <li>Activa la línea de datos de la eSIM y quita los datos de tu otro chip si quieres usar solo estos gigas.</li>
                             </ol>
+                            <p>No puedes escanear el QR con el mismo celular donde lo estás viendo; usa el botón o el código copiado.</p>
                         </div>
                     </div>
-                </div>
-
-                <div style="text-align:center;margin-top:20px;">
-                    <button class="btn-cancelar" onclick="volverACompra()">
-                        ← Comprar otro paquete
-                    </button>
                 </div>
             </div>
 
@@ -1258,27 +692,6 @@
     <script src="/features/shared/js/idiomas.js"></script>
 
     <script>
-    /* ═══════════════════════════════════════════════════════════════
-       AGREGADO: Safety timer para evitar pantalla blanca
-       ═══════════════════════════════════════════════════════════════ */
-    (function() {
-        setTimeout(function() {
-            try {
-                document.querySelectorAll('.vista').forEach(function(v) {
-                    if (v.offsetParent === null && !v.classList.contains('active')) {
-                        // Solo asegura que al menos la vista-compra esté activa
-                    }
-                });
-                var v = document.getElementById('vista-compra');
-                var vActiva = document.querySelector('.vista.active');
-                if (!vActiva && v) v.classList.add('active');
-            } catch (e) {}
-        }, 3000);
-    })();
-
-    /* ═══════════════════════════════════════════════════════════════
-       TODO LO DE ABAJO ES DEL SCRIPT ORIGINAL (no se tocó)
-       ═══════════════════════════════════════════════════════════════ */
     const SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
     const BACKEND_URL = 'https://galleta-domo-production.up.railway.app';
@@ -1303,22 +716,27 @@
     let selectedPack = null;
     let planes = [];
 
-    /* AGREGADO: variables para las vistas nuevas */
+    // Estado de la compra y de la eSIM
     let pollingInterval = null;
     let pollingIntentos = 0;
-    let ordenActual = null;
-    let planActual = null;
+    let ordenActual = null;       // orden en curso (se guarda también en localStorage)
+    let esimActual = null;        // último estado conocido de la eSIM
+    let totalAntesMb = 0;         // gigas totales que tenía antes de esta compra
+    let esperandoEsim = false;    // evita dos esperas en paralelo
     const POLLING_INTERVAL_MS = 15000;
-    const POLLING_MAX_INTENTOS = 80;
+    const POLLING_MAX_INTENTOS = 80;     // ~20 min
+    const PENDIENTE_KEY = 'sariels_orden_internet_pendiente';
+    const PENDIENTE_MAX_MS = 6 * 60 * 60 * 1000;
 
-    function showToast(mensaje, tipo = '') {
+    const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
+
+    function showToast(mensaje, tipo = '', ms = 3500) {
         const toast = document.getElementById('toast');
         toast.textContent = mensaje;
         toast.className = 'toast show';
-        if (tipo === 'error') toast.classList.add('error');
-        else if (tipo === 'success') toast.classList.add('success');
+        if (tipo) toast.classList.add(tipo); // error | success | warning
         clearTimeout(toast._timeout);
-        toast._timeout = setTimeout(() => toast.classList.remove('show'), 3500);
+        toast._timeout = setTimeout(() => toast.classList.remove('show'), ms);
     }
 
     async function getSession() {
@@ -1326,6 +744,25 @@
         return session;
     }
 
+    // Llamada autenticada al backend
+    async function api(path, opts = {}) {
+        const session = await getSession();
+        if (!session) throw new Error('Inicia sesión');
+        const resp = await fetch(BACKEND_URL + path, {
+            ...opts,
+            headers: { 'Authorization': 'Bearer ' + session.access_token, ...(opts.headers || {}) }
+        });
+        let data = {};
+        try { data = await resp.json(); } catch (_) { /* respuesta sin JSON */ }
+        return { resp, data };
+    }
+
+    function escapeHTML(t) {
+        if (t === null || t === undefined) return '';
+        return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    // ---------------------------------------------------------------- paquetes
     async function cargarPlanes() {
         try {
             const { data, error } = await supabase
@@ -1333,9 +770,7 @@
                 .select('*')
                 .eq('activo', true)
                 .order('orden', { ascending: true });
-
             if (error) throw error;
-
             planes = data || [];
             renderPacks();
             return planes;
@@ -1358,39 +793,32 @@
                     <span style="font-size:2rem;">📡</span>
                     <p style="margin-top:10px;">No hay paquetes disponibles en este momento</p>
                     <p style="font-size:0.7rem;">Vuelve más tarde</p>
-                </div>
-            `;
+                </div>`;
             return;
         }
 
         grid.innerHTML = planes.map((p, index) => `
-            <div onclick="selectPack(${p.id})" id="pack-${p.id}" class="pack-card ${index === 2 ? 'popular' : ''}">
+            <div onclick="selectPack(${Number(p.id)})" id="pack-${Number(p.id)}" class="pack-card ${index === 2 ? 'popular' : ''}">
                 ${index === 2 ? '<div class="popular-badge">✦ POPULAR</div>' : ''}
                 <div class="pack-header">
                     <span class="pack-name">${escapeHTML(p.nombre)}</span>
                     <span class="pack-vel">4G/5G</span>
                 </div>
                 <div class="pack-data">
-                    <span class="size">${p.datos_gb} <span>GB</span></span>
-                    <span class="days"> / ${p.duracion_dias} días</span>
+                    <span class="size">${escapeHTML(p.datos_gb)} <span>GB</span></span>
+                    <span class="days"> / ${escapeHTML(p.duracion_dias)} días</span>
                 </div>
                 <div class="pack-price">
-                    <span style="font-size:0.7rem;color:var(--text-muted);">MXN</span> $${p.precio_mxn}
+                    <span style="font-size:0.7rem;color:var(--text-muted);">MXN</span> $${escapeHTML(p.precio_mxn)}
                     <span style="font-size:0.6rem;color:var(--text-muted);margin-left:8px;">·</span>
-                    <span style="font-size:0.7rem;color:var(--text-muted);">USDT</span> $${p.precio_usdt}
+                    <span style="font-size:0.7rem;color:var(--text-muted);">USDT</span> $${escapeHTML(p.precio_usdt)}
                 </div>
                 <div class="pack-features">
                     <span>◈ Hotspot</span>
                     <span>◆ Sin contrato</span>
                     <span>◉ Activa al instante</span>
                 </div>
-            </div>
-        `).join('');
-    }
-
-    function escapeHTML(t) {
-        if (t === null || t === undefined) return '';
-        return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            </div>`).join('');
     }
 
     function getRedesDisponibles(montoMxn) {
@@ -1435,8 +863,7 @@
         if (info) {
             info.innerHTML = `
                 ◈ Precio: <strong>$${monto.toFixed(2)} MXN</strong> ≈ <strong>$${montoUsd} USD</strong><br>
-                ◈ ${redes.length} red(es) disponibles${descartadas > 0 ? ` · ${descartadas} ocultas por mínimo` : ''}
-            `;
+                ◈ ${redes.length} red(es) disponibles${descartadas > 0 ? ` · ${descartadas} ocultas por mínimo` : ''}`;
         }
     }
 
@@ -1452,20 +879,30 @@
         const resumen = document.getElementById('internetResumen');
         if (resumen) {
             resumen.innerHTML = `
-                <strong>${escapeHTML(selectedPack.nombre)}</strong> - ${selectedPack.datos_gb} GB<br>
-                ${selectedPack.duracion_dias} días<br><br>
-                <span class="precio-final">$${selectedPack.precio_mxn} MXN</span>
+                <strong>${escapeHTML(selectedPack.nombre)}</strong> - ${escapeHTML(selectedPack.datos_gb)} GB<br>
+                ${escapeHTML(selectedPack.duracion_dias)} días<br><br>
+                <span class="precio-final">$${escapeHTML(selectedPack.precio_mxn)} MXN</span>
                 <br>
-                <span style="font-size:0.65rem;">Activa al: ${escapeHTML(phone)}</span>
-            `;
+                <span style="font-size:0.65rem;">Contacto: ${escapeHTML(phone)}</span>`;
         }
 
         poblarRedesDePago(selectedPack.precio_mxn);
     }
 
-    /* ═══════════════════════════════════════════════════════════════
-       AGREGADO: Sistema de vistas (compra/esperando/esim)
-       ═══════════════════════════════════════════════════════════════ */
+    // ---------------------------------------------------------------- compra pendiente (sobrevive a recargas de página)
+    function guardarPendiente() {
+        try {
+            localStorage.setItem(PENDIENTE_KEY, JSON.stringify({ ...ordenActual, totalAntesMb, ts: Date.now() }));
+        } catch (_) { /* almacenamiento no disponible */ }
+    }
+    function leerPendiente() {
+        try { const r = localStorage.getItem(PENDIENTE_KEY); return r ? JSON.parse(r) : null; } catch (_) { return null; }
+    }
+    function limpiarPendiente() {
+        try { localStorage.removeItem(PENDIENTE_KEY); } catch (_) { /* nada */ }
+    }
+
+    // ---------------------------------------------------------------- vistas
     function mostrarVista(nombre) {
         document.querySelectorAll('.vista').forEach(v => v.classList.remove('active'));
         const el = document.getElementById('vista-' + nombre);
@@ -1473,77 +910,84 @@
         if (nombre !== 'esperando') detenerPolling();
     }
 
-    function volverACompra() {
-        detenerPolling();
-        ordenActual = null;
-        planActual = null;
-        mostrarVista('compra');
-        cargarEsimActual();
+    function actualizarBannerEsim() {
+        const b = document.getElementById('bannerMiEsim');
+        if (b) b.classList.toggle('show', Boolean(esimActual && esimActual.tiene_esim));
     }
 
-    async function cargarEsimActual() {
+    // Volver a los paquetes (compra o recarga). NO reabre la vista de eSIM automáticamente.
+    function volverACompra() {
+        detenerPolling();
+        esperandoEsim = false;
+        ordenActual = null;
+        limpiarPendiente();
+        mostrarVista('compra');
+        actualizarBannerEsim();
+    }
+
+    async function obtenerEsim() {
         try {
-            const session = await getSession();
-            if (!session) return false;
+            const { resp, data } = await api('/api/telnyx/esim/mia');
+            if (resp.ok && data.success && data.data) {
+                esimActual = data.data;
+                return esimActual;
+            }
+        } catch (_) { /* sin sesión o sin red */ }
+        return null;
+    }
 
-            const resp = await fetch(`${BACKEND_URL}/api/telnyx/esim/mia`, {
-                headers: { 'Authorization': 'Bearer ' + session.access_token }
-            });
-            const data = await resp.json();
-            if (!resp.ok || !data.success || !data.data) return false;
-
-            const esim = data.data;
-            if (!esim.tiene_esim) return false;
-
-            renderEsim(esim);
+    async function abrirMiEsim() {
+        const e = await obtenerEsim();
+        if (e && e.tiene_esim) {
+            renderEsim(e);
             mostrarVista('esim');
-            return true;
-        } catch (error) {
-            console.error('Error cargando eSIM:', error);
-            return false;
+        } else {
+            showToast('Aún no tienes una eSIM', 'warning');
         }
     }
 
+    // ---------------------------------------------------------------- eSIM
+    function fmtMb(mb) {
+        const n = Number(mb);
+        if (!Number.isFinite(n) || n <= 0) return '0 MB';
+        if (n >= 1000) return (n / 1000).toFixed(2) + ' GB';
+        return Math.round(n) + ' MB';
+    }
+
+    function setTexto(id, val) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = val;
+    }
+
     function renderEsim(esim) {
+        esimActual = esim;
+
         const badge = document.getElementById('esimEstadoBadge');
+        const estado = esim.estado || 'pendiente';
         if (badge) {
-            const estado = esim.estado || 'pendiente';
             const map = {
                 'activa': { txt: '● ACTIVA', cls: 'activa' },
                 'sin_saldo': { txt: '● SIN SALDO', cls: 'sin_saldo' },
                 'pendiente': { txt: '● PENDIENTE', cls: 'pendiente' },
-                'aprovisionando': { txt: '● APROVISIONANDO', cls: 'aprovisionando' },
-                'reemplazando': { txt: '● REEMPLAZANDO', cls: 'aprovisionando' }
+                'aprovisionando': { txt: '● PREPARANDO', cls: 'aprovisionando' },
+                'reemplazando': { txt: '● CAMBIANDO', cls: 'aprovisionando' }
             };
-            const info = map[estado] || { txt: '● ' + estado.toUpperCase(), cls: 'pendiente' };
+            const info = map[estado] || { txt: '● ' + String(estado).toUpperCase(), cls: 'pendiente' };
             badge.textContent = info.txt;
             badge.className = 'esim-badge ' + info.cls;
         }
-
-        const planNombreEl = document.getElementById('esimPlanNombre');
-        if (planNombreEl) planNombreEl.textContent = planActual?.nombre || "Sariel's Net";
 
         const totalMb = Number(esim.datos_total_mb) || 0;
         const usadosMb = Number(esim.datos_usados_mb) || 0;
         const restanteMb = Math.max(totalMb - usadosMb, 0);
         const pct = totalMb > 0 ? Math.min((usadosMb / totalMb) * 100, 100) : 0;
 
-        const fmt = (mb) => {
-            const n = Number(mb);
-            if (!Number.isFinite(n) || n <= 0) return '0 MB';
-            if (n >= 1000) return (n / 1000).toFixed(2) + ' GB';
-            return Math.round(n) + ' MB';
-        };
-
-        const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-        set('esimUsados', fmt(usadosMb));
-        set('esimTotal', fmt(totalMb));
-        set('esimRestanteText', fmt(restanteMb) + ' restantes');
-        set('esimPctText', pct.toFixed(1) + '% usado');
-        set('esimIccid', esim.iccid || '—');
-
-        const ultSync = esim.ultimo_sync_at ? new Date(esim.ultimo_sync_at).toLocaleString('es-MX') : '—';
-        set('esimUltimoSync', ultSync);
+        setTexto('esimUsados', fmtMb(usadosMb));
+        setTexto('esimTotal', fmtMb(totalMb));
+        setTexto('esimRestanteText', fmtMb(restanteMb) + ' restantes');
+        setTexto('esimPctText', pct.toFixed(1) + '% usado');
+        setTexto('esimIccid', esim.iccid || '—');
+        setTexto('esimUltimoSync', esim.ultimo_sync_at ? new Date(esim.ultimo_sync_at).toLocaleString('es-MX') : '—');
 
         const fill = document.getElementById('esimProgressFill');
         if (fill) {
@@ -1553,105 +997,128 @@
             else if (pct > 50) fill.classList.add('warn');
         }
 
-        const activationCode = esim.activation_code || null;
+        // Aviso de saldo
+        const aviso = document.getElementById('esimAviso');
+        if (aviso) {
+            aviso.className = 'esim-aviso';
+            if (estado === 'sin_saldo') {
+                aviso.textContent = 'Se acabaron tus datos. Recarga gigas y tu eSIM se reactiva automáticamente.';
+                aviso.classList.add('show', 'sin_saldo');
+            } else if (estado === 'activa' && pct >= 80) {
+                aviso.textContent = 'Te queda poco saldo. Puedes recargar cuando quieras; los gigas se suman a tu eSIM.';
+                aviso.classList.add('show', 'poco');
+            }
+        }
+
+        // Código de activación: QR + datos para instalación manual
+        const code = esim.activation_code || null;
         const qrCanvas = document.getElementById('qrCanvas');
         const lpaBox = document.getElementById('esimLpaBox');
-        const lpaValue = document.getElementById('esimLpaValue');
+        const btnIos = document.getElementById('btnInstalarIos');
 
-        if (activationCode && qrCanvas && typeof QRCode !== 'undefined') {
-            QRCode.toCanvas(qrCanvas, activationCode, {
-                width: 220, margin: 1,
-                color: { dark: '#05080f', light: '#ffffff' }
+        if (code && qrCanvas && typeof QRCode !== 'undefined') {
+            QRCode.toCanvas(qrCanvas, code, {
+                width: 220, margin: 1, color: { dark: '#05080f', light: '#ffffff' }
             }, (err) => { if (err) console.error('Error generando QR:', err); });
-            if (lpaBox) lpaBox.style.display = 'block';
-            if (lpaValue) lpaValue.textContent = activationCode;
         } else if (qrCanvas) {
-            const ctx = qrCanvas.getContext('2d');
             qrCanvas.width = 220; qrCanvas.height = 220;
+            const ctx = qrCanvas.getContext('2d');
             ctx.fillStyle = '#05080f'; ctx.fillRect(0, 0, 220, 220);
-            ctx.fillStyle = '#D4AF37';
-            ctx.font = '14px Inter, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText(typeof QRCode === 'undefined' ? 'QR no disponible' : 'QR no generado', 110, 110);
+            ctx.fillStyle = '#D4AF37'; ctx.font = '14px Inter, sans-serif'; ctx.textAlign = 'center';
+            ctx.fillText(code ? 'Usa el código de abajo' : 'QR no disponible', 110, 110);
+        }
+
+        if (code) {
+            const partes = String(code).split('$'); // LPA:1$<SM-DP+>$<código>
+            setTexto('esimLpaValue', code);
+            setTexto('esimSmdp', partes[1] || '—');
+            setTexto('esimMatching', partes[2] || '—');
+            if (lpaBox) lpaBox.style.display = 'block';
+            if (btnIos) {
+                const esIos = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+                btnIos.style.display = esIos ? 'inline-flex' : 'none';
+                btnIos.href = 'https://esimsetup.apple.com/esim_qrcode_provisioning?carddata=' + encodeURI(code);
+            }
+        } else {
             if (lpaBox) lpaBox.style.display = 'none';
+            if (btnIos) btnIos.style.display = 'none';
         }
 
         const btnCambiar = document.getElementById('btnCambiarCelular');
         if (btnCambiar) {
-            if (esim.puede_reemplazar) {
-                btnCambiar.disabled = false;
-                btnCambiar.title = 'Cambiar la eSIM a otro celular';
-            } else {
-                btnCambiar.disabled = true;
-                const desde = esim.reemplazo_disponible_desde ? new Date(esim.reemplazo_disponible_desde) : null;
-                btnCambiar.title = desde ? 'Disponible desde ' + desde.toLocaleDateString('es-MX') : 'Aún no disponible';
-            }
+            const bloqueado = !esim.puede_reemplazar || estado === 'reemplazando' || estado === 'aprovisionando';
+            btnCambiar.disabled = bloqueado;
+            const desde = esim.reemplazo_disponible_desde ? new Date(esim.reemplazo_disponible_desde) : null;
+            btnCambiar.title = bloqueado && desde ? 'Disponible desde ' + desde.toLocaleDateString('es-MX') : 'Pasar tu eSIM a otro celular';
         }
     }
 
     async function sincronizarEsim() {
-        showToast('⏳ Sincronizando consumo...', '', 3000);
+        const btn = document.getElementById('btnSync');
+        if (btn) btn.disabled = true;
         try {
-            const session = await getSession();
-            if (!session) { showToast('⚠️ Inicia sesión', 'warning'); return; }
-
-            const resp = await fetch(`${BACKEND_URL}/api/telnyx/esim/sync`, {
-                method: 'POST',
-                headers: { 'Authorization': 'Bearer ' + session.access_token }
-            });
-            const data = await resp.json();
+            const { resp, data } = await api('/api/telnyx/esim/sync', { method: 'POST' });
             if (!resp.ok || !data.success) {
-                showToast('❌ ' + (data.error || 'No se pudo sincronizar'), 'error');
+                showToast('❌ ' + (data.error || 'No se pudo actualizar'), 'error');
                 return;
             }
             renderEsim(data.data);
             showToast('✅ Datos actualizados', 'success');
         } catch (error) {
-            showToast('❌ Error al sincronizar: ' + error.message, 'error');
+            showToast('❌ ' + error.message, 'error');
+        } finally {
+            if (btn) btn.disabled = false;
         }
     }
 
     async function cambiarCelular() {
-        if (!confirm('¿Seguro que quieres cambiar tu eSIM a otro celular?\n\nSe generará una nueva eSIM con los GB restantes. Solo puedes hacer esto una vez cada 30 días.')) return;
-        showToast('⏳ Generando nueva eSIM...', '', 8000);
+        if (!confirm('¿Cambiar tu eSIM a otro celular?\n\nSe genera una eSIM nueva con los gigas que te quedan y la anterior deja de funcionar. Solo puedes hacerlo una vez cada 30 días.')) return;
+        const btn = document.getElementById('btnCambiarCelular');
+        if (btn) btn.disabled = true;
+        showToast('⏳ Generando tu nueva eSIM...', '', 8000);
         try {
-            const session = await getSession();
-            if (!session) { showToast('⚠️ Inicia sesión', 'warning'); return; }
-
-            const resp = await fetch(`${BACKEND_URL}/api/telnyx/esim/reemplazar`, {
-                method: 'POST',
-                headers: { 'Authorization': 'Bearer ' + session.access_token }
-            });
-            const data = await resp.json();
+            const { resp, data } = await api('/api/telnyx/esim/reemplazar', { method: 'POST' });
             if (!resp.ok || !data.success) {
-                const err = data.error || 'No se pudo cambiar la eSIM';
-                showToast(resp.status === 429 ? '⏳ ' + err : '❌ ' + err, resp.status === 429 ? 'warning' : 'error', 6000);
+                showToast((resp.status === 429 ? '⏳ ' : '❌ ') + (data.error || 'No se pudo cambiar la eSIM'), resp.status === 429 ? 'warning' : 'error', 6000);
+                if (esimActual) renderEsim(esimActual);
                 return;
             }
             renderEsim(data.data);
-            showToast('🎉 eSIM reemplazada. Escanea el nuevo QR.', 'success', 6000);
+            showToast('🎉 Listo. Instala la nueva eSIM con el código de abajo.', 'success', 6000);
         } catch (error) {
-            showToast('❌ Error: ' + error.message, 'error');
+            showToast('❌ ' + error.message, 'error');
+            if (esimActual) renderEsim(esimActual);
         }
     }
 
-    function copiarLPA() {
+    async function copiarLPA() {
         const lpa = document.getElementById('esimLpaValue')?.textContent;
         if (!lpa || lpa === '—') { showToast('⚠️ No hay código para copiar', 'warning'); return; }
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(lpa).then(() => showToast('📋 Código copiado', 'success')).catch(() => showToast('❌ No se pudo copiar', 'error'));
-        } else {
-            showToast('❌ Copiado no disponible', 'error');
+        try {
+            await navigator.clipboard.writeText(lpa);
+            showToast('📋 Código copiado', 'success');
+        } catch (_) {
+            showToast('❌ No se pudo copiar. Mantén presionado el código para copiarlo.', 'error', 5000);
         }
     }
+
+    // ---------------------------------------------------------------- espera de pago y de eSIM
+    function setEstadoEsperando(txt) { setTexto('espEstadoTexto', txt); }
 
     function mostrarVistaEsperando() {
         if (!ordenActual) return;
-        const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-        set('espPlan', ordenActual.plan_nombre || '—');
-        set('espDatos', `${ordenActual.datos_gb || 0} GB · ${ordenActual.duracion_dias || 0} días`);
-        set('espMonto', `$${Number(ordenActual.monto_mxn || 0).toFixed(2)} MXN`);
-        set('espOrden', ordenActual.id);
+        setTexto('espPlan', ordenActual.plan_nombre || '—');
+        setTexto('espDatos', `${ordenActual.datos_gb || 0} GB · ${ordenActual.duracion_dias || 0} días`);
+        setTexto('espMonto', `$${Number(ordenActual.monto_mxn || 0).toFixed(2)} MXN`);
+        setTexto('espOrden', ordenActual.id);
+        setEstadoEsperando('Esperando tu pago…');
+
+        const link = document.getElementById('btnAbrirPago');
+        if (link) {
+            const url = String(ordenActual.payment_url || '');
+            if (/^https:\/\//i.test(url)) { link.href = url; link.style.display = 'inline-flex'; }
+            else { link.style.display = 'none'; }
+        }
         const btn = document.getElementById('btnVerificar');
         if (btn) { btn.disabled = false; btn.innerHTML = '🔄 Ya pagué, verificar ahora'; }
         mostrarVista('esperando');
@@ -1664,7 +1131,7 @@
             pollingIntentos++;
             if (pollingIntentos > POLLING_MAX_INTENTOS) {
                 detenerPolling();
-                showToast('⏳ Tiempo de espera agotado', 'warning', 6000);
+                setEstadoEsperando('Sigue sin confirmarse. Si ya pagaste, tu eSIM se activará sola; puedes volver más tarde.');
                 return;
             }
             await verificarEstadoOrden(false);
@@ -1672,10 +1139,7 @@
     }
 
     function detenerPolling() {
-        if (pollingInterval) {
-            clearInterval(pollingInterval);
-            pollingInterval = null;
-        }
+        if (pollingInterval) { clearInterval(pollingInterval); pollingInterval = null; }
     }
 
     async function verificarPagoManual() {
@@ -1685,50 +1149,82 @@
         if (btn) { btn.disabled = false; btn.innerHTML = '🔄 Ya pagué, verificar ahora'; }
     }
 
+    // Tras confirmarse el pago, la eSIM se crea / se acreditan los gigas en el backend (unos segundos).
+    async function esperarEsimLista() {
+        if (esperandoEsim) return;
+        esperandoEsim = true;
+        setEstadoEsperando('✅ Pago confirmado. Preparando tu eSIM…');
+        try {
+            for (let i = 0; i < 24 && esperandoEsim; i++) { // ~2 minutos
+                const e = await obtenerEsim();
+                if (e && e.tiene_esim && e.activation_code && Number(e.datos_total_mb) > totalAntesMb) {
+                    limpiarPendiente();
+                    renderEsim(e);
+                    mostrarVista('esim');
+                    showToast('🎉 ¡Listo! Tus gigas ya están en tu eSIM', 'success', 5000);
+                    return;
+                }
+                await dormir(5000);
+            }
+            if (esperandoEsim) {
+                setEstadoEsperando('Tu pago está confirmado. Tu eSIM se está preparando y puede tardar unos minutos. Vuelve a esta página más tarde: aparecerá sola.');
+            }
+        } finally {
+            esperandoEsim = false;
+        }
+    }
+
     async function verificarEstadoOrden(manual = false) {
         if (!ordenActual || !ordenActual.id) return;
         try {
-            const session = await getSession();
-            if (!session) return;
-
-            const resp = await fetch(`${BACKEND_URL}/api/payments/internet/status/${encodeURIComponent(ordenActual.id)}`, {
-                headers: { 'Authorization': 'Bearer ' + session.access_token }
-            });
-            const data = await resp.json();
+            const { resp, data } = await api(`/api/payments/internet/status/${encodeURIComponent(ordenActual.id)}`);
             if (!resp.ok || !data.success) {
                 if (manual) showToast('⚠️ ' + (data.error || 'No se pudo verificar'), 'warning');
                 return;
             }
             const estado = data.data?.estado;
-            const activated = data.activated === true || estado === 'activa' || estado === 'activada' || estado === 'completado';
+            const activada = data.activated === true || ['activa', 'activada', 'completado'].includes(estado);
 
-            if (activated) {
+            if (activada) {
                 detenerPolling();
-                showToast('🎉 ¡Pago confirmado! eSIM activada', 'success', 5000);
-                setTimeout(async () => {
-                    await cargarEsimActual();
-                }, 800);
+                await esperarEsimLista();
                 return;
             }
-
             if (estado === 'cancelada' || data.failed === true) {
                 detenerPolling();
+                limpiarPendiente();
                 showToast('❌ El pago fue cancelado o falló', 'error', 6000);
-                setTimeout(volverACompra, 3000);
+                setTimeout(volverACompra, 2500);
                 return;
             }
-
             if (manual) showToast('⏳ Aún no se confirma el pago', 'warning', 4000);
         } catch (error) {
             console.error('Error verificando orden:', error);
-            if (manual) showToast('❌ Error al verificar: ' + error.message, 'error');
+            if (manual) showToast('❌ ' + error.message, 'error');
         }
     }
 
-    /* ═══════════════════════════════════════════════════════════════
-       FIN AGREGADO
-       ═══════════════════════════════════════════════════════════════ */
+    // Si el usuario salió a pagar a su wallet y la página se recargó, retomamos donde iba.
+    async function reanudarPendiente() {
+        const p = leerPendiente();
+        if (!p || !p.id) return false;
+        if (Date.now() - (p.ts || 0) > PENDIENTE_MAX_MS) { limpiarPendiente(); return false; }
 
+        const e = esimActual;
+        if (e && e.tiene_esim && Number(e.datos_total_mb) > Number(p.totalAntesMb || 0)) {
+            limpiarPendiente(); // ya se acreditó
+            return false;
+        }
+
+        ordenActual = p;
+        totalAntesMb = Number(p.totalAntesMb || 0);
+        mostrarVistaEsperando();
+        await verificarEstadoOrden(false);
+        if (document.getElementById('vista-esperando').classList.contains('active') && !esperandoEsim) iniciarPolling();
+        return true;
+    }
+
+    // ---------------------------------------------------------------- compra
     async function comprarInternet() {
         const phone = document.getElementById('netPhone').value.trim();
         const status = document.getElementById('netStatus');
@@ -1736,7 +1232,7 @@
         const btn = document.getElementById('btnPagar');
 
         if (!selectedPack) { status.innerText = '⚠️ Selecciona un paquete'; return; }
-        if (!phone) { status.innerText = '⚠️ Pon tu número o ID'; return; }
+        if (phone.length < 5) { status.innerText = '⚠️ Escribe tu número de celular'; return; }
         if (!terms) { status.innerText = '⚠️ Acepta términos'; return; }
 
         const payCurrency = document.getElementById('pay-currency').value;
@@ -1750,33 +1246,26 @@
             if (!session) {
                 status.innerText = '⚠️ Inicia sesión para comprar';
                 showToast('⚠️ Inicia sesión primero', 'error');
-                btn.disabled = false;
                 return;
             }
 
-            status.innerText = '⏳ Creando orden segura...';
+            // Saldo actual, para saber cuándo se acreditan los gigas nuevos
+            await obtenerEsim();
+            totalAntesMb = Number(esimActual?.datos_total_mb) || 0;
 
+            status.innerText = '⏳ Creando orden segura...';
             const { data: orden, error } = await supabase.rpc('crear_orden_internet', {
                 p_plan_id: selectedPack.id,
                 p_telefono: phone
             });
-
             if (error) throw error;
 
             status.innerText = '⏳ Generando pago...';
-
             const resp = await fetch(`${BACKEND_URL}/api/payments/internet/create`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + session.access_token
-                },
-                body: JSON.stringify({
-                    ordenId: orden.id,
-                    payCurrency: payCurrency
-                })
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+                body: JSON.stringify({ ordenId: orden.id, payCurrency: payCurrency })
             });
-
             const pagoData = await resp.json();
 
             if (!resp.ok || !pagoData.success || !pagoData.data?.payment_url) {
@@ -1785,38 +1274,40 @@
                 return;
             }
 
-            window.open(pagoData.data.payment_url, '_blank');
-
-            /* AGREGADO: guardar contexto y pasar a Vista 2 */
             ordenActual = {
                 id: orden.id,
                 plan_nombre: orden.plan_nombre || selectedPack.nombre,
                 datos_gb: orden.datos_gb || selectedPack.datos_gb,
                 duracion_dias: orden.duracion_dias || selectedPack.duracion_dias,
                 monto_mxn: orden.monto_mxn || selectedPack.precio_mxn,
-                payCurrency: payCurrency
+                payCurrency: payCurrency,
+                payment_url: pagoData.data.payment_url
             };
-            planActual = selectedPack;
+            guardarPendiente();
+            status.innerText = '';
 
-            showToast('◈ Redirigiendo a pago...', 'success', 4000);
             mostrarVistaEsperando();
             iniciarPolling();
 
+            // En celulares el navegador puede bloquear la ventana; por eso existe el botón "Abrir página de pago".
+            const ventana = window.open(ordenActual.payment_url, '_blank', 'noopener');
+            if (!ventana) showToast('Toca "Abrir página de pago" para continuar', 'warning', 6000);
+
         } catch (error) {
             console.error('Error en compra:', error);
-            status.innerText = '❌ ' + error.message;
-            showToast('❌ ' + error.message, 'error');
+            status.innerText = '❌ ' + (error.message || 'Error en la compra');
+            showToast('❌ ' + (error.message || 'Error en la compra'), 'error');
         } finally {
             btn.disabled = false;
         }
     }
 
+    // ---------------------------------------------------------------- fondo
     function initStars() {
         const canvas = document.getElementById('stars-canvas');
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
         let width, height, stars = [];
-        let animId = null;
         let isVisible = true;
         const isMobile = window.innerWidth < 600;
         const STAR_COUNT = isMobile ? 60 : 120;
@@ -1844,9 +1335,9 @@
         }
 
         function draw() {
-            if (!isVisible) { animId = requestAnimationFrame(draw); return; }
+            if (!isVisible) { requestAnimationFrame(draw); return; }
             ctx.clearRect(0, 0, width, height);
-            for (let star of stars) {
+            for (const star of stars) {
                 const opacity = star.opacity * (0.6 + 0.4 * Math.sin(star.twinklePhase));
                 ctx.beginPath();
                 ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
@@ -1856,50 +1347,48 @@
                 star.y += star.speed;
                 if (star.y > height) { star.y = 0; star.x = Math.random() * width; }
             }
-            animId = requestAnimationFrame(draw);
+            requestAnimationFrame(draw);
         }
 
         resize();
         draw();
         window.addEventListener('resize', resize);
-        document.addEventListener('visibilitychange', function() {
-            isVisible = !document.hidden;
-        });
+        document.addEventListener('visibilitychange', function () { isVisible = !document.hidden; });
     }
 
-    document.addEventListener('DOMContentLoaded', async function() {
+    // ---------------------------------------------------------------- arranque
+    document.addEventListener('DOMContentLoaded', async function () {
         initStars();
         await cargarPlanes();
 
-        /* AGREGADO: verificar si ya tiene eSIM activa */
-        try {
-            await cargarEsimActual();
-        } catch (e) {
-            console.warn('Error cargando eSIM inicial:', e);
-        }
-
         const phoneInput = document.getElementById('netPhone');
         if (phoneInput) {
-            phoneInput.addEventListener('input', function() {
-                if (selectedPack) selectPack(selectedPack.id);
-            });
-            phoneInput.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') comprarInternet();
-            });
+            phoneInput.addEventListener('input', function () { if (selectedPack) selectPack(selectedPack.id); });
+            phoneInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') comprarInternet(); });
         }
 
-        setTimeout(async function() {
+        try {
+            await obtenerEsim();
+            if (esimActual && esimActual.tiene_esim) renderEsim(esimActual);
+            const reanudado = await reanudarPendiente();
+            if (!reanudado) {
+                mostrarVista(esimActual && esimActual.tiene_esim ? 'esim' : 'compra');
+            }
+            actualizarBannerEsim();
+        } catch (e) {
+            console.warn('Error iniciando vistas:', e);
+            mostrarVista('compra');
+        }
+
+        setTimeout(async function () {
             try {
                 if (typeof window.inicializarIdiomas === 'function') {
                     await window.inicializarIdiomas();
-                    console.log('✅ Idiomas aplicados a internet');
                 }
             } catch (e) {
                 console.warn('⚠️ Error aplicando idiomas:', e);
             }
         }, 500);
-
-        console.log('◈ Sariel\'s - Internet corregido ·', planes.length, 'paquetes');
     });
 
     window.selectPack = selectPack;
@@ -1907,9 +1396,9 @@
     window.showToast = showToast;
     window.cargarPlanes = cargarPlanes;
     window.supabase = supabase;
-    /* AGREGADO: exponer funciones nuevas */
     window.verificarPagoManual = verificarPagoManual;
     window.volverACompra = volverACompra;
+    window.abrirMiEsim = abrirMiEsim;
     window.sincronizarEsim = sincronizarEsim;
     window.cambiarCelular = cambiarCelular;
     window.copiarLPA = copiarLPA;
