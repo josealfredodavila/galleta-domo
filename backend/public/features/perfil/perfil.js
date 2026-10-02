@@ -102,8 +102,7 @@ const ENV = {
 
 const BACKEND_URL = window.location.origin;
 const API_ENDPOINTS = {
-    pagos:    BACKEND_URL + '/api/payments',
-    webhook:  BACKEND_URL + '/api/webhooks/nowpayments'
+    pagos: BACKEND_URL + '/api/payments'
 };
 
 const COLUMNAS_PERFIL = [
@@ -112,12 +111,6 @@ const COLUMNAS_PERFIL = [
     'tokens', 'tokens_acumulados', 'progreso_canje', 'puede_canjear',
     'nft_canjeado', 'domos', 'tokens_para_canje',
     'plan', 'plan_expira_at', 'plan_meta', 'membresia_live_hasta',
-    'esim_iccid', 'esim_status', 'esim_data_used', 'esim_data_limit', 'esim_apn',
-    'esim_imsi', 'esim_msisdn', 'esim_eid', 'esim_type',
-    'esim_installation_status', 'esim_status_reason', 'esim_data_unit',
-    'esim_last_sync_at', 'esim_last_error', 'esim_activated_at',
-    'esim_expires_at', 'esim_operator', 'esim_network',
-    'telnyx_sim_id', 'telnyx_connection_id', 'telefono_telnyx',
     'telefono', 'numero_verificado',
     'online', 'ultima_conexion', 'offline_desde',
     'conexion_tipo', 'conexion_activa', 'conexion_velocidad',
@@ -171,7 +164,9 @@ async function getSession() {
     } catch (error) {
         return null;
     }
-}async function cargarEstadoPro() {
+}
+
+async function cargarEstadoPro() {
     try {
         if (!cli()) return;
         const session = await getSession();
@@ -245,6 +240,7 @@ function aplicarEstadoProUI(usuario) {
     aplicarI18NPerfil();
 }
 
+// TODO(pagos): endpoint incorrecto, pendiente de definir.
 async function contratarPro() {
     try {
         const session = await getSession();
@@ -347,6 +343,7 @@ async function activarProDirecto(usuarioId) {
 }
 
 let pollingPagoProInterval = null;
+// TODO(pagos): endpoint incorrecto, pendiente de definir.
 function iniciarPollingPagoPro(pagoProId) {
     if (!pagoProId) return;
     if (pollingPagoProInterval) clearInterval(pollingPagoProInterval);
@@ -388,6 +385,8 @@ function cambiarTab(tab) {
     }
     const tabBtn = document.querySelector('.tab-btn[onclick*="\'' + tab + '\'"]');
     if (tabBtn) tabBtn.classList.add('active');
+    if (tab === 'esim' && typeof window.cargarEsimNueva === 'function') window.cargarEsimNueva();
+    if (tab === 'internet' && typeof window.cargarOrdenesInternet === 'function') window.cargarOrdenesInternet();
 }
 
 function escaparHTML(texto) {
@@ -438,7 +437,9 @@ function perfilBasico(session) {
         tokens: 0,
         online: true
     };
-}async function cargarPerfil(forzarActualizacion = false) {
+}
+
+async function cargarPerfil(forzarActualizacion = false) {
     try {
         if (!cli()) return;
         const session = await getSession();
@@ -471,7 +472,6 @@ function perfilBasico(session) {
         ultimaActualizacion = ahora;
         await actualizarEstadoEnLinea(true);
         actualizarUI(perfil);
-        if (perfil.esim_iccid) await cargarDatosESIM(perfil.esim_iccid);
         Promise.all([
             cargarEstadoConexion(),
             cargarAmigosEnLinea(),
@@ -649,10 +649,10 @@ function actualizarUIAmigos(todosAmigos = [], enLinea = []) {
     container.innerHTML = ordenados.map(amigo => {
         const estaEnLinea = enLineaIds.has(amigo.id);
         const estadoTxt = estaEnLinea ? '🟢 ' + activoAhoraT : '⭕ ' + desconectadoT;
-        const handleSafe = encodeURIComponent(String(amigo.handle || amigo.id || ''));
+        const handleRaw = String(amigo.handle || amigo.id || '');
         const nombreSafe = escaparHTML(amigo.nombre || amigo.handle || '');
         const avatarSafe = amigo.avatar_url ? escaparHTML(amigo.avatar_url) : '';
-        return '<div class="amigo-item ' + (estaEnLinea ? 'online' : '') + '" onclick="window.location.href=\'/perfil/' + handleSafe + '\'">'
+        return '<div class="amigo-item ' + (estaEnLinea ? 'online' : '') + '" data-handle="' + escaparHTML(handleRaw) + '" style="cursor:pointer;">'
             + '<div class="avatar-mini">' + (avatarSafe ? '<img src="' + avatarSafe + '">' : '◈') + '</div>'
             + '<div class="info">'
             + '<div class="nombre" style="color:' + (estaEnLinea ? 'var(--text-primary)' : 'var(--text-muted)') + '">' + nombreSafe + '</div>'
@@ -663,6 +663,12 @@ function actualizarUIAmigos(todosAmigos = [], enLinea = []) {
             + (estaEnLinea ? '<div class="badge-online">' + enLineaT + '</div>' : '')
             + '</div>';
     }).join('');
+    container.querySelectorAll('.amigo-item[data-handle]').forEach(el => {
+        el.addEventListener('click', function () {
+            const handle = el.getAttribute('data-handle') || '';
+            window.location.href = '/perfil/' + encodeURIComponent(handle);
+        });
+    });
 }
 
 async function actualizarListaAmigos() { await cargarAmigosEnLinea(); }
@@ -738,7 +744,9 @@ function aplicarContadoresSociales(c) {
     const sigEl = document.getElementById('statSiguiendo');
     if (segEl) segEl.textContent = String(c?.seguidores ?? 0);
     if (sigEl) sigEl.textContent = String(c?.siguiendo ?? 0);
-}let estadoConexion = {
+}
+
+let estadoConexion = {
     tipo: 'wifi', activa: true, velocidad: '0 Mbps', señal: 100,
     operador: "Sariel's Net", datos_usados: 0, datos_limite: 0, datos_restantes: 0
 };
@@ -781,12 +789,18 @@ async function cambiarConexion(tipo) {
         const session = await getSession();
         if (!session) { showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error'); return; }
         if (tipo === 'datos') {
-            const perfil = getPerfilActual();
-            if (!perfil || !perfil.esim_iccid) { showToast('⚠️ No tienes una eSIM activa. Compra una primero.', 'warning'); return; }
-            if (perfil.esim_status !== 'enabled' && perfil.esim_status !== 'active') {
-                showToast('⚠️ Tu eSIM no está activa. Actívala primero.', 'warning');
+            const token = session.access_token;
+            let r, j;
+            try {
+                r = await fetch(BACKEND_URL + '/api/telnyx/esim/mia', { headers: { 'Authorization': 'Bearer ' + token } });
+                j = await r.json().catch(() => null);
+            } catch (netErr) {
+                showToast('❌ Error de red al verificar tu eSIM. Intenta de nuevo.', 'error', 5000);
                 return;
             }
+            const e = j && j.success ? j.data : null;
+            if (!e || !e.tiene_esim) { showToast('⚠️ Aún no tienes eSIM. Compra un paquete en Internet.', 'warning', 5000); return; }
+            if (e.estado !== 'activa') { showToast('⚠️ Tu eSIM no tiene saldo. Recarga gigas en Internet.', 'warning', 5000); return; }
         }
         const { error } = await supabaseClient
             .from('usuarios')
@@ -803,7 +817,6 @@ async function cambiarConexion(tipo) {
         if (perfilCache) { perfilCache.conexion_tipo = tipo; perfilCache.conexion_activa = true; }
         actualizarUIConexion(estadoConexion);
         showToast(tipo === 'wifi' ? '🛜 ' + t('perfil_conexion_wifi', 'WiFi') : '📶 ' + t('perfil_conexion_datos', 'Datos'), 'success');
-        if (tipo === 'datos') await cargarDatosESIM(perfilCache?.esim_iccid);
     } catch (error) {
         showToast('❌ Error al cambiar conexión: ' + msgError(error), 'error');
     }
@@ -890,263 +903,6 @@ function iniciarEscuchaConexion() {
     if (navigator.connection && navigator.connection.addEventListener) {
         navigator.connection.addEventListener('change', async () => { await cargarEstadoConexion(); });
     }
-}
-
-function actualizarUIESIM(data) {
-    const esimStatus = document.getElementById('esimStatus');
-    const esimDataUsed = document.getElementById('esimDataUsed');
-    const esimDataLimit = document.getElementById('esimDataLimit');
-    const esimDataProgress = document.getElementById('esimDataProgress');
-    const esimIccid = document.getElementById('esimIccid');
-    const esimApn = document.getElementById('esimApn');
-    const esimRestante = document.getElementById('esimDataRestante');
-    if (esimStatus) {
-        const statusMap = {
-            'enabled': '✅ Activo', 'active': '✅ Activo',
-            'disabled': '❌ Inactivo', 'inactive': '❌ Inactivo',
-            'standby': '⏳ En espera', 'pending': '🔄 Pendiente', 'unknown': '❓ Desconocido'
-        };
-        const st = data.esim_status;
-        esimStatus.textContent = st ? (statusMap[st] || st) : '⏳ Sin eSIM';
-        esimStatus.style.color = (st === 'enabled' || st === 'active') ? 'var(--success)' : 'var(--warning)';
-    }
-    if (esimDataUsed) esimDataUsed.textContent = ((data.esim_data_used || 0) / 1024 / 1024 / 1024).toFixed(2) + ' GB';
-    if (esimDataLimit) esimDataLimit.textContent = ((data.esim_data_limit || 0) / 1024 / 1024 / 1024).toFixed(2) + ' GB';
-    if (esimRestante) {
-        const usado = (data.esim_data_used || 0) / 1024 / 1024 / 1024;
-        const limite = (data.esim_data_limit || 0) / 1024 / 1024 / 1024;
-        const restante = Math.max(limite - usado, 0);
-        esimRestante.textContent = restante.toFixed(2) + ' GB';
-        esimRestante.style.color = restante < 1 ? 'var(--danger)' : 'var(--success)';
-    }
-    if (esimDataProgress && data.esim_data_limit > 0) {
-        const porcentaje = ((data.esim_data_used || 0) / (data.esim_data_limit || 1)) * 100;
-        esimDataProgress.style.width = Math.min(porcentaje, 100) + '%';
-        esimDataProgress.style.transition = 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
-        esimDataProgress.style.background = porcentaje > 80 ? 'var(--danger)' : (porcentaje > 50 ? 'var(--warning)' : 'var(--success)');
-    }
-    if (esimIccid) {
-        esimIccid.removeAttribute('data-clave');
-        const iccid = data.esim_iccid || t('perfil_no_asignado', 'No asignado');
-        esimIccid.textContent = iccid.length > 10 ? iccid.slice(0, 10) + '...' + iccid.slice(-4) : iccid;
-    }
-    if (esimApn) esimApn.textContent = data.esim_apn || 'data00.telnyx';
-}
-
-function mostrarSinESIM() {
-    actualizarUIESIM({ esim_iccid: null, esim_status: 'disabled', esim_data_used: 0, esim_data_limit: 0, esim_apn: 'data00.telnyx' });
-    const esimStatus = document.getElementById('esimStatus');
-    if (esimStatus) { esimStatus.textContent = '⏳ Sin eSIM'; esimStatus.style.color = 'var(--text-muted)'; }
-}
-
-async function cargarDatosESIM(iccid) {
-    if (!iccid) { mostrarSinESIM(); return null; }
-    try {
-        const session = await getSession();
-        if (!session) return null;
-        const { data: usuario, error } = await supabaseClient
-            .from('usuarios')
-            .select('esim_iccid, esim_status, esim_data_used, esim_data_limit, esim_apn, esim_activated_at, esim_expires_at, esim_operator, esim_network, esim_last_sync_at, esim_last_error, esim_imsi, esim_msisdn, esim_eid, esim_type, esim_installation_status, esim_status_reason, esim_data_unit')
-            .eq('id', session.user.id)
-            .maybeSingle();
-        if (error || !usuario || !usuario.esim_iccid) { mostrarSinESIM(); return null; }
-        if (perfilCache) Object.assign(perfilCache, usuario);
-        actualizarUIESIM({
-            esim_iccid: usuario.esim_iccid,
-            esim_status: usuario.esim_status,
-            esim_data_used: usuario.esim_data_used || 0,
-            esim_data_limit: usuario.esim_data_limit || 0,
-            esim_apn: usuario.esim_apn || 'data00.telnyx'
-        });
-        return usuario;
-    } catch (error) { mostrarSinESIM(); return null; }
-}
-
-async function sincronizarESIM() {
-    try {
-        const session = await getSession();
-        if (!session) { showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error'); return; }
-        showToast('⏳ ' + t('perfil_sincronizando', 'Sincronizando...'), '', 3000);
-        const { data: usuario, error } = await supabaseClient
-            .from('usuarios')
-            .select('esim_iccid, esim_status, esim_data_used, esim_data_limit, esim_apn, esim_last_sync_at')
-            .eq('id', session.user.id)
-            .maybeSingle();
-        if (error) throw error;
-        if (usuario && usuario.esim_iccid) {
-            if (perfilCache) Object.assign(perfilCache, usuario);
-            actualizarUIESIM(usuario);
-            showToast('✅ ' + t('perfil_sincronizar', 'Datos sincronizados'), 'success');
-        } else {
-            mostrarSinESIM();
-            showToast('⚠️ No tienes eSIM asignada', 'warning');
-        }
-    } catch (error) { showToast('❌ Error al sincronizar: ' + msgError(error), 'error'); }
-}
-
-async function comprarESIM(planId) {
-    try {
-        const session = await getSession();
-        if (!session) { showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error'); return; }
-        const { data: plan, error } = await supabaseClient.from('planes_esim').select('*').eq('id', planId).maybeSingle();
-        if (error || !plan) { showToast('❌ Plan no encontrado', 'error'); return; }
-        showToast('⏳ Creando orden de compra...', '', 5000);
-        const response = await fetch(API_ENDPOINTS.pagos + '/create', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
-            body: JSON.stringify({
-                transmisionId: null, monto: Number(plan.precio_mxn) || 0,
-                metodo: 'crypto', tipo: 'esim', planId: plan.id,
-                idempotency_key: 'esim_' + session.user.id + '_' + planId + '_' + Date.now()
-            })
-        });
-        let result = null;
-        try { result = await response.json(); } catch (e) { result = null; }
-        if (!response.ok || !result || !result.success) throw new Error((result && result.error) || 'Error al crear la orden');
-        if (result.data && result.data.payment_url) {
-            mostrarModalPagoReal(result.data.payment_url, result.data.id, plan);
-        } else {
-            const qrData = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent('Orden: ' + (result.data?.id || ''));
-            mostrarModalPagoSimulado(qrData, result.data?.id, plan);
-        }
-    } catch (error) { showToast('❌ Error al comprar eSIM: ' + msgError(error), 'error'); }
-}
-
-async function activarESIM(iccid) {
-    try {
-        const session = await getSession();
-        if (!session) { showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error'); return; }
-        const iccidParam = iccid || perfilCache?.esim_iccid;
-        if (!iccidParam) { showToast('⚠️ No hay eSIM para activar', 'error'); return; }
-        showToast('⏳ Activando eSIM...', '', 5000);
-        const { error } = await supabaseClient
-            .from('usuarios')
-            .update({ esim_status: 'enabled', esim_last_sync_at: new Date().toISOString() })
-            .eq('id', session.user.id);
-        if (error) throw error;
-        showToast('✅ eSIM activada correctamente', 'success');
-        await cargarPerfil(true);
-    } catch (error) { showToast('❌ No se pudo activar la eSIM: ' + msgError(error), 'error', 5000); }
-}
-
-async function desactivarESIM(iccid) {
-    try {
-        const session = await getSession();
-        if (!session) { showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error'); return; }
-        const iccidParam = iccid || perfilCache?.esim_iccid;
-        if (!iccidParam) { showToast('⚠️ No hay eSIM para desactivar', 'error'); return; }
-        if (!confirm(t('perfil_confirmar_desactivar_esim', '¿Seguro que quieres desactivar tu eSIM?'))) return;
-        showToast('⏳ Desactivando eSIM...', '', 5000);
-        const { error } = await supabaseClient
-            .from('usuarios')
-            .update({ esim_status: 'disabled', esim_last_sync_at: new Date().toISOString() })
-            .eq('id', session.user.id);
-        if (error) throw error;
-        showToast('🔌 eSIM desactivada', 'warning');
-        await cargarPerfil(true);
-    } catch (error) { showToast('❌ No se pudo desactivar la eSIM: ' + msgError(error), 'error', 5000); }
-}
-
-async function generarQRESIM(iccid) {
-    try {
-        const iccidParam = iccid || perfilCache?.esim_iccid;
-        if (!iccidParam) { showToast('⚠️ No hay eSIM para generar QR', 'error'); return; }
-        const qrData = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent("LPA:1$" + iccidParam + "$Sariel's");
-        mostrarModalQR(qrData);
-    } catch (error) { showToast('❌ Error al generar QR: ' + msgError(error), 'error'); }
-}
-
-async function obtenerEstadoESIM() {
-    try {
-        const session = await getSession();
-        if (!session) return null;
-        const { data, error } = await supabaseClient
-            .from('usuarios')
-            .select('esim_iccid, esim_status, esim_data_used, esim_data_limit, esim_apn')
-            .eq('id', session.user.id)
-            .maybeSingle();
-        if (error) throw error;
-        return data || null;
-    } catch (error) { return null; }
-}
-
-async function obtenerPlanesESIM() {
-    try {
-        if (!cli()) return [];
-        const { data, error } = await supabaseClient.from('planes_esim').select('*').eq('activo', true).order('precio_mxn', { ascending: true });
-        if (error) throw error;
-        return data || [];
-    } catch (error) { return []; }
-}
-
-function mostrarModalPagoReal(paymentUrl, ordenId, plan) {
-    const modal = document.createElement('div');
-    modal.id = 'pagoModal';
-    modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; z-index: 9999;';
-    modal.innerHTML = '<div style="background: linear-gradient(135deg, var(--bg-card), var(--bg-dark)); border: 2px solid var(--gold); border-radius: 20px; padding: 30px; max-width: 450px; width: 90%; text-align: center;">'
-        + '<h2 style="color: var(--gold); margin-bottom: 10px;">📱 Compra eSIM</h2>'
-        + '<p style="color: var(--text-secondary); margin-bottom: 20px;">' + escaparHTML(plan.nombre) + ' - ' + escaparHTML(plan.datos_gb) + ' GB ' + t('perfil_duracion', 'por') + ' ' + escaparHTML(plan.duracion_dias) + ' ' + t('perfil_dias', 'días') + '</p>'
-        + '<p style="color: var(--gold); font-size: 1.2rem; font-weight: bold;">$' + escaparHTML(plan.precio_usdt || plan.precio_mxn) + ' ' + (plan.precio_usdt ? 'USDT' : 'MXN') + '</p>'
-        + '<div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 15px 0;">'
-        + '<a href="' + escaparHTML(paymentUrl) + '" target="_blank" rel="noopener noreferrer" style="background: linear-gradient(135deg, var(--gold), #f7971e); border: none; color: #fff; padding: 12px 30px; border-radius: 10px; font-weight: 600; text-decoration: none;">💳 Ir a pagar</a>'
-        + '<button onclick="window.verificarPago(\'' + escaparHTML(ordenId) + '\')" style="background: var(--bg-card); border: 1px solid var(--cyan); color: var(--cyan); padding: 12px 30px; border-radius: 10px; font-weight: 600; cursor: pointer;">✅ Verificar pago</button>'
-        + '<button onclick="this.closest(\'#pagoModal\').remove()" style="background: transparent; border: 1px solid var(--text-muted); color: var(--text-muted); padding: 12px 30px; border-radius: 10px; cursor: pointer;">' + t('perfil_cerrar', 'Cerrar') + '</button>'
-        + '</div><div id="pagoStatus" style="margin-top: 10px; font-size: 0.8rem; color: var(--text-secondary);"></div></div>';
-    document.body.appendChild(modal);
-}
-
-function mostrarModalPagoSimulado(qrData, ordenId, plan) {
-    const modal = document.createElement('div');
-    modal.id = 'pagoModal';
-    modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; z-index: 9999;';
-    modal.innerHTML = '<div style="background: linear-gradient(135deg, var(--bg-card), var(--bg-dark)); border: 2px solid var(--gold); border-radius: 20px; padding: 30px; max-width: 450px; width: 90%; text-align: center;">'
-        + '<h2 style="color: var(--gold); margin-bottom: 10px;">📱 Compra eSIM</h2>'
-        + '<div style="background: white; border-radius: 10px; padding: 15px; margin: 10px 0;"><img src="' + escaparHTML(qrData) + '" alt="QR" style="max-width: 200px; width: 100%;"></div>'
-        + '<p style="color: var(--gold); font-size: 1.2rem; font-weight: bold;">$' + escaparHTML(plan.precio_usdt || plan.precio_mxn) + ' ' + (plan.precio_usdt ? 'USDT' : 'MXN') + '</p>'
-        + '<div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">'
-        + '<button onclick="window.verificarPago(\'' + escaparHTML(ordenId) + '\')" style="background: linear-gradient(135deg, var(--gold), #f7971e); border: none; color: #fff; padding: 10px 30px; border-radius: 10px; font-weight: 600; cursor: pointer;">✅ Verificar pago</button>'
-        + '<button onclick="this.closest(\'#pagoModal\').remove()" style="background: transparent; border: 1px solid var(--text-muted); color: var(--text-muted); padding: 10px 30px; border-radius: 10px; cursor: pointer;">' + t('perfil_cerrar', 'Cerrar') + '</button>'
-        + '</div><div id="pagoStatus" style="margin-top: 10px; font-size: 0.8rem; color: var(--text-secondary);"></div></div>';
-    document.body.appendChild(modal);
-}
-
-function mostrarModalQR(qrData) {
-    const modal = document.createElement('div');
-    modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; z-index: 9999;';
-    modal.innerHTML = '<div style="background: linear-gradient(135deg, var(--bg-card), var(--bg-dark)); border: 2px solid var(--gold); border-radius: 20px; padding: 30px; max-width: 400px; width: 90%; text-align: center;">'
-        + '<h2 style="color: var(--gold); margin-bottom: 10px;">📱 Activa tu eSIM</h2>'
-        + '<p style="color: var(--text-secondary); margin-bottom: 20px;">Escanea con la cámara de tu móvil</p>'
-        + '<div style="background: white; border-radius: 10px; padding: 15px; margin: 10px 0;"><img src="' + escaparHTML(qrData) + '" alt="QR" style="max-width: 200px; width: 100%;"></div>'
-        + '<p style="color: var(--text-muted); font-size: 0.7rem;">📲 Ve a Ajustes > Datos Móviles > Añadir eSIM</p>'
-        + '<button onclick="this.parentElement.parentElement.remove()" style="margin-top: 15px; background: var(--gold); border: none; color: #fff; padding: 10px 30px; border-radius: 10px; cursor: pointer;">' + t('perfil_cerrar', 'Cerrar') + '</button></div>';
-    document.body.appendChild(modal);
-}
-
-async function verificarPago(ordenId) {
-    const statusEl = document.getElementById('pagoStatus');
-    if (!statusEl) return;
-    statusEl.textContent = '⏳ Verificando pago...';
-    try {
-        const session = await getSession();
-        if (!session) { statusEl.textContent = '❌ ' + t('perfil_inicia_sesion', 'Inicia sesión'); return; }
-        const response = await fetch(API_ENDPOINTS.pagos + '/status/' + encodeURIComponent(ordenId), {
-            headers: { 'Authorization': 'Bearer ' + session.access_token }
-        });
-        let result = null;
-        try { result = await response.json(); } catch (e) { result = null; }
-        if (!response.ok || !result || !result.success) throw new Error((result && result.error) || 'Error al verificar');
-        const orden = result.data;
-        if (['completado', 'finished', 'confirmed', 'pagado'].includes(orden.estado)) {
-            statusEl.textContent = '✅ ¡Pago confirmado! Activando eSIM...';
-            showToast('🎉 ¡eSIM activada exitosamente!', 'success');
-            await cargarPerfil(true);
-            setTimeout(() => { document.getElementById('pagoModal')?.remove(); }, 2000);
-        } else if (['pendiente', 'pagando'].includes(orden.estado)) {
-            statusEl.textContent = '⏳ Aún no se confirma el pago. Espera unos minutos.';
-        } else {
-            statusEl.textContent = '❌ Estado: ' + orden.estado;
-        }
-    } catch (error) { statusEl.textContent = '❌ Error al verificar: ' + msgError(error); }
 }
 
 let qrScannerInterval = null;
@@ -1288,7 +1044,9 @@ function actualizarUIHistorialQR(historial = []) {
         const qrId = item.qr_id ? escaparHTML(String(item.qr_id).slice(0, 15)) : 'N/A';
         return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(212,175,55,0.05);font-size:0.7rem;color:var(--text-muted);"><span>📱 QR: ' + qrId + '</span><span>' + fecha + '</span></div>';
     }).join('');
-}function actualizarUI(data) {
+}
+
+function actualizarUI(data) {
     if (!data) return;
     const nombreEl = document.getElementById('perfilNombre');
     const handleEl = document.getElementById('perfilHandle');
@@ -1369,7 +1127,6 @@ function actualizarUIHistorialQR(historial = []) {
             btnCanjear.innerHTML = '🔒 NECESITAS 12 TOKENS';
         }
     }
-    if (data.esim_iccid !== undefined) actualizarUIESIM(data);
     actualizarUIConexion(estadoConexion);
     actualizarUIEstado(data.online !== false);
 }
@@ -1473,6 +1230,7 @@ async function comprarDomo(cantidad = 1) {
     } catch (error) { showToast('❌ Error en la compra: ' + msgError(error), 'error'); }
 }
 
+// TODO(pagos): endpoint incorrecto, pendiente de definir.
 async function comprarConCripto() {
     const session = await getSession();
     if (!session) { showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error'); return; }
@@ -1827,7 +1585,9 @@ function iniciarNotificacionesRealtime() {
         })
         .subscribe();
     return canalNotificaciones;
-}function publicarFuncionesGlobales() {
+}
+
+function publicarFuncionesGlobales() {
     window.cambiarTab = cambiarTab;
     window.cargarPerfil = cargarPerfil;
     window.guardarPerfil = guardarPerfil;
@@ -1850,15 +1610,6 @@ function iniciarNotificacionesRealtime() {
     window.generarQRPerfil = generarQRPerfil;
     window.calcularNivel = calcularNivel;
     window.compartirLogro = compartirLogro;
-    window.comprarESIM = comprarESIM;
-    window.cargarDatosESIM = cargarDatosESIM;
-    window.activarESIM = activarESIM;
-    window.desactivarESIM = desactivarESIM;
-    window.generarQRESIM = generarQRESIM;
-    window.obtenerEstadoESIM = obtenerEstadoESIM;
-    window.obtenerPlanesESIM = obtenerPlanesESIM;
-    window.verificarPago = verificarPago;
-    window.sincronizarESIM = sincronizarESIM;
     window.comprarConCripto = comprarConCripto;
     window.verificarPagoCrypto = verificarPagoCrypto;
     window.copiarDireccion = copiarDireccion;
@@ -1911,7 +1662,6 @@ async function iniciarPerfil() {
     iniciarEscuchaConexion();
     iniciarEscuchaAmigos();
     iniciarDetectorInactividad();
-    setInterval(() => { if (!document.hidden && perfilCache?.esim_iccid) cargarDatosESIM(perfilCache.esim_iccid); }, 60000);
     setInterval(() => { if (!document.hidden) cargarEstadoConexion(); }, 60000);
     setInterval(() => { if (!document.hidden) cargarAmigosEnLinea(); }, 60000);
     const cryptoQty = document.getElementById('cryptoQuantity');
