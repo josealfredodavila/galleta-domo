@@ -10,6 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/features/shared/js/auth-global.js"></script>
 <script src="/features/shared/js/apariencia-global.js?v=6" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 
 <style>
     html:not(.auth-ready) .app { display: none !important; }
@@ -43,18 +44,7 @@
     ::-webkit-scrollbar-track { background: var(--space); }
     ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
 
-    .icon {
-        display: inline-block;
-        width: 1em;
-        height: 1em;
-        stroke: currentColor;
-        stroke-width: 2;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-        fill: none;
-        vertical-align: -0.125em;
-        flex-shrink: 0;
-    }
+    .icon { display: inline-block; width: 1em; height: 1em; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; vertical-align: -0.125em; flex-shrink: 0; }
     .icon-sm { width: 0.85em; height: 0.85em; }
     .icon-lg { width: 1.25em; height: 1.25em; }
 
@@ -932,15 +922,15 @@
             </div>
 
             <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
-                <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" onclick="window.comprarESIM(1)" data-clave="perfil_adquirir_esim">
+                <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" onclick="window.irAComprarInternet()" data-clave="perfil_adquirir_esim">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
                     Comprar eSIM
                 </button>
-                <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="window.generarQRESIM()" data-clave="perfil_obtener_qr">
+                <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="window.verQREsimNuevo()" data-clave="perfil_obtener_qr">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="17"/><line x1="17" y1="14" x2="21" y2="14"/><line x1="14" y1="21" x2="21" y2="21"/></svg>
                     QR Activación
                 </button>
-                <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="window.sincronizarESIM()" data-clave="perfil_sincronizar">
+                <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" onclick="window.sincronizarEsimNuevo()" data-clave="perfil_sincronizar">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
                     Sincronizar
                 </button>
@@ -1397,13 +1387,9 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <script>
-/* ============================================================
-   PUBLICACIONES DEL PERFIL — VISTAS PÚBLICAS (sin JOIN a usuarios)
-   ✅ Cambios aplicados:
-      - cargarMisPublicaciones → publicaciones_publicas
-      - cargarComentariosPerfil → publicaciones_comentarios_publicos
-      - Campos: usuario_nombre, usuario_handle, usuario_avatar_url
-   ============================================================ */
+/* ═══════════════════════════════════════════════════════════════
+   PUBLICACIONES DEL PERFIL — VISTAS PÚBLICAS
+   ═══════════════════════════════════════════════════════════════ */
 (function() {
     'use strict';
 
@@ -1570,10 +1556,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return '◈';
     }
 
-    /* ============================================================
-       ✅ cargarMisPublicaciones — lee desde publicaciones_publicas
-       Campos planos: usuario_nombre, usuario_handle, usuario_avatar_url
-       ============================================================ */
     window.cargarMisPublicaciones = async function() {
         var container = document.getElementById('misPublicacionesList');
         var contador = document.getElementById('misPostsCount');
@@ -1786,10 +1768,6 @@ document.addEventListener('DOMContentLoaded', function() {
         await cargarComentariosPerfil(publicacionId);
     };
 
-    /* ============================================================
-       ✅ cargarComentariosPerfil — lee desde publicaciones_comentarios_publicos
-       Campos planos: usuario_nombre, usuario_handle, usuario_avatar_url
-       ============================================================ */
     async function cargarComentariosPerfil(publicacionId) {
         var lista = document.getElementById('comentarios-lista-' + publicacionId);
         if (!lista) return;
@@ -1924,7 +1902,9 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <script>
-/* ÓRDENES DE INTERNET */
+/* ═══════════════════════════════════════════════════════════════
+   ÓRDENES DE INTERNET
+   ═══════════════════════════════════════════════════════════════ */
 (function() {
     'use strict';
     var ordenesInternet = [];
@@ -2050,7 +2030,9 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <script>
-/* SINCRONIZACIÓN DE PERFIL — Realtime + Reintentos */
+/* ═══════════════════════════════════════════════════════════════
+   SINCRONIZACIÓN DE PERFIL — Realtime + Reintentos
+   ═══════════════════════════════════════════════════════════════ */
 (function() {
     'use strict';
     var ultimaRecarga = 0;
@@ -2158,6 +2140,224 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (e) { console.warn('[Perfil] Realtime error:', e); }
     }
     setTimeout(iniciarRealtime, 1000);
+})();
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     AGREGADO: Integración con el sistema nuevo de Telnyx/eSIM
+     ═══════════════════════════════════════════════════════════════ -->
+<script>
+(function() {
+    'use strict';
+
+    var BACKEND_URL = window.location.origin;
+
+    async function getToken() {
+        try {
+            if (!window.supabaseClient) return null;
+            var r = await window.supabaseClient.auth.getSession();
+            return r && r.data && r.data.session ? r.data.session.access_token : null;
+        } catch (e) { return null; }
+    }
+
+    async function fetchAuth(url, opciones) {
+        var token = await getToken();
+        if (!token) {
+            if (window.showToast) window.showToast('⚠️ Inicia sesión', 'error');
+            return null;
+        }
+        var opts = opciones || {};
+        var headers = Object.assign({}, opts.headers || {}, {
+            'Authorization': 'Bearer ' + token
+        });
+        if (opts.body && !headers['Content-Type']) {
+            headers['Content-Type'] = 'application/json';
+        }
+        return fetch(url, Object.assign({}, opts, { headers: headers }));
+    }
+
+    window.irAComprarInternet = function() {
+        window.location.href = '/features/internet/internet.html';
+    };
+
+    window.verQREsimNuevo = async function() {
+        if (window.showToast) window.showToast('⏳ Cargando eSIM...', '', 3000);
+        try {
+            var resp = await fetchAuth(BACKEND_URL + '/api/telnyx/esim/mia');
+            if (!resp) return;
+            var data = await resp.json();
+            if (!resp.ok || !data.success || !data.data || !data.data.tiene_esim) {
+                if (window.showToast) window.showToast('⚠️ No tienes eSIM activa. Compra un paquete primero.', 'warning', 5000);
+                return;
+            }
+            var esim = data.data;
+            var code = esim.activation_code || '';
+            if (!code) {
+                if (window.showToast) window.showToast('⚠️ La eSIM no tiene código QR disponible', 'warning', 4000);
+                return;
+            }
+            mostrarModalQREsim(code);
+        } catch (e) {
+            console.error('[Perfil] Error verQREsimNuevo:', e);
+            if (window.showToast) window.showToast('❌ Error al cargar la eSIM: ' + e.message, 'error', 5000);
+        }
+    };
+
+    window.sincronizarEsimNuevo = async function() {
+        if (window.showToast) window.showToast('⏳ Sincronizando consumo...', '', 3000);
+        try {
+            var resp = await fetchAuth(BACKEND_URL + '/api/telnyx/esim/sync', { method: 'POST' });
+            if (!resp) return;
+            var data = await resp.json();
+            if (!resp.ok || !data.success) {
+                if (window.showToast) window.showToast('❌ ' + (data.error || 'No se pudo sincronizar'), 'error', 4000);
+                return;
+            }
+            if (window.showToast) window.showToast('✅ Datos actualizados', 'success', 3000);
+            actualizarUIEsimNueva(data.data);
+        } catch (e) {
+            console.error('[Perfil] Error sincronizarEsimNuevo:', e);
+            if (window.showToast) window.showToast('❌ Error: ' + e.message, 'error', 5000);
+        }
+    };
+
+    function mostrarModalQREsim(code) {
+        var previo = document.getElementById('esimQrModalNuevo');
+        if (previo) previo.remove();
+
+        var codeSafe = code.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+
+        var modal = document.createElement('div');
+        modal.id = 'esimQrModalNuevo';
+        modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);backdrop-filter:blur(10px);display:flex;justify-content:center;align-items:center;z-index:99999;padding:20px;';
+        modal.innerHTML =
+            '<div style="background:linear-gradient(135deg,var(--bg-card),var(--bg-dark));border:2px solid var(--gold);border-radius:20px;padding:30px;max-width:420px;width:100%;text-align:center;position:relative;">' +
+                '<button onclick="document.getElementById(\'esimQrModalNuevo\').remove()" style="position:absolute;top:10px;right:15px;background:transparent;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;">✕</button>' +
+                '<h3 style="color:var(--gold);margin-bottom:12px;font-family:Orbitron,monospace;font-size:1rem;">📱 Activar eSIM</h3>' +
+                '<p style="color:var(--text-secondary);font-size:0.8rem;margin-bottom:14px;">Escanea este código con la cámara de tu celular</p>' +
+                '<div style="background:#fff;border-radius:12px;padding:15px;display:inline-block;margin-bottom:14px;"><canvas id="esimQrCanvasNuevo"></canvas></div>' +
+                '<div style="background:rgba(0,0,0,0.6);border:1px solid var(--glass-border);border-radius:8px;padding:10px;word-break:break-all;margin-bottom:12px;text-align:left;">' +
+                    '<div style="font-size:0.55rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Código LPA</div>' +
+                    '<div style="font-family:monospace;font-size:0.65rem;color:var(--gold);line-height:1.4;">' + code + '</div>' +
+                '</div>' +
+                '<button onclick="navigator.clipboard.writeText(\'' + codeSafe + '\').then(function(){window.showToast&&window.showToast(\'📋 Código copiado\',\'success\')})" style="background:rgba(212,175,55,0.1);border:1px solid var(--gold);color:var(--gold);padding:8px 18px;border-radius:30px;font-size:0.7rem;font-weight:600;cursor:pointer;margin-right:6px;">📋 Copiar código</button>' +
+                '<button onclick="document.getElementById(\'esimQrModalNuevo\').remove()" style="background:transparent;border:1px solid var(--text-muted);color:var(--text-muted);padding:8px 18px;border-radius:30px;font-size:0.7rem;cursor:pointer;">Cerrar</button>' +
+                '<p style="color:var(--text-muted);font-size:0.65rem;margin-top:14px;">📲 Ajustes › Datos móviles › Agregar eSIM</p>' +
+            '</div>';
+
+        document.body.appendChild(modal);
+
+        var canvas = document.getElementById('esimQrCanvasNuevo');
+        if (typeof QRCode !== 'undefined' && canvas) {
+            QRCode.toCanvas(canvas, code, {
+                width: 220,
+                margin: 1,
+                color: { dark: '#05080f', light: '#ffffff' }
+            }, function(err) { if (err) console.error('[Perfil] Error QR:', err); });
+        } else if (canvas) {
+            canvas.width = 220;
+            canvas.height = 220;
+            var ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#05080f';
+            ctx.fillRect(0, 0, 220, 220);
+            ctx.fillStyle = '#D4AF37';
+            ctx.font = '13px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('QR no disponible', 110, 110);
+        }
+    }
+
+    function actualizarUIEsimNueva(esim) {
+        if (!esim) return;
+        try {
+            var estadoEl = document.getElementById('esimStatus');
+            if (estadoEl) {
+                var estado = esim.estado || 'pendiente';
+                var map = {
+                    'activa': '✅ Activa',
+                    'activada': '✅ Activa',
+                    'sin_saldo': '❌ Sin saldo',
+                    'pendiente': '⏳ Pendiente',
+                    'aprovisionando': '🔄 Aprovisionando',
+                    'reemplazando': '🔄 Reemplazando'
+                };
+                estadoEl.textContent = map[estado] || estado;
+                estadoEl.style.color = (estado === 'activa' || estado === 'activada') ? 'var(--success)' : 'var(--warning)';
+            }
+
+            var fmt = function(mb) {
+                var n = Number(mb);
+                if (!Number.isFinite(n) || n <= 0) return '0 GB';
+                if (n >= 1000) return (n / 1000).toFixed(2) + ' GB';
+                return Math.round(n) + ' MB';
+            };
+
+            var totalMb = Number(esim.datos_total_mb) || 0;
+            var usadosMb = Number(esim.datos_usados_mb) || 0;
+            var restanteMb = Math.max(totalMb - usadosMb, 0);
+            var pct = totalMb > 0 ? Math.min((usadosMb / totalMb) * 100, 100) : 0;
+
+            var usedEl = document.getElementById('esimDataUsed');
+            if (usedEl) usedEl.textContent = fmt(usadosMb);
+
+            var limitEl = document.getElementById('esimDataLimit');
+            if (limitEl) limitEl.textContent = fmt(totalMb);
+
+            var restEl = document.getElementById('esimDataRestante');
+            if (restEl) {
+                restEl.textContent = fmt(restanteMb);
+                restEl.style.color = restanteMb < 1000 ? 'var(--danger)' : 'var(--success)';
+            }
+
+            var iccidEl = document.getElementById('esimIccid');
+            if (iccidEl) {
+                iccidEl.removeAttribute('data-clave');
+                var iccid = esim.iccid || 'No asignado';
+                iccidEl.textContent = iccid.length > 16 ? iccid.slice(0, 10) + '...' + iccid.slice(-4) : iccid;
+            }
+
+            var barEl = document.getElementById('esimDataProgress');
+            if (barEl) {
+                barEl.style.width = pct + '%';
+                barEl.style.background = pct > 80 ? 'var(--danger)' : (pct > 50 ? 'var(--warning)' : 'var(--success)');
+            }
+        } catch (e) {
+            console.warn('[Perfil] Error actualizarUIEsimNueva:', e);
+        }
+    }
+
+    async function cargarEsimNueva() {
+        try {
+            var resp = await fetchAuth(BACKEND_URL + '/api/telnyx/esim/mia');
+            if (!resp) return;
+            var data = await resp.json();
+            if (resp.ok && data.success && data.data && data.data.tiene_esim) {
+                actualizarUIEsimNueva(data.data);
+            }
+        } catch (e) {
+            console.warn('[Perfil] Error cargando eSIM nueva:', e);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var intervalCheck = setInterval(function() {
+            var btns = document.querySelectorAll('.perfil-tabs .tab-btn');
+            if (!btns || btns.length === 0) return;
+            clearInterval(intervalCheck);
+            btns.forEach(function(btn) {
+                var onclick = btn.getAttribute('onclick') || '';
+                if (onclick.indexOf("'esim'") !== -1) {
+                    btn.addEventListener('click', function() {
+                        setTimeout(cargarEsimNueva, 200);
+                    });
+                }
+            });
+        }, 300);
+    });
+
+    window.cargarEsimNueva = cargarEsimNueva;
+
+    console.log('[Perfil] Integración eSIM nueva cargada ✅');
 })();
 </script>
 
