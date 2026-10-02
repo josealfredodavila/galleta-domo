@@ -527,17 +527,14 @@
     }
 
     // ============================================================
-    // FIX #1: ocultarLoading robusto
+    // FIX #1: ocultarLoading robusto (sin eliminar del DOM)
     // ============================================================
     function ocultarLoading() {
         try {
             const ov = document.getElementById('loadingOverlay');
             if (ov) {
                 ov.classList.add('hide');
-                // Fallback: eliminar del DOM tras transición
-                setTimeout(() => {
-                    if (ov && ov.parentNode) ov.parentNode.removeChild(ov);
-                }, 400);
+                // No eliminamos el elemento del DOM para evitar errores de referencia
             }
         } catch (e) {
             console.warn('Error ocultando loading:', e);
@@ -548,7 +545,7 @@
     setTimeout(ocultarLoading, 5000);
 
     // ============================================================
-    // FIX #2: cargarSesion con timeout
+    // FIX #2: cargarSesion con timeout y manejo de errores
     // ============================================================
     async function cargarSesion() {
         try {
@@ -766,6 +763,7 @@
 
         status.innerText = '⏳ Autenticando...';
         btn.disabled = true;
+        btn.innerHTML = '⏳ Procesando...';
 
         try {
             const session = currentSession || (await supabase.auth.getSession()).data.session;
@@ -814,6 +812,7 @@
             showToast('❌ ' + error.message, 'error');
         } finally {
             btn.disabled = false;
+            btn.innerHTML = '⟡ Pagar y activar';
         }
     }
 
