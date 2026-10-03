@@ -41,8 +41,21 @@ async function cargarTendencias() {
 
         contenedor.innerHTML = html;
 
+        // ✅ Actualizar hora con formato 12h + AM/PM + emoji por franja horaria
         if (actualizado) {
-            actualizado.textContent = 'Actualizado ' + new Date().toLocaleTimeString().slice(0, 5);
+            var ahora = new Date();
+            var hora = ahora.getHours();
+            var h12 = hora % 12 || 12;
+            var minutos = String(ahora.getMinutes()).padStart(2, '0');
+            var ampm = hora < 12 ? 'AM' : 'PM';
+
+            // Emoji según franja horaria
+            var emoji;
+            if (hora >= 5 && hora < 12) emoji = '🌅';       // Mañana (5:00 - 11:59)
+            else if (hora >= 12 && hora < 19) emoji = '☀️';  // Tarde (12:00 - 18:59)
+            else emoji = '🌙';                                // Noche (19:00 - 4:59)
+
+            actualizado.innerHTML = '<span class="emoji-hora">' + emoji + '</span> ' + h12 + ':' + minutos + ' ' + ampm;
         }
     } catch (e) {
         console.error('Error cargando tendencias:', e);
