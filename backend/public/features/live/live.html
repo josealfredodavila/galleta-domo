@@ -301,7 +301,8 @@
                 <div class="live-actions">
                     <button class="btn btn-gold btn-sm" onclick="iniciarTransmisionGeneral()" data-clave="live_iniciar">◉ Iniciar live</button>
                     <button class="btn btn-outline btn-sm" onclick="cargarTransmisionesActivas()" data-clave="live_ver_todas">◈ Ver todas</button>
-                    <button class="btn btn-outline btn-sm" onclick="abrirMembresiaLive()" data-clave="live_estadisticas">💎 Mi Live Pass</button>
+                    <button class="btn btn-outline btn-sm" onclick="cargarEstadisticas()" data-clave="live_estadisticas">◈ Estadísticas</button>
+                    <button class="btn btn-outline btn-sm" onclick="abrirMembresiaLive()" data-clave="live_mi_pass">💎 Mi Live Pass</button>
                 </div>
             </div>
             <div class="live-video-container" id="liveVideoContainer">
@@ -430,7 +431,6 @@
     <div class="toast" id="toast"></div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="/features/shared/js/idiomas.js"></script>
-
     <script>
 // ================================================================
 // CLIENTE SUPABASE
@@ -627,13 +627,11 @@ function iniciarConteoMinutos() {
     tiempoInicioTransmision = Date.now();
     minutosTransmitiendo = 0;
     
-    // Actualizar la barra de tiempo cada segundo
     if (timerBarraTiempo) clearInterval(timerBarraTiempo);
     timerBarraTiempo = setInterval(() => {
         actualizarBarraTiempo();
     }, 1000);
     
-    // Registrar los minutos cada minuto
     timerConteoMinutos = setInterval(async () => {
         await registrarMinutoTranscurrido();
     }, 60000);
@@ -643,7 +641,6 @@ function detenerConteoMinutos() {
     if (timerConteoMinutos) { clearInterval(timerConteoMinutos); timerConteoMinutos = null; }
     if (timerBarraTiempo) { clearInterval(timerBarraTiempo); timerBarraTiempo = null; }
     
-    // Registrar los minutos finales
     if (tiempoInicioTransmision) {
         const minutosTotales = Math.floor((Date.now() - tiempoInicioTransmision) / 60000);
         if (minutosTotales > minutosTransmitiendo) {
@@ -671,7 +668,6 @@ function actualizarBarraTiempo() {
     const minutosRestantesTotales = infoLivePass.minutos_restantes - minutosTranscurridos;
     
     if (minutosRestantesTotales <= 0) {
-        // Se acabó el tiempo → finalizar automáticamente
         finalizarPorTiempoAgotado();
         return;
     }
@@ -695,7 +691,6 @@ async function registrarMinutoTranscurrido() {
         const session = await getSession();
         if (!session) return;
         
-        // Registrar 1 minuto
         const { error } = await supabaseClient.rpc('registrar_minutos_live', {
             p_usuario_id: session.user.id,
             p_minutos: 1
@@ -785,7 +780,7 @@ function iniciarRefrescoAnuncios() { if (adRefreshInterval) clearInterval(adRefr
 function detenerRefrescoAnuncios() { if (adRefreshInterval) { clearInterval(adRefreshInterval); adRefreshInterval = null; } if (adVistaTimer) { clearTimeout(adVistaTimer); adVistaTimer = null; } }
 
 // ================================================================
-// 🎥 INICIAR LIVE PROFESIONAL (CON VALIDACIÓN LIVE PASS)
+// 🎥 INICIAR LIVE PROFESIONAL
 // ================================================================
 async function iniciarTransmisionGeneral() {
     try {
@@ -795,12 +790,9 @@ async function iniciarTransmisionGeneral() {
         currentUser = session.user;
         console.log('🎬 [2] Usuario:', currentUser.id);
 
-        // 🆕 VALIDACIÓN LIVE PASS
-        console.log('🎬 [3] Verificando Live Pass...');
         const verificacion = await verificarLivePassAntesDeTransmitir();
         
         if (!verificacion.puede) {
-            // Según la razón, mostrar modal específico
             if (verificacion.razon === 'sin_live_pass') {
                 mostrarModalLivePass('Necesitas un Live Pass activo para transmitir');
             } else if (verificacion.razon === 'expirado') {
@@ -813,9 +805,8 @@ async function iniciarTransmisionGeneral() {
             return;
         }
         
-        console.log('🎬 [4] Live Pass OK. Minutos restantes hoy:', verificacion.minutos_restantes);
+        console.log('🎬 [3] Live Pass OK. Minutos restantes hoy:', verificacion.minutos_restantes);
 
-        // Validación: No transmisión de GRUPO activa
         const { data: streamGrupo, error: checkGrupoError } = await supabaseClient
             .from('transmisiones')
             .select('id')
@@ -831,7 +822,6 @@ async function iniciarTransmisionGeneral() {
             return;
         }
 
-        // Validación: No transmisión LIVE activa
         const { data: streamActivo, error: checkError } = await supabaseClient.from('transmisiones').select('id')
             .eq('streamer_id', currentUser.id).eq('estado', 'en_vivo').eq('is_live', true)
             .is('grupo_id', null)
@@ -887,7 +877,6 @@ async function iniciarTransmisionGeneral() {
         isLive = true;
         document.getElementById('viewersCount').textContent = '● 0';
         
-        // 🆕 INICIAR CONTEO DE TIEMPO
         infoLivePass = verificacion;
         iniciarConteoMinutos();
         
@@ -927,7 +916,6 @@ async function finalizarTransmisionGeneral() {
         if (!confirm('¿Finalizar la transmisión?')) return;
         showToast('⏳ Finalizando...', '', 3000);
         
-        // 🆕 DETENER CONTEO DE TIEMPO
         detenerConteoMinutos();
         
         const video = document.getElementById('liveVideo');
@@ -1205,7 +1193,6 @@ async function iniciarTransmisionJuego(juego) {
         if (esIOS()) { showToast('Compartir pantalla no disponible en iOS.', 'warning', 6000); return; }
         if (!soportaCompartirPantalla()) { showToast('⚠️ Tu navegador no soporta compartir pantalla.', 'error', 6000); return; }
         
-        // 🆕 VALIDACIÓN LIVE PASS ANTES DE PEDIR PANTALLA
         const verificacion = await verificarLivePassAntesDeTransmitir();
         if (!verificacion.puede) {
             if (verificacion.razon === 'sin_live_pass') {
@@ -1226,7 +1213,6 @@ async function iniciarTransmisionJuego(juego) {
         if (!session) { gameScreenStream.getTracks().forEach(t => t.stop()); gameScreenStream = null; showToast('⚠️ Inicia sesión', 'error'); return; }
         currentUser = session.user;
 
-        // Validación: no transmisión de grupo activa
         const { data: streamGrupo } = await supabaseClient.from('transmisiones').select('id')
             .eq('streamer_id', currentUser.id).eq('estado', 'en_vivo').eq('is_live', true)
             .not('grupo_id', 'is', null).maybeSingle();
@@ -1238,7 +1224,6 @@ async function iniciarTransmisionJuego(juego) {
             return;
         }
 
-        // Validación: no transmisión Live activa
         const { data: act } = await supabaseClient.from('transmisiones').select('id')
             .eq('streamer_id', currentUser.id).eq('estado', 'en_vivo').eq('is_live', true)
             .is('grupo_id', null).maybeSingle();
@@ -1278,7 +1263,6 @@ async function iniciarTransmisionJuego(juego) {
 
         isLive = true; espectadores = 0;
         
-        // 🆕 INICIAR CONTEO DE TIEMPO
         infoLivePass = verificacion;
         iniciarConteoMinutos();
         
@@ -1307,14 +1291,6 @@ async function iniciarTransmisionJuego(juego) {
 async function cargarEstadisticas() {
     const session = await getSession();
     if (!session) { showToast('⚠️ Inicia sesión', 'error'); return; }
-    
-    // 🆕 MOSTRAR INFO DEL LIVE PASS
-    const verificacion = await verificarLivePassAntesDeTransmitir();
-    
-    if (!verificacion.puede && verificacion.razon === 'sin_live_pass') {
-        abrirMembresiaLive();
-        return;
-    }
     
     const { data, error } = await supabaseClient.from('transmisiones').select('*').eq('streamer_id', session.user.id).is('grupo_id', null).order('fecha_inicio', { ascending: false });
     if (error) { showToast('✕ Error', 'error'); return; }
