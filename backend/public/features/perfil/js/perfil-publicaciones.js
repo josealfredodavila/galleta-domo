@@ -59,7 +59,7 @@ function insertarHashtagPerfil() {
 }
 
 // ================================================================
-// SELECCIONAR ARCHIVO (foto/video para publicar)
+// SELECCIONAR ARCHIVO
 // ================================================================
 function seleccionarArchivoPerfil(event, tipo) {
     var file = event.target.files[0];
@@ -92,7 +92,7 @@ function seleccionarArchivoPerfil(event, tipo) {
 }
 
 // ================================================================
-// RENDERIZAR PREVIEW DE ARCHIVOS
+// RENDERIZAR PREVIEW
 // ================================================================
 function renderizarPreviewPerfil() {
     var container = document.getElementById('previewArchivosPerfil');
@@ -157,7 +157,7 @@ async function publicarDesdePerfil() {
         var mediaUrl = null;
         var mediaType = null;
 
-        // Subir imagen si hay
+        // Subir imagen
         if (archivosSeleccionados.imagen) {
             if (window.showToast) window.showToast('Subiendo imagen...', '', 5000);
             var file = archivosSeleccionados.imagen;
@@ -172,7 +172,7 @@ async function publicarDesdePerfil() {
             mediaType = 'imagen';
         }
 
-        // Subir video si hay
+        // Subir video
         if (archivosSeleccionados.video) {
             if (window.showToast) window.showToast('Subiendo video...', '', 15000);
             var vfile = archivosSeleccionados.video;
@@ -200,7 +200,6 @@ async function publicarDesdePerfil() {
 
         if (window.showToast) window.showToast('¡Publicación creada!', 'success');
 
-        // Limpiar
         if (input) input.value = '';
         archivosSeleccionados.imagen = null;
         archivosSeleccionados.video = null;
@@ -210,7 +209,7 @@ async function publicarDesdePerfil() {
         if (i2) i2.value = '';
         renderizarPreviewPerfil();
 
-        await cargarMisPublicaciones();
+        await cargarMisPublicaciones(true);
     } catch (error) {
         console.error('Error publicando:', error);
         if (window.showToast) window.showToast('Error: ' + error.message, 'error');
@@ -223,9 +222,9 @@ async function publicarDesdePerfil() {
 }
 
 // ================================================================
-// CARGAR MIS PUBLICACIONES
+// CARGAR MIS PUBLICACIONES (con reintentos si la sesión no está lista)
 // ================================================================
-async function cargarMisPublicaciones() {
+async function cargarMisPublicaciones(forzarRefresco) {
     var container = document.getElementById('misPublicacionesList');
     var contador = document.getElementById('misPostsCount');
     if (!container) return;
@@ -233,15 +232,38 @@ async function cargarMisPublicaciones() {
     try {
         var client = window.supabaseClient;
         if (!client) {
-            setTimeout(cargarMisPublicaciones, 1000);
+            // Reintentar
+            if (!forzarRefresco) {
+                setTimeout(function() { cargarMisPublicaciones(true); }, 1000);
+            }
             return;
         }
+
+        // Esperar sesión con reintentos
         var sessionResult = await client.auth.getSession();
         var session = sessionResult.data.session;
+
         if (!session) {
+            // Puede ser que la sesión aún no cargó. Reintentar 3 veces.
+            if (!container._intentos) container._intentos = 0;
+            container._intentos++;
+
+            if (container._intentos <= 5) {
+                // Mostrar cargando en lugar de "Sin publicaciones"
+                if (container._intentos === 1) {
+                    container.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><h4>Cargando...</h4></div>';
+                }
+                setTimeout(function() { cargarMisPublicaciones(true); }, 800);
+                return;
+            }
+
+            // Después de 5 intentos, mostrar mensaje
             container.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/></svg><h4>Inicia sesión</h4><p>Para ver tus publicaciones</p></div>';
             return;
         }
+
+        // Resetear intentos al tener sesión
+        container._intentos = 0;
 
         var result = await client
             .from('publicaciones_publicas')
@@ -253,6 +275,7 @@ async function cargarMisPublicaciones() {
         if (result.error) throw result.error;
         var publicaciones = result.data || [];
         if (contador) contador.textContent = publicaciones.length;
+
         if (publicaciones.length === 0) {
             container.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/></svg><h4>Sin publicaciones aún</h4><p>Publica algo para verlo aquí</p></div>';
             return;
@@ -271,7 +294,7 @@ async function cargarMisPublicaciones() {
             }
         } catch (e) {}
 
-        // Cargar conteo de reacciones por post
+        // Cargar conteos de reacciones
         var conteosReacciones = {};
         try {
             var allReacc = await client.from('publicaciones_reacciones').select('publicacion_id, tipo');
@@ -290,7 +313,7 @@ async function cargarMisPublicaciones() {
             var card = document.createElement('div');
             card.className = 'publicacion-card';
 
-            // ---- HEADER ----
+            // HEADER
             var header = document.createElement('div');
             header.className = 'header';
             var avatarBox = document.createElement('div');
@@ -307,7 +330,7 @@ async function cargarMisPublicaciones() {
             header.appendChild(headerMeta);
             card.appendChild(header);
 
-            // ---- CONTENIDO ----
+            // CONTENIDO
             var contenido = document.createElement('div');
             contenido.className = 'contenido';
             contenido.setAttribute('data-no-traducir', '1');
@@ -335,7 +358,7 @@ async function cargarMisPublicaciones() {
             }
             card.appendChild(contenido);
 
-            // ---- REACCIONES ----
+            // REACCIONES
             var reaccionUsuario = reaccionesUsuario[p.id] || null;
             var conteos = conteosReacciones[p.id] || {};
             var totalReacciones = 0;
@@ -391,7 +414,7 @@ async function cargarMisPublicaciones() {
             wrap.appendChild(trigger);
             card.appendChild(wrap);
 
-            // ---- STATS ----
+            // STATS
             var stats = document.createElement('div');
             stats.className = 'stats';
             stats.setAttribute('data-no-traducir', '1');
@@ -420,7 +443,7 @@ async function cargarMisPublicaciones() {
             stats.appendChild(btnEliminar);
             card.appendChild(stats);
 
-            // ---- COMENTARIOS (contenedor oculto) ----
+            // COMENTARIOS
             var comentariosContainer = document.createElement('div');
             comentariosContainer.className = 'comentarios-container';
             comentariosContainer.id = 'comentarios-container-' + p.id;
@@ -458,7 +481,7 @@ function toggleReaccionDropdown(postId) {
 }
 
 // ================================================================
-// REACCIONAR A UNA PUBLICACIÓN
+// REACCIONAR
 // ================================================================
 async function reaccionarPublicacionPerfil(postId, emoji) {
     if (!EMOJIS_REACCION.includes(emoji)) return;
@@ -504,9 +527,6 @@ async function reaccionarPublicacionPerfil(postId, emoji) {
     }
 }
 
-// ================================================================
-// RECARGAR BARRA DE REACCIONES
-// ================================================================
 async function recargarBarraReacciones(postId) {
     try {
         var client = window.supabaseClient;
@@ -573,7 +593,7 @@ async function recargarBarraReacciones(postId) {
 }
 
 // ================================================================
-// TOGGLE COMENTARIOS
+// COMENTARIOS
 // ================================================================
 async function toggleComentariosPerfil(publicacionId) {
     var container = document.getElementById('comentarios-container-' + publicacionId);
@@ -586,9 +606,6 @@ async function toggleComentariosPerfil(publicacionId) {
     await cargarComentariosPerfil(publicacionId);
 }
 
-// ================================================================
-// CARGAR COMENTARIOS
-// ================================================================
 async function cargarComentariosPerfil(publicacionId) {
     var lista = document.getElementById('comentarios-lista-' + publicacionId);
     if (!lista) return;
@@ -648,9 +665,6 @@ async function cargarComentariosPerfil(publicacionId) {
     }
 }
 
-// ================================================================
-// ENVIAR COMENTARIO
-// ================================================================
 async function enviarComentarioPerfil(publicacionId) {
     var input = document.getElementById('comentario-input-' + publicacionId);
     var texto = input ? input.value.trim() : '';
@@ -681,7 +695,7 @@ async function enviarComentarioPerfil(publicacionId) {
 }
 
 // ================================================================
-// ELIMINAR MI PUBLICACIÓN (con borrado de media en Storage)
+// ELIMINAR PUBLICACIÓN
 // ================================================================
 async function eliminarMiPublicacion(publicacionId, event) {
     if (event) {
@@ -698,7 +712,6 @@ async function eliminarMiPublicacion(publicacionId, event) {
             return;
         }
 
-        // Intentar borrar media del storage
         try {
             var pubRes = await client
                 .from('publicaciones')
@@ -728,7 +741,7 @@ async function eliminarMiPublicacion(publicacionId, event) {
         if (result.error) throw new Error(result.error.message);
 
         if (window.showToast) window.showToast('Publicación eliminada', 'success');
-        await cargarMisPublicaciones();
+        await cargarMisPublicaciones(true);
     } catch (error) {
         console.error('Error eliminando:', error);
         if (window.showToast) window.showToast('Error al eliminar: ' + error.message, 'error');
