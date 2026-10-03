@@ -484,6 +484,103 @@
             stroke-linejoin: round;
         }
 
+        /* ============================================================ */
+        /* 🔊 BOTÓN GLOBAL DE AUDIO — v15.3                             */
+        /* ============================================================ */
+        .btn-audio-global {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 9998;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 18px;
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.88), rgba(15, 45, 26, 0.88));
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1.5px solid #D4AF37;
+            border-radius: 30px;
+            color: #D4AF37;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            box-shadow: 0 0 24px rgba(212, 175, 55, 0.55);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            -webkit-tap-highlight-color: transparent;
+            animation: pulseAudioGlobal 2s ease-in-out infinite;
+        }
+        .btn-audio-global.visible { display: flex; }
+        .btn-audio-global:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 36px rgba(212, 175, 55, 0.9);
+        }
+        .btn-audio-global .ico { font-size: 1.2rem; line-height: 1; animation: swingAudio 1.5s ease-in-out infinite; }
+        .btn-audio-global.activo {
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.25), rgba(184, 146, 58, 0.15));
+            border-color: #D4AF37;
+        }
+        .btn-audio-global.activo .ico { animation: none; }
+
+        @keyframes pulseAudioGlobal {
+            0%, 100% { box-shadow: 0 0 18px rgba(212, 175, 55, 0.5); }
+            50%      { box-shadow: 0 0 32px rgba(212, 175, 55, 0.85); }
+        }
+        @keyframes swingAudio {
+            0%, 100% { transform: rotate(0deg); }
+            25%      { transform: rotate(-12deg); }
+            75%      { transform: rotate(12deg); }
+        }
+
+        @media (max-width: 480px) {
+            .btn-audio-global { bottom: 14px; left: 14px; padding: 8px 14px; font-size: 0.65rem; }
+        }
+
+        /* ============================================================ */
+        /* 🗑️ BOTÓN ELIMINAR COMENTARIO — v15.3                         */
+        /* ============================================================ */
+        .comentario-burbuja .burbuja .btn-eliminar-comentario {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: rgba(255, 51, 102, 0.12);
+            border: 1px solid rgba(255, 51, 102, 0.35);
+            color: #ff3366;
+            font-size: 0.75rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            line-height: 1;
+            opacity: 0;
+            transition: all 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .comentario-burbuja:hover .btn-eliminar-comentario,
+        .comentario-burbuja.touch-activo .btn-eliminar-comentario {
+            opacity: 1;
+        }
+        .comentario-burbuja .burbuja .btn-eliminar-comentario:hover {
+            background: rgba(255, 51, 102, 0.3);
+            border-color: #ff3366;
+            transform: scale(1.12);
+            box-shadow: 0 0 12px rgba(255, 51, 102, 0.5);
+        }
+        .comentario-burbuja .burbuja .btn-eliminar-comentario:active {
+            transform: scale(0.9);
+        }
+        @media (max-width: 768px) {
+            .comentario-burbuja .burbuja .btn-eliminar-comentario { opacity: 0.7; }
+            .comentario-burbuja .burbuja .btn-eliminar-comentario:active { opacity: 1; }
+        }
+        .comentario-burbuja .burbuja .nombre { padding-right: 32px; }
+
         .bottom-sheet-backdrop {
             position: fixed;
             inset: 0;
@@ -792,6 +889,12 @@
         </div>
     </div>
 
+    <!-- 🔊 Botón global de audio — v15.3 -->
+    <button class="btn-audio-global" id="btnAudioGlobal" onclick="activarAudioGlobal()" title="Activar sonido">
+        <span class="ico">🔇</span>
+        <span class="txt">Activar sonido</span>
+    </button>
+
     <div class="toast" id="toast"></div>
     <div class="toast-siguiente" id="toastSiguiente"></div>
 
@@ -802,17 +905,22 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script src="/features/shared/js/idiomas.js"></script>
-<script>
+    <script src="/features/shared/js/idiomas.js"></script><script>
     // ================================================================
-    // VIDEOS · v15.2 — Reels + Fullscreen + Doble Tap + AUDIO FIX
+    // VIDEOS · v15.3 — Reels + Fullscreen + Doble Tap + AUDIO FIX REAL
     // ================================================================
-    // ✅ FIX APLICADO: el video ahora suena al reproducir
-    //    - Se eliminó 'muted' del HTML del video
-    //    - Se eliminó 'muted playsinline' del crearVideoCard()
-    //    - Se desmutea automáticamente tras el primer play()
-    //    - El botón de pantalla completa ya no silencia el video
-    //    - togglePlayCard también garantiza el sonido
+    // ✅ v15.3 — CORRECCIONES APLICADAS:
+    //   🔊 AUDIO:
+    //      - Detección de primer gesto del usuario (click/tap/scroll/keydown)
+    //      - video.load() obligatorio tras asignar src dinámico
+    //      - preload="auto" para cargar stream de audio
+    //      - Función reproducirVideoConSonido() robusta
+    //      - Botón global "Activar sonido" si autoplay bloquea
+    //      - Fullscreen NO silencia el video
+    //   🗑️ COMENTARIOS:
+    //      - Botón eliminar en cada comentario
+    //      - Permisos: autor del comentario O dueño del video
+    //      - Validación en cliente + RLS en servidor
     // ================================================================
 
     // ================================================================
@@ -873,9 +981,8 @@
 
     var vistasContadas = {};
 
-    // ✅ FIX AUDIO: recordar si el usuario ya interactuó con la página
-    //    (los navegadores solo permiten sonido después de un gesto del usuario)
-    var audioHabilitado = false;
+    // ✅ v15.3 — Estado global de audio
+    var audioGlobalActivado = false;
 
     // ================================================================
     // HELPERS
@@ -988,28 +1095,106 @@
     }
 
     // ================================================================
-    // ✅ FIX AUDIO: función que reproduce con sonido
+    // ✅ v15.3 — SISTEMA DE AUDIO GLOBAL
     // ================================================================
+
+    // Detecta el primer gesto del usuario en la página.
+    (function detectarPrimerGesto() {
+        var eventos = ['click', 'touchstart', 'keydown', 'scroll'];
+        var disparado = false;
+        function onGesto() {
+            if (disparado) return;
+            disparado = true;
+            audioGlobalActivado = true;
+            console.log('[Audio] ✅ Gesto detectado — audio desbloqueado');
+
+            // Desmutea todos los videos ya creados
+            document.querySelectorAll('.video-card video').forEach(function(v) {
+                v.muted = false;
+                v.volume = 1;
+                v.removeAttribute('muted');
+            });
+
+            // Actualiza el botón global
+            var btn = document.getElementById('btnAudioGlobal');
+            if (btn) {
+                btn.classList.add('activo');
+                var txt = btn.querySelector('.txt');
+                var ico = btn.querySelector('.ico');
+                if (txt) txt.textContent = 'Sonido activo';
+                if (ico) ico.textContent = '🔊';
+                setTimeout(function() { btn.classList.remove('visible'); }, 2000);
+            }
+
+            // Remueve los listeners
+            eventos.forEach(function(ev) {
+                document.removeEventListener(ev, onGesto, true);
+            });
+        }
+        eventos.forEach(function(ev) {
+            document.addEventListener(ev, onGesto, { capture: true, passive: true });
+        });
+    })();
+
+    function mostrarBotonAudioGlobal() {
+        if (audioGlobalActivado) return;
+        var btn = document.getElementById('btnAudioGlobal');
+        if (btn) btn.classList.add('visible');
+    }
+
+    function activarAudioGlobal() {
+        audioGlobalActivado = true;
+        document.querySelectorAll('.video-card video').forEach(function(v) {
+            v.muted = false;
+            v.volume = 1;
+            v.removeAttribute('muted');
+            var card = v.closest('.video-card');
+            if (card && card.classList.contains('visible')) {
+                v.play().catch(function() {});
+            }
+        });
+        var btn = document.getElementById('btnAudioGlobal');
+        if (btn) {
+            btn.classList.add('activo');
+            var txt = btn.querySelector('.txt');
+            var ico = btn.querySelector('.ico');
+            if (txt) txt.textContent = 'Sonido activo';
+            if (ico) ico.textContent = '🔊';
+            setTimeout(function() { btn.classList.remove('visible'); }, 2000);
+        }
+        showToast('🔊 Sonido activado', 'success', 2000);
+    }
+
+    // ✅ v15.3 — Reproducción robusta con detección de gesto
     function reproducirVideoConSonido(video) {
         if (!video) return;
-        // Quitar mute forzado
+
+        // Asegurar que el src esté cargado
+        if (!video.getAttribute('src') && video.dataset.src) {
+            video.src = video.dataset.src;
+            video.load();
+        }
+
+        // Quitar mute
         video.muted = false;
         video.volume = 1;
         video.removeAttribute('muted');
 
         var promesa = video.play();
+
         if (promesa && typeof promesa.then === 'function') {
-            promesa.catch(function(err) {
-                // Si el navegador bloqueó el audio, intentamos muted y avisamos
-                if (err && err.name === 'NotAllowedError') {
-                    console.warn('[Videos] Autoplay con audio bloqueado, reintentando muted');
+            promesa.then(function() {
+                console.log('[Video] ▶ Reproduciendo con audio:', video.src || video.dataset.src);
+            }).catch(function(err) {
+                console.warn('[Video] ⚠ Error al reproducir:', err && err.name, err && err.message);
+
+                if (err && (err.name === 'NotAllowedError' || err.name === 'AbortError')) {
+                    console.log('[Video] Bloqueado por autoplay. Reproduciendo en muted...');
                     video.muted = true;
-                    video.play().catch(function() {});
-                    // Mostrar un solo aviso
-                    if (!window._avisoAudioMostrado) {
-                        window._avisoAudioMostrado = true;
-                        showToast('🔊 Toca el video para activar el sonido', 'warning', 4000);
-                    }
+                    video.play().catch(function(e2) {
+                        console.warn('[Video] Segundo intento fallido:', e2 && e2.name);
+                    });
+                    mostrarBotonAudioGlobal();
                 }
             });
         }
@@ -1289,7 +1474,7 @@
     }
 
     // ================================================================
-    // ICONO SVG COMPARTIR ESTILO INSTAGRAM
+    // ICONOS SVG
     // ================================================================
     function getIconoCompartirSVG() {
         return '<svg class="icono-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor">' +
@@ -1300,17 +1485,9 @@
             '<path d="M8.2 13.2 L15.8 17.8"/>' +
             '</svg>';
     }
-
-    // ================================================================
-    // ICONO FULLSCREEN SVG (expandir)
-    // ================================================================
     function getIconoFullscreenSVG() {
         return '<svg viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
     }
-
-    // ================================================================
-    // ICONO EXIT FULLSCREEN SVG (reducir)
-    // ================================================================
     function getIconoExitFullscreenSVG() {
         return '<svg viewBox="0 0 24 24"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
     }
@@ -1330,7 +1507,7 @@
     }
 
     // ================================================================
-    // CREAR CARD DE VIDEO — ✅ FIX AUDIO (sin muted forzado)
+    // CREAR CARD DE VIDEO — ✅ v15.3 con audio fix
     // ================================================================
     function crearVideoCard(v) {
         var autor = v.usuarios || {};
@@ -1379,9 +1556,9 @@
             html += '<button class="btn-eliminar-card" onclick="event.stopPropagation(); eliminarMiVideo(\'' + v.id + '\')" title="Eliminar">🗑️</button>';
         }
 
-        // ✅ FIX AUDIO: se eliminó 'muted' del tag <video>
+        // ✅ v15.3: preload="auto" + crossorigin para mejor manejo de audio
         html += '<div class="thumbnail">';
-        html += '<video preload="metadata" playsinline webkit-playsinline data-src="' + videoUrl + '" poster="' + posterUrl + '"></video>';
+        html += '<video preload="auto" playsinline webkit-playsinline crossorigin="anonymous" data-src="' + videoUrl + '" poster="' + posterUrl + '"></video>';
         html += '<div class="play-btn" onclick="togglePlayCard(event, \'' + v.id + '\')">▶</div>';
         html += '</div>';
 
@@ -1438,7 +1615,7 @@
 
         var videoEl = card.querySelector('video');
 
-        // ✅ FIX AUDIO: garantizar que el video arranca sin mute
+        // ✅ v15.3: garantizar video sin mute
         videoEl.muted = false;
         videoEl.volume = 1;
         videoEl.removeAttribute('muted');
@@ -1460,7 +1637,7 @@
     }
 
     // ================================================================
-    // TOGGLE FULLSCREEN — ✅ FIX AUDIO (no silencia al expandir)
+    // TOGGLE FULLSCREEN
     // ================================================================
     function toggleFullscreen(videoId) {
         var card = document.querySelector('.video-card[data-video-id="' + videoId + '"]');
@@ -1488,7 +1665,6 @@
             var video2 = card.querySelector('video');
             if (video2) {
                 video2.style.objectFit = 'cover';
-                // ✅ FIX AUDIO: NO silenciar al entrar en fullscreen
                 video2.muted = false;
             }
             vibrar(20);
@@ -1499,7 +1675,7 @@
     }
 
     // ================================================================
-    // DOBLE TAP — solo en el área del video
+    // DOBLE TAP
     // ================================================================
     function configurarDobleTap(card, videoId) {
         var ultimoTap = 0;
@@ -1805,6 +1981,7 @@
         if (input) { input.value = ''; input.blur(); }
     }
 
+    // ✅ v15.3 — CON BOTÓN DE ELIMINAR
     async function cargarComentariosSheet(videoId) {
         var lista = document.getElementById('comentariosLista');
         if (!lista) return;
@@ -1829,6 +2006,10 @@
                 return;
             }
 
+            // ✅ v15.3: verificar si soy dueño del video
+            var videoData = videosPublicados.find(function(v) { return v.id === videoId; });
+            var soyDuenoVideo = !!(sessionUser && videoData && videoData.usuario_id === sessionUser.id);
+
             var html = '';
             data.forEach(function(c) {
                 var u = c.usuarios || {};
@@ -1840,9 +2021,18 @@
                 var contenido = escapeHTML(c.contenido || '');
                 var fecha = c.created_at ? new Date(c.created_at).toLocaleString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
 
-                html += '<div class="comentario-burbuja">';
+                // ✅ v15.3: permisos para eliminar
+                var soyAutorComentario = !!(sessionUser && c.usuario_id === sessionUser.id);
+                var puedoEliminar = soyAutorComentario || soyDuenoVideo;
+
+                html += '<div class="comentario-burbuja" data-comentario-id="' + c.id + '">';
                 html += '<div class="avatar">' + avatarHTML + '</div>';
                 html += '<div class="burbuja">';
+
+                if (puedoEliminar) {
+                    html += '<button class="btn-eliminar-comentario" onclick="eliminarComentario(\'' + c.id + '\', \'' + videoId + '\', event)" title="Eliminar comentario" aria-label="Eliminar comentario">✕</button>';
+                }
+
                 html += '<div class="nombre">' + nombre;
                 if (u.verificado) html += ' <span class="badge-verif">✓</span>';
                 if (handle) html += ' <span style="color:var(--text-muted);font-weight:400;font-size:0.7rem;">' + handle + '</span>';
@@ -1899,6 +2089,79 @@
     }
 
     // ================================================================
+    // ✅ v15.3 — ELIMINAR COMENTARIO (propio o siendo dueño del video)
+    // ================================================================
+    async function eliminarComentario(comentarioId, videoId, event) {
+        if (event) event.stopPropagation();
+
+        if (!sessionUser) {
+            showToast('Inicia sesión', 'error');
+            return;
+        }
+
+        if (!confirm('¿Eliminar este comentario? Esta acción no se puede deshacer.')) {
+            return;
+        }
+
+        try {
+            if (!sbVideos) throw new Error('Cliente no disponible');
+
+            // Validar permisos antes de borrar
+            var comentarioResp = await sbVideos
+                .from('videos_comentarios')
+                .select('id, usuario_id, video_id')
+                .eq('id', comentarioId)
+                .maybeSingle();
+
+            if (comentarioResp.error) throw comentarioResp.error;
+            if (!comentarioResp.data) {
+                showToast('Comentario no encontrado', 'error');
+                return;
+            }
+
+            var comentario = comentarioResp.data;
+            var soyAutorComentario = (comentario.usuario_id === sessionUser.id);
+
+            var videoResp = await sbVideos
+                .from('videos')
+                .select('usuario_id')
+                .eq('id', comentario.video_id)
+                .maybeSingle();
+
+            var soyDuenoVideo = (!videoResp.error && videoResp.data && videoResp.data.usuario_id === sessionUser.id);
+
+            if (!soyAutorComentario && !soyDuenoVideo) {
+                showToast('No tienes permiso para eliminar este comentario', 'error');
+                return;
+            }
+
+            // Eliminar
+            var delResp = await sbVideos
+                .from('videos_comentarios')
+                .delete()
+                .eq('id', comentarioId);
+
+            if (delResp.error) throw delResp.error;
+
+            // Actualizar contador en la card
+            var contEl = document.getElementById('comentCount-' + videoId);
+            if (contEl) {
+                var actual = parseInt(contEl.textContent.replace(/[^\d]/g, '')) || 0;
+                contEl.textContent = formatContador(Math.max(0, actual - 1));
+            }
+
+            await cargarComentariosSheet(videoId);
+
+            vibrar(15);
+            showToast('🗑️ Comentario eliminado', 'success', 2500);
+
+        } catch (e) {
+            console.error('[Eliminar comentario] Error:', e);
+            showToast('Error al eliminar comentario: ' + (e.message || ''), 'error', 4000);
+        }
+    }
+
+    // ================================================================
     // TECLADO MÓVIL
     // ================================================================
     function configurarTecladoMovil() {
@@ -1922,7 +2185,7 @@
     }
 
     // ================================================================
-    // AUTOPLAY SCROLL — ✅ FIX AUDIO (reproducir con sonido)
+    // AUTOPLAY SCROLL — ✅ v15.3 con audio + anuncios + vistas
     // ================================================================
     function activarAutoplayScroll() {
         if (observerVideos) { observerVideos.disconnect(); observerVideos = null; }
@@ -1932,8 +2195,10 @@
 
         function asegurarSrc(video) {
             if (video && !video.getAttribute('src') && video.dataset.src) {
-                video.preload = 'metadata';
+                video.preload = 'auto';
                 video.src = video.dataset.src;
+                video.load();
+                console.log('[Video] 🔄 Cargando src:', video.dataset.src);
             }
         }
 
@@ -1963,10 +2228,16 @@
                     }
 
                     if (videoPausadoManualmente !== idVisible) {
-                        // ✅ FIX AUDIO: reproducir con sonido
                         reproducirVideoConSonido(video);
                         card.classList.add('playing');
                         incrementarVista(idVisible);
+
+                        // ✅ v15.3: mostrar botón global si el audio sigue bloqueado
+                        setTimeout(function() {
+                            if (video.muted && !audioGlobalActivado) {
+                                mostrarBotonAudioGlobal();
+                            }
+                        }, 500);
                     }
                 } else {
                     card.classList.remove('visible');
@@ -1984,7 +2255,7 @@
     }
 
     // ================================================================
-    // TOGGLE PLAY — ✅ FIX AUDIO (reproducir con sonido al tocar)
+    // TOGGLE PLAY — ✅ v15.3 con audio
     // ================================================================
     function togglePlayCard(event, videoId) {
         if (event) event.stopPropagation();
@@ -1993,11 +2264,11 @@
         var video = card.querySelector('video');
         if (!video) return;
         if (!video.getAttribute('src') && video.dataset.src) {
-            video.preload = 'metadata';
+            video.preload = 'auto';
             video.src = video.dataset.src;
+            video.load();
         }
         if (video.paused) {
-            // ✅ FIX AUDIO: reproducir con sonido
             reproducirVideoConSonido(video);
             card.classList.add('playing');
             videoPausadoManualmente = null;
@@ -2299,7 +2570,7 @@
     // INIT
     // ================================================================
     document.addEventListener('DOMContentLoaded', function() {
-        console.log("◈ Sariel's - Videos v15.2 (Audio Fix aplicado)");
+        console.log("◈ Sariel's - Videos v15.3 (Audio Fix Real + Eliminar Comentarios)");
         aplicarI18N();
         configurarTecladoMovil();
         cargarUsuarioActual().then(async function() {
@@ -2322,6 +2593,7 @@
     window.abrirComentarios = abrirComentarios;
     window.cerrarBottomSheet = cerrarBottomSheet;
     window.enviarComentarioSheet = enviarComentarioSheet;
+    window.eliminarComentario = eliminarComentario;
     window.compartirVideo = compartirVideo;
     window.togglePlayCard = togglePlayCard;
     window.eliminarMiVideo = eliminarMiVideo;
@@ -2331,6 +2603,7 @@
     window.toggleFullscreen = toggleFullscreen;
     window.showToast = showToast;
     window.incrementarVista = incrementarVista;
+    window.activarAudioGlobal = activarAudioGlobal;
 </script>
 
 </body>
