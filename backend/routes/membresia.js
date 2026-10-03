@@ -1,33 +1,11 @@
 // ================================================================
-// MEMBRESIA.JS - SARIEL'S ECOSYSTEM
-// VERSIÓN SIMPLIFICADA - CON VERIFICACIÓN DE SUPABASE
+// LIVEPASS.JS - SARIEL'S ECOSYSTEM
+// Endpoint para Live Pass (Básico y Pro)
 //
-// CAMBIOS RESPECTO A LA VERSIÓN ANTERIOR
-// 1) El pago se guarda en Supabase (estado 'pendiente') ANTES de
-//    crear el cobro en NOWPayments. Antes era al revés: si el INSERT
-//    fallaba, el usuario podía pagar y el webhook no encontraba la fila
-//    (pagó y no recibía la membresía).
-// 2) Se usa POST /v1/invoice. El endpoint /v1/payment NO devuelve
-//    invoice_url ni acepta success_url/cancel_url, así que payment_url
-//    quedaba vacío. /v1/invoice sí devuelve invoice_url.
-// 3) Monedas en minúsculas y con ticker válido: price_currency 'mxn',
-//    pay_currency 'usdttrc20' (el mismo que usa payments.js).
-// 4) Timeout de 15 s en la llamada a NOWPayments y limitadorPagos.
-// 5) Si NOWPayments falla, la fila queda en estado 'failed'.
-//
-// El webhook (/api/webhook/nowpayments) encuentra el pago por order_id
-// y la RPC activar_membresia_pro completa payment_id al confirmarse.
-//
-// SUPABASE:
-// Se instancia supabaseAdmin directamente con @supabase/supabase-js
-// para hacer el router 100% autónomo (no depende de ../config/supabase).
-//
-// DOMINIO:
-// SITE_URL se resuelve con cadena de prioridad dinámica:
-//   process.env.SITE_URL
-//   || process.env.FRONTEND_URL
-//   || process.env.PUBLIC_APP_URL
-//   || 'https://galleta-domo-production.up.railway.app'
+// Reutiliza la misma lógica de membresia.js pero:
+// - Acepta 2 planes: 'live_basico' y 'live_pro'
+// - El webhook activará la RPC `activar_live_pass` (no `activar_membresia_pro`)
+// - Guarda en `pagos_membresia` con order_id distinto: LP-XXXX
 // ================================================================
 
 const express = require('express');
@@ -51,11 +29,10 @@ const SITE_URL =
     process.env.PUBLIC_APP_URL ||
     DEFAULT_SITE_URL;
 
-console.log('🔑 NOWPAYMENTS_API_KEY:', NOWPAYMENTS_API_KEY ? '✅ Definida' : '❌ NO DEFINIDA');
-console.log('🌐 SITE_URL:', SITE_URL);
+console.log('🔑 [LivePass] NOWPAYMENTS_API_KEY:', NOWPAYMENTS_API_KEY ? '✅ Definida' : '❌ NO DEFINIDA');
+console.log('🌐 [LivePass] SITE_URL:', SITE_URL);
 
 // ===== SUPABASE ADMIN =====
-// Instanciación directa para hacer el router 100% autónomo.
 const supabaseAdmin = createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -90,7 +67,7 @@ async function verificarAutenticacion(req, res, next) {
         const { data: { user }, error } = await supabaseUser.auth.getUser();
 
         if (error || !user) {
-            console.error('❌ Error de autenticación:', error);
+            console.error('❌ [LivePass] Error de autenticación:', error);
             return res.status(401).json({ success: false, error: 'Token inválido' });
         }
 
@@ -98,35 +75,44 @@ async function verificarAutenticacion(req, res, next) {
         next();
 
     } catch (error) {
-        console.error('❌ Error en autenticación:', error);
+        console.error('❌ [LivePass] Error en autenticación:', error);
         return res.status(500).json({ success: false, error: 'Error de autenticación' });
     }
 }
 
 // ================================================================
-// POST /api/payments/membresia/create
+// POST /api/payments/live-pass/create
 // ================================================================
 
 router.post('/create', verificarAutenticacion, limitadorPagos, async (req, res) => {
     try {
-        console.log('📩 Solicitud de membresía recibida');
+        console.log('📩 [LivePass] Solicitud recibida');
 
-        const { privacy_version } = req.body;
+        const { plan_tipo, privacy_version } = req.body;
         const usuario_id = req.user.id;
 
-        console.log('👤 Usuario ID:', usuario_id);
+        console.log('👤 [LivePass] Usuario ID:', usuario_id);
+        console.log('📦 [LivePass] Plan solicitado:', plan_tipo);
 
-        // 🔴 VERIFICACIÓN CRÍTICA
+        // Validar plan
+        if (plan_tipo !== 'live_basico' && plan_tipo !== 'live_pro') {
+            return res.status(400).json({
+                success: false,
+                error: 'Plan inválido. Debe ser "live_basico" o "live_pro"'
+            });
+        }
+
+        // Verificar configuración
         if (!supabaseAdmin) {
-            console.error('❌ supabaseAdmin NO DISPONIBLE');
+            console.error('❌ [LivePass] supabaseAdmin NO DISPONIBLE');
             return res.status(500).json({
                 success: false,
-                error: 'Error de configuración: supabaseAdmin no disponible. Verifica SUPABASE_SERVICE_ROLE_KEY en Railway.'
+                error: 'Error de configuración: supabaseAdmin no disponible.'
             });
         }
 
         if (!NOWPAYMENTS_API_KEY) {
-            console.error('❌ NOWPAYMENTS_API_KEY no configurada');
+            console.error('❌ [LivePass] NOWPAYMENTS_API_KEY no configurada');
             return res.status(500).json({ success: false, error: 'Servicio de pagos no configurado' });
         }
 
@@ -138,35 +124,34 @@ router.post('/create', verificarAutenticacion, limitadorPagos, async (req, res) 
             .single();
 
         if (userError || !usuario) {
-            console.error('❌ Error obteniendo usuario:', userError);
+            console.error('❌ [LivePass] Error obteniendo usuario:', userError);
             return res.status(404).json({ success: false, error: 'Usuario no encontrado' });
         }
 
-        console.log('👤 Usuario encontrado:', usuario.email);
+        console.log('👤 [LivePass] Usuario encontrado:', usuario.email);
 
-        // Obtener plan Pro (el precio SIEMPRE sale de la base de datos)
+        // Obtener plan de la BD
         const { data: plan, error: planError } = await supabaseAdmin
             .from('planes_membresia')
             .select('id, nombre, precio_mxn, intervalo_dias')
-            .eq('id', 'pro')
+            .eq('id', plan_tipo)
             .eq('activo', true)
             .single();
 
         if (planError || !plan) {
-            console.error('❌ Plan Pro no encontrado:', planError);
-            return res.status(404).json({ success: false, error: 'Plan Pro no disponible' });
+            console.error('❌ [LivePass] Plan no encontrado:', planError);
+            return res.status(404).json({ success: false, error: 'Plan no disponible' });
         }
 
         const precioMxn = parseFloat(plan.precio_mxn);
-        console.log('✅ Plan encontrado:', plan.nombre, '$' + precioMxn);
+        console.log('✅ [LivePass] Plan encontrado:', plan.nombre, '$' + precioMxn);
 
-        // Generar order_id
-        const orderId = `PRO-${Date.now()}-${usuario_id.slice(0, 8)}`;
-        console.log('📦 Order ID generado:', orderId);
+        // Generar order_id con prefijo LP (Live Pass)
+        const orderId = `LP-${Date.now()}-${usuario_id.slice(0, 8)}`;
+        console.log('📦 [LivePass] Order ID generado:', orderId);
 
         // ------------------------------------------------------------
-        // 1) GUARDAR EL PAGO COMO PENDIENTE (antes de cobrar)
-        // payment_id queda NULL hasta que llegue el webhook.
+        // 1) GUARDAR EL PAGO COMO PENDIENTE
         // ------------------------------------------------------------
         const { data: pago, error: pagoError } = await supabaseAdmin
             .from('pagos_membresia')
@@ -183,11 +168,11 @@ router.post('/create', verificarAutenticacion, limitadorPagos, async (req, res) 
             .single();
 
         if (pagoError || !pago) {
-            console.error('❌ Error guardando pago:', pagoError);
+            console.error('❌ [LivePass] Error guardando pago:', pagoError);
             return res.status(500).json({ success: false, error: 'Error al guardar pago' });
         }
 
-        console.log('✅ Pago pendiente guardado en Supabase:', pago.id);
+        console.log('✅ [LivePass] Pago pendiente guardado:', pago.id);
 
         // ------------------------------------------------------------
         // 2) CREAR INVOICE EN NOWPAYMENTS
@@ -197,13 +182,13 @@ router.post('/create', verificarAutenticacion, limitadorPagos, async (req, res) 
             price_currency: 'mxn',
             pay_currency: PAY_CURRENCY,
             order_id: orderId,
-            order_description: `Membresía Sariel's Pro - ${usuario.email}`,
+            order_description: `${plan.nombre} Sariel's - ${usuario.email}`,
             ipn_callback_url: `${SITE_URL}/api/webhook/nowpayments`,
-            success_url: `${SITE_URL}/features/perfil/perfil.html?payment=success`,
-            cancel_url: `${SITE_URL}/features/perfil/perfil.html?payment=cancel`
+            success_url: `${SITE_URL}/features/live/membresia-live.html?payment=success`,
+            cancel_url: `${SITE_URL}/features/live/membresia-live.html?payment=cancel`
         };
 
-        console.log('📤 Enviando invoice a NOWPayments...');
+        console.log('📤 [LivePass] Enviando invoice a NOWPayments...');
 
         let nowpaymentsOk = false;
         let nowpaymentsData = {};
@@ -232,9 +217,8 @@ router.post('/create', verificarAutenticacion, limitadorPagos, async (req, res) 
         }
 
         if (!nowpaymentsOk || !nowpaymentsData.invoice_url) {
-            console.error('❌ Error en NOWPayments:', nowpaymentsData);
+            console.error('❌ [LivePass] Error en NOWPayments:', nowpaymentsData);
 
-            // Dejar constancia: este pago nunca se cobró
             await supabaseAdmin
                 .from('pagos_membresia')
                 .update({ estado: 'failed', updated_at: new Date().toISOString() })
@@ -246,13 +230,11 @@ router.post('/create', verificarAutenticacion, limitadorPagos, async (req, res) 
             });
         }
 
-        console.log('✅ Invoice creado en NOWPayments:', nowpaymentsData.id);
-        console.log('🔗 URL de pago:', nowpaymentsData.invoice_url);
+        console.log('✅ [LivePass] Invoice creado:', nowpaymentsData.id);
+        console.log('🔗 [LivePass] URL de pago:', nowpaymentsData.invoice_url);
 
         // ------------------------------------------------------------
         // 3) GUARDAR LA URL DEL INVOICE
-        // Si esto falla no es crítico: el webhook localiza el pago por
-        // order_id y la RPC completa payment_id al confirmarse.
         // ------------------------------------------------------------
         const { error: urlError } = await supabaseAdmin
             .from('pagos_membresia')
@@ -264,21 +246,23 @@ router.post('/create', verificarAutenticacion, limitadorPagos, async (req, res) 
             .eq('id', pago.id);
 
         if (urlError) {
-            console.error('⚠️ No se pudo guardar payment_url (el pago sigue siendo válido):', urlError.message);
+            console.error('⚠️ [LivePass] No se pudo guardar payment_url:', urlError.message);
         }
 
         res.json({
             success: true,
             order_id: orderId,
-            payment_id: null, // se conoce hasta que llega el webhook
+            payment_id: null,
             payment_url: nowpaymentsData.invoice_url,
-            pay_address: null, // el invoice muestra la dirección en su propia página
+            pay_address: null,
             price_amount: precioMxn,
-            price_currency: 'MXN'
+            price_currency: 'MXN',
+            plan_tipo: plan_tipo,
+            plan_nombre: plan.nombre
         });
 
     } catch (error) {
-        console.error('❌ Error en /membresia/create:', error);
+        console.error('❌ [LivePass] Error en /create:', error);
         res.status(500).json({
             success: false,
             error: 'Error interno del servidor'
@@ -287,31 +271,30 @@ router.post('/create', verificarAutenticacion, limitadorPagos, async (req, res) 
 });
 
 // ================================================================
-// GET /api/payments/membresia/status
+// GET /api/payments/live-pass/status
 // ================================================================
 
 router.get('/status', verificarAutenticacion, async (req, res) => {
     try {
         const usuario_id = req.user.id;
 
-        console.log('📊 Consultando membresía para:', usuario_id);
+        console.log('📊 [LivePass] Consultando estado para:', usuario_id);
 
         if (!supabaseAdmin) {
-            console.error('❌ supabaseAdmin no disponible');
             return res.status(500).json({ success: false, error: 'Servicio no configurado' });
         }
 
         const { data, error } = await supabaseAdmin
-            .rpc('obtener_membresia_usuario', {
+            .rpc('puede_transmitir_live', {
                 p_usuario_id: usuario_id
             });
 
         if (error) {
-            console.error('❌ Error en obtener_membresia_usuario:', error);
+            console.error('❌ [LivePass] Error en puede_transmitir_live:', error);
             return res.status(500).json({ success: false, error: error.message });
         }
 
-        console.log('✅ Membresía obtenida:', data);
+        console.log('✅ [LivePass] Estado obtenido:', data);
 
         res.json({
             success: true,
@@ -319,7 +302,7 @@ router.get('/status', verificarAutenticacion, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Error en /membresia/status:', error);
+        console.error('❌ [LivePass] Error en /status:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });
