@@ -38,7 +38,6 @@
 
         .app { position: relative; z-index: 1; max-width: 100%; width: 100%; margin: 0 auto; padding: 12px 16px 30px; }
 
-        /* HEADER */
         .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0 14px; border-bottom: 1px solid var(--glass-border); background: rgba(5, 8, 15, 0.92); position: sticky; top: 0; z-index: 100; }
         .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
         .logo-hex { font-size: 1.8rem; color: var(--gold); font-family: 'Orbitron', monospace; }
@@ -53,7 +52,6 @@
         .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); }
         .main-nav .nav-link.live { color: var(--danger); }
 
-        /* UPLOAD */
         .upload-section { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 20px; margin-bottom: 20px; }
         .upload-section h3 { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 0.9rem; margin-bottom: 12px; }
         .upload-section .form-group { margin-bottom: 12px; }
@@ -69,7 +67,6 @@
         .btn-subir-video:hover { transform: scale(1.02); box-shadow: var(--shadow-gold); }
         .btn-subir-video:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-        /* PROCESSING */
         .processing-state { display: none; flex-direction: column; align-items: center; gap: 12px; padding: 30px 20px; background: linear-gradient(155deg, rgba(15, 45, 26, 0.55), rgba(8, 15, 26, 0.75)); border: 1px solid var(--gold); border-radius: var(--radius-xl); margin-bottom: 20px; text-align: center; }
         .processing-state.visible { display: flex; }
         .processing-state .spinner { width: 60px; height: 60px; border: 4px solid rgba(212, 175, 55, 0.15); border-top-color: var(--gold); border-radius: 50%; animation: spin 1s linear infinite; }
@@ -80,7 +77,6 @@
         .processing-state .progress-bar-big .fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-light)); border-radius: 10px; transition: width 0.5s ease; width: 0%; }
         .processing-state .progress-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--gold); font-weight: 700; }
 
-        /* ANUNCIOS */
         .marketing-ad-container { display: none; margin-bottom: 20px; background: linear-gradient(155deg, rgba(15, 45, 26, 0.55), rgba(8, 15, 26, 0.75)); border: 1px solid rgba(212, 175, 55, 0.25); border-radius: var(--radius-xl); overflow: hidden; backdrop-filter: blur(14px); }
         .marketing-ad-container.visible { display: block; animation: adFadeIn 0.5s ease; }
         @keyframes adFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -96,9 +92,6 @@
         .marketing-ad-cta { display: inline-flex; align-items: center; gap: 6px; padding: 8px 20px; border-radius: 30px; background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); font-size: 0.7rem; font-weight: 700; border: none; cursor: pointer; text-transform: uppercase; }
         @media (max-width: 480px) { .marketing-ad-body { flex-direction: column; } .marketing-ad-media { width: 100%; height: 140px; } }
 
-        /* ============================================================ */
-        /* FEED DE VIDEOS — REELS STYLE                                 */
-        /* ============================================================ */
         #videosContainer.videos-grid {
             display: flex;
             flex-direction: column;
@@ -183,7 +176,6 @@
             transition: opacity 0.3s ease;
         }
 
-        /* Overlay info */
         .video-card .overlay-info {
             position: absolute;
             left: 14px;
@@ -217,9 +209,6 @@
         .video-card .overlay-info .titulo { font-size: 0.8rem; color: rgba(255,255,255,0.92); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 4px; }
         .video-card .overlay-info .descripcion-corta { font-size: 0.7rem; color: rgba(255,255,255,0.72); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
-        /* ============================================================ */
-        /* SIDEBAR FLOTANTE                                             */
-        /* ============================================================ */
         .video-card .sidebar-acciones {
             position: absolute;
             right: 10px;
@@ -284,7 +273,6 @@
             font-weight: 800;
         }
 
-        /* Íconos dorados premium con glow */
         .sidebar-btn svg.icono-svg {
             width: 24px;
             height: 24px;
@@ -302,7 +290,6 @@
             filter: drop-shadow(0 0 14px rgba(212, 175, 55, 0.9));
         }
 
-        /* Botón de compartir con pulso dorado */
         .sidebar-btn.btn-compartir-premium {
             background: linear-gradient(135deg, rgba(15, 45, 26, 0.7), rgba(26, 74, 42, 0.7));
             border: 1.5px solid #D4AF37;
@@ -325,7 +312,6 @@
             }
         }
 
-        /* Animación de pulse al dar like */
         @keyframes likePop {
             0% { transform: scale(1); }
             40% { transform: scale(1.35); }
@@ -334,7 +320,6 @@
         }
         .sidebar-btn.like-pop .icono { animation: likePop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
 
-        /* Reacciones flotantes */
         .reaccion-picker {
             position: absolute;
             right: 60px;
@@ -366,7 +351,6 @@
         .reaccion-picker .reaccion-opcion:hover { background: rgba(255, 255, 255, 0.1); transform: scale(1.25) translateY(-4px); }
         .reaccion-picker .reaccion-opcion.activa { background: rgba(212, 175, 55, 0.25); box-shadow: 0 0 0 1.5px rgba(212, 175, 55, 0.6); }
 
-        /* Barra inferior (tiempo + progreso) */
         .video-card .barra-inferior {
             position: absolute;
             left: 0; right: 0; bottom: 0;
@@ -399,7 +383,6 @@
             transition: width 0.15s linear;
         }
 
-        /* ✅ Botón flotante de pantalla completa con glow dorado */
         .btn-fullscreen {
             position: absolute;
             top: 12px;
@@ -438,7 +421,6 @@
             stroke-linecap: round;
             stroke-linejoin: round;
         }
-        /* En pantalla completa, el botón cambia a modo "salir" */
         .video-card.pantalla-completa .btn-fullscreen {
             opacity: 1;
             pointer-events: auto;
@@ -449,9 +431,6 @@
             background: linear-gradient(135deg, rgba(212, 175, 55, 0.6), rgba(184, 146, 58, 0.6));
         }
 
-        /* ============================================================ */
-        /* MODO PANTALLA COMPLETA (transición suave)                    */
-        /* ============================================================ */
         .video-card.pantalla-completa {
             border-radius: 0;
             min-height: 100vh;
@@ -469,7 +448,6 @@
             transform: scale(1.02);
         }
 
-        /* Hint doble tap */
         .doble-tap-hint {
             position: absolute;
             top: 50%;
@@ -506,9 +484,6 @@
             stroke-linejoin: round;
         }
 
-        /* ============================================================ */
-        /* BOTTOM SHEET DE COMENTARIOS                                  */
-        /* ============================================================ */
         .bottom-sheet-backdrop {
             position: fixed;
             inset: 0;
@@ -646,12 +621,10 @@
 
         body.teclado-abierto .bottom-sheet { max-height: 80vh; }
 
-        /* EMPTY STATE */
         .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
         .empty-state .icon { font-size: 3rem; display: block; margin-bottom: 16px; color: var(--gold); opacity: 0.3; }
         .empty-state h3 { font-family: 'Orbitron', monospace; color: var(--text-secondary); font-size: 1rem; margin-bottom: 8px; }
 
-        /* TOASTS */
         .toast { position: fixed; bottom: 30px; right: 30px; background: var(--green-deep); border: 1px solid var(--gold); color: var(--gold); padding: 14px 28px; border-radius: 14px; font-size: 0.8rem; transform: translateY(100px); opacity: 0; transition: all 0.5s ease; z-index: 99999; max-width: 400px; }
         .toast.show { transform: translateY(0); opacity: 1; }
         .toast.error { border-color: var(--danger); color: var(--danger); }
@@ -661,14 +634,12 @@
         .toast-siguiente { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.85); color: var(--gold); padding: 14px 28px; border-radius: 30px; font-family: 'Orbitron', monospace; font-size: 0.9rem; z-index: 100000; opacity: 0; transition: opacity 0.3s ease; pointer-events: none; border: 1px solid rgba(212, 175, 55, 0.5); }
         .toast-siguiente.visible { opacity: 1; }
 
-        /* FOOTER */
         .footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--text-muted); flex-wrap: wrap; gap: 10px; }
         .footer .brand { color: var(--gold); font-weight: 600; }
         .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
         .footer-links a { color: var(--text-muted); text-decoration: none; }
         .footer-links a:hover { color: var(--gold); }
 
-        /* TEMA DÍA */
         html.tema-dia, html[data-tema="dia"] {
             --space: #f5f7fa; --glass-bg: rgba(255, 255, 255, 0.85); --glass-border: rgba(0, 0, 0, 0.1);
             --text-primary: #1a2332; --text-secondary: #4a5568; --text-muted: #718096;
@@ -681,7 +652,6 @@
         html.tema-dia .nebula, html[data-tema="dia"] .nebula { display: none !important; }
         html.tema-dia .toast, html[data-tema="dia"] .toast { background: rgba(255,255,255,0.98) !important; }
 
-        /* RESPONSIVE */
         @media (max-width: 768px) {
             .app { padding: 12px 14px; }
             .video-card { min-height: 72vh; max-height: 72vh; }
@@ -832,22 +802,17 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script src="/features/shared/js/idiomas.js"></script><script>
+    <script src="/features/shared/js/idiomas.js"></script>
+<script>
     // ================================================================
-    // VIDEOS · v15.1 — Reels + Fullscreen + Doble Tap + Auditoría Fix
+    // VIDEOS · v15.2 — Reels + Fullscreen + Doble Tap + AUDIO FIX
     // ================================================================
-    // CAMBIOS v15.1 (auditoría quirúrgica):
-    //  ✅ Bug #1  — cargarAnuncioVideo() ahora se invoca desde el observer
-    //  ✅ Bug #2  — videoActual ahora es string + fix en registrarClicAnuncioVideo()
-    //  ✅ Bug #3  — eliminada variable muerta 'cambiandoVideo'
-    //  ✅ Bug #4  — eliminadas 'arrastrandoProgreso', 'autoAvanzados', 'MAX_AUTOAVANCE'
-    //  ✅ Bug #5  — eliminado setTimeout(4000) del picker de reacciones
-    //  ✅ Bug #6  — bandera longPressActivado para evitar doble disparo
-    //  ✅ Bug #7  — limpiado tapUnicoTimer en configurarDobleTap()
-    //  ✅ Bug #8  — nueva incrementarVista() con RPC + control de sesión
-    //  ✅ Bug #12 — posterUrl solo si comienza con https://
-    //  ✅ Bug #13 — mostrarHint() invocado desde toggleFullscreen()
-    //  ✅ Bug #14 — validación if(fileInput) antes de reset
+    // ✅ FIX APLICADO: el video ahora suena al reproducir
+    //    - Se eliminó 'muted' del HTML del video
+    //    - Se eliminó 'muted playsinline' del crearVideoCard()
+    //    - Se desmutea automáticamente tras el primer play()
+    //    - El botón de pantalla completa ya no silencia el video
+    //    - togglePlayCard también garantiza el sonido
     // ================================================================
 
     // ================================================================
@@ -883,8 +848,6 @@
     // ESTADO GLOBAL
     // ================================================================
     var sessionUser = null;
-
-    // ✅ Bug #2 FIX: videoActual ahora es un STRING con el ID del video visible
     var videoActual = null;
 
     var videosPublicados = [];
@@ -905,17 +868,14 @@
     var pollingVideoInterval = null;
     var videoEnProcesamiento = null;
 
-    // ✅ Bug #3 y #4 FIX: variables muertas eliminadas
-    //    - cambiandoVideo      (eliminada)
-    //    - arrastrandoProgreso (eliminada)
-    //    - autoAvanzados       (eliminada)
-    //    - MAX_AUTOAVANCE      (eliminada)
-
     var videoIdComentariosActual = null;
     var longPressTimers = {};
 
-    // ✅ Bug #8 FIX: control de vistas ya contadas en esta sesión (evita RPC repetido)
     var vistasContadas = {};
+
+    // ✅ FIX AUDIO: recordar si el usuario ya interactuó con la página
+    //    (los navegadores solo permiten sonido después de un gesto del usuario)
+    var audioHabilitado = false;
 
     // ================================================================
     // HELPERS
@@ -1028,13 +988,40 @@
     }
 
     // ================================================================
-    // ✅ Bug #8 FIX: INCREMENTAR VISTA (con RPC + control de sesión)
+    // ✅ FIX AUDIO: función que reproduce con sonido
+    // ================================================================
+    function reproducirVideoConSonido(video) {
+        if (!video) return;
+        // Quitar mute forzado
+        video.muted = false;
+        video.volume = 1;
+        video.removeAttribute('muted');
+
+        var promesa = video.play();
+        if (promesa && typeof promesa.then === 'function') {
+            promesa.catch(function(err) {
+                // Si el navegador bloqueó el audio, intentamos muted y avisamos
+                if (err && err.name === 'NotAllowedError') {
+                    console.warn('[Videos] Autoplay con audio bloqueado, reintentando muted');
+                    video.muted = true;
+                    video.play().catch(function() {});
+                    // Mostrar un solo aviso
+                    if (!window._avisoAudioMostrado) {
+                        window._avisoAudioMostrado = true;
+                        showToast('🔊 Toca el video para activar el sonido', 'warning', 4000);
+                    }
+                }
+            });
+        }
+    }
+
+    // ================================================================
+    // INCREMENTAR VISTA
     // ================================================================
     async function incrementarVista(videoId) {
         if (!videoId) return;
         var id = String(videoId);
 
-        // Evitar peticiones duplicadas en esta sesión
         if (vistasContadas[id]) return;
         if (yaVistoEnSesion(id)) {
             vistasContadas[id] = true;
@@ -1043,7 +1030,6 @@
 
         vistasContadas[id] = true;
 
-        // Actualización optimista de UI
         var vistasInfo = document.querySelector(
             '.video-card[data-video-id="' + id + '"] .vistas-info'
         );
@@ -1057,10 +1043,8 @@
 
         try {
             if (!sbVideos) return;
-            // Intentar RPC (incremento atómico)
             var rpcResp = await sbVideos.rpc('incrementar_reproducciones', { video_id: id });
             if (rpcResp.error) {
-                // Fallback: UPDATE incremental
                 console.warn('[Vistas] RPC no disponible, usando UPDATE:', rpcResp.error.message);
                 var actual = await sbVideos
                     .from('videos')
@@ -1183,7 +1167,6 @@
         var session = await getSession();
         if (!session) return;
         try {
-            // ✅ Bug #2 FIX: videoActual ahora es string, no objeto
             var videoId = videoActual || null;
             await fetchConTimeout('/api/marketing/register-event', {
                 method: 'POST',
@@ -1333,7 +1316,7 @@
     }
 
     // ================================================================
-    // MOSTRAR HINT DE DOBLE TAP (helper reutilizable) — ✅ Bug #13 FIX
+    // MOSTRAR HINT DE DOBLE TAP
     // ================================================================
     function mostrarHintFullscreen(card) {
         if (!card) return;
@@ -1347,7 +1330,7 @@
     }
 
     // ================================================================
-    // CREAR CARD DE VIDEO
+    // CREAR CARD DE VIDEO — ✅ FIX AUDIO (sin muted forzado)
     // ================================================================
     function crearVideoCard(v) {
         var autor = v.usuarios || {};
@@ -1371,7 +1354,6 @@
         var iconoFinal = tipoMiReaccion || iconoMostrar;
         var videoUrl = escapeHTML(safeAttr(v.url_video));
 
-        // ✅ Bug #12 FIX: solo usar posterUrl si empieza con https://
         var posterUrl = (v.url_miniatura && typeof v.url_miniatura === 'string' && v.url_miniatura.startsWith('https://'))
             ? escapeHTML(v.url_miniatura)
             : '';
@@ -1389,23 +1371,20 @@
 
         var html = '';
 
-        // Botón de pantalla completa (arriba izquierda)
         html += '<button class="btn-fullscreen" onclick="event.stopPropagation(); toggleFullscreen(\'' + v.id + '\')" title="Pantalla completa" aria-label="Pantalla completa" data-icono-expandir="' + escapeHTML(getIconoFullscreenSVG()) + '" data-icono-reducir="' + escapeHTML(getIconoExitFullscreenSVG()) + '">';
         html += getIconoFullscreenSVG();
         html += '</button>';
 
-        // Botón eliminar (arriba derecha, solo si es mío)
         if (esMio) {
             html += '<button class="btn-eliminar-card" onclick="event.stopPropagation(); eliminarMiVideo(\'' + v.id + '\')" title="Eliminar">🗑️</button>';
         }
 
-        // Thumbnail + video
+        // ✅ FIX AUDIO: se eliminó 'muted' del tag <video>
         html += '<div class="thumbnail">';
-        html += '<video preload="none" muted playsinline data-src="' + videoUrl + '" poster="' + posterUrl + '"></video>';
+        html += '<video preload="metadata" playsinline webkit-playsinline data-src="' + videoUrl + '" poster="' + posterUrl + '"></video>';
         html += '<div class="play-btn" onclick="togglePlayCard(event, \'' + v.id + '\')">▶</div>';
         html += '</div>';
 
-        // Overlay info
         var avatarHTML = autorAvatar
             ? '<img src="' + autorAvatar + '" alt="">'
             : escapeHTML((autorNombre.charAt(0) || '◈').toUpperCase());
@@ -1418,24 +1397,19 @@
         if (descripcion) html += '<div class="descripcion-corta">' + descripcion + '</div>';
         html += '</div>';
 
-        // Sidebar acciones
         var claseLiked = tipoMiReaccion ? ' liked' : '';
         html += '<div class="sidebar-acciones">';
-        // Like
         html += '<button class="sidebar-btn like-btn' + claseLiked + '" data-video-id="' + v.id + '" onclick="event.stopPropagation(); toggleLikeVideo(\'' + v.id + '\')">';
         html += '<span class="icono">' + iconoFinal + '</span>';
         html += '<span class="contador" id="likeCount-' + v.id + '">' + formatContador(totalReacciones) + '</span>';
         html += '</button>';
-        // Comentarios
         html += '<button class="sidebar-btn" onclick="event.stopPropagation(); abrirComentarios(\'' + v.id + '\')">';
         html += '<span class="icono">💬</span>';
         html += '<span class="contador" id="comentCount-' + v.id + '">' + formatContador(v.comentarios || 0) + '</span>';
         html += '</button>';
-        // Compartir
         html += '<button class="sidebar-btn btn-compartir-premium" onclick="event.stopPropagation(); compartirVideo(\'' + v.id + '\')" title="Compartir">';
         html += getIconoCompartirSVG();
         html += '</button>';
-        // Picker reacciones
         html += '<div class="reaccion-picker" id="picker-' + v.id + '">';
         REACCIONES.forEach(function(re) {
             html += '<button class="reaccion-opcion" data-reaccion="' + re + '" onclick="event.stopPropagation(); elegirReaccion(\'' + v.id + '\', \'' + re + '\')">' + re + '</button>';
@@ -1443,7 +1417,6 @@
         html += '</div>';
         html += '</div>';
 
-        // Barra inferior
         html += '<div class="barra-inferior">';
         html += '<div class="fila-tiempo">';
         html += '<span class="tiempo-actual-card">0:00</span>';
@@ -1455,18 +1428,21 @@
 
         card.innerHTML = html;
 
-        // Hint doble tap
         var hintEl = document.createElement('div');
         hintEl.className = 'doble-tap-hint';
         hintEl.innerHTML = getIconoFullscreenSVG();
         card.appendChild(hintEl);
 
-        // Configurar interacciones
         configurarDobleTap(card, v.id);
         configurarLongPressLike(card, v.id);
 
-        // Eventos del video
         var videoEl = card.querySelector('video');
+
+        // ✅ FIX AUDIO: garantizar que el video arranca sin mute
+        videoEl.muted = false;
+        videoEl.volume = 1;
+        videoEl.removeAttribute('muted');
+
         videoEl.addEventListener('timeupdate', function() {
             if (!videoEl.duration) return;
             var pct = (videoEl.currentTime / videoEl.duration) * 100;
@@ -1484,7 +1460,7 @@
     }
 
     // ================================================================
-    // TOGGLE FULLSCREEN — con cambio de ícono + hint — ✅ Bug #13 FIX
+    // TOGGLE FULLSCREEN — ✅ FIX AUDIO (no silencia al expandir)
     // ================================================================
     function toggleFullscreen(videoId) {
         var card = document.querySelector('.video-card[data-video-id="' + videoId + '"]');
@@ -1510,24 +1486,26 @@
                 btn.title = 'Salir de pantalla completa';
             }
             var video2 = card.querySelector('video');
-            if (video2) video2.style.objectFit = 'cover';
+            if (video2) {
+                video2.style.objectFit = 'cover';
+                // ✅ FIX AUDIO: NO silenciar al entrar en fullscreen
+                video2.muted = false;
+            }
             vibrar(20);
             showToast('⛶ Pantalla completa', 'success', 1500);
         }
 
-        // ✅ Bug #13 FIX: mostrar hint también desde el botón, no solo desde doble tap
         mostrarHintFullscreen(card);
     }
 
     // ================================================================
-    // DOBLE TAP — solo en el área del video — ✅ Bug #7 FIX
+    // DOBLE TAP — solo en el área del video
     // ================================================================
     function configurarDobleTap(card, videoId) {
         var ultimoTap = 0;
         var DOBLE_TAP_MS = 320;
 
         function manejarTap(e) {
-            // Ignorar si toca botones o controles
             if (e.target.closest('.sidebar-btn') ||
                 e.target.closest('.play-btn') ||
                 e.target.closest('.btn-eliminar-card') ||
@@ -1539,7 +1517,6 @@
                 return;
             }
 
-            // ✅ Solo procesar si toca el VIDEO
             var video = card.querySelector('video');
             if (!video) return;
             if (e.target !== video) return;
@@ -1548,9 +1525,6 @@
             var diff = ahora - ultimoTap;
 
             if (diff < DOBLE_TAP_MS) {
-                // ✅ DOBLE TAP detectado → pantalla completa
-                // ✅ Bug #7 FIX: no hay tapUnicoTimer que limpiar (era código muerto)
-
                 var btn = card.querySelector('.btn-fullscreen');
                 var estaEnFullscreen = card.classList.contains('pantalla-completa');
 
@@ -1574,7 +1548,6 @@
                 mostrarHintFullscreen(card);
                 ultimoTap = 0;
             } else {
-                // Primer tap → guardar timestamp
                 ultimoTap = ahora;
             }
         }
@@ -1583,7 +1556,7 @@
     }
 
     // ================================================================
-    // LONG PRESS EN LIKE — ✅ Bug #6 FIX (bandera longPressActivado)
+    // LONG PRESS EN LIKE
     // ================================================================
     function configurarLongPressLike(card, videoId) {
         var btnLike = card.querySelector('.like-btn');
@@ -1605,7 +1578,6 @@
             longPressTimers[videoId] = setTimeout(function() {
                 vibrar(20);
                 mostrarPickerReacciones(videoId);
-                // ✅ Bug #6 FIX: marcar bandera para que el click posterior sea ignorado
                 btnLike.dataset.longPressActivado = 'true';
                 longPressTimers[videoId] = null;
             }, LONG_PRESS_MS);
@@ -1650,11 +1622,7 @@
         });
     }
 
-    // ================================================================
-    // MOSTRAR PICKER DE REACCIONES — ✅ Bug #5 FIX (sin setTimeout)
-    // ================================================================
     function mostrarPickerReacciones(videoId) {
-        // Cerrar otros pickers abiertos
         document.querySelectorAll('.reaccion-picker.show').forEach(function(p) {
             p.classList.remove('show');
         });
@@ -1668,10 +1636,6 @@
         });
 
         picker.classList.add('show');
-
-        // ✅ Bug #5 FIX: el picker permanece abierto hasta que el usuario
-        //    elija una reacción o toque fuera. Se elimina el setTimeout(4000)
-        //    que lo cerraba prematuramente.
     }
 
     // ================================================================
@@ -1692,7 +1656,6 @@
             if (!sbVideos) throw new Error('Cliente no disponible');
 
             if (tipoPrevio === tipo) {
-                // Quitar reacción
                 var del = await sbVideos.from('videos_likes').delete().eq('video_id', videoId).eq('usuario_id', sessionUser.id);
                 if (del.error) throw del.error;
                 likeCache.delete(key);
@@ -1704,7 +1667,6 @@
                     btnLike.querySelector('.icono').textContent = REACCION_DEFAULT;
                 }
             } else if (tipoPrevio) {
-                // Cambiar reacción
                 var upd = await sbVideos.from('videos_likes')
                     .update({ tipo: tipo })
                     .eq('video_id', videoId)
@@ -1725,7 +1687,6 @@
                     btnLike.classList.add('like-pop');
                 }
             } else {
-                // Nueva reacción
                 var ins = await sbVideos.from('videos_likes').insert({
                     video_id: videoId, usuario_id: sessionUser.id, tipo: tipo
                 });
@@ -1764,12 +1725,11 @@
     }
 
     // ================================================================
-    // TOGGLE LIKE — ✅ Bug #6 FIX (chequea bandera longPressActivado)
+    // TOGGLE LIKE
     // ================================================================
     async function toggleLikeVideo(videoId) {
         var btnLike = document.querySelector('.like-btn[data-video-id="' + videoId + '"]');
 
-        // ✅ Bug #6 FIX: si el long-press acaba de activarse, ignorar este click
         if (btnLike && btnLike.dataset.longPressActivado === 'true') {
             delete btnLike.dataset.longPressActivado;
             return;
@@ -1780,7 +1740,6 @@
             longPressTimers[videoId] = null;
         }
 
-        // Si el picker ya está abierto, no alternar
         var picker = document.getElementById('picker-' + videoId);
         if (picker && picker.classList.contains('show')) return;
 
@@ -1963,7 +1922,7 @@
     }
 
     // ================================================================
-    // AUTOPLAY SCROLL — ✅ Bug #1 FIX (carga anuncio) + ✅ Bug #2 + ✅ Bug #8
+    // AUTOPLAY SCROLL — ✅ FIX AUDIO (reproducir con sonido)
     // ================================================================
     function activarAutoplayScroll() {
         if (observerVideos) { observerVideos.disconnect(); observerVideos = null; }
@@ -1995,24 +1954,19 @@
                     card.classList.add('visible');
                     asegurarSrc(video);
 
-                    // ✅ Bug #1 + #2 FIX: detectar cambio de video actual,
-                    //    actualizar variable string y cargar anuncio correspondiente
                     var idVisible = card.dataset.videoId;
                     if (videoActual !== idVisible) {
                         videoActual = idVisible;
-                        // Limpiar estado del anuncio anterior para permitir carga fresca
                         adCerradoVideo = false;
                         if (adVistaTimerVideo) { clearTimeout(adVistaTimerVideo); adVistaTimerVideo = null; }
                         cargarAnuncioVideo(idVisible);
                     }
 
-                    // ✅ Bug #8 FIX: incrementar vista cuando el video se reproduce
                     if (videoPausadoManualmente !== idVisible) {
-                        video.play().then(function() {
-                            card.classList.add('playing');
-                            // Incrementar vista solo si realmente empieza a reproducir
-                            incrementarVista(idVisible);
-                        }).catch(function() {});
+                        // ✅ FIX AUDIO: reproducir con sonido
+                        reproducirVideoConSonido(video);
+                        card.classList.add('playing');
+                        incrementarVista(idVisible);
                     }
                 } else {
                     card.classList.remove('visible');
@@ -2029,18 +1983,24 @@
         });
     }
 
+    // ================================================================
+    // TOGGLE PLAY — ✅ FIX AUDIO (reproducir con sonido al tocar)
+    // ================================================================
     function togglePlayCard(event, videoId) {
         if (event) event.stopPropagation();
         var card = document.querySelector('.video-card[data-video-id="' + videoId + '"]');
         if (!card) return;
         var video = card.querySelector('video');
         if (!video) return;
-        if (!video.getAttribute('src') && video.dataset.src) { video.preload = 'metadata'; video.src = video.dataset.src; }
+        if (!video.getAttribute('src') && video.dataset.src) {
+            video.preload = 'metadata';
+            video.src = video.dataset.src;
+        }
         if (video.paused) {
-            video.play().catch(function() {});
+            // ✅ FIX AUDIO: reproducir con sonido
+            reproducirVideoConSonido(video);
             card.classList.add('playing');
             videoPausadoManualmente = null;
-            // ✅ Bug #8: también contar vista si se activó manualmente
             incrementarVista(videoId);
         } else {
             video.pause();
@@ -2075,7 +2035,7 @@
     }
 
     // ================================================================
-    // SUBIR VIDEO — ✅ Bug #14 FIX (validar fileInput antes de reset)
+    // SUBIR VIDEO
     // ================================================================
     var subiendoVideo = false;
 
@@ -2096,7 +2056,6 @@
             if (btn) { btn.disabled = false; btn.textContent = '◈ Subir video'; }
             if (progressEl) progressEl.style.display = 'none';
             if (progressFill) progressFill.style.width = '0%';
-            // ✅ Bug #14 FIX: validar fileInput antes de acceder a su propiedad
             if (fileInput) {
                 try { fileInput.value = ''; } catch (e) {}
             }
@@ -2171,7 +2130,6 @@
             showToast('◈ Procesando video', 'success', 3000);
             document.getElementById('inputTituloVideo').value = '';
             document.getElementById('inputDescripcionVideo').value = '';
-            // ✅ Bug #14 FIX: validación antes de reset
             if (fileInput) {
                 try { fileInput.value = ''; } catch (e) {}
             }
@@ -2295,7 +2253,6 @@
         reaccionesCache.clear();
     });
 
-    // Ocultar pickers al click afuera
     document.addEventListener('click', function(e) {
         if (!e.target.closest('.reaccion-picker') && !e.target.closest('.like-btn')) {
             document.querySelectorAll('.reaccion-picker.show').forEach(function(p) {
@@ -2304,7 +2261,6 @@
         }
     });
 
-    // ESC sale de Bottom Sheet o Pantalla Completa
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             var sheet = document.getElementById('bottomSheet');
@@ -2343,7 +2299,7 @@
     // INIT
     // ================================================================
     document.addEventListener('DOMContentLoaded', function() {
-        console.log("◈ Sariel's - Videos v15.1 (Auditoría Fix aplicada)");
+        console.log("◈ Sariel's - Videos v15.2 (Audio Fix aplicado)");
         aplicarI18N();
         configurarTecladoMovil();
         cargarUsuarioActual().then(async function() {
