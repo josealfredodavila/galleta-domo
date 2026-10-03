@@ -119,7 +119,7 @@
             background: #000;
             border-radius: var(--radius-xl);
             overflow: hidden;
-            transition: border-radius 0.3s ease, min-height 0.3s ease, max-height 0.3s ease;
+            transition: border-radius 0.35s ease, min-height 0.35s ease, max-height 0.35s ease;
             scroll-snap-align: center;
             scroll-snap-stop: always;
             min-height: 78vh;
@@ -147,7 +147,7 @@
             object-fit: contain;
             background: #000;
             display: block;
-            transition: object-fit 0.3s ease, transform 0.3s ease;
+            transition: object-fit 0.35s ease, transform 0.35s ease;
         }
         .video-card .thumbnail .play-btn {
             position: absolute;
@@ -272,10 +272,19 @@
             text-align: center;
             white-space: nowrap;
         }
-        .sidebar-btn.liked { background: rgba(255, 51, 102, 0.25); border-color: rgba(255, 51, 102, 0.5); }
-        .sidebar-btn.liked .contador { background: rgba(255, 51, 102, 0.9); border-color: rgba(255, 51, 102, 0.6); }
+        .sidebar-btn.liked {
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.25), rgba(255, 51, 102, 0.15));
+            border-color: rgba(212, 175, 55, 0.7);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.4), 0 0 40px rgba(255, 51, 102, 0.2);
+        }
+        .sidebar-btn.liked .contador {
+            background: linear-gradient(135deg, #D4AF37, #b8923a);
+            border-color: rgba(212, 175, 55, 0.8);
+            color: #05080f;
+            font-weight: 800;
+        }
 
-        /* ✅ NUEVO: ícono SVG estilo Instagram para compartir */
+        /* Íconos dorados premium con glow */
         .sidebar-btn svg.icono-svg {
             width: 24px;
             height: 24px;
@@ -284,10 +293,36 @@
             stroke-width: 2;
             stroke-linecap: round;
             stroke-linejoin: round;
-            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            filter: drop-shadow(0 0 6px rgba(212, 175, 55, 0.5));
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+                        filter 0.25s ease;
         }
         .sidebar-btn:hover svg.icono-svg {
-            transform: scale(1.12) rotate(-8deg);
+            transform: scale(1.15) rotate(-8deg);
+            filter: drop-shadow(0 0 14px rgba(212, 175, 55, 0.9));
+        }
+
+        /* Botón de compartir con pulso dorado */
+        .sidebar-btn.btn-compartir-premium {
+            background: linear-gradient(135deg, rgba(15, 45, 26, 0.7), rgba(26, 74, 42, 0.7));
+            border: 1.5px solid #D4AF37;
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.35);
+            animation: pulseGoldShare 2.5s ease-in-out infinite;
+        }
+        .sidebar-btn.btn-compartir-premium:hover {
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.1));
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.7);
+            transform: scale(1.08);
+        }
+        @keyframes pulseGoldShare {
+            0%, 100% {
+                box-shadow: 0 0 12px rgba(212, 175, 55, 0.35),
+                            inset 0 0 6px rgba(212, 175, 55, 0.15);
+            }
+            50% {
+                box-shadow: 0 0 28px rgba(212, 175, 55, 0.75),
+                            inset 0 0 10px rgba(212, 175, 55, 0.25);
+            }
         }
 
         /* Animación de pulse al dar like */
@@ -364,13 +399,63 @@
             transition: width 0.15s linear;
         }
 
+        /* ✅ NUEVO: Botón flotante de pantalla completa con glow dorado */
+        .btn-fullscreen {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            z-index: 6;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(15, 45, 26, 0.75), rgba(26, 74, 42, 0.75));
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1.5px solid rgba(212, 175, 55, 0.6);
+            color: #D4AF37;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            -webkit-tap-highlight-color: transparent;
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+        }
+        .btn-fullscreen:hover {
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.25), rgba(212, 175, 55, 0.15));
+            border-color: #D4AF37;
+            transform: scale(1.08);
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.6);
+        }
+        .btn-fullscreen:active { transform: scale(0.9); }
+        .btn-fullscreen svg {
+            width: 20px;
+            height: 20px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        /* En pantalla completa, el botón cambia a modo "salir" */
+        .video-card.pantalla-completa .btn-fullscreen {
+            opacity: 1;
+            pointer-events: auto;
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.4), rgba(184, 146, 58, 0.4));
+            border-color: #D4AF37;
+        }
+        .video-card.pantalla-completa .btn-fullscreen:hover {
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.6), rgba(184, 146, 58, 0.6));
+        }
+
         /* ============================================================ */
-        /* ✅ NUEVO: MODO PANTALLA COMPLETA (doble tap)                 */
+        /* MODO PANTALLA COMPLETA (transición suave)                    */
         /* ============================================================ */
         .video-card.pantalla-completa {
             border-radius: 0;
-            min-height: 95vh;
-            max-height: 95vh;
+            min-height: 100vh;
+            max-height: 100vh;
         }
         .video-card.pantalla-completa .overlay-info,
         .video-card.pantalla-completa .sidebar-acciones,
@@ -390,25 +475,35 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%) scale(0.5);
-            background: rgba(0, 0, 0, 0.75);
+            background: rgba(0, 0, 0, 0.8);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1.5px solid rgba(212, 175, 55, 0.5);
             border-radius: 50%;
-            width: 80px;
-            height: 80px;
+            width: 90px;
+            height: 90px;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #fff;
+            color: #D4AF37;
             opacity: 0;
             pointer-events: none;
             z-index: 10;
-            transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 0 40px rgba(212, 175, 55, 0.5);
         }
         .doble-tap-hint.show {
             opacity: 1;
             transform: translate(-50%, -50%) scale(1);
+        }
+        .doble-tap-hint svg {
+            width: 36px;
+            height: 36px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
         }
 
         /* ============================================================ */
@@ -596,6 +691,8 @@
         @media (max-width: 480px) {
             .video-card { min-height: 68vh; max-height: 68vh; }
             .video-card .btn-eliminar-card { width: 34px; height: 34px; font-size: 0.95rem; }
+            .btn-fullscreen { width: 38px; height: 38px; top: 10px; left: 10px; }
+            .btn-fullscreen svg { width: 18px; height: 18px; }
             .sidebar-btn { width: 44px; height: 44px; }
             .sidebar-btn .icono { font-size: 1.2rem; }
             .sidebar-btn svg.icono-svg { width: 20px; height: 20px; }
@@ -738,7 +835,7 @@
     <script src="/features/shared/js/idiomas.js"></script>
 <script>
     // ================================================================
-    // VIDEOS · v13 — Reels + Pantalla Completa + Compartir SVG
+    // VIDEOS · v15 — Reels + Fullscreen Funcional + Doble Tap Fix
     // ================================================================
 
     var sbVideos = null;
@@ -1133,13 +1230,30 @@
     }
 
     // ================================================================
-    // ✅ ICONO SVG COMPARTIR ESTILO INSTAGRAM
+    // ICONO SVG COMPARTIR ESTILO INSTAGRAM
     // ================================================================
     function getIconoCompartirSVG() {
-        return '<svg class="icono-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">' +
-            '<line x1="22" y1="2" x2="11" y2="13"/>' +
-            '<polygon points="22 2 15 22 11 13 2 9 22 2"/>' +
+        return '<svg class="icono-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor">' +
+            '<circle cx="18" cy="5" r="2.5"/>' +
+            '<circle cx="6" cy="12" r="2.5"/>' +
+            '<circle cx="18" cy="19" r="2.5"/>' +
+            '<path d="M8.2 10.8 L15.8 6.2"/>' +
+            '<path d="M8.2 13.2 L15.8 17.8"/>' +
             '</svg>';
+    }
+
+    // ================================================================
+    // ICONO FULLSCREEN SVG (expandir)
+    // ================================================================
+    function getIconoFullscreenSVG() {
+        return '<svg viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
+    }
+
+    // ================================================================
+    // ✅ ICONO EXIT FULLSCREEN SVG (reducir)
+    // ================================================================
+    function getIconoExitFullscreenSVG() {
+        return '<svg viewBox="0 0 24 24"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
     }
 
     // ================================================================
@@ -1180,6 +1294,12 @@
 
         var html = '';
 
+        // ✅ Botón de pantalla completa (arriba izquierda) — CON GLOW DORADO
+        html += '<button class="btn-fullscreen" onclick="event.stopPropagation(); toggleFullscreen(\'' + v.id + '\')" title="Pantalla completa" aria-label="Pantalla completa" data-icono-expandir="' + escapeHTML(getIconoFullscreenSVG()) + '" data-icono-reducir="' + escapeHTML(getIconoExitFullscreenSVG()) + '">';
+        html += getIconoFullscreenSVG();
+        html += '</button>';
+
+        // Botón eliminar (arriba derecha, solo si es mío)
         if (esMio) {
             html += '<button class="btn-eliminar-card" onclick="event.stopPropagation(); eliminarMiVideo(\'' + v.id + '\')" title="Eliminar">🗑️</button>';
         }
@@ -1216,8 +1336,8 @@
         html += '<span class="icono">💬</span>';
         html += '<span class="contador" id="comentCount-' + v.id + '">' + formatContador(v.comentarios || 0) + '</span>';
         html += '</button>';
-        // ✅ Compartir — SVG estilo Instagram
-        html += '<button class="sidebar-btn" onclick="event.stopPropagation(); compartirVideo(\'' + v.id + '\')" title="Compartir">';
+        // Compartir
+        html += '<button class="sidebar-btn btn-compartir-premium" onclick="event.stopPropagation(); compartirVideo(\'' + v.id + '\')" title="Compartir">';
         html += getIconoCompartirSVG();
         html += '</button>';
         // Picker reacciones
@@ -1240,28 +1360,17 @@
 
         card.innerHTML = html;
 
-        // ✅ Hint de doble tap (se agrega dinámicamente)
+        // Hint doble tap
         var hintEl = document.createElement('div');
         hintEl.className = 'doble-tap-hint';
-        hintEl.innerHTML = '<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
+        hintEl.innerHTML = getIconoFullscreenSVG();
         card.appendChild(hintEl);
 
-        // ✅ Configurar doble tap
+        // Configurar interacciones
         configurarDobleTap(card, v.id);
-
-        // Configurar long-press para like
         configurarLongPressLike(card, v.id);
 
-        // Click en la card para reproducir (excluyendo botones)
-        card.addEventListener('click', function(e) {
-            if (e.target.closest('.sidebar-btn')) return;
-            if (e.target.closest('.play-btn')) return;
-            if (e.target.closest('.btn-eliminar-card')) return;
-            if (e.target.closest('.barra-inferior')) return;
-            if (e.target.closest('.doble-tap-hint')) return;
-        });
-
-        // Eventos de video
+        // Eventos del video
         var videoEl = card.querySelector('video');
         videoEl.addEventListener('timeupdate', function() {
             if (!videoEl.duration) return;
@@ -1280,7 +1389,42 @@
     }
 
     // ================================================================
-    // ✅ DOBLE TAP → PANTALLA COMPLETA
+    // ✅ TOGGLE FULLSCREEN — con cambio de ícono (expandir/reducir)
+    // ================================================================
+    function toggleFullscreen(videoId) {
+        var card = document.querySelector('.video-card[data-video-id="' + videoId + '"]');
+        if (!card) return;
+
+        var btn = card.querySelector('.btn-fullscreen');
+        var estaEnFullscreen = card.classList.contains('pantalla-completa');
+
+        if (estaEnFullscreen) {
+            // Salir de fullscreen
+            card.classList.remove('pantalla-completa');
+            if (btn) {
+                btn.innerHTML = btn.dataset.iconoExpandir;
+                btn.title = 'Pantalla completa';
+            }
+            var video = card.querySelector('video');
+            if (video) video.style.objectFit = 'contain';
+            vibrar(15);
+            showToast('↙ Modo normal', 'success', 1500);
+        } else {
+            // Entrar a fullscreen
+            card.classList.add('pantalla-completa');
+            if (btn) {
+                btn.innerHTML = btn.dataset.iconoReducir;
+                btn.title = 'Salir de pantalla completa';
+            }
+            var video2 = card.querySelector('video');
+            if (video2) video2.style.objectFit = 'cover';
+            vibrar(20);
+            showToast('⛶ Pantalla completa', 'success', 1500);
+        }
+    }
+
+    // ================================================================
+    // ✅ DOBLE TAP ARREGLADO — solo en el área del video
     // ================================================================
     function configurarDobleTap(card, videoId) {
         var ultimoTap = 0;
@@ -1299,34 +1443,57 @@
         }
 
         function manejarTap(e) {
+            // Ignorar si toca botones o controles
             if (e.target.closest('.sidebar-btn') ||
                 e.target.closest('.play-btn') ||
                 e.target.closest('.btn-eliminar-card') ||
+                e.target.closest('.btn-fullscreen') ||
                 e.target.closest('.barra-inferior') ||
-                e.target.closest('.reaccion-picker')) {
+                e.target.closest('.reaccion-picker') ||
+                e.target.closest('.doble-tap-hint') ||
+                e.target.closest('.overlay-info')) {
                 return;
             }
+
+            // ✅ Solo procesar si toca el VIDEO
+            var video = card.querySelector('video');
+            if (!video) return;
+            if (e.target !== video) return;
 
             var ahora = Date.now();
             var diff = ahora - ultimoTap;
 
             if (diff < DOBLE_TAP_MS) {
                 // ✅ DOBLE TAP detectado → pantalla completa
-                if (tapUnicoTimer) { clearTimeout(tapUnicoTimer); tapUnicoTimer = null; }
-                card.classList.toggle('pantalla-completa');
+                if (tapUnicoTimer) {
+                    clearTimeout(tapUnicoTimer);
+                    tapUnicoTimer = null;
+                }
+
+                var btn = card.querySelector('.btn-fullscreen');
+                var estaEnFullscreen = card.classList.contains('pantalla-completa');
+
+                if (estaEnFullscreen) {
+                    card.classList.remove('pantalla-completa');
+                    if (btn) {
+                        btn.innerHTML = btn.dataset.iconoExpandir;
+                        btn.title = 'Pantalla completa';
+                    }
+                    video.style.objectFit = 'contain';
+                } else {
+                    card.classList.add('pantalla-completa');
+                    if (btn) {
+                        btn.innerHTML = btn.dataset.iconoReducir;
+                        btn.title = 'Salir de pantalla completa';
+                    }
+                    video.style.objectFit = 'cover';
+                }
+
                 vibrar(20);
                 mostrarHint();
-
-                var video = card.querySelector('video');
-                if (video) {
-                    if (card.classList.contains('pantalla-completa')) {
-                        video.style.objectFit = 'cover';
-                    } else {
-                        video.style.objectFit = 'contain';
-                    }
-                }
                 ultimoTap = 0;
             } else {
+                // ✅ Primer tap → esperar a ver si hay segundo
                 ultimoTap = ahora;
             }
         }
@@ -1335,7 +1502,7 @@
     }
 
     // ================================================================
-    // ✅ LONG PRESS EN LIKE
+    // LONG PRESS EN LIKE
     // ================================================================
     function configurarLongPressLike(card, videoId) {
         var btnLike = card.querySelector('.like-btn');
@@ -1436,7 +1603,6 @@
             if (!sbVideos) throw new Error('Cliente no disponible');
 
             if (tipoPrevio === tipo) {
-                // Quitar
                 var del = await sbVideos.from('videos_likes').delete().eq('video_id', videoId).eq('usuario_id', sessionUser.id);
                 if (del.error) throw del.error;
                 likeCache.delete(key);
@@ -1448,7 +1614,6 @@
                     btnLike.querySelector('.icono').textContent = REACCION_DEFAULT;
                 }
             } else if (tipoPrevio) {
-                // Cambiar
                 var upd = await sbVideos.from('videos_likes')
                     .update({ tipo: tipo })
                     .eq('video_id', videoId)
@@ -1469,7 +1634,6 @@
                     btnLike.classList.add('like-pop');
                 }
             } else {
-                // Crear
                 var ins = await sbVideos.from('videos_likes').insert({
                     video_id: videoId, usuario_id: sessionUser.id, tipo: tipo
                 });
@@ -2025,6 +2189,11 @@
                 card.classList.remove('pantalla-completa');
                 var video = card.querySelector('video');
                 if (video) video.style.objectFit = 'contain';
+                var btn = card.querySelector('.btn-fullscreen');
+                if (btn && btn.dataset.iconoExpandir) {
+                    btn.innerHTML = btn.dataset.iconoExpandir;
+                    btn.title = 'Pantalla completa';
+                }
             });
         }
     });
@@ -2047,7 +2216,7 @@
     // INIT
     // ================================================================
     document.addEventListener('DOMContentLoaded', function() {
-        console.log("◈ Sariel's - Videos v13 (Reels + Fullscreen)");
+        console.log("◈ Sariel's - Videos v15 (Reels + Fullscreen + Doble Tap Fix)");
         aplicarI18N();
         configurarTecladoMovil();
         cargarUsuarioActual().then(async function() {
@@ -2076,6 +2245,7 @@
     window.verTokens = verTokens;
     window.cerrarAnuncioVideo = cerrarAnuncioVideo;
     window.registrarClicAnuncioVideo = registrarClicAnuncioVideo;
+    window.toggleFullscreen = toggleFullscreen;
     window.showToast = showToast;
 </script>
 
