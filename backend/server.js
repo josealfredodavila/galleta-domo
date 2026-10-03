@@ -382,8 +382,6 @@ app.use(
 // ================================================================
 // WEBHOOK TELNYX — ANTES de express.json() y rate limit
 // ================================================================
-// Debe recibir el raw body para validar la firma con TELNYX_PUBLIC_KEY.
-// ================================================================
 
 app.use('/api/telnyx/webhook', require('./routes/telnyx-webhook'));
 
@@ -801,6 +799,13 @@ montarRouter(
     'routes/membresia'
 );
 
+// ✅ NUEVO: Router de Live Pass
+montarRouter(
+    '/api/payments/live-pass',
+    './routes/payments/livePass',
+    'routes/payments/livePass'
+);
+
 montarRouter('/api/webhook', './routes/webhooks', 'routes/webhooks');
 
 montarRouter('/api/pay', './routes/pay', 'routes/pay');
@@ -1049,12 +1054,6 @@ app.listen(PORT, () => {
 
 // ================================================================
 // CRON — Limpieza de cuentas eliminadas hace más de 30 días
-// ================================================================
-// Ejecuta cada 24 horas. Busca usuarios con activo = false y
-// deleted_at mayor a 30 días, y los borra físicamente de la DB.
-// Marca la solicitud en solicitudes_eliminacion como "completada".
-//
-// Los datos on-chain (ES.TOKS, NFTs) NO se tocan.
 // ================================================================
 
 async function ejecutarLimpiezaCuentas() {
