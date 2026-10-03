@@ -8,7 +8,6 @@
 
 // ================================================================
 // EXPOSICIÓN GLOBAL A WINDOW
-// (para los onclick del HTML)
 // ================================================================
 function publicarFuncionesGlobales() {
     // Utils
@@ -103,7 +102,7 @@ function publicarFuncionesGlobales() {
 }
 
 // ================================================================
-// CAMBIAR TAB (publicaciones / actividad / tokens / esim / qr / internet)
+// CAMBIAR TAB
 // ================================================================
 function cambiarTab(tab) {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -117,7 +116,6 @@ function cambiarTab(tab) {
     const tabBtn = document.querySelector('.tab-btn[onclick*="\'' + tab + '\'"]');
     if (tabBtn) tabBtn.classList.add('active');
 
-    // Cargar datos según la tab
     if (tab === 'esim' && typeof window.cargarEsimNueva === 'function') {
         window.cargarEsimNueva();
     }
@@ -127,14 +125,13 @@ function cambiarTab(tab) {
 }
 
 // ================================================================
-// SINCRONIZACIÓN REALTIME DEL PERFIL
+// SINCRONIZACIÓN REALTIME
 // ================================================================
 var ultimaRecargaPerfilSync = 0;
 
 function actualizarDOMDesdeRealtime(usuario) {
     try {
         if (!usuario) return;
-        // Nombre
         var nombreContainer = document.querySelector('#perfilNombre');
         if (nombreContainer) {
             var nombreSpan = nombreContainer.querySelector('[data-clave="perfil_nombre_usuario"]');
@@ -144,12 +141,10 @@ function actualizarDOMDesdeRealtime(usuario) {
                 nombreContainer.textContent = usuario.nombre || 'Explorador';
             }
         }
-        // Handle
         var handleElement = document.querySelector('#perfilHandle');
         if (handleElement) {
             handleElement.textContent = usuario.handle ? '@' + usuario.handle : '@explorador';
         }
-        // Avatar
         var avatarElement = document.querySelector('#perfilAvatar');
         if (avatarElement) {
             if (usuario.avatar_url) {
@@ -241,7 +236,7 @@ async function iniciarRealtimePerfil() {
 }
 
 // ================================================================
-// APLICAR PARÁMETROS DE URL (tab, action)
+// APLICAR PARÁMETROS DE URL
 // ================================================================
 function aplicarParametrosURL() {
     var params = new URLSearchParams(window.location.search);
@@ -252,7 +247,6 @@ function aplicarParametrosURL() {
         setTimeout(function() {
             window.cambiarTab(tab);
             console.log('[Perfil] Tab cambiada a:', tab);
-
             if (tab === 'qr') {
                 var tabContent = document.getElementById('tab-qr');
                 if (tabContent) {
@@ -294,10 +288,8 @@ function aplicarParametrosURL() {
 // INICIALIZACIÓN PRINCIPAL
 // ================================================================
 async function iniciarPerfil() {
-    // Asegurar estilos de animaciones
     asegurarEstilosPerfil();
 
-    // Cargar jsQR si no está
     if (typeof jsQR === 'undefined') {
         try {
             const script = document.createElement('script');
@@ -312,6 +304,9 @@ async function iniciarPerfil() {
 
     // Cargar perfil principal
     await cargarPerfil();
+
+    // ⭐ ARREGLO DE CLAUDE: Cargar mis publicaciones al arrancar
+    cargarMisPublicaciones();
 
     // Cargar estadísticas y nivel
     const stats = await obtenerEstadisticas();
@@ -342,7 +337,7 @@ async function iniciarPerfil() {
     // Cargar repartidor
     setTimeout(verificarEstadoRepartidorPerfil, 1500);
 
-    // Verificar eSIM (para la pestaña)
+    // Verificar eSIM
     setTimeout(() => {
         if (typeof window.cargarEsimNueva === 'function') {
             window.cargarEsimNueva();
@@ -356,7 +351,6 @@ async function iniciarPerfil() {
 publicarFuncionesGlobales();
 asegurarEstilosPerfil();
 
-// Realtime sync
 iniciarRecargaRealtime();
 setTimeout(function() { recargarPerfilRealtime(true); }, 800);
 setTimeout(function() { recargarPerfilRealtime(true); }, 1600);
@@ -370,9 +364,7 @@ window.addEventListener('focus', function() {
     recargarPerfilRealtime(true);
 });
 
-// Click fuera de menús para cerrar
 document.addEventListener('click', function(e) {
-    // Cerrar avatar menu
     var menu = document.getElementById('avatarMenu');
     var avatar = document.getElementById('perfilAvatar');
     if (menu && menu.classList.contains('show')) {
@@ -380,16 +372,12 @@ document.addEventListener('click', function(e) {
             menu.classList.remove('show');
         }
     }
-
-    // Cerrar emoji picker
     var picker = document.getElementById('emojiPickerPerfil');
     if (picker && picker.classList.contains('show')) {
         if (!picker.contains(e.target) && e.target.id !== 'btnEmojiPerfil') {
             picker.classList.remove('show');
         }
     }
-
-    // Cerrar reacciones dropdowns
     var rd = document.querySelectorAll('.reaccion-dropdown.show');
     rd.forEach(function(dd) {
         if (!dd.contains(e.target) && !dd.parentElement.contains(e.target)) {
@@ -398,7 +386,6 @@ document.addEventListener('click', function(e) {
     });
 });
 
-// Arranque del módulo perfil (cuando el DOM esté listo)
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', iniciarPerfil);
 } else {
