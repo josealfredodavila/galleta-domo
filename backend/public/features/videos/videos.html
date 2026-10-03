@@ -19,7 +19,6 @@
             --purple: #a855f7;
             --line-black: #000000;
             --line-black-soft: rgba(0, 0, 0, 0.85);
-            --line-black-mid: rgba(0, 0, 0, 0.65);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { overscroll-behavior-y: none; }
@@ -82,7 +81,7 @@
         .processing-state .progress-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--gold); font-weight: 700; }
 
         /* ANUNCIOS */
-        .marketing-ad-container { display: none; margin-bottom: 20px; background: linear-gradient(155deg, rgba(15, 45, 26, 0.55), rgba(8, 15, 26, 0.75)); border: 1px solid rgba(212, 175, 55, 0.25); border-radius: var(--radius-xl); overflow: hidden; backdrop-filter: blur(14px); position: relative; box-shadow: 0 10px 40px rgba(212, 175, 55, 0.08); }
+        .marketing-ad-container { display: none; margin-bottom: 20px; background: linear-gradient(155deg, rgba(15, 45, 26, 0.55), rgba(8, 15, 26, 0.75)); border: 1px solid rgba(212, 175, 55, 0.25); border-radius: var(--radius-xl); overflow: hidden; backdrop-filter: blur(14px); }
         .marketing-ad-container.visible { display: block; animation: adFadeIn 0.5s ease; }
         @keyframes adFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .marketing-ad-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; border-bottom: 1px solid rgba(212, 175, 55, 0.1); }
@@ -98,7 +97,7 @@
         @media (max-width: 480px) { .marketing-ad-body { flex-direction: column; } .marketing-ad-media { width: 100%; height: 140px; } }
 
         /* ============================================================ */
-        /* FEED DE VIDEOS — FULLSCREEN TIPO REELS                       */
+        /* FEED DE VIDEOS — REELS STYLE                                 */
         /* ============================================================ */
         #videosContainer.videos-grid {
             display: flex;
@@ -120,7 +119,7 @@
             background: #000;
             border-radius: var(--radius-xl);
             overflow: hidden;
-            transition: var(--transition);
+            transition: border-radius 0.3s ease, min-height 0.3s ease, max-height 0.3s ease;
             scroll-snap-align: center;
             scroll-snap-stop: always;
             min-height: 78vh;
@@ -148,6 +147,7 @@
             object-fit: contain;
             background: #000;
             display: block;
+            transition: object-fit 0.3s ease, transform 0.3s ease;
         }
         .video-card .thumbnail .play-btn {
             position: absolute;
@@ -171,7 +171,6 @@
         }
         .video-card .thumbnail .play-btn:hover { transform: translate(-50%, -50%) scale(1.1); background: rgba(0,0,0,0.75); }
         .video-card.playing .thumbnail .play-btn { display: none; }
-        .video-card.playing:not(.activo-manual) .thumbnail .play-btn { display: none; }
 
         .video-card .btn-eliminar-card {
             position: absolute; top: 12px; right: 12px; z-index: 5;
@@ -181,10 +180,10 @@
             font-size: 1.05rem; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
             padding: 0; line-height: 1;
+            transition: opacity 0.3s ease;
         }
-        .video-card .btn-eliminar-card:hover { background: rgba(255, 51, 102, 0.9); color: #fff; }
 
-        /* Overlay info (autor + título) — arriba izquierda */
+        /* Overlay info */
         .video-card .overlay-info {
             position: absolute;
             left: 14px;
@@ -193,6 +192,7 @@
             z-index: 4;
             pointer-events: none;
             text-shadow: 0 2px 8px rgba(0,0,0,0.9);
+            transition: opacity 0.3s ease;
         }
         .video-card .overlay-info .autor-row {
             display: flex;
@@ -213,31 +213,12 @@
             flex-shrink: 0;
         }
         .video-card .overlay-info .autor-avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .video-card .overlay-info .autor-nombre {
-            font-weight: 700;
-            font-size: 0.85rem;
-            color: #fff;
-        }
-        .video-card .overlay-info .titulo {
-            font-size: 0.8rem;
-            color: rgba(255,255,255,0.92);
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            margin-bottom: 4px;
-        }
-        .video-card .overlay-info .descripcion-corta {
-            font-size: 0.7rem;
-            color: rgba(255,255,255,0.72);
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
+        .video-card .overlay-info .autor-nombre { font-weight: 700; font-size: 0.85rem; color: #fff; }
+        .video-card .overlay-info .titulo { font-size: 0.8rem; color: rgba(255,255,255,0.92); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 4px; }
+        .video-card .overlay-info .descripcion-corta { font-size: 0.7rem; color: rgba(255,255,255,0.72); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
         /* ============================================================ */
-        /* SIDE BAR FLOTANTE (derecha, sobre el video)                  */
+        /* SIDEBAR FLOTANTE                                             */
         /* ============================================================ */
         .video-card .sidebar-acciones {
             position: absolute;
@@ -248,6 +229,7 @@
             flex-direction: column;
             gap: 14px;
             align-items: center;
+            transition: opacity 0.3s ease, transform 0.3s ease;
         }
         .sidebar-btn {
             width: 48px;
@@ -261,7 +243,6 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 0;
             cursor: pointer;
             transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
             position: relative;
@@ -272,22 +253,9 @@
             -webkit-user-select: none;
             -webkit-tap-highlight-color: transparent;
         }
-        .sidebar-btn:active {
-            transform: scale(0.85);
-        }
-        .sidebar-btn:hover {
-            background: rgba(0, 0, 0, 0.7);
-            border-color: rgba(255, 255, 255, 0.25);
-            transform: scale(1.06);
-        }
-        .sidebar-btn .icono {
-            font-size: 1.35rem;
-            line-height: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.2s ease;
-        }
+        .sidebar-btn:active { transform: scale(0.85); }
+        .sidebar-btn:hover { background: rgba(0, 0, 0, 0.7); border-color: rgba(255, 255, 255, 0.25); transform: scale(1.06); }
+        .sidebar-btn .icono { font-size: 1.35rem; line-height: 1; display: flex; align-items: center; justify-content: center; transition: transform 0.2s ease; }
         .sidebar-btn .contador {
             position: absolute;
             bottom: -6px;
@@ -307,6 +275,21 @@
         .sidebar-btn.liked { background: rgba(255, 51, 102, 0.25); border-color: rgba(255, 51, 102, 0.5); }
         .sidebar-btn.liked .contador { background: rgba(255, 51, 102, 0.9); border-color: rgba(255, 51, 102, 0.6); }
 
+        /* ✅ NUEVO: ícono SVG estilo Instagram para compartir */
+        .sidebar-btn svg.icono-svg {
+            width: 24px;
+            height: 24px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .sidebar-btn:hover svg.icono-svg {
+            transform: scale(1.12) rotate(-8deg);
+        }
+
         /* Animación de pulse al dar like */
         @keyframes likePop {
             0% { transform: scale(1); }
@@ -314,11 +297,9 @@
             70% { transform: scale(0.9); }
             100% { transform: scale(1); }
         }
-        .sidebar-btn.like-pop .icono {
-            animation: likePop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
+        .sidebar-btn.like-pop .icono { animation: likePop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
 
-        /* Reacciones flotantes (picker que aparece al long-press) */
+        /* Reacciones flotantes */
         .reaccion-picker {
             position: absolute;
             right: 60px;
@@ -335,40 +316,22 @@
             z-index: 8;
             white-space: nowrap;
         }
-        .reaccion-picker.show {
-            display: flex;
-            animation: pickerIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        @keyframes pickerIn {
-            from { opacity: 0; transform: translateX(10px) scale(0.85); }
-            to { opacity: 1; transform: translateX(0) scale(1); }
-        }
+        .reaccion-picker.show { display: flex; animation: pickerIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        @keyframes pickerIn { from { opacity: 0; transform: translateX(10px) scale(0.85); } to { opacity: 1; transform: translateX(0) scale(1); } }
         .reaccion-picker .reaccion-opcion {
-            width: 40px;
-            height: 40px;
-            background: transparent;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
+            width: 40px; height: 40px;
+            background: transparent; border: none;
+            font-size: 1.5rem; cursor: pointer;
             border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: flex; align-items: center; justify-content: center;
             transition: all 0.15s ease;
-            padding: 0;
-            line-height: 1;
+            padding: 0; line-height: 1;
             -webkit-tap-highlight-color: transparent;
         }
-        .reaccion-picker .reaccion-opcion:hover {
-            background: rgba(255, 255, 255, 0.1);
-            transform: scale(1.25) translateY(-4px);
-        }
-        .reaccion-picker .reaccion-opcion.activa {
-            background: rgba(212, 175, 55, 0.25);
-            box-shadow: 0 0 0 1.5px rgba(212, 175, 55, 0.6);
-        }
+        .reaccion-picker .reaccion-opcion:hover { background: rgba(255, 255, 255, 0.1); transform: scale(1.25) translateY(-4px); }
+        .reaccion-picker .reaccion-opcion.activa { background: rgba(212, 175, 55, 0.25); box-shadow: 0 0 0 1.5px rgba(212, 175, 55, 0.6); }
 
-        /* Barra inferior (tiempo + progreso sobre el video) */
+        /* Barra inferior (tiempo + progreso) */
         .video-card .barra-inferior {
             position: absolute;
             left: 0; right: 0; bottom: 0;
@@ -376,6 +339,7 @@
             padding: 8px 12px 10px;
             background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%);
             pointer-events: auto;
+            transition: opacity 0.3s ease;
         }
         .video-card .barra-inferior .fila-tiempo {
             display: flex;
@@ -388,18 +352,63 @@
             text-shadow: 0 1px 3px rgba(0,0,0,0.9);
         }
         .video-card .barra-inferior .barra-progreso-card {
-            width: 100%;
-            height: 3px;
+            width: 100%; height: 3px;
             background: rgba(255, 255, 255, 0.2);
             border-radius: 3px;
             overflow: hidden;
         }
         .video-card .barra-inferior .barra-progreso-card .fill {
-            height: 100%;
-            width: 0%;
+            height: 100%; width: 0%;
             background: linear-gradient(90deg, var(--gold), var(--gold-light));
             border-radius: 3px;
             transition: width 0.15s linear;
+        }
+
+        /* ============================================================ */
+        /* ✅ NUEVO: MODO PANTALLA COMPLETA (doble tap)                 */
+        /* ============================================================ */
+        .video-card.pantalla-completa {
+            border-radius: 0;
+            min-height: 95vh;
+            max-height: 95vh;
+        }
+        .video-card.pantalla-completa .overlay-info,
+        .video-card.pantalla-completa .sidebar-acciones,
+        .video-card.pantalla-completa .barra-inferior,
+        .video-card.pantalla-completa .btn-eliminar-card {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .video-card.pantalla-completa .thumbnail video {
+            object-fit: cover;
+            transform: scale(1.02);
+        }
+
+        /* Hint doble tap */
+        .doble-tap-hint {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.5);
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 10;
+            transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .doble-tap-hint.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
         }
 
         /* ============================================================ */
@@ -416,10 +425,7 @@
             visibility: hidden;
             transition: opacity 0.25s ease, visibility 0.25s ease;
         }
-        .bottom-sheet-backdrop.show {
-            opacity: 1;
-            visibility: visible;
-        }
+        .bottom-sheet-backdrop.show { opacity: 1; visibility: visible; }
         .bottom-sheet {
             position: fixed;
             left: 0;
@@ -442,57 +448,13 @@
             box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.6);
             will-change: transform;
         }
-        .bottom-sheet.show {
-            transform: translateY(0);
-        }
-        .bottom-sheet .sheet-handle {
-            padding: 8px 0 4px;
-            display: flex;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-        .bottom-sheet .sheet-handle::before {
-            content: '';
-            width: 40px;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.25);
-            border-radius: 4px;
-        }
-        .bottom-sheet .sheet-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 4px 16px 12px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-            flex-shrink: 0;
-        }
-        .bottom-sheet .sheet-titulo {
-            font-family: 'Orbitron', monospace;
-            font-size: 0.9rem;
-            font-weight: 700;
-            color: var(--gold);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .bottom-sheet .sheet-contador {
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            background: rgba(255, 255, 255, 0.05);
-            padding: 2px 10px;
-            border-radius: 12px;
-            font-family: 'Inter', sans-serif;
-            font-weight: 500;
-        }
-        .bottom-sheet .sheet-close {
-            background: transparent;
-            border: none;
-            color: var(--text-muted);
-            font-size: 1.4rem;
-            cursor: pointer;
-            padding: 0 4px;
-            line-height: 1;
-        }
+        .bottom-sheet.show { transform: translateY(0); }
+        .bottom-sheet .sheet-handle { padding: 8px 0 4px; display: flex; justify-content: center; flex-shrink: 0; }
+        .bottom-sheet .sheet-handle::before { content: ''; width: 40px; height: 4px; background: rgba(255, 255, 255, 0.25); border-radius: 4px; }
+        .bottom-sheet .sheet-header { display: flex; justify-content: space-between; align-items: center; padding: 4px 16px 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.06); flex-shrink: 0; }
+        .bottom-sheet .sheet-titulo { font-family: 'Orbitron', monospace; font-size: 0.9rem; font-weight: 700; color: var(--gold); display: flex; align-items: center; gap: 8px; }
+        .bottom-sheet .sheet-contador { font-size: 0.7rem; color: var(--text-muted); background: rgba(255, 255, 255, 0.05); padding: 2px 10px; border-radius: 12px; font-family: 'Inter', sans-serif; font-weight: 500; }
+        .bottom-sheet .sheet-close { background: transparent; border: none; color: var(--text-muted); font-size: 1.4rem; cursor: pointer; padding: 0 4px; line-height: 1; }
 
         .bottom-sheet .comentarios-lista {
             flex: 1;
@@ -507,30 +469,20 @@
         .bottom-sheet .comentarios-lista::-webkit-scrollbar { width: 3px; }
         .bottom-sheet .comentarios-lista::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 3px; }
 
-        .comentario-burbuja {
-            display: flex;
-            gap: 10px;
-            align-items: flex-start;
-        }
+        .comentario-burbuja { display: flex; gap: 10px; align-items: flex-start; }
         .comentario-burbuja .avatar {
-            width: 36px;
-            height: 36px;
+            width: 36px; height: 36px;
             border-radius: 50%;
             overflow: hidden;
             flex-shrink: 0;
             background: linear-gradient(135deg, var(--green-deep), var(--gold));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.8rem;
-            font-weight: 700;
-            color: #fff;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.8rem; font-weight: 700; color: #fff;
             border: 1.5px solid rgba(255, 255, 255, 0.1);
         }
         .comentario-burbuja .avatar img { width: 100%; height: 100%; object-fit: cover; }
         .comentario-burbuja .burbuja {
-            flex: 1;
-            min-width: 0;
+            flex: 1; min-width: 0;
             background: rgba(255, 255, 255, 0.06);
             border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 16px;
@@ -555,17 +507,8 @@
             font-weight: 700;
             letter-spacing: 0.5px;
         }
-        .comentario-burbuja .burbuja .texto {
-            font-size: 0.82rem;
-            color: var(--text-primary);
-            line-height: 1.45;
-            word-wrap: break-word;
-        }
-        .comentario-burbuja .burbuja .fecha {
-            font-size: 0.6rem;
-            color: var(--text-muted);
-            margin-top: 5px;
-        }
+        .comentario-burbuja .burbuja .texto { font-size: 0.82rem; color: var(--text-primary); line-height: 1.45; word-wrap: break-word; }
+        .comentario-burbuja .burbuja .fecha { font-size: 0.6rem; color: var(--text-muted); margin-top: 5px; }
 
         .bottom-sheet .sheet-input {
             flex-shrink: 0;
@@ -588,14 +531,10 @@
             outline: none;
             font-family: inherit;
         }
-        .bottom-sheet .sheet-input input:focus {
-            border-color: var(--gold);
-            background: rgba(255, 255, 255, 0.1);
-        }
+        .bottom-sheet .sheet-input input:focus { border-color: var(--gold); background: rgba(255, 255, 255, 0.1); }
         .bottom-sheet .sheet-input input::placeholder { color: var(--text-muted); }
         .bottom-sheet .sheet-input button {
-            width: 42px;
-            height: 42px;
+            width: 42px; height: 42px;
             border-radius: 50%;
             background: linear-gradient(135deg, var(--gold), var(--gold-dark));
             color: var(--space);
@@ -603,19 +542,14 @@
             font-weight: 700;
             font-size: 1.1rem;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: flex; align-items: center; justify-content: center;
             flex-shrink: 0;
             padding: 0;
         }
         .bottom-sheet .sheet-input button:active { transform: scale(0.92); }
         .bottom-sheet .sheet-input button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        /* Ajuste cuando el teclado está abierto (usando visualViewport) */
-        body.teclado-abierto .bottom-sheet {
-            max-height: 80vh;
-        }
+        body.teclado-abierto .bottom-sheet { max-height: 80vh; }
 
         /* EMPTY STATE */
         .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
@@ -641,18 +575,11 @@
 
         /* TEMA DÍA */
         html.tema-dia, html[data-tema="dia"] {
-            --space: #f5f7fa;
-            --glass-bg: rgba(255, 255, 255, 0.85);
-            --glass-border: rgba(0, 0, 0, 0.1);
-            --text-primary: #1a2332;
-            --text-secondary: #4a5568;
-            --text-muted: #718096;
+            --space: #f5f7fa; --glass-bg: rgba(255, 255, 255, 0.85); --glass-border: rgba(0, 0, 0, 0.1);
+            --text-primary: #1a2332; --text-secondary: #4a5568; --text-muted: #718096;
             --line-black: rgba(0, 0, 0, 0.15);
         }
-        html.tema-dia body, html[data-tema="dia"] body {
-            background: #f5f7fa !important;
-            color: var(--text-primary) !important;
-        }
+        html.tema-dia body, html[data-tema="dia"] body { background: #f5f7fa !important; color: var(--text-primary) !important; }
         html.tema-dia .header, html[data-tema="dia"] .header { background: rgba(255,255,255,0.95) !important; }
         html.tema-dia .main-nav, html[data-tema="dia"] .main-nav { background: rgba(255,255,255,0.7) !important; }
         html.tema-dia .upload-section, html[data-tema="dia"] .upload-section { background: rgba(255,255,255,0.9) !important; }
@@ -671,6 +598,7 @@
             .video-card .btn-eliminar-card { width: 34px; height: 34px; font-size: 0.95rem; }
             .sidebar-btn { width: 44px; height: 44px; }
             .sidebar-btn .icono { font-size: 1.2rem; }
+            .sidebar-btn svg.icono-svg { width: 20px; height: 20px; }
             .sidebar-btn .contador { font-size: 0.55rem; padding: 1px 6px; min-width: 20px; }
             .video-card .overlay-info { right: 80px; bottom: 80px; }
         }
@@ -777,9 +705,6 @@
         </footer>
     </div>
 
-    <!-- ============================================================ -->
-    <!-- BOTTOM SHEET DE COMENTARIOS                                  -->
-    <!-- ============================================================ -->
     <div class="bottom-sheet-backdrop" id="sheetBackdrop" onclick="cerrarBottomSheet()"></div>
 
     <div class="bottom-sheet" id="bottomSheet" role="dialog" aria-modal="true">
@@ -792,18 +717,10 @@
             <button class="sheet-close" onclick="cerrarBottomSheet()" aria-label="Cerrar">✕</button>
         </div>
         <div class="comentarios-lista" id="comentariosLista">
-            <div style="color:var(--text-muted);font-size:0.8rem;padding:20px;text-align:center;">
-                Sin comentarios. ¡Sé el primero!
-            </div>
+            <div style="color:var(--text-muted);font-size:0.8rem;padding:20px;text-align:center;">Sin comentarios. ¡Sé el primero!</div>
         </div>
         <div class="sheet-input">
-            <input
-                type="text"
-                id="inputComentarioSheet"
-                placeholder="Escribe un comentario..."
-                maxlength="2000"
-                autocomplete="off"
-            />
+            <input type="text" id="inputComentarioSheet" placeholder="Escribe un comentario..." maxlength="2000" autocomplete="off" />
             <button id="btnEnviarComentarioSheet" onclick="enviarComentarioSheet()" aria-label="Enviar">➤</button>
         </div>
     </div>
@@ -821,8 +738,7 @@
     <script src="/features/shared/js/idiomas.js"></script>
 <script>
     // ================================================================
-    // VIDEOS · v12 — Facebook Reels Style
-    // Reacciones múltiples + Bottom Sheet + Sidebar flotante
+    // VIDEOS · v13 — Reels + Pantalla Completa + Compartir SVG
     // ================================================================
 
     var sbVideos = null;
@@ -845,7 +761,7 @@
     })();
 
     // ================================================================
-    // CONSTANTES Y VARIABLES GLOBALES
+    // CONSTANTES
     // ================================================================
     var REACCIONES = ['❤️', '🔥', '🚀', '😂', '👍'];
     var REACCION_DEFAULT = '❤️';
@@ -856,7 +772,7 @@
     var videosPublicados = [];
     var likeCache = new Map();
     var likeCacheOrden = [];
-    var reaccionesCache = new Map(); // key: videoId → { tipo: '❤️', totales: { '❤️': 2, '🔥': 1 } }
+    var reaccionesCache = new Map();
 
     var anuncioActualVideo = null;
     var adRefreshIntervalVideo = null;
@@ -892,11 +808,8 @@
     function escapeHTML(texto) {
         if (texto === null || texto === undefined) return '';
         return String(texto)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#39;');
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
     function esURLValida(url) {
         if (!url || typeof url !== 'string') return false;
@@ -993,7 +906,7 @@
     }
 
     // ================================================================
-    // CARGA DE USUARIO ACTUAL
+    // USUARIO ACTUAL
     // ================================================================
     async function cargarUsuarioActual() {
         try {
@@ -1114,7 +1027,7 @@
     }
 
     // ================================================================
-    // CARGAR VIDEOS — estilo Reels
+    // CARGAR VIDEOS
     // ================================================================
     async function cargarVideos() {
         var container = document.getElementById('videosContainer');
@@ -1138,7 +1051,6 @@
                     .eq('estado', 'publicado')
                     .order('created_at', { ascending: false })
                     .limit(20);
-
                 if (result2.error) throw new Error(result.error.message + ' || ' + result2.error.message);
                 data = result2.data || [];
             } else {
@@ -1153,7 +1065,6 @@
                 return;
             }
 
-            // ✅ Cargar reacciones de todos los videos de una vez
             await cargarReaccionesDeVideos(data.map(function(v){ return v.id; }));
 
             container.className = 'videos-grid';
@@ -1176,22 +1087,19 @@
     }
 
     // ================================================================
-    // CARGAR REACCIONES DE VARIOS VIDEOS
+    // CARGAR REACCIONES
     // ================================================================
     async function cargarReaccionesDeVideos(videoIds) {
         if (!videoIds || videoIds.length === 0) return;
         try {
             if (!sbVideos) return;
-
-            // Todas las reacciones de todos los videos visibles
             var result = await sbVideos
                 .from('videos_likes')
                 .select('video_id, usuario_id, tipo')
                 .in('video_id', videoIds);
 
             if (result.error) {
-                console.warn('[Reacciones] Falló con columna tipo, intentando sin ella:', result.error);
-                // Fallback: asumir que no existe columna tipo
+                console.warn('[Reacciones] Falló con tipo, intentando sin ella:', result.error);
                 var fallback = await sbVideos
                     .from('videos_likes')
                     .select('video_id, usuario_id')
@@ -1199,7 +1107,7 @@
                 if (fallback.error) return;
                 (fallback.data || []).forEach(function(r) {
                     var key = r.video_id + '_' + r.usuario_id;
-                    likeCache.set(key, true);
+                    likeCache.set(key, REACCION_DEFAULT);
                     if (!reaccionesCache.has(r.video_id)) {
                         reaccionesCache.set(r.video_id, { tipo: REACCION_DEFAULT, totales: {} });
                     }
@@ -1225,7 +1133,17 @@
     }
 
     // ================================================================
-    // CREAR UNA CARD DE VIDEO — Estilo Reels
+    // ✅ ICONO SVG COMPARTIR ESTILO INSTAGRAM
+    // ================================================================
+    function getIconoCompartirSVG() {
+        return '<svg class="icono-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">' +
+            '<line x1="22" y1="2" x2="11" y2="13"/>' +
+            '<polygon points="22 2 15 22 11 13 2 9 22 2"/>' +
+            '</svg>';
+    }
+
+    // ================================================================
+    // CREAR CARD DE VIDEO
     // ================================================================
     function crearVideoCard(v) {
         var autor = v.usuarios || {};
@@ -1239,7 +1157,6 @@
         if (reaccionesCache.has(v.id)) {
             var obj = reaccionesCache.get(v.id);
             Object.keys(obj.totales).forEach(function(k) { totalReacciones += obj.totales[k]; });
-            // Emoji más frecuente
             var mayor = 0;
             Object.keys(obj.totales).forEach(function(k) {
                 if (obj.totales[k] > mayor) { mayor = obj.totales[k]; iconoMostrar = k; }
@@ -1273,7 +1190,7 @@
         html += '<div class="play-btn" onclick="togglePlayCard(event, \'' + v.id + '\')">▶</div>';
         html += '</div>';
 
-        // Overlay info (autor + título)
+        // Overlay info
         var avatarHTML = autorAvatar
             ? '<img src="' + autorAvatar + '" alt="">'
             : escapeHTML((autorNombre.charAt(0) || '◈').toUpperCase());
@@ -1286,7 +1203,7 @@
         if (descripcion) html += '<div class="descripcion-corta">' + descripcion + '</div>';
         html += '</div>';
 
-        // Sidebar de acciones (Likes, Comentarios, Compartir)
+        // Sidebar acciones
         var claseLiked = tipoMiReaccion ? ' liked' : '';
         html += '<div class="sidebar-acciones">';
         // Like
@@ -1299,11 +1216,11 @@
         html += '<span class="icono">💬</span>';
         html += '<span class="contador" id="comentCount-' + v.id + '">' + formatContador(v.comentarios || 0) + '</span>';
         html += '</button>';
-        // Compartir
-        html += '<button class="sidebar-btn" onclick="event.stopPropagation(); compartirVideo(\'' + v.id + '\')">';
-        html += '<span class="icono">↗️</span>';
+        // ✅ Compartir — SVG estilo Instagram
+        html += '<button class="sidebar-btn" onclick="event.stopPropagation(); compartirVideo(\'' + v.id + '\')" title="Compartir">';
+        html += getIconoCompartirSVG();
         html += '</button>';
-        // Picker de reacciones
+        // Picker reacciones
         html += '<div class="reaccion-picker" id="picker-' + v.id + '">';
         REACCIONES.forEach(function(re) {
             html += '<button class="reaccion-opcion" data-reaccion="' + re + '" onclick="event.stopPropagation(); elegirReaccion(\'' + v.id + '\', \'' + re + '\')">' + re + '</button>';
@@ -1311,7 +1228,7 @@
         html += '</div>';
         html += '</div>';
 
-        // Barra inferior (tiempo + progreso)
+        // Barra inferior
         html += '<div class="barra-inferior">';
         html += '<div class="fila-tiempo">';
         html += '<span class="tiempo-actual-card">0:00</span>';
@@ -1323,22 +1240,28 @@
 
         card.innerHTML = html;
 
-        // Eventos: long-press para picker
+        // ✅ Hint de doble tap (se agrega dinámicamente)
+        var hintEl = document.createElement('div');
+        hintEl.className = 'doble-tap-hint';
+        hintEl.innerHTML = '<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
+        card.appendChild(hintEl);
+
+        // ✅ Configurar doble tap
+        configurarDobleTap(card, v.id);
+
+        // Configurar long-press para like
         configurarLongPressLike(card, v.id);
 
-        // Click en la card (excepto botones) → reproducir
+        // Click en la card para reproducir (excluyendo botones)
         card.addEventListener('click', function(e) {
             if (e.target.closest('.sidebar-btn')) return;
             if (e.target.closest('.play-btn')) return;
             if (e.target.closest('.btn-eliminar-card')) return;
             if (e.target.closest('.barra-inferior')) return;
-            var video = card.querySelector('video');
-            if (video && video.paused) {
-                togglePlayCard(e, v.id);
-            }
+            if (e.target.closest('.doble-tap-hint')) return;
         });
 
-        // Eventos del video: tiempo + progreso
+        // Eventos de video
         var videoEl = card.querySelector('video');
         videoEl.addEventListener('timeupdate', function() {
             if (!videoEl.duration) return;
@@ -1357,13 +1280,68 @@
     }
 
     // ================================================================
-    // CONFIGURAR LONG PRESS EN LIKE
+    // ✅ DOBLE TAP → PANTALLA COMPLETA
+    // ================================================================
+    function configurarDobleTap(card, videoId) {
+        var ultimoTap = 0;
+        var DOBLE_TAP_MS = 320;
+        var hintTimeout = null;
+        var tapUnicoTimer = null;
+
+        function mostrarHint() {
+            var hint = card.querySelector('.doble-tap-hint');
+            if (!hint) return;
+            hint.classList.add('show');
+            if (hintTimeout) clearTimeout(hintTimeout);
+            hintTimeout = setTimeout(function() {
+                hint.classList.remove('show');
+            }, 800);
+        }
+
+        function manejarTap(e) {
+            if (e.target.closest('.sidebar-btn') ||
+                e.target.closest('.play-btn') ||
+                e.target.closest('.btn-eliminar-card') ||
+                e.target.closest('.barra-inferior') ||
+                e.target.closest('.reaccion-picker')) {
+                return;
+            }
+
+            var ahora = Date.now();
+            var diff = ahora - ultimoTap;
+
+            if (diff < DOBLE_TAP_MS) {
+                // ✅ DOBLE TAP detectado → pantalla completa
+                if (tapUnicoTimer) { clearTimeout(tapUnicoTimer); tapUnicoTimer = null; }
+                card.classList.toggle('pantalla-completa');
+                vibrar(20);
+                mostrarHint();
+
+                var video = card.querySelector('video');
+                if (video) {
+                    if (card.classList.contains('pantalla-completa')) {
+                        video.style.objectFit = 'cover';
+                    } else {
+                        video.style.objectFit = 'contain';
+                    }
+                }
+                ultimoTap = 0;
+            } else {
+                ultimoTap = ahora;
+            }
+        }
+
+        card.addEventListener('click', manejarTap);
+    }
+
+    // ================================================================
+    // ✅ LONG PRESS EN LIKE
     // ================================================================
     function configurarLongPressLike(card, videoId) {
         var btnLike = card.querySelector('.like-btn');
         if (!btnLike) return;
 
-        var startX = 0, startY = 0, longPressActivado = false;
+        var startX = 0, startY = 0;
         var LONG_PRESS_MS = 450;
 
         function iniciarLongPress(e) {
@@ -1375,10 +1353,8 @@
                 startX = e.clientX;
                 startY = e.clientY;
             }
-            longPressActivado = false;
             if (longPressTimers[videoId]) clearTimeout(longPressTimers[videoId]);
             longPressTimers[videoId] = setTimeout(function() {
-                longPressActivado = true;
                 vibrar(20);
                 mostrarPickerReacciones(videoId);
             }, LONG_PRESS_MS);
@@ -1408,9 +1384,8 @@
         btnLike.addEventListener('touchend', cancelarLongPress, { passive: true });
         btnLike.addEventListener('touchcancel', cancelarLongPress, { passive: true });
         btnLike.addEventListener('touchmove', cancelarLongPress, { passive: true });
-
         btnLike.addEventListener('mousedown', iniciarLongPress);
-        btnLike.addEventListener('mouseup', function(e) {
+        btnLike.addEventListener('mouseup', function() {
             if (longPressTimers[videoId]) {
                 clearTimeout(longPressTimers[videoId]);
                 longPressTimers[videoId] = null;
@@ -1425,14 +1400,12 @@
     }
 
     function mostrarPickerReacciones(videoId) {
-        // Ocultar todos los pickers
         document.querySelectorAll('.reaccion-picker.show').forEach(function(p) {
             p.classList.remove('show');
         });
         var picker = document.getElementById('picker-' + videoId);
         if (!picker) return;
 
-        // Marcar activa la reacción actual
         var tipoActual = sessionUser ? likeCache.get(videoId + '_' + sessionUser.id) : null;
         picker.querySelectorAll('.reaccion-opcion').forEach(function(b) {
             if (b.dataset.reaccion === tipoActual) b.classList.add('activa');
@@ -1440,38 +1413,33 @@
         });
 
         picker.classList.add('show');
-
-        // Auto-ocultar a los 4 segundos
         setTimeout(function() {
             picker.classList.remove('show');
         }, 4000);
     }
 
     // ================================================================
-    // ELEGIR UNA REACCIÓN
+    // ELEGIR REACCIÓN
     // ================================================================
     async function elegirReaccion(videoId, tipo) {
         if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
         if (!REACCIONES.includes(tipo)) return;
 
-        // Ocultar picker
         var picker = document.getElementById('picker-' + videoId);
         if (picker) picker.classList.remove('show');
 
         var btnLike = document.querySelector('.like-btn[data-video-id="' + videoId + '"]');
-        var countEl = document.getElementById('likeCount-' + videoId);
         var key = videoId + '_' + sessionUser.id;
         var tipoPrevio = likeCache.get(key);
 
         try {
             if (!sbVideos) throw new Error('Cliente no disponible');
 
-            // Si ya tenía ese mismo tipo → quitar
             if (tipoPrevio === tipo) {
+                // Quitar
                 var del = await sbVideos.from('videos_likes').delete().eq('video_id', videoId).eq('usuario_id', sessionUser.id);
                 if (del.error) throw del.error;
                 likeCache.delete(key);
-                // Actualizar contador
                 var obj = reaccionesCache.get(videoId);
                 if (obj) obj.totales[tipo] = Math.max(0, (obj.totales[tipo] || 0) - 1);
                 actualizarUIContadorReaccion(videoId);
@@ -1480,13 +1448,12 @@
                     btnLike.querySelector('.icono').textContent = REACCION_DEFAULT;
                 }
             } else if (tipoPrevio) {
-                // Ya existía otra reacción → actualizar
+                // Cambiar
                 var upd = await sbVideos.from('videos_likes')
                     .update({ tipo: tipo })
                     .eq('video_id', videoId)
                     .eq('usuario_id', sessionUser.id);
                 if (upd.error) throw upd.error;
-                // Actualizar caches
                 var obj2 = reaccionesCache.get(videoId);
                 if (obj2) {
                     obj2.totales[tipoPrevio] = Math.max(0, (obj2.totales[tipoPrevio] || 0) - 1);
@@ -1502,11 +1469,9 @@
                     btnLike.classList.add('like-pop');
                 }
             } else {
-                // Crear nueva
+                // Crear
                 var ins = await sbVideos.from('videos_likes').insert({
-                    video_id: videoId,
-                    usuario_id: sessionUser.id,
-                    tipo: tipo
+                    video_id: videoId, usuario_id: sessionUser.id, tipo: tipo
                 });
                 if (ins.error) throw ins.error;
                 likeCache.set(key, tipo);
@@ -1543,14 +1508,13 @@
     }
 
     // ================================================================
-    // CLICK SIMPLE EN LIKE (sin long press)
+    // TOGGLE LIKE (click simple)
     // ================================================================
     async function toggleLikeVideo(videoId) {
         if (longPressTimers[videoId]) {
             clearTimeout(longPressTimers[videoId]);
             longPressTimers[videoId] = null;
         }
-        // Si el picker estaba visible, no hacemos nada (el usuario eligió)
         var picker = document.getElementById('picker-' + videoId);
         if (picker && picker.classList.contains('show')) return;
 
@@ -1559,10 +1523,8 @@
         var tipoPrevio = likeCache.get(videoId + '_' + sessionUser.id);
 
         if (tipoPrevio) {
-            // Quitar reacción
             await elegirReaccion(videoId, tipoPrevio);
         } else {
-            // Poner reacción por defecto
             await elegirReaccion(videoId, REACCION_DEFAULT);
         }
     }
@@ -1574,7 +1536,7 @@
         var url = window.location.origin + '/features/videos/videos.html?v=' + videoId;
         try {
             if (navigator.share) {
-                await navigator.share({ title: 'Sariel\'s Video', url: url });
+                await navigator.share({ title: "Sariel's Video", url: url });
             } else {
                 await navigator.clipboard.writeText(url);
                 showToast('🔗 Enlace copiado', 'success');
@@ -1585,7 +1547,7 @@
     }
 
     // ================================================================
-    // BOTTOM SHEET — COMENTARIOS
+    // BOTTOM SHEET COMENTARIOS
     // ================================================================
     function abrirComentarios(videoId) {
         videoIdComentariosActual = videoId;
@@ -1593,7 +1555,6 @@
         var backdrop = document.getElementById('sheetBackdrop');
         if (!sheet || !backdrop) return;
 
-        // Limpiar
         var lista = document.getElementById('comentariosLista');
         if (lista) lista.innerHTML = '<div style="color:var(--text-muted);font-size:0.8rem;padding:20px;text-align:center;">Cargando...</div>';
 
@@ -1668,9 +1629,7 @@
             });
 
             lista.innerHTML = html;
-            // Scroll al final
             setTimeout(function(){ lista.scrollTop = lista.scrollHeight; }, 100);
-
         } catch (e) {
             console.error('[Comentarios] Error:', e);
             lista.innerHTML = '<div style="color:var(--danger);font-size:0.8rem;padding:20px;text-align:center;">Error al cargar comentarios</div>';
@@ -1692,22 +1651,18 @@
         try {
             if (!sbVideos) throw new Error('Cliente no disponible');
             var result = await sbVideos.from('videos_comentarios').insert({
-                video_id: videoIdComentariosActual,
-                usuario_id: sessionUser.id,
-                contenido: texto
+                video_id: videoIdComentariosActual, usuario_id: sessionUser.id, contenido: texto
             });
             if (result.error) throw result.error;
 
             input.value = '';
 
-            // Incrementar contador en la card
             var contEl = document.getElementById('comentCount-' + videoIdComentariosActual);
             if (contEl) {
                 var actual = parseInt(contEl.textContent.replace(/[^\d]/g, '')) || 0;
                 contEl.textContent = formatContador(actual + 1);
             }
 
-            // Recargar comentarios
             await cargarComentariosSheet(videoIdComentariosActual);
             vibrar(10);
         } catch (e) {
@@ -1719,7 +1674,7 @@
     }
 
     // ================================================================
-    // TECLADO MÓVIL — Evitar pantalla negra
+    // TECLADO MÓVIL
     // ================================================================
     function configurarTecladoMovil() {
         if (!window.visualViewport) return;
@@ -1730,7 +1685,6 @@
         function ajustar() {
             var diff = window.innerHeight - vv.height;
             if (diff > 150) {
-                // Teclado abierto
                 document.body.classList.add('teclado-abierto');
                 sheet.style.maxHeight = (vv.height - 40) + 'px';
             } else {
@@ -1833,20 +1787,6 @@
         } catch (e) {
             showToast('Error al eliminar', 'error');
         }
-    }
-
-    // ================================================================
-    // VISTAS
-    // ================================================================
-    async function registrarVista(videoId) {
-        try {
-            if (yaVistoEnSesion(videoId)) return;
-            var session = await getSession();
-            if (!session) return;
-            if (!sbVideos) return;
-            var r = await sbVideos.rpc('registrar_vista_video', { p_video_id: videoId });
-            if (!r.error) marcarVistoEnSesion(videoId);
-        } catch (e) {}
     }
 
     // ================================================================
@@ -2064,7 +2004,7 @@
         reaccionesCache.clear();
     });
 
-    // Ocultar pickers al hacer click en cualquier lado
+    // Ocultar pickers al click afuera
     document.addEventListener('click', function(e) {
         if (!e.target.closest('.reaccion-picker') && !e.target.closest('.like-btn')) {
             document.querySelectorAll('.reaccion-picker.show').forEach(function(p) {
@@ -2073,21 +2013,27 @@
         }
     });
 
-    // ESC cierra bottom sheet
+    // ✅ ESC sale de Bottom Sheet o Pantalla Completa
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             var sheet = document.getElementById('bottomSheet');
-            if (sheet && sheet.classList.contains('show')) cerrarBottomSheet();
+            if (sheet && sheet.classList.contains('show')) {
+                cerrarBottomSheet();
+                return;
+            }
+            document.querySelectorAll('.video-card.pantalla-completa').forEach(function(card) {
+                card.classList.remove('pantalla-completa');
+                var video = card.querySelector('video');
+                if (video) video.style.objectFit = 'contain';
+            });
         }
     });
 
-    // Pausar videos al cambiar de pestaña
     document.addEventListener('visibilitychange', function () {
         if (!document.hidden) return;
         document.querySelectorAll('.video-card video').forEach(function (v) { v.pause(); });
     });
 
-    // Input del sheet: enter para enviar
     document.addEventListener('DOMContentLoaded', function() {
         var inputSheet = document.getElementById('inputComentarioSheet');
         if (inputSheet) {
@@ -2098,10 +2044,10 @@
     });
 
     // ================================================================
-    // INICIALIZACIÓN
+    // INIT
     // ================================================================
     document.addEventListener('DOMContentLoaded', function() {
-        console.log("◈ Sariel's - Videos v12 (Reels Style)");
+        console.log("◈ Sariel's - Videos v13 (Reels + Fullscreen)");
         aplicarI18N();
         configurarTecladoMovil();
         cargarUsuarioActual().then(async function() {
@@ -2115,7 +2061,7 @@
     });
 
     // ================================================================
-    // EXPORTS GLOBALES
+    // EXPORTS
     // ================================================================
     window.subirVideo = subirVideo;
     window.cargarVideos = cargarVideos;
