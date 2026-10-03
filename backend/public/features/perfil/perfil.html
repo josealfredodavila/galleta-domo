@@ -108,8 +108,6 @@
     .btn-sm { padding: 4px 12px; font-size: 0.65rem; }
     .btn-danger { background: rgba(255, 51, 102, 0.1); color: var(--danger); border: 2px solid var(--line-black); }
     .btn-danger:hover { background: rgba(255, 51, 102, 0.2); }
-    .btn-crypto { background: linear-gradient(135deg, #00ff88, #00b894); color: var(--space); box-shadow: 0 4px 20px rgba(0, 255, 136, 0.2), 0 0 0 1px var(--line-black); }
-    .btn-crypto:hover { transform: translateY(-2px); box-shadow: 0 0 40px rgba(0, 255, 136, 0.3), 0 0 0 1px var(--line-black); }
     .perfil-tabs { display: flex; gap: 4px; background: var(--glass-bg); border-radius: var(--radius); padding: 4px; border: 2px solid var(--line-black); margin-bottom: 20px; overflow-x: auto; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); }
     .perfil-tabs .tab-btn { padding: 10px 20px; border: none; background: transparent; color: var(--text-muted); font-family: 'Inter', sans-serif; font-size: 0.7rem; font-weight: 600; border-radius: 10px; cursor: pointer; transition: var(--transition); white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; }
     .perfil-tabs .tab-btn.active { background: rgba(212, 175, 55, 0.12); color: var(--gold); box-shadow: 0 0 20px rgba(212, 175, 55, 0.05), inset 0 0 0 1px var(--line-black); }
@@ -309,13 +307,6 @@
     .modal-content .amount { font-family: 'Orbitron', monospace; font-size: 1.4rem; color: var(--gold); margin: 10px 0; }
     .modal-content .actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
     .modal-content .status { margin-top: 10px; font-size: 0.8rem; color: var(--text-muted); min-height: 20px; }
-    .crypto-controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-    .crypto-controls .qty-group { display: flex; align-items: center; gap: 10px; background: rgba(0, 0, 0, 0.4); padding: 4px 12px; border-radius: 30px; border: 2px solid var(--line-black); }
-    .crypto-controls .qty-group .qty-btn { width: 28px; height: 28px; border-radius: 50%; border: none; background: transparent; color: var(--text-primary); font-size: 1.1rem; cursor: pointer; transition: var(--transition); }
-    .crypto-controls .qty-group .qty-btn:hover { background: rgba(212, 175, 55, 0.1); }
-    .crypto-controls .qty-group .qty-value { font-family: 'Orbitron', monospace; font-size: 1rem; font-weight: 600; color: var(--gold); min-width: 20px; text-align: center; }
-    .crypto-total { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--gold); font-weight: 700; }
-    .crypto-hint { font-size: 0.55rem; color: var(--text-muted); margin-top: 6px; text-align: center; }
     #qrReaderContainer { display: none; margin-top: 10px; text-align: center; }
     #qrReaderContainer video { width: 100%; max-width: 300px; border-radius: 10px; background: black; border: 2px solid var(--line-black); }
 
@@ -355,7 +346,6 @@
         .header .logo-hex { font-size: 1.4rem; }
         .conexion-section .conexion-header { flex-direction: column; align-items: stretch; }
         .estado-section .estado-header { flex-direction: column; align-items: stretch; }
-        .crypto-controls { flex-direction: column; }
         .modal-content { padding: 20px; }
         .emoji-picker { width: 240px; left: 50%; transform: translateX(-50%); }
         .emoji-picker .grid { grid-template-columns: repeat(6, 1fr); }
@@ -837,41 +827,10 @@
             </div>
 
             <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
-                <button class="btn btn-gold" style="flex:1;justify-content:center;" onclick="window.comprarDomo(1)" data-clave="perfil_comprar_domo">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/><path d="M2 9h20M12 3l-4 6 4 12 4-12-4-6"/></svg>
-                    Comprar Domo (MXN)
-                </button>
                 <button class="btn btn-gold" style="flex:1;justify-content:center;" id="canjearNft" onclick="window.canjearNFT()" disabled data-clave="perfil_canjear_nft">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                     CANJEAR NFT
                 </button>
-            </div>
-
-            <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--line-black-soft);">
-                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-                    <span style="font-size:0.75rem;color:var(--gold);font-weight:600;display:inline-flex;align-items:center;gap:5px;" data-clave="perfil_pagar_usdt">
-                        <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-                        Comprar con Cripto
-                    </span>
-                    <span style="font-size:0.55rem;color:var(--text-muted);" data-clave="perfil_usdt_trc20">USDT / USDC · 2% comisión</span>
-                </div>
-                <div class="crypto-controls">
-                    <div class="qty-group">
-                        <button class="qty-btn" id="cryptoDecreaseQty">−</button>
-                        <span class="qty-value" id="cryptoQuantity">1</span>
-                        <button class="qty-btn" id="cryptoIncreaseQty">+</button>
-                    </div>
-                    <div style="flex:1;text-align:center;">
-                        <span class="crypto-total" id="cryptoTotal">$4.59 USDT</span>
-                    </div>
-                </div>
-                <button class="btn btn-crypto" style="width:100%;justify-content:center;margin-top:8px;padding:10px;" onclick="window.comprarConCripto()" data-clave="perfil_pagar_usdt">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-                    Pagar con USDT/USDC
-                </button>
-                <div class="crypto-hint" data-clave="perfil_usdt_trc20">
-                    ⚡ Red: TRC-20 (tarifas bajas) · Acepta USDT y USDC
-                </div>
             </div>
 
             <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;" onclick="window.irAMuro()" data-clave="perfil_ir_muro">
@@ -926,9 +885,9 @@
             </div>
 
             <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
-                <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" id="btnComprarEsim" onclick="window.irAComprarInternet()" data-clave="perfil_adquirir_esim">
+                <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" id="btnComprarEsim" onclick="window.irAComprarInternet()">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
-                    Comprar eSIM
+                    <span id="btnComprarEsimTxt">Comprar eSIM</span>
                 </button>
                 <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" id="btnQrEsim" onclick="window.verQREsimNuevo()" data-clave="perfil_obtener_qr">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="17"/><line x1="17" y1="14" x2="21" y2="14"/><line x1="14" y1="21" x2="21" y2="21"/></svg>
@@ -1086,45 +1045,6 @@
 </div>
 
 <div class="toast" id="toast"></div>
-
-<div class="modal-overlay" id="cryptoPaymentModal">
-    <div class="modal-content">
-        <button class="close-btn" onclick="window.cerrarModalPago()">✕</button>
-        <h2 data-clave="perfil_pagar_usdt">
-            <svg class="icon" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-            Pagar con Cripto
-        </h2>
-        <p class="subtitle" data-clave="perfil_obtencion_cripto">Escanea el QR o copia la dirección para pagar</p>
-        <div class="qr-container">
-            <img id="cryptoQR" src="" alt="QR de pago" />
-        </div>
-        <div class="address-box">
-            <div class="label" data-clave="perfil_codigo_qr">
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                Dirección de pago
-            </div>
-            <div class="address" id="cryptoAddress" data-clave="perfil_cargando_direccion">Cargando dirección...</div>
-        </div>
-        <div class="amount">
-            <span id="cryptoMonto">0.00</span> <span id="cryptoMoneda">USDT</span>
-        </div>
-        <div class="actions">
-            <button class="btn btn-outline btn-sm" onclick="window.copiarDireccion()" data-clave="perfil_copiar_direccion">
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                Copiar dirección
-            </button>
-            <button class="btn btn-gold btn-sm" onclick="window.verificarPagoCrypto()" data-clave="perfil_validacion_real">
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                Verificar pago
-            </button>
-            <button class="btn btn-outline btn-sm" onclick="window.cerrarModalPago()" data-clave="perfil_cerrar">Cerrar</button>
-        </div>
-        <div class="status" id="cryptoStatus" data-clave="perfil_cargando_membresia">
-            <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            Esperando confirmación de pago...
-        </div>
-    </div>
-</div>
 
 <div id="errorBanner" style="display:none; position:fixed; top:0; left:0; right:0; z-index:99999; background:#ff3366; color:#fff; padding:12px 16px; font-family:monospace; font-size:0.75rem; word-break:break-word; box-shadow:0 4px 20px rgba(0,0,0,0.4);">
     <strong>⚠️ Error detectado:</strong>
@@ -1421,7 +1341,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function crearAvatar(usuarioNombre, avatarUrl, size) {
         var letra = (usuarioNombre || '◈').charAt(0).toUpperCase() || '◈';
-        if (!esUrlSegura(avatarUrl)) return letra;
+        if (!esUrlSegura(avatarUrl)) return document.createTextNode(letra);
         var img = document.createElement('img');
         img.alt = 'Avatar';
         img.loading = 'lazy';
@@ -2151,14 +2071,6 @@ document.addEventListener('DOMContentLoaded', function() {
         renderOrdenesInternet();
     };
     document.addEventListener('DOMContentLoaded', function() {
-        document.querySelectorAll('.perfil-tabs .tab-btn').forEach(function(btn){
-            btn.addEventListener('click', function() {
-                var onclick = btn.getAttribute('onclick') || '';
-                if (onclick.indexOf("'internet'") !== -1) {
-                    setTimeout(window.cargarOrdenesInternet, 100);
-                }
-            });
-        });
         var tabInternet = document.getElementById('tab-internet');
         if (tabInternet && tabInternet.classList.contains('active')) {
             window.cargarOrdenesInternet();
@@ -2195,16 +2107,6 @@ document.addEventListener('DOMContentLoaded', function() {
             var handleElement = document.querySelector('#perfilHandle');
             if (handleElement) {
                 handleElement.textContent = usuario.handle ? '@' + usuario.handle : '@explorador';
-            }
-            var bioElement = document.querySelector('#perfilBio');
-            if (bioElement) {
-                var tieneClave = bioElement.hasAttribute('data-clave');
-                var bioPersonalizada = usuario.bio && String(usuario.bio).trim() !== '';
-                var bioDefault = "Explorando el ecosistema Csariel's · WEB3 · Comunidad";
-                if (bioPersonalizada && usuario.bio !== bioDefault) {
-                    if (tieneClave) bioElement.removeAttribute('data-clave');
-                    bioElement.textContent = usuario.bio;
-                }
             }
             var avatarElement = document.querySelector('#perfilAvatar');
             if (avatarElement) {
@@ -2378,7 +2280,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.avisoSinSaldo) e.avisoSinSaldo.style.display = 'none';
         if (e.btnQr) e.btnQr.style.display = 'none';
         if (e.btnSync) e.btnSync.style.display = 'none';
-        if (e.btnComprar) e.btnComprar.style.display = '';
+        if (e.btnComprar) {
+            e.btnComprar.style.display = '';
+            var txt = document.getElementById('btnComprarEsimTxt');
+            if (txt) txt.textContent = 'Comprar eSIM';
+        }
         limpiarErrorEsim();
     }
 
@@ -2421,8 +2327,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.btnQr) e.btnQr.style.display = '';
         if (e.btnSync) e.btnSync.style.display = '';
         if (e.btnComprar) {
-            var label = e.btnComprar.querySelector('span');
-            if (label) label.textContent = 'Recargar gigas';
+            var txt = document.getElementById('btnComprarEsimTxt');
+            if (txt) txt.textContent = 'Recargar gigas';
             e.btnComprar.style.display = '';
         }
         limpiarErrorEsim();
@@ -2672,7 +2578,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (b.textContent.indexOf('Instalar') !== -1) {
                     b.style.display = '';
                     b.addEventListener('click', function() {
-                        var url = 'https://esimsetup.apple.com/esim_qrcode_provisioning?carddata=' + encodeURIComponent(code);
+                        var url = 'https://esimsetup.apple.com/esim_qrcode_provisioning?carddata=' + encodeURI(code);
                         window.location.href = url;
                     });
                 }
@@ -2705,22 +2611,6 @@ document.addEventListener('DOMContentLoaded', function() {
             ctx.fillText('QR no disponible', 110, 110);
         }
     }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        var intervalCheck = setInterval(function() {
-            var btns = document.querySelectorAll('.perfil-tabs .tab-btn');
-            if (!btns || btns.length === 0) return;
-            clearInterval(intervalCheck);
-            btns.forEach(function(btn) {
-                var onclick = btn.getAttribute('onclick') || '';
-                if (onclick.indexOf("'esim'") !== -1) {
-                    btn.addEventListener('click', function() {
-                        setTimeout(window.cargarEsimNueva, 150);
-                    });
-                }
-            });
-        }, 300);
-    });
 
     console.log('[Perfil] Integración eSIM nueva cargada ✅');
 })();
