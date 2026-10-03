@@ -399,7 +399,7 @@
             transition: width 0.15s linear;
         }
 
-        /* ✅ NUEVO: Botón flotante de pantalla completa con glow dorado */
+        /* ✅ Botón flotante de pantalla completa con glow dorado */
         .btn-fullscreen {
             position: absolute;
             top: 12px;
@@ -832,12 +832,27 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script src="/features/shared/js/idiomas.js"></script>
-<script>
+    <script src="/features/shared/js/idiomas.js"></script><script>
     // ================================================================
-    // VIDEOS · v15 — Reels + Fullscreen Funcional + Doble Tap Fix
+    // VIDEOS · v15.1 — Reels + Fullscreen + Doble Tap + Auditoría Fix
+    // ================================================================
+    // CAMBIOS v15.1 (auditoría quirúrgica):
+    //  ✅ Bug #1  — cargarAnuncioVideo() ahora se invoca desde el observer
+    //  ✅ Bug #2  — videoActual ahora es string + fix en registrarClicAnuncioVideo()
+    //  ✅ Bug #3  — eliminada variable muerta 'cambiandoVideo'
+    //  ✅ Bug #4  — eliminadas 'arrastrandoProgreso', 'autoAvanzados', 'MAX_AUTOAVANCE'
+    //  ✅ Bug #5  — eliminado setTimeout(4000) del picker de reacciones
+    //  ✅ Bug #6  — bandera longPressActivado para evitar doble disparo
+    //  ✅ Bug #7  — limpiado tapUnicoTimer en configurarDobleTap()
+    //  ✅ Bug #8  — nueva incrementarVista() con RPC + control de sesión
+    //  ✅ Bug #12 — posterUrl solo si comienza con https://
+    //  ✅ Bug #13 — mostrarHint() invocado desde toggleFullscreen()
+    //  ✅ Bug #14 — validación if(fileInput) antes de reset
     // ================================================================
 
+    // ================================================================
+    // CLIENTE SUPABASE PROPIO
+    // ================================================================
     var sbVideos = null;
     (function crearClienteVideos() {
         try {
@@ -864,8 +879,14 @@
     var REACCION_DEFAULT = '❤️';
     var VISTAS_KEY = 'videos_vistas_sesion';
 
+    // ================================================================
+    // ESTADO GLOBAL
+    // ================================================================
     var sessionUser = null;
+
+    // ✅ Bug #2 FIX: videoActual ahora es un STRING con el ID del video visible
     var videoActual = null;
+
     var videosPublicados = [];
     var likeCache = new Map();
     var likeCacheOrden = [];
@@ -884,13 +905,17 @@
     var pollingVideoInterval = null;
     var videoEnProcesamiento = null;
 
-    var cambiandoVideo = false;
-    var arrastrandoProgreso = false;
-    var autoAvanzados = 0;
-    var MAX_AUTOAVANCE = 3;
+    // ✅ Bug #3 y #4 FIX: variables muertas eliminadas
+    //    - cambiandoVideo      (eliminada)
+    //    - arrastrandoProgreso (eliminada)
+    //    - autoAvanzados       (eliminada)
+    //    - MAX_AUTOAVANCE      (eliminada)
 
     var videoIdComentariosActual = null;
     var longPressTimers = {};
+
+    // ✅ Bug #8 FIX: control de vistas ya contadas en esta sesión (evita RPC repetido)
+    var vistasContadas = {};
 
     // ================================================================
     // HELPERS
@@ -1003,6 +1028,56 @@
     }
 
     // ================================================================
+    // ✅ Bug #8 FIX: INCREMENTAR VISTA (con RPC + control de sesión)
+    // ================================================================
+    async function incrementarVista(videoId) {
+        if (!videoId) return;
+        var id = String(videoId);
+
+        // Evitar peticiones duplicadas en esta sesión
+        if (vistasContadas[id]) return;
+        if (yaVistoEnSesion(id)) {
+            vistasContadas[id] = true;
+            return;
+        }
+
+        vistasContadas[id] = true;
+
+        // Actualización optimista de UI
+        var vistasInfo = document.querySelector(
+            '.video-card[data-video-id="' + id + '"] .vistas-info'
+        );
+        if (vistasInfo) {
+            var texto = vistasInfo.textContent || '';
+            var num = parseInt(texto.replace(/[^\d]/g, ''), 10) || 0;
+            vistasInfo.textContent = '◈ ' + formatContador(num + 1) + ' vistas';
+        }
+
+        marcarVistoEnSesion(id);
+
+        try {
+            if (!sbVideos) return;
+            // Intentar RPC (incremento atómico)
+            var rpcResp = await sbVideos.rpc('incrementar_reproducciones', { video_id: id });
+            if (rpcResp.error) {
+                // Fallback: UPDATE incremental
+                console.warn('[Vistas] RPC no disponible, usando UPDATE:', rpcResp.error.message);
+                var actual = await sbVideos
+                    .from('videos')
+                    .select('reproducciones')
+                    .eq('id', id)
+                    .maybeSingle();
+                if (!actual.error && actual.data) {
+                    var nuevas = (actual.data.reproducciones || 0) + 1;
+                    await sbVideos.from('videos').update({ reproducciones: nuevas }).eq('id', id);
+                }
+            }
+        } catch (e) {
+            console.warn('[Vistas] Error incrementando:', e);
+        }
+    }
+
+    // ================================================================
     // USUARIO ACTUAL
     // ================================================================
     async function cargarUsuarioActual() {
@@ -1108,13 +1183,14 @@
         var session = await getSession();
         if (!session) return;
         try {
-            var videoId = videoActual ? videoActual.id : null;
+            // ✅ Bug #2 FIX: videoActual ahora es string, no objeto
+            var videoId = videoActual || null;
             await fetchConTimeout('/api/marketing/register-event', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
                 body: JSON.stringify({
                     ad_id: anuncioActualVideo.id, campaign_id: anuncioActualVideo.campaign_id,
-                    target_tipo: 'video', target_id: String(videoId),
+                    target_tipo: 'video', target_id: videoId ? String(videoId) : null,
                     evento: 'clic', session_id: getOrCreateAdSessionIdVideo()
                 })
             }, 8000);
@@ -1250,10 +1326,24 @@
     }
 
     // ================================================================
-    // ✅ ICONO EXIT FULLSCREEN SVG (reducir)
+    // ICONO EXIT FULLSCREEN SVG (reducir)
     // ================================================================
     function getIconoExitFullscreenSVG() {
         return '<svg viewBox="0 0 24 24"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
+    }
+
+    // ================================================================
+    // MOSTRAR HINT DE DOBLE TAP (helper reutilizable) — ✅ Bug #13 FIX
+    // ================================================================
+    function mostrarHintFullscreen(card) {
+        if (!card) return;
+        var hint = card.querySelector('.doble-tap-hint');
+        if (!hint) return;
+        hint.classList.add('show');
+        clearTimeout(hint._timeout);
+        hint._timeout = setTimeout(function() {
+            hint.classList.remove('show');
+        }, 800);
     }
 
     // ================================================================
@@ -1280,7 +1370,12 @@
         }
         var iconoFinal = tipoMiReaccion || iconoMostrar;
         var videoUrl = escapeHTML(safeAttr(v.url_video));
-        var posterUrl = v.url_miniatura ? escapeHTML(safeAttr(v.url_miniatura)) : '';
+
+        // ✅ Bug #12 FIX: solo usar posterUrl si empieza con https://
+        var posterUrl = (v.url_miniatura && typeof v.url_miniatura === 'string' && v.url_miniatura.startsWith('https://'))
+            ? escapeHTML(v.url_miniatura)
+            : '';
+
         var esMio = !!(sessionUser && v.usuario_id === sessionUser.id);
         var autorNombre = escapeHTML(autor.nombre || 'Usuario');
         var autorHandle = escapeHTML(autor.handle || 'usuario');
@@ -1294,7 +1389,7 @@
 
         var html = '';
 
-        // ✅ Botón de pantalla completa (arriba izquierda) — CON GLOW DORADO
+        // Botón de pantalla completa (arriba izquierda)
         html += '<button class="btn-fullscreen" onclick="event.stopPropagation(); toggleFullscreen(\'' + v.id + '\')" title="Pantalla completa" aria-label="Pantalla completa" data-icono-expandir="' + escapeHTML(getIconoFullscreenSVG()) + '" data-icono-reducir="' + escapeHTML(getIconoExitFullscreenSVG()) + '">';
         html += getIconoFullscreenSVG();
         html += '</button>';
@@ -1389,7 +1484,7 @@
     }
 
     // ================================================================
-    // ✅ TOGGLE FULLSCREEN — con cambio de ícono (expandir/reducir)
+    // TOGGLE FULLSCREEN — con cambio de ícono + hint — ✅ Bug #13 FIX
     // ================================================================
     function toggleFullscreen(videoId) {
         var card = document.querySelector('.video-card[data-video-id="' + videoId + '"]');
@@ -1399,7 +1494,6 @@
         var estaEnFullscreen = card.classList.contains('pantalla-completa');
 
         if (estaEnFullscreen) {
-            // Salir de fullscreen
             card.classList.remove('pantalla-completa');
             if (btn) {
                 btn.innerHTML = btn.dataset.iconoExpandir;
@@ -1410,7 +1504,6 @@
             vibrar(15);
             showToast('↙ Modo normal', 'success', 1500);
         } else {
-            // Entrar a fullscreen
             card.classList.add('pantalla-completa');
             if (btn) {
                 btn.innerHTML = btn.dataset.iconoReducir;
@@ -1421,26 +1514,17 @@
             vibrar(20);
             showToast('⛶ Pantalla completa', 'success', 1500);
         }
+
+        // ✅ Bug #13 FIX: mostrar hint también desde el botón, no solo desde doble tap
+        mostrarHintFullscreen(card);
     }
 
     // ================================================================
-    // ✅ DOBLE TAP ARREGLADO — solo en el área del video
+    // DOBLE TAP — solo en el área del video — ✅ Bug #7 FIX
     // ================================================================
     function configurarDobleTap(card, videoId) {
         var ultimoTap = 0;
         var DOBLE_TAP_MS = 320;
-        var hintTimeout = null;
-        var tapUnicoTimer = null;
-
-        function mostrarHint() {
-            var hint = card.querySelector('.doble-tap-hint');
-            if (!hint) return;
-            hint.classList.add('show');
-            if (hintTimeout) clearTimeout(hintTimeout);
-            hintTimeout = setTimeout(function() {
-                hint.classList.remove('show');
-            }, 800);
-        }
 
         function manejarTap(e) {
             // Ignorar si toca botones o controles
@@ -1465,10 +1549,7 @@
 
             if (diff < DOBLE_TAP_MS) {
                 // ✅ DOBLE TAP detectado → pantalla completa
-                if (tapUnicoTimer) {
-                    clearTimeout(tapUnicoTimer);
-                    tapUnicoTimer = null;
-                }
+                // ✅ Bug #7 FIX: no hay tapUnicoTimer que limpiar (era código muerto)
 
                 var btn = card.querySelector('.btn-fullscreen');
                 var estaEnFullscreen = card.classList.contains('pantalla-completa');
@@ -1490,10 +1571,10 @@
                 }
 
                 vibrar(20);
-                mostrarHint();
+                mostrarHintFullscreen(card);
                 ultimoTap = 0;
             } else {
-                // ✅ Primer tap → esperar a ver si hay segundo
+                // Primer tap → guardar timestamp
                 ultimoTap = ahora;
             }
         }
@@ -1502,7 +1583,7 @@
     }
 
     // ================================================================
-    // LONG PRESS EN LIKE
+    // LONG PRESS EN LIKE — ✅ Bug #6 FIX (bandera longPressActivado)
     // ================================================================
     function configurarLongPressLike(card, videoId) {
         var btnLike = card.querySelector('.like-btn');
@@ -1524,6 +1605,9 @@
             longPressTimers[videoId] = setTimeout(function() {
                 vibrar(20);
                 mostrarPickerReacciones(videoId);
+                // ✅ Bug #6 FIX: marcar bandera para que el click posterior sea ignorado
+                btnLike.dataset.longPressActivado = 'true';
+                longPressTimers[videoId] = null;
             }, LONG_PRESS_MS);
         }
 
@@ -1566,7 +1650,11 @@
         });
     }
 
+    // ================================================================
+    // MOSTRAR PICKER DE REACCIONES — ✅ Bug #5 FIX (sin setTimeout)
+    // ================================================================
     function mostrarPickerReacciones(videoId) {
+        // Cerrar otros pickers abiertos
         document.querySelectorAll('.reaccion-picker.show').forEach(function(p) {
             p.classList.remove('show');
         });
@@ -1580,9 +1668,10 @@
         });
 
         picker.classList.add('show');
-        setTimeout(function() {
-            picker.classList.remove('show');
-        }, 4000);
+
+        // ✅ Bug #5 FIX: el picker permanece abierto hasta que el usuario
+        //    elija una reacción o toque fuera. Se elimina el setTimeout(4000)
+        //    que lo cerraba prematuramente.
     }
 
     // ================================================================
@@ -1603,6 +1692,7 @@
             if (!sbVideos) throw new Error('Cliente no disponible');
 
             if (tipoPrevio === tipo) {
+                // Quitar reacción
                 var del = await sbVideos.from('videos_likes').delete().eq('video_id', videoId).eq('usuario_id', sessionUser.id);
                 if (del.error) throw del.error;
                 likeCache.delete(key);
@@ -1614,6 +1704,7 @@
                     btnLike.querySelector('.icono').textContent = REACCION_DEFAULT;
                 }
             } else if (tipoPrevio) {
+                // Cambiar reacción
                 var upd = await sbVideos.from('videos_likes')
                     .update({ tipo: tipo })
                     .eq('video_id', videoId)
@@ -1634,6 +1725,7 @@
                     btnLike.classList.add('like-pop');
                 }
             } else {
+                // Nueva reacción
                 var ins = await sbVideos.from('videos_likes').insert({
                     video_id: videoId, usuario_id: sessionUser.id, tipo: tipo
                 });
@@ -1672,13 +1764,23 @@
     }
 
     // ================================================================
-    // TOGGLE LIKE (click simple)
+    // TOGGLE LIKE — ✅ Bug #6 FIX (chequea bandera longPressActivado)
     // ================================================================
     async function toggleLikeVideo(videoId) {
+        var btnLike = document.querySelector('.like-btn[data-video-id="' + videoId + '"]');
+
+        // ✅ Bug #6 FIX: si el long-press acaba de activarse, ignorar este click
+        if (btnLike && btnLike.dataset.longPressActivado === 'true') {
+            delete btnLike.dataset.longPressActivado;
+            return;
+        }
+
         if (longPressTimers[videoId]) {
             clearTimeout(longPressTimers[videoId]);
             longPressTimers[videoId] = null;
         }
+
+        // Si el picker ya está abierto, no alternar
         var picker = document.getElementById('picker-' + videoId);
         if (picker && picker.classList.contains('show')) return;
 
@@ -1861,7 +1963,7 @@
     }
 
     // ================================================================
-    // AUTOPLAY SCROLL
+    // AUTOPLAY SCROLL — ✅ Bug #1 FIX (carga anuncio) + ✅ Bug #2 + ✅ Bug #8
     // ================================================================
     function activarAutoplayScroll() {
         if (observerVideos) { observerVideos.disconnect(); observerVideos = null; }
@@ -1892,8 +1994,25 @@
                 if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
                     card.classList.add('visible');
                     asegurarSrc(video);
-                    if (videoPausadoManualmente !== card.dataset.videoId) {
-                        video.play().then(function() { card.classList.add('playing'); }).catch(function() {});
+
+                    // ✅ Bug #1 + #2 FIX: detectar cambio de video actual,
+                    //    actualizar variable string y cargar anuncio correspondiente
+                    var idVisible = card.dataset.videoId;
+                    if (videoActual !== idVisible) {
+                        videoActual = idVisible;
+                        // Limpiar estado del anuncio anterior para permitir carga fresca
+                        adCerradoVideo = false;
+                        if (adVistaTimerVideo) { clearTimeout(adVistaTimerVideo); adVistaTimerVideo = null; }
+                        cargarAnuncioVideo(idVisible);
+                    }
+
+                    // ✅ Bug #8 FIX: incrementar vista cuando el video se reproduce
+                    if (videoPausadoManualmente !== idVisible) {
+                        video.play().then(function() {
+                            card.classList.add('playing');
+                            // Incrementar vista solo si realmente empieza a reproducir
+                            incrementarVista(idVisible);
+                        }).catch(function() {});
                     }
                 } else {
                     card.classList.remove('visible');
@@ -1921,6 +2040,8 @@
             video.play().catch(function() {});
             card.classList.add('playing');
             videoPausadoManualmente = null;
+            // ✅ Bug #8: también contar vista si se activó manualmente
+            incrementarVista(videoId);
         } else {
             video.pause();
             card.classList.remove('playing');
@@ -1954,7 +2075,7 @@
     }
 
     // ================================================================
-    // SUBIR VIDEO
+    // SUBIR VIDEO — ✅ Bug #14 FIX (validar fileInput antes de reset)
     // ================================================================
     var subiendoVideo = false;
 
@@ -1975,7 +2096,10 @@
             if (btn) { btn.disabled = false; btn.textContent = '◈ Subir video'; }
             if (progressEl) progressEl.style.display = 'none';
             if (progressFill) progressFill.style.width = '0%';
-            try { fileInput.value = ''; } catch (e) {}
+            // ✅ Bug #14 FIX: validar fileInput antes de acceder a su propiedad
+            if (fileInput) {
+                try { fileInput.value = ''; } catch (e) {}
+            }
         }
 
         if (btn) btn.disabled = true;
@@ -1986,7 +2110,7 @@
             if (!titulo) throw new Error('Escribe un título');
             if (titulo.length > 200) throw new Error('Título muy largo (máx 200)');
             if (descripcion.length > 5000) throw new Error('Descripción muy larga (máx 5000)');
-            if (!fileInput.files || fileInput.files.length === 0) throw new Error('Selecciona un video');
+            if (!fileInput || !fileInput.files || fileInput.files.length === 0) throw new Error('Selecciona un video');
             var file = fileInput.files[0];
             if (file.size > 100 * 1024 * 1024) throw new Error('Video muy grande (máx 100 MB)');
             if (['video/mp4', 'video/webm', 'video/quicktime'].indexOf(file.type) === -1) {
@@ -2047,7 +2171,10 @@
             showToast('◈ Procesando video', 'success', 3000);
             document.getElementById('inputTituloVideo').value = '';
             document.getElementById('inputDescripcionVideo').value = '';
-            fileInput.value = '';
+            // ✅ Bug #14 FIX: validación antes de reset
+            if (fileInput) {
+                try { fileInput.value = ''; } catch (e) {}
+            }
             if (progressEl) progressEl.style.display = 'none';
             subiendoVideo = false;
             iniciarPollingProcesamiento(queueData.jobId, videoId);
@@ -2177,7 +2304,7 @@
         }
     });
 
-    // ✅ ESC sale de Bottom Sheet o Pantalla Completa
+    // ESC sale de Bottom Sheet o Pantalla Completa
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             var sheet = document.getElementById('bottomSheet');
@@ -2216,7 +2343,7 @@
     // INIT
     // ================================================================
     document.addEventListener('DOMContentLoaded', function() {
-        console.log("◈ Sariel's - Videos v15 (Reels + Fullscreen + Doble Tap Fix)");
+        console.log("◈ Sariel's - Videos v15.1 (Auditoría Fix aplicada)");
         aplicarI18N();
         configurarTecladoMovil();
         cargarUsuarioActual().then(async function() {
@@ -2247,6 +2374,7 @@
     window.registrarClicAnuncioVideo = registrarClicAnuncioVideo;
     window.toggleFullscreen = toggleFullscreen;
     window.showToast = showToast;
+    window.incrementarVista = incrementarVista;
 </script>
 
 </body>
