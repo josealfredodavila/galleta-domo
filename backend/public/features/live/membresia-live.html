@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#000000" />
+    <title>Live Pass · Sariel's</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron,monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/features/shared/config-layout.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script>
+        (function () {
+            'use strict';
+            window.__sarielsAuthenticated = null;
+            window.supabaseClient = window.supabaseClient || null;
+            window.supabaseReady = null;
+            window.getSupabaseClient = function () { return window.supabaseReady; };
+            function esRutaInternaSegura(valor) {
+                if (typeof valor !== 'string') return false;
+                if (!valor.startsWith('/')) return false;
+                if (valor.startsWith('//')) return false;
+                if (valor.startsWith('/\\')) return false;
+                return true;
+            }
+            function revelarPagina() { document.documentElement.classList.add('auth-ready'); }
+            function irAlIndexConReturnTo() {
+                try {
+                    var returnTo = window.location.pathname + window.location.search + window.location.hash;
+                    if (esRutaInternaSegura(returnTo)) { localStorage.setItem('wallet_returnTo', returnTo); }
+                    window.location.replace('/');
+                } catch (e) { window.location.replace('/'); }
+            }
+            var salvaguarda = setTimeout(function () { revelarPagina(); }, 10000);
+            async function inicializarSupabase() {
+                try {
+                    if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+                        throw new Error('Supabase SDK no disponible.');
+                    }
+                    if (!window.supabaseClient) {
+                        var supabaseUrl = null, supabaseAnonKey = null;
+                        try {
+                            const response = await fetch('/api/config/public', { method: 'GET', credentials: 'same-origin', cache: 'no-store', headers: { 'Accept': 'application/json' } });
+                            if (response.ok) {
+                                const config = await response.json();
+                                supabaseUrl = config && config.supabaseUrl;
+                                supabaseAnonKey = config && config.supabaseAnonKey;
+                            }
+                        } catch (fetchErr) { console.warn('[LivePass] fetch config falló:', fetchErr); }
+                        if (!supabaseUrl || !supabaseAnonKey) { throw new Error('Config pública no disponible.'); }
+                        window.SupabaseSDK = window.supabase;
+                        window.supabaseClient = window.SupabaseSDK.createClient(supabaseUrl, supabaseAnonKey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
+                    }
+                    const resultado = await window.supabaseClient.auth.getSession();
+                    const session = resultado && resultado.data ? resultado.data.session : null;
+                    window.__sarielsAuthenticated = !!session;
+                    clearTimeout(salvaguarda);
+                    if (!session) { irAlIndexConReturnTo(); } else { revelarPagina(); }
+                    return window.supabaseClient;
+                } catch (error) {
+                    console.error('[LivePass] Error:', error);
+                    window.__sarielsAuthenticated = false;
+                    clearTimeout(salvaguarda);
+                    revelarPagina();
+                    return null;
+                }
+            }
+            window.supabaseReady = inicializarSupabase();
+        })();
+    </script>
+    <style>
+        html:not(.auth-ready) body { visibility: hidden; }
+        html.auth-ready body { visibility: visible; }
+        .cfg-live-hero { margin: 16px; padding: 32px 20px; background: linear-gradient(135deg, rgba(212,175,55,.15), rgba(15,45,26,.5), rgba(212,175,55,.1)); background-size: 200% 200%; border: 2px solid rgba(212,175,55,.4); border-radius: 24px; text-align: center; position: relative; overflow: hidden; animation: gradientMove 8s ease infinite; }
+        @keyframes gradientMove { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+        .cfg-live-icon { font-size: 3.5rem; display: block; margin-bottom: 10px; filter: drop-shadow(0 0 25px rgba(212,175,55,.6)); animation: pulse 2s ease-in-out infinite; }
+        @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+        .cfg-live-title { font-family: 'Orbitron', monospace; font-size: 1.5rem; font-weight: 900; color: var(--cfg-gold); letter-spacing: 2px; margin-bottom: 8px; }
+        .cfg-live-subtitle { font-size: .8rem; color: var(--cfg-text-muted); margin-bottom: 24px; }
+        .cfg-plan-card { margin: 16px; padding: 20px; border-radius: 20px; border: 2px solid; position: relative; overflow: hidden; transition: all .3s ease; }
+        .cfg-plan-card.basico { border-color: rgba(212,175,55,.3); background: linear-gradient(135deg, rgba(212,175,55,.05), rgba(15,45,26,.3)); }
+        .cfg-plan-card.pro { border-color: rgba(168,85,247,.4); background: linear-gradient(135deg, rgba(168,85,247,.08), rgba(15,45,26,.3)); }
+        .cfg-plan-card:hover { transform: translateY(-4px); }
+        .cfg-plan-card.basico:hover { box-shadow: 0 12px 40px rgba(212,175,55,.25); }
+        .cfg-plan-card.pro:hover { box-shadow: 0 12px 40px rgba(168,85,247,.3); }
+        .cfg-plan-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-family: 'Orbitron', monospace; font-size: .55rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 12px; }
+        .cfg-plan-card.basico .cfg-plan-badge { background: rgba(212,175,55,.2); color: var(--cfg-gold); }
+        .cfg-plan-card.pro .cfg-plan-badge { background: rgba(168,85,247,.25); color: #a855f7; }
+        .cfg-plan-name { font-family: 'Orbitron', monospace; font-size: 1.3rem; font-weight: 900; margin-bottom: 6px; }
+        .cfg-plan-card.basico .cfg-plan-name { color: var(--cfg-gold); }
+        .cfg-plan-card.pro .cfg-plan-name { color: #a855f7; }
+        .cfg-plan-price { font-family: 'Orbitron', monospace; font-size: 2rem; font-weight: 900; color: var(--cfg-text); margin: 8px 0 4px; }
+        .cfg-plan-price .currency { font-size: .7em; color: var(--cfg-text-muted); }
+        .cfg-plan-duration { font-size: .75rem; color: var(--cfg-text-muted); margin-bottom: 16px; }
+        .cfg-plan-features { list-style: none; padding: 0; margin: 16px 0; }
+        .cfg-plan-features li { padding: 8px 0; color: var(--cfg-text-secondary); font-size: .82rem; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid rgba(255,255,255,.05); }
+        .cfg-plan-features li:last-child { border-bottom: none; }
+        .cfg-plan-features li::before { content: '✓'; font-weight: 900; font-size: 1rem; }
+        .cfg-plan-card.basico .cfg-plan-features li::before { color: var(--cfg-gold); }
+        .cfg-plan-card.pro .cfg-plan-features li::before { color: #a855f7; }
+        .cfg-plan-btn { width: 100%; padding: 14px 24px; border-radius: 30px; border: none; font-family: 'Inter', sans-serif; font-size: .9rem; font-weight: 700; cursor: pointer; transition: all .3s ease; letter-spacing: .5px; }
+        .cfg-plan-card.basico .cfg-plan-btn { background: linear-gradient(135deg, var(--cfg-gold), var(--cfg-gold-dark)); color: var(--cfg-space); box-shadow: 0 8px 30px rgba(212,175,55,.3); }
+        .cfg-plan-card.pro .cfg-plan-btn { background: linear-gradient(135deg, #a855f7, #7c3aed); color: #fff; box-shadow: 0 8px 30px rgba(168,85,247,.35); }
+        .cfg-plan-btn:hover { transform: translateY(-2px); }
+        .cfg-plan-btn:disabled { opacity: .5; cursor: not-allowed; }
+    </style>
+</head>
+<body class="cfg-page">
+    <div id="cfgHeaderSlot"></div>
+    <main class="cfg-content">
+        <div id="estadoCargando" style="text-align: center; padding: 60px 20px; color: var(--cfg-text-muted);">
+            <div style="font-size: 2rem; margin-bottom: 12px;">⟡</div>
+            <div style="font-size: 0.85rem;">Cargando...</div>
+        </div>
+
+        <div id="estadoNoPass" style="display: none;">
+            <div class="cfg-live-hero">
+                <span class="cfg-live-icon">◉</span>
+                <div class="cfg-live-title">Sariel's Live</div>
+                <div class="cfg-live-subtitle">Compra tu Live Pass y comienza a transmitir</div>
+            </div>
+
+            <div class="cfg-plan-card basico" id="cardBasico">
+                <span class="cfg-plan-badge">⚡ Básico</span>
+                <div class="cfg-plan-name">Live Básico</div>
+                <div class="cfg-plan-price" id="precioBasico"><span class="currency">$</span>—</div>
+                <div class="cfg-plan-duration" id="periodoBasico">/ 30 días</div>
+                <ul class="cfg-plan-features">
+                    <li><strong>2 horas al día</strong> para transmitir</li>
+                    <li>Hasta 30 días de acceso</li>
+                    <li>Puedes partir las horas en el día</li>
+                    <li>Se renuevan cada día</li>
+                </ul>
+                <button class="cfg-plan-btn" id="btnBasico" onclick="window.onComprarLive('live_basico')">🚀 Comprar Live Básico</button>
+            </div>
+
+            <div class="cfg-plan-card pro" id="cardPro">
+                <span class="cfg-plan-badge">👑 Pro</span>
+                <div class="cfg-plan-name">Live Pro</div>
+                <div class="cfg-plan-price" id="precioPro"><span class="currency">$</span>—</div>
+                <div class="cfg-plan-duration" id="periodoPro">/ 30 días</div>
+                <ul class="cfg-plan-features">
+                    <li><strong>5 horas al día</strong> para transmitir</li>
+                    <li>Hasta 30 días de acceso</li>
+                    <li>Puedes partir las horas en el día</li>
+                    <li>Se renuevan cada día</li>
+                    <li><strong>Más tiempo para tus lives</strong></li>
+                </ul>
+                <button class="cfg-plan-btn" id="btnPro" onclick="window.onComprarLive('live_pro')">🚀 Comprar Live Pro</button>
+            </div>
+
+            <div class="cfg-aviso cfg-aviso-info">
+                ℹ️ Es un pago único en cripto (USDT). Activa tu Live Pass por 30 días. No se renueva automáticamente.
+            </div>
+        </div>
+
+        <div id="estadoPassActivo" style="display: none;">
+            <div class="cfg-live-hero">
+                <span class="cfg-live-icon">✅</span>
+                <div class="cfg-live-title" id="passTipo">Live Pass Activo</div>
+                <div class="cfg-live-subtitle" id="passVence">—</div>
+            </div>
+
+            <div class="cfg-plan-card basico" id="cardEstado" style="display: none;">
+                <div class="cfg-plan-features">
+                    <li><strong id="estadoHoras">—</strong> disponibles por día</li>
+                    <li id="estadoUsadoHoy">—</li>
+                    <li id="estadoRestantes">—</li>
+                    <li id="estadoRenueva">Se renuevan cada día a medianoche</li>
+                </div>
+                <button class="cfg-plan-btn" onclick="window.onComprarLive(window.passTipoActual)">🔄 Extender 30 días más</button>
+            </div>
+        </div>
+
+        <div class="cfg-footer">
+            <strong>◈ Sariel's</strong> · Live Pass
+        </div>
+    </main>
+
+    <script src="/features/shared/config-icons.js"></script>
+    <script src="/features/shared/config-layout.js"></script>
+
+    <script>
+    (function () {
+        'use strict';
+        const $ = (sel) => document.querySelector(sel);
+        let precios = { live_basico: null, live_pro: null };
+        let passActivo = false;
+        window.passTipoActual = null;
+
+        cfgInitPage({ title: 'Live Pass', subtitle: 'Sariel\'s Live', backUrl: '/features/live/live.html' });
+
+        async function esperarCliente() {
+            const inicio = Date.now();
+            while (Date.now() - inicio < 10000) {
+                if (window.supabaseClient) return window.supabaseClient;
+                await new Promise(r => setTimeout(r, 100));
+            }
+            return null;
+        }
+
+        function formatoMxn(n) {
+            return '$' + Number(n).toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+        }
+
+        async function cargarPrecios(client) {
+            try {
+                const { data, error } = await client
+                    .from('planes_membresia')
+                    .select('id, precio_mxn, intervalo_dias')
+                    .in('id', ['live_basico', 'live_pro'])
+                    .eq('activo', true);
+                if (!error && data) {
+                    data.forEach(p => { precios[p.id] = { precio: Number(p.precio_mxn), dias: p.intervalo_dias || 30 }; });
+                }
+            } catch (e) { console.error('Error cargando precios:', e); }
+            pintarPrecios();
+        }
+
+        function pintarPrecios() {
+            if (precios.live_basico) {
+                const el = $('#precioBasico');
+                if (el) el.innerHTML = '<span class="currency">$</span>' + precios.live_basico.precio;
+                const pb = $('#periodoBasico');
+                if (pb) pb.textContent = '/ ' + precios.live_basico.dias + ' días';
+                const btn = $('#btnBasico');
+                if (btn) { btn.disabled = false; btn.textContent = '🚀 Comprar Live Básico por ' + formatoMxn(precios.live_basico.precio); }
+            }
+            if (precios.live_pro) {
+                const el = $('#precioPro');
+                if (el) el.innerHTML = '<span class="currency">$</span>' + precios.live_pro.precio;
+                const pp = $('#periodoPro');
+                if (pp) pp.textContent = '/ ' + precios.live_pro.dias + ' días';
+                const btn = $('#btnPro');
+                if (btn) { btn.disabled = false; btn.textContent = '🚀 Comprar Live Pro por ' + formatoMxn(precios.live_pro.precio); }
+            }
+        }
+
+        async function cargarEstado() {
+            try {
+                const client = await esperarCliente();
+                if (!client) { mostrarNoPass(); return; }
+                await cargarPrecios(client);
+                const { data: sessionData } = await client.auth.getSession();
+                const session = sessionData && sessionData.session;
+                if (!session) { mostrarNoPass(); return; }
+                const { data, error } = await client.rpc('puede_transmitir_live', { p_usuario_id: session.user.id });
+                if (error) { mostrarNoPass(); return; }
+                const m = Array.isArray(data) ? data[0] : data;
+                if (m && m.puede === true && m.plan_horas_dia) {
+                    window.passTipoActual = m.plan_horas_dia === 5 ? 'live_pro' : 'live_basico';
+                    mostrarPassActivo(m);
+                    return;
+                }
+                mostrarNoPass();
+            } catch (error) { mostrarNoPass(); }
+        }
+
+        function mostrarNoPass() {
+            passActivo = false;
+            const cargando = $('#estadoCargando'), noPass = $('#estadoNoPass'), activo = $('#estadoPassActivo');
+            if (cargando) cargando.style.display = 'none';
+            if (noPass) noPass.style.display = 'block';
+            if (activo) activo.style.display = 'none';
+        }
+
+        function mostrarPassActivo(m) {
+            passActivo = true;
+            const cargando = $('#estadoCargando'), noPass = $('#estadoNoPass'), activo = $('#estadoPassActivo');
+            if (cargando) cargando.style.display = 'none';
+            if (noPass) noPass.style.display = 'none';
+            if (activo) activo.style.display = 'block';
+            const tipoEl = $('#passTipo');
+            if (tipoEl) tipoEl.textContent = m.plan_horas_dia === 5 ? 'Live Pro Activo' : 'Live Básico Activo';
+            const venceEl = $('#passVence');
+            if (venceEl && m.vence_at) {
+                const vence = new Date(m.vence_at);
+                venceEl.textContent = 'Vence el ' + vence.toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
+            }
+            const cardEstado = $('#cardEstado');
+            if (cardEstado) cardEstado.style.display = 'block';
+            const horasEl = $('#estadoHoras');
+            if (horasEl) horasEl.textContent = m.plan_horas_dia + ' horas';
+            const usadoEl = $('#estadoUsadoHoy');
+            if (usadoEl) usadoEl.textContent = 'Usado hoy: ' + (m.minutos_usados || 0) + ' min';
+            const restEl = $('#estadoRestantes');
+            if (restEl) restEl.textContent = 'Restantes hoy: ' + (m.minutos_restantes || 0) + ' min';
+        }
+
+        window.onComprarLive = async (planTipo) => {
+            if (!precios[planTipo]) { cfgToast('⚠️ No se pudo cargar el precio', 'warning'); return; }
+            const p = precios[planTipo];
+            const nombre = planTipo === 'live_pro' ? 'Live Pro' : 'Live Básico';
+            const ok = await cfgConfirm({
+                title: '¿Comprar ' + nombre + '?',
+                text: 'Pago de ' + formatoMxn(p.precio) + ' en USDT por ' + p.dias + ' días de Live Pass.',
+                confirmText: 'Comprar', cancelText: 'Cancelar', danger: false,
+            });
+            if (!ok) return;
+            const btn = planTipo === 'live_pro' ? $('#btnPro') : $('#btnBasico');
+            if (btn) { btn.disabled = true; btn.textContent = '⏳ Procesando...'; }
+            cfgToast('⏳ Creando tu pago...', '', 4000);
+            try {
+                const client = await esperarCliente();
+                const { data: sessionData } = await client.auth.getSession();
+                const session = sessionData && sessionData.session;
+                if (!session) throw new Error('Inicia sesión');
+                const resp = await fetch('/api/payments/live-pass/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+                    body: JSON.stringify({ plan_tipo: planTipo, privacy_version: '1.0' })
+                });
+                const data = await resp.json().catch(() => ({}));
+                if (!resp.ok || !data.success || !data.payment_url) { throw new Error(data.error || 'No se pudo crear el pago'); }
+                window.location.href = data.payment_url;
+            } catch (e) {
+                console.error('Error:', e);
+                cfgToast('❌ ' + e.message, 'error');
+                pintarPrecios();
+            }
+        };
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            await new Promise(r => setTimeout(r, 400));
+            await cargarEstado();
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('payment') === 'success' && !passActivo) {
+                cfgToast('⏳ Confirmando tu pago...', '', 5000);
+                for (let i = 0; i < 24; i++) {
+                    await new Promise(r => setTimeout(r, 5000));
+                    await cargarEstado();
+                    if (passActivo) { cfgToast('✅ ¡Live Pass activado!', '', 6000); return; }
+                }
+            }
+        });
+    })();
+    </script>
+</body>
+</html>
