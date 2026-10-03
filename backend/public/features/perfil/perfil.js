@@ -1212,115 +1212,6 @@ async function desconectarWallet() {
     } catch (error) { showToast('❌ Error al desconectar wallet: ' + msgError(error), 'error'); }
 }
 
-async function comprarDomo(cantidad = 1) {
-    try {
-        const session = await getSession();
-        if (!session) { showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error'); return; }
-        cantidad = Math.max(1, Math.floor(Number(cantidad) || 1));
-        if (cantidad > 10) { showToast('⚠️ Máximo 10 domos por transacción', 'warning'); return; }
-        showToast('⏳ Procesando compra...', '', 5000);
-        const { error } = await supabaseClient.rpc('comprar_domo', { p_cantidad: cantidad });
-        if (error) {
-            if ((error.message || '').includes('insufficient')) { showToast('❌ Fondos insuficientes', 'error'); return; }
-            throw error;
-        }
-        showToast('🎉 ¡' + cantidad + ' Domo(s) comprado(s)!', 'success', 5000);
-        await cargarPerfil(true);
-        mostrarCelebracion();
-    } catch (error) { showToast('❌ Error en la compra: ' + msgError(error), 'error'); }
-}
-
-// TODO(pagos): endpoint incorrecto, pendiente de definir.
-async function comprarConCripto() {
-    const session = await getSession();
-    if (!session) { showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error'); return; }
-    const qtyEl = document.getElementById('cryptoQuantity');
-    const qty = parseInt(qtyEl?.textContent || '1');
-    if (qty < 1 || qty > 10) { showToast('⚠️ Cantidad inválida', 'warning'); return; }
-    const totalConComision = (qty * 4.50) * 1.02;
-    const modal = document.getElementById('cryptoPaymentModal');
-    const qrImg = document.getElementById('cryptoQR');
-    const addressEl = document.getElementById('cryptoAddress');
-    const montoEl = document.getElementById('cryptoMonto');
-    const monedaEl = document.getElementById('cryptoMoneda');
-    const statusEl = document.getElementById('cryptoStatus');
-    if (modal) modal.classList.add('active');
-    try {
-        const response = await fetch(API_ENDPOINTS.pagos + '/create', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
-            body: JSON.stringify({
-                transmisionId: null, monto: totalConComision,
-                metodo: 'crypto', tipo: 'domo', cantidad: qty,
-                idempotency_key: 'domo_' + session.user.id + '_' + qty + '_' + Date.now()
-            })
-        });
-        let result = null;
-        try { result = await response.json(); } catch (e) { result = null; }
-        if (!response.ok || !result || !result.success) {
-            showToast('❌ Error al crear pago', 'error');
-            if (modal) modal.classList.remove('active');
-            return;
-        }
-        const pagoData = result.data;
-        if (montoEl) montoEl.textContent = totalConComision.toFixed(2);
-        if (monedaEl) monedaEl.textContent = 'USDT';
-        if (addressEl) { addressEl.removeAttribute('data-clave'); addressEl.textContent = pagoData.pay_address || pagoData.payment_address || '0x...'; }
-        if (statusEl) { statusEl.removeAttribute('data-clave'); statusEl.textContent = '⏳ Esperando confirmación...'; }
-        if (qrImg) {
-            if (pagoData.payment_url) qrImg.src = pagoData.payment_url;
-            else qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent('Orden: ' + pagoData.id);
-        }
-        window._ordenPagoId = pagoData.id;
-        showToast('💳 QR generado', 'success');
-    } catch (error) {
-        showToast('❌ Error al crear el pago', 'error');
-        if (modal) modal.classList.remove('active');
-    }
-}
-
-async function verificarPagoCrypto() {
-    const statusEl = document.getElementById('cryptoStatus');
-    const ordenId = window._ordenPagoId;
-    if (!ordenId) { if (statusEl) statusEl.textContent = '❌ No hay orden'; return; }
-    if (statusEl) statusEl.textContent = '⏳ Verificando...';
-    try {
-        const session = await getSession();
-        if (!session) return;
-        const response = await fetch(API_ENDPOINTS.pagos + '/status/' + encodeURIComponent(ordenId), {
-            headers: { 'Authorization': 'Bearer ' + session.access_token }
-        });
-        let result = null;
-        try { result = await response.json(); } catch (e) { result = null; }
-        if (!response.ok || !result || !result.success) throw new Error('Error');
-        const orden = result.data;
-        if (['completado', 'finished', 'confirmed', 'pagado'].includes(orden.estado)) {
-            if (statusEl) statusEl.textContent = '✅ ¡Pago confirmado!';
-            showToast('🎉 ¡Compra exitosa!', 'success');
-            await cargarPerfil(true);
-            setTimeout(() => cerrarModalPago(), 2000);
-        } else if (['pendiente', 'pagando'].includes(orden.estado)) {
-            if (statusEl) statusEl.textContent = '⏳ Aún no se confirma.';
-        } else {
-            if (statusEl) statusEl.textContent = '❌ Estado: ' + orden.estado;
-        }
-    } catch (error) { if (statusEl) statusEl.textContent = '❌ Error: ' + msgError(error); }
-}
-
-function copiarDireccion() {
-    const addressEl = document.getElementById('cryptoAddress');
-    const address = addressEl?.textContent;
-    if (address && address !== 'Cargando dirección...') {
-        navigator.clipboard.writeText(address).then(() => { showToast('📋 Copiada', 'success'); }).catch(() => {});
-    }
-}
-
-function cerrarModalPago() {
-    const modal = document.getElementById('cryptoPaymentModal');
-    if (modal) modal.classList.remove('active');
-    window._ordenPagoId = null;
-}
-
 async function canjearNFT() {
     try {
         const session = await getSession();
@@ -1601,7 +1492,6 @@ function publicarFuncionesGlobales() {
     window.compartirPerfil = compartirPerfil;
     window.conectarWallet = conectarWallet;
     window.desconectarWallet = desconectarWallet;
-    window.comprarDomo = comprarDomo;
     window.canjearNFT = canjearNFT;
     window.agregarAmigo = agregarAmigo;
     window.cerrarSesion = cerrarSesion;
@@ -1610,10 +1500,6 @@ function publicarFuncionesGlobales() {
     window.generarQRPerfil = generarQRPerfil;
     window.calcularNivel = calcularNivel;
     window.compartirLogro = compartirLogro;
-    window.comprarConCripto = comprarConCripto;
-    window.verificarPagoCrypto = verificarPagoCrypto;
-    window.copiarDireccion = copiarDireccion;
-    window.cerrarModalPago = cerrarModalPago;
     window.cambiarConexion = cambiarConexion;
     window.cargarEstadoConexion = cargarEstadoConexion;
     window.getPerfilActual = getPerfilActual;
@@ -1664,19 +1550,6 @@ async function iniciarPerfil() {
     iniciarDetectorInactividad();
     setInterval(() => { if (!document.hidden) cargarEstadoConexion(); }, 60000);
     setInterval(() => { if (!document.hidden) cargarAmigosEnLinea(); }, 60000);
-    const cryptoQty = document.getElementById('cryptoQuantity');
-    const decBtn = document.getElementById('cryptoDecreaseQty');
-    const incBtn = document.getElementById('cryptoIncreaseQty');
-    function actualizarCryptoTotal() {
-        const qty = parseInt(cryptoQty?.textContent || 1);
-        const total = qty * 4.50;
-        const comision = total * 0.02;
-        const totalEl = document.getElementById('cryptoTotal');
-        if (totalEl) totalEl.textContent = '$' + (total + comision).toFixed(2) + ' USDT';
-    }
-    if (decBtn && cryptoQty) decBtn.addEventListener('click', () => { let v = parseInt(cryptoQty.textContent); if (v > 1) { cryptoQty.textContent = v - 1; actualizarCryptoTotal(); } });
-    if (incBtn && cryptoQty) incBtn.addEventListener('click', () => { let v = parseInt(cryptoQty.textContent); if (v < 10) { cryptoQty.textContent = v + 1; actualizarCryptoTotal(); } });
-    actualizarCryptoTotal();
 }
 
 asegurarEstilosPerfil();
