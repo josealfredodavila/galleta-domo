@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>◈ Canales · Sariel's</title>
+    <title>🏛️ Canales · Sariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <script>
     (function(){
@@ -44,6 +44,7 @@
         .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212,175,55,0.05); text-shadow: 0 0 10px rgba(212,175,55,0.4); }
         .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); box-shadow: inset 0 0 20px rgba(212,175,55,0.1); }
         .main-nav .nav-link.live { color: var(--danger); }
+        .nav-emoji { display: inline-block; font-family: "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif; font-size: 1.05em; line-height: 1; filter: drop-shadow(0 0 4px rgba(212,175,55,0.35)); }
         .icon { display: inline-block; width: 1em; height: 1em; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; vertical-align: -0.125em; flex-shrink: 0; }
         .icon-sm { width: 0.85em; height: 0.85em; }
         .icon-lg { width: 1.25em; height: 1.25em; }
@@ -66,7 +67,7 @@
         .mis-canales-lista { display: flex; flex-direction: column; gap: 10px; }
         .canal-item { display: flex; align-items: center; gap: 12px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 10px 14px; cursor: pointer; transition: var(--transition); position: relative; }
         .canal-item:hover { border-color: var(--gold); transform: translateX(4px); box-shadow: 0 0 25px rgba(212,175,55,0.25); }
-        .canal-item .avatar-mini { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold)); display: flex; align-items: center; justify-content: center; font-size: 1rem; color: #fff; overflow: hidden; flex-shrink: 0; border: 1px solid rgba(212,175,55,0.4); }
+        .canal-item .avatar-mini { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold)); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: #fff; overflow: hidden; flex-shrink: 0; border: 1px solid rgba(212,175,55,0.4); }
         .canal-item .avatar-mini img { width: 100%; height: 100%; object-fit: cover; }
         .canal-item .info { flex: 1; min-width: 0; }
         .canal-item .info .nombre { font-weight: 700; color: var(--text-primary); font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-flex; align-items: center; gap: 5px; }
@@ -82,6 +83,7 @@
         .en-vivo-card .info .stats { font-size: 0.6rem; color: var(--text-muted); margin-top: 6px; display: inline-flex; align-items: center; gap: 4px; }
         .no-live-box { grid-column: 1 / -1; text-align: center; padding: 20px 16px; background: linear-gradient(155deg, rgba(15, 45, 26, 0.8), rgba(8, 15, 26, 0.9)); border: 1px dashed rgba(212, 175, 55, 0.3); border-radius: var(--radius); color: var(--text-muted); display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .no-live-box .icon { font-size: 1.5rem; display: block; margin-bottom: 8px; color: var(--gold); opacity: 0.8; width: 1.5rem; height: 1.5rem; filter: drop-shadow(0 0 10px rgba(212,175,55,0.6)); }
+        .no-live-box .emoji-big { font-size: 2.5rem; display: block; margin-bottom: 8px; filter: drop-shadow(0 0 12px rgba(212,175,55,0.5)); }
         .no-live-box h3 { font-size: 0.85rem; color: var(--text-primary); font-family: 'Orbitron', monospace; margin-bottom: 4px; }
         .no-live-box p { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 12px; }
         .no-live-box .btn-salir-aire { padding: 8px 20px; font-size: 0.7rem; }
@@ -113,6 +115,7 @@
         .post-menu-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; color: var(--text-secondary); font-size: 0.72rem; font-weight: 500; cursor: pointer; transition: var(--transition); background: transparent; border: none; width: 100%; text-align: left; font-family: 'Inter', sans-serif; }
         .post-menu-item:hover { background: rgba(212,175,55,0.12); color: var(--gold); text-shadow: 0 0 10px rgba(212,175,55,0.5); }
         .post-menu-item .icon { font-size: 0.9rem; width: 20px; text-align: center; }
+        .post-menu-item .emoji { display: inline-block; font-family: "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif; font-size: 1rem; width: 20px; text-align: center; }
         .post-menu-separator { height: 1px; background: rgba(212,175,55,0.1); margin: 4px 0; }
         .post-menu-item.danger { color: var(--danger); }
         .post-menu-item.danger:hover { background: rgba(255,51,102,0.1); color: var(--danger); text-shadow: 0 0 10px rgba(255,51,102,0.5); }
@@ -136,6 +139,7 @@
         .btn-donar:hover { transform: scale(1.02); box-shadow: 0 0 30px rgba(0,214,143,0.6); }
         .btn-salir-aire { background: var(--live-red); color: #fff; border: none; padding: 10px 24px; border-radius: 30px; font-weight: 800; font-size: 0.8rem; cursor: pointer; animation: pulse-live 2s infinite; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 0 20px rgba(255, 0, 68, 0.5), 0 0 40px rgba(255,0,68,0.25); display: inline-flex; align-items: center; gap: 6px; }
         .btn-salir-aire:hover { transform: scale(1.05); box-shadow: 0 0 35px rgba(255, 0, 68, 0.8); }
+        .btn-emoji { display: inline-block; font-family: "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif; font-size: 1.05em; line-height: 1; vertical-align: -0.1em; }
         .ajustes-menu { display: flex; flex-direction: column; gap: 8px; }
         .ajustes-menu button { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); color: var(--text-primary); cursor: pointer; text-align: left; font-size: 0.8rem; transition: var(--transition); display: inline-flex; align-items: center; gap: 8px; }
         .ajustes-menu button:hover { border-color: var(--gold); background: rgba(212,175,55,0.1); color: var(--gold); box-shadow: 0 0 20px rgba(212,175,55,0.25); }
@@ -241,6 +245,7 @@
         .modal .btn-confirmar-eliminar { width: 100%; padding: 10px; border-radius: 30px; border: none; background: var(--danger); color: #fff; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
         .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
         .empty-state .icon { font-size: 2.5rem; display: block; margin: 0 auto 12px; color: var(--gold); opacity: 0.3; width: 2.5rem; height: 2.5rem; }
+        .empty-state .emoji-big { font-size: 2.5rem; display: block; margin: 0 auto 12px; opacity: 0.6; filter: drop-shadow(0 0 10px rgba(212,175,55,0.4)); }
         .gift-options { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin: 12px 0; }
         .gift-btn { padding: 10px 16px; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.3); color: var(--text-primary); cursor: pointer; transition: var(--transition); text-align: center; min-width: 70px; }
         .gift-btn:hover { border-color: var(--gold); transform: scale(1.05); background: rgba(212,175,55,0.1); box-shadow: 0 0 22px rgba(212,175,55,0.35); }
@@ -305,6 +310,13 @@
         .btn-danger { background: rgba(255, 51, 102, 0.1) !important; color: var(--danger) !important; border: 1px solid rgba(255, 51, 102, 0.3) !important; padding: 6px 14px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: var(--transition); }
         .btn-danger:hover { box-shadow: 0 0 20px rgba(255,51,102,0.4) !important; }
         .btn-sm { padding: 4px 12px !important; font-size: 0.65rem !important; }
+
+        /* Emoji font stack global */
+        .emoji, .btn-emoji, .nav-emoji, .live-tag, .modal-header h2 span, .seccion-titulo span, .main-nav .nav-link span, .btn-gold span, .btn-outline span, .btn-danger span, .btn-donar span, .btn-salir-aire span, .feed-filtro-btn span, .gift-btn .label, .post-menu-item .emoji, .empty-state .emoji-big, .no-live-box .emoji-big {
+            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "EmojiOne Color", sans-serif;
+            font-style: normal;
+            font-weight: 400;
+        }
     </style>
 </head>
 <body>
@@ -317,11 +329,11 @@
             </a>
             <div class="header-actions">
                 <span class="network-badge">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/></svg>
+                    <span class="nav-emoji">⬡</span>
                     Polygon
                 </span>
                 <span class="token-badge" id="tokenBadge" onclick="verTokens()">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/><polygon points="12 7 16 9.5 16 14.5 12 17 8 14.5 8 9.5 12 7"/></svg>
+                    <span class="nav-emoji">💎</span>
                     <span id="tokenBadgeCantidad">0</span> Es.stoks
                 </span>
             </div>
@@ -329,51 +341,41 @@
 
         <nav class="main-nav">
             <a href="/" class="nav-link">
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                Inicio
+                <span class="nav-emoji">🏠</span> Inicio
             </a>
             <a href="/features/muro/muro.html" class="nav-link">
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                Muro
+                <span class="nav-emoji">📰</span> Muro
             </a>
             <a href="/features/perfil/perfil.html" class="nav-link">
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                Perfil
+                <span class="nav-emoji">👤</span> Perfil
             </a>
             <a href="/features/mensajes/contactos.html" class="nav-link">
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                Contactos            </a>
+                <span class="nav-emoji">💬</span> Contactos
+            </a>
             <a href="/features/live/live.html" class="nav-link live">
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4.93 19.07A10 10 0 0 1 4.93 4.93M19.07 19.07a10 10 0 0 0 0-14.14M7.76 16.24a6 6 0 0 1 0-8.48M16.24 16.24a6 6 0 0 0 0-8.48"/><circle cx="12" cy="12" r="2"/></svg>
-                Live
+                <span class="nav-emoji">🔴</span> Live
             </a>
             <a href="/features/internet/internet.html" class="nav-link">
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4.93 19.07A10 10 0 0 1 4.93 4.93M19.07 19.07a10 10 0 0 0 0-14.14M7.76 16.24a6 6 0 0 1 0-8.48M16.24 16.24a6 6 0 0 0 0-8.48"/><circle cx="12" cy="12" r="2"/></svg>
-                Internet
+                <span class="nav-emoji">🌐</span> Internet
             </a>
             <a href="/features/videos/videos.html" class="nav-link">
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-                Videos
+                <span class="nav-emoji">🎬</span> Videos
             </a>
             <a href="/features/grupos/grupos.html" class="nav-link active">
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                Canales
+                <span class="nav-emoji">🏛️</span> Canales
             </a>
             <a href="/marketing/marketing.html" class="nav-link">
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
-                Marketing
+                <span class="nav-emoji">📢</span> Marketing
             </a>
         </nav>
 
         <div id="vistaLista">
             <div class="mobile-tabs">
                 <div class="mobile-tab active" onclick="switchTab('mis-canales')" id="tabMisCanales">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg>
-                    Mis Canales
+                    <span class="nav-emoji">🏛️</span> Mis Canales
                 </div>
                 <div class="mobile-tab" onclick="switchTab('en-vivo')" id="tabEnVivo">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24" style="color:var(--live-red);"><circle cx="12" cy="12" r="8" fill="currentColor" stroke="none"/></svg>
-                    En Vivo Ahora
+                    <span class="nav-emoji">🔴</span> En Vivo Ahora
                 </div>
             </div>
 
@@ -381,17 +383,15 @@
                 <div class="col-mis-canales" id="colMisCanales">
                     <div class="seccion-titulo">
                         <span>
-                            <svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg>
-                            MIS CANALES
+                            <span class="nav-emoji">🏛️</span> MIS CANALES
                         </span>
                         <button class="btn-outline btn-sm" onclick="toggleMisGrupos()" id="btnMisGrupos">
-                            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                            Ver Todos
+                            <span class="btn-emoji">👁️</span> Ver Todos
                         </button>
                     </div>
                     <div class="mis-canales-lista" id="misCanalesLista">
                         <div class="empty-state" style="padding:20px;">
-                            <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            <span class="emoji-big">⏳</span>
                             <h3>Cargando...</h3>
                         </div>
                     </div>
@@ -399,13 +399,12 @@
                 <div class="col-en-vivo" id="colEnVivo">
                     <div class="seccion-titulo">
                         <span>
-                            <svg class="icon" viewBox="0 0 24 24" style="color:var(--live-red);"><circle cx="12" cy="12" r="8" fill="currentColor" stroke="none"/></svg>
-                            EN VIVO AHORA
+                            <span class="nav-emoji">🔴</span> EN VIVO AHORA
                         </span>
                     </div>
                     <div class="en-vivo-grid" id="enVivoGrid">
                         <div class="empty-state" style="padding:20px;">
-                            <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            <span class="emoji-big">⏳</span>
                             <h3>Cargando parrilla...</h3>
                         </div>
                     </div>
@@ -415,7 +414,7 @@
             <div style="margin-top: 30px;">
                 <div class="grupos-header">
                     <h1 data-clave="grupos_titulo" style="color: var(--gold) !important; display: inline-flex; align-items: center; gap: 8px;">
-                        <svg class="icon icon-lg" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/><polygon points="12 7 16 9.5 16 14.5 12 17 8 14.5 8 9.5 12 7"/></svg>
+                        <span class="nav-emoji" style="font-size:1.5rem;">🏛️</span>
                         Directorio de Canales
                     </h1>
                     <div class="filtros" style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:12px;">
@@ -430,14 +429,13 @@
                             <option value="">Todas las categorías</option>
                         </select>
                         <button class="btn-gold btn-sm" onclick="abrirModalCrearGrupo()">
-                            <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                            Crear Comunidad
+                            <span class="btn-emoji">➕</span> Crear Comunidad
                         </button>
                     </div>
                 </div>
                 <div class="grupos-grid" id="gruposGrid" style="margin-top:16px;">
                     <div class="empty-state">
-                        <svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg>
+                        <span class="emoji-big">🏛️</span>
                         <h3 data-clave="grupos_cargando">Cargando canales...</h3>
                     </div>
                 </div>
@@ -449,39 +447,38 @@
 
         <div class="grupo-interno" id="vistaGrupo">
             <button class="btn-outline btn-sm" onclick="volverALista()" style="margin-bottom:12px;">
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-                Volver a Canales
+                <span class="btn-emoji">⬅️</span> Volver a Canales
             </button>
 
             <div class="grupo-header-interno" id="grupoHeaderInterno">
                 <button class="btn-ajustes-canal" onclick="abrirAjustesCanal()" id="btnAjustesCanal" style="display:none;" title="Ajustes del Canal">
-                    <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    <span class="nav-emoji">⚙️</span>
                 </button>
-                <div class="portada" id="grupoPortada">◈</div>
+                <div class="portada" id="grupoPortada">🏛️</div>
                 <div class="info-row">
-                    <div class="avatar-grande" id="grupoAvatar">◈</div>
+                    <div class="avatar-grande" id="grupoAvatar">🏛️</div>
                     <div class="info-text">
                         <div class="nombre" id="grupoNombre">Nombre del canal</div>
                         <div class="descripcion" id="grupoDescripcion">Descripción</div>
                         <div class="meta">
                             <span id="grupoCiudad">
-                                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                <span class="nav-emoji">📍</span>
                                 Ciudad
                             </span>
                             <span id="grupoMiembros">
-                                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                                <span class="nav-emoji">👥</span>
                                 0 seguidores
                             </span>
                             <span id="grupoEstadoBadge">
-                                <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                <span class="nav-emoji">🌐</span>
                                 Público
                             </span>
                             <span id="grupoLiveBadge" style="display:none;" class="live-badge">
-                                <svg class="icon icon-sm" viewBox="0 0 24 24" style="color:#fff;"><circle cx="12" cy="12" r="6" fill="currentColor" stroke="none"/></svg>
+                                <span class="nav-emoji">🔴</span>
                                 EN VIVO
                             </span>
                             <span id="grupoMkBadge" style="display:none;" class="mk-badge">
-                                <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                                <span class="nav-emoji">🛒</span>
                                 Marketplace
                             </span>
                         </div>
@@ -489,24 +486,19 @@
                 </div>
                 <div class="acciones" id="grupoAcciones">
                     <button class="btn-donar btn-sm" onclick="abrirModalRegalos(grupoActual?.creador_id, grupoActual?.nombre)" id="btnDonar">
-                        <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9 11h6"/></svg>
-                        Donar USDT
+                        <span class="btn-emoji">💎</span> Donar USDT
                     </button>
                     <button class="btn-gold btn-sm" onclick="abrirFormPublicacion()">
-                        <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                        Subir al Canal
+                        <span class="btn-emoji">📤</span> Subir al Canal
                     </button>
                     <button class="btn-salir-aire" onclick="iniciarLiveEnGrupo()" id="btnIniciarLive">
-                        <svg class="icon icon-sm" viewBox="0 0 24 24" style="fill:currentColor;stroke:none;"><circle cx="12" cy="12" r="6"/></svg>
-                        SALIR AL AIRE
+                        <span class="btn-emoji">🔴</span> SALIR AL AIRE
                     </button>
                     <button class="btn-danger btn-sm" onclick="verLiveActivo()" id="btnVerLive" style="display:none;">
-                        <svg class="icon icon-sm" viewBox="0 0 24 24" style="fill:currentColor;stroke:none;"><circle cx="12" cy="12" r="6"/></svg>
-                        VER LIVE
+                        <span class="btn-emoji">📺</span> VER LIVE
                     </button>
                     <button class="btn-danger btn-sm" onclick="finalizarLiveGrupo()" id="btnFinalizarLive" style="display:none;">
-                        <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1" fill="currentColor" stroke="none"/></svg>
-                        Finalizar LIVE
+                        <span class="btn-emoji">⏹️</span> Finalizar LIVE
                     </button>
                 </div>
             </div>
@@ -523,20 +515,20 @@
                     <video id="grupoLiveVideo" autoplay playsinline muted></video>
                     <div class="live-controls-inline">
                         <button class="live-ctrl-btn" onclick="toggleMuteGrupoLive()" id="grupoLiveMuteBtn" title="Micrófono" style="position: absolute; bottom: 12px; right: 12px; background: rgba(0,0,0,0.7); border: 1px solid var(--glass-border); color: var(--gold); font-size: 1.2rem; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; cursor: pointer; z-index: 20; backdrop-filter: blur(4px);">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                            <span class="nav-emoji" style="font-size:1.1rem;">🎤</span>
                         </button>
                         <button class="live-ctrl-btn end" onclick="finalizarLiveGrupo()" id="grupoLiveEndBtn" title="Finalizar" style="display:none; position: absolute; bottom: 12px; left: 12px; background: rgba(255,0,68,0.3); border: 1px solid var(--live-red); color: #fff; width: 40px; height: 40px; align-items: center; justify-content: center; border-radius: 50%; cursor: pointer; z-index: 20; backdrop-filter: blur(4px);">
-                            <svg viewBox="0 0 24 24" fill="currentColor" style="width: 20px; height: 20px;"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+                            <span class="nav-emoji" style="font-size:1.1rem;">⏹️</span>
                         </button>
                     </div>
                 </div>
                 <div class="live-info">
                     <span style="display:inline-flex;align-items:center;gap:5px;">
-                        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        <span class="nav-emoji">👁️</span>
                         <span id="grupoLiveEspectadores">0</span> espectadores
                     </span>
                     <span id="grupoLiveEstado" style="display:inline-flex;align-items:center;gap:5px;">
-                        <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6" fill="currentColor" stroke="none"/></svg>
+                        <span class="nav-emoji">🔴</span>
                         Conectando...
                     </span>
                 </div>
@@ -566,28 +558,22 @@
                 <textarea id="inputPublicacion" placeholder="¿Qué está pasando en el canal?"></textarea>
                 <div class="acciones">
                     <button onclick="toggleEmojiPickerGrupo()" id="btnEmojiGrupo">
-                        <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-                        Emoji
+                        <span class="btn-emoji">😀</span> Emoji
                     </button>
                     <button onclick="insertarHashtagGrupo()">
-                        <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>
-                        Hashtag
+                        <span class="btn-emoji">#️⃣</span> Hashtag
                     </button>
                     <button onclick="subirFotoGrupo()">
-                        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                        Foto
+                        <span class="btn-emoji">📷</span> Foto
                     </button>
                     <button onclick="subirVideoGrupo()">
-                        <svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-                        Video
+                        <span class="btn-emoji">🎬</span> Video
                     </button>
                     <button class="btn-mk" onclick="abrirModalMarketplace()" id="btnMarketplace">
-                        <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-                        Marketplace
+                        <span class="btn-emoji">🛒</span> Marketplace
                     </button>
                     <button class="btn-publicar" onclick="publicarEnGrupo()">
-                        <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                        Subir al Canal
+                        <span class="btn-emoji">📤</span> Subir al Canal
                     </button>
                     <div class="emoji-picker" id="emojiPickerGrupo">
                         <div class="titulo">✦ Elige tu emoji</div>
@@ -598,26 +584,22 @@
 
             <div class="feed-filtros" id="feedFiltros">
                 <button class="feed-filtro-btn active" data-filtro="todo" onclick="filtrarFeed('todo')">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg>
-                    Todo
+                    <span class="btn-emoji">✨</span> Todo
                 </button>
                 <button class="feed-filtro-btn" data-filtro="marketplace" onclick="filtrarFeed('marketplace')">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-                    Solo Marketplace
+                    <span class="btn-emoji">🛒</span> Solo Marketplace
                 </button>
                 <button class="feed-filtro-btn" data-filtro="publicaciones" onclick="filtrarFeed('publicaciones')">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                    Solo Publicaciones
+                    <span class="btn-emoji">📄</span> Solo Publicaciones
                 </button>
                 <button class="feed-filtro-btn" data-filtro="interesados" onclick="filtrarFeed('interesados')">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg>
-                    Me Interesa
+                    <span class="btn-emoji">⭐</span> Me Interesa
                 </button>
             </div>
 
             <div class="publicaciones-container" id="publicacionesContainer">
                 <div class="empty-state">
-                    <svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg>
+                    <span class="emoji-big">🏛️</span>
                     <h3 data-clave="grupos_sin_publicaciones">Sin publicaciones aún</h3>
                     <p data-clave="grupos_sin_publicaciones_desc">Sé el primero en publicar</p>
                 </div>
@@ -628,7 +610,7 @@
             <div class="modal">
                 <div class="modal-header">
                     <h2>
-                        <svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg>
+                        <span class="nav-emoji">🏛️</span>
                         Crear Comunidad
                     </h2>
                     <button class="btn-cerrar" onclick="cerrarModalCrearGrupo()">×</button>
@@ -660,7 +642,7 @@
                     <div class="checkbox-row">
                         <input type="checkbox" id="inputMarketplaceActivo" />
                         <label for="inputMarketplaceActivo">
-                            <svg class="icon icon-sm" viewBox="0 0 24 24" style="vertical-align:middle;"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                            <span class="nav-emoji">🛒</span>
                             Activar Marketplace del grupo
                         </label>
                         <span class="hint">Opcional</span>
@@ -675,8 +657,7 @@
                         <select id="inputModoIngresoGrupo"><option value="abierto">Abierto</option><option value="solicitud">Solicitud</option><option value="invitacion">Invitación</option></select>
                     </div>
                     <button class="btn-guardar" id="btnCrearGrupo">
-                        <svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg>
-                        Crear Comunidad
+                        <span class="btn-emoji">➕</span> Crear Comunidad
                     </button>
                 </form>
             </div>
@@ -686,35 +667,36 @@
             <div class="modal">
                 <div class="modal-header">
                     <h2>
-                        <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                        <span class="nav-emoji">⚙️</span>
                         Ajustes del Canal
                     </h2>
                     <button class="btn-cerrar" onclick="cerrarAjustesCanal()">×</button>
                 </div>
                 <div class="ajustes-menu">
                     <div id="marketplaceAviso" style="font-size:0.65rem;color:var(--text-muted);padding:10px 12px;background:rgba(0,0,0,0.2);border-radius:10px;margin-bottom:8px;line-height:1.5;display:none;">
-                        <svg class="icon icon-sm" viewBox="0 0 24 24" style="vertical-align:middle;"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                        <span class="nav-emoji">🛒</span>
                         El Marketplace se activó (o no) al crear el grupo. <strong>No se puede cambiar después.</strong>
                     </div>
                     <button onclick="abrirAdminGrupo()">
-                        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                        <span class="nav-emoji">👥</span>
                         Administrar Miembros y Publicaciones
                     </button>
                     <button onclick="cambiarAvatarGrupo()">
-                        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                        <span class="nav-emoji">📷</span>
                         Cambiar Foto de Perfil
                     </button>
                     <button onclick="cambiarPortadaGrupo()">
-                        <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                        <span class="nav-emoji">🖼️</span>
                         Cambiar Portada (Video/Imagen)
                     </button>
                     <a href="/features/terminos/derechos-sariels.html" target="_blank" style="text-decoration:none;">
                         <button style="width:100%;">
+                            <span class="nav-emoji">📜</span>
                             Ver Derechos y Usos
                         </button>
                     </a>
                     <button onclick="mostrarConfirmacionEliminarGrupo()" style="color:var(--danger); border-color:rgba(255,51,102,0.3);">
-                        <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+                        <span class="nav-emoji">🗑️</span>
                         Eliminar Canal
                     </button>
                 </div>
@@ -725,23 +707,23 @@
             <div class="modal">
                 <div class="modal-header">
                     <h2>
-                        <svg class="icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                        <span class="nav-emoji">👥</span>
                         Administrar Canal
                     </h2>
                     <button class="btn-cerrar" onclick="cerrarModalAdmin()">×</button>
                 </div>
                 <div id="adminContenido">
                     <div class="empty-state">
-                        <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        <span class="emoji-big">⏳</span>
                         <h3 data-clave="grupos_cargando_admin">Cargando...</h3>
                     </div>
                 </div>
                 <div style="margin-top:16px; display:flex; gap:8px; flex-wrap:wrap;">
-                    <button class="btn-gold btn-sm" onclick="cargarAdminMiembros()" style="flex:1;">Miembros</button>
-                    <button class="btn-gold btn-sm" onclick="cargarAdminPublicaciones()" style="flex:1;">Publicaciones</button>
-                    <button class="btn-gold btn-sm" onclick="cargarAdminSolicitudes()" style="flex:1;">Solicitudes</button>
-                    <button class="btn-gold btn-sm" onclick="cargarAdminReportes()" style="flex:1;">Reportes</button>
-                    <button class="btn-gold btn-sm" onclick="cargarAdminEditar()" style="flex:1;">Editar Datos</button>
+                    <button class="btn-gold btn-sm" onclick="cargarAdminMiembros()" style="flex:1;">👥 Miembros</button>
+                    <button class="btn-gold btn-sm" onclick="cargarAdminPublicaciones()" style="flex:1;">📄 Publicaciones</button>
+                    <button class="btn-gold btn-sm" onclick="cargarAdminSolicitudes()" style="flex:1;">📨 Solicitudes</button>
+                    <button class="btn-gold btn-sm" onclick="cargarAdminReportes()" style="flex:1;">🚨 Reportes</button>
+                    <button class="btn-gold btn-sm" onclick="cargarAdminEditar()" style="flex:1;">✏️ Editar Datos</button>
                 </div>
             </div>
         </div>
@@ -750,7 +732,7 @@
             <div class="modal">
                 <div class="modal-header">
                     <h2 style="color:var(--danger);">
-                        <svg class="icon" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+                        <span class="nav-emoji">🗑️</span>
                         Eliminar Canal
                     </h2>
                     <button class="btn-cerrar" onclick="cerrarConfirmacionEliminarGrupo()">×</button>
@@ -772,7 +754,7 @@
             <div class="modal">
                 <div class="modal-header">
                     <h2>
-                        <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9 11h6"/></svg>
+                        <span class="nav-emoji">💎</span>
                         Donar USDT
                     </h2>
                     <button class="btn-cerrar" onclick="cerrarModalRegalos()">×</button>
@@ -780,11 +762,11 @@
                 <div style="text-align:center;padding:10px 0;">
                     <p style="color:var(--text-muted);font-size:0.8rem;margin-bottom:12px;">Apoya a <strong id="giftStreamerName" style="color:var(--gold);">el creador</strong> con USDT/USDC</p>
                     <div class="gift-options" id="giftOptions">
-                        <button class="gift-btn" onclick="enviarRegalo(2)"><span class="monto">$2</span><span class="label">Básico</span></button>
-                        <button class="gift-btn" onclick="enviarRegalo(5)"><span class="monto">$5</span><span class="label">Plata</span></button>
-                        <button class="gift-btn" onclick="enviarRegalo(10)"><span class="monto">$10</span><span class="label">Oro</span></button>
-                        <button class="gift-btn" onclick="enviarRegalo(20)" style="border-color:var(--bronze);"><span class="monto" style="color:var(--bronze);">$20</span><span class="label" style="color:var(--bronze-light);">Platino</span></button>
-                        <button class="gift-btn" onclick="enviarRegalo(50)" style="border-color:var(--esmeralda);"><span class="monto" style="color:var(--esmeralda);">$50</span><span class="label" style="color:var(--esmeralda);">Esmeralda</span></button>
+                        <button class="gift-btn" onclick="enviarRegalo(2)"><span class="monto">$2</span><span class="label">🥈 Básico</span></button>
+                        <button class="gift-btn" onclick="enviarRegalo(5)"><span class="monto">$5</span><span class="label">🥈 Plata</span></button>
+                        <button class="gift-btn" onclick="enviarRegalo(10)"><span class="monto">$10</span><span class="label">🥇 Oro</span></button>
+                        <button class="gift-btn" onclick="enviarRegalo(20)" style="border-color:var(--bronze);"><span class="monto" style="color:var(--bronze);">$20</span><span class="label" style="color:var(--bronze-light);">🥉 Platino</span></button>
+                        <button class="gift-btn" onclick="enviarRegalo(50)" style="border-color:var(--esmeralda);"><span class="monto" style="color:var(--esmeralda);">$50</span><span class="label" style="color:var(--esmeralda);">💚 Esmeralda</span></button>
                     </div>
                     <div id="giftStatus" style="margin-top:12px;font-size:0.7rem;color:var(--text-muted);">Selecciona un monto para apoyar</div>
                 </div>
@@ -795,7 +777,7 @@
             <div class="modal">
                 <div class="modal-header">
                     <h2>
-                        <svg class="icon" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+                        <span class="nav-emoji">🚩</span>
                         Reportar Publicación
                     </h2>
                     <button class="btn-cerrar" onclick="cerrarModalReportar()">×</button>
@@ -819,8 +801,7 @@
                     <textarea id="inputDescripcionReporte" rows="3" placeholder="Cuéntanos más sobre el problema..."></textarea>
                 </div>
                 <button class="btn-guardar" onclick="enviarReportePublicacion()">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                    Enviar Reporte
+                    <span class="btn-emoji">📨</span> Enviar Reporte
                 </button>
                 <div id="reporteStatus" style="margin-top:12px;font-size:0.7rem;color:var(--text-muted);text-align:center;"></div>
             </div>
@@ -830,7 +811,7 @@
             <div class="modal">
                 <div class="modal-header">
                     <h2>
-                        <svg class="icon" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        <span class="nav-emoji">⚠️</span>
                         Reportar al Administrador
                     </h2>
                     <button class="btn-cerrar" onclick="cerrarModalReportarAdmin()">×</button>
@@ -859,8 +840,7 @@
                     <textarea id="inputDescripcionReporteAdmin" rows="3" placeholder="Explícanos qué está pasando..." required></textarea>
                 </div>
                 <button class="btn-guardar" onclick="enviarReporteAdmin()">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                    Enviar Reporte al Admin
+                    <span class="btn-emoji">📨</span> Enviar Reporte al Admin
                 </button>
                 <div id="reporteAdminStatus" style="margin-top:12px;font-size:0.7rem;color:var(--text-muted);text-align:center;"></div>
             </div>
@@ -870,7 +850,7 @@
             <div class="modal">
                 <div class="modal-header">
                     <h2>
-                        <svg class="icon" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                        <span class="nav-emoji">🏷️</span>
                         Etiquetar Foto
                     </h2>
                     <button class="btn-cerrar" onclick="cerrarModalEtiquetar()">×</button>
@@ -885,8 +865,7 @@
                 <div id="resultadosUsuariosEtiqueta" style="max-height:200px;overflow-y:auto;margin-bottom:12px;"></div>
                 <div id="etiquetadosSeleccionados" style="margin-bottom:12px;display:flex;flex-wrap:wrap;gap:6px;"></div>
                 <button class="btn-guardar" onclick="guardarEtiquetas()">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                    Guardar Etiquetas
+                    <span class="btn-emoji">💾</span> Guardar Etiquetas
                 </button>
             </div>
         </div>
@@ -895,7 +874,7 @@
             <div class="modal">
                 <div class="modal-header">
                     <h2>
-                        <svg class="icon" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                        <span class="nav-emoji">🛒</span>
                         Publicar en Marketplace
                     </h2>
                     <button class="btn-cerrar" onclick="cerrarModalMarketplace()">×</button>
@@ -957,8 +936,7 @@
                     </div>
                 </div>
                 <button class="btn-guardar" onclick="publicarMarketplace()" id="btnPublicarMarketplace">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-                    Publicar en Marketplace
+                    <span class="btn-emoji">🛒</span> Publicar en Marketplace
                 </button>
                 <div id="marketplaceStatus" style="margin-top:12px;font-size:0.7rem;color:var(--text-muted);text-align:center;"></div>
             </div>
@@ -970,20 +948,23 @@
             <span><span class="brand">◈ Sariel's</span> · Csariels.s ecosystem · WEB3</span>
             <div class="footer-links">
                 <a href="/terminos" data-clave="grupos_footer_terminos">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    <span class="nav-emoji">📜</span>
                     Términos
                 </a>
                 <a href="/privacidad" data-clave="grupos_footer_privacidad">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    <span class="nav-emoji">🔒</span>
                     Privacidad
                 </a>
                 <a href="/cookies" data-clave="grupos_footer_cookies">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="8.5" cy="8.5" r="1"/><circle cx="15.5" cy="15.5" r="1"/><circle cx="12" cy="12" r="1"/></svg>
+                    <span class="nav-emoji">🍪</span>
                     Cookies
                 </a>
-                <a href="/features/terminos/derechos-sariels.html">Derechos y Usos</a>
+                <a href="/features/terminos/derechos-sariels.html">
+                    <span class="nav-emoji">📄</span>
+                    Derechos y Usos
+                </a>
                 <span style="opacity:0.3;display:inline-flex;align-items:center;gap:4px;">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                    <span class="nav-emoji">⬡</span>
                     Polygon
                 </span>
             </div>
@@ -1441,7 +1422,7 @@
             if (!window.supabaseClient) return;
             
             if (!sessionUser) {
-                misCanalesDiv.innerHTML = '<div class="empty-state" style="padding:20px;"><svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg><p style="font-size:0.7rem;">Inicia sesión para ver tus canales.</p></div>';
+                misCanalesDiv.innerHTML = '<div class="empty-state" style="padding:20px;"><span class="emoji-big">🏛️</span><p style="font-size:0.7rem;">Inicia sesión para ver tus canales.</p></div>';
             } else {
                 var misGruposResult = await window.supabaseClient.from('grupos_video_miembros').select('grupo_id').eq('usuario_id', sessionUser.id).eq('estado', 'activo');
                 var ids = (misGruposResult.data || []).map(function(m) { return m.grupo_id; });
@@ -1451,16 +1432,16 @@
                     misCanalesCache = misCanalesData.data || [];
                     
                     misCanalesDiv.innerHTML = misCanalesCache.map(function(g) {
-                        var avatar = g.avatar_url ? '<img src="' + grpEscapeHTML(grpSafeUrl(g.avatar_url)) + '">' : '◈';
+                        var avatar = g.avatar_url ? '<img src="' + grpEscapeHTML(grpSafeUrl(g.avatar_url)) + '">' : '🏛️';
                         var precio = g.precio_usdt > 0 ? '$' + g.precio_usdt + ' USDT' : 'Gratis';
-                        var mkIcon = g.marketplace_activo ? '<svg class="icon icon-sm" viewBox="0 0 24 24" style="vertical-align:middle;"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>' : '';
+                        var mkIcon = g.marketplace_activo ? '<span class="nav-emoji">🛒</span>' : '';
                         return '<div class="canal-item" onclick="abrirGrupo(\'' + g.id + '\')">' +
                             '<div class="avatar-mini">' + avatar + '</div>' +
                             '<div class="info"><div class="nombre">' + grpEscapeHTML(g.nombre) + ' ' + mkIcon + '</div>' +
                             '<div class="stats">' + precio + '</div></div></div>';
                     }).join('');
                 } else {
-                    misCanalesDiv.innerHTML = '<div class="empty-state" style="padding:20px;"><svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg><p style="font-size:0.7rem;">No sigues ningún canal aún.</p></div>';
+                    misCanalesDiv.innerHTML = '<div class="empty-state" style="padding:20px;"><span class="emoji-big">🏛️</span><p style="font-size:0.7rem;">No sigues ningún canal aún.</p></div>';
                 }
             }
 
@@ -1476,17 +1457,17 @@
                 var botonAireHTML;
                 if (misCanalesCache && misCanalesCache.length > 0) {
                     botonAireHTML = '<button class="btn-salir-aire" onclick="abrirGrupo(\'' + misCanalesCache[0].id + '\')">' +
-                        '<svg class="icon icon-sm" viewBox="0 0 24 24" style="fill:currentColor;stroke:none;"><circle cx="12" cy="12" r="6"/></svg>' +
+                        '<span class="btn-emoji">🔴</span>' +
                         'SALIR AL AIRE EN ' + grpEscapeHTML(misCanalesCache[0].nombre).toUpperCase() +
                         '</button>';
                 } else {
                     botonAireHTML = '<button class="btn-salir-aire" onclick="abrirModalCrearGrupo()">' +
-                        '<svg class="icon icon-sm" viewBox="0 0 24 24" style="fill:currentColor;stroke:none;"><circle cx="12" cy="12" r="6"/></svg>' +
+                        '<span class="btn-emoji">🔴</span>' +
                         'Crear mi canal' +
                         '</button>';
                 }
                 enVivoDiv.innerHTML = `<div class="no-live-box">
-                    <svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg>
+                    <span class="emoji-big">🏛️</span>
                     <h3>Nadie al aire por ahora</h3>
                     <p>Sé el primero en transmitir en tu canal</p>
                     ${botonAireHTML}
@@ -1497,17 +1478,17 @@
                     var img = grpSafeUrl(g.avatar_url);
                     return `<div class="en-vivo-card" onclick="abrirGrupo('${g.id}')">
                         <div class="live-tag-small">
-                            <svg class="icon icon-sm" viewBox="0 0 24 24" style="color:#fff;fill:currentColor;stroke:none;"><circle cx="12" cy="12" r="6"/></svg>
+                            <span class="nav-emoji">🔴</span>
                             EN VIVO
                         </div>
                         <div style="width:100%; height:130px; background:#000; display:flex; align-items:center; justify-content:center; color:#fff; font-size:2rem; position:relative;">
-                            ${img ? `<img src="${grpEscapeHTML(img)}" style="width:60px; height:60px; border-radius:50%; border:2px solid var(--gold); box-shadow: 0 0 20px rgba(212,175,55,0.6);">` : '◈'}
+                            ${img ? `<img src="${grpEscapeHTML(img)}" style="width:60px; height:60px; border-radius:50%; border:2px solid var(--gold); box-shadow: 0 0 20px rgba(212,175,55,0.6);">` : '🏛️'}
                         </div>
                         <div class="info">
                             <div class="titulo">${grpEscapeHTML(l.titulo || 'Sin título')}</div>
                             <div class="canal">${grpEscapeHTML(g.nombre || 'Canal')}</div>
                             <div class="stats">
-                                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                <span class="nav-emoji">👁️</span>
                                 ${l.espectadores || 0} viendo
                             </div>
                         </div>
@@ -1556,7 +1537,7 @@
         
         if (!(await esperarSupabase())) {
             console.error('[Grupos] cargarGrupos: supabaseClient no disponible');
-            grid.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><h3>Sin conexión a Supabase</h3></div>';
+            grid.innerHTML = '<div class="empty-state"><span class="emoji-big">⚠️</span><h3>Sin conexión a Supabase</h3></div>';
             return;
         }
         
@@ -1564,14 +1545,14 @@
         
         var timeoutId = setTimeout(function() {
             if (grid.querySelector('.empty-state h3')?.textContent.includes('Cargando')) {
-                grid.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><h3>La carga está tardando</h3><p>Intenta recargar la página</p></div>';
+                grid.innerHTML = '<div class="empty-state"><span class="emoji-big">⚠️</span><h3>La carga está tardando</h3><p>Intenta recargar la página</p></div>';
             }
         }, 8000);
         
         try {
             if (!window.supabaseClient) {
                 clearTimeout(timeoutId);
-                grid.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg><h3>Sin conexión a Supabase</h3></div>';
+                grid.innerHTML = '<div class="empty-state"><span class="emoji-big">⚠️</span><h3>Sin conexión a Supabase</h3></div>';
                 return;
             }
             
@@ -1609,7 +1590,7 @@
                 var ids = (misGruposResult.data || []).map(function(m) { return m.grupo_id; });
                 if (ids.length === 0) {
                     clearTimeout(timeoutId);
-                    grid.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg><h3>No sigues ningún canal</h3></div>';
+                    grid.innerHTML = '<div class="empty-state"><span class="emoji-big">🏛️</span><h3>No sigues ningún canal</h3></div>';
                     var btnMasVacio = document.getElementById('btnCargarMasContainer');
                     if (btnMasVacio) btnMasVacio.style.display = 'none';
                     return;
@@ -1631,7 +1612,7 @@
             grpHayMas = grupos.length === grpPaginaSize;
 
             if (grupos.length === 0 && !esPaginaSiguiente) {
-                grid.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg><h3>No hay canales disponibles</h3><p>Activa el primero</p></div>';
+                grid.innerHTML = '<div class="empty-state"><span class="emoji-big">🏛️</span><h3>No hay canales disponibles</h3><p>Activa el primero</p></div>';
                 var btnMas = document.getElementById('btnCargarMasContainer');
                 if (btnMas) btnMas.style.display = 'none';
                 return;
@@ -1647,10 +1628,10 @@
                 var tieneLive = liveMap[g.id] ? true : false;
                 var visibilidad = g.visibilidad || 'publico';
                 var visBadge = visibilidad === 'publico'
-                    ? '<span class="estado-badge"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>Público</span>'
-                    : '<span class="estado-badge privado"><svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Privado</span>';
-                var precio = g.precio_usdt > 0 ? `<span class="precio-badge"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9 11h6"/></svg>$${g.precio_usdt} USDT</span>` : '';
-                var mkBadge = g.marketplace_activo ? '<span class="mk-badge"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>Marketplace</span>' : '';
+                    ? '<span class="estado-badge"><span class="nav-emoji">🌐</span>Público</span>'
+                    : '<span class="estado-badge privado"><span class="nav-emoji">🔒</span>Privado</span>';
+                var precio = g.precio_usdt > 0 ? `<span class="precio-badge"><span class="nav-emoji">💎</span>$${g.precio_usdt} USDT</span>` : '';
+                var mkBadge = g.marketplace_activo ? '<span class="mk-badge"><span class="nav-emoji">🛒</span>Marketplace</span>' : '';
                 var liveClass = tieneLive ? 'en-vivo' : '';
                 var ubicacion = [];
                 if (g.municipio) ubicacion.push(g.municipio);
@@ -1658,11 +1639,11 @@
                 var ubicacionTexto = ubicacion.length > 0 ? ubicacion.join(', ') : 'Sin ubicación';
                 var img = grpSafeUrl(g.avatar_url);
                 return '<div class="grupo-card ' + liveClass + '" onclick="abrirGrupo(\'' + g.id + '\')">' +
-                    '<div class="avatar">' + (img ? '<img src="' + grpEscapeHTML(img) + '">' : '◈') + '</div>' +
+                    '<div class="avatar">' + (img ? '<img src="' + grpEscapeHTML(img) + '">' : '🏛️') + '</div>' +
                     '<div class="nombre">' + grpEscapeHTML(g.nombre) + '</div>' +
                     '<div class="descripcion">' + grpEscapeHTML((g.descripcion || '').substring(0, 80)) + '</div>' +
-                    '<div class="meta"><span class="ciudad"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>' + grpEscapeHTML(ubicacionTexto) + '</span>' + visBadge + precio + mkBadge +
-                    (tieneLive ? ' <span class="live-badge"><svg class="icon icon-sm" viewBox="0 0 24 24" style="color:#fff;fill:currentColor;stroke:none;"><circle cx="12" cy="12" r="5"/></svg>EN VIVO</span>' : '') +
+                    '<div class="meta"><span class="ciudad"><span class="nav-emoji">📍</span>' + grpEscapeHTML(ubicacionTexto) + '</span>' + visBadge + precio + mkBadge +
+                    (tieneLive ? ' <span class="live-badge"><span class="nav-emoji">🔴</span>EN VIVO</span>' : '') +
                     '</div></div>';
             }).join('');
             
@@ -1678,7 +1659,7 @@
         } catch (e) {
             clearTimeout(timeoutId);
             console.error('[Grupos] ERROR cargando canales:', e);
-            grid.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg><h3>Error cargando canales</h3><p style="font-size:0.7rem;">' + grpEscapeHTML(e.message || 'Error desconocido') + '</p></div>';
+            grid.innerHTML = '<div class="empty-state"><span class="emoji-big">⚠️</span><h3>Error cargando canales</h3><p style="font-size:0.7rem;">' + grpEscapeHTML(e.message || 'Error desconocido') + '</p></div>';
         }
     }
 
@@ -1720,14 +1701,14 @@
             if (grupoActual.municipio) ubicacion.push(grupoActual.municipio);
             if (grupoActual.estado_region) ubicacion.push(grupoActual.estado_region);
             if (grupoActual.pais) ubicacion.push(grupoActual.pais);
-            document.getElementById('grupoCiudad').innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>' + (ubicacion.length > 0 ? ubicacion.join(', ') : 'Sin ubicación');
+            document.getElementById('grupoCiudad').innerHTML = '<span class="nav-emoji">📍</span>' + (ubicacion.length > 0 ? ubicacion.join(', ') : 'Sin ubicación');
             
-            document.getElementById('grupoMiembros').innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>' + (grupoActual.miembros?.[0]?.count || 0) + ' seguidores';
+            document.getElementById('grupoMiembros').innerHTML = '<span class="nav-emoji">👥</span>' + (grupoActual.miembros?.[0]?.count || 0) + ' seguidores';
 
             var vis = grupoActual.visibilidad || 'publico';
             document.getElementById('grupoEstadoBadge').innerHTML = vis === 'publico'
-                ? '<svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> Público'
-                : '<svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Privado';
+                ? '<span class="nav-emoji">🌐</span> Público'
+                : '<span class="nav-emoji">🔒</span> Privado';
             
             var mkBadgeEl = document.getElementById('grupoMkBadge');
             if (mkBadgeEl) mkBadgeEl.style.display = grupoActual.marketplace_activo ? 'inline-flex' : 'none';
@@ -1745,23 +1726,23 @@
             var btnDonar = document.getElementById('btnDonar');
             if (btnDonar) {
                 if (grupoActual.precio_usdt > 0) {
-                    btnDonar.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9 11h6"/></svg> Donar $' + grupoActual.precio_usdt + ' USDT';
+                    btnDonar.innerHTML = '<span class="btn-emoji">💎</span> Donar $' + grupoActual.precio_usdt + ' USDT';
                 } else {
-                    btnDonar.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9 11h6"/></svg> Donar USDT';
+                    btnDonar.innerHTML = '<span class="btn-emoji">💎</span> Donar USDT';
                 }
             }
 
             var avatarEl = document.getElementById('grupoAvatar');
             var avatarImg = grpSafeUrl(grupoActual.avatar_url);
             if (avatarImg) avatarEl.innerHTML = '<img src="' + grpEscapeHTML(avatarImg) + '">';
-            else avatarEl.textContent = '◈';
+            else avatarEl.textContent = '🏛️';
 
             var portadaEl = document.getElementById('grupoPortada');
             var portadaImg = grpSafeUrl(grupoActual.portada_url);
             if (portadaImg) {
                 portadaEl.innerHTML = `<video src="${grpEscapeHTML(portadaImg)}" autoplay loop muted playsinline style="width:100%; height:100%; object-fit:cover;"></video>`;
             } else {
-                portadaEl.textContent = '◈';
+                portadaEl.textContent = '🏛️';
             }
 
             var esAdminOGerente = esAdmin || esCreador;
@@ -1814,16 +1795,16 @@
             btnUnirse.style.cssText = 'display:inline-flex;';
             
             if (modo === 'abierto') {
-                btnUnirse.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg> Unirse';
+                btnUnirse.innerHTML = '<span class="btn-emoji">➕</span> Unirse';
                 btnUnirse.onclick = unirseAlGrupo;
             } else if (modo === 'solicitud') {
-                btnUnirse.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> Solicitar';
+                btnUnirse.innerHTML = '<span class="btn-emoji">📨</span> Solicitar';
                 btnUnirse.onclick = solicitarUnirseAlGrupo;
             } else if (modo === 'invitacion') {
                 btnUnirse.disabled = true;
                 btnUnirse.style.opacity = '0.5';
                 btnUnirse.style.cursor = 'not-allowed';
-                btnUnirse.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Solo por invitación';
+                btnUnirse.innerHTML = '<span class="btn-emoji">🔒</span> Solo por invitación';
                 btnUnirse.onclick = null;
             }
             
@@ -1956,7 +1937,7 @@
                 'publicaciones': 'No hay publicaciones normales',
                 'interesados': 'Aún no has marcado ninguna publicación como "Me interesa"'
             };
-            container.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg><h3>' + mensajes[filtroFeedActual] + '</h3></div>';
+            container.innerHTML = '<div class="empty-state"><span class="emoji-big">🏛️</span><h3>' + mensajes[filtroFeedActual] + '</h3></div>';
             return;
         }
 
@@ -1964,7 +1945,7 @@
     }
 
     function renderizarPublicacionHTML(p) {
-        var avatarUrl = p.usuario_avatar_url && grpSafeUrl(p.usuario_avatar_url) ? '<img src="' + grpEscapeHTML(grpSafeUrl(p.usuario_avatar_url)) + '">' : '◈';
+        var avatarUrl = p.usuario_avatar_url && grpSafeUrl(p.usuario_avatar_url) ? '<img src="' + grpEscapeHTML(grpSafeUrl(p.usuario_avatar_url)) + '">' : '👤';
         var nombre = grpEscapeHTML(p.usuario_nombre || 'Usuario');
         var handle = p.usuario_handle ? ' <span style="color:var(--text-muted);font-weight:400;font-size:0.65rem;">@' + grpEscapeHTML(p.usuario_handle) + '</span>' : '';
         var contenido = grpEscapeHTML(p.contenido || '');
@@ -1989,21 +1970,21 @@
             var ubiParts = [];
             if (p.municipio) ubiParts.push(p.municipio);
             if (p.estado_region) ubiParts.push(p.estado_region);
-            if (ubiParts.length > 0) ubicacionHTML = '<div class="ubicacion"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>' + grpEscapeHTML(ubiParts.join(', ')) + '</div>';
+            if (ubiParts.length > 0) ubicacionHTML = '<div class="ubicacion"><span class="nav-emoji">📍</span>' + grpEscapeHTML(ubiParts.join(', ')) + '</div>';
             
             var contactoHTML = '';
             if (p.whatsapp) {
                 var wapp = String(p.whatsapp).replace(/\D/g, '');
-                if (wapp.length >= 10) contactoHTML += '<a href="https://wa.me/52' + wapp + '" target="_blank" rel="noopener" class="btn-whatsapp">WhatsApp</a>';
+                if (wapp.length >= 10) contactoHTML += '<a href="https://wa.me/52' + wapp + '" target="_blank" rel="noopener" class="btn-whatsapp"><span class="btn-emoji">💬</span> WhatsApp</a>';
             }
             if (p.telefono_contacto) {
                 var tel = String(p.telefono_contacto).replace(/\D/g, '');
-                if (tel.length >= 10) contactoHTML += '<a href="tel:+52' + tel + '" class="btn-llamar">Llamar</a>';
+                if (tel.length >= 10) contactoHTML += '<a href="tel:+52' + tel + '" class="btn-llamar"><span class="btn-emoji">📞</span> Llamar</a>';
             }
             var contactoDiv = contactoHTML ? '<div class="contacto">' + contactoHTML + '</div>' : '';
 
             mkHTML = '<div class="marketplace-info">' +
-                '<div class="titulo-mk"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>' + tipoLabel + '</div>' +
+                '<div class="titulo-mk"><span class="nav-emoji">🛒</span>' + tipoLabel + '</div>' +
                 '<div>' + precioHTML + '</div>' + ubicacionHTML + contactoDiv + '</div>';
         }
 
@@ -2019,23 +2000,23 @@
             '<div class="post-menu-wrapper">' +
             '<button class="post-menu-btn" onclick="togglePostMenu(event, ' + p.id + ')" title="Opciones">⋯</button>' +
             '<div class="post-menu-dropdown" id="postMenu-' + p.id + '">' +
-            '<button class="post-menu-item" onclick="toggleMeInteresa(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg> Me interesa</button>' +
-            '<button class="post-menu-item" onclick="toggleNoMeInteresa(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> No me interesa</button>' +
-            '<button class="post-menu-item" onclick="abrirModalEtiquetar(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> Etiquetar foto</button>' +
-            '<button class="post-menu-item" onclick="toggleNotificacion(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> ' + (misNotificaciones[p.id] ? 'Desactivar notificaciones' : 'Activar notificaciones') + '</button>' +
-            '<button class="post-menu-item" onclick="ocultarPublicacionUsuario(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> No quiero ver esto</button>' +
-            '<button class="post-menu-item" onclick="copiarEnlacePost(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Copiar enlace</button>' +
-            '<button class="post-menu-item" onclick="compartirPublicacion(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/></svg> Compartir</button>' +
+            '<button class="post-menu-item" onclick="toggleMeInteresa(' + p.id + ')"><span class="emoji">⭐</span> Me interesa</button>' +
+            '<button class="post-menu-item" onclick="toggleNoMeInteresa(' + p.id + ')"><span class="emoji">❌</span> No me interesa</button>' +
+            '<button class="post-menu-item" onclick="abrirModalEtiquetar(' + p.id + ')"><span class="emoji">🏷️</span> Etiquetar foto</button>' +
+            '<button class="post-menu-item" onclick="toggleNotificacion(' + p.id + ')"><span class="emoji">🔔</span> ' + (misNotificaciones[p.id] ? 'Desactivar notificaciones' : 'Activar notificaciones') + '</button>' +
+            '<button class="post-menu-item" onclick="ocultarPublicacionUsuario(' + p.id + ')"><span class="emoji">🚫</span> No quiero ver esto</button>' +
+            '<button class="post-menu-item" onclick="copiarEnlacePost(' + p.id + ')"><span class="emoji">🔗</span> Copiar enlace</button>' +
+            '<button class="post-menu-item" onclick="compartirPublicacion(' + p.id + ')"><span class="emoji">📤</span> Compartir</button>' +
             '<div class="post-menu-separator"></div>' +
-            '<button class="post-menu-item danger" onclick="abrirModalReportar(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg> Reportar publicación</button>' +
-            '<button class="post-menu-item danger" onclick="abrirModalReportarAdmin(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Reportar al administrador</button>' +
+            '<button class="post-menu-item danger" onclick="abrirModalReportar(' + p.id + ')"><span class="emoji">🚩</span> Reportar publicación</button>' +
+            '<button class="post-menu-item danger" onclick="abrirModalReportarAdmin(' + p.id + ')"><span class="emoji">⚠️</span> Reportar al administrador</button>' +
             '</div></div></div>' +
             '<div class="contenido">' + contenido + '</div>' + mkHTML +
             '<div class="stats">' +
-            '<span onclick="reaccionarPublicacion(' + p.id + ')" id="like-btn-' + p.id + '"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> <span id="likes-' + p.id + '">' + likesCount + '</span></span>' +
-            '<span onclick="toggleComentariosPublicacion(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> <span id="comentarios-' + p.id + '">' + comentariosCount + '</span></span>' +
-            '<span class="' + tengoMeInteresa.trim() + '" onclick="toggleMeInteresa(' + p.id + ')" id="interesa-' + p.id + '"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg> ' + (mias.me_interesa ? 'Interesado' : 'Me interesa') + '</span>' +
-            (misNotificaciones[p.id] ? '<span style="color:var(--gold);"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg> Notificado</span>' : '') +
+            '<span onclick="reaccionarPublicacion(' + p.id + ')" id="like-btn-' + p.id + '"><span class="nav-emoji">❤️</span> <span id="likes-' + p.id + '">' + likesCount + '</span></span>' +
+            '<span onclick="toggleComentariosPublicacion(' + p.id + ')"><span class="nav-emoji">💬</span> <span id="comentarios-' + p.id + '">' + comentariosCount + '</span></span>' +
+            '<span class="' + tengoMeInteresa.trim() + '" onclick="toggleMeInteresa(' + p.id + ')" id="interesa-' + p.id + '"><span class="nav-emoji">⭐</span> ' + (mias.me_interesa ? 'Interesado' : 'Me interesa') + '</span>' +
+            (misNotificaciones[p.id] ? '<span style="color:var(--gold);"><span class="nav-emoji">🔔</span> Notificado</span>' : '') +
             '</div>' +
             '<div class="comentarios-container" id="comentariosContainer-' + p.id + '" style="display:none;margin-top:8px;">' +
             '<div id="comentariosLista-' + p.id + '"></div>' +
@@ -2237,7 +2218,7 @@
             if (result.error || !result.data) { container.innerHTML = '<div style="color:var(--text-muted);font-size:0.7rem;padding:8px;">Sin resultados</div>'; return; }
             container.innerHTML = result.data.map(function(u) {
                 var yaSel = etiquetadosSeleccionados.find(function(e) { return e.id === u.id; });
-                var avatar = u.avatar_url && grpSafeUrl(u.avatar_url) ? '<img src="' + grpEscapeHTML(grpSafeUrl(u.avatar_url)) + '" style="width:100%;height:100%;object-fit:cover;">' : '◈';
+                var avatar = u.avatar_url && grpSafeUrl(u.avatar_url) ? '<img src="' + grpEscapeHTML(grpSafeUrl(u.avatar_url)) + '" style="width:100%;height:100%;object-fit:cover;">' : '👤';
                 return '<div class="usuario-etiqueta-item" data-id="' + grpEscapeHTML(u.id) + '" data-nombre="' + grpEscapeHTML(u.nombre || '') + '" data-handle="' + grpEscapeHTML(u.handle || '') + '" data-avatar="' + grpEscapeHTML(grpSafeUrl(u.avatar_url) || '') + '" style="display:flex;align-items:center;gap:10px;padding:8px;border-bottom:1px solid rgba(212,175,55,0.05);cursor:pointer;' + (yaSel ? 'opacity:0.4;pointer-events:none;' : '') + '">' +
                     '<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--green-deep),var(--gold));display:flex;align-items:center;justify-content:center;overflow:hidden;font-weight:700;">' + avatar + '</div>' +
                     '<div><div style="font-size:0.75rem;font-weight:600;">' + grpEscapeHTML(u.nombre || 'Usuario') + '</div>' +
@@ -2429,7 +2410,7 @@
         var infDesc = detectarInfraccion(descripcion);
         if (infDesc.bloqueado) { statusEl.innerHTML = 'No permitido.<br>Categoría: ' + infDesc.categorias.join(', '); statusEl.style.color = 'var(--danger)'; return; }
         btn.disabled = true;
-        btn.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Publicando...';
+        btn.innerHTML = '<span class="btn-emoji">⏳</span> Publicando...';
         statusEl.textContent = 'Subiendo...';
         try {
             var imagenUrl = null, videoUrl = null;
@@ -2465,7 +2446,7 @@
             grpShowToast('Publicación creada', 'success');
             setTimeout(function() { cerrarModalMarketplace(); cargarPublicacionesGrupo(grupoActualId); }, 800);
         } catch (e) { statusEl.textContent = 'Error: ' + e.message; statusEl.style.color = 'var(--danger)'; }
-        finally { btn.disabled = false; btn.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> Publicar en Marketplace'; }
+        finally { btn.disabled = false; btn.innerHTML = '<span class="btn-emoji">🛒</span> Publicar en Marketplace'; }
     }
 
     async function reaccionarPublicacion(publicacionId) {
@@ -2501,7 +2482,7 @@
             var data = result.data || [];
             if (data.length === 0) { lista.innerHTML = '<div style="color:var(--text-muted);font-size:0.65rem;padding:4px 0;">Sin comentarios</div>'; return; }
             lista.innerHTML = data.map(function(c) {
-                var avatar = c.usuario_avatar_url && grpSafeUrl(c.usuario_avatar_url) ? '<img src="' + grpEscapeHTML(grpSafeUrl(c.usuario_avatar_url)) + '">' : '◈';
+                var avatar = c.usuario_avatar_url && grpSafeUrl(c.usuario_avatar_url) ? '<img src="' + grpEscapeHTML(grpSafeUrl(c.usuario_avatar_url)) + '">' : '👤';
                 return '<div style="display:flex;gap:6px;padding:4px 0;border-bottom:1px solid rgba(212,175,55,0.04);">' +
                     '<div style="width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,var(--green-deep),var(--gold));display:flex;align-items:center;justify-content:center;font-size:0.5rem;color:#fff;overflow:hidden;flex-shrink:0;">' + avatar + '</div>' +
                     '<div style="flex:1;font-size:0.65rem;"><strong style="color:var(--gold);">' + grpEscapeHTML(c.usuario_nombre || 'Usuario') + '</strong> ' + grpEscapeHTML(c.contenido || '') +
@@ -2606,12 +2587,12 @@
 
     async function cargarAdminMiembros() {
         var container = document.getElementById('adminContenido');
-        container.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><h3>Cargando...</h3></div>';
+        container.innerHTML = '<div class="empty-state"><span class="emoji-big">⏳</span><h3>Cargando...</h3></div>';
         try {
             var result = await window.supabaseClient.from('grupos_video_miembros_publicos').select('*').eq('grupo_id', grupoActualId).order('created_at', { ascending: true });
             if (result.error) throw result.error;
             var miembros = result.data || [];
-            if (miembros.length === 0) { container.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><h3>Sin miembros</h3></div>'; return; }
+            if (miembros.length === 0) { container.innerHTML = '<div class="empty-state"><span class="emoji-big">👥</span><h3>Sin miembros</h3></div>'; return; }
             var html = '<h4 style="color:var(--gold);font-size:0.8rem;margin-bottom:12px;">Miembros (' + miembros.length + ')</h4>';
             miembros.forEach(function(m) {
                 var esCreadorDelGrupo = m.rol === 'administrador';
@@ -2637,12 +2618,12 @@
 
     async function cargarAdminPublicaciones() {
         var container = document.getElementById('adminContenido');
-        container.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><h3>Cargando...</h3></div>';
+        container.innerHTML = '<div class="empty-state"><span class="emoji-big">⏳</span><h3>Cargando...</h3></div>';
         try {
             var result = await window.supabaseClient.from('grupos_video_publicaciones_publicas').select('*').eq('grupo_id', grupoActualId).order('created_at', { ascending: false });
             if (result.error) throw result.error;
             var publicaciones = result.data || [];
-            if (publicaciones.length === 0) { container.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg><h3>Sin publicaciones</h3></div>'; return; }
+            if (publicaciones.length === 0) { container.innerHTML = '<div class="empty-state"><span class="emoji-big">📄</span><h3>Sin publicaciones</h3></div>'; return; }
             var html = '<h4 style="color:var(--gold);font-size:0.8rem;margin-bottom:12px;">Publicaciones (' + publicaciones.length + ')</h4>';
             publicaciones.forEach(function(p) {
                 var estado = p.estado || 'publicado';
@@ -2664,12 +2645,12 @@
 
     async function cargarAdminSolicitudes() {
         var container = document.getElementById('adminContenido');
-        container.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><h3>Cargando...</h3></div>';
+        container.innerHTML = '<div class="empty-state"><span class="emoji-big">⏳</span><h3>Cargando...</h3></div>';
         try {
             var result = await window.supabaseClient.from('grupos_video_solicitudes_publicas').select('*').eq('grupo_id', grupoActualId).eq('estado', 'pendiente').order('created_at', { ascending: true });
             if (result.error) throw result.error;
             var solicitudes = result.data || [];
-            if (solicitudes.length === 0) { container.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg><h3>Sin solicitudes</h3></div>'; return; }
+            if (solicitudes.length === 0) { container.innerHTML = '<div class="empty-state"><span class="emoji-big">📨</span><h3>Sin solicitudes</h3></div>'; return; }
             var html = '<h4 style="color:var(--gold);font-size:0.8rem;margin-bottom:12px;">Solicitudes (' + solicitudes.length + ')</h4>';
             solicitudes.forEach(function(s) {
                 html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--glass-border);">' +
@@ -2685,12 +2666,12 @@
 
     async function cargarAdminReportes() {
         var container = document.getElementById('adminContenido');
-        container.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><h3>Cargando...</h3></div>';
+        container.innerHTML = '<div class="empty-state"><span class="emoji-big">⏳</span><h3>Cargando...</h3></div>';
         try {
             var result = await window.supabaseClient.from('grupos_video_reportes_publicos').select('*').eq('grupo_id', grupoActualId).eq('estado', 'pendiente').order('created_at', { ascending: false });
             if (result.error) throw result.error;
             var reportes = result.data || [];
-            if (reportes.length === 0) { container.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><h3>Sin reportes pendientes</h3></div>'; return; }
+            if (reportes.length === 0) { container.innerHTML = '<div class="empty-state"><span class="emoji-big">✅</span><h3>Sin reportes pendientes</h3></div>'; return; }
             var html = '<h4 style="color:var(--gold);font-size:0.8rem;margin-bottom:12px;">Reportes (' + reportes.length + ')</h4>';
             reportes.forEach(function(r) {
                 html += '<div style="padding:10px 0;border-bottom:1px solid var(--glass-border);">' +
@@ -2716,7 +2697,7 @@
 
     async function cargarAdminEditar() {
         var container = document.getElementById('adminContenido');
-        container.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><h3>Cargando...</h3></div>';
+        container.innerHTML = '<div class="empty-state"><span class="emoji-big">⏳</span><h3>Cargando...</h3></div>';
         try {
             var result = await window.supabaseClient.from('grupos_video').select('*').eq('id', grupoActualId).single();
             if (result.error) throw result.error;
@@ -2896,7 +2877,7 @@
         if (!validarTextoPermitido(descripcion, 'Descripción del canal')) return;
         var btn = document.getElementById('btnCrearGrupo');
         btn.disabled = true;
-        btn.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Activando...';
+        btn.innerHTML = '<span class="btn-emoji">⏳</span> Activando...';
         try {
             var catResult = await window.supabaseClient.from('grupos_video_categorias').select('id').eq('nombre', categoriaNombre).maybeSingle();
             var categoriaId = catResult.data?.id || '2822d03e-c8aa-4e65-a537-736dd432ed36';
@@ -2920,7 +2901,7 @@
             else { cargarGrupos(); }
             await cargarDashboard();
         } catch (e) { grpShowToast('Error: ' + e.message, 'error'); }
-        finally { btn.disabled = false; btn.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg> Crear Comunidad'; }
+        finally { btn.disabled = false; btn.innerHTML = '<span class="btn-emoji">➕</span> Crear Comunidad'; }
     }
 
     function abrirFormPublicacion() {
@@ -3045,7 +3026,7 @@
                 await liveKitRoomGrupo.localParticipant.setMicrophoneEnabled(true);
                 const localVideoTrack = liveKitRoomGrupo.localParticipant.getTrackPublication(Track.Source.Camera)?.videoTrack;
                 if (localVideoTrack) localVideoTrack.attach(document.getElementById('grupoLiveVideo'));
-                document.getElementById('grupoLiveEstado').innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24" style="fill:currentColor;stroke:none;"><circle cx="12" cy="12" r="6"/></svg> En vivo';
+                document.getElementById('grupoLiveEstado').innerHTML = '<span class="nav-emoji">🔴</span> En vivo';
                 grpShowToast('Transmitiendo en el canal', 'success');
             } catch (e) {
                 console.error('[LiveKit] Error al conectar:', e);
@@ -3155,7 +3136,7 @@
             liveKitRoomGrupo.on('participantConnected', actualizarEspectadores);
             liveKitRoomGrupo.on('participantDisconnected', actualizarEspectadores);
             
-            document.getElementById('grupoLiveEstado').innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24" style="fill:currentColor;stroke:none;"><circle cx="12" cy="12" r="6"/></svg> En vivo';
+            document.getElementById('grupoLiveEstado').innerHTML = '<span class="nav-emoji">🔴</span> En vivo';
             grpShowToast('Conectado al LIVE', 'success');
             suscribirseAlChatGrupo();
         } catch (e) { grpShowToast('Error al conectar: ' + e.message, 'warning'); }
