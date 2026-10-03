@@ -673,6 +673,44 @@ async function iniciarTransmisionGeneral() {
         currentUser = session.user;
         console.log('🎬 [2] Usuario:', currentUser.id);
 
+        // Validación 1: Membresía Pro
+        const { data: perfilUsuario } = await supabaseClient
+            .from('usuarios')
+            .select('plan, plan_expira_at, membresia_live_hasta')
+            .eq('id', currentUser.id)
+            .maybeSingle();
+
+        const planUsuario = (perfilUsuario?.plan || '').toLowerCase();
+        const esPro = planUsuario.includes('pro');
+        const planActivo = perfilUsuario?.plan_expira_at
+            ? new Date(perfilUsuario.plan_expira_at) > new Date()
+            : false;
+        const membresiaLiveActiva = perfilUsuario?.membresia_live_hasta
+            ? new Date(perfilUsuario.membresia_live_hasta) > new Date()
+            : false;
+
+        if (!esPro && !planActivo && !membresiaLiveActiva) {
+            showToast('💎 Necesitas ser miembro Pro para transmitir en Live', 'error', 6000);
+            return;
+        }
+
+        // Validación 2: No transmisión de GRUPO activa
+        const { data: streamGrupo, error: checkGrupoError } = await supabaseClient
+            .from('transmisiones')
+            .select('id')
+            .eq('streamer_id', currentUser.id)
+            .eq('estado', 'en_vivo')
+            .eq('is_live', true)
+            .not('grupo_id', 'is', null)
+            .maybeSingle();
+
+        if (checkGrupoError) throw checkGrupoError;
+        if (streamGrupo) {
+            showToast('⚠️ Estás transmitiendo en un grupo. Finalízalo primero.', 'warning', 6000);
+            return;
+        }
+
+        // Validación 3: No transmisión LIVE activa
         const { data: streamActivo, error: checkError } = await supabaseClient.from('transmisiones').select('id')
             .eq('streamer_id', currentUser.id).eq('estado', 'en_vivo').eq('is_live', true)
             .is('grupo_id', null)
@@ -1035,7 +1073,46 @@ async function iniciarTransmisionJuego(juego) {
         if (!session) { gameScreenStream.getTracks().forEach(t => t.stop()); gameScreenStream = null; showToast('⚠️ Inicia sesión', 'error'); return; }
         currentUser = session.user;
 
-        const { data: act } = await supabaseClient.from('transmisiones').select('id').eq('streamer_id', currentUser.id).eq('estado', 'en_vivo').eq('is_live', true).is('grupo_id', null).maybeSingle();
+        // Validación Pro
+        const { data: perfilUsuario } = await supabaseClient
+            .from('usuarios')
+            .select('plan, plan_expira_at, membresia_live_hasta')
+            .eq('id', currentUser.id)
+            .maybeSingle();
+
+        const planUsuario = (perfilUsuario?.plan || '').toLowerCase();
+        const esPro = planUsuario.includes('pro');
+        const planActivo = perfilUsuario?.plan_expira_at
+            ? new Date(perfilUsuario.plan_expira_at) > new Date()
+            : false;
+        const membresiaLiveActiva = perfilUsuario?.membresia_live_hasta
+            ? new Date(perfilUsuario.membresia_live_hasta) > new Date()
+            : false;
+
+        if (!esPro && !planActivo && !membresiaLiveActiva) {
+            gameScreenStream.getTracks().forEach(t => t.stop());
+            gameScreenStream = null;
+            showToast('💎 Necesitas ser miembro Pro para transmitir', 'error', 6000);
+            return;
+        }
+
+        // Validación: no transmisión de grupo activa
+        const { data: streamGrupo } = await supabaseClient.from('transmisiones').select('id')
+            .eq('streamer_id', currentUser.id).eq('estado', 'en_vivo').eq('is_live', true)
+            .not('grupo_id', 'is', null).maybeSingle();
+
+        if (streamGrupo) {
+            gameScreenStream.getTracks().forEach(t => t.stop());
+            gameScreenStream = null;
+            showToast('⚠️ Estás transmitiendo en un grupo. Finalízalo primero.', 'warning', 6000);
+            return;
+        }
+
+        // Validación: no transmisión Live activa
+        const { data: act } = await supabaseClient.from('transmisiones').select('id')
+            .eq('streamer_id', currentUser.id).eq('estado', 'en_vivo').eq('is_live', true)
+            .is('grupo_id', null).maybeSingle();
+
         if (act) { gameScreenStream.getTracks().forEach(t => t.stop()); gameScreenStream = null; showToast('⚠️ Ya tienes una transmisión activa', 'warning'); return; }
 
         gameScreenTrack = gameScreenStream.getVideoTracks()[0];
