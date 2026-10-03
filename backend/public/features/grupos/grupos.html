@@ -32,20 +32,22 @@
         .app { max-width: 1100px; margin: 0 auto; padding: 12px 16px 30px; position: relative; z-index: 1; }
         .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0 14px; border-bottom: 1px solid var(--glass-border); background: rgba(5, 8, 15, 0.92); position: sticky; top: 0; z-index: 100; }
         .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-        .logo-hex { font-size: 1.8rem; color: var(--gold); font-family: 'Orbitron', monospace; }
+        .logo-hex { font-size: 1.8rem; color: var(--gold); font-family: 'Orbitron', monospace; text-shadow: 0 0 18px rgba(212,175,55,0.8), 0 0 36px rgba(212,175,55,0.4); }
         .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--text-primary); letter-spacing: 2px; }
-        .logo-text span { color: var(--gold); }
-        .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; }
-        .network-badge { display: flex; align-items: center; gap: 6px; font-size: 0.6rem; color: var(--gold); background: rgba(212,175,55,0.1); padding: 4px 12px; border-radius: 20px; }
-        .token-badge { display: flex; align-items: center; gap: 6px; background: rgba(212,175,55,0.1); border: 1px solid rgba(212,175,55,0.15); padding: 4px 14px; border-radius: 20px; font-size: 0.7rem; color: var(--gold); font-family: 'Orbitron', monospace; cursor: pointer; }
+        .logo-text span { color: var(--gold); text-shadow: 0 0 12px rgba(212,175,55,0.6); }
+        .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; box-shadow: 0 0 12px rgba(212,175,55,0.5); }
+        .network-badge { display: flex; align-items: center; gap: 6px; font-size: 0.6rem; color: var(--gold); background: rgba(212,175,55,0.1); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(212,175,55,0.2); }
+        .token-badge { display: flex; align-items: center; gap: 6px; background: rgba(212,175,55,0.1); border: 1px solid rgba(212,175,55,0.25); padding: 4px 14px; border-radius: 20px; font-size: 0.7rem; color: var(--gold); font-family: 'Orbitron', monospace; cursor: pointer; transition: var(--transition); }
+        .token-badge:hover { box-shadow: 0 0 20px rgba(212,175,55,0.35); }
         .main-nav { display: flex; gap: 4px; background: rgba(15,45,26,0.3); border-radius: var(--radius); padding: 4px; border: 1px solid var(--glass-border); margin: 16px 0 20px; overflow-x: auto; }
         .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; white-space: nowrap; transition: var(--transition); display: inline-flex; align-items: center; gap: 6px; }
-        .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212,175,55,0.05); }
-        .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); }
+        .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212,175,55,0.05); text-shadow: 0 0 10px rgba(212,175,55,0.4); }
+        .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); box-shadow: inset 0 0 20px rgba(212,175,55,0.1); }
         .main-nav .nav-link.live { color: var(--danger); }
         .icon { display: inline-block; width: 1em; height: 1em; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; vertical-align: -0.125em; flex-shrink: 0; }
         .icon-sm { width: 0.85em; height: 0.85em; }
         .icon-lg { width: 1.25em; height: 1.25em; }
+        .icon-gold { color: var(--gold); filter: drop-shadow(0 0 5px rgba(212,175,55,0.7)); }
         .toast { position: fixed; bottom: 20px; right: 20px; padding: 12px 24px; border-radius: 12px; background: var(--green-deep); border: 1px solid var(--gold); color: var(--gold); font-size: 0.8rem; font-weight: 500; box-shadow: var(--shadow-gold-strong); transform: translateY(100px); opacity: 0; transition: all 0.4s ease; z-index: 99999; max-width: 400px; backdrop-filter: blur(10px); }
         .toast.show { transform: translateY(0); opacity: 1; }
         .toast.error { border-color: var(--danger); color: var(--danger); }
@@ -53,97 +55,98 @@
         .toast.success { border-color: var(--success); color: var(--success); }
         .mobile-tabs { display: flex; background: rgba(15,45,26,0.5); border: 1px solid var(--glass-border); border-radius: 12px; padding: 4px; margin-bottom: 16px; }
         .mobile-tab { flex: 1; text-align: center; padding: 10px; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); border-radius: 8px; cursor: pointer; transition: var(--transition); display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
-        .mobile-tab.active { background: var(--gold); color: var(--space); }
+        .mobile-tab.active { background: var(--gold); color: var(--space); box-shadow: 0 0 20px rgba(212,175,55,0.45); }
         @media (min-width: 900px) { .mobile-tabs { display: none; } }
         .dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 24px; }
         @media (min-width: 900px) { .dashboard-grid { grid-template-columns: 320px 1fr; } }
-        .seccion-titulo { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 0.9rem; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .seccion-titulo { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 0.9rem; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 8px; text-shadow: 0 0 12px rgba(212,175,55,0.5); }
         .seccion-titulo > span { display: inline-flex; align-items: center; gap: 6px; }
         @keyframes pulse-live { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.8); } }
+        @keyframes glowGold { 0%,100% { box-shadow: 0 0 10px rgba(212,175,55,0.3); } 50% { box-shadow: 0 0 22px rgba(212,175,55,0.7); } }
         .mis-canales-lista { display: flex; flex-direction: column; gap: 10px; }
         .canal-item { display: flex; align-items: center; gap: 12px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 10px 14px; cursor: pointer; transition: var(--transition); position: relative; }
-        .canal-item:hover { border-color: var(--gold); transform: translateX(4px); }
-        .canal-item .avatar-mini { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold)); display: flex; align-items: center; justify-content: center; font-size: 1rem; color: #fff; overflow: hidden; flex-shrink: 0; }
+        .canal-item:hover { border-color: var(--gold); transform: translateX(4px); box-shadow: 0 0 25px rgba(212,175,55,0.25); }
+        .canal-item .avatar-mini { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold)); display: flex; align-items: center; justify-content: center; font-size: 1rem; color: #fff; overflow: hidden; flex-shrink: 0; border: 1px solid rgba(212,175,55,0.4); }
         .canal-item .avatar-mini img { width: 100%; height: 100%; object-fit: cover; }
         .canal-item .info { flex: 1; min-width: 0; }
         .canal-item .info .nombre { font-weight: 700; color: var(--text-primary); font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-flex; align-items: center; gap: 5px; }
         .canal-item .info .stats { font-size: 0.6rem; color: var(--text-muted); }
-        .canal-item .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--live-red); animation: pulse-live 1s infinite; margin-left: auto; }
+        .canal-item .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--live-red); animation: pulse-live 1s infinite; margin-left: auto; box-shadow: 0 0 10px rgba(255,0,68,0.8); }
         .en-vivo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
         .en-vivo-card { background: var(--glass-bg); border: 1px solid var(--live-red); border-radius: var(--radius); overflow: hidden; cursor: pointer; transition: var(--transition); position: relative; }
-        .en-vivo-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(255, 0, 68, 0.2); }
-        .en-vivo-card .live-tag-small { position: absolute; top: 8px; left: 8px; background: var(--live-red); color: #fff; font-size: 0.5rem; padding: 2px 8px; border-radius: 10px; font-weight: 700; font-family: 'Orbitron', monospace; z-index: 2; display: inline-flex; align-items: center; gap: 4px; }
+        .en-vivo-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(255, 0, 68, 0.3), 0 0 40px rgba(255,0,68,0.15); }
+        .en-vivo-card .live-tag-small { position: absolute; top: 8px; left: 8px; background: var(--live-red); color: #fff; font-size: 0.5rem; padding: 2px 8px; border-radius: 10px; font-weight: 700; font-family: 'Orbitron', monospace; z-index: 2; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 0 15px rgba(255,0,68,0.7); }
         .en-vivo-card .info { padding: 10px 12px; }
         .en-vivo-card .info .titulo { font-size: 0.75rem; font-weight: 600; color: var(--gold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .en-vivo-card .info .canal { font-size: 0.65rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
         .en-vivo-card .info .stats { font-size: 0.6rem; color: var(--text-muted); margin-top: 6px; display: inline-flex; align-items: center; gap: 4px; }
         .no-live-box { grid-column: 1 / -1; text-align: center; padding: 20px 16px; background: linear-gradient(155deg, rgba(15, 45, 26, 0.8), rgba(8, 15, 26, 0.9)); border: 1px dashed rgba(212, 175, 55, 0.3); border-radius: var(--radius); color: var(--text-muted); display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .no-live-box .icon { font-size: 1.5rem; display: block; margin-bottom: 8px; color: var(--gold); opacity: 0.8; width: 1.5rem; height: 1.5rem; }
+        .no-live-box .icon { font-size: 1.5rem; display: block; margin-bottom: 8px; color: var(--gold); opacity: 0.8; width: 1.5rem; height: 1.5rem; filter: drop-shadow(0 0 10px rgba(212,175,55,0.6)); }
         .no-live-box h3 { font-size: 0.85rem; color: var(--text-primary); font-family: 'Orbitron', monospace; margin-bottom: 4px; }
         .no-live-box p { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 12px; }
         .no-live-box .btn-salir-aire { padding: 8px 20px; font-size: 0.7rem; }
         .grupos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
         .grupo-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 16px; cursor: pointer; transition: var(--transition); position: relative; }
-        .grupo-card:hover { border-color: var(--gold); transform: translateY(-3px); box-shadow: var(--shadow-gold); }
-        .grupo-card.en-vivo { border-left: 4px solid var(--gold); }
-        .grupo-card .avatar { width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold)); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #fff; overflow: hidden; margin-bottom: 8px; }
+        .grupo-card:hover { border-color: var(--gold); transform: translateY(-3px); box-shadow: var(--shadow-gold), 0 0 40px rgba(212,175,55,0.2); }
+        .grupo-card.en-vivo { border-left: 4px solid var(--gold); box-shadow: -4px 0 20px rgba(212,175,55,0.3); }
+        .grupo-card .avatar { width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold)); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #fff; overflow: hidden; margin-bottom: 8px; border: 2px solid rgba(212,175,55,0.35); }
         .grupo-card .avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .grupo-card .nombre { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 0.9rem; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .grupo-card .nombre { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 0.9rem; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; text-shadow: 0 0 12px rgba(212,175,55,0.35); }
         .grupo-card .descripcion { font-size: 0.7rem; color: var(--text-secondary); margin-top: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
         .grupo-card .meta { display: flex; gap: 12px; font-size: 0.6rem; color: var(--text-muted); margin-top: 8px; flex-wrap: wrap; align-items: center; }
         .grupo-card .meta .ciudad { color: var(--gold); display: inline-flex; align-items: center; gap: 4px; }
-        .grupo-card .estado-badge { font-size: 0.5rem; padding: 2px 10px; border-radius: 12px; background: rgba(212,175,55,0.1); color: var(--gold); display: inline-flex; align-items: center; gap: 3px; }
-        .grupo-card .estado-badge.privado { background: rgba(255,51,102,0.1); color: var(--danger); }
-        .grupo-card .live-badge { font-size: 0.5rem; padding: 2px 10px; border-radius: 12px; background: var(--live-red); color: #fff; animation: pulse-live 2s infinite; display: inline-flex; align-items: center; gap: 3px; }
-        .grupo-card .precio-badge { font-size: 0.6rem; padding: 2px 8px; border-radius: 12px; background: rgba(0, 214, 143, 0.15); color: var(--success); font-weight: 700; font-family: 'Orbitron', monospace; display: inline-flex; align-items: center; gap: 3px; }
-        .grupo-card .mk-badge { font-size: 0.55rem; padding: 2px 8px; border-radius: 12px; background: rgba(0, 229, 255, 0.15); color: var(--cyan); font-weight: 700; font-family: 'Orbitron', monospace; display: inline-flex; align-items: center; gap: 3px; }
+        .grupo-card .estado-badge { font-size: 0.5rem; padding: 2px 10px; border-radius: 12px; background: rgba(212,175,55,0.1); color: var(--gold); display: inline-flex; align-items: center; gap: 3px; border: 1px solid rgba(212,175,55,0.2); }
+        .grupo-card .estado-badge.privado { background: rgba(255,51,102,0.1); color: var(--danger); border-color: rgba(255,51,102,0.25); }
+        .grupo-card .live-badge { font-size: 0.5rem; padding: 2px 10px; border-radius: 12px; background: var(--live-red); color: #fff; animation: pulse-live 2s infinite; display: inline-flex; align-items: center; gap: 3px; box-shadow: 0 0 12px rgba(255,0,68,0.7); }
+        .grupo-card .precio-badge { font-size: 0.6rem; padding: 2px 8px; border-radius: 12px; background: rgba(0, 214, 143, 0.15); color: var(--success); font-weight: 700; font-family: 'Orbitron', monospace; display: inline-flex; align-items: center; gap: 3px; border: 1px solid rgba(0,214,143,0.25); }
+        .grupo-card .mk-badge { font-size: 0.55rem; padding: 2px 8px; border-radius: 12px; background: rgba(0, 229, 255, 0.15); color: var(--cyan); font-weight: 700; font-family: 'Orbitron', monospace; display: inline-flex; align-items: center; gap: 3px; border: 1px solid rgba(0,229,255,0.25); }
         .feed-filtros { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; background: rgba(15,45,26,0.3); padding: 8px; border-radius: 14px; border: 1px solid var(--glass-border); }
         .feed-filtro-btn { padding: 6px 14px; border-radius: 20px; border: 1px solid var(--glass-border); background: transparent; color: var(--text-muted); font-size: 0.65rem; font-weight: 600; cursor: pointer; transition: var(--transition); font-family: 'Inter', sans-serif; display: inline-flex; align-items: center; gap: 5px; }
-        .feed-filtro-btn:hover { border-color: var(--gold); color: var(--gold); }
-        .feed-filtro-btn.active { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border-color: var(--gold); }
+        .feed-filtro-btn:hover { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 15px rgba(212,175,55,0.25); }
+        .feed-filtro-btn.active { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border-color: var(--gold); box-shadow: 0 0 22px rgba(212,175,55,0.5); }
         .post-menu-wrapper { position: relative; margin-left: auto; }
         .post-menu-btn { background: none; border: none; color: var(--text-muted); font-size: 1.2rem; font-weight: 700; cursor: pointer; padding: 4px 10px; border-radius: 8px; line-height: 1; transition: var(--transition); }
-        .post-menu-btn:hover { background: rgba(212,175,55,0.1); color: var(--gold); }
+        .post-menu-btn:hover { background: rgba(212,175,55,0.1); color: var(--gold); text-shadow: 0 0 12px rgba(212,175,55,0.7); }
         .post-menu-dropdown { display: none; position: absolute; top: 100%; right: 0; margin-top: 4px; background: linear-gradient(160deg, rgba(15, 45, 26, 0.98), rgba(5, 8, 15, 0.99)); border: 1px solid rgba(212,175,55,0.3); border-radius: 14px; padding: 6px; min-width: 240px; z-index: 50; box-shadow: 0 10px 40px rgba(0,0,0,0.7), 0 0 30px rgba(212,175,55,0.15); animation: menuFadeIn 0.15s ease-out; }
         .post-menu-dropdown.show { display: block; }
         @keyframes menuFadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
         .post-menu-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; color: var(--text-secondary); font-size: 0.72rem; font-weight: 500; cursor: pointer; transition: var(--transition); background: transparent; border: none; width: 100%; text-align: left; font-family: 'Inter', sans-serif; }
-        .post-menu-item:hover { background: rgba(212,175,55,0.12); color: var(--gold); }
+        .post-menu-item:hover { background: rgba(212,175,55,0.12); color: var(--gold); text-shadow: 0 0 10px rgba(212,175,55,0.5); }
         .post-menu-item .icon { font-size: 0.9rem; width: 20px; text-align: center; }
         .post-menu-separator { height: 1px; background: rgba(212,175,55,0.1); margin: 4px 0; }
         .post-menu-item.danger { color: var(--danger); }
-        .post-menu-item.danger:hover { background: rgba(255,51,102,0.1); color: var(--danger); }
+        .post-menu-item.danger:hover { background: rgba(255,51,102,0.1); color: var(--danger); text-shadow: 0 0 10px rgba(255,51,102,0.5); }
         .grupo-interno { display: none; }
         .grupo-interno.show { display: block; }
         .grupo-header-interno { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 20px; margin-bottom: 20px; position: relative; }
         .btn-ajustes-canal { position: absolute; bottom: 12px; right: 12px; background: rgba(0,0,0,0.7); border: 1px solid var(--glass-border); border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; color: var(--gold); cursor: pointer; z-index: 10; backdrop-filter: blur(4px); transition: var(--transition); }
-        .btn-ajustes-canal:hover { background: var(--gold); color: var(--space); transform: rotate(90deg); }
-        .grupo-header-interno .portada { width: 100%; height: 180px; background: linear-gradient(135deg, var(--green-deep), var(--gold-dark)); border-radius: var(--radius); margin-bottom: 12px; display: flex; align-items: center; justify-content: center; font-size: 3rem; color: rgba(255,255,255,0.1); overflow: hidden; position: relative; }
+        .btn-ajustes-canal:hover { background: var(--gold); color: var(--space); transform: rotate(90deg); box-shadow: 0 0 25px rgba(212,175,55,0.7); }
+        .grupo-header-interno .portada { width: 100%; height: 180px; background: linear-gradient(135deg, var(--green-deep), var(--gold-dark)); border-radius: var(--radius); margin-bottom: 12px; display: flex; align-items: center; justify-content: center; font-size: 3rem; color: rgba(255,255,255,0.1); overflow: hidden; position: relative; border: 1px solid rgba(212,175,55,0.2); }
         .grupo-header-interno .portada img, .grupo-header-interno .portada video { width: 100%; height: 100%; object-fit: cover; }
         .grupo-header-interno .info-row { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
-        .grupo-header-interno .avatar-grande { width: 70px; height: 70px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold)); display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #fff; overflow: hidden; flex-shrink: 0; margin-top: -40px; border: 3px solid var(--space); position: relative; z-index: 2; }
+        .grupo-header-interno .avatar-grande { width: 70px; height: 70px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold)); display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #fff; overflow: hidden; flex-shrink: 0; margin-top: -40px; border: 3px solid var(--space); position: relative; z-index: 2; box-shadow: 0 0 25px rgba(212,175,55,0.45); }
         .grupo-header-interno .avatar-grande img { width: 100%; height: 100%; object-fit: cover; }
         .grupo-header-interno .info-text { flex: 1; }
-        .grupo-header-interno .info-text .nombre { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 1.2rem; font-weight: 700; }
+        .grupo-header-interno .info-text .nombre { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 1.2rem; font-weight: 700; text-shadow: 0 0 15px rgba(212,175,55,0.5); }
         .grupo-header-interno .info-text .descripcion { color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px; }
         .grupo-header-interno .info-text .meta { display: flex; gap: 12px; font-size: 0.65rem; color: var(--text-muted); margin-top: 6px; flex-wrap: wrap; align-items: center; }
         .grupo-header-interno .info-text .meta > span { display: inline-flex; align-items: center; gap: 4px; }
         .grupo-header-interno .acciones { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; align-items: center; }
-        .btn-donar { background: linear-gradient(135deg, #00d68f, #00b377); color: #fff; border: none; padding: 8px 20px; border-radius: 30px; font-weight: 700; font-size: 0.7rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
-        .btn-donar:hover { transform: scale(1.02); }
-        .btn-salir-aire { background: var(--live-red); color: #fff; border: none; padding: 10px 24px; border-radius: 30px; font-weight: 800; font-size: 0.8rem; cursor: pointer; animation: pulse-live 2s infinite; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 0 20px rgba(255, 0, 68, 0.4); display: inline-flex; align-items: center; gap: 6px; }
-        .btn-salir-aire:hover { transform: scale(1.05); }
+        .btn-donar { background: linear-gradient(135deg, #00d68f, #00b377); color: #fff; border: none; padding: 8px 20px; border-radius: 30px; font-weight: 700; font-size: 0.7rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 0 18px rgba(0,214,143,0.4); transition: var(--transition); }
+        .btn-donar:hover { transform: scale(1.02); box-shadow: 0 0 30px rgba(0,214,143,0.6); }
+        .btn-salir-aire { background: var(--live-red); color: #fff; border: none; padding: 10px 24px; border-radius: 30px; font-weight: 800; font-size: 0.8rem; cursor: pointer; animation: pulse-live 2s infinite; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 0 20px rgba(255, 0, 68, 0.5), 0 0 40px rgba(255,0,68,0.25); display: inline-flex; align-items: center; gap: 6px; }
+        .btn-salir-aire:hover { transform: scale(1.05); box-shadow: 0 0 35px rgba(255, 0, 68, 0.8); }
         .ajustes-menu { display: flex; flex-direction: column; gap: 8px; }
         .ajustes-menu button { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); color: var(--text-primary); cursor: pointer; text-align: left; font-size: 0.8rem; transition: var(--transition); display: inline-flex; align-items: center; gap: 8px; }
-        .ajustes-menu button:hover { border-color: var(--gold); background: rgba(212,175,55,0.1); color: var(--gold); }
+        .ajustes-menu button:hover { border-color: var(--gold); background: rgba(212,175,55,0.1); color: var(--gold); box-shadow: 0 0 20px rgba(212,175,55,0.25); }
         .ajustes-menu .toggle-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); }
         .ajustes-menu .toggle-row span { font-size: 0.8rem; color: var(--text-primary); }
         .ajustes-menu .toggle-row input[type="checkbox"] { width: auto; transform: scale(1.3); cursor: pointer; accent-color: var(--gold); }
-        .grupo-live-container { display: none; margin-bottom: 20px; background: var(--glass-bg); border: 1px solid var(--live-red); border-radius: var(--radius-xl); overflow: hidden; box-shadow: 0 10px 40px rgba(255, 0, 68, 0.2); animation: adFadeIn 0.5s ease; }
+        .grupo-live-container { display: none; margin-bottom: 20px; background: var(--glass-bg); border: 1px solid var(--live-red); border-radius: var(--radius-xl); overflow: hidden; box-shadow: 0 10px 40px rgba(255, 0, 68, 0.25); animation: adFadeIn 0.5s ease; }
         .grupo-live-container.visible { display: block; }
         .grupo-live-container .live-header-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; border-bottom: 1px solid rgba(255, 0, 68, 0.2); background: rgba(255, 0, 68, 0.05); }
-        .grupo-live-container .live-header-bar .live-tag { display: flex; align-items: center; gap: 8px; color: var(--live-red); font-weight: 700; font-size: 0.75rem; font-family: 'Orbitron', monospace; letter-spacing: 1px; }
-        .grupo-live-container .live-header-bar .live-tag .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--live-red); animation: pulse-live 1s infinite; }
+        .grupo-live-container .live-header-bar .live-tag { display: flex; align-items: center; gap: 8px; color: var(--live-red); font-weight: 700; font-size: 0.75rem; font-family: 'Orbitron', monospace; letter-spacing: 1px; text-shadow: 0 0 12px rgba(255,0,68,0.6); }
+        .grupo-live-container .live-header-bar .live-tag .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--live-red); animation: pulse-live 1s infinite; box-shadow: 0 0 12px rgba(255,0,68,0.9); }
         .grupo-live-container .live-header-bar .live-close { background: transparent; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; padding: 4px 10px; border-radius: 8px; }
         .grupo-live-container .live-header-bar .live-close:hover { color: var(--danger); background: rgba(255,0,68,0.1); }
         .grupo-live-container .live-video-wrap { position: relative; width: 100%; background: #000; aspect-ratio: 16/9; max-height: 60vh; }
@@ -155,15 +158,16 @@
         .grupo-live-container .live-chat-inline .chat-msg strong { color: var(--gold); font-weight: 600; }
         .grupo-live-container .live-chat-input-row { display: flex; gap: 8px; padding: 10px 16px; border-top: 1px solid var(--glass-border); background: rgba(0,0,0,0.3); }
         .grupo-live-container .live-chat-input-row input { flex: 1; padding: 8px 14px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 20px; color: var(--text-primary); font-size: 0.75rem; outline: none; }
-        .grupo-live-container .live-chat-input-row input:focus { border-color: var(--gold); }
-        .grupo-live-container .live-chat-input-row button { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border: none; padding: 8px 18px; border-radius: 20px; font-weight: 700; font-size: 0.7rem; cursor: pointer; }
-        .marketing-ad-container { display: none; margin-bottom: 16px; background: linear-gradient(155deg, rgba(15, 45, 26, 0.55), rgba(8, 15, 26, 0.75)); border: 1px solid rgba(212, 175, 55, 0.25); border-radius: var(--radius-xl); overflow: hidden; backdrop-filter: blur(14px); position: relative; box-shadow: 0 10px 40px rgba(212, 175, 55, 0.08); animation: adFadeIn 0.5s ease; }
+        .grupo-live-container .live-chat-input-row input:focus { border-color: var(--gold); box-shadow: 0 0 15px rgba(212,175,55,0.3); }
+        .grupo-live-container .live-chat-input-row button { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border: none; padding: 8px 18px; border-radius: 20px; font-weight: 700; font-size: 0.7rem; cursor: pointer; transition: var(--transition); }
+        .grupo-live-container .live-chat-input-row button:hover { box-shadow: 0 0 20px rgba(212,175,55,0.6); }
+        .marketing-ad-container { display: none; margin-bottom: 16px; background: linear-gradient(155deg, rgba(15, 45, 26, 0.55), rgba(8, 15, 26, 0.75)); border: 1px solid rgba(212, 175, 55, 0.25); border-radius: var(--radius-xl); overflow: hidden; backdrop-filter: blur(14px); position: relative; box-shadow: 0 10px 40px rgba(212, 175, 55, 0.1), 0 0 30px rgba(212,175,55,0.05); animation: adFadeIn 0.5s ease; }
         .marketing-ad-container.visible { display: block; }
         @keyframes adFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .marketing-ad-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; border-bottom: 1px solid rgba(212, 175, 55, 0.1); }
-        .marketing-ad-label { font-family: 'Orbitron', monospace; font-size: 0.55rem; color: var(--gold); letter-spacing: 3px; text-transform: uppercase; display: flex; align-items: center; gap: 8px; opacity: 0.85; }
+        .marketing-ad-label { font-family: 'Orbitron', monospace; font-size: 0.55rem; color: var(--gold); letter-spacing: 3px; text-transform: uppercase; display: flex; align-items: center; gap: 8px; opacity: 0.85; text-shadow: 0 0 12px rgba(212,175,55,0.5); }
         .marketing-ad-close { background: transparent; border: none; color: var(--text-muted); font-size: 1.1rem; cursor: pointer; line-height: 1; padding: 4px 8px; transition: var(--transition); }
-        .marketing-ad-close:hover { color: var(--gold); }
+        .marketing-ad-close:hover { color: var(--gold); text-shadow: 0 0 12px rgba(212,175,55,0.7); }
         .marketing-ad-body { display: flex; gap: 14px; padding: 14px 16px 16px; align-items: flex-start; }
         .marketing-ad-media { width: 96px; height: 96px; border-radius: 12px; overflow: hidden; flex-shrink: 0; background: rgba(0,0,0,0.4); border: 1px solid rgba(212, 175, 55, 0.15); display: flex; align-items: center; justify-content: center; color: var(--gold); font-family: 'Orbitron', monospace; font-size: 1.5rem; position: relative; }
         .marketing-ad-media img, .marketing-ad-media video { width: 100%; height: 100%; object-fit: cover; }
@@ -171,7 +175,7 @@
         .marketing-ad-title { font-family: 'Orbitron', monospace; font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; line-height: 1.3; }
         .marketing-ad-desc { font-size: 0.7rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 12px; word-wrap: break-word; }
         .marketing-ad-cta { display: inline-flex; align-items: center; gap: 6px; padding: 8px 20px; border-radius: 30px; background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); font-size: 0.7rem; font-weight: 700; text-decoration: none; border: none; cursor: pointer; transition: var(--transition); font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: 0.5px; }
-        .marketing-ad-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(212, 175, 55, 0.4); }
+        .marketing-ad-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(212, 175, 55, 0.5), 0 0 30px rgba(212,175,55,0.3); }
         .publicaciones-container { margin-top: 16px; }
         .publicacion-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 12px; position: relative; }
         .publicacion-card.marketplace { border-left: 4px solid var(--success); }
@@ -180,7 +184,7 @@
         .publicacion-card.marketplace.regalo { border-left-color: var(--pink); }
         .publicacion-card.marketplace.servicio { border-left-color: var(--warning); }
         .publicacion-card .header { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
-        .publicacion-card .header .avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold)); display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: #fff; overflow: hidden; flex-shrink: 0; }
+        .publicacion-card .header .avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold)); display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: #fff; overflow: hidden; flex-shrink: 0; border: 1px solid rgba(212,175,55,0.3); }
         .publicacion-card .header .avatar img { width: 100%; height: 100%; object-fit: cover; }
         .publicacion-card .header .nombre { font-weight: 600; color: var(--gold); font-size: 0.75rem; }
         .publicacion-card .header .fecha { font-size: 0.55rem; color: var(--text-muted); }
@@ -189,7 +193,7 @@
         .publicacion-card .contenido video { max-width: 100%; border-radius: 8px; margin-top: 8px; }
         .marketplace-info { background: rgba(0,214,143,0.06); border: 1px solid rgba(0,214,143,0.15); border-radius: 12px; padding: 10px 14px; margin-top: 10px; }
         .marketplace-info .titulo-mk { font-family: 'Orbitron', monospace; color: var(--success); font-size: 0.75rem; font-weight: 700; margin-bottom: 6px; display: inline-flex; align-items: center; gap: 6px; }
-        .marketplace-info .precio { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 1.1rem; font-weight: 700; }
+        .marketplace-info .precio { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 1.1rem; font-weight: 700; text-shadow: 0 0 12px rgba(212,175,55,0.4); }
         .marketplace-info .precio-usdt { font-size: 0.75rem; color: var(--text-muted); margin-left: 8px; }
         .marketplace-info .ubicacion { font-size: 0.65rem; color: var(--text-muted); margin-top: 4px; display: inline-flex; align-items: center; gap: 4px; }
         .marketplace-info .contacto { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
@@ -198,20 +202,21 @@
         .marketplace-info .contacto .btn-llamar { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); }
         .publicacion-card .stats { display: flex; gap: 12px; font-size: 0.6rem; color: var(--text-muted); margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--glass-border); flex-wrap: wrap; align-items: center; }
         .publicacion-card .stats span { cursor: pointer; padding: 4px 8px; border-radius: 12px; transition: var(--transition); display: inline-flex; align-items: center; gap: 4px; }
-        .publicacion-card .stats span:hover { color: var(--gold); background: rgba(212,175,55,0.05); }
+        .publicacion-card .stats span:hover { color: var(--gold); background: rgba(212,175,55,0.05); text-shadow: 0 0 10px rgba(212,175,55,0.6); }
         .publicacion-card .stats span.interesado { color: var(--success); background: rgba(0,214,143,0.1); }
         .publicacion-card .stats span.no-interesado { color: var(--danger); background: rgba(255,51,102,0.1); }
         .form-publicacion { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 16px; }
         .form-publicacion textarea { width: 100%; padding: 10px 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--text-primary); font-size: 0.8rem; resize: vertical; min-height: 60px; outline: none; }
-        .form-publicacion textarea:focus { border-color: var(--gold); }
+        .form-publicacion textarea:focus { border-color: var(--gold); box-shadow: 0 0 20px rgba(212,175,55,0.25); }
         .form-publicacion .acciones { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; align-items: center; position: relative; }
         .form-publicacion .acciones button { background: transparent; border: none; color: var(--text-muted); font-size: 0.7rem; cursor: pointer; padding: 4px 12px; border-radius: 12px; transition: var(--transition); display: inline-flex; align-items: center; gap: 5px; }
-        .form-publicacion .acciones button:hover { color: var(--gold); background: rgba(212,175,55,0.05); }
-        .form-publicacion .acciones .btn-publicar { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border: none; padding: 6px 20px; border-radius: 20px; font-weight: 700; font-size: 0.7rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+        .form-publicacion .acciones button:hover { color: var(--gold); background: rgba(212,175,55,0.05); text-shadow: 0 0 10px rgba(212,175,55,0.5); }
+        .form-publicacion .acciones .btn-publicar { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border: none; padding: 6px 20px; border-radius: 20px; font-weight: 700; font-size: 0.7rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: var(--transition); }
+        .form-publicacion .acciones .btn-publicar:hover { box-shadow: 0 0 22px rgba(212,175,55,0.6); }
         .form-publicacion .acciones .btn-mk { color: var(--success); border: 1px solid rgba(0,214,143,0.3); }
-        .form-publicacion .acciones .btn-mk:hover { background: rgba(0,214,143,0.1); color: var(--success); }
+        .form-publicacion .acciones .btn-mk:hover { background: rgba(0,214,143,0.1); color: var(--success); box-shadow: 0 0 20px rgba(0,214,143,0.3); }
         .form-publicacion .acciones .btn-mk:disabled { opacity: 0.3; cursor: not-allowed; }
-        .emoji-picker { display: none; position: absolute; bottom: 100%; left: 0; background: rgba(15, 25, 20, 0.95); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 12px; width: 280px; max-width: 90vw; z-index: 1000; box-shadow: var(--shadow-gold-strong); backdrop-filter: blur(12px); margin-bottom: 8px; }
+        .emoji-picker { display: none; position: absolute; bottom: 100%; left: 0; background: rgba(15, 25, 20, 0.95); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 12px; width: 280px; max-width: 90vw; z-index: 1000; box-shadow: var(--shadow-gold-strong), 0 0 40px rgba(212,175,55,0.2); backdrop-filter: blur(12px); margin-bottom: 8px; }
         .emoji-picker.show { display: block; }
         .emoji-picker .grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
         .emoji-picker .grid button { background: transparent; border: none; font-size: 1.5rem; padding: 6px 4px; cursor: pointer; border-radius: 8px; transition: var(--transition); line-height: 1; }
@@ -221,31 +226,31 @@
         .modal-overlay.show { display: flex; }
         .modal { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 24px; max-width: 500px; width: 100%; max-height: 85vh; overflow-y: auto; }
         .modal .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-        .modal .modal-header h2 { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 1rem; display: inline-flex; align-items: center; gap: 6px; }
+        .modal .modal-header h2 { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 1rem; display: inline-flex; align-items: center; gap: 6px; text-shadow: 0 0 15px rgba(212,175,55,0.5); }
         .modal .modal-header .btn-cerrar { background: none; border: none; color: var(--text-muted); font-size: 1.4rem; cursor: pointer; }
         .modal .form-group { margin-bottom: 12px; }
         .modal .form-group label { display: block; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 4px; }
         .modal .form-group input, .modal .form-group textarea, .modal .form-group select { width: 100%; padding: 8px 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--text-primary); font-size: 0.85rem; outline: none; }
-        .modal .form-group input:focus, .modal .form-group textarea:focus, .modal .form-group select:focus { border-color: var(--gold); }
+        .modal .form-group input:focus, .modal .form-group textarea:focus, .modal .form-group select:focus { border-color: var(--gold); box-shadow: 0 0 18px rgba(212,175,55,0.25); }
         .modal .checkbox-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: rgba(0,0,0,0.2); border-radius: 10px; margin-bottom: 12px; }
         .modal .checkbox-row input[type="checkbox"] { width: auto; transform: scale(1.3); cursor: pointer; accent-color: var(--gold); }
         .modal .checkbox-row label { margin: 0; cursor: pointer; font-size: 0.75rem; color: var(--text-primary); }
         .modal .checkbox-row .hint { font-size: 0.6rem; color: var(--text-muted); margin-left: auto; }
-        .modal .btn-guardar { width: 100%; padding: 10px; border-radius: 30px; border: none; background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); font-weight: 700; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
-        .modal .btn-guardar:hover { transform: scale(1.02); }
+        .modal .btn-guardar { width: 100%; padding: 10px; border-radius: 30px; border: none; background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); font-weight: 700; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: var(--transition); }
+        .modal .btn-guardar:hover { transform: scale(1.02); box-shadow: 0 0 30px rgba(212,175,55,0.6); }
         .modal .btn-confirmar-eliminar { width: 100%; padding: 10px; border-radius: 30px; border: none; background: var(--danger); color: #fff; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
         .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
         .empty-state .icon { font-size: 2.5rem; display: block; margin: 0 auto 12px; color: var(--gold); opacity: 0.3; width: 2.5rem; height: 2.5rem; }
         .gift-options { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin: 12px 0; }
         .gift-btn { padding: 10px 16px; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.3); color: var(--text-primary); cursor: pointer; transition: var(--transition); text-align: center; min-width: 70px; }
-        .gift-btn:hover { border-color: var(--gold); transform: scale(1.05); background: rgba(212,175,55,0.1); }
+        .gift-btn:hover { border-color: var(--gold); transform: scale(1.05); background: rgba(212,175,55,0.1); box-shadow: 0 0 22px rgba(212,175,55,0.35); }
         .gift-btn .monto { font-weight: 700; color: var(--gold); font-size: 0.9rem; }
         .gift-btn .label { font-size: 0.5rem; color: var(--text-muted); display: block; }
         .footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--text-muted); flex-wrap: wrap; gap: 10px; }
-        .footer .brand { color: var(--gold); font-weight: 600; }
+        .footer .brand { color: var(--gold); font-weight: 600; text-shadow: 0 0 12px rgba(212,175,55,0.5); }
         .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
         .footer-links a { color: var(--text-muted); text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
-        .footer-links a:hover { color: var(--gold); }
+        .footer-links a:hover { color: var(--gold); text-shadow: 0 0 12px rgba(212,175,55,0.5); }
 
         html.tema-dia, html[data-tema="dia"] {
             --space: #f5f7fa; --text-primary: #1a2332; --text-secondary: #4a5568; --text-muted: #718096;
@@ -293,14 +298,16 @@
         input, select, textarea { background-color: rgba(0,0,0,0.3) !important; color: var(--text-primary) !important; border: 1px solid var(--glass-border) !important; }
         input::placeholder, textarea::placeholder { color: var(--text-muted) !important; }
         select option { background-color: var(--space) !important; color: var(--text-primary) !important; }
-        .btn-outline { background: rgba(0,0,0,0.3) !important; color: var(--text-secondary) !important; border: 1px solid var(--glass-border) !important; padding: 6px 14px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
-        .btn-outline:hover { border-color: var(--gold) !important; color: var(--gold) !important; background: rgba(212,175,55,0.1) !important; }
-        .btn-gold { background: linear-gradient(135deg, var(--gold), var(--gold-dark)) !important; color: var(--space) !important; border: 1px solid var(--gold) !important; font-weight: 700 !important; padding: 6px 16px; border-radius: 20px; font-size: 0.7rem; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
-        .btn-gold:hover { transform: translateY(-2px) !important; box-shadow: var(--shadow-gold) !important; }
-        .btn-danger { background: rgba(255, 51, 102, 0.1) !important; color: var(--danger) !important; border: 1px solid rgba(255, 51, 102, 0.3) !important; padding: 6px 14px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+        .btn-outline { background: rgba(0,0,0,0.3) !important; color: var(--text-secondary) !important; border: 1px solid var(--glass-border) !important; padding: 6px 14px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: var(--transition); }
+        .btn-outline:hover { border-color: var(--gold) !important; color: var(--gold) !important; background: rgba(212,175,55,0.1) !important; box-shadow: 0 0 20px rgba(212,175,55,0.35) !important; }
+        .btn-gold { background: linear-gradient(135deg, var(--gold), var(--gold-dark)) !important; color: var(--space) !important; border: 1px solid var(--gold) !important; font-weight: 700 !important; padding: 6px 16px; border-radius: 20px; font-size: 0.7rem; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: var(--transition); }
+        .btn-gold:hover { transform: translateY(-2px) !important; box-shadow: var(--shadow-gold), 0 0 35px rgba(212,175,55,0.45) !important; }
+        .btn-danger { background: rgba(255, 51, 102, 0.1) !important; color: var(--danger) !important; border: 1px solid rgba(255, 51, 102, 0.3) !important; padding: 6px 14px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: var(--transition); }
+        .btn-danger:hover { box-shadow: 0 0 20px rgba(255,51,102,0.4) !important; }
         .btn-sm { padding: 4px 12px !important; font-size: 0.65rem !important; }
     </style>
-</head><body>
+</head>
+<body>
     <div class="app">
         <header class="header">
             <a href="/" class="logo">
@@ -335,8 +342,7 @@
             </a>
             <a href="/features/mensajes/contactos.html" class="nav-link">
                 <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                Contactos
-            </a>
+                Contactos            </a>
             <a href="/features/live/live.html" class="nav-link live">
                 <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4.93 19.07A10 10 0 0 1 4.93 4.93M19.07 19.07a10 10 0 0 0 0-14.14M7.76 16.24a6 6 0 0 1 0-8.48M16.24 16.24a6 6 0 0 0 0-8.48"/><circle cx="12" cy="12" r="2"/></svg>
                 Live
@@ -982,549 +988,551 @@
                 </span>
             </div>
         </footer>
-    </div><!-- ✅ SUPABASE + IDIOMAS -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script>window.__SB_SDK = window.supabase;</script>
-<script src="/features/shared/js/idiomas.js"></script>
-<script src="/app.js"></script>
+    </div>
+    <!-- ✅ SUPABASE + IDIOMAS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script>window.__SB_SDK = window.supabase;</script>
+    <script src="/features/shared/js/idiomas.js"></script>
+    <script src="/app.js"></script>
 
-<script>
-// ================================================================
-// ✅ FORZAR APARIENCIA
-// ================================================================
-(function forzarApariencia() {
-    try {
-        const tema = localStorage.getItem('mostrar_tema') || 'sistema';
-        const html = document.documentElement;
-        html.classList.remove('tema-dia', 'tema-noche');
-        html.removeAttribute('data-tema');
-        
-        if (tema === 'dia') {
-            html.classList.add('tema-dia');
-            html.setAttribute('data-tema', 'dia');
-        } else if (tema === 'noche') {
-            html.classList.add('tema-noche');
-            html.setAttribute('data-tema', 'noche');
-        } else {
-            const prefiereOscuro = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            html.setAttribute('data-tema', prefiereOscuro ? 'noche' : 'dia');
-            html.classList.add(prefiereOscuro ? 'tema-noche' : 'tema-dia');
-        }
-        
-        const color = localStorage.getItem('mostrar_color_acento') || '#D4AF37';
-        html.style.setProperty('--gold', color);
-        
-        const fuente = parseInt(localStorage.getItem('mostrar_tamano_fuente') || 100);
-        html.style.fontSize = (16 * fuente / 100) + 'px';
-    } catch (e) {
-        console.warn('[Grupos] No se pudo forzar apariencia:', e);
-    }
-})();
-
-// ================================================================
-// ✅ INICIALIZAR SUPABASE
-// ================================================================
-(function inicializarSupabase() {
-    try {
-        if (window.supabaseClient && typeof window.supabaseClient.from === 'function') {
-            console.log('[Grupos] ✅ supabaseClient ya existía');
-            return;
-        }
-        
-        var SDK = window.__SB_SDK || window.supabase;
-        if (!SDK || typeof SDK.createClient !== 'function') {
-            console.error('[Grupos] ❌ Supabase SDK no disponible');
-            if (window.__dbgShow) window.__dbgShow('Supabase: SDK no disponible');
-            return;
-        }
-        
-        window.supabaseClient = SDK.createClient(
-            'https://zultnlogdoajehbswlih.supabase.co',
-            'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu',
-            {
-                auth: {
-                    persistSession: true,
-                    autoRefreshToken: true,
-                    detectSessionInUrl: true
-                }
+    <script>
+    // ================================================================
+    // ✅ FORZAR APARIENCIA
+    // ================================================================
+    (function forzarApariencia() {
+        try {
+            const tema = localStorage.getItem('mostrar_tema') || 'sistema';
+            const html = document.documentElement;
+            html.classList.remove('tema-dia', 'tema-noche');
+            html.removeAttribute('data-tema');
+            
+            if (tema === 'dia') {
+                html.classList.add('tema-dia');
+                html.setAttribute('data-tema', 'dia');
+            } else if (tema === 'noche') {
+                html.classList.add('tema-noche');
+                html.setAttribute('data-tema', 'noche');
+            } else {
+                const prefiereOscuro = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                html.setAttribute('data-tema', prefiereOscuro ? 'noche' : 'dia');
+                html.classList.add(prefiereOscuro ? 'tema-noche' : 'tema-dia');
             }
-        );
-        console.log('[Grupos] ✅ Supabase Client inicializado');
-    } catch (e) {
-        console.error('[Grupos] ❌ Error inicializando Supabase:', e);
-        if (window.__dbgShow) window.__dbgShow('Supabase: ' + (e && e.message ? e.message : String(e)));
-    }
-})();
-
-window.supabaseReady = Promise.resolve(window.supabaseClient);
-
-async function esperarSupabase() {
-    for (var i = 0; i < 10; i++) {
-        if (window.supabaseClient) return true;
-        await new Promise(function(r) { setTimeout(r, 300); });
-    }
-    return false;
-}
-
-var sessionUser = null;
-var grupoActual = null;
-var grupoActualId = null;
-var rolEnGrupo = null;
-var esAdmin = false;
-var esModerador = false;
-var esCreador = false;
-var liveActivoEnGrupo = null;
-var soloMisGrupos = false;
-var categoriasCache = [];
-var publicando = false;
-var eliminandoGrupo = false;
-var misCanalesCache = [];
-
-var misInteracciones = {};
-var misNotificaciones = {};
-var filtroFeedActual = 'todo';
-var publicacionesCache = [];
-var publicacionReportando = null;
-var etiquetadosSeleccionados = [];
-
-var anuncioActual = null;
-var adRefreshInterval = null;
-var adSessionId = null;
-var adVistaTimer = null;
-var adCerrado = false;
-
-var grpPagina = 0;
-var grpPaginaSize = 24;
-var grpHayMas = false;
-var grpBuscarTimer = null;
-
-const LIVEKIT_CONFIG = { url: 'wss://csariels-domo-57ujk04t.livekit.cloud' };
-
-var liveKitRoomGrupo = null;
-var localStreamGrupo = null;
-var isLiveGrupoActivo = false;
-var streamIntervalGrupo = null;
-var channelChatGrupo = null;
-var espectadoresGrupo = 0;
-var currentStreamGrupoId = null;
-var esStreamerDelLiveGrupo = false;
-
-// ================================================================
-// HELPERS
-// ================================================================
-function grpOk(r) {
-    if (r && r.error) throw r.error;
-    return r;
-}
-
-// ================================================================
-// 🚫 MODERACIÓN
-// ================================================================
-const CATEGORIAS_BLOQUEADAS = {
-    activos_digitales: ['token','tokens','cripto','criptos','crypto','cryptos','criptomoneda','criptomonedas','bitcoin','btc','ethereum','eth','usdt','usdc','tether','dai','busd','nft','nfts','blockchain','cadena de bloques','coin','coins','altcoin','altcoins','defi','web3','wallet','wallets','metamask','binance','coinbase','kraken','kucoin','dogecoin','doge','shiba','shib','solana','bnb','binance coin','polygon','matic','cardano','ripple','xrp','litecoin','ltc','tron','trx','es.stok','es.stoks','estok','estoks','es stok','es stoks','staking','mining','mineria','minar','p2p cripto','exchange cripto','monedero digital','monedero cripto','activo digital','activos digitales','polkadot','chainlink','uniswap','aave','memecoin','shitcoin','airdrop','whitelist cripto','presale cripto','ieo','mineria bitcoin','rig de mineria','hardware wallet','ledger nano','trezor'],
-    articulos_regulados: ['arma','armas','pistola','pistolas','rifle','rifles','escopeta','escopetas','municion','municiones','balas','cartuchos','explosivo','explosivos','granada','granadas','dinamita','tnt','c4','polvora','mecha','silenciador','supresor','cargador extendido','arma larga','arma corta','arma de fuego','arma blanca','cuchillo tactico','navaja automatica','taser','paralizante','gas pimienta restringido','chaleco antibalas','placa balistica','dron armado','mira telescopica','scope militar'],
-    sustancias_controladas: ['droga','drogas','cocaina','heroina','metanfetamina','cristal','meth','marihuana','mariguana','cannabis','weed','motita','porro','lsd','acido lisergico','extasis','mdma','fentanilo','opio','opiaceos','morfina','tramadol','oxycodone','xanax','valium','clonazepam','medicamento controlado','medicamento sin receta','medicamento fraude','antibiotico sin receta','viagra generico','esteroides','anabolicos','tramadol sin receta','psicotropico','estupefaciente'],
-    contenido_adulto: ['pornografia','porno','xxx','contenido para adultos','contenido sexual','sexo explicito','nudismo','desnudo','desnudos','onlyfans','pack de fotos','pack de videos','pack intimo','fotos intimas','videos intimas','contenido nsfw','nsfw','hentai','ecchi','juguete sexual','juguetes sexuales','consolador','vibrador','lenceria erotica','traje de latex','servicio sexual','masaje erotico','masaje tantrico','masaje sensual','acompañante','escort','prepago','servicios de acompañamiento','chica prepago','chico prepago'],
-    documentos_oficiales: ['ine falsa','ine falso','credencial falsa','credencial falsificada','pasaporte falso','pasaporte falsificado','licencia de conducir falsa','licencia falsificada','acta de nacimiento falsa','acta falsificada','titulo profesional falso','titulo falsificado','cedula falsa','cedula falsificada','diploma falso','certificado falso','documento oficial falso','documento falsificado','tarjeta de circulacion falsa','placas falsas','comprobante de domicilio falso','recibo falso','factura falsa','factura falsificada','cfdi falso','constancia falsa','curp falsa','rfc falso','numero de seguro social falso','nss falso'],
-    productos_falsificados: ['replica','replicas','imitacion','imitaciones','clon','clones','falsificacion','falsificaciones','pirata','piratas','pirateria','producto pirata','producto replicado','producto clon','primera copia','triple a','aaa replica','espejo original','outlet replica','marca replica','bolso replica','tenis replica','reloj replica','perfume replica','ropa replica','software pirata','windows pirata','office pirata','adobe pirata','photoshop pirata','juego pirata','pelicula pirata','serie pirata'],
-    practicas_fraudulentas: ['estafa','estafas','fraude','fraudes','timo','timos','engano','enganos','piramide','esquema piramidal','esquema ponzi','ponzi','multinivel falso','inversion garantizada','inversion segura sin riesgo','rendimiento garantizado','dinero facil','gana dinero rapido','ganancias garantizadas','prestamo sin aval','prestamo express','prestamo gota a gota','montadeudas','cobro por adelantado','anticipo por adelantado','deposito por adelantado','transferencia por adelantado','phishing','malware','virus informatico','spyware','ransomware','tarjeta clonada','tarjeta de credito clonada','clonar tarjeta','clonar whatsapp','hackear whatsapp','hackear facebook','hackear instagram','recuperar cuenta hackeada','espiar whatsapp','espiar celular','rastreador de pareja','app espia','software espia'],
-    datos_personales: ['venta de datos','vendo datos personales','base de datos privada','padron electoral','padron de clientes','lista de correos','lista de telefonos','lista de whatsapp','contactos de famosos','datos de usuarios','informacion confidencial','informacion privada','datos filtrados','datos de clientes','datos bancarios de terceros','numero de tarjeta de credito ajeno','cvv ajeno','nip ajeno','curp ajena','rfc ajeno','ine ajena','direccion de terceros','ubicacion de terceros','geolocalizacion ajena','espiar ubicacion'],
-    seres_vivos: ['vendo perro','vendo gato','vendo cachorro','vendo gatito','venta de perros','venta de gatos','venta de aves','venta de reptiles','venta de peces','venta de conejos','venta de hamsters','cachorros en venta','gatitos en venta','aves exoticas','animal exotico','animal protegido','especie protegida','venta de tortugas','venta de iguanas','venta de serpientes','venta de loros','venta de guacamayas','venta de tucanes','trafico de animales','trafico de especies','fauna silvestre','planta protegida','cactacea protegida','orquidea silvestre','madera preciosa','palo de rosa','caoba','cedro rojo'],
-    alcohol_tabaco: ['vendo alcohol','vendo cerveza','vendo tequila','vendo whisky','venta de alcohol','venta de cerveza','venta de tequila','cerveza artesanal','vino artesanal','mezcal artesanal','licor casero','destilado casero','alcohol casero','vape','vapes','vapeador','vapeadores','cigarro electronico','cigarrillos electronicos','desechable vape','cigarros','cigarrillos','tabaco','puros','habanos','picadura de tabaco','snus','nicotina liquida','sales de nicotina'],
-    discurso_odio: ['muerte a los','maten a los','odio a los','los malditos','raza inferior','raza superior','cancer de la sociedad','basura humana','escoria humana','exterminar a','eliminar a todos los','deberian morir','deberian desaparecer','infieles','putos','maricones','sudacas','indios de mierda','prietos','narizones','nacos','pinches indios','malinchistas','gachupines','sionistas','nazis','hitler','supremacia blanca','supremacia aria','razas inferiores','limpieza etnica'],
-    contenido_menores: ['menor de edad','menores de edad','contenido con menores','fotos de menores','videos de menores','nino desnudo','nina desnuda','child porn','pedofilia','pedofilo','pederasta','chico joven sexual','chica joven sexual','adolescente desnuda','adolescente desnudo','preteen','lolita','lolicon','shotacon'],
-    amenazas_extorsion: ['te voy a matar','te voy a encontrar','se donde vives','tengo tu direccion','tengo tu familia','secuestro','secuestrar','levanton','levantar a alguien','extorsion','extorsionar','cobro de piso','derecho de piso','cobro forzoso','amenaza de muerte','amenazas graves','te voy a golpear','te voy a hacer dano','sicario','sicarios','maton','matones','por encargo','ajuste de cuentas','cobrar por la fuerza'],
-    contenido_intimo_sin_consentimiento: ['pack filtrado','pack filtrados','pack sin permiso','pack de ex','pack de la ex','pack de mi ex','pack de novia','fotos filtradas','videos filtrados','intimo filtrado','intimo sin permiso','sin consentimiento','pack de la companera','pack de la vecina','pack de la maestra','pack de la alumna','venganza intima','revenge porn','porno venganza','fotos privadas filtradas','venganza con fotos','exponer intimidades','venganza con videos']
-};
-
-const NOMBRES_CATEGORIAS = {
-    activos_digitales: 'Activos digitales (cripto/tokens/NFT)',
-    articulos_regulados: 'Artículos regulados por la ley',
-    sustancias_controladas: 'Sustancias controladas',
-    contenido_adulto: 'Contenido para adultos',
-    documentos_oficiales: 'Documentos oficiales',
-    productos_falsificados: 'Productos falsificados',
-    practicas_fraudulentas: 'Prácticas fraudulentas',
-    datos_personales: 'Datos personales de terceros',
-    seres_vivos: 'Seres vivos',
-    alcohol_tabaco: 'Alcohol y tabaco',
-    discurso_odio: 'Discursos de odio',
-    contenido_menores: 'Contenido con menores de edad',
-    amenazas_extorsion: 'Amenazas o extorsión',
-    contenido_intimo_sin_consentimiento: 'Contenido íntimo sin consentimiento (Ley Olimpia)'
-};
-
-function normalizarTexto(texto) {
-    if (!texto) return '';
-    return texto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[.,;:!?¿¡\-_\(\)\[\]\{\}\/\\|@#$%^&*+=~`"']/g, ' ').replace(/\s+/g, ' ').trim();
-}
-
-function contienePalabrasDeCategoria(texto, categoria) {
-    if (!texto || !CATEGORIAS_BLOQUEADAS[categoria]) return false;
-    const textoNorm = normalizarTexto(texto);
-    return CATEGORIAS_BLOQUEADAS[categoria].some(function(palabra) {
-        const palabraNorm = normalizarTexto(palabra);
-        if (!palabraNorm) return false;
-        if (palabraNorm.includes(' ')) return textoNorm.includes(palabraNorm);
-        const regex = new RegExp('\\b' + palabraNorm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i');
-        return regex.test(textoNorm);
-    });
-}
-
-function detectarInfraccion(texto) {
-    const resultado = { bloqueado: false, categorias: [] };
-    if (!texto) return resultado;
-    for (const cat in CATEGORIAS_BLOQUEADAS) {
-        if (contienePalabrasDeCategoria(texto, cat)) {
-            resultado.bloqueado = true;
-            resultado.categorias.push(NOMBRES_CATEGORIAS[cat] || cat);
+            
+            const color = localStorage.getItem('mostrar_color_acento') || '#D4AF37';
+            html.style.setProperty('--gold', color);
+            
+            const fuente = parseInt(localStorage.getItem('mostrar_tamano_fuente') || 100);
+            html.style.fontSize = (16 * fuente / 100) + 'px';
+        } catch (e) {
+            console.warn('[Grupos] No se pudo forzar apariencia:', e);
         }
-    }
-    return resultado;
-}
+    })();
 
-function contienePalabrasCripto(texto) { return contienePalabrasDeCategoria(texto, 'activos_digitales'); }
+    // ================================================================
+    // ✅ INICIALIZAR SUPABASE
+    // ================================================================
+    (function inicializarSupabase() {
+        try {
+            if (window.supabaseClient && typeof window.supabaseClient.from === 'function') {
+                console.log('[Grupos] ✅ supabaseClient ya existía');
+                return;
+            }
+            
+            var SDK = window.__SB_SDK || window.supabase;
+            if (!SDK || typeof SDK.createClient !== 'function') {
+                console.error('[Grupos] ❌ Supabase SDK no disponible');
+                if (window.__dbgShow) window.__dbgShow('Supabase: SDK no disponible');
+                return;
+            }
+            
+            window.supabaseClient = SDK.createClient(
+                'https://zultnlogdoajehbswlih.supabase.co',
+                'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu',
+                {
+                    auth: {
+                        persistSession: true,
+                        autoRefreshToken: true,
+                        detectSessionInUrl: true
+                    }
+                }
+            );
+            console.log('[Grupos] ✅ Supabase Client inicializado');
+        } catch (e) {
+            console.error('[Grupos] ❌ Error inicializando Supabase:', e);
+            if (window.__dbgShow) window.__dbgShow('Supabase: ' + (e && e.message ? e.message : String(e)));
+        }
+    })();
 
-function grpShowToast(msg, type, ms) {
-    var t = document.getElementById('toast');
-    if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); }
-    t.textContent = msg;
-    t.className = 'toast show';
-    if (type === 'error') t.classList.add('error');
-    else if (type === 'warning') t.classList.add('warning');
-    else if (type === 'success') t.classList.add('success');
-    else t.classList.remove('error', 'warning', 'success');
-    clearTimeout(t._timeout);
-    t._timeout = setTimeout(function() { t.classList.remove('show'); }, ms || 3500);
-}
+    window.supabaseReady = Promise.resolve(window.supabaseClient);
 
-function validarTextoPermitido(texto, nombreCampo) {
-    if (!texto) return true;
-    var inf = detectarInfraccion(texto);
-    if (inf.bloqueado) {
-        var cats = inf.categorias.join(', ');
-        grpShowToast((nombreCampo || 'Contenido') + ' bloqueado: ' + cats, 'error', 6000);
+    async function esperarSupabase() {
+        for (var i = 0; i < 10; i++) {
+            if (window.supabaseClient) return true;
+            await new Promise(function(r) { setTimeout(r, 300); });
+        }
         return false;
     }
-    return true;
-}
 
-async function grpGetSession() {
-    try {
-        if (!window.supabaseClient) { console.warn('[Grupos] supabaseClient no disponible'); return null; }
-        var r = await window.supabaseClient.auth.getSession();
-        return r.data.session;
-    } catch (e) { console.error('[Grupos] Error sesión:', e); return null; }
-}
+    var sessionUser = null;
+    var grupoActual = null;
+    var grupoActualId = null;
+    var rolEnGrupo = null;
+    var esAdmin = false;
+    var esModerador = false;
+    var esCreador = false;
+    var liveActivoEnGrupo = null;
+    var soloMisGrupos = false;
+    var categoriasCache = [];
+    var publicando = false;
+    var eliminandoGrupo = false;
+    var misCanalesCache = [];
 
-function grpEscapeHTML(texto) {
-    if (texto === null || texto === undefined) return '';
-    return String(texto)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-}
+    var misInteracciones = {};
+    var misNotificaciones = {};
+    var filtroFeedActual = 'todo';
+    var publicacionesCache = [];
+    var publicacionReportando = null;
+    var etiquetadosSeleccionados = [];
 
-function grpSafeUrl(u) {
-    if (!u) return '';
-    return (typeof u === 'string' && u.startsWith('https://')) ? u : '';
-}
+    var anuncioActual = null;
+    var adRefreshInterval = null;
+    var adSessionId = null;
+    var adVistaTimer = null;
+    var adCerrado = false;
 
-async function grpCargarLiveKit() {
-    return await import('https://cdn.jsdelivr.net/npm/livekit-client@2/dist/livekit-client.esm.mjs');
-}
+    var grpPagina = 0;
+    var grpPaginaSize = 24;
+    var grpHayMas = false;
+    var grpBuscarTimer = null;
 
-async function cargarUsuarioActual() {
-    try {
-        var session = await grpGetSession();
-        if (!session) { sessionUser = null; return null; }
-        sessionUser = session.user;
-        var result = await window.supabaseClient.from('usuarios').select('nombre, handle, tokens').eq('id', session.user.id).single();
-        if (!result.error && result.data) {
-            var badge = document.getElementById('tokenBadgeCantidad');
-            if (badge) badge.textContent = result.data.tokens || 0;
-        }
-        return result.data || null;
-    } catch (e) { console.error('[Grupos] Error cargando usuario:', e); return null; }
-}
+    const LIVEKIT_CONFIG = { url: 'wss://csariels-domo-57ujk04t.livekit.cloud' };
 
-// ================================================================
-// ANUNCIOS
-// ================================================================
-function getOrCreateAdSessionId() {
-    if (adSessionId) return adSessionId;
-    adSessionId = `ads_grupo_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
-    return adSessionId;
-}
+    var liveKitRoomGrupo = null;
+    var localStreamGrupo = null;
+    var isLiveGrupoActivo = false;
+    var streamIntervalGrupo = null;
+    var channelChatGrupo = null;
+    var espectadoresGrupo = 0;
+    var currentStreamGrupoId = null;
+    var esStreamerDelLiveGrupo = false;
 
-function cerrarAnuncio() {
-    adCerrado = true;
-    const container = document.getElementById('marketingAdContainer');
-    if (container) container.classList.remove('visible');
-    anuncioActual = null;
-}
+    // ================================================================
+    // HELPERS
+    // ================================================================
+    function grpOk(r) {
+        if (r && r.error) throw r.error;
+        return r;
+    }
 
-async function cargarAnuncioGrupo() {
-    if (!grupoActualId) return;
-    if (adCerrado) return;
-    const session = await grpGetSession();
-    if (!session) return;
-    try {
-        const response = await fetch('/api/marketing/get-ad', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-            body: JSON.stringify({ target_tipo: 'grupo', target_id: grupoActualId, session_id: getOrCreateAdSessionId() })
+    // ================================================================
+    // 🚫 MODERACIÓN
+    // ================================================================
+    const CATEGORIAS_BLOQUEADAS = {
+        activos_digitales: ['token','tokens','cripto','criptos','crypto','cryptos','criptomoneda','criptomonedas','bitcoin','btc','ethereum','eth','usdt','usdc','tether','dai','busd','nft','nfts','blockchain','cadena de bloques','coin','coins','altcoin','altcoins','defi','web3','wallet','wallets','metamask','binance','coinbase','kraken','kucoin','dogecoin','doge','shiba','shib','solana','bnb','binance coin','polygon','matic','cardano','ripple','xrp','litecoin','ltc','tron','trx','es.stok','es.stoks','estok','estoks','es stok','es stoks','staking','mining','mineria','minar','p2p cripto','exchange cripto','monedero digital','monedero cripto','activo digital','activos digitales','polkadot','chainlink','uniswap','aave','memecoin','shitcoin','airdrop','whitelist cripto','presale cripto','ieo','mineria bitcoin','rig de mineria','hardware wallet','ledger nano','trezor'],
+        articulos_regulados: ['arma','armas','pistola','pistolas','rifle','rifles','escopeta','escopetas','municion','municiones','balas','cartuchos','explosivo','explosivos','granada','granadas','dinamita','tnt','c4','polvora','mecha','silenciador','supresor','cargador extendido','arma larga','arma corta','arma de fuego','arma blanca','cuchillo tactico','navaja automatica','taser','paralizante','gas pimienta restringido','chaleco antibalas','placa balistica','dron armado','mira telescopica','scope militar'],
+        sustancias_controladas: ['droga','drogas','cocaina','heroina','metanfetamina','cristal','meth','marihuana','mariguana','cannabis','weed','motita','porro','lsd','acido lisergico','extasis','mdma','fentanilo','opio','opiaceos','morfina','tramadol','oxycodone','xanax','valium','clonazepam','medicamento controlado','medicamento sin receta','medicamento fraude','antibiotico sin receta','viagra generico','esteroides','anabolicos','tramadol sin receta','psicotropico','estupefaciente'],
+        contenido_adulto: ['pornografia','porno','xxx','contenido para adultos','contenido sexual','sexo explicito','nudismo','desnudo','desnudos','onlyfans','pack de fotos','pack de videos','pack intimo','fotos intimas','videos intimas','contenido nsfw','nsfw','hentai','ecchi','juguete sexual','juguetes sexuales','consolador','vibrador','lenceria erotica','traje de latex','servicio sexual','masaje erotico','masaje tantrico','masaje sensual','acompañante','escort','prepago','servicios de acompañamiento','chica prepago','chico prepago'],
+        documentos_oficiales: ['ine falsa','ine falso','credencial falsa','credencial falsificada','pasaporte falso','pasaporte falsificado','licencia de conducir falsa','licencia falsificada','acta de nacimiento falsa','acta falsificada','titulo profesional falso','titulo falsificado','cedula falsa','cedula falsificada','diploma falso','certificado falso','documento oficial falso','documento falsificado','tarjeta de circulacion falsa','placas falsas','comprobante de domicilio falso','recibo falso','factura falsa','factura falsificada','cfdi falso','constancia falsa','curp falsa','rfc falso','numero de seguro social falso','nss falso'],
+        productos_falsificados: ['replica','replicas','imitacion','imitaciones','clon','clones','falsificacion','falsificaciones','pirata','piratas','pirateria','producto pirata','producto replicado','producto clon','primera copia','triple a','aaa replica','espejo original','outlet replica','marca replica','bolso replica','tenis replica','reloj replica','perfume replica','ropa replica','software pirata','windows pirata','office pirata','adobe pirata','photoshop pirata','juego pirata','pelicula pirata','serie pirata'],
+        practicas_fraudulentas: ['estafa','estafas','fraude','fraudes','timo','timos','engano','enganos','piramide','esquema piramidal','esquema ponzi','ponzi','multinivel falso','inversion garantizada','inversion segura sin riesgo','rendimiento garantizado','dinero facil','gana dinero rapido','ganancias garantizadas','prestamo sin aval','prestamo express','prestamo gota a gota','montadeudas','cobro por adelantado','anticipo por adelantado','deposito por adelantado','transferencia por adelantado','phishing','malware','virus informatico','spyware','ransomware','tarjeta clonada','tarjeta de credito clonada','clonar tarjeta','clonar whatsapp','hackear whatsapp','hackear facebook','hackear instagram','recuperar cuenta hackeada','espiar whatsapp','espiar celular','rastreador de pareja','app espia','software espia'],
+        datos_personales: ['venta de datos','vendo datos personales','base de datos privada','padron electoral','padron de clientes','lista de correos','lista de telefonos','lista de whatsapp','contactos de famosos','datos de usuarios','informacion confidencial','informacion privada','datos filtrados','datos de clientes','datos bancarios de terceros','numero de tarjeta de credito ajeno','cvv ajeno','nip ajeno','curp ajena','rfc ajeno','ine ajena','direccion de terceros','ubicacion de terceros','geolocalizacion ajena','espiar ubicacion'],
+        seres_vivos: ['vendo perro','vendo gato','vendo cachorro','vendo gatito','venta de perros','venta de gatos','venta de aves','venta de reptiles','venta de peces','venta de conejos','venta de hamsters','cachorros en venta','gatitos en venta','aves exoticas','animal exotico','animal protegido','especie protegida','venta de tortugas','venta de iguanas','venta de serpientes','venta de loros','venta de guacamayas','venta de tucanes','trafico de animales','trafico de especies','fauna silvestre','planta protegida','cactacea protegida','orquidea silvestre','madera preciosa','palo de rosa','caoba','cedro rojo'],
+        alcohol_tabaco: ['vendo alcohol','vendo cerveza','vendo tequila','vendo whisky','venta de alcohol','venta de cerveza','venta de tequila','cerveza artesanal','vino artesanal','mezcal artesanal','licor casero','destilado casero','alcohol casero','vape','vapes','vapeador','vapeadores','cigarro electronico','cigarrillos electronicos','desechable vape','cigarros','cigarrillos','tabaco','puros','habanos','picadura de tabaco','snus','nicotina liquida','sales de nicotina'],
+        discurso_odio: ['muerte a los','maten a los','odio a los','los malditos','raza inferior','raza superior','cancer de la sociedad','basura humana','escoria humana','exterminar a','eliminar a todos los','deberian morir','deberian desaparecer','infieles','putos','maricones','sudacas','indios de mierda','prietos','narizones','nacos','pinches indios','malinchistas','gachupines','sionistas','nazis','hitler','supremacia blanca','supremacia aria','razas inferiores','limpieza etnica'],
+        contenido_menores: ['menor de edad','menores de edad','contenido con menores','fotos de menores','videos de menores','nino desnudo','nina desnuda','child porn','pedofilia','pedofilo','pederasta','chico joven sexual','chica joven sexual','adolescente desnuda','adolescente desnudo','preteen','lolita','lolicon','shotacon'],
+        amenazas_extorsion: ['te voy a matar','te voy a encontrar','se donde vives','tengo tu direccion','tengo tu familia','secuestro','secuestrar','levanton','levantar a alguien','extorsion','extorsionar','cobro de piso','derecho de piso','cobro forzoso','amenaza de muerte','amenazas graves','te voy a golpear','te voy a hacer dano','sicario','sicarios','maton','matones','por encargo','ajuste de cuentas','cobrar por la fuerza'],
+        contenido_intimo_sin_consentimiento: ['pack filtrado','pack filtrados','pack sin permiso','pack de ex','pack de la ex','pack de mi ex','pack de novia','fotos filtradas','videos filtrados','intimo filtrado','intimo sin permiso','sin consentimiento','pack de la companera','pack de la vecina','pack de la maestra','pack de la alumna','venganza intima','revenge porn','porno venganza','fotos privadas filtradas','venganza con fotos','exponer intimidades','venganza con videos']
+    };
+
+    const NOMBRES_CATEGORIAS = {
+        activos_digitales: 'Activos digitales (cripto/tokens/NFT)',
+        articulos_regulados: 'Artículos regulados por la ley',
+        sustancias_controladas: 'Sustancias controladas',
+        contenido_adulto: 'Contenido para adultos',
+        documentos_oficiales: 'Documentos oficiales',
+        productos_falsificados: 'Productos falsificados',
+        practicas_fraudulentas: 'Prácticas fraudulentas',
+        datos_personales: 'Datos personales de terceros',
+        seres_vivos: 'Seres vivos',
+        alcohol_tabaco: 'Alcohol y tabaco',
+        discurso_odio: 'Discursos de odio',
+        contenido_menores: 'Contenido con menores de edad',
+        amenazas_extorsion: 'Amenazas o extorsión',
+        contenido_intimo_sin_consentimiento: 'Contenido íntimo sin consentimiento (Ley Olimpia)'
+    };
+
+    function normalizarTexto(texto) {
+        if (!texto) return '';
+        return texto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[.,;:!?¿¡\-_\(\)\[\]\{\}\/\\|@#$%^&*+=~`"']/g, ' ').replace(/\s+/g, ' ').trim();
+    }
+
+    function contienePalabrasDeCategoria(texto, categoria) {
+        if (!texto || !CATEGORIAS_BLOQUEADAS[categoria]) return false;
+        const textoNorm = normalizarTexto(texto);
+        return CATEGORIAS_BLOQUEADAS[categoria].some(function(palabra) {
+            const palabraNorm = normalizarTexto(palabra);
+            if (!palabraNorm) return false;
+            if (palabraNorm.includes(' ')) return textoNorm.includes(palabraNorm);
+            const regex = new RegExp('\\b' + palabraNorm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i');
+            return regex.test(textoNorm);
         });
-        if (!response.ok) return;
-        const data = await response.json();
-        if (!data.success || !data.ad) {
-            const container = document.getElementById('marketingAdContainer');
-            if (container) container.classList.remove('visible');
+    }
+
+    function detectarInfraccion(texto) {
+        const resultado = { bloqueado: false, categorias: [] };
+        if (!texto) return resultado;
+        for (const cat in CATEGORIAS_BLOQUEADAS) {
+            if (contienePalabrasDeCategoria(texto, cat)) {
+                resultado.bloqueado = true;
+                resultado.categorias.push(NOMBRES_CATEGORIAS[cat] || cat);
+            }
+        }
+        return resultado;
+    }
+
+    function contienePalabrasCripto(texto) { return contienePalabrasDeCategoria(texto, 'activos_digitales'); }
+
+    function grpShowToast(msg, type, ms) {
+        var t = document.getElementById('toast');
+        if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); }
+        t.textContent = msg;
+        t.className = 'toast show';
+        if (type === 'error') t.classList.add('error');
+        else if (type === 'warning') t.classList.add('warning');
+        else if (type === 'success') t.classList.add('success');
+        else t.classList.remove('error', 'warning', 'success');
+        clearTimeout(t._timeout);
+        t._timeout = setTimeout(function() { t.classList.remove('show'); }, ms || 3500);
+    }
+
+    function validarTextoPermitido(texto, nombreCampo) {
+        if (!texto) return true;
+        var inf = detectarInfraccion(texto);
+        if (inf.bloqueado) {
+            var cats = inf.categorias.join(', ');
+            grpShowToast((nombreCampo || 'Contenido') + ' bloqueado: ' + cats, 'error', 6000);
+            return false;
+        }
+        return true;
+    }
+
+    async function grpGetSession() {
+        try {
+            if (!window.supabaseClient) { console.warn('[Grupos] supabaseClient no disponible'); return null; }
+            var r = await window.supabaseClient.auth.getSession();
+            return r.data.session;
+        } catch (e) { console.error('[Grupos] Error sesión:', e); return null; }
+    }
+
+    function grpEscapeHTML(texto) {
+        if (texto === null || texto === undefined) return '';
+        return String(texto)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function grpSafeUrl(u) {
+        if (!u) return '';
+        return (typeof u === 'string' && u.startsWith('https://')) ? u : '';
+    }
+
+    async function grpCargarLiveKit() {
+        return await import('https://cdn.jsdelivr.net/npm/livekit-client@2/dist/livekit-client.esm.mjs');
+    }
+
+    async function cargarUsuarioActual() {
+        try {
+            var session = await grpGetSession();
+            if (!session) { sessionUser = null; return null; }
+            sessionUser = session.user;
+            var result = await window.supabaseClient.from('usuarios').select('nombre, handle, tokens').eq('id', session.user.id).single();
+            if (!result.error && result.data) {
+                var badge = document.getElementById('tokenBadgeCantidad');
+                if (badge) badge.textContent = result.data.tokens || 0;
+            }
+            return result.data || null;
+        } catch (e) { console.error('[Grupos] Error cargando usuario:', e); return null; }
+    }
+
+    // ================================================================
+    // ANUNCIOS
+    // ================================================================
+    function getOrCreateAdSessionId() {
+        if (adSessionId) return adSessionId;
+        adSessionId = `ads_grupo_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+        return adSessionId;
+    }
+
+    function cerrarAnuncio() {
+        adCerrado = true;
+        const container = document.getElementById('marketingAdContainer');
+        if (container) container.classList.remove('visible');
+        anuncioActual = null;
+    }
+
+    async function cargarAnuncioGrupo() {
+        if (!grupoActualId) return;
+        if (adCerrado) return;
+        const session = await grpGetSession();
+        if (!session) return;
+        try {
+            const response = await fetch('/api/marketing/get-ad', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                body: JSON.stringify({ target_tipo: 'grupo', target_id: grupoActualId, session_id: getOrCreateAdSessionId() })
+            });
+            if (!response.ok) return;
+            const data = await response.json();
+            if (!data.success || !data.ad) {
+                const container = document.getElementById('marketingAdContainer');
+                if (container) container.classList.remove('visible');
+                return;
+            }
+            mostrarAnuncio(data.ad);
+            anuncioActual = data.ad;
+            if (adVistaTimer) clearTimeout(adVistaTimer);
+            adVistaTimer = setTimeout(() => { registrarVistaAnuncio(); }, 3000);
+        } catch (error) { console.warn('[Grupos] Error cargando anuncio:', error); }
+    }
+
+    function mostrarAnuncio(ad) {
+        const container = document.getElementById('marketingAdContainer');
+        const media = document.getElementById('marketingAdMedia');
+        const title = document.getElementById('marketingAdTitle');
+        const desc = document.getElementById('marketingAdDesc');
+        const cta = document.getElementById('marketingAdCta');
+        if (!container || !media || !title || !desc || !cta) return;
+        var img = grpSafeUrl(ad.imagen_url);
+        var vid = grpSafeUrl(ad.video_url);
+        if (img) {
+            media.innerHTML = `<img src="${grpEscapeHTML(img)}" alt="${grpEscapeHTML(ad.titulo)}" loading="lazy" onerror="this.parentElement.innerHTML='<span>◈</span>'">`;
+        } else if (vid) {
+            media.innerHTML = `<video src="${grpEscapeHTML(vid)}" muted autoplay loop playsinline></video>`;
+        } else {
+            media.innerHTML = '<span>◈</span>';
+        }
+        title.textContent = ad.titulo || 'Patrocinado';
+        desc.textContent = ad.descripcion || '';
+        cta.textContent = ad.cta_texto || 'Ver más';
+        desc.style.display = ad.descripcion ? 'block' : 'none';
+        container.classList.add('visible');
+    }
+
+    async function registrarVistaAnuncio() {
+        if (!anuncioActual) return;
+        const session = await grpGetSession();
+        if (!session) return;
+        try {
+            await fetch('/api/marketing/register-event', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                body: JSON.stringify({ ad_id: anuncioActual.id, campaign_id: anuncioActual.campaign_id, target_tipo: 'grupo', target_id: grupoActualId, evento: 'vista', session_id: getOrCreateAdSessionId() })
+            });
+        } catch (error) { console.warn('Error registrando vista:', error); }
+    }
+
+    async function registrarClicAnuncio() {
+        if (!anuncioActual) return;
+        const session = await grpGetSession();
+        if (!session) return;
+        try {
+            await fetch('/api/marketing/register-event', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                body: JSON.stringify({ ad_id: anuncioActual.id, campaign_id: anuncioActual.campaign_id, target_tipo: 'grupo', target_id: grupoActualId, evento: 'clic', session_id: getOrCreateAdSessionId() })
+            });
+            if (anuncioActual.video_url) window.open(grpSafeUrl(anuncioActual.video_url) || '#', '_blank', 'noopener');
+            else if (anuncioActual.imagen_url) window.open(grpSafeUrl(anuncioActual.imagen_url) || '#', '_blank', 'noopener');
+        } catch (error) { console.warn('Error registrando clic:', error); }
+    }
+
+    function iniciarRefrescoAnuncios() {
+        if (adRefreshInterval) clearInterval(adRefreshInterval);
+        cargarAnuncioGrupo();
+        adRefreshInterval = setInterval(() => {
+            if (grupoActualId && !adCerrado) cargarAnuncioGrupo();
+        }, 30000);
+    }
+
+    function detenerRefrescoAnuncios() {
+        if (adRefreshInterval) { clearInterval(adRefreshInterval); adRefreshInterval = null; }
+        if (adVistaTimer) { clearTimeout(adVistaTimer); adVistaTimer = null; }
+    }
+
+    // ================================================================
+    // CARGAR CATEGORÍAS / ESTADOS / MUNICIPIOS
+    // ================================================================
+    async function cargarCategorias() {
+        try {
+            var result = await window.supabaseClient.from('grupos_video_categorias').select('*').eq('activo', true).order('nombre', { ascending: true });
+            if (result.error) throw result.error;
+            categoriasCache = result.data || [];
+            var select = document.getElementById('selectCategoria');
+            if (select) {
+                var currentVal = select.value;
+                select.innerHTML = '<option value="">Todas las categorías</option>';
+                categoriasCache.forEach(function(c) {
+                    var opt = document.createElement('option');
+                    opt.value = c.id; opt.textContent = c.nombre;
+                    select.appendChild(opt);
+                });
+                select.value = currentVal;
+            }
+        } catch (e) { console.warn('[Grupos] Error cargando categorías:', e); }
+    }
+
+    async function cargarEstados() {
+        try {
+            var result = await window.supabaseClient.from('grupos_video').select('estado_region').not('estado_region', 'is', null).neq('estado_region', '').limit(1000);
+            if (result.error) throw result.error;
+            var estados = {};
+            (result.data || []).forEach(function(g) { if (g.estado_region) estados[g.estado_region] = true; });
+            var select = document.getElementById('selectEstado');
+            if (select) {
+                var currentVal = select.value;
+                select.innerHTML = '<option value="">Todos los estados</option>';
+                Object.keys(estados).sort().forEach(function(c) {
+                    var opt = document.createElement('option');
+                    opt.value = c; opt.textContent = c;
+                    select.appendChild(opt);
+                });
+                select.value = currentVal;
+            }
+        } catch (e) { console.warn('[Grupos] Error cargando estados:', e); }
+    }
+
+    async function cargarMunicipios() {
+        try {
+            var result = await window.supabaseClient.from('grupos_video').select('municipio').not('municipio', 'is', null).neq('municipio', '').limit(1000);
+            if (result.error) throw result.error;
+            var municipios = {};
+            (result.data || []).forEach(function(g) { if (g.municipio) municipios[g.municipio] = true; });
+            var select = document.getElementById('selectMunicipio');
+            if (select) {
+                var currentVal = select.value;
+                select.innerHTML = '<option value="">Todos los municipios</option>';
+                Object.keys(municipios).sort().forEach(function(c) {
+                    var opt = document.createElement('option');
+                    opt.value = c; opt.textContent = c;
+                    select.appendChild(opt);
+                });
+                select.value = currentVal;
+            }
+        } catch (e) { console.warn('[Grupos] Error cargando municipios:', e); }
+    }
+
+    // ================================================================
+    // DASHBOARD
+    // ================================================================
+    async function cargarDashboard() {
+        var misCanalesDiv = document.getElementById('misCanalesLista');
+        var enVivoDiv = document.getElementById('enVivoGrid');
+        if (!misCanalesDiv || !enVivoDiv) return;
+
+        if (!(await esperarSupabase())) {
+            console.warn('[Grupos] cargarDashboard: supabaseClient no disponible');
             return;
         }
-        mostrarAnuncio(data.ad);
-        anuncioActual = data.ad;
-        if (adVistaTimer) clearTimeout(adVistaTimer);
-        adVistaTimer = setTimeout(() => { registrarVistaAnuncio(); }, 3000);
-    } catch (error) { console.warn('[Grupos] Error cargando anuncio:', error); }
-}
 
-function mostrarAnuncio(ad) {
-    const container = document.getElementById('marketingAdContainer');
-    const media = document.getElementById('marketingAdMedia');
-    const title = document.getElementById('marketingAdTitle');
-    const desc = document.getElementById('marketingAdDesc');
-    const cta = document.getElementById('marketingAdCta');
-    if (!container || !media || !title || !desc || !cta) return;
-    var img = grpSafeUrl(ad.imagen_url);
-    var vid = grpSafeUrl(ad.video_url);
-    if (img) {
-        media.innerHTML = `<img src="${grpEscapeHTML(img)}" alt="${grpEscapeHTML(ad.titulo)}" loading="lazy" onerror="this.parentElement.innerHTML='<span>◈</span>'">`;
-    } else if (vid) {
-        media.innerHTML = `<video src="${grpEscapeHTML(vid)}" muted autoplay loop playsinline></video>`;
-    } else {
-        media.innerHTML = '<span>◈</span>';
-    }
-    title.textContent = ad.titulo || 'Patrocinado';
-    desc.textContent = ad.descripcion || '';
-    cta.textContent = ad.cta_texto || 'Ver más';
-    desc.style.display = ad.descripcion ? 'block' : 'none';
-    container.classList.add('visible');
-}
-
-async function registrarVistaAnuncio() {
-    if (!anuncioActual) return;
-    const session = await grpGetSession();
-    if (!session) return;
-    try {
-        await fetch('/api/marketing/register-event', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-            body: JSON.stringify({ ad_id: anuncioActual.id, campaign_id: anuncioActual.campaign_id, target_tipo: 'grupo', target_id: grupoActualId, evento: 'vista', session_id: getOrCreateAdSessionId() })
-        });
-    } catch (error) { console.warn('Error registrando vista:', error); }
-}
-
-async function registrarClicAnuncio() {
-    if (!anuncioActual) return;
-    const session = await grpGetSession();
-    if (!session) return;
-    try {
-        await fetch('/api/marketing/register-event', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-            body: JSON.stringify({ ad_id: anuncioActual.id, campaign_id: anuncioActual.campaign_id, target_tipo: 'grupo', target_id: grupoActualId, evento: 'clic', session_id: getOrCreateAdSessionId() })
-        });
-        if (anuncioActual.video_url) window.open(grpSafeUrl(anuncioActual.video_url) || '#', '_blank', 'noopener');
-        else if (anuncioActual.imagen_url) window.open(grpSafeUrl(anuncioActual.imagen_url) || '#', '_blank', 'noopener');
-    } catch (error) { console.warn('Error registrando clic:', error); }
-}
-
-function iniciarRefrescoAnuncios() {
-    if (adRefreshInterval) clearInterval(adRefreshInterval);
-    cargarAnuncioGrupo();
-    adRefreshInterval = setInterval(() => {
-        if (grupoActualId && !adCerrado) cargarAnuncioGrupo();
-    }, 30000);
-}
-
-function detenerRefrescoAnuncios() {
-    if (adRefreshInterval) { clearInterval(adRefreshInterval); adRefreshInterval = null; }
-    if (adVistaTimer) { clearTimeout(adVistaTimer); adVistaTimer = null; }
-}
-
-// ================================================================
-// CARGAR CATEGORÍAS / ESTADOS / MUNICIPIOS
-// ================================================================
-async function cargarCategorias() {
-    try {
-        var result = await window.supabaseClient.from('grupos_video_categorias').select('*').eq('activo', true).order('nombre', { ascending: true });
-        if (result.error) throw result.error;
-        categoriasCache = result.data || [];
-        var select = document.getElementById('selectCategoria');
-        if (select) {
-            var currentVal = select.value;
-            select.innerHTML = '<option value="">Todas las categorías</option>';
-            categoriasCache.forEach(function(c) {
-                var opt = document.createElement('option');
-                opt.value = c.id; opt.textContent = c.nombre;
-                select.appendChild(opt);
-            });
-            select.value = currentVal;
-        }
-    } catch (e) { console.warn('[Grupos] Error cargando categorías:', e); }
-}
-
-async function cargarEstados() {
-    try {
-        var result = await window.supabaseClient.from('grupos_video').select('estado_region').not('estado_region', 'is', null).neq('estado_region', '').limit(1000);
-        if (result.error) throw result.error;
-        var estados = {};
-        (result.data || []).forEach(function(g) { if (g.estado_region) estados[g.estado_region] = true; });
-        var select = document.getElementById('selectEstado');
-        if (select) {
-            var currentVal = select.value;
-            select.innerHTML = '<option value="">Todos los estados</option>';
-            Object.keys(estados).sort().forEach(function(c) {
-                var opt = document.createElement('option');
-                opt.value = c; opt.textContent = c;
-                select.appendChild(opt);
-            });
-            select.value = currentVal;
-        }
-    } catch (e) { console.warn('[Grupos] Error cargando estados:', e); }
-}
-
-async function cargarMunicipios() {
-    try {
-        var result = await window.supabaseClient.from('grupos_video').select('municipio').not('municipio', 'is', null).neq('municipio', '').limit(1000);
-        if (result.error) throw result.error;
-        var municipios = {};
-        (result.data || []).forEach(function(g) { if (g.municipio) municipios[g.municipio] = true; });
-        var select = document.getElementById('selectMunicipio');
-        if (select) {
-            var currentVal = select.value;
-            select.innerHTML = '<option value="">Todos los municipios</option>';
-            Object.keys(municipios).sort().forEach(function(c) {
-                var opt = document.createElement('option');
-                opt.value = c; opt.textContent = c;
-                select.appendChild(opt);
-            });
-            select.value = currentVal;
-        }
-    } catch (e) { console.warn('[Grupos] Error cargando municipios:', e); }
-}
-
-// ================================================================
-// DASHBOARD
-// ================================================================
-async function cargarDashboard() {
-    var misCanalesDiv = document.getElementById('misCanalesLista');
-    var enVivoDiv = document.getElementById('enVivoGrid');
-    if (!misCanalesDiv || !enVivoDiv) return;
-
-    if (!(await esperarSupabase())) {
-        console.warn('[Grupos] cargarDashboard: supabaseClient no disponible');
-        return;
-    }
-
-    try {
-        if (!window.supabaseClient) return;
-        
-        if (!sessionUser) {
-            misCanalesDiv.innerHTML = '<div class="empty-state" style="padding:20px;"><svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg><p style="font-size:0.7rem;">Inicia sesión para ver tus canales.</p></div>';
-        } else {
-            var misGruposResult = await window.supabaseClient.from('grupos_video_miembros').select('grupo_id').eq('usuario_id', sessionUser.id).eq('estado', 'activo');
-            var ids = (misGruposResult.data || []).map(function(m) { return m.grupo_id; });
+        try {
+            if (!window.supabaseClient) return;
             
-            if (ids.length > 0) {
-                var misCanalesData = await window.supabaseClient.from('grupos_video').select('id, nombre, avatar_url, precio_usdt, marketplace_activo').in('id', ids);
-                misCanalesCache = misCanalesData.data || [];
+            if (!sessionUser) {
+                misCanalesDiv.innerHTML = '<div class="empty-state" style="padding:20px;"><svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg><p style="font-size:0.7rem;">Inicia sesión para ver tus canales.</p></div>';
+            } else {
+                var misGruposResult = await window.supabaseClient.from('grupos_video_miembros').select('grupo_id').eq('usuario_id', sessionUser.id).eq('estado', 'activo');
+                var ids = (misGruposResult.data || []).map(function(m) { return m.grupo_id; });
                 
-                misCanalesDiv.innerHTML = misCanalesCache.map(function(g) {
-                    var avatar = g.avatar_url ? '<img src="' + grpEscapeHTML(grpSafeUrl(g.avatar_url)) + '">' : '◈';
-                    var precio = g.precio_usdt > 0 ? '$' + g.precio_usdt + ' USDT' : 'Gratis';
-                    var mkIcon = g.marketplace_activo ? '<svg class="icon icon-sm" viewBox="0 0 24 24" style="vertical-align:middle;"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>' : '';
-                    return '<div class="canal-item" onclick="abrirGrupo(\'' + g.id + '\')">' +
-                        '<div class="avatar-mini">' + avatar + '</div>' +
-                        '<div class="info"><div class="nombre">' + grpEscapeHTML(g.nombre) + ' ' + mkIcon + '</div>' +
-                        '<div class="stats">' + precio + '</div></div></div>';
-                }).join('');
-            } else {
-                misCanalesDiv.innerHTML = '<div class="empty-state" style="padding:20px;"><svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg><p style="font-size:0.7rem;">No sigues ningún canal aún.</p></div>';
+                if (ids.length > 0) {
+                    var misCanalesData = await window.supabaseClient.from('grupos_video').select('id, nombre, avatar_url, precio_usdt, marketplace_activo').in('id', ids);
+                    misCanalesCache = misCanalesData.data || [];
+                    
+                    misCanalesDiv.innerHTML = misCanalesCache.map(function(g) {
+                        var avatar = g.avatar_url ? '<img src="' + grpEscapeHTML(grpSafeUrl(g.avatar_url)) + '">' : '◈';
+                        var precio = g.precio_usdt > 0 ? '$' + g.precio_usdt + ' USDT' : 'Gratis';
+                        var mkIcon = g.marketplace_activo ? '<svg class="icon icon-sm" viewBox="0 0 24 24" style="vertical-align:middle;"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>' : '';
+                        return '<div class="canal-item" onclick="abrirGrupo(\'' + g.id + '\')">' +
+                            '<div class="avatar-mini">' + avatar + '</div>' +
+                            '<div class="info"><div class="nombre">' + grpEscapeHTML(g.nombre) + ' ' + mkIcon + '</div>' +
+                            '<div class="stats">' + precio + '</div></div></div>';
+                    }).join('');
+                } else {
+                    misCanalesDiv.innerHTML = '<div class="empty-state" style="padding:20px;"><svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg><p style="font-size:0.7rem;">No sigues ningún canal aún.</p></div>';
+                }
             }
-        }
 
-        var livesResult = await window.supabaseClient.from('transmisiones')
-            .select(`*, grupo:grupos_video(id, nombre, avatar_url)`)
-            .eq('estado', 'en_vivo')
-            .eq('is_live', true)
-            .order('created_at', { ascending: false })
-            .limit(20);
+            var livesResult = await window.supabaseClient.from('transmisiones')
+                .select(`*, grupo:grupos_video(id, nombre, avatar_url)`)
+                .eq('estado', 'en_vivo')
+                .eq('is_live', true)
+                .order('created_at', { ascending: false })
+                .limit(20);
 
-        var lives = livesResult.data || [];
-        if (lives.length === 0) {
-            var botonAireHTML;
-            if (misCanalesCache && misCanalesCache.length > 0) {
-                botonAireHTML = '<button class="btn-salir-aire" onclick="abrirGrupo(\'' + misCanalesCache[0].id + '\')">' +
-                    '<svg class="icon icon-sm" viewBox="0 0 24 24" style="fill:currentColor;stroke:none;"><circle cx="12" cy="12" r="6"/></svg>' +
-                    'SALIR AL AIRE EN ' + grpEscapeHTML(misCanalesCache[0].nombre).toUpperCase() +
-                    '</button>';
-            } else {
-                botonAireHTML = '<button class="btn-salir-aire" onclick="abrirModalCrearGrupo()">' +
-                    '<svg class="icon icon-sm" viewBox="0 0 24 24" style="fill:currentColor;stroke:none;"><circle cx="12" cy="12" r="6"/></svg>' +
-                    'Crear mi canal' +
-                    '</button>';
-            }
-            enVivoDiv.innerHTML = `<div class="no-live-box">
-                <svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg>
-                <h3>Nadie al aire por ahora</h3>
-                <p>Sé el primero en transmitir en tu canal</p>
-                ${botonAireHTML}
-            </div>`;
-        } else {
-            enVivoDiv.innerHTML = lives.map(function(l) {
-                var g = l.grupo || {};
-                var img = grpSafeUrl(g.avatar_url);
-                return `<div class="en-vivo-card" onclick="abrirGrupo('${g.id}')">
-                    <div class="live-tag-small">
-                        <svg class="icon icon-sm" viewBox="0 0 24 24" style="color:#fff;fill:currentColor;stroke:none;"><circle cx="12" cy="12" r="6"/></svg>
-                        EN VIVO
-                    </div>
-                    <div style="width:100%; height:130px; background:#000; display:flex; align-items:center; justify-content:center; color:#fff; font-size:2rem; position:relative;">
-                        ${img ? `<img src="${grpEscapeHTML(img)}" style="width:60px; height:60px; border-radius:50%; border:2px solid var(--gold);">` : '◈'}
-                    </div>
-                    <div class="info">
-                        <div class="titulo">${grpEscapeHTML(l.titulo || 'Sin título')}</div>
-                        <div class="canal">${grpEscapeHTML(g.nombre || 'Canal')}</div>
-                        <div class="stats">
-                            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                            ${l.espectadores || 0} viendo
-                        </div>
-                    </div>
+            var lives = livesResult.data || [];
+            if (lives.length === 0) {
+                var botonAireHTML;
+                if (misCanalesCache && misCanalesCache.length > 0) {
+                    botonAireHTML = '<button class="btn-salir-aire" onclick="abrirGrupo(\'' + misCanalesCache[0].id + '\')">' +
+                        '<svg class="icon icon-sm" viewBox="0 0 24 24" style="fill:currentColor;stroke:none;"><circle cx="12" cy="12" r="6"/></svg>' +
+                        'SALIR AL AIRE EN ' + grpEscapeHTML(misCanalesCache[0].nombre).toUpperCase() +
+                        '</button>';
+                } else {
+                    botonAireHTML = '<button class="btn-salir-aire" onclick="abrirModalCrearGrupo()">' +
+                        '<svg class="icon icon-sm" viewBox="0 0 24 24" style="fill:currentColor;stroke:none;"><circle cx="12" cy="12" r="6"/></svg>' +
+                        'Crear mi canal' +
+                        '</button>';
+                }
+                enVivoDiv.innerHTML = `<div class="no-live-box">
+                    <svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg>
+                    <h3>Nadie al aire por ahora</h3>
+                    <p>Sé el primero en transmitir en tu canal</p>
+                    ${botonAireHTML}
                 </div>`;
-            }).join('');
-        }
-    } catch (e) { console.warn('[Grupos] Error cargando dashboard:', e); }
-}
-
-function switchTab(tab) {
-    var tabMis = document.getElementById('tabMisCanales');
-    var tabVivo = document.getElementById('tabEnVivo');
-    var colMis = document.getElementById('colMisCanales');
-    var colVivo = document.getElementById('colEnVivo');
-
-    if (tab === 'mis-canales') {
-        tabMis.classList.add('active'); tabVivo.classList.remove('active');
-        colMis.style.display = 'block'; colVivo.style.display = 'none';
-    } else {
-        tabVivo.classList.add('active'); tabMis.classList.remove('active');
-        colVivo.style.display = 'block'; colMis.style.display = 'none';
+            } else {
+                enVivoDiv.innerHTML = lives.map(function(l) {
+                    var g = l.grupo || {};
+                    var img = grpSafeUrl(g.avatar_url);
+                    return `<div class="en-vivo-card" onclick="abrirGrupo('${g.id}')">
+                        <div class="live-tag-small">
+                            <svg class="icon icon-sm" viewBox="0 0 24 24" style="color:#fff;fill:currentColor;stroke:none;"><circle cx="12" cy="12" r="6"/></svg>
+                            EN VIVO
+                        </div>
+                        <div style="width:100%; height:130px; background:#000; display:flex; align-items:center; justify-content:center; color:#fff; font-size:2rem; position:relative;">
+                            ${img ? `<img src="${grpEscapeHTML(img)}" style="width:60px; height:60px; border-radius:50%; border:2px solid var(--gold); box-shadow: 0 0 20px rgba(212,175,55,0.6);">` : '◈'}
+                        </div>
+                        <div class="info">
+                            <div class="titulo">${grpEscapeHTML(l.titulo || 'Sin título')}</div>
+                            <div class="canal">${grpEscapeHTML(g.nombre || 'Canal')}</div>
+                            <div class="stats">
+                                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                ${l.espectadores || 0} viendo
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+        } catch (e) { console.warn('[Grupos] Error cargando dashboard:', e); }
     }
-}
-</script>    <script>
+
+    function switchTab(tab) {
+        var tabMis = document.getElementById('tabMisCanales');
+        var tabVivo = document.getElementById('tabEnVivo');
+        var colMis = document.getElementById('colMisCanales');
+        var colVivo = document.getElementById('colEnVivo');
+
+        if (tab === 'mis-canales') {
+            tabMis.classList.add('active'); tabVivo.classList.remove('active');
+            colMis.style.display = 'block'; colVivo.style.display = 'none';
+        } else {
+            tabVivo.classList.add('active'); tabMis.classList.remove('active');
+            colVivo.style.display = 'block'; colMis.style.display = 'none';
+        }
+    }
+    </script>
+    <script>
     // ================================================================
     // CARGAR GRUPOS
     // ================================================================
@@ -1677,8 +1685,8 @@ function switchTab(tab) {
     function toggleMisGrupos() {
         soloMisGrupos = !soloMisGrupos;
         var btn = document.getElementById('btnMisGrupos');
-        if (soloMisGrupos) { btn.style.borderColor = 'var(--gold)'; btn.style.color = 'var(--gold)'; }
-        else { btn.style.borderColor = ''; btn.style.color = ''; }
+        if (soloMisGrupos) { btn.style.borderColor = 'var(--gold)'; btn.style.color = 'var(--gold)'; btn.style.boxShadow = '0 0 20px rgba(212,175,55,0.4)'; }
+        else { btn.style.borderColor = ''; btn.style.color = ''; btn.style.boxShadow = ''; }
         grpPagina = 0;
         cargarGrupos();
     }
