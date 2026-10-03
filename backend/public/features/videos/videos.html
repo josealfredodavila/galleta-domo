@@ -21,8 +21,10 @@
             --line-black-soft: rgba(0, 0, 0, 0.85);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { overscroll-behavior-y: none; }
+        /* ✅ v15.4 FIX: overscroll-behavior en html y body permite pull-to-refresh */
+        html { overscroll-behavior-y: contain; }
         body {
+            overscroll-behavior-y: contain;
             background: var(--space);
             color: var(--text-primary);
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -82,7 +84,7 @@
         @keyframes adFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .marketing-ad-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; border-bottom: 1px solid rgba(212, 175, 55, 0.1); }
         .marketing-ad-label { font-family: 'Orbitron', monospace; font-size: 0.55rem; color: var(--gold); letter-spacing: 3px; text-transform: uppercase; opacity: 0.85; }
-        .marketing-ad-close { background: transparent; border: none; color: var(--text-muted); font-size: 1.1rem; cursor: pointer; padding: 4px 8px; }
+        .marketing-ad-close { background: transparent; border: none; color: var(--text-muted); font-size: 1.1rem; cursor: pointer; padding: 4px 8px; display: flex; align-items: center; justify-content: center; }
         .marketing-ad-body { display: flex; gap: 14px; padding: 14px 16px 16px; align-items: flex-start; }
         .marketing-ad-media { width: 96px; height: 96px; border-radius: 12px; overflow: hidden; flex-shrink: 0; background: rgba(0,0,0,0.4); border: 1px solid rgba(212, 175, 55, 0.15); display: flex; align-items: center; justify-content: center; color: var(--gold); font-family: 'Orbitron', monospace; font-size: 1.5rem; }
         .marketing-ad-media img, .marketing-ad-media video { width: 100%; height: 100%; object-fit: cover; }
@@ -103,6 +105,7 @@
             padding-bottom: 20px;
             scroll-behavior: smooth;
             -webkit-overflow-scrolling: touch;
+            overscroll-behavior-y: contain;
         }
         #videosContainer.videos-grid::-webkit-scrollbar { width: 4px; }
         #videosContainer.videos-grid::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 4px; }
@@ -155,14 +158,21 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2rem;
-            color: #fff;
+            color: #D4AF37;
             cursor: pointer;
-            border: 2px solid rgba(255, 255, 255, 0.25);
+            border: 2px solid rgba(212, 175, 55, 0.4);
             z-index: 3;
             transition: var(--transition);
         }
-        .video-card .thumbnail .play-btn:hover { transform: translate(-50%, -50%) scale(1.1); background: rgba(0,0,0,0.75); }
+        .video-card .thumbnail .play-btn svg {
+            width: 30px;
+            height: 30px;
+            stroke: currentColor;
+            fill: currentColor;
+            filter: drop-shadow(0 0 8px rgba(212, 175, 55, 0.6));
+            margin-left: 4px;
+        }
+        .video-card .thumbnail .play-btn:hover { transform: translate(-50%, -50%) scale(1.1); background: rgba(0,0,0,0.75); border-color: #D4AF37; }
         .video-card.playing .thumbnail .play-btn { display: none; }
 
         .video-card .btn-eliminar-card {
@@ -170,7 +180,7 @@
             width: 38px; height: 38px; border-radius: 50%;
             background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(8px);
             border: 1px solid rgba(255, 51, 102, 0.5); color: #ff3366;
-            font-size: 1.05rem; cursor: pointer;
+            cursor: pointer;
             display: flex; align-items: center; justify-content: center;
             padding: 0; line-height: 1;
             transition: opacity 0.3s ease;
@@ -237,14 +247,13 @@
             position: relative;
             padding: 0;
             color: #fff;
-            font-size: 1.2rem;
             user-select: none;
             -webkit-user-select: none;
             -webkit-tap-highlight-color: transparent;
         }
         .sidebar-btn:active { transform: scale(0.85); }
         .sidebar-btn:hover { background: rgba(0, 0, 0, 0.7); border-color: rgba(255, 255, 255, 0.25); transform: scale(1.06); }
-        .sidebar-btn .icono { font-size: 1.35rem; line-height: 1; display: flex; align-items: center; justify-content: center; transition: transform 0.2s ease; }
+        .sidebar-btn .icono { display: flex; align-items: center; justify-content: center; transition: transform 0.2s ease; line-height: 1; }
         .sidebar-btn .contador {
             position: absolute;
             bottom: -6px;
@@ -288,6 +297,95 @@
         .sidebar-btn:hover svg.icono-svg {
             transform: scale(1.15) rotate(-8deg);
             filter: drop-shadow(0 0 14px rgba(212, 175, 55, 0.9));
+        }
+
+        /* ✅ v15.4: Iconos premium SVG (reemplazo de emojis) */
+        .ico-premium {
+            width: 22px;
+            height: 22px;
+            stroke: #D4AF37;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+            filter: drop-shadow(0 0 6px rgba(212, 175, 55, 0.6));
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            vertical-align: middle;
+            display: inline-block;
+        }
+
+        .sidebar-btn .ico-premium { width: 22px; height: 22px; }
+        .sidebar-btn:hover .ico-premium {
+            transform: scale(1.15) rotate(-6deg);
+            filter: drop-shadow(0 0 14px rgba(212, 175, 55, 0.95));
+        }
+        .sidebar-btn.liked .ico-premium {
+            stroke: #D4AF37;
+            fill: rgba(212, 175, 55, 0.3);
+        }
+
+        .btn-eliminar-card .ico-premium {
+            width: 18px;
+            height: 18px;
+            stroke: #ff3366;
+            filter: drop-shadow(0 0 6px rgba(255, 51, 102, 0.5));
+        }
+        .btn-eliminar-card:hover .ico-premium {
+            transform: scale(1.15);
+            filter: drop-shadow(0 0 14px rgba(255, 51, 102, 0.9));
+        }
+
+        .btn-eliminar-comentario .ico-premium {
+            width: 14px;
+            height: 14px;
+            stroke: #ff3366;
+            filter: drop-shadow(0 0 4px rgba(255, 51, 102, 0.4));
+        }
+
+        .sheet-close .ico-premium,
+        .marketing-ad-close .ico-premium {
+            width: 20px;
+            height: 20px;
+            stroke: #D4AF37;
+            filter: drop-shadow(0 0 6px rgba(212, 175, 55, 0.5));
+        }
+
+        .bottom-sheet .sheet-input button .ico-premium {
+            width: 20px;
+            height: 20px;
+            stroke: #05080f;
+            fill: #05080f;
+            filter: none;
+        }
+
+        .badge-verif .ico-premium {
+            width: 10px;
+            height: 10px;
+            stroke: #D4AF37;
+            fill: #D4AF37;
+            filter: none;
+            vertical-align: middle;
+        }
+
+        .btn-audio-global .ico-premium {
+            width: 20px;
+            height: 20px;
+            stroke: #D4AF37;
+            filter: drop-shadow(0 0 6px rgba(212, 175, 55, 0.6));
+        }
+
+        .reaccion-opcion .ico-premium {
+            width: 26px;
+            height: 26px;
+            stroke-width: 2;
+        }
+        .reaccion-opcion:hover .ico-premium {
+            transform: scale(1.25) translateY(-4px);
+            filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.9));
+        }
+        .reaccion-opcion.activa .ico-premium {
+            stroke: #D4AF37;
+            fill: rgba(212, 175, 55, 0.4);
         }
 
         .sidebar-btn.btn-compartir-premium {
@@ -339,9 +437,9 @@
         .reaccion-picker.show { display: flex; animation: pickerIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); }
         @keyframes pickerIn { from { opacity: 0; transform: translateX(10px) scale(0.85); } to { opacity: 1; transform: translateX(0) scale(1); } }
         .reaccion-picker .reaccion-opcion {
-            width: 40px; height: 40px;
+            width: 42px; height: 42px;
             background: transparent; border: none;
-            font-size: 1.5rem; cursor: pointer;
+            cursor: pointer;
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
             transition: all 0.15s ease;
@@ -484,9 +582,6 @@
             stroke-linejoin: round;
         }
 
-        /* ============================================================ */
-        /* 🔊 BOTÓN GLOBAL DE AUDIO — v15.3                             */
-        /* ============================================================ */
         .btn-audio-global {
             position: fixed;
             bottom: 20px;
@@ -517,12 +612,13 @@
             transform: scale(1.05);
             box-shadow: 0 0 36px rgba(212, 175, 55, 0.9);
         }
-        .btn-audio-global .ico { font-size: 1.2rem; line-height: 1; animation: swingAudio 1.5s ease-in-out infinite; }
+        .btn-audio-global .ico { display: flex; align-items: center; justify-content: center; line-height: 1; }
+        .btn-audio-global .ico .ico-premium { animation: swingAudio 1.5s ease-in-out infinite; }
         .btn-audio-global.activo {
             background: linear-gradient(135deg, rgba(212, 175, 55, 0.25), rgba(184, 146, 58, 0.15));
             border-color: #D4AF37;
         }
-        .btn-audio-global.activo .ico { animation: none; }
+        .btn-audio-global.activo .ico .ico-premium { animation: none; }
 
         @keyframes pulseAudioGlobal {
             0%, 100% { box-shadow: 0 0 18px rgba(212, 175, 55, 0.5); }
@@ -538,9 +634,6 @@
             .btn-audio-global { bottom: 14px; left: 14px; padding: 8px 14px; font-size: 0.65rem; }
         }
 
-        /* ============================================================ */
-        /* 🗑️ BOTÓN ELIMINAR COMENTARIO — v15.3                         */
-        /* ============================================================ */
         .comentario-burbuja .burbuja .btn-eliminar-comentario {
             position: absolute;
             top: 8px;
@@ -551,7 +644,6 @@
             background: rgba(255, 51, 102, 0.12);
             border: 1px solid rgba(255, 51, 102, 0.35);
             color: #ff3366;
-            font-size: 0.75rem;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -621,7 +713,7 @@
         .bottom-sheet .sheet-header { display: flex; justify-content: space-between; align-items: center; padding: 4px 16px 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.06); flex-shrink: 0; }
         .bottom-sheet .sheet-titulo { font-family: 'Orbitron', monospace; font-size: 0.9rem; font-weight: 700; color: var(--gold); display: flex; align-items: center; gap: 8px; }
         .bottom-sheet .sheet-contador { font-size: 0.7rem; color: var(--text-muted); background: rgba(255, 255, 255, 0.05); padding: 2px 10px; border-radius: 12px; font-family: 'Inter', sans-serif; font-weight: 500; }
-        .bottom-sheet .sheet-close { background: transparent; border: none; color: var(--text-muted); font-size: 1.4rem; cursor: pointer; padding: 0 4px; line-height: 1; }
+        .bottom-sheet .sheet-close { background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 0 4px; line-height: 1; display: flex; align-items: center; justify-content: center; }
 
         .bottom-sheet .comentarios-lista {
             flex: 1;
@@ -666,13 +758,12 @@
             gap: 6px;
         }
         .comentario-burbuja .burbuja .badge-verif {
-            font-size: 0.5rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             background: rgba(212, 175, 55, 0.15);
-            color: var(--gold);
-            padding: 1px 6px;
+            padding: 2px 5px;
             border-radius: 8px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
         }
         .comentario-burbuja .burbuja .texto { font-size: 0.82rem; color: var(--text-primary); line-height: 1.45; word-wrap: break-word; }
         .comentario-burbuja .burbuja .fecha { font-size: 0.6rem; color: var(--text-muted); margin-top: 5px; }
@@ -706,8 +797,6 @@
             background: linear-gradient(135deg, var(--gold), var(--gold-dark));
             color: var(--space);
             border: none;
-            font-weight: 700;
-            font-size: 1.1rem;
             cursor: pointer;
             display: flex; align-items: center; justify-content: center;
             flex-shrink: 0;
@@ -757,14 +846,14 @@
         }
         @media (max-width: 480px) {
             .video-card { min-height: 68vh; max-height: 68vh; }
-            .video-card .btn-eliminar-card { width: 34px; height: 34px; font-size: 0.95rem; }
+            .video-card .btn-eliminar-card { width: 34px; height: 34px; }
             .btn-fullscreen { width: 38px; height: 38px; top: 10px; left: 10px; }
             .btn-fullscreen svg { width: 18px; height: 18px; }
             .sidebar-btn { width: 44px; height: 44px; }
-            .sidebar-btn .icono { font-size: 1.2rem; }
-            .sidebar-btn svg.icono-svg { width: 20px; height: 20px; }
+            .sidebar-btn .ico-premium { width: 20px; height: 20px; }
             .sidebar-btn .contador { font-size: 0.55rem; padding: 1px 6px; min-width: 20px; }
             .video-card .overlay-info { right: 80px; bottom: 80px; }
+            .reaccion-opcion .ico-premium { width: 22px; height: 22px; }
         }
     </style>
 </head>
@@ -838,7 +927,7 @@
         <div class="marketing-ad-container" id="marketingAdContainer">
             <div class="marketing-ad-header">
                 <span class="marketing-ad-label">Patrocinado</span>
-                <button class="marketing-ad-close" onclick="cerrarAnuncioVideo()">&times;</button>
+                <button class="marketing-ad-close" onclick="cerrarAnuncioVideo()" aria-label="Cerrar"><svg viewBox="0 0 24 24" class="ico-premium"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
             <div class="marketing-ad-body">
                 <div class="marketing-ad-media" id="marketingAdMediaVideo"><span>◈</span></div>
@@ -875,23 +964,23 @@
         <div class="sheet-handle"></div>
         <div class="sheet-header">
             <div class="sheet-titulo">
-                <span>💬 Comentarios</span>
+                <svg viewBox="0 0 24 24" class="ico-premium" style="width:18px;height:18px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                <span>Comentarios</span>
                 <span class="sheet-contador" id="sheetContador">0</span>
             </div>
-            <button class="sheet-close" onclick="cerrarBottomSheet()" aria-label="Cerrar">✕</button>
+            <button class="sheet-close" onclick="cerrarBottomSheet()" aria-label="Cerrar"><svg viewBox="0 0 24 24" class="ico-premium"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
         <div class="comentarios-lista" id="comentariosLista">
             <div style="color:var(--text-muted);font-size:0.8rem;padding:20px;text-align:center;">Sin comentarios. ¡Sé el primero!</div>
         </div>
         <div class="sheet-input">
             <input type="text" id="inputComentarioSheet" placeholder="Escribe un comentario..." maxlength="2000" autocomplete="off" />
-            <button id="btnEnviarComentarioSheet" onclick="enviarComentarioSheet()" aria-label="Enviar">➤</button>
+            <button id="btnEnviarComentarioSheet" onclick="enviarComentarioSheet()" aria-label="Enviar"><svg viewBox="0 0 24 24" class="ico-premium"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
         </div>
     </div>
 
-    <!-- 🔊 Botón global de audio — v15.3 -->
     <button class="btn-audio-global" id="btnAudioGlobal" onclick="activarAudioGlobal()" title="Activar sonido">
-        <span class="ico">🔇</span>
+        <span class="ico"><svg viewBox="0 0 24 24" class="ico-premium"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg></span>
         <span class="txt">Activar sonido</span>
     </button>
 
@@ -907,20 +996,24 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="/features/shared/js/idiomas.js"></script><script>
     // ================================================================
-    // VIDEOS · v15.3 — Reels + Fullscreen + Doble Tap + AUDIO FIX REAL
+    // VIDEOS · v15.4 — Reels + Fullscreen + Audio + Eliminar + SVG Premium
     // ================================================================
-    // ✅ v15.3 — CORRECCIONES APLICADAS:
+    // ✅ v15.4 — CORRECCIONES APLICADAS:
     //   🔊 AUDIO:
     //      - Detección de primer gesto del usuario (click/tap/scroll/keydown)
     //      - video.load() obligatorio tras asignar src dinámico
     //      - preload="auto" para cargar stream de audio
-    //      - Función reproducirVideoConSonido() robusta
+    //      - reproducirVideoConSonido() robusta
     //      - Botón global "Activar sonido" si autoplay bloquea
     //      - Fullscreen NO silencia el video
     //   🗑️ COMENTARIOS:
-    //      - Botón eliminar en cada comentario
+    //      - Botón eliminar en cada comentario (SVG premium)
     //      - Permisos: autor del comentario O dueño del video
-    //      - Validación en cliente + RLS en servidor
+    //   ✦ ICONOS SVG PREMIUM:
+    //      - Reemplazo total de emojis por SVG dorados
+    //      - Funciones helper: iconoBasuraSVG, iconoComentarioSVG, etc.
+    //   📜 OVERSCROLL:
+    //      - pull-to-refresh habilitado en móvil
     // ================================================================
 
     // ================================================================
@@ -981,7 +1074,6 @@
 
     var vistasContadas = {};
 
-    // ✅ v15.3 — Estado global de audio
     var audioGlobalActivado = false;
 
     // ================================================================
@@ -1095,10 +1187,46 @@
     }
 
     // ================================================================
-    // ✅ v15.3 — SISTEMA DE AUDIO GLOBAL
+    // ✅ v15.4 — ICONOS SVG PREMIUM (reemplazo de emojis)
     // ================================================================
+    function iconoBasuraSVG() {
+        return '<svg viewBox="0 0 24 24" class="ico-premium"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>';
+    }
+    function iconoComentarioSVG() {
+        return '<svg viewBox="0 0 24 24" class="ico-premium"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+    }
+    function iconoEnviarSVG() {
+        return '<svg viewBox="0 0 24 24" class="ico-premium"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>';
+    }
+    function iconoCerrarSVG() {
+        return '<svg viewBox="0 0 24 24" class="ico-premium"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+    }
+    function iconoVerificadoSVG() {
+        return '<svg viewBox="0 0 24 24" class="ico-premium"><polyline points="20 6 9 17 4 12"/></svg>';
+    }
+    function iconoAudioOnSVG() {
+        return '<svg viewBox="0 0 24 24" class="ico-premium"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>';
+    }
+    function iconoAudioOffSVG() {
+        return '<svg viewBox="0 0 24 24" class="ico-premium"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>';
+    }
+    function iconoPlaySVG() {
+        return '<svg viewBox="0 0 24 24" class="ico-premium" style="width:30px;height:30px;fill:#D4AF37;stroke:#D4AF37;margin-left:4px;"><polygon points="6 4 20 12 6 20 6 4"/></svg>';
+    }
+    function iconoReaccionSVG(tipo) {
+        var iconos = {
+            '❤️': '<svg viewBox="0 0 24 24" class="ico-premium"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
+            '🔥': '<svg viewBox="0 0 24 24" class="ico-premium"><path d="M12 2c1 3 4 5 4 9a4 4 0 0 1-8 0c0-2 1-3 1-5-2 2-4 4-4 7a6 6 0 0 0 12 0c0-5-3-8-5-11z"/></svg>',
+            '🚀': '<svg viewBox="0 0 24 24" class="ico-premium"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91 0z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>',
+            '😂': '<svg viewBox="0 0 24 24" class="ico-premium"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>',
+            '👍': '<svg viewBox="0 0 24 24" class="ico-premium"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>'
+        };
+        return iconos[tipo] || iconos['❤️'];
+    }
 
-    // Detecta el primer gesto del usuario en la página.
+    // ================================================================
+    // ✅ v15.4 — SISTEMA DE AUDIO GLOBAL
+    // ================================================================
     (function detectarPrimerGesto() {
         var eventos = ['click', 'touchstart', 'keydown', 'scroll'];
         var disparado = false;
@@ -1108,25 +1236,22 @@
             audioGlobalActivado = true;
             console.log('[Audio] ✅ Gesto detectado — audio desbloqueado');
 
-            // Desmutea todos los videos ya creados
             document.querySelectorAll('.video-card video').forEach(function(v) {
                 v.muted = false;
                 v.volume = 1;
                 v.removeAttribute('muted');
             });
 
-            // Actualiza el botón global
             var btn = document.getElementById('btnAudioGlobal');
             if (btn) {
                 btn.classList.add('activo');
                 var txt = btn.querySelector('.txt');
                 var ico = btn.querySelector('.ico');
                 if (txt) txt.textContent = 'Sonido activo';
-                if (ico) ico.textContent = '🔊';
+                if (ico) ico.innerHTML = iconoAudioOnSVG();
                 setTimeout(function() { btn.classList.remove('visible'); }, 2000);
             }
 
-            // Remueve los listeners
             eventos.forEach(function(ev) {
                 document.removeEventListener(ev, onGesto, true);
             });
@@ -1159,23 +1284,20 @@
             var txt = btn.querySelector('.txt');
             var ico = btn.querySelector('.ico');
             if (txt) txt.textContent = 'Sonido activo';
-            if (ico) ico.textContent = '🔊';
+            if (ico) ico.innerHTML = iconoAudioOnSVG();
             setTimeout(function() { btn.classList.remove('visible'); }, 2000);
         }
-        showToast('🔊 Sonido activado', 'success', 2000);
+        showToast('◈ Sonido activado', 'success', 2000);
     }
 
-    // ✅ v15.3 — Reproducción robusta con detección de gesto
     function reproducirVideoConSonido(video) {
         if (!video) return;
 
-        // Asegurar que el src esté cargado
         if (!video.getAttribute('src') && video.dataset.src) {
             video.src = video.dataset.src;
             video.load();
         }
 
-        // Quitar mute
         video.muted = false;
         video.volume = 1;
         video.removeAttribute('muted');
@@ -1474,7 +1596,7 @@
     }
 
     // ================================================================
-    // ICONOS SVG
+    // ICONO COMPARTIR SVG
     // ================================================================
     function getIconoCompartirSVG() {
         return '<svg class="icono-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor">' +
@@ -1507,7 +1629,7 @@
     }
 
     // ================================================================
-    // CREAR CARD DE VIDEO — ✅ v15.3 con audio fix
+    // CREAR CARD DE VIDEO — ✅ v15.4 con SVG premium
     // ================================================================
     function crearVideoCard(v) {
         var autor = v.usuarios || {};
@@ -1552,14 +1674,15 @@
         html += getIconoFullscreenSVG();
         html += '</button>';
 
+        // ✅ v15.4: SVG basura dorado
         if (esMio) {
-            html += '<button class="btn-eliminar-card" onclick="event.stopPropagation(); eliminarMiVideo(\'' + v.id + '\')" title="Eliminar">🗑️</button>';
+            html += '<button class="btn-eliminar-card" onclick="event.stopPropagation(); eliminarMiVideo(\'' + v.id + '\')" title="Eliminar">' + iconoBasuraSVG() + '</button>';
         }
 
-        // ✅ v15.3: preload="auto" + crossorigin para mejor manejo de audio
+        // ✅ v15.4: video con preload auto + crossorigin
         html += '<div class="thumbnail">';
         html += '<video preload="auto" playsinline webkit-playsinline crossorigin="anonymous" data-src="' + videoUrl + '" poster="' + posterUrl + '"></video>';
-        html += '<div class="play-btn" onclick="togglePlayCard(event, \'' + v.id + '\')">▶</div>';
+        html += '<div class="play-btn" onclick="togglePlayCard(event, \'' + v.id + '\')">' + iconoPlaySVG() + '</div>';
         html += '</div>';
 
         var avatarHTML = autorAvatar
@@ -1576,20 +1699,24 @@
 
         var claseLiked = tipoMiReaccion ? ' liked' : '';
         html += '<div class="sidebar-acciones">';
+        // ✅ v15.4: icono SVG de reacción
         html += '<button class="sidebar-btn like-btn' + claseLiked + '" data-video-id="' + v.id + '" onclick="event.stopPropagation(); toggleLikeVideo(\'' + v.id + '\')">';
-        html += '<span class="icono">' + iconoFinal + '</span>';
+        html += '<span class="icono">' + iconoReaccionSVG(iconoFinal) + '</span>';
         html += '<span class="contador" id="likeCount-' + v.id + '">' + formatContador(totalReacciones) + '</span>';
         html += '</button>';
+        // ✅ v15.4: icono SVG comentario
         html += '<button class="sidebar-btn" onclick="event.stopPropagation(); abrirComentarios(\'' + v.id + '\')">';
-        html += '<span class="icono">💬</span>';
+        html += '<span class="icono">' + iconoComentarioSVG() + '</span>';
         html += '<span class="contador" id="comentCount-' + v.id + '">' + formatContador(v.comentarios || 0) + '</span>';
         html += '</button>';
+        // Compartir
         html += '<button class="sidebar-btn btn-compartir-premium" onclick="event.stopPropagation(); compartirVideo(\'' + v.id + '\')" title="Compartir">';
         html += getIconoCompartirSVG();
         html += '</button>';
+        // ✅ v15.4: picker con SVG premium
         html += '<div class="reaccion-picker" id="picker-' + v.id + '">';
         REACCIONES.forEach(function(re) {
-            html += '<button class="reaccion-opcion" data-reaccion="' + re + '" onclick="event.stopPropagation(); elegirReaccion(\'' + v.id + '\', \'' + re + '\')">' + re + '</button>';
+            html += '<button class="reaccion-opcion" data-reaccion="' + re + '" onclick="event.stopPropagation(); elegirReaccion(\'' + v.id + '\', \'' + re + '\')">' + iconoReaccionSVG(re) + '</button>';
         });
         html += '</div>';
         html += '</div>';
@@ -1615,7 +1742,6 @@
 
         var videoEl = card.querySelector('video');
 
-        // ✅ v15.3: garantizar video sin mute
         videoEl.muted = false;
         videoEl.volume = 1;
         videoEl.removeAttribute('muted');
@@ -1655,7 +1781,7 @@
             var video = card.querySelector('video');
             if (video) video.style.objectFit = 'contain';
             vibrar(15);
-            showToast('↙ Modo normal', 'success', 1500);
+            showToast('◈ Modo normal', 'success', 1500);
         } else {
             card.classList.add('pantalla-completa');
             if (btn) {
@@ -1668,7 +1794,7 @@
                 video2.muted = false;
             }
             vibrar(20);
-            showToast('⛶ Pantalla completa', 'success', 1500);
+            showToast('◈ Pantalla completa', 'success', 1500);
         }
 
         mostrarHintFullscreen(card);
@@ -1815,7 +1941,7 @@
     }
 
     // ================================================================
-    // ELEGIR REACCIÓN
+    // ELEGIR REACCIÓN — ✅ v15.4 con SVG
     // ================================================================
     async function elegirReaccion(videoId, tipo) {
         if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
@@ -1840,7 +1966,7 @@
                 actualizarUIContadorReaccion(videoId);
                 if (btnLike) {
                     btnLike.classList.remove('liked');
-                    btnLike.querySelector('.icono').textContent = REACCION_DEFAULT;
+                    btnLike.querySelector('.icono').innerHTML = iconoReaccionSVG(REACCION_DEFAULT);
                 }
             } else if (tipoPrevio) {
                 var upd = await sbVideos.from('videos_likes')
@@ -1857,7 +1983,7 @@
                 actualizarUIContadorReaccion(videoId);
                 if (btnLike) {
                     btnLike.classList.add('liked');
-                    btnLike.querySelector('.icono').textContent = tipo;
+                    btnLike.querySelector('.icono').innerHTML = iconoReaccionSVG(tipo);
                     btnLike.classList.remove('like-pop');
                     void btnLike.offsetWidth;
                     btnLike.classList.add('like-pop');
@@ -1876,7 +2002,7 @@
                 actualizarUIContadorReaccion(videoId);
                 if (btnLike) {
                     btnLike.classList.add('liked');
-                    btnLike.querySelector('.icono').textContent = tipo;
+                    btnLike.querySelector('.icono').innerHTML = iconoReaccionSVG(tipo);
                     btnLike.classList.remove('like-pop');
                     void btnLike.offsetWidth;
                     btnLike.classList.add('like-pop');
@@ -1940,7 +2066,7 @@
                 await navigator.share({ title: "Sariel's Video", url: url });
             } else {
                 await navigator.clipboard.writeText(url);
-                showToast('🔗 Enlace copiado', 'success');
+                showToast('◈ Enlace copiado', 'success');
             }
         } catch (e) {
             if (e.name !== 'AbortError') showToast('No se pudo compartir', 'warning');
@@ -1981,7 +2107,7 @@
         if (input) { input.value = ''; input.blur(); }
     }
 
-    // ✅ v15.3 — CON BOTÓN DE ELIMINAR
+    // ✅ v15.4 — CON BOTÓN DE ELIMINAR + SVG PREMIUM
     async function cargarComentariosSheet(videoId) {
         var lista = document.getElementById('comentariosLista');
         if (!lista) return;
@@ -2006,7 +2132,6 @@
                 return;
             }
 
-            // ✅ v15.3: verificar si soy dueño del video
             var videoData = videosPublicados.find(function(v) { return v.id === videoId; });
             var soyDuenoVideo = !!(sessionUser && videoData && videoData.usuario_id === sessionUser.id);
 
@@ -2021,7 +2146,6 @@
                 var contenido = escapeHTML(c.contenido || '');
                 var fecha = c.created_at ? new Date(c.created_at).toLocaleString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
 
-                // ✅ v15.3: permisos para eliminar
                 var soyAutorComentario = !!(sessionUser && c.usuario_id === sessionUser.id);
                 var puedoEliminar = soyAutorComentario || soyDuenoVideo;
 
@@ -2030,11 +2154,11 @@
                 html += '<div class="burbuja">';
 
                 if (puedoEliminar) {
-                    html += '<button class="btn-eliminar-comentario" onclick="eliminarComentario(\'' + c.id + '\', \'' + videoId + '\', event)" title="Eliminar comentario" aria-label="Eliminar comentario">✕</button>';
+                    html += '<button class="btn-eliminar-comentario" onclick="eliminarComentario(\'' + c.id + '\', \'' + videoId + '\', event)" title="Eliminar comentario" aria-label="Eliminar comentario">' + iconoCerrarSVG() + '</button>';
                 }
 
                 html += '<div class="nombre">' + nombre;
-                if (u.verificado) html += ' <span class="badge-verif">✓</span>';
+                if (u.verificado) html += ' <span class="badge-verif">' + iconoVerificadoSVG() + '</span>';
                 if (handle) html += ' <span style="color:var(--text-muted);font-weight:400;font-size:0.7rem;">' + handle + '</span>';
                 html += '</div>';
                 html += '<div class="texto">' + contenido + '</div>';
@@ -2089,7 +2213,7 @@
     }
 
     // ================================================================
-    // ✅ v15.3 — ELIMINAR COMENTARIO (propio o siendo dueño del video)
+    // ✅ v15.4 — ELIMINAR COMENTARIO (propio o siendo dueño del video)
     // ================================================================
     async function eliminarComentario(comentarioId, videoId, event) {
         if (event) event.stopPropagation();
@@ -2106,7 +2230,6 @@
         try {
             if (!sbVideos) throw new Error('Cliente no disponible');
 
-            // Validar permisos antes de borrar
             var comentarioResp = await sbVideos
                 .from('videos_comentarios')
                 .select('id, usuario_id, video_id')
@@ -2135,7 +2258,6 @@
                 return;
             }
 
-            // Eliminar
             var delResp = await sbVideos
                 .from('videos_comentarios')
                 .delete()
@@ -2143,7 +2265,6 @@
 
             if (delResp.error) throw delResp.error;
 
-            // Actualizar contador en la card
             var contEl = document.getElementById('comentCount-' + videoId);
             if (contEl) {
                 var actual = parseInt(contEl.textContent.replace(/[^\d]/g, '')) || 0;
@@ -2153,7 +2274,7 @@
             await cargarComentariosSheet(videoId);
 
             vibrar(15);
-            showToast('🗑️ Comentario eliminado', 'success', 2500);
+            showToast('◈ Comentario eliminado', 'success', 2500);
 
         } catch (e) {
             console.error('[Eliminar comentario] Error:', e);
@@ -2185,7 +2306,7 @@
     }
 
     // ================================================================
-    // AUTOPLAY SCROLL — ✅ v15.3 con audio + anuncios + vistas
+    // AUTOPLAY SCROLL — ✅ v15.4
     // ================================================================
     function activarAutoplayScroll() {
         if (observerVideos) { observerVideos.disconnect(); observerVideos = null; }
@@ -2232,7 +2353,6 @@
                         card.classList.add('playing');
                         incrementarVista(idVisible);
 
-                        // ✅ v15.3: mostrar botón global si el audio sigue bloqueado
                         setTimeout(function() {
                             if (video.muted && !audioGlobalActivado) {
                                 mostrarBotonAudioGlobal();
@@ -2255,7 +2375,7 @@
     }
 
     // ================================================================
-    // TOGGLE PLAY — ✅ v15.3 con audio
+    // TOGGLE PLAY
     // ================================================================
     function togglePlayCard(event, videoId) {
         if (event) event.stopPropagation();
@@ -2298,7 +2418,7 @@
             if (path) { try { await sbVideos.storage.from('videos').remove([path]); } catch (e) {} }
             var del = await sbVideos.from('videos').delete().eq('id', videoId);
             if (del.error) throw del.error;
-            showToast('🗑️ Video eliminado', 'success');
+            showToast('◈ Video eliminado', 'success');
             await cargarVideos();
         } catch (e) {
             showToast('Error al eliminar', 'error');
@@ -2413,7 +2533,7 @@
                 if (filePath) { try { await sbVideos.storage.from('videos').remove([filePath]); } catch (x) {} }
                 videoEnProcesamiento = null;
             }
-            showToast('❌ ' + (e.message || 'Error'), 'error');
+            showToast('◈ ' + (e.message || 'Error'), 'error');
             liberar();
         }
     }
@@ -2480,7 +2600,7 @@
         document.getElementById('processingProgressFill').style.width = '0%';
         document.getElementById('processingProgressText').textContent = '0%';
         videoEnProcesamiento = null;
-        showToast('❌ ' + msg, 'error', 6000);
+        showToast('◈ ' + msg, 'error', 6000);
     }
     async function reanudarProcesamientoPendiente() {
         if (!sessionUser || !sbVideos) return;
@@ -2570,7 +2690,7 @@
     // INIT
     // ================================================================
     document.addEventListener('DOMContentLoaded', function() {
-        console.log("◈ Sariel's - Videos v15.3 (Audio Fix Real + Eliminar Comentarios)");
+        console.log("◈ Sariel's - Videos v15.4 (Audio + Eliminar + SVG Premium)");
         aplicarI18N();
         configurarTecladoMovil();
         cargarUsuarioActual().then(async function() {
