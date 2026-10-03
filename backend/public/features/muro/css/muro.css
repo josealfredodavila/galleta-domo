@@ -45,7 +45,7 @@ body { background: var(--space); color: var(--text-primary); font-family: 'Inter
 .valor-mercado .info .detalles { display: flex; gap: 16px; font-size: 0.65rem; color: var(--text-muted); margin-top: 4px; flex-wrap: wrap; }
 .valor-mercado .btn-vender-token { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border: none; padding: 10px 20px; border-radius: 30px; font-family: 'Orbitron', monospace; font-weight: 700; font-size: 0.7rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
 
-/* ===== TENDENCIAS (FIX hora cortada) ===== */
+/* ===== TENDENCIAS ===== */
 .trending-section { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 16px 20px; margin-bottom: 20px; }
 .trending-section .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 12px; flex-wrap: wrap; }
 .trending-section .header h3 { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 0.85rem; display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0; }
@@ -56,6 +56,20 @@ body { background: var(--space); color: var(--text-primary); font-family: 'Inter
 .trending-tags .tag.tema { background: rgba(168,85,247,0.1); border-color: rgba(168,85,247,0.2); }
 .trending-tags .tag.tema:hover { background: rgba(168,85,247,0.2); color: #d8b4fe; }
 .trending-tags .tag.loading { opacity: 0.5; cursor: wait; }
+
+/* ===== HORA CON EMOJI (Tendencia ahora) ===== */
+.trending-section .header .actualizado {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: 'Inter', sans-serif;
+}
+.trending-section .header .actualizado .emoji-hora {
+    font-size: 0.85rem;
+    line-height: 1;
+    display: inline-block;
+    filter: drop-shadow(0 0 4px rgba(212, 175, 55, 0.4));
+}
 
 .tokens-destacados { background: linear-gradient(135deg, rgba(212,175,55,0.08), rgba(15,45,26,0.6)); border: 1px solid rgba(212,175,55,0.25); border-radius: var(--radius-xl); padding: 16px 20px; margin-bottom: 20px; }
 .tokens-destacados .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
