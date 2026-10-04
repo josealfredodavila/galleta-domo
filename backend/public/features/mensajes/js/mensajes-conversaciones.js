@@ -1,10 +1,35 @@
 // ================================================================
-// MENSAJES · CONVERSACIONES
+// MENSAJES · CONVERSACIONES (v2.1 — Fixes de producción)
 // ================================================================
 // Lista de conversaciones, filtro, apertura, cierre.
-// Compatible con mensajes-chat.js v3 (visto solo al contestar).
+// Compatible con mensajes-chat.js v3.3 (visto solo al contestar).
 // Depende de: config, utils, auth.
+//
+// FIXES v2.1:
+// - deleteConversation: limpieza total de estado local con
+//   limpiarEstadoConversacion() + reset de `current`
+// - openConversation: normaliza ID del bot (BOT_ID ↔ BOT_UUID)
+// - loadConversations: detecta bot activo por AMBOS IDs
+// - Marca leído del bot al abrir conversación del bot
 // ================================================================
+
+// ================================================================
+// HELPERS DE NORMALIZACIÓN DEL BOT
+// ================================================================
+function _esIdDelBotConv(id) {
+    if (!id) return false;
+    var s = String(id);
+    return s === BOT_ID || s === BOT_UUID;
+}
+
+function _normalizarBotIdConv(id) {
+    if (!id) return BOT_UUID;
+    var s = String(id);
+    if (s === BOT_ID || s === 'bot-marquinhos' || s === 'marquinhos') {
+        return BOT_UUID;
+    }
+    return s;
+}
 
 // ================================================================
 // CARGAR LISTA DE CONVERSACIONES
@@ -15,8 +40,11 @@ async function loadConversations() {
     list.innerHTML = '';
 
     // ---- Bot Marquinhos SIEMPRE primero ----
+    // ✅ FIX: detectar bot activo por CUALQUIERA de sus dos IDs
+    var botActivo = current && _esIdDelBotConv(current.id);
+
     var botEl = document.createElement('div');
-    botEl.className = 'conv conv-bot' + (current && current.id === BOT_ID ? ' active' : '');
+    botEl.className = 'conv conv-bot' + (botActivo ? ' active' : '');
     botEl.dataset.id = BOT_ID;
     botEl.dataset.name = 'marquinhos';
     botEl.innerHTML =
@@ -88,6 +116,7 @@ async function loadConversations() {
 
         for (var i = 0; i < rContactos.data.length; i++) {
             var c = rContactos.data[i];
+            // ✅ FIX: excluir al bot por UUID
             if (c.contacto_id === BOT_UUID) continue;
 
             var p = await profile(c.contacto_id);
@@ -165,9 +194,26 @@ function aplicarFiltroConversaciones() {
 async function openConversation(id) {
     if (!await auth()) return;
 
-    var p = await profile(id);
-    var esBot = (id === BOT_ID);
-    current = { id: id, profile: p, bot: esBot };
+    // ✅ FIX: normalizar ID del bot para que `current.bot` siempre sea true
+    var esBot = _esIdDelBotConv(id);
+    var idNormalizado = esBot ? BOT_UUID : id;
+
+    var p;
+    if (esBot) {
+        // Perfil ficticio del bot (no consultar BD de perfiles)
+        p = {
+            id: BOT_UUID,
+            nombre: 'Marquinhos',
+            handle: 'marquinhos',
+            avatar_url: null,
+            online: true,
+            bot: true
+        };
+    } else {
+        p = await profile(idNormalizado);
+    }
+
+    current = { id: idNormalizado, profile: p, bot: esBot };
 
     // ---- Header del chat ----
     var chatName = $('chatName');
@@ -216,9 +262,15 @@ async function openConversation(id) {
     var panel = $('panel');
     if (panel) panel.classList.add('chat-open');
 
-    // Activar el item en la lista
+    // Activar el item en la lista (por dataset.id que usa BOT_ID en el botón del bot)
     document.querySelectorAll('.conv').forEach(function(x) {
-        x.classList.toggle('active', x.dataset.id === id);
+        var match = false;
+        if (esBot) {
+            match = _esIdDelBotConv(x.dataset.id);
+        } else {
+            match = x.dataset.id === idNormalizado;
+        }
+        x.classList.toggle('active', match);
     });
 
     isUserAtBottom = true;
@@ -233,7 +285,9 @@ async function openConversation(id) {
                 .eq('remitente_id', BOT_UUID)
                 .eq('destinatario_id', user.id)
                 .eq('leido', false);
-        } catch (e) {}
+        } catch (e) {
+            console.warn('[Mensajes] No se pudo marcar leído del bot:', e);
+        }
 
         var badge = $('botBadge');
         if (badge) {
@@ -246,13 +300,12 @@ async function openConversation(id) {
     }
 
     // ---- Chat normal: cargar mensajes ----
-    // ✅ NOTA: Ya NO marcamos como leído al abrir.
-    // La regla v3 dice: "visto SOLO cuando contestas".
+    // ✅ Regla v3: "visto SOLO cuando contestas" → NO marcar leído al abrir.
     var r = await db
         .from('mensajes_chat')
         .select('*')
         .eq('eliminado', false)
-        .or('and(remitente_id.eq.' + user.id + ',destinatario_id.eq.' + id + '),and(remitente_id.eq.' + id + ',destinatario_id.eq.' + user.id + ')')
+        .or('and(remitente_id.eq.' + user.id + ',destinatario_id.eq.' + idNormalizado + '),and(remitente_id.eq.' + idNormalizado + ',destinatario_id.eq.' + user.id + ')')
         .order('created_at', { ascending: true })
         .limit(100);
 
@@ -263,8 +316,7 @@ async function openConversation(id) {
     }
 
     await renderMessages(r.data || []);
-    // ❌ ELIMINADO: await markRead(id);
-    subscribeMessages(id);
+    subscribeMessages(idNormalizado);
 }
 
 // ================================================================
@@ -298,9 +350,18 @@ async function cerrarConversacion() {
     var emptyState = $('emptyState');
     if (emptyState) emptyState.style.display = 'block';
 
-    var box = $('messages');
-    if (box) {
-        box.querySelectorAll('.bubblewrap').forEach(function(el) { el.remove(); });
+    // Limpiar DOM del chat
+    if (typeof limpiarEstadoConversacion === 'function') {
+        try {
+            await limpiarEstadoConversacion();
+        } catch (e) {
+            console.warn('[Mensajes] Error limpiando estado:', e);
+        }
+    } else {
+        var box = $('messages');
+        if (box) {
+            box.querySelectorAll('.bubblewrap').forEach(function(el) { el.remove(); });
+        }
     }
 
     document.querySelectorAll('.conv').forEach(function(x) {
@@ -422,7 +483,7 @@ async function createConversation(id) {
 }
 
 // ================================================================
-// ELIMINAR CONVERSACIÓN
+// ✅ ELIMINAR CONVERSACIÓN (con limpieza TOTAL de estado local)
 // ================================================================
 async function deleteConversation() {
     if (!current) {
@@ -437,7 +498,8 @@ async function deleteConversation() {
     if (!confirmar) return;
 
     try {
-        var targetId = current.bot ? BOT_UUID : current.id;
+        // ✅ Normalizar ID del bot por si acaso
+        var targetId = current.bot ? BOT_UUID : _normalizarBotIdConv(current.id);
 
         var r = await db
             .from('mensajes_chat')
@@ -448,18 +510,40 @@ async function deleteConversation() {
 
         toast('✅ Conversación eliminada correctamente', 'success');
 
-        var box = $('messages');
-        if (box) {
-            box.querySelectorAll('.bubblewrap').forEach(function(el) { el.remove(); });
-            var anchor = box.querySelector('#scrollAnchor');
-            if (anchor) {
-                anchor.insertAdjacentHTML('beforebegin',
-                    '<div class="empty"><strong>◈</strong><div>Conversación eliminada</div><small>Envía un mensaje para empezar de nuevo</small></div>');
+        // ✅ FIX CRÍTICO: limpieza total del estado local
+        if (typeof limpiarEstadoConversacion === 'function') {
+            try {
+                await limpiarEstadoConversacion();
+            } catch (e) {
+                console.warn('[Mensajes] Error en limpiarEstadoConversacion:', e);
+            }
+        } else {
+            // Fallback: limpieza manual
+            var box = $('messages');
+            if (box) {
+                box.querySelectorAll('.bubblewrap').forEach(function(el) { el.remove(); });
+                box.querySelectorAll('.empty').forEach(function(el) { el.remove(); });
+                var anchor = box.querySelector('#scrollAnchor');
+                if (anchor) {
+                    anchor.insertAdjacentHTML('beforebegin',
+                        '<div class="empty" id="emptyState">' +
+                            '<strong>◈</strong>' +
+                            '<div>Conversación eliminada</div>' +
+                            '<small>Envía un mensaje para empezar de nuevo</small>' +
+                        '</div>');
+                }
             }
         }
 
+        // ✅ FIX: resetear `current` para que `append()` deje de operar en esta sesión
+        current = null;
+
+        // ✅ Resetear contadores UI
         unreadCount = 0;
+        isUserAtBottom = true;
         actualizarFlecha();
+
+        // ✅ Refrescar lista de conversaciones (sin el chat eliminado)
         await loadConversations();
     } catch (e) {
         console.error('[Mensajes] Error eliminando conversación:', e);
@@ -479,5 +563,7 @@ window.cerrarModalNuevaConversacion = cerrarModalNuevaConversacion;
 window.searchUsers = searchUsers;
 window.createConversation = createConversation;
 window.deleteConversation = deleteConversation;
+window._esIdDelBotConv = _esIdDelBotConv;
+window._normalizarBotIdConv = _normalizarBotIdConv;
 
-console.log('[Mensajes] ✅ Conversaciones cargado');
+console.log('[Mensajes] ✅ Conversaciones v2.1 cargado (con fixes de producción)');
