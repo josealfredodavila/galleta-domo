@@ -1,36 +1,37 @@
 // ================================================================
-// MENSAJES · CHAT (v3.1 — Auditoría aplicada)
+// MENSAJES · CHAT (v3.2 — Auditoría aplicada + fixes producción)
 // ================================================================
 // - Anti-duplicados robusto (registro + DOM)
-// - "Visto" SOLO cuando el receptor contesta (texto/audio/video/foto)
-// - Autoenvío (remitente === destinatario) se marca VISTO al instante
+// - "Visto" SOLO cuando el receptor contesta
+// - Autoenvío se marca VISTO al instante
 // - Límites: texto 1000, audio 5min, video 2min/50MB, foto 10MB
 // - Seguridad: URLs, UUIDs, escape HTML, filtro realtime servidor
-// - Fixes: race conditions, unreadCount, scroll, LRU, removeChannel
-// - ✅ v3.1: markRead legacy, polyfill allSettled, saneo de IDs,
-//           .catch() en _unsubPromise, rate limit en vez de _sending
+// - FIXES v3.2:
+//   * markRead(id) con segundo parámetro (timestamp)
+//   * Guard `if (!current) return;` en append()
+//   * Filtro de exclusión del bot valida BOT_ID Y BOT_UUID
 // ================================================================
 
 // ----------------------------------------------------------------
 // CONSTANTES
 // ----------------------------------------------------------------
 var MAX_TEXTO_LEN       = 1000;
-var MAX_AUDIO_SEGUNDOS  = 5 * 60;          // 5 min
-var MAX_VIDEO_SEGUNDOS  = 2 * 60;          // 2 min
-var MAX_VIDEO_BYTES     = 50 * 1024 * 1024; // 50 MB
-var MAX_FOTO_BYTES      = 10 * 1024 * 1024; // 10 MB
+var MAX_AUDIO_SEGUNDOS  = 5 * 60;
+var MAX_VIDEO_SEGUNDOS  = 2 * 60;
+var MAX_VIDEO_BYTES     = 50 * 1024 * 1024;
+var MAX_FOTO_BYTES      = 10 * 1024 * 1024;
 var MAX_RENDERED_LRU    = 500;
 var SCROLL_RETRY_MS     = 100;
 var SCROLL_RETRY_MAX    = 10;
 var KEYBOARD_SCROLL_MS  = 300;
 var KEYBOARD_INPUT_MS   = 50;
 var MARKREAD_DEBOUNCE   = 500;
-var RATE_LIMIT_ENVIO_MS = 500;              // ✅ NUEVO: rate limit
+var RATE_LIMIT_ENVIO_MS = 500;
 
 var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // ----------------------------------------------------------------
-// ✅ POLYFILL: Promise.allSettled (para navegadores viejos)
+// POLYFILL: Promise.allSettled
 // ----------------------------------------------------------------
 if (typeof Promise.allSettled !== 'function') {
     Promise.allSettled = function(promises) {
@@ -79,14 +80,13 @@ function _esAutoEnvio(m) {
     return String(m.remitente_id) === String(m.destinatario_id);
 }
 
-// ✅ NUEVO: saneo de IDs para el DOM
 function _safeDomId(id) {
     if (!id) return '';
     return String(id).replace(/[^a-zA-Z0-9-]/g, '');
 }
 
 // ----------------------------------------------------------------
-// REGISTRO LRU DE IDs YA RENDERIZADOS (anti-duplicados)
+// REGISTRO LRU ANTI-DUPLICADOS
 // ----------------------------------------------------------------
 var _mensajesRenderizados = new Map();
 
@@ -291,7 +291,6 @@ function messageHTML(m, sent, signedUrl) {
     var esNoLeido = !sent && m.leido === false;
     var unreadDot = esNoLeido ? '<span class="unread-dot" title="No leído"></span>' : '';
 
-    // ✅ Saneo de ID para el DOM
     var msgIdRaw = m.id || ('temp-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8));
     var msgIdSafe = _safeDomId(msgIdRaw);
     var idAttr = m.id ? ('id="msg-' + msgIdSafe + '" ') : '';
@@ -348,7 +347,10 @@ function validarFotoChat(pesoBytes) {
 // ----------------------------------------------------------------
 async function marcarConversacionComoLeida(remitenteId, antesDe) {
     if (!user || !remitenteId) return;
-    if (remitenteId === BOT_ID) return;
+
+    // ✅ FIX: Excluir al bot por AMBOS identificadores
+    if (remitenteId === BOT_ID || remitenteId === BOT_UUID) return;
+
     if (!_esUUID(remitenteId)) return;
 
     var timestamp = antesDe || new Date().toISOString();
@@ -378,22 +380,21 @@ async function marcarConversacionComoLeida(remitenteId, antesDe) {
 }
 
 // ----------------------------------------------------------------
-// ✅ NUEVO: ALIAS LEGACY markRead (compatibilidad con otros archivos)
+// ✅ FIX: markRead con timestamp obligatorio
 // ----------------------------------------------------------------
 async function markRead(id) {
     if (!id) return;
-    await marcarConversacionComoLeida(id);
+    await marcarConversacionComoLeida(id, new Date().toISOString());
 }
 
 // ----------------------------------------------------------------
-// ENVIAR MENSAJE (con rate limit en vez de bloqueo)
+// ENVIAR MENSAJE (rate limit)
 // ----------------------------------------------------------------
 var _ultimoEnvio = 0;
 
 async function sendMessage(text) {
     if (!current || !text) return;
 
-    // ✅ RATE LIMIT: evita doble envío por doble Enter/tap
     var ahora = Date.now();
     if (ahora - _ultimoEnvio < RATE_LIMIT_ENVIO_MS) return;
     _ultimoEnvio = ahora;
@@ -460,7 +461,7 @@ async function _enviarMensajeAlBot(textoLimpio) {
     if (userMsg.id) _marcarRenderizado(userMsg.id);
     await append(userMsg, true);
 
-    await marcarConversacionComoLeida(BOT_UUID, userMsg.created_at);
+    // ✅ FIX: Ya no intentamos marcar como leído el bot (excluido dentro de la función)
 
     mostrarTypingBot();
     try {
@@ -688,9 +689,12 @@ function quitarTypingBot() {
 }
 
 // ----------------------------------------------------------------
-// AÑADIR MENSAJE AL DOM
+// AÑADIR MENSAJE AL DOM (con guard de current)
 // ----------------------------------------------------------------
 async function append(m, sent) {
+    // ✅ FIX: Guard si no hay conversación activa
+    if (!current) return;
+
     var box = $('messages');
     if (!box) return;
 
@@ -742,7 +746,7 @@ async function append(m, sent) {
 }
 
 // ----------------------------------------------------------------
-// SUSCRIPCIÓN REALTIME (con .catch robusto)
+// SUSCRIPCIÓN REALTIME
 // ----------------------------------------------------------------
 var _unsubPromise = Promise.resolve();
 
@@ -932,7 +936,7 @@ if (document.readyState === 'loading') {
 }
 
 // ================================================================
-// ✅ EXPOSICIÓN GLOBAL A WINDOW
+// EXPOSICIÓN GLOBAL A WINDOW
 // ================================================================
 window.sendMessage = sendMessage;
 window.sendAudio = sendAudio;
@@ -948,7 +952,7 @@ window.actualizarFlecha = actualizarFlecha;
 window.ocultarFlechaNuevos = ocultarFlechaNuevos;
 window.detectarSiEstaAbajo = detectarSiEstaAbajo;
 window.observarCargaMultimedia = observarCargaMultimedia;
-window.markRead = markRead;                              // ✅ ALIAS LEGACY
+window.markRead = markRead;
 window.marcarConversacionComoLeida = marcarConversacionComoLeida;
 window.mostrarTypingBot = mostrarTypingBot;
 window.quitarTypingBot = quitarTypingBot;
@@ -960,4 +964,4 @@ window._marcarRenderizado = _marcarRenderizado;
 window._yaRenderizado = _yaRenderizado;
 window._safeDomId = _safeDomId;
 
-console.log('[Mensajes] ✅ Chat v3.1 cargado (auditoría aplicada)');
+console.log('[Mensajes] ✅ Chat v3.2 cargado (fixes de producción)');
