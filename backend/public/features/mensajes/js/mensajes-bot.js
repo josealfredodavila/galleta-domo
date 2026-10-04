@@ -1,320 +1,106 @@
 // ================================================================
-// MENSAJES · BOT (Marquinhos) — v2.6
+// MENSAJES · BOT (Marquinhos)
 // ================================================================
-// CORRECCIONES v2.6 (sobre v2.5):
-// - ✅ Verificación del ecosistema a los 2s (detecta faltantes)
-// - ✅ Logging detallado para diagnóstico
+// Historial para contexto, preguntar al bot, grabación de voz,
+// envío de voz al bot y cancelación de operaciones.
+// Se carga DESPUÉS de config, utils, auth, chat.
 //
-// HEREDADO v2.5:
-// - Handshake: emite evento `marquinhos:listo` al cargar
-// - Función `_botEstaListo()` para verificar estado
-// - API unificada `window.enviarMensajeAlBot(texto)`
-// - Listeners de eventos `marquinhos:chatAbierto` / `marquinhos:chatCerrado`
-// - Namespace `window.Chat` completo
+// IMPORTANTE: abrirConversacionBot() y enviarMensajeAlBot() NO se
+// definen aquí (viven en mensajes-chat.js). Este archivo solo
+// contiene los auxiliares.
 //
-// HEREDADO v2.4:
-// - NO define abrirConversacionBot (delegada a mensajes-chat.js)
-// - Valida dependencias antes de usar db/user
-// - Usa BOT_UUID como destinatario real del bot
-// - Normaliza BOT_ID / BOT_UUID
-// - Historial seguro y limitado
-// - Compatible con /api/ai/chat
-// - Valida correctamente la sesión y access_token
-// - Maneja errores HTTP y respuestas no JSON
-// - Evita que un error del bot rompa mensajes.html
-// - Voz: subida, signed URL, reintentos 429 y renderizado
-// - Limpia correctamente el estado de grabación
-// - No elimina mensajes de voz de otros elementos
-// - Escapa correctamente contenido dinámico
-// - Exposición global compatible con código antiguo
+// FUENTE DE VERDAD: monolítico mensajes.html original.
+// API BACKEND: /api/ai/chat y /api/ai/voice/chat
 // ================================================================
 
-// ----------------------------------------------------------------
-// NAMESPACE
-// ----------------------------------------------------------------
-window.Chat = window.Chat || {};
+'use strict';
 
-// ----------------------------------------------------------------
-// ✅ v2.5: LISTENER — Chat del bot abierto
-// ----------------------------------------------------------------
-window.addEventListener('marquinhos:chatAbierto', function(e) {
-    console.log('[Bot] marquinhos:chatAbierto recibido:', e && e.detail);
-});
+// ================================================================
+// ESTADO DEL BOT
+// ================================================================
+var _botAbortController = null;
 
-// ----------------------------------------------------------------
-// ✅ v2.5: LISTENER — Chat del bot cerrado
-// ----------------------------------------------------------------
-window.addEventListener('marquinhos:chatCerrado', function(e) {
-    console.log('[Bot] marquinhos:chatCerrado recibido:', e && e.detail);
-
-    if (typeof voiceBotGrabando !== 'undefined' && voiceBotGrabando) {
-        if (typeof voiceBotRecorder !== 'undefined' && voiceBotRecorder) {
-            try {
-                if (voiceBotRecorder.state !== 'inactive') {
-                    voiceBotRecorder.stop();
-                }
-            } catch (err) {
-                console.warn('[Bot] Error deteniendo grabación al cerrar chat:', err);
-            }
-        }
-        try {
-            voiceBotGrabando = false;
-            voiceBotChunks = [];
-        } catch (err) {}
+// ================================================================
+// CANCELAR OPERACIONES DEL BOT
+// ================================================================
+function cancelarOperacionesBot() {
+    // Abortar fetch en curso
+    if (_botAbortController && typeof _botAbortController.abort === 'function') {
+        try { _botAbortController.abort(); } catch (e) {}
+        _botAbortController = null;
     }
 
-    var btn = document.getElementById('voiceBot');
-    if (btn) {
-        btn.classList.remove('recording');
-        btn.textContent = '✦';
-    }
-});
-
-// ----------------------------------------------------------------
-// HELPERS DE DEPENDENCIAS
-// ----------------------------------------------------------------
-function _botTieneDB() {
-    return (
-        typeof db !== 'undefined' &&
-        db &&
-        typeof db.from === 'function'
-    );
-}
-
-function _botTieneUsuario() {
-    return (
-        typeof user !== 'undefined' &&
-        user &&
-        user.id
-    );
-}
-
-function _botTieneSesion() {
-    return typeof session === 'function';
-}
-
-function _botLimpiarTexto(texto) {
-    texto = typeof texto === 'string' ? texto : '';
-
-    if (typeof limpiarMarkdown === 'function') {
-        try {
-            return limpiarMarkdown(texto);
-        } catch (e) {
-            console.warn('[Bot] Error en limpiarMarkdown:', e);
-        }
+    // Detener grabación de voz del bot
+    if (voiceBotRecorder && voiceBotRecorder.state !== 'inactive') {
+        try { voiceBotRecorder.stop(); } catch (e) {}
     }
 
-    return texto
-        .replace(/\*\*(.*?)\*\*/g, '$1')
-        .replace(/__(.*?)__/g, '$1')
-        .replace(/```[\s\S]*?```/g, '')
-        .replace(/`([^`]+)`/g, '$1')
-        .trim();
+    // Reset flags
+    voiceBotGrabando = false;
+    enviandoVozBot = false;
 }
 
-function _botEsc(texto) {
-    texto = texto == null ? '' : String(texto);
-
-    if (typeof esc === 'function') {
-        try {
-            return esc(texto);
-        } catch (e) {
-            console.warn('[Bot] Error en esc:', e);
-        }
-    }
-
-    return texto
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-}
-
-function _botToast(mensaje, tipo) {
-    if (typeof toast === 'function') {
-        toast(mensaje, tipo);
-    } else {
-        console.warn('[Bot]', mensaje);
-    }
-}
-
-function _botScroll() {
-    if (typeof scrollToBottom === 'function') {
-        try {
-            scrollToBottom(true);
-        } catch (e) {}
-    }
-}
-
-// ----------------------------------------------------------------
-// NORMALIZACIÓN DE ID DEL BOT
-// ----------------------------------------------------------------
-function _normalizarBotId(id) {
-    var uuid = (typeof BOT_UUID !== 'undefined' && BOT_UUID) ? String(BOT_UUID) : '';
-    var botId = (typeof BOT_ID !== 'undefined' && BOT_ID) ? String(BOT_ID) : 'bot-marquinhos';
-
-    if (!id) return uuid || botId;
-
-    var s = String(id);
-    if (s === botId || s === 'bot-marquinhos' || s === 'marquinhos') {
-        return uuid || botId;
-    }
-    return s;
-}
-
-function _esIdDelBot(id) {
-    if (!id) return false;
-
-    var s = String(id);
-    var uuid = (typeof BOT_UUID !== 'undefined' && BOT_UUID) ? String(BOT_UUID) : '';
-    var botId = (typeof BOT_ID !== 'undefined' && BOT_ID) ? String(BOT_ID) : 'bot-marquinhos';
-
-    return (
-        s === botId ||
-        s === uuid ||
-        s === 'bot-marquinhos' ||
-        s === 'marquinhos'
-    );
-}
-
-// ----------------------------------------------------------------
-// CARGAR HISTORIAL PARA MARQUINHOS
-// ----------------------------------------------------------------
+// ================================================================
+// CARGAR HISTORIAL PARA EL BOT
+// ================================================================
 async function cargarHistorialParaBot() {
+    if (!user || !user.id) return [];
+
     try {
-        if (!_botTieneDB()) {
-            console.warn('[Bot] db todavía no está disponible.');
-            return [];
-        }
-
-        if (!_botTieneUsuario()) {
-            console.warn('[Bot] usuario todavía no está disponible.');
-            return [];
-        }
-
-        var botUuid = _normalizarBotId(
-            typeof BOT_UUID !== 'undefined' ? BOT_UUID : null
-        );
-
-        if (!botUuid) {
-            console.warn('[Bot] BOT_UUID no está definido.');
-            return [];
-        }
-
-        var limite =
-            typeof BOT_MAX_HISTORY === 'number' && BOT_MAX_HISTORY > 0
-                ? Math.min(BOT_MAX_HISTORY, 50)
-                : 20;
-
-        var filtro =
-            'and(remitente_id.eq.' + user.id + ',destinatario_id.eq.' + botUuid + '),' +
-            'and(remitente_id.eq.' + botUuid + ',destinatario_id.eq.' + user.id + ')';
-
         var r = await db
             .from('mensajes_chat')
-            .select('remitente_id, destinatario_id, contenido, tipo, created_at')
+            .select('remitente_id, contenido, tipo, created_at')
             .eq('eliminado', false)
-            .or(filtro)
+            .or('and(remitente_id.eq.' + user.id + ',destinatario_id.eq.' + BOT_UUID + '),and(remitente_id.eq.' + BOT_UUID + ',destinatario_id.eq.' + user.id + ')')
             .order('created_at', { ascending: false })
-            .limit(limite);
+            .limit(BOT_MAX_HISTORY);
 
-        if (r.error) {
-            console.warn('[Bot] Error cargando historial:', r.error);
-            return [];
-        }
+        if (r.error || !Array.isArray(r.data)) return [];
 
-        if (!Array.isArray(r.data)) return [];
-
+        // Ordenar cronológicamente (del más viejo al más nuevo)
         return r.data
             .slice()
             .reverse()
             .map(function(m) {
-                var contenido = typeof m.contenido === 'string' ? m.contenido : '';
-                contenido = _botLimpiarTexto(contenido).slice(0, 2000).trim();
-
-                if (!contenido) return null;
-
                 return {
-                    role: String(m.remitente_id) === String(user.id) ? 'user' : 'assistant',
-                    content: contenido
+                    role: m.remitente_id === user.id ? 'user' : 'assistant',
+                    content: limpiarMarkdown(m.contenido || '').slice(0, 2000)
                 };
             })
-            .filter(function(m) { return !!m; });
-
+            .filter(function(m) {
+                return m.content && m.content.length > 0;
+            });
     } catch (e) {
-        console.warn('[Bot] No se pudo cargar historial para Marquinhos:', e);
+        console.warn('[Mensajes/Bot] No se pudo cargar historial:', e);
         return [];
     }
 }
 
-// ----------------------------------------------------------------
-// PREGUNTAR A MARQUINHOS
-// ----------------------------------------------------------------
+// ================================================================
+// PREGUNTAR AL BOT (texto)
+// ================================================================
 async function preguntarAlBot(mensaje, historial) {
     if (typeof mensaje !== 'string' || !mensaje.trim()) {
-        throw new Error('Escribe un mensaje para Marquinhos.');
+        throw new Error('Mensaje vacío');
     }
 
-    if (!_botTieneDB()) {
-        throw new Error('El sistema todavía está inicializando. Intenta nuevamente.');
+    var s = await session();
+    if (!s) throw new Error('No hay una sesión activa. Inicia sesión nuevamente.');
+    if (!s.access_token) throw new Error('Sesión sin token válido.');
+
+    // Cancelar cualquier fetch anterior
+    if (_botAbortController) {
+        try { _botAbortController.abort(); } catch (e) {}
     }
+    _botAbortController = new AbortController();
+    var controller = _botAbortController;
 
-    if (!_botTieneUsuario()) {
-        throw new Error('No hay un usuario autenticado.');
-    }
-
-    if (!_botTieneSesion()) {
-        throw new Error('El sistema de sesión todavía no está disponible.');
-    }
-
-    var s;
-    try {
-        s = await session();
-    } catch (e) {
-        console.error('[Bot] Error obteniendo sesión:', e);
-        throw new Error('No se pudo comprobar tu sesión.');
-    }
-
-    if (!s) {
-        throw new Error('No hay una sesión activa. Inicia sesión nuevamente.');
-    }
-
-    if (!s.access_token) {
-        throw new Error('La sesión no tiene un token válido. Recarga la página e intenta nuevamente.');
-    }
-
-    var texto = mensaje.trim();
-
-    var historialSeguro =
-        Array.isArray(historial)
-            ? historial
-                .filter(function(item) {
-                    return (
-                        item &&
-                        typeof item.content === 'string' &&
-                        (item.role === 'user' || item.role === 'assistant')
-                    );
-                })
-                .slice(-20)
-                .map(function(item) {
-                    return {
-                        role: item.role,
-                        content: _botLimpiarTexto(item.content).slice(0, 2000)
-                    };
-                })
-                .filter(function(item) { return item.content; })
-            : [];
-
-    var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-    var timeout = null;
-
-    if (controller) {
-        timeout = setTimeout(function() { controller.abort(); }, 50000);
-    }
+    var timeout = setTimeout(function() {
+        try { controller.abort(); } catch (e) {}
+    }, 50000);
 
     try {
-        var opciones = {
+        var r = await fetch('/api/ai/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -322,252 +108,201 @@ async function preguntarAlBot(mensaje, historial) {
                 'Authorization': 'Bearer ' + s.access_token
             },
             body: JSON.stringify({
-                message: texto,
+                message: mensaje.trim(),
                 context: 'chat_sariels',
-                history: historialSeguro
-            })
-        };
+                history: Array.isArray(historial) ? historial : []
+            }),
+            signal: controller.signal
+        });
 
-        if (controller) opciones.signal = controller.signal;
-
-        var r = await fetch('/api/ai/chat', opciones);
-
-        var contentType = r.headers.get('content-type') || '';
-        var textoRespuesta = '';
-
-        try {
-            textoRespuesta = await r.text();
-        } catch (e) {
-            textoRespuesta = '';
-        }
-
-        var data = null;
-        if (textoRespuesta) {
-            try {
-                data = JSON.parse(textoRespuesta);
-            } catch (e) {
-                data = null;
-            }
-        }
-
+        // Manejo de error HTTP primero
         if (!r.ok) {
-            var mensajeError = data && typeof data.error === 'string' ? data.error : '';
+            var textoErr = await r.text().catch(function() { return ''; });
+            var dataErr = null;
+            try { dataErr = JSON.parse(textoErr); } catch (e) {}
 
-            if (!mensajeError) {
-                if (r.status === 401) {
-                    mensajeError = 'Tu sesión expiró. Inicia sesión nuevamente.';
-                } else if (r.status === 403) {
-                    mensajeError = 'No tienes autorización para usar Marquinhos.';
-                } else if (r.status === 429) {
-                    mensajeError = 'Marquinhos está recibiendo muchas solicitudes. Espera unos segundos.';
-                } else if (r.status >= 500) {
-                    mensajeError = 'El servidor de Marquinhos tuvo un problema. Intenta nuevamente.';
-                } else {
-                    mensajeError = 'Error del servidor (' + r.status + ').';
-                }
+            if (r.status === 502 || r.status === 504) {
+                throw new Error('El servidor está tardando o no disponible. Intenta de nuevo.');
+            }
+            if (r.status === 500) {
+                throw new Error('El servidor tuvo un error interno. Revisa los logs.');
+            }
+            if (r.status === 429) {
+                throw new Error('Demasiadas solicitudes. Espera un momento e intenta de nuevo.');
             }
 
-            throw new Error(mensajeError);
+            throw new Error((dataErr && dataErr.error) || ('Error del servidor (' + r.status + ')'));
         }
 
-        if (contentType.indexOf('application/json') === -1) {
-            throw new Error('Marquinhos devolvió una respuesta inválida.');
+        // Parsear JSON
+        var contentType = r.headers.get('content-type') || '';
+        var data = null;
+
+        if (contentType.indexOf('application/json') !== -1) {
+            try { data = await r.json(); } catch (e) { data = null; }
+        } else {
+            throw new Error('El servidor no devolvió JSON válido.');
         }
 
         if (!data) {
-            throw new Error('No se pudo interpretar la respuesta de Marquinhos.');
+            throw new Error('Respuesta vacía del servidor.');
         }
-
         if (data.success === false) {
-            throw new Error(typeof data.error === 'string' ? data.error : 'Marquinhos no pudo responder.');
+            throw new Error(data.error || 'Marquinhos no pudo responder.');
         }
 
-        var respuesta = '';
-
-        if (typeof data.reply === 'string') respuesta = data.reply;
-        else if (typeof data.response === 'string') respuesta = data.response;
-        else if (typeof data.message === 'string') respuesta = data.message;
-
-        respuesta = _botLimpiarTexto(respuesta).trim();
-
+        var respuesta = typeof data.reply === 'string' ? data.reply.trim() : '';
         if (!respuesta) {
             throw new Error('Marquinhos respondió sin contenido.');
         }
 
-        return respuesta;
-
+        // Limpieza extra en frontend
+        return limpiarMarkdown(respuesta);
     } catch (error) {
-        if (error && error.name === 'AbortError') {
+        if (error.name === 'AbortError') {
             throw new Error('Marquinhos está tardando demasiado en responder. Intenta nuevamente.');
         }
-
-        if (
-            error &&
-            error.name === 'TypeError' &&
-            /Failed to fetch|NetworkError|Load failed/i.test(error.message || '')
-        ) {
-            throw new Error('No se pudo conectar con Marquinhos. Revisa tu conexión.');
+        if (error.name === 'TypeError' && /Failed to fetch|NetworkError/i.test(error.message || '')) {
+            throw new Error('No se pudo conectar con el servidor. Revisa tu conexión.');
         }
-
         throw error;
-
     } finally {
-        if (timeout) clearTimeout(timeout);
+        clearTimeout(timeout);
+        if (_botAbortController === controller) {
+            _botAbortController = null;
+        }
     }
 }
 
-// ----------------------------------------------------------------
-// GRABAR VOZ PARA MARQUINHOS
-// ----------------------------------------------------------------
+// ================================================================
+// GRABAR VOZ PARA EL BOT
+// ================================================================
 async function grabarVozParaBot() {
-    if (typeof current !== 'undefined' && current && current.bot === false) {
+    if (!current || !current.bot) return;
+    if (!await auth()) return;
+
+    if (enviandoVozBot) {
+        toast('⏳ Procesando audio anterior. Espera un momento…', 'warning');
         return;
     }
 
-    if (typeof auth === 'function') {
-        var autenticado = await auth();
-        if (!autenticado) return;
-    }
-
-    if (typeof enviandoVozBot !== 'undefined' && enviandoVozBot) {
-        _botToast('⏳ Procesando audio anterior. Espera un momento…', 'warning');
-        return;
-    }
-
-    if (typeof voiceBotGrabando !== 'undefined' && voiceBotGrabando) {
-        if (
-            typeof voiceBotRecorder !== 'undefined' &&
-            voiceBotRecorder &&
-            voiceBotRecorder.state !== 'inactive'
-        ) {
-            voiceBotRecorder.stop();
+    // Si ya está grabando → detener
+    if (voiceBotGrabando) {
+        var rec = voiceBotRecorder;
+        if (rec && rec.state !== 'inactive') {
+            try { rec.stop(); } catch (e) {}
         }
         return;
     }
 
-    if (
-        !navigator.mediaDevices ||
-        typeof navigator.mediaDevices.getUserMedia !== 'function'
-    ) {
-        _botToast('❌ Este navegador no permite acceder al micrófono.', 'error');
-        return;
-    }
+    var stream = null;
 
     try {
-        var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         voiceBotChunks = [];
 
+        // MIME type robusto
         var mimeType = '';
-
-        if (
-            typeof MediaRecorder !== 'undefined' &&
-            typeof MediaRecorder.isTypeSupported === 'function'
-        ) {
-            var tipos = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'];
-
-            for (var i = 0; i < tipos.length; i++) {
-                if (MediaRecorder.isTypeSupported(tipos[i])) {
-                    mimeType = tipos[i];
-                    break;
+        try {
+            if (window.MediaRecorder && MediaRecorder.isTypeSupported) {
+                var candidatos = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
+                for (var i = 0; i < candidatos.length; i++) {
+                    if (MediaRecorder.isTypeSupported(candidatos[i])) {
+                        mimeType = candidatos[i];
+                        break;
+                    }
                 }
             }
-        }
+        } catch (e) {}
 
         voiceBotRecorder = mimeType
             ? new MediaRecorder(stream, { mimeType: mimeType })
             : new MediaRecorder(stream);
 
-        voiceBotRecorder.ondataavailable = function(e) {
-            if (e.data && e.data.size) {
-                voiceBotChunks.push(e.data);
-            }
+        // Capturar referencia local al recorder para evitar overwrite
+        var recorderLocal = voiceBotRecorder;
+
+        recorderLocal.ondataavailable = function(e) {
+            if (e.data && e.data.size) voiceBotChunks.push(e.data);
         };
 
-        voiceBotRecorder.onerror = function(e) {
-            console.error('[Bot] MediaRecorder error:', e);
-            stream.getTracks().forEach(function(track) { track.stop(); });
+        recorderLocal.onerror = function(e) {
+            console.error('[Mensajes/Bot] MediaRecorder error:', e);
+            if (stream) stream.getTracks().forEach(function(t) { t.stop(); });
             voiceBotGrabando = false;
-
-            var errorBtn = $('voiceBot');
-            if (errorBtn) {
-                errorBtn.classList.remove('recording');
-                errorBtn.textContent = '✦';
+            var btnErr = $('voiceBot');
+            if (btnErr) {
+                btnErr.classList.remove('recording');
+                btnErr.textContent = '🔊';
             }
         };
 
-        voiceBotRecorder.onstop = async function() {
-            stream.getTracks().forEach(function(track) { track.stop(); });
+        recorderLocal.onstop = async function() {
+            // Detener micrófono
+            if (stream) {
+                try { stream.getTracks().forEach(function(t) { t.stop(); }); } catch (e) {}
+            }
             voiceBotGrabando = false;
 
             var btn = $('voiceBot');
             if (btn) {
                 btn.classList.remove('recording');
-                btn.textContent = '✦';
+                btn.textContent = '🔊';
             }
 
-            var tipoAudio = voiceBotRecorder.mimeType || mimeType || 'audio/webm';
-            var blob = new Blob(voiceBotChunks, { type: tipoAudio });
-            voiceBotChunks = [];
+            try {
+                var blob = new Blob(voiceBotChunks, {
+                    type: recorderLocal.mimeType || mimeType || 'audio/webm'
+                });
+                voiceBotChunks = [];
 
-            if (!blob.size) {
-                _botToast('⚠️ No se capturó audio.', 'error');
-                return;
+                if (!blob.size) {
+                    toast('⚠️ No se capturó audio', 'error');
+                    return;
+                }
+
+                // Extensión según mime
+                var ext = 'webm';
+                if ((recorderLocal.mimeType || '').indexOf('mp4') !== -1) ext = 'm4a';
+                else if ((recorderLocal.mimeType || '').indexOf('ogg') !== -1) ext = 'ogg';
+
+                var file = new File([blob], 'voz-' + Date.now() + '.' + ext, {
+                    type: blob.type
+                });
+
+                await enviarVozAlBot(file);
+            } catch (err) {
+                console.error('[Mensajes/Bot] Error procesando audio:', err);
+                toast('❌ Error procesando audio', 'error');
             }
-
-            var extension = tipoAudio.indexOf('mp4') !== -1 ? 'mp4' : 'webm';
-            var file = new File(
-                [blob],
-                'voz-' + Date.now() + '.' + extension,
-                { type: tipoAudio }
-            );
-
-            await enviarVozAlBot(file);
         };
 
-        voiceBotRecorder.start();
+        recorderLocal.start();
         voiceBotGrabando = true;
 
         var btn2 = $('voiceBot');
         if (btn2) {
             btn2.classList.add('recording');
-            btn2.textContent = '■';
+            btn2.textContent = '⏹️';
         }
 
-        _botToast('🎙️ Habla ahora… presiona otra vez para enviar');
-
+        toast('🎙️ Habla ahora… presiona otra vez para enviar');
     } catch (e) {
-        console.error('[Bot] Error micrófono:', e);
+        console.error('[Mensajes/Bot] Error micrófono:', e);
+        if (stream) {
+            try { stream.getTracks().forEach(function(t) { t.stop(); }); } catch (_) {}
+        }
         voiceBotGrabando = false;
-        _botToast(
-            e && e.name === 'NotAllowedError'
-                ? '❌ Permiso de micrófono denegado.'
-                : '❌ No se pudo acceder al micrófono.',
-            'error'
-        );
+        toast('❌ No se pudo acceder al micrófono', 'error');
     }
 }
 
-// ----------------------------------------------------------------
-// ENVIAR VOZ A MARQUINHOS
-// ----------------------------------------------------------------
+// ================================================================
+// ENVIAR VOZ AL BOT
+// ================================================================
 async function enviarVozAlBot(file) {
-    if (!file || !file.size) {
-        _botToast('❌ El audio está vacío.', 'error');
-        return;
-    }
-
-    if (typeof enviandoVozBot !== 'undefined' && enviandoVozBot) {
-        _botToast('⏳ Ya hay un audio en proceso. Espera…', 'warning');
-        return;
-    }
-
-    if (!_botTieneDB()) {
-        _botToast('❌ El sistema todavía no está listo.', 'error');
-        return;
-    }
-
-    if (!_botTieneUsuario()) {
-        _botToast('❌ No hay una sesión de usuario activa.', 'error');
+    if (enviandoVozBot) {
+        toast('⏳ Ya hay un audio en proceso. Espera…', 'warning');
         return;
     }
 
@@ -580,308 +315,214 @@ async function enviarVozAlBot(file) {
         btn.disabled = true;
     }
 
-    var tempId = null;
+    var boxLocal = $('messages');
+    var chatIdCapturado = current ? current.id : null;
+    var tempId = 'voice-user-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
 
     try {
-        var s = typeof session === 'function' ? await session() : null;
-
-        if (!s || !s.access_token) {
-            throw new Error('Tu sesión expiró. Inicia sesión nuevamente.');
+        var s = await session();
+        if (!s) {
+            toast('⚠️ Sesión no disponible', 'error');
+            return;
         }
 
-        var bucket =
-            (typeof CHAT_AUDIO_BUCKET !== 'undefined' && CHAT_AUDIO_BUCKET)
-                ? CHAT_AUDIO_BUCKET
-                : 'chat-audio';
+        // ---- Subir audio a Storage ----
+        var path = user.id + '/bot-voice/' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.webm';
 
-        var path = user.id + '/bot-voice/' + Date.now() + '.webm';
+        var upRes = await db.storage.from(CHAT_AUDIO_BUCKET).upload(path, file, {
+            contentType: file.type || 'audio/webm',
+            upsert: false,
+            cacheControl: '3600'
+        });
 
-        var uploadResult = await db.storage.from(bucket).upload(
-            path,
-            file,
-            {
-                contentType: file.type || 'audio/webm',
-                upsert: false
-            }
-        );
-
-        if (uploadResult && uploadResult.error) {
-            throw new Error('Error subiendo el audio: ' + uploadResult.error.message);
+        if (upRes.error) {
+            console.error('[Mensajes/Bot] Error subiendo audio:', upRes.error);
+            toast('❌ Error subiendo audio', 'error');
+            return;
         }
 
-        var signed = await db.storage.from(bucket).createSignedUrl(path, 3600);
-
-        if (!signed || signed.error || !signed.data || !signed.data.signedUrl) {
-            throw new Error('No se pudo generar el enlace temporal del audio.');
+        // ---- URL firmada ----
+        var signedRes = await db.storage.from(CHAT_AUDIO_BUCKET).createSignedUrl(path, 3600);
+        if (!signedRes || !signedRes.data || !signedRes.data.signedUrl) {
+            toast('❌ Error firmando audio', 'error');
+            return;
         }
 
-        tempId = 'voice-user-' + Date.now();
+        var signedUrl = signedRes.data.signedUrl;
 
-        var box = $('messages');
-        if (!box) {
-            throw new Error('No se encontró el contenedor de mensajes.');
+        // ---- Verificar que seguimos en el chat del bot ----
+        if (!current || current.id !== chatIdCapturado || !current.bot) {
+            toast('ℹ️ Cambiaste de chat. El audio se enviará cuando vuelvas.', 'warning');
+            return;
         }
 
+        // ---- Insertar burbuja temporal ----
         var tempHTML =
-            '<div class="bubblewrap sent" id="' + _botEsc(tempId) + '">' +
+            '<div class="bubblewrap sent" id="' + tempId + '">' +
                 '<div class="bubble">' +
                     '<div class="voice-label">🎙️ TU VOZ</div>' +
-                    '<div class="voice-loading">Enviando a Marquinhos…</div>' +
+                    '<div class="voice-loading">Enviando a ' + BOT_NOMBRE + '…</div>' +
                 '</div>' +
             '</div>';
 
-        var anchorRef = box.querySelector('#scrollAnchor');
+        var anchorRef = boxLocal ? boxLocal.querySelector('#scrollAnchor') : null;
+        if (anchorRef) anchorRef.insertAdjacentHTML('beforebegin', tempHTML);
+        else if (boxLocal) boxLocal.insertAdjacentHTML('beforeend', tempHTML);
 
-        if (anchorRef) {
-            anchorRef.insertAdjacentHTML('beforebegin', tempHTML);
-        } else {
-            box.insertAdjacentHTML('beforeend', tempHTML);
-        }
+        scrollToBottom(true);
 
-        _botScroll();
-
+        // ---- Llamar a la API con reintentos para 429 ----
         var intentos = 0;
         var maxIntentos = 3;
-        var data = null;
+        var exito = false;
+        var data = {};
 
-        while (intentos < maxIntentos) {
+        while (intentos < maxIntentos && !exito) {
             var r = await fetch('/api/ai/voice/chat', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json',
                     'Authorization': 'Bearer ' + s.access_token
                 },
                 body: JSON.stringify({
-                    audio_url: signed.data.signedUrl
+                    audio_url: signedUrl,
+                    audioUrl: signedUrl
                 })
             });
 
-            var texto = '';
-
-            try {
-                texto = await r.text();
-            } catch (e) {
-                texto = '';
-            }
-
-            data = null;
-            if (texto) {
-                try {
-                    data = JSON.parse(texto);
-                } catch (e) {
-                    data = null;
-                }
-            }
+            data = await r.json().catch(function() { return {}; });
 
             if (r.status === 429) {
                 intentos++;
-
-                if (intentos >= maxIntentos) break;
-
                 var waitTime = intentos * 2000;
-
-                _botToast(
-                    '⏳ Servidor ocupado. Reintentando en ' + (waitTime / 1000) + 's…',
-                    'warning'
-                );
-
+                toast('⏳ Servidor ocupado. Reintentando en ' + (waitTime / 1000) + 's...', 'warning');
                 await new Promise(function(resolve) { setTimeout(resolve, waitTime); });
                 continue;
             }
 
-            if (!r.ok) {
-                throw new Error(
-                    data && typeof data.error === 'string'
-                        ? data.error
-                        : 'Error del servicio de voz (' + r.status + ').'
-                );
+            if (!r.ok || data.success === false) {
+                throw new Error(data.error || 'Error del servicio de voz');
             }
-
-            if (!data) {
-                throw new Error('El servidor de voz devolvió una respuesta inválida.');
-            }
-
-            if (data.success === false) {
-                throw new Error(data.error || 'Marquinhos no pudo procesar el audio.');
-            }
-
-            break;
+            exito = true;
         }
 
-        if (!data || data.success === false) {
-            throw new Error('El servidor de IA está saturado. Intenta nuevamente en unos minutos.');
+        if (!exito) {
+            throw new Error('El servidor de IA está saturado. Intenta de nuevo en unos minutos.');
         }
 
+        // ---- Eliminar burbuja temporal ----
         var tempEl = document.getElementById(tempId);
         if (tempEl) tempEl.remove();
 
-        // Guardar audio del usuario
+        // ---- Verificar contexto otra vez ----
+        if (!current || current.id !== chatIdCapturado || !current.bot) {
+            toast('ℹ️ Cambiaste de chat. La respuesta se guardará en el historial.', 'warning');
+        }
+
+        // ---- Guardar nota de voz del usuario en BD ----
         try {
             await db.from('mensajes_chat').insert({
                 remitente_id: user.id,
-                destinatario_id: _normalizarBotId(
-                    typeof BOT_UUID !== 'undefined' ? BOT_UUID : null
-                ),
-                contenido:
-                    typeof data.transcripcion === 'string' && data.transcripcion.trim()
-                        ? data.transcripcion.trim()
-                        : file.name,
+                destinatario_id: BOT_UUID,
+                contenido: data.transcripcion || file.name,
                 nombre_archivo: file.name,
-                imagen_url: 'bucket://' + bucket + '/' + path,
+                imagen_url: 'bucket://' + CHAT_AUDIO_BUCKET + '/' + path,
                 tipo: 'audio',
                 leido: true,
                 editado: false,
-                eliminado: false
+                eliminado: false,
+                es_bot: false
             });
         } catch (e) {
-            console.warn('[Bot] No se pudo guardar nota de voz:', e);
+            console.warn('[Mensajes/Bot] No se pudo guardar nota de voz:', e);
         }
 
-        // Guardar respuesta del bot
-        if (typeof data.reply === 'string' && data.reply.trim()) {
+        // ---- Guardar respuesta del bot en BD ----
+        if (data.reply) {
             try {
                 await db.from('mensajes_chat').insert({
-                    remitente_id: _normalizarBotId(
-                        typeof BOT_UUID !== 'undefined' ? BOT_UUID : null
-                    ),
+                    remitente_id: BOT_UUID,
                     destinatario_id: user.id,
                     contenido: data.reply,
                     tipo: 'texto',
                     leido: true,
                     editado: false,
-                    eliminado: false
+                    eliminado: false,
+                    es_bot: true,
+                    bot_nombre: BOT_NOMBRE
                 });
             } catch (e) {
-                console.warn('[Bot] No se pudo guardar respuesta:', e);
+                console.warn('[Mensajes/Bot] No se pudo guardar respuesta del bot:', e);
             }
         }
 
-        // Renderizar respuesta
-        var botId = 'voice-bot-' + Date.now();
-        var respuestaBot =
-            typeof data.reply === 'string' && data.reply.trim()
-                ? _botLimpiarTexto(data.reply)
-                : 'Sin respuesta';
-
-        var botBody = '<div class="bubble-bot-info">✦ MARQUINHOS</div>';
-
-        if (typeof data.transcripcion === 'string' && data.transcripcion.trim()) {
-            botBody += '<div class="bot-transcripcion">🎙️ "' + _botEsc(data.transcripcion) + '"</div>';
+        // ---- Verificar contexto antes de renderizar ----
+        if (!current || current.id !== chatIdCapturado || !current.bot) {
+            loadConversations();
+            return;
         }
 
-        botBody += '<div>' + _botEsc(respuestaBot) + '</div>';
+        // ---- Renderizar burbuja del bot ----
+        var botId = 'voice-bot-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+        var botBody = '<div class="bubble-bot-info">✦ ' + BOT_NOMBRE.toUpperCase() + '</div>';
 
-        if (typeof data.audio_url === 'string' && data.audio_url) {
-            botBody += '<audio class="bot-audio" controls src="' + _botEsc(data.audio_url) + '"></audio>';
+        if (data.transcripcion) {
+            botBody += '<div class="bot-transcripcion">🎙️ "' + esc(data.transcripcion) + '"</div>';
+        }
+
+        botBody += '<div>' + esc(limpiarMarkdown(data.reply || 'Sin respuesta')) + '</div>';
+
+        if (data.audio_url && urlSegura(data.audio_url)) {
+            botBody += '<audio class="bot-audio" controls preload="metadata" src="' + esc(data.audio_url) + '"></audio>';
         }
 
         var botHTML =
-            '<div class="bubblewrap received" id="' + _botEsc(botId) + '">' +
+            '<div class="bubblewrap received" id="' + botId + '">' +
                 '<div class="bubble">' + botBody + '</div>' +
             '</div>';
 
-        var box2 = $('messages');
+        isUserAtBottom = true;
 
-        if (box2) {
-            var anchorRef2 = box2.querySelector('#scrollAnchor');
+        var anchorRef2 = boxLocal ? boxLocal.querySelector('#scrollAnchor') : null;
+        if (anchorRef2) anchorRef2.insertAdjacentHTML('beforebegin', botHTML);
+        else if (boxLocal) boxLocal.insertAdjacentHTML('beforeend', botHTML);
 
-            if (anchorRef2) {
-                anchorRef2.insertAdjacentHTML('beforebegin', botHTML);
-            } else {
-                box2.insertAdjacentHTML('beforeend', botHTML);
-            }
+        observarCargaMultimedia(boxLocal);
+        scrollToBottom(true);
 
-            if (typeof observarCargaMultimedia === 'function') {
-                try { observarCargaMultimedia(box2); } catch (e) {}
-            }
-
-            _botScroll();
-
-            if (typeof data.audio_url === 'string' && data.audio_url) {
-                var audio = document.querySelector('#' + botId + ' audio');
-                if (audio) audio.play().catch(function() {});
+        // Autoplay del audio del bot
+        if (data.audio_url && urlSegura(data.audio_url)) {
+            var audio = document.querySelector('#' + botId + ' audio');
+            if (audio && document.body.contains(audio)) {
+                audio.play().catch(function(err) {
+                    if (window.DEBUG_CHAT) console.warn('[Mensajes/Bot] Autoplay bloqueado:', err);
+                });
             }
         }
 
-        if (typeof loadConversations === 'function') {
-            try {
-                await loadConversations();
-            } catch (e) {
-                console.warn('[Bot] No se pudo actualizar conversaciones:', e);
-            }
-        }
-
+        loadConversations();
     } catch (e) {
-        console.error('[Bot] Error voz Marquinhos:', e);
+        console.error('[Mensajes/Bot] Error enviando voz:', e);
 
-        if (tempId) {
-            var temp = document.getElementById(tempId);
-            if (temp) temp.remove();
-        }
+        var tempEl2 = document.getElementById(tempId);
+        if (tempEl2) tempEl2.remove();
 
-        var msg = e && e.message ? e.message : 'No se pudo procesar el audio.';
-
-        if (
-            msg.indexOf('429') !== -1 ||
-            /Too Many Requests/i.test(msg) ||
-            /saturado/i.test(msg)
-        ) {
-            _botToast(
-                '⏳ Marquinhos está saturado. Espera unos segundos e intenta nuevamente.',
-                'warning'
-            );
+        if (e.message.indexOf('429') !== -1 ||
+            e.message.indexOf('Too Many Requests') !== -1 ||
+            e.message.indexOf('saturado') !== -1) {
+            toast('⏳ El asistente está saturado. Espera unos segundos e intenta de nuevo.', 'warning');
         } else {
-            _botToast('❌ ' + msg, 'error');
+            toast('❌ ' + (e.message || 'Error desconocido'), 'error');
         }
-
     } finally {
         enviandoVozBot = false;
-
         var btn3 = $('voiceBot');
         if (btn3) {
             btn3.classList.remove('processing');
-            btn3.textContent = '✦';
+            btn3.textContent = '🔊';
             btn3.disabled = false;
         }
     }
-}
-
-// ================================================================
-// ✅ v2.5: API UNIFICADA — enviar mensaje al bot desde cualquier lugar
-// ================================================================
-async function enviarMensajeAlBot(texto) {
-    if (!texto || typeof texto !== 'string' || !texto.trim()) {
-        throw new Error('El mensaje está vacío.');
-    }
-
-    if (typeof current === 'undefined' || !current) {
-        throw new Error('No hay una conversación activa. Abre el chat de Marquinhos primero.');
-    }
-
-    if (!current.bot && !_esIdDelBot(current.id)) {
-        throw new Error('La conversación activa no es con Marquinhos. Ábrela primero.');
-    }
-
-    if (typeof sendMessage === 'function') {
-        await sendMessage(texto.trim());
-        return true;
-    }
-
-    throw new Error('sendMessage no está disponible. El sistema todavía se está inicializando.');
-}
-
-// ================================================================
-// ✅ v2.5: VERIFICAR ESTADO DEL BOT
-// ================================================================
-function _botEstaListo() {
-    return (
-        typeof cargarHistorialParaBot === 'function' &&
-        typeof preguntarAlBot === 'function' &&
-        typeof enviarVozAlBot === 'function' &&
-        typeof db !== 'undefined' &&
-        db !== null
-    );
 }
 
 // ================================================================
@@ -891,73 +532,11 @@ window.cargarHistorialParaBot = cargarHistorialParaBot;
 window.preguntarAlBot = preguntarAlBot;
 window.grabarVozParaBot = grabarVozParaBot;
 window.enviarVozAlBot = enviarVozAlBot;
-window.enviarMensajeAlBot = enviarMensajeAlBot;
-window._esIdDelBot = _esIdDelBot;
-window._normalizarBotId = _normalizarBotId;
-window._botEstaListo = _botEstaListo;
-
-// ----------------------------------------------------------------
-// NAMESPACE Chat
-// ----------------------------------------------------------------
-window.Chat = window.Chat || {};
-
-window.Chat.cargarHistorialParaBot = cargarHistorialParaBot;
-window.Chat.preguntarAlBot = preguntarAlBot;
-window.Chat.grabarVozParaBot = grabarVozParaBot;
-window.Chat.enviarVozAlBot = enviarVozAlBot;
-window.Chat.enviarMensajeAlBot = enviarMensajeAlBot;
-window.Chat._botEstaListo = _botEstaListo;
+window.cancelarOperacionesBot = cancelarOperacionesBot;
 
 // ================================================================
-// ✅ v2.5: EVENTO DE LISTO
+// LOG FINAL
 // ================================================================
-try {
-    window.dispatchEvent(new CustomEvent('marquinhos:listo', {
-        detail: {
-            version: '2.6',
-            funciones: [
-                'cargarHistorialParaBot',
-                'preguntarAlBot',
-                'grabarVozParaBot',
-                'enviarVozAlBot',
-                'enviarMensajeAlBot'
-            ],
-            timestamp: Date.now()
-        }
-    }));
-} catch (e) {
-    console.warn('[Bot] No se pudo emitir evento marquinhos:listo:', e);
+if (window.DEBUG_CHAT) {
+    console.log('[Mensajes/Bot] ✅ Bot cargado');
 }
-
-// ================================================================
-// ✅ v2.6: VERIFICAR QUE EL ECOSISTEMA ESTÉ COMPLETO
-// ================================================================
-setTimeout(function() {
-    var faltantes = [];
-
-    if (typeof window.abrirConversacionBot !== 'function') faltantes.push('abrirConversacionBot');
-    if (typeof window.sendMessage !== 'function') faltantes.push('sendMessage');
-    if (typeof window.renderMessages !== 'function') faltantes.push('renderMessages');
-    if (typeof window.loadConversations !== 'function') faltantes.push('loadConversations');
-    if (typeof window.openConversation !== 'function') faltantes.push('openConversation');
-
-    if (faltantes.length > 0) {
-        console.error('[Bot] ❌ Funciones del ecosistema no disponibles:', faltantes);
-        console.error('[Bot] Verifica el orden de carga en mensajes.html');
-    } else {
-        console.log('[Bot] ✅ Ecosistema completo verificado');
-    }
-}, 2000);
-
-// ================================================================
-// DIAGNÓSTICO
-// ================================================================
-console.log('[Mensajes] ✅ Marquinhos Bot v2.6 cargado');
-console.log('[Mensajes] abrirConversacionBot: delegada a mensajes-chat.js');
-console.log('[Mensajes] API unificada disponible:');
-console.log('  • window.cargarHistorialParaBot');
-console.log('  • window.preguntarAlBot');
-console.log('  • window.grabarVozParaBot');
-console.log('  • window.enviarVozAlBot');
-console.log('  • window.enviarMensajeAlBot');
-console.log('  • window.Chat._botEstaListo()');
