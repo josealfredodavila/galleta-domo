@@ -1,62 +1,29 @@
 // ================================================================
-// MENSAJES · AUTENTICACIÓN
+// MENSAJES · AUTH
 // ================================================================
-// Inicialización de Supabase, sesión, perfil de usuario.
-// Depende de: mensajes-config.js, mensajes-utils.js
+// Sesión, autenticación, perfil, avatar del header y visor de foto.
+// Se carga DESPUÉS de mensajes-config.js y mensajes-utils.js.
+//
+// FUENTE DE VERDAD: monolítico mensajes.html original.
+// COMPATIBLE CON: tabla usuarios, perfiles_publicos, bucket sariels-avatars.
 // ================================================================
 
-// ================================================================
-// INICIALIZAR SUPABASE (idempotente)
-// ================================================================
-function inicializarSupabase() {
-    // Si ya existe, reutilizarlo
-    if (window.supabaseClient && typeof window.supabaseClient.from === 'function') {
-        db = window.supabaseClient;
-        return db;
-    }
-
-    // Verificar SDK
-    var SDK = window.supabase;
-    if (!SDK || typeof SDK.createClient !== 'function') {
-        console.error('[Auth] Supabase SDK no disponible');
-        return null;
-    }
-
-    // Crear cliente
-    try {
-        db = SDK.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-            auth: {
-                persistSession: true,
-                autoRefreshToken: true,
-                detectSessionInUrl: true
-            },
-            realtime: {
-                params: { eventsPerSecond: 10 }
-            }
-        });
-        window.supabaseClient = db;
-        console.log('[Auth] ✅ Supabase Client inicializado');
-        return db;
-    } catch (e) {
-        console.error('[Auth] ❌ Error inicializando Supabase:', e);
-        return null;
-    }
-}
+'use strict';
 
 // ================================================================
-// OBTENER SESIÓN ACTUAL
+// SESIÓN
 // ================================================================
 async function session() {
     if (!db) {
-        db = inicializarSupabase();
-        if (!db) return null;
+        console.warn('[Mensajes/Auth] db no disponible');
+        return null;
     }
     try {
         var r = await db.auth.getSession();
         if (r.error) throw r.error;
         return r.data.session;
     } catch (e) {
-        console.warn('[Auth] Error obteniendo sesión:', e);
+        console.warn('[Mensajes/Auth] Error obteniendo sesión:', e);
         return null;
     }
 }
@@ -65,7 +32,7 @@ async function session() {
 // ESPERAR SESIÓN (con timeout)
 // ================================================================
 async function esperarSesion(maxMs) {
-    maxMs = maxMs || 2000;
+    maxMs = maxMs || 3000;
     var inicio = Date.now();
     while (Date.now() - inicio < maxMs) {
         var s = await session();
@@ -80,30 +47,37 @@ async function esperarSesion(maxMs) {
 // ================================================================
 async function auth() {
     try {
-        // Asegurar que db exista
+        // Optimización: si ya tenemos user, devolver true
+        if (user && user.id) return true;
+
+        // Si no hay db, intentar inicializar desde config
         if (!db) {
-            db = inicializarSupabase();
-            if (!db) {
-                console.warn('[Auth] No hay db');
+            if (window.supabaseClient) {
+                db = window.supabaseClient;
+            } else if (window.supabase && window.supabase.createClient) {
+                db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+                    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+                });
+                window.supabaseClient = db;
+            } else {
+                console.warn('[Mensajes/Auth] No hay cliente Supabase');
                 return false;
             }
         }
 
-        // Si ya tenemos user, devolver true (optimización)
-        if (user && user.id) return true;
-
-        // Consultar sesión
         var s = await session();
         if (!s || !s.user) {
-            console.warn('[Auth] No hay sesión activa');
+            console.warn('[Mensajes/Auth] No hay sesión activa');
             return false;
         }
 
         user = s.user;
-        console.log('[Auth] ✅ Usuario autenticado:', user.id);
+        if (window.DEBUG_CHAT) {
+            console.log('[Mensajes/Auth] ✅ Usuario autenticado:', user.id);
+        }
         return true;
     } catch (e) {
-        console.error('[Auth] Error en auth():', e);
+        console.error('[Mensajes/Auth] Error en auth():', e);
         return false;
     }
 }
@@ -112,13 +86,15 @@ async function auth() {
 // PERFIL DE USUARIO
 // ================================================================
 async function profile(id) {
-    if (!id) return { id: null, nombre: 'Usuario', avatar_url: null, online: false };
+    if (!id) {
+        return { id: null, nombre: 'Usuario', avatar_url: null, online: false };
+    }
 
     // Si es el bot
-    if (id === BOT_ID) {
+    if (id === BOT_ID || id === BOT_UUID) {
         return {
             id: BOT_ID,
-            nombre: 'Marquinhos',
+            nombre: BOT_NOMBRE,
             handle: 'marquinhos',
             avatar_url: null,
             online: true,
@@ -129,19 +105,28 @@ async function profile(id) {
     try {
         var r = await db
             .from('perfiles_publicos')
-            .select('id,nombre,handle,avatar_url,online,ultima_conexion')
+            .select('id,nombre,handle,avatar_url,online,ultima_conexion,verificado')
             .eq('id', id)
             .maybeSingle();
 
-        return r.data || { id: id, nombre: 'Usuario', avatar_url: null, online: false };
+        if (r.error) {
+            console.warn('[Mensajes/Auth] Error profile():', r.error);
+            return { id: id, nombre: 'Usuario', avatar_url: null, online: false };
+        }
+
+        if (!r.data) {
+            return { id: id, nombre: 'Usuario', avatar_url: null, online: false };
+        }
+
+        return r.data;
     } catch (e) {
-        console.warn('[Auth] Error profile():', e);
+        console.warn('[Mensajes/Auth] Excepción profile():', e);
         return { id: id, nombre: 'Usuario', avatar_url: null, online: false };
     }
 }
 
 // ================================================================
-// CARGAR FOTO DEL HEADER
+// CARGAR FOTO DEL HEADER + PERFIL MODAL
 // ================================================================
 async function cargarFotoHeader() {
     if (!user || !user.id) return;
@@ -154,19 +139,23 @@ async function cargarFotoHeader() {
             .maybeSingle();
 
         if (result.error) {
-            console.warn('[Auth] No se pudo cargar perfil:', result.error.message);
+            console.warn('[Mensajes/Auth] No se pudo cargar perfil:', result.error.message);
             return;
         }
 
-        currentUserProfile = result.data;
+        currentUserProfile = result.data || null;
+
+        var nombre = (currentUserProfile && currentUserProfile.nombre) || 'Usuario';
+        var handle = (currentUserProfile && currentUserProfile.handle) || 'usuario';
+        var avatarUrl = (currentUserProfile && currentUserProfile.avatar_url) || null;
 
         // Header avatar
         var headerAvatar = $('headerAvatar');
         if (headerAvatar) {
-            if (result.data && result.data.avatar_url) {
-                headerAvatar.innerHTML = '<img src="' + esc(result.data.avatar_url) + '" alt="Mi foto">';
+            if (avatarUrl) {
+                headerAvatar.innerHTML = '<img src="' + esc(avatarUrl) + '" alt="Mi foto">';
             } else {
-                var inicial = ((result.data && (result.data.nombre || result.data.handle)) || '◈').charAt(0).toUpperCase();
+                var inicial = nombre.charAt(0).toUpperCase();
                 headerAvatar.innerHTML = esc(inicial);
             }
         }
@@ -174,21 +163,23 @@ async function cargarFotoHeader() {
         // Modal avatar
         var modalAvatar = $('profileModalAvatar');
         if (modalAvatar) {
-            modalAvatar.innerHTML = (result.data && result.data.avatar_url)
-                ? '<img src="' + esc(result.data.avatar_url) + '" alt="Mi foto">'
-                : esc(((result.data && (result.data.nombre || result.data.handle)) || '◈').charAt(0).toUpperCase());
+            if (avatarUrl) {
+                modalAvatar.innerHTML = '<img src="' + esc(avatarUrl) + '" alt="Mi foto">';
+            } else {
+                modalAvatar.innerHTML = esc(nombre.charAt(0).toUpperCase());
+            }
         }
 
         // Modal nombre
         var modalName = $('profileModalName');
-        if (modalName) modalName.textContent = (result.data && result.data.nombre) || 'Mi Perfil';
+        if (modalName) modalName.textContent = nombre;
 
         // Modal handle
         var modalHandle = $('profileModalHandle');
-        if (modalHandle) modalHandle.textContent = '@' + ((result.data && result.data.handle) || 'usuario');
+        if (modalHandle) modalHandle.textContent = '@' + handle;
 
     } catch (e) {
-        console.warn('[Auth] Error cargando foto del header:', e);
+        console.warn('[Mensajes/Auth] Error cargando foto del header:', e);
     }
 }
 
@@ -209,34 +200,40 @@ function cerrarProfileModal() {
 // SUBIR FOTO DEL HEADER
 // ================================================================
 async function subirFotoHeader(event) {
-    var file = event.target.files[0];
+    var file = event && event.target && event.target.files ? event.target.files[0] : null;
     if (!file) return;
+
     if (!await auth()) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-        toast('La imagen no puede superar 5 MB', 'error');
-        event.target.value = '';
-        return;
-    }
-    if (!file.type.startsWith('image/')) {
-        toast('Solo se permiten imágenes', 'error');
+    if (file.size > MAX_IMAGE_SIZE) {
+        toast('❌ La imagen no puede superar los 5 MB', 'error');
         event.target.value = '';
         return;
     }
 
-    var fileExt = file.name.split('.').pop().toLowerCase();
+    if (!file.type.startsWith('image/')) {
+        toast('❌ Solo se permiten imágenes', 'error');
+        event.target.value = '';
+        return;
+    }
+
+    var fileExt = (file.name.split('.').pop() || 'jpg').toLowerCase();
     var filePath = user.id + '/avatar.' + fileExt;
 
     try {
-        toast('Subiendo foto...', '', 5000);
+        toast('⏳ Subiendo foto...', '', 5000);
 
         var uploadResult = await db.storage
-            .from('sariels-avatars')
-            .upload(filePath, file, { upsert: true, contentType: file.type });
+            .from(AVATARS_BUCKET)
+            .upload(filePath, file, {
+                upsert: true,
+                contentType: file.type,
+                cacheControl: '3600'
+            });
 
         if (uploadResult.error) throw uploadResult.error;
 
-        var urlData = db.storage.from('sariels-avatars').getPublicUrl(filePath);
+        var urlData = db.storage.from(AVATARS_BUCKET).getPublicUrl(filePath);
         var publicUrl = urlData.data.publicUrl + '?t=' + Date.now();
 
         var updateResult = await db
@@ -246,12 +243,13 @@ async function subirFotoHeader(event) {
 
         if (updateResult.error) throw updateResult.error;
 
-        toast('Foto actualizada correctamente', 'success');
+        toast('✅ Foto actualizada correctamente', 'success');
         event.target.value = '';
+
         await cargarFotoHeader();
     } catch (error) {
-        console.error('[Auth] Error al subir foto:', error);
-        toast('Error al subir foto: ' + error.message, 'error');
+        console.error('[Mensajes/Auth] Error al subir foto:', error);
+        toast('❌ Error al subir foto: ' + (error.message || 'desconocido'), 'error');
     }
 }
 
@@ -259,10 +257,11 @@ async function subirFotoHeader(event) {
 // VISOR DE FOTO AMPLIADA
 // ================================================================
 function verFotoAmpliada(url, nombre, handle) {
-    if (!url) {
-        toast('Este usuario no tiene foto de perfil', 'warning');
+    if (!url || !urlSegura(url)) {
+        toast('ℹ️ Este usuario no tiene foto de perfil', 'warning');
         return;
     }
+
     var img = $('pvImage');
     if (img) img.src = url;
 
@@ -281,4 +280,39 @@ function cerrarPhotoViewer() {
     if (el) el.classList.remove('show');
 }
 
-console.log('[Mensajes] ✅ Auth cargado');
+// ================================================================
+// SIGNOUT (por si se usa desde algún botón)
+// ================================================================
+async function cerrarSesion() {
+    try {
+        if (db && db.auth) {
+            await db.auth.signOut();
+        }
+        window.location.href = '/';
+    } catch (e) {
+        console.error('[Mensajes/Auth] Error cerrando sesión:', e);
+        toast('❌ Error al cerrar sesión', 'error');
+    }
+}
+
+// ================================================================
+// EXPOSICIÓN GLOBAL
+// ================================================================
+window.session = session;
+window.esperarSesion = esperarSesion;
+window.auth = auth;
+window.profile = profile;
+window.cargarFotoHeader = cargarFotoHeader;
+window.abrirProfileModal = abrirProfileModal;
+window.cerrarProfileModal = cerrarProfileModal;
+window.subirFotoHeader = subirFotoHeader;
+window.verFotoAmpliada = verFotoAmpliada;
+window.cerrarPhotoViewer = cerrarPhotoViewer;
+window.cerrarSesion = cerrarSesion;
+
+// ================================================================
+// LOG FINAL
+// ================================================================
+if (window.DEBUG_CHAT) {
+    console.log('[Mensajes/Auth] ✅ Auth cargado');
+}
