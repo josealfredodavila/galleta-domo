@@ -1,15 +1,17 @@
 // ================================================================
-// MENSAJES · BOT (Marquinhos) — v2.2
+// MENSAJES · BOT (Marquinhos) — v2.3
 // ================================================================
-// FIXES v2.2:
-// - Uso consistente de BOT_UUID para todas las operaciones de BD
-// - Renderizado garantizado de respuestas en el chat activo
-// - Normalización de IDs (BOT_ID ↔ BOT_UUID)
-// - Retry logic para errores 429/timeout
+// FIXES v2.3:
+// - ELIMINADA abrirConversacionBot duplicada (la única versión está
+//   en mensajes-chat.js v3.4). Esto era la causa raíz del bug de
+//   "pantalla en blanco" al abrir el chat del bot.
+// - cargarHistorialParaBot: usa BOT_UUID siempre
+// - preguntarAlBot: sin cambios
+// - enviarVozAlBot: renderiza respuesta en el DOM directamente
 // ================================================================
 
 // ----------------------------------------------------------------
-// HELPERS DE NORMALIZACIÓN DE IDS
+// HELPERS DE NORMALIZACIÓN
 // ----------------------------------------------------------------
 function _normalizarBotId(id) {
     if (!id) return BOT_UUID;
@@ -26,89 +28,8 @@ function _esIdDelBot(id) {
     return s === BOT_ID || s === BOT_UUID;
 }
 
-// ----------------------------------------------------------------
-// ABRIR CONVERSACIÓN CON MARQUINHOS
-// ----------------------------------------------------------------
-async function abrirConversacionBot() {
-    var box = $('messages');
-    if (!box) return;
-
-    var btn = box.querySelector('#scrollDownBtn');
-    var anchor = box.querySelector('#scrollAnchor');
-
-    box.querySelectorAll('.bubblewrap').forEach(function(el) { el.remove(); });
-    box.querySelectorAll('.empty').forEach(function(el) { el.remove(); });
-
-    if (!anchor) {
-        var newAnchor = document.createElement('div');
-        newAnchor.id = 'scrollAnchor';
-        box.appendChild(newAnchor);
-        anchor = newAnchor;
-    }
-
-    if (!btn) {
-        var newBtn = document.createElement('button');
-        newBtn.className = 'scroll-down-btn';
-        newBtn.id = 'scrollDownBtn';
-        newBtn.innerHTML = '↓<span class="badge-new" id="newMsgBadge" style="display:none;">1</span>';
-        box.appendChild(newBtn);
-        newBtn.onclick = function() {
-            isUserAtBottom = true;
-            scrollToBottom(true);
-            actualizarFlecha();
-        };
-    }
-
-    var historial = [];
-    try {
-        var r = await db
-            .from('mensajes_chat')
-            .select('*')
-            .eq('eliminado', false)
-            .or('and(remitente_id.eq.' + user.id + ',destinatario_id.eq.' + BOT_UUID + '),and(remitente_id.eq.' + BOT_UUID + ',destinatario_id.eq.' + user.id + ')')
-            .order('created_at', { ascending: true })
-            .limit(200);
-
-        if (!r.error) historial = r.data || [];
-    } catch (e) {
-        console.warn('[Bot] No se pudo cargar el historial:', e);
-    }
-
-    var anchorRef = box.querySelector('#scrollAnchor');
-
-    if (!historial.length) {
-        anchorRef.insertAdjacentHTML('beforebegin',
-            '<div class="bubblewrap received">' +
-                '<div class="bubble">' +
-                    '<div class="bubble-bot-info">✦ MARQUINHOS</div>' +
-                    '¡Hola! 👋 Soy Marquinhos, el asistente de Sariel\'s. Puedes:<br><br>' +
-                    '◈ Escribirme un mensaje de texto<br>' +
-                    '◈ Enviarme una nota de voz con 🎙️<br>' +
-                    '◈ Hablarme con el botón 🔊 (te responderé con voz)<br><br>' +
-                    '¿En qué te puedo ayudar hoy?' +
-                '</div>' +
-            '</div>');
-        isUserAtBottom = true;
-        scrollToBottom(true);
-        return;
-    }
-
-    var signedUrls = await Promise.all(historial.map(function(m) {
-        return getSignedUrlForMessage(m);
-    }));
-
-    historial.forEach(function(m, i) {
-        if (_yaRenderizado(m.id)) return;
-        _marcarRenderizado(m.id);
-        var esMio = (String(m.remitente_id) === String(user.id));
-        anchorRef.insertAdjacentHTML('beforebegin',
-            messageHTML(m, esMio, signedUrls[i]));
-    });
-
-    isUserAtBottom = true;
-    observarCargaMultimedia(box);
-    scrollToBottom(true);
-}
+// ⚠️ NOTA: `abrirConversacionBot` NO se define aquí.
+// Su definición única y autoritativa está en `mensajes-chat.js v3.4`.
 
 // ----------------------------------------------------------------
 // CARGAR HISTORIAL PARA EL BOT
@@ -172,7 +93,6 @@ async function preguntarAlBot(mensaje, historial) {
             try { data = await r.json(); } catch (e) { data = null; }
         } else {
             var texto = await r.text().catch(function() { return ''; });
-
             if (r.status === 502 || r.status === 504) {
                 throw new Error('El servidor está tardando o no disponible. Intenta de nuevo.');
             }
@@ -207,34 +127,6 @@ async function preguntarAlBot(mensaje, historial) {
     } finally {
         clearTimeout(timeout);
     }
-}
-
-// ----------------------------------------------------------------
-// TYPING INDICATOR
-// ----------------------------------------------------------------
-function mostrarTypingBot() {
-    var box = $('messages');
-    if (!box) return;
-
-    var empty = box.querySelector('.empty');
-    if (empty) empty.remove();
-
-    var anchorRef = box.querySelector('#scrollAnchor');
-    if (anchorRef) {
-        anchorRef.insertAdjacentHTML('beforebegin',
-            '<div class="bubblewrap received" id="typing-bot">' +
-                '<div class="bubble">' +
-                    '<div class="bubble-bot-info">✦ MARQUINHOS</div>' +
-                    '<div class="typing-indicator"><span></span><span></span><span></span></div>' +
-                '</div>' +
-            '</div>');
-    }
-    scrollToBottom(true);
-}
-
-function quitarTypingBot() {
-    var el = $('typing-bot');
-    if (el) el.remove();
 }
 
 // ----------------------------------------------------------------
@@ -306,7 +198,7 @@ async function grabarVozParaBot() {
 }
 
 // ----------------------------------------------------------------
-// ENVIAR VOZ AL BOT Y RECIBIR RESPUESTA
+// ENVIAR VOZ AL BOT
 // ----------------------------------------------------------------
 async function enviarVozAlBot(file) {
     if (enviandoVozBot) {
@@ -334,7 +226,6 @@ async function enviarVozAlBot(file) {
             return;
         }
 
-        // Subir audio
         var path = user.id + '/bot-voice/' + Date.now() + '.webm';
         var upErr = (await db.storage.from(CHAT_AUDIO_BUCKET).upload(path, file, {
             contentType: file.type,
@@ -364,7 +255,6 @@ async function enviarVozAlBot(file) {
             return;
         }
 
-        // Burbuja temporal
         var tempId = 'voice-user-' + Date.now();
         var box = $('messages');
         var anchorRef = box.querySelector('#scrollAnchor');
@@ -380,7 +270,6 @@ async function enviarVozAlBot(file) {
 
         scrollToBottom(true);
 
-        // Llamada a la API de voz con reintentos
         var intentos = 0;
         var maxIntentos = 3;
         var exito = false;
@@ -417,7 +306,6 @@ async function enviarVozAlBot(file) {
         var tempEl = document.getElementById(tempId);
         if (tempEl) tempEl.remove();
 
-        // ✅ FIX: Guardar mensaje del usuario con BOT_UUID
         try {
             await db.from('mensajes_chat').insert({
                 remitente_id: user.id,
@@ -434,7 +322,6 @@ async function enviarVozAlBot(file) {
             console.warn('[Bot] No se pudo guardar la nota de voz:', e);
         }
 
-        // ✅ FIX: Guardar respuesta del bot con BOT_UUID
         if (data.reply) {
             try {
                 await db.from('mensajes_chat').insert({
@@ -451,7 +338,6 @@ async function enviarVozAlBot(file) {
             }
         }
 
-        // ✅ FIX CRÍTICO: Renderizar la respuesta del bot DIRECTAMENTE en el DOM
         var botId = 'voice-bot-' + Date.now();
         var botBody = '<div class="bubble-bot-info">✦ MARQUINHOS</div>';
 
@@ -469,28 +355,23 @@ async function enviarVozAlBot(file) {
             '<div class="bubble">' + botBody + '</div>' +
         '</div>';
 
-        // Forzar scroll al fondo antes de insertar
         isUserAtBottom = true;
 
-        if (anchorRef) anchorRef.insertAdjacentHTML('beforebegin', botHTML);
+        var anchorRef2 = box.querySelector('#scrollAnchor');
+        if (anchorRef2) anchorRef2.insertAdjacentHTML('beforebegin', botHTML);
         else box.insertAdjacentHTML('beforeend', botHTML);
 
         observarCargaMultimedia(box);
         scrollToBottom(true);
 
-        // Autoplay del audio del bot
         if (data.audio_url) {
             var audio = document.querySelector('#' + botId + ' audio');
-            if (audio) {
-                audio.play().catch(function() {});
-            }
+            if (audio) audio.play().catch(function() {});
         }
 
         loadConversations();
     } catch (e) {
         console.error('[Bot] Error voz bot:', e);
-
-        // Limpiar temporal
         document.querySelectorAll('[id^="voice-user-"]').forEach(function(el) { el.remove(); });
 
         if (e.message.indexOf('429') !== -1
@@ -514,14 +395,12 @@ async function enviarVozAlBot(file) {
 // ----------------------------------------------------------------
 // EXPOSICIÓN GLOBAL
 // ----------------------------------------------------------------
-window.abrirConversacionBot = abrirConversacionBot;
+// ⚠️ NO exponemos abrirConversacionBot aquí — ya lo expone mensajes-chat.js
 window.cargarHistorialParaBot = cargarHistorialParaBot;
 window.preguntarAlBot = preguntarAlBot;
-window.mostrarTypingBot = mostrarTypingBot;
-window.quitarTypingBot = quitarTypingBot;
 window.grabarVozParaBot = grabarVozParaBot;
 window.enviarVozAlBot = enviarVozAlBot;
 window._esIdDelBot = _esIdDelBot;
 window._normalizarBotId = _normalizarBotId;
 
-console.log('[Mensajes] ✅ Bot v2.2 cargado (fixes de producción)');
+console.log('[Mensajes] ✅ Bot v2.3 cargado (sin duplicado abrirConversacionBot)');
