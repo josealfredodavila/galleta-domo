@@ -302,90 +302,7 @@
 }
 
 /* ================================================================
-   MODALES DE CREAR CANAL / GRUPO
-   ================================================================ */
-.modal .form-group {
-    margin-bottom: 12px;
-}
-
-.modal .form-group label {
-    display: block;
-    font-size: .7rem;
-    color: var(--muted);
-    font-weight: 600;
-    margin-bottom: 5px;
-    letter-spacing: .3px;
-}
-
-.modal .form-group input,
-.modal .form-group textarea,
-.modal .form-group select {
-    width: 100%;
-    padding: 10px 14px;
-    border-radius: 12px;
-    border: 1px solid var(--border);
-    background: rgba(255, 255, 255, 0.05);
-    color: var(--text);
-    font-size: .82rem;
-    outline: 0;
-    font-family: inherit;
-    resize: vertical;
-}
-
-.modal .form-group input:focus,
-.modal .form-group textarea:focus,
-.modal .form-group select:focus {
-    border-color: var(--gold);
-    background: rgba(255, 255, 255, 0.08);
-}
-
-.modal .form-group input::placeholder,
-.modal .form-group textarea::placeholder {
-    color: var(--muted);
-    opacity: .6;
-}
-
-/* ================================================================
-   BOTÓN PRINCIPAL DORADO
-   ================================================================ */
-.btn-gold-primary {
-    width: 100%;
-    padding: 12px;
-    border-radius: 14px;
-    border: 0;
-    background: linear-gradient(135deg, var(--gold), #b8923a);
-    color: var(--space);
-    font-size: .85rem;
-    font-weight: 800;
-    cursor: pointer;
-    transition: all .2s;
-    font-family: inherit;
-    letter-spacing: .5px;
-    margin-top: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-}
-
-.btn-gold-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
-}
-
-.btn-gold-primary:active {
-    transform: translateY(0);
-}
-
-.btn-gold-primary:disabled {
-    opacity: .5;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-}
-
-/* ================================================================
-   TEMA DÍA — ajustes específicos
+   TEMA DÍA
    ================================================================ */
 html.tema-dia .filtros-canales select,
 html[data-tema="dia"] .filtros-canales select {
@@ -417,17 +334,6 @@ html[data-tema="dia"] .canal-card:hover {
 html.tema-dia .canal-nombre,
 html[data-tema="dia"] .canal-nombre {
     color: var(--text) !important;
-}
-
-html.tema-dia .modal .form-group input,
-html.tema-dia .modal .form-group textarea,
-html.tema-dia .modal .form-group select,
-html[data-tema="dia"] .modal .form-group input,
-html[data-tema="dia"] .modal .form-group textarea,
-html[data-tema="dia"] .modal .form-group select {
-    background: rgba(0, 0, 0, 0.03) !important;
-    color: var(--text) !important;
-    border-color: rgba(0, 0, 0, 0.15) !important;
 }
 
 html.tema-dia .empty-state-small .empty-btn,
