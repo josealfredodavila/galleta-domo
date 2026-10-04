@@ -1,5 +1,5 @@
 // ================================================================
-// MENSAJES · CHAT (v3 — Correcciones completas + Reglas del chat)
+// MENSAJES · CHAT (v3.1 — Auditoría aplicada)
 // ================================================================
 // - Anti-duplicados robusto (registro + DOM)
 // - "Visto" SOLO cuando el receptor contesta (texto/audio/video/foto)
@@ -7,6 +7,8 @@
 // - Límites: texto 1000, audio 5min, video 2min/50MB, foto 10MB
 // - Seguridad: URLs, UUIDs, escape HTML, filtro realtime servidor
 // - Fixes: race conditions, unreadCount, scroll, LRU, removeChannel
+// - ✅ v3.1: markRead legacy, polyfill allSettled, saneo de IDs,
+//           .catch() en _unsubPromise, rate limit en vez de _sending
 // ================================================================
 
 // ----------------------------------------------------------------
@@ -23,8 +25,23 @@ var SCROLL_RETRY_MAX    = 10;
 var KEYBOARD_SCROLL_MS  = 300;
 var KEYBOARD_INPUT_MS   = 50;
 var MARKREAD_DEBOUNCE   = 500;
+var RATE_LIMIT_ENVIO_MS = 500;              // ✅ NUEVO: rate limit
 
 var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// ----------------------------------------------------------------
+// ✅ POLYFILL: Promise.allSettled (para navegadores viejos)
+// ----------------------------------------------------------------
+if (typeof Promise.allSettled !== 'function') {
+    Promise.allSettled = function(promises) {
+        return Promise.all((promises || []).map(function(p) {
+            return Promise.resolve(p).then(
+                function(value) { return { status: 'fulfilled', value: value }; },
+                function(reason) { return { status: 'rejected', reason: reason }; }
+            );
+        }));
+    };
+}
 
 // ----------------------------------------------------------------
 // UTILIDADES INTERNAS
@@ -60,6 +77,12 @@ function _esMensajeParaMi(m) {
 function _esAutoEnvio(m) {
     if (!m || !m.remitente_id || !m.destinatario_id) return false;
     return String(m.remitente_id) === String(m.destinatario_id);
+}
+
+// ✅ NUEVO: saneo de IDs para el DOM
+function _safeDomId(id) {
+    if (!id) return '';
+    return String(id).replace(/[^a-zA-Z0-9-]/g, '');
 }
 
 // ----------------------------------------------------------------
@@ -154,7 +177,7 @@ async function abrirConversacionBot() {
             .limit(200);
         if (!r.error) historial = r.data || [];
     } catch (e) {
-        console.warn('No se pudo cargar historial del bot:', e);
+        console.warn('[Chat] No se pudo cargar historial del bot:', e);
     }
 
     if (!document.body.contains(box)) return;
@@ -204,7 +227,7 @@ async function renderMessages(rows) {
     _limpiarMensajes(box);
     var anchor = _asegurarUIBase(box);
 
-    if (!rows.length) {
+    if (!rows || !rows.length) {
         anchor.insertAdjacentHTML('beforebegin',
             '<div class="empty"><strong>◈</strong><div>Sin mensajes</div><small>Envía el primer mensaje</small></div>');
         return;
@@ -268,12 +291,14 @@ function messageHTML(m, sent, signedUrl) {
     var esNoLeido = !sent && m.leido === false;
     var unreadDot = esNoLeido ? '<span class="unread-dot" title="No leído"></span>' : '';
 
-    var msgId = m.id || ('temp-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8));
-    var idAttr = m.id ? ('id="msg-' + esc(m.id) + '" ') : '';
+    // ✅ Saneo de ID para el DOM
+    var msgIdRaw = m.id || ('temp-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8));
+    var msgIdSafe = _safeDomId(msgIdRaw);
+    var idAttr = m.id ? ('id="msg-' + msgIdSafe + '" ') : '';
 
     var wrapClass = 'bubblewrap ' + (sent ? 'sent' : 'received') + (esNoLeido ? ' is-unread' : '');
 
-    return '<div ' + idAttr + 'class="' + wrapClass + '" data-msg-id="' + esc(msgId) + '">' +
+    return '<div ' + idAttr + 'class="' + wrapClass + '" data-msg-id="' + esc(msgIdSafe) + '">' +
         '<div class="bubble">' + headerBot + body + '</div>' +
         '<div class="meta">' + unreadDot + meta + '</div>' +
     '</div>';
@@ -353,13 +378,26 @@ async function marcarConversacionComoLeida(remitenteId, antesDe) {
 }
 
 // ----------------------------------------------------------------
-// ENVIAR MENSAJE
+// ✅ NUEVO: ALIAS LEGACY markRead (compatibilidad con otros archivos)
 // ----------------------------------------------------------------
-var _sending = false;
+async function markRead(id) {
+    if (!id) return;
+    await marcarConversacionComoLeida(id);
+}
+
+// ----------------------------------------------------------------
+// ENVIAR MENSAJE (con rate limit en vez de bloqueo)
+// ----------------------------------------------------------------
+var _ultimoEnvio = 0;
 
 async function sendMessage(text) {
     if (!current || !text) return;
-    if (_sending) return;
+
+    // ✅ RATE LIMIT: evita doble envío por doble Enter/tap
+    var ahora = Date.now();
+    if (ahora - _ultimoEnvio < RATE_LIMIT_ENVIO_MS) return;
+    _ultimoEnvio = ahora;
+
     if (!await auth()) return;
 
     var textoLimpio = String(text).trim();
@@ -371,8 +409,6 @@ async function sendMessage(text) {
         return;
     }
 
-    _sending = true;
-
     var inputEl = $('messageInput');
     if (inputEl) inputEl.value = '';
 
@@ -382,8 +418,9 @@ async function sendMessage(text) {
         } else {
             await _enviarMensajeNormal(textoLimpio);
         }
-    } finally {
-        _sending = false;
+    } catch (e) {
+        console.error('[Chat] Error en sendMessage:', e);
+        toast('❌ Error al enviar mensaje', 'error');
     }
 }
 
@@ -658,7 +695,8 @@ async function append(m, sent) {
     if (!box) return;
 
     if (m.id) {
-        var existente = document.getElementById('msg-' + m.id);
+        var safeId = _safeDomId(m.id);
+        var existente = document.getElementById('msg-' + safeId);
         if (existente) return;
         if (_yaRenderizado(m.id)) return;
     }
@@ -704,7 +742,7 @@ async function append(m, sent) {
 }
 
 // ----------------------------------------------------------------
-// SUSCRIPCIÓN REALTIME
+// SUSCRIPCIÓN REALTIME (con .catch robusto)
 // ----------------------------------------------------------------
 var _unsubPromise = Promise.resolve();
 
@@ -712,30 +750,35 @@ function subscribeMessages(id) {
     if (id === BOT_ID) return;
     if (!_esUUID(id) || !_esUUID(user && user.id)) return;
 
-    _unsubPromise = _unsubPromise.then(async function() {
-        if (msgChannel) {
-            try { await db.removeChannel(msgChannel); } catch (e) {}
-            msgChannel = null;
-        }
+    _unsubPromise = _unsubPromise
+        .then(async function() {
+            if (msgChannel) {
+                try { await db.removeChannel(msgChannel); } catch (e) {}
+                msgChannel = null;
+            }
 
-        msgChannel = db.channel('chat-' + id)
-            .on('postgres_changes', {
-                event: 'INSERT',
-                schema: 'public',
-                table: 'mensajes_chat',
-                filter: 'or(remitente_id.eq.' + user.id + ',destinatario_id.eq.' + user.id + ')'
-            }, function(p) {
-                var m = p.new;
-                if (!current || current.id !== id) return;
-                if (_esMensajeMio(m)) return;
-                if (_esMensajeParaMi(m)) {
-                    if (!_yaRenderizado(m.id) && !document.getElementById('msg-' + m.id)) {
-                        append(m, false);
+            msgChannel = db.channel('chat-' + id)
+                .on('postgres_changes', {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'mensajes_chat',
+                    filter: 'or(remitente_id.eq.' + user.id + ',destinatario_id.eq.' + user.id + ')'
+                }, function(p) {
+                    var m = p.new;
+                    if (!current || current.id !== id) return;
+                    if (_esMensajeMio(m)) return;
+                    if (_esMensajeParaMi(m)) {
+                        var safeId = _safeDomId(m.id);
+                        if (!_yaRenderizado(m.id) && !document.getElementById('msg-' + safeId)) {
+                            append(m, false);
+                        }
                     }
-                }
-            })
-            .subscribe();
-    });
+                })
+                .subscribe();
+        })
+        .catch(function(e) {
+            console.warn('[Chat] Error en subscribeMessages:', e);
+        });
 
     return _unsubPromise;
 }
@@ -889,7 +932,7 @@ if (document.readyState === 'loading') {
 }
 
 // ================================================================
-// ✅ EXPOSICIÓN GLOBAL A WINDOW (para que otros módulos las usen)
+// ✅ EXPOSICIÓN GLOBAL A WINDOW
 // ================================================================
 window.sendMessage = sendMessage;
 window.sendAudio = sendAudio;
@@ -905,7 +948,7 @@ window.actualizarFlecha = actualizarFlecha;
 window.ocultarFlechaNuevos = ocultarFlechaNuevos;
 window.detectarSiEstaAbajo = detectarSiEstaAbajo;
 window.observarCargaMultimedia = observarCargaMultimedia;
-window.markRead = markRead;
+window.markRead = markRead;                              // ✅ ALIAS LEGACY
 window.marcarConversacionComoLeida = marcarConversacionComoLeida;
 window.mostrarTypingBot = mostrarTypingBot;
 window.quitarTypingBot = quitarTypingBot;
@@ -915,5 +958,6 @@ window.validarVideoChat = validarVideoChat;
 window.validarFotoChat = validarFotoChat;
 window._marcarRenderizado = _marcarRenderizado;
 window._yaRenderizado = _yaRenderizado;
+window._safeDomId = _safeDomId;
 
-console.log('[Mensajes] ✅ Chat v3 cargado (visto al contestar + reglas + correcciones)');
+console.log('[Mensajes] ✅ Chat v3.1 cargado (auditoría aplicada)');
