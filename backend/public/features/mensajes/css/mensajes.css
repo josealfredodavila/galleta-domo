@@ -11,41 +11,31 @@
    VARIABLES BASE (las que apariencia-global.js NO inyecta)
    ================================================================ */
 :root {
-    /* Paleta base - dorada por defecto */
     --gold: var(--accent, #d4af37);
     --gold2: #e8c84a;
     --gold-cosmic: var(--accent, #D4AF37);
 
-    /* Verde y espacio */
     --green: #0f2d1a;
     --green2: #1a4a2a;
     --space: #05080f;
 
-    /* Texto */
     --text: #f0f4f8;
     --text-secondary: #c0d8e8;
     --muted: #8aa8b8;
 
-    /* Bordes y glass */
     --border: rgba(212, 175, 55, .16);
     --glass: rgba(15, 45, 26, .55);
 
-    /* Estados */
     --success: #00d68f;
     --danger: #ff3366;
     --warning: #ffaa00;
 
-    /* Medidas */
     --r: 16px;
     --xl: 24px;
 
-    /* Transición */
     --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ================================================================
-   TEMA NOCHE (por defecto, sobrescribe variables si es necesario)
-   ================================================================ */
 html.tema-noche,
 html[data-tema="noche"] {
     --space: #05080f;
@@ -58,9 +48,6 @@ html[data-tema="noche"] {
     --green2: #1a4a2a;
 }
 
-/* ================================================================
-   TEMA DÍA
-   ================================================================ */
 html.tema-dia,
 html[data-tema="dia"] {
     --space: #f5f7fa;
