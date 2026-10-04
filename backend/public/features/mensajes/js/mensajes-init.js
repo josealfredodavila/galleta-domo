@@ -1,29 +1,27 @@
 // ================================================================
-// MENSAJES · INICIALIZACIÓN (v3.3 — Fixes de producción)
+// MENSAJES · INICIALIZACIÓN (v3.4 — Diagnóstico mejorado)
 // ================================================================
 // Arranque del módulo, exposición global a window.
 // Depende de: TODOS los archivos anteriores.
+//
+// FIXES v3.4 (sobre v3.3):
+// - ✅ Log detallado de qué módulo falta y su estado
 //
 // FIXES v3.3:
 // - Promesa compartida para evitar race conditions en init()
 // - Eliminado bucle de reintento doble (solo arrancarMensajes reintenta)
 // - Garantizada asignación de db antes de listeners
 // - try/catch global + capturas individuales en cada paso
-// - Exposición de nuevas funciones de producción:
-//     _esMensajeDelBot, _esConversacionBot, limpiarEstadoConversacion,
-//     _esIdDelBot, _normalizarBotId, _esIdDelBotConv, _normalizarBotIdConv
+// - Exposición de nuevas funciones de producción
 // - Espera a que mensajes-chat.js y mensajes-bot.js estén cargados
-//   antes de iniciar (verificación de funciones críticas)
 // ================================================================
 
-// ---- Flag/Promesa compartida anti-doble-init ----
 var __initPromise = null;
 
 // ================================================================
 // VERIFICAR QUE LOS MÓDULOS CRÍTICOS ESTÉN CARGADOS
 // ================================================================
 function _modulosCriticosListos() {
-    // Funciones obligatorias que deben existir antes de init()
     var obligatorias = [
         'sendMessage',
         'append',
@@ -42,6 +40,10 @@ function _modulosCriticosListos() {
     for (var i = 0; i < obligatorias.length; i++) {
         var fn = window[obligatorias[i]];
         if (typeof fn !== 'function') {
+            // ✅ v3.4: Log detallado
+            console.warn('[Init] Falta función:', obligatorias[i],
+                '| Chat namespace:', typeof window.Chat,
+                '| Chat.' + obligatorias[i] + ':', typeof (window.Chat && window.Chat[obligatorias[i]]));
             return { listo: false, falta: obligatorias[i] };
         }
     }
@@ -53,7 +55,6 @@ function _modulosCriticosListos() {
 // INICIALIZACIÓN PRINCIPAL
 // ================================================================
 function init() {
-    // Si ya hay una promesa en curso o completada, devolverla
     if (__initPromise) {
         console.log('[Mensajes] init() ya en curso o completado, se reutiliza');
         return __initPromise;
@@ -63,22 +64,18 @@ function init() {
         console.log('◈ Mensajes inicializando...');
 
         try {
-            // ---- Verificar Supabase SDK ----
             if (!window.supabase || !window.supabase.createClient) {
                 throw new Error('Supabase SDK no disponible');
             }
 
-            // ---- Inicializar cliente Supabase ----
             var cliente = inicializarSupabase();
             if (!cliente) {
                 throw new Error('No se pudo inicializar Supabase');
             }
 
-            // ---- Garantizar db global no-null ----
             db = cliente;
             window.supabaseClient = db;
 
-            // ---- Obtener sesión ----
             var s = await esperarSesion();
             user = (s && s.user) || null;
 
@@ -88,7 +85,6 @@ function init() {
                 console.log('[Mensajes] ✅ Sesión activa:', user.id);
             }
 
-            // ---- Cargar datos iniciales (con captura individual) ----
             await cargarFotoHeader().catch(function(e) {
                 console.warn('[Init] cargarFotoHeader falló:', e);
             });
@@ -101,11 +97,9 @@ function init() {
                 console.warn('[Init] cargarEstados falló:', e);
             });
 
-            // ---- Configurar botón "+" dinámico ----
             var fab = document.getElementById('newChat');
             if (fab) fab.onclick = onNuevoClick;
 
-            // Cerrar modales de canal/grupo al hacer clic fuera
             var modalCanal = document.getElementById('modalCrearCanal');
             if (modalCanal) {
                 modalCanal.addEventListener('click', function(e) {
@@ -119,7 +113,6 @@ function init() {
                 });
             }
 
-            // ---- Listener de cambios de sesión ----
             db.auth.onAuthStateChange(function(event, s2) {
                 var userAnterior = user;
                 user = (s2 && s2.user) || null;
@@ -138,7 +131,6 @@ function init() {
                 }
             });
 
-            // ---- Modales y botones del perfil ----
             var headerAvatar = $('headerAvatar');
             if (headerAvatar) headerAvatar.onclick = abrirProfileModal;
 
@@ -163,7 +155,6 @@ function init() {
                 });
             }
 
-            // ---- Modales de estados ----
             var closeVistasModal = $('closeVistasModal');
             if (closeVistasModal) closeVistasModal.onclick = cerrarVistasModal;
 
@@ -198,7 +189,6 @@ function init() {
                 };
             }
 
-            // Botón Responder del visor de estados
             var evReply = $('evReply');
             if (evReply) {
                 evReply.onclick = function(e) {
@@ -222,7 +212,6 @@ function init() {
                 };
             }
 
-            // Emojis rápidos del visor de estados
             var emojiBtns = document.querySelectorAll('.estado-viewer-emoji');
             emojiBtns.forEach(function(btn) {
                 btn.onclick = function(e) {
@@ -253,7 +242,6 @@ function init() {
                 };
             });
 
-            // Zonas táctiles prev/next
             var evPrev = $('evPrev');
             if (evPrev) {
                 evPrev.onclick = function(e) {
@@ -279,7 +267,6 @@ function init() {
                 };
             }
 
-            // Pausa con dedo/mouse en el visor
             var viewerEstado = $('estadoViewer');
             if (viewerEstado) {
                 viewerEstado.addEventListener('touchstart', function(e) {
@@ -298,7 +285,6 @@ function init() {
                 viewerEstado.addEventListener('mouseleave', desactivarPausaEstado);
             }
 
-            // Atajos de teclado del visor
             document.addEventListener('keydown', function(e) {
                 if (e.code === 'Space') {
                     var viewer = $('estadoViewer');
@@ -322,7 +308,6 @@ function init() {
                 if (e.code === 'Space') desactivarPausaEstado();
             });
 
-            // Modal subir estado
             var btnSubirEstado = $('btnSubirEstado');
             if (btnSubirEstado) btnSubirEstado.onclick = abrirModalEstado;
 
@@ -345,7 +330,6 @@ function init() {
                 });
             }
 
-            // Composer
             var composer = $('composer');
             if (composer) {
                 composer.addEventListener('submit', function(e) {
@@ -355,7 +339,6 @@ function init() {
                 });
             }
 
-            // Nueva conversación (modal)
             var closeModal = $('closeModal');
             if (closeModal) {
                 closeModal.onclick = function() {
@@ -378,7 +361,6 @@ function init() {
                 });
             }
 
-            // Buscador de conversaciones
             var searchConversations = $('searchConversations');
             if (searchConversations) {
                 searchConversations.addEventListener('input', function(e) {
@@ -387,7 +369,6 @@ function init() {
                 });
             }
 
-            // Botones de adjuntar
             var attach = $('attach');
             if (attach) {
                 attach.onclick = function() {
@@ -416,7 +397,6 @@ function init() {
             var voiceBot = $('voiceBot');
             if (voiceBot) voiceBot.onclick = grabarVozParaBot;
 
-            // Acciones de conversación
             var deleteChat = $('deleteChat');
             if (deleteChat) deleteChat.onclick = deleteConversation;
 
@@ -426,7 +406,6 @@ function init() {
             var backBtn = $('backBtn');
             if (backBtn) backBtn.onclick = cerrarConversacion;
 
-            // Controles de llamada
             var hangupBtn = $('hangup');
             if (hangupBtn) hangupBtn.onclick = hangup;
 
@@ -445,7 +424,6 @@ function init() {
             var rejectCallBtn = $('rejectCall');
             if (rejectCallBtn) rejectCallBtn.onclick = rejectCall;
 
-            // Scroll del chat
             var messagesBox = $('messages');
             if (messagesBox) messagesBox.addEventListener('scroll', detectarSiEstaAbajo);
 
@@ -458,7 +436,6 @@ function init() {
                 };
             }
 
-            // Buscar en el chat
             var searchChatBtn = $('searchChat');
             if (searchChatBtn) {
                 searchChatBtn.onclick = async function() {
@@ -494,7 +471,6 @@ function init() {
                 };
             }
 
-            // Suscripción a llamadas entrantes
             db.channel('incoming-calls')
                 .on('postgres_changes', {
                     event: 'INSERT',
@@ -507,13 +483,11 @@ function init() {
                 })
                 .subscribe();
 
-            // Refresco periódico de estados
             setInterval(function() {
                 limpiarVistosAntiguos();
                 cargarEstados().catch(function() {});
             }, 5 * 60 * 1000);
 
-            // Idiomas
             setTimeout(async function() {
                 try {
                     if (typeof window.inicializarIdiomas === 'function') {
@@ -530,7 +504,6 @@ function init() {
 
         } catch (e) {
             console.error('[Init] 💥 Error fatal en init():', e);
-            // Resetear para permitir reintento desde arrancarMensajes
             __initPromise = null;
             throw e;
         }
@@ -558,15 +531,14 @@ window.cerrarModalNuevaConversacion = cerrarModalNuevaConversacion;
 window.deleteConversation = deleteConversation;
 window.openConversation = openConversation;
 window.cerrarConversacion = cerrarConversacion;
-// ✅ NUEVO: helpers de normalización del bot (definidos en conversaciones.js)
 window._esIdDelBotConv = _esIdDelBotConv;
 window._normalizarBotIdConv = _normalizarBotIdConv;
 
 window.sendMessage = sendMessage;
 window.markRead = markRead;
-window.limpiarEstadoConversacion = limpiarEstadoConversacion;   // ✅ NUEVO
-window._esMensajeDelBot = _esMensajeDelBot;                     // ✅ NUEVO
-window._esConversacionBot = _esConversacionBot;                 // ✅ NUEVO
+window.limpiarEstadoConversacion = limpiarEstadoConversacion;
+window._esMensajeDelBot = _esMensajeDelBot;
+window._esConversacionBot = _esConversacionBot;
 
 window.uploadFile = uploadFile;
 window.recordAudioNota = recordAudioNota;
@@ -576,8 +548,8 @@ window.enviarVozAlBot = enviarVozAlBot;
 window.abrirConversacionBot = abrirConversacionBot;
 window.cargarHistorialParaBot = cargarHistorialParaBot;
 window.preguntarAlBot = preguntarAlBot;
-window._esIdDelBot = _esIdDelBot;                               // ✅ NUEVO
-window._normalizarBotId = _normalizarBotId;                     // ✅ NUEVO
+window._esIdDelBot = _esIdDelBot;
+window._normalizarBotId = _normalizarBotId;
 
 window.cargarEstados = cargarEstados;
 window.abrirEstadoUsuario = abrirEstadoUsuario;
@@ -620,12 +592,11 @@ window.supabaseClient = db;
 // ARRANQUE — único punto de reintento
 // ================================================================
 var __arranqueIntentos = 0;
-var __arranqueMax = 40;  // 40 * 500ms = 20s máximo
+var __arranqueMax = 40;
 
 function arrancarMensajes() {
     __arranqueIntentos++;
 
-    // Esperar a que el SDK de Supabase esté disponible
     if (!window.supabase || !window.supabase.createClient) {
         if (__arranqueIntentos >= __arranqueMax) {
             console.error('[Mensajes] ❌ SDK de Supabase nunca cargó. Abortando.');
@@ -636,22 +607,18 @@ function arrancarMensajes() {
         return;
     }
 
-    // ✅ NUEVO: verificar que los módulos críticos estén cargados
     var check = _modulosCriticosListos();
     if (!check.listo) {
         if (__arranqueIntentos >= __arranqueMax) {
             console.error('[Mensajes] ❌ Módulo crítico nunca cargó:', check.falta);
             return;
         }
-        console.warn('[Mensajes] Esperando módulo:', check.falta, '— intento', __arranqueIntentos);
         setTimeout(arrancarMensajes, 300);
         return;
     }
 
-    // SDK listo y módulos cargados → iniciar
     init().catch(function(e) {
         console.error('[Mensajes] ❌ init() falló:', e);
-        // Si falla, permitir un reintento único
         if (__arranqueIntentos < __arranqueMax) {
             __initPromise = null;
             setTimeout(arrancarMensajes, 1000);
@@ -659,7 +626,6 @@ function arrancarMensajes() {
     });
 }
 
-// Lanzar arranque cuando el DOM esté listo
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', arrancarMensajes);
 } else {
