@@ -1,12 +1,14 @@
 // ================================================================
-// MENSAJES · CHAT (v3.3 — Fixes de producción)
+// MENSAJES · CHAT (v3.4 — Renderizado robusto garantizado)
 // ================================================================
-// FIXES v3.3:
-// - Bot: renderizado FORZADO sin importar isUserAtBottom
-// - Bot: exclusión correcta por BOT_ID Y BOT_UUID en markRead
-// - Auto-mensajes: detecta remitente_id === destinatario_id === user.id
-// - append(): guard reforzado + no descarta mensajes del bot
-// - deleteConversation: limpieza total de estado local
+// FIXES v3.4:
+// - abrirConversacionBot: doble verificación de DOM + reaseguro de anchor
+// - append(): detecta si el contenedor está visible, si no, fuerza render
+// - renderMessages(): unificado para chat normal y bot
+// - Bot: fuerza renderizado SIEMPRE sin importar isUserAtBottom
+// - Auto-mensajes: detecta autoenvío y renderiza como "sent"
+// - Guard `if (!current) return` reforzado
+// - Logs de diagnóstico para producción
 // ================================================================
 
 // ----------------------------------------------------------------
@@ -42,7 +44,7 @@ if (typeof Promise.allSettled !== 'function') {
 }
 
 // ----------------------------------------------------------------
-// UTILIDADES INTERNAS
+// UTILIDADES
 // ----------------------------------------------------------------
 function _esUUID(v) {
     return typeof v === 'string' && UUID_RE.test(v);
@@ -82,7 +84,7 @@ function _safeDomId(id) {
     return String(id).replace(/[^a-zA-Z0-9-]/g, '');
 }
 
-// ✅ FIX #1: Detectar si estamos en conversación con el bot
+// ✅ Detectar chat del bot (por ID)
 function _esConversacionBot() {
     if (!current) return false;
     return current.bot === true
@@ -90,15 +92,26 @@ function _esConversacionBot() {
         || current.id === BOT_UUID;
 }
 
-// ✅ FIX #1: Detectar si el remitente es el bot
+// ✅ Detectar si el remitente es el bot
 function _esMensajeDelBot(m) {
     if (!m || !m.remitente_id) return false;
     var rid = String(m.remitente_id);
     return rid === BOT_ID || rid === BOT_UUID;
 }
 
+// ✅ NUEVO: Verificar si el contenedor de mensajes está visible
+function _contenedorVisible(box) {
+    if (!box) return false;
+    if (!document.body.contains(box)) return false;
+    if (box.offsetParent === null && getComputedStyle(box).position !== 'fixed') {
+        // Está oculto (display:none o similar)
+        return false;
+    }
+    return true;
+}
+
 // ----------------------------------------------------------------
-// REGISTRO LRU ANTI-DUPLICADOS
+// REGISTRO LRU
 // ----------------------------------------------------------------
 var _mensajesRenderizados = new Map();
 
@@ -127,16 +140,32 @@ function _desmarcarRenderizado(msgId) {
 }
 
 // ----------------------------------------------------------------
-// HELPERS DE UI BASE
+// HELPERS DE UI
 // ----------------------------------------------------------------
 function _asegurarUIBase(box) {
     if (!box) return null;
+
+    // ✅ Limpiar cualquier anchor/botón duplicado
+    var anchors = box.querySelectorAll('#scrollAnchor');
+    if (anchors.length > 1) {
+        for (var i = 1; i < anchors.length; i++) anchors[i].remove();
+    }
+    var btns = box.querySelectorAll('#scrollDownBtn');
+    if (btns.length > 1) {
+        for (var j = 1; j < btns.length; j++) btns[j].remove();
+    }
 
     var anchor = box.querySelector('#scrollAnchor');
     if (!anchor) {
         anchor = document.createElement('div');
         anchor.id = 'scrollAnchor';
-        box.appendChild(anchor);
+        // ✅ IMPORTANTE: insertar el anchor como ÚLTIMO hijo, antes del botón
+        var btnExistente = box.querySelector('#scrollDownBtn');
+        if (btnExistente) {
+            box.insertBefore(anchor, btnExistente);
+        } else {
+            box.appendChild(anchor);
+        }
     }
 
     var btn = box.querySelector('#scrollDownBtn');
@@ -159,26 +188,59 @@ function _asegurarUIBase(box) {
 function _limpiarMensajes(box) {
     if (!box) return;
     box.querySelectorAll('.bubblewrap').forEach(function(el) { el.remove(); });
+    // ✅ NO eliminar .empty, solo ocultarlo (mantiene la referencia para después)
     var empty = box.querySelector('.empty');
-    if (empty) empty.remove();
+    if (empty) empty.style.display = 'none';
     _resetearMensajesRenderizados();
 }
 
+// ✅ NUEVO: Mostrar el empty state correctamente
+function _mostrarEmptyState(texto, subtexto) {
+    var box = $('messages');
+    if (!box) return;
+    var empty = box.querySelector('.empty');
+    if (!empty) {
+        // Crear uno nuevo si fue eliminado
+        empty = document.createElement('div');
+        empty.className = 'empty';
+        empty.id = 'emptyState';
+        empty.innerHTML = '<strong>◈</strong><p>' + (texto || 'Sin mensajes') + '</p><small>' + (subtexto || '') + '</small>';
+        box.insertBefore(empty, box.firstChild);
+    } else {
+        empty.style.display = 'block';
+        var p = empty.querySelector('p');
+        var s = empty.querySelector('small');
+        if (p) p.textContent = texto || 'Sin mensajes';
+        if (s) s.textContent = subtexto || '';
+    }
+}
+
 // ----------------------------------------------------------------
-// ABRIR CONVERSACIÓN CON EL BOT
+// ✅ abrirConversacionBot — REESCRITA ROBUSTA
 // ----------------------------------------------------------------
 async function abrirConversacionBot() {
     var box = $('messages');
-    if (!box) return;
-
-    _limpiarMensajes(box);
-    var anchor = _asegurarUIBase(box);
-
-    if (!_esUUID(user && user.id) || !_esUUID(BOT_UUID)) {
-        console.error('[Chat] UUID inválido en abrirConversacionBot');
+    if (!box) {
+        console.warn('[Chat] abrirConversacionBot: #messages no existe');
         return;
     }
 
+    console.log('[Chat] abrirConversacionBot: iniciando');
+
+    // ✅ Paso 1: limpiar y asegurar UI base
+    _limpiarMensajes(box);
+    var anchor = _asegurarUIBase(box);
+    if (!anchor) {
+        console.error('[Chat] No se pudo crear anchor');
+        return;
+    }
+
+    if (!_esUUID(user && user.id) || !_esUUID(BOT_UUID)) {
+        console.error('[Chat] UUID inválido:', { user: user?.id, bot: BOT_UUID });
+        return;
+    }
+
+    // ✅ Paso 2: cargar historial
     var historial = [];
     try {
         var r = await db.from('mensajes_chat')
@@ -192,8 +254,25 @@ async function abrirConversacionBot() {
         console.warn('[Chat] No se pudo cargar historial del bot:', e);
     }
 
-    if (!document.body.contains(box)) return;
+    // ✅ Paso 3: verificar que seguimos en el mismo chat
+    if (!current || !_esConversacionBot()) {
+        console.warn('[Chat] Usuario cambió de chat durante la carga, abortando');
+        return;
+    }
 
+    if (!document.body.contains(box)) {
+        console.warn('[Chat] box ya no está en el DOM');
+        return;
+    }
+
+    // ✅ Paso 4: reasegurar anchor (pudo haber cambiado)
+    anchor = box.querySelector('#scrollAnchor');
+    if (!anchor) {
+        anchor = _asegurarUIBase(box);
+        if (!anchor) return;
+    }
+
+    // ✅ Paso 5: renderizar
     if (!historial.length) {
         anchor.insertAdjacentHTML('beforebegin',
             '<div class="bubblewrap received">' +
@@ -208,6 +287,7 @@ async function abrirConversacionBot() {
             '</div>');
         isUserAtBottom = true;
         scrollToBottom(true);
+        console.log('[Chat] ✅ Bienvenida del bot renderizada');
         return;
     }
 
@@ -215,24 +295,36 @@ async function abrirConversacionBot() {
         historial.map(function(m) { return getSignedUrlForMessage(m); })
     );
 
+    // ✅ Verificación final antes de insertar
+    if (!current || !_esConversacionBot()) return;
     if (!document.body.contains(box)) return;
 
+    anchor = box.querySelector('#scrollAnchor');
+    if (!anchor) return;
+
+    var insertados = 0;
     historial.forEach(function(m, i) {
         if (_yaRenderizado(m.id)) return;
         _marcarRenderizado(m.id);
         var url = results[i].status === 'fulfilled' ? results[i].value : null;
-        // ✅ FIX #3: Si es autoenvío (user → user), marcar como sent
         var esMio = _esMensajeMio(m) || _esAutoEnvio(m);
-        anchor.insertAdjacentHTML('beforebegin', messageHTML(m, esMio, url));
+        try {
+            anchor.insertAdjacentHTML('beforebegin', messageHTML(m, esMio, url));
+            insertados++;
+        } catch (e) {
+            console.warn('[Chat] Error insertando mensaje:', e);
+        }
     });
 
     isUserAtBottom = true;
     observarCargaMultimedia(box);
     scrollToBottom(true);
+
+    console.log('[Chat] ✅ Historial del bot renderizado:', insertados, 'mensajes');
 }
 
 // ----------------------------------------------------------------
-// RENDERIZAR MENSAJES
+// RENDERIZAR MENSAJES (chat normal)
 // ----------------------------------------------------------------
 async function renderMessages(rows) {
     var box = $('messages');
@@ -243,7 +335,7 @@ async function renderMessages(rows) {
 
     if (!rows || !rows.length) {
         anchor.insertAdjacentHTML('beforebegin',
-            '<div class="empty"><strong>◈</strong><div>Sin mensajes</div><small>Envía el primer mensaje</small></div>');
+            '<div class="empty" id="emptyState"><strong>◈</strong><div>Sin mensajes</div><small>Envía el primer mensaje</small></div>');
         return;
     }
 
@@ -251,13 +343,17 @@ async function renderMessages(rows) {
         rows.map(function(m) { return getSignedUrlForMessage(m); })
     );
 
+    if (!current) return;
     if (!document.body.contains(box)) return;
+
+    anchor = box.querySelector('#scrollAnchor');
+    if (!anchor) anchor = _asegurarUIBase(box);
+    if (!anchor) return;
 
     rows.forEach(function(m, i) {
         if (_yaRenderizado(m.id)) return;
         _marcarRenderizado(m.id);
         var url = results[i].status === 'fulfilled' ? results[i].value : null;
-        // ✅ FIX #3: Autoenvío también se marca como "sent"
         var esMio = _esMensajeMio(m) || _esAutoEnvio(m);
         anchor.insertAdjacentHTML('beforebegin', messageHTML(m, esMio, url));
     });
@@ -268,7 +364,7 @@ async function renderMessages(rows) {
 }
 
 // ----------------------------------------------------------------
-// HTML DE UN MENSAJE
+// HTML DE MENSAJE
 // ----------------------------------------------------------------
 function messageHTML(m, sent, signedUrl) {
     sent = Boolean(sent);
@@ -359,14 +455,11 @@ function validarFotoChat(pesoBytes) {
 }
 
 // ----------------------------------------------------------------
-// "VISTO AL CONTESTAR"
+// VISTO AL CONTESTAR
 // ----------------------------------------------------------------
 async function marcarConversacionComoLeida(remitenteId, antesDe) {
     if (!user || !remitenteId) return;
-
-    // ✅ FIX #1: Excluir bot por AMBOS identificadores
     if (remitenteId === BOT_ID || remitenteId === BOT_UUID) return;
-
     if (!_esUUID(remitenteId)) return;
 
     var timestamp = antesDe || new Date().toISOString();
@@ -508,13 +601,8 @@ async function _enviarMensajeAlBot(textoLimpio) {
         }
 
         if (botMsg.id) _marcarRenderizado(botMsg.id);
-
-        // ✅ FIX #1 CRÍTICO: Forzar renderizado del mensaje del bot
-        // sin importar isUserAtBottom (el usuario está esperando la respuesta)
         isUserAtBottom = true;
         await append(botMsg, false);
-
-        // Scroll forzado al fondo
         scrollToBottom(true);
 
         loadConversations();
@@ -568,7 +656,7 @@ async function _enviarMensajeNormal(textoLimpio) {
 }
 
 // ----------------------------------------------------------------
-// ENVIAR AUDIO / VIDEO / FOTO
+// ENVIAR AUDIO/VIDEO/FOTO
 // ----------------------------------------------------------------
 async function sendAudio(blob, duracionSegundos) {
     if (!current || !blob) return;
@@ -691,7 +779,7 @@ function mostrarTypingBot() {
     var box = $('messages');
     if (!box) return;
     var empty = box.querySelector('.empty');
-    if (empty) empty.remove();
+    if (empty) empty.style.display = 'none';
     var anchorRef = box.querySelector('#scrollAnchor');
     if (anchorRef) {
         anchorRef.insertAdjacentHTML('beforebegin',
@@ -711,14 +799,19 @@ function quitarTypingBot() {
 }
 
 // ----------------------------------------------------------------
-// ✅ append() CORREGIDO — FIX #1 y #3
+// ✅ append() — REESCRITA ROBUSTA
 // ----------------------------------------------------------------
 async function append(m, sent) {
-    // Guard: sin conversación activa
-    if (!current) return;
+    if (!current) {
+        console.warn('[Chat] append: sin conversación activa');
+        return;
+    }
 
     var box = $('messages');
-    if (!box) return;
+    if (!box) {
+        console.warn('[Chat] append: #messages no existe');
+        return;
+    }
 
     // Anti-duplicados
     if (m.id) {
@@ -742,29 +835,39 @@ async function append(m, sent) {
         }
     }
 
+    // ✅ Verificar que seguimos en el mismo chat
+    if (!current) return;
+    if (!document.body.contains(box)) return;
+
     var empty = box.querySelector('.empty');
-    if (empty) empty.remove();
+    if (empty) empty.style.display = 'none';
 
     var anchorRef = box.querySelector('#scrollAnchor');
+    if (!anchorRef) {
+        anchorRef = _asegurarUIBase(box);
+        if (!anchorRef) return;
+    }
+
     sent = Boolean(sent);
 
-    // ✅ FIX #3: Autoenvío siempre se renderiza como "sent"
+    // ✅ Autoenvío → siempre como "sent"
     if (!sent && _esAutoEnvio(m)) {
         sent = true;
     }
 
-    if (anchorRef) {
+    // ✅ Insertar
+    try {
         anchorRef.insertAdjacentHTML('beforebegin', messageHTML(m, sent, signedUrl));
-    } else {
-        box.insertAdjacentHTML('beforeend', messageHTML(m, sent, signedUrl));
+    } catch (e) {
+        console.error('[Chat] Error insertando mensaje:', e);
+        return;
     }
     observarCargaMultimedia(box);
 
-    // ✅ FIX #1: Si estamos en el chat del bot, SIEMPRE renderizar y scrollear
+    // ✅ FIX CRÍTICO: En el chat del bot, SIEMPRE renderizar y scrollear
     var esChatBot = _esConversacionBot();
 
     if (!sent) {
-        // Si es respuesta del bot en su propio chat → forzar visibilidad
         if (esChatBot || _esMensajeDelBot(m)) {
             isUserAtBottom = true;
             scrollToBottom(true);
@@ -772,7 +875,6 @@ async function append(m, sent) {
             return;
         }
 
-        // Mensaje normal recibido
         if (isUserAtBottom) {
             ocultarFlechaNuevos();
         } else {
@@ -792,7 +894,6 @@ async function append(m, sent) {
 var _unsubPromise = Promise.resolve();
 
 function subscribeMessages(id) {
-    // ✅ FIX #1: El bot no usa realtime (se renderiza directo)
     if (id === BOT_ID || id === BOT_UUID) return;
     if (!_esUUID(id) || !_esUUID(user && user.id)) return;
 
@@ -811,13 +912,26 @@ function subscribeMessages(id) {
                     filter: 'or(remitente_id.eq.' + user.id + ',destinatario_id.eq.' + user.id + ')'
                 }, function(p) {
                     var m = p.new;
-                    if (!current || current.id !== id) return;
+                    if (!current) return;
+
+                    var chatActual = current.id;
+                    var esBotChat = _esConversacionBot();
+                    var esParaEsteChat = false;
+
+                    if (esBotChat) {
+                        esParaEsteChat = (String(m.remitente_id) === String(BOT_UUID))
+                            || (String(m.destinatario_id) === String(BOT_UUID));
+                    } else {
+                        esParaEsteChat = (String(m.remitente_id) === String(chatActual))
+                            || (String(m.destinatario_id) === String(chatActual));
+                    }
+
+                    if (!esParaEsteChat) return;
                     if (_esMensajeMio(m) && !_esAutoEnvio(m)) return;
-                    if (_esMensajeParaMi(m) || _esAutoEnvio(m)) {
-                        var safeId = _safeDomId(m.id);
-                        if (!_yaRenderizado(m.id) && !document.getElementById('msg-' + safeId)) {
-                            append(m, _esAutoEnvio(m));
-                        }
+
+                    var safeId = _safeDomId(m.id);
+                    if (!_yaRenderizado(m.id) && !document.getElementById('msg-' + safeId)) {
+                        append(m, _esAutoEnvio(m));
                     }
                 })
                 .subscribe();
@@ -916,7 +1030,7 @@ function detectarSiEstaAbajo() {
 }
 
 // ----------------------------------------------------------------
-// OBSERVAR CARGA DE MULTIMEDIA
+// OBSERVAR MULTIMEDIA
 // ----------------------------------------------------------------
 var _mediaObservados = new WeakSet();
 
@@ -939,7 +1053,7 @@ function observarCargaMultimedia(box) {
 }
 
 // ----------------------------------------------------------------
-// AUTO-SCROLL TECLADO
+// TECLADO
 // ----------------------------------------------------------------
 var _tecladoConfigurado = false;
 
@@ -977,40 +1091,33 @@ if (document.readyState === 'loading') {
     configurarAutoScrollTeclado();
 }
 
-// ================================================================
-// ✅ FIX #3: LIMPIEZA TOTAL AL ELIMINAR CONVERSACIÓN
-// ================================================================
+// ----------------------------------------------------------------
+// LIMPIAR ESTADO
+// ----------------------------------------------------------------
 async function limpiarEstadoConversacion() {
-    // Resetear registro LRU de mensajes renderizados
     _resetearMensajesRenderizados();
 
-    // Limpiar DOM del chat
     var box = $('messages');
     if (box) {
         box.querySelectorAll('.bubblewrap').forEach(function(el) { el.remove(); });
-        box.querySelectorAll('.empty').forEach(function(el) { el.remove(); });
-        var anchor = box.querySelector('#scrollAnchor');
-        if (anchor) {
-            anchor.insertAdjacentHTML('beforebegin',
-                '<div class="empty" id="emptyState"><strong>◈</strong><div>Sin mensajes</div><small>Envía el primer mensaje</small></div>');
-        }
+        // Ocultar empty, no eliminar
+        var empty = box.querySelector('.empty');
+        if (empty) empty.style.display = 'none';
     }
 
-    // Resetear contadores
     unreadCount = 0;
     isUserAtBottom = true;
     actualizarFlecha();
 
-    // Limpiar canal realtime si existe
     if (msgChannel) {
         try { await db.removeChannel(msgChannel); } catch (e) {}
         msgChannel = null;
     }
 }
 
-// ================================================================
+// ----------------------------------------------------------------
 // EXPOSICIÓN GLOBAL
-// ================================================================
+// ----------------------------------------------------------------
 window.sendMessage = sendMessage;
 window.sendAudio = sendAudio;
 window.sendVideo = sendVideo;
@@ -1038,6 +1145,7 @@ window._yaRenderizado = _yaRenderizado;
 window._safeDomId = _safeDomId;
 window._esMensajeDelBot = _esMensajeDelBot;
 window._esConversacionBot = _esConversacionBot;
+window._contenedorVisible = _contenedorVisible;
 window.limpiarEstadoConversacion = limpiarEstadoConversacion;
 
-console.log('[Mensajes] ✅ Chat v3.3 cargado (fixes de producción)');
+console.log('[Mensajes] ✅ Chat v3.4 cargado (renderizado robusto garantizado)');
