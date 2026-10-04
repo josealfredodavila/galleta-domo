@@ -1,15 +1,25 @@
 // ================================================================
-// MENSAJES · CHAT (CORREGIDO - auto-scroll y mensajes a mí mismo)
+// MENSAJES · CHAT (VERSIÓN FINAL - Anti-duplicados + Auto-scroll)
 // ================================================================
-// Enviar, renderizar y sincronizar mensajes.
+// Enviar, renderizar y sincronizar mensajes sin duplicados.
 // Depende de: mensajes-config.js, mensajes-utils.js, mensajes-auth.js
 // ================================================================
 
 // ================================================================
-// FUNCIÓN AUXILIAR: ¿Es un mensaje a mí mismo?
+// REGISTRO DE IDs YA RENDERIZADOS (evita duplicados)
 // ================================================================
-function esMensajeAMiMismo(m) {
-    return m.remitente_id && m.destinatario_id && m.remitente_id === m.destinatario_id;
+var _mensajesRenderizados = {};  // { msgId: true }
+
+function _resetearMensajesRenderizados() {
+    _mensajesRenderizados = {};
+}
+
+function _yaRenderizado(msgId) {
+    return _mensajesRenderizados[msgId] === true;
+}
+
+function _marcarRenderizado(msgId) {
+    _mensajesRenderizados[msgId] = true;
 }
 
 // ================================================================
@@ -19,15 +29,22 @@ async function abrirConversacionBot() {
     var box = $('messages');
     if (!box) return;
 
-    var btn = box.querySelector('#scrollDownBtn');
-    var anchor = box.querySelector('#scrollAnchor');
+    // ✅ LIMPIAR TODO antes de renderizar
+    _resetearMensajesRenderizados();
     box.querySelectorAll('.bubblewrap').forEach(function(el) { el.remove(); });
+    var empty = box.querySelector('.empty');
+    if (empty) empty.remove();
 
+    // Asegurar anchor
+    var anchor = box.querySelector('#scrollAnchor');
     if (!anchor) {
-        var newAnchor = document.createElement('div');
-        newAnchor.id = 'scrollAnchor';
-        box.appendChild(newAnchor);
+        anchor = document.createElement('div');
+        anchor.id = 'scrollAnchor';
+        box.appendChild(anchor);
     }
+
+    // Asegurar botón scroll-down
+    var btn = box.querySelector('#scrollDownBtn');
     if (!btn) {
         var newBtn = document.createElement('button');
         newBtn.className = 'scroll-down-btn';
@@ -37,6 +54,7 @@ async function abrirConversacionBot() {
         newBtn.onclick = function() { isUserAtBottom = true; scrollToBottom(true); actualizarFlecha(); };
     }
 
+    // Cargar historial
     var historial = [];
     try {
         var r = await db.from('mensajes_chat')
@@ -71,6 +89,8 @@ async function abrirConversacionBot() {
 
     var signedUrls = await Promise.all(historial.map(function(m) { return getSignedUrlForMessage(m); }));
     historial.forEach(function(m, i) {
+        if (_yaRenderizado(m.id)) return;
+        _marcarRenderizado(m.id);
         var esMio = (m.remitente_id === user.id);
         anchorRef.insertAdjacentHTML('beforebegin', messageHTML(m, esMio, signedUrls[i]));
     });
@@ -81,13 +101,19 @@ async function abrirConversacionBot() {
 }
 
 // ================================================================
-// RENDERIZAR MENSAJES
+// RENDERIZAR MENSAJES (limpia TODO y pinta de nuevo)
 // ================================================================
 async function renderMessages(rows) {
     var box = $('messages');
     if (!box) return;
 
+    // ✅ LIMPIAR TODO
+    _resetearMensajesRenderizados();
     box.querySelectorAll('.bubblewrap').forEach(function(el) { el.remove(); });
+    var empty = box.querySelector('.empty');
+    if (empty) empty.remove();
+
+    // Asegurar anchor
     var anchor = box.querySelector('#scrollAnchor');
     if (!anchor) {
         anchor = document.createElement('div');
@@ -102,8 +128,11 @@ async function renderMessages(rows) {
     }
 
     var signedUrls = await Promise.all(rows.map(function(m) { return getSignedUrlForMessage(m); }));
+
     rows.forEach(function(m, i) {
-        // ✅ Detectar si es mío (enviado) o recibido
+        if (_yaRenderizado(m.id)) return;
+        _marcarRenderizado(m.id);
+        // ✅ Detectar si es MÍO o recibido
         var esMio = (m.remitente_id === user.id);
         anchor.insertAdjacentHTML('beforebegin', messageHTML(m, esMio, signedUrls[i]));
     });
@@ -114,7 +143,7 @@ async function renderMessages(rows) {
 }
 
 // ================================================================
-// HTML DE UN MENSAJE (CORREGIDO - manejo de mensajes a mí mismo)
+// HTML DE UN MENSAJE
 // ================================================================
 function messageHTML(m, sent, signedUrl) {
     var body = esc(limpiarMarkdown(m.contenido || ''));
@@ -133,11 +162,11 @@ function messageHTML(m, sent, signedUrl) {
         }
     }
 
-    // ✅ Detectar si es del bot (solo si es recibido)
+    // Solo mostrar "MARQUINHOS" si es un mensaje RECIBIDO del bot
     var esBotRecibido = !sent && (m.es_bot || m.bot_message);
     var headerBot = esBotRecibido ? '<div class="bubble-bot-info">✦ MARQUINHOS</div>' : '';
 
-    // ✅ Meta con hora y estado
+    // Meta: hora + estado
     var meta = '';
     if (m.created_at) {
         meta = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -146,14 +175,15 @@ function messageHTML(m, sent, signedUrl) {
         meta += m.leido ? ' · ◆◆' : ' · ◈◈';
     }
 
-    return '<div class="bubblewrap ' + (sent ? 'sent' : 'received') + '">' +
+    // ✅ ID único en el DOM para poder identificar duplicados
+    return '<div class="bubblewrap ' + (sent ? 'sent' : 'received') + '" data-msg-id="' + esc(m.id || '') + '">' +
         '<div class="bubble">' + headerBot + body + '</div>' +
         '<div class="meta">' + meta + '</div>' +
     '</div>';
 }
 
 // ================================================================
-// ENVIAR MENSAJE (CORREGIDO - detecta si es a mí mismo)
+// ENVIAR MENSAJE
 // ================================================================
 async function sendMessage(text) {
     if (!current || !text.trim()) return;
@@ -214,7 +244,7 @@ async function sendMessage(text) {
         return;
     }
 
-    // ---- MENSAJE NORMAL (a Alfredo, a ti mismo, etc.) ----
+    // ---- MENSAJE NORMAL ----
     try {
         var r = await db.from('mensajes_chat').insert({
             remitente_id: user.id,
@@ -232,7 +262,10 @@ async function sendMessage(text) {
             return;
         }
 
-        // ✅ SIEMPRE enviado, sin importar si es a mí mismo
+        // ✅ Marcar como renderizado ANTES de pintarlo
+        // (así el realtime NO lo duplica)
+        if (r.data && r.data.id) _marcarRenderizado(r.data.id);
+
         await append(r.data, true);
         loadConversations();
     } catch (e) {
@@ -242,7 +275,7 @@ async function sendMessage(text) {
 }
 
 // ================================================================
-// MOSTRAR TYPING BOT
+// TYPING INDICATOR DEL BOT
 // ================================================================
 function mostrarTypingBot() {
     var box = $('messages');
@@ -268,11 +301,20 @@ function quitarTypingBot() {
 }
 
 // ================================================================
-// AÑADIR MENSAJE AL DOM (CORREGIDO)
+// AÑADIR MENSAJE AL DOM (con control de duplicados)
 // ================================================================
 async function append(m, sent) {
     var box = $('messages');
     if (!box) return;
+
+    // ✅ Si ya está renderizado, NO duplicar
+    if (m.id && _yaRenderizado(m.id)) {
+        console.log('[Chat] Mensaje ya renderizado, se omite:', m.id);
+        return;
+    }
+
+    // ✅ Marcar como renderizado
+    if (m.id) _marcarRenderizado(m.id);
 
     var empty = box.querySelector('.empty');
     if (empty) empty.remove();
@@ -297,7 +339,7 @@ async function append(m, sent) {
 }
 
 // ================================================================
-// MARCAR MENSAJES COMO LEÍDOS
+// MARCAR COMO LEÍDO
 // ================================================================
 async function markRead(id) {
     if (!user || id === BOT_ID) return;
@@ -314,20 +356,31 @@ async function markRead(id) {
 }
 
 // ================================================================
-// SUSCRIPCIÓN REALTIME
+// SUSCRIPCIÓN REALTIME (anti-duplicados)
 // ================================================================
 function subscribeMessages(id) {
     if (id === BOT_ID) return;
     if (msgChannel) {
         try { db.removeChannel(msgChannel); } catch (e) {}
     }
+
     msgChannel = db.channel('chat-' + id)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes_chat' }, function(p) {
             var m = p.new;
-            if (current && current.id === id && m.remitente_id === id && m.destinatario_id === user.id) {
-                // ✅ Es un mensaje RECIBIDO de otra persona
-                // Pero si es a mí mismo, no lo agregamos de nuevo (ya se agregó al enviar)
-                if (m.remitente_id !== m.destinatario_id) {
+
+            // ¿Es para el chat activo?
+            if (!current || current.id !== id) return;
+
+            // ¿Es un mensaje que YO envié? → Ya está renderizado, ignorar
+            if (m.remitente_id === user.id) {
+                console.log('[Chat] Realtime: mensaje propio ignorado:', m.id);
+                return;
+            }
+
+            // ¿Es un mensaje que YO recibí?
+            if (m.destinatario_id === user.id) {
+                // ✅ Solo pintar si NO está renderizado
+                if (!_yaRenderizado(m.id)) {
                     append(m, false);
                     markRead(id);
                 }
@@ -421,46 +474,40 @@ function observarCargaMultimedia(box) {
 }
 
 // ================================================================
-// ✅ NUEVO: Detectar cuando se abre el teclado en móvil
+// AUTO-SCROLL AL ABRIR EL TECLADO (móvil)
 // ================================================================
 function configurarAutoScrollTeclado() {
+    // Detectar cambios en el viewport (teclado abriéndose en móvil)
     if (window.visualViewport) {
-        // En móvil, cuando el teclado se abre, el visualViewport cambia
         window.visualViewport.addEventListener('resize', function() {
-            // Cuando el teclado se abre, hacemos scroll al fondo
             setTimeout(function() {
-                if (isUserAtBottom) {
-                    scrollToBottom(true);
-                }
+                if (isUserAtBottom) scrollToBottom(true);
             }, 100);
+        });
+        window.visualViewport.addEventListener('scroll', function() {
+            setTimeout(function() {
+                if (isUserAtBottom) scrollToBottom(true);
+            }, 50);
         });
     }
 
-    // Detectar focus en el input
     var input = $('messageInput');
     if (input) {
         input.addEventListener('focus', function() {
-            setTimeout(function() {
-                scrollToBottom(true);
-            }, 300);
+            setTimeout(function() { scrollToBottom(true); }, 300);
         });
-
-        // Cuando el usuario escribe, mantener scroll al fondo
         input.addEventListener('input', function() {
             if (isUserAtBottom) {
-                setTimeout(function() {
-                    scrollToBottom(true);
-                }, 50);
+                setTimeout(function() { scrollToBottom(true); }, 50);
             }
         });
     }
 }
 
-// ✅ Ejecutar cuando el DOM esté listo
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', configurarAutoScrollTeclado);
 } else {
     configurarAutoScrollTeclado();
 }
 
-console.log('[Mensajes] ✅ Chat cargado (auto-scroll + mensajes a mí mismo)');
+console.log('[Mensajes] ✅ Chat cargado (anti-duplicados + auto-scroll)');
