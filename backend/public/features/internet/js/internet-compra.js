@@ -65,12 +65,12 @@ async function verificarPagoManual() {
     var btn = document.getElementById('btnVerificar');
     if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '⏳ Verificando...';
+        btn.innerHTML = '◈ Verificando...';
     }
     await verificarEstadoOrden(true);
     if (btn) {
         btn.disabled = false;
-        btn.innerHTML = '🔄 Ya pagué, verificar ahora';
+        btn.innerHTML = '◈ Ya pagué, verificar ahora';
     }
 }
 
@@ -84,7 +84,7 @@ async function verificarEstadoOrden(manual) {
         var data = r.data;
 
         if (!resp.ok || !data.success) {
-            if (manual) showToast('⚠️ ' + (data.error || 'No se pudo verificar'), 'warning');
+            if (manual) showToast('◈ ' + (data.error || 'No se pudo verificar'), 'warning');
             return;
         }
 
@@ -101,26 +101,26 @@ async function verificarEstadoOrden(manual) {
         if (estado === 'cancelada' || data.failed === true) {
             detenerPolling();
             limpiarPendiente();
-            showToast('❌ El pago fue cancelado o falló', 'error', 6000);
+            showToast('✕ El pago fue cancelado o falló', 'error', 6000);
             setTimeout(volverACompra, 2500);
             return;
         }
 
-        if (manual) showToast('⏳ Aún no se confirma el pago', 'warning', 4000);
+        if (manual) showToast('◈ Aún no se confirma el pago', 'warning', 4000);
     } catch (error) {
         console.error('Error verificando orden:', error);
-        if (manual) showToast('❌ ' + error.message, 'error');
+        if (manual) showToast('✕ ' + error.message, 'error');
     }
 }
 
 // ================================================================
-// ESPERAR A QUE LA eSIM SE ACredite
+// ESPERAR A QUE LA eSIM SE ACREDITE
 // (la eSIM se crea / se acreditan los gigas en el backend tras confirmar el pago)
 // ================================================================
 async function esperarEsimLista() {
     if (esperandoEsim) return;
     esperandoEsim = true;
-    setEstadoEsperando('✅ Pago confirmado. Preparando tu eSIM…');
+    setEstadoEsperando('◈ Pago confirmado. Preparando tu eSIM…');
 
     try {
         for (var i = 0; i < 24 && esperandoEsim; i++) { // ~2 minutos
@@ -129,7 +129,7 @@ async function esperarEsimLista() {
                 limpiarPendiente();
                 renderEsim(e);
                 mostrarVista('esim');
-                showToast('🎉 ¡Listo! Tus gigas ya están en tu eSIM', 'success', 5000);
+                showToast('◈ ¡Listo! Tus gigas ya están en tu eSIM', 'success', 5000);
                 return;
             }
             await dormir(5000);
@@ -170,7 +170,7 @@ function mostrarVistaEsperando() {
     var btn = document.getElementById('btnVerificar');
     if (btn) {
         btn.disabled = false;
-        btn.innerHTML = '🔄 Ya pagué, verificar ahora';
+        btn.innerHTML = '◈ Ya pagué, verificar ahora';
     }
 
     mostrarVista('esperando');
@@ -216,21 +216,21 @@ async function comprarInternet() {
     var terms = document.getElementById('checkNetTerms').checked;
     var btn = document.getElementById('btnPagar');
 
-    if (!selectedPack) { status.innerText = '⚠️ Selecciona un paquete'; return; }
-    if (phone.length < 5) { status.innerText = '⚠️ Escribe tu número de celular'; return; }
-    if (!terms) { status.innerText = '⚠️ Acepta términos'; return; }
+    if (!selectedPack) { status.innerText = '◈ Selecciona un paquete'; return; }
+    if (phone.length < 5) { status.innerText = '◈ Escribe tu número de celular'; return; }
+    if (!terms) { status.innerText = '◈ Acepta términos'; return; }
 
     var payCurrency = document.getElementById('pay-currency').value;
-    if (!payCurrency) { status.innerText = '⚠️ Selecciona una red de pago'; return; }
+    if (!payCurrency) { status.innerText = '◈ Selecciona una red de pago'; return; }
 
-    status.innerText = '⏳ Autenticando...';
+    status.innerText = '◈ Autenticando...';
     btn.disabled = true;
 
     try {
         var session = await getSessionInternet();
         if (!session) {
-            status.innerText = '⚠️ Inicia sesión para comprar';
-            showToast('⚠️ Inicia sesión primero', 'error');
+            status.innerText = '◈ Inicia sesión para comprar';
+            showToast('◈ Inicia sesión primero', 'error');
             return;
         }
 
@@ -239,7 +239,7 @@ async function comprarInternet() {
         totalAntesMb = Number(esimActual && esimActual.datos_total_mb) || 0;
 
         // Crear orden en Supabase vía RPC
-        status.innerText = '⏳ Creando orden segura...';
+        status.innerText = '◈ Creando orden segura...';
         var rpcResult = await supabaseClient.rpc('crear_orden_internet', {
             p_plan_id: selectedPack.id,
             p_telefono: phone
@@ -248,7 +248,7 @@ async function comprarInternet() {
         var orden = rpcResult.data;
 
         // Crear pago en el backend
-        status.innerText = '⏳ Generando pago...';
+        status.innerText = '◈ Generando pago...';
         var resp = await fetch(BACKEND_URL + '/api/payments/internet/create', {
             method: 'POST',
             headers: {
@@ -263,7 +263,7 @@ async function comprarInternet() {
         var pagoData = await resp.json();
 
         if (!resp.ok || !pagoData.success || !pagoData.data || !pagoData.data.payment_url) {
-            status.innerText = '❌ ' + (pagoData.error || 'Error generando el pago');
+            status.innerText = '✕ ' + (pagoData.error || 'Error generando el pago');
             showToast('✕ ' + (pagoData.error || 'Error generando pago'), 'error');
             return;
         }
@@ -284,16 +284,15 @@ async function comprarInternet() {
         iniciarPolling();
 
         // Abrir pasarela en pestaña nueva
-        // (en celulares el navegador puede bloquear la ventana; por eso el botón "Abrir página de pago")
         var ventana = window.open(ordenActual.payment_url, '_blank', 'noopener');
         if (!ventana) {
-            showToast('Toca "Abrir página de pago" para continuar', 'warning', 6000);
+            showToast('◈ Toca "Abrir página de pago" para continuar', 'warning', 6000);
         }
 
     } catch (error) {
         console.error('Error en compra:', error);
-        status.innerText = '❌ ' + (error.message || 'Error en la compra');
-        showToast('❌ ' + (error.message || 'Error en la compra'), 'error');
+        status.innerText = '✕ ' + (error.message || 'Error en la compra');
+        showToast('✕ ' + (error.message || 'Error en la compra'), 'error');
     } finally {
         btn.disabled = false;
     }
