@@ -12,6 +12,20 @@
 // ================================================================
 
 // ----------------------------------------------------------------
+// GUARDAS DE DEPENDENCIAS
+// ----------------------------------------------------------------
+[
+    'BOT_ID','BOT_UUID','user','current','db','toast','auth','msgChannel',
+    'isUserAtBottom','unreadCount','scrollRetryTimer','SCROLL_THRESHOLD',
+    'subirArchivoChat','getSignedUrlForMessage','preguntarAlBot',
+    'cargarHistorialParaBot','limpiarMarkdown','loadConversations','$','esc'
+].forEach(function(n) {
+    if (typeof window[n] === 'undefined') {
+        console.warn('[Chat] Dependencia global ausente:', n);
+    }
+});
+
+// ----------------------------------------------------------------
 // CONSTANTES
 // ----------------------------------------------------------------
 var MAX_TEXTO_LEN       = 1000;
@@ -67,13 +81,6 @@ function _esMensajeMio(m) {
     return String(m.remitente_id) === String(myId);
 }
 
-function _esMensajeParaMi(m) {
-    if (!m || !m.destinatario_id) return false;
-    var myId = (typeof user !== 'undefined' && user && user.id) ? user.id : null;
-    if (!myId) return false;
-    return String(m.destinatario_id) === String(myId);
-}
-
 function _esAutoEnvio(m) {
     if (!m || !m.remitente_id || !m.destinatario_id) return false;
     return String(m.remitente_id) === String(m.destinatario_id);
@@ -97,17 +104,6 @@ function _esMensajeDelBot(m) {
     if (!m || !m.remitente_id) return false;
     var rid = String(m.remitente_id);
     return rid === BOT_ID || rid === BOT_UUID;
-}
-
-// ✅ NUEVO: Verificar si el contenedor de mensajes está visible
-function _contenedorVisible(box) {
-    if (!box) return false;
-    if (!document.body.contains(box)) return false;
-    if (box.offsetParent === null && getComputedStyle(box).position !== 'fixed') {
-        // Está oculto (display:none o similar)
-        return false;
-    }
-    return true;
 }
 
 // ----------------------------------------------------------------
@@ -148,11 +144,11 @@ function _asegurarUIBase(box) {
     // ✅ Limpiar cualquier anchor/botón duplicado
     var anchors = box.querySelectorAll('#scrollAnchor');
     if (anchors.length > 1) {
-        for (var i = 1; i < anchors.length; i++) anchors[i].remove();
+        for (var i = 0; i < anchors.length - 1; i++) anchors[i].remove();
     }
     var btns = box.querySelectorAll('#scrollDownBtn');
     if (btns.length > 1) {
-        for (var j = 1; j < btns.length; j++) btns[j].remove();
+        for (var j = 0; j < btns.length - 1; j++) btns[j].remove();
     }
 
     var anchor = box.querySelector('#scrollAnchor');
@@ -225,7 +221,9 @@ async function abrirConversacionBot() {
         return;
     }
 
-    console.log('[Chat] abrirConversacionBot: iniciando');
+    if (window.DEBUG_CHAT) {
+        console.log('[Chat] abrirConversacionBot: iniciando');
+    }
 
     // ✅ Paso 1: limpiar y asegurar UI base
     _limpiarMensajes(box);
@@ -287,7 +285,9 @@ async function abrirConversacionBot() {
             '</div>');
         isUserAtBottom = true;
         scrollToBottom(true);
-        console.log('[Chat] ✅ Bienvenida del bot renderizada');
+        if (window.DEBUG_CHAT) {
+            console.log('[Chat] ✅ Bienvenida del bot renderizada');
+        }
         return;
     }
 
@@ -320,22 +320,26 @@ async function abrirConversacionBot() {
     observarCargaMultimedia(box);
     scrollToBottom(true);
 
-    console.log('[Chat] ✅ Historial del bot renderizado:', insertados, 'mensajes');
+    if (window.DEBUG_CHAT) {
+        console.log('[Chat] ✅ Historial del bot renderizado:', insertados, 'mensajes');
+    }
 }
 
 // ----------------------------------------------------------------
 // RENDERIZAR MENSAJES (chat normal)
 // ----------------------------------------------------------------
 async function renderMessages(rows) {
+    var chatIdAlInicio = current && current.id;
     var box = $('messages');
     if (!box) return;
 
     _limpiarMensajes(box);
     var anchor = _asegurarUIBase(box);
+    if (!anchor) return;
 
     if (!rows || !rows.length) {
-        anchor.insertAdjacentHTML('beforebegin',
-            '<div class="empty" id="emptyState"><strong>◈</strong><div>Sin mensajes</div><small>Envía el primer mensaje</small></div>');
+        box.querySelectorAll('.empty').forEach(function(el) { el.remove(); });
+        _mostrarEmptyState('Sin mensajes', 'Envía el primer mensaje');
         return;
     }
 
@@ -343,7 +347,7 @@ async function renderMessages(rows) {
         rows.map(function(m) { return getSignedUrlForMessage(m); })
     );
 
-    if (!current) return;
+    if (!current || current.id !== chatIdAlInicio) return;
     if (!document.body.contains(box)) return;
 
     anchor = box.querySelector('#scrollAnchor');
@@ -409,7 +413,7 @@ function messageHTML(m, sent, signedUrl) {
 
     var wrapClass = 'bubblewrap ' + (sent ? 'sent' : 'received') + (esNoLeido ? ' is-unread' : '');
 
-    return '<div ' + idAttr + 'class="' + wrapClass + '" data-msg-id="' + esc(msgIdSafe) + '">' +
+    return '<div ' + idAttr + 'class="' + wrapClass + '" data-msg-id="' + esc(msgIdSafe) + '" data-remitente-id="' + esc(m.remitente_id || '') + '">' +
         '<div class="bubble">' + headerBot + body + '</div>' +
         '<div class="meta">' + unreadDot + meta + '</div>' +
     '</div>';
@@ -478,7 +482,7 @@ async function marcarConversacionComoLeida(remitenteId, antesDe) {
             return;
         }
 
-        document.querySelectorAll('.bubblewrap.received.is-unread').forEach(function(el) {
+        document.querySelectorAll('.bubblewrap.received.is-unread[data-remitente-id="' + remitenteId + '"]').forEach(function(el) {
             el.classList.remove('is-unread');
             var dot = el.querySelector('.unread-dot');
             if (dot) dot.remove();
@@ -532,12 +536,16 @@ async function sendMessage(text) {
 }
 
 async function _enviarMensajeAlBot(textoLimpio) {
+    var chatId = current.id;
+    var esChatBot = current.bot;
+    var destinatarioId = esChatBot ? BOT_UUID : chatId;
+
     var userMsg = {
         contenido: textoLimpio,
         created_at: new Date().toISOString(),
         tipo: 'texto',
         remitente_id: user.id,
-        destinatario_id: BOT_UUID,
+        destinatario_id: destinatarioId,
         leido: false,
         es_bot: false
     };
@@ -545,7 +553,7 @@ async function _enviarMensajeAlBot(textoLimpio) {
     try {
         var ins = await db.from('mensajes_chat').insert({
             remitente_id: user.id,
-            destinatario_id: BOT_UUID,
+            destinatario_id: destinatarioId,
             contenido: textoLimpio,
             tipo: 'texto',
             leido: false,
@@ -564,7 +572,6 @@ async function _enviarMensajeAlBot(textoLimpio) {
         userMsg.id = 'tmp-' + Date.now();
     }
 
-    if (userMsg.id) _marcarRenderizado(userMsg.id);
     await append(userMsg, true);
 
     mostrarTypingBot();
@@ -600,7 +607,6 @@ async function _enviarMensajeAlBot(textoLimpio) {
             console.warn('[Chat] No se pudo guardar respuesta del bot:', e);
         }
 
-        if (botMsg.id) _marcarRenderizado(botMsg.id);
         isUserAtBottom = true;
         await append(botMsg, false);
         scrollToBottom(true);
@@ -626,10 +632,13 @@ async function _enviarMensajeAlBot(textoLimpio) {
 }
 
 async function _enviarMensajeNormal(textoLimpio) {
+    var chatId = current.id;
+    var esChatBot = current.bot;
+
     try {
         var r = await db.from('mensajes_chat').insert({
             remitente_id: user.id,
-            destinatario_id: current.id,
+            destinatario_id: chatId,
             contenido: textoLimpio,
             tipo: 'texto',
             leido: false,
@@ -643,10 +652,9 @@ async function _enviarMensajeNormal(textoLimpio) {
             return;
         }
 
-        _marcarRenderizado(r.data.id);
         await append(r.data, true);
 
-        await marcarConversacionComoLeida(current.id, r.data.created_at);
+        await marcarConversacionComoLeida(chatId, r.data.created_at);
 
         loadConversations();
     } catch (e) {
@@ -660,6 +668,7 @@ async function _enviarMensajeNormal(textoLimpio) {
 // ----------------------------------------------------------------
 async function sendAudio(blob, duracionSegundos) {
     if (!current || !blob) return;
+    var chatId = current.bot ? BOT_UUID : current.id;
     if (!await auth()) return;
 
     var val = validarAudioChat(duracionSegundos);
@@ -670,7 +679,7 @@ async function sendAudio(blob, duracionSegundos) {
 
         var ins = await db.from('mensajes_chat').insert({
             remitente_id: user.id,
-            destinatario_id: current.bot ? BOT_UUID : current.id,
+            destinatario_id: chatId,
             tipo: 'audio',
             imagen_url: url,
             leido: false,
@@ -683,11 +692,9 @@ async function sendAudio(blob, duracionSegundos) {
             return;
         }
 
-        _marcarRenderizado(ins.data.id);
         await append(ins.data, true);
 
-        var remitente = current.bot ? BOT_UUID : current.id;
-        await marcarConversacionComoLeida(remitente, ins.data.created_at);
+        await marcarConversacionComoLeida(chatId, ins.data.created_at);
 
         loadConversations();
     } catch (e) {
@@ -698,6 +705,7 @@ async function sendAudio(blob, duracionSegundos) {
 
 async function sendVideo(blob, duracionSegundos, pesoBytes) {
     if (!current || !blob) return;
+    var chatId = current.bot ? BOT_UUID : current.id;
     if (!await auth()) return;
 
     var val = validarVideoChat(duracionSegundos, pesoBytes || blob.size);
@@ -708,7 +716,7 @@ async function sendVideo(blob, duracionSegundos, pesoBytes) {
 
         var ins = await db.from('mensajes_chat').insert({
             remitente_id: user.id,
-            destinatario_id: current.bot ? BOT_UUID : current.id,
+            destinatario_id: chatId,
             tipo: 'video',
             imagen_url: url,
             leido: false,
@@ -721,11 +729,9 @@ async function sendVideo(blob, duracionSegundos, pesoBytes) {
             return;
         }
 
-        _marcarRenderizado(ins.data.id);
         await append(ins.data, true);
 
-        var remitente = current.bot ? BOT_UUID : current.id;
-        await marcarConversacionComoLeida(remitente, ins.data.created_at);
+        await marcarConversacionComoLeida(chatId, ins.data.created_at);
 
         loadConversations();
     } catch (e) {
@@ -736,6 +742,7 @@ async function sendVideo(blob, duracionSegundos, pesoBytes) {
 
 async function sendFoto(blob) {
     if (!current || !blob) return;
+    var chatId = current.bot ? BOT_UUID : current.id;
     if (!await auth()) return;
 
     var val = validarFotoChat(blob.size);
@@ -746,7 +753,7 @@ async function sendFoto(blob) {
 
         var ins = await db.from('mensajes_chat').insert({
             remitente_id: user.id,
-            destinatario_id: current.bot ? BOT_UUID : current.id,
+            destinatario_id: chatId,
             tipo: 'imagen',
             imagen_url: url,
             leido: false,
@@ -759,11 +766,9 @@ async function sendFoto(blob) {
             return;
         }
 
-        _marcarRenderizado(ins.data.id);
         await append(ins.data, true);
 
-        var remitente = current.bot ? BOT_UUID : current.id;
-        await marcarConversacionComoLeida(remitente, ins.data.created_at);
+        await marcarConversacionComoLeida(chatId, ins.data.created_at);
 
         loadConversations();
     } catch (e) {
@@ -908,8 +913,7 @@ function subscribeMessages(id) {
                 .on('postgres_changes', {
                     event: 'INSERT',
                     schema: 'public',
-                    table: 'mensajes_chat',
-                    filter: 'or(remitente_id.eq.' + user.id + ',destinatario_id.eq.' + user.id + ')'
+                    table: 'mensajes_chat'
                 }, function(p) {
                     var m = p.new;
                     if (!current) return;
@@ -927,11 +931,10 @@ function subscribeMessages(id) {
                     }
 
                     if (!esParaEsteChat) return;
-                    if (_esMensajeMio(m) && !_esAutoEnvio(m)) return;
 
                     var safeId = _safeDomId(m.id);
                     if (!_yaRenderizado(m.id) && !document.getElementById('msg-' + safeId)) {
-                        append(m, _esAutoEnvio(m));
+                        append(m, _esMensajeMio(m) || _esAutoEnvio(m));
                     }
                 })
                 .subscribe();
@@ -947,9 +950,20 @@ function subscribeMessages(id) {
 // SCROLL
 // ----------------------------------------------------------------
 var _scrollUserOverride = false;
+var _scrollRafId = null;
 
 function scrollToBottom(force) {
     if (force === undefined) force = false;
+
+    if (_scrollRafId !== null) {
+        cancelAnimationFrame(_scrollRafId);
+        _scrollRafId = null;
+    }
+    if (scrollRetryTimer) {
+        clearInterval(scrollRetryTimer);
+        scrollRetryTimer = null;
+    }
+
     var box = $('messages');
     if (!box) return;
     if (!force && !isUserAtBottom) return;
@@ -964,9 +978,11 @@ function scrollToBottom(force) {
     };
 
     doScroll();
-    requestAnimationFrame(doScroll);
+    _scrollRafId = requestAnimationFrame(function() {
+        _scrollRafId = null;
+        doScroll();
+    });
 
-    if (scrollRetryTimer) clearInterval(scrollRetryTimer);
     var intentos = 0;
     scrollRetryTimer = setInterval(function() {
         if (_scrollUserOverride) {
@@ -991,10 +1007,18 @@ function _instalarCancelScrollManual(box) {
     box.addEventListener('wheel', function() {
         _scrollUserOverride = true;
         if (scrollRetryTimer) { clearInterval(scrollRetryTimer); scrollRetryTimer = null; }
+        if (_scrollRafId !== null) {
+            cancelAnimationFrame(_scrollRafId);
+            _scrollRafId = null;
+        }
     }, { passive: true });
     box.addEventListener('touchmove', function() {
         _scrollUserOverride = true;
         if (scrollRetryTimer) { clearInterval(scrollRetryTimer); scrollRetryTimer = null; }
+        if (_scrollRafId !== null) {
+            cancelAnimationFrame(_scrollRafId);
+            _scrollRafId = null;
+        }
     }, { passive: true });
 }
 
@@ -1039,7 +1063,10 @@ function observarCargaMultimedia(box) {
     box.querySelectorAll('img, audio, video').forEach(function(el) {
         if (_mediaObservados.has(el)) return;
         _mediaObservados.add(el);
+        var _disparado = false;
         var onLoad = function() {
+            if (_disparado) return;
+            _disparado = true;
             if (isUserAtBottom) {
                 var anchor = document.getElementById('scrollAnchor');
                 if (anchor) anchor.scrollIntoView({ behavior: 'auto', block: 'end' });
@@ -1118,34 +1145,43 @@ async function limpiarEstadoConversacion() {
 // ----------------------------------------------------------------
 // EXPOSICIÓN GLOBAL
 // ----------------------------------------------------------------
-window.sendMessage = sendMessage;
-window.sendAudio = sendAudio;
-window.sendVideo = sendVideo;
-window.sendFoto = sendFoto;
-window.append = append;
-window.renderMessages = renderMessages;
-window.messageHTML = messageHTML;
-window.abrirConversacionBot = abrirConversacionBot;
-window.subscribeMessages = subscribeMessages;
-window.scrollToBottom = scrollToBottom;
-window.actualizarFlecha = actualizarFlecha;
-window.ocultarFlechaNuevos = ocultarFlechaNuevos;
-window.detectarSiEstaAbajo = detectarSiEstaAbajo;
-window.observarCargaMultimedia = observarCargaMultimedia;
-window.markRead = markRead;
-window.marcarConversacionComoLeida = marcarConversacionComoLeida;
-window.mostrarTypingBot = mostrarTypingBot;
-window.quitarTypingBot = quitarTypingBot;
-window.validarTextoChat = validarTextoChat;
-window.validarAudioChat = validarAudioChat;
-window.validarVideoChat = validarVideoChat;
-window.validarFotoChat = validarFotoChat;
-window._marcarRenderizado = _marcarRenderizado;
-window._yaRenderizado = _yaRenderizado;
-window._safeDomId = _safeDomId;
-window._esMensajeDelBot = _esMensajeDelBot;
-window._esConversacionBot = _esConversacionBot;
-window._contenedorVisible = _contenedorVisible;
-window.limpiarEstadoConversacion = limpiarEstadoConversacion;
+window.Chat = {
+    sendMessage: sendMessage,
+    sendAudio: sendAudio,
+    sendVideo: sendVideo,
+    sendFoto: sendFoto,
+    append: append,
+    renderMessages: renderMessages,
+    messageHTML: messageHTML,
+    abrirConversacionBot: abrirConversacionBot,
+    subscribeMessages: subscribeMessages,
+    scrollToBottom: scrollToBottom,
+    actualizarFlecha: actualizarFlecha,
+    ocultarFlechaNuevos: ocultarFlechaNuevos,
+    detectarSiEstaAbajo: detectarSiEstaAbajo,
+    observarCargaMultimedia: observarCargaMultimedia,
+    markRead: markRead,
+    marcarConversacionComoLeida: marcarConversacionComoLeida,
+    mostrarTypingBot: mostrarTypingBot,
+    quitarTypingBot: quitarTypingBot,
+    validarTextoChat: validarTextoChat,
+    validarAudioChat: validarAudioChat,
+    validarVideoChat: validarVideoChat,
+    validarFotoChat: validarFotoChat,
+    _marcarRenderizado: _marcarRenderizado,
+    _yaRenderizado: _yaRenderizado,
+    _safeDomId: _safeDomId,
+    _esMensajeDelBot: _esMensajeDelBot,
+    _esConversacionBot: _esConversacionBot,
+    limpiarEstadoConversacion: limpiarEstadoConversacion
+};
 
-console.log('[Mensajes] ✅ Chat v3.4 cargado (renderizado robusto garantizado)');
+window.sendMessage = sendMessage;
+window.append = append;
+window.abrirConversacionBot = abrirConversacionBot;
+window.scrollToBottom = scrollToBottom;
+window.markRead = markRead;
+
+if (window.DEBUG_CHAT) {
+    console.log('[Mensajes] ✅ Chat v3.4 cargado (renderizado robusto garantizado)');
+}
