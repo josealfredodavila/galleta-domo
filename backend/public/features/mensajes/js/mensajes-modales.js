@@ -1,75 +1,19 @@
 // ================================================================
-// MENSAJES · MODALES Y ATAJOS GLOBALES — v2.0
+// MENSAJES · MODALES Y ATAJOS GLOBALES
 // ================================================================
-// Comportamientos comunes de modales, atajos de teclado y
-// funciones que cruzan varios módulos.
+// Comportamientos comunes: ESC con stack, click fuera, bloqueo de
+// scroll, evitar drag de imágenes y doble tap zoom.
+// Se carga DESPUÉS de todos los módulos anteriores.
 //
-// Depende de:
-//   • mensajes-config.js       (db, user, current, call, msgChannel...)
-//   • mensajes-utils.js        ($, toast, esc, domListo)
-//   • mensajes-auth.js         (auth)
-//   • mensajes-conversaciones.js
-//   • mensajes-chat.js         (cerrarEstadoViewer, cerrarPhotoViewer...)
-//   • mensajes-estados.js      (cerrarEstadoViewer, estadoPausado...)
-//   • mensajes-llamadas.js     (hangup, rejectCall, cleanupCall...)
-//
-// INTEGRACIÓN v2.0:
-//   • Namespace window.Chat.*
-//   • Exposición directa window.* (compatibilidad legacy)
-//   • Fallbacks robustos si algún módulo no cargó
-//   • Cleanup de micrófono/cámara al cerrar modales de llamada
-//   • Emisión de eventos del ecosistema
-//   • ESC cierra llamadas entrantes
-//   • Logs de diagnóstico si DEBUG_CHAT
+// FUENTE DE VERDAD: monolítico mensajes.html original.
 // ================================================================
 
-// ----------------------------------------------------------------
-// NAMESPACE
-// ----------------------------------------------------------------
-window.Chat = window.Chat || {};
-
-// ----------------------------------------------------------------
-// FLAG DEBUG
-// ----------------------------------------------------------------
-if (typeof window.DEBUG_CHAT === 'undefined') {
-    window.DEBUG_CHAT = false;
-}
-
-// ----------------------------------------------------------------
-// HELPERS INTERNOS
-// ----------------------------------------------------------------
-function _modLog() {
-    if (window.DEBUG_CHAT && console && console.log) {
-        console.log.apply(console, ['[Modales]'].concat(Array.prototype.slice.call(arguments)));
-    }
-}
-
-function _modSafeCall(fnName, args) {
-    // Llama a una función global si existe, con fallback vía window.Chat
-    var fn = (window.Chat && typeof window.Chat[fnName] === 'function')
-        ? window.Chat[fnName]
-        : (typeof window[fnName] === 'function' ? window[fnName] : null);
-
-    if (typeof fn !== 'function') {
-        _modLog('⚠️ Función no disponible:', fnName);
-        return false;
-    }
-
-    try {
-        fn.apply(null, args || []);
-        return true;
-    } catch (e) {
-        console.warn('[Modales] Error llamando a', fnName, e);
-        return false;
-    }
-}
+'use strict';
 
 // ================================================================
 // CERRAR TODOS LOS MODALES
 // ================================================================
 function cerrarTodosLosModales() {
-    _modLog('cerrarTodosLosModales()');
-
     var ids = [
         'newModal',
         'profileModal',
@@ -77,29 +21,34 @@ function cerrarTodosLosModales() {
         'photoViewer',
         'estadoUploadModal',
         'modalCrearCanal',
-        'modalCrearGrupo'
+        'modalCrearGrupo',
+        'incomingOverlay'
     ];
 
     ids.forEach(function(id) {
         var el = document.getElementById(id);
-        if (el && el.classList) {
-            el.classList.remove('show');
-        }
+        if (el) el.classList.remove('show');
     });
 
-    // Visor de estados (usa función dedicada)
+    // Visores full-screen (los cierra cada módulo específico)
     var estados = document.getElementById('estadoViewer');
     if (estados && estados.classList.contains('show')) {
-        _modSafeCall('cerrarEstadoViewer', []);
+        if (typeof cerrarEstadoViewer === 'function') {
+            cerrarEstadoViewer();
+        }
     }
 
-    // ✅ v2.0: Emitir evento
-    try {
-        window.dispatchEvent(new CustomEvent('modales:cerradosTodos'));
-    } catch (e) {}
+    // Reset file inputs
+    var fi = document.getElementById('estadoFileInput');
+    if (fi) fi.value = '';
 
-    // ✅ v2.0: Actualizar bloqueo de scroll inmediatamente
-    actualizarBloqueoScroll();
+    var avatarInput = document.getElementById('avatarInput');
+    if (avatarInput) avatarInput.value = '';
+
+    // Actualizar bloqueo de scroll
+    if (typeof actualizarBloqueoScroll === 'function') {
+        actualizarBloqueoScroll();
+    }
 }
 
 // ================================================================
@@ -107,141 +56,121 @@ function cerrarTodosLosModales() {
 // ================================================================
 function cerrarModalPorId(id) {
     if (!id) return;
-
-    _modLog('cerrarModalPorId:', id);
-
     var el = document.getElementById(id);
-    if (el && el.classList) {
-        el.classList.remove('show');
-
-        // ✅ v2.0: Emitir evento específico
-        try {
-            window.dispatchEvent(new CustomEvent('modal:cerrado', {
-                detail: { id: id }
-            }));
-        } catch (e) {}
-
+    if (el) el.classList.remove('show');
+    if (typeof actualizarBloqueoScroll === 'function') {
         actualizarBloqueoScroll();
     }
 }
 
 // ================================================================
-// ✅ v2.0: CLEANUP DE LLAMADA (micrófono + cámara)
-// ================================================================
-function _cleanupLlamadaSiNecesario() {
-    // Si la llamada está activa o hay overlays abiertos, limpiar
-    var callActiva = (typeof call !== 'undefined' && call && call.active);
-    var overlayCall = document.getElementById('callOverlay');
-    var overlayIncoming = document.getElementById('incomingOverlay');
-
-    var callVisible = overlayCall && overlayCall.classList.contains('show');
-    var incomingVisible = overlayIncoming && overlayIncoming.classList.contains('show');
-
-    if (callActiva || callVisible || incomingVisible) {
-        _modLog('🧹 Limpiando recursos de llamada al cerrar modales');
-
-        // ✅ Detener tracks locales
-        try {
-            if (typeof call !== 'undefined' && call) {
-                if (call.audio && typeof call.audio.stop === 'function') {
-                    call.audio.stop();
-                }
-                if (call.video && typeof call.video.stop === 'function') {
-                    call.video.stop();
-                }
-                if (call.screen && typeof call.screen.stop === 'function') {
-                    call.screen.stop();
-                }
-            }
-        } catch (e) {
-            console.warn('[Modales] Error deteniendo tracks:', e);
-        }
-
-        // ✅ Rechazar/colgar la llamada si hay funciones disponibles
-        if (incomingVisible && typeof rejectCall === 'function') {
-            try { rejectCall(); } catch (e) {}
-        } else if (callVisible && typeof hangup === 'function') {
-            try { hangup(); } catch (e) {}
-        }
-
-        // ✅ Ocultar overlays
-        if (overlayCall) overlayCall.classList.remove('show');
-        if (overlayIncoming) overlayIncoming.classList.remove('show');
-    }
-}
-
-// ================================================================
-// ATAJOS DE TECLADO GLOBALES
+// ATAJO ESC CON STACK (cierra el último modal abierto)
 // ================================================================
 document.addEventListener('keydown', function(e) {
+    if (e.key !== 'Escape') return;
 
-    // ✅ v2.0: Solo procesar ESC si no hay un input activo
-    var tag = (e.target && e.target.tagName) ? e.target.tagName : '';
-    var esInput = (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target && e.target.isContentEditable));
-
-    if (e.key === 'Escape') {
-
-        // 1. Cerrar visor de estados primero (prioridad)
-        var viewer = document.getElementById('estadoViewer');
-        if (viewer && viewer.classList.contains('show')) {
-            _modLog('ESC → cerrando visor de estados');
-            _modSafeCall('cerrarEstadoViewer', []);
-            return;
-        }
-
-        // 2. Cerrar visor de fotos
-        var pv = document.getElementById('photoViewer');
-        if (pv && pv.classList.contains('show')) {
-            _modLog('ESC → cerrando visor de fotos');
-            _modSafeCall('cerrarPhotoViewer', []);
-            return;
-        }
-
-        // 3. Cerrar modales de llamada (con cleanup)
-        var incoming = document.getElementById('incomingOverlay');
-        if (incoming && incoming.classList.contains('show')) {
-            _modLog('ESC → rechazando llamada entrante');
-            _modSafeCall('rejectCall', []);
-            return;
-        }
-
-        var callOverlay = document.getElementById('callOverlay');
-        if (callOverlay && callOverlay.classList.contains('show')) {
-            _modLog('ESC → colgando llamada');
-            _modSafeCall('hangup', []);
-            return;
-        }
-
-        // 4. Cerrar otros modales
-        if (!esInput) {
-            _modLog('ESC → cerrando todos los modales');
-            cerrarTodosLosModales();
-        }
+    // 1. Visor de estados (prioridad máxima)
+    var viewer = document.getElementById('estadoViewer');
+    if (viewer && viewer.classList.contains('show')) {
+        if (typeof cerrarEstadoViewer === 'function') cerrarEstadoViewer();
+        return;
     }
+
+    // 2. Visor de fotos
+    var pv = document.getElementById('photoViewer');
+    if (pv && pv.classList.contains('show')) {
+        if (typeof cerrarPhotoViewer === 'function') cerrarPhotoViewer();
+        return;
+    }
+
+    // 3. Modal de vistas (secundario)
+    var vistasModal = document.getElementById('vistasModal');
+    if (vistasModal && vistasModal.classList.contains('show')) {
+        if (typeof cerrarVistasModal === 'function') cerrarVistasModal();
+        return;
+    }
+
+    // 4. Modal de subir estado
+    var estadoUpload = document.getElementById('estadoUploadModal');
+    if (estadoUpload && estadoUpload.classList.contains('show')) {
+        if (typeof cerrarModalEstado === 'function') cerrarModalEstado();
+        return;
+    }
+
+    // 5. Modal de perfil
+    var profileModal = document.getElementById('profileModal');
+    if (profileModal && profileModal.classList.contains('show')) {
+        if (typeof cerrarProfileModal === 'function') cerrarProfileModal();
+        return;
+    }
+
+    // 6. Modal de nueva conversación
+    var newModal = document.getElementById('newModal');
+    if (newModal && newModal.classList.contains('show')) {
+        if (typeof cerrarModalNuevaConversacion === 'function') cerrarModalNuevaConversacion();
+        return;
+    }
+
+    // 7. Modales de crear canal/grupo
+    var modalCanal = document.getElementById('modalCrearCanal');
+    if (modalCanal && modalCanal.classList.contains('show')) {
+        if (typeof cerrarModalCrearCanal === 'function') cerrarModalCrearCanal();
+        return;
+    }
+
+    var modalGrupo = document.getElementById('modalCrearGrupo');
+    if (modalGrupo && modalGrupo.classList.contains('show')) {
+        if (typeof cerrarModalCrearGrupo === 'function') cerrarModalCrearGrupo();
+        return;
+    }
+
+    // 8. Stack genérico: si no cayó ninguna prioridad, cerrar el último `.modal.show`
+    var abiertos = Array.prototype.slice.call(document.querySelectorAll('.modal.show'));
+    if (abiertos.length) {
+        abiertos[abiertos.length - 1].classList.remove('show');
+        if (typeof actualizarBloqueoScroll === 'function') {
+            actualizarBloqueoScroll();
+        }
+        return;
+    }
+
+    // 9. Fallback
+    cerrarTodosLosModales();
 });
 
 // ================================================================
 // CLICK FUERA DEL MODAL → CERRAR
 // ================================================================
 document.addEventListener('click', function(e) {
-    if (!e.target || !e.target.classList) return;
+    var t = e.target;
+    if (!t) return;
 
-    // ✅ Si el click fue directamente en el fondo del modal
-    if (e.target.classList.contains('modal')) {
-        _modLog('Click fuera del modal → cerrando:', e.target.id);
-        e.target.classList.remove('show');
-        actualizarBloqueoScroll();
+    // Click directo sobre el fondo del modal (no sobre el contenido)
+    if (t.classList && t.classList.contains('modal')) {
+        t.classList.remove('show');
+        if (typeof actualizarBloqueoScroll === 'function') {
+            actualizarBloqueoScroll();
+        }
+        return;
     }
 
-    // ✅ v2.0: Si fue en el fondo del photo-viewer
-    if (e.target.classList.contains('photo-viewer')) {
-        _modSafeCall('cerrarPhotoViewer', []);
+    // Click sobre un hijo directo del modal (por si el modal tiene wrapper)
+    if (t.parentElement && t.parentElement.classList && t.parentElement.classList.contains('modal')) {
+        // Verificar que no sea el contenido del modal
+        if (!t.closest('.modalbox') && !t.closest('.profile-modal-box')) {
+            t.parentElement.classList.remove('show');
+            if (typeof actualizarBloqueoScroll === 'function') {
+                actualizarBloqueoScroll();
+            }
+        }
     }
-});
+}, { passive: true });
 
 // ================================================================
-// BLOQUEO DE SCROLL DEL BODY CON MODALES ABIERTOS
+// BLOQUEO DE SCROLL DEL BODY
 // ================================================================
+var _overflowPrevio = null;
+
 function actualizarBloqueoScroll() {
     var algunoAbierto =
         document.querySelector('.modal.show') ||
@@ -250,24 +179,40 @@ function actualizarBloqueoScroll() {
         document.querySelector('.call.show');
 
     if (algunoAbierto) {
-        if (document.body.style.overflow !== 'hidden') {
-            document.body.style.overflow = 'hidden';
-            _modLog('Body scroll bloqueado');
+        if (_overflowPrevio === null) {
+            _overflowPrevio = document.body.style.overflow || '';
         }
-    } else {
-        if (document.body.style.overflow !== '') {
-            document.body.style.overflow = '';
-            _modLog('Body scroll desbloqueado');
-        }
+        document.body.style.overflow = 'hidden';
+    } else if (_overflowPrevio !== null) {
+        document.body.style.overflow = _overflowPrevio;
+        _overflowPrevio = null;
     }
+
+    // Accesibilidad: inert + aria-hidden en modales cerrados
+    document.querySelectorAll('.modal, .photo-viewer, .estado-viewer, .call').forEach(function(el) {
+        if (el.classList.contains('show')) {
+            if (el.hasAttribute('inert')) el.removeAttribute('inert');
+            el.setAttribute('aria-hidden', 'false');
+        } else {
+            el.setAttribute('inert', '');
+            el.setAttribute('aria-hidden', 'true');
+        }
+    });
 }
 
 // ================================================================
-// OBSERVER DE MODALES (para bloqueo de scroll)
+// MUTATION OBSERVER (bloqueo de scroll automático)
 // ================================================================
 (function observarModales() {
     if (!window.MutationObserver) {
-        _modLog('MutationObserver no soportado, usando fallback');
+        // Fallback: llamar directo
+        if (typeof domListo === 'function') {
+            domListo(function() { actualizarBloqueoScroll(); });
+        } else if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', actualizarBloqueoScroll);
+        } else {
+            actualizarBloqueoScroll();
+        }
         return;
     }
 
@@ -275,152 +220,143 @@ function actualizarBloqueoScroll() {
         actualizarBloqueoScroll();
     });
 
-    // ✅ v2.0: Ejecutar cuando el DOM esté listo
-    function setup() {
-        var targets = document.querySelectorAll('.modal, .photo-viewer, .estado-viewer, .call');
-        targets.forEach(function(el) {
-            observer.observe(el, { attributes: true, attributeFilter: ['class'] });
+    var setup = function() {
+        observer.observe(document.body, {
+            attributes: true,
+            attributeFilter: ['class'],
+            subtree: true
         });
-        _modLog('Observer instalado en', targets.length, 'elementos');
-    }
+        actualizarBloqueoScroll();
+    };
 
     if (typeof domListo === 'function') {
         domListo(setup);
     } else if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', setup, { once: true });
+        document.addEventListener('DOMContentLoaded', setup);
     } else {
         setup();
     }
+
+    window._modalObserver = observer;
 })();
 
 // ================================================================
-// PREVENIR DRAG DE IMÁGENES EN MÓVIL
+// EVITAR DRAG DE IMÁGENES / SVG EN MÓVIL
 // ================================================================
 document.addEventListener('dragstart', function(e) {
-    if (e.target && e.target.tagName === 'IMG') {
+    var t = e.target;
+    if (!t) return;
+    if (t.tagName === 'IMG' ||
+        t.tagName === 'svg' ||
+        (t.tagName && t.tagName.toLowerCase() === 'image')) {
         e.preventDefault();
     }
-});
+}, { passive: true });
 
 // ================================================================
-// PREVENIR ZOOM ACCIDENTAL EN DOBLE TAP (móvil)
+// EVITAR ZOOM ACCIDENTAL EN DOBLE TAP (solo en imágenes de chat)
 // ================================================================
 (function prevenirDobleTapZoom() {
     var lastTap = 0;
+    var ignorar = { BUTTON: 1, INPUT: 1, TEXTAREA: 1, A: 1, SELECT: 1, LABEL: 1, SVG: 1 };
 
     document.addEventListener('touchend', function(e) {
-        var now = Date.now();
-
-        if (now - lastTap < 300) {
-            var t = e.target;
-
-            // ✅ v2.0: Excluir más elementos interactivos
-            var esInteractivo = t && (
-                t.tagName === 'BUTTON' ||
-                t.tagName === 'INPUT' ||
-                t.tagName === 'TEXTAREA' ||
-                t.tagName === 'A' ||
-                t.tagName === 'SELECT' ||
-                (t.closest && t.closest('button, input, textarea, select, a, [role="button"]'))
-            );
-
-            if (!esInteractivo) {
-                e.preventDefault();
-            }
+        var t = e.target;
+        if (!t || ignorar[t.tagName]) {
+            lastTap = 0;
+            return;
         }
 
+        var now = Date.now();
+        var esImagenDeChat = (t.tagName === 'IMG') || (t.closest && t.closest('.bubble img'));
+
+        if (now - lastTap < 300 && esImagenDeChat) {
+            e.preventDefault();
+        }
         lastTap = now;
     }, { passive: false });
 })();
 
 // ================================================================
-// RESIZE / ORIENTATION CHANGE
+// RESIZE / ORIENTATION CHANGE (re-scroll si estamos abajo)
 // ================================================================
+var _resizeTimer = null;
 window.addEventListener('resize', function() {
-    if (isUserAtBottom && typeof scrollToBottom === 'function') {
-        _modSafeCall('scrollToBottom', [true]);
-    }
+    if (_resizeTimer) clearTimeout(_resizeTimer);
+    _resizeTimer = setTimeout(function() {
+        if (typeof detectarSiEstaAbajo === 'function') {
+            detectarSiEstaAbajo();
+        }
+        if (typeof isUserAtBottom !== 'undefined' && isUserAtBottom && typeof scrollToBottom === 'function') {
+            scrollToBottom(true);
+        }
+    }, 200);
 });
 
 // ================================================================
-// BEFORE UNLOAD — limpiar timers y canales
+// BEFORE UNLOAD (limpieza de timers y canales)
 // ================================================================
 window.addEventListener('beforeunload', function() {
-    _modLog('🧹 beforeunload: limpiando recursos');
-
-    // Estados
-    if (typeof _estadoTimerRAF !== 'undefined' && _estadoTimerRAF) {
-        cancelAnimationFrame(_estadoTimerRAF);
+    // Cancelar timers de estados
+    if (typeof estadoTimer !== 'undefined' && estadoTimer) {
+        try { clearInterval(estadoTimer); } catch (e) {}
     }
 
-    // Scroll retry
+    // Cancelar timers de scroll
     if (typeof scrollRetryTimer !== 'undefined' && scrollRetryTimer) {
-        clearInterval(scrollRetryTimer);
+        try { clearInterval(scrollRetryTimer); } catch (e) {}
+    }
+    if (window.scrollRetryTimer) {
+        try { clearInterval(window.scrollRetryTimer); } catch (e) {}
     }
 
-    // Realtime
+    // Detener grabaciones activas
+    try {
+        if (typeof voiceBotRecorder !== 'undefined' && voiceBotRecorder && voiceBotRecorder.state !== 'inactive') {
+            voiceBotRecorder.stop();
+        }
+    } catch (e) {}
+
+    try {
+        if (typeof recorder !== 'undefined' && recorder && recorder.state !== 'inactive') {
+            recorder.stop();
+        }
+    } catch (e) {}
+
+    // Cancelar operaciones del bot
+    if (typeof cancelarOperacionesBot === 'function') {
+        try { cancelarOperacionesBot(); } catch (e) {}
+    }
+
+    // Remover canales realtime
     try {
         if (typeof msgChannel !== 'undefined' && msgChannel && window.db) {
             window.db.removeChannel(msgChannel);
         }
+    } catch (e) {}
+
+    try {
         if (typeof callChannel !== 'undefined' && callChannel && window.db) {
             window.db.removeChannel(callChannel);
         }
-    } catch (e) {
-        console.warn('[Modales] Error cerrando canales realtime:', e);
-    }
-
-    // ✅ v2.0: Cleanup de llamada
-    try {
-        if (typeof call !== 'undefined' && call) {
-            if (call.audio && typeof call.audio.stop === 'function') call.audio.stop();
-            if (call.video && typeof call.video.stop === 'function') call.video.stop();
-            if (call.screen && typeof call.screen.stop === 'function') call.screen.stop();
-            if (call.room && typeof call.room.disconnect === 'function') call.room.disconnect();
-        }
     } catch (e) {}
+
+    // Desconectar observer
+    if (window._modalObserver && typeof window._modalObserver.disconnect === 'function') {
+        try { window._modalObserver.disconnect(); } catch (e) {}
+    }
 });
 
 // ================================================================
-// ✅ v2.0: EXPOSICIÓN GLOBAL — Namespace Chat
-// ================================================================
-window.Chat.cerrarTodosLosModales = cerrarTodosLosModales;
-window.Chat.cerrarModalPorId = cerrarModalPorId;
-window.Chat.actualizarBloqueoScroll = actualizarBloqueoScroll;
-
-// ================================================================
-// ✅ v2.0: EXPOSICIÓN GLOBAL — Compatibilidad legacy
+// EXPOSICIÓN GLOBAL
 // ================================================================
 window.cerrarTodosLosModales = cerrarTodosLosModales;
 window.cerrarModalPorId = cerrarModalPorId;
 window.actualizarBloqueoScroll = actualizarBloqueoScroll;
 
 // ================================================================
-// ✅ v2.0: EVENTO DE LISTO
-// ================================================================
-try {
-    window.dispatchEvent(new CustomEvent('modales:listo', {
-        detail: {
-            version: '2.0',
-            funciones: [
-                'cerrarTodosLosModales',
-                'cerrarModalPorId',
-                'actualizarBloqueoScroll'
-            ]
-        }
-    }));
-} catch (e) {}
-
-// ================================================================
-// DIAGNÓSTICO
+// LOG FINAL
 // ================================================================
 if (window.DEBUG_CHAT) {
-    console.log('[Mensajes] ✅ Modales v2.0 cargado (integración con ecosistema)');
-    console.log('[Mensajes] Funciones expuestas:');
-    console.log('  • window.cerrarTodosLosModales');
-    console.log('  • window.cerrarModalPorId');
-    console.log('  • window.actualizarBloqueoScroll');
-    console.log('  • window.Chat.* (namespace)');
-} else {
-    console.log('[Mensajes] ✅ Modales v2.0 cargado');
+    console.log('[Mensajes/Modales] ✅ Modales cargado');
 }
