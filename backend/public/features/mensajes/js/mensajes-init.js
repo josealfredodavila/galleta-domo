@@ -1,18 +1,53 @@
 // ================================================================
-// MENSAJES · INICIALIZACIÓN (v3.2 — con fixes de race conditions)
+// MENSAJES · INICIALIZACIÓN (v3.3 — Fixes de producción)
 // ================================================================
 // Arranque del módulo, exposición global a window.
 // Depende de: TODOS los archivos anteriores.
 //
-// FIXES v3.2:
+// FIXES v3.3:
 // - Promesa compartida para evitar race conditions en init()
 // - Eliminado bucle de reintento doble (solo arrancarMensajes reintenta)
 // - Garantizada asignación de db antes de listeners
 // - try/catch global + capturas individuales en cada paso
+// - Exposición de nuevas funciones de producción:
+//     _esMensajeDelBot, _esConversacionBot, limpiarEstadoConversacion,
+//     _esIdDelBot, _normalizarBotId, _esIdDelBotConv, _normalizarBotIdConv
+// - Espera a que mensajes-chat.js y mensajes-bot.js estén cargados
+//   antes de iniciar (verificación de funciones críticas)
 // ================================================================
 
 // ---- Flag/Promesa compartida anti-doble-init ----
 var __initPromise = null;
+
+// ================================================================
+// VERIFICAR QUE LOS MÓDULOS CRÍTICOS ESTÉN CARGADOS
+// ================================================================
+function _modulosCriticosListos() {
+    // Funciones obligatorias que deben existir antes de init()
+    var obligatorias = [
+        'sendMessage',
+        'append',
+        'abrirConversacionBot',
+        'cargarHistorialParaBot',
+        'preguntarAlBot',
+        'loadConversations',
+        'openConversation',
+        'deleteConversation',
+        'cargarEstados',
+        'inicializarSupabase',
+        'auth',
+        'profile'
+    ];
+
+    for (var i = 0; i < obligatorias.length; i++) {
+        var fn = window[obligatorias[i]];
+        if (typeof fn !== 'function') {
+            return { listo: false, falta: obligatorias[i] };
+        }
+    }
+
+    return { listo: true, falta: null };
+}
 
 // ================================================================
 // INICIALIZACIÓN PRINCIPAL
@@ -30,7 +65,6 @@ function init() {
         try {
             // ---- Verificar Supabase SDK ----
             if (!window.supabase || !window.supabase.createClient) {
-                // Rechazar para que arrancarMensajes reintente
                 throw new Error('Supabase SDK no disponible');
             }
 
@@ -524,15 +558,26 @@ window.cerrarModalNuevaConversacion = cerrarModalNuevaConversacion;
 window.deleteConversation = deleteConversation;
 window.openConversation = openConversation;
 window.cerrarConversacion = cerrarConversacion;
+// ✅ NUEVO: helpers de normalización del bot (definidos en conversaciones.js)
+window._esIdDelBotConv = _esIdDelBotConv;
+window._normalizarBotIdConv = _normalizarBotIdConv;
 
 window.sendMessage = sendMessage;
 window.markRead = markRead;
+window.limpiarEstadoConversacion = limpiarEstadoConversacion;   // ✅ NUEVO
+window._esMensajeDelBot = _esMensajeDelBot;                     // ✅ NUEVO
+window._esConversacionBot = _esConversacionBot;                 // ✅ NUEVO
 
 window.uploadFile = uploadFile;
 window.recordAudioNota = recordAudioNota;
 
 window.grabarVozParaBot = grabarVozParaBot;
 window.enviarVozAlBot = enviarVozAlBot;
+window.abrirConversacionBot = abrirConversacionBot;
+window.cargarHistorialParaBot = cargarHistorialParaBot;
+window.preguntarAlBot = preguntarAlBot;
+window._esIdDelBot = _esIdDelBot;                               // ✅ NUEVO
+window._normalizarBotId = _normalizarBotId;                     // ✅ NUEVO
 
 window.cargarEstados = cargarEstados;
 window.abrirEstadoUsuario = abrirEstadoUsuario;
@@ -591,7 +636,19 @@ function arrancarMensajes() {
         return;
     }
 
-    // SDK listo → iniciar (la promesa interna protege de doble ejecución)
+    // ✅ NUEVO: verificar que los módulos críticos estén cargados
+    var check = _modulosCriticosListos();
+    if (!check.listo) {
+        if (__arranqueIntentos >= __arranqueMax) {
+            console.error('[Mensajes] ❌ Módulo crítico nunca cargó:', check.falta);
+            return;
+        }
+        console.warn('[Mensajes] Esperando módulo:', check.falta, '— intento', __arranqueIntentos);
+        setTimeout(arrancarMensajes, 300);
+        return;
+    }
+
+    // SDK listo y módulos cargados → iniciar
     init().catch(function(e) {
         console.error('[Mensajes] ❌ init() falló:', e);
         // Si falla, permitir un reintento único
