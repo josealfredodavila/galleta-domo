@@ -1,9 +1,20 @@
 // ================================================================
-// MENSAJES · ESTADOS (CORREGIDO - Bug de progreso arreglado)
+// MENSAJES · ESTADOS (VERSIÓN FINAL WHATSAPP-LIKE)
 // ================================================================
-// Estados: cargar, subir, ver con auto-avance, registrar vistas,
-// ver lista de vistas, marcar visto.
+// Estados: cargar, subir, ver con auto-avance segmentado,
+// registrar vistas, marcar visto, pausa con dedo, emojis.
 // ================================================================
+
+// ================================================================
+// VARIABLES LOCALES DEL VISOR
+// ================================================================
+var _estadosViewerActuales = [];   // Estados del usuario actualmente abierto
+var _estadoTimerRAF = null;         // ID del requestAnimationFrame
+var _estadoInicioMs = 0;            // performance.now() al arrancar
+var _estadoDuracionMs = 5000;       // 5s por estado (como WhatsApp)
+var _estadoPausadoAcum = 0;         // Tiempo pausado acumulado
+var _estadoPausaInicio = 0;         // Cuándo empezó la pausa actual
+var _cerrandoViewer = false;        // Flag para evitar navegación mientras cierra
 
 // ================================================================
 // MARCAR ESTADO COMO VISTO (localStorage)
@@ -11,14 +22,20 @@
 function marcarEstadoVisto(estadoId) {
     estadoVistos[estadoId] = Date.now();
     try { localStorage.setItem('sariels_estados_vistos', JSON.stringify(estadoVistos)); } catch (e) {}
+    limpiarVistosAntiguos();
 }
 
 function estadoEsNuevo(estado) { return !estadoVistos[estado.id]; }
 
 function limpiarVistosAntiguos() {
     var limite = Date.now() - (48 * 60 * 60 * 1000);
-    Object.keys(estadoVistos).forEach(function(k) { if (estadoVistos[k] < limite) delete estadoVistos[k]; });
-    try { localStorage.setItem('sariels_estados_vistos', JSON.stringify(estadoVistos)); } catch (e) {}
+    var cambio = false;
+    Object.keys(estadoVistos).forEach(function(k) {
+        if (estadoVistos[k] < limite) { delete estadoVistos[k]; cambio = true; }
+    });
+    if (cambio) {
+        try { localStorage.setItem('sariels_estados_vistos', JSON.stringify(estadoVistos)); } catch (e) {}
+    }
 }
 
 // ================================================================
@@ -39,10 +56,23 @@ async function registrarVistaEstado(estadoId) {
 // ================================================================
 async function obtenerVistasEstado(estadoId) {
     try {
-        var result = await db.from('estados_vistas').select('id', { count: 'exact', head: true }).eq('estado_id', estadoId);
+        var result = await db.from('estados_vistas')
+            .select('id', { count: 'exact', head: true })
+            .eq('estado_id', estadoId);
         if (result.error) return 0;
         return result.count || 0;
     } catch (e) { return 0; }
+}
+
+// ================================================================
+// HELPER: avatar HTML (reutilizable)
+// ================================================================
+function avatarEstadoHTML(perfil, fallback) {
+    if (perfil && perfil.avatar_url) {
+        return '<img src="' + esc(perfil.avatar_url) + '" alt="">';
+    }
+    var inicial = ((perfil && perfil.nombre) || fallback || '◈').charAt(0).toUpperCase();
+    return esc(inicial);
 }
 
 // ================================================================
@@ -61,7 +91,10 @@ async function cargarEstados() {
             .order('created_at', { ascending: true });
 
         if (result.error) {
-            if (result.error.code === '42P01') { console.warn('Tabla estados no existe aún'); return; }
+            if (result.error.code === '42P01') {
+                console.warn('[Estados] Tabla "estados" no existe aún');
+                return;
+            }
             throw result.error;
         }
 
@@ -105,9 +138,7 @@ async function cargarEstados() {
             var tieneNuevos2 = estadosUsuario.some(function(e) { return estadoEsNuevo(e); });
             var html = '<div class="estado-item" data-userid="' + uid + '">' +
                 '<div class="estado-circle ' + (tieneNuevos2 ? '' : 'visto') + '">' +
-                    '<div class="estado-inner">' +
-                        (p.avatar_url ? '<img src="' + esc(p.avatar_url) + '" alt="">' : esc((p.nombre || '◈').charAt(0).toUpperCase())) +
-                    '</div>' +
+                    '<div class="estado-inner">' + avatarEstadoHTML(p) + '</div>' +
                 '</div>' +
                 '<div class="estado-name">' + esc(p.nombre || 'Usuario') + '</div></div>';
             scroll.insertAdjacentHTML('beforeend', html);
@@ -116,68 +147,121 @@ async function cargarEstados() {
                 if (el) el.onclick = function() { abrirEstadoUsuario(id); };
             })(uid);
         }
-    } catch (e) { console.warn('Error cargando estados:', e); }
+    } catch (e) {
+        console.warn('[Estados] Error cargando:', e);
+    }
 }
 
 // ================================================================
 // ABRIR ESTADO DE UN USUARIO
 // ================================================================
 function abrirEstadoUsuario(uid) {
-    var estados = estadosCache.filter(function(e) { return e.usuario_id === uid; });
-    if (estados.length === 0) { toast('ℹ️ Este usuario no tiene estados', 'warning'); return; }
+    var estadosUsuario = estadosCache.filter(function(e) { return e.usuario_id === uid; });
+    estadosUsuario.sort(function(a, b) { return new Date(a.created_at) - new Date(b.created_at); });
 
+    if (estadosUsuario.length === 0) {
+        toast('ℹ️ Este usuario no tiene estados', 'warning');
+        return;
+    }
+
+    _estadosViewerActuales = estadosUsuario;
     estadoActualUserId = uid;
     estadoActualIndex = 0;
     estadoProgresoActual = 0;
     estadoPausado = false;
+    _cerrandoViewer = false;
 
     var viewer = $('estadoViewer');
     if (viewer) viewer.classList.add('show');
 
+    construirBarraSegmentada(estadosUsuario.length);
     mostrarEstadoActual();
+}
+
+// ================================================================
+// CONSTRUIR BARRA SEGMENTADA (estilo WhatsApp)
+// ================================================================
+function construirBarraSegmentada(total) {
+    var container = $('estadoProgress');
+    if (!container) return;
+
+    var html = '';
+    for (var i = 0; i < total; i++) {
+        html += '<div class="estado-segmento">' +
+            '<div class="estado-segmento-fill" id="segmento-fill-' + i + '"></div>' +
+        '</div>';
+    }
+    container.innerHTML = html;
+}
+
+// ================================================================
+// ACTUALIZAR BARRA SEGMENTADA
+// ================================================================
+function actualizarBarraSegmentada(porcentaje) {
+    // Segmentos anteriores: 100%
+    for (var i = 0; i < estadoActualIndex; i++) {
+        var fillAnt = document.getElementById('segmento-fill-' + i);
+        if (fillAnt) fillAnt.style.width = '100%';
+    }
+    // Segmentos posteriores: 0%
+    for (var j = estadoActualIndex + 1; j < _estadosViewerActuales.length; j++) {
+        var fillPost = document.getElementById('segmento-fill-' + j);
+        if (fillPost) fillPost.style.width = '0%';
+    }
+    // Segmento actual: porcentaje
+    var fillActual = document.getElementById('segmento-fill-' + estadoActualIndex);
+    if (fillActual) fillActual.style.width = porcentaje + '%';
 }
 
 // ================================================================
 // MOSTRAR ESTADO ACTUAL
 // ================================================================
 async function mostrarEstadoActual() {
-    var estados = estadosCache.filter(function(e) { return e.usuario_id === estadoActualUserId; });
-    if (estadoActualIndex >= estados.length) {
+    if (estadoActualIndex >= _estadosViewerActuales.length) {
         cerrarEstadoViewer();
         return;
     }
 
-    var estado = estados[estadoActualIndex];
-    var esMiEstado = (estadoActualUserId === user.id);
+    var estado = _estadosViewerActuales[estadoActualIndex];
+    var esMiEstado = user && (estadoActualUserId === user.id);
 
     // ---- CABECERA ----
     if (esMiEstado) {
         var evAvatar = $('evAvatar');
         if (evAvatar) {
-            evAvatar.innerHTML = (currentUserProfile && currentUserProfile.avatar_url)
-                ? '<img src="' + esc(currentUserProfile.avatar_url) + '" alt="">'
-                : esc((currentUserProfile && currentUserProfile.nombre || '◈').charAt(0).toUpperCase());
+            evAvatar.innerHTML = avatarEstadoHTML(currentUserProfile, '◈');
         }
         var evName = $('evName');
         if (evName) evName.textContent = 'Tú';
     } else {
-        db.from('perfiles_publicos').select('nombre, handle, avatar_url').eq('id', estadoActualUserId).maybeSingle().then(function(r) {
-            if (r.data) {
-                var evAvatar2 = $('evAvatar');
-                if (evAvatar2) {
-                    evAvatar2.innerHTML = r.data.avatar_url
-                        ? '<img src="' + esc(r.data.avatar_url) + '" alt="">'
-                        : esc((r.data.nombre || '◈').charAt(0).toUpperCase());
+        // Capturamos el index actual para evitar race condition
+        var indexCapturado = estadoActualIndex;
+        var uidCapturado = estadoActualUserId;
+        db.from('perfiles_publicos')
+            .select('nombre, handle, avatar_url')
+            .eq('id', uidCapturado)
+            .maybeSingle()
+            .then(function(r) {
+                // Si el usuario ya avanzó, no aplicamos el avatar viejo
+                if (estadoActualIndex !== indexCapturado) return;
+                if (estadoActualUserId !== uidCapturado) return;
+                if (r.data) {
+                    var evAvatar2 = $('evAvatar');
+                    if (evAvatar2) evAvatar2.innerHTML = avatarEstadoHTML(r.data, '◈');
+                    var evName2 = $('evName');
+                    if (evName2) evName2.textContent = r.data.nombre || 'Usuario';
                 }
-                var evName2 = $('evName');
-                if (evName2) evName2.textContent = r.data.nombre || 'Usuario';
-            }
-        });
+            });
     }
 
     // ---- IMAGEN Y TEXTO ----
     var evImage = $('evImage');
-    if (evImage) evImage.src = estado.imagen_url;
+    if (evImage) {
+        evImage.onerror = function() {
+            evImage.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="%23111"/><text x="100" y="110" fill="%23888" text-anchor="middle" font-size="14">Imagen no disponible</text></svg>';
+        };
+        evImage.src = estado.imagen_url;
+    }
 
     var evTime = $('evTime');
     if (evTime) evTime.textContent = haceTiempo(estado.created_at);
@@ -192,88 +276,90 @@ async function mostrarEstadoActual() {
         }
     }
 
-    // ---- MARCAR VISTO + REGISTRAR ----
-    marcarEstadoVisto(estado.id);
-    registrarVistaEstado(estado.id);
+    // ---- MARCAR VISTO + REGISTRAR (solo si NO es mi estado) ----
+    if (!esMiEstado) {
+        marcarEstadoVisto(estado.id);
+        registrarVistaEstado(estado.id);
+    }
 
-    // ---- NAVEGACIÓN ----
+    // ---- NAVEGACIÓN (zonas táctiles ocultas) ----
     var evPrev = $('evPrev');
     if (evPrev) evPrev.classList.toggle('hidden', estadoActualIndex === 0);
 
     var evNext = $('evNext');
-    if (evNext) evNext.classList.toggle('hidden', estadoActualIndex >= estados.length - 1);
+    if (evNext) evNext.classList.toggle('hidden', estadoActualIndex >= _estadosViewerActuales.length - 1);
 
-    // ---- VISTAS (solo si es mi estado) ----
-    if (esMiEstado) {
-        var total = await obtenerVistasEstado(estado.id);
-        var evVistasCount = $('evVistasCount');
-        if (evVistasCount) evVistasCount.textContent = total;
-        var evVistas = $('evVistas');
-        if (evVistas) {
-            evVistas.classList.remove('hidden');
-            evVistas.dataset.estadoId = estado.id;
-        }
-    } else {
-        var evVistas2 = $('evVistas');
-        if (evVistas2) evVistas2.classList.add('hidden');
-    }
-
-    // ✅ IMPORTANTE: Iniciar progreso al final
-    iniciarProgresoEstado();
+    // ---- ARRANCAR TIMER ----
+    iniciarTemporizadorEstado();
 }
 
 // ================================================================
-// PROGRESO AUTOMÁTICO DEL ESTADO - ✅ CORREGIDO
+// TEMPORIZADOR CON requestAnimationFrame (preciso)
 // ================================================================
-function iniciarProgresoEstado() {
-    var progress = $('estadoProgress');
-    if (!progress) return;
-
-    // ✅ SIEMPRE limpiar timer anterior antes de crear uno nuevo
-    if (estadoTimer) {
-        clearInterval(estadoTimer);
-        estadoTimer = null;
+function iniciarTemporizadorEstado() {
+    if (_estadoTimerRAF) {
+        cancelAnimationFrame(_estadoTimerRAF);
+        _estadoTimerRAF = null;
     }
 
-    // ✅ Reiniciar el ancho visual al 0%
-    progress.style.width = estadoProgresoActual + '%';
+    _estadoInicioMs = performance.now();
+    _estadoPausadoAcum = 0;
+    _estadoPausaInicio = 0;
+    estadoProgresoActual = 0;
+    estadoPausado = false;
 
-    estadoTimer = setInterval(function() {
-        if (estadoPausado) return;
-
-        estadoProgresoActual += 1;
-        progress.style.width = estadoProgresoActual + '%';
-
-        if (estadoProgresoActual >= 100) {
-            // ✅ Detener este timer
-            if (estadoTimer) {
-                clearInterval(estadoTimer);
-                estadoTimer = null;
-            }
-            // ✅ Resetear contador
-            estadoProgresoActual = 0;
-            progress.style.width = '0%';
-            // ✅ Pequeño delay para que se vea la transición antes de pasar al siguiente
-            setTimeout(function() { siguienteEstado(); }, 100);
+    function tick(ahora) {
+        if (estadoPausado) {
+            _estadoTimerRAF = requestAnimationFrame(tick);
+            return;
         }
-    }, 50);
+
+        var elapsed = ahora - _estadoInicioMs - _estadoPausadoAcum;
+        var porcentaje = Math.min(100, (elapsed / _estadoDuracionMs) * 100);
+        estadoProgresoActual = porcentaje;
+
+        actualizarBarraSegmentada(porcentaje);
+
+        if (porcentaje >= 100) {
+            _estadoTimerRAF = null;
+            setTimeout(function() { siguienteEstado(); }, 60);
+            return;
+        }
+        _estadoTimerRAF = requestAnimationFrame(tick);
+    }
+
+    _estadoTimerRAF = requestAnimationFrame(tick);
 }
 
 // ================================================================
-// SIGUIENTE ESTADO - ✅ CORREGIDO
+// SIGUIENTE ESTADO
 // ================================================================
 function siguienteEstado() {
-    var estados = estadosCache.filter(function(e) { return e.usuario_id === estadoActualUserId; });
+    if (_cerrandoViewer) return;
+    if (_estadoTimerRAF) {
+        cancelAnimationFrame(_estadoTimerRAF);
+        _estadoTimerRAF = null;
+    }
 
-    if (estadoActualIndex < estados.length - 1) {
-        // ✅ Hay más estados: avanzar
+    if (estadoActualIndex < _estadosViewerActuales.length - 1) {
+        // Pintar el segmento actual al 100% antes de avanzar
+        var fillActual = document.getElementById('segmento-fill-' + estadoActualIndex);
+        if (fillActual) fillActual.style.width = '100%';
+
         estadoActualIndex++;
         estadoProgresoActual = 0;
         estadoPausado = false;
-        mostrarEstadoActual();  // Esto reinicia el timer automáticamente
+        mostrarEstadoActual();
     } else {
-        // ✅ Último estado: cerrar después de un pequeño delay
-        setTimeout(function() { cerrarEstadoViewer(); }, 200);
+        // Último estado: pintar al 100% y cerrar
+        var fillUltimo = document.getElementById('segmento-fill-' + estadoActualIndex);
+        if (fillUltimo) fillUltimo.style.width = '100%';
+
+        _cerrandoViewer = true;
+        setTimeout(function() {
+            _cerrandoViewer = false;
+            cerrarEstadoViewer();
+        }, 250);
     }
 }
 
@@ -281,6 +367,11 @@ function siguienteEstado() {
 // ESTADO ANTERIOR
 // ================================================================
 function anteriorEstado() {
+    if (_cerrandoViewer) return;
+    if (_estadoTimerRAF) {
+        cancelAnimationFrame(_estadoTimerRAF);
+        _estadoTimerRAF = null;
+    }
     if (estadoActualIndex > 0) {
         estadoActualIndex--;
         estadoProgresoActual = 0;
@@ -293,38 +384,46 @@ function anteriorEstado() {
 // CERRAR VISOR DE ESTADOS
 // ================================================================
 function cerrarEstadoViewer() {
+    if (_estadoTimerRAF) {
+        cancelAnimationFrame(_estadoTimerRAF);
+        _estadoTimerRAF = null;
+    }
+
+    estadoPausado = false;
+    estadoProgresoActual = 0;
+    estadoActualIndex = 0;
+    estadoActualUserId = null;
+    _estadosViewerActuales = [];
+    _estadoPausadoAcum = 0;
+    _estadoPausaInicio = 0;
+
     var viewer = $('estadoViewer');
     if (viewer) viewer.classList.remove('show');
 
-    if (estadoTimer) {
-        clearInterval(estadoTimer);
-        estadoTimer = null;
-    }
-    estadoPausado = false;
-    estadoProgresoActual = 0;
-    estadoActualUserId = null;
+    var container = $('estadoProgress');
+    if (container) container.innerHTML = '';
 
-    // ✅ Resetear barra de progreso visual
-    var progress = $('estadoProgress');
-    if (progress) progress.style.width = '0%';
-
-    // Recargar estados para actualizar vistas
     cargarEstados();
 }
 
 // ================================================================
-// PAUSAR / REANUDAR
+// PAUSAR / REANUDAR (con acumulador correcto)
 // ================================================================
 function activarPausaEstado() {
     var viewer = $('estadoViewer');
     if (!viewer || !viewer.classList.contains('show')) return;
+    if (estadoPausado) return;
     estadoPausado = true;
+    _estadoPausaInicio = performance.now();
 }
 
 function desactivarPausaEstado() {
     var viewer = $('estadoViewer');
     if (!viewer || !viewer.classList.contains('show')) return;
+    if (!estadoPausado) return;
     estadoPausado = false;
+    _estadoPausadoAcum += performance.now() - _estadoPausaInicio;
+    _estadoPausaInicio = 0;
 }
 
 // ================================================================
@@ -332,6 +431,7 @@ function desactivarPausaEstado() {
 // ================================================================
 async function abrirVistasModal(estadoId) {
     if (!estadoId) return;
+    activarPausaEstado(); // Pausar el visor mientras se muestra
 
     var modal = $('vistasModal');
     if (modal) modal.classList.add('show');
@@ -349,7 +449,6 @@ async function abrirVistasModal(estadoId) {
             .order('visto_at', { ascending: false });
 
         if (result.error) throw result.error;
-
         var vistas = result.data || [];
 
         if (vistas.length === 0) {
@@ -394,7 +493,7 @@ async function abrirVistasModal(estadoId) {
             };
         });
     } catch (e) {
-        console.error('Error cargando vistas:', e);
+        console.error('[Estados] Error cargando vistas:', e);
         if (list) list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger);font-size:.8rem;">Error al cargar vistas</div>';
     }
 }
@@ -402,6 +501,7 @@ async function abrirVistasModal(estadoId) {
 function cerrarVistasModal() {
     var modal = $('vistasModal');
     if (modal) modal.classList.remove('show');
+    desactivarPausaEstado(); // Reanudar visor
 }
 
 // ================================================================
@@ -421,7 +521,7 @@ function abrirModalEstado() {
     if (caption) caption.value = '';
 
     var btn = $('btnPublicarEstado');
-    if (btn) btn.disabled = true;
+    if (btn) { btn.disabled = true; btn.textContent = 'Publicar estado'; }
 
     var fileInput = $('estadoFileInput');
     if (fileInput) fileInput.value = '';
@@ -437,7 +537,7 @@ function seleccionarArchivoEstado() {
     if (fileInput) fileInput.click();
 }
 
-async function previewEstado(event) {
+function previewEstado(event) {
     var file = event.target.files[0];
     if (!file) return;
 
@@ -480,7 +580,9 @@ async function publicarEstado() {
         var fileExt = file.name.split('.').pop().toLowerCase();
         var filePath = user.id + '/' + Date.now() + '.' + fileExt;
 
-        var uploadResult = await db.storage.from(ESTADOS_BUCKET).upload(filePath, file, { upsert: false, contentType: file.type });
+        var uploadResult = await db.storage
+            .from(ESTADOS_BUCKET)
+            .upload(filePath, file, { upsert: false, contentType: file.type });
         if (uploadResult.error) throw uploadResult.error;
 
         var urlData = db.storage.from(ESTADOS_BUCKET).getPublicUrl(filePath);
@@ -497,9 +599,9 @@ async function publicarEstado() {
         cerrarModalEstado();
         await cargarEstados();
     } catch (e) {
-        console.error('Error publicando estado:', e);
+        console.error('[Estados] Error publicando:', e);
         if (e.message && (e.message.indexOf('Bucket') !== -1 || e.message.indexOf('not found') !== -1)) {
-            toast('❌ Bucket "sariels-estados" no existe. Créalo en Supabase.', 'error');
+            toast('❌ Bucket "' + ESTADOS_BUCKET + '" no existe. Créalo en Supabase.', 'error');
         } else if (e.code === '42P01') {
             toast('❌ Tabla "estados" no existe. Ejecuta el SQL.', 'error');
         } else {
@@ -510,4 +612,105 @@ async function publicarEstado() {
     }
 }
 
-console.log('[Mensajes] ✅ Estados cargado (CORREGIDO)');
+// ================================================================
+// HANDLERS DEL VISOR (flecha ←, menú ⋮, responder, emojis, pausa)
+// ================================================================
+function inicializarHandlersVisorEstado() {
+    var viewer = $('estadoViewer');
+    if (!viewer) return;
+
+    // Botón atrás ←
+    var btnBack = $('evBack');
+    if (btnBack) btnBack.onclick = function() { cerrarEstadoViewer(); };
+
+    // Botón menú ⋮
+    var btnMenu = $('evMenu');
+    if (btnMenu) btnMenu.onclick = function() {
+        toast('ℹ️ Opciones próximamente', 'warning');
+    };
+
+    // Botón Responder
+    var btnReply = $('evReply');
+    if (btnReply) btnReply.onclick = function() {
+        var estado = _estadosViewerActuales[estadoActualIndex];
+        if (!estado) return;
+        var uid = estado.usuario_id;
+        cerrarEstadoViewer();
+        if (typeof abrirChat === 'function') {
+            abrirChat(uid);
+            setTimeout(function() {
+                var input = $('messageInput');
+                if (input) input.focus();
+            }, 300);
+        }
+    };
+
+    // Emojis rápidos
+    var emojiBtns = viewer.querySelectorAll('.estado-viewer-emoji');
+    emojiBtns.forEach(function(btn) {
+        btn.onclick = function(e) {
+            e.stopPropagation();
+            var emoji = btn.dataset.emoji;
+            var estado = _estadosViewerActuales[estadoActualIndex];
+            if (!estado) return;
+            var uid = estado.usuario_id;
+            cerrarEstadoViewer();
+            if (typeof abrirChat === 'function') {
+                abrirChat(uid);
+                setTimeout(function() {
+                    var input = $('messageInput');
+                    if (input) {
+                        input.value = emoji;
+                        var form = $('composer');
+                        if (form) form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                    }
+                }, 300);
+            }
+        };
+    });
+
+    // Zonas táctiles prev/next
+    var evPrev = $('evPrev');
+    if (evPrev) evPrev.onclick = function(e) { e.stopPropagation(); anteriorEstado(); };
+
+    var evNext = $('evNext');
+    if (evNext) evNext.onclick = function(e) { e.stopPropagation(); siguienteEstado(); };
+
+    // Pausa al mantener pulsado (touch)
+    viewer.addEventListener('touchstart', function(e) {
+        if (e.target.closest('.estado-viewer-header, .estado-viewer-footer, .estado-viewer-nav')) return;
+        activarPausaEstado();
+    }, { passive: true });
+
+    viewer.addEventListener('touchend', function() { desactivarPausaEstado(); });
+    viewer.addEventListener('touchcancel', function() { desactivarPausaEstado(); });
+
+    // Pausa al mantener pulsado (mouse)
+    viewer.addEventListener('mousedown', function(e) {
+        if (e.target.closest('.estado-viewer-header, .estado-viewer-footer, .estado-viewer-nav')) return;
+        activarPausaEstado();
+    });
+    viewer.addEventListener('mouseup', function() { desactivarPausaEstado(); });
+    viewer.addEventListener('mouseleave', function() { desactivarPausaEstado(); });
+
+    // Pausa con barra espaciadora (bonus desktop)
+    document.addEventListener('keydown', function(e) {
+        if (!viewer.classList.contains('show')) return;
+        if (e.code === 'Space' && !e.repeat) { e.preventDefault(); activarPausaEstado(); }
+        if (e.code === 'ArrowRight') siguienteEstado();
+        if (e.code === 'ArrowLeft') anteriorEstado();
+        if (e.code === 'Escape') cerrarEstadoViewer();
+    });
+    document.addEventListener('keyup', function(e) {
+        if (e.code === 'Space') desactivarPausaEstado();
+    });
+}
+
+// Arrancar handlers cuando el DOM esté listo
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', inicializarHandlersVisorEstado);
+} else {
+    inicializarHandlersVisorEstado();
+}
+
+console.log('[Mensajes] ✅ Estados cargado (VERSIÓN FINAL WHATSAPP-LIKE)');
