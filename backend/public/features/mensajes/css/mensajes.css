@@ -206,6 +206,51 @@ button, input { font: inherit; }
 }
 
 /* ================================================================
+   PESTAÑAS CHATS/CANALES/GRUPOS
+   ================================================================ */
+.sidebar-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    background: rgba(0, 0, 0, .15);
+}
+.sidebar-tab {
+    flex: 1;
+    background: transparent;
+    border: 0;
+    padding: 12px 6px;
+    color: var(--muted);
+    font-size: .65rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: var(--transition);
+    border-bottom: 2px solid transparent;
+}
+.sidebar-tab:hover { color: var(--text); }
+.sidebar-tab.active {
+    color: var(--gold-cosmic);
+    border-bottom-color: var(--gold-cosmic);
+    background: rgba(212, 175, 55, .06);
+    text-shadow: 0 0 10px color-mix(in srgb, var(--accent, #D4AF37) 50%, transparent);
+}
+.sidebar-tab .tab-icon {
+    font-size: 1rem;
+    opacity: .8;
+}
+.sidebar-tab.active .tab-icon { opacity: 1; }
+
+.tab-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.tab-content.hidden { display: none; }
+
+/* ================================================================
    ESTADOS BAR
    ================================================================ */
 .estados-bar {
@@ -274,7 +319,10 @@ button, input { font: inherit; }
     box-shadow: 0 0 15px color-mix(in srgb, var(--accent, #D4AF37) 25%, transparent);
 }
 .estado-circle:hover { transform: scale(1.05); }
-.estado-circle.visto { background: rgba(138, 168, 184, .35); box-shadow: none; }
+.estado-circle.visto {
+    background: rgba(138, 168, 184, .35);
+    box-shadow: none;
+}
 .estado-inner {
     width: 100%;
     height: 100%;
@@ -1071,7 +1119,6 @@ button, input { font: inherit; }
 }
 .estado-viewer.show { display: flex; }
 
-/* ---- Gradiente superior/inferior ---- */
 .estado-viewer::before,
 .estado-viewer::after {
     content: '';
@@ -1091,7 +1138,6 @@ button, input { font: inherit; }
     background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 55%, transparent 100%);
 }
 
-/* ---- Barra de progreso segmentada BLANCA ---- */
 #estadoProgress {
     position: absolute;
     top: 10px;
@@ -1133,7 +1179,6 @@ button, input { font: inherit; }
     transition: width 0.05s linear;
 }
 
-/* ---- Header ---- */
 .estado-viewer-header {
     position: absolute;
     top: 22px;
@@ -1211,10 +1256,8 @@ button, input { font: inherit; }
     text-shadow: 0 1px 4px rgba(0,0,0,0.9);
 }
 
-/* Botón ✕ antiguo: oculto por compatibilidad */
 .estado-viewer-close { display: none !important; }
 
-/* ---- Cuerpo / imagen ---- */
 .estado-viewer-body {
     flex: 1;
     position: relative;
@@ -1233,7 +1276,6 @@ button, input { font: inherit; }
     display: block;
 }
 
-/* ---- Caption ---- */
 .estado-viewer-caption {
     position: absolute;
     bottom: 100px;
@@ -1250,7 +1292,6 @@ button, input { font: inherit; }
     z-index: 5;
 }
 
-/* ---- Zonas táctiles invisibles (prev/next) ---- */
 .estado-viewer-nav {
     position: absolute;
     top: 60px;
@@ -1272,7 +1313,6 @@ button, input { font: inherit; }
 .estado-viewer-nav.hidden { display: none; }
 .estado-viewer-nav:active { background: rgba(255, 255, 255, 0.06); }
 
-/* ---- Footer Responder + emojis ---- */
 .estado-viewer-footer {
     position: absolute;
     bottom: 0;
@@ -1324,7 +1364,6 @@ button, input { font: inherit; }
     stroke-linejoin: round;
 }
 
-/* ---- Contador de vistas: OCULTO en visor ---- */
 .estado-viewer-vistas { display: none !important; }
 .estado-viewer-vistas-pill { display: none !important; }
 
