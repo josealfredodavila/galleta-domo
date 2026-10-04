@@ -8,6 +8,7 @@
 
 <script src="/features/shared/js/apariencia-global.js"></script>
 <link rel="stylesheet" href="/features/mensajes/css/mensajes.css">
+<link rel="stylesheet" href="/features/mensajes/css/mensajes-canales.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/livekit-client@1/dist/livekit-client.umd.min.js"></script>
 </head>
@@ -34,19 +35,96 @@
 
 <main class="panel" id="panel">
 <aside class="sidebar">
-    <div class="sidehead"><span>◈ Conversaciones</span></div>
-    <div class="searchbox">
-        <input type="text" id="searchConversations" placeholder="🔍 Buscar conversación…" autocomplete="off">
+
+    <!-- ============================================================
+         PESTAÑAS PRINCIPALES (Chats / Canales / Grupos)
+         ============================================================ -->
+    <div class="sidebar-tabs" id="sidebarTabs">
+        <button class="sidebar-tab active" data-tab="chats" onclick="cambiarPestana('chats')">
+            <span class="tab-icon">◈</span>
+            <span class="tab-label">Chats</span>
+        </button>
+        <button class="sidebar-tab" data-tab="canales" onclick="cambiarPestana('canales')">
+            <span class="tab-icon">✦</span>
+            <span class="tab-label">Canales</span>
+        </button>
+        <button class="sidebar-tab" data-tab="grupos" onclick="cambiarPestana('grupos')">
+            <span class="tab-icon">◆</span>
+            <span class="tab-label">Grupos</span>
+        </button>
     </div>
-    <div class="estados-bar">
-        <div class="estados-header">
-            <div class="estados-title">◈ ESTADOS</div>
-            <button class="btn-subir-estado" id="btnSubirEstado" title="Subir estado">＋ Subir</button>
+
+    <!-- ============================================================
+         CONTENIDO DE LA PESTAÑA "CHATS"
+         ============================================================ -->
+    <div class="tab-content" id="tabChats">
+        <div class="searchbox">
+            <input type="text" id="searchConversations" placeholder="Buscar conversación..." autocomplete="off">
         </div>
-        <div class="estados-scroll" id="estadosScroll"></div>
+
+        <div class="estados-bar">
+            <div class="estados-header">
+                <div class="estados-title">◈ ESTADOS</div>
+                <button class="btn-subir-estado" id="btnSubirEstado" title="Subir estado">+ Subir</button>
+            </div>
+            <div class="estados-scroll" id="estadosScroll"></div>
+        </div>
+
+        <div class="convlist" id="conversationList"></div>
     </div>
-    <div class="convlist" id="conversationList"></div>
-    <button class="fab" id="newChat" title="Nueva conversación">＋</button>
+
+    <!-- ============================================================
+         CONTENIDO DE LA PESTAÑA "CANALES"
+         ============================================================ -->
+    <div class="tab-content hidden" id="tabCanales">
+        <div class="searchbox">
+            <input type="text" id="searchCanales" placeholder="Buscar canal..." autocomplete="off" oninput="buscarCanalesDebounce()">
+        </div>
+
+        <div class="filtros-canales">
+            <select id="filtroEstadoCanal" onchange="cargarCanales()">
+                <option value="">Todos los estados</option>
+            </select>
+            <select id="filtroCategoriaCanal" onchange="cargarCanales()">
+                <option value="">Todas las categorías</option>
+            </select>
+        </div>
+
+        <div class="canales-lista" id="canalesLista">
+            <div class="empty-state-small">
+                <div class="empty-icon">✦</div>
+                <div class="empty-text">Cargando canales...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         CONTENIDO DE LA PESTAÑA "GRUPOS"
+         ============================================================ -->
+    <div class="tab-content hidden" id="tabGrupos">
+        <div class="searchbox">
+            <input type="text" id="searchGrupos" placeholder="Buscar grupo..." autocomplete="off" oninput="buscarGruposDebounce()">
+        </div>
+
+        <div class="filtros-canales">
+            <select id="filtroEstadoGrupo" onchange="cargarGrupos()">
+                <option value="">Todos los estados</option>
+            </select>
+            <select id="filtroCategoriaGrupo" onchange="cargarGrupos()">
+                <option value="">Todas las categorías</option>
+            </select>
+        </div>
+
+        <div class="canales-lista" id="gruposLista">
+            <div class="empty-state-small">
+                <div class="empty-icon">◆</div>
+                <div class="empty-text">Cargando grupos...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botón flotante "+" (cambia según pestaña) -->
+    <button class="fab" id="newChat" title="Crear nuevo">+</button>
 </aside>
 
 <section class="chat">
@@ -58,25 +136,25 @@
             <div class="status" id="chatStatus">◈ En espera</div>
         </div>
         <div class="actions" id="chatActions" style="display:none;">
-            <button class="iconbtn" id="deleteChat" title="Eliminar conversación">🗑️</button>
-            <button class="iconbtn" id="videoCall" title="Videollamada">📹</button>
-            <button class="iconbtn" id="searchChat" title="Buscar en la conversación">🔍</button>
+            <button class="iconbtn" id="deleteChat" title="Eliminar">×</button>
+            <button class="iconbtn" id="videoCall" title="Videollamada">▸</button>
+            <button class="iconbtn" id="searchChat" title="Buscar">◌</button>
         </div>
     </header>
     <div class="messages" id="messages">
         <div class="empty" id="emptyState">
             <strong>◈</strong>
             <p>Selecciona una conversación</p>
-            <small>Elige un chat de la lista para empezar a hablar</small>
+            <small>Elige un chat, canal o grupo para empezar</small>
         </div>
         <div id="scrollAnchor"></div>
         <button class="scroll-down-btn" id="scrollDownBtn" title="Ir al final">↓<span class="badge-new" id="newMsgBadge" style="display:none;">1</span></button>
     </div>
     <form class="composer" id="composer" style="display:none;">
-        <button type="button" class="btn" id="attach" title="Adjuntar">📎</button>
-        <button type="button" class="btn" id="audio" title="Grabar audio">🎙️</button>
-        <button type="button" class="btn" id="voiceBot" title="Hablar con Marquinhos" style="display:none;">🔊</button>
-        <input id="messageInput" autocomplete="off" placeholder="Escribe un mensaje…">
+        <button type="button" class="btn" id="attach" title="Adjuntar">+</button>
+        <button type="button" class="btn" id="audio" title="Grabar audio">◉</button>
+        <button type="button" class="btn" id="voiceBot" title="Hablar con Marquinhos" style="display:none;">✦</button>
+        <input id="messageInput" autocomplete="off" placeholder="Escribe un mensaje...">
         <button class="btn send" type="submit">Enviar</button>
         <input id="fileInput" type="file" hidden multiple accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt">
     </form>
@@ -85,42 +163,142 @@
 <footer style="padding:18px 2px;color:var(--muted);font-size:.68rem">◈ Sariel's · Sabor al Paladar · WEB3</footer>
 </div>
 
+<!-- ============================================================
+     MODAL: NUEVA CONVERSACIÓN (solo en pestaña Chats)
+     ============================================================ -->
 <div class="modal" id="newModal">
     <div class="modalbox">
-        <button class="iconbtn" id="closeModal" style="float:right">✕</button>
+        <button class="iconbtn" id="closeModal" style="float:right">×</button>
         <h2>◈ Nueva conversación</h2>
-        <input class="search" id="userSearch" placeholder="Buscar por nombre o usuario…">
+        <input class="search" id="userSearch" placeholder="Buscar por nombre o usuario...">
         <div id="userResults" style="margin-top:10px"></div>
     </div>
 </div>
 
+<!-- ============================================================
+     MODAL: CREAR CANAL
+     ============================================================ -->
+<div class="modal" id="modalCrearCanal">
+    <div class="modalbox">
+        <button class="iconbtn" onclick="cerrarModalCrearCanal()" style="float:right">×</button>
+        <h2>✦ Nuevo Canal</h2>
+        <p style="color:var(--muted);font-size:.75rem;margin-bottom:14px;">
+            Un canal es público. Solo tú (el creador) puedes publicar.
+        </p>
+        <div class="form-group">
+            <label>Nombre del canal *</label>
+            <input type="text" id="canalNombre" placeholder="Ej: Noticias Puebla" required maxlength="80">
+        </div>
+        <div class="form-group">
+            <label>Descripción</label>
+            <textarea id="canalDescripcion" rows="2" placeholder="De qué trata tu canal..." maxlength="300"></textarea>
+        </div>
+        <div class="form-group">
+            <label>Estado / Región</label>
+            <input type="text" id="canalEstado" placeholder="Ej: Puebla">
+        </div>
+        <div class="form-group">
+            <label>Municipio *</label>
+            <input type="text" id="canalMunicipio" placeholder="Ej: Puebla" required>
+        </div>
+        <div class="form-group">
+            <label>Ciudad / Localidad</label>
+            <input type="text" id="canalCiudad" placeholder="Ej: Centro">
+        </div>
+        <div class="form-group">
+            <label>País</label>
+            <input type="text" id="canalPais" value="México">
+        </div>
+        <button class="btn-gold-primary" onclick="crearCanal()" id="btnCrearCanal">
+            ✦ Crear Canal
+        </button>
+    </div>
+</div>
+
+<!-- ============================================================
+     MODAL: CREAR GRUPO
+     ============================================================ -->
+<div class="modal" id="modalCrearGrupo">
+    <div class="modalbox">
+        <button class="iconbtn" onclick="cerrarModalCrearGrupo()" style="float:right">×</button>
+        <h2>◆ Nuevo Grupo</h2>
+        <p style="color:var(--muted);font-size:.75rem;margin-bottom:14px;">
+            Un grupo es privado. Todos los miembros pueden publicar.
+        </p>
+        <div class="form-group">
+            <label>Nombre del grupo *</label>
+            <input type="text" id="grupoNombre" placeholder="Ej: Amigos del Barrio" required maxlength="80">
+        </div>
+        <div class="form-group">
+            <label>Descripción</label>
+            <textarea id="grupoDescripcion" rows="2" placeholder="De qué trata tu grupo..." maxlength="300"></textarea>
+        </div>
+        <div class="form-group">
+            <label>Estado / Región</label>
+            <input type="text" id="grupoEstado" placeholder="Ej: Puebla">
+        </div>
+        <div class="form-group">
+            <label>Municipio *</label>
+            <input type="text" id="grupoMunicipio" placeholder="Ej: Puebla" required>
+        </div>
+        <div class="form-group">
+            <label>Ciudad / Localidad</label>
+            <input type="text" id="grupoCiudad" placeholder="Ej: Centro">
+        </div>
+        <div class="form-group">
+            <label>País</label>
+            <input type="text" id="grupoPais" value="México">
+        </div>
+        <button class="btn-gold-primary" onclick="crearGrupo()" id="btnCrearGrupo">
+            ◆ Crear Grupo
+        </button>
+    </div>
+</div>
+
+<!-- ============================================================
+     MODAL: PERFIL
+     ============================================================ -->
 <div class="modal" id="profileModal">
     <div class="profile-modal-box">
         <div class="profile-modal-avatar" id="profileModalAvatar">◈</div>
         <div class="profile-modal-name" id="profileModalName">Mi Perfil</div>
         <div class="profile-modal-handle" id="profileModalHandle">@usuario</div>
         <div class="profile-modal-actions">
-            <button class="profile-modal-btn" id="btnCambiarFoto"><span class="icon">📷</span><span>Cambiar foto de perfil</span></button>
+            <button class="profile-modal-btn" id="btnCambiarFoto">
+                <span class="icon">◉</span>
+                <span>Cambiar foto de perfil</span>
+            </button>
         </div>
         <button class="btn" id="btnCerrarProfileModal" style="margin-top:18px;width:100%;">Cerrar</button>
     </div>
 </div>
 
+<!-- ============================================================
+     MODAL: VISTAS DE ESTADO
+     ============================================================ -->
 <div class="modal" id="vistasModal">
     <div class="modalbox" style="max-width:420px;">
-        <button class="iconbtn" id="closeVistasModal" style="float:right">✕</button>
-        <h2 style="display:flex;align-items:center;gap:8px;">👁️ Vistas <span id="vistasModalCount" style="color:var(--muted);font-size:.85rem;font-weight:400;"></span></h2>
-        <div id="vistasList" style="margin-top:10px;"><div style="text-align:center;padding:20px;color:var(--muted);font-size:.8rem;">Cargando…</div></div>
+        <button class="iconbtn" id="closeVistasModal" style="float:right">×</button>
+        <h2 style="display:flex;align-items:center;gap:8px;">◉ Vistas <span id="vistasModalCount" style="color:var(--muted);font-size:.85rem;font-weight:400;"></span></h2>
+        <div id="vistasList" style="margin-top:10px;">
+            <div style="text-align:center;padding:20px;color:var(--muted);font-size:.8rem;">Cargando...</div>
+        </div>
     </div>
 </div>
 
+<!-- ============================================================
+     VISOR: FOTO AMPLIADA
+     ============================================================ -->
 <div class="photo-viewer" id="photoViewer">
-    <button class="pv-close" id="pvClose">✕</button>
+    <button class="pv-close" id="pvClose">×</button>
     <img id="pvImage" src="" alt="Foto">
     <div class="pv-name" id="pvName"></div>
     <div class="pv-handle" id="pvHandle"></div>
 </div>
 
+<!-- ============================================================
+     VISOR: ESTADO
+     ============================================================ -->
 <div class="estado-viewer" id="estadoViewer">
     <div class="estado-viewer-progress"><div class="estado-viewer-progress-inner" id="estadoProgress"></div></div>
     <div class="estado-viewer-header">
@@ -129,7 +307,7 @@
             <div class="estado-viewer-name" id="evName">Usuario</div>
             <div class="estado-viewer-time" id="evTime">Hace un momento</div>
         </div>
-        <button class="estado-viewer-close" id="evClose">✕</button>
+        <button class="estado-viewer-close" id="evClose">×</button>
     </div>
     <div class="estado-viewer-body" id="evBody">
         <button class="estado-viewer-nav prev" id="evPrev">‹</button>
@@ -137,45 +315,56 @@
         <div class="estado-viewer-caption hidden" id="evCaption"></div>
         <button class="estado-viewer-nav next" id="evNext">›</button>
     </div>
-    <div class="estado-viewer-vistas hidden" id="evVistas"><div class="estado-viewer-vistas-pill">👁️ <span id="evVistasCount">0</span> vistas</div></div>
+    <div class="estado-viewer-vistas hidden" id="evVistas">
+        <div class="estado-viewer-vistas-pill">◉ <span id="evVistasCount">0</span> vistas</div>
+    </div>
 </div>
 
+<!-- ============================================================
+     MODAL: SUBIR ESTADO
+     ============================================================ -->
 <div class="modal" id="estadoUploadModal">
     <div class="modalbox" style="text-align:center;">
-        <button class="iconbtn" id="closeEstadoModal" style="float:right">✕</button>
+        <button class="iconbtn" id="closeEstadoModal" style="float:right">×</button>
         <h2>◈ Nuevo Estado</h2>
         <p style="color:var(--muted);font-size:.8rem;margin-bottom:14px;">Se mostrará 24 horas</p>
         <div id="estadoPreviewWrap" style="margin:16px 0;display:none;">
             <img id="estadoPreviewImg" style="max-width:100%;max-height:240px;border-radius:12px;border:2px solid var(--gold);">
         </div>
         <input type="file" id="estadoFileInput" accept="image/*" style="display:none;">
-        <button class="btn" id="btnSeleccionarEstado" style="width:100%;margin-bottom:10px;">📷 Seleccionar imagen</button>
+        <button class="btn" id="btnSeleccionarEstado" style="width:100%;margin-bottom:10px;">◉ Seleccionar imagen</button>
         <textarea id="estadoCaption" placeholder="Escribe un mensaje (opcional)" maxlength="120" style="width:100%;padding:10px 14px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--text);outline:0;font-family:inherit;resize:none;min-height:60px;margin-bottom:12px;"></textarea>
         <button class="btn send" id="btnPublicarEstado" style="width:100%;" disabled>Publicar estado</button>
     </div>
 </div>
 
+<!-- ============================================================
+     LLAMADA: VIDEO
+     ============================================================ -->
 <div class="call" id="callOverlay">
     <div class="videos">
         <video id="remoteVideo" autoplay playsinline></video>
         <video id="localVideo" class="local" autoplay playsinline muted></video>
     </div>
-    <div class="callinfo" id="callInfo">◈ Conectando…</div>
+    <div class="callinfo" id="callInfo">◈ Conectando...</div>
     <div class="controls">
-        <button id="toggleMic">🎤</button>
-        <button id="toggleCam">📷</button>
-        <button id="toggleScreen">🖥️</button>
-        <button class="hang" id="hangup">📞</button>
+        <button id="toggleMic">◉</button>
+        <button id="toggleCam">◈</button>
+        <button id="toggleScreen">▢</button>
+        <button class="hang" id="hangup">×</button>
     </div>
 </div>
 
+<!-- ============================================================
+     LLAMADA: ENTRANTE
+     ============================================================ -->
 <div class="call" id="incomingOverlay">
     <div class="avatar" style="width:80px;height:80px;font-size:2rem" id="incomingAvatar">◈</div>
     <h2 id="incomingName">Usuario</h2>
-    <div class="callinfo">📞 Llamada entrante…</div>
+    <div class="callinfo">◉ Llamada entrante...</div>
     <div class="controls">
-        <button id="acceptCall">📞</button>
-        <button class="hang" id="rejectCall">✕</button>
+        <button id="acceptCall">◉</button>
+        <button class="hang" id="rejectCall">×</button>
     </div>
 </div>
 
@@ -190,6 +379,7 @@
 <script src="/features/mensajes/js/mensajes-archivos.js"></script>
 <script src="/features/mensajes/js/mensajes-bot.js"></script>
 <script src="/features/mensajes/js/mensajes-estados.js"></script>
+<script src="/features/mensajes/js/mensajes-canales.js"></script>
 <script src="/features/mensajes/js/mensajes-llamadas.js"></script>
 <script src="/features/mensajes/js/mensajes-modales.js"></script>
 <script src="/features/mensajes/js/mensajes-init.js"></script>
