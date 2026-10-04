@@ -1,15 +1,16 @@
 // ================================================================
 // MENSAJES · CANALES Y GRUPOS
 // ================================================================
-// Usa la tabla real: grupos_video (con visibilidad publico/privado).
-// Depende de: config, utils, auth, conversaciones.
+// Integración de canales y grupos dentro del módulo de mensajes.
+// Depende de: mensajes-config.js, mensajes-utils.js, mensajes-auth.js
 // ================================================================
 
 // ================================================================
-// VARIABLES LOCALES
+// VARIABLES LOCALES DEL MÓDULO
 // ================================================================
 var _canalesTimer = null;
 var _gruposTimer = null;
+var _categoriaCache = [];
 var _pestanaActual = 'chats';
 
 // ================================================================
@@ -22,13 +23,9 @@ function cambiarPestana(pestana) {
         btn.classList.toggle('active', btn.dataset.tab === pestana);
     });
 
-    var tabChats = document.getElementById('tabChats');
-    var tabCanales = document.getElementById('tabCanales');
-    var tabGrupos = document.getElementById('tabGrupos');
-
-    if (tabChats) tabChats.classList.toggle('hidden', pestana !== 'chats');
-    if (tabCanales) tabCanales.classList.toggle('hidden', pestana !== 'canales');
-    if (tabGrupos) tabGrupos.classList.toggle('hidden', pestana !== 'grupos');
+    document.getElementById('tabChats').classList.toggle('hidden', pestana !== 'chats');
+    document.getElementById('tabCanales').classList.toggle('hidden', pestana !== 'canales');
+    document.getElementById('tabGrupos').classList.toggle('hidden', pestana !== 'grupos');
 
     var fab = document.getElementById('newChat');
     if (fab) {
@@ -42,20 +39,16 @@ function cambiarPestana(pestana) {
 }
 
 // ================================================================
-// BOTÓN FLOTANTE "+"
+// BOTÓN FLOTANTE "+" — COMPORTAMIENTO DINÁMICO
 // ================================================================
 function onNuevoClick() {
-    if (_pestanaActual === 'chats') {
-        newConversation();
-    } else if (_pestanaActual === 'canales') {
-        abrirModalCrearCanal();
-    } else if (_pestanaActual === 'grupos') {
-        abrirModalCrearGrupo();
-    }
+    if (_pestanaActual === 'chats') newConversation();
+    else if (_pestanaActual === 'canales') abrirModalCrearCanal();
+    else if (_pestanaActual === 'grupos') abrirModalCrearGrupo();
 }
 
 // ================================================================
-// DEBOUNCE DE BUSCADORES
+// BUSCADORES CON DEBOUNCE
 // ================================================================
 function buscarCanalesDebounce() {
     if (_canalesTimer) clearTimeout(_canalesTimer);
@@ -76,20 +69,12 @@ async function cargarCanales() {
 
     if (!await auth()) return;
 
-    lista.innerHTML = '<div class="empty-state-small">' +
-        '<div class="empty-icon">✦</div>' +
-        '<div class="empty-text">Cargando canales...</div>' +
-    '</div>';
+    lista.innerHTML = '<div class="empty-state-small"><div class="empty-icon">✦</div><div class="empty-text">Cargando canales...</div></div>';
 
     try {
-        var searchEl = document.getElementById('searchCanales');
-        var buscar = (searchEl ? searchEl.value : '').trim();
-
-        var estadoEl = document.getElementById('filtroEstadoCanal');
-        var filtroEstado = estadoEl ? estadoEl.value : '';
-
-        var catEl = document.getElementById('filtroCategoriaCanal');
-        var filtroCategoria = catEl ? catEl.value : '';
+        var buscar = (document.getElementById('searchCanales')?.value || '').trim();
+        var filtroEstado = document.getElementById('filtroEstadoCanal')?.value || '';
+        var filtroCategoria = document.getElementById('filtroCategoriaCanal')?.value || '';
 
         buscar = buscar.replace(/[(),%*\\]/g, ' ').trim();
 
@@ -101,15 +86,9 @@ async function cargarCanales() {
             .order('created_at', { ascending: false })
             .limit(50);
 
-        if (buscar) {
-            query = query.or('nombre.ilike.%' + buscar + '%,descripcion.ilike.%' + buscar + '%');
-        }
-        if (filtroEstado) {
-            query = query.eq('estado_region', filtroEstado);
-        }
-        if (filtroCategoria) {
-            query = query.eq('categoria_id', filtroCategoria);
-        }
+        if (buscar) query = query.or('nombre.ilike.%' + buscar + '%,descripcion.ilike.%' + buscar + '%');
+        if (filtroEstado) query = query.eq('estado_region', filtroEstado);
+        if (filtroCategoria) query = query.eq('categoria_id', filtroCategoria);
 
         var result = await query;
         if (result.error) throw result.error;
@@ -133,10 +112,7 @@ async function cargarCanales() {
         actualizarFiltros('canal', canales);
     } catch (e) {
         console.error('[Canales] Error:', e);
-        lista.innerHTML = '<div class="empty-state-small">' +
-            '<div class="empty-icon">!</div>' +
-            '<div class="empty-text">Error al cargar canales</div>' +
-        '</div>';
+        lista.innerHTML = '<div class="empty-state-small"><div class="empty-icon">!</div><div class="empty-text">Error al cargar canales</div></div>';
     }
 }
 
@@ -149,20 +125,12 @@ async function cargarGrupos() {
 
     if (!await auth()) return;
 
-    lista.innerHTML = '<div class="empty-state-small">' +
-        '<div class="empty-icon">◆</div>' +
-        '<div class="empty-text">Cargando grupos...</div>' +
-    '</div>';
+    lista.innerHTML = '<div class="empty-state-small"><div class="empty-icon">◆</div><div class="empty-text">Cargando grupos...</div></div>';
 
     try {
-        var searchEl = document.getElementById('searchGrupos');
-        var buscar = (searchEl ? searchEl.value : '').trim();
-
-        var estadoEl = document.getElementById('filtroEstadoGrupo');
-        var filtroEstado = estadoEl ? estadoEl.value : '';
-
-        var catEl = document.getElementById('filtroCategoriaGrupo');
-        var filtroCategoria = catEl ? catEl.value : '';
+        var buscar = (document.getElementById('searchGrupos')?.value || '').trim();
+        var filtroEstado = document.getElementById('filtroEstadoGrupo')?.value || '';
+        var filtroCategoria = document.getElementById('filtroCategoriaGrupo')?.value || '';
 
         buscar = buscar.replace(/[(),%*\\]/g, ' ').trim();
 
@@ -174,15 +142,9 @@ async function cargarGrupos() {
             .order('created_at', { ascending: false })
             .limit(50);
 
-        if (buscar) {
-            query = query.or('nombre.ilike.%' + buscar + '%,descripcion.ilike.%' + buscar + '%');
-        }
-        if (filtroEstado) {
-            query = query.eq('estado_region', filtroEstado);
-        }
-        if (filtroCategoria) {
-            query = query.eq('categoria_id', filtroCategoria);
-        }
+        if (buscar) query = query.or('nombre.ilike.%' + buscar + '%,descripcion.ilike.%' + buscar + '%');
+        if (filtroEstado) query = query.eq('estado_region', filtroEstado);
+        if (filtroCategoria) query = query.eq('categoria_id', filtroCategoria);
 
         var result = await query;
         if (result.error) throw result.error;
@@ -206,10 +168,7 @@ async function cargarGrupos() {
         actualizarFiltros('grupo', grupos);
     } catch (e) {
         console.error('[Grupos] Error:', e);
-        lista.innerHTML = '<div class="empty-state-small">' +
-            '<div class="empty-icon">!</div>' +
-            '<div class="empty-text">Error al cargar grupos</div>' +
-        '</div>';
+        lista.innerHTML = '<div class="empty-state-small"><div class="empty-icon">!</div><div class="empty-text">Error al cargar grupos</div></div>';
     }
 }
 
@@ -253,7 +212,7 @@ function renderCanalCard(item, tipo) {
 }
 
 // ================================================================
-// ACTUALIZAR FILTROS DE ESTADO
+// ACTUALIZAR FILTROS (estados únicos)
 // ================================================================
 function actualizarFiltros(tipo, items) {
     var selectEstadoId = tipo === 'canal' ? 'filtroEstadoCanal' : 'filtroEstadoGrupo';
@@ -289,7 +248,6 @@ function abrirCanalOGrupo(id, tipo) {
 function abrirModalCrearCanal() {
     var modal = document.getElementById('modalCrearCanal');
     if (modal) modal.classList.add('show');
-
     setTimeout(function() {
         var input = document.getElementById('canalNombre');
         if (input) input.focus();
@@ -307,7 +265,6 @@ function cerrarModalCrearCanal() {
 function abrirModalCrearGrupo() {
     var modal = document.getElementById('modalCrearGrupo');
     if (modal) modal.classList.add('show');
-
     setTimeout(function() {
         var input = document.getElementById('grupoNombre');
         if (input) input.focus();
@@ -325,19 +282,12 @@ function cerrarModalCrearGrupo() {
 async function crearCanal() {
     if (!await auth()) return;
 
-    var nombreEl = document.getElementById('canalNombre');
-    var descEl = document.getElementById('canalDescripcion');
-    var estadoEl = document.getElementById('canalEstado');
-    var municipioEl = document.getElementById('canalMunicipio');
-    var ciudadEl = document.getElementById('canalCiudad');
-    var paisEl = document.getElementById('canalPais');
-
-    var nombre = (nombreEl ? nombreEl.value : '').trim();
-    var descripcion = (descEl ? descEl.value : '').trim();
-    var estado = (estadoEl ? estadoEl.value : '').trim();
-    var municipio = (municipioEl ? municipioEl.value : '').trim();
-    var ciudad = (ciudadEl ? ciudadEl.value : '').trim();
-    var pais = (paisEl ? paisEl.value : 'México').trim();
+    var nombre = (document.getElementById('canalNombre')?.value || '').trim();
+    var descripcion = (document.getElementById('canalDescripcion')?.value || '').trim();
+    var estado = (document.getElementById('canalEstado')?.value || '').trim();
+    var municipio = (document.getElementById('canalMunicipio')?.value || '').trim();
+    var ciudad = (document.getElementById('canalCiudad')?.value || '').trim();
+    var pais = (document.getElementById('canalPais')?.value || 'México').trim();
 
     if (!nombre) { toast('El nombre es obligatorio', 'error'); return; }
     if (!municipio) { toast('El municipio es obligatorio', 'error'); return; }
@@ -345,10 +295,7 @@ async function crearCanal() {
     if (descripcion.length > 300) { toast('La descripción es muy larga', 'error'); return; }
 
     var btn = document.getElementById('btnCrearCanal');
-    if (btn) {
-        btn.disabled = true;
-        btn.textContent = 'Creando...';
-    }
+    if (btn) { btn.disabled = true; btn.textContent = 'Creando...'; }
 
     try {
         var result = await db.from('grupos_video').insert({
@@ -371,7 +318,7 @@ async function crearCanal() {
         toast('Canal creado correctamente', 'success');
         cerrarModalCrearCanal();
 
-        ['canalNombre', 'canalDescripcion', 'canalEstado', 'canalMunicipio', 'canalCiudad'].forEach(function(id) {
+        ['canalNombre','canalDescripcion','canalEstado','canalMunicipio','canalCiudad'].forEach(function(id) {
             var el = document.getElementById(id);
             if (el) el.value = '';
         });
@@ -387,10 +334,7 @@ async function crearCanal() {
         console.error('[Canales] Error creando:', e);
         toast('Error al crear el canal: ' + (e.message || 'desconocido'), 'error');
     } finally {
-        if (btn) {
-            btn.disabled = false;
-            btn.textContent = '✦ Crear Canal';
-        }
+        if (btn) { btn.disabled = false; btn.textContent = '✦ Crear Canal'; }
     }
 }
 
@@ -400,19 +344,12 @@ async function crearCanal() {
 async function crearGrupo() {
     if (!await auth()) return;
 
-    var nombreEl = document.getElementById('grupoNombre');
-    var descEl = document.getElementById('grupoDescripcion');
-    var estadoEl = document.getElementById('grupoEstado');
-    var municipioEl = document.getElementById('grupoMunicipio');
-    var ciudadEl = document.getElementById('grupoCiudad');
-    var paisEl = document.getElementById('grupoPais');
-
-    var nombre = (nombreEl ? nombreEl.value : '').trim();
-    var descripcion = (descEl ? descEl.value : '').trim();
-    var estado = (estadoEl ? estadoEl.value : '').trim();
-    var municipio = (municipioEl ? municipioEl.value : '').trim();
-    var ciudad = (ciudadEl ? ciudadEl.value : '').trim();
-    var pais = (paisEl ? paisEl.value : 'México').trim();
+    var nombre = (document.getElementById('grupoNombre')?.value || '').trim();
+    var descripcion = (document.getElementById('grupoDescripcion')?.value || '').trim();
+    var estado = (document.getElementById('grupoEstado')?.value || '').trim();
+    var municipio = (document.getElementById('grupoMunicipio')?.value || '').trim();
+    var ciudad = (document.getElementById('grupoCiudad')?.value || '').trim();
+    var pais = (document.getElementById('grupoPais')?.value || 'México').trim();
 
     if (!nombre) { toast('El nombre es obligatorio', 'error'); return; }
     if (!municipio) { toast('El municipio es obligatorio', 'error'); return; }
@@ -420,10 +357,7 @@ async function crearGrupo() {
     if (descripcion.length > 300) { toast('La descripción es muy larga', 'error'); return; }
 
     var btn = document.getElementById('btnCrearGrupo');
-    if (btn) {
-        btn.disabled = true;
-        btn.textContent = 'Creando...';
-    }
+    if (btn) { btn.disabled = true; btn.textContent = 'Creando...'; }
 
     try {
         var result = await db.from('grupos_video').insert({
@@ -446,7 +380,7 @@ async function crearGrupo() {
         toast('Grupo creado correctamente', 'success');
         cerrarModalCrearGrupo();
 
-        ['grupoNombre', 'grupoDescripcion', 'grupoEstado', 'grupoMunicipio', 'grupoCiudad'].forEach(function(id) {
+        ['grupoNombre','grupoDescripcion','grupoEstado','grupoMunicipio','grupoCiudad'].forEach(function(id) {
             var el = document.getElementById(id);
             if (el) el.value = '';
         });
@@ -462,11 +396,8 @@ async function crearGrupo() {
         console.error('[Grupos] Error creando:', e);
         toast('Error al crear el grupo: ' + (e.message || 'desconocido'), 'error');
     } finally {
-        if (btn) {
-            btn.disabled = false;
-            btn.textContent = '◆ Crear Grupo';
-        }
+        if (btn) { btn.disabled = false; btn.textContent = '◆ Crear Grupo'; }
     }
 }
 
-console.log('[Mensajes] ✅ Canales y Grupos cargado (usa grupos_video)');
+console.log('[Mensajes] Canales y Grupos cargado');
