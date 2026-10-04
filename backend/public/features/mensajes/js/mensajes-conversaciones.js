@@ -1,15 +1,19 @@
 // ================================================================
-// MENSAJES · CONVERSACIONES (v2.3 — Integración con ecosistema)
+// MENSAJES · CONVERSACIONES (v2.4 — Diagnóstico mejorado)
 // ================================================================
 // Lista de conversaciones, filtro, apertura, cierre.
-// Compatible con mensajes-chat.js v3.5 y mensajes-bot.js v2.5
+// Compatible con mensajes-chat.js v3.6 y mensajes-bot.js v2.6
 //
-// FIXES v2.3 (sobre v2.2):
-// - ✅ Integración con namespace window.Chat
-// - ✅ Eventos `marquinhos:chatAbierto` / `marquinhos:chatCerrado`
-// - ✅ Llamada a abrirConversacionBot vía window.Chat con fallback
-// - ✅ Exposición dual: window.* + window.Chat.*
-// - ✅ Guard si abrirConversacionBot no está disponible aún
+// FIXES v2.4 (sobre v2.3):
+// - ✅ Log detallado del error real al abrir chat del bot
+// - ✅ Detección de retorno false de abrirConversacionBot
+//
+// FIXES v2.3 (heredados):
+// - Integración con namespace window.Chat
+// - Eventos `marquinhos:chatAbierto` / `marquinhos:chatCerrado`
+// - Llamada a abrirConversacionBot vía window.Chat con fallback
+// - Exposición dual: window.* + window.Chat.*
+// - Guard si abrirConversacionBot no está disponible aún
 //
 // FIXES v2.2 (heredados):
 // - loadConversations: consultas por lotes, sin consultas por contacto
@@ -52,15 +56,12 @@ function _normalizarBotIdConv(id) {
 // ✅ v2.3: RESOLVER abrirConversacionBot con fallback
 // ================================================================
 function _resolverAbrirConversacionBot() {
-    // Preferencia 1: namespace Chat
     if (window.Chat && typeof window.Chat.abrirConversacionBot === 'function') {
         return window.Chat.abrirConversacionBot;
     }
-    // Preferencia 2: global directo
     if (typeof window.abrirConversacionBot === 'function') {
         return window.abrirConversacionBot;
     }
-    // Preferencia 3: scope local (por si acaso)
     if (typeof abrirConversacionBot === 'function') {
         return abrirConversacionBot;
     }
@@ -144,18 +145,13 @@ async function loadConversations() {
 
         if (!rContactos.data || !rContactos.data.length) return;
 
-        // --------------------------------------------------------
-        // IDS ÚNICOS DE CONTACTOS, EXCLUYENDO AL BOT
-        // --------------------------------------------------------
         var idsDeContactos = [];
         var idsVistos = Object.create(null);
 
         rContactos.data.forEach(function(c) {
             if (!c.contacto_id || c.contacto_id === BOT_UUID) return;
-
             var cid = String(c.contacto_id);
             if (idsVistos[cid]) return;
-
             idsVistos[cid] = true;
             idsDeContactos.push(cid);
         });
@@ -165,25 +161,19 @@ async function loadConversations() {
             return;
         }
 
-        // --------------------------------------------------------
-        // CONSULTAS EN LOTE
-        // --------------------------------------------------------
         var resultados = await Promise.all([
-            db
-                .from('perfiles_publicos')
+            db.from('perfiles_publicos')
                 .select('id,nombre,handle,avatar_url')
                 .in('id', idsDeContactos),
 
-            db
-                .from('mensajes_chat')
+            db.from('mensajes_chat')
                 .select('contenido,tipo,created_at,leido,remitente_id,destinatario_id,nombre_archivo')
                 .eq('eliminado', false)
                 .eq('remitente_id', user.id)
                 .in('destinatario_id', idsDeContactos)
                 .order('created_at', { ascending: false }),
 
-            db
-                .from('mensajes_chat')
+            db.from('mensajes_chat')
                 .select('contenido,tipo,created_at,leido,remitente_id,destinatario_id,nombre_archivo')
                 .eq('eliminado', false)
                 .eq('destinatario_id', user.id)
@@ -195,43 +185,26 @@ async function loadConversations() {
         var rEnviados = resultados[1];
         var rRecibidos = resultados[2];
 
-        if (rPerfiles.error) {
-            console.error('[Mensajes] Error cargando perfiles en lote:', rPerfiles.error);
-        }
-        if (rEnviados.error) {
-            console.error('[Mensajes] Error cargando mensajes enviados:', rEnviados.error);
-        }
-        if (rRecibidos.error) {
-            console.error('[Mensajes] Error cargando mensajes recibidos:', rRecibidos.error);
-        }
+        if (rPerfiles.error) console.error('[Mensajes] Error cargando perfiles en lote:', rPerfiles.error);
+        if (rEnviados.error) console.error('[Mensajes] Error cargando mensajes enviados:', rEnviados.error);
+        if (rRecibidos.error) console.error('[Mensajes] Error cargando mensajes recibidos:', rRecibidos.error);
 
-        // --------------------------------------------------------
-        // MAPA DE PERFILES POR ID
-        // --------------------------------------------------------
         var perfilesPorId = Object.create(null);
-
         (rPerfiles.data || []).forEach(function(p) {
             perfilesPorId[String(p.id)] = p;
         });
 
-        // --------------------------------------------------------
-        // MAPA DEL ÚLTIMO MENSAJE POR CONTACTO
-        // --------------------------------------------------------
         var ultimoMensajePorContacto = Object.create(null);
 
         function registrarUltimoMensaje(m) {
             var contactoId = String(
-                m.remitente_id === user.id
-                    ? m.destinatario_id
-                    : m.remitente_id
+                m.remitente_id === user.id ? m.destinatario_id : m.remitente_id
             );
-
             var anterior = ultimoMensajePorContacto[contactoId];
 
             if (
                 !anterior ||
-                new Date(m.created_at).getTime() >
-                new Date(anterior.created_at).getTime()
+                new Date(m.created_at).getTime() > new Date(anterior.created_at).getTime()
             ) {
                 ultimoMensajePorContacto[contactoId] = m;
             }
@@ -240,9 +213,6 @@ async function loadConversations() {
         (rEnviados.data || []).forEach(registrarUltimoMensaje);
         (rRecibidos.data || []).forEach(registrarUltimoMensaje);
 
-        // --------------------------------------------------------
-        // CONSTRUIR ELEMENTOS DOM DESDE LOS MAPAS
-        // --------------------------------------------------------
         for (var i = 0; i < idsDeContactos.length; i++) {
             var contactoId = idsDeContactos[i];
 
@@ -260,9 +230,7 @@ async function loadConversations() {
                 (current && String(current.id) === contactoId ? ' active' : '');
 
             el.dataset.id = contactoId;
-            el.dataset.name = (
-                (p.nombre || '') + ' ' + (p.handle || '')
-            ).toLowerCase();
+            el.dataset.name = ((p.nombre || '') + ' ' + (p.handle || '')).toLowerCase();
 
             var preview = 'Sin mensajes';
 
@@ -295,9 +263,7 @@ async function loadConversations() {
                 '<div class="convtime">' + esc(hora) + '</div>';
 
             el.onclick = (function(cid) {
-                return function() {
-                    openConversation(cid);
-                };
+                return function() { openConversation(cid); };
             })(contactoId);
 
             list.appendChild(el);
@@ -342,9 +308,6 @@ async function openConversation(id) {
     var esBot = _esIdDelBotConv(id);
     var idNormalizado = esBot ? BOT_UUID : id;
 
-    // ------------------------------------------------------------
-    // PLACEHOLDER INMEDIATO
-    // ------------------------------------------------------------
     current = {
         id: idNormalizado,
         profile: {
@@ -382,7 +345,6 @@ async function openConversation(id) {
 
     console.log('[Conv] current seteado:', current);
 
-    // Header
     var chatName = $('chatName');
     if (chatName) chatName.textContent = p.nombre || 'Usuario';
 
@@ -391,7 +353,6 @@ async function openConversation(id) {
         chatAvatar.innerHTML = esBot ? '✦' : (p.avatar_url
             ? '<img src="' + esc(p.avatar_url) + '" alt="">'
             : esc((p.nombre || '◈').charAt(0).toUpperCase()));
-
         chatAvatar.className = 'avatar' + (esBot ? ' avatar-bot' : '');
     }
 
@@ -400,7 +361,6 @@ async function openConversation(id) {
         chatStatus.textContent = esBot
             ? '✦ IA · Siempre disponible'
             : (p.online ? '◉ En línea' : '◈ Desconectado');
-
         chatStatus.className = 'status' + (p.online ? ' online' : '');
     }
 
@@ -414,7 +374,6 @@ async function openConversation(id) {
         };
     }
 
-    // UI
     var voiceBot = $('voiceBot');
     if (voiceBot) voiceBot.style.display = esBot ? 'inline-flex' : 'none';
 
@@ -432,13 +391,11 @@ async function openConversation(id) {
 
     document.querySelectorAll('.conv').forEach(function(x) {
         var match = false;
-
         if (esBot) {
             match = _esIdDelBotConv(x.dataset.id);
         } else {
             match = x.dataset.id === idNormalizado;
         }
-
         x.classList.toggle('active', match);
     });
 
@@ -446,9 +403,6 @@ async function openConversation(id) {
     unreadCount = 0;
     actualizarFlecha();
 
-    // ============================================================
-    // ✅ v2.3: BOT — emitir evento + delegar renderizado
-    // ============================================================
     if (esBot) {
         try {
             await db.from('mensajes_chat')
@@ -458,7 +412,6 @@ async function openConversation(id) {
                 .eq('leido', false);
 
             if (miToken !== _openConvToken) return;
-
         } catch (e) {
             if (miToken !== _openConvToken) return;
             console.warn('[Conv] No se pudo marcar leído del bot:', e);
@@ -472,48 +425,50 @@ async function openConversation(id) {
             badge.style.color = 'var(--success)';
         }
 
-        // ✅ v2.3: Emitir evento para mensajes-bot.js v2.5
         try {
             window.dispatchEvent(new CustomEvent('marquinhos:chatAbierto', {
-                detail: {
-                    userId: user.id,
-                    botId: BOT_UUID,
-                    token: miToken
-                }
+                detail: { userId: user.id, botId: BOT_UUID, token: miToken }
             }));
         } catch (e) {
             console.warn('[Conv] Error emitiendo marquinhos:chatAbierto:', e);
         }
 
-        // ✅ v2.3: Resolver abrirConversacionBot con fallback
         var fnAbrirBot = _resolverAbrirConversacionBot();
 
         if (typeof fnAbrirBot !== 'function') {
             console.error('[Conv] ❌ abrirConversacionBot no está disponible');
+            console.error('[Conv] window.abrirConversacionBot:', typeof window.abrirConversacionBot);
+            console.error('[Conv] window.Chat.abrirConversacionBot:', typeof (window.Chat && window.Chat.abrirConversacionBot));
             toast('❌ El sistema de chat no está listo. Recarga la página.', 'error');
             return;
         }
 
+        // ✅ v2.4: Manejo mejorado del resultado
         try {
-            await fnAbrirBot();
+            var resultado = await fnAbrirBot();
 
             if (miToken !== _openConvToken) return;
 
-            console.log('[Conv] ✅ Chat del bot abierto y renderizado');
+            if (resultado === false) {
+                console.warn('[Conv] abrirConversacionBot retornó false');
+            } else {
+                console.log('[Conv] ✅ Chat del bot abierto y renderizado');
+            }
 
         } catch (e) {
             if (miToken !== _openConvToken) return;
 
             console.error('[Conv] ❌ Error renderizando chat del bot:', e);
-            toast('❌ No se pudo cargar el chat de Marquinhos', 'error');
+            console.error('[Conv] Stack:', e && e.stack);
+            console.error('[Conv] fnAbrirBot:', fnAbrirBot);
+
+            var msgError = (e && e.message) ? e.message : 'Error desconocido';
+            toast('❌ No se pudo cargar el chat de Marquinhos: ' + msgError, 'error');
         }
 
         return;
     }
 
-    // ============================================================
-    // CHAT NORMAL
-    // ============================================================
     var r = await db
         .from('mensajes_chat')
         .select('*')
@@ -530,10 +485,7 @@ async function openConversation(id) {
         return;
     }
 
-    // ✅ v2.3: Resolver renderMessages con fallback
-    var fnRender = (window.Chat && window.Chat.renderMessages)
-        || window.renderMessages;
-
+    var fnRender = (window.Chat && window.Chat.renderMessages) || window.renderMessages;
     if (typeof fnRender === 'function') {
         await fnRender(r.data || []);
     } else {
@@ -542,10 +494,7 @@ async function openConversation(id) {
 
     if (miToken !== _openConvToken) return;
 
-    // ✅ v2.3: Resolver subscribeMessages con fallback
-    var fnSub = (window.Chat && window.Chat.subscribeMessages)
-        || window.subscribeMessages;
-
+    var fnSub = (window.Chat && window.Chat.subscribeMessages) || window.subscribeMessages;
     if (typeof fnSub === 'function') {
         fnSub(idNormalizado);
     }
@@ -555,10 +504,8 @@ async function openConversation(id) {
 // CERRAR CONVERSACIÓN
 // ================================================================
 async function cerrarConversacion() {
-    // Invalidar cualquier apertura pendiente
     _openConvToken++;
 
-    // ✅ v2.3: Emitir evento de chat cerrado
     try {
         window.dispatchEvent(new CustomEvent('marquinhos:chatCerrado', {
             detail: {
@@ -592,34 +539,21 @@ async function cerrarConversacion() {
     var composer = $('composer');
     if (composer) composer.style.display = 'none';
 
-    // ✅ v2.3: Resolver _mostrarEmptyState con fallback
-    var fnEmpty = (window.Chat && window.Chat._mostrarEmptyState)
-        || window._mostrarEmptyState;
-
+    var fnEmpty = (window.Chat && window.Chat._mostrarEmptyState) || window._mostrarEmptyState;
     if (typeof fnEmpty === 'function') {
-        fnEmpty(
-            'Selecciona una conversación',
-            'Elige un chat, canal o grupo para empezar'
-        );
+        fnEmpty('Selecciona una conversación', 'Elige un chat, canal o grupo para empezar');
     } else {
         var emptyState = $('emptyState');
         if (emptyState) emptyState.style.display = 'block';
     }
 
-    // ✅ v2.3: Resolver limpiarEstadoConversacion con fallback
-    var fnLimpiar = (window.Chat && window.Chat.limpiarEstadoConversacion)
-        || window.limpiarEstadoConversacion;
-
+    var fnLimpiar = (window.Chat && window.Chat.limpiarEstadoConversacion) || window.limpiarEstadoConversacion;
     if (typeof fnLimpiar === 'function') {
-        try {
-            await fnLimpiar();
-        } catch (e) {}
+        try { await fnLimpiar(); } catch (e) {}
     } else {
         var box = $('messages');
         if (box) {
-            box.querySelectorAll('.bubblewrap').forEach(function(el) {
-                el.remove();
-            });
+            box.querySelectorAll('.bubblewrap').forEach(function(el) { el.remove(); });
         }
     }
 
@@ -638,9 +572,7 @@ function newConversation() {
     var input = $('userSearch');
     if (input) {
         input.value = '';
-        setTimeout(function() {
-            input.focus();
-        }, 50);
+        setTimeout(function() { input.focus(); }, 50);
     }
 
     var results = $('userResults');
@@ -702,9 +634,7 @@ async function searchUsers(q) {
             '<span style="color:var(--gold);font-size:.7rem">Iniciar ›</span>';
 
         el.onclick = (function(pid) {
-            return function() {
-                createConversation(pid);
-            };
+            return function() { createConversation(pid); };
         })(p.id);
 
         box.appendChild(el);
@@ -732,11 +662,7 @@ async function createConversation(id) {
     if (!r.data) {
         var ins = await db
             .from('contactos')
-            .insert({
-                usuario_id: user.id,
-                contacto_id: id,
-                estado: 'activo'
-            });
+            .insert({ usuario_id: user.id, contacto_id: id, estado: 'activo' });
 
         if (ins.error) {
             console.error(ins.error);
@@ -761,22 +687,16 @@ async function deleteConversation() {
 
     if (!await auth()) return;
 
-    var nombre = current.bot
-        ? 'Marquinhos'
-        : (current.profile.nombre || 'este usuario');
+    var nombre = current.bot ? 'Marquinhos' : (current.profile.nombre || 'este usuario');
 
     var confirmar = confirm(
-        '⚠️ ¿Estás seguro de que quieres eliminar TODA la conversación con ' +
-        nombre +
-        '?\n\nEsta acción no se puede deshacer.'
+        '⚠️ ¿Estás seguro de que quieres eliminar TODA la conversación con ' + nombre + '?\n\nEsta acción no se puede deshacer.'
     );
 
     if (!confirmar) return;
 
     try {
-        var targetId = current.bot
-            ? BOT_UUID
-            : _normalizarBotIdConv(current.id);
+        var targetId = current.bot ? BOT_UUID : _normalizarBotIdConv(current.id);
 
         var r = await db
             .from('mensajes_chat')
@@ -787,14 +707,9 @@ async function deleteConversation() {
 
         toast('✅ Conversación eliminada correctamente', 'success');
 
-        // ✅ v2.3: Resolver limpiarEstadoConversacion con fallback
-        var fnLimpiar = (window.Chat && window.Chat.limpiarEstadoConversacion)
-            || window.limpiarEstadoConversacion;
-
+        var fnLimpiar = (window.Chat && window.Chat.limpiarEstadoConversacion) || window.limpiarEstadoConversacion;
         if (typeof fnLimpiar === 'function') {
-            try {
-                await fnLimpiar();
-            } catch (e) {}
+            try { await fnLimpiar(); } catch (e) {}
         }
 
         current = null;
@@ -802,15 +717,9 @@ async function deleteConversation() {
         isUserAtBottom = true;
         actualizarFlecha();
 
-        // ✅ v2.3: Mostrar empty state con fallback
-        var fnEmpty = (window.Chat && window.Chat._mostrarEmptyState)
-            || window._mostrarEmptyState;
-
+        var fnEmpty = (window.Chat && window.Chat._mostrarEmptyState) || window._mostrarEmptyState;
         if (typeof fnEmpty === 'function') {
-            fnEmpty(
-                'Conversación eliminada',
-                'Envía un mensaje para empezar de nuevo'
-            );
+            fnEmpty('Conversación eliminada', 'Envía un mensaje para empezar de nuevo');
         }
 
         await loadConversations();
@@ -822,7 +731,7 @@ async function deleteConversation() {
 }
 
 // ================================================================
-// ✅ v2.3: EXPOSICIÓN GLOBAL — Namespace Chat
+// EXPOSICIÓN GLOBAL — Namespace Chat
 // ================================================================
 window.Chat = window.Chat || {};
 
@@ -839,7 +748,7 @@ window.Chat._esIdDelBotConv = _esIdDelBotConv;
 window.Chat._normalizarBotIdConv = _normalizarBotIdConv;
 
 // ================================================================
-// ✅ v2.3: EXPOSICIÓN GLOBAL — Compatibilidad legacy
+// EXPOSICIÓN GLOBAL — Compatibilidad legacy
 // ================================================================
 window.loadConversations = loadConversations;
 window.aplicarFiltroConversaciones = aplicarFiltroConversaciones;
@@ -856,4 +765,4 @@ window._normalizarBotIdConv = _normalizarBotIdConv;
 // ================================================================
 // DIAGNÓSTICO
 // ================================================================
-console.log('[Mensajes] ✅ Conversaciones v2.3 cargado (integración con ecosistema)');
+console.log('[Mensajes] ✅ Conversaciones v2.4 cargado (diagnóstico mejorado)');
