@@ -2,6 +2,7 @@
 // MENSAJES · CANALES Y GRUPOS
 // ================================================================
 // Integración de canales y grupos dentro del módulo de mensajes.
+// Usa la tabla grupos_video (visibilidad: publico/privado).
 // Depende de: mensajes-config.js, mensajes-utils.js, mensajes-auth.js
 // ================================================================
 
@@ -80,15 +81,13 @@ async function cargarCanales() {
 
         var query = db
             .from('grupos_video')
-            .select('id, nombre, descripcion, avatar_url, municipio, estado_region, visibilidad, precio_usdt, marketplace_activo, categoria_id, created_at')
+            .select('id, nombre, descripcion, avatar_url, municipio, estado_region, visibilidad, precio_usdt, marketplace_activo, created_at')
             .eq('visibilidad', 'publico')
-            .eq('activo', true)
             .order('created_at', { ascending: false })
             .limit(50);
 
         if (buscar) query = query.or('nombre.ilike.%' + buscar + '%,descripcion.ilike.%' + buscar + '%');
         if (filtroEstado) query = query.eq('estado_region', filtroEstado);
-        if (filtroCategoria) query = query.eq('categoria_id', filtroCategoria);
 
         var result = await query;
         if (result.error) throw result.error;
@@ -112,7 +111,8 @@ async function cargarCanales() {
         actualizarFiltros('canal', canales);
     } catch (e) {
         console.error('[Canales] Error:', e);
-        lista.innerHTML = '<div class="empty-state-small"><div class="empty-icon">!</div><div class="empty-text">Error al cargar canales</div></div>';
+        var msg = (e && e.message) ? e.message : 'Error desconocido';
+        lista.innerHTML = '<div class="empty-state-small"><div class="empty-icon">!</div><div class="empty-text">Error: ' + esc(msg) + '</div></div>';
     }
 }
 
@@ -136,15 +136,13 @@ async function cargarGrupos() {
 
         var query = db
             .from('grupos_video')
-            .select('id, nombre, descripcion, avatar_url, municipio, estado_region, visibilidad, precio_usdt, marketplace_activo, categoria_id, created_at')
+            .select('id, nombre, descripcion, avatar_url, municipio, estado_region, visibilidad, precio_usdt, marketplace_activo, created_at')
             .eq('visibilidad', 'privado')
-            .eq('activo', true)
             .order('created_at', { ascending: false })
             .limit(50);
 
         if (buscar) query = query.or('nombre.ilike.%' + buscar + '%,descripcion.ilike.%' + buscar + '%');
         if (filtroEstado) query = query.eq('estado_region', filtroEstado);
-        if (filtroCategoria) query = query.eq('categoria_id', filtroCategoria);
 
         var result = await query;
         if (result.error) throw result.error;
@@ -168,7 +166,8 @@ async function cargarGrupos() {
         actualizarFiltros('grupo', grupos);
     } catch (e) {
         console.error('[Grupos] Error:', e);
-        lista.innerHTML = '<div class="empty-state-small"><div class="empty-icon">!</div><div class="empty-text">Error al cargar grupos</div></div>';
+        var msg = (e && e.message) ? e.message : 'Error desconocido';
+        lista.innerHTML = '<div class="empty-state-small"><div class="empty-icon">!</div><div class="empty-text">Error: ' + esc(msg) + '</div></div>';
     }
 }
 
@@ -309,7 +308,6 @@ async function crearCanal() {
             precio_usdt: 0,
             marketplace_activo: false,
             creador_id: user.id,
-            activo: true,
             firma_ligera: 'Yo me hago cargo de lo que digo aquí'
         }).select().single();
 
@@ -371,7 +369,6 @@ async function crearGrupo() {
             precio_usdt: 0,
             marketplace_activo: false,
             creador_id: user.id,
-            activo: true,
             firma_ligera: 'Yo me hago cargo de lo que digo aquí'
         }).select().single();
 
@@ -400,4 +397,4 @@ async function crearGrupo() {
     }
 }
 
-console.log('[Mensajes] Canales y Grupos cargado');
+console.log('[Mensajes] ✅ Canales y Grupos cargado');
