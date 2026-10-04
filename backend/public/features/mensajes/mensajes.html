@@ -6,11 +6,16 @@
 <meta name="theme-color" content="#05080f">
 <title>◈ Mensajes · Sariel's</title>
 
+<!-- Apariencia global: aplica tema/color/fuente ANTES de pintar (evita flash) -->
 <script src="/features/shared/js/apariencia-global.js"></script>
+
+<!-- Estilos del módulo mensajes -->
 <link rel="stylesheet" href="/features/mensajes/css/mensajes.css">
 <link rel="stylesheet" href="/features/mensajes/css/mensajes-canales.css">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/livekit-client@1/dist/livekit-client.umd.min.js"></script>
+
+<!-- SDKs externos -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/livekit-client@2.5.7/dist/livekit-client.umd.min.js"></script>
 </head>
 <body>
 
@@ -36,9 +41,7 @@
 <main class="panel" id="panel">
 <aside class="sidebar">
 
-    <!-- ============================================================
-         PESTAÑAS PRINCIPALES (Chats / Canales / Grupos)
-         ============================================================ -->
+    <!-- PESTAÑAS PRINCIPALES -->
     <div class="sidebar-tabs" id="sidebarTabs">
         <button class="sidebar-tab active" data-tab="chats" onclick="cambiarPestana('chats')">
             <span class="tab-icon">◈</span>
@@ -54,9 +57,7 @@
         </button>
     </div>
 
-    <!-- ============================================================
-         CONTENIDO DE LA PESTAÑA "CHATS"
-         ============================================================ -->
+    <!-- PESTAÑA CHATS -->
     <div class="tab-content" id="tabChats">
         <div class="searchbox">
             <input type="text" id="searchConversations" placeholder="Buscar conversación..." autocomplete="off">
@@ -73,9 +74,7 @@
         <div class="convlist" id="conversationList"></div>
     </div>
 
-    <!-- ============================================================
-         CONTENIDO DE LA PESTAÑA "CANALES"
-         ============================================================ -->
+    <!-- PESTAÑA CANALES -->
     <div class="tab-content hidden" id="tabCanales">
         <div class="searchbox">
             <input type="text" id="searchCanales" placeholder="Buscar canal..." autocomplete="off" oninput="buscarCanalesDebounce()">
@@ -98,9 +97,7 @@
         </div>
     </div>
 
-    <!-- ============================================================
-         CONTENIDO DE LA PESTAÑA "GRUPOS"
-         ============================================================ -->
+    <!-- PESTAÑA GRUPOS -->
     <div class="tab-content hidden" id="tabGrupos">
         <div class="searchbox">
             <input type="text" id="searchGrupos" placeholder="Buscar grupo..." autocomplete="off" oninput="buscarGruposDebounce()">
@@ -123,7 +120,6 @@
         </div>
     </div>
 
-    <!-- Botón flotante "+" (cambia según pestaña) -->
     <button class="fab" id="newChat" title="Crear nuevo">+</button>
 </aside>
 
@@ -163,9 +159,7 @@
 <footer style="padding:18px 2px;color:var(--muted);font-size:.68rem">◈ Sariel's · Sabor al Paladar · WEB3</footer>
 </div>
 
-<!-- ============================================================
-     MODAL: NUEVA CONVERSACIÓN (solo en pestaña Chats)
-     ============================================================ -->
+<!-- MODAL: NUEVA CONVERSACIÓN -->
 <div class="modal" id="newModal">
     <div class="modalbox">
         <button class="iconbtn" id="closeModal" style="float:right">×</button>
@@ -175,9 +169,7 @@
     </div>
 </div>
 
-<!-- ============================================================
-     MODAL: CREAR CANAL
-     ============================================================ -->
+<!-- MODAL: CREAR CANAL -->
 <div class="modal" id="modalCrearCanal">
     <div class="modalbox">
         <button class="iconbtn" onclick="cerrarModalCrearCanal()" style="float:right">×</button>
@@ -215,9 +207,7 @@
     </div>
 </div>
 
-<!-- ============================================================
-     MODAL: CREAR GRUPO
-     ============================================================ -->
+<!-- MODAL: CREAR GRUPO -->
 <div class="modal" id="modalCrearGrupo">
     <div class="modalbox">
         <button class="iconbtn" onclick="cerrarModalCrearGrupo()" style="float:right">×</button>
@@ -255,9 +245,7 @@
     </div>
 </div>
 
-<!-- ============================================================
-     MODAL: PERFIL
-     ============================================================ -->
+<!-- MODAL: PERFIL -->
 <div class="modal" id="profileModal">
     <div class="profile-modal-box">
         <div class="profile-modal-avatar" id="profileModalAvatar">◈</div>
@@ -273,9 +261,7 @@
     </div>
 </div>
 
-<!-- ============================================================
-     MODAL: VISTAS DE ESTADO
-     ============================================================ -->
+<!-- MODAL: VISTAS DE ESTADO -->
 <div class="modal" id="vistasModal">
     <div class="modalbox" style="max-width:420px;">
         <button class="iconbtn" id="closeVistasModal" style="float:right">×</button>
@@ -286,9 +272,7 @@
     </div>
 </div>
 
-<!-- ============================================================
-     VISOR: FOTO AMPLIADA
-     ============================================================ -->
+<!-- VISOR: FOTO AMPLIADA -->
 <div class="photo-viewer" id="photoViewer">
     <button class="pv-close" id="pvClose">×</button>
     <img id="pvImage" src="" alt="Foto">
@@ -296,15 +280,10 @@
     <div class="pv-handle" id="pvHandle"></div>
 </div>
 
-<!-- ============================================================
-     VISOR: ESTADO (ESTILO WHATSAPP)
-     ============================================================ -->
+<!-- VISOR: ESTADO -->
 <div class="estado-viewer" id="estadoViewer">
-
-    <!-- Barra de progreso segmentada -->
     <div id="estadoProgress"></div>
 
-    <!-- Header: ← + avatar + nombre/hora + ⋮ -->
     <div class="estado-viewer-header">
         <button class="estado-viewer-back" id="evBack" aria-label="Atrás">
             <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
@@ -319,7 +298,6 @@
         </button>
     </div>
 
-    <!-- Cuerpo: imagen + caption + zonas táctiles prev/next -->
     <div class="estado-viewer-body" id="evBody">
         <button class="estado-viewer-nav prev" id="evPrev" aria-label="Anterior"></button>
         <img class="estado-viewer-img" id="evImage" src="" alt="Estado" draggable="false">
@@ -327,7 +305,6 @@
         <button class="estado-viewer-nav next" id="evNext" aria-label="Siguiente"></button>
     </div>
 
-    <!-- Footer: Responder + emojis -->
     <div class="estado-viewer-footer">
         <button class="estado-viewer-reply" id="evReply">Responder</button>
         <button class="estado-viewer-emoji" data-emoji="😍" aria-label="Me encanta">😍</button>
@@ -337,15 +314,12 @@
         </button>
     </div>
 
-    <!-- Contador de vistas: fuera del visor (WhatsApp no lo muestra aquí) -->
     <div class="estado-viewer-vistas hidden" id="evVistas" style="display:none !important;">
         <div class="estado-viewer-vistas-pill">◉ <span id="evVistasCount">0</span> vistas</div>
     </div>
 </div>
 
-<!-- ============================================================
-     MODAL: SUBIR ESTADO
-     ============================================================ -->
+<!-- MODAL: SUBIR ESTADO -->
 <div class="modal" id="estadoUploadModal">
     <div class="modalbox" style="text-align:center;">
         <button class="iconbtn" id="closeEstadoModal" style="float:right">×</button>
@@ -361,9 +335,7 @@
     </div>
 </div>
 
-<!-- ============================================================
-     LLAMADA: VIDEO
-     ============================================================ -->
+<!-- LLAMADA: VIDEO -->
 <div class="call" id="callOverlay">
     <div class="videos">
         <video id="remoteVideo" autoplay playsinline></video>
@@ -378,9 +350,7 @@
     </div>
 </div>
 
-<!-- ============================================================
-     LLAMADA: ENTRANTE
-     ============================================================ -->
+<!-- LLAMADA: ENTRANTE -->
 <div class="call" id="incomingOverlay">
     <div class="avatar" style="width:80px;height:80px;font-size:2rem" id="incomingAvatar">◈</div>
     <h2 id="incomingName">Usuario</h2>
@@ -393,6 +363,7 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- SCRIPTS DEL MÓDULO (orden estricto) -->
 <script src="/features/shared/js/idiomas.js"></script>
 <script src="/features/mensajes/js/mensajes-config.js"></script>
 <script src="/features/mensajes/js/mensajes-utils.js"></script>
