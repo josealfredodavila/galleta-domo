@@ -1,3 +1,4 @@
+
 // ================================================================
 // MENSAJES · BOT (Marquinhos) — v2.3
 // ================================================================
@@ -6,7 +7,11 @@
 //   en mensajes-chat.js v3.4). Esto era la causa raíz del bug de
 //   "pantalla en blanco" al abrir el chat del bot.
 // - cargarHistorialParaBot: usa BOT_UUID siempre
-// - preguntarAlBot: sin cambios
+// - cargarHistorialParaBot: no muta el array original de Supabase
+// - cargarHistorialParaBot: límite seguro de historial
+// - preguntarAlBot: valida mensaje y token de sesión
+// - preguntarAlBot: procesa errores HTTP antes de Content-Type
+// - Namespace window.Chat con compatibilidad global
 // - enviarVozAlBot: renderiza respuesta en el DOM directamente
 // ================================================================
 
@@ -36,24 +41,30 @@ function _esIdDelBot(id) {
 // ----------------------------------------------------------------
 async function cargarHistorialParaBot() {
     try {
+        var limite = (typeof BOT_MAX_HISTORY === 'number' && BOT_MAX_HISTORY > 0)
+            ? BOT_MAX_HISTORY
+            : 20;
+
         var r = await db
             .from('mensajes_chat')
             .select('remitente_id, contenido, tipo, created_at')
             .eq('eliminado', false)
             .or('and(remitente_id.eq.' + user.id + ',destinatario_id.eq.' + BOT_UUID + '),and(remitente_id.eq.' + BOT_UUID + ',destinatario_id.eq.' + user.id + ')')
             .order('created_at', { ascending: false })
-            .limit(BOT_MAX_HISTORY);
+            .limit(limite);
 
         if (r.error || !Array.isArray(r.data)) return [];
 
-        return r.data.reverse()
+        return r.data.slice().reverse()
             .map(function(m) {
                 return {
                     role: m.remitente_id === user.id ? 'user' : 'assistant',
                     content: limpiarMarkdown(m.contenido || '').slice(0, 2000)
                 };
             })
-            .filter(function(m) { return m.content && m.content.length > 0; });
+            .filter(function(m) {
+                return m.content && m.content.length > 0;
+            });
     } catch (e) {
         console.warn('[Bot] No se pudo cargar historial para el bot:', e);
         return [];
@@ -64,11 +75,24 @@ async function cargarHistorialParaBot() {
 // PREGUNTAR AL BOT
 // ----------------------------------------------------------------
 async function preguntarAlBot(mensaje, historial) {
+    if (typeof mensaje !== 'string' || !mensaje.trim()) {
+        throw new Error('Mensaje vacío');
+    }
+
     var s = await session();
-    if (!s) throw new Error('No hay una sesión activa. Inicia sesión nuevamente.');
+
+    if (!s) {
+        throw new Error('No hay una sesión activa. Inicia sesión nuevamente.');
+    }
+
+    if (!s.access_token) {
+        throw new Error('Sesión sin token');
+    }
 
     var controller = new AbortController();
-    var timeout = setTimeout(function() { controller.abort(); }, 50000);
+    var timeout = setTimeout(function() {
+        controller.abort();
+    }, 50000);
 
     try {
         var r = await fetch('/api/ai/chat', {
@@ -86,44 +110,77 @@ async function preguntarAlBot(mensaje, historial) {
             signal: controller.signal
         });
 
+        // --------------------------------------------------------
+        // ERRORES HTTP: comprobar ANTES del Content-Type
+        // --------------------------------------------------------
+        if (!r.ok) {
+            var textoErr = await r.text().catch(function() {
+                return '';
+            });
+
+            var dataErr = null;
+
+            try {
+                dataErr = JSON.parse(textoErr);
+            } catch (e) {}
+
+            throw new Error(
+                (dataErr && dataErr.error) ||
+                ('Error del servidor (' + r.status + ')')
+            );
+        }
+
+        // --------------------------------------------------------
+        // PROCESAMIENTO DE RESPUESTA
+        // --------------------------------------------------------
         var data = null;
         var contentType = r.headers.get('content-type') || '';
 
         if (contentType.indexOf('application/json') !== -1) {
-            try { data = await r.json(); } catch (e) { data = null; }
+            try {
+                data = await r.json();
+            } catch (e) {
+                data = null;
+            }
         } else {
-            var texto = await r.text().catch(function() { return ''; });
-            if (r.status === 502 || r.status === 504) {
-                throw new Error('El servidor está tardando o no disponible. Intenta de nuevo.');
-            }
-            if (r.status === 500) {
-                throw new Error('El servidor tuvo un error interno. Revisa CORS o logs de Railway.');
-            }
-            if (!r.ok) {
-                throw new Error('El servidor devolvió una respuesta inesperada. Código: ' + r.status);
-            }
             throw new Error('El servidor no devolvió JSON válido.');
         }
 
-        if (!r.ok) {
-            throw new Error((data && data.error) || ('Error del servidor (' + r.status + ')'));
-        }
         if (!data || data.success === false) {
-            throw new Error((data && data.error) || 'Marquinhos no pudo responder.');
+            throw new Error(
+                (data && data.error) ||
+                'Marquinhos no pudo responder.'
+            );
         }
 
-        var respuesta = typeof data.reply === 'string' ? data.reply.trim() : '';
-        if (!respuesta) throw new Error('Marquinhos respondió sin contenido.');
+        var respuesta = typeof data.reply === 'string'
+            ? data.reply.trim()
+            : '';
+
+        if (!respuesta) {
+            throw new Error('Marquinhos respondió sin contenido.');
+        }
 
         return limpiarMarkdown(respuesta);
+
     } catch (error) {
         if (error.name === 'AbortError') {
-            throw new Error('Marquinhos está tardando demasiado en responder. Intenta nuevamente.');
+            throw new Error(
+                'Marquinhos está tardando demasiado en responder. Intenta nuevamente.'
+            );
         }
-        if (error.name === 'TypeError' && /Failed to fetch|NetworkError/i.test(error.message || '')) {
-            throw new Error('No se pudo conectar con el servidor. Revisa tu conexión.');
+
+        if (
+            error.name === 'TypeError' &&
+            /Failed to fetch|NetworkError/i.test(error.message || '')
+        ) {
+            throw new Error(
+                'No se pudo conectar con el servidor. Revisa tu conexión.'
+            );
         }
+
         throw error;
+
     } finally {
         clearTimeout(timeout);
     }
@@ -149,19 +206,28 @@ async function grabarVozParaBot() {
     }
 
     try {
-        var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        var stream = await navigator.mediaDevices.getUserMedia({
+            audio: true
+        });
+
         voiceBotChunks = [];
         voiceBotRecorder = new MediaRecorder(stream);
 
         voiceBotRecorder.ondataavailable = function(e) {
-            if (e.data && e.data.size) voiceBotChunks.push(e.data);
+            if (e.data && e.data.size) {
+                voiceBotChunks.push(e.data);
+            }
         };
 
         voiceBotRecorder.onstop = async function() {
-            stream.getTracks().forEach(function(t) { t.stop(); });
+            stream.getTracks().forEach(function(t) {
+                t.stop();
+            });
+
             voiceBotGrabando = false;
 
             var btn = $('voiceBot');
+
             if (btn) {
                 btn.classList.remove('recording');
                 btn.textContent = '✦';
@@ -170,6 +236,7 @@ async function grabarVozParaBot() {
             var blob = new Blob(voiceBotChunks, {
                 type: voiceBotRecorder.mimeType || 'audio/webm'
             });
+
             voiceBotChunks = [];
 
             if (!blob.size) {
@@ -177,7 +244,12 @@ async function grabarVozParaBot() {
                 return;
             }
 
-            var file = new File([blob], 'voz-' + Date.now() + '.webm', { type: blob.type });
+            var file = new File(
+                [blob],
+                'voz-' + Date.now() + '.webm',
+                { type: blob.type }
+            );
+
             await enviarVozAlBot(file);
         };
 
@@ -185,12 +257,14 @@ async function grabarVozParaBot() {
         voiceBotGrabando = true;
 
         var btn2 = $('voiceBot');
+
         if (btn2) {
             btn2.classList.add('recording');
             btn2.textContent = '■';
         }
 
         toast('🎙️ Habla ahora… presiona otra vez para enviar');
+
     } catch (e) {
         console.error('[Bot] Error micrófono:', e);
         toast('❌ No se pudo acceder al micrófono', 'error');
@@ -207,7 +281,9 @@ async function enviarVozAlBot(file) {
     }
 
     enviandoVozBot = true;
+
     var btn = $('voiceBot');
+
     if (btn) {
         btn.classList.add('processing');
         btn.textContent = '⏳';
@@ -216,57 +292,75 @@ async function enviarVozAlBot(file) {
 
     try {
         var s = await session();
+
         if (!s) {
             enviandoVozBot = false;
+
             if (btn) {
                 btn.classList.remove('processing');
                 btn.textContent = '✦';
                 btn.disabled = false;
             }
+
             return;
         }
 
         var path = user.id + '/bot-voice/' + Date.now() + '.webm';
-        var upErr = (await db.storage.from(CHAT_AUDIO_BUCKET).upload(path, file, {
-            contentType: file.type,
-            upsert: false
-        })).error;
+
+        var upErr = (await db.storage
+            .from(CHAT_AUDIO_BUCKET)
+            .upload(path, file, {
+                contentType: file.type,
+                upsert: false
+            })).error;
 
         if (upErr) {
             toast('❌ Error subiendo audio', 'error');
             enviandoVozBot = false;
+
             if (btn) {
                 btn.classList.remove('processing');
                 btn.textContent = '✦';
                 btn.disabled = false;
             }
+
             return;
         }
 
-        var signed = await db.storage.from(CHAT_AUDIO_BUCKET).createSignedUrl(path, 3600);
+        var signed = await db.storage
+            .from(CHAT_AUDIO_BUCKET)
+            .createSignedUrl(path, 3600);
+
         if (!signed || !signed.data || !signed.data.signedUrl) {
             toast('❌ Error firmando audio', 'error');
             enviandoVozBot = false;
+
             if (btn) {
                 btn.classList.remove('processing');
                 btn.textContent = '✦';
                 btn.disabled = false;
             }
+
             return;
         }
 
         var tempId = 'voice-user-' + Date.now();
         var box = $('messages');
         var anchorRef = box.querySelector('#scrollAnchor');
-        var tempHTML = '<div class="bubblewrap sent" id="' + tempId + '">' +
-            '<div class="bubble">' +
-                '<div class="voice-label">🎙️ TU VOZ</div>' +
-                '<div class="voice-loading">Enviando a Marquinhos…</div>' +
-            '</div>' +
-        '</div>';
 
-        if (anchorRef) anchorRef.insertAdjacentHTML('beforebegin', tempHTML);
-        else box.insertAdjacentHTML('beforeend', tempHTML);
+        var tempHTML =
+            '<div class="bubblewrap sent" id="' + tempId + '">' +
+                '<div class="bubble">' +
+                    '<div class="voice-label">🎙️ TU VOZ</div>' +
+                    '<div class="voice-loading">Enviando a Marquinhos…</div>' +
+                '</div>' +
+            '</div>';
+
+        if (anchorRef) {
+            anchorRef.insertAdjacentHTML('beforebegin', tempHTML);
+        } else {
+            box.insertAdjacentHTML('beforeend', tempHTML);
+        }
 
         scrollToBottom(true);
 
@@ -282,29 +376,53 @@ async function enviarVozAlBot(file) {
                     'Content-Type': 'application/json',
                     'Authorization': 'Bearer ' + s.access_token
                 },
-                body: JSON.stringify({ audio_url: signed.data.signedUrl })
+                body: JSON.stringify({
+                    audio_url: signed.data.signedUrl
+                })
             });
 
-            data = await r.json().catch(function() { return {}; });
+            data = await r.json().catch(function() {
+                return {};
+            });
 
             if (r.status === 429) {
                 intentos++;
+
                 var waitTime = intentos * 2000;
-                toast('⏳ Servidor ocupado. Reintentando en ' + (waitTime / 1000) + 's...', 'warning');
-                await new Promise(function(resolve) { setTimeout(resolve, waitTime); });
+
+                toast(
+                    '⏳ Servidor ocupado. Reintentando en ' +
+                    (waitTime / 1000) + 's...',
+                    'warning'
+                );
+
+                await new Promise(function(resolve) {
+                    setTimeout(resolve, waitTime);
+                });
+
                 continue;
             }
 
             if (!r.ok || data.success === false) {
-                throw new Error(data.error || 'Error del servicio de voz');
+                throw new Error(
+                    data.error || 'Error del servicio de voz'
+                );
             }
+
             exito = true;
         }
 
-        if (!exito) throw new Error('El servidor de IA está saturado. Intenta de nuevo en unos minutos.');
+        if (!exito) {
+            throw new Error(
+                'El servidor de IA está saturado. Intenta de nuevo en unos minutos.'
+            );
+        }
 
         var tempEl = document.getElementById(tempId);
-        if (tempEl) tempEl.remove();
+
+        if (tempEl) {
+            tempEl.remove();
+        }
 
         try {
             await db.from('mensajes_chat').insert({
@@ -319,7 +437,10 @@ async function enviarVozAlBot(file) {
                 eliminado: false
             });
         } catch (e) {
-            console.warn('[Bot] No se pudo guardar la nota de voz:', e);
+            console.warn(
+                '[Bot] No se pudo guardar la nota de voz:',
+                e
+            );
         }
 
         if (data.reply) {
@@ -334,56 +455,92 @@ async function enviarVozAlBot(file) {
                     eliminado: false
                 });
             } catch (e) {
-                console.warn('[Bot] No se pudo guardar la respuesta del bot:', e);
+                console.warn(
+                    '[Bot] No se pudo guardar la respuesta del bot:',
+                    e
+                );
             }
         }
 
         var botId = 'voice-bot-' + Date.now();
-        var botBody = '<div class="bubble-bot-info">✦ MARQUINHOS</div>';
+
+        var botBody =
+            '<div class="bubble-bot-info">✦ MARQUINHOS</div>';
 
         if (data.transcripcion) {
-            botBody += '<div class="bot-transcripcion">🎙️ "' + esc(data.transcripcion) + '"</div>';
+            botBody +=
+                '<div class="bot-transcripcion">🎙️ "' +
+                esc(data.transcripcion) +
+                '"</div>';
         }
 
-        botBody += '<div>' + esc(limpiarMarkdown(data.reply || 'Sin respuesta')) + '</div>';
+        botBody +=
+            '<div>' +
+            esc(limpiarMarkdown(data.reply || 'Sin respuesta')) +
+            '</div>';
 
         if (data.audio_url) {
-            botBody += '<audio class="bot-audio" controls src="' + esc(data.audio_url) + '"></audio>';
+            botBody +=
+                '<audio class="bot-audio" controls src="' +
+                esc(data.audio_url) +
+                '"></audio>';
         }
 
-        var botHTML = '<div class="bubblewrap received" id="' + botId + '">' +
-            '<div class="bubble">' + botBody + '</div>' +
-        '</div>';
+        var botHTML =
+            '<div class="bubblewrap received" id="' + botId + '">' +
+                '<div class="bubble">' + botBody + '</div>' +
+            '</div>';
 
         isUserAtBottom = true;
 
         var anchorRef2 = box.querySelector('#scrollAnchor');
-        if (anchorRef2) anchorRef2.insertAdjacentHTML('beforebegin', botHTML);
-        else box.insertAdjacentHTML('beforeend', botHTML);
+
+        if (anchorRef2) {
+            anchorRef2.insertAdjacentHTML('beforebegin', botHTML);
+        } else {
+            box.insertAdjacentHTML('beforeend', botHTML);
+        }
 
         observarCargaMultimedia(box);
         scrollToBottom(true);
 
         if (data.audio_url) {
-            var audio = document.querySelector('#' + botId + ' audio');
-            if (audio) audio.play().catch(function() {});
+            var audio = document.querySelector(
+                '#' + botId + ' audio'
+            );
+
+            if (audio) {
+                audio.play().catch(function() {});
+            }
         }
 
         loadConversations();
+
     } catch (e) {
         console.error('[Bot] Error voz bot:', e);
-        document.querySelectorAll('[id^="voice-user-"]').forEach(function(el) { el.remove(); });
 
-        if (e.message.indexOf('429') !== -1
-            || e.message.indexOf('Too Many Requests') !== -1
-            || e.message.indexOf('saturado') !== -1) {
-            toast('⏳ El asistente está saturado. Por favor, espera unos segundos e intenta de nuevo.', 'warning');
+        document.querySelectorAll('[id^="voice-user-"]').forEach(function(el) {
+            el.remove();
+        });
+
+        if (
+            e.message.indexOf('429') !== -1 ||
+            e.message.indexOf('Too Many Requests') !== -1 ||
+            e.message.indexOf('saturado') !== -1
+        ) {
+            toast(
+                '⏳ El asistente está saturado. Por favor, espera unos segundos e intenta de nuevo.',
+                'warning'
+            );
         } else {
             toast('❌ ' + e.message, 'error');
         }
+
     } finally {
         enviandoVozBot = false;
+
         var btn3 = $('voiceBot');
+
         if (btn3) {
             btn3.classList.remove('processing');
             btn3.textContent = '✦';
@@ -396,10 +553,24 @@ async function enviarVozAlBot(file) {
 // EXPOSICIÓN GLOBAL
 // ----------------------------------------------------------------
 // ⚠️ NO exponemos abrirConversacionBot aquí — ya lo expone mensajes-chat.js
+
+// Compatibilidad hacia atrás: los cuatro alias globales.
 window.cargarHistorialParaBot = cargarHistorialParaBot;
 window.preguntarAlBot = preguntarAlBot;
 window.grabarVozParaBot = grabarVozParaBot;
 window.enviarVozAlBot = enviarVozAlBot;
+
+// Unificación con window.Chat si mensajes-chat.js ya creó el namespace.
+if (window.Chat) {
+    window.Chat.cargarHistorialParaBot = cargarHistorialParaBot;
+    window.Chat.preguntarAlBot = preguntarAlBot;
+    window.Chat.grabarVozParaBot = grabarVozParaBot;
+    window.Chat.enviarVozAlBot = enviarVozAlBot;
+} else {
+    // TODO: unificar namespace window.Chat
+}
+
+// Helpers públicos existentes.
 window._esIdDelBot = _esIdDelBot;
 window._normalizarBotId = _normalizarBotId;
 
