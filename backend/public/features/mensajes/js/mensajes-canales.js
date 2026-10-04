@@ -13,14 +13,13 @@ function generarSlug(nombre) {
     var slug = (nombre || '')
         .toLowerCase()
         .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')  // quitar acentos
-        .replace(/[^a-z0-9\s-]/g, '')     // quitar caracteres especiales
-        .replace(/\s+/g, '-')             // espacios → guiones
-        .replace(/-+/g, '-')              // múltiples guiones → uno
-        .replace(/^-|-$/g, '');           // quitar guiones al inicio/fin
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
 
     if (!slug) slug = 'grupo';
-    // Añadir timestamp para evitar colisiones
     return slug + '-' + Date.now();
 }
 
@@ -319,14 +318,13 @@ async function crearCanal() {
     if (btn) { btn.disabled = true; btn.textContent = 'Creando...'; }
 
     try {
-        // ✅ GENERAR SLUG
         var slug = generarSlug(nombre);
 
         var result = await db.from('grupos_video').insert({
             creador_id: user.id,
             categoria_id: null,
             nombre: nombre,
-            slug: slug,                    // ✅ AHORA SÍ
+            slug: slug,
             descripcion: descripcion || null,
             ciudad: ciudad || null,
             estado_region: estado || null,
@@ -383,14 +381,13 @@ async function crearGrupo() {
     if (btn) { btn.disabled = true; btn.textContent = 'Creando...'; }
 
     try {
-        // ✅ GENERAR SLUG
         var slug = generarSlug(nombre);
 
         var result = await db.from('grupos_video').insert({
             creador_id: user.id,
             categoria_id: null,
             nombre: nombre,
-            slug: slug,                    // ✅ AHORA SÍ
+            slug: slug,
             descripcion: descripcion || null,
             ciudad: ciudad || null,
             estado_region: estado || null,
@@ -425,5 +422,22 @@ async function crearGrupo() {
         if (btn) { btn.disabled = false; btn.textContent = '◆ Crear Grupo'; }
     }
 }
+
+// ================================================================
+// EXPOSICIÓN GLOBAL
+// ================================================================
+window.cambiarPestana = cambiarPestana;
+window.onNuevoClick = onNuevoClick;
+window.buscarCanalesDebounce = buscarCanalesDebounce;
+window.buscarGruposDebounce = buscarGruposDebounce;
+window.cargarCanales = cargarCanales;
+window.cargarGrupos = cargarGrupos;
+window.abrirCanalOGrupo = abrirCanalOGrupo;
+window.abrirModalCrearCanal = abrirModalCrearCanal;
+window.cerrarModalCrearCanal = cerrarModalCrearCanal;
+window.abrirModalCrearGrupo = abrirModalCrearGrupo;
+window.cerrarModalCrearGrupo = cerrarModalCrearGrupo;
+window.crearCanal = crearCanal;
+window.crearGrupo = crearGrupo;
 
 console.log('[Mensajes] Canales y Grupos cargado (con slug)');
