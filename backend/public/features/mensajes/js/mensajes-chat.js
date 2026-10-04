@@ -1,25 +1,15 @@
 // ================================================================
-// MENSAJES · CHAT (v3.5 — Integración completa con ecosistema)
+// MENSAJES · CHAT (v3.6 — Renderizado blindado)
 // ================================================================
-// - Anti-duplicados robusto (registro + DOM)
-// - "Visto" SOLO cuando el receptor contesta
-// - Autoenvío se marca VISTO al instante
-// - Límites: texto 1000, audio 5min, video 2min/50MB, foto 10MB
-// - Seguridad: URLs, UUIDs, escape HTML, filtro realtime servidor
-//
-// INTEGRACIÓN v3.5:
-// - Namespace unificado window.Chat.*
-// - Exposición directa window.* (compatibilidad legacy)
-// - Handshake con mensajes-bot.js (_botListo)
-// - Detección de Chat.cargarHistorialParaBot / Chat.preguntarAlBot
-// - Evento marquinhos:chatAbierto al abrir chat del bot
-// - _enviarMensajeAlBot con fallback robusto vía window.Chat
+// FIXES v3.6 (sobre v3.5):
+// - ✅ abrirConversacionBot con try/catch interno (NUNCA lanza)
+// - ✅ Logging exhaustivo con DEBUG_CHAT
+// - ✅ Fallback si getSignedUrlForMessage no está disponible
+// - ✅ _botListo robusto
 // ================================================================
 
-// ----------------------------------------------------------------
-// NAMESPACE
-// ----------------------------------------------------------------
 window.Chat = window.Chat || {};
+if (typeof window.DEBUG_CHAT === 'undefined') window.DEBUG_CHAT = false;
 
 // ----------------------------------------------------------------
 // CONSTANTES
@@ -40,7 +30,16 @@ var RATE_LIMIT_ENVIO_MS = 500;
 var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // ----------------------------------------------------------------
-// POLYFILL: Promise.allSettled
+// LOGGING
+// ----------------------------------------------------------------
+function _chatLog() {
+    if (window.DEBUG_CHAT && console && console.log) {
+        console.log.apply(console, ['[Chat]'].concat(Array.prototype.slice.call(arguments)));
+    }
+}
+
+// ----------------------------------------------------------------
+// POLYFILL
 // ----------------------------------------------------------------
 if (typeof Promise.allSettled !== 'function') {
     Promise.allSettled = function(promises) {
@@ -54,7 +53,7 @@ if (typeof Promise.allSettled !== 'function') {
 }
 
 // ----------------------------------------------------------------
-// UTILIDADES INTERNAS
+// UTILIDADES
 // ----------------------------------------------------------------
 function _esUUID(v) {
     return typeof v === 'string' && UUID_RE.test(v);
@@ -107,28 +106,31 @@ function _esMensajeDelBot(m) {
     return rid === BOT_ID || rid === BOT_UUID;
 }
 
-function _contenedorVisible(box) {
-    if (!box) return false;
-    if (!document.body.contains(box)) return false;
-    if (box.offsetParent === null && getComputedStyle(box).position !== 'fixed') {
-        return false;
+// ✅ v3.6: Fallback si getSignedUrlForMessage no está disponible
+async function _getSignedUrlSeguro(m) {
+    if (!m) return null;
+    if (!m.imagen_url && m.tipo !== 'imagen' && m.tipo !== 'video' && m.tipo !== 'audio') {
+        return null;
     }
-    return true;
+    if (typeof getSignedUrlForMessage === 'function') {
+        try {
+            return await getSignedUrlForMessage(m);
+        } catch (e) {
+            _chatLog('getSignedUrlForMessage falló:', e);
+            return null;
+        }
+    }
+    _chatLog('getSignedUrlForMessage no disponible, usando imagen_url directo');
+    return m.imagen_url || null;
 }
 
 // ----------------------------------------------------------------
-// REGISTRO LRU ANTI-DUPLICADOS
+// REGISTRO LRU
 // ----------------------------------------------------------------
 var _mensajesRenderizados = new Map();
 
-function _resetearMensajesRenderizados() {
-    _mensajesRenderizados.clear();
-}
-
-function _yaRenderizado(msgId) {
-    if (!msgId) return false;
-    return _mensajesRenderizados.has(msgId);
-}
+function _resetearMensajesRenderizados() { _mensajesRenderizados.clear(); }
+function _yaRenderizado(id) { return id ? _mensajesRenderizados.has(id) : false; }
 
 function _marcarRenderizado(msgId) {
     if (!msgId) return;
@@ -146,7 +148,7 @@ function _desmarcarRenderizado(msgId) {
 }
 
 // ----------------------------------------------------------------
-// HELPERS UI BASE
+// UI BASE
 // ----------------------------------------------------------------
 function _asegurarUIBase(box) {
     if (!box) return null;
@@ -165,11 +167,8 @@ function _asegurarUIBase(box) {
         anchor = document.createElement('div');
         anchor.id = 'scrollAnchor';
         var btnExistente = box.querySelector('#scrollDownBtn');
-        if (btnExistente) {
-            box.insertBefore(anchor, btnExistente);
-        } else {
-            box.appendChild(anchor);
-        }
+        if (btnExistente) box.insertBefore(anchor, btnExistente);
+        else box.appendChild(anchor);
     }
 
     var btn = box.querySelector('#scrollDownBtn');
@@ -216,117 +215,178 @@ function _mostrarEmptyState(texto, subtexto) {
     }
 }
 
-// ----------------------------------------------------------------
-// ABRIR CONVERSACIÓN CON EL BOT
-// ----------------------------------------------------------------
+// ================================================================
+// ✅ v3.6: abrirConversacionBot BLINDADA (nunca lanza excepción)
+// ================================================================
 async function abrirConversacionBot() {
-    var box = $('messages');
-    if (!box) {
-        console.warn('[Chat] abrirConversacionBot: #messages no existe');
-        return;
-    }
+    _chatLog('abrirConversacionBot: iniciando');
 
-    console.log('[Chat] abrirConversacionBot: iniciando');
-
-    _limpiarMensajes(box);
-    var anchor = _asegurarUIBase(box);
-    if (!anchor) {
-        console.error('[Chat] No se pudo crear anchor');
-        return;
-    }
-
-    if (!_esUUID(user && user.id) || !_esUUID(BOT_UUID)) {
-        console.error('[Chat] UUID inválido:', { user: user?.id, bot: BOT_UUID });
-        return;
-    }
-
-    // ✅ v3.5: Emitir evento de chat abierto (para mensajes-bot.js)
     try {
-        window.dispatchEvent(new CustomEvent('marquinhos:chatAbierto', {
-            detail: { userId: user.id, botId: BOT_UUID }
-        }));
-    } catch (e) {}
-
-    var historial = [];
-    try {
-        var r = await db.from('mensajes_chat')
-            .select('*')
-            .eq('eliminado', false)
-            .or('and(remitente_id.eq.' + user.id + ',destinatario_id.eq.' + BOT_UUID + '),and(remitente_id.eq.' + BOT_UUID + ',destinatario_id.eq.' + user.id + ')')
-            .order('created_at', { ascending: true })
-            .limit(200);
-        if (!r.error) historial = r.data || [];
-    } catch (e) {
-        console.warn('[Chat] No se pudo cargar historial del bot:', e);
-    }
-
-    if (!current || !_esConversacionBot()) {
-        console.warn('[Chat] Usuario cambió de chat durante la carga, abortando');
-        return;
-    }
-
-    if (!document.body.contains(box)) {
-        console.warn('[Chat] box ya no está en el DOM');
-        return;
-    }
-
-    anchor = box.querySelector('#scrollAnchor');
-    if (!anchor) {
-        anchor = _asegurarUIBase(box);
-        if (!anchor) return;
-    }
-
-    if (!historial.length) {
-        anchor.insertAdjacentHTML('beforebegin',
-            '<div class="bubblewrap received">' +
-                '<div class="bubble">' +
-                    '<div class="bubble-bot-info">✦ MARQUINHOS</div>' +
-                    '¡Hola! 👋 Soy Marquinhos, el asistente de Sariel\'s. Puedes:<br><br>' +
-                    '◈ Escribirme un mensaje de texto<br>' +
-                    '◈ Enviarme una nota de voz<br>' +
-                    '◈ Hablarme con el botón 🔊 (te responderé con voz)<br><br>' +
-                    '¿En qué te puedo ayudar hoy?' +
-                '</div>' +
-            '</div>');
-        isUserAtBottom = true;
-        scrollToBottom(true);
-        console.log('[Chat] ✅ Bienvenida del bot renderizada');
-        return;
-    }
-
-    var results = await Promise.allSettled(
-        historial.map(function(m) { return getSignedUrlForMessage(m); })
-    );
-
-    if (!current || !_esConversacionBot()) return;
-    if (!document.body.contains(box)) return;
-
-    anchor = box.querySelector('#scrollAnchor');
-    if (!anchor) return;
-
-    var insertados = 0;
-    historial.forEach(function(m, i) {
-        if (_yaRenderizado(m.id)) return;
-        _marcarRenderizado(m.id);
-        var url = results[i].status === 'fulfilled' ? results[i].value : null;
-        var esMio = _esMensajeMio(m) || _esAutoEnvio(m);
-        try {
-            anchor.insertAdjacentHTML('beforebegin', messageHTML(m, esMio, url));
-            insertados++;
-        } catch (e) {
-            console.warn('[Chat] Error insertando mensaje:', e);
+        var box = $('messages');
+        if (!box) {
+            console.error('[Chat] #messages no existe');
+            return false;
         }
-    });
 
-    isUserAtBottom = true;
-    observarCargaMultimedia(box);
-    scrollToBottom(true);
+        _limpiarMensajes(box);
+        var anchor = _asegurarUIBase(box);
+        if (!anchor) {
+            console.error('[Chat] No se pudo crear anchor');
+            return false;
+        }
 
-    console.log('[Chat] ✅ Historial del bot renderizado:', insertados, 'mensajes');
+        if (!user || !_esUUID(user.id)) {
+            console.error('[Chat] user.id inválido:', user && user.id);
+            return false;
+        }
+        if (!_esUUID(BOT_UUID)) {
+            console.error('[Chat] BOT_UUID inválido:', BOT_UUID);
+            return false;
+        }
+
+        // Emitir evento
+        try {
+            window.dispatchEvent(new CustomEvent('marquinhos:chatAbierto', {
+                detail: { userId: user.id, botId: BOT_UUID }
+            }));
+        } catch (e) {}
+
+        // Verificar db
+        if (typeof db === 'undefined' || !db) {
+            console.error('[Chat] db no está definido');
+            anchor.insertAdjacentHTML('beforebegin',
+                '<div class="bubblewrap received">' +
+                    '<div class="bubble">' +
+                        '<div class="bubble-bot-info">✦ MARQUINHOS</div>' +
+                        '⚠️ El sistema todavía está inicializando. Recarga la página.' +
+                    '</div>' +
+                '</div>');
+            return false;
+        }
+
+        _chatLog('Cargando historial del bot...');
+
+        var historial = [];
+        try {
+            var r = await db.from('mensajes_chat')
+                .select('*')
+                .eq('eliminado', false)
+                .or('and(remitente_id.eq.' + user.id + ',destinatario_id.eq.' + BOT_UUID + '),and(remitente_id.eq.' + BOT_UUID + ',destinatario_id.eq.' + user.id + ')')
+                .order('created_at', { ascending: true })
+                .limit(200);
+
+            if (r.error) {
+                console.warn('[Chat] Error cargando historial:', r.error);
+            } else {
+                historial = r.data || [];
+            }
+        } catch (e) {
+            console.error('[Chat] Excepción cargando historial:', e);
+            historial = [];
+        }
+
+        _chatLog('Historial obtenido:', historial.length, 'mensajes');
+
+        // Verificar contexto
+        if (!current || !_esConversacionBot()) {
+            console.warn('[Chat] Usuario cambió de chat, abortando');
+            return false;
+        }
+        if (!document.body.contains(box)) {
+            console.warn('[Chat] box ya no está en el DOM');
+            return false;
+        }
+
+        // Reobtener anchor
+        anchor = box.querySelector('#scrollAnchor');
+        if (!anchor) {
+            anchor = _asegurarUIBase(box);
+            if (!anchor) return false;
+        }
+
+        // Sin historial → bienvenida
+        if (!historial.length) {
+            _chatLog('Renderizando mensaje de bienvenida');
+            anchor.insertAdjacentHTML('beforebegin',
+                '<div class="bubblewrap received">' +
+                    '<div class="bubble">' +
+                        '<div class="bubble-bot-info">✦ MARQUINHOS</div>' +
+                        '¡Hola! 👋 Soy Marquinhos, el asistente de Sariel\'s. Puedes:<br><br>' +
+                        '◈ Escribirme un mensaje de texto<br>' +
+                        '◈ Enviarme una nota de voz<br>' +
+                        '◈ Hablarme con el botón 🔊 (te responderé con voz)<br><br>' +
+                        '¿En qué te puedo ayudar hoy?' +
+                    '</div>' +
+                '</div>');
+            isUserAtBottom = true;
+            scrollToBottom(true);
+            _chatLog('✅ Bienvenida renderizada');
+            return true;
+        }
+
+        // Cargar URLs firmadas (con fallback)
+        _chatLog('Cargando URLs firmadas...');
+        var results = await Promise.allSettled(
+            historial.map(function(m) { return _getSignedUrlSeguro(m); })
+        );
+
+        // Verificar contexto de nuevo
+        if (!current || !_esConversacionBot()) return false;
+        if (!document.body.contains(box)) return false;
+
+        anchor = box.querySelector('#scrollAnchor');
+        if (!anchor) {
+            anchor = _asegurarUIBase(box);
+            if (!anchor) return false;
+        }
+
+        // Renderizar mensajes
+        _chatLog('Renderizando', historial.length, 'mensajes');
+        var insertados = 0;
+        historial.forEach(function(m, i) {
+            if (_yaRenderizado(m.id)) return;
+            _marcarRenderizado(m.id);
+            var url = results[i] && results[i].status === 'fulfilled' ? results[i].value : null;
+            var esMio = _esMensajeMio(m) || _esAutoEnvio(m);
+            try {
+                anchor.insertAdjacentHTML('beforebegin', messageHTML(m, esMio, url));
+                insertados++;
+            } catch (e) {
+                console.error('[Chat] Error insertando mensaje:', e, m);
+            }
+        });
+
+        isUserAtBottom = true;
+        observarCargaMultimedia(box);
+        scrollToBottom(true);
+
+        _chatLog('✅ Historial renderizado:', insertados, 'mensajes');
+        return true;
+
+    } catch (e) {
+        console.error('[Chat] ❌ Excepción en abrirConversacionBot:', e);
+        // Fallback: mostrar mensaje de error en el chat
+        try {
+            var box2 = $('messages');
+            if (box2) {
+                var anchor2 = box2.querySelector('#scrollAnchor') || _asegurarUIBase(box2);
+                if (anchor2) {
+                    anchor2.insertAdjacentHTML('beforebegin',
+                        '<div class="bubblewrap received">' +
+                            '<div class="bubble">' +
+                                '<div class="bubble-bot-info">✦ MARQUINHOS</div>' +
+                                '⚠️ Error al cargar el chat: ' + esc(e.message || 'desconocido') +
+                            '</div>' +
+                        '</div>');
+                }
+            }
+        } catch (e2) {}
+        return false;
+    }
 }
 
 // ----------------------------------------------------------------
-// RENDERIZAR MENSAJES
+// RENDERIZAR MENSAJES (chat normal)
 // ----------------------------------------------------------------
 async function renderMessages(rows) {
     var box = $('messages');
@@ -342,7 +402,7 @@ async function renderMessages(rows) {
     }
 
     var results = await Promise.allSettled(
-        rows.map(function(m) { return getSignedUrlForMessage(m); })
+        rows.map(function(m) { return _getSignedUrlSeguro(m); })
     );
 
     if (!current) return;
@@ -355,7 +415,7 @@ async function renderMessages(rows) {
     rows.forEach(function(m, i) {
         if (_yaRenderizado(m.id)) return;
         _marcarRenderizado(m.id);
-        var url = results[i].status === 'fulfilled' ? results[i].value : null;
+        var url = results[i] && results[i].status === 'fulfilled' ? results[i].value : null;
         var esMio = _esMensajeMio(m) || _esAutoEnvio(m);
         anchor.insertAdjacentHTML('beforebegin', messageHTML(m, esMio, url));
     });
@@ -422,37 +482,25 @@ function messageHTML(m, sent, signedUrl) {
 // ----------------------------------------------------------------
 function validarTextoChat(texto) {
     if (typeof texto !== 'string') return { ok: false, motivo: 'Texto inválido' };
-    if (texto.length > MAX_TEXTO_LEN) {
-        return { ok: false, motivo: 'Máximo ' + MAX_TEXTO_LEN + ' letras' };
-    }
+    if (texto.length > MAX_TEXTO_LEN) return { ok: false, motivo: 'Máximo ' + MAX_TEXTO_LEN + ' letras' };
     return { ok: true };
 }
 
-function validarAudioChat(duracionSegundos) {
-    if (typeof duracionSegundos !== 'number' || duracionSegundos <= 0) {
-        return { ok: false, motivo: 'Audio inválido' };
-    }
-    if (duracionSegundos > MAX_AUDIO_SEGUNDOS) {
-        return { ok: true, recortarA: MAX_AUDIO_SEGUNDOS };
-    }
+function validarAudioChat(d) {
+    if (typeof d !== 'number' || d <= 0) return { ok: false, motivo: 'Audio inválido' };
+    if (d > MAX_AUDIO_SEGUNDOS) return { ok: true, recortarA: MAX_AUDIO_SEGUNDOS };
     return { ok: true };
 }
 
-function validarVideoChat(duracionSegundos, pesoBytes) {
-    if (typeof pesoBytes === 'number' && pesoBytes > MAX_VIDEO_BYTES) {
-        return { ok: false, motivo: 'Video muy pesado' };
-    }
-    if (typeof duracionSegundos === 'number' && duracionSegundos > MAX_VIDEO_SEGUNDOS) {
-        return { ok: false, motivo: 'Video supera 2 minutos' };
-    }
+function validarVideoChat(d, b) {
+    if (typeof b === 'number' && b > MAX_VIDEO_BYTES) return { ok: false, motivo: 'Video muy pesado' };
+    if (typeof d === 'number' && d > MAX_VIDEO_SEGUNDOS) return { ok: false, motivo: 'Video supera 2 minutos' };
     return { ok: true };
 }
 
-function validarFotoChat(pesoBytes) {
-    if (typeof pesoBytes !== 'number') return { ok: false, motivo: 'Foto inválida' };
-    if (pesoBytes > MAX_FOTO_BYTES) {
-        return { ok: false, motivo: 'Foto muy pesada (máx 10MB)' };
-    }
+function validarFotoChat(b) {
+    if (typeof b !== 'number') return { ok: false, motivo: 'Foto inválida' };
+    if (b > MAX_FOTO_BYTES) return { ok: false, motivo: 'Foto muy pesada (máx 10MB)' };
     return { ok: true };
 }
 
@@ -513,10 +561,7 @@ async function sendMessage(text) {
     if (!textoLimpio) return;
 
     var val = validarTextoChat(textoLimpio);
-    if (!val.ok) {
-        toast('⚠️ ' + val.motivo, 'error');
-        return;
-    }
+    if (!val.ok) { toast('⚠️ ' + val.motivo, 'error'); return; }
 
     var inputEl = $('messageInput');
     if (inputEl) inputEl.value = '';
@@ -533,9 +578,6 @@ async function sendMessage(text) {
     }
 }
 
-// ----------------------------------------------------------------
-// ✅ v3.5: _enviarMensajeAlBot con integración Chat namespace
-// ----------------------------------------------------------------
 async function _enviarMensajeAlBot(textoLimpio) {
     var userMsg = {
         contenido: textoLimpio,
@@ -547,7 +589,6 @@ async function _enviarMensajeAlBot(textoLimpio) {
         es_bot: false
     };
 
-    // 1. Guardar mensaje del usuario
     try {
         var ins = await db.from('mensajes_chat').insert({
             remitente_id: user.id,
@@ -576,26 +617,15 @@ async function _enviarMensajeAlBot(textoLimpio) {
     mostrarTypingBot();
 
     try {
-        // ✅ v3.5: Resolver funciones del bot vía namespace con fallback
-        var fnCargarHistorial = (window.Chat && window.Chat.cargarHistorialParaBot)
-            || window.cargarHistorialParaBot;
-        var fnPreguntar = (window.Chat && window.Chat.preguntarAlBot)
-            || window.preguntarAlBot;
+        var fnCargarHistorial = (window.Chat && window.Chat.cargarHistorialParaBot) || window.cargarHistorialParaBot;
+        var fnPreguntar = (window.Chat && window.Chat.preguntarAlBot) || window.preguntarAlBot;
 
-        if (typeof fnCargarHistorial !== 'function') {
-            throw new Error('El sistema del bot no está listo. Recarga la página.');
-        }
-        if (typeof fnPreguntar !== 'function') {
-            throw new Error('El sistema del bot no está listo. Recarga la página.');
-        }
+        if (typeof fnCargarHistorial !== 'function') throw new Error('El sistema del bot no está listo. Recarga la página.');
+        if (typeof fnPreguntar !== 'function') throw new Error('El sistema del bot no está listo. Recarga la página.');
 
-        // 2. Cargar historial
         var historial = await fnCargarHistorial();
-
-        // 3. Preguntar al bot
         var respuesta = await fnPreguntar(textoLimpio, historial);
 
-        // 4. Guardar respuesta del bot
         var botMsg = {
             contenido: respuesta,
             created_at: new Date().toISOString(),
@@ -616,7 +646,6 @@ async function _enviarMensajeAlBot(textoLimpio) {
                 editado: false,
                 eliminado: false
             }).select('*').single();
-
             if (!insBot.error && insBot.data) {
                 botMsg = Object.assign({}, insBot.data, { es_bot: true });
             }
@@ -624,20 +653,15 @@ async function _enviarMensajeAlBot(textoLimpio) {
             console.warn('[Chat] No se pudo guardar respuesta del bot:', e);
         }
 
-        // 5. Renderizar respuesta del bot
         if (botMsg.id) _marcarRenderizado(botMsg.id);
         isUserAtBottom = true;
         await append(botMsg, false);
         scrollToBottom(true);
 
-        // 6. Actualizar lista de conversaciones
-        if (typeof loadConversations === 'function') {
-            loadConversations();
-        }
+        if (typeof loadConversations === 'function') loadConversations();
 
     } catch (e) {
         console.error('[Chat] Error Marquinhos:', e);
-
         var errorMsg = {
             contenido: '⚠️ ' + (e.message || 'Ups, tuve un problema.'),
             created_at: new Date().toISOString(),
@@ -647,7 +671,6 @@ async function _enviarMensajeAlBot(textoLimpio) {
             leido: false,
             es_bot: true
         };
-
         try {
             await db.from('mensajes_chat').insert({
                 remitente_id: BOT_UUID,
@@ -659,7 +682,6 @@ async function _enviarMensajeAlBot(textoLimpio) {
                 eliminado: false
             });
         } catch (e2) {}
-
         isUserAtBottom = true;
         await append(errorMsg, false);
         scrollToBottom(true);
@@ -688,12 +710,8 @@ async function _enviarMensajeNormal(textoLimpio) {
 
         _marcarRenderizado(r.data.id);
         await append(r.data, true);
-
         await marcarConversacionComoLeida(current.id, r.data.created_at);
-
-        if (typeof loadConversations === 'function') {
-            loadConversations();
-        }
+        if (typeof loadConversations === 'function') loadConversations();
     } catch (e) {
         console.error('[Chat] Error al enviar:', e);
         toast('❌ Error al enviar mensaje', 'error');
@@ -701,39 +719,28 @@ async function _enviarMensajeNormal(textoLimpio) {
 }
 
 // ----------------------------------------------------------------
-// ENVIAR AUDIO/VIDEO/FOTO
+// AUDIO/VIDEO/FOTO
 // ----------------------------------------------------------------
-async function sendAudio(blob, duracionSegundos) {
+async function sendAudio(blob, dur) {
     if (!current || !blob) return;
     if (!await auth()) return;
-
-    var val = validarAudioChat(duracionSegundos);
+    var val = validarAudioChat(dur);
     if (!val.ok) { toast('⚠️ ' + val.motivo, 'error'); return; }
 
     try {
         var url = await subirArchivoChat(blob, 'audio');
-
         var ins = await db.from('mensajes_chat').insert({
             remitente_id: user.id,
             destinatario_id: current.bot ? BOT_UUID : current.id,
             tipo: 'audio',
             imagen_url: url,
-            leido: false,
-            editado: false,
-            eliminado: false
+            leido: false, editado: false, eliminado: false
         }).select('*').single();
-
-        if (ins.error || !ins.data) {
-            toast('❌ Error al enviar audio', 'error');
-            return;
-        }
-
+        if (ins.error || !ins.data) { toast('❌ Error al enviar audio', 'error'); return; }
         _marcarRenderizado(ins.data.id);
         await append(ins.data, true);
-
         var remitente = current.bot ? BOT_UUID : current.id;
         await marcarConversacionComoLeida(remitente, ins.data.created_at);
-
         if (typeof loadConversations === 'function') loadConversations();
     } catch (e) {
         console.error('[Chat] Error enviando audio:', e);
@@ -741,37 +748,26 @@ async function sendAudio(blob, duracionSegundos) {
     }
 }
 
-async function sendVideo(blob, duracionSegundos, pesoBytes) {
+async function sendVideo(blob, dur, peso) {
     if (!current || !blob) return;
     if (!await auth()) return;
-
-    var val = validarVideoChat(duracionSegundos, pesoBytes || blob.size);
+    var val = validarVideoChat(dur, peso || blob.size);
     if (!val.ok) { toast('⚠️ ' + val.motivo, 'error'); return; }
 
     try {
         var url = await subirArchivoChat(blob, 'video');
-
         var ins = await db.from('mensajes_chat').insert({
             remitente_id: user.id,
             destinatario_id: current.bot ? BOT_UUID : current.id,
             tipo: 'video',
             imagen_url: url,
-            leido: false,
-            editado: false,
-            eliminado: false
+            leido: false, editado: false, eliminado: false
         }).select('*').single();
-
-        if (ins.error || !ins.data) {
-            toast('❌ Error al enviar video', 'error');
-            return;
-        }
-
+        if (ins.error || !ins.data) { toast('❌ Error al enviar video', 'error'); return; }
         _marcarRenderizado(ins.data.id);
         await append(ins.data, true);
-
         var remitente = current.bot ? BOT_UUID : current.id;
         await marcarConversacionComoLeida(remitente, ins.data.created_at);
-
         if (typeof loadConversations === 'function') loadConversations();
     } catch (e) {
         console.error('[Chat] Error enviando video:', e);
@@ -782,34 +778,23 @@ async function sendVideo(blob, duracionSegundos, pesoBytes) {
 async function sendFoto(blob) {
     if (!current || !blob) return;
     if (!await auth()) return;
-
     var val = validarFotoChat(blob.size);
     if (!val.ok) { toast('⚠️ ' + val.motivo, 'error'); return; }
 
     try {
         var url = await subirArchivoChat(blob, 'imagen');
-
         var ins = await db.from('mensajes_chat').insert({
             remitente_id: user.id,
             destinatario_id: current.bot ? BOT_UUID : current.id,
             tipo: 'imagen',
             imagen_url: url,
-            leido: false,
-            editado: false,
-            eliminado: false
+            leido: false, editado: false, eliminado: false
         }).select('*').single();
-
-        if (ins.error || !ins.data) {
-            toast('❌ Error al enviar foto', 'error');
-            return;
-        }
-
+        if (ins.error || !ins.data) { toast('❌ Error al enviar foto', 'error'); return; }
         _marcarRenderizado(ins.data.id);
         await append(ins.data, true);
-
         var remitente = current.bot ? BOT_UUID : current.id;
         await marcarConversacionComoLeida(remitente, ins.data.created_at);
-
         if (typeof loadConversations === 'function') loadConversations();
     } catch (e) {
         console.error('[Chat] Error enviando foto:', e);
@@ -844,39 +829,22 @@ function quitarTypingBot() {
 }
 
 // ----------------------------------------------------------------
-// ✅ append() ROBUSTO
+// APPEND
 // ----------------------------------------------------------------
 async function append(m, sent) {
-    if (!current) {
-        console.warn('[Chat] append: sin conversación activa');
-        return;
-    }
-
+    if (!current) return;
     var box = $('messages');
-    if (!box) {
-        console.warn('[Chat] append: #messages no existe');
-        return;
-    }
+    if (!box) return;
 
     if (m.id) {
         var safeId = _safeDomId(m.id);
-        var existente = document.getElementById('msg-' + safeId);
-        if (existente) return;
+        if (document.getElementById('msg-' + safeId)) return;
         if (_yaRenderizado(m.id)) return;
     }
 
     if (m.id) _marcarRenderizado(m.id);
 
-    var signedUrl = null;
-    if (m.imagen_url || m.tipo === 'imagen' || m.tipo === 'video' || m.tipo === 'audio') {
-        try {
-            signedUrl = await getSignedUrlForMessage(m);
-        } catch (e) {
-            console.warn('[Chat] Signed URL falló:', m.id, e);
-            if (m.id) _desmarcarRenderizado(m.id);
-            return;
-        }
-    }
+    var signedUrl = await _getSignedUrlSeguro(m);
 
     if (!current) return;
     if (!document.body.contains(box)) return;
@@ -891,10 +859,7 @@ async function append(m, sent) {
     }
 
     sent = Boolean(sent);
-
-    if (!sent && _esAutoEnvio(m)) {
-        sent = true;
-    }
+    if (!sent && _esAutoEnvio(m)) sent = true;
 
     try {
         anchorRef.insertAdjacentHTML('beforebegin', messageHTML(m, sent, signedUrl));
@@ -905,7 +870,6 @@ async function append(m, sent) {
     observarCargaMultimedia(box);
 
     var esChatBot = _esConversacionBot();
-
     if (!sent) {
         if (esChatBot || _esMensajeDelBot(m)) {
             isUserAtBottom = true;
@@ -913,7 +877,6 @@ async function append(m, sent) {
             ocultarFlechaNuevos();
             return;
         }
-
         if (isUserAtBottom) {
             ocultarFlechaNuevos();
         } else {
@@ -952,7 +915,6 @@ function subscribeMessages(id) {
                 }, function(p) {
                     var m = p.new;
                     if (!current) return;
-
                     var chatActual = current.id;
                     var esBotChat = _esConversacionBot();
                     var esParaEsteChat = false;
@@ -1053,10 +1015,7 @@ function actualizarFlecha() {
     }
 }
 
-function ocultarFlechaNuevos() {
-    unreadCount = 0;
-    actualizarFlecha();
-}
+function ocultarFlechaNuevos() { unreadCount = 0; actualizarFlecha(); }
 
 function detectarSiEstaAbajo() {
     var box = $('messages');
@@ -1069,7 +1028,7 @@ function detectarSiEstaAbajo() {
 }
 
 // ----------------------------------------------------------------
-// OBSERVAR MULTIMEDIA
+// MULTIMEDIA
 // ----------------------------------------------------------------
 var _mediaObservados = new WeakSet();
 
@@ -1102,21 +1061,15 @@ function configurarAutoScrollTeclado() {
 
     if (window.visualViewport) {
         window.visualViewport.addEventListener('resize', function() {
-            setTimeout(function() {
-                if (isUserAtBottom) scrollToBottom(true);
-            }, KEYBOARD_SCROLL_MS);
+            setTimeout(function() { if (isUserAtBottom) scrollToBottom(true); }, KEYBOARD_SCROLL_MS);
         });
     }
 
     var input = $('messageInput');
     if (input) {
-        input.addEventListener('focus', function() {
-            setTimeout(function() { scrollToBottom(true); }, KEYBOARD_SCROLL_MS);
-        });
+        input.addEventListener('focus', function() { setTimeout(function() { scrollToBottom(true); }, KEYBOARD_SCROLL_MS); });
         input.addEventListener('input', function() {
-            if (isUserAtBottom) {
-                setTimeout(function() { scrollToBottom(true); }, KEYBOARD_INPUT_MS);
-            }
+            if (isUserAtBottom) setTimeout(function() { scrollToBottom(true); }, KEYBOARD_INPUT_MS);
         });
     }
 
@@ -1135,18 +1088,15 @@ if (document.readyState === 'loading') {
 // ----------------------------------------------------------------
 async function limpiarEstadoConversacion() {
     _resetearMensajesRenderizados();
-
     var box = $('messages');
     if (box) {
         box.querySelectorAll('.bubblewrap').forEach(function(el) { el.remove(); });
         var empty = box.querySelector('.empty');
         if (empty) empty.style.display = 'none';
     }
-
     unreadCount = 0;
     isUserAtBottom = true;
     actualizarFlecha();
-
     if (msgChannel) {
         try { await db.removeChannel(msgChannel); } catch (e) {}
         msgChannel = null;
@@ -1154,20 +1104,16 @@ async function limpiarEstadoConversacion() {
 }
 
 // ----------------------------------------------------------------
-// ✅ v3.5: HANDSHAKE — verificar que el bot está listo
+// HANDSHAKE
 // ----------------------------------------------------------------
 function _botListo() {
-    var fnCargarHistorial = (window.Chat && window.Chat.cargarHistorialParaBot)
-        || window.cargarHistorialParaBot;
-    var fnPreguntar = (window.Chat && window.Chat.preguntarAlBot)
-        || window.preguntarAlBot;
-
-    return typeof fnCargarHistorial === 'function'
-        && typeof fnPreguntar === 'function';
+    var fnCargarHistorial = (window.Chat && window.Chat.cargarHistorialParaBot) || window.cargarHistorialParaBot;
+    var fnPreguntar = (window.Chat && window.Chat.preguntarAlBot) || window.preguntarAlBot;
+    return typeof fnCargarHistorial === 'function' && typeof fnPreguntar === 'function';
 }
 
 // ================================================================
-// EXPOSICIÓN GLOBAL — NAMESPACE Chat
+// EXPOSICIÓN GLOBAL
 // ================================================================
 window.Chat = window.Chat || {};
 
@@ -1200,16 +1146,14 @@ window.Chat._esMensajeDelBot = _esMensajeDelBot;
 window.Chat._esConversacionBot = _esConversacionBot;
 window.Chat.limpiarEstadoConversacion = limpiarEstadoConversacion;
 window.Chat._botListo = _botListo;
+window.Chat._mostrarEmptyState = _mostrarEmptyState;
+window.Chat._getSignedUrlSeguro = _getSignedUrlSeguro;
 
-// ================================================================
-// EXPOSICIÓN GLOBAL DIRECTA — Compatibilidad legacy
-// ================================================================
 window.sendMessage = sendMessage;
 window.append = append;
 window.abrirConversacionBot = abrirConversacionBot;
 window.scrollToBottom = scrollToBottom;
 window.markRead = markRead;
-
 window.renderMessages = renderMessages;
 window.subscribeMessages = subscribeMessages;
 window.actualizarFlecha = actualizarFlecha;
@@ -1220,7 +1164,6 @@ window.mostrarTypingBot = mostrarTypingBot;
 window.quitarTypingBot = quitarTypingBot;
 window.marcarConversacionComoLeida = marcarConversacionComoLeida;
 window.limpiarEstadoConversacion = limpiarEstadoConversacion;
-
 window._mostrarEmptyState = _mostrarEmptyState;
 window._esUUID = _esUUID;
 window._urlSegura = _urlSegura;
@@ -1232,13 +1175,10 @@ window._safeDomId = _safeDomId;
 window._marcarRenderizado = _marcarRenderizado;
 window._yaRenderizado = _yaRenderizado;
 window._botListo = _botListo;
-
+window._getSignedUrlSeguro = _getSignedUrlSeguro;
 window.sendAudio = sendAudio;
 window.sendVideo = sendVideo;
 window.sendFoto = sendFoto;
 
-// ================================================================
-// DIAGNÓSTICO
-// ================================================================
-console.log('[Mensajes] ✅ Chat v3.5 cargado (integración completa con ecosistema)');
-console.log('[Mensajes] namespace window.Chat disponible con', Object.keys(window.Chat).length, 'funciones');
+console.log('[Mensajes] ✅ Chat v3.6 cargado (renderizado blindado)');
+console.log('[Mensajes] namespace window.Chat con', Object.keys(window.Chat).length, 'funciones');
