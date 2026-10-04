@@ -1,38 +1,83 @@
 // ================================================================
-// MENSAJES · BOT (Marquinhos) — v2.4
+// MENSAJES · BOT (Marquinhos) — v2.5
 // ================================================================
-// CORRECCIONES v2.4:
+// CORRECCIONES v2.5 (sobre v2.4):
 //
-// - NO define abrirConversacionBot.
-// - Mantiene una sola implementación en mensajes-chat.js.
-// - Valida dependencias antes de usar db/user.
-// - Garantiza window.Chat.
-// - Usa BOT_UUID como destinatario real del bot.
-// - Normaliza BOT_ID / BOT_UUID.
-// - Historial seguro y limitado.
-// - Compatible con /api/ai/chat.
-// - Valida correctamente la sesión y access_token.
-// - Maneja errores HTTP y respuestas no JSON.
-// - Evita que un error del bot rompa mensajes.html.
-// - Voz: subida, signed URL, reintentos 429 y renderizado.
-// - Limpia correctamente el estado de grabación.
-// - No elimina mensajes de voz de otros elementos.
-// - Escapa correctamente contenido dinámico.
-// - Exposición global compatible con código antiguo.
+// - ✅ Handshake: emite evento `marquinhos:listo` al cargar
+// - ✅ Función `_botEstaListo()` para verificar estado
+// - ✅ API unificada `window.enviarMensajeAlBot(texto)`
+// - ✅ Listeners de eventos `marquinhos:chatAbierto` / `marquinhos:chatCerrado`
+// - ✅ Namespace `window.Chat` completo
+//
+// HEREDADO v2.4:
+// - NO define abrirConversacionBot (delegada a mensajes-chat.js)
+// - Valida dependencias antes de usar db/user
+// - Usa BOT_UUID como destinatario real del bot
+// - Normaliza BOT_ID / BOT_UUID
+// - Historial seguro y limitado
+// - Compatible con /api/ai/chat
+// - Valida correctamente la sesión y access_token
+// - Maneja errores HTTP y respuestas no JSON
+// - Evita que un error del bot rompa mensajes.html
+// - Voz: subida, signed URL, reintentos 429 y renderizado
+// - Limpia correctamente el estado de grabación
+// - No elimina mensajes de voz de otros elementos
+// - Escapa correctamente contenido dinámico
+// - Exposición global compatible con código antiguo
 // ================================================================
-
 
 // ----------------------------------------------------------------
 // NAMESPACE
 // ----------------------------------------------------------------
-
 window.Chat = window.Chat || {};
 
+// ----------------------------------------------------------------
+// ✅ v2.5: LISTENER — Chat del bot abierto
+// ----------------------------------------------------------------
+// Cuando el usuario abre el chat de Marquinhos, esta función se
+// dispara y sirve como punto de extensión para preparar contexto.
+window.addEventListener('marquinhos:chatAbierto', function(e) {
+    console.log('[Bot] marquinhos:chatAbierto recibido:', e && e.detail);
+    // El bot ya está listo desde el load; no requiere acción adicional.
+    // Punto de extensión por si en el futuro se necesita preparar contexto.
+});
+
+// ----------------------------------------------------------------
+// ✅ v2.5: LISTENER — Chat del bot cerrado
+// ----------------------------------------------------------------
+// Limpia el estado de grabación si quedó a medias al cerrar el chat.
+window.addEventListener('marquinhos:chatCerrado', function(e) {
+    console.log('[Bot] marquinhos:chatCerrado recibido:', e && e.detail);
+
+    // Si había una grabación activa, detenerla para liberar el micrófono
+    if (typeof voiceBotGrabando !== 'undefined' && voiceBotGrabando) {
+        if (typeof voiceBotRecorder !== 'undefined' && voiceBotRecorder) {
+            try {
+                if (voiceBotRecorder.state !== 'inactive') {
+                    voiceBotRecorder.stop();
+                }
+            } catch (err) {
+                console.warn('[Bot] Error deteniendo grabación al cerrar chat:', err);
+            }
+        }
+        // Resetear flags
+        try {
+            voiceBotGrabando = false;
+            voiceBotChunks = [];
+        } catch (err) {}
+    }
+
+    // Resetear el botón de voz si quedó en estado "recording"
+    var btn = document.getElementById('voiceBot');
+    if (btn) {
+        btn.classList.remove('recording');
+        btn.textContent = '✦';
+    }
+});
 
 // ----------------------------------------------------------------
 // HELPERS DE DEPENDENCIAS
 // ----------------------------------------------------------------
-
 function _botTieneDB() {
     return (
         typeof db !== 'undefined' &&
@@ -107,11 +152,9 @@ function _botScroll() {
     }
 }
 
-
 // ----------------------------------------------------------------
 // NORMALIZACIÓN DE ID DEL BOT
 // ----------------------------------------------------------------
-
 function _normalizarBotId(id) {
 
     var uuid =
@@ -143,7 +186,6 @@ function _normalizarBotId(id) {
     return s;
 }
 
-
 function _esIdDelBot(id) {
 
     if (!id) return false;
@@ -170,11 +212,9 @@ function _esIdDelBot(id) {
     );
 }
 
-
 // ----------------------------------------------------------------
 // CARGAR HISTORIAL PARA MARQUINHOS
 // ----------------------------------------------------------------
-
 async function cargarHistorialParaBot() {
 
     try {
@@ -285,11 +325,9 @@ async function cargarHistorialParaBot() {
     }
 }
 
-
 // ----------------------------------------------------------------
 // PREGUNTAR A MARQUINHOS
 // ----------------------------------------------------------------
-
 async function preguntarAlBot(mensaje, historial) {
 
     if (
@@ -576,11 +614,9 @@ async function preguntarAlBot(mensaje, historial) {
     }
 }
 
-
 // ----------------------------------------------------------------
 // GRABAR VOZ PARA MARQUINHOS
 // ----------------------------------------------------------------
-
 async function grabarVozParaBot() {
 
     if (
@@ -829,11 +865,9 @@ async function grabarVozParaBot() {
     }
 }
 
-
 // ----------------------------------------------------------------
 // ENVIAR VOZ A MARQUINHOS
 // ----------------------------------------------------------------
-
 async function enviarVozAlBot(file) {
 
     if (!file || !file.size) {
@@ -1452,10 +1486,61 @@ async function enviarVozAlBot(file) {
     }
 }
 
+// ================================================================
+// ✅ v2.5: API UNIFICADA — enviar mensaje al bot desde cualquier lugar
+// ================================================================
+// Permite enviar un mensaje de texto al bot sin conocer los detalles
+// internos. Útil para otras partes de la app (muro, perfil, etc.).
+//
+// Uso:
+//   await window.Chat.enviarMensajeAlBot("Hola Marquinhos");
+//
+async function enviarMensajeAlBot(texto) {
 
-// ----------------------------------------------------------------
+    if (!texto || typeof texto !== 'string' || !texto.trim()) {
+        throw new Error('El mensaje está vacío.');
+    }
+
+    // Verificar que hay un contexto de chat activo con el bot
+    if (typeof current === 'undefined' || !current) {
+        throw new Error(
+            'No hay una conversación activa. Abre el chat de Marquinhos primero.'
+        );
+    }
+
+    if (!current.bot && !_esIdDelBot(current.id)) {
+        throw new Error(
+            'La conversación activa no es con Marquinhos. Ábrela primero.'
+        );
+    }
+
+    // Delegar a sendMessage (que ya sabe manejar el flujo del bot)
+    if (typeof sendMessage === 'function') {
+        await sendMessage(texto.trim());
+        return true;
+    }
+
+    throw new Error(
+        'sendMessage no está disponible. El sistema todavía se está inicializando.'
+    );
+}
+
+// ================================================================
+// ✅ v2.5: VERIFICAR ESTADO DEL BOT
+// ================================================================
+function _botEstaListo() {
+    return (
+        typeof cargarHistorialParaBot === 'function' &&
+        typeof preguntarAlBot === 'function' &&
+        typeof enviarVozAlBot === 'function' &&
+        typeof db !== 'undefined' &&
+        db !== null
+    );
+}
+
+// ================================================================
 // EXPOSICIÓN GLOBAL
-// ----------------------------------------------------------------
+// ================================================================
 //
 // IMPORTANTE:
 // abrirConversacionBot NO se define aquí.
@@ -1463,53 +1548,59 @@ async function enviarVozAlBot(file) {
 // mensajes-chat.js.
 // ----------------------------------------------------------------
 
-window.cargarHistorialParaBot =
-    cargarHistorialParaBot;
-
-window.preguntarAlBot =
-    preguntarAlBot;
-
-window.grabarVozParaBot =
-    grabarVozParaBot;
-
-window.enviarVozAlBot =
-    enviarVozAlBot;
-
-window._esIdDelBot =
-    _esIdDelBot;
-
-window._normalizarBotId =
-    _normalizarBotId;
-
+window.cargarHistorialParaBot = cargarHistorialParaBot;
+window.preguntarAlBot = preguntarAlBot;
+window.grabarVozParaBot = grabarVozParaBot;
+window.enviarVozAlBot = enviarVozAlBot;
+window.enviarMensajeAlBot = enviarMensajeAlBot;
+window._esIdDelBot = _esIdDelBot;
+window._normalizarBotId = _normalizarBotId;
+window._botEstaListo = _botEstaListo;
 
 // ----------------------------------------------------------------
 // NAMESPACE Chat
 // ----------------------------------------------------------------
+window.Chat = window.Chat || {};
 
-window.Chat =
-    window.Chat || {};
+window.Chat.cargarHistorialParaBot = cargarHistorialParaBot;
+window.Chat.preguntarAlBot = preguntarAlBot;
+window.Chat.grabarVozParaBot = grabarVozParaBot;
+window.Chat.enviarVozAlBot = enviarVozAlBot;
+window.Chat.enviarMensajeAlBot = enviarMensajeAlBot;
+window.Chat._botEstaListo = _botEstaListo;
 
-window.Chat.cargarHistorialParaBot =
-    cargarHistorialParaBot;
+// ================================================================
+// ✅ v2.5: EVENTO DE LISTO
+// ================================================================
+// Notifica al resto de la app que Marquinhos está completamente
+// cargado y listo para recibir interacciones.
+try {
+    window.dispatchEvent(new CustomEvent('marquinhos:listo', {
+        detail: {
+            version: '2.5',
+            funciones: [
+                'cargarHistorialParaBot',
+                'preguntarAlBot',
+                'grabarVozParaBot',
+                'enviarVozAlBot',
+                'enviarMensajeAlBot'
+            ],
+            timestamp: Date.now()
+        }
+    }));
+} catch (e) {
+    console.warn('[Bot] No se pudo emitir evento marquinhos:listo:', e);
+}
 
-window.Chat.preguntarAlBot =
-    preguntarAlBot;
-
-window.Chat.grabarVozParaBot =
-    grabarVozParaBot;
-
-window.Chat.enviarVozAlBot =
-    enviarVozAlBot;
-
-
-// ----------------------------------------------------------------
+// ================================================================
 // DIAGNÓSTICO
-// ----------------------------------------------------------------
-
-console.log(
-    '[Mensajes] ✅ Marquinhos Bot v2.4 cargado'
-);
-
-console.log(
-    '[Mensajes] abrirConversacionBot: delegada a mensajes-chat.js'
-);
+// ================================================================
+console.log('[Mensajes] ✅ Marquinhos Bot v2.5 cargado');
+console.log('[Mensajes] abrirConversacionBot: delegada a mensajes-chat.js');
+console.log('[Mensajes] API unificada disponible:');
+console.log('  • window.cargarHistorialParaBot');
+console.log('  • window.preguntarAlBot');
+console.log('  • window.grabarVozParaBot');
+console.log('  • window.enviarVozAlBot');
+console.log('  • window.enviarMensajeAlBot');
+console.log('  • window.Chat._botEstaListo()');
