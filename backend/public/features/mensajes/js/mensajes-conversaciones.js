@@ -2,6 +2,7 @@
 // MENSAJES · CONVERSACIONES
 // ================================================================
 // Lista de conversaciones, filtro, apertura, cierre.
+// Compatible con mensajes-chat.js v3 (visto solo al contestar).
 // Depende de: config, utils, auth.
 // ================================================================
 
@@ -93,7 +94,7 @@ async function loadConversations() {
 
             var rLast = await db
                 .from('mensajes_chat')
-                .select('contenido,tipo,created_at,leido,remitente_id')
+                .select('contenido,tipo,created_at,leido,remitente_id,nombre_archivo')
                 .eq('eliminado', false)
                 .or('and(remitente_id.eq.' + user.id + ',destinatario_id.eq.' + c.contacto_id + '),and(remitente_id.eq.' + c.contacto_id + ',destinatario_id.eq.' + user.id + ')')
                 .order('created_at', { ascending: false })
@@ -107,9 +108,14 @@ async function loadConversations() {
             el.dataset.id = c.contacto_id;
             el.dataset.name = ((p.nombre || '') + ' ' + (p.handle || '')).toLowerCase();
 
-            var preview = last
-                ? (last.tipo === 'texto' ? (last.contenido || '').slice(0, 60) : ('📎 ' + (last.nombre_archivo || last.tipo)))
-                : 'Sin mensajes';
+            var preview = 'Sin mensajes';
+            if (last) {
+                if (last.tipo === 'texto') preview = (last.contenido || '').slice(0, 60);
+                else if (last.tipo === 'imagen') preview = '📷 Foto';
+                else if (last.tipo === 'video') preview = '🎬 Video';
+                else if (last.tipo === 'audio') preview = '🎙️ Audio';
+                else preview = '📎 ' + (last.nombre_archivo || 'Archivo');
+            }
 
             var hora = last && last.created_at
                 ? new Date(last.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -240,6 +246,8 @@ async function openConversation(id) {
     }
 
     // ---- Chat normal: cargar mensajes ----
+    // ✅ NOTA: Ya NO marcamos como leído al abrir.
+    // La regla v3 dice: "visto SOLO cuando contestas".
     var r = await db
         .from('mensajes_chat')
         .select('*')
@@ -255,7 +263,7 @@ async function openConversation(id) {
     }
 
     await renderMessages(r.data || []);
-    await markRead(id);
+    // ❌ ELIMINADO: await markRead(id);
     subscribeMessages(id);
 }
 
@@ -384,7 +392,6 @@ async function searchUsers(q) {
 async function createConversation(id) {
     if (!await auth()) return;
 
-    // Verificar si ya es contacto
     var r = await db
         .from('contactos')
         .select('id')
@@ -397,7 +404,6 @@ async function createConversation(id) {
         return;
     }
 
-    // Si no existe, crear contacto
     if (!r.data) {
         var ins = await db
             .from('contactos')
@@ -460,5 +466,18 @@ async function deleteConversation() {
         toast('❌ No se pudo eliminar la conversación', 'error');
     }
 }
+
+// ================================================================
+// ✅ EXPOSICIÓN GLOBAL A WINDOW
+// ================================================================
+window.loadConversations = loadConversations;
+window.aplicarFiltroConversaciones = aplicarFiltroConversaciones;
+window.openConversation = openConversation;
+window.cerrarConversacion = cerrarConversacion;
+window.newConversation = newConversation;
+window.cerrarModalNuevaConversacion = cerrarModalNuevaConversacion;
+window.searchUsers = searchUsers;
+window.createConversation = createConversation;
+window.deleteConversation = deleteConversation;
 
 console.log('[Mensajes] ✅ Conversaciones cargado');
