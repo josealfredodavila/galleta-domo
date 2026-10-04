@@ -1,3 +1,4 @@
+
 // ================================================================
 // MENSAJES · CONVERSACIONES (v2.2 — Renderizado garantizado)
 // ================================================================
@@ -5,11 +6,15 @@
 // Compatible con mensajes-chat.js v3.4
 //
 // FIXES v2.2:
-// - openConversation: NO delega renderizado de historial al bot aquí
-//   (mensajes-chat.js v3.4 hace TODO el renderizado)
-// - Verifica que `current` esté bien seteado antes de cualquier await
+// - loadConversations: consultas por lotes, sin consultas por contacto
+// - Perfiles y últimos mensajes agrupados mediante mapas
+// - openConversation: protección contra aperturas simultáneas
+// - current se establece con placeholder antes de profile()
+// - Verificación de token después de cada await
 // - Logs de diagnóstico
 // ================================================================
+
+var _openConvToken = 0;
 
 // ================================================================
 // HELPERS DEL BOT
@@ -106,39 +111,152 @@ async function loadConversations() {
 
         if (!rContactos.data || !rContactos.data.length) return;
 
-        for (var i = 0; i < rContactos.data.length; i++) {
-            var c = rContactos.data[i];
-            if (c.contacto_id === BOT_UUID) continue;
+        // --------------------------------------------------------
+        // IDS ÚNICOS DE CONTACTOS, EXCLUYENDO AL BOT
+        // --------------------------------------------------------
+        var idsDeContactos = [];
+        var idsVistos = Object.create(null);
 
-            var p = await profile(c.contacto_id);
+        rContactos.data.forEach(function(c) {
+            if (!c.contacto_id || c.contacto_id === BOT_UUID) return;
 
-            var rLast = await db
+            var cid = String(c.contacto_id);
+            if (idsVistos[cid]) return;
+
+            idsVistos[cid] = true;
+            idsDeContactos.push(cid);
+        });
+
+        if (!idsDeContactos.length) {
+            aplicarFiltroConversaciones();
+            return;
+        }
+
+        // --------------------------------------------------------
+        // CONSULTAS EN LOTE
+        // Una consulta de perfiles y dos consultas de mensajes.
+        // --------------------------------------------------------
+        var idsStr = idsDeContactos.join(',');
+
+        var resultados = await Promise.all([
+            db
+                .from('perfiles_publicos')
+                .select('id,nombre,handle,avatar_url')
+                .in('id', idsDeContactos),
+
+            db
                 .from('mensajes_chat')
-                .select('contenido,tipo,created_at,leido,remitente_id,nombre_archivo')
+                .select('contenido,tipo,created_at,leido,remitente_id,destinatario_id,nombre_archivo')
                 .eq('eliminado', false)
-                .or('and(remitente_id.eq.' + user.id + ',destinatario_id.eq.' + c.contacto_id + '),and(remitente_id.eq.' + c.contacto_id + ',destinatario_id.eq.' + user.id + ')')
-                .order('created_at', { ascending: false })
-                .limit(1)
-                .maybeSingle();
+                .eq('remitente_id', user.id)
+                .in('destinatario_id', idsDeContactos)
+                .order('created_at', { ascending: false }),
 
-            var last = rLast.data;
+            db
+                .from('mensajes_chat')
+                .select('contenido,tipo,created_at,leido,remitente_id,destinatario_id,nombre_archivo')
+                .eq('eliminado', false)
+                .eq('destinatario_id', user.id)
+                .in('remitente_id', idsDeContactos)
+                .order('created_at', { ascending: false })
+        ]);
+
+        var rPerfiles = resultados[0];
+        var rEnviados = resultados[1];
+        var rRecibidos = resultados[2];
+
+        if (rPerfiles.error) {
+            console.error('[Mensajes] Error cargando perfiles en lote:', rPerfiles.error);
+        }
+
+        if (rEnviados.error) {
+            console.error('[Mensajes] Error cargando mensajes enviados:', rEnviados.error);
+        }
+
+        if (rRecibidos.error) {
+            console.error('[Mensajes] Error cargando mensajes recibidos:', rRecibidos.error);
+        }
+
+        // --------------------------------------------------------
+        // MAPA DE PERFILES POR ID
+        // --------------------------------------------------------
+        var perfilesPorId = Object.create(null);
+
+        (rPerfiles.data || []).forEach(function(p) {
+            perfilesPorId[String(p.id)] = p;
+        });
+
+        // --------------------------------------------------------
+        // MAPA DEL ÚLTIMO MENSAJE POR CONTACTO
+        // --------------------------------------------------------
+        var ultimoMensajePorContacto = Object.create(null);
+
+        function registrarUltimoMensaje(m) {
+            var contactoId = String(
+                m.remitente_id === user.id
+                    ? m.destinatario_id
+                    : m.remitente_id
+            );
+
+            var anterior = ultimoMensajePorContacto[contactoId];
+
+            if (
+                !anterior ||
+                new Date(m.created_at).getTime() >
+                new Date(anterior.created_at).getTime()
+            ) {
+                ultimoMensajePorContacto[contactoId] = m;
+            }
+        }
+
+        (rEnviados.data || []).forEach(registrarUltimoMensaje);
+        (rRecibidos.data || []).forEach(registrarUltimoMensaje);
+
+        // --------------------------------------------------------
+        // CONSTRUIR ELEMENTOS DOM DESDE LOS MAPAS
+        // --------------------------------------------------------
+        for (var i = 0; i < idsDeContactos.length; i++) {
+            var contactoId = idsDeContactos[i];
+
+            var p = perfilesPorId[contactoId] || {
+                id: contactoId,
+                nombre: 'Usuario',
+                handle: '',
+                avatar_url: null
+            };
+
+            var last = ultimoMensajePorContacto[contactoId];
 
             var el = document.createElement('div');
-            el.className = 'conv' + (current && current.id === c.contacto_id ? ' active' : '');
-            el.dataset.id = c.contacto_id;
-            el.dataset.name = ((p.nombre || '') + ' ' + (p.handle || '')).toLowerCase();
+            el.className = 'conv' +
+                (current && String(current.id) === contactoId ? ' active' : '');
+
+            el.dataset.id = contactoId;
+            el.dataset.name = (
+                (p.nombre || '') + ' ' + (p.handle || '')
+            ).toLowerCase();
 
             var preview = 'Sin mensajes';
+
             if (last) {
-                if (last.tipo === 'texto') preview = (last.contenido || '').slice(0, 60);
-                else if (last.tipo === 'imagen') preview = '📷 Foto';
-                else if (last.tipo === 'video') preview = '🎬 Video';
-                else if (last.tipo === 'audio') preview = '🎙️ Audio';
-                else preview = '📎 ' + (last.nombre_archivo || 'Archivo');
+                if (last.tipo === 'texto') {
+                    preview = (last.contenido || '').slice(0, 60);
+                } else if (last.tipo === 'imagen') {
+                    preview = '📷 Foto';
+                } else if (last.tipo === 'video') {
+                    preview = '🎬 Video';
+                } else if (last.tipo === 'audio') {
+                    preview = '🎙️ Audio';
+                } else {
+                    preview = '📎 ' + (last.nombre_archivo || 'Archivo');
+                }
             }
 
             var hora = last && last.created_at
-                ? new Date(last.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                ? new Date(last.created_at).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                })
                 : '';
 
             el.innerHTML = avatar(p.nombre, p.avatar_url) +
@@ -149,13 +267,16 @@ async function loadConversations() {
                 '<div class="convtime">' + esc(hora) + '</div>';
 
             el.onclick = (function(cid) {
-                return function() { openConversation(cid); };
-            })(c.contacto_id);
+                return function() {
+                    openConversation(cid);
+                };
+            })(contactoId);
 
             list.appendChild(el);
         }
 
         aplicarFiltroConversaciones();
+
     } catch (e) {
         console.error('[Mensajes] Error en loadConversations:', e);
     }
@@ -183,15 +304,35 @@ function aplicarFiltroConversaciones() {
 // ABRIR CONVERSACIÓN
 // ================================================================
 async function openConversation(id) {
+    var miToken = ++_openConvToken;
+
     if (!await auth()) return;
+    if (miToken !== _openConvToken) return;
 
     console.log('[Conv] Abriendo conversación:', id);
 
     var esBot = _esIdDelBotConv(id);
     var idNormalizado = esBot ? BOT_UUID : id;
 
-    // ✅ Setear `current` ANTES de cualquier await posterior
+    // ------------------------------------------------------------
+    // PLACEHOLDER INMEDIATO: evita conservar current anterior
+    // mientras se obtiene el perfil.
+    // ------------------------------------------------------------
+    current = {
+        id: idNormalizado,
+        profile: {
+            id: idNormalizado,
+            nombre: esBot ? 'Marquinhos' : 'Cargando…',
+            handle: '',
+            avatar_url: null,
+            online: false,
+            bot: esBot
+        },
+        bot: esBot
+    };
+
     var p;
+
     if (esBot) {
         p = {
             id: BOT_UUID,
@@ -203,9 +344,15 @@ async function openConversation(id) {
         };
     } else {
         p = await profile(idNormalizado);
+        if (miToken !== _openConvToken) return;
     }
 
-    current = { id: idNormalizado, profile: p, bot: esBot };
+    current = {
+        id: idNormalizado,
+        profile: p,
+        bot: esBot
+    };
+
     console.log('[Conv] current seteado:', current);
 
     // Header
@@ -217,6 +364,7 @@ async function openConversation(id) {
         chatAvatar.innerHTML = esBot ? '✦' : (p.avatar_url
             ? '<img src="' + esc(p.avatar_url) + '" alt="">'
             : esc((p.nombre || '◈').charAt(0).toUpperCase()));
+
         chatAvatar.className = 'avatar' + (esBot ? ' avatar-bot' : '');
     }
 
@@ -225,6 +373,7 @@ async function openConversation(id) {
         chatStatus.textContent = esBot
             ? '✦ IA · Siempre disponible'
             : (p.online ? '◉ En línea' : '◈ Desconectado');
+
         chatStatus.className = 'status' + (p.online ? ' online' : '');
     }
 
@@ -234,6 +383,7 @@ async function openConversation(id) {
                 toast('ℹ️ Marquinhos es un asistente IA', 'warning');
                 return;
             }
+
             verFotoAmpliada(p.avatar_url, p.nombre, p.handle);
         };
     }
@@ -256,11 +406,13 @@ async function openConversation(id) {
 
     document.querySelectorAll('.conv').forEach(function(x) {
         var match = false;
+
         if (esBot) {
             match = _esIdDelBotConv(x.dataset.id);
         } else {
             match = x.dataset.id === idNormalizado;
         }
+
         x.classList.toggle('active', match);
     });
 
@@ -279,9 +431,15 @@ async function openConversation(id) {
                 .eq('remitente_id', BOT_UUID)
                 .eq('destinatario_id', user.id)
                 .eq('leido', false);
+
+            if (miToken !== _openConvToken) return;
+
         } catch (e) {
+            if (miToken !== _openConvToken) return;
             console.warn('[Conv] No se pudo marcar leído del bot:', e);
         }
+
+        if (miToken !== _openConvToken) return;
 
         var badge = $('botBadge');
         if (badge) {
@@ -289,14 +447,21 @@ async function openConversation(id) {
             badge.style.color = 'var(--success)';
         }
 
-        // ✅ Llamar a la versión autoritativa (v3.4)
+        // Llamar a la versión autoritativa (v3.4)
         try {
             await abrirConversacionBot();
+
+            if (miToken !== _openConvToken) return;
+
             console.log('[Conv] ✅ Chat del bot abierto y renderizado');
+
         } catch (e) {
+            if (miToken !== _openConvToken) return;
+
             console.error('[Conv] ❌ Error renderizando chat del bot:', e);
             toast('❌ No se pudo cargar el chat de Marquinhos', 'error');
         }
+
         return;
     }
 
@@ -311,6 +476,8 @@ async function openConversation(id) {
         .order('created_at', { ascending: true })
         .limit(100);
 
+    if (miToken !== _openConvToken) return;
+
     if (r.error) {
         console.error(r.error);
         toast('❌ Error al cargar mensajes', 'error');
@@ -318,6 +485,8 @@ async function openConversation(id) {
     }
 
     await renderMessages(r.data || []);
+    if (miToken !== _openConvToken) return;
+
     subscribeMessages(idNormalizado);
 }
 
@@ -325,6 +494,9 @@ async function openConversation(id) {
 // CERRAR CONVERSACIÓN
 // ================================================================
 async function cerrarConversacion() {
+    // Invalidar cualquier apertura que siga pendiente.
+    _openConvToken++;
+
     current = null;
 
     var panel = $('panel');
@@ -349,9 +521,12 @@ async function cerrarConversacion() {
     var composer = $('composer');
     if (composer) composer.style.display = 'none';
 
-    // ✅ Mostrar empty state
+    // Mostrar empty state
     if (typeof _mostrarEmptyState === 'function') {
-        _mostrarEmptyState('Selecciona una conversación', 'Elige un chat, canal o grupo para empezar');
+        _mostrarEmptyState(
+            'Selecciona una conversación',
+            'Elige un chat, canal o grupo para empezar'
+        );
     } else {
         var emptyState = $('emptyState');
         if (emptyState) emptyState.style.display = 'block';
@@ -359,10 +534,16 @@ async function cerrarConversacion() {
 
     // Limpiar mensajes
     if (typeof limpiarEstadoConversacion === 'function') {
-        try { await limpiarEstadoConversacion(); } catch (e) {}
+        try {
+            await limpiarEstadoConversacion();
+        } catch (e) {}
     } else {
         var box = $('messages');
-        if (box) box.querySelectorAll('.bubblewrap').forEach(function(el) { el.remove(); });
+        if (box) {
+            box.querySelectorAll('.bubblewrap').forEach(function(el) {
+                el.remove();
+            });
+        }
     }
 
     document.querySelectorAll('.conv').forEach(function(x) {
@@ -380,7 +561,9 @@ function newConversation() {
     var input = $('userSearch');
     if (input) {
         input.value = '';
-        setTimeout(function() { input.focus(); }, 50);
+        setTimeout(function() {
+            input.focus();
+        }, 50);
     }
 
     var results = $('userResults');
@@ -433,6 +616,7 @@ async function searchUsers(q) {
         var p = r.data[i];
         var el = document.createElement('div');
         el.className = 'result';
+
         el.innerHTML = avatar(p.nombre, p.avatar_url) +
             '<div style="flex:1">' +
                 '<b>' + esc(p.nombre || 'Usuario') + '</b>' +
@@ -441,7 +625,9 @@ async function searchUsers(q) {
             '<span style="color:var(--gold);font-size:.7rem">Iniciar ›</span>';
 
         el.onclick = (function(pid) {
-            return function() { createConversation(pid); };
+            return function() {
+                createConversation(pid);
+            };
         })(p.id);
 
         box.appendChild(el);
@@ -469,7 +655,11 @@ async function createConversation(id) {
     if (!r.data) {
         var ins = await db
             .from('contactos')
-            .insert({ usuario_id: user.id, contacto_id: id, estado: 'activo' });
+            .insert({
+                usuario_id: user.id,
+                contacto_id: id,
+                estado: 'activo'
+            });
 
         if (ins.error) {
             console.error(ins.error);
@@ -494,12 +684,22 @@ async function deleteConversation() {
 
     if (!await auth()) return;
 
-    var nombre = current.bot ? 'Marquinhos' : (current.profile.nombre || 'este usuario');
-    var confirmar = confirm('⚠️ ¿Estás seguro de que quieres eliminar TODA la conversación con ' + nombre + '?\n\nEsta acción no se puede deshacer.');
+    var nombre = current.bot
+        ? 'Marquinhos'
+        : (current.profile.nombre || 'este usuario');
+
+    var confirmar = confirm(
+        '⚠️ ¿Estás seguro de que quieres eliminar TODA la conversación con ' +
+        nombre +
+        '?\n\nEsta acción no se puede deshacer.'
+    );
+
     if (!confirmar) return;
 
     try {
-        var targetId = current.bot ? BOT_UUID : _normalizarBotIdConv(current.id);
+        var targetId = current.bot
+            ? BOT_UUID
+            : _normalizarBotIdConv(current.id);
 
         var r = await db
             .from('mensajes_chat')
@@ -511,7 +711,9 @@ async function deleteConversation() {
         toast('✅ Conversación eliminada correctamente', 'success');
 
         if (typeof limpiarEstadoConversacion === 'function') {
-            try { await limpiarEstadoConversacion(); } catch (e) {}
+            try {
+                await limpiarEstadoConversacion();
+            } catch (e) {}
         }
 
         current = null;
@@ -521,10 +723,14 @@ async function deleteConversation() {
 
         // Mostrar empty state
         if (typeof _mostrarEmptyState === 'function') {
-            _mostrarEmptyState('Conversación eliminada', 'Envía un mensaje para empezar de nuevo');
+            _mostrarEmptyState(
+                'Conversación eliminada',
+                'Envía un mensaje para empezar de nuevo'
+            );
         }
 
         await loadConversations();
+
     } catch (e) {
         console.error('[Mensajes] Error eliminando conversación:', e);
         toast('❌ No se pudo eliminar la conversación', 'error');
