@@ -1,7 +1,5 @@
 /* ================================================================
-   MARQUINHOS · PET · CSS
-   ================================================================
-   Widget flotante de la mascota virtual.
+   MARQUINHOS · PET · CSS v2.0
    ================================================================ */
 
 .mq-pet {
@@ -9,22 +7,44 @@
     bottom: 20px;
     right: 20px;
     z-index: 999999;
-    width: 120px;
-    height: 170px;
-    pointer-events: none;
-    opacity: 0;
-    transform: translateY(20px) scale(0.9);
-    transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    width: 90px;
+    height: 130px;
+    pointer-events: auto;
+    opacity: 1;
+    transition: transform 0.3s ease;
     user-select: none;
     -webkit-user-select: none;
     touch-action: manipulation;
     font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
 }
 
-.mq-pet.mq-visible {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    pointer-events: auto;
+.mq-pet-avatar {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 90px;
+    height: 130px;
+    cursor: pointer;
+    filter: drop-shadow(0 6px 16px rgba(21, 101, 192, 0.3));
+    animation: mq-float 4s ease-in-out infinite;
+    transition: transform 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.mq-pet-avatar:active {
+    transform: scale(0.92);
+}
+
+.mq-pet-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    pointer-events: none;
+}
+
+@keyframes mq-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
 }
 
 /* ================================================================
@@ -32,9 +52,9 @@
    ================================================================ */
 .mq-pet-bubble {
     position: absolute;
-    bottom: calc(100% - 30px);
-    right: 10px;
-    background: rgba(255, 255, 255, 0.97);
+    bottom: calc(100% - 20px);
+    right: 0;
+    background: rgba(255, 255, 255, 0.98);
     color: #0D47A1;
     padding: 8px 14px;
     border-radius: 14px;
@@ -43,7 +63,7 @@
     font-weight: 600;
     max-width: 220px;
     min-width: 100px;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(21, 101, 192, 0.1);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(21, 101, 192, 0.12);
     opacity: 0;
     transform: translateY(8px) scale(0.95);
     transform-origin: bottom right;
@@ -63,63 +83,12 @@
     content: '';
     position: absolute;
     bottom: -8px;
-    right: 24px;
+    right: 20px;
     width: 0;
     height: 0;
     border-left: 8px solid transparent;
     border-right: 8px solid transparent;
-    border-top: 8px solid rgba(255, 255, 255, 0.97);
-}
-
-/* ================================================================
-   AVATAR
-   ================================================================ */
-.mq-pet-avatar {
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    width: 120px;
-    height: 170px;
-    cursor: pointer;
-    filter: drop-shadow(0 8px 20px rgba(21, 101, 192, 0.25));
-    animation: mq-float 4s ease-in-out infinite;
-    transition: transform 0.3s ease;
-}
-
-.mq-pet-avatar:active {
-    transform: scale(0.96);
-}
-
-.mq-pet-svg {
-    width: 100%;
-    height: 100%;
-    display: block;
-}
-
-/* Animación de flotado */
-@keyframes mq-float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-6px); }
-}
-
-/* Brazos que se mueven */
-.mq-arm-left {
-    transform-origin: 23px 150px;
-    transform: rotate(-10deg);
-}
-.mq-arm-right {
-    transform-origin: 177px 150px;
-    transform: rotate(10deg);
-}
-
-/* Hablando */
-.mq-pet.mq-hablando #mq-mouth {
-    animation: mq-talk 0.15s ease-in-out infinite alternate;
-}
-
-@keyframes mq-talk {
-    from { d: path('M 85 108 Q 100 118 115 108'); }
-    to { d: path('M 85 105 Q 100 125 115 105'); }
+    border-top: 8px solid rgba(255, 255, 255, 0.98);
 }
 
 /* ================================================================
@@ -127,7 +96,7 @@
    ================================================================ */
 .mq-pet-status {
     position: absolute;
-    bottom: -6px;
+    bottom: -8px;
     left: 50%;
     transform: translateX(-50%);
     background: rgba(5, 8, 15, 0.92);
@@ -135,14 +104,14 @@
     -webkit-backdrop-filter: blur(8px);
     padding: 4px 10px;
     border-radius: 12px;
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 600;
     color: #8aa8b8;
     white-space: nowrap;
     display: flex;
     align-items: center;
     gap: 5px;
-    border: 1px solid rgba(212, 175, 55, 0.2);
+    border: 1px solid rgba(212, 175, 55, 0.25);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     pointer-events: none;
 }
@@ -155,25 +124,11 @@
     transition: background 0.3s ease;
 }
 
-/* Estados */
-.mq-pet-status.mq-status-espera .mq-dot {
-    background: #4a6a8a;
-}
-.mq-pet-status.mq-status-escuchando .mq-dot {
-    background: #00E5FF;
-    animation: mq-pulse 1s ease-in-out infinite;
-}
-.mq-pet-status.mq-status-pensando .mq-dot {
-    background: #FFD700;
-    animation: mq-pulse 0.8s ease-in-out infinite;
-}
-.mq-pet-status.mq-status-hablando .mq-dot {
-    background: #2ECC71;
-    animation: mq-pulse 0.6s ease-in-out infinite;
-}
-.mq-pet-status.mq-status-error .mq-dot {
-    background: #FF3366;
-}
+.mq-pet-status.mq-status-espera .mq-dot { background: #4a6a8a; }
+.mq-pet-status.mq-status-escuchando .mq-dot { background: #00E5FF; animation: mq-pulse 1s ease-in-out infinite; }
+.mq-pet-status.mq-status-pensando .mq-dot { background: #FFD700; animation: mq-pulse 0.8s ease-in-out infinite; }
+.mq-pet-status.mq-status-hablando .mq-dot { background: #2ECC71; animation: mq-pulse 0.6s ease-in-out infinite; }
+.mq-pet-status.mq-status-error .mq-dot { background: #FF3366; animation: mq-pulse 0.4s ease-in-out infinite; }
 
 @keyframes mq-pulse {
     0%, 100% { transform: scale(1); opacity: 1; }
@@ -181,18 +136,57 @@
 }
 
 /* ================================================================
+   ESTADOS DEL AVATAR
+   ================================================================ */
+.mq-pet[data-estado="escuchando"] .mq-pet-avatar {
+    animation: mq-listening 1s ease-in-out infinite;
+}
+
+.mq-pet[data-estado="hablando"] .mq-pet-avatar {
+    animation: mq-talking 0.4s ease-in-out infinite alternate;
+}
+
+@keyframes mq-listening {
+    0%, 100% { filter: drop-shadow(0 6px 16px rgba(0, 229, 255, 0.3)); }
+    50% { filter: drop-shadow(0 6px 24px rgba(0, 229, 255, 0.6)); }
+}
+
+@keyframes mq-talking {
+    from { transform: translateY(0) rotate(-2deg); }
+    to { transform: translateY(-3px) rotate(2deg); }
+}
+
+/* ================================================================
+   OCULTO (si el usuario lo desactiva)
+   ================================================================ */
+.mq-pet.mq-hidden {
+    display: none;
+}
+
+/* ================================================================
+   TEMA DÍA
+   ================================================================ */
+html.tema-dia .mq-pet-bubble,
+html[data-tema="dia"] .mq-pet-bubble {
+    background: rgba(255, 255, 255, 0.99);
+    color: #0D47A1;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(21, 101, 192, 0.15);
+}
+
+html.tema-dia .mq-pet-status,
+html[data-tema="dia"] .mq-pet-status {
+    background: rgba(255, 255, 255, 0.96);
+    color: #4a5568;
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+/* ================================================================
    RESPONSIVE
    ================================================================ */
 @media (max-width: 520px) {
-    .mq-pet {
-        width: 90px;
-        height: 130px;
-        bottom: 14px;
-        right: 14px;
-    }
-    .mq-pet-avatar {
-        width: 90px;
-        height: 130px;
+    .mq-pet, .mq-pet-avatar {
+        width: 80px;
+        height: 115px;
     }
     .mq-pet-bubble {
         font-size: 11px;
@@ -202,41 +196,5 @@
     .mq-pet-status {
         font-size: 9px;
         padding: 3px 8px;
-    }
-}
-
-/* ================================================================
-   TEMA DÍA
-   ================================================================ */
-html.tema-dia .mq-pet-bubble,
-html[data-tema="dia"] .mq-pet-bubble {
-    background: rgba(255, 255, 255, 0.98);
-    color: #0D47A1;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(21, 101, 192, 0.15);
-}
-
-html.tema-dia .mq-pet-bubble::after,
-html[data-tema="dia"] .mq-pet-bubble::after {
-    border-top-color: rgba(255, 255, 255, 0.98);
-}
-
-html.tema-dia .mq-pet-status,
-html[data-tema="dia"] .mq-pet-status {
-    background: rgba(255, 255, 255, 0.96);
-    color: #4a5568;
-    border-color: rgba(0, 0, 0, 0.1);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-/* ================================================================
-   ACCESIBILIDAD
-   ================================================================ */
-@media (prefers-reduced-motion: reduce) {
-    .mq-pet-avatar,
-    .mq-pet,
-    .mq-pet-bubble,
-    .mq-pet-status .mq-dot {
-        animation: none !important;
-        transition: opacity 0.2s ease !important;
     }
 }
