@@ -1,9 +1,11 @@
 <!doctype html>
-<html lang="es">
+<html lang="es-MX">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#05080f">
+<meta name="description" content="Mensajería cifrada, canales, grupos y llamadas en Sariel's Web3.">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <title>◈ Mensajes · Sariel's</title>
 
 <!-- Apariencia global: aplica tema/color/fuente ANTES de pintar (evita flash) -->
@@ -13,19 +15,30 @@
 <link rel="stylesheet" href="/features/mensajes/css/mensajes.css">
 <link rel="stylesheet" href="/features/mensajes/css/mensajes-canales.css">
 
-<!-- SDKs externos -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/livekit-client@2.5.7/dist/livekit-client.umd.min.js"></script>
+<!-- Preconexión CDN -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+
+<!-- SDK Supabase -->
+<!-- TODO: SRI -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" defer crossorigin="anonymous"></script>
+
+<!-- SDK LiveKit -->
+<!-- TODO: SRI -->
+<script src="https://cdn.jsdelivr.net/npm/livekit-client@2.5.7/dist/livekit-client.umd.min.js" defer crossorigin="anonymous"></script>
 </head>
 <body>
 
+<noscript>
+    <p>Esta aplicación requiere JavaScript para funcionar. Actívalo para continuar.</p>
+</noscript>
+
 <div class="app">
 <header class="header">
-    <a class="logo" href="/"><b>◈</b><span>Sariel's</span><em class="badge">WEB3</em></a>
+    <a class="logo" href="/" aria-label="Ir al inicio"><b>◈</b><span>Sariel's</span><em class="badge">WEB3</em></a>
     <div class="header-right">
-        <div class="network"><i></i>Polygon</div>
-        <div class="header-avatar" id="headerAvatar" title="Mi perfil">◈</div>
-        <input type="file" id="avatarInput" hidden accept="image/*">
+        <div class="network"><i aria-hidden="true"></i>Polygon</div>
+        <div class="header-avatar" id="headerAvatar" title="Mi perfil" role="button" tabindex="0" aria-label="Abrir mi perfil">◈</div>
+        <input type="file" id="avatarInput" hidden accept="image/*" autocomplete="off">
     </div>
 </header>
 
@@ -131,28 +144,21 @@
             <div class="chatname" id="chatName">Selecciona una conversación</div>
             <div class="status" id="chatStatus">◈ En espera</div>
         </div>
-        <div class="actions" id="chatActions" style="display:none;">
+        <div class="actions hidden" id="chatActions">
             <button class="iconbtn" id="deleteChat" title="Eliminar">×</button>
             <button class="iconbtn" id="videoCall" title="Videollamada">▸</button>
             <button class="iconbtn" id="searchChat" title="Buscar">◌</button>
         </div>
     </header>
     <div class="messages" id="messages">
-        <div class="empty" id="emptyState">
-            <strong>◈</strong>
-            <p>Selecciona una conversación</p>
-            <small>Elige un chat, canal o grupo para empezar</small>
-        </div>
-        <div id="scrollAnchor"></div>
-        <button class="scroll-down-btn" id="scrollDownBtn" title="Ir al final">↓<span class="badge-new" id="newMsgBadge" style="display:none;">1</span></button>
     </div>
-    <form class="composer" id="composer" style="display:none;">
+    <form class="composer hidden" id="composer">
         <button type="button" class="btn" id="attach" title="Adjuntar">+</button>
         <button type="button" class="btn" id="audio" title="Grabar audio">◉</button>
-        <button type="button" class="btn" id="voiceBot" title="Hablar con Marquinhos" style="display:none;">✦</button>
+        <button type="button" class="btn hidden" id="voiceBot" title="Hablar con Marquinhos">✦</button>
         <input id="messageInput" autocomplete="off" placeholder="Escribe un mensaje...">
         <button class="btn send" type="submit">Enviar</button>
-        <input id="fileInput" type="file" hidden multiple accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt">
+        <input id="fileInput" type="file" hidden multiple accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt" autocomplete="off">
     </form>
 </section>
 </main>
@@ -160,46 +166,46 @@
 </div>
 
 <!-- MODAL: NUEVA CONVERSACIÓN -->
-<div class="modal" id="newModal">
+<div class="modal" id="newModal" role="dialog" aria-modal="true" aria-labelledby="newModalTitle">
     <div class="modalbox">
         <button class="iconbtn" id="closeModal" style="float:right">×</button>
-        <h2>◈ Nueva conversación</h2>
-        <input class="search" id="userSearch" placeholder="Buscar por nombre o usuario...">
+        <h2 id="newModalTitle">◈ Nueva conversación</h2>
+        <input class="search" id="userSearch" placeholder="Buscar por nombre o usuario..." autocomplete="off">
         <div id="userResults" style="margin-top:10px"></div>
     </div>
 </div>
 
 <!-- MODAL: CREAR CANAL -->
-<div class="modal" id="modalCrearCanal">
+<div class="modal" id="modalCrearCanal" role="dialog" aria-modal="true" aria-labelledby="modalCrearCanalTitle">
     <div class="modalbox">
         <button class="iconbtn" onclick="cerrarModalCrearCanal()" style="float:right">×</button>
-        <h2>✦ Nuevo Canal</h2>
+        <h2 id="modalCrearCanalTitle">✦ Nuevo Canal</h2>
         <p style="color:var(--muted);font-size:.75rem;margin-bottom:14px;">
             Un canal es público. Solo tú (el creador) puedes publicar.
         </p>
         <div class="form-group">
-            <label>Nombre del canal *</label>
-            <input type="text" id="canalNombre" placeholder="Ej: Noticias Puebla" required maxlength="80">
+            <label for="canalNombre">Nombre del canal *</label>
+            <input type="text" id="canalNombre" placeholder="Ej: Noticias Puebla" required maxlength="80" autocomplete="off">
         </div>
         <div class="form-group">
-            <label>Descripción</label>
+            <label for="canalDescripcion">Descripción</label>
             <textarea id="canalDescripcion" rows="2" placeholder="De qué trata tu canal..." maxlength="300"></textarea>
         </div>
         <div class="form-group">
-            <label>Estado / Región</label>
-            <input type="text" id="canalEstado" placeholder="Ej: Puebla">
+            <label for="canalEstado">Estado / Región</label>
+            <input type="text" id="canalEstado" placeholder="Ej: Puebla" autocomplete="off">
         </div>
         <div class="form-group">
-            <label>Municipio *</label>
-            <input type="text" id="canalMunicipio" placeholder="Ej: Puebla" required>
+            <label for="canalMunicipio">Municipio *</label>
+            <input type="text" id="canalMunicipio" placeholder="Ej: Puebla" required autocomplete="off">
         </div>
         <div class="form-group">
-            <label>Ciudad / Localidad</label>
-            <input type="text" id="canalCiudad" placeholder="Ej: Centro">
+            <label for="canalCiudad">Ciudad / Localidad</label>
+            <input type="text" id="canalCiudad" placeholder="Ej: Centro" autocomplete="off">
         </div>
         <div class="form-group">
-            <label>País</label>
-            <input type="text" id="canalPais" value="México">
+            <label for="canalPais">País</label>
+            <input type="text" id="canalPais" value="México" autocomplete="off">
         </div>
         <button class="btn-gold-primary" onclick="crearCanal()" id="btnCrearCanal">
             ✦ Crear Canal
@@ -208,36 +214,36 @@
 </div>
 
 <!-- MODAL: CREAR GRUPO -->
-<div class="modal" id="modalCrearGrupo">
+<div class="modal" id="modalCrearGrupo" role="dialog" aria-modal="true" aria-labelledby="modalCrearGrupoTitle">
     <div class="modalbox">
         <button class="iconbtn" onclick="cerrarModalCrearGrupo()" style="float:right">×</button>
-        <h2>◆ Nuevo Grupo</h2>
+        <h2 id="modalCrearGrupoTitle">◆ Nuevo Grupo</h2>
         <p style="color:var(--muted);font-size:.75rem;margin-bottom:14px;">
             Un grupo es privado. Todos los miembros pueden publicar.
         </p>
         <div class="form-group">
-            <label>Nombre del grupo *</label>
-            <input type="text" id="grupoNombre" placeholder="Ej: Amigos del Barrio" required maxlength="80">
+            <label for="grupoNombre">Nombre del grupo *</label>
+            <input type="text" id="grupoNombre" placeholder="Ej: Amigos del Barrio" required maxlength="80" autocomplete="off">
         </div>
         <div class="form-group">
-            <label>Descripción</label>
+            <label for="grupoDescripcion">Descripción</label>
             <textarea id="grupoDescripcion" rows="2" placeholder="De qué trata tu grupo..." maxlength="300"></textarea>
         </div>
         <div class="form-group">
-            <label>Estado / Región</label>
-            <input type="text" id="grupoEstado" placeholder="Ej: Puebla">
+            <label for="grupoEstado">Estado / Región</label>
+            <input type="text" id="grupoEstado" placeholder="Ej: Puebla" autocomplete="off">
         </div>
         <div class="form-group">
-            <label>Municipio *</label>
-            <input type="text" id="grupoMunicipio" placeholder="Ej: Puebla" required>
+            <label for="grupoMunicipio">Municipio *</label>
+            <input type="text" id="grupoMunicipio" placeholder="Ej: Puebla" required autocomplete="off">
         </div>
         <div class="form-group">
-            <label>Ciudad / Localidad</label>
-            <input type="text" id="grupoCiudad" placeholder="Ej: Centro">
+            <label for="grupoCiudad">Ciudad / Localidad</label>
+            <input type="text" id="grupoCiudad" placeholder="Ej: Centro" autocomplete="off">
         </div>
         <div class="form-group">
-            <label>País</label>
-            <input type="text" id="grupoPais" value="México">
+            <label for="grupoPais">País</label>
+            <input type="text" id="grupoPais" value="México" autocomplete="off">
         </div>
         <button class="btn-gold-primary" onclick="crearGrupo()" id="btnCrearGrupo">
             ◆ Crear Grupo
@@ -246,10 +252,10 @@
 </div>
 
 <!-- MODAL: PERFIL -->
-<div class="modal" id="profileModal">
+<div class="modal" id="profileModal" role="dialog" aria-modal="true" aria-labelledby="profileModalName">
     <div class="profile-modal-box">
         <div class="profile-modal-avatar" id="profileModalAvatar">◈</div>
-        <div class="profile-modal-name" id="profileModalName">Mi Perfil</div>
+        <h2 class="profile-modal-name" id="profileModalName">Mi Perfil</h2>
         <div class="profile-modal-handle" id="profileModalHandle">@usuario</div>
         <div class="profile-modal-actions">
             <button class="profile-modal-btn" id="btnCambiarFoto">
@@ -262,10 +268,10 @@
 </div>
 
 <!-- MODAL: VISTAS DE ESTADO -->
-<div class="modal" id="vistasModal">
+<div class="modal" id="vistasModal" role="dialog" aria-modal="true" aria-labelledby="vistasModalTitle">
     <div class="modalbox" style="max-width:420px;">
         <button class="iconbtn" id="closeVistasModal" style="float:right">×</button>
-        <h2 style="display:flex;align-items:center;gap:8px;">◉ Vistas <span id="vistasModalCount" style="color:var(--muted);font-size:.85rem;font-weight:400;"></span></h2>
+        <h2 id="vistasModalTitle" style="display:flex;align-items:center;gap:8px;">◉ Vistas <span id="vistasModalCount" style="color:var(--muted);font-size:.85rem;font-weight:400;"></span></h2>
         <div id="vistasList" style="margin-top:10px;">
             <div style="text-align:center;padding:20px;color:var(--muted);font-size:.8rem;">Cargando...</div>
         </div>
@@ -273,15 +279,17 @@
 </div>
 
 <!-- VISOR: FOTO AMPLIADA -->
-<div class="photo-viewer" id="photoViewer">
+<div class="photo-viewer" id="photoViewer" role="dialog" aria-modal="true" aria-labelledby="photoViewerTitle">
+    <h2 id="photoViewerTitle" hidden>Foto ampliada</h2>
     <button class="pv-close" id="pvClose">×</button>
-    <img id="pvImage" src="" alt="Foto">
+    <img id="pvImage" alt="Foto">
     <div class="pv-name" id="pvName"></div>
     <div class="pv-handle" id="pvHandle"></div>
 </div>
 
 <!-- VISOR: ESTADO -->
-<div class="estado-viewer" id="estadoViewer">
+<div class="estado-viewer" id="estadoViewer" role="dialog" aria-modal="true" aria-labelledby="estadoViewerTitle">
+    <h2 id="estadoViewerTitle" hidden>Visor de estados</h2>
     <div id="estadoProgress"></div>
 
     <div class="estado-viewer-header">
@@ -314,21 +322,21 @@
         </button>
     </div>
 
-    <div class="estado-viewer-vistas hidden" id="evVistas" style="display:none !important;">
+    <div class="estado-viewer-vistas hidden" id="evVistas">
         <div class="estado-viewer-vistas-pill">◉ <span id="evVistasCount">0</span> vistas</div>
     </div>
 </div>
 
 <!-- MODAL: SUBIR ESTADO -->
-<div class="modal" id="estadoUploadModal">
+<div class="modal" id="estadoUploadModal" role="dialog" aria-modal="true" aria-labelledby="estadoUploadTitle">
     <div class="modalbox" style="text-align:center;">
         <button class="iconbtn" id="closeEstadoModal" style="float:right">×</button>
-        <h2>◈ Nuevo Estado</h2>
+        <h2 id="estadoUploadTitle">◈ Nuevo Estado</h2>
         <p style="color:var(--muted);font-size:.8rem;margin-bottom:14px;">Se mostrará 24 horas</p>
         <div id="estadoPreviewWrap" style="margin:16px 0;display:none;">
-            <img id="estadoPreviewImg" style="max-width:100%;max-height:240px;border-radius:12px;border:2px solid var(--gold);">
+            <img id="estadoPreviewImg" style="max-width:100%;max-height:240px;border-radius:12px;border:2px solid var(--gold);" alt="Vista previa del estado">
         </div>
-        <input type="file" id="estadoFileInput" accept="image/*" style="display:none;">
+        <input type="file" id="estadoFileInput" accept="image/*" hidden autocomplete="off">
         <button type="button" class="btn" id="btnSeleccionarEstado" onclick="seleccionarArchivoEstado()" style="width:100%;margin-bottom:10px;">◉ Seleccionar imagen</button>
         <textarea id="estadoCaption" placeholder="Escribe un mensaje (opcional)" maxlength="120" style="width:100%;padding:10px 14px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--text);outline:0;font-family:inherit;resize:none;min-height:60px;margin-bottom:12px;"></textarea>
         <button type="button" class="btn send" id="btnPublicarEstado" onclick="publicarEstado()" style="width:100%;" disabled>Publicar estado</button>
@@ -336,7 +344,8 @@
 </div>
 
 <!-- LLAMADA: VIDEO -->
-<div class="call" id="callOverlay">
+<div class="call" id="callOverlay" role="dialog" aria-modal="true" aria-labelledby="callOverlayTitle">
+    <h2 id="callOverlayTitle" hidden>Llamada de video</h2>
     <div class="videos">
         <video id="remoteVideo" autoplay playsinline></video>
         <video id="localVideo" class="local" autoplay playsinline muted></video>
@@ -351,7 +360,7 @@
 </div>
 
 <!-- LLAMADA: ENTRANTE -->
-<div class="call" id="incomingOverlay">
+<div class="call" id="incomingOverlay" role="alertdialog" aria-modal="true" aria-labelledby="incomingName">
     <div class="avatar" style="width:80px;height:80px;font-size:2rem" id="incomingAvatar">◈</div>
     <h2 id="incomingName">Usuario</h2>
     <div class="callinfo">◉ Llamada entrante...</div>
@@ -364,18 +373,43 @@
 <div class="toast" id="toast"></div>
 
 <!-- SCRIPTS DEL MÓDULO (orden estricto) -->
+<!-- depende de: idioma global -->
 <script src="/features/shared/js/idiomas.js"></script>
+
+<!-- depende de: mensajes-config.js -->
 <script src="/features/mensajes/js/mensajes-config.js"></script>
+
+<!-- depende de: mensajes-config.js -->
 <script src="/features/mensajes/js/mensajes-utils.js"></script>
+
+<!-- depende de: mensajes-config.js, mensajes-utils.js -->
 <script src="/features/mensajes/js/mensajes-auth.js"></script>
+
+<!-- depende de: mensajes-config.js, mensajes-utils.js, mensajes-auth.js -->
 <script src="/features/mensajes/js/mensajes-conversaciones.js"></script>
+
+<!-- depende de: mensajes-config.js, mensajes-utils.js, mensajes-auth.js, mensajes-conversaciones.js -->
 <script src="/features/mensajes/js/mensajes-chat.js"></script>
+
+<!-- depende de: mensajes-config.js, mensajes-utils.js, mensajes-chat.js -->
 <script src="/features/mensajes/js/mensajes-archivos.js"></script>
+
+<!-- depende de: mensajes-config.js, mensajes-utils.js, mensajes-chat.js -->
 <script src="/features/mensajes/js/mensajes-bot.js"></script>
+
+<!-- depende de: mensajes-config.js, mensajes-utils.js, mensajes-chat.js -->
 <script src="/features/mensajes/js/mensajes-estados.js"></script>
+
+<!-- depende de: mensajes-config.js, mensajes-utils.js, mensajes-auth.js -->
 <script src="/features/mensajes/js/mensajes-canales.js"></script>
+
+<!-- depende de: mensajes-config.js, mensajes-utils.js, mensajes-auth.js, LiveKit -->
 <script src="/features/mensajes/js/mensajes-llamadas.js"></script>
+
+<!-- depende de: mensajes-config.js, mensajes-utils.js, mensajes-conversaciones.js, mensajes-canales.js -->
 <script src="/features/mensajes/js/mensajes-modales.js"></script>
+
+<!-- depende de: todos los módulos anteriores -->
 <script src="/features/mensajes/js/mensajes-init.js"></script>
 
 </body>
