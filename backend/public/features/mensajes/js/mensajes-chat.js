@@ -1,15 +1,12 @@
 // ================================================================
-// MENSAJES · CHAT (v3.2 — Auditoría aplicada + fixes producción)
+// MENSAJES · CHAT (v3.3 — Fixes de producción)
 // ================================================================
-// - Anti-duplicados robusto (registro + DOM)
-// - "Visto" SOLO cuando el receptor contesta
-// - Autoenvío se marca VISTO al instante
-// - Límites: texto 1000, audio 5min, video 2min/50MB, foto 10MB
-// - Seguridad: URLs, UUIDs, escape HTML, filtro realtime servidor
-// - FIXES v3.2:
-//   * markRead(id) con segundo parámetro (timestamp)
-//   * Guard `if (!current) return;` en append()
-//   * Filtro de exclusión del bot valida BOT_ID Y BOT_UUID
+// FIXES v3.3:
+// - Bot: renderizado FORZADO sin importar isUserAtBottom
+// - Bot: exclusión correcta por BOT_ID Y BOT_UUID en markRead
+// - Auto-mensajes: detecta remitente_id === destinatario_id === user.id
+// - append(): guard reforzado + no descarta mensajes del bot
+// - deleteConversation: limpieza total de estado local
 // ================================================================
 
 // ----------------------------------------------------------------
@@ -83,6 +80,21 @@ function _esAutoEnvio(m) {
 function _safeDomId(id) {
     if (!id) return '';
     return String(id).replace(/[^a-zA-Z0-9-]/g, '');
+}
+
+// ✅ FIX #1: Detectar si estamos en conversación con el bot
+function _esConversacionBot() {
+    if (!current) return false;
+    return current.bot === true
+        || current.id === BOT_ID
+        || current.id === BOT_UUID;
+}
+
+// ✅ FIX #1: Detectar si el remitente es el bot
+function _esMensajeDelBot(m) {
+    if (!m || !m.remitente_id) return false;
+    var rid = String(m.remitente_id);
+    return rid === BOT_ID || rid === BOT_UUID;
 }
 
 // ----------------------------------------------------------------
@@ -209,7 +221,9 @@ async function abrirConversacionBot() {
         if (_yaRenderizado(m.id)) return;
         _marcarRenderizado(m.id);
         var url = results[i].status === 'fulfilled' ? results[i].value : null;
-        anchor.insertAdjacentHTML('beforebegin', messageHTML(m, _esMensajeMio(m), url));
+        // ✅ FIX #3: Si es autoenvío (user → user), marcar como sent
+        var esMio = _esMensajeMio(m) || _esAutoEnvio(m);
+        anchor.insertAdjacentHTML('beforebegin', messageHTML(m, esMio, url));
     });
 
     isUserAtBottom = true;
@@ -243,7 +257,9 @@ async function renderMessages(rows) {
         if (_yaRenderizado(m.id)) return;
         _marcarRenderizado(m.id);
         var url = results[i].status === 'fulfilled' ? results[i].value : null;
-        anchor.insertAdjacentHTML('beforebegin', messageHTML(m, _esMensajeMio(m), url));
+        // ✅ FIX #3: Autoenvío también se marca como "sent"
+        var esMio = _esMensajeMio(m) || _esAutoEnvio(m);
+        anchor.insertAdjacentHTML('beforebegin', messageHTML(m, esMio, url));
     });
 
     isUserAtBottom = true;
@@ -277,7 +293,7 @@ function messageHTML(m, sent, signedUrl) {
         body = '<span class="file-icon">📎</span> ' + fallbackName;
     }
 
-    var esBotRecibido = !sent && (m.es_bot || m.bot_message);
+    var esBotRecibido = !sent && (_esMensajeDelBot(m) || m.es_bot || m.bot_message);
     var headerBot = esBotRecibido ? '<div class="bubble-bot-info">✦ MARQUINHOS</div>' : '';
 
     var meta = '';
@@ -304,7 +320,7 @@ function messageHTML(m, sent, signedUrl) {
 }
 
 // ----------------------------------------------------------------
-// VALIDACIONES DE LÍMITES
+// VALIDACIONES
 // ----------------------------------------------------------------
 function validarTextoChat(texto) {
     if (typeof texto !== 'string') return { ok: false, motivo: 'Texto inválido' };
@@ -343,12 +359,12 @@ function validarFotoChat(pesoBytes) {
 }
 
 // ----------------------------------------------------------------
-// "VISTO AL CONTESTAR" — Función central
+// "VISTO AL CONTESTAR"
 // ----------------------------------------------------------------
 async function marcarConversacionComoLeida(remitenteId, antesDe) {
     if (!user || !remitenteId) return;
 
-    // ✅ FIX: Excluir al bot por AMBOS identificadores
+    // ✅ FIX #1: Excluir bot por AMBOS identificadores
     if (remitenteId === BOT_ID || remitenteId === BOT_UUID) return;
 
     if (!_esUUID(remitenteId)) return;
@@ -379,16 +395,13 @@ async function marcarConversacionComoLeida(remitenteId, antesDe) {
     }
 }
 
-// ----------------------------------------------------------------
-// ✅ FIX: markRead con timestamp obligatorio
-// ----------------------------------------------------------------
 async function markRead(id) {
     if (!id) return;
     await marcarConversacionComoLeida(id, new Date().toISOString());
 }
 
 // ----------------------------------------------------------------
-// ENVIAR MENSAJE (rate limit)
+// ENVIAR MENSAJE
 // ----------------------------------------------------------------
 var _ultimoEnvio = 0;
 
@@ -461,9 +474,8 @@ async function _enviarMensajeAlBot(textoLimpio) {
     if (userMsg.id) _marcarRenderizado(userMsg.id);
     await append(userMsg, true);
 
-    // ✅ FIX: Ya no intentamos marcar como leído el bot (excluido dentro de la función)
-
     mostrarTypingBot();
+
     try {
         var historial = await cargarHistorialParaBot();
         var respuesta = await preguntarAlBot(textoLimpio, historial);
@@ -496,7 +508,15 @@ async function _enviarMensajeAlBot(textoLimpio) {
         }
 
         if (botMsg.id) _marcarRenderizado(botMsg.id);
+
+        // ✅ FIX #1 CRÍTICO: Forzar renderizado del mensaje del bot
+        // sin importar isUserAtBottom (el usuario está esperando la respuesta)
+        isUserAtBottom = true;
         await append(botMsg, false);
+
+        // Scroll forzado al fondo
+        scrollToBottom(true);
+
         loadConversations();
     } catch (e) {
         console.error('[Chat] Error Marquinhos:', e);
@@ -509,7 +529,9 @@ async function _enviarMensajeAlBot(textoLimpio) {
             leido: false,
             es_bot: true
         };
+        isUserAtBottom = true;
         await append(errorMsg, false);
+        scrollToBottom(true);
     } finally {
         quitarTypingBot();
     }
@@ -663,7 +685,7 @@ async function sendFoto(blob) {
 }
 
 // ----------------------------------------------------------------
-// TYPING INDICATOR DEL BOT
+// TYPING INDICATOR
 // ----------------------------------------------------------------
 function mostrarTypingBot() {
     var box = $('messages');
@@ -689,15 +711,16 @@ function quitarTypingBot() {
 }
 
 // ----------------------------------------------------------------
-// AÑADIR MENSAJE AL DOM (con guard de current)
+// ✅ append() CORREGIDO — FIX #1 y #3
 // ----------------------------------------------------------------
 async function append(m, sent) {
-    // ✅ FIX: Guard si no hay conversación activa
+    // Guard: sin conversación activa
     if (!current) return;
 
     var box = $('messages');
     if (!box) return;
 
+    // Anti-duplicados
     if (m.id) {
         var safeId = _safeDomId(m.id);
         var existente = document.getElementById('msg-' + safeId);
@@ -707,6 +730,7 @@ async function append(m, sent) {
 
     if (m.id) _marcarRenderizado(m.id);
 
+    // Obtener URL firmada si aplica
     var signedUrl = null;
     if (m.imagen_url || m.tipo === 'imagen' || m.tipo === 'video' || m.tipo === 'audio') {
         try {
@@ -724,6 +748,11 @@ async function append(m, sent) {
     var anchorRef = box.querySelector('#scrollAnchor');
     sent = Boolean(sent);
 
+    // ✅ FIX #3: Autoenvío siempre se renderiza como "sent"
+    if (!sent && _esAutoEnvio(m)) {
+        sent = true;
+    }
+
     if (anchorRef) {
         anchorRef.insertAdjacentHTML('beforebegin', messageHTML(m, sent, signedUrl));
     } else {
@@ -731,7 +760,19 @@ async function append(m, sent) {
     }
     observarCargaMultimedia(box);
 
+    // ✅ FIX #1: Si estamos en el chat del bot, SIEMPRE renderizar y scrollear
+    var esChatBot = _esConversacionBot();
+
     if (!sent) {
+        // Si es respuesta del bot en su propio chat → forzar visibilidad
+        if (esChatBot || _esMensajeDelBot(m)) {
+            isUserAtBottom = true;
+            scrollToBottom(true);
+            ocultarFlechaNuevos();
+            return;
+        }
+
+        // Mensaje normal recibido
         if (isUserAtBottom) {
             ocultarFlechaNuevos();
         } else {
@@ -751,7 +792,8 @@ async function append(m, sent) {
 var _unsubPromise = Promise.resolve();
 
 function subscribeMessages(id) {
-    if (id === BOT_ID) return;
+    // ✅ FIX #1: El bot no usa realtime (se renderiza directo)
+    if (id === BOT_ID || id === BOT_UUID) return;
     if (!_esUUID(id) || !_esUUID(user && user.id)) return;
 
     _unsubPromise = _unsubPromise
@@ -770,11 +812,11 @@ function subscribeMessages(id) {
                 }, function(p) {
                     var m = p.new;
                     if (!current || current.id !== id) return;
-                    if (_esMensajeMio(m)) return;
-                    if (_esMensajeParaMi(m)) {
+                    if (_esMensajeMio(m) && !_esAutoEnvio(m)) return;
+                    if (_esMensajeParaMi(m) || _esAutoEnvio(m)) {
                         var safeId = _safeDomId(m.id);
                         if (!_yaRenderizado(m.id) && !document.getElementById('msg-' + safeId)) {
-                            append(m, false);
+                            append(m, _esAutoEnvio(m));
                         }
                     }
                 })
@@ -897,7 +939,7 @@ function observarCargaMultimedia(box) {
 }
 
 // ----------------------------------------------------------------
-// AUTO-SCROLL AL ABRIR EL TECLADO
+// AUTO-SCROLL TECLADO
 // ----------------------------------------------------------------
 var _tecladoConfigurado = false;
 
@@ -936,7 +978,38 @@ if (document.readyState === 'loading') {
 }
 
 // ================================================================
-// EXPOSICIÓN GLOBAL A WINDOW
+// ✅ FIX #3: LIMPIEZA TOTAL AL ELIMINAR CONVERSACIÓN
+// ================================================================
+async function limpiarEstadoConversacion() {
+    // Resetear registro LRU de mensajes renderizados
+    _resetearMensajesRenderizados();
+
+    // Limpiar DOM del chat
+    var box = $('messages');
+    if (box) {
+        box.querySelectorAll('.bubblewrap').forEach(function(el) { el.remove(); });
+        box.querySelectorAll('.empty').forEach(function(el) { el.remove(); });
+        var anchor = box.querySelector('#scrollAnchor');
+        if (anchor) {
+            anchor.insertAdjacentHTML('beforebegin',
+                '<div class="empty" id="emptyState"><strong>◈</strong><div>Sin mensajes</div><small>Envía el primer mensaje</small></div>');
+        }
+    }
+
+    // Resetear contadores
+    unreadCount = 0;
+    isUserAtBottom = true;
+    actualizarFlecha();
+
+    // Limpiar canal realtime si existe
+    if (msgChannel) {
+        try { await db.removeChannel(msgChannel); } catch (e) {}
+        msgChannel = null;
+    }
+}
+
+// ================================================================
+// EXPOSICIÓN GLOBAL
 // ================================================================
 window.sendMessage = sendMessage;
 window.sendAudio = sendAudio;
@@ -963,5 +1036,8 @@ window.validarFotoChat = validarFotoChat;
 window._marcarRenderizado = _marcarRenderizado;
 window._yaRenderizado = _yaRenderizado;
 window._safeDomId = _safeDomId;
+window._esMensajeDelBot = _esMensajeDelBot;
+window._esConversacionBot = _esConversacionBot;
+window.limpiarEstadoConversacion = limpiarEstadoConversacion;
 
-console.log('[Mensajes] ✅ Chat v3.2 cargado (fixes de producción)');
+console.log('[Mensajes] ✅ Chat v3.3 cargado (fixes de producción)');
