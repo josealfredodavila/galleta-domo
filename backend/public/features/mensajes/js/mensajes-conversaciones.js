@@ -1,11 +1,17 @@
-
 // ================================================================
-// MENSAJES · CONVERSACIONES (v2.2 — Renderizado garantizado)
+// MENSAJES · CONVERSACIONES (v2.3 — Integración con ecosistema)
 // ================================================================
 // Lista de conversaciones, filtro, apertura, cierre.
-// Compatible con mensajes-chat.js v3.4
+// Compatible con mensajes-chat.js v3.5 y mensajes-bot.js v2.5
 //
-// FIXES v2.2:
+// FIXES v2.3 (sobre v2.2):
+// - ✅ Integración con namespace window.Chat
+// - ✅ Eventos `marquinhos:chatAbierto` / `marquinhos:chatCerrado`
+// - ✅ Llamada a abrirConversacionBot vía window.Chat con fallback
+// - ✅ Exposición dual: window.* + window.Chat.*
+// - ✅ Guard si abrirConversacionBot no está disponible aún
+//
+// FIXES v2.2 (heredados):
 // - loadConversations: consultas por lotes, sin consultas por contacto
 // - Perfiles y últimos mensajes agrupados mediante mapas
 // - openConversation: protección contra aperturas simultáneas
@@ -14,6 +20,14 @@
 // - Logs de diagnóstico
 // ================================================================
 
+// ================================================================
+// NAMESPACE
+// ================================================================
+window.Chat = window.Chat || {};
+
+// ================================================================
+// TOKEN DE APERTURA (anti race conditions)
+// ================================================================
 var _openConvToken = 0;
 
 // ================================================================
@@ -32,6 +46,25 @@ function _normalizarBotIdConv(id) {
         return BOT_UUID;
     }
     return s;
+}
+
+// ================================================================
+// ✅ v2.3: RESOLVER abrirConversacionBot con fallback
+// ================================================================
+function _resolverAbrirConversacionBot() {
+    // Preferencia 1: namespace Chat
+    if (window.Chat && typeof window.Chat.abrirConversacionBot === 'function') {
+        return window.Chat.abrirConversacionBot;
+    }
+    // Preferencia 2: global directo
+    if (typeof window.abrirConversacionBot === 'function') {
+        return window.abrirConversacionBot;
+    }
+    // Preferencia 3: scope local (por si acaso)
+    if (typeof abrirConversacionBot === 'function') {
+        return abrirConversacionBot;
+    }
+    return null;
 }
 
 // ================================================================
@@ -134,10 +167,7 @@ async function loadConversations() {
 
         // --------------------------------------------------------
         // CONSULTAS EN LOTE
-        // Una consulta de perfiles y dos consultas de mensajes.
         // --------------------------------------------------------
-        var idsStr = idsDeContactos.join(',');
-
         var resultados = await Promise.all([
             db
                 .from('perfiles_publicos')
@@ -168,11 +198,9 @@ async function loadConversations() {
         if (rPerfiles.error) {
             console.error('[Mensajes] Error cargando perfiles en lote:', rPerfiles.error);
         }
-
         if (rEnviados.error) {
             console.error('[Mensajes] Error cargando mensajes enviados:', rEnviados.error);
         }
-
         if (rRecibidos.error) {
             console.error('[Mensajes] Error cargando mensajes recibidos:', rRecibidos.error);
         }
@@ -315,8 +343,7 @@ async function openConversation(id) {
     var idNormalizado = esBot ? BOT_UUID : id;
 
     // ------------------------------------------------------------
-    // PLACEHOLDER INMEDIATO: evita conservar current anterior
-    // mientras se obtiene el perfil.
+    // PLACEHOLDER INMEDIATO
     // ------------------------------------------------------------
     current = {
         id: idNormalizado,
@@ -383,7 +410,6 @@ async function openConversation(id) {
                 toast('ℹ️ Marquinhos es un asistente IA', 'warning');
                 return;
             }
-
             verFotoAmpliada(p.avatar_url, p.nombre, p.handle);
         };
     }
@@ -421,8 +447,7 @@ async function openConversation(id) {
     actualizarFlecha();
 
     // ============================================================
-    // BOT: delegar TODO el renderizado a abrirConversacionBot()
-    // (definida en mensajes-chat.js v3.4)
+    // ✅ v2.3: BOT — emitir evento + delegar renderizado
     // ============================================================
     if (esBot) {
         try {
@@ -447,9 +472,30 @@ async function openConversation(id) {
             badge.style.color = 'var(--success)';
         }
 
-        // Llamar a la versión autoritativa (v3.4)
+        // ✅ v2.3: Emitir evento para mensajes-bot.js v2.5
         try {
-            await abrirConversacionBot();
+            window.dispatchEvent(new CustomEvent('marquinhos:chatAbierto', {
+                detail: {
+                    userId: user.id,
+                    botId: BOT_UUID,
+                    token: miToken
+                }
+            }));
+        } catch (e) {
+            console.warn('[Conv] Error emitiendo marquinhos:chatAbierto:', e);
+        }
+
+        // ✅ v2.3: Resolver abrirConversacionBot con fallback
+        var fnAbrirBot = _resolverAbrirConversacionBot();
+
+        if (typeof fnAbrirBot !== 'function') {
+            console.error('[Conv] ❌ abrirConversacionBot no está disponible');
+            toast('❌ El sistema de chat no está listo. Recarga la página.', 'error');
+            return;
+        }
+
+        try {
+            await fnAbrirBot();
 
             if (miToken !== _openConvToken) return;
 
@@ -484,18 +530,43 @@ async function openConversation(id) {
         return;
     }
 
-    await renderMessages(r.data || []);
+    // ✅ v2.3: Resolver renderMessages con fallback
+    var fnRender = (window.Chat && window.Chat.renderMessages)
+        || window.renderMessages;
+
+    if (typeof fnRender === 'function') {
+        await fnRender(r.data || []);
+    } else {
+        console.warn('[Conv] renderMessages no disponible aún');
+    }
+
     if (miToken !== _openConvToken) return;
 
-    subscribeMessages(idNormalizado);
+    // ✅ v2.3: Resolver subscribeMessages con fallback
+    var fnSub = (window.Chat && window.Chat.subscribeMessages)
+        || window.subscribeMessages;
+
+    if (typeof fnSub === 'function') {
+        fnSub(idNormalizado);
+    }
 }
 
 // ================================================================
 // CERRAR CONVERSACIÓN
 // ================================================================
 async function cerrarConversacion() {
-    // Invalidar cualquier apertura que siga pendiente.
+    // Invalidar cualquier apertura pendiente
     _openConvToken++;
+
+    // ✅ v2.3: Emitir evento de chat cerrado
+    try {
+        window.dispatchEvent(new CustomEvent('marquinhos:chatCerrado', {
+            detail: {
+                userId: user && user.id,
+                previousId: current && current.id
+            }
+        }));
+    } catch (e) {}
 
     current = null;
 
@@ -521,9 +592,12 @@ async function cerrarConversacion() {
     var composer = $('composer');
     if (composer) composer.style.display = 'none';
 
-    // Mostrar empty state
-    if (typeof _mostrarEmptyState === 'function') {
-        _mostrarEmptyState(
+    // ✅ v2.3: Resolver _mostrarEmptyState con fallback
+    var fnEmpty = (window.Chat && window.Chat._mostrarEmptyState)
+        || window._mostrarEmptyState;
+
+    if (typeof fnEmpty === 'function') {
+        fnEmpty(
             'Selecciona una conversación',
             'Elige un chat, canal o grupo para empezar'
         );
@@ -532,10 +606,13 @@ async function cerrarConversacion() {
         if (emptyState) emptyState.style.display = 'block';
     }
 
-    // Limpiar mensajes
-    if (typeof limpiarEstadoConversacion === 'function') {
+    // ✅ v2.3: Resolver limpiarEstadoConversacion con fallback
+    var fnLimpiar = (window.Chat && window.Chat.limpiarEstadoConversacion)
+        || window.limpiarEstadoConversacion;
+
+    if (typeof fnLimpiar === 'function') {
         try {
-            await limpiarEstadoConversacion();
+            await fnLimpiar();
         } catch (e) {}
     } else {
         var box = $('messages');
@@ -710,9 +787,13 @@ async function deleteConversation() {
 
         toast('✅ Conversación eliminada correctamente', 'success');
 
-        if (typeof limpiarEstadoConversacion === 'function') {
+        // ✅ v2.3: Resolver limpiarEstadoConversacion con fallback
+        var fnLimpiar = (window.Chat && window.Chat.limpiarEstadoConversacion)
+            || window.limpiarEstadoConversacion;
+
+        if (typeof fnLimpiar === 'function') {
             try {
-                await limpiarEstadoConversacion();
+                await fnLimpiar();
             } catch (e) {}
         }
 
@@ -721,9 +802,12 @@ async function deleteConversation() {
         isUserAtBottom = true;
         actualizarFlecha();
 
-        // Mostrar empty state
-        if (typeof _mostrarEmptyState === 'function') {
-            _mostrarEmptyState(
+        // ✅ v2.3: Mostrar empty state con fallback
+        var fnEmpty = (window.Chat && window.Chat._mostrarEmptyState)
+            || window._mostrarEmptyState;
+
+        if (typeof fnEmpty === 'function') {
+            fnEmpty(
                 'Conversación eliminada',
                 'Envía un mensaje para empezar de nuevo'
             );
@@ -738,7 +822,24 @@ async function deleteConversation() {
 }
 
 // ================================================================
-// EXPOSICIÓN GLOBAL
+// ✅ v2.3: EXPOSICIÓN GLOBAL — Namespace Chat
+// ================================================================
+window.Chat = window.Chat || {};
+
+window.Chat.loadConversations = loadConversations;
+window.Chat.aplicarFiltroConversaciones = aplicarFiltroConversaciones;
+window.Chat.openConversation = openConversation;
+window.Chat.cerrarConversacion = cerrarConversacion;
+window.Chat.newConversation = newConversation;
+window.Chat.cerrarModalNuevaConversacion = cerrarModalNuevaConversacion;
+window.Chat.searchUsers = searchUsers;
+window.Chat.createConversation = createConversation;
+window.Chat.deleteConversation = deleteConversation;
+window.Chat._esIdDelBotConv = _esIdDelBotConv;
+window.Chat._normalizarBotIdConv = _normalizarBotIdConv;
+
+// ================================================================
+// ✅ v2.3: EXPOSICIÓN GLOBAL — Compatibilidad legacy
 // ================================================================
 window.loadConversations = loadConversations;
 window.aplicarFiltroConversaciones = aplicarFiltroConversaciones;
@@ -752,4 +853,7 @@ window.deleteConversation = deleteConversation;
 window._esIdDelBotConv = _esIdDelBotConv;
 window._normalizarBotIdConv = _normalizarBotIdConv;
 
-console.log('[Mensajes] ✅ Conversaciones v2.2 cargado (renderizado garantizado)');
+// ================================================================
+// DIAGNÓSTICO
+// ================================================================
+console.log('[Mensajes] ✅ Conversaciones v2.3 cargado (integración con ecosistema)');
