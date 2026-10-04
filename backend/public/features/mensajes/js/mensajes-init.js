@@ -28,7 +28,7 @@ async function init() {
         return;
     }
 
-    // ---- Inicializar cliente Supabase (compartido con el resto de la app) ----
+    // ---- Inicializar cliente Supabase ----
     var cliente = inicializarSupabase();
     if (!cliente) {
         console.error('[Mensajes] ❌ No se pudo inicializar Supabase');
@@ -155,7 +155,7 @@ async function init() {
     if (evMenu) {
         evMenu.onclick = function(e) {
             e.stopPropagation();
-            toast('ℹ️ Opciones próximamente', 'warning');
+            toast('Opciones próximamente', 'warning');
         };
     }
 
@@ -564,7 +564,7 @@ window.publicarEstado = publicarEstado;
 window.anteriorEstado = anteriorEstado;
 window.siguienteEstado = siguienteEstado;
 
-// ---- Canales y Grupos ----
+// ---- Canales y Grupos (se exponen desde mensajes-canales.js) ----
 window.cambiarPestana = cambiarPestana;
 window.onNuevoClick = onNuevoClick;
 window.buscarCanalesDebounce = buscarCanalesDebounce;
