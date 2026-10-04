@@ -1,364 +1,436 @@
 // ================================================================
-// ✅ v3.8: abrirConversacionBot ULTRA-blindada (garantía: NUNCA lanza)
+// MENSAJES · CONVERSACIONES
 // ================================================================
-async function abrirConversacionBot() {
-    // ============================================================
-    // NIVEL 0: Todo el cuerpo envuelto en try/catch raíz
-    // ============================================================
+// Lista de conversaciones, filtro, nueva conversación, búsqueda,
+// creación y eliminación. Se carga DESPUÉS de config, utils, auth, estados.
+//
+// FUENTE DE VERDAD: monolítico mensajes.html original.
+// OPTIMIZACIÓN: sin N+1 queries. Todo batch.
+// ================================================================
+
+'use strict';
+
+// ================================================================
+// CARGAR LISTA DE CONVERSACIONES
+// ================================================================
+async function loadConversations() {
+    var list = $('conversationList');
+    if (!list) return;
+
+    list.innerHTML = '';
+
+    // ---- 1. BOT MARQUINHOS (siempre primero) ----
+    var botActivo = current && (current.id === BOT_ID || current.id === BOT_UUID);
+    var botEl = document.createElement('div');
+    botEl.className = 'conv conv-bot' + (botActivo ? ' active' : '');
+    botEl.dataset.id = BOT_ID;
+    botEl.dataset.name = 'marquinhos';
+    botEl.innerHTML =
+        '<div class="avatar avatar-bot">✦</div>' +
+        '<div class="convinfo">' +
+            '<div class="convname">' + BOT_NOMBRE + '</div>' +
+            '<div class="convmsg" id="botLastMsg">Tu asistente personal</div>' +
+        '</div>' +
+        '<div class="convtime" id="botBadge" style="color:var(--success);font-size:.55rem">IA</div>';
+    botEl.onclick = function() { openConversation(BOT_ID); };
+    list.appendChild(botEl);
+
+    if (!user) {
+        if (window.DEBUG_CHAT) console.warn('[Mensajes/Conv] Sin user, no se cargan contactos');
+        return;
+    }
+
+    // ---- 2. ÚLTIMO MENSAJE DEL BOT (1 query) ----
     try {
-        console.log('[Chat v3.8] abrirConversacionBot: iniciando');
+        var rBot = await db
+            .from('mensajes_chat')
+            .select('contenido,tipo,created_at')
+            .eq('eliminado', false)
+            .or('and(remitente_id.eq.' + user.id + ',destinatario_id.eq.' + BOT_UUID + '),and(remitente_id.eq.' + BOT_UUID + ',destinatario_id.eq.' + user.id + ')')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
 
-        // --------------------------------------------------------
-        // NIVEL 1: Verificar DOM
-        // --------------------------------------------------------
-        var box = document.getElementById('messages');
-        if (!box) {
-            console.error('[Chat v3.8] ❌ #messages no existe en el DOM');
-            return false;
-        }
-
-        // --------------------------------------------------------
-        // NIVEL 2: Verificar globales críticos
-        // --------------------------------------------------------
-        if (typeof BOT_UUID === 'undefined' || !BOT_UUID) {
-            console.error('[Chat v3.8] ❌ BOT_UUID no definido');
-            _renderizarErrorBot(box, 'Configuración incompleta: BOT_UUID');
-            return false;
-        }
-
-        if (typeof BOT_ID === 'undefined' || !BOT_ID) {
-            console.warn('[Chat v3.8] ⚠️ BOT_ID no definido (usando BOT_UUID)');
-        }
-
-        if (typeof db === 'undefined' || !db) {
-            console.error('[Chat v3.8] ❌ db no inicializado');
-            _renderizarErrorBot(box, 'Sistema no inicializado. Recarga la página.');
-            return false;
-        }
-
-        if (!user || !user.id) {
-            console.error('[Chat v3.8] ❌ user no autenticado');
-            _renderizarErrorBot(box, 'No hay sesión activa. Recarga la página.');
-            return false;
-        }
-
-        console.log('[Chat v3.8] user.id =', user.id);
-        console.log('[Chat v3.8] BOT_UUID =', BOT_UUID);
-
-        // --------------------------------------------------------
-        // NIVEL 3: Limpiar y asegurar UI (dentro de try propio)
-        // --------------------------------------------------------
-        try {
-            if (typeof _limpiarMensajes === 'function') {
-                _limpiarMensajes(box);
-            } else {
-                box.querySelectorAll('.bubblewrap').forEach(function(el) { el.remove(); });
-            }
-        } catch (e) {
-            console.warn('[Chat v3.8] _limpiarMensajes falló:', e);
-        }
-
-        var anchor = null;
-        try {
-            if (typeof _asegurarUIBase === 'function') {
-                anchor = _asegurarUIBase(box);
-            } else {
-                anchor = box.querySelector('#scrollAnchor');
-                if (!anchor) {
-                    anchor = document.createElement('div');
-                    anchor.id = 'scrollAnchor';
-                    box.appendChild(anchor);
-                }
-            }
-        } catch (e) {
-            console.error('[Chat v3.8] ❌ _asegurarUIBase falló:', e);
-            _renderizarErrorBot(box, 'Error creando interfaz: ' + e.message);
-            return false;
-        }
-
-        if (!anchor) {
-            console.error('[Chat v3.8] ❌ anchor nulo');
-            _renderizarErrorBot(box, 'Error de UI: anchor no creado');
-            return false;
-        }
-
-        // --------------------------------------------------------
-        // NIVEL 4: Emitir evento (opcional, no bloquea)
-        // --------------------------------------------------------
-        try {
-            window.dispatchEvent(new CustomEvent('marquinhos:chatAbierto', {
-                detail: { userId: user.id, botId: BOT_UUID }
-            }));
-        } catch (e) {}
-
-        // --------------------------------------------------------
-        // NIVEL 5: Cargar historial de Supabase
-        // --------------------------------------------------------
-        console.log('[Chat v3.8] Consultando historial...');
-        var historial = [];
-        var errorHistorial = null;
-
-        try {
-            var r = await db.from('mensajes_chat')
-                .select('*')
-                .eq('eliminado', false)
-                .or(
-                    'and(remitente_id.eq.' + user.id + ',destinatario_id.eq.' + BOT_UUID + '),' +
-                    'and(remitente_id.eq.' + BOT_UUID + ',destinatario_id.eq.' + user.id + ')'
-                )
-                .order('created_at', { ascending: true })
-                .limit(200);
-
-            if (r && r.error) {
-                errorHistorial = r.error;
-                console.error('[Chat v3.8] ❌ Error Supabase historial:', r.error);
-            } else {
-                historial = (r && r.data) ? r.data : [];
-                console.log('[Chat v3.8] Historial:', historial.length, 'mensajes');
-            }
-        } catch (e) {
-            errorHistorial = e;
-            console.error('[Chat v3.8] ❌ Excepción cargando historial:', e);
-        }
-
-        // --------------------------------------------------------
-        // NIVEL 6: Verificar contexto (usuario no cambió de chat)
-        // --------------------------------------------------------
-        if (!current || !_esConversacionBot()) {
-            console.warn('[Chat v3.8] Usuario cambió de chat, abortando');
-            return false;
-        }
-        if (!document.body.contains(box)) {
-            console.warn('[Chat v3.8] box fuera del DOM');
-            return false;
-        }
-
-        // --------------------------------------------------------
-        // NIVEL 7: Reobtener anchor (por si algo lo movió)
-        // --------------------------------------------------------
-        anchor = box.querySelector('#scrollAnchor');
-        if (!anchor) {
-            try {
-                anchor = typeof _asegurarUIBase === 'function' ? _asegurarUIBase(box) : null;
-            } catch (e) {}
-            if (!anchor) {
-                console.error('[Chat v3.8] ❌ Anchor perdido');
-                return false;
+        if (rBot.data) {
+            var preview = $('botLastMsg');
+            if (preview) {
+                preview.textContent = rBot.data.tipo === 'texto'
+                    ? (rBot.data.contenido || '').slice(0, 60)
+                    : ('📎 ' + (rBot.data.contenido || rBot.data.tipo));
             }
         }
 
-        // --------------------------------------------------------
-        // NIVEL 8: Si hubo error de historial, mostrarlo y salir
-        // --------------------------------------------------------
-        if (errorHistorial) {
-            var msgHist = errorHistorial.message || 'desconocido';
-            console.error('[Chat v3.8] Historial falló:', msgHist);
-            _renderizarErrorBot(box, 'Error al cargar historial: ' + msgHist);
-            return false;
+        // Contar no leídos del bot (1 query)
+        var rCount = await db
+            .from('mensajes_chat')
+            .select('id', { count: 'exact', head: true })
+            .eq('remitente_id', BOT_UUID)
+            .eq('destinatario_id', user.id)
+            .eq('leido', false)
+            .eq('eliminado', false);
+
+        var badge = $('botBadge');
+        if (badge && rCount.count && rCount.count > 0) {
+            var n = rCount.count > 9 ? '9+' : rCount.count;
+            badge.innerHTML = '<span style="background:var(--danger);color:#fff;font-size:.6rem;font-weight:800;padding:2px 8px;border-radius:99px;min-width:20px;text-align:center;display:inline-block;animation:pulse-badge 1.5s infinite;">' + n + '</span>';
         }
-
-        // --------------------------------------------------------
-        // NIVEL 9: Sin historial → bienvenida
-        // --------------------------------------------------------
-        if (!historial.length) {
-            console.log('[Chat v3.8] Sin historial, mostrando bienvenida');
-            try {
-                anchor.insertAdjacentHTML('beforebegin',
-                    '<div class="bubblewrap received">' +
-                        '<div class="bubble">' +
-                            '<div class="bubble-bot-info">✦ MARQUINHOS</div>' +
-                            '¡Hola! 👋 Soy Marquinhos, el asistente de Sariel\'s. Puedes:<br><br>' +
-                            '◈ Escribirme un mensaje de texto<br>' +
-                            '◈ Enviarme una nota de voz<br>' +
-                            '◈ Hablarme con el botón 🔊 (te responderé con voz)<br><br>' +
-                            '¿En qué te puedo ayudar hoy?' +
-                        '</div>' +
-                    '</div>');
-                isUserAtBottom = true;
-                scrollToBottom(true);
-                console.log('[Chat v3.8] ✅ Bienvenida renderizada');
-                return true;
-            } catch (e) {
-                console.error('[Chat v3.8] ❌ Error insertando bienvenida:', e);
-                _renderizarErrorBot(box, 'Error al renderizar bienvenida');
-                return false;
-            }
-        }
-
-        // --------------------------------------------------------
-        // NIVEL 10: Cargar URLs firmadas con fallback total
-        // --------------------------------------------------------
-        console.log('[Chat v3.8] Cargando URLs firmadas para', historial.length, 'mensajes');
-
-        var results = await Promise.allSettled(
-            historial.map(function(m) {
-                try {
-                    if (typeof getSignedUrlForMessage === 'function') {
-                        var p = getSignedUrlForMessage(m);
-                        return Promise.resolve(p).catch(function() {
-                            return m.imagen_url || null;
-                        });
-                    }
-                    return Promise.resolve(m.imagen_url || null);
-                } catch (e) {
-                    return Promise.resolve(m.imagen_url || null);
-                }
-            })
-        );
-
-        // --------------------------------------------------------
-        // NIVEL 11: Verificar contexto de nuevo
-        // --------------------------------------------------------
-        if (!current || !_esConversacionBot()) {
-            console.warn('[Chat v3.8] Usuario cambió de chat durante carga');
-            return false;
-        }
-        if (!document.body.contains(box)) return false;
-
-        anchor = box.querySelector('#scrollAnchor');
-        if (!anchor) {
-            try {
-                anchor = typeof _asegurarUIBase === 'function' ? _asegurarUIBase(box) : null;
-            } catch (e) {}
-            if (!anchor) return false;
-        }
-
-        // --------------------------------------------------------
-        // NIVEL 12: Renderizar mensajes uno por uno (aislado)
-        // --------------------------------------------------------
-        console.log('[Chat v3.8] Renderizando', historial.length, 'mensajes');
-        var insertados = 0;
-        var errores = 0;
-
-        for (var i = 0; i < historial.length; i++) {
-            var m = historial[i];
-
-            try {
-                if (typeof _yaRenderizado === 'function' && _yaRenderizado(m.id)) {
-                    continue;
-                }
-                if (typeof _marcarRenderizado === 'function') {
-                    _marcarRenderizado(m.id);
-                }
-
-                var url = (results[i] && results[i].status === 'fulfilled')
-                    ? results[i].value
-                    : (m.imagen_url || null);
-
-                var esMio = (typeof _esMensajeMio === 'function' && _esMensajeMio(m))
-                    || (typeof _esAutoEnvio === 'function' && _esAutoEnvio(m));
-
-                var html;
-                if (typeof messageHTML === 'function') {
-                    html = messageHTML(m, esMio, url);
-                } else {
-                    // Fallback mínimo si messageHTML no existe
-                    html = '<div class="bubblewrap ' + (esMio ? 'sent' : 'received') + '">' +
-                        '<div class="bubble">' + String(m.contenido || '') + '</div>' +
-                    '</div>';
-                }
-
-                anchor.insertAdjacentHTML('beforebegin', html);
-                insertados++;
-
-            } catch (e) {
-                errores++;
-                console.error('[Chat v3.8] Error renderizando mensaje', m.id, ':', e);
-            }
-        }
-
-        // --------------------------------------------------------
-        // NIVEL 13: Post-renderizado
-        // --------------------------------------------------------
-        try {
-            isUserAtBottom = true;
-            if (typeof observarCargaMultimedia === 'function') {
-                observarCargaMultimedia(box);
-            }
-            if (typeof scrollToBottom === 'function') {
-                scrollToBottom(true);
-            }
-        } catch (e) {
-            console.warn('[Chat v3.8] Error en post-renderizado:', e);
-        }
-
-        console.log('[Chat v3.8] ✅ Renderizado: ' + insertados + ' ok, ' + errores + ' errores');
-
-        // --------------------------------------------------------
-        // NIVEL 14: Si nada se renderizó y hubo errores, avisar
-        // --------------------------------------------------------
-        if (insertados === 0 && errores > 0) {
-            _renderizarErrorBot(box, 'No se pudo renderizar ningún mensaje. Revisa la consola.');
-            return false;
-        }
-
-        return true;
-
     } catch (e) {
-        // ============================================================
-        // NIVEL FINAL: Atrapar CUALQUIER excepción no controlada
-        // ============================================================
-        console.error('[Chat v3.8] 💥 Excepción general NO capturada:', e);
-        console.error('[Chat v3.8] Stack:', e && e.stack);
-        console.error('[Chat v3.8] Tipo:', e && e.name);
+        console.warn('[Mensajes/Conv] Error cargando badge bot:', e);
+    }
 
-        try {
-            var boxFallback = document.getElementById('messages');
-            if (boxFallback) {
-                _renderizarErrorBot(boxFallback, 'Error inesperado: ' + (e && e.message ? e.message : 'desconocido'));
-            }
-        } catch (e2) {
-            console.error('[Chat v3.8] Ni siquiera el fallback funcionó:', e2);
+    // ---- 3. CONTACTOS (1 query) ----
+    var contactos = [];
+    try {
+        var rContactos = await db
+            .from('contactos')
+            .select('contacto_id,created_at,fecha,estado,es_favorito')
+            .eq('usuario_id', user.id)
+            .neq('estado', 'bloqueado')
+            .order('created_at', { ascending: false });
+
+        if (rContactos.error) {
+            console.error('[Mensajes/Conv] Error cargando contactos:', rContactos.error);
+            return;
         }
 
-        return false;
+        contactos = rContactos.data || [];
+    } catch (e) {
+        console.error('[Mensajes/Conv] Error contactos:', e);
+        return;
+    }
+
+    if (!contactos.length) {
+        aplicarFiltroConversaciones();
+        return;
+    }
+
+    // ---- 4. FILTRAR IDs (excluir bot) ----
+    var contactosIds = contactos
+        .map(function(c) { return c.contacto_id; })
+        .filter(function(id) { return id && id !== BOT_UUID && id !== BOT_ID; });
+
+    if (!contactosIds.length) {
+        aplicarFiltroConversaciones();
+        return;
+    }
+
+    // ---- 5. PERFILES BATCH (1 query) ----
+    var perfilesMap = {};
+    try {
+        var rPerfiles = await db
+            .from('perfiles_publicos')
+            .select('id,nombre,handle,avatar_url,online,ultima_conexion,verificado')
+            .in('id', contactosIds);
+
+        (rPerfiles.data || []).forEach(function(p) {
+            perfilesMap[p.id] = p;
+        });
+    } catch (e) {
+        console.warn('[Mensajes/Conv] Error perfiles batch:', e);
+    }
+
+    // ---- 6. ÚLTIMOS MENSAJES BATCH (1 query) ----
+    // Traemos los últimos 200 mensajes que involucren al usuario,
+    // y en JS nos quedamos con el último por cada contacto.
+    var ultimoPorContacto = {};
+    try {
+        var listaIdsOr = contactosIds.join(',');
+        var rMensajes = await db
+            .from('mensajes_chat')
+            .select('remitente_id,destinatario_id,contenido,tipo,created_at,leido,nombre_archivo')
+            .eq('eliminado', false)
+            .or(
+                'and(remitente_id.eq.' + user.id + ',destinatario_id.in.(' + listaIdsOr + ')),' +
+                'and(destinatario_id.eq.' + user.id + ',remitente_id.in.(' + listaIdsOr + '))'
+            )
+            .order('created_at', { ascending: false })
+            .limit(500);
+
+        (rMensajes.data || []).forEach(function(m) {
+            var otroId = m.remitente_id === user.id ? m.destinatario_id : m.remitente_id;
+            if (!ultimoPorContacto[otroId]) {
+                ultimoPorContacto[otroId] = m;
+            }
+        });
+    } catch (e) {
+        console.warn('[Mensajes/Conv] Error mensajes batch:', e);
+    }
+
+    // ---- 7. RENDERIZAR ----
+    contactosIds.forEach(function(cid) {
+        var p = perfilesMap[cid] || { id: cid, nombre: 'Usuario', avatar_url: null, online: false };
+        var last = ultimoPorContacto[cid];
+
+        var el = document.createElement('div');
+        el.className = 'conv' + (current && current.id === cid ? ' active' : '');
+        el.dataset.id = cid;
+        el.dataset.name = ((p.nombre || '') + ' ' + (p.handle || '')).toLowerCase();
+
+        var preview = 'Sin mensajes';
+        if (last) {
+            if (last.tipo === 'texto') preview = (last.contenido || '').slice(0, 60);
+            else if (last.tipo === 'imagen') preview = '📷 Foto';
+            else if (last.tipo === 'video') preview = '🎬 Video';
+            else if (last.tipo === 'audio') preview = '🎙️ Audio';
+            else preview = '📎 ' + (last.nombre_archivo || 'Archivo');
+        }
+
+        var hora = last && last.created_at
+            ? new Date(last.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            : '';
+
+        el.innerHTML = avatar(p.nombre, p.avatar_url) +
+            '<div class="convinfo">' +
+                '<div class="convname">' + esc(p.nombre || 'Usuario') + '</div>' +
+                '<div class="convmsg">' + esc(preview) + '</div>' +
+            '</div>' +
+            '<div class="convtime">' + esc(hora) + '</div>';
+
+        el.onclick = (function(id) {
+            return function() { openConversation(id); };
+        })(cid);
+
+        list.appendChild(el);
+    });
+
+    aplicarFiltroConversaciones();
+}
+
+// ================================================================
+// FILTRO DEL BUSCADOR
+// ================================================================
+function aplicarFiltroConversaciones() {
+    var q = (conversationFilter || '').trim().toLowerCase();
+    var convs = document.querySelectorAll('.conv');
+
+    convs.forEach(function(el) {
+        var name = (el.dataset.name || '').toLowerCase();
+        var convname = el.querySelector('.convname');
+        var visible = !q
+            || name.indexOf(q) !== -1
+            || (convname && convname.textContent.toLowerCase().indexOf(q) !== -1);
+
+        el.style.display = visible ? 'flex' : 'none';
+    });
+}
+
+// ================================================================
+// NUEVA CONVERSACIÓN (modal)
+// ================================================================
+function newConversation() {
+    var m = $('newModal');
+    if (m) m.classList.add('show');
+
+    var input = $('userSearch');
+    if (input) {
+        input.value = '';
+        setTimeout(function() { input.focus(); }, 50);
+    }
+
+    var results = $('userResults');
+    if (results) results.innerHTML = '';
+}
+
+function cerrarModalNuevaConversacion() {
+    var m = $('newModal');
+    if (m) m.classList.remove('show');
+}
+
+// ================================================================
+// BUSCAR USUARIOS
+// ================================================================
+async function searchUsers(q) {
+    var box = $('userResults');
+    if (!box) return;
+
+    if (!q || q.trim().length < 2) {
+        box.innerHTML = '<div style="padding:18px;text-align:center;color:var(--muted)">Escribe al menos 2 caracteres</div>';
+        return;
+    }
+
+    if (!await auth()) return;
+
+    // Sanear término
+    var term = q.trim()
+        .replace(/[%_,\\.()]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    if (!term) {
+        box.innerHTML = '<div style="padding:18px;text-align:center;color:var(--muted)">Escribe algo válido</div>';
+        return;
+    }
+
+    try {
+        var r = await db
+            .from('perfiles_publicos')
+            .select('id,nombre,handle,avatar_url')
+            .or('nombre.ilike.%' + term + '%,handle.ilike.%' + term + '%')
+            .neq('id', user.id)
+            .neq('id', BOT_UUID)
+            .limit(12);
+
+        if (r.error) {
+            console.error('[Mensajes/Conv] Error búsqueda:', r.error);
+            toast('❌ Error al buscar usuarios', 'error');
+            return;
+        }
+
+        if (!r.data || !r.data.length) {
+            box.innerHTML = '<div style="padding:18px;text-align:center;color:var(--muted)">No se encontraron usuarios</div>';
+            return;
+        }
+
+        box.innerHTML = '';
+
+        r.data.forEach(function(p) {
+            var el = document.createElement('div');
+            el.className = 'result';
+            el.innerHTML = avatar(p.nombre, p.avatar_url) +
+                '<div style="flex:1">' +
+                    '<b>' + esc(p.nombre || 'Usuario') + '</b>' +
+                    '<div style="font-size:.68rem;color:var(--muted)">@' + esc(p.handle || 'usuario') + '</div>' +
+                '</div>' +
+                '<span style="color:var(--gold);font-size:.7rem">Iniciar ›</span>';
+
+            el.onclick = (function(pid) {
+                return function() { createConversation(pid); };
+            })(p.id);
+
+            box.appendChild(el);
+        });
+    } catch (e) {
+        console.error('[Mensajes/Conv] Excepción búsqueda:', e);
+        toast('❌ Error al buscar usuarios', 'error');
     }
 }
 
 // ================================================================
-// ✅ v3.8: Helper para mostrar errores en el chat (nunca lanza)
+// CREAR CONVERSACIÓN
 // ================================================================
-function _renderizarErrorBot(box, mensaje) {
-    try {
-        if (!box) {
-            box = document.getElementById('messages');
-        }
-        if (!box) {
-            console.error('[Chat v3.8] _renderizarErrorBot: box es null');
-            return;
-        }
-
-        var anchor = box.querySelector('#scrollAnchor');
-        if (!anchor) {
-            try {
-                if (typeof _asegurarUIBase === 'function') {
-                    anchor = _asegurarUIBase(box);
-                }
-            } catch (e) {}
-        }
-        if (!anchor) {
-            console.error('[Chat v3.8] _renderizarErrorBot: anchor es null');
-            return;
-        }
-
-        // Escapar el mensaje de forma segura
-        var msgEscapado = String(mensaje)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;');
-
-        anchor.insertAdjacentHTML('beforebegin',
-            '<div class="bubblewrap received" style="opacity:0.9;">' +
-                '<div class="bubble" style="border:1px solid var(--danger);background:rgba(255,51,102,0.08);">' +
-                    '<div class="bubble-bot-info">✦ MARQUINHOS</div>' +
-                    '<div style="color:var(--danger);font-size:.8rem;">' +
-                        '⚠️ ' + msgEscapado +
-                    '</div>' +
-                '</div>' +
-            '</div>');
-
-    } catch (e) {
-        console.error('[Chat v3.8] _renderizarErrorBot TAMBIÉN falló:', e);
+async function createConversation(id) {
+    if (!id || !esUUID(id)) {
+        toast('⚠️ Usuario inválido', 'error');
+        return;
     }
+
+    if (!await auth()) return;
+
+    try {
+        var r = await db
+            .from('contactos')
+            .select('id')
+            .eq('usuario_id', user.id)
+            .eq('contacto_id', id)
+            .maybeSingle();
+
+        if (r.error) {
+            console.error('[Mensajes/Conv] Error comprobando contacto:', r.error);
+            toast('❌ Error comprobando contacto', 'error');
+            return;
+        }
+
+        if (!r.data) {
+            var ins = await db
+                .from('contactos')
+                .insert({
+                    usuario_id: user.id,
+                    contacto_id: id,
+                    estado: 'activo'
+                });
+
+            if (ins.error) {
+                console.error('[Mensajes/Conv] Error insertando contacto:', ins.error);
+                toast('❌ No se pudo crear la conversación', 'error');
+                return;
+            }
+        }
+
+        cerrarModalNuevaConversacion();
+        await loadConversations();
+        await openConversation(id);
+    } catch (e) {
+        console.error('[Mensajes/Conv] Excepción creando:', e);
+        toast('❌ Error al crear la conversación', 'error');
+    }
+}
+
+// ================================================================
+// ELIMINAR CONVERSACIÓN
+// ================================================================
+async function deleteConversation() {
+    if (!current) {
+        toast('⚠️ Selecciona una conversación', 'error');
+        return;
+    }
+
+    if (!await auth()) return;
+
+    var nombre = current.bot
+        ? BOT_NOMBRE
+        : ((current.profile && current.profile.nombre) || 'este usuario');
+
+    var confirmar = confirm('⚠️ ¿Estás seguro de que quieres eliminar TODA la conversación con ' + nombre + '?\n\nEsta acción no se puede deshacer.');
+    if (!confirmar) return;
+
+    try {
+        var targetId = current.bot ? BOT_UUID : current.id;
+        if (!esUUID(targetId)) {
+            toast('⚠️ Conversación inválida', 'error');
+            return;
+        }
+
+        var r = await db
+            .from('mensajes_chat')
+            .update({ eliminado: true })
+            .or('and(remitente_id.eq.' + user.id + ',destinatario_id.eq.' + targetId + '),and(remitente_id.eq.' + targetId + ',destinatario_id.eq.' + user.id + ')')
+            .eq('eliminado', false);
+
+        if (r.error) throw r.error;
+
+        toast('✅ Conversación eliminada correctamente', 'success');
+
+        // Limpiar el chat actual
+        if (typeof limpiarEstadoConversacion === 'function') {
+            try { await limpiarEstadoConversacion(); } catch (e) {}
+        }
+
+        current = null;
+        unreadCount = 0;
+        isUserAtBottom = true;
+        if (typeof actualizarFlecha === 'function') actualizarFlecha();
+
+        // Mostrar empty state
+        if (typeof mostrarEmptyState === 'function') {
+            mostrarEmptyState('Conversación eliminada', 'Envía un mensaje para empezar de nuevo');
+        }
+
+        // Cerrar el chat visualmente
+        if (typeof cerrarConversacionUI === 'function') {
+            cerrarConversacionUI();
+        }
+
+        await loadConversations();
+    } catch (e) {
+        console.error('[Mensajes/Conv] Error eliminando:', e);
+        toast('❌ No se pudo eliminar la conversación', 'error');
+    }
+}
+
+// ================================================================
+// EXPOSICIÓN GLOBAL
+// ================================================================
+window.loadConversations = loadConversations;
+window.aplicarFiltroConversaciones = aplicarFiltroConversaciones;
+window.newConversation = newConversation;
+window.cerrarModalNuevaConversacion = cerrarModalNuevaConversacion;
+window.searchUsers = searchUsers;
+window.createConversation = createConversation;
+window.deleteConversation = deleteConversation;
+
+// ================================================================
+// LOG FINAL
+// ================================================================
+if (window.DEBUG_CHAT) {
+    console.log('[Mensajes/Conv] ✅ Conversaciones cargado');
 }
