@@ -1,21 +1,24 @@
 /* ================================================================
-   MARQUINHOS · PET · CSS v2.0
+   MARQUINHOS · PET · CSS v2.1
    ================================================================ */
 
 .mq-pet {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 999999;
-    width: 90px;
-    height: 130px;
-    pointer-events: auto;
-    opacity: 1;
-    transition: transform 0.3s ease;
+    position: fixed !important;
+    bottom: 16px !important;
+    right: 16px !important;
+    z-index: 2147483647 !important; /* Máximo valor posible */
+    width: 90px !important;
+    height: 130px !important;
+    pointer-events: auto !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: block !important;
+    transform: none !important;
     user-select: none;
     -webkit-user-select: none;
     touch-action: manipulation;
     font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .mq-pet-avatar {
@@ -25,15 +28,13 @@
     width: 90px;
     height: 130px;
     cursor: pointer;
-    filter: drop-shadow(0 6px 16px rgba(21, 101, 192, 0.3));
+    filter: drop-shadow(0 6px 16px rgba(21, 101, 192, 0.35));
     animation: mq-float 4s ease-in-out infinite;
     transition: transform 0.2s ease;
     -webkit-tap-highlight-color: transparent;
 }
 
-.mq-pet-avatar:active {
-    transform: scale(0.92);
-}
+.mq-pet-avatar:active { transform: scale(0.92); }
 
 .mq-pet-svg {
     width: 100%;
@@ -47,9 +48,6 @@
     50% { transform: translateY(-4px); }
 }
 
-/* ================================================================
-   BURBUJA
-   ================================================================ */
 .mq-pet-bubble {
     position: absolute;
     bottom: calc(100% - 20px);
@@ -91,9 +89,6 @@
     border-top: 8px solid rgba(255, 255, 255, 0.98);
 }
 
-/* ================================================================
-   STATUS
-   ================================================================ */
 .mq-pet-status {
     position: absolute;
     bottom: -8px;
@@ -135,58 +130,10 @@
     50% { transform: scale(1.5); opacity: 0.5; }
 }
 
-/* ================================================================
-   ESTADOS DEL AVATAR
-   ================================================================ */
-.mq-pet[data-estado="escuchando"] .mq-pet-avatar {
-    animation: mq-listening 1s ease-in-out infinite;
-}
-
-.mq-pet[data-estado="hablando"] .mq-pet-avatar {
-    animation: mq-talking 0.4s ease-in-out infinite alternate;
-}
-
-@keyframes mq-listening {
-    0%, 100% { filter: drop-shadow(0 6px 16px rgba(0, 229, 255, 0.3)); }
-    50% { filter: drop-shadow(0 6px 24px rgba(0, 229, 255, 0.6)); }
-}
-
-@keyframes mq-talking {
-    from { transform: translateY(0) rotate(-2deg); }
-    to { transform: translateY(-3px) rotate(2deg); }
-}
-
-/* ================================================================
-   OCULTO (si el usuario lo desactiva)
-   ================================================================ */
-.mq-pet.mq-hidden {
-    display: none;
-}
-
-/* ================================================================
-   TEMA DÍA
-   ================================================================ */
-html.tema-dia .mq-pet-bubble,
-html[data-tema="dia"] .mq-pet-bubble {
-    background: rgba(255, 255, 255, 0.99);
-    color: #0D47A1;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(21, 101, 192, 0.15);
-}
-
-html.tema-dia .mq-pet-status,
-html[data-tema="dia"] .mq-pet-status {
-    background: rgba(255, 255, 255, 0.96);
-    color: #4a5568;
-    border-color: rgba(0, 0, 0, 0.1);
-}
-
-/* ================================================================
-   RESPONSIVE
-   ================================================================ */
 @media (max-width: 520px) {
     .mq-pet, .mq-pet-avatar {
-        width: 80px;
-        height: 115px;
+        width: 80px !important;
+        height: 115px !important;
     }
     .mq-pet-bubble {
         font-size: 11px;
@@ -197,4 +144,17 @@ html[data-tema="dia"] .mq-pet-status {
         font-size: 9px;
         padding: 3px 8px;
     }
+}
+
+html.tema-dia .mq-pet-bubble,
+html[data-tema="dia"] .mq-pet-bubble {
+    background: rgba(255, 255, 255, 0.99);
+    color: #0D47A1;
+}
+
+html.tema-dia .mq-pet-status,
+html[data-tema="dia"] .mq-pet-status {
+    background: rgba(255, 255, 255, 0.96);
+    color: #4a5568;
+    border-color: rgba(0, 0, 0, 0.1);
 }
