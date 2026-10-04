@@ -1,17 +1,9 @@
 // ================================================================
-// MENSAJES · CANALES Y GRUPOS
-// ================================================================
-// Integración de canales y grupos dentro del módulo de mensajes.
-// Usa la tabla grupos_video (visibilidad: publico/privado).
-// Depende de: mensajes-config.js, mensajes-utils.js, mensajes-auth.js
+// MENSAJES · CANALES Y GRUPOS (CORREGIDO)
 // ================================================================
 
-// ================================================================
-// VARIABLES LOCALES DEL MÓDULO
-// ================================================================
 var _canalesTimer = null;
 var _gruposTimer = null;
-var _categoriaCache = [];
 var _pestanaActual = 'chats';
 
 // ================================================================
@@ -40,7 +32,7 @@ function cambiarPestana(pestana) {
 }
 
 // ================================================================
-// BOTÓN FLOTANTE "+" — COMPORTAMIENTO DINÁMICO
+// BOTÓN FLOTANTE "+" — DINÁMICO
 // ================================================================
 function onNuevoClick() {
     if (_pestanaActual === 'chats') newConversation();
@@ -73,24 +65,18 @@ async function cargarCanales() {
     lista.innerHTML = '<div class="empty-state-small"><div class="empty-icon">✦</div><div class="empty-text">Cargando canales...</div></div>';
 
     try {
-        var buscar = (document.getElementById('searchCanales')?.value || '').trim();
-        var filtroEstado = document.getElementById('filtroEstadoCanal')?.value || '';
-        var filtroCategoria = document.getElementById('filtroCategoriaCanal')?.value || '';
-
-        buscar = buscar.replace(/[(),%*\\]/g, ' ').trim();
-
-        var query = db
+        // ✅ CONSULTA SIMPLE: solo visibilidad
+        var result = await db
             .from('grupos_video')
-            .select('id, nombre, descripcion, avatar_url, municipio, estado_region, visibilidad, precio_usdt, marketplace_activo, created_at')
+            .select('*')
             .eq('visibilidad', 'publico')
             .order('created_at', { ascending: false })
             .limit(50);
 
-        if (buscar) query = query.or('nombre.ilike.%' + buscar + '%,descripcion.ilike.%' + buscar + '%');
-        if (filtroEstado) query = query.eq('estado_region', filtroEstado);
-
-        var result = await query;
-        if (result.error) throw result.error;
+        if (result.error) {
+            console.error('[Canales] Error Supabase:', result.error);
+            throw result.error;
+        }
 
         var canales = result.data || [];
 
@@ -104,6 +90,15 @@ async function cargarCanales() {
             return;
         }
 
+        // Filtro de búsqueda local
+        var buscar = (document.getElementById('searchCanales')?.value || '').trim().toLowerCase();
+        if (buscar) {
+            canales = canales.filter(function(c) {
+                return (c.nombre || '').toLowerCase().includes(buscar) ||
+                       (c.descripcion || '').toLowerCase().includes(buscar);
+            });
+        }
+
         lista.innerHTML = canales.map(function(c) {
             return renderCanalCard(c, 'canal');
         }).join('');
@@ -111,8 +106,14 @@ async function cargarCanales() {
         actualizarFiltros('canal', canales);
     } catch (e) {
         console.error('[Canales] Error:', e);
-        var msg = (e && e.message) ? e.message : 'Error desconocido';
-        lista.innerHTML = '<div class="empty-state-small"><div class="empty-icon">!</div><div class="empty-text">Error: ' + esc(msg) + '</div></div>';
+        lista.innerHTML =
+            '<div class="empty-state-small">' +
+                '<div class="empty-icon">!</div>' +
+                '<div class="empty-text">No se pudieron cargar los canales</div>' +
+                '<div style="font-size:.6rem;color:#ff3366;margin-top:8px;padding:8px;background:rgba(255,51,102,.1);border-radius:8px;max-width:100%;word-break:break-all;">' +
+                    (e.message || 'Error desconocido') +
+                '</div>' +
+            '</div>';
     }
 }
 
@@ -128,24 +129,18 @@ async function cargarGrupos() {
     lista.innerHTML = '<div class="empty-state-small"><div class="empty-icon">◆</div><div class="empty-text">Cargando grupos...</div></div>';
 
     try {
-        var buscar = (document.getElementById('searchGrupos')?.value || '').trim();
-        var filtroEstado = document.getElementById('filtroEstadoGrupo')?.value || '';
-        var filtroCategoria = document.getElementById('filtroCategoriaGrupo')?.value || '';
-
-        buscar = buscar.replace(/[(),%*\\]/g, ' ').trim();
-
-        var query = db
+        // ✅ CONSULTA SIMPLE: solo visibilidad
+        var result = await db
             .from('grupos_video')
-            .select('id, nombre, descripcion, avatar_url, municipio, estado_region, visibilidad, precio_usdt, marketplace_activo, created_at')
+            .select('*')
             .eq('visibilidad', 'privado')
             .order('created_at', { ascending: false })
             .limit(50);
 
-        if (buscar) query = query.or('nombre.ilike.%' + buscar + '%,descripcion.ilike.%' + buscar + '%');
-        if (filtroEstado) query = query.eq('estado_region', filtroEstado);
-
-        var result = await query;
-        if (result.error) throw result.error;
+        if (result.error) {
+            console.error('[Grupos] Error Supabase:', result.error);
+            throw result.error;
+        }
 
         var grupos = result.data || [];
 
@@ -159,6 +154,15 @@ async function cargarGrupos() {
             return;
         }
 
+        // Filtro de búsqueda local
+        var buscar = (document.getElementById('searchGrupos')?.value || '').trim().toLowerCase();
+        if (buscar) {
+            grupos = grupos.filter(function(g) {
+                return (g.nombre || '').toLowerCase().includes(buscar) ||
+                       (g.descripcion || '').toLowerCase().includes(buscar);
+            });
+        }
+
         lista.innerHTML = grupos.map(function(g) {
             return renderCanalCard(g, 'grupo');
         }).join('');
@@ -166,13 +170,19 @@ async function cargarGrupos() {
         actualizarFiltros('grupo', grupos);
     } catch (e) {
         console.error('[Grupos] Error:', e);
-        var msg = (e && e.message) ? e.message : 'Error desconocido';
-        lista.innerHTML = '<div class="empty-state-small"><div class="empty-icon">!</div><div class="empty-text">Error: ' + esc(msg) + '</div></div>';
+        lista.innerHTML =
+            '<div class="empty-state-small">' +
+                '<div class="empty-icon">!</div>' +
+                '<div class="empty-text">No se pudieron cargar los grupos</div>' +
+                '<div style="font-size:.6rem;color:#ff3366;margin-top:8px;padding:8px;background:rgba(255,51,102,.1);border-radius:8px;max-width:100%;word-break:break-all;">' +
+                    (e.message || 'Error desconocido') +
+                '</div>' +
+            '</div>';
     }
 }
 
 // ================================================================
-// RENDERIZAR TARJETA DE CANAL/GRUPO
+// RENDERIZAR TARJETA
 // ================================================================
 function renderCanalCard(item, tipo) {
     var esCanal = tipo === 'canal';
@@ -211,7 +221,7 @@ function renderCanalCard(item, tipo) {
 }
 
 // ================================================================
-// ACTUALIZAR FILTROS (estados únicos)
+// ACTUALIZAR FILTROS
 // ================================================================
 function actualizarFiltros(tipo, items) {
     var selectEstadoId = tipo === 'canal' ? 'filtroEstadoCanal' : 'filtroEstadoGrupo';
@@ -235,14 +245,14 @@ function actualizarFiltros(tipo, items) {
 }
 
 // ================================================================
-// ABRIR CANAL O GRUPO
+// ABRIR CANAL/GRUPO
 // ================================================================
 function abrirCanalOGrupo(id, tipo) {
     window.location.href = '/features/grupos/grupos.html?grupo=' + id;
 }
 
 // ================================================================
-// MODAL CREAR CANAL
+// MODALES
 // ================================================================
 function abrirModalCrearCanal() {
     var modal = document.getElementById('modalCrearCanal');
@@ -258,9 +268,6 @@ function cerrarModalCrearCanal() {
     if (modal) modal.classList.remove('show');
 }
 
-// ================================================================
-// MODAL CREAR GRUPO
-// ================================================================
 function abrirModalCrearGrupo() {
     var modal = document.getElementById('modalCrearGrupo');
     if (modal) modal.classList.add('show');
@@ -276,7 +283,7 @@ function cerrarModalCrearGrupo() {
 }
 
 // ================================================================
-// CREAR CANAL (visibilidad = 'publico')
+// CREAR CANAL
 // ================================================================
 async function crearCanal() {
     if (!await auth()) return;
@@ -290,8 +297,6 @@ async function crearCanal() {
 
     if (!nombre) { toast('El nombre es obligatorio', 'error'); return; }
     if (!municipio) { toast('El municipio es obligatorio', 'error'); return; }
-    if (nombre.length > 80) { toast('El nombre es muy largo', 'error'); return; }
-    if (descripcion.length > 300) { toast('La descripción es muy larga', 'error'); return; }
 
     var btn = document.getElementById('btnCrearCanal');
     if (btn) { btn.disabled = true; btn.textContent = 'Creando...'; }
@@ -308,10 +313,14 @@ async function crearCanal() {
             precio_usdt: 0,
             marketplace_activo: false,
             creador_id: user.id,
+            activo: true,
             firma_ligera: 'Yo me hago cargo de lo que digo aquí'
         }).select().single();
 
-        if (result.error) throw result.error;
+        if (result.error) {
+            console.error('[Canales] Error INSERT:', result.error);
+            throw result.error;
+        }
 
         toast('Canal creado correctamente', 'success');
         cerrarModalCrearCanal();
@@ -322,22 +331,16 @@ async function crearCanal() {
         });
 
         await cargarCanales();
-
-        if (result.data && result.data.id) {
-            setTimeout(function() {
-                abrirCanalOGrupo(result.data.id, 'canal');
-            }, 500);
-        }
     } catch (e) {
         console.error('[Canales] Error creando:', e);
-        toast('Error al crear el canal: ' + (e.message || 'desconocido'), 'error');
+        toast('Error: ' + (e.message || 'desconocido'), 'error');
     } finally {
         if (btn) { btn.disabled = false; btn.textContent = '✦ Crear Canal'; }
     }
 }
 
 // ================================================================
-// CREAR GRUPO (visibilidad = 'privado')
+// CREAR GRUPO
 // ================================================================
 async function crearGrupo() {
     if (!await auth()) return;
@@ -351,8 +354,6 @@ async function crearGrupo() {
 
     if (!nombre) { toast('El nombre es obligatorio', 'error'); return; }
     if (!municipio) { toast('El municipio es obligatorio', 'error'); return; }
-    if (nombre.length > 80) { toast('El nombre es muy largo', 'error'); return; }
-    if (descripcion.length > 300) { toast('La descripción es muy larga', 'error'); return; }
 
     var btn = document.getElementById('btnCrearGrupo');
     if (btn) { btn.disabled = true; btn.textContent = 'Creando...'; }
@@ -369,10 +370,14 @@ async function crearGrupo() {
             precio_usdt: 0,
             marketplace_activo: false,
             creador_id: user.id,
+            activo: true,
             firma_ligera: 'Yo me hago cargo de lo que digo aquí'
         }).select().single();
 
-        if (result.error) throw result.error;
+        if (result.error) {
+            console.error('[Grupos] Error INSERT:', result.error);
+            throw result.error;
+        }
 
         toast('Grupo creado correctamente', 'success');
         cerrarModalCrearGrupo();
@@ -383,18 +388,12 @@ async function crearGrupo() {
         });
 
         await cargarGrupos();
-
-        if (result.data && result.data.id) {
-            setTimeout(function() {
-                abrirCanalOGrupo(result.data.id, 'grupo');
-            }, 500);
-        }
     } catch (e) {
         console.error('[Grupos] Error creando:', e);
-        toast('Error al crear el grupo: ' + (e.message || 'desconocido'), 'error');
+        toast('Error: ' + (e.message || 'desconocido'), 'error');
     } finally {
         if (btn) { btn.disabled = false; btn.textContent = '◆ Crear Grupo'; }
     }
 }
 
-console.log('[Mensajes] ✅ Canales y Grupos cargado');
+console.log('[Mensajes] Canales y Grupos cargado (CORREGIDO)');
