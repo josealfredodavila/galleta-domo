@@ -1,11 +1,10 @@
 // ================================================================
-// MENSAJES · INICIALIZACIÓN (CORREGIDO)
+// MENSAJES · INICIALIZACIÓN (CORREGIDO — usa cliente global)
 // ================================================================
 // Arranque del módulo, listeners globales, exposición a window.
 // Depende de: TODOS los archivos anteriores.
 // ================================================================
 
-// Flag para evitar doble init
 var __mensajesIniciado = false;
 
 // ================================================================
@@ -13,11 +12,9 @@ var __mensajesIniciado = false;
 // ================================================================
 async function esperarSesion() {
     try {
-        // 1) Intento rápido desde localStorage
         var s = await session();
         if (s && s.user) return s;
 
-        // 2) Fallback: esperar el primer onAuthStateChange
         return await new Promise(function(resolve) {
             var resuelto = false;
             var timeout = setTimeout(function() {
@@ -59,29 +56,30 @@ async function init() {
         return;
     }
 
-    // ---- Crear cliente ----
-    db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-        auth: {
-            persistSession: true,
-            autoRefreshToken: true,
-            detectSessionInUrl: true,
-            storageKey: 'sariels-auth' // ⚠️ MISMA CLAVE QUE EL RESTO DE LA APP
-        },
-        realtime: { params: { eventsPerSecond: 10 } }
-    });
-    window.supabaseClient = db;
+    // ✅ FIX CLAVE: usar el cliente global si ya existe (comparte sesión con Perfil/Contactos)
+    if (window.supabaseClient) {
+        db = window.supabaseClient;
+        console.log('[Mensajes] ✅ Usando cliente Supabase GLOBAL (con sesión compartida)');
+    } else {
+        db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+            auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+            realtime: { params: { eventsPerSecond: 10 } }
+        });
+        window.supabaseClient = db;
+        console.log('[Mensajes] Cliente Supabase creado (fallback)');
+    }
 
-    // ---- Obtener sesión (con fallback robusto) ----
+    // ✅ Esperar sesión (con fallback robusto)
     var s = await esperarSesion();
     user = (s && s.user) || null;
 
     if (!user) {
         console.warn('[Mensajes] No hay sesión activa todavía');
     } else {
-        console.log('[Mensajes] Sesión OK:', user.id);
+        console.log('[Mensajes] ✅ Sesión OK:', user.id);
     }
 
-    // ---- Cargar datos iniciales (aunque user sea null, no rompe) ----
+    // ---- Cargar datos iniciales ----
     await cargarFotoHeader();
     await loadConversations();
     await cargarEstados();
@@ -92,7 +90,6 @@ async function init() {
     var fab = document.getElementById('newChat');
     if (fab) fab.onclick = onNuevoClick;
 
-    // Cerrar modales de canal/grupo al hacer clic fuera
     var modalCanal = document.getElementById('modalCrearCanal');
     if (modalCanal) {
         modalCanal.addEventListener('click', function(e) {
@@ -168,9 +165,7 @@ async function init() {
             if (!estado) return;
             var uid = estado.usuario_id;
             cerrarEstadoViewer();
-            if (typeof abrirChat === 'function') {
-                abrirChat(uid);
-            } else if (typeof openConversation === 'function') {
+            if (typeof openConversation === 'function') {
                 openConversation(uid);
             }
             setTimeout(function() {
@@ -190,9 +185,7 @@ async function init() {
             if (!estado) return;
             var uid = estado.usuario_id;
             cerrarEstadoViewer();
-            if (typeof abrirChat === 'function') {
-                abrirChat(uid);
-            } else if (typeof openConversation === 'function') {
+            if (typeof openConversation === 'function') {
                 openConversation(uid);
             }
             setTimeout(function() {
@@ -212,11 +205,10 @@ async function init() {
     var evNext = $('evNext');
     if (evNext) evNext.onclick = function(e) { e.stopPropagation(); siguienteEstado(); };
 
-    // Botón vistas (oculto pero por si acaso)
     var evVistas = $('evVistas');
     if (evVistas) evVistas.onclick = function(e) { e.stopPropagation(); var id = evVistas.dataset.estadoId; if (id) abrirVistasModal(id); };
 
-    // Pausa al mantener pulsado (contenedor del visor)
+    // Pausa al mantener pulsado
     var viewerEstado = $('estadoViewer');
     if (viewerEstado) {
         viewerEstado.addEventListener('touchstart', function(e) {
@@ -493,8 +485,6 @@ window.hangup = hangup;
 window.toggleMic = toggleMic;
 window.toggleCam = toggleCam;
 window.toggleScreen = toggleScreen;
-
-window.supabaseClient = db;
 
 // ================================================================
 // ARRANQUE
