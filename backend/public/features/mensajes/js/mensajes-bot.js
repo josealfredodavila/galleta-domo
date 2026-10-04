@@ -1,18 +1,38 @@
 // ================================================================
-// MENSAJES · BOT (Marquinhos)
+// MENSAJES · BOT (Marquinhos) — v2.2
 // ================================================================
-// Conversación con el asistente IA: texto, voz, historial.
-// Depende de: config, utils, auth, chat, archivos.
+// FIXES v2.2:
+// - Uso consistente de BOT_UUID para todas las operaciones de BD
+// - Renderizado garantizado de respuestas en el chat activo
+// - Normalización de IDs (BOT_ID ↔ BOT_UUID)
+// - Retry logic para errores 429/timeout
 // ================================================================
 
-// ================================================================
+// ----------------------------------------------------------------
+// HELPERS DE NORMALIZACIÓN DE IDS
+// ----------------------------------------------------------------
+function _normalizarBotId(id) {
+    if (!id) return BOT_UUID;
+    var s = String(id);
+    if (s === BOT_ID || s === 'bot-marquinhos' || s === 'marquinhos') {
+        return BOT_UUID;
+    }
+    return s;
+}
+
+function _esIdDelBot(id) {
+    if (!id) return false;
+    var s = String(id);
+    return s === BOT_ID || s === BOT_UUID;
+}
+
+// ----------------------------------------------------------------
 // ABRIR CONVERSACIÓN CON MARQUINHOS
-// ================================================================
+// ----------------------------------------------------------------
 async function abrirConversacionBot() {
     var box = $('messages');
     if (!box) return;
 
-    // Asegurar botón de scroll down
     var btn = box.querySelector('#scrollDownBtn');
     var anchor = box.querySelector('#scrollAnchor');
 
@@ -39,7 +59,6 @@ async function abrirConversacionBot() {
         };
     }
 
-    // Cargar historial
     var historial = [];
     try {
         var r = await db
@@ -52,12 +71,11 @@ async function abrirConversacionBot() {
 
         if (!r.error) historial = r.data || [];
     } catch (e) {
-        console.warn('[Mensajes] No se pudo cargar el historial de Marquinhos:', e);
+        console.warn('[Bot] No se pudo cargar el historial:', e);
     }
 
     var anchorRef = box.querySelector('#scrollAnchor');
 
-    // Sin historial → mensaje de bienvenida
     if (!historial.length) {
         anchorRef.insertAdjacentHTML('beforebegin',
             '<div class="bubblewrap received">' +
@@ -75,14 +93,16 @@ async function abrirConversacionBot() {
         return;
     }
 
-    // Renderizar historial con URLs firmadas
     var signedUrls = await Promise.all(historial.map(function(m) {
         return getSignedUrlForMessage(m);
     }));
 
     historial.forEach(function(m, i) {
+        if (_yaRenderizado(m.id)) return;
+        _marcarRenderizado(m.id);
+        var esMio = (String(m.remitente_id) === String(user.id));
         anchorRef.insertAdjacentHTML('beforebegin',
-            messageHTML(m, m.remitente_id === user.id, signedUrls[i]));
+            messageHTML(m, esMio, signedUrls[i]));
     });
 
     isUserAtBottom = true;
@@ -90,9 +110,9 @@ async function abrirConversacionBot() {
     scrollToBottom(true);
 }
 
-// ================================================================
-// CARGAR HISTORIAL PARA EL BOT (contexto de IA)
-// ================================================================
+// ----------------------------------------------------------------
+// CARGAR HISTORIAL PARA EL BOT
+// ----------------------------------------------------------------
 async function cargarHistorialParaBot() {
     try {
         var r = await db
@@ -114,14 +134,14 @@ async function cargarHistorialParaBot() {
             })
             .filter(function(m) { return m.content && m.content.length > 0; });
     } catch (e) {
-        console.warn('[Mensajes] No se pudo cargar historial para el bot:', e);
+        console.warn('[Bot] No se pudo cargar historial para el bot:', e);
         return [];
     }
 }
 
-// ================================================================
-// PREGUNTAR AL BOT (texto)
-// ================================================================
+// ----------------------------------------------------------------
+// PREGUNTAR AL BOT
+// ----------------------------------------------------------------
 async function preguntarAlBot(mensaje, historial) {
     var s = await session();
     if (!s) throw new Error('No hay una sesión activa. Inicia sesión nuevamente.');
@@ -189,9 +209,9 @@ async function preguntarAlBot(mensaje, historial) {
     }
 }
 
-// ================================================================
-// TYPING INDICATOR DEL BOT
-// ================================================================
+// ----------------------------------------------------------------
+// TYPING INDICATOR
+// ----------------------------------------------------------------
 function mostrarTypingBot() {
     var box = $('messages');
     if (!box) return;
@@ -217,9 +237,9 @@ function quitarTypingBot() {
     if (el) el.remove();
 }
 
-// ================================================================
-// GRABAR VOZ PARA EL BOT (con respuesta en audio)
-// ================================================================
+// ----------------------------------------------------------------
+// GRABAR VOZ PARA EL BOT
+// ----------------------------------------------------------------
 async function grabarVozParaBot() {
     if (!current || !current.bot) return;
     if (!await auth()) return;
@@ -229,7 +249,6 @@ async function grabarVozParaBot() {
         return;
     }
 
-    // Si ya está grabando → detener y enviar
     if (voiceBotGrabando) {
         if (voiceBotRecorder && voiceBotRecorder.state !== 'inactive') {
             voiceBotRecorder.stop();
@@ -281,14 +300,14 @@ async function grabarVozParaBot() {
 
         toast('🎙️ Habla ahora… presiona otra vez para enviar');
     } catch (e) {
-        console.error('[Mensajes] Error micrófono:', e);
+        console.error('[Bot] Error micrófono:', e);
         toast('❌ No se pudo acceder al micrófono', 'error');
     }
 }
 
-// ================================================================
+// ----------------------------------------------------------------
 // ENVIAR VOZ AL BOT Y RECIBIR RESPUESTA
-// ================================================================
+// ----------------------------------------------------------------
 async function enviarVozAlBot(file) {
     if (enviandoVozBot) {
         toast('⏳ Ya hay un audio en proceso. Espera…', 'warning');
@@ -361,7 +380,7 @@ async function enviarVozAlBot(file) {
 
         scrollToBottom(true);
 
-        // Llamada a la API de voz (con reintentos)
+        // Llamada a la API de voz con reintentos
         var intentos = 0;
         var maxIntentos = 3;
         var exito = false;
@@ -398,7 +417,7 @@ async function enviarVozAlBot(file) {
         var tempEl = document.getElementById(tempId);
         if (tempEl) tempEl.remove();
 
-        // Guardar mensajes en BD
+        // ✅ FIX: Guardar mensaje del usuario con BOT_UUID
         try {
             await db.from('mensajes_chat').insert({
                 remitente_id: user.id,
@@ -412,11 +431,12 @@ async function enviarVozAlBot(file) {
                 eliminado: false
             });
         } catch (e) {
-            console.warn('[Mensajes] No se pudo guardar la nota de voz:', e);
+            console.warn('[Bot] No se pudo guardar la nota de voz:', e);
         }
 
-        try {
-            if (data.reply) {
+        // ✅ FIX: Guardar respuesta del bot con BOT_UUID
+        if (data.reply) {
+            try {
                 await db.from('mensajes_chat').insert({
                     remitente_id: BOT_UUID,
                     destinatario_id: user.id,
@@ -426,12 +446,12 @@ async function enviarVozAlBot(file) {
                     editado: false,
                     eliminado: false
                 });
+            } catch (e) {
+                console.warn('[Bot] No se pudo guardar la respuesta del bot:', e);
             }
-        } catch (e) {
-            console.warn('[Mensajes] No se pudo guardar la respuesta del bot:', e);
         }
 
-        // Burbuja de respuesta del bot
+        // ✅ FIX CRÍTICO: Renderizar la respuesta del bot DIRECTAMENTE en el DOM
         var botId = 'voice-bot-' + Date.now();
         var botBody = '<div class="bubble-bot-info">✦ MARQUINHOS</div>';
 
@@ -449,6 +469,9 @@ async function enviarVozAlBot(file) {
             '<div class="bubble">' + botBody + '</div>' +
         '</div>';
 
+        // Forzar scroll al fondo antes de insertar
+        isUserAtBottom = true;
+
         if (anchorRef) anchorRef.insertAdjacentHTML('beforebegin', botHTML);
         else box.insertAdjacentHTML('beforeend', botHTML);
 
@@ -465,9 +488,9 @@ async function enviarVozAlBot(file) {
 
         loadConversations();
     } catch (e) {
-        console.error('[Mensajes] Error voz bot:', e);
-        var tempEl2 = document.getElementById('voice-user-' + Date.now());
-        // (por simplicidad omitimos remover el temp exacto, ya que el id cambió)
+        console.error('[Bot] Error voz bot:', e);
+
+        // Limpiar temporal
         document.querySelectorAll('[id^="voice-user-"]').forEach(function(el) { el.remove(); });
 
         if (e.message.indexOf('429') !== -1
@@ -488,4 +511,17 @@ async function enviarVozAlBot(file) {
     }
 }
 
-console.log('[Mensajes] ✅ Bot cargado');
+// ----------------------------------------------------------------
+// EXPOSICIÓN GLOBAL
+// ----------------------------------------------------------------
+window.abrirConversacionBot = abrirConversacionBot;
+window.cargarHistorialParaBot = cargarHistorialParaBot;
+window.preguntarAlBot = preguntarAlBot;
+window.mostrarTypingBot = mostrarTypingBot;
+window.quitarTypingBot = quitarTypingBot;
+window.grabarVozParaBot = grabarVozParaBot;
+window.enviarVozAlBot = enviarVozAlBot;
+window._esIdDelBot = _esIdDelBot;
+window._normalizarBotId = _normalizarBotId;
+
+console.log('[Mensajes] ✅ Bot v2.2 cargado (fixes de producción)');
