@@ -65,7 +65,7 @@ function _esAutoEnvio(m) {
 // ----------------------------------------------------------------
 // REGISTRO LRU DE IDs YA RENDERIZADOS (anti-duplicados)
 // ----------------------------------------------------------------
-var _mensajesRenderizados = new Map(); // Map para LRU (id → true)
+var _mensajesRenderizados = new Map();
 
 function _resetearMensajesRenderizados() {
     _mensajesRenderizados.clear();
@@ -79,10 +79,8 @@ function _yaRenderizado(msgId) {
 function _marcarRenderizado(msgId) {
     if (!msgId) return;
     if (_mensajesRenderizados.has(msgId)) {
-        // refrescar orden LRU
         _mensajesRenderizados.delete(msgId);
     } else if (_mensajesRenderizados.size >= MAX_RENDERED_LRU) {
-        // eliminar el más antiguo
         var first = _mensajesRenderizados.keys().next().value;
         _mensajesRenderizados.delete(first);
     }
@@ -94,7 +92,7 @@ function _desmarcarRenderizado(msgId) {
 }
 
 // ----------------------------------------------------------------
-// HELPERS DE UI BASE (evita duplicación entre abrirBot y render)
+// HELPERS DE UI BASE
 // ----------------------------------------------------------------
 function _asegurarUIBase(box) {
     if (!box) return null;
@@ -141,7 +139,6 @@ async function abrirConversacionBot() {
     _limpiarMensajes(box);
     var anchor = _asegurarUIBase(box);
 
-    // Validación de UUIDs antes de concatenar en PostgREST
     if (!_esUUID(user && user.id) || !_esUUID(BOT_UUID)) {
         console.error('[Chat] UUID inválido en abrirConversacionBot');
         return;
@@ -160,7 +157,7 @@ async function abrirConversacionBot() {
         console.warn('No se pudo cargar historial del bot:', e);
     }
 
-    if (!document.body.contains(box)) return; // abortar si ya no está
+    if (!document.body.contains(box)) return;
 
     if (!historial.length) {
         anchor.insertAdjacentHTML('beforebegin',
@@ -179,7 +176,6 @@ async function abrirConversacionBot() {
         return;
     }
 
-    // Promise.allSettled: si una URL firmada falla, no rompe todo
     var results = await Promise.allSettled(
         historial.map(function(m) { return getSignedUrlForMessage(m); })
     );
@@ -206,7 +202,7 @@ async function renderMessages(rows) {
     if (!box) return;
 
     _limpiarMensajes(box);
-    var anchor = _asegurarUIBase(box); // ✅ ahora también asegura botón
+    var anchor = _asegurarUIBase(box);
 
     if (!rows.length) {
         anchor.insertAdjacentHTML('beforebegin',
@@ -254,7 +250,6 @@ function messageHTML(m, sent, signedUrl) {
             body = '<span class="file-icon">📎</span> <a href="' + esc(urlToUse) + '" target="_blank" rel="noopener" style="color:var(--gold)">' + displayName + '</a>';
         }
     } else if (urlToUse && !urlOk) {
-        // URL insegura: no renderizar el link, mostrar nombre
         var fallbackName = esc(m.nombre_archivo || 'Archivo');
         body = '<span class="file-icon">📎</span> ' + fallbackName;
     }
@@ -262,7 +257,6 @@ function messageHTML(m, sent, signedUrl) {
     var esBotRecibido = !sent && (m.es_bot || m.bot_message);
     var headerBot = esBotRecibido ? '<div class="bubble-bot-info">✦ MARQUINHOS</div>' : '';
 
-    // Meta: hora + estado
     var meta = '';
     if (m.created_at) {
         meta = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -271,11 +265,9 @@ function messageHTML(m, sent, signedUrl) {
         meta += m.leido ? ' · ◆◆' : ' · ◈◈';
     }
 
-    // ✅ Punto de "no leído" para mensajes recibidos que no están leídos
     var esNoLeido = !sent && m.leido === false;
     var unreadDot = esNoLeido ? '<span class="unread-dot" title="No leído"></span>' : '';
 
-    // id seguro
     var msgId = m.id || ('temp-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8));
     var idAttr = m.id ? ('id="msg-' + esc(m.id) + '" ') : '';
 
@@ -288,12 +280,12 @@ function messageHTML(m, sent, signedUrl) {
 }
 
 // ----------------------------------------------------------------
-// VALIDACIONES DE LÍMITES (reglas del chat)
+// VALIDACIONES DE LÍMITES
 // ----------------------------------------------------------------
 function validarTextoChat(texto) {
     if (typeof texto !== 'string') return { ok: false, motivo: 'Texto inválido' };
     if (texto.length > MAX_TEXTO_LEN) {
-        return { ok: false, motivo: 'Máximo ' + MAX_TEXTO_LEN + ' letras we' };
+        return { ok: false, motivo: 'Máximo ' + MAX_TEXTO_LEN + ' letras' };
     }
     return { ok: true };
 }
@@ -303,7 +295,6 @@ function validarAudioChat(duracionSegundos) {
         return { ok: false, motivo: 'Audio inválido' };
     }
     if (duracionSegundos > MAX_AUDIO_SEGUNDOS) {
-        // Se corta solo a 5:00 según regla
         return { ok: true, recortarA: MAX_AUDIO_SEGUNDOS };
     }
     return { ok: true };
@@ -330,10 +321,6 @@ function validarFotoChat(pesoBytes) {
 // ----------------------------------------------------------------
 // "VISTO AL CONTESTAR" — Función central
 // ----------------------------------------------------------------
-// Marca como leídos TODOS los mensajes que el otro me envió,
-// SOLO cuando yo contesto (texto/audio/video/foto).
-// Filtra por timestamp para evitar race condition.
-// ----------------------------------------------------------------
 async function marcarConversacionComoLeida(remitenteId, antesDe) {
     if (!user || !remitenteId) return;
     if (remitenteId === BOT_ID) return;
@@ -355,7 +342,6 @@ async function marcarConversacionComoLeida(remitenteId, antesDe) {
             return;
         }
 
-        // Actualizar DOM localmente
         document.querySelectorAll('.bubblewrap.received.is-unread').forEach(function(el) {
             el.classList.remove('is-unread');
             var dot = el.querySelector('.unread-dot');
@@ -373,13 +359,12 @@ var _sending = false;
 
 async function sendMessage(text) {
     if (!current || !text) return;
-    if (_sending) return; // rate limit básico
+    if (_sending) return;
     if (!await auth()) return;
 
     var textoLimpio = String(text).trim();
     if (!textoLimpio) return;
 
-    // Validar límite de texto
     var val = validarTextoChat(textoLimpio);
     if (!val.ok) {
         toast('⚠️ ' + val.motivo, 'error');
@@ -403,14 +388,13 @@ async function sendMessage(text) {
 }
 
 async function _enviarMensajeAlBot(textoLimpio) {
-    // 1. Guardar mensaje del usuario
     var userMsg = {
         contenido: textoLimpio,
         created_at: new Date().toISOString(),
         tipo: 'texto',
         remitente_id: user.id,
         destinatario_id: BOT_UUID,
-        leido: false, // ✅ ya no true; el bot no "lee"
+        leido: false,
         es_bot: false
     };
 
@@ -439,10 +423,8 @@ async function _enviarMensajeAlBot(textoLimpio) {
     if (userMsg.id) _marcarRenderizado(userMsg.id);
     await append(userMsg, true);
 
-    // ✅ Al contestar al bot, marcamos como leídos los previos del bot
     await marcarConversacionComoLeida(BOT_UUID, userMsg.created_at);
 
-    // 2. Typing + respuesta del bot
     mostrarTypingBot();
     try {
         var historial = await cargarHistorialParaBot();
@@ -516,7 +498,6 @@ async function _enviarMensajeNormal(textoLimpio) {
         _marcarRenderizado(r.data.id);
         await append(r.data, true);
 
-        // ✅ Al contestar, marcar los previos del otro como leídos
         await marcarConversacionComoLeida(current.id, r.data.created_at);
 
         loadConversations();
@@ -527,10 +508,7 @@ async function _enviarMensajeNormal(textoLimpio) {
 }
 
 // ----------------------------------------------------------------
-// ENVIAR AUDIO / VIDEO / FOTO (marca visto al contestar)
-// ----------------------------------------------------------------
-// Estas funciones deben llamarse desde tu capa de subida.
-// Ejemplo: sendAudio(blob, duracionSegundos)
+// ENVIAR AUDIO / VIDEO / FOTO
 // ----------------------------------------------------------------
 async function sendAudio(blob, duracionSegundos) {
     if (!current || !blob) return;
@@ -539,10 +517,7 @@ async function sendAudio(blob, duracionSegundos) {
     var val = validarAudioChat(duracionSegundos);
     if (!val.ok) { toast('⚠️ ' + val.motivo, 'error'); return; }
 
-    // Nota: si val.recortarA está definido, tu capa de grabación
-    // debe cortar el blob a 5:00 antes de llegar aquí.
     try {
-        // Subir blob y obtener URL pública (usa tu helper existente)
         var url = await subirArchivoChat(blob, 'audio');
 
         var ins = await db.from('mensajes_chat').insert({
@@ -563,7 +538,6 @@ async function sendAudio(blob, duracionSegundos) {
         _marcarRenderizado(ins.data.id);
         await append(ins.data, true);
 
-        // ✅ Al contestar con audio, marcar previos como leídos
         var remitente = current.bot ? BOT_UUID : current.id;
         await marcarConversacionComoLeida(remitente, ins.data.created_at);
 
@@ -683,17 +657,14 @@ async function append(m, sent) {
     var box = $('messages');
     if (!box) return;
 
-    // Doble verificación: DOM + registro
     if (m.id) {
         var existente = document.getElementById('msg-' + m.id);
         if (existente) return;
         if (_yaRenderizado(m.id)) return;
     }
 
-    // Marcar ANTES del await (evita doble append)
     if (m.id) _marcarRenderizado(m.id);
 
-    // Signed URL con rollback si falla
     var signedUrl = null;
     if (m.imagen_url || m.tipo === 'imagen' || m.tipo === 'video' || m.tipo === 'audio') {
         try {
@@ -718,7 +689,6 @@ async function append(m, sent) {
     }
     observarCargaMultimedia(box);
 
-    // Gestión de flecha "no leídos"
     if (!sent) {
         if (isUserAtBottom) {
             ocultarFlechaNuevos();
@@ -734,7 +704,7 @@ async function append(m, sent) {
 }
 
 // ----------------------------------------------------------------
-// SUSCRIPCIÓN REALTIME (con filtro servidor + anti-duplicados)
+// SUSCRIPCIÓN REALTIME
 // ----------------------------------------------------------------
 var _unsubPromise = Promise.resolve();
 
@@ -756,16 +726,10 @@ function subscribeMessages(id) {
                 filter: 'or(remitente_id.eq.' + user.id + ',destinatario_id.eq.' + user.id + ')'
             }, function(p) {
                 var m = p.new;
-
                 if (!current || current.id !== id) return;
-
-                // Si es mío → ignorar (ya renderizado)
                 if (_esMensajeMio(m)) return;
-
-                // Si es para mí y no está renderizado → pintar
                 if (_esMensajeParaMi(m)) {
                     if (!_yaRenderizado(m.id) && !document.getElementById('msg-' + m.id)) {
-                        // ✅ NO marcar como leído aquí (regla: solo al contestar)
                         append(m, false);
                     }
                 }
@@ -818,7 +782,6 @@ function scrollToBottom(force) {
     if (force || isUserAtBottom) ocultarFlechaNuevos();
 }
 
-// Detecta scroll manual para cancelar auto-scroll agresivo
 function _instalarCancelScrollManual(box) {
     if (!box || box._cancelScrollInstalled) return;
     box._cancelScrollInstalled = true;
@@ -864,7 +827,7 @@ function detectarSiEstaAbajo() {
 }
 
 // ----------------------------------------------------------------
-// OBSERVAR CARGA DE MULTIMEDIA (auto-scroll al cargar)
+// OBSERVAR CARGA DE MULTIMEDIA
 // ----------------------------------------------------------------
 var _mediaObservados = new WeakSet();
 
@@ -887,7 +850,7 @@ function observarCargaMultimedia(box) {
 }
 
 // ----------------------------------------------------------------
-// AUTO-SCROLL AL ABRIR EL TECLADO (idempotente)
+// AUTO-SCROLL AL ABRIR EL TECLADO
 // ----------------------------------------------------------------
 var _tecladoConfigurado = false;
 
@@ -924,5 +887,33 @@ if (document.readyState === 'loading') {
 } else {
     configurarAutoScrollTeclado();
 }
+
+// ================================================================
+// ✅ EXPOSICIÓN GLOBAL A WINDOW (para que otros módulos las usen)
+// ================================================================
+window.sendMessage = sendMessage;
+window.sendAudio = sendAudio;
+window.sendVideo = sendVideo;
+window.sendFoto = sendFoto;
+window.append = append;
+window.renderMessages = renderMessages;
+window.messageHTML = messageHTML;
+window.abrirConversacionBot = abrirConversacionBot;
+window.subscribeMessages = subscribeMessages;
+window.scrollToBottom = scrollToBottom;
+window.actualizarFlecha = actualizarFlecha;
+window.ocultarFlechaNuevos = ocultarFlechaNuevos;
+window.detectarSiEstaAbajo = detectarSiEstaAbajo;
+window.observarCargaMultimedia = observarCargaMultimedia;
+window.markRead = markRead;
+window.marcarConversacionComoLeida = marcarConversacionComoLeida;
+window.mostrarTypingBot = mostrarTypingBot;
+window.quitarTypingBot = quitarTypingBot;
+window.validarTextoChat = validarTextoChat;
+window.validarAudioChat = validarAudioChat;
+window.validarVideoChat = validarVideoChat;
+window.validarFotoChat = validarFotoChat;
+window._marcarRenderizado = _marcarRenderizado;
+window._yaRenderizado = _yaRenderizado;
 
 console.log('[Mensajes] ✅ Chat v3 cargado (visto al contestar + reglas + correcciones)');
