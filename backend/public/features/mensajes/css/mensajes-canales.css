@@ -1,9 +1,12 @@
 /* ================================================================
-   MENSAJES · CANALES Y GRUPOS
+   MENSAJES · CANALES Y GRUPOS · CSS
+   ================================================================
+   Estilos para las pestañas Canales y Grupos dentro de Mensajes.
+   Usa la misma paleta que grupos.css para consistencia visual.
    ================================================================ */
 
 /* ================================================================
-   PESTAÑAS PRINCIPALES DEL SIDEBAR
+   PESTAÑAS DEL SIDEBAR (Chats / Canales / Grupos)
    ================================================================ */
 .sidebar-tabs {
     display: flex;
@@ -68,7 +71,7 @@
 }
 
 /* ================================================================
-   FILTROS DE CANALES/GRUPOS
+   FILTROS DE CANALES / GRUPOS
    ================================================================ */
 .filtros-canales {
     display: flex;
@@ -87,10 +90,22 @@
     outline: 0;
     cursor: pointer;
     font-family: inherit;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%238aa8b8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    padding-right: 26px;
+    transition: border-color .2s;
 }
 
 .filtros-canales select:focus {
     border-color: var(--gold);
+}
+
+.filtros-canales select option {
+    background: #0f2d1a;
+    color: var(--text);
 }
 
 /* ================================================================
@@ -105,6 +120,9 @@
     gap: 6px;
 }
 
+/* ================================================================
+   TARJETA DE CANAL / GRUPO
+   ================================================================ */
 .canal-card {
     display: flex;
     gap: 11px;
@@ -192,6 +210,9 @@
     margin-top: 2px;
 }
 
+/* ================================================================
+   BADGES
+   ================================================================ */
 .canal-badge {
     display: inline-flex;
     align-items: center;
@@ -235,7 +256,7 @@
 }
 
 /* ================================================================
-   ESTADO VACÍO (cuando no hay canales/grupos)
+   ESTADO VACÍO
    ================================================================ */
 .empty-state-small {
     display: flex;
@@ -277,10 +298,11 @@
 .empty-state-small .empty-btn:hover {
     background: var(--gold);
     color: var(--space);
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
 }
 
 /* ================================================================
-   MODALES DE CREAR CANAL/GRUPO
+   MODALES DE CREAR CANAL / GRUPO
    ================================================================ */
 .modal .form-group {
     margin-bottom: 12px;
@@ -296,7 +318,8 @@
 }
 
 .modal .form-group input,
-.modal .form-group textarea {
+.modal .form-group textarea,
+.modal .form-group select {
     width: 100%;
     padding: 10px 14px;
     border-radius: 12px;
@@ -310,11 +333,21 @@
 }
 
 .modal .form-group input:focus,
-.modal .form-group textarea:focus {
+.modal .form-group textarea:focus,
+.modal .form-group select:focus {
     border-color: var(--gold);
     background: rgba(255, 255, 255, 0.08);
 }
 
+.modal .form-group input::placeholder,
+.modal .form-group textarea::placeholder {
+    color: var(--muted);
+    opacity: .6;
+}
+
+/* ================================================================
+   BOTÓN PRINCIPAL DORADO
+   ================================================================ */
 .btn-gold-primary {
     width: 100%;
     padding: 12px;
@@ -329,6 +362,10 @@
     font-family: inherit;
     letter-spacing: .5px;
     margin-top: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
 }
 
 .btn-gold-primary:hover {
@@ -336,11 +373,67 @@
     box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
 }
 
+.btn-gold-primary:active {
+    transform: translateY(0);
+}
+
 .btn-gold-primary:disabled {
     opacity: .5;
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
+}
+
+/* ================================================================
+   TEMA DÍA — ajustes específicos
+   ================================================================ */
+html.tema-dia .filtros-canales select,
+html[data-tema="dia"] .filtros-canales select {
+    background-color: rgba(0, 0, 0, 0.03) !important;
+    color: var(--text) !important;
+    border-color: rgba(0, 0, 0, 0.15) !important;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23718096' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 8px center !important;
+}
+
+html.tema-dia .filtros-canales select option,
+html[data-tema="dia"] .filtros-canales select option {
+    background: #fff;
+    color: var(--text);
+}
+
+html.tema-dia .canal-card,
+html[data-tema="dia"] .canal-card {
+    background: rgba(0, 0, 0, 0.02) !important;
+    border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+html.tema-dia .canal-card:hover,
+html[data-tema="dia"] .canal-card:hover {
+    background: rgba(212, 175, 55, 0.08) !important;
+}
+
+html.tema-dia .canal-nombre,
+html[data-tema="dia"] .canal-nombre {
+    color: var(--text) !important;
+}
+
+html.tema-dia .modal .form-group input,
+html.tema-dia .modal .form-group textarea,
+html.tema-dia .modal .form-group select,
+html[data-tema="dia"] .modal .form-group input,
+html[data-tema="dia"] .modal .form-group textarea,
+html[data-tema="dia"] .modal .form-group select {
+    background: rgba(0, 0, 0, 0.03) !important;
+    color: var(--text) !important;
+    border-color: rgba(0, 0, 0, 0.15) !important;
+}
+
+html.tema-dia .empty-state-small .empty-btn,
+html[data-tema="dia"] .empty-state-small .empty-btn {
+    color: var(--gold) !important;
+    border-color: var(--gold) !important;
 }
 
 /* ================================================================
@@ -361,5 +454,27 @@
     }
     .filtros-canales {
         padding: 0 8px 8px;
+    }
+    .canales-lista {
+        padding: 0 6px 70px;
+    }
+}
+
+@media (max-width: 430px) {
+    .filtros-canales {
+        flex-direction: column;
+        gap: 6px;
+    }
+    .filtros-canales select {
+        width: 100%;
+    }
+    .canal-card {
+        padding: 10px;
+    }
+    .canal-avatar {
+        width: 38px;
+        height: 38px;
+        flex: 0 0 38px;
+        font-size: 1rem;
     }
 }
