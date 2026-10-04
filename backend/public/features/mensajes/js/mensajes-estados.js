@@ -1,25 +1,20 @@
 // ================================================================
-// MENSAJES · ESTADOS (VERSIÓN WHATSAPP-LIKE)
+// MENSAJES · ESTADOS
 // ================================================================
-// Estados con barra segmentada blanca, auto-avance, pausa con
-// dedo, flecha ←, menú ⋮, footer "Responder" + emojis.
-// Depende de: config, utils, auth, conversaciones.
+// Estados tipo WhatsApp: franja, visor, progreso, vistas, subir.
+// Se carga DESPUÉS de config, utils, auth.
+//
+// FUENTE DE VERDAD: monolítico mensajes.html original.
+// COMPATIBLE CON: tablas estados, estados_vistas, bucket sariels-estados.
 // ================================================================
 
-// ================================================================
-// VARIABLES LOCALES DEL VISOR
-// ================================================================
-var _estadosViewerActuales = [];
-var _estadoTimerRAF = null;
-var _estadoInicioMs = 0;
-var _estadoPausadoAcum = 0;
-var _estadoPausaInicio = 0;
-var _cerrandoViewer = false;
+'use strict';
 
 // ================================================================
-// MARCAR ESTADO COMO VISTO (localStorage)
+// VISTOS · LOCALSTORAGE
 // ================================================================
 function marcarEstadoVisto(estadoId) {
+    if (!estadoId) return;
     estadoVistos[estadoId] = Date.now();
     try {
         localStorage.setItem('sariels_estados_vistos', JSON.stringify(estadoVistos));
@@ -28,11 +23,12 @@ function marcarEstadoVisto(estadoId) {
 }
 
 function estadoEsNuevo(estado) {
+    if (!estado || !estado.id) return false;
     return !estadoVistos[estado.id];
 }
 
 function limpiarVistosAntiguos() {
-    var limite = Date.now() - (48 * 60 * 60 * 1000);
+    var limite = Date.now() - (48 * 60 * 60 * 1000); // 48 horas
     var cambio = false;
     Object.keys(estadoVistos).forEach(function(k) {
         if (estadoVistos[k] < limite) {
@@ -51,7 +47,7 @@ function limpiarVistosAntiguos() {
 // REGISTRAR VISTA EN SUPABASE
 // ================================================================
 async function registrarVistaEstado(estadoId) {
-    if (!user) return;
+    if (!user || !estadoId) return;
     try {
         await db.from('estados_vistas').upsert({
             estado_id: estadoId,
@@ -60,13 +56,18 @@ async function registrarVistaEstado(estadoId) {
             onConflict: 'estado_id,usuario_id',
             ignoreDuplicates: true
         });
-    } catch (e) {}
+    } catch (e) {
+        if (window.DEBUG_CHAT) {
+            console.warn('[Mensajes/Estados] Error registrando vista:', e);
+        }
+    }
 }
 
 // ================================================================
 // OBTENER NÚMERO DE VISTAS
 // ================================================================
 async function obtenerVistasEstado(estadoId) {
+    if (!estadoId) return 0;
     try {
         var r = await db
             .from('estados_vistas')
@@ -80,11 +81,12 @@ async function obtenerVistasEstado(estadoId) {
 }
 
 // ================================================================
-// CARGAR ESTADOS ACTIVOS
+// CARGAR FRANJA DE ESTADOS
 // ================================================================
 async function cargarEstados() {
     var scroll = $('estadosScroll');
     if (!scroll) return;
+
     scroll.innerHTML = '';
     if (!user) return;
 
@@ -97,7 +99,7 @@ async function cargarEstados() {
 
         if (r.error) {
             if (r.error.code === '42P01') {
-                console.warn('[Estados] Tabla estados no existe aún');
+                console.warn('[Mensajes/Estados] Tabla estados no existe');
                 return;
             }
             throw r.error;
@@ -143,7 +145,7 @@ async function cargarEstados() {
             }
         }
 
-        // ---- ESTADOS DE OTROS USUARIOS ----
+        // ---- ESTADOS DE OTROS ----
         var otrosIds = Object.keys(porUsuario).filter(function(uid) { return uid !== user.id; });
 
         for (var i = 0; i < otrosIds.length; i++) {
@@ -172,14 +174,16 @@ async function cargarEstados() {
             })(uid);
         }
     } catch (e) {
-        console.warn('[Estados] Error cargando:', e);
+        console.warn('[Mensajes/Estados] Error cargando:', e);
     }
 }
 
 // ================================================================
-// ABRIR ESTADO DE UN USUARIO
+// ABRIR VISOR DE UN USUARIO
 // ================================================================
 function abrirEstadoUsuario(uid) {
+    if (!uid) return;
+
     var estadosUsuario = estadosCache.filter(function(e) { return e.usuario_id === uid; });
     estadosUsuario.sort(function(a, b) {
         return new Date(a.created_at) - new Date(b.created_at);
@@ -190,71 +194,37 @@ function abrirEstadoUsuario(uid) {
         return;
     }
 
-    _estadosViewerActuales = estadosUsuario;
     estadoActualUserId = uid;
     estadoActualIndex = 0;
     estadoProgresoActual = 0;
     estadoPausado = false;
-    _cerrandoViewer = false;
+
+    mostrarEstadoActual();
 
     var viewer = $('estadoViewer');
     if (viewer) viewer.classList.add('show');
-
-    construirBarraSegmentada(estadosUsuario.length);
-    mostrarEstadoActual();
-}
-
-// ================================================================
-// CONSTRUIR BARRA SEGMENTADA
-// ================================================================
-function construirBarraSegmentada(total) {
-    var container = $('estadoProgress');
-    if (!container) return;
-
-    var html = '';
-    for (var i = 0; i < total; i++) {
-        html += '<div class="estado-segmento">' +
-            '<div class="estado-segmento-fill" id="segmento-fill-' + i + '"></div>' +
-        '</div>';
-    }
-    container.innerHTML = html;
-}
-
-// ================================================================
-// ACTUALIZAR BARRA SEGMENTADA
-// ================================================================
-function actualizarBarraSegmentada(porcentaje) {
-    for (var i = 0; i < estadoActualIndex; i++) {
-        var fillAnt = document.getElementById('segmento-fill-' + i);
-        if (fillAnt) fillAnt.style.width = '100%';
-    }
-
-    for (var j = estadoActualIndex + 1; j < _estadosViewerActuales.length; j++) {
-        var fillPost = document.getElementById('segmento-fill-' + j);
-        if (fillPost) fillPost.style.width = '0%';
-    }
-
-    var fillActual = document.getElementById('segmento-fill-' + estadoActualIndex);
-    if (fillActual) fillActual.style.width = porcentaje + '%';
 }
 
 // ================================================================
 // MOSTRAR ESTADO ACTUAL
 // ================================================================
 async function mostrarEstadoActual() {
-    if (estadoActualIndex >= _estadosViewerActuales.length) {
+    var estadosUsuario = estadosCache.filter(function(e) { return e.usuario_id === estadoActualUserId; });
+    if (estadoActualIndex >= estadosUsuario.length) {
         cerrarEstadoViewer();
         return;
     }
 
-    var estado = _estadosViewerActuales[estadoActualIndex];
+    var estado = estadosUsuario[estadoActualIndex];
     var esMiEstado = user && (estadoActualUserId === user.id);
 
     // ---- CABECERA ----
     if (esMiEstado) {
         var evAvatar = $('evAvatar');
         if (evAvatar) {
-            evAvatar.innerHTML = avatarEstadoHTML(currentUserProfile, '◈');
+            evAvatar.innerHTML = currentUserProfile && currentUserProfile.avatar_url
+                ? '<img src="' + esc(currentUserProfile.avatar_url) + '" alt="">'
+                : esc(((currentUserProfile && currentUserProfile.nombre) || '◈').charAt(0).toUpperCase());
         }
         var evName = $('evName');
         if (evName) evName.textContent = 'Tú';
@@ -271,7 +241,11 @@ async function mostrarEstadoActual() {
                 if (estadoActualUserId !== uidCapturado) return;
                 if (r.data) {
                     var evAvatar2 = $('evAvatar');
-                    if (evAvatar2) evAvatar2.innerHTML = avatarEstadoHTML(r.data, '◈');
+                    if (evAvatar2) {
+                        evAvatar2.innerHTML = r.data.avatar_url
+                            ? '<img src="' + esc(r.data.avatar_url) + '" alt="">'
+                            : esc((r.data.nombre || '◈').charAt(0).toUpperCase());
+                    }
                     var evName2 = $('evName');
                     if (evName2) evName2.textContent = r.data.nombre || 'Usuario';
                 }
@@ -301,7 +275,7 @@ async function mostrarEstadoActual() {
         }
     }
 
-    // ---- MARCAR VISTO (solo si NO es mi estado) ----
+    // ---- MARCAR VISTO ----
     if (!esMiEstado) {
         marcarEstadoVisto(estado.id);
         registrarVistaEstado(estado.id);
@@ -313,92 +287,68 @@ async function mostrarEstadoActual() {
 
     var evNext = $('evNext');
     if (evNext) {
-        evNext.classList.toggle('hidden', estadoActualIndex >= _estadosViewerActuales.length - 1);
+        evNext.classList.toggle('hidden', estadoActualIndex >= estadosUsuario.length - 1);
     }
 
-    // ---- ARRANCAR TIMER ----
-    iniciarTemporizadorEstado();
+    // ---- VISTAS (solo si es mi estado) ----
+    var evVistas = $('evVistas');
+    if (evVistas) {
+        if (esMiEstado) {
+            var total = await obtenerVistasEstado(estado.id);
+            var countEl = $('evVistasCount');
+            if (countEl) countEl.textContent = total;
+            evVistas.classList.remove('hidden');
+            evVistas.dataset.estadoId = estado.id;
+        } else {
+            evVistas.classList.add('hidden');
+        }
+    }
+
+    // ---- TIMER ----
+    iniciarProgresoEstado();
 }
 
 // ================================================================
-// TIMER CON requestAnimationFrame
+// TIMER DE PROGRESO
 // ================================================================
-function iniciarTemporizadorEstado() {
-    if (_estadoTimerRAF) {
-        cancelAnimationFrame(_estadoTimerRAF);
-        _estadoTimerRAF = null;
-    }
+function iniciarProgresoEstado() {
+    var progress = $('estadoProgress');
+    if (!progress) return;
 
-    _estadoInicioMs = performance.now();
-    _estadoPausadoAcum = 0;
-    _estadoPausaInicio = 0;
-    estadoProgresoActual = 0;
-    estadoPausado = false;
+    if (estadoTimer) clearInterval(estadoTimer);
+    progress.style.width = estadoProgresoActual + '%';
 
-    function tick(ahora) {
-        if (estadoPausado) {
-            _estadoTimerRAF = requestAnimationFrame(tick);
-            return;
+    estadoTimer = setInterval(function() {
+        if (estadoPausado) return;
+
+        estadoProgresoActual += 1;
+        progress.style.width = estadoProgresoActual + '%';
+
+        if (estadoProgresoActual >= 100) {
+            clearInterval(estadoTimer);
+            estadoTimer = null;
+            estadoProgresoActual = 0;
+            siguienteEstado();
         }
-
-        var elapsed = ahora - _estadoInicioMs - _estadoPausadoAcum;
-        var porcentaje = Math.min(100, (elapsed / ESTADO_DURACION_MS) * 100);
-        estadoProgresoActual = porcentaje;
-
-        actualizarBarraSegmentada(porcentaje);
-
-        if (porcentaje >= 100) {
-            _estadoTimerRAF = null;
-            setTimeout(function() { siguienteEstado(); }, 60);
-            return;
-        }
-
-        _estadoTimerRAF = requestAnimationFrame(tick);
-    }
-
-    _estadoTimerRAF = requestAnimationFrame(tick);
+    }, 50); // 50 ms × 100 = 5 s
 }
 
 // ================================================================
-// SIGUIENTE ESTADO
+// NAVEGACIÓN
 // ================================================================
 function siguienteEstado() {
-    if (_cerrandoViewer) return;
-    if (_estadoTimerRAF) {
-        cancelAnimationFrame(_estadoTimerRAF);
-        _estadoTimerRAF = null;
-    }
-
-    if (estadoActualIndex < _estadosViewerActuales.length - 1) {
-        var fillActual = document.getElementById('segmento-fill-' + estadoActualIndex);
-        if (fillActual) fillActual.style.width = '100%';
-
+    var estadosUsuario = estadosCache.filter(function(e) { return e.usuario_id === estadoActualUserId; });
+    if (estadoActualIndex < estadosUsuario.length - 1) {
         estadoActualIndex++;
         estadoProgresoActual = 0;
         estadoPausado = false;
         mostrarEstadoActual();
     } else {
-        var fillUltimo = document.getElementById('segmento-fill-' + estadoActualIndex);
-        if (fillUltimo) fillUltimo.style.width = '100%';
-
-        _cerrandoViewer = true;
-        setTimeout(function() {
-            _cerrandoViewer = false;
-            cerrarEstadoViewer();
-        }, 250);
+        cerrarEstadoViewer();
     }
 }
 
-// ================================================================
-// ESTADO ANTERIOR
-// ================================================================
 function anteriorEstado() {
-    if (_cerrandoViewer) return;
-    if (_estadoTimerRAF) {
-        cancelAnimationFrame(_estadoTimerRAF);
-        _estadoTimerRAF = null;
-    }
-
     if (estadoActualIndex > 0) {
         estadoActualIndex--;
         estadoProgresoActual = 0;
@@ -411,53 +361,43 @@ function anteriorEstado() {
 // CERRAR VISOR
 // ================================================================
 function cerrarEstadoViewer() {
-    if (_estadoTimerRAF) {
-        cancelAnimationFrame(_estadoTimerRAF);
-        _estadoTimerRAF = null;
-    }
-
-    estadoPausado = false;
-    estadoProgresoActual = 0;
-    estadoActualIndex = 0;
-    estadoActualUserId = null;
-    _estadosViewerActuales = [];
-    _estadoPausadoAcum = 0;
-    _estadoPausaInicio = 0;
-
     var viewer = $('estadoViewer');
     if (viewer) viewer.classList.remove('show');
 
-    var container = $('estadoProgress');
-    if (container) container.innerHTML = '';
+    if (estadoTimer) {
+        clearInterval(estadoTimer);
+        estadoTimer = null;
+    }
+    estadoPausado = false;
+    estadoProgresoActual = 0;
+    estadoActualUserId = null;
+    estadoActualIndex = 0;
 
+    // Recargar franja para actualizar marcas de visto
     cargarEstados();
 }
 
 // ================================================================
-// PAUSAR / REANUDAR
+// PAUSA / REANUDAR
 // ================================================================
 function activarPausaEstado() {
     var viewer = $('estadoViewer');
     if (!viewer || !viewer.classList.contains('show')) return;
-    if (estadoPausado) return;
     estadoPausado = true;
-    _estadoPausaInicio = performance.now();
 }
 
 function desactivarPausaEstado() {
     var viewer = $('estadoViewer');
     if (!viewer || !viewer.classList.contains('show')) return;
-    if (!estadoPausado) return;
     estadoPausado = false;
-    _estadoPausadoAcum += performance.now() - _estadoPausaInicio;
-    _estadoPausaInicio = 0;
 }
 
 // ================================================================
-// MODAL DE VISTAS
+// MODAL DE VISTAS (quién vio mi estado)
 // ================================================================
 async function abrirVistasModal(estadoId) {
     if (!estadoId) return;
+
     activarPausaEstado();
 
     var modal = $('vistasModal');
@@ -527,7 +467,7 @@ async function abrirVistasModal(estadoId) {
             };
         });
     } catch (e) {
-        console.error('[Estados] Error cargando vistas:', e);
+        console.error('[Mensajes/Estados] Error cargando vistas:', e);
         if (list) {
             list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger);font-size:.8rem;">Error al cargar vistas</div>';
         }
@@ -577,7 +517,7 @@ function seleccionarArchivoEstado() {
 }
 
 function previewEstado(event) {
-    var file = event.target.files[0];
+    var file = event && event.target && event.target.files ? event.target.files[0] : null;
     if (!file) return;
 
     if (file.size > MAX_IMAGE_SIZE) {
@@ -585,6 +525,7 @@ function previewEstado(event) {
         event.target.value = '';
         return;
     }
+
     if (file.type.indexOf('image/') !== 0) {
         toast('❌ Solo se permiten imágenes', 'error');
         event.target.value = '';
@@ -607,11 +548,13 @@ function previewEstado(event) {
 
 async function publicarEstado() {
     var fileInput = $('estadoFileInput');
-    var file = fileInput ? fileInput.files[0] : null;
+    var file = fileInput && fileInput.files ? fileInput.files[0] : null;
+
     if (!file) {
         toast('⚠️ Selecciona una imagen', 'error');
         return;
     }
+
     if (!await auth()) return;
 
     var captionEl = $('estadoCaption');
@@ -624,12 +567,16 @@ async function publicarEstado() {
     }
 
     try {
-        var fileExt = file.name.split('.').pop().toLowerCase();
+        var fileExt = (file.name.split('.').pop() || 'jpg').toLowerCase();
         var filePath = user.id + '/' + Date.now() + '.' + fileExt;
 
         var uploadResult = await db.storage
             .from(ESTADOS_BUCKET)
-            .upload(filePath, file, { upsert: false, contentType: file.type });
+            .upload(filePath, file, {
+                upsert: false,
+                contentType: file.type,
+                cacheControl: '3600'
+            });
 
         if (uploadResult.error) throw uploadResult.error;
 
@@ -648,14 +595,14 @@ async function publicarEstado() {
         cerrarModalEstado();
         await cargarEstados();
     } catch (e) {
-        console.error('[Estados] Error publicando:', e);
+        console.error('[Mensajes/Estados] Error publicando:', e);
 
         if (e.message && (e.message.indexOf('Bucket') !== -1 || e.message.indexOf('not found') !== -1)) {
             toast('❌ Bucket "' + ESTADOS_BUCKET + '" no existe. Créalo en Supabase.', 'error');
         } else if (e.code === '42P01') {
             toast('❌ Tabla "estados" no existe. Ejecuta el SQL.', 'error');
         } else {
-            toast('❌ Error: ' + e.message, 'error');
+            toast('❌ Error: ' + (e.message || 'desconocido'), 'error');
         }
     } finally {
         if (btn) {
@@ -665,4 +612,34 @@ async function publicarEstado() {
     }
 }
 
-console.log('[Mensajes] ✅ Estados cargado');
+// ================================================================
+// EXPOSICIÓN GLOBAL
+// ================================================================
+window.cargarEstados = cargarEstados;
+window.abrirEstadoUsuario = abrirEstadoUsuario;
+window.mostrarEstadoActual = mostrarEstadoActual;
+window.iniciarProgresoEstado = iniciarProgresoEstado;
+window.siguienteEstado = siguienteEstado;
+window.anteriorEstado = anteriorEstado;
+window.cerrarEstadoViewer = cerrarEstadoViewer;
+window.activarPausaEstado = activarPausaEstado;
+window.desactivarPausaEstado = desactivarPausaEstado;
+window.abrirVistasModal = abrirVistasModal;
+window.cerrarVistasModal = cerrarVistasModal;
+window.abrirModalEstado = abrirModalEstado;
+window.cerrarModalEstado = cerrarModalEstado;
+window.seleccionarArchivoEstado = seleccionarArchivoEstado;
+window.previewEstado = previewEstado;
+window.publicarEstado = publicarEstado;
+window.marcarEstadoVisto = marcarEstadoVisto;
+window.estadoEsNuevo = estadoEsNuevo;
+window.limpiarVistosAntiguos = limpiarVistosAntiguos;
+window.registrarVistaEstado = registrarVistaEstado;
+window.obtenerVistasEstado = obtenerVistasEstado;
+
+// ================================================================
+// LOG FINAL
+// ================================================================
+if (window.DEBUG_CHAT) {
+    console.log('[Mensajes/Estados] ✅ Estados cargado');
+}
