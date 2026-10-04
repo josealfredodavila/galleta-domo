@@ -1,10 +1,10 @@
 // ================================================================
-// MARQUINHOS · PET v2.0 (optimizado para móvil)
+// MARQUINHOS · PET v2.1 (iOS friendly + z-index alto)
 // ================================================================
-// - Botón flotante visible SIEMPRE
-// - Tap → pide permiso de micrófono (iOS friendly)
-// - Wake word opcional
-// - Sin dependencia de consola
+// - Pide permiso DIRECTO al hacer recognition.start() (iOS friendly)
+// - z-index 2147483647 (máximo posible)
+// - overflow visible forzado en body
+// - Fallback si el avatar se corta
 // ================================================================
 
 'use strict';
@@ -63,30 +63,29 @@
     let recognition = null;
     let recognitionActive = false;
     let timeoutTimer = null;
-    let ultimoDiscurso = '';
     let audioActual = null;
     let historialLocal = [];
     let userInfo = null;
-    let modoActivo = 'idle'; // idle | esperando | escuchando | hablando
 
     // ================================================================
-    // DETECCIÓN
+    // UTILIDADES
     // ================================================================
     function rutaExcluida() {
         const path = window.location.pathname.toLowerCase();
         return RUTAS_EXCLUIDAS.some(r => path.indexOf(r) !== -1);
     }
 
-    function soportaVoz() {
-        return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+    function log(msg) {
+        // Log siempre, ayuda a diagnosticar
+        console.log('[Marquinhos]', msg);
     }
 
-    function soportaTTS() {
-        return !!window.speechSynthesis;
+    function warn(msg) {
+        console.warn('[Marquinhos]', msg);
     }
 
     // ================================================================
-    // CONFIGURACIÓN
+    // CONFIG
     // ================================================================
     function cargarConfig() {
         try {
@@ -104,11 +103,24 @@
     // ================================================================
     async function cargarUsuario() {
         try {
-            if (!window.getSupabase) return null;
+            if (!window.getSupabase) {
+                log('No hay window.getSupabase');
+                // Fallback: userInfo básico
+                userInfo = { id: 'anon', nombre: 'amigo', handle: 'usuario' };
+                return userInfo;
+            }
             const sb = window.getSupabase();
-            if (!sb || !sb.auth) return null;
+            if (!sb || !sb.auth) {
+                log('No hay sb.auth');
+                userInfo = { id: 'anon', nombre: 'amigo', handle: 'usuario' };
+                return userInfo;
+            }
             const r = await sb.auth.getSession();
-            if (!r.data.session) return null;
+            if (!r.data.session) {
+                log('Sin sesión activa');
+                userInfo = { id: 'anon', nombre: 'amigo', handle: 'usuario' };
+                return userInfo;
+            }
 
             const uid = r.data.session.user.id;
             try {
@@ -129,9 +141,12 @@
                     handle: 'usuario'
                 };
             }
+            log('Usuario cargado: ' + userInfo.nombre);
             return userInfo;
         } catch (e) {
-            return null;
+            warn('Error cargando usuario: ' + e.message);
+            userInfo = { id: 'anon', nombre: 'amigo', handle: 'usuario' };
+            return userInfo;
         }
     }
 
@@ -139,18 +154,18 @@
     // CREAR WIDGET
     // ================================================================
     function crearWidget() {
-        if (document.getElementById('marquinhos-pet')) return;
+        if (document.getElementById('marquinhos-pet')) {
+            log('Widget ya existe');
+            return;
+        }
 
         container = document.createElement('div');
         container.id = 'marquinhos-pet';
         container.className = 'mq-pet';
         container.innerHTML = `
-            <!-- Burbuja de texto -->
             <div class="mq-pet-bubble" id="mq-bubble">
                 <div class="mq-pet-bubble-text" id="mq-bubble-text"></div>
             </div>
-
-            <!-- Avatar -->
             <div class="mq-pet-avatar" id="mq-avatar" role="button" tabindex="0" aria-label="Activar Marquinhos">
                 <svg viewBox="0 0 200 260" xmlns="http://www.w3.org/2000/svg" class="mq-pet-svg">
                     <g>
@@ -188,8 +203,6 @@
                     <rect x="118" y="240" width="22" height="20" rx="8" fill="#FFF8E1" stroke="#1565C0" stroke-width="3"/>
                 </svg>
             </div>
-
-            <!-- Estado -->
             <div class="mq-pet-status" id="mq-status">
                 <span class="mq-dot"></span>
                 <span class="mq-status-text">Tócame</span>
@@ -197,69 +210,50 @@
         `;
 
         document.body.appendChild(container);
+
+        // Forzar body sin overflow hidden
+        try {
+            document.body.style.overflowX = 'visible';
+        } catch (e) {}
+
         bubble = document.getElementById('mq-bubble');
         statusEl = document.getElementById('mq-status');
 
-        // TAP en el avatar → activar
         const avatar = document.getElementById('mq-avatar');
         avatar.addEventListener('click', onAvatarTap);
-        avatar.addEventListener('touchend', (e) => {
+        avatar.addEventListener('touchend', function(e) {
             e.preventDefault();
             onAvatarTap();
         }, { passive: false });
+
+        log('Widget creado');
     }
 
     // ================================================================
-    // TAP EN EL AVATAR (activación manual, iOS-friendly)
+    // TAP EN EL AVATAR
     // ================================================================
     async function onAvatarTap() {
+        log('Avatar tocado');
         if (isSpeaking) {
-            // Si está hablando, callar
             detenerTTS();
             return;
         }
 
         if (!isVisible) {
-            // Mostrar + pedir permiso + escuchar
             mostrar();
-            await pedirPermisoYEscuchar();
-            return;
         }
 
         if (isListening) {
-            // Si ya escucha, callar
             detenerReconocimiento();
-            actualizarStatus('espera', 'Tócame para hablar');
+            actualizarStatus('espera', 'Tócame');
             return;
         }
 
-        // Está visible pero no escuchando → volver a escuchar
-        await pedirPermisoYEscuchar();
-    }
-
-    // ================================================================
-    // PEDIR PERMISO DE MICRÓFONO
-    // ================================================================
-    async function pedirPermisoYEscuchar() {
-        actualizarStatus('escuchando', 'Pidiendo permiso...');
-
-        try {
-            // Pedir permiso con getUserMedia
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            // Cerrar el stream inmediatamente (solo queríamos el permiso)
-            stream.getTracks().forEach(t => t.stop());
-        } catch (e) {
-            actualizarStatus('error', 'Sin permiso de micrófono');
-            mostrarBurbuja('No puedo escucharte. Activa el micrófono en los ajustes del navegador.');
-            setTimeout(ocultarBurbuja, 4000);
-            return;
-        }
-
-        // Ahora iniciar reconocimiento
+        // Iniciar reconocimiento DIRECTO (sin getUserMedia previo — iOS friendly)
         const ok = iniciarReconocimiento();
         if (!ok) {
             actualizarStatus('error', 'Voz no soportada');
-            mostrarBurbuja('Tu navegador no soporta reconocimiento de voz. Puedes escribirme.');
+            mostrarBurbuja('Tu navegador no soporta reconocimiento de voz.');
             setTimeout(ocultarBurbuja, 4000);
             return;
         }
@@ -291,9 +285,9 @@
     function iniciarTimeout() {
         detenerTimeout();
         if (config.timeout_seg <= 0) return;
-        timeoutTimer = setTimeout(() => {
+        timeoutTimer = setTimeout(function() {
             if (!isSpeaking && !isListening && isVisible) {
-                hablar('Si me necesitas, tócame otra vez.').then(() => {
+                hablar('Si me necesitas, tócame otra vez.').then(function() {
                     setTimeout(ocultar, 1200);
                 });
             }
@@ -319,13 +313,12 @@
     }
 
     // ================================================================
-    // HABLAR (TTS)
+    // HABLAR
     // ================================================================
     async function hablar(texto) {
         if (!texto) return;
         detenerTTS();
 
-        ultimoDiscurso = texto;
         const estilo = VOZ_ESTILOS[config.estilo_voz] || VOZ_ESTILOS.natural;
         const pitchBase = TONO_PITCH[config.tono] || 1.0;
         const rate = estilo.rate * (config.velocidad || 1.0);
@@ -336,53 +329,17 @@
         isSpeaking = true;
         actualizarStatus('hablando', 'Hablando...');
 
-        // Intentar con backend primero
-        let ok = false;
-        if (!window.__marquinhosNoBackend && window.getSupabase) {
-            try {
-                const sb = window.getSupabase();
-                const s = await sb.auth.getSession();
-                if (s.data.session) {
-                    const resp = await fetch('/api/ai/voice/tts', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': 'Bearer ' + s.data.session.access_token
-                        },
-                        body: JSON.stringify({
-                            text: texto,
-                            voice: estilo.google,
-                            rate: rate,
-                            pitch: pitch
-                        })
-                    });
-                    if (resp.ok) {
-                        const data = await resp.json();
-                        const url = data.audio_url || data.audioUrl;
-                        if (url) {
-                            ok = true;
-                            await reproducirAudio(url);
-                        }
-                    }
-                }
-            } catch (e) {
-                window.__marquinhosNoBackend = true;
-            }
-        }
-
-        // Fallback: navegador
-        if (!ok) {
-            await hablarNavegador(texto, rate, pitch, volumen);
-        }
+        // SIEMPRE usar navegador (más simple, sin backend)
+        await hablarNavegador(texto, rate, pitch, volumen);
 
         isSpeaking = false;
         actualizarStatus('espera', 'Tócame');
-        setTimeout(() => { if (!isSpeaking) ocultarBurbuja(); }, 2500);
+        setTimeout(function() { if (!isSpeaking) ocultarBurbuja(); }, 2500);
         if (isVisible) iniciarTimeout();
     }
 
     function hablarNavegador(texto, rate, pitch, volumen) {
-        return new Promise((resolve) => {
+        return new Promise(function(resolve) {
             if (!window.speechSynthesis) { resolve(); return; }
             window.speechSynthesis.cancel();
             const u = new SpeechSynthesisUtterance(texto);
@@ -396,18 +353,6 @@
         });
     }
 
-    function reproducirAudio(url) {
-        return new Promise((resolve) => {
-            try {
-                audioActual = new Audio(url);
-                audioActual.volume = Math.max(0, Math.min(1, config.volumen || 1.0));
-                audioActual.onended = () => { audioActual = null; resolve(); };
-                audioActual.onerror = () => { audioActual = null; resolve(); };
-                audioActual.play().catch(() => resolve());
-            } catch (e) { resolve(); }
-        });
-    }
-
     function detenerTTS() {
         try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
         if (audioActual) { try { audioActual.pause(); audioActual = null; } catch (e) {} }
@@ -415,69 +360,72 @@
     }
 
     // ================================================================
-    // ESTADO VISUAL
+    // STATUS
     // ================================================================
     function actualizarStatus(tipo, texto) {
         if (!statusEl) return;
         statusEl.className = 'mq-pet-status mq-status-' + tipo;
         const t = statusEl.querySelector('.mq-status-text');
         if (t) t.textContent = texto || '';
-        if (container) container.setAttribute('data-estado', tipo);
     }
 
     // ================================================================
-    // RECONOCIMIENTO DE VOZ
+    // RECONOCIMIENTO
     // ================================================================
     function iniciarReconocimiento() {
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SR) return false;
+        if (!SR) {
+            warn('SpeechRecognition no soportado');
+            return false;
+        }
 
         if (recognitionActive && recognition) return true;
 
         try {
             recognition = new SR();
             recognition.lang = config.idioma || 'es-MX';
-            recognition.continuous = false;    // iOS no soporta continuous bien
+            recognition.continuous = false;
             recognition.interimResults = false;
             recognition.maxAlternatives = 1;
 
-            recognition.onstart = () => {
+            recognition.onstart = function() {
                 recognitionActive = true;
                 isListening = true;
                 actualizarStatus('escuchando', 'Escuchando...');
                 mostrarBurbuja('Te escucho...');
+                log('Reconocimiento iniciado');
             };
 
-            recognition.onresult = (event) => {
+            recognition.onresult = function(event) {
                 const transcript = event.results[0][0].transcript.trim();
+                log('Dijiste: ' + transcript);
                 if (!transcript) return;
 
                 const lower = transcript.toLowerCase();
-
-                // Si dice adiós → cerrar
                 if (lower.includes('adiós') || lower.includes('adios') ||
                     lower.includes('chao') || lower.includes('hasta luego')) {
-                    hablar('¡Hasta luego!').then(() => ocultar());
+                    hablar('¡Hasta luego!').then(function() { ocultar(); });
                     return;
                 }
-
-                // Procesar comando
                 procesarComando(transcript);
             };
 
-            recognition.onerror = (event) => {
+            recognition.onerror = function(event) {
                 recognitionActive = false;
                 isListening = false;
+                warn('Error reconocimiento: ' + event.error);
                 if (event.error === 'not-allowed') {
                     actualizarStatus('error', 'Micrófono bloqueado');
+                    mostrarBurbuja('Permite el micrófono en los ajustes del navegador.');
+                    setTimeout(ocultarBurbuja, 5000);
                 } else if (event.error === 'no-speech') {
-                    actualizarStatus('espera', 'Tócame para hablar');
+                    actualizarStatus('espera', 'Tócame');
                 } else {
                     actualizarStatus('error', 'Error de audio');
                 }
             };
 
-            recognition.onend = () => {
+            recognition.onend = function() {
                 recognitionActive = false;
                 isListening = false;
                 if (isVisible && !isSpeaking) {
@@ -488,6 +436,7 @@
             recognition.start();
             return true;
         } catch (e) {
+            warn('Error al iniciar reconocimiento: ' + e.message);
             return false;
         }
     }
@@ -518,7 +467,7 @@
                 respuesta = 'Ups, tuve un problema. ¿Puedes repetir?';
             }
         } else {
-            respuesta = 'Aún estoy aprendiendo. ¿Puedes preguntarme algo más simple?';
+            respuesta = 'Aún estoy aprendiendo. Pregúntame cosas simples como "hola", "¿qué hora es?", o "¿quién eres?".';
         }
 
         if (!respuesta) respuesta = 'No supe qué decir.';
@@ -533,7 +482,7 @@
     // VISIBILITY
     // ================================================================
     function instalarVisibility() {
-        document.addEventListener('visibilitychange', () => {
+        document.addEventListener('visibilitychange', function() {
             if (document.hidden) {
                 detenerTTS();
                 detenerReconocimiento();
@@ -546,40 +495,50 @@
     // API PÚBLICA
     // ================================================================
     window.Marquinhos = {
-        mostrar,
-        ocultar,
-        hablar,
+        mostrar: mostrar,
+        ocultar: ocultar,
+        hablar: hablar,
         procesar: procesarComando,
-        activar: () => { mostrar(); pedirPermisoYEscuchar(); },
-        getConfig: () => ({ ...config }),
-        setConfig: (nuevos) => { config = { ...config, ...nuevos }; guardarConfig(); },
+        activar: function() { mostrar(); },
+        getConfig: function() { return { ...config }; },
+        setConfig: function(nuevos) { config = { ...config, ...nuevos }; guardarConfig(); },
         recargarConfig: cargarConfig,
-        getHistorial: () => historialLocal.slice(),
-        getUserInfo: () => userInfo
+        getHistorial: function() { return historialLocal.slice(); },
+        getUserInfo: function() { return userInfo; }
     };
 
     // ================================================================
     // INIT
     // ================================================================
     async function init() {
-        if (rutaExcluida()) return;
+        log('Iniciando init()...');
+
+        if (rutaExcluida()) {
+            log('Ruta excluida, no se activa');
+            return;
+        }
 
         cargarConfig();
-        if (!config.activo) return;
+        if (!config.activo) {
+            log('Desactivado por el usuario');
+            return;
+        }
 
         await cargarUsuario();
-        if (!userInfo) return;
+        log('Usuario: ' + (userInfo ? userInfo.nombre : 'null'));
 
         crearWidget();
         instalarVisibility();
 
-        // Mostrar burbuja al cargar
-        setTimeout(() => {
-            mostrarBurbuja('¡Hola ' + (userInfo.nombre || '') + '! Tócame para hablar.');
-            setTimeout(() => {
+        // Mostrar burbuja de bienvenida
+        setTimeout(function() {
+            mostrarBurbuja('¡Hola ' + (userInfo?.nombre || '') + '! Tócame para hablar.');
+            setTimeout(function() {
                 if (!isSpeaking) ocultarBurbuja();
             }, 4000);
         }, 800);
+
+        log('✅ Listo.');
     }
 
     if (document.readyState === 'loading') {
