@@ -24,7 +24,7 @@ async function cargarPlanes() {
         return planes;
     } catch (error) {
         console.error('Error cargando planes:', error);
-        showToast('❌ Error al cargar paquetes', 'error');
+        showToast('✕ Error al cargar paquetes', 'error');
         planes = [];
         renderPacks();
         return [];
@@ -41,8 +41,8 @@ function renderPacks() {
     if (!planes || planes.length === 0) {
         grid.innerHTML =
             '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted);">' +
-                '<span style="font-size:2rem;">📡</span>' +
-                '<p style="margin-top:10px;">No hay paquetes disponibles en este momento</p>' +
+                '<span style="font-size:3rem;color:var(--gold-cosmic);opacity:0.6;text-shadow:0 0 30px color-mix(in srgb, var(--accent, #D4AF37) 50%, transparent);display:inline-block;">◈</span>' +
+                '<p style="margin-top:12px;font-family:\'Orbitron\',monospace;color:var(--gold-cosmic);letter-spacing:1px;">Sin paquetes disponibles</p>' +
                 '<p style="font-size:0.7rem;">Vuelve más tarde</p>' +
             '</div>';
         return;
@@ -50,7 +50,7 @@ function renderPacks() {
 
     grid.innerHTML = planes.map(function(p, index) {
         return '<div onclick="selectPack(' + Number(p.id) + ')" id="pack-' + Number(p.id) + '" class="pack-card ' + (index === 2 ? 'popular' : '') + '">' +
-            (index === 2 ? '<div class="popular-badge">✦ POPULAR</div>' : '') +
+            (index === 2 ? '<div class="popular-badge">◈ POPULAR</div>' : '') +
             '<div class="pack-header">' +
                 '<span class="pack-name">' + escapeHTML(p.nombre) + '</span>' +
                 '<span class="pack-vel">4G/5G</span>' +
@@ -103,7 +103,7 @@ function poblarRedesDePago(montoMxn) {
     if (redes.length === 0) {
         var minimoMxn = Math.ceil(1 / MXN_A_USD_APROX);
         select.innerHTML = '<option value="">Monto insuficiente</option>';
-        if (info) info.innerHTML = '<span class="warn">⚠ El paquete es menor al mínimo. Mínimo: ~$' + minimoMxn + ' MXN (1 USD).</span>';
+        if (info) info.innerHTML = '<span class="warn">◈ El paquete es menor al mínimo. Mínimo: ~$' + minimoMxn + ' MXN (1 USD).</span>';
         return;
     }
 
