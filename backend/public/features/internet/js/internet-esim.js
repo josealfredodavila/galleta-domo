@@ -31,7 +31,7 @@ async function abrirMiEsim() {
         renderEsim(e);
         mostrarVista('esim');
     } else {
-        showToast('Aún no tienes una eSIM', 'warning');
+        showToast('◈ Aún no tienes una eSIM', 'warning');
     }
 }
 
@@ -47,13 +47,13 @@ function renderEsim(esim) {
 
     if (badge) {
         var map = {
-            'activa': { txt: '● ACTIVA', cls: 'activa' },
-            'sin_saldo': { txt: '● SIN SALDO', cls: 'sin_saldo' },
-            'pendiente': { txt: '● PENDIENTE', cls: 'pendiente' },
-            'aprovisionando': { txt: '● PREPARANDO', cls: 'aprovisionando' },
-            'reemplazando': { txt: '● CAMBIANDO', cls: 'aprovisionando' }
+            'activa': { txt: '◈ ACTIVA', cls: 'activa' },
+            'sin_saldo': { txt: '◈ SIN SALDO', cls: 'sin_saldo' },
+            'pendiente': { txt: '◈ PENDIENTE', cls: 'pendiente' },
+            'aprovisionando': { txt: '◈ PREPARANDO', cls: 'aprovisionando' },
+            'reemplazando': { txt: '◈ CAMBIANDO', cls: 'aprovisionando' }
         };
-        var info = map[estado] || { txt: '● ' + String(estado).toUpperCase(), cls: 'pendiente' };
+        var info = map[estado] || { txt: '◈ ' + String(estado).toUpperCase(), cls: 'pendiente' };
         badge.textContent = info.txt;
         badge.className = 'esim-badge ' + info.cls;
     }
@@ -160,13 +160,13 @@ async function sincronizarEsim() {
     try {
         var r = await api('/api/telnyx/esim/sync', { method: 'POST' });
         if (!r.resp.ok || !r.data.success) {
-            showToast('❌ ' + (r.data.error || 'No se pudo actualizar'), 'error');
+            showToast('✕ ' + (r.data.error || 'No se pudo actualizar'), 'error');
             return;
         }
         renderEsim(r.data.data);
-        showToast('✅ Datos actualizados', 'success');
+        showToast('◈ Datos actualizados', 'success');
     } catch (error) {
-        showToast('❌ ' + error.message, 'error');
+        showToast('✕ ' + error.message, 'error');
     } finally {
         if (btn) btn.disabled = false;
     }
@@ -180,13 +180,13 @@ async function cambiarCelular() {
 
     var btn = document.getElementById('btnCambiarCelular');
     if (btn) btn.disabled = true;
-    showToast('⏳ Generando tu nueva eSIM...', '', 8000);
+    showToast('◈ Generando tu nueva eSIM...', '', 8000);
 
     try {
         var r = await api('/api/telnyx/esim/reemplazar', { method: 'POST' });
 
         if (!r.resp.ok || !r.data.success) {
-            var prefijo = r.resp.status === 429 ? '⏳ ' : '❌ ';
+            var prefijo = r.resp.status === 429 ? '◈ ' : '✕ ';
             var tipo = r.resp.status === 429 ? 'warning' : 'error';
             showToast(prefijo + (r.data.error || 'No se pudo cambiar la eSIM'), tipo, 6000);
             if (esimActual) renderEsim(esimActual);
@@ -194,9 +194,9 @@ async function cambiarCelular() {
         }
 
         renderEsim(r.data.data);
-        showToast('🎉 Listo. Instala la nueva eSIM con el código de abajo.', 'success', 6000);
+        showToast('◈ Listo. Instala la nueva eSIM con el código de abajo.', 'success', 6000);
     } catch (error) {
-        showToast('❌ ' + error.message, 'error');
+        showToast('✕ ' + error.message, 'error');
         if (esimActual) renderEsim(esimActual);
     }
 }
@@ -209,14 +209,14 @@ async function copiarLPA() {
     var lpa = lpaEl ? lpaEl.textContent : null;
 
     if (!lpa || lpa === '—') {
-        showToast('⚠️ No hay código para copiar', 'warning');
+        showToast('◈ No hay código para copiar', 'warning');
         return;
     }
 
     try {
         await navigator.clipboard.writeText(lpa);
-        showToast('📋 Código copiado', 'success');
+        showToast('◈ Código copiado', 'success');
     } catch (_) {
-        showToast('❌ No se pudo copiar. Mantén presionado el código para copiarlo.', 'error', 5000);
+        showToast('✕ No se pudo copiar. Mantén presionado el código para copiarlo.', 'error', 5000);
     }
 }
