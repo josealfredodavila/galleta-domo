@@ -1,5 +1,6 @@
 // ================================================================
-// MARQUINHOS · PET v3.0 (arrastrable + IA real + sin subtítulo)
+// MARQUINHOS · PET v4.0
+// arrastrable + memoria persistente + conversación continua
 // ================================================================
 
 'use strict';
@@ -24,6 +25,7 @@
         volumen: 1.0,
         timeout_seg: 20,
         manos_libres: false,
+        conversacion: true,   // sigue escuchando después de responder
         idioma: null,
         posicion_x: null,
         posicion_y: null
@@ -38,18 +40,25 @@
 
     const TONO_PITCH = { grave: 0.85, medio: 1.0, agudo: 1.15 };
 
+    // Memoria de conversación
+    const HIST_MAX = 40;                              // mensajes guardados
+    const HIST_TTL_MS = 7 * 24 * 60 * 60 * 1000;      // 7 días
+    const HIST_KEY = 'marquinhos_hist_';
+
     let config = { ...CONFIG_DEFAULT };
     let container = null;
     let bubble = null;
-    let isVisible = true;
     let isSpeaking = false;
     let isListening = false;
     let recognition = null;
     let recognitionActive = false;
-    let timeoutTimer = null;
     let audioActual = null;
     let historialLocal = [];
     let userInfo = null;
+    let ttsToken = 0;
+    let conversacionActiva = false;
+    let procesando = false;
+    let recibioResultado = false;
 
     // Arrastre
     let isDragging = false;
@@ -75,6 +84,36 @@
 
     function guardarConfig() {
         try { localStorage.setItem('marquinhos_config', JSON.stringify(config)); } catch (e) {}
+    }
+
+    // ============================================================
+    // MEMORIA PERSISTENTE
+    // ============================================================
+    function cargarHistorial() {
+        try {
+            const raw = localStorage.getItem(HIST_KEY + (userInfo ? userInfo.id : 'anon'));
+            if (!raw) { historialLocal = []; return; }
+            const arr = JSON.parse(raw);
+            const limite = Date.now() - HIST_TTL_MS;
+            historialLocal = (Array.isArray(arr) ? arr : [])
+                .filter(m => m && m.content && m.ts && m.ts > limite)
+                .slice(-HIST_MAX);
+        } catch (e) { historialLocal = []; }
+    }
+
+    function guardarHistorial() {
+        try {
+            historialLocal = historialLocal.slice(-HIST_MAX);
+            localStorage.setItem(
+                HIST_KEY + (userInfo ? userInfo.id : 'anon'),
+                JSON.stringify(historialLocal)
+            );
+        } catch (e) {}
+    }
+
+    function olvidarTodo() {
+        historialLocal = [];
+        try { localStorage.removeItem(HIST_KEY + (userInfo ? userInfo.id : 'anon')); } catch (e) {}
     }
 
     async function cargarUsuario() {
@@ -106,6 +145,9 @@
         }
     }
 
+    // ============================================================
+    // WIDGET
+    // ============================================================
     function crearWidget() {
         if (document.getElementById('marquinhos-pet')) return;
 
@@ -113,7 +155,6 @@
         container.id = 'marquinhos-pet';
         container.className = 'mq-pet';
 
-        // Restaurar posición guardada
         if (config.posicion_x !== null && config.posicion_y !== null) {
             container.style.left = config.posicion_x + 'px';
             container.style.top = config.posicion_y + 'px';
@@ -165,38 +206,24 @@
         `;
 
         document.body.appendChild(container);
-
         try { document.body.style.overflowX = 'visible'; } catch (e) {}
 
         bubble = document.getElementById('mq-bubble');
-
         const avatar = document.getElementById('mq-avatar');
 
-        // ============================================================
-        // TAP → ACTIVAR VOZ
-        // ============================================================
-        avatar.addEventListener('click', function(e) {
-            // Si fue un drag, no hacer nada
-            if (hasMoved) {
-                hasMoved = false;
-                return;
-            }
+        avatar.addEventListener('click', function() {
+            if (hasMoved) { hasMoved = false; return; }
             onAvatarTap();
         });
 
-        // ============================================================
-        // ARRASTRE CON POINTER EVENTS (funciona mouse + touch)
-        // ============================================================
         avatar.addEventListener('pointerdown', function(e) {
             isDragging = true;
             hasMoved = false;
             dragStartX = e.clientX;
             dragStartY = e.clientY;
-
             const rect = container.getBoundingClientRect();
             posStartX = rect.left;
             posStartY = rect.top;
-
             avatar.setPointerCapture(e.pointerId);
             container.classList.add('mq-dragging');
             e.preventDefault();
@@ -204,21 +231,13 @@
 
         avatar.addEventListener('pointermove', function(e) {
             if (!isDragging) return;
-
             const dx = e.clientX - dragStartX;
             const dy = e.clientY - dragStartY;
-
-            // Detectar movimiento real (más de 5px)
-            if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
-                hasMoved = true;
-            }
-
+            if (Math.abs(dx) > 5 || Math.abs(dy) > 5) hasMoved = true;
             if (!hasMoved) return;
 
             let newX = posStartX + dx;
             let newY = posStartY + dy;
-
-            // Limitar dentro de la pantalla
             const maxX = window.innerWidth - 90;
             const maxY = window.innerHeight - 130;
             newX = Math.max(0, Math.min(maxX, newX));
@@ -234,9 +253,7 @@
             if (!isDragging) return;
             isDragging = false;
             container.classList.remove('mq-dragging');
-            avatar.releasePointerCapture(e.pointerId);
-
-            // Guardar posición
+            try { avatar.releasePointerCapture(e.pointerId); } catch (err) {}
             if (hasMoved) {
                 const rect = container.getBoundingClientRect();
                 config.posicion_x = rect.left;
@@ -245,7 +262,7 @@
             }
         });
 
-        avatar.addEventListener('pointercancel', function(e) {
+        avatar.addEventListener('pointercancel', function() {
             isDragging = false;
             container.classList.remove('mq-dragging');
         });
@@ -253,31 +270,44 @@
         log('Widget creado');
     }
 
+    // ============================================================
+    // TAP: inicia / detiene la conversación
+    // ============================================================
+    function detenerConversacion() {
+        conversacionActiva = false;
+        detenerTTS();
+        detenerReconocimiento();
+        setEstado('idle');
+        ocultarBurbuja();
+    }
+
     async function onAvatarTap() {
-        if (isSpeaking) {
-            detenerTTS();
-            return;
-        }
-        if (isListening) {
-            detenerReconocimiento();
+        // Si está hablando, escuchando o pensando → parar todo
+        if (isSpeaking || isListening || procesando) {
+            detenerConversacion();
             return;
         }
 
+        conversacionActiva = !!config.conversacion;
         const ok = iniciarReconocimiento();
         if (!ok) {
+            conversacionActiva = false;
             mostrarBurbuja('Tu navegador no soporta reconocimiento de voz.');
             setTimeout(ocultarBurbuja, 4000);
-            return;
         }
-
-        const saludo = '¿Sí, ' + (userInfo?.nombre || 'amigo') + '?';
-        hablar(saludo);
+        // Sin saludo hablado: así el micrófono no se escucha a sí mismo
     }
+
+    // ============================================================
+    // BURBUJA
+    // ============================================================
+    function setEstado(e) { if (container) container.setAttribute('data-estado', e); }
 
     function mostrarBurbuja(texto) {
         if (!bubble) return;
         const t = document.getElementById('mq-bubble-text');
-        if (t) t.textContent = texto;
+        const corto = texto.length > 160 ? texto.slice(0, 157) + '…' : texto;
+        if (t) t.textContent = corto;
         bubble.classList.add('mq-bubble-visible');
     }
 
@@ -285,9 +315,14 @@
         if (bubble) bubble.classList.remove('mq-bubble-visible');
     }
 
+    // ============================================================
+    // VOZ (TTS)
+    // ============================================================
+    // Devuelve true si terminó de hablar completo (no fue interrumpido)
     async function hablar(texto) {
-        if (!texto) return;
+        if (!texto) return false;
         detenerTTS();
+        const miToken = ++ttsToken;
 
         const estilo = VOZ_ESTILOS[config.estilo_voz] || VOZ_ESTILOS.natural;
         const pitchBase = TONO_PITCH[config.tono] || 1.0;
@@ -297,34 +332,32 @@
 
         mostrarBurbuja(texto);
         isSpeaking = true;
-        if (container) container.setAttribute('data-estado', 'hablando');
+        setEstado('hablando');
 
-        // 1. Intentar con TTS del backend
         let ok = false;
-        if (window.getSupabase && !window.__marquinhosNoBackendTTS) {
+        // Backend TTS solo para textos cortos; los largos van por el navegador (por frases)
+        if (texto.length <= 300 && window.getSupabase && !window.__marquinhosNoBackendTTS) {
             try {
                 const sb = window.getSupabase();
                 const s = await sb.auth.getSession();
-                if (s.data.session) {
+                if (s.data.session && miToken === ttsToken) {
                     const resp = await fetch('/api/ai/voice/tts', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                             'Authorization': 'Bearer ' + s.data.session.access_token
                         },
-                        body: JSON.stringify({
-                            text: texto,
-                            rate: rate,
-                            pitch: pitch
-                        })
+                        body: JSON.stringify({ text: texto, rate: rate, pitch: pitch })
                     });
                     if (resp.ok) {
                         const data = await resp.json();
                         const url = data.audio_url || data.audioUrl;
-                        if (url) {
+                        if (url && miToken === ttsToken) {
                             ok = true;
                             await reproducirAudio(url);
                         }
+                    } else {
+                        window.__marquinhosNoBackendTTS = true;
                     }
                 }
             } catch (e) {
@@ -332,29 +365,49 @@
             }
         }
 
-        // 2. Fallback: navegador
-        if (!ok) {
-            await hablarNavegador(texto, rate, pitch, volumen);
+        if (!ok && miToken === ttsToken) {
+            await hablarNavegador(texto, rate, pitch, volumen, miToken);
         }
 
-        isSpeaking = false;
-        if (container) container.setAttribute('data-estado', 'idle');
-        setTimeout(function() { if (!isSpeaking) ocultarBurbuja(); }, 3000);
+        const completo = (miToken === ttsToken);
+        if (completo) {
+            isSpeaking = false;
+            setEstado('idle');
+            setTimeout(function() { if (!isSpeaking && !isListening) ocultarBurbuja(); }, 3000);
+        }
+        return completo;
     }
 
-    function hablarNavegador(texto, rate, pitch, volumen) {
-        return new Promise(function(resolve) {
-            if (!window.speechSynthesis) { resolve(); return; }
-            window.speechSynthesis.cancel();
-            const u = new SpeechSynthesisUtterance(texto);
-            u.lang = config.idioma || 'es-MX';
-            u.rate = Math.max(0.5, Math.min(2, rate));
-            u.pitch = Math.max(0.5, Math.min(2, pitch));
-            u.volume = volumen;
-            u.onend = resolve;
-            u.onerror = resolve;
-            window.speechSynthesis.speak(u);
+    // Divide en frases (evita el corte de ~15 s de speechSynthesis en Chrome/Android)
+    function dividirEnFrases(texto) {
+        const partes = texto.split(/(?<=[.!?…\n])\s+/);
+        const out = [];
+        let acc = '';
+        partes.forEach(function(p) {
+            if ((acc + ' ' + p).length > 170 && acc) { out.push(acc.trim()); acc = p; }
+            else acc = acc ? acc + ' ' + p : p;
         });
+        if (acc.trim()) out.push(acc.trim());
+        return out;
+    }
+
+    async function hablarNavegador(texto, rate, pitch, volumen, miToken) {
+        if (!window.speechSynthesis) return;
+        window.speechSynthesis.cancel();
+        const frases = dividirEnFrases(texto);
+        for (let i = 0; i < frases.length; i++) {
+            if (miToken !== ttsToken) return;
+            await new Promise(function(resolve) {
+                const u = new SpeechSynthesisUtterance(frases[i]);
+                u.lang = config.idioma || 'es-MX';
+                u.rate = Math.max(0.5, Math.min(2, rate));
+                u.pitch = Math.max(0.5, Math.min(2, pitch));
+                u.volume = volumen;
+                u.onend = resolve;
+                u.onerror = resolve;
+                window.speechSynthesis.speak(u);
+            });
+        }
     }
 
     function reproducirAudio(url) {
@@ -370,11 +423,15 @@
     }
 
     function detenerTTS() {
+        ttsToken++;
         try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
-        if (audioActual) { try { audioActual.pause(); audioActual = null; } catch (e) {} }
+        if (audioActual) { try { audioActual.pause(); } catch (e) {} audioActual = null; }
         isSpeaking = false;
     }
 
+    // ============================================================
+    // RECONOCIMIENTO DE VOZ
+    // ============================================================
     function iniciarReconocimiento() {
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SR) return false;
@@ -386,39 +443,66 @@
             recognition.continuous = false;
             recognition.interimResults = false;
             recognition.maxAlternatives = 1;
+            recibioResultado = false;
 
             recognition.onstart = function() {
                 recognitionActive = true;
                 isListening = true;
-                if (container) container.setAttribute('data-estado', 'escuchando');
+                setEstado('escuchando');
                 mostrarBurbuja('Te escucho...');
             };
 
             recognition.onresult = function(event) {
                 const transcript = event.results[0][0].transcript.trim();
                 if (!transcript) return;
+                recibioResultado = true;
                 const lower = transcript.toLowerCase();
-                if (lower.includes('adiós') || lower.includes('adios') || lower.includes('hasta luego')) {
-                    hablar('¡Hasta luego!');
+
+                if (/(adiós|adios|hasta luego|nos vemos|ya no)/.test(lower) && lower.length < 30) {
+                    conversacionActiva = false;
+                    historialLocal.push({ role: 'user', content: transcript, ts: Date.now() });
+                    hablar('¡Hasta luego!').then(function() { guardarHistorial(); });
                     return;
                 }
+
+                if (/(olvida (todo|lo que hablamos)|borra (la )?conversaci[oó]n|empecemos de nuevo)/.test(lower)) {
+                    olvidarTodo();
+                    hablar('Listo, empezamos de cero.').then(function() {
+                        if (conversacionActiva) iniciarReconocimiento();
+                    });
+                    return;
+                }
+
                 procesarComando(transcript);
             };
 
             recognition.onerror = function(event) {
                 recognitionActive = false;
                 isListening = false;
-                if (container) container.setAttribute('data-estado', 'idle');
-                if (event.error === 'not-allowed') {
+                if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                    conversacionActiva = false;
+                    setEstado('idle');
                     mostrarBurbuja('Permite el micrófono.');
                     setTimeout(ocultarBurbuja, 5000);
+                } else if (event.error === 'no-speech' || event.error === 'aborted') {
+                    // silencio: termina la conversación continua sin ruido
+                    conversacionActiva = false;
+                    setEstado('idle');
+                    ocultarBurbuja();
+                } else {
+                    setEstado('idle');
                 }
             };
 
             recognition.onend = function() {
                 recognitionActive = false;
                 isListening = false;
-                if (container) container.setAttribute('data-estado', 'idle');
+                if (!procesando && !isSpeaking) setEstado('idle');
+                // Terminó sin resultado → fin de la conversación continua
+                if (!recibioResultado && !procesando && !isSpeaking) {
+                    conversacionActiva = false;
+                    setTimeout(function() { if (!isSpeaking && !procesando) ocultarBurbuja(); }, 1500);
+                }
             };
 
             recognition.start();
@@ -430,15 +514,19 @@
 
     function detenerReconocimiento() {
         if (recognition && recognitionActive) {
-            try { recognition.stop(); } catch (e) {}
+            try { recognition.abort ? recognition.abort() : recognition.stop(); } catch (e) {}
         }
         recognitionActive = false;
         isListening = false;
     }
 
+    // ============================================================
+    // PROCESAR (pregunta → IA → respuesta hablada → vuelve a escuchar)
+    // ============================================================
     async function procesarComando(texto) {
         if (!texto) return;
-        if (container) container.setAttribute('data-estado', 'pensando');
+        procesando = true;
+        setEstado('pensando');
         mostrarBurbuja('...');
 
         historialLocal.push({ role: 'user', content: texto, ts: Date.now() });
@@ -457,23 +545,33 @@
         if (!respuesta) respuesta = 'No supe qué decir.';
 
         historialLocal.push({ role: 'assistant', content: respuesta, ts: Date.now() });
-        if (historialLocal.length > 30) historialLocal = historialLocal.slice(-30);
+        guardarHistorial();
 
-        await hablar(respuesta);
+        procesando = false;
+        const completo = await hablar(respuesta);
+
+        // Conversación continua: vuelve a escuchar si no la interrumpieron
+        if (completo && conversacionActiva) {
+            recibioResultado = false;
+            setTimeout(function() {
+                if (conversacionActiva && !isSpeaking && !isListening && !procesando) {
+                    iniciarReconocimiento();
+                }
+            }, 300);
+        }
     }
 
     function instalarVisibility() {
         document.addEventListener('visibilitychange', function() {
-            if (document.hidden) {
-                detenerTTS();
-                detenerReconocimiento();
-            }
+            if (document.hidden) detenerConversacion();
         });
     }
 
     window.Marquinhos = {
         hablar: hablar,
         procesar: procesarComando,
+        olvidar: olvidarTodo,
+        getHistorial: function() { return historialLocal.slice(); },
         getConfig: function() { return { ...config }; },
         setConfig: function(nuevos) { config = { ...config, ...nuevos }; guardarConfig(); },
         resetPosicion: function() {
@@ -496,9 +594,10 @@
         if (!config.activo) return;
 
         await cargarUsuario();
+        cargarHistorial();
         crearWidget();
         instalarVisibility();
-        log('✅ Listo.');
+        log('✅ Listo. Mensajes en memoria: ' + historialLocal.length);
     }
 
     if (document.readyState === 'loading') {
