@@ -1,6 +1,7 @@
 // ================================================================
-// MARQUINHOS · PET v4.0
+// MARQUINHOS · PET v5.0
 // arrastrable + memoria persistente + conversación continua
+// + accesorios de la tienda sobre el avatar
 // ================================================================
 
 'use strict';
@@ -14,7 +15,8 @@
         '/pagar', '/pay', '/checkout', '/success', '/cancel',
         '/terminos', '/privacidad', '/cookies', '/legal',
         '/info', '/live-terminos', '/eliminar-cuenta',
-        '/actualizar-contrasena'
+        '/actualizar-contrasena',
+        '/features/marquinhos/tienda'   // ← NUEVO: no duplicar pet en la tienda
     ];
 
     const CONFIG_DEFAULT = {
@@ -41,9 +43,12 @@
     const TONO_PITCH = { grave: 0.85, medio: 1.0, agudo: 1.15 };
 
     // Memoria de conversación
-    const HIST_MAX = 40;                              // mensajes guardados
-    const HIST_TTL_MS = 7 * 24 * 60 * 60 * 1000;      // 7 días
+    const HIST_MAX = 40;
+    const HIST_TTL_MS = 7 * 24 * 60 * 60 * 1000;
     const HIST_KEY = 'marquinhos_hist_';
+
+    // Accesorios equipados (cache)
+    const ACC_KEY = 'marquinhos_accesorios_equipados';
 
     let config = { ...CONFIG_DEFAULT };
     let container = null;
@@ -59,6 +64,7 @@
     let conversacionActiva = false;
     let procesando = false;
     let recibioResultado = false;
+    let accesoriosEquipados = [];   // ← NUEVO
 
     // Arrastre
     let isDragging = false;
@@ -74,6 +80,12 @@
     }
 
     function log(msg) { console.log('[Marquinhos]', msg); }
+
+    function esc(v) {
+        const d = document.createElement('div');
+        d.textContent = v == null ? '' : String(v);
+        return d.innerHTML;
+    }
 
     function cargarConfig() {
         try {
@@ -146,6 +158,82 @@
     }
 
     // ============================================================
+    // ACCESORIOS DE LA TIENDA
+    // ============================================================
+    async function cargarAccesorios() {
+        // 1. Cargar desde localStorage primero (respuesta instantánea)
+        try {
+            const cached = JSON.parse(localStorage.getItem(ACC_KEY) || '[]');
+            if (Array.isArray(cached)) {
+                accesoriosEquipados = cached;
+            }
+        } catch (e) {
+            accesoriosEquipados = [];
+        }
+
+        // 2. Refrescar desde Supabase (async, actualiza si cambió)
+        try {
+            if (!window.getSupabase) return;
+            const sb = window.getSupabase();
+            const r = await sb.auth.getSession();
+            if (!r.data.session) return;
+
+            const uid = r.data.session.user.id;
+
+            const { data, error } = await sb
+                .from('marquinhos_inventario')
+                .select(`
+                    accesorio_id,
+                    equipado,
+                    marquinhos_accesorios!inner (
+                        nombre, categoria, svg_data
+                    )
+                `)
+                .eq('usuario_id', uid)
+                .eq('equipado', true);
+
+            if (error) {
+                console.warn('[Marquinhos] Error cargando accesorios:', error);
+                return;
+            }
+
+            if (Array.isArray(data)) {
+                accesoriosEquipados = data.map(d => ({
+                    id: d.accesorio_id,
+                    categoria: d.marquinhos_accesorios?.categoria || 'accesorio',
+                    svg: d.marquinhos_accesorios?.svg_data || '',
+                    nombre: d.marquinhos_accesorios?.nombre || ''
+                }));
+                localStorage.setItem(ACC_KEY, JSON.stringify(accesoriosEquipados));
+            }
+        } catch (e) {
+            console.warn('[Marquinhos] No se pudieron cargar accesorios:', e);
+        }
+    }
+
+    function posicionPorCategoria(cat) {
+        switch (cat) {
+            case 'sombrero':   return { x: 100, y: 35,  size: 70 };
+            case 'playera':    return { x: 100, y: 195, size: 90 };
+            case 'pantalon':   return { x: 100, y: 235, size: 70 };
+            case 'zapatos':    return { x: 100, y: 258, size: 60 };
+            case 'lentes':     return { x: 100, y: 82,  size: 60 };
+            case 'accesorio':  return { x: 175, y: 195, size: 60 };
+            default:           return { x: 100, y: 100, size: 50 };
+        }
+    }
+
+    function renderAccesoriosEnAvatar() {
+        const layer = document.getElementById('mq-acc-layer');
+        if (!layer) return;
+
+        layer.innerHTML = accesoriosEquipados.map(a => {
+            const p = posicionPorCategoria(a.categoria);
+            return `<text x="${p.x}" y="${p.y}" font-size="${p.size}" text-anchor="middle">${esc(a.svg)}</text>`;
+        }).join('');
+    }
+
+    // ============================================================
     // WIDGET
     // ============================================================
     function crearWidget() {
@@ -168,39 +256,39 @@
             </div>
             <div class="mq-pet-avatar" id="mq-avatar" role="button" tabindex="0" aria-label="Hablar con Marquinhos">
                 <svg viewBox="0 0 200 260" xmlns="http://www.w3.org/2000/svg" class="mq-pet-svg">
+                    <!-- ✅ NUEVO: capa de accesorios equipados -->
+                    <g id="mq-acc-layer"></g>
                     <g>
                         <line x1="70" y1="40" x2="68" y2="20" stroke="#1565C0" stroke-width="3" stroke-linecap="round"/>
                         <circle cx="68" cy="16" r="6" fill="#FFF8E1" stroke="#1565C0" stroke-width="2"/>
-                    </g>
-                    <g>
                         <line x1="130" y1="40" x2="132" y2="20" stroke="#1565C0" stroke-width="3" stroke-linecap="round"/>
                         <circle cx="132" cy="16" r="6" fill="#FFF8E1" stroke="#1565C0" stroke-width="2"/>
+                        <ellipse cx="100" cy="80" rx="62" ry="56" fill="#FFF8E1" stroke="#1565C0" stroke-width="3"/>
+                        <ellipse cx="76" cy="80" rx="14" ry="16" fill="#1A0A2E"/>
+                        <ellipse cx="76" cy="80" rx="12" ry="13" fill="#F5F0E8"/>
+                        <circle cx="76" cy="82" r="6" fill="#0a1a3e"/>
+                        <circle cx="74" cy="79" r="2" fill="#fff" opacity="0.9"/>
+                        <ellipse cx="124" cy="80" rx="14" ry="16" fill="#1A0A2E"/>
+                        <ellipse cx="124" cy="80" rx="12" ry="13" fill="#F5F0E8"/>
+                        <circle cx="124" cy="82" r="6" fill="#0a1a3e"/>
+                        <circle cx="122" cy="79" r="2" fill="#fff" opacity="0.9"/>
+                        <path d="M 85 108 Q 100 118 115 108" stroke="#1565C0" stroke-width="3" fill="none" stroke-linecap="round"/>
+                        <ellipse cx="62" cy="105" rx="8" ry="5" fill="#FF6B8A" opacity="0.4"/>
+                        <ellipse cx="138" cy="105" rx="8" ry="5" fill="#FF6B8A" opacity="0.4"/>
+                        <rect x="35" y="140" width="130" height="100" rx="22" fill="#FFF8E1" stroke="#1565C0" stroke-width="3"/>
+                        <rect x="70" y="152" width="60" height="26" rx="8" fill="#FFFFFF" stroke="#1565C0" stroke-width="2.5"/>
+                        <text x="100" y="170" text-anchor="middle" font-family="sans-serif" font-size="9" font-weight="700" fill="#0D47A1" letter-spacing="0.5">MARQUINHOS</text>
+                        <g>
+                            <rect x="15" y="150" width="16" height="55" rx="8" fill="#FFF8E1" stroke="#1565C0" stroke-width="3"/>
+                            <circle cx="23" cy="210" r="12" fill="#FFF8E1" stroke="#1565C0" stroke-width="3"/>
+                        </g>
+                        <g>
+                            <rect x="169" y="150" width="16" height="55" rx="8" fill="#FFF8E1" stroke="#1565C0" stroke-width="3"/>
+                            <circle cx="177" cy="210" r="12" fill="#FFF8E1" stroke="#1565C0" stroke-width="3"/>
+                        </g>
+                        <rect x="60" y="240" width="22" height="20" rx="8" fill="#FFF8E1" stroke="#1565C0" stroke-width="3"/>
+                        <rect x="118" y="240" width="22" height="20" rx="8" fill="#FFF8E1" stroke="#1565C0" stroke-width="3"/>
                     </g>
-                    <ellipse cx="100" cy="80" rx="62" ry="56" fill="#FFF8E1" stroke="#1565C0" stroke-width="3"/>
-                    <ellipse cx="76" cy="80" rx="14" ry="16" fill="#1A0A2E"/>
-                    <ellipse cx="76" cy="80" rx="12" ry="13" fill="#F5F0E8"/>
-                    <circle cx="76" cy="82" r="6" fill="#0a1a3e"/>
-                    <circle cx="74" cy="79" r="2" fill="#fff" opacity="0.9"/>
-                    <ellipse cx="124" cy="80" rx="14" ry="16" fill="#1A0A2E"/>
-                    <ellipse cx="124" cy="80" rx="12" ry="13" fill="#F5F0E8"/>
-                    <circle cx="124" cy="82" r="6" fill="#0a1a3e"/>
-                    <circle cx="122" cy="79" r="2" fill="#fff" opacity="0.9"/>
-                    <path d="M 85 108 Q 100 118 115 108" stroke="#1565C0" stroke-width="3" fill="none" stroke-linecap="round"/>
-                    <ellipse cx="62" cy="105" rx="8" ry="5" fill="#FF6B8A" opacity="0.4"/>
-                    <ellipse cx="138" cy="105" rx="8" ry="5" fill="#FF6B8A" opacity="0.4"/>
-                    <rect x="35" y="140" width="130" height="100" rx="22" fill="#FFF8E1" stroke="#1565C0" stroke-width="3"/>
-                    <rect x="70" y="152" width="60" height="26" rx="8" fill="#FFFFFF" stroke="#1565C0" stroke-width="2.5"/>
-                    <text x="100" y="170" text-anchor="middle" font-family="sans-serif" font-size="9" font-weight="700" fill="#0D47A1" letter-spacing="0.5">MARQUINHOS</text>
-                    <g>
-                        <rect x="15" y="150" width="16" height="55" rx="8" fill="#FFF8E1" stroke="#1565C0" stroke-width="3"/>
-                        <circle cx="23" cy="210" r="12" fill="#FFF8E1" stroke="#1565C0" stroke-width="3"/>
-                    </g>
-                    <g>
-                        <rect x="169" y="150" width="16" height="55" rx="8" fill="#FFF8E1" stroke="#1565C0" stroke-width="3"/>
-                        <circle cx="177" cy="210" r="12" fill="#FFF8E1" stroke="#1565C0" stroke-width="3"/>
-                    </g>
-                    <rect x="60" y="240" width="22" height="20" rx="8" fill="#FFF8E1" stroke="#1565C0" stroke-width="3"/>
-                    <rect x="118" y="240" width="22" height="20" rx="8" fill="#FFF8E1" stroke="#1565C0" stroke-width="3"/>
                 </svg>
             </div>
         `;
@@ -267,6 +355,9 @@
             container.classList.remove('mq-dragging');
         });
 
+        // ✅ NUEVO: renderizar accesorios al crear el widget
+        renderAccesoriosEnAvatar();
+
         log('Widget creado');
     }
 
@@ -282,7 +373,6 @@
     }
 
     async function onAvatarTap() {
-        // Si está hablando, escuchando o pensando → parar todo
         if (isSpeaking || isListening || procesando) {
             detenerConversacion();
             return;
@@ -295,7 +385,6 @@
             mostrarBurbuja('Tu navegador no soporta reconocimiento de voz.');
             setTimeout(ocultarBurbuja, 4000);
         }
-        // Sin saludo hablado: así el micrófono no se escucha a sí mismo
     }
 
     // ============================================================
@@ -318,7 +407,6 @@
     // ============================================================
     // VOZ (TTS)
     // ============================================================
-    // Devuelve true si terminó de hablar completo (no fue interrumpido)
     async function hablar(texto) {
         if (!texto) return false;
         detenerTTS();
@@ -335,7 +423,6 @@
         setEstado('hablando');
 
         let ok = false;
-        // Backend TTS solo para textos cortos; los largos van por el navegador (por frases)
         if (texto.length <= 300 && window.getSupabase && !window.__marquinhosNoBackendTTS) {
             try {
                 const sb = window.getSupabase();
@@ -378,7 +465,6 @@
         return completo;
     }
 
-    // Divide en frases (evita el corte de ~15 s de speechSynthesis en Chrome/Android)
     function dividirEnFrases(texto) {
         const partes = texto.split(/(?<=[.!?…\n])\s+/);
         const out = [];
@@ -485,7 +571,6 @@
                     mostrarBurbuja('Permite el micrófono.');
                     setTimeout(ocultarBurbuja, 5000);
                 } else if (event.error === 'no-speech' || event.error === 'aborted') {
-                    // silencio: termina la conversación continua sin ruido
                     conversacionActiva = false;
                     setEstado('idle');
                     ocultarBurbuja();
@@ -498,7 +583,6 @@
                 recognitionActive = false;
                 isListening = false;
                 if (!procesando && !isSpeaking) setEstado('idle');
-                // Terminó sin resultado → fin de la conversación continua
                 if (!recibioResultado && !procesando && !isSpeaking) {
                     conversacionActiva = false;
                     setTimeout(function() { if (!isSpeaking && !procesando) ocultarBurbuja(); }, 1500);
@@ -521,7 +605,7 @@
     }
 
     // ============================================================
-    // PROCESAR (pregunta → IA → respuesta hablada → vuelve a escuchar)
+    // PROCESAR
     // ============================================================
     async function procesarComando(texto) {
         if (!texto) return;
@@ -550,7 +634,6 @@
         procesando = false;
         const completo = await hablar(respuesta);
 
-        // Conversación continua: vuelve a escuchar si no la interrumpieron
         if (completo && conversacionActiva) {
             recibioResultado = false;
             setTimeout(function() {
@@ -567,10 +650,28 @@
         });
     }
 
+    // ✅ NUEVO: escuchar cambios de accesorios desde otra pestaña (la tienda)
+    window.addEventListener('storage', function(e) {
+        if (e.key === ACC_KEY) {
+            try {
+                accesoriosEquipados = JSON.parse(e.newValue || '[]');
+                renderAccesoriosEnAvatar();
+            } catch (err) {}
+        }
+    });
+
+    // ============================================================
+    // API PÚBLICA
+    // ============================================================
     window.Marquinhos = {
         hablar: hablar,
         procesar: procesarComando,
         olvidar: olvidarTodo,
+        // ✅ NUEVO: la tienda llama a esto al comprar/equipar
+        recargarAccesorios: async function() {
+            await cargarAccesorios();
+            renderAccesoriosEnAvatar();
+        },
         getHistorial: function() { return historialLocal.slice(); },
         getConfig: function() { return { ...config }; },
         setConfig: function(nuevos) { config = { ...config, ...nuevos }; guardarConfig(); },
@@ -595,9 +696,10 @@
 
         await cargarUsuario();
         cargarHistorial();
+        await cargarAccesorios();   // ✅ NUEVO
         crearWidget();
         instalarVisibility();
-        log('✅ Listo. Mensajes en memoria: ' + historialLocal.length);
+        log('✅ Listo. Mensajes: ' + historialLocal.length + ' · Accesorios: ' + accesoriosEquipados.length);
     }
 
     if (document.readyState === 'loading') {
