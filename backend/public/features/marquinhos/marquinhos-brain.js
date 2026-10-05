@@ -1,8 +1,5 @@
 // ================================================================
-// MARQUINHOS · BRAIN v2.0
-// ================================================================
-// Conecta con IA real (/api/ai/chat) para respuestas complejas
-// sobre CUALQUIER tema, no solo el ecosistema.
+// MARQUINHOS · BRAIN v3.0 (IA real + memoria persistente)
 // ================================================================
 
 'use strict';
@@ -10,55 +7,27 @@
 (function() {
     if (window.MarquinhosBrain) return;
 
-    const HISTORIAL_MAX = 20;
     const TIMEOUT_MS = 60000;
 
     let _abortController = null;
-    let _historialCache = null;
+    let _historialSesion = [];
 
     // ================================================================
-    // CONOCIMIENTO DEL ECOSISTEMA (system prompt adicional)
-    // ================================================================
-    const CONTEXTO_SARIELS = `
-Eres Marquinhos, el asistente personal del ecosistema Sariel's.
-
-Sobre Sariel's:
-- Es un ecosistema Web3 en Polygon (cripto).
-- Los Domos son productos físicos que acumulan Es.stoks.
-- Los Es.stoks son tokens internos. 12 Es.stoks = 1 NFT Domo.
-- Secciones: Muro (publicaciones), Canales (públicos), Grupos (privados), Live (transmisiones), Mensajes, Perfil, Wallet, Internet (eSIMs), Videos, Marketing, Mercado.
-- El Muro es donde compartes publicaciones con texto, fotos, hashtags.
-- Los Canales son públicos: solo el creador publica.
-- Los Grupos son privados: todos los miembros publican.
-- Live requiere un Live Pass activo (de pago).
-- La Wallet gestiona cripto en Polygon.
-
-Comportamiento:
-- Habla natural, cercano, cálido.
-- Usa español mexicano neutro.
-- Respuestas fluidas y completas (2-5 frases normalmente).
-- Si no sabes algo, dilo con honestidad.
-- Puedes responder CUALQUIER pregunta (no solo del ecosistema): ayuda general, conocimiento, matemáticas, consejos, etc.
-- Sé útil, conciso, no des vueltas.
-- Nunca inventes datos personales del usuario.
-`.trim();
-
-    // ================================================================
-    // RESPUESTAS LOCALES (fallback si el backend falla)
+    // FALLBACK LOCAL
     // ================================================================
     const RESPUESTAS_LOCALES = [
         { keys: ['hola','buenas','hey','qué tal'], r: function(c){ return '¡Hola' + (c.nombre ? ' ' + c.nombre : '') + '! ¿En qué te ayudo?'; } },
         { keys: ['cómo estás','como estas'], r: function(){ return '¡Bien! Listo para ayudarte. ¿Y tú?'; } },
-        { keys: ['quién eres','quien eres','cómo te llamas'], r: function(){ return 'Soy Marquinhos, tu asistente en Sariel\'s. Estoy aquí para ayudarte con lo que necesites.'; } },
+        { keys: ['quién eres','quien eres'], r: function(){ return 'Soy Marquinhos, tu asistente personal en Sariel\'s.'; } },
         { keys: ['qué hora','que hora'], r: function(){ const n=new Date(); return 'Son las ' + n.getHours() + ':' + String(n.getMinutes()).padStart(2,'0') + '.'; } },
-        { keys: ['qué día','que dia','qué fecha'], r: function(){ const d=['domingo','lunes','martes','miércoles','jueves','viernes','sábado']; return 'Hoy es ' + d[new Date().getDay()] + '.'; } },
+        { keys: ['qué día','que dia'], r: function(){ const d=['domingo','lunes','martes','miércoles','jueves','viernes','sábado']; return 'Hoy es ' + d[new Date().getDay()] + '.'; } },
         { keys: ['gracias'], r: function(){ return '¡De nada!'; } },
-        { keys: ['ayuda','qué puedes hacer','qué haces'], r: function(){ return 'Puedo conversar sobre cualquier tema, ayudarte con tareas, explicarte el ecosistema Sariel\'s, darte consejos, hacer cálculos y mucho más. Pregúntame lo que quieras.'; } },
-        { keys: ['muro'], r: function(){ return 'El Muro es donde compartes publicaciones. Puedes escribir, subir fotos, usar hashtags y mencionar a otros.'; } },
-        { keys: ['canal','grupo'], r: function(){ return 'Los Canales son públicos: solo el creador publica. Los Grupos son privados: todos publican.'; } },
-        { keys: ['live'], r: function(){ return 'En Live transmites video en vivo. Necesitas un Live Pass activo.'; } },
-        { keys: ['es.stok','token','es stok'], r: function(){ return 'Los Es.stoks son los tokens del ecosistema. 12 Es.stoks equivalen a 1 NFT Domo.'; } },
-        { keys: ['domo'], r: function(){ return 'Los Domos son productos físicos del ecosistema que acumulan Es.stoks.'; } }
+        { keys: ['ayuda','qué puedes hacer'], r: function(){ return 'Puedo ayudarte con el Muro, Canales, Grupos, Live, Mensajes, tu Perfil, la Wallet, los Es.stoks, los Domos, y también responder preguntas generales.'; } },
+        { keys: ['muro'], r: function(){ return 'El Muro es un mercado P2P donde compras y venden Es.stoks entre usuarios. Hay comisión del 3%.'; } },
+        { keys: ['canal','grupo'], r: function(){ return 'Los Canales son públicos y solo el creador publica. Los Grupos son privados y todos los miembros publican.'; } },
+        { keys: ['live'], r: function(){ return 'En Live hay dos modos: Profesional (con membresía de pago) y en Grupos (gratis aceptando términos).'; } },
+        { keys: ['es.stok','es stok','token'], r: function(){ return 'Los Es.stoks son tokens del ecosistema. 12 Es.stoks equivalen a 1 NFT Domo.'; } },
+        { keys: ['domo'], r: function(){ return 'Los Domos son productos físicos del ecosistema. Cada Domo tiene un QR que se escanea para recibir Es.stoks.'; } }
     ];
 
     function buscarRespuestaLocal(texto, ctx) {
@@ -73,45 +42,7 @@ Comportamiento:
     }
 
     // ================================================================
-    // GUARDAR / CARGAR HISTORIAL
-    // ================================================================
-    async function guardarMensaje(role, contenido) {
-        try {
-            if (!window.getSupabase) return;
-            const sb = window.getSupabase();
-            const r = await sb.auth.getSession();
-            if (!r.data.session) return;
-            await sb.from('marquinhos_conversaciones').insert({
-                usuario_id: r.data.session.user.id,
-                rol: role,
-                contenido: contenido,
-                contexto_pagina: window.location.pathname
-            });
-        } catch (e) {}
-    }
-
-    async function cargarHistorial() {
-        if (_historialCache) return _historialCache;
-        try {
-            if (!window.getSupabase) return [];
-            const sb = window.getSupabase();
-            const r = await sb.auth.getSession();
-            if (!r.data.session) return [];
-            const { data } = await sb.from('marquinhos_conversaciones')
-                .select('rol, contenido, created_at')
-                .eq('usuario_id', r.data.session.user.id)
-                .order('created_at', { ascending: false })
-                .limit(HISTORIAL_MAX);
-            if (!data) return [];
-            _historialCache = data.reverse().map(function(m) {
-                return { role: m.rol === 'user' ? 'user' : 'assistant', content: m.contenido };
-            });
-            return _historialCache;
-        } catch (e) { return []; }
-    }
-
-    // ================================================================
-    // PREGUNTAR A LA IA
+    // PREGUNTAR
     // ================================================================
     async function preguntar(texto, historialLocal) {
         if (!texto || typeof texto !== 'string') return '';
@@ -119,24 +50,13 @@ Comportamiento:
         const userInfo = window.Marquinhos && window.Marquinhos.getUserInfo ? window.Marquinhos.getUserInfo() : null;
         const ctx = { nombre: userInfo ? userInfo.nombre : null };
 
-        // === 1. Backend IA real ===
+        // 1. Intentar con backend IA real
         try {
             if (window.getSupabase) {
                 const sb = window.getSupabase();
                 const s = await sb.auth.getSession();
 
                 if (s.data.session) {
-                    // Construir historial completo
-                    let historial = [];
-                    try { historial = await cargarHistorial(); } catch (e) {}
-
-                    if (Array.isArray(historialLocal) && historialLocal.length > 0) {
-                        const recientes = historialLocal.slice(-6).map(function(m) {
-                            return { role: m.role, content: m.content };
-                        });
-                        historial = historial.concat(recientes).slice(-HISTORIAL_MAX);
-                    }
-
                     // Abortar anterior
                     if (_abortController) {
                         try { _abortController.abort(); } catch (e) {}
@@ -147,7 +67,14 @@ Comportamiento:
                         try { _abortController.abort(); } catch (e) {}
                     }, TIMEOUT_MS);
 
-                    const resp = await fetch('/api/ai/chat', {
+                    // Historial local de la sesión
+                    const historialEnvio = Array.isArray(historialLocal)
+                        ? historialLocal.slice(-10).map(function(m) {
+                            return { role: m.role, content: m.content };
+                          })
+                        : [];
+
+                    const resp = await fetch('/api/ai/chat-pet', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -156,9 +83,7 @@ Comportamiento:
                         },
                         body: JSON.stringify({
                             message: texto.trim(),
-                            context: 'marquinhos_pet',
-                            system_extra: CONTEXTO_SARIELS,
-                            history: historial,
+                            history: historialEnvio,
                             page: window.location.pathname,
                             user_name: ctx.nombre
                         }),
@@ -169,32 +94,29 @@ Comportamiento:
 
                     if (resp.ok) {
                         const data = await resp.json();
-                        const reply = data && (data.reply || data.message || data.response);
+                        const reply = data && data.reply;
                         if (reply && typeof reply === 'string' && reply.trim().length > 0) {
-                            guardarMensaje('user', texto);
-                            guardarMensaje('assistant', reply);
-                            _historialCache = null;
                             return reply.trim();
                         }
+                    } else {
+                        console.warn('[Marquinhos/Brain] Backend respondió:', resp.status);
                     }
                 }
             }
         } catch (e) {
-            console.warn('[Marquinhos/Brain] Backend falló:', e);
+            console.warn('[Marquinhos/Brain] Error backend:', e.message);
         }
 
-        // === 2. Fallback local ===
+        // 2. Fallback local
         const local = buscarRespuestaLocal(texto, ctx);
         if (local) return local;
 
-        // === 3. Mensaje genérico ===
-        return 'No pude procesar eso ahora. Intenta preguntar algo más simple mientras me reconecto.';
+        return 'No pude procesar eso ahora. Intenta de nuevo en unos segundos.';
     }
 
     window.MarquinhosBrain = {
-        preguntar: preguntar,
-        limpiarHistorial: function() { _historialCache = null; }
+        preguntar: preguntar
     };
 
-    console.log('[Marquinhos/Brain] ✅ Cerebro v2.0 cargado (IA real)');
+    console.log('[Marquinhos/Brain] ✅ Cerebro v3.0 cargado (IA real + memoria)');
 })();
