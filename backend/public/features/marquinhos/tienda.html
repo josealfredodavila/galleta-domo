@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>◈ Tienda de Marquinhos · Sariel's</title>
+<meta name="theme-color" content="#05080f">
+
+<link rel="stylesheet" href="/features/marquinhos/tienda.css">
+<script src="/features/shared/js/apariencia-global.js"></script>
+</head>
+<body>
+
+<div class="tienda-app">
+
+    <!-- Header -->
+    <header class="tienda-header">
+        <a href="/features/perfil/perfil.html" class="tienda-volver" aria-label="Volver">
+            <span class="tienda-volver-icon">←</span>
+            <span class="tienda-volver-text">Volver</span>
+        </a>
+        <a href="/" class="tienda-logo">
+            <span class="tienda-logo-hex">◈</span>
+            <span class="tienda-logo-text">Sariel's</span>
+        </a>
+        <div class="tienda-saldo" id="tiendaSaldo">
+            <span class="saldo-icon">◈</span>
+            <span class="saldo-valor" id="saldoValor">...</span>
+            <span class="saldo-label" id="saldoLabel">USDT</span>
+        </div>
+    </header>
+
+    <!-- Preview del avatar -->
+    <section class="tienda-preview">
+        <div class="preview-avatar">
+            <svg viewBox="0 0 200 260" xmlns="http://www.w3.org/2000/svg" class="preview-svg">
+                <g id="accesoriosLayer"></g>
+                <g>
+                    <line x1="70" y1="40" x2="68" y2="20" stroke="#1565C0" stroke-width="3" stroke-linecap="round"/>
+                    <circle cx="68" cy="16" r="6" fill="#FFF8E1" stroke="#1565C0" stroke-width="2"/>
+                    <line x1="130" y1="40" x2="132" y2="20" stroke="#1565C0" stroke-width="3" stroke-linecap="round"/>
+                    <circle cx="132" cy="16" r="6" fill="#FFF8E1" stroke="#1565C0" stroke-width="2"/>
+                    <ellipse cx="100" cy="80" rx="62" ry="56" fill="#FFF8E1" stroke="#1565C0" stroke-width="3"/>
+                    <ellipse cx="76" cy="80" rx="14" ry="16" fill="#1A0A2E"/>
+                    <ellipse cx="76" cy="80" rx="12" ry="13" fill="#F5F0E8"/>
+                    <circle cx="76" cy="82" r="6" fill="#0a1a3e"/>
+                    <circle cx="74" cy="79" r="2" fill="#fff" opacity="0.9"/>
+                    <ellipse cx="124" cy="80" rx="14" ry="16" fill="#1A0A2E"/>
+                    <ellipse cx="124" cy="80" rx="12" ry="13" fill="#F5F0E8"/>
+                    <circle cx="124" cy="82" r="6" fill="#0a1a3e"/>
+                    <circle cx="122" cy="79" r="2" fill="#fff" opacity="0.9"/>
+                    <path d="M 85 108 Q 100 118 115 108" stroke="#1565C0" stroke-width="3" fill="none" stroke-linecap="round"/>
+                    <rect x="35" y="140" width="130" height="100" rx="22" fill="#FFF8E1" stroke="#1565C0" stroke-width="3"/>
+                    <g>
+                        <rect x="15" y="150" width="16" height="55" rx="8" fill="#FFF8E1" stroke="#1565C0" stroke-width="3"/>
+                        <circle cx="23" cy="210" r="12" fill="#FFF8E1" stroke="#1565C0" stroke-width="3"/>
+                        <rect x="169" y="150" width="16" height="55" rx="8" fill="#FFF8E1" stroke="#1565C0" stroke-width="3"/>
+                        <circle cx="177" cy="210" r="12" fill="#FFF8E1" stroke="#1565C0" stroke-width="3"/>
+                    </g>
+                    <rect x="60" y="240" width="22" height="20" rx="8" fill="#FFF8E1" stroke="#1565C0" stroke-width="3"/>
+                    <rect x="118" y="240" width="22" height="20" rx="8" fill="#FFF8E1" stroke="#1565C0" stroke-width="3"/>
+                </g>
+            </svg>
+        </div>
+        <div class="preview-info">
+            <h1 class="preview-title">Marquinhos</h1>
+            <p class="preview-sub">Personaliza tu mascota virtual · Paga con USDT/USDC</p>
+            <button class="preview-reset" id="btnResetAccesorios" type="button">
+                Quitar todos los accesorios
+            </button>
+        </div>
+    </section>
+
+    <!-- Filtros -->
+    <nav class="tienda-filtros">
+        <button class="filtro-btn active" data-cat="todos" type="button">Todos</button>
+        <button class="filtro-btn" data-cat="sombrero" type="button">🎩 Sombreros</button>
+        <button class="filtro-btn" data-cat="playera" type="button">👕 Playeras</button>
+        <button class="filtro-btn" data-cat="pantalon" type="button">👖 Pantalones</button>
+        <button class="filtro-btn" data-cat="zapatos" type="button">👟 Zapatos</button>
+        <button class="filtro-btn" data-cat="lentes" type="button">🕶️ Lentes</button>
+        <button class="filtro-btn" data-cat="accesorio" type="button">🎒 Accesorios</button>
+    </nav>
+
+    <!-- Grid -->
+    <section class="tienda-grid" id="tiendaGrid">
+        <div class="tienda-loading">Cargando accesorios...</div>
+    </section>
+
+    <footer class="tienda-footer">
+        <span>◈ Sariel's · Tienda de Marquinhos</span>
+        <a href="/features/perfil/perfil.html">Volver al perfil</a>
+    </footer>
+</div>
+
+<div class="tienda-toast" id="tiendaToast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/features/marquinhos/tienda.js"></script>
+
+</body>
+</html>
