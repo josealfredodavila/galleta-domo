@@ -99,8 +99,21 @@ h1 .hex { font-family: 'Orbitron', monospace; }
     font-family: inherit;
     margin-top: 8px;
     transition: all .2s;
+    text-decoration: none;
+    display: block;
+    text-align: center;
 }
 .btn:hover { border-color: var(--gold); color: var(--gold); }
+.btn-gold {
+    background: linear-gradient(135deg, var(--gold), #b8923a);
+    color: var(--space);
+    border-color: transparent;
+}
+.btn-gold:hover {
+    transform: scale(1.02);
+    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+    color: var(--space);
+}
 .btn-danger { color: var(--danger); border-color: rgba(255,51,102,0.3); }
 .btn-danger:hover { background: rgba(255,51,102,0.1); }
 .btn-back {
@@ -161,6 +174,17 @@ h1 .hex { font-family: 'Orbitron', monospace; }
     <h1><span class="hex">◈</span> Marquinhos</h1>
     <p class="sub">Personaliza tu mascota virtual</p>
 
+    <!-- TIENDA -->
+    <div class="card">
+        <h2>TIENDA</h2>
+        <a href="/features/marquinhos/tienda.html" class="btn btn-gold">
+            ◈ Ir a la tienda de accesorios
+        </a>
+        <p style="color:var(--muted);font-size:.72rem;line-height:1.4;margin-top:12px;">
+            Compra sombreros, playeras, zapatos, lentes y más. Paga con USDT/USDC.
+        </p>
+    </div>
+
     <!-- MODO DE INTERACCIÓN -->
     <div class="card">
         <h2>MODO DE INTERACCIÓN</h2>
@@ -204,8 +228,8 @@ h1 .hex { font-family: 'Orbitron', monospace; }
     <!-- ACCIONES -->
     <div class="card">
         <h2>ACCIONES</h2>
-        <button class="btn" id="btnResetPosicion">Resetear posición del avatar</button>
-        <button class="btn btn-danger" id="btnLimpiarHistorial">Borrar historial de conversación</button>
+        <button class="btn" id="btnResetPosicion" type="button">Resetear posición del avatar</button>
+        <button class="btn btn-danger" id="btnLimpiarHistorial" type="button">Borrar historial de conversación</button>
     </div>
 
 </div>
