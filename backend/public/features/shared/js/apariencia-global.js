@@ -1,35 +1,30 @@
 /* ================================================================
-   APARIENCIA GLOBAL - SARIEL'S ECOSYSTEM v2.1
+   APARIENCIA GLOBAL - SARIEL'S ECOSYSTEM v2.2
    - Lee de localStorage (rápido, sin red)
    - Sincroniza con Supabase preferencias_usuario (persistente)
    - Aplica tema, color de acento y tamaño de fuente globalmente
    - ✅ NUEVO: Inyecta Marquinhos-pet en todas las páginas
+   - ✅ NUEVO: Carga analizador de boca (marquinhos-boca.js)
    ================================================================ */
 
 (function() {
     'use strict';
 
-    // Claves de localStorage
     const KEYS = {
         tema: 'mostrar_tema',
         tamano_fuente: 'mostrar_tamano_fuente',
         color_acento: 'mostrar_color_acento'
     };
 
-    // Valores por defecto
     const DEFAULTS = {
         tema: 'sistema',
         tamano_fuente: 100,
         color_acento: '#D4AF37'
     };
 
-    // Estado interno
     let prefsActuales = { ...DEFAULTS };
     let syncConSupabaseListo = false;
 
-    /* ----------------------------------------------------------------
-       HELPERS DE CLIENTE SUPABASE
-       ---------------------------------------------------------------- */
     function getSupabase() {
         if (window.supabaseClient) return window.supabaseClient;
         if (window.supabase && typeof window.supabase.createClient === 'function') {
@@ -45,9 +40,6 @@
         return null;
     }
 
-    /* ----------------------------------------------------------------
-       LEER PREFERENCIAS DE LOCALSTORAGE
-       ---------------------------------------------------------------- */
     function leerPref(clave, defecto) {
         try {
             const v = localStorage.getItem(clave);
@@ -65,9 +57,6 @@
         };
     }
 
-    /* ----------------------------------------------------------------
-       LEER PREFERENCIAS DE SUPABASE
-       ---------------------------------------------------------------- */
     async function leerDeSupabase() {
         try {
             const client = getSupabase();
@@ -76,7 +65,6 @@
             const sessionResult = await client.auth.getSession();
             if (sessionResult.error || !sessionResult.data?.session?.user) return null;
 
-            // Intentar con RPC primero
             try {
                 const { data, error } = await client.rpc('obtener_mis_preferencias');
                 if (!error && data) {
@@ -87,10 +75,9 @@
                     };
                 }
             } catch (rpcError) {
-                console.warn('[Apariencia] RPC obtener_mis_preferencias falló, usando tabla directa:', rpcError);
+                console.warn('[Apariencia] RPC obtener_mis_preferencias falló:', rpcError);
             }
 
-            // Fallback: leer tabla directa
             const { data: pref, error: errTabla } = await client
                 .from('preferencias_usuario')
                 .select('prefs')
@@ -110,18 +97,13 @@
         }
     }
 
-    /* ----------------------------------------------------------------
-       GUARDAR PREFERENCIAS EN AMBOS LADOS
-       ---------------------------------------------------------------- */
     async function guardarPref(clave, valor) {
-        // 1. Guardar en localStorage (inmediato)
         try {
             localStorage.setItem(clave, valor);
         } catch (e) {
             console.warn('[Apariencia] No se pudo guardar en localStorage:', e);
         }
 
-        // 2. Guardar en Supabase (async, no bloquea)
         const client = getSupabase();
         if (!client) return;
 
@@ -133,7 +115,6 @@
                              clave === KEYS.tamano_fuente ? 'mostrar_tamano_fuente' :
                              clave === KEYS.color_acento ? 'mostrar_color_acento' : clave;
 
-            // Intentar con RPC
             try {
                 await client.rpc('actualizar_preferencia', {
                     p_key: keyPrefs,
@@ -141,7 +122,6 @@
                 });
                 return;
             } catch (rpcError) {
-                // Fallback: update directo
                 const { data: pref } = await client
                     .from('preferencias_usuario')
                     .select('prefs')
@@ -161,9 +141,6 @@
         }
     }
 
-    /* ----------------------------------------------------------------
-       HELPERS DE COLOR
-       ---------------------------------------------------------------- */
     function ajustarColor(hex, porcentaje) {
         try {
             let r = parseInt(hex.substring(1, 3), 16);
@@ -192,9 +169,6 @@
         }
     }
 
-    /* ----------------------------------------------------------------
-       APLICAR TEMA
-       ---------------------------------------------------------------- */
     function aplicarTema(tema) {
         const html = document.documentElement;
 
@@ -214,9 +188,6 @@
         }
     }
 
-    /* ----------------------------------------------------------------
-       APLICAR COLOR DE ACENTO
-       ---------------------------------------------------------------- */
     function aplicarColorAcento(color) {
         const html = document.documentElement;
 
@@ -230,9 +201,6 @@
         html.style.setProperty('--accent-light', ajustarColor(color, 15));
     }
 
-    /* ----------------------------------------------------------------
-       APLICAR TAMAÑO DE FUENTE
-       ---------------------------------------------------------------- */
     function aplicarTamanoFuente(porcentaje) {
         const html = document.documentElement;
         const valor = Math.max(80, Math.min(140, porcentaje));
@@ -242,9 +210,6 @@
         html.style.setProperty('--preview-size', (15 * valor / 100) + 'px');
     }
 
-    /* ----------------------------------------------------------------
-       APLICAR TODO
-       ---------------------------------------------------------------- */
     function aplicarTodo(prefs) {
         const p = prefs || prefsActuales;
         aplicarTema(p.tema);
@@ -253,17 +218,10 @@
         prefsActuales = { ...p };
     }
 
-    /* ----------------------------------------------------------------
-       INICIALIZACIÓN
-       1. Aplica localStorage INMEDIATAMENTE (sin flash)
-       2. Luego consulta Supabase y sobreescribe si hay diferencias
-       ---------------------------------------------------------------- */
     async function inicializar() {
-        // PASO 1: Aplicar localStorage ya (0ms delay)
         const prefsLocal = leerDeLocalStorage();
         aplicarTodo(prefsLocal);
 
-        // PASO 2: Esperar Supabase y comparar
         let intentos = 0;
         while (!getSupabase() && intentos < 20) {
             await new Promise(r => setTimeout(r, 100));
@@ -272,17 +230,14 @@
 
         const prefsSupabase = await leerDeSupabase();
         if (prefsSupabase) {
-            // ¿Hay diferencias?
             const hayDiferencias =
                 prefsSupabase.tema !== prefsLocal.tema ||
                 prefsSupabase.tamano_fuente !== prefsLocal.tamano_fuente ||
                 prefsSupabase.color_acento !== prefsLocal.color_acento;
 
             if (hayDiferencias) {
-                // Supabase GANA (es la fuente de verdad)
                 aplicarTodo(prefsSupabase);
 
-                // Sincronizar localStorage con Supabase
                 try {
                     localStorage.setItem(KEYS.tema, prefsSupabase.tema);
                     localStorage.setItem(KEYS.tamano_fuente, String(prefsSupabase.tamano_fuente));
@@ -296,9 +251,6 @@
         syncConSupabaseListo = true;
     }
 
-    /* ----------------------------------------------------------------
-       ESCUCHAR CAMBIOS DE OTRA PESTAÑA (localStorage)
-       ---------------------------------------------------------------- */
     window.addEventListener('storage', function(e) {
         if (e.key && (e.key === KEYS.tema || e.key === KEYS.tamano_fuente || e.key === KEYS.color_acento)) {
             const prefs = leerDeLocalStorage();
@@ -306,9 +258,6 @@
         }
     });
 
-    /* ----------------------------------------------------------------
-       ESCUCHAR CAMBIOS DEL SISTEMA (tema 'sistema')
-       ---------------------------------------------------------------- */
     try {
         const mq = window.matchMedia('(prefers-color-scheme: dark)');
         mq.addEventListener('change', function() {
@@ -318,18 +267,12 @@
         });
     } catch (e) {}
 
-    /* ----------------------------------------------------------------
-       ARRANCAR
-       ---------------------------------------------------------------- */
     inicializar();
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function() { aplicarTodo(); }, { once: true });
     }
 
-    /* ----------------------------------------------------------------
-       API PÚBLICA
-       ---------------------------------------------------------------- */
     window.SarielApariencia = {
         aplicar: aplicarTodo,
         aplicarTema: aplicarTema,
@@ -347,10 +290,10 @@
     };
 
     /* ================================================================
-       ✅ NUEVO: Inyectar Marquinhos-pet en todas las páginas
+       ✅ Inyectar Marquinhos-pet en todas las páginas
        ================================================================
-       Excluye rutas legales, de login, de pago, y la tienda.
-       Se inyecta CSS + JS del pet + JS del brain.
+       Ahora carga TAMBIÉN marquinhos-boca.js (analizador de visemas).
+       Orden: CSS → boca.js → pet.js → brain.js
        ================================================================ */
     (function inyectarMarquinhosPet() {
         var path = window.location.pathname.toLowerCase();
@@ -368,7 +311,6 @@
             if (path.indexOf(excluidas[i]) !== -1) return;
         }
 
-        // Evitar doble inyección
         if (document.getElementById('marquinhos-pet-script')) return;
 
         var insertar = function() {
@@ -379,14 +321,21 @@
             css.id = 'marquinhos-pet-css';
             document.head.appendChild(css);
 
-            // Pet JS
+            // ✅ Analizador de boca (visemas) — PRIMERO
+            var boca = document.createElement('script');
+            boca.id = 'marquinhos-boca-script';
+            boca.src = '/features/marquinhos/marquinhos-boca.js';
+            boca.defer = true;
+            document.head.appendChild(boca);
+
+            // Pet
             var js = document.createElement('script');
             js.id = 'marquinhos-pet-script';
             js.src = '/features/marquinhos/marquinhos-pet.js';
             js.defer = true;
             document.head.appendChild(js);
 
-            // Brain JS (para las respuestas IA)
+            // Brain
             var brain = document.createElement('script');
             brain.id = 'marquinhos-brain-script';
             brain.src = '/features/marquinhos/marquinhos-brain.js';
@@ -394,7 +343,6 @@
             document.head.appendChild(brain);
         };
 
-        // Insertar cuando el DOM esté listo (por si acaso)
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', insertar);
         } else {
@@ -402,5 +350,5 @@
         }
     })();
 
-    console.log('[Apariencia] ✅ Módulo global v2.1 cargado (localStorage + Supabase + Marquinhos-pet)');
+    console.log('[Apariencia] ✅ Módulo global v2.2 cargado (localStorage + Supabase + Marquinhos-pet + Boca)');
 })();
