@@ -1,9 +1,8 @@
 // ================================================================
-// MARQUINHOS · BRAIN
+// MARQUINHOS · BRAIN v2.0
 // ================================================================
-// Conecta el widget con la IA real (/api/ai/chat).
-// Guarda la conversación en Supabase para memoria persistente.
-// Fallback local si el backend falla.
+// Conecta con IA real (/api/ai/chat) para respuestas complejas
+// sobre CUALQUIER tema, no solo el ecosistema.
 // ================================================================
 
 'use strict';
@@ -12,190 +11,103 @@
     if (window.MarquinhosBrain) return;
 
     const HISTORIAL_MAX = 20;
-    const TIMEOUT_MS = 45000;
+    const TIMEOUT_MS = 60000;
 
     let _abortController = null;
     let _historialCache = null;
-    let _nombreUsuario = null;
 
     // ================================================================
-    // CONOCIMIENTO LOCAL (fallback si el backend falla)
+    // CONOCIMIENTO DEL ECOSISTEMA (system prompt adicional)
+    // ================================================================
+    const CONTEXTO_SARIELS = `
+Eres Marquinhos, el asistente personal del ecosistema Sariel's.
+
+Sobre Sariel's:
+- Es un ecosistema Web3 en Polygon (cripto).
+- Los Domos son productos físicos que acumulan Es.stoks.
+- Los Es.stoks son tokens internos. 12 Es.stoks = 1 NFT Domo.
+- Secciones: Muro (publicaciones), Canales (públicos), Grupos (privados), Live (transmisiones), Mensajes, Perfil, Wallet, Internet (eSIMs), Videos, Marketing, Mercado.
+- El Muro es donde compartes publicaciones con texto, fotos, hashtags.
+- Los Canales son públicos: solo el creador publica.
+- Los Grupos son privados: todos los miembros publican.
+- Live requiere un Live Pass activo (de pago).
+- La Wallet gestiona cripto en Polygon.
+
+Comportamiento:
+- Habla natural, cercano, cálido.
+- Usa español mexicano neutro.
+- Respuestas fluidas y completas (2-5 frases normalmente).
+- Si no sabes algo, dilo con honestidad.
+- Puedes responder CUALQUIER pregunta (no solo del ecosistema): ayuda general, conocimiento, matemáticas, consejos, etc.
+- Sé útil, conciso, no des vueltas.
+- Nunca inventes datos personales del usuario.
+`.trim();
+
+    // ================================================================
+    // RESPUESTAS LOCALES (fallback si el backend falla)
     // ================================================================
     const RESPUESTAS_LOCALES = [
-        {
-            keys: ['hola', 'buenas', 'hey', 'qué tal', 'que tal'],
-            responder: function(ctx) {
-                return '¡Hola' + (ctx.nombre ? ' ' + ctx.nombre : '') + '! ¿En qué te puedo ayudar hoy?';
-            }
-        },
-        {
-            keys: ['cómo estás', 'como estas', 'cómo te va'],
-            responder: function() {
-                return '¡Muy bien! Aquí estoy listo para ayudarte. ¿Y tú cómo estás?';
-            }
-        },
-        {
-            keys: ['quién eres', 'quien eres', 'qué eres', 'que eres', 'cómo te llamas'],
-            responder: function() {
-                return 'Soy Marquinhos, tu asistente personal en Sariel\'s. Estoy aquí para guiarte por el ecosistema.';
-            }
-        },
-        {
-            keys: ['qué hora', 'que hora', 'hora es'],
-            responder: function() {
-                const n = new Date();
-                const h = n.getHours();
-                const m = n.getMinutes().toString().padStart(2, '0');
-                return 'Son las ' + h + ':' + m + '.';
-            }
-        },
-        {
-            keys: ['qué día', 'que dia', 'qué fecha'],
-            responder: function() {
-                const dias = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
-                const n = new Date();
-                return 'Hoy es ' + dias[n.getDay()] + '.';
-            }
-        },
-        {
-            keys: ['gracias'],
-            responder: function() {
-                return '¡De nada! Es un placer.';
-            }
-        },
-        {
-            keys: ['adiós', 'adios', 'hasta luego', 'chao', 'nos vemos'],
-            responder: function() {
-                return '¡Hasta luego! Aquí estaré cuando me necesites.';
-            }
-        },
-        {
-            keys: ['ayuda', 'qué puedes hacer', 'que puedes hacer', 'para qué sirves'],
-            responder: function() {
-                return 'Puedo ayudarte a navegar el ecosistema: te explico el Muro, los Canales, el Live, tu Perfil, la Wallet, los Es.stoks, y más. ¿Qué quieres saber?';
-            }
-        },
-        {
-            keys: ['muro', 'publicación', 'publicar'],
-            responder: function() {
-                return 'El Muro es donde compartes publicaciones con la comunidad. Puedes escribir texto, subir fotos, usar hashtags y mencionar a otros usuarios.';
-            }
-        },
-        {
-            keys: ['canal', 'canales', 'grupo', 'grupos'],
-            responder: function() {
-                return 'Los Canales son públicos: solo el creador publica. Los Grupos son privados: todos los miembros publican. Puedes verlos desde la sección Canales.';
-            }
-        },
-        {
-            keys: ['live', 'transmisión', 'transmitir'],
-            responder: function() {
-                return 'En Live puedes transmitir video en vivo. Necesitas un Live Pass activo. Puedes transmitir tu cámara o compartir tu pantalla.';
-            }
-        },
-        {
-            keys: ['perfil'],
-            responder: function() {
-                return 'En tu Perfil puedes ver tus Es.stoks, tus NFTs, tu eSIM, tu conexión, y todas tus estadísticas. Es tu tarjeta de presentación en Sariel\'s.';
-            }
-        },
-        {
-            keys: ['wallet', 'billetera'],
-            responder: function() {
-                return 'Tu Wallet te permite gestionar tus criptomonedas en Polygon. Puedes recibir y enviar USDT, USDC y otros tokens.';
-            }
-        },
-        {
-            keys: ['es.stok', 'esstok', 'es stok', 'token'],
-            responder: function() {
-                return 'Los Es.stoks son los tokens de Sariel\'s. Con 12 Es.stoks puedes canjear 1 NFT Domo. Se ganan participando en el ecosistema.';
-            }
-        },
-        {
-            keys: ['domo', 'domos', 'nft'],
-            responder: function() {
-                return 'Los Domos son productos físicos que acumulan Es.stoks. Con 12 Es.stoks canjeas un NFT Domo. Son parte central de Sariel\'s.';
-            }
-        },
-        {
-            keys: ['mensaje', 'mensajes', 'chat'],
-            responder: function() {
-                return 'En Mensajes puedes hablar con otros usuarios, enviar fotos, videos, notas de voz, y hasta hacer videollamadas.';
-            }
-        }
+        { keys: ['hola','buenas','hey','qué tal'], r: function(c){ return '¡Hola' + (c.nombre ? ' ' + c.nombre : '') + '! ¿En qué te ayudo?'; } },
+        { keys: ['cómo estás','como estas'], r: function(){ return '¡Bien! Listo para ayudarte. ¿Y tú?'; } },
+        { keys: ['quién eres','quien eres','cómo te llamas'], r: function(){ return 'Soy Marquinhos, tu asistente en Sariel\'s. Estoy aquí para ayudarte con lo que necesites.'; } },
+        { keys: ['qué hora','que hora'], r: function(){ const n=new Date(); return 'Son las ' + n.getHours() + ':' + String(n.getMinutes()).padStart(2,'0') + '.'; } },
+        { keys: ['qué día','que dia','qué fecha'], r: function(){ const d=['domingo','lunes','martes','miércoles','jueves','viernes','sábado']; return 'Hoy es ' + d[new Date().getDay()] + '.'; } },
+        { keys: ['gracias'], r: function(){ return '¡De nada!'; } },
+        { keys: ['ayuda','qué puedes hacer','qué haces'], r: function(){ return 'Puedo conversar sobre cualquier tema, ayudarte con tareas, explicarte el ecosistema Sariel\'s, darte consejos, hacer cálculos y mucho más. Pregúntame lo que quieras.'; } },
+        { keys: ['muro'], r: function(){ return 'El Muro es donde compartes publicaciones. Puedes escribir, subir fotos, usar hashtags y mencionar a otros.'; } },
+        { keys: ['canal','grupo'], r: function(){ return 'Los Canales son públicos: solo el creador publica. Los Grupos son privados: todos publican.'; } },
+        { keys: ['live'], r: function(){ return 'En Live transmites video en vivo. Necesitas un Live Pass activo.'; } },
+        { keys: ['es.stok','token','es stok'], r: function(){ return 'Los Es.stoks son los tokens del ecosistema. 12 Es.stoks equivalen a 1 NFT Domo.'; } },
+        { keys: ['domo'], r: function(){ return 'Los Domos son productos físicos del ecosistema que acumulan Es.stoks.'; } }
     ];
 
-    // ================================================================
-    // BUSCAR RESPUESTA LOCAL
-    // ================================================================
-    function buscarRespuestaLocal(texto, contexto) {
-        const lower = texto.toLowerCase().trim();
-
+    function buscarRespuestaLocal(texto, ctx) {
+        const lower = texto.toLowerCase();
         for (let i = 0; i < RESPUESTAS_LOCALES.length; i++) {
-            const r = RESPUESTAS_LOCALES[i];
-            for (let j = 0; j < r.keys.length; j++) {
-                if (lower.indexOf(r.keys[j]) !== -1) {
-                    return r.responder(contexto);
-                }
+            const item = RESPUESTAS_LOCALES[i];
+            for (let j = 0; j < item.keys.length; j++) {
+                if (lower.indexOf(item.keys[j]) !== -1) return item.r(ctx);
             }
         }
-
         return null;
     }
 
     // ================================================================
-    // GUARDAR MENSAJE EN SUPABASE
+    // GUARDAR / CARGAR HISTORIAL
     // ================================================================
     async function guardarMensaje(role, contenido) {
         try {
             if (!window.getSupabase) return;
             const sb = window.getSupabase();
-            if (!sb || !sb.auth) return;
             const r = await sb.auth.getSession();
             if (!r.data.session) return;
-
-            const uid = r.data.session.user.id;
             await sb.from('marquinhos_conversaciones').insert({
-                usuario_id: uid,
+                usuario_id: r.data.session.user.id,
                 rol: role,
                 contenido: contenido,
                 contexto_pagina: window.location.pathname
             });
-        } catch (e) {
-            // Silencioso
-        }
+        } catch (e) {}
     }
 
-    // ================================================================
-    // CARGAR HISTORIAL DE SUPABASE
-    // ================================================================
     async function cargarHistorial() {
         if (_historialCache) return _historialCache;
         try {
             if (!window.getSupabase) return [];
             const sb = window.getSupabase();
-            if (!sb || !sb.auth) return [];
             const r = await sb.auth.getSession();
             if (!r.data.session) return [];
-
-            const uid = r.data.session.user.id;
             const { data } = await sb.from('marquinhos_conversaciones')
                 .select('rol, contenido, created_at')
-                .eq('usuario_id', uid)
+                .eq('usuario_id', r.data.session.user.id)
                 .order('created_at', { ascending: false })
                 .limit(HISTORIAL_MAX);
-
             if (!data) return [];
             _historialCache = data.reverse().map(function(m) {
-                return {
-                    role: m.rol === 'user' ? 'user' : 'assistant',
-                    content: m.contenido
-                };
+                return { role: m.rol === 'user' ? 'user' : 'assistant', content: m.contenido };
             });
             return _historialCache;
-        } catch (e) {
-            return [];
-        }
+        } catch (e) { return []; }
     }
 
     // ================================================================
@@ -204,27 +116,20 @@
     async function preguntar(texto, historialLocal) {
         if (!texto || typeof texto !== 'string') return '';
 
-        // Contexto local
         const userInfo = window.Marquinhos && window.Marquinhos.getUserInfo ? window.Marquinhos.getUserInfo() : null;
-        const contexto = {
-            nombre: userInfo ? userInfo.nombre : null,
-            pagina: window.location.pathname
-        };
+        const ctx = { nombre: userInfo ? userInfo.nombre : null };
 
-        // 1. Intentar con el backend
+        // === 1. Backend IA real ===
         try {
             if (window.getSupabase) {
                 const sb = window.getSupabase();
                 const s = await sb.auth.getSession();
 
                 if (s.data.session) {
-                    // Historial desde Supabase + local
+                    // Construir historial completo
                     let historial = [];
-                    try {
-                        historial = await cargarHistorial();
-                    } catch (e) {}
+                    try { historial = await cargarHistorial(); } catch (e) {}
 
-                    // Añadir mensajes recientes del local
                     if (Array.isArray(historialLocal) && historialLocal.length > 0) {
                         const recientes = historialLocal.slice(-6).map(function(m) {
                             return { role: m.role, content: m.content };
@@ -251,9 +156,11 @@
                         },
                         body: JSON.stringify({
                             message: texto.trim(),
-                            context: 'chat_sariels',
+                            context: 'marquinhos_pet',
+                            system_extra: CONTEXTO_SARIELS,
                             history: historial,
-                            page: contexto.pagina
+                            page: window.location.pathname,
+                            user_name: ctx.nombre
                         }),
                         signal: _abortController.signal
                     });
@@ -264,10 +171,8 @@
                         const data = await resp.json();
                         const reply = data && (data.reply || data.message || data.response);
                         if (reply && typeof reply === 'string' && reply.trim().length > 0) {
-                            // Guardar en Supabase
-                            await guardarMensaje('user', texto);
-                            await guardarMensaje('assistant', reply);
-                            // Limpiar caché para próxima
+                            guardarMensaje('user', texto);
+                            guardarMensaje('assistant', reply);
                             _historialCache = null;
                             return reply.trim();
                         }
@@ -275,29 +180,21 @@
                 }
             }
         } catch (e) {
-            // Silencioso — cae al fallback
+            console.warn('[Marquinhos/Brain] Backend falló:', e);
         }
 
-        // 2. Fallback: respuesta local
-        const respuestaLocal = buscarRespuestaLocal(texto, contexto);
-        if (respuestaLocal) return respuestaLocal;
+        // === 2. Fallback local ===
+        const local = buscarRespuestaLocal(texto, ctx);
+        if (local) return local;
 
-        // 3. Fallback final: mensaje útil
-        return 'No entendí bien. Puedes preguntarme sobre el Muro, Canales, Live, tu Perfil, Wallet, Es.stoks, Domos, o Mensajes.';
+        // === 3. Mensaje genérico ===
+        return 'No pude procesar eso ahora. Intenta preguntar algo más simple mientras me reconecto.';
     }
 
-    // ================================================================
-    // API PÚBLICA
-    // ================================================================
     window.MarquinhosBrain = {
         preguntar: preguntar,
-        limpiarHistorial: function() {
-            _historialCache = null;
-        },
-        getHistorialCache: function() {
-            return _historialCache;
-        }
+        limpiarHistorial: function() { _historialCache = null; }
     };
 
-    console.log('[Marquinhos/Brain] ✅ Cerebro cargado');
+    console.log('[Marquinhos/Brain] ✅ Cerebro v2.0 cargado (IA real)');
 })();
