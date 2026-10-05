@@ -1,7 +1,7 @@
 // ================================================================
-// MARQUINHOS · PET v5.0
-// arrastrable + memoria persistente + conversación continua
-// + accesorios de la tienda sobre el avatar
+// MARQUINHOS · PET v6.0
+// arrastrable + memoria + conversación continua + accesorios
+// + MODO SOLO VOZ (3 burbujitas) vs MODO SUBTÍTULOS
 // ================================================================
 
 'use strict';
@@ -16,7 +16,7 @@
         '/terminos', '/privacidad', '/cookies', '/legal',
         '/info', '/live-terminos', '/eliminar-cuenta',
         '/actualizar-contrasena',
-        '/features/marquinhos/tienda'   // ← NUEVO: no duplicar pet en la tienda
+        '/features/marquinhos/tienda'
     ];
 
     const CONFIG_DEFAULT = {
@@ -27,7 +27,8 @@
         volumen: 1.0,
         timeout_seg: 20,
         manos_libres: false,
-        conversacion: true,   // sigue escuchando después de responder
+        conversacion: true,
+        mostrar_subtitulos: false,   // ← NUEVO: false = modo solo voz
         idioma: null,
         posicion_x: null,
         posicion_y: null
@@ -42,17 +43,15 @@
 
     const TONO_PITCH = { grave: 0.85, medio: 1.0, agudo: 1.15 };
 
-    // Memoria de conversación
     const HIST_MAX = 40;
     const HIST_TTL_MS = 7 * 24 * 60 * 60 * 1000;
     const HIST_KEY = 'marquinhos_hist_';
-
-    // Accesorios equipados (cache)
     const ACC_KEY = 'marquinhos_accesorios_equipados';
 
     let config = { ...CONFIG_DEFAULT };
     let container = null;
     let bubble = null;
+    let dots = null;   // ← NUEVO: contenedor de las 3 burbujitas
     let isSpeaking = false;
     let isListening = false;
     let recognition = null;
@@ -64,9 +63,8 @@
     let conversacionActiva = false;
     let procesando = false;
     let recibioResultado = false;
-    let accesoriosEquipados = [];   // ← NUEVO
+    let accesoriosEquipados = [];
 
-    // Arrastre
     let isDragging = false;
     let dragStartX = 0;
     let dragStartY = 0;
@@ -99,7 +97,19 @@
     }
 
     // ============================================================
-    // MEMORIA PERSISTENTE
+    // MODO: VOZ o SUBTÍTULOS
+    // ============================================================
+    function aplicarModo() {
+        if (!container) return;
+        if (config.mostrar_subtitulos) {
+            container.classList.remove('mq-modo-voz');
+        } else {
+            container.classList.add('mq-modo-voz');
+        }
+    }
+
+    // ============================================================
+    // MEMORIA
     // ============================================================
     function cargarHistorial() {
         try {
@@ -158,26 +168,21 @@
     }
 
     // ============================================================
-    // ACCESORIOS DE LA TIENDA
+    // ACCESORIOS
     // ============================================================
     async function cargarAccesorios() {
-        // 1. Cargar desde localStorage primero (respuesta instantánea)
         try {
             const cached = JSON.parse(localStorage.getItem(ACC_KEY) || '[]');
-            if (Array.isArray(cached)) {
-                accesoriosEquipados = cached;
-            }
+            if (Array.isArray(cached)) accesoriosEquipados = cached;
         } catch (e) {
             accesoriosEquipados = [];
         }
 
-        // 2. Refrescar desde Supabase (async, actualiza si cambió)
         try {
             if (!window.getSupabase) return;
             const sb = window.getSupabase();
             const r = await sb.auth.getSession();
             if (!r.data.session) return;
-
             const uid = r.data.session.user.id;
 
             const { data, error } = await sb
@@ -192,10 +197,7 @@
                 .eq('usuario_id', uid)
                 .eq('equipado', true);
 
-            if (error) {
-                console.warn('[Marquinhos] Error cargando accesorios:', error);
-                return;
-            }
+            if (error) return;
 
             if (Array.isArray(data)) {
                 accesoriosEquipados = data.map(d => ({
@@ -206,9 +208,7 @@
                 }));
                 localStorage.setItem(ACC_KEY, JSON.stringify(accesoriosEquipados));
             }
-        } catch (e) {
-            console.warn('[Marquinhos] No se pudieron cargar accesorios:', e);
-        }
+        } catch (e) {}
     }
 
     function posicionPorCategoria(cat) {
@@ -226,7 +226,6 @@
     function renderAccesoriosEnAvatar() {
         const layer = document.getElementById('mq-acc-layer');
         if (!layer) return;
-
         layer.innerHTML = accesoriosEquipados.map(a => {
             const p = posicionPorCategoria(a.categoria);
             return `<text x="${p.x}" y="${p.y}" font-size="${p.size}" text-anchor="middle">${esc(a.svg)}</text>`;
@@ -251,12 +250,21 @@
         }
 
         container.innerHTML = `
+            <!-- Burbuja de texto (solo en modo subtítulos) -->
             <div class="mq-pet-bubble" id="mq-bubble">
                 <div class="mq-pet-bubble-text" id="mq-bubble-text"></div>
             </div>
+
+            <!-- 3 burbujitas animadas (siempre visibles cuando procesa/habla) -->
+            <div class="mq-pet-bubble-dots" id="mq-dots">
+                <span class="mq-dot"></span>
+                <span class="mq-dot"></span>
+                <span class="mq-dot"></span>
+            </div>
+
+            <!-- Avatar -->
             <div class="mq-pet-avatar" id="mq-avatar" role="button" tabindex="0" aria-label="Hablar con Marquinhos">
                 <svg viewBox="0 0 200 260" xmlns="http://www.w3.org/2000/svg" class="mq-pet-svg">
-                    <!-- ✅ NUEVO: capa de accesorios equipados -->
                     <g id="mq-acc-layer"></g>
                     <g>
                         <line x1="70" y1="40" x2="68" y2="20" stroke="#1565C0" stroke-width="3" stroke-linecap="round"/>
@@ -297,6 +305,8 @@
         try { document.body.style.overflowX = 'visible'; } catch (e) {}
 
         bubble = document.getElementById('mq-bubble');
+        dots = document.getElementById('mq-dots');
+
         const avatar = document.getElementById('mq-avatar');
 
         avatar.addEventListener('click', function() {
@@ -355,44 +365,30 @@
             container.classList.remove('mq-dragging');
         });
 
-        // ✅ NUEVO: renderizar accesorios al crear el widget
         renderAccesoriosEnAvatar();
-
+        aplicarModo();
         log('Widget creado');
     }
 
     // ============================================================
-    // TAP: inicia / detiene la conversación
+    // BURBUJITAS (3 puntos animados)
     // ============================================================
-    function detenerConversacion() {
-        conversacionActiva = false;
-        detenerTTS();
-        detenerReconocimiento();
-        setEstado('idle');
-        ocultarBurbuja();
+    function mostrarDots() {
+        if (dots) dots.classList.add('mq-dots-visible');
     }
 
-    async function onAvatarTap() {
-        if (isSpeaking || isListening || procesando) {
-            detenerConversacion();
-            return;
-        }
-
-        conversacionActiva = !!config.conversacion;
-        const ok = iniciarReconocimiento();
-        if (!ok) {
-            conversacionActiva = false;
-            mostrarBurbuja('Tu navegador no soporta reconocimiento de voz.');
-            setTimeout(ocultarBurbuja, 4000);
-        }
+    function ocultarDots() {
+        if (dots) dots.classList.remove('mq-dots-visible');
     }
 
     // ============================================================
-    // BURBUJA
+    // GLOBO DE TEXTO (solo modo subtítulos)
     // ============================================================
     function setEstado(e) { if (container) container.setAttribute('data-estado', e); }
 
     function mostrarBurbuja(texto) {
+        // Solo mostrar si el modo subtítulos está activo
+        if (!config.mostrar_subtitulos) return;
         if (!bubble) return;
         const t = document.getElementById('mq-bubble-text');
         const corto = texto.length > 160 ? texto.slice(0, 157) + '…' : texto;
@@ -405,7 +401,36 @@
     }
 
     // ============================================================
-    // VOZ (TTS)
+    // TAP: inicia / detiene
+    // ============================================================
+    function detenerConversacion() {
+        conversacionActiva = false;
+        detenerTTS();
+        detenerReconocimiento();
+        setEstado('idle');
+        ocultarBurbuja();
+        ocultarDots();
+    }
+
+    async function onAvatarTap() {
+        if (isSpeaking || isListening || procesando) {
+            detenerConversacion();
+            return;
+        }
+
+        conversacionActiva = !!config.conversacion;
+        const ok = iniciarReconocimiento();
+        if (!ok) {
+            conversacionActiva = false;
+            if (config.mostrar_subtitulos) {
+                mostrarBurbuja('Tu navegador no soporta reconocimiento de voz.');
+                setTimeout(ocultarBurbuja, 4000);
+            }
+        }
+    }
+
+    // ============================================================
+    // VOZ
     // ============================================================
     async function hablar(texto) {
         if (!texto) return false;
@@ -418,7 +443,10 @@
         const pitch = estilo.pitch * pitchBase;
         const volumen = Math.max(0, Math.min(1, config.volumen || 1.0));
 
-        mostrarBurbuja(texto);
+        // En modo subtítulos, mostrar el globo
+        if (config.mostrar_subtitulos) mostrarBurbuja(texto);
+        // Siempre mostrar los puntos mientras habla
+        mostrarDots();
         isSpeaking = true;
         setEstado('hablando');
 
@@ -460,7 +488,12 @@
         if (completo) {
             isSpeaking = false;
             setEstado('idle');
-            setTimeout(function() { if (!isSpeaking && !isListening) ocultarBurbuja(); }, 3000);
+            ocultarDots();
+            setTimeout(function() {
+                if (!isSpeaking && !isListening && !procesando) {
+                    ocultarBurbuja();
+                }
+            }, 2500);
         }
         return completo;
     }
@@ -513,10 +546,11 @@
         try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
         if (audioActual) { try { audioActual.pause(); } catch (e) {} audioActual = null; }
         isSpeaking = false;
+        ocultarDots();
     }
 
     // ============================================================
-    // RECONOCIMIENTO DE VOZ
+    // RECONOCIMIENTO
     // ============================================================
     function iniciarReconocimiento() {
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -535,7 +569,7 @@
                 recognitionActive = true;
                 isListening = true;
                 setEstado('escuchando');
-                mostrarBurbuja('Te escucho...');
+                mostrarDots();   // ← puntos mientras escucha
             };
 
             recognition.onresult = function(event) {
@@ -565,15 +599,17 @@
             recognition.onerror = function(event) {
                 recognitionActive = false;
                 isListening = false;
+                ocultarDots();
                 if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
                     conversacionActiva = false;
                     setEstado('idle');
-                    mostrarBurbuja('Permite el micrófono.');
-                    setTimeout(ocultarBurbuja, 5000);
+                    if (config.mostrar_subtitulos) {
+                        mostrarBurbuja('Permite el micrófono.');
+                        setTimeout(ocultarBurbuja, 5000);
+                    }
                 } else if (event.error === 'no-speech' || event.error === 'aborted') {
                     conversacionActiva = false;
                     setEstado('idle');
-                    ocultarBurbuja();
                 } else {
                     setEstado('idle');
                 }
@@ -582,10 +618,12 @@
             recognition.onend = function() {
                 recognitionActive = false;
                 isListening = false;
-                if (!procesando && !isSpeaking) setEstado('idle');
+                if (!procesando && !isSpeaking) {
+                    setEstado('idle');
+                    ocultarDots();
+                }
                 if (!recibioResultado && !procesando && !isSpeaking) {
                     conversacionActiva = false;
-                    setTimeout(function() { if (!isSpeaking && !procesando) ocultarBurbuja(); }, 1500);
                 }
             };
 
@@ -611,7 +649,7 @@
         if (!texto) return;
         procesando = true;
         setEstado('pensando');
-        mostrarBurbuja('...');
+        mostrarDots();   // ← puntos mientras piensa
 
         historialLocal.push({ role: 'user', content: texto, ts: Date.now() });
 
@@ -650,8 +688,12 @@
         });
     }
 
-    // ✅ NUEVO: escuchar cambios de accesorios desde otra pestaña (la tienda)
+    // Cambios de config desde otra pestaña (configuración)
     window.addEventListener('storage', function(e) {
+        if (e.key === 'marquinhos_config') {
+            cargarConfig();
+            aplicarModo();
+        }
         if (e.key === ACC_KEY) {
             try {
                 accesoriosEquipados = JSON.parse(e.newValue || '[]');
@@ -667,14 +709,24 @@
         hablar: hablar,
         procesar: procesarComando,
         olvidar: olvidarTodo,
-        // ✅ NUEVO: la tienda llama a esto al comprar/equipar
         recargarAccesorios: async function() {
             await cargarAccesorios();
             renderAccesoriosEnAvatar();
         },
+        // ✅ NUEVO: para que la página de configuración cambie el modo
+        setModoSubtitulos: function(activo) {
+            config.mostrar_subtitulos = !!activo;
+            guardarConfig();
+            aplicarModo();
+        },
+        getModoSubtitulos: function() { return !!config.mostrar_subtitulos; },
         getHistorial: function() { return historialLocal.slice(); },
         getConfig: function() { return { ...config }; },
-        setConfig: function(nuevos) { config = { ...config, ...nuevos }; guardarConfig(); },
+        setConfig: function(nuevos) {
+            config = { ...config, ...nuevos };
+            guardarConfig();
+            aplicarModo();
+        },
         resetPosicion: function() {
             config.posicion_x = null;
             config.posicion_y = null;
@@ -696,10 +748,10 @@
 
         await cargarUsuario();
         cargarHistorial();
-        await cargarAccesorios();   // ✅ NUEVO
+        await cargarAccesorios();
         crearWidget();
         instalarVisibility();
-        log('✅ Listo. Mensajes: ' + historialLocal.length + ' · Accesorios: ' + accesoriosEquipados.length);
+        log('✅ Listo. Mensajes: ' + historialLocal.length + ' · Accesorios: ' + accesoriosEquipados.length + ' · Subtítulos: ' + config.mostrar_subtitulos);
     }
 
     if (document.readyState === 'loading') {
