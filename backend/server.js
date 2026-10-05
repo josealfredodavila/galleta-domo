@@ -822,6 +822,11 @@ montarRouter('/api/ai', './routes/ai-chat', 'routes/ai-chat');
 
 montarRouter('/api/ai/voice', './routes/ai-voice', 'routes/ai-voice');
 
+// ✅ NUEVO: Marquinhos-pet (mascota virtual flotante)
+montarRouter('/api/ai/chat-pet', './routes/ai-chat-pet', 'routes/ai-chat-pet');
+
+montarRouter('/api/ai/tts', './routes/ai-tts', 'routes/ai-tts');
+
 montarRouter('/api/telnyx', './routes/telnyx', 'routes/telnyx');
 
 // ================================================================
