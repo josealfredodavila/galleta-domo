@@ -1,5 +1,6 @@
 /* ================================================================
-   MARQUINHOS · PET · CSS v3.0 (arrastrable)
+   MARQUINHOS · PET · CSS v4.0
+   (arrastrable + indicador de 3 burbujitas animadas)
    ================================================================ */
 
 .mq-pet {
@@ -59,7 +60,9 @@
     50% { transform: translateY(-4px); }
 }
 
-/* Burbuja */
+/* ================================================================
+   BURBUJA DE TEXTO (modo subtítulos)
+   ================================================================ */
 .mq-pet-bubble {
     position: absolute;
     bottom: calc(100% - 20px);
@@ -101,7 +104,95 @@
     border-top: 8px solid rgba(255, 255, 255, 0.98);
 }
 
-/* Estados */
+/* ================================================================
+   INDICADOR DE 3 BURBUJITAS ANIMADAS (v4.0)
+   ================================================================ */
+.mq-pet-bubble-dots {
+    display: none;
+    gap: 6px;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 16px;
+    background: rgba(255, 255, 255, 0.98);
+    border-radius: 20px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(21, 101, 192, 0.12);
+    position: absolute;
+    bottom: calc(100% - 20px);
+    left: 50%;
+    transform: translateX(-50%) scale(0.9);
+    transform-origin: bottom center;
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.mq-pet-bubble-dots.mq-dots-visible {
+    display: flex;
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+}
+
+/* Triangulito */
+.mq-pet-bubble-dots::after {
+    content: '';
+    position: absolute;
+    bottom: -7px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-top: 7px solid rgba(255, 255, 255, 0.98);
+}
+
+.mq-pet-bubble-dots .mq-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #1565C0;
+    animation: mq-dot-bounce 1.2s ease-in-out infinite;
+}
+
+.mq-pet-bubble-dots .mq-dot:nth-child(1) { animation-delay: 0s; }
+.mq-pet-bubble-dots .mq-dot:nth-child(2) { animation-delay: 0.15s; }
+.mq-pet-bubble-dots .mq-dot:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes mq-dot-bounce {
+    0%, 80%, 100% {
+        transform: scale(0.6);
+        opacity: 0.4;
+    }
+    40% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Cuando el pet está "hablando", las burbujitas son verdes */
+.mq-pet[data-estado="hablando"] .mq-pet-bubble-dots .mq-dot {
+    background: #2ECC71;
+}
+
+/* Cuando el pet está "pensando", las burbujitas son doradas */
+.mq-pet[data-estado="pensando"] .mq-pet-bubble-dots .mq-dot {
+    background: #FFD700;
+}
+
+/* Cuando escucha, son cyan */
+.mq-pet[data-estado="escuchando"] .mq-pet-bubble-dots .mq-dot {
+    background: #00E5FF;
+}
+
+/* Ocultar el globo de texto en modo solo-voz */
+.mq-pet.mq-modo-voz .mq-pet-bubble {
+    display: none !important;
+}
+
+/* ================================================================
+   Estados del avatar
+   ================================================================ */
 .mq-pet[data-estado="escuchando"] .mq-pet-avatar {
     animation: mq-pulse-listen 1.2s ease-in-out infinite;
 }
@@ -129,6 +220,9 @@
     to { transform: translateY(-3px) rotate(2deg); }
 }
 
+/* ================================================================
+   Responsive
+   ================================================================ */
 @media (max-width: 520px) {
     .mq-pet, .mq-pet-avatar {
         width: 80px !important;
@@ -139,10 +233,31 @@
         max-width: 180px;
         padding: 6px 10px;
     }
+    .mq-pet-bubble-dots {
+        padding: 8px 12px;
+        gap: 5px;
+    }
+    .mq-pet-bubble-dots .mq-dot {
+        width: 7px;
+        height: 7px;
+    }
 }
 
+/* ================================================================
+   Tema día
+   ================================================================ */
 html.tema-dia .mq-pet-bubble,
 html[data-tema="dia"] .mq-pet-bubble {
     background: rgba(255, 255, 255, 0.99);
     color: #0D47A1;
+}
+
+html.tema-dia .mq-pet-bubble-dots,
+html[data-tema="dia"] .mq-pet-bubble-dots {
+    background: rgba(255, 255, 255, 0.99);
+}
+
+html.tema-dia .mq-pet-bubble-dots::after,
+html[data-tema="dia"] .mq-pet-bubble-dots::after {
+    border-top-color: rgba(255, 255, 255, 0.99);
 }
