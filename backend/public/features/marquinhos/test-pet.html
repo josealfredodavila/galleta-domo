@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Test Pet IA</title>
+<style>
+body { background: #05080f; color: #fff; font-family: monospace; padding: 20px; font-size: 14px; line-height: 1.6; }
+h1 { color: #D4AF37; }
+.box { padding: 14px; border-radius: 10px; margin: 10px 0; font-weight: 600; }
+.ok { background: #0a2a1a; border-left: 5px solid #00d68f; color: #00d68f; }
+.fail { background: #2a0a1a; border-left: 5px solid #ff3366; color: #ff3366; }
+.wait { background: #1a1a0a; border-left: 5px solid #FFD700; color: #FFD700; }
+.info { background: #0a1a2a; border-left: 5px solid #00E5FF; color: #00E5FF; word-break: break-all; }
+pre { background: #000; padding: 10px; border-radius: 8px; overflow: auto; font-size: 12px; color: #8aa8b8; }
+</style>
+</head>
+<body>
+
+<h1>◈ Test Pet IA</h1>
+<div id="resultado"></div>
+
+<script>
+const cont = document.getElementById('resultado');
+
+function addBox(clase, texto) {
+    const div = document.createElement('div');
+    div.className = 'box ' + clase;
+    div.innerHTML = texto;
+    cont.appendChild(div);
+}
+
+(async function test() {
+    try {
+        addBox('wait', '1. Verificando sesión Supabase...');
+
+        // Obtener sesión
+        let session = null;
+        try {
+            const sb = window.getSupabase ? window.getSupabase() : (window.supabaseClient || null);
+            if (sb && sb.auth) {
+                const r = await sb.auth.getSession();
+                session = r.data.session;
+            }
+        } catch (e) {}
+
+        if (!session) {
+            addBox('fail', '❌ No hay sesión activa. Inicia sesión primero.');
+            return;
+        }
+
+        addBox('ok', '✅ Sesión activa<br>Usuario: ' + session.user.id.slice(0, 8) + '...<br>Token válido: SÍ');
+
+        addBox('wait', '2. Llamando a /api/ai/chat-pet...');
+
+        const t0 = Date.now();
+        const resp = await fetch('/api/ai/chat-pet', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization': 'Bearer ' + session.access_token
+            },
+            body: JSON.stringify({
+                message: 'Hola, ¿cuánto es 15 por 23?',
+                history: [],
+                page: '/test-pet',
+                user_name: 'Test'
+            })
+        });
+
+        const ms = Date.now() - t0;
+
+        addBox('info', 'Status HTTP: <b>' + resp.status + '</b><br>Tiempo: ' + ms + 'ms');
+
+        if (resp.status === 401) {
+            addBox('fail', '❌ 401 — Sesión rechazada por el backend. Revisa SUPABASE_SERVICE_ROLE_KEY en Railway.');
+        } else if (resp.status === 404) {
+            addBox('fail', '❌ 404 — Endpoint /api/ai/chat-pet no existe en el servidor. Revisa server.js y el deploy.');
+        } else if (resp.status === 500) {
+            addBox('fail', '❌ 500 — Error interno del servidor. Revisa Deploy Logs de Railway.');
+        } else if (resp.status === 502) {
+            addBox('fail', '❌ 502 — Groq falló. Revisa GROQ_API_KEY en Railway.');
+        } else if (resp.status === 504) {
+            addBox('fail', '❌ 504 — Groq tardó demasiado. Revisa el timeout.');
+        } else if (resp.ok) {
+            const data = await resp.json();
+            addBox('ok', '✅ FUNCIONA!<br>Respuesta:<br><pre>' + JSON.stringify(data, null, 2) + '</pre>');
+        } else {
+            const text = await resp.text();
+            addBox('fail', '❌ Status inesperado: ' + resp.status + '<br><pre>' + text.slice(0, 500) + '</pre>');
+        }
+
+    } catch (e) {
+        addBox('fail', '❌ Error de red: ' + e.message);
+        addBox('info', 'Puede ser CORS o CSP. Revisa el archivo marquinhos-pet.js y server.js.');
+    }
+})();
+</script>
+
+</body>
+</html>
