@@ -1,24 +1,29 @@
 /* ================================================================
-   MARQUINHOS · PET · CSS v2.1
+   MARQUINHOS · PET · CSS v3.0 (arrastrable)
    ================================================================ */
 
 .mq-pet {
     position: fixed !important;
     bottom: 16px !important;
     right: 16px !important;
-    z-index: 2147483647 !important; /* Máximo valor posible */
+    z-index: 2147483647 !important;
     width: 90px !important;
     height: 130px !important;
     pointer-events: auto !important;
     opacity: 1 !important;
     visibility: visible !important;
     display: block !important;
-    transform: none !important;
     user-select: none;
     -webkit-user-select: none;
-    touch-action: manipulation;
+    touch-action: none;
     font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
     -webkit-tap-highlight-color: transparent;
+    transition: none;
+}
+
+.mq-pet.mq-dragging {
+    transition: none;
+    cursor: grabbing;
 }
 
 .mq-pet-avatar {
@@ -27,14 +32,20 @@
     right: 0;
     width: 90px;
     height: 130px;
-    cursor: pointer;
+    cursor: grab;
     filter: drop-shadow(0 6px 16px rgba(21, 101, 192, 0.35));
     animation: mq-float 4s ease-in-out infinite;
-    transition: transform 0.2s ease;
+    touch-action: none;
     -webkit-tap-highlight-color: transparent;
 }
 
-.mq-pet-avatar:active { transform: scale(0.92); }
+.mq-pet.mq-dragging .mq-pet-avatar {
+    animation: none;
+    cursor: grabbing;
+    transform: scale(1.05);
+}
+
+.mq-pet-avatar:active { cursor: grabbing; }
 
 .mq-pet-svg {
     width: 100%;
@@ -48,6 +59,7 @@
     50% { transform: translateY(-4px); }
 }
 
+/* Burbuja */
 .mq-pet-bubble {
     position: absolute;
     bottom: calc(100% - 20px);
@@ -60,7 +72,7 @@
     line-height: 1.35;
     font-weight: 600;
     max-width: 220px;
-    min-width: 100px;
+    min-width: 60px;
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(21, 101, 192, 0.12);
     opacity: 0;
     transform: translateY(8px) scale(0.95);
@@ -89,45 +101,32 @@
     border-top: 8px solid rgba(255, 255, 255, 0.98);
 }
 
-.mq-pet-status {
-    position: absolute;
-    bottom: -8px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(5, 8, 15, 0.92);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    padding: 4px 10px;
-    border-radius: 12px;
-    font-size: 9px;
-    font-weight: 600;
-    color: #8aa8b8;
-    white-space: nowrap;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    border: 1px solid rgba(212, 175, 55, 0.25);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    pointer-events: none;
+/* Estados */
+.mq-pet[data-estado="escuchando"] .mq-pet-avatar {
+    animation: mq-pulse-listen 1.2s ease-in-out infinite;
 }
 
-.mq-pet-status .mq-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: #8aa8b8;
-    transition: background 0.3s ease;
+.mq-pet[data-estado="pensando"] .mq-pet-avatar {
+    animation: mq-pulse-think 1s ease-in-out infinite;
 }
 
-.mq-pet-status.mq-status-espera .mq-dot { background: #4a6a8a; }
-.mq-pet-status.mq-status-escuchando .mq-dot { background: #00E5FF; animation: mq-pulse 1s ease-in-out infinite; }
-.mq-pet-status.mq-status-pensando .mq-dot { background: #FFD700; animation: mq-pulse 0.8s ease-in-out infinite; }
-.mq-pet-status.mq-status-hablando .mq-dot { background: #2ECC71; animation: mq-pulse 0.6s ease-in-out infinite; }
-.mq-pet-status.mq-status-error .mq-dot { background: #FF3366; animation: mq-pulse 0.4s ease-in-out infinite; }
+.mq-pet[data-estado="hablando"] .mq-pet-avatar {
+    animation: mq-talk 0.4s ease-in-out infinite alternate;
+}
 
-@keyframes mq-pulse {
-    0%, 100% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.5); opacity: 0.5; }
+@keyframes mq-pulse-listen {
+    0%, 100% { filter: drop-shadow(0 6px 16px rgba(0, 229, 255, 0.3)); }
+    50% { filter: drop-shadow(0 6px 24px rgba(0, 229, 255, 0.7)); }
+}
+
+@keyframes mq-pulse-think {
+    0%, 100% { filter: drop-shadow(0 6px 16px rgba(255, 215, 0, 0.3)); }
+    50% { filter: drop-shadow(0 6px 24px rgba(255, 215, 0, 0.7)); }
+}
+
+@keyframes mq-talk {
+    from { transform: translateY(0) rotate(-2deg); }
+    to { transform: translateY(-3px) rotate(2deg); }
 }
 
 @media (max-width: 520px) {
@@ -140,21 +139,10 @@
         max-width: 180px;
         padding: 6px 10px;
     }
-    .mq-pet-status {
-        font-size: 9px;
-        padding: 3px 8px;
-    }
 }
 
 html.tema-dia .mq-pet-bubble,
 html[data-tema="dia"] .mq-pet-bubble {
     background: rgba(255, 255, 255, 0.99);
     color: #0D47A1;
-}
-
-html.tema-dia .mq-pet-status,
-html[data-tema="dia"] .mq-pet-status {
-    background: rgba(255, 255, 255, 0.96);
-    color: #4a5568;
-    border-color: rgba(0, 0, 0, 0.1);
 }
