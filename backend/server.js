@@ -254,6 +254,11 @@ app.use(
 
                 connectSrc: [
                     "'self'",
+                    // ✅ NUEVO: Añadido el origen propio explícitamente para
+                    // asegurar que fetch a /api/ai/chat-pet y /api/ai/tts
+                    // no sea bloqueado por CSP.
+                    "https://galleta-domo-production.up.railway.app",
+                    "wss://galleta-domo-production.up.railway.app",
                     "https://zultnlogdoajehbswlih.supabase.co",
                     "wss://zultnlogdoajehbswlih.supabase.co",
                     "https://api.qrserver.com",
@@ -375,7 +380,15 @@ app.use(
             'x-requested-with',
             'x-nowpayments-sig',
             'x-signature'
-        ]
+        ],
+
+        // ✅ NUEVO: Configuración de preflight más robusta
+        // Esto asegura que el navegador no cancele el POST cuando
+        // hace preflight OPTIONS antes de llamar a /api/ai/chat-pet.
+        exposedHeaders: ['Content-Length', 'X-Requested-With'],
+        maxAge: 86400,
+        preflightContinue: false,
+        optionsSuccessStatus: 204
     })
 );
 
