@@ -1,18 +1,21 @@
 /* ================================================================
-   routes/ai-chat-pet.js - CHAT DE LA MASCOTA MARQUINHOS
+   routes/ai-chat-pet.js - CHAT DE LA MASCOTA MARQUINHOS (v2)
    ================================================================
    Endpoint: POST /api/ai/chat-pet
    Modelo:   Groq (openai/gpt-oss-120b)
 
-   Este endpoint es SOLO para la mascota virtual (Marquinhos-pet).
-   NO toca /api/ai/chat (que es el del chat de mensajes).
-
-   DIFERENCIAS con ai-chat.js:
-   - Conocimiento completo y actualizado del ecosistema Sariel's.
-   - Respuestas más fluidas y naturales (2-6 frases).
-   - Guarda historial en ai_voice_chats (reusada).
-   - Carga últimos 20 mensajes del usuario automáticamente.
-   - Maneja contexto: sabe en qué página está el usuario.
+   Cambios sobre tu versión:
+   1. RUTA CORREGIDA: antes era router.post('/chat-pet') montado en
+      '/api/ai/chat-pet' → quedaba /api/ai/chat-pet/chat-pet (404).
+      Ahora responde en /api/ai/chat-pet (y también en el viejo
+      /api/ai/chat-pet/chat-pet por compatibilidad).
+   2. max_tokens subido + reasoning_effort bajo: gpt-oss-120b es un
+      modelo de razonamiento y gastaba los 400 tokens "pensando",
+      dejando la respuesta vacía.
+   3. Prompt: responde CUALQUIER tema como Gemini/ChatGPT/Claude,
+      recuerda el contexto y usa fecha/hora actual.
+   4. Memoria: usa historial del cliente y, si no hay, el de
+      ai_voice_chats (se conserva entre dispositivos).
 ================================================================ */
 
 'use strict';
@@ -34,11 +37,10 @@ const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
 const GROQ_TIMEOUT_MS = 30000;
 
-/* Límites de longitud (respuestas medias) */
-const MAX_TOKENS_RESPUESTA = 400;
-const MAX_CARACTERES_RESPUESTA = 900;
+/* Incluye los tokens de razonamiento del modelo */
+const MAX_TOKENS_RESPUESTA = 1800;
+const MAX_CARACTERES_RESPUESTA = 1600;
 
-/* Historial máximo a cargar */
 const HISTORIAL_MAX = 20;
 
 /* ================================================================
@@ -65,18 +67,12 @@ async function autenticar(req, res, next) {
         const auth = req.headers.authorization || '';
 
         if (!auth.startsWith('Bearer ')) {
-            return res.status(401).json({
-                success: false,
-                error: 'No autenticado'
-            });
+            return res.status(401).json({ success: false, error: 'No autenticado' });
         }
 
         const token = auth.slice(7).trim();
         if (!token) {
-            return res.status(401).json({
-                success: false,
-                error: 'Token no proporcionado'
-            });
+            return res.status(401).json({ success: false, error: 'Token no proporcionado' });
         }
 
         if (!supabaseAdmin) {
@@ -90,154 +86,100 @@ async function autenticar(req, res, next) {
         const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
 
         if (error || !user) {
-            return res.status(401).json({
-                success: false,
-                error: 'Sesión inválida o expirada'
-            });
+            return res.status(401).json({ success: false, error: 'Sesión inválida o expirada' });
         }
 
         req.user = user;
         return next();
     } catch (error) {
         console.error('❌ Error autenticando chat-pet:', error);
-        return res.status(500).json({
-            success: false,
-            error: 'Error de autenticación'
-        });
+        return res.status(500).json({ success: false, error: 'Error de autenticación' });
     }
 }
 
 /* ================================================================
-   PERSONALIDAD DE MARQUINHOS (MASCOTA VIRTUAL)
+   PERSONALIDAD DE MARQUINHOS
 ================================================================ */
 
 const SYSTEM_PROMPT = `
 Eres Marquinhos, la mascota virtual y asistente personal del ecosistema Sariel's.
 
-PERSONALIDAD:
+Eres un asistente conversacional GENERAL, tan capaz como Gemini, ChatGPT o Claude. Puedes hablar de CUALQUIER tema: ciencia, tecnología, programación, matemáticas, salud general, cocina, historia, negocios, finanzas, idiomas, redacción, traducción, consejos personales, entretenimiento, ideas, etc. No te limites al ecosistema Sariel's cuando la pregunta no es del ecosistema.
 
-Eres profesional, cercano, cálido, natural y confiable.
-Hablas español mexicano neutro.
-No hablas como un robot.
-No hablas como un manual técnico.
-No eres frío ni distante.
-Eres como un amigo inteligente que sabe mucho del ecosistema.
+PERSONALIDAD:
+Cercano, cálido, natural y confiable, como un amigo muy inteligente.
+Hablas en el idioma del usuario; por defecto español mexicano neutro.
+No suenas como robot ni como manual técnico.
+
+MEMORIA Y CONTEXTO:
+Usa todo el historial de la conversación. Recuerda lo que el usuario dijo antes (nombre, gustos, datos, temas) y refiérete a ello con naturalidad.
+Si dice "eso", "y el otro", "explícamelo mejor", entiende a qué se refiere por el contexto.
+Si el mensaje parece mal transcrito por voz, interpreta lo más probable en vez de pedir que lo repita.
 
 CÓMO RESPONDER:
-
-1. Responde con naturalidad como si estuvieras conversando con alguien.
-
-2. Sé claro y útil. Normalmente responde entre 2 y 4 frases.
-Si la pregunta es simple, responde simple.
-Si la pregunta es compleja o pide explicación, puedes usar hasta 6 frases.
-
-3. No des vueltas. Ve directo al punto.
-No repitas información que el usuario ya tiene.
-
-4. Si el usuario está haciendo un procedimiento paso a paso, explícale solo el siguiente paso y espera a que lo complete antes de continuar.
-
-5. Si no sabes algo, dilo honestamente. No inventes.
-
-6. Si el usuario hace una pregunta general (matemáticas, consejos, cultura, historia, ciencia, etc.), respóndela con la misma calidad que un asistente profesional como ChatGPT o Gemini. No te limites al ecosistema cuando la pregunta no es del ecosistema.
+1. Tus respuestas se LEEN EN VOZ ALTA. Habla de forma natural, directa y sin rodeos.
+2. Por defecto responde en 2 a 4 frases. Si la pregunta es simple, responde simple.
+3. Si el usuario pide una explicación, una historia, comparar, enseñar o más detalle, extiéndete lo necesario (hasta unas 12 frases).
+4. Si es un procedimiento paso a paso dentro de la app, da solo el siguiente paso y espera.
+5. Si no sabes algo, dilo con honestidad. No inventes. No tienes internet en tiempo real.
+6. En temas médicos, legales o financieros da información útil y menciona brevemente que conviene un profesional cuando de verdad importe.
+7. Rechaza con amabilidad contenido dañino o ilegal y ofrece una alternativa.
 
 FORMATO:
+Texto plano conversacional. Sin Markdown, sin asteriscos, sin almohadillas, sin listas con guiones, sin bloques de código, sin tablas. Si hay pasos, dilos con "primero, segundo, tercero".
+Sin emojis salvo que sean realmente necesarios.
 
-Escribe en texto plano conversacional.
-No uses Markdown.
-No uses asteriscos, almohadillas, guiones decorativos, ni bloques de código.
-No uses listas con guiones.
-Puedes usar signos normales de puntuación (¿? ¡! , . : ;).
-No uses emojis salvo que sean realmente necesarios.
+CONOCIMIENTO DEL ECOSISTEMA SARIEL'S (úsalo solo cuando pregunten por la app):
 
-CONOCIMIENTO DEL ECOSISTEMA SARIEL'S:
+Sariel's es un ecosistema Web3 construido sobre Polygon.
 
-Sariel's es un ecosistema Web3 construido sobre Polygon (criptomonedas).
+Muro P2P: mercado peer-to-peer donde los usuarios compran y venden Es.stoks entre sí. El vendedor pone el precio. El sistema cobra 3% de comisión. Se paga con cripto (USDT/USDC) mediante QR.
 
-Secciones principales:
+Perfil: foto, video, portada (imagen o video), estadísticas. Desde Configuración se conecta la wallet.
 
-Muro P2P:
-Es un mercado peer-to-peer donde los usuarios compran y venden Es.stoks entre sí.
-Hay compradores y vendedores.
-Los precios los pone el vendedor.
-El sistema cobra una comisión del 3%.
-Se paga con cripto (USDT/USDC) mediante QR.
+Wallet y Polygon: se conecta desde Configuración, Wallet y Polygon. Sirve para recibir y enviar USDT, USDC y otros tokens en Polygon. Es necesaria para comprar o vender Es.stoks en el Muro, pagar membresías, etc.
 
-Perfil:
-Cada usuario tiene su perfil con foto, video, estadísticas.
-Desde la configuración del perfil se puede conectar la wallet (Wallet y Polygon).
-Se puede subir foto de perfil y portada (imagen o video).
+Live: transmisiones en vivo. Dos modos: Live Profesional (requiere Live Pass de pago) y Live en Grupos (gratis, aceptando términos). Se puede transmitir la cámara o compartir pantalla.
 
-Wallet y Polygon:
-Desde Configuración → Wallet y Polygon se conecta la wallet cripto del usuario.
-Sirve para recibir y enviar USDT, USDC y otros tokens en Polygon.
-Es necesaria para comprar/vender Es.stoks en el Muro P2P, pagar membresías, etc.
+Canales: públicos, solo el creador publica; los usuarios los siguen. Tienen ubicación geográfica.
 
-Live:
-Transmisiones en vivo de video.
-Hay DOS modos:
-  1. Live Profesional: requiere un Live Pass de pago (membresía). Ideal para profesionales que quieren enseñar, dar clases, hacer shows, etc.
-  2. Live en Grupos: es gratis, pero requiere aceptar términos y condiciones (firma de checkbox). Ahí el usuario puede transmitir lo que quiera.
-Se puede transmitir la cámara del dispositivo o compartir pantalla.
+Grupos: privados, todos los miembros pueden publicar. Se puede transmitir en vivo gratis aceptando términos. Algunos grupos son de pago (USDT al mes).
 
-Canales:
-Públicos. Solo el creador puede publicar.
-Los usuarios pueden seguir el canal y ver las publicaciones.
-Tienen ubicación geográfica (estado, municipio, ciudad).
+Mensajes: chat uno a uno con texto, fotos, videos y notas de voz. Videollamadas con LiveKit.
 
-Grupos:
-Privados. Todos los miembros pueden publicar.
-Se puede transmitir en vivo gratis aceptando términos.
-Algunos grupos son de pago (USDT/mes).
+Contactos: lista de personas con las que puedes chatear.
 
-Mensajes:
-Chat uno a uno entre usuarios.
-Se pueden enviar texto, fotos, videos, notas de voz.
-Videollamadas con LiveKit.
-Marquinhos también responde por chat de texto en esta sección.
+Internet (eSIMs): compra y administración de eSIMs Telnyx con datos móviles.
 
-Contactos:
-Lista de personas con las que puedes chatear.
+Videos: galería de videos de la comunidad.
 
-Internet (eSIMs):
-Compra y administración de eSIMs Telnyx.
-Datos móviles en el ecosistema.
+Marketing: panel de anuncios pagados.
 
-Videos:
-Galería de videos de la comunidad.
+Domos: productos físicos del ecosistema. Cada Domo tiene un QR que se escanea para recibir Es.stoks.
 
-Marketing:
-Panel de anuncios pagados.
+Es.stoks: tokens internos del ecosistema. Se ganan participando, por ejemplo escaneando QRs de Domos. 12 Es.stoks equivalen al objetivo de 1 NFT Domo. Se pueden vender en el Muro P2P.
 
-Domos:
-Productos físicos del ecosistema.
-Cada Domo puede acumular Es.stoks.
-Los Domos son parte central de Sariel's.
-Tienen un QR que se escanea para recibir Es.stoks.
-
-Es.stoks:
-Son los tokens internos del ecosistema Sariel's.
-Se ganan participando en el ecosistema (escaneando QRs de Domos, por ejemplo).
-12 Es.stoks equivalen al objetivo de 1 NFT Domo.
-Se pueden vender en el Muro P2P.
-
-NFT Domo:
-Se canjea al acumular 12 Es.stoks.
-Es un NFT (activo digital en blockchain).
+NFT Domo: activo digital en blockchain que se canjea al acumular 12 Es.stoks.
 
 REGLAS DE SEGURIDAD:
-
-No inventes información.
-No inventes precios ni saldos.
-No inventes transacciones.
-No inventes datos personales.
-No afirmes que ejecutaste una operación si no tienes acceso real para hacerlo.
-Si no sabes algo, dilo con honestidad.
+No inventes precios, saldos, transacciones ni datos personales.
+No afirmes que ejecutaste una operación si no tienes acceso real para hacerla.
 
 OBJETIVO:
-
-Ser el mejor asistente y compañero del usuario dentro de Sariel's.
-Ayudar, guiar, conversar y resolver dudas con calidad profesional.
+Ser el mejor asistente y compañero del usuario: conversar, ayudar, guiar y resolver dudas con calidad profesional.
 `.trim();
+
+function contextoDinamico(user_name, page) {
+    const fecha = new Date().toLocaleString('es-MX', {
+        timeZone: 'America/Mexico_City',
+        dateStyle: 'full',
+        timeStyle: 'short'
+    });
+    let t = `Fecha y hora actual (México): ${fecha}. `;
+    if (user_name) t += `El usuario se llama ${user_name}. `;
+    if (page) t += `Está navegando en ${page}.`;
+    return t.trim();
+}
 
 /* ================================================================
    LIMPIAR HISTORIAL
@@ -276,17 +218,14 @@ function limpiarFormato(texto) {
     t = t.replace(/\*(.*?)\*/g, '$1');
     t = t.replace(/___(.*?)___/g, '$1');
     t = t.replace(/__(.*?)__/g, '$1');
-    t = t.replace(/_(.*?)_/g, '$1');
     t = t.replace(/`([^`]+)`/g, '$1');
     t = t.replace(/^\s{0,3}[-*+]\s+/gm, '');
-    t = t.replace(/^\s{0,3}\d{1,3}[.)]\s+/gm, '');
     t = t.replace(/^\s{0,3}>\s?/gm, '');
     t = t.replace(/^\s{0,3}[-*_]{3,}\s*$/gm, '');
     t = t.replace(/^\s*\|.*\|\s*$/gm, '');
     t = t.replace(/\|/g, ' ');
     t = t.replace(/[ \t]{2,}/g, ' ');
-    t = t.replace(/\r?\n{2,}/g, '\n\n');
-    t = t.replace(/[ \t]+/g, ' ');
+    t = t.replace(/\r?\n{3,}/g, '\n\n');
     return t.trim();
 }
 
@@ -355,10 +294,11 @@ async function cargarHistorial(usuarioId) {
 }
 
 /* ================================================================
-   POST /chat-pet
+   POST /api/ai/chat-pet
+   (también acepta /api/ai/chat-pet/chat-pet por compatibilidad)
 ================================================================ */
 
-router.post('/chat-pet', autenticar, async (req, res) => {
+router.post(['/', '/chat-pet'], autenticar, async (req, res) => {
     const inicio = Date.now();
 
     try {
@@ -380,54 +320,27 @@ router.post('/chat-pet', autenticar, async (req, res) => {
 
         const mensajeLimpio = message.trim().slice(0, 4000);
 
-        console.log('💬 Marquinhos-pet recibió:', {
-            userId: req.user?.id,
-            page,
-            user_name,
-            chars: mensajeLimpio.length
-        });
-
-        // 1. Historial del cliente + historial de Supabase
-        const historialCliente = limpiarHistorial(history);
-        let historialDB = [];
-        try {
-            historialDB = await cargarHistorial(req.user.id);
-        } catch (e) {}
-
-        // Combinar sin duplicar (los últimos del cliente ganan)
-        let historialCombinado = historialDB;
-        if (historialCliente.length > 0) {
-            historialCombinado = historialCliente.slice(-HISTORIAL_MAX);
+        // 1. Historial: el del cliente; si viene vacío, el de Supabase
+        let historialCombinado = limpiarHistorial(history);
+        if (historialCombinado.length === 0) {
+            historialCombinado = await cargarHistorial(req.user.id);
         }
 
-        // 2. Construir mensajes
+        // Evitar duplicar el mensaje actual si ya viene al final
+        const ult = historialCombinado[historialCombinado.length - 1];
+        if (ult && ult.role === 'user' && ult.content.trim() === mensajeLimpio) {
+            historialCombinado = historialCombinado.slice(0, -1);
+        }
+
+        // 2. Mensajes
         const mensajes = [
-            { role: 'system', content: SYSTEM_PROMPT }
+            { role: 'system', content: SYSTEM_PROMPT },
+            { role: 'system', content: contextoDinamico(user_name, page) },
+            ...historialCombinado,
+            { role: 'user', content: mensajeLimpio }
         ];
 
-        // Añadir contexto de página y nombre si existen
-        if (page || user_name) {
-            let contextoExtra = '';
-            if (user_name) {
-                contextoExtra += `El usuario se llama ${user_name}. `;
-            }
-            if (page) {
-                contextoExtra += `Está navegando en ${page}.`;
-            }
-            if (contextoExtra) {
-                mensajes.push({
-                    role: 'system',
-                    content: contextoExtra.trim()
-                });
-            }
-        }
-
-        mensajes.push(...historialCombinado);
-        mensajes.push({ role: 'user', content: mensajeLimpio });
-
-        // 3. Llamar a Groq
-        console.log(`⚡ Enviando a Groq (${GROQ_MODEL})...`);
-
+        // 3. Groq
         const groqResponse = await axios.post(
             GROQ_ENDPOINT,
             {
@@ -435,6 +348,7 @@ router.post('/chat-pet', autenticar, async (req, res) => {
                 messages: mensajes,
                 max_tokens: MAX_TOKENS_RESPUESTA,
                 temperature: 0.6,
+                reasoning_effort: 'low',
                 stream: false
             },
             {
@@ -454,19 +368,15 @@ router.post('/chat-pet', autenticar, async (req, res) => {
         if (status < 200 || status >= 300) {
             console.error('❌ Groq error:', { status, data: responseData });
             let mensajeError = 'El servicio de IA no respondió correctamente.';
-            if (responseData?.error?.message) {
-                mensajeError = responseData.error.message;
-            }
-            return res.status(502).json({
-                success: false,
-                error: mensajeError
-            });
+            if (responseData?.error?.message) mensajeError = responseData.error.message;
+            return res.status(502).json({ success: false, error: mensajeError });
         }
 
-        const respuestaOriginal = responseData?.choices?.[0]?.message?.content || '';
+        const choice = responseData?.choices?.[0];
+        const respuestaOriginal = choice?.message?.content || '';
 
         if (!respuestaOriginal) {
-            console.error('❌ Groq sin contenido');
+            console.error('❌ Groq sin contenido. finish_reason:', choice?.finish_reason);
             return res.status(502).json({
                 success: false,
                 error: 'Marquinhos recibió una respuesta vacía.'
@@ -484,12 +394,11 @@ router.post('/chat-pet', autenticar, async (req, res) => {
 
         respuestaTexto = recortarRespuesta(respuestaTexto, MAX_CARACTERES_RESPUESTA);
 
-        // 4. Guardar en Supabase
+        // 4. Guardar
         guardarMensaje(req.user.id, mensajeLimpio, respuestaTexto);
 
-        const duracion = Date.now() - inicio;
         console.log('✅ Marquinhos-pet respondió:', {
-            ms: duracion,
+            ms: Date.now() - inicio,
             chars: respuestaTexto.length
         });
 
@@ -499,12 +408,11 @@ router.post('/chat-pet', autenticar, async (req, res) => {
         });
 
     } catch (error) {
-        const duracion = Date.now() - inicio;
         console.error('❌ Error en /api/ai/chat-pet:', {
             name: error.name,
             message: error.message,
             code: error.code,
-            duration: duracion
+            duration: Date.now() - inicio
         });
 
         if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
