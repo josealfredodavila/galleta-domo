@@ -1,7 +1,8 @@
 // ================================================================
-// MARQUINHOS · PET v6.0
+// MARQUINHOS · PET v7.0
 // arrastrable + memoria + conversación continua + accesorios
 // + MODO SOLO VOZ (3 burbujitas) vs MODO SUBTÍTULOS
+// + BOCA DINÁMICA POR VISEMAS (sincronizada con el habla)
 // ================================================================
 
 'use strict';
@@ -28,7 +29,7 @@
         timeout_seg: 20,
         manos_libres: false,
         conversacion: true,
-        mostrar_subtitulos: false,   // ← NUEVO: false = modo solo voz
+        mostrar_subtitulos: false,
         idioma: null,
         posicion_x: null,
         posicion_y: null
@@ -48,10 +49,31 @@
     const HIST_KEY = 'marquinhos_hist_';
     const ACC_KEY = 'marquinhos_accesorios_equipados';
 
+    // ============================================================
+    // FORMAS DE BOCA (paths SVG por visema)
+    // ============================================================
+    var VISEMAS_SVG = {
+        // Reposo: sonrisa suave
+        REST: 'M 85 108 Q 100 114 115 108',
+        // A: boca muy abierta
+        A:    'M 80 105 Q 100 132 120 105 Q 100 138 80 105',
+        // E: semiabierta horizontal
+        E:    'M 82 108 Q 100 120 118 108 Q 100 122 82 108',
+        // I: sonrisa estrecha (boca estirada)
+        I:    'M 78 108 Q 100 114 122 108',
+        // O: redonda grande
+        O:    'M 100 100 Q 118 100 118 112 Q 118 124 100 124 Q 82 124 82 112 Q 82 100 100 100 Z',
+        // U: redonda pequeña
+        U:    'M 100 105 Q 112 105 112 113 Q 112 120 100 120 Q 88 120 88 113 Q 88 105 100 105 Z',
+        // M: labios cerrados (m/b/p)
+        M:    'M 82 110 L 118 110'
+    };
+
     let config = { ...CONFIG_DEFAULT };
     let container = null;
     let bubble = null;
-    let dots = null;   // ← NUEVO: contenedor de las 3 burbujitas
+    let dots = null;
+    let bocaEl = null;
     let isSpeaking = false;
     let isListening = false;
     let recognition = null;
@@ -65,6 +87,11 @@
     let recibioResultado = false;
     let accesoriosEquipados = [];
 
+    // Animación de boca
+    var _bocaTimeouts = [];
+    var _bocaActiva = false;
+
+    // Arrastre
     let isDragging = false;
     let dragStartX = 0;
     let dragStartY = 0;
@@ -233,6 +260,75 @@
     }
 
     // ============================================================
+    // ANIMACIÓN DE BOCA
+    // ============================================================
+    function detenerAnimacionBoca() {
+        _bocaActiva = false;
+        _bocaTimeouts.forEach(function(t) { clearTimeout(t); });
+        _bocaTimeouts = [];
+        if (bocaEl) {
+            bocaEl.setAttribute('d', VISEMAS_SVG.REST);
+        }
+    }
+
+    function cambiarVisema(nombre) {
+        if (!bocaEl) return;
+        var d = VISEMAS_SVG[nombre] || VISEMAS_SVG.REST;
+        bocaEl.setAttribute('d', d);
+    }
+
+    function animarBoca(texto, rate) {
+        detenerAnimacionBoca();
+        if (!bocaEl) return;
+        if (!window.MarquinhosBoca) {
+            animarBocaRandom();
+            return;
+        }
+
+        var visemas = window.MarquinhosBoca.analizar(texto);
+        if (!visemas || !visemas.length) {
+            animarBocaRandom();
+            return;
+        }
+
+        _bocaActiva = true;
+        var rateFactor = rate || 1.0;
+        var tiempo = 0;
+
+        visemas.forEach(function(v) {
+            var dur = v.duracion / rateFactor;
+            var t = setTimeout(function() {
+                if (!_bocaActiva) return;
+                cambiarVisema(v.visema);
+            }, tiempo);
+            _bocaTimeouts.push(t);
+            tiempo += dur;
+        });
+
+        var tFin = setTimeout(function() {
+            if (!_bocaActiva) return;
+            cambiarVisema('REST');
+            _bocaActiva = false;
+        }, tiempo + 100);
+        _bocaTimeouts.push(tFin);
+    }
+
+    function animarBocaRandom() {
+        _bocaActiva = true;
+        var visemas = ['A', 'E', 'I', 'O', 'U'];
+        var idx = 0;
+
+        function siguiente() {
+            if (!_bocaActiva || !bocaEl) return;
+            cambiarVisema(visemas[idx % visemas.length]);
+            idx++;
+            var t = setTimeout(siguiente, 80 + Math.random() * 60);
+            _bocaTimeouts.push(t);
+        }
+        siguiente();
+    }
+
+    // ============================================================
     // WIDGET
     // ============================================================
     function crearWidget() {
@@ -250,19 +346,16 @@
         }
 
         container.innerHTML = `
-            <!-- Burbuja de texto (solo en modo subtítulos) -->
             <div class="mq-pet-bubble" id="mq-bubble">
                 <div class="mq-pet-bubble-text" id="mq-bubble-text"></div>
             </div>
 
-            <!-- 3 burbujitas animadas (siempre visibles cuando procesa/habla) -->
             <div class="mq-pet-bubble-dots" id="mq-dots">
                 <span class="mq-dot"></span>
                 <span class="mq-dot"></span>
                 <span class="mq-dot"></span>
             </div>
 
-            <!-- Avatar -->
             <div class="mq-pet-avatar" id="mq-avatar" role="button" tabindex="0" aria-label="Hablar con Marquinhos">
                 <svg viewBox="0 0 200 260" xmlns="http://www.w3.org/2000/svg" class="mq-pet-svg">
                     <g id="mq-acc-layer"></g>
@@ -280,7 +373,10 @@
                         <ellipse cx="124" cy="80" rx="12" ry="13" fill="#F5F0E8"/>
                         <circle cx="124" cy="82" r="6" fill="#0a1a3e"/>
                         <circle cx="122" cy="79" r="2" fill="#fff" opacity="0.9"/>
-                        <path d="M 85 108 Q 100 118 115 108" stroke="#1565C0" stroke-width="3" fill="none" stroke-linecap="round"/>
+                        <path id="mq-boca" class="mq-pet-boca"
+                              d="M 85 108 Q 100 114 115 108"
+                              stroke="#1565C0" stroke-width="3"
+                              fill="none" stroke-linecap="round"/>
                         <ellipse cx="62" cy="105" rx="8" ry="5" fill="#FF6B8A" opacity="0.4"/>
                         <ellipse cx="138" cy="105" rx="8" ry="5" fill="#FF6B8A" opacity="0.4"/>
                         <rect x="35" y="140" width="130" height="100" rx="22" fill="#FFF8E1" stroke="#1565C0" stroke-width="3"/>
@@ -306,6 +402,7 @@
 
         bubble = document.getElementById('mq-bubble');
         dots = document.getElementById('mq-dots');
+        bocaEl = document.getElementById('mq-boca');
 
         const avatar = document.getElementById('mq-avatar');
 
@@ -367,11 +464,11 @@
 
         renderAccesoriosEnAvatar();
         aplicarModo();
-        log('Widget creado');
+        log('Widget creado con boca dinámica');
     }
 
     // ============================================================
-    // BURBUJITAS (3 puntos animados)
+    // BURBUJITAS
     // ============================================================
     function mostrarDots() {
         if (dots) dots.classList.add('mq-dots-visible');
@@ -382,12 +479,11 @@
     }
 
     // ============================================================
-    // GLOBO DE TEXTO (solo modo subtítulos)
+    // BURBUJA
     // ============================================================
     function setEstado(e) { if (container) container.setAttribute('data-estado', e); }
 
     function mostrarBurbuja(texto) {
-        // Solo mostrar si el modo subtítulos está activo
         if (!config.mostrar_subtitulos) return;
         if (!bubble) return;
         const t = document.getElementById('mq-bubble-text');
@@ -401,12 +497,13 @@
     }
 
     // ============================================================
-    // TAP: inicia / detiene
+    // TAP
     // ============================================================
     function detenerConversacion() {
         conversacionActiva = false;
         detenerTTS();
         detenerReconocimiento();
+        detenerAnimacionBoca();
         setEstado('idle');
         ocultarBurbuja();
         ocultarDots();
@@ -443,12 +540,13 @@
         const pitch = estilo.pitch * pitchBase;
         const volumen = Math.max(0, Math.min(1, config.volumen || 1.0));
 
-        // En modo subtítulos, mostrar el globo
         if (config.mostrar_subtitulos) mostrarBurbuja(texto);
-        // Siempre mostrar los puntos mientras habla
         mostrarDots();
         isSpeaking = true;
         setEstado('hablando');
+
+        // ✅ ANIMAR LA BOCA
+        animarBoca(texto, rate);
 
         let ok = false;
         if (texto.length <= 300 && window.getSupabase && !window.__marquinhosNoBackendTTS) {
@@ -489,6 +587,7 @@
             isSpeaking = false;
             setEstado('idle');
             ocultarDots();
+            detenerAnimacionBoca();
             setTimeout(function() {
                 if (!isSpeaking && !isListening && !procesando) {
                     ocultarBurbuja();
@@ -547,6 +646,7 @@
         if (audioActual) { try { audioActual.pause(); } catch (e) {} audioActual = null; }
         isSpeaking = false;
         ocultarDots();
+        detenerAnimacionBoca();
     }
 
     // ============================================================
@@ -569,7 +669,7 @@
                 recognitionActive = true;
                 isListening = true;
                 setEstado('escuchando');
-                mostrarDots();   // ← puntos mientras escucha
+                mostrarDots();
             };
 
             recognition.onresult = function(event) {
@@ -649,7 +749,9 @@
         if (!texto) return;
         procesando = true;
         setEstado('pensando');
-        mostrarDots();   // ← puntos mientras piensa
+        mostrarDots();
+
+        if (bocaEl) cambiarVisema('E');
 
         historialLocal.push({ role: 'user', content: texto, ts: Date.now() });
 
@@ -688,7 +790,6 @@
         });
     }
 
-    // Cambios de config desde otra pestaña (configuración)
     window.addEventListener('storage', function(e) {
         if (e.key === 'marquinhos_config') {
             cargarConfig();
@@ -713,7 +814,6 @@
             await cargarAccesorios();
             renderAccesoriosEnAvatar();
         },
-        // ✅ NUEVO: para que la página de configuración cambie el modo
         setModoSubtitulos: function(activo) {
             config.mostrar_subtitulos = !!activo;
             guardarConfig();
@@ -738,7 +838,8 @@
                 container.style.bottom = '16px';
             }
         },
-        getUserInfo: function() { return userInfo; }
+        getUserInfo: function() { return userInfo; },
+        _visemasDisponibles: function() { return Object.keys(VISEMAS_SVG); }
     };
 
     async function init() {
@@ -751,7 +852,7 @@
         await cargarAccesorios();
         crearWidget();
         instalarVisibility();
-        log('✅ Listo. Mensajes: ' + historialLocal.length + ' · Accesorios: ' + accesoriosEquipados.length + ' · Subtítulos: ' + config.mostrar_subtitulos);
+        log('✅ Listo. Boca dinámica activa. Mensajes: ' + historialLocal.length + ' · Accesorios: ' + accesoriosEquipados.length);
     }
 
     if (document.readyState === 'loading') {
