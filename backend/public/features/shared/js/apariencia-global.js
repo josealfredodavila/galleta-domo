@@ -1,8 +1,9 @@
 /* ================================================================
-   APARIENCIA GLOBAL - SARIEL'S ECOSYSTEM v2.0
+   APARIENCIA GLOBAL - SARIEL'S ECOSYSTEM v2.1
    - Lee de localStorage (rápido, sin red)
    - Sincroniza con Supabase preferencias_usuario (persistente)
    - Aplica tema, color de acento y tamaño de fuente globalmente
+   - ✅ NUEVO: Inyecta Marquinhos-pet en todas las páginas
    ================================================================ */
 
 (function() {
@@ -345,5 +346,61 @@
         DEFAULTS: DEFAULTS
     };
 
-    console.log('[Apariencia] ✅ Módulo global v2.0 cargado (localStorage + Supabase)');
+    /* ================================================================
+       ✅ NUEVO: Inyectar Marquinhos-pet en todas las páginas
+       ================================================================
+       Excluye rutas legales, de login, de pago, y la tienda.
+       Se inyecta CSS + JS del pet + JS del brain.
+       ================================================================ */
+    (function inyectarMarquinhosPet() {
+        var path = window.location.pathname.toLowerCase();
+
+        var excluidas = [
+            '/login', '/registro',
+            '/pagar', '/pay', '/checkout', '/success', '/cancel',
+            '/terminos', '/privacidad', '/cookies', '/legal',
+            '/info', '/live-terminos', '/eliminar-cuenta',
+            '/actualizar-contrasena',
+            '/features/marquinhos/tienda'
+        ];
+
+        for (var i = 0; i < excluidas.length; i++) {
+            if (path.indexOf(excluidas[i]) !== -1) return;
+        }
+
+        // Evitar doble inyección
+        if (document.getElementById('marquinhos-pet-script')) return;
+
+        var insertar = function() {
+            // CSS
+            var css = document.createElement('link');
+            css.rel = 'stylesheet';
+            css.href = '/features/marquinhos/marquinhos-pet.css';
+            css.id = 'marquinhos-pet-css';
+            document.head.appendChild(css);
+
+            // Pet JS
+            var js = document.createElement('script');
+            js.id = 'marquinhos-pet-script';
+            js.src = '/features/marquinhos/marquinhos-pet.js';
+            js.defer = true;
+            document.head.appendChild(js);
+
+            // Brain JS (para las respuestas IA)
+            var brain = document.createElement('script');
+            brain.id = 'marquinhos-brain-script';
+            brain.src = '/features/marquinhos/marquinhos-brain.js';
+            brain.defer = true;
+            document.head.appendChild(brain);
+        };
+
+        // Insertar cuando el DOM esté listo (por si acaso)
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', insertar);
+        } else {
+            insertar();
+        }
+    })();
+
+    console.log('[Apariencia] ✅ Módulo global v2.1 cargado (localStorage + Supabase + Marquinhos-pet)');
 })();
