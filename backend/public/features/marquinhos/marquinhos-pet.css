@@ -1,6 +1,6 @@
 /* ================================================================
-   MARQUINHOS · PET · CSS v4.0
-   (arrastrable + indicador de 3 burbujitas animadas)
+   MARQUINHOS · PET · CSS v5.0
+   (arrastrable + 3 burbujitas + boca dinámica)
    ================================================================ */
 
 .mq-pet {
@@ -105,7 +105,7 @@
 }
 
 /* ================================================================
-   INDICADOR DE 3 BURBUJITAS ANIMADAS (v4.0)
+   INDICADOR DE 3 BURBUJITAS ANIMADAS
    ================================================================ */
 .mq-pet-bubble-dots {
     display: none;
@@ -133,7 +133,6 @@
     transform: translateX(-50%) scale(1);
 }
 
-/* Triangulito */
 .mq-pet-bubble-dots::after {
     content: '';
     position: absolute;
@@ -170,24 +169,37 @@
     }
 }
 
-/* Cuando el pet está "hablando", las burbujitas son verdes */
 .mq-pet[data-estado="hablando"] .mq-pet-bubble-dots .mq-dot {
     background: #2ECC71;
 }
 
-/* Cuando el pet está "pensando", las burbujitas son doradas */
 .mq-pet[data-estado="pensando"] .mq-pet-bubble-dots .mq-dot {
     background: #FFD700;
 }
 
-/* Cuando escucha, son cyan */
 .mq-pet[data-estado="escuchando"] .mq-pet-bubble-dots .mq-dot {
     background: #00E5FF;
 }
 
-/* Ocultar el globo de texto en modo solo-voz */
 .mq-pet.mq-modo-voz .mq-pet-bubble {
     display: none !important;
+}
+
+/* ================================================================
+   BOCA DINÁMICA — Visemas
+   ================================================================ */
+.mq-pet-boca {
+    transition: d 0.08s ease-out;
+}
+
+/* Al hablar: el SVG tiembla levemente para dar vida */
+.mq-pet[data-estado="hablando"] .mq-pet-svg {
+    animation: mq-boca-bounce 0.25s ease-in-out infinite alternate;
+}
+
+@keyframes mq-boca-bounce {
+    from { transform: translateY(0); }
+    to { transform: translateY(-1px); }
 }
 
 /* ================================================================
