@@ -1,12 +1,12 @@
 // ================================================================
-// MARQUINHOS · BRAIN v5.1
+// MARQUINHOS · BRAIN v6.0
 // contexto largo + reintento + sesión robusta + motivo visible
+// + ✅ v6.0: MEMORIA POR USUARIO (RAG con pgvector)
 // ================================================================
-// 1. POST /api/ai/chat-pet  (IA general con contexto) — 1 reintento
-// 2. POST /api/ai/chat      (respaldo)
-// 3. Fallback local solo si no hay red / servidor / sesión
-// Si falla, el mensaje incluye el MOTIVO entre paréntesis para poder
-// diagnosticar desde el celular sin consola.
+// 1. ANTES de responder: BUSCA recuerdos relevantes del usuario.
+// 2. Inyecta los recuerdos como contexto al modelo.
+// 3. DESPUÉS de responder: GUARDA la conversación como recuerdo.
+// 4. Si la memoria falla, la conversación sigue funcionando normal.
 // ================================================================
 
 'use strict';
@@ -16,6 +16,10 @@
 
     const TIMEOUT_MS = 30000;
     const HISTORIAL_ENVIO = 20;
+    const MEMORIA_LIMITE = 5;          // cuántos recuerdos inyectar
+    const MEMORIA_UMBRAL = 0.65;       // qué tan similares deben ser
+    const MEMORIA_MIN_LONGITUD = 10;   // mínimo de caracteres para guardar
+    const EMBEDDINGS_ENDPOINT = '/api/ai/embeddings';
 
     let _abort = null;
 
@@ -62,7 +66,6 @@
     async function obtenerToken() {
         let motivo = '';
 
-        // 1. window.getSupabase()
         if (typeof window.getSupabase === 'function') {
             try {
                 const t = await tokenDesde(window.getSupabase());
@@ -73,14 +76,12 @@
             motivo = 'getSupabase no existe aquí';
         }
 
-        // 2. Clientes globales comunes
         const nombres = ['supabaseClient', 'supabase', '_supabase', 'sb'];
         for (let i = 0; i < nombres.length; i++) {
             const t = await tokenDesde(window[nombres[i]]);
             if (t) return { token: t };
         }
 
-        // 3. Sesión guardada por Supabase en localStorage
         try {
             for (let i = 0; i < localStorage.length; i++) {
                 const k = localStorage.key(i);
@@ -93,6 +94,100 @@
         } catch (e) {}
 
         return { token: null, motivo: motivo || 'sin sesión' };
+    }
+
+    // ============================================================
+    // ✅ v6.0: EMBEDDINGS (texto → vector)
+    // ============================================================
+    async function generarEmbedding(texto, token) {
+        if (!texto || !token) return null;
+        try {
+            const resp = await fetch(EMBEDDINGS_ENDPOINT, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify({ text: texto })
+            });
+            if (!resp.ok) {
+                console.warn('[Marquinhos/Brain] Embedding falló:', resp.status);
+                return null;
+            }
+            const data = await resp.json();
+            return data.embedding || null;
+        } catch (e) {
+            console.warn('[Marquinhos/Brain] Error generando embedding:', e.message);
+            return null;
+        }
+    }
+
+    // ============================================================
+    // ✅ v6.0: MEMORIA — Buscar recuerdos relevantes
+    // ============================================================
+    async function buscarRecuerdos(texto, token) {
+        try {
+            const embedding = await generarEmbedding(texto, token);
+            if (!embedding) return [];
+
+            const sb = window.getSupabase();
+            if (!sb) {
+                const sbClient = window.supabaseClient;
+                if (!sbClient) return [];
+                const { data, error } = await sbClient.rpc('buscar_memoria_marquinhos', {
+                    p_embedding: embedding,
+                    p_limite: MEMORIA_LIMITE,
+                    p_umbral: MEMORIA_UMBRAL
+                });
+                if (error || !data) return [];
+                return data;
+            }
+
+            const cliente = await sb;
+            const { data, error } = await cliente.rpc('buscar_memoria_marquinhos', {
+                p_embedding: embedding,
+                p_limite: MEMORIA_LIMITE,
+                p_umbral: MEMORIA_UMBRAL
+            });
+
+            if (error || !data) return [];
+            return data;
+        } catch (e) {
+            console.warn('[Marquinhos/Brain] Error buscando recuerdos:', e.message);
+            return [];
+        }
+    }
+
+    // ============================================================
+    // ✅ v6.0: MEMORIA — Guardar recuerdo (asíncrono, no bloquea)
+    // ============================================================
+    async function guardarRecuerdo(contenido, token, tipo, importancia) {
+        try {
+            if (!contenido || contenido.length < MEMORIA_MIN_LONGITUD) return;
+
+            const embedding = await generarEmbedding(contenido, token);
+            if (!embedding) return;
+
+            let cliente = null;
+            if (typeof window.getSupabase === 'function') {
+                cliente = await window.getSupabase();
+            } else if (window.supabaseClient) {
+                cliente = window.supabaseClient;
+            }
+
+            if (!cliente) return;
+
+            await cliente.rpc('guardar_memoria_marquinhos', {
+                p_contenido: contenido,
+                p_embedding: embedding,
+                p_tipo: tipo || 'conversacion',
+                p_importancia: importancia || 1
+            });
+
+            console.log('[Marquinhos/Brain] 💾 Recuerdo guardado');
+        } catch (e) {
+            console.warn('[Marquinhos/Brain] Error guardando recuerdo:', e.message);
+        }
     }
 
     // ============================================================
@@ -149,7 +244,7 @@
     }
 
     // ============================================================
-    // PREGUNTAR
+    // PREGUNTAR (con memoria)
     // ============================================================
     async function preguntar(texto, historialLocal) {
         if (!texto || typeof texto !== 'string') return '';
@@ -168,6 +263,7 @@
         });
 
         let motivoFallo = '';
+        let contextoMemoria = '';
 
         try {
             const auth = await obtenerToken();
@@ -178,27 +274,52 @@
             } else {
                 const token = auth.token;
 
-                // 1. chat-pet (+1 reintento por red/5xx)
+                // ✅ v6.0: 1. Buscar recuerdos relevantes
+                const recuerdos = await buscarRecuerdos(limpio, token);
+                if (recuerdos && recuerdos.length > 0) {
+                    console.log('[Marquinhos/Brain] 🧠 Recuerdos encontrados:', recuerdos.length);
+                    contextoMemoria = 'Recuerdos relevantes de este usuario:\n' +
+                        recuerdos.map(function(r) { return '- ' + r.contenido; }).join('\n') +
+                        '\n\nUsa estos recuerdos para personalizar tu respuesta si son relevantes.';
+                }
+
+                // 2. Llamar a chat-pet con memoria
                 const payload1 = {
                     message: limpio,
                     history: historialEnvio,
                     page: window.location.pathname,
-                    user_name: ctx.nombre
+                    user_name: ctx.nombre,
+                    memoria: contextoMemoria
                 };
+
                 let r1 = await llamarEndpoint('/api/ai/chat-pet', payload1, token);
                 if (!r1.ok && (!r1.status || r1.status >= 500) && !r1.aborted) {
                     await esperar(600);
                     r1 = await llamarEndpoint('/api/ai/chat-pet', payload1, token);
                 }
-                if (r1.ok) return r1.reply;
+                if (r1.ok) {
+                    // ✅ v6.0: 3. Guardar como recuerdo (asíncrono, no bloquea)
+                    const recuerdo = 'Usuario preguntó: "' + limpio.slice(0, 200) +
+                                     '" y Marquinhos respondió: "' + r1.reply.slice(0, 300) + '"';
+                    guardarRecuerdo(recuerdo, token, 'conversacion', 1);
 
-                // 2. respaldo /api/ai/chat
+                    return r1.reply;
+                }
+
+                // 3. Respaldo /api/ai/chat
                 const r2 = await llamarEndpoint('/api/ai/chat', {
                     message: limpio,
                     context: 'marquinhos_pet',
-                    history: historialEnvio
+                    history: historialEnvio,
+                    memoria: contextoMemoria
                 }, token);
-                if (r2.ok) return r2.reply;
+                if (r2.ok) {
+                    const recuerdo = 'Usuario preguntó: "' + limpio.slice(0, 200) +
+                                     '" y Marquinhos respondió: "' + r2.reply.slice(0, 300) + '"';
+                    guardarRecuerdo(recuerdo, token, 'conversacion', 1);
+
+                    return r2.reply;
+                }
 
                 motivoFallo = 'chat-pet: ' + describirFallo(r1) + ' | chat: ' + describirFallo(r2);
                 console.warn('[Marquinhos/Brain] Ambos endpoints fallaron:', motivoFallo);
@@ -211,10 +332,9 @@
         const local = buscarRespuestaLocal(limpio, ctx);
         if (local) return local;
 
-        // Motivo corto, visible en la burbuja (útil para diagnosticar desde el celular)
         return 'No pude conectarme ahora (' + motivoFallo.slice(0, 120) + '). Intenta de nuevo.';
     }
 
     window.MarquinhosBrain = { preguntar: preguntar };
-    console.log('[Marquinhos/Brain] ✅ v5.1 cargado');
+    console.log('[Marquinhos/Brain] ✅ v6.0 cargado con MEMORIA POR USUARIO');
 })();
