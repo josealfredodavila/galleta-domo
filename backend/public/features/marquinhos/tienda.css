@@ -1,102 +1,402 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>◈ Tienda de Marquinhos · Sariel's</title>
-<meta name="theme-color" content="#05080f">
+/* ================================================================
+   TIENDA DE MARQUINHOS · CSS v2
+   ================================================================ */
 
-<link rel="stylesheet" href="/features/marquinhos/tienda.css">
-<script src="/features/shared/js/apariencia-global.js"></script>
-</head>
-<body>
+:root {
+    --gold: #D4AF37;
+    --gold-dark: #b8923a;
+    --gold-light: #e8c84a;
+    --space: #05080f;
+    --verde: #0F2D1A;
+    --verde-light: #1a4a2a;
+    --text: #f0f4f8;
+    --text-secondary: #c0d8e8;
+    --muted: #8aa8b8;
+    --border: rgba(212, 175, 55, 0.16);
+    --danger: #ff3366;
+    --success: #00d68f;
+    --radius: 16px;
+}
 
-<div class="tienda-app">
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
-    <!-- Header -->
-    <header class="tienda-header">
-        <a href="/features/perfil/perfil.html" class="tienda-volver" aria-label="Volver">
-            <span class="tienda-volver-icon">←</span>
-            <span class="tienda-volver-text">Volver</span>
-        </a>
-        <a href="/" class="tienda-logo">
-            <span class="tienda-logo-hex">◈</span>
-            <span class="tienda-logo-text">Sariel's</span>
-        </a>
-        <div class="tienda-saldo" id="tiendaSaldo">
-            <span class="saldo-icon">◈</span>
-            <span class="saldo-valor" id="saldoValor">...</span>
-            <span class="saldo-label" id="saldoLabel">USDT</span>
-        </div>
-    </header>
+body {
+    background: var(--space);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    min-height: 100vh;
+    background-image:
+        radial-gradient(ellipse at 20% 20%, rgba(42, 106, 58, 0.25), transparent 55%),
+        radial-gradient(ellipse at 80% 80%, rgba(212, 175, 55, 0.06), transparent 55%);
+}
 
-    <!-- Preview del avatar -->
-    <section class="tienda-preview">
-        <div class="preview-avatar">
-            <svg viewBox="0 0 200 260" xmlns="http://www.w3.org/2000/svg" class="preview-svg">
-                <g id="accesoriosLayer"></g>
-                <g>
-                    <line x1="70" y1="40" x2="68" y2="20" stroke="#1565C0" stroke-width="3" stroke-linecap="round"/>
-                    <circle cx="68" cy="16" r="6" fill="#FFF8E1" stroke="#1565C0" stroke-width="2"/>
-                    <line x1="130" y1="40" x2="132" y2="20" stroke="#1565C0" stroke-width="3" stroke-linecap="round"/>
-                    <circle cx="132" cy="16" r="6" fill="#FFF8E1" stroke="#1565C0" stroke-width="2"/>
-                    <ellipse cx="100" cy="80" rx="62" ry="56" fill="#FFF8E1" stroke="#1565C0" stroke-width="3"/>
-                    <ellipse cx="76" cy="80" rx="14" ry="16" fill="#1A0A2E"/>
-                    <ellipse cx="76" cy="80" rx="12" ry="13" fill="#F5F0E8"/>
-                    <circle cx="76" cy="82" r="6" fill="#0a1a3e"/>
-                    <circle cx="74" cy="79" r="2" fill="#fff" opacity="0.9"/>
-                    <ellipse cx="124" cy="80" rx="14" ry="16" fill="#1A0A2E"/>
-                    <ellipse cx="124" cy="80" rx="12" ry="13" fill="#F5F0E8"/>
-                    <circle cx="124" cy="82" r="6" fill="#0a1a3e"/>
-                    <circle cx="122" cy="79" r="2" fill="#fff" opacity="0.9"/>
-                    <path d="M 85 108 Q 100 118 115 108" stroke="#1565C0" stroke-width="3" fill="none" stroke-linecap="round"/>
-                    <rect x="35" y="140" width="130" height="100" rx="22" fill="#FFF8E1" stroke="#1565C0" stroke-width="3"/>
-                    <g>
-                        <rect x="15" y="150" width="16" height="55" rx="8" fill="#FFF8E1" stroke="#1565C0" stroke-width="3"/>
-                        <circle cx="23" cy="210" r="12" fill="#FFF8E1" stroke="#1565C0" stroke-width="3"/>
-                        <rect x="169" y="150" width="16" height="55" rx="8" fill="#FFF8E1" stroke="#1565C0" stroke-width="3"/>
-                        <circle cx="177" cy="210" r="12" fill="#FFF8E1" stroke="#1565C0" stroke-width="3"/>
-                    </g>
-                    <rect x="60" y="240" width="22" height="20" rx="8" fill="#FFF8E1" stroke="#1565C0" stroke-width="3"/>
-                    <rect x="118" y="240" width="22" height="20" rx="8" fill="#FFF8E1" stroke="#1565C0" stroke-width="3"/>
-                </g>
-            </svg>
-        </div>
-        <div class="preview-info">
-            <h1 class="preview-title">Marquinhos</h1>
-            <p class="preview-sub">Personaliza tu mascota virtual · Paga con USDT/USDC</p>
-            <button class="preview-reset" id="btnResetAccesorios" type="button">
-                Quitar todos los accesorios
-            </button>
-        </div>
-    </section>
+.tienda-app {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 16px 18px 30px;
+}
 
-    <!-- Filtros -->
-    <nav class="tienda-filtros">
-        <button class="filtro-btn active" data-cat="todos" type="button">Todos</button>
-        <button class="filtro-btn" data-cat="sombrero" type="button">🎩 Sombreros</button>
-        <button class="filtro-btn" data-cat="playera" type="button">👕 Playeras</button>
-        <button class="filtro-btn" data-cat="pantalon" type="button">👖 Pantalones</button>
-        <button class="filtro-btn" data-cat="zapatos" type="button">👟 Zapatos</button>
-        <button class="filtro-btn" data-cat="lentes" type="button">🕶️ Lentes</button>
-        <button class="filtro-btn" data-cat="accesorio" type="button">🎒 Accesorios</button>
-    </nav>
+/* ============================================================
+   HEADER
+   ============================================================ */
+.tienda-header {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+}
 
-    <!-- Grid -->
-    <section class="tienda-grid" id="tiendaGrid">
-        <div class="tienda-loading">Cargando accesorios...</div>
-    </section>
+.tienda-volver {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--muted);
+    border-radius: 99px;
+    text-decoration: none;
+    font-size: .8rem;
+    font-weight: 600;
+    transition: all 0.2s;
+    font-family: inherit;
+    cursor: pointer;
+}
+.tienda-volver:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+}
+.tienda-volver-icon {
+    font-size: 1rem;
+    line-height: 1;
+}
 
-    <footer class="tienda-footer">
-        <span>◈ Sariel's · Tienda de Marquinhos</span>
-        <a href="/features/perfil/perfil.html">Volver al perfil</a>
-    </footer>
-</div>
+.tienda-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--text);
+}
+.tienda-logo-hex {
+    font-size: 1.6rem;
+    color: var(--gold);
+}
+.tienda-logo-text {
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: var(--text);
+    font-size: 1rem;
+}
 
-<div class="tienda-toast" id="tiendaToast"></div>
+.tienda-saldo {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(212, 175, 55, 0.08);
+    border: 1px solid var(--border);
+    padding: 6px 14px;
+    border-radius: 99px;
+    font-size: .85rem;
+    font-weight: 700;
+    justify-self: end;
+}
+.saldo-icon { color: var(--gold); }
+.saldo-valor { color: var(--gold); font-family: 'Orbitron', monospace; }
+.saldo-label { color: var(--muted); font-size: .7rem; }
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="/features/marquinhos/tienda.js"></script>
+/* ============================================================
+   PREVIEW
+   ============================================================ */
+.tienda-preview {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 24px;
+    align-items: center;
+    background: rgba(15, 45, 26, 0.4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 24px;
+    backdrop-filter: blur(10px);
+}
+.preview-avatar {
+    width: 200px;
+    height: 260px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at 50% 40%, rgba(212, 175, 55, 0.15), transparent 60%);
+    border-radius: 50%;
+}
+.preview-svg {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 8px 30px rgba(21, 101, 192, 0.3));
+}
+.preview-info { display: flex; flex-direction: column; gap: 12px; }
+.preview-title {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--gold);
+    margin: 0;
+    letter-spacing: 1px;
+}
+.preview-sub {
+    color: var(--muted);
+    font-size: .9rem;
+}
+.preview-reset {
+    align-self: flex-start;
+    padding: 8px 16px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    border-radius: 99px;
+    font-size: .8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+.preview-reset:hover {
+    border-color: var(--danger);
+    color: var(--danger);
+}
 
-</body>
-</html>
+/* ============================================================
+   FILTROS
+   ============================================================ */
+.tienda-filtros {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    margin-bottom: 20px;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+}
+.tienda-filtros::-webkit-scrollbar { display: none; }
+
+.filtro-btn {
+    flex-shrink: 0;
+    padding: 8px 16px;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--muted);
+    border-radius: 99px;
+    font-size: .8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    font-family: inherit;
+}
+.filtro-btn:hover { border-color: var(--gold); color: var(--gold); }
+.filtro-btn.active {
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+    color: var(--space);
+    border-color: transparent;
+}
+
+/* ============================================================
+   GRID
+   ============================================================ */
+.tienda-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+}
+.tienda-loading,
+.tienda-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+    font-size: .9rem;
+}
+
+/* ============================================================
+   CARD DE ACCESORIO
+   ============================================================ */
+.acc-card {
+    background: rgba(15, 45, 26, 0.35);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.2s;
+    position: relative;
+}
+.acc-card:hover {
+    border-color: var(--gold);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+.acc-card.equipado {
+    border-color: var(--success);
+    background: rgba(0, 214, 143, 0.08);
+}
+.acc-emoji {
+    font-size: 3.5rem;
+    line-height: 1;
+    filter: drop-shadow(0 4px 12px rgba(212, 175, 55, 0.25));
+}
+.acc-nombre {
+    font-weight: 700;
+    color: var(--text);
+    text-align: center;
+    font-size: .95rem;
+}
+.acc-desc {
+    color: var(--muted);
+    font-size: .72rem;
+    text-align: center;
+    line-height: 1.3;
+}
+.acc-precio {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--gold);
+    font-weight: 800;
+    font-size: .95rem;
+}
+
+.acc-btn {
+    width: 100%;
+    padding: 10px;
+    border-radius: 10px;
+    border: 0;
+    font-weight: 700;
+    font-size: .85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+.acc-btn-comprar {
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+    color: var(--space);
+}
+.acc-btn-comprar:hover:not(:disabled) { transform: scale(1.03); }
+.acc-btn-equipar {
+    background: rgba(0, 214, 143, 0.15);
+    border: 1px solid var(--success);
+    color: var(--success);
+}
+.acc-btn-desequipar {
+    background: rgba(255, 51, 102, 0.1);
+    border: 1px solid var(--danger);
+    color: var(--danger);
+}
+.acc-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* Badge */
+.acc-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: var(--success);
+    color: var(--space);
+    font-size: .6rem;
+    font-weight: 900;
+    padding: 3px 8px;
+    border-radius: 99px;
+    letter-spacing: 0.5px;
+}
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+.tienda-footer {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: .75rem;
+    color: var(--muted);
+}
+.tienda-footer a { color: var(--gold); text-decoration: none; }
+.tienda-footer a:hover { text-decoration: underline; }
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+.tienda-toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--verde);
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: .85rem;
+    max-width: 90vw;
+    text-align: center;
+    opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+    z-index: 9999;
+}
+.tienda-toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+.tienda-toast.error { border-color: var(--danger); color: var(--danger); }
+.tienda-toast.success { border-color: var(--success); color: var(--success); }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 640px) {
+    .tienda-header {
+        grid-template-columns: auto 1fr;
+        grid-template-areas:
+            "volver saldo"
+            "logo   logo";
+        row-gap: 8px;
+    }
+    .tienda-volver { grid-area: volver; }
+    .tienda-saldo { grid-area: saldo; justify-self: end; }
+    .tienda-logo {
+        grid-area: logo;
+        justify-content: flex-start;
+    }
+
+    .tienda-preview {
+        grid-template-columns: 1fr;
+        text-align: center;
+        padding: 20px;
+    }
+    .preview-avatar { width: 160px; height: 210px; margin: 0 auto; }
+    .preview-reset { align-self: center; }
+
+    .tienda-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .acc-card { padding: 12px; }
+    .acc-emoji { font-size: 2.5rem; }
+    .acc-nombre { font-size: .8rem; }
+    .acc-desc { display: none; }
+    .acc-btn { padding: 8px; font-size: .75rem; }
+}
+
+@media (max-width: 430px) {
+    .tienda-volver-text { display: none; }
+    .tienda-volver { padding: 8px 12px; }
+    .tienda-saldo { font-size: .75rem; padding: 5px 10px; }
+}
