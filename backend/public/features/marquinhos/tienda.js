@@ -1,9 +1,11 @@
 // ================================================================
-// TIENDA DE MARQUINHOS · v3.2
+// TIENDA DE MARQUINHOS · v3.3
 // compra ultra-rápida + UI optimista + PROBAR ANTES DE COMPRAR
 //
 // "Probar" solo cambia la vista previa en esta pantalla: NO escribe
 // nada en la base de datos ni cambia el Marquinhos flotante.
+//
+// ✅ v3.3: fix de reconexión de listeners tras renderGrid()
 // ================================================================
 
 'use strict';
@@ -33,6 +35,11 @@
         const d = document.createElement('div');
         d.textContent = v == null ? '' : String(v);
         return d.innerHTML;
+    }
+
+    // ✅ Helper: reconectar TODOS los botones después de re-renderizar
+    function reconectarBotones() {
+        document.querySelectorAll('.acc-btn').forEach(instalarListenerBoton);
     }
 
     // ============================================================
@@ -68,9 +75,9 @@
             renderGrid();
             instalarEventos();
 
-            console.log('[Tienda v3.2] ✅ Lista');
+            console.log('[Tienda v3.3] ✅ Lista');
         } catch (e) {
-            console.error('[Tienda v3.2] Error init:', e);
+            console.error('[Tienda v3.3] Error init:', e);
             toast('Error cargando tienda', 'error');
         }
     }
@@ -93,7 +100,7 @@
 
             pintarSaldo();
         } catch (e) {
-            console.warn('[Tienda v3.2] Error saldo:', e);
+            console.warn('[Tienda v3.3] Error saldo:', e);
             $('saldoValor').textContent = '0.00';
         }
     }
@@ -172,7 +179,7 @@
         }
 
         grid.innerHTML = lista.map(a => cardHTML(a)).join('');
-        grid.querySelectorAll('.acc-btn').forEach(instalarListenerBoton);
+        reconectarBotones();  // ✅ reconectar después de re-renderizar
     }
 
     function cardHTML(a) {
@@ -283,7 +290,7 @@
         } else {
             pruebas[acc.categoria] = acc.id;
         }
-        renderGrid();
+        renderGrid();  // ✅ dentro ya se llama a reconectarBotones()
         renderAccesoriosEquipados();
     }
 
@@ -314,7 +321,7 @@
             });
 
             if (error) {
-                console.error('[Tienda v3.2] RPC error:', error);
+                console.error('[Tienda v3.3] RPC error:', error);
                 toast('Error al procesar la compra', 'error');
                 return;
             }
@@ -346,7 +353,7 @@
             // de la misma categoría (evita dos sombreros juntos)
             await equipar(acc.id);
         } catch (e) {
-            console.error('[Tienda v3.2] Error comprando:', e);
+            console.error('[Tienda v3.3] Error comprando:', e);
             toast('Error al comprar: ' + (e.message || 'desconocido'), 'error');
         } finally {
             comprasEnVuelo.delete(acc.id);
@@ -418,14 +425,14 @@
             inventario[accId] = upd;
 
             // Las tarjetas de esa categoría pueden haber cambiado (pruebas)
-            renderGrid();
+            renderGrid();  // ✅ reconecta botones
             renderAccesoriosEquipados();
 
             if (window.Marquinhos?.recargarAccesorios) {
                 try { window.Marquinhos.recargarAccesorios(); } catch (e) {}
             }
         } catch (e) {
-            console.error('[Tienda v3.2] Error equipando:', e);
+            console.error('[Tienda v3.3] Error equipando:', e);
             toast('Error al equipar', 'error');
         }
     }
@@ -450,7 +457,7 @@
                 try { window.Marquinhos.recargarAccesorios(); } catch (e) {}
             }
         } catch (e) {
-            console.error('[Tienda v3.2] Error desequipando:', e);
+            console.error('[Tienda v3.3] Error desequipando:', e);
         }
     }
 
@@ -477,7 +484,7 @@
                 }
             }
 
-            renderGrid();
+            renderGrid();  // ✅ reconecta botones
             renderAccesoriosEquipados();
             toast('Accesorios quitados', 'success');
         } catch (e) {
