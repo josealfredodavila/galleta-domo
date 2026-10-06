@@ -1,7 +1,7 @@
 // ================================================================
 // server.js — Sariel's Ecosystem
 // Backend principal — Producción Railway
-// ✅ v2.0: Añadido endpoint /api/ai/embeddings para memoria Marquinhos
+// ✅ v2.1: Añadida ruta /legal/terminos-marquinhos
 // ================================================================
 
 require('dotenv').config();
@@ -580,7 +580,7 @@ app.post('/api/livekit/token', authMiddleware, async (req, res) => {
 });
 
 // ================================================================
-// ✅ NUEVO v2.0: MARQUINHOS · EMBEDDINGS (texto → vector)
+// ✅ MARQUINHOS · EMBEDDINGS (texto → vector)
 // Sistema de memoria por usuario (RAG con pgvector)
 // ================================================================
 
@@ -970,6 +970,21 @@ app.get('/actualizar-contrasena', (req, res) => {
     return res.sendFile(
         path.join(publicPath, 'actualizar-contrasena.html')
     );
+});
+
+// ================================================================
+// ✅ v2.1: TÉRMINOS DE USO DE MARQUINHOS (IA)
+// ================================================================
+
+app.get('/legal/terminos-marquinhos', (req, res) => {
+    const filePath = path.join(publicPath, 'legal', 'terminos-marquinhos.html');
+
+    if (!fs.existsSync(filePath)) {
+        console.error('❌ Archivo no encontrado:', filePath);
+        return res.status(404).send('Términos de Marquinhos no disponibles');
+    }
+
+    return res.sendFile(filePath);
 });
 
 // ================================================================
