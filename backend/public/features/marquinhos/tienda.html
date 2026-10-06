@@ -34,7 +34,7 @@
     <section class="tienda-preview">
         <div class="preview-avatar">
             <svg viewBox="0 0 200 260" xmlns="http://www.w3.org/2000/svg" class="preview-svg">
-                <g id="accesoriosLayer"></g>
+                <!-- 1) Avatar base -->
                 <g>
                     <line x1="70" y1="40" x2="68" y2="20" stroke="#1565C0" stroke-width="3" stroke-linecap="round"/>
                     <circle cx="68" cy="16" r="6" fill="#FFF8E1" stroke="#1565C0" stroke-width="2"/>
@@ -60,6 +60,10 @@
                     <rect x="60" y="240" width="22" height="20" rx="8" fill="#FFF8E1" stroke="#1565C0" stroke-width="3"/>
                     <rect x="118" y="240" width="22" height="20" rx="8" fill="#FFF8E1" stroke="#1565C0" stroke-width="3"/>
                 </g>
+
+                <!-- 2) Accesorios: van DESPUÉS del avatar para dibujarse encima
+                        (antes quedaban detrás de la cabeza y no se veían bien) -->
+                <g id="accesoriosLayer"></g>
             </svg>
         </div>
         <div class="preview-info">
