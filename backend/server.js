@@ -1,6 +1,7 @@
 // ================================================================
 // server.js — Sariel's Ecosystem
 // Backend principal — Producción Railway
+// ✅ v2.0: Añadido endpoint /api/ai/embeddings para memoria Marquinhos
 // ================================================================
 
 require('dotenv').config();
@@ -254,9 +255,6 @@ app.use(
 
                 connectSrc: [
                     "'self'",
-                    // ✅ NUEVO: Añadido el origen propio explícitamente para
-                    // asegurar que fetch a /api/ai/chat-pet y /api/ai/tts
-                    // no sea bloqueado por CSP.
                     "https://galleta-domo-production.up.railway.app",
                     "wss://galleta-domo-production.up.railway.app",
                     "https://zultnlogdoajehbswlih.supabase.co",
@@ -382,9 +380,6 @@ app.use(
             'x-signature'
         ],
 
-        // ✅ NUEVO: Configuración de preflight más robusta
-        // Esto asegura que el navegador no cancele el POST cuando
-        // hace preflight OPTIONS antes de llamar a /api/ai/chat-pet.
         exposedHeaders: ['Content-Length', 'X-Requested-With'],
         maxAge: 86400,
         preflightContinue: false,
@@ -583,6 +578,70 @@ app.post('/api/livekit/token', authMiddleware, async (req, res) => {
         });
     }
 });
+
+// ================================================================
+// ✅ NUEVO v2.0: MARQUINHOS · EMBEDDINGS (texto → vector)
+// Sistema de memoria por usuario (RAG con pgvector)
+// ================================================================
+
+let _embedderMarquinhos = null;
+let _embedderLoading = null;
+
+async function obtenerEmbedder() {
+    if (_embedderMarquinhos) return _embedderMarquinhos;
+    if (_embedderLoading) return _embedderLoading;
+
+    _embedderLoading = (async () => {
+        try {
+            console.log('🧠 [Embeddings] Cargando modelo all-MiniLM-L6-v2...');
+            const { pipeline } = await import('@xenova/transformers');
+            const pipe = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
+            console.log('✅ [Embeddings] Modelo listo (384 dims)');
+            _embedderMarquinhos = pipe;
+            return pipe;
+        } catch (e) {
+            console.error('❌ [Embeddings] Error cargando modelo:', e);
+            _embedderLoading = null;
+            throw e;
+        }
+    })();
+
+    return _embedderLoading;
+}
+
+app.post('/api/ai/embeddings', authMiddleware, async (req, res) => {
+    try {
+        const { text } = req.body;
+
+        if (!text || typeof text !== 'string' || text.trim().length < 2) {
+            return res.status(400).json({ error: 'Texto requerido (min 2 caracteres)' });
+        }
+
+        const textoLimpio = text.trim().slice(0, 2000);
+
+        const embedder = await obtenerEmbedder();
+        const output = await embedder(textoLimpio, {
+            pooling: 'mean',
+            normalize: true
+        });
+
+        const embedding = Array.from(output.data);
+
+        return res.json({
+            success: true,
+            embedding: embedding,
+            dims: embedding.length
+        });
+    } catch (error) {
+        console.error('❌ Error /api/ai/embeddings:', error);
+        return res.status(500).json({
+            error: 'Error generando embedding',
+            message: error.message
+        });
+    }
+});
+
+console.log('✅ Endpoint /api/ai/embeddings registrado');
 
 // ================================================================
 // TURNSTILE
@@ -801,7 +860,6 @@ function montarRouter(mountPath, requirePath, nombre) {
 
 montarRouter('/api/auth', './routes/auth', 'routes/auth');
 
-// ✅ NUEVO: Router modular de eliminación de cuenta
 montarRouter('/api/account', './routes/account', 'routes/account');
 
 montarRouter('/api/payments', './routes/payments', 'routes/payments');
@@ -812,7 +870,6 @@ montarRouter(
     'routes/membresia'
 );
 
-// ✅ NUEVO: Router de Live Pass
 montarRouter(
     '/api/payments/live-pass',
     './routes/payments/livePass',
@@ -835,7 +892,6 @@ montarRouter('/api/ai', './routes/ai-chat', 'routes/ai-chat');
 
 montarRouter('/api/ai/voice', './routes/ai-voice', 'routes/ai-voice');
 
-// ✅ NUEVO: Marquinhos-pet (mascota virtual flotante)
 montarRouter('/api/ai/chat-pet', './routes/ai-chat-pet', 'routes/ai-chat-pet');
 
 montarRouter('/api/ai/tts', './routes/ai-tts', 'routes/ai-tts');
