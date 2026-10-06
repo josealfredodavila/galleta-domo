@@ -295,7 +295,6 @@
             var t = setTimeout(function() {
                 if (!_bocaActiva) return;
                 cambiarVisema(v.visema);
-                // ✅ v8.0: Squash & stretch durante el habla
                 if (window.MarquinhosAnim && typeof window.MarquinhosAnim.squash === 'function') {
                     window.MarquinhosAnim.squash();
                 }
@@ -358,14 +357,13 @@
             <div class="mq-pet-avatar" id="mq-avatar" role="button" tabindex="0" aria-label="Hablar con Marquinhos">
                 <svg viewBox="0 0 200 260" xmlns="http://www.w3.org/2000/svg" class="mq-pet-svg">
                     <g id="mq-acc-layer"></g>
-                    <g>
+                    <g id="mq-cuerpo">
                         <line x1="70" y1="40" x2="68" y2="20" stroke="#1565C0" stroke-width="3" stroke-linecap="round"/>
                         <circle cx="68" cy="16" r="6" fill="#FFF8E1" stroke="#1565C0" stroke-width="2"/>
                         <line x1="130" y1="40" x2="132" y2="20" stroke="#1565C0" stroke-width="3" stroke-linecap="round"/>
                         <circle cx="132" cy="16" r="6" fill="#FFF8E1" stroke="#1565C0" stroke-width="2"/>
                         <ellipse cx="100" cy="80" rx="62" ry="56" fill="#FFF8E1" stroke="#1565C0" stroke-width="3"/>
                         
-                        <!-- ✅ v8.0: Ojos con IDs para animaciones -->
                         <ellipse id="mq-ojo-izq" cx="76" cy="80" rx="14" ry="16" fill="#1A0A2E"/>
                         <ellipse cx="76" cy="80" rx="12" ry="13" fill="#F5F0E8"/>
                         <circle id="mq-pupila-izq" cx="76" cy="82" r="6" fill="#0a1a3e"/>
@@ -467,7 +465,6 @@
         renderAccesoriosEnAvatar();
         aplicarModo();
 
-        // ✅ v8.0: Arrancar el sistema Disney de animaciones
         setTimeout(function() {
             if (window.MarquinhosAnim && typeof window.MarquinhosAnim.iniciar === 'function') {
                 window.MarquinhosAnim.iniciar();
@@ -493,7 +490,6 @@
     // ============================================================
     function setEstado(e) {
         if (container) container.setAttribute('data-estado', e);
-        // ✅ v8.0: Notificar al sistema de animaciones
         if (window.MarquinhosAnim && typeof window.MarquinhosAnim.setEstado === 'function') {
             window.MarquinhosAnim.setEstado(e);
         }
@@ -561,12 +557,10 @@
         isSpeaking = true;
         setEstado('hablando');
 
-        // ✅ v8.0: Anticipación (inhalar antes de hablar)
         if (window.MarquinhosAnim && typeof window.MarquinhosAnim.anticipar === 'function') {
             window.MarquinhosAnim.anticipar();
         }
 
-        // ✅ ANIMAR LA BOCA
         animarBoca(texto, rate);
 
         let ok = false;
