@@ -1,21 +1,18 @@
 /* ================================================================
-   routes/ai-chat-pet.js - CHAT DE LA MASCOTA MARQUINHOS (v2)
+   routes/ai-chat-pet.js - CHAT DE LA MASCOTA MARQUINHOS (v3)
    ================================================================
    Endpoint: POST /api/ai/chat-pet
    Modelo:   Groq (openai/gpt-oss-120b)
 
-   Cambios sobre tu versión:
-   1. RUTA CORREGIDA: antes era router.post('/chat-pet') montado en
-      '/api/ai/chat-pet' → quedaba /api/ai/chat-pet/chat-pet (404).
-      Ahora responde en /api/ai/chat-pet (y también en el viejo
-      /api/ai/chat-pet/chat-pet por compatibilidad).
-   2. max_tokens subido + reasoning_effort bajo: gpt-oss-120b es un
-      modelo de razonamiento y gastaba los 400 tokens "pensando",
-      dejando la respuesta vacía.
-   3. Prompt: responde CUALQUIER tema como Gemini/ChatGPT/Claude,
-      recuerda el contexto y usa fecha/hora actual.
-   4. Memoria: usa historial del cliente y, si no hay, el de
-      ai_voice_chats (se conserva entre dispositivos).
+   v3 — Memoria por usuario (RAG):
+   - Acepta el campo "memoria" del frontend con recuerdos relevantes.
+   - Se inyecta como mensaje de sistema adicional antes del historial.
+   - El frontend ya se encarga de buscar los recuerdos con pgvector.
+
+   Además:
+   1. RUTA CORREGIDA: responde en /api/ai/chat-pet
+   2. max_tokens subido + reasoning_effort bajo
+   3. Prompt: responde CUALQUIER tema como Gemini/ChatGPT/Claude
 ================================================================ */
 
 'use strict';
@@ -37,7 +34,6 @@ const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
 const GROQ_TIMEOUT_MS = 30000;
 
-/* Incluye los tokens de razonamiento del modelo */
 const MAX_TOKENS_RESPUESTA = 1800;
 const MAX_CARACTERES_RESPUESTA = 1600;
 
@@ -115,6 +111,7 @@ MEMORIA Y CONTEXTO:
 Usa todo el historial de la conversación. Recuerda lo que el usuario dijo antes (nombre, gustos, datos, temas) y refiérete a ello con naturalidad.
 Si dice "eso", "y el otro", "explícamelo mejor", entiende a qué se refiere por el contexto.
 Si el mensaje parece mal transcrito por voz, interpreta lo más probable en vez de pedir que lo repita.
+Si recibes un bloque de "Recuerdos relevantes de este usuario", ÚSALOS para personalizar tu respuesta cuando sean pertinentes. Nunca los menciones textualmente ni digas "según mis recuerdos"; intégralos con naturalidad.
 
 CÓMO RESPONDER:
 1. Tus respuestas se LEEN EN VOZ ALTA. Habla de forma natural, directa y sin rodeos.
@@ -296,6 +293,7 @@ async function cargarHistorial(usuarioId) {
 /* ================================================================
    POST /api/ai/chat-pet
    (también acepta /api/ai/chat-pet/chat-pet por compatibilidad)
+   ✅ v3: Acepta "memoria" del frontend (recuerdos relevantes del usuario)
 ================================================================ */
 
 router.post(['/', '/chat-pet'], autenticar, async (req, res) => {
@@ -309,7 +307,13 @@ router.post(['/', '/chat-pet'], autenticar, async (req, res) => {
             });
         }
 
-        const { message, history = [], page = null, user_name = null } = req.body || {};
+        const {
+            message,
+            history = [],
+            page = null,
+            user_name = null,
+            memoria = ''
+        } = req.body || {};
 
         if (typeof message !== 'string' || !message.trim()) {
             return res.status(400).json({
@@ -319,6 +323,12 @@ router.post(['/', '/chat-pet'], autenticar, async (req, res) => {
         }
 
         const mensajeLimpio = message.trim().slice(0, 4000);
+
+        // ✅ v3: Memoria del usuario (viene del frontend como string)
+        const memoriaLimpia =
+            typeof memoria === 'string'
+                ? memoria.trim().slice(0, 4000)
+                : '';
 
         // 1. Historial: el del cliente; si viene vacío, el de Supabase
         let historialCombinado = limpiarHistorial(history);
@@ -332,13 +342,24 @@ router.post(['/', '/chat-pet'], autenticar, async (req, res) => {
             historialCombinado = historialCombinado.slice(0, -1);
         }
 
-        // 2. Mensajes
+        // 2. Mensajes (sistema + contexto + memoria + historial + actual)
         const mensajes = [
             { role: 'system', content: SYSTEM_PROMPT },
-            { role: 'system', content: contextoDinamico(user_name, page) },
-            ...historialCombinado,
-            { role: 'user', content: mensajeLimpio }
+            { role: 'system', content: contextoDinamico(user_name, page) }
         ];
+
+        // ✅ v3: Inyectar memoria del usuario si existe
+        if (memoriaLimpia) {
+            mensajes.push({
+                role: 'system',
+                content: memoriaLimpia
+            });
+            console.log('🧠 Memoria inyectada:', memoriaLimpia.length, 'chars');
+        }
+
+        // Añadir historial y mensaje actual
+        mensajes.push(...historialCombinado);
+        mensajes.push({ role: 'user', content: mensajeLimpio });
 
         // 3. Groq
         const groqResponse = await axios.post(
@@ -399,7 +420,8 @@ router.post(['/', '/chat-pet'], autenticar, async (req, res) => {
 
         console.log('✅ Marquinhos-pet respondió:', {
             ms: Date.now() - inicio,
-            chars: respuestaTexto.length
+            chars: respuestaTexto.length,
+            memoria: memoriaLimpia ? 'sí' : 'no'
         });
 
         return res.status(200).json({
