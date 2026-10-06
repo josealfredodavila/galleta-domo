@@ -1,6 +1,6 @@
 /* ================================================================
-   MARQUINHOS · PET · CSS v5.0
-   (arrastrable + 3 burbujitas + boca dinámica)
+   MARQUINHOS · PET · CSS v6.0
+   (arrastrable + 3 burbujitas + boca dinámica + animaciones Disney)
    ================================================================ */
 
 .mq-pet {
@@ -53,6 +53,10 @@
     height: 100%;
     display: block;
     pointer-events: none;
+    /* ✅ v6.0: Base para animaciones Disney */
+    transform-origin: center center;
+    will-change: transform;
+    backface-visibility: hidden;
 }
 
 @keyframes mq-float {
@@ -230,6 +234,50 @@
 @keyframes mq-talk {
     from { transform: translateY(0) rotate(-2deg); }
     to { transform: translateY(-3px) rotate(2deg); }
+}
+
+/* ================================================================
+   ✅ NUEVO v6.0: ANIMACIONES DISNEY
+   ================================================================ */
+
+/* Los ojos y pupilas necesitan transform-origin centrado */
+#mq-pupila-izq,
+#mq-pupila-der,
+#mq-brillo-izq,
+#mq-brillo-der {
+    transform-origin: center center;
+    will-change: transform;
+}
+
+/* Suavizar la transición del parpadeo (ry) */
+#mq-ojo-izq,
+#mq-ojo-der {
+    transition: ry 0.08s ease-out;
+}
+
+/* Al escuchar: ligera inclinación y pulso (refuerza el estado) */
+.mq-pet[data-estado="escuchando"] .mq-pet-svg {
+    animation: mq-listen-tilt 2s ease-in-out infinite;
+}
+
+@keyframes mq-listen-tilt {
+    0%, 100% { transform: rotate(-4deg); }
+    50%      { transform: rotate(4deg); }
+}
+
+/* Al pensar: mirada arriba (lo maneja el JS con transform en las pupilas) */
+.mq-pet[data-estado="pensando"] .mq-pet-avatar {
+    filter: drop-shadow(0 6px 20px rgba(255, 215, 0, 0.5));
+}
+
+/* Al hablar: un pequeño temblor extra (además del que ya existía) */
+.mq-pet[data-estado="hablando"] .mq-pet-svg {
+    animation: mq-talk-shake 0.15s ease-in-out infinite alternate;
+}
+
+@keyframes mq-talk-shake {
+    from { transform: translateX(-0.5px); }
+    to   { transform: translateX(0.5px); }
 }
 
 /* ================================================================
