@@ -1,6 +1,7 @@
 /* ================================================================
-   MARQUINHOS · PET · CSS v6.1
-   (arrastrable + 3 burbujitas + boca dinámica + animaciones Disney)
+   MARQUINHOS · PET · CSS v6.2
+   (arrastrable + 3 burbujitas + boca dinámica + animaciones Disney
+    + modal de aceptación de términos)
    ================================================================ */
 
 .mq-pet {
@@ -62,7 +63,7 @@
 }
 
 /* ================================================================
-   ✅ v6.1: El <g> del cuerpo acepta transform del JS (Disney)
+   ✅ v6.2: El <g> del cuerpo acepta transform del JS (Disney)
    ================================================================ */
 #mq-cuerpo {
     transform-origin: 100px 200px;
@@ -223,7 +224,7 @@
 }
 
 /* ================================================================
-   ✅ v6.1: ANIMACIONES DISNEY (controladas por JS)
+   ✅ v6.2: ANIMACIONES DISNEY (controladas por JS)
    ================================================================ */
 
 /* Los ojos y pupilas necesitan transform-origin centrado */
@@ -239,6 +240,117 @@
 #mq-ojo-izq,
 #mq-ojo-der {
     transition: ry 0.08s ease-out;
+}
+
+/* ================================================================
+   ✅ v6.2: MODAL DE TÉRMINOS DE USO
+   ================================================================ */
+.mq-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 2147483646;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: mq-fade-in 0.3s ease;
+}
+
+@keyframes mq-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.mq-modal-content {
+    background: #0a0f1a;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    border-radius: 16px;
+    max-width: 480px;
+    width: 100%;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    color: #f0f4f8;
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    animation: mq-slide-up 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes mq-slide-up {
+    from { transform: translateY(30px) scale(0.95); opacity: 0; }
+    to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.mq-modal-content h2 {
+    color: #D4AF37;
+    font-size: 1.1rem;
+    margin: 0;
+    padding: 20px 24px 12px;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+}
+
+.mq-modal-body {
+    padding: 20px 24px;
+    overflow-y: auto;
+    font-size: 0.88rem;
+    line-height: 1.55;
+    color: #c0d8e8;
+}
+
+.mq-modal-body p {
+    margin: 0 0 12px;
+}
+
+.mq-modal-body ul {
+    padding-left: 20px;
+    margin: 8px 0 16px;
+}
+
+.mq-modal-body li {
+    margin-bottom: 6px;
+}
+
+.mq-modal-body strong {
+    color: #f0f4f8;
+}
+
+.mq-modal-body a {
+    color: #D4AF37;
+}
+
+.mq-modal-actions {
+    padding: 16px 24px 20px;
+    display: flex;
+    gap: 10px;
+    border-top: 1px solid rgba(212, 175, 55, 0.15);
+}
+
+.mq-btn-aceptar, .mq-btn-rechazar {
+    flex: 1;
+    padding: 12px 16px;
+    border-radius: 99px;
+    border: 0;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    font-family: inherit;
+    transition: transform 0.15s ease;
+}
+
+.mq-btn-aceptar {
+    background: linear-gradient(135deg, #D4AF37, #b8923a);
+    color: #05080f;
+}
+
+.mq-btn-rechazar {
+    background: transparent;
+    border: 1px solid rgba(138, 168, 184, 0.4);
+    color: #8aa8b8;
+}
+
+.mq-btn-aceptar:hover, .mq-btn-rechazar:hover {
+    transform: scale(1.03);
 }
 
 /* ================================================================
@@ -262,6 +374,23 @@
         width: 7px;
         height: 7px;
     }
+
+    /* Modal responsive */
+    .mq-modal-content h2 {
+        font-size: 1rem;
+        padding: 16px 20px 10px;
+    }
+    .mq-modal-body {
+        padding: 16px 20px;
+        font-size: 0.83rem;
+    }
+    .mq-modal-actions {
+        padding: 14px 20px 18px;
+    }
+    .mq-btn-aceptar, .mq-btn-rechazar {
+        font-size: 0.8rem;
+        padding: 10px 12px;
+    }
 }
 
 /* ================================================================
@@ -281,4 +410,34 @@ html[data-tema="dia"] .mq-pet-bubble-dots {
 html.tema-dia .mq-pet-bubble-dots::after,
 html[data-tema="dia"] .mq-pet-bubble-dots::after {
     border-top-color: rgba(255, 255, 255, 0.99);
+}
+
+/* Modo día para el modal */
+html.tema-dia .mq-modal-content,
+html[data-tema="dia"] .mq-modal-content {
+    background: #ffffff;
+    color: #0a1a3e;
+    border-color: rgba(212, 175, 55, 0.4);
+}
+
+html.tema-dia .mq-modal-content h2,
+html[data-tema="dia"] .mq-modal-content h2 {
+    color: #b8923a;
+    border-bottom-color: rgba(212, 175, 55, 0.3);
+}
+
+html.tema-dia .mq-modal-body,
+html[data-tema="dia"] .mq-modal-body {
+    color: #334;
+}
+
+html.tema-dia .mq-modal-body strong,
+html[data-tema="dia"] .mq-modal-body strong {
+    color: #0a1a3e;
+}
+
+html.tema-dia .mq-btn-rechazar,
+html[data-tema="dia"] .mq-btn-rechazar {
+    border-color: rgba(10, 26, 62, 0.3);
+    color: #556;
 }
