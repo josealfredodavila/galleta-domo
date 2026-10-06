@@ -1,10 +1,10 @@
 /* ================================================================
-   APARIENCIA GLOBAL - SARIEL'S ECOSYSTEM v2.2
+   APARIENCIA GLOBAL - SARIEL'S ECOSYSTEM v2.3
    - Lee de localStorage (rápido, sin red)
    - Sincroniza con Supabase preferencias_usuario (persistente)
    - Aplica tema, color de acento y tamaño de fuente globalmente
-   - ✅ NUEVO: Inyecta Marquinhos-pet en todas las páginas
-   - ✅ NUEVO: Carga analizador de boca (marquinhos-boca.js)
+   - Inyecta Marquinhos-pet en todas las páginas
+   - ✅ v2.3: Carga marquinhos-animaciones.js (sistema Disney)
    ================================================================ */
 
 (function() {
@@ -292,8 +292,7 @@
     /* ================================================================
        ✅ Inyectar Marquinhos-pet en todas las páginas
        ================================================================
-       Ahora carga TAMBIÉN marquinhos-boca.js (analizador de visemas).
-       Orden: CSS → boca.js → pet.js → brain.js
+       Orden de carga: CSS → boca.js → animaciones.js → pet.js → brain.js
        ================================================================ */
     (function inyectarMarquinhosPet() {
         var path = window.location.pathname.toLowerCase();
@@ -321,12 +320,19 @@
             css.id = 'marquinhos-pet-css';
             document.head.appendChild(css);
 
-            // ✅ Analizador de boca (visemas) — PRIMERO
+            // Analizador de boca (visemas) — PRIMERO
             var boca = document.createElement('script');
             boca.id = 'marquinhos-boca-script';
             boca.src = '/features/marquinhos/marquinhos-boca.js';
             boca.defer = true;
             document.head.appendChild(boca);
+
+            // ✅ v2.3: Sistema de animaciones Disney (antes del pet)
+            var anim = document.createElement('script');
+            anim.id = 'marquinhos-anim-script';
+            anim.src = '/features/marquinhos/marquinhos-animaciones.js';
+            anim.defer = true;
+            document.head.appendChild(anim);
 
             // Pet
             var js = document.createElement('script');
@@ -350,5 +356,5 @@
         }
     })();
 
-    console.log('[Apariencia] ✅ Módulo global v2.2 cargado (localStorage + Supabase + Marquinhos-pet + Boca)');
+    console.log('[Apariencia] ✅ Módulo global v2.3 cargado (localStorage + Supabase + Marquinhos-pet + Boca + Animaciones Disney)');
 })();
