@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#05080f">
 
 <link rel="stylesheet" href="/features/marquinhos/tienda.css">
-<script src="/features/shared/js/apariencia-global.js"></script>
+<!-- ✅ Se eliminó apariencia-global.js de aquí -->
 </head>
 <body>
 
@@ -99,8 +99,10 @@
 
 <div class="tienda-toast" id="tiendaToast"></div>
 
+<!-- ✅ Scripts al final del body para asegurar que Supabase ya esté cargado -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/features/marquinhos/tienda.js"></script>
+<script src="/features/shared/js/apariencia-global.js" defer></script>
 
 </body>
 </html>
