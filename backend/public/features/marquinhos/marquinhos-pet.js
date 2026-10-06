@@ -1,8 +1,10 @@
 // ================================================================
-// MARQUINHOS · PET v7.0
+// MARQUINHOS · PET v8.0
 // arrastrable + memoria + conversación continua + accesorios
-// + MODO SOLO VOZ (3 burbujitas) vs MODO SUBTÍTULOS
-// + BOCA DINÁMICA POR VISEMAS (sincronizada con el habla)
+// + MODO SOLO VOZ / SUBTÍTULOS
+// + BOCA DINÁMICA POR VISEMAS
+// + ✅ v8.0: SISTEMA DISNEY DE ANIMACIONES (respirar, parpadear,
+//   mirar, anticipar, squash & stretch, estados expresivos)
 // ================================================================
 
 'use strict';
@@ -53,19 +55,12 @@
     // FORMAS DE BOCA (paths SVG por visema)
     // ============================================================
     var VISEMAS_SVG = {
-        // Reposo: sonrisa suave
         REST: 'M 85 108 Q 100 114 115 108',
-        // A: boca muy abierta
         A:    'M 80 105 Q 100 132 120 105 Q 100 138 80 105',
-        // E: semiabierta horizontal
         E:    'M 82 108 Q 100 120 118 108 Q 100 122 82 108',
-        // I: sonrisa estrecha (boca estirada)
         I:    'M 78 108 Q 100 114 122 108',
-        // O: redonda grande
         O:    'M 100 100 Q 118 100 118 112 Q 118 124 100 124 Q 82 124 82 112 Q 82 100 100 100 Z',
-        // U: redonda pequeña
         U:    'M 100 105 Q 112 105 112 113 Q 112 120 100 120 Q 88 120 88 113 Q 88 105 100 105 Z',
-        // M: labios cerrados (m/b/p)
         M:    'M 82 110 L 118 110'
     };
 
@@ -300,6 +295,10 @@
             var t = setTimeout(function() {
                 if (!_bocaActiva) return;
                 cambiarVisema(v.visema);
+                // ✅ v8.0: Squash & stretch durante el habla
+                if (window.MarquinhosAnim && typeof window.MarquinhosAnim.squash === 'function') {
+                    window.MarquinhosAnim.squash();
+                }
             }, tiempo);
             _bocaTimeouts.push(t);
             tiempo += dur;
@@ -365,14 +364,17 @@
                         <line x1="130" y1="40" x2="132" y2="20" stroke="#1565C0" stroke-width="3" stroke-linecap="round"/>
                         <circle cx="132" cy="16" r="6" fill="#FFF8E1" stroke="#1565C0" stroke-width="2"/>
                         <ellipse cx="100" cy="80" rx="62" ry="56" fill="#FFF8E1" stroke="#1565C0" stroke-width="3"/>
-                        <ellipse cx="76" cy="80" rx="14" ry="16" fill="#1A0A2E"/>
+                        
+                        <!-- ✅ v8.0: Ojos con IDs para animaciones -->
+                        <ellipse id="mq-ojo-izq" cx="76" cy="80" rx="14" ry="16" fill="#1A0A2E"/>
                         <ellipse cx="76" cy="80" rx="12" ry="13" fill="#F5F0E8"/>
-                        <circle cx="76" cy="82" r="6" fill="#0a1a3e"/>
-                        <circle cx="74" cy="79" r="2" fill="#fff" opacity="0.9"/>
-                        <ellipse cx="124" cy="80" rx="14" ry="16" fill="#1A0A2E"/>
+                        <circle id="mq-pupila-izq" cx="76" cy="82" r="6" fill="#0a1a3e"/>
+                        <circle id="mq-brillo-izq" cx="74" cy="79" r="2" fill="#fff" opacity="0.9"/>
+                        <ellipse id="mq-ojo-der" cx="124" cy="80" rx="14" ry="16" fill="#1A0A2E"/>
                         <ellipse cx="124" cy="80" rx="12" ry="13" fill="#F5F0E8"/>
-                        <circle cx="124" cy="82" r="6" fill="#0a1a3e"/>
-                        <circle cx="122" cy="79" r="2" fill="#fff" opacity="0.9"/>
+                        <circle id="mq-pupila-der" cx="124" cy="82" r="6" fill="#0a1a3e"/>
+                        <circle id="mq-brillo-der" cx="122" cy="79" r="2" fill="#fff" opacity="0.9"/>
+                        
                         <path id="mq-boca" class="mq-pet-boca"
                               d="M 85 108 Q 100 114 115 108"
                               stroke="#1565C0" stroke-width="3"
@@ -464,7 +466,15 @@
 
         renderAccesoriosEnAvatar();
         aplicarModo();
-        log('Widget creado con boca dinámica');
+
+        // ✅ v8.0: Arrancar el sistema Disney de animaciones
+        setTimeout(function() {
+            if (window.MarquinhosAnim && typeof window.MarquinhosAnim.iniciar === 'function') {
+                window.MarquinhosAnim.iniciar();
+            }
+        }, 500);
+
+        log('Widget creado con animaciones Disney v8.0');
     }
 
     // ============================================================
@@ -481,7 +491,13 @@
     // ============================================================
     // BURBUJA
     // ============================================================
-    function setEstado(e) { if (container) container.setAttribute('data-estado', e); }
+    function setEstado(e) {
+        if (container) container.setAttribute('data-estado', e);
+        // ✅ v8.0: Notificar al sistema de animaciones
+        if (window.MarquinhosAnim && typeof window.MarquinhosAnim.setEstado === 'function') {
+            window.MarquinhosAnim.setEstado(e);
+        }
+    }
 
     function mostrarBurbuja(texto) {
         if (!config.mostrar_subtitulos) return;
@@ -544,6 +560,11 @@
         mostrarDots();
         isSpeaking = true;
         setEstado('hablando');
+
+        // ✅ v8.0: Anticipación (inhalar antes de hablar)
+        if (window.MarquinhosAnim && typeof window.MarquinhosAnim.anticipar === 'function') {
+            window.MarquinhosAnim.anticipar();
+        }
 
         // ✅ ANIMAR LA BOCA
         animarBoca(texto, rate);
@@ -852,7 +873,7 @@
         await cargarAccesorios();
         crearWidget();
         instalarVisibility();
-        log('✅ Listo. Boca dinámica activa. Mensajes: ' + historialLocal.length + ' · Accesorios: ' + accesoriosEquipados.length);
+        log('✅ Listo. Disney v8.0 activo. Mensajes: ' + historialLocal.length + ' · Accesorios: ' + accesoriosEquipados.length);
     }
 
     if (document.readyState === 'loading') {
