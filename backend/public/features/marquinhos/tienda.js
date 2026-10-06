@@ -1,9 +1,9 @@
 // ================================================================
-// TIENDA DE MARQUINHOS · v3.1
-// compra ultra-rápida + UI optimista
-// v3.1: al comprar, equipa el nuevo y quita el anterior de la misma
-//       categoría (ya no se ven dos sombreros "montados");
-//       sombrero reubicado para no cortarse arriba del avatar.
+// TIENDA DE MARQUINHOS · v3.2
+// compra ultra-rápida + UI optimista + PROBAR ANTES DE COMPRAR
+//
+// "Probar" solo cambia la vista previa en esta pantalla: NO escribe
+// nada en la base de datos ni cambia el Marquinhos flotante.
 // ================================================================
 
 'use strict';
@@ -16,6 +16,7 @@
     let filtroActual = 'todos';
     let saldoActual = { usdt: 0, usdc: 0 };
     let comprasEnVuelo = new Set();   // bloqueo por item_id
+    let pruebas = {};                 // categoria -> id del accesorio que se está probando
 
     function $(id) { return document.getElementById(id); }
 
@@ -58,7 +59,6 @@
             }
             userId = s.data.session.user.id;
 
-            // Cargar todo EN PARALELO para velocidad
             await Promise.all([
                 cargarSaldo(),
                 cargarCatalogo()
@@ -68,9 +68,9 @@
             renderGrid();
             instalarEventos();
 
-            console.log('[Tienda v3.1] ✅ Lista');
+            console.log('[Tienda v3.2] ✅ Lista');
         } catch (e) {
-            console.error('[Tienda v3.1] Error init:', e);
+            console.error('[Tienda v3.2] Error init:', e);
             toast('Error cargando tienda', 'error');
         }
     }
@@ -93,7 +93,7 @@
 
             pintarSaldo();
         } catch (e) {
-            console.warn('[Tienda v3.1] Error saldo:', e);
+            console.warn('[Tienda v3.2] Error saldo:', e);
             $('saldoValor').textContent = '0.00';
         }
     }
@@ -103,7 +103,6 @@
         const label = $('saldoLabel');
         if (!el) return;
 
-        // Mostrar el saldo de la moneda "predominante"
         if (saldoActual.usdc > saldoActual.usdt && saldoActual.usdc > 0) {
             el.textContent = saldoActual.usdc.toFixed(2);
             if (label) label.textContent = 'USDC';
@@ -150,13 +149,14 @@
     function instalarListenerBoton(btn) {
         btn.addEventListener('click', () => {
             const id = btn.dataset.id;
+            const accion = btn.dataset.accion;
             const acc = accesorios.find(x => x.id === id);
-            const inv = inventario[id];
-            if (inv) {
-                inv.equipado ? desequipar(id) : equipar(id);
-            } else {
-                comprar(acc, btn);
-            }
+            if (!acc) return;
+
+            if (accion === 'probar')          return alternarPrueba(acc);
+            if (accion === 'comprar')         return comprar(acc, btn);
+            if (accion === 'desequipar')      return desequipar(id);
+            if (accion === 'equipar')         return equipar(id);
         });
     }
 
@@ -179,24 +179,35 @@
         const inv = inventario[a.id];
         const equipado = inv && inv.equipado;
         const comprado = !!inv;
+        const probando = pruebas[a.categoria] === a.id;
         const moneda = a.moneda || 'USDT';
         const precio = parseFloat(a.precio_usdt).toFixed(2);
         const enVuelo = comprasEnVuelo.has(a.id);
 
         let btnHTML = '';
         if (!comprado) {
-            btnHTML = `<button class="acc-btn acc-btn-comprar" data-id="${esc(a.id)}" type="button" ${enVuelo ? 'disabled' : ''}>
-                ${enVuelo ? 'Procesando...' : `Comprar · ${precio} ${esc(moneda)}`}
-            </button>`;
+            btnHTML = `
+                <div class="acc-botones">
+                    <button class="acc-btn acc-btn-probar ${probando ? 'activo' : ''}" data-id="${esc(a.id)}" data-accion="probar" type="button">
+                        ${probando ? 'Quitar prueba' : '👁 Probar'}
+                    </button>
+                    <button class="acc-btn acc-btn-comprar" data-id="${esc(a.id)}" data-accion="comprar" type="button" ${enVuelo ? 'disabled' : ''}>
+                        ${enVuelo ? 'Procesando...' : `Comprar · ${precio} ${esc(moneda)}`}
+                    </button>
+                </div>`;
         } else if (equipado) {
-            btnHTML = `<button class="acc-btn acc-btn-desequipar" data-id="${esc(a.id)}" type="button">Quitar</button>`;
+            btnHTML = `<button class="acc-btn acc-btn-desequipar" data-id="${esc(a.id)}" data-accion="desequipar" type="button">Quitar</button>`;
         } else {
-            btnHTML = `<button class="acc-btn acc-btn-equipar" data-id="${esc(a.id)}" type="button">Poner</button>`;
+            btnHTML = `<button class="acc-btn acc-btn-equipar" data-id="${esc(a.id)}" data-accion="equipar" type="button">Poner</button>`;
         }
 
+        const badge = equipado
+            ? '<div class="acc-badge">EQUIPADO</div>'
+            : (probando ? '<div class="acc-badge acc-badge-prueba">PROBANDO</div>' : '');
+
         return `
-            <div class="acc-card ${equipado ? 'equipado' : ''}">
-                ${equipado ? '<div class="acc-badge">EQUIPADO</div>' : ''}
+            <div class="acc-card ${equipado ? 'equipado' : ''} ${probando ? 'probando' : ''}">
+                ${badge}
                 <div class="acc-emoji">${esc(a.svg_data || '❓')}</div>
                 <div class="acc-nombre">${esc(a.nombre)}</div>
                 <div class="acc-desc">${esc(a.descripcion || '')}</div>
@@ -206,24 +217,53 @@
         `;
     }
 
+    // Vista previa = accesorios equipados + pruebas.
+    // Una prueba reemplaza lo equipado en su misma categoría.
     function renderAccesoriosEquipados() {
         const layer = $('accesoriosLayer');
         if (!layer) return;
 
-        const equipados = accesorios.filter(a => {
+        const visibles = [];
+
+        accesorios.forEach(a => {
             const inv = inventario[a.id];
-            return inv && inv.equipado;
+            if (inv && inv.equipado && !pruebas[a.categoria]) visibles.push(a);
         });
 
-        layer.innerHTML = equipados.map(a => {
+        Object.keys(pruebas).forEach(cat => {
+            const a = accesorios.find(x => x.id === pruebas[cat]);
+            if (a) visibles.push(a);
+        });
+
+        layer.innerHTML = visibles.map(a => {
             const pos = posicionPorCategoria(a.categoria);
             return `<text x="${pos.x}" y="${pos.y}" font-size="${pos.size}" text-anchor="middle">${esc(a.svg_data || '')}</text>`;
         }).join('');
+
+        pintarAvisoPrueba();
+    }
+
+    function pintarAvisoPrueba() {
+        const el = $('previewPrueba');
+        if (!el) return;
+
+        const lista = Object.keys(pruebas)
+            .map(cat => accesorios.find(x => x.id === pruebas[cat]))
+            .filter(Boolean);
+
+        if (!lista.length) {
+            el.hidden = true;
+            el.textContent = '';
+            return;
+        }
+
+        el.hidden = false;
+        el.textContent = '👁 Probando: ' + lista.map(a => a.nombre).join(', ') +
+            ' · aún no los tienes (solo vista previa)';
     }
 
     function posicionPorCategoria(cat) {
         switch (cat) {
-            // sombrero bajado y más chico: antes (y=35, 70) se cortaba arriba del avatar
             case 'sombrero':   return { x: 100, y: 52,  size: 56 };
             case 'playera':    return { x: 100, y: 195, size: 90 };
             case 'pantalon':   return { x: 100, y: 235, size: 70 };
@@ -235,16 +275,33 @@
     }
 
     // ============================================================
+    // PROBAR ANTES DE COMPRAR (solo visual, sin base de datos)
+    // ============================================================
+    function alternarPrueba(acc) {
+        if (pruebas[acc.categoria] === acc.id) {
+            delete pruebas[acc.categoria];
+        } else {
+            pruebas[acc.categoria] = acc.id;
+        }
+        renderGrid();
+        renderAccesoriosEquipados();
+    }
+
+    function limpiarPruebaDe(acc) {
+        if (acc && pruebas[acc.categoria]) {
+            delete pruebas[acc.categoria];
+        }
+    }
+
+    // ============================================================
     // COMPRAR · UI optimista + RPC atómica
     // ============================================================
     async function comprar(acc, btn) {
         if (!acc) return;
 
-        // Bloqueo de doble clic
         if (comprasEnVuelo.has(acc.id)) return;
         comprasEnVuelo.add(acc.id);
 
-        // UI optimista: mostrar "Procesando..."
         const btnOriginal = btn ? btn.textContent : '';
         if (btn) {
             btn.disabled = true;
@@ -257,7 +314,7 @@
             });
 
             if (error) {
-                console.error('[Tienda v3.1] RPC error:', error);
+                console.error('[Tienda v3.2] RPC error:', error);
                 toast('Error al procesar la compra', 'error');
                 return;
             }
@@ -270,7 +327,6 @@
             // ✅ Éxito
             inventario[acc.id] = data.inventario;
 
-            // Actualizar saldo local sin ir al servidor
             if (data.moneda === 'USDC') {
                 saldoActual.usdc = parseFloat(data.nuevo_saldo);
             } else {
@@ -278,16 +334,19 @@
             }
             pintarSaldo();
 
+            // La prueba de este accesorio ya no hace falta: ahora es suyo
+            limpiarPruebaDe(acc);
+
             repintarTarjeta(acc.id);
             renderAccesoriosEquipados();
 
             toast(data.message || ('¡' + acc.nombre + ' comprado! 🎉'), 'success');
 
-            // La RPC deja el nuevo accesorio equipado; equipar() además
-            // quita el anterior de la misma categoría (evita dos sombreros juntos)
+            // La RPC lo deja equipado; equipar() además quita el anterior
+            // de la misma categoría (evita dos sombreros juntos)
             await equipar(acc.id);
         } catch (e) {
-            console.error('[Tienda v3.1] Error comprando:', e);
+            console.error('[Tienda v3.2] Error comprando:', e);
             toast('Error al comprar: ' + (e.message || 'desconocido'), 'error');
         } finally {
             comprasEnVuelo.delete(acc.id);
@@ -327,6 +386,9 @@
             const acc = accesorios.find(x => x.id === accId);
             if (!acc) return;
 
+            // Si equipas algo, la prueba de esa categoría se descarta
+            limpiarPruebaDe(acc);
+
             const mismaCategoria = accesorios
                 .filter(x => x.categoria === acc.categoria)
                 .map(x => x.id)
@@ -334,7 +396,7 @@
 
             for (const id of mismaCategoria) {
                 if (id === accId) continue;
-                if (!inventario[id].equipado) continue;   // solo si estaba puesto
+                if (!inventario[id].equipado) continue;
                 await supabase
                     .from('marquinhos_inventario')
                     .update({ equipado: false })
@@ -355,14 +417,15 @@
             if (error) throw error;
             inventario[accId] = upd;
 
-            repintarTarjeta(accId);
+            // Las tarjetas de esa categoría pueden haber cambiado (pruebas)
+            renderGrid();
             renderAccesoriosEquipados();
 
             if (window.Marquinhos?.recargarAccesorios) {
                 try { window.Marquinhos.recargarAccesorios(); } catch (e) {}
             }
         } catch (e) {
-            console.error('[Tienda v3.1] Error equipando:', e);
+            console.error('[Tienda v3.2] Error equipando:', e);
             toast('Error al equipar', 'error');
         }
     }
@@ -387,29 +450,36 @@
                 try { window.Marquinhos.recargarAccesorios(); } catch (e) {}
             }
         } catch (e) {
-            console.error('[Tienda v3.1] Error desequipando:', e);
+            console.error('[Tienda v3.2] Error desequipando:', e);
         }
     }
 
     async function resetAccesorios() {
-        if (!confirm('¿Quitar todos los accesorios equipados?')) return;
-        try {
-            await supabase
-                .from('marquinhos_inventario')
-                .update({ equipado: false })
-                .eq('usuario_id', userId);
+        // Solo pruebas, sin accesorios equipados: basta quitar la prueba, sin preguntar
+        const hayEquipados = Object.values(inventario).some(i => i && i.equipado);
+        if (hayEquipados && !confirm('¿Quitar todos los accesorios equipados?')) return;
 
-            Object.keys(inventario).forEach(id => {
-                inventario[id].equipado = false;
-            });
+        pruebas = {};
+
+        try {
+            if (hayEquipados) {
+                await supabase
+                    .from('marquinhos_inventario')
+                    .update({ equipado: false })
+                    .eq('usuario_id', userId);
+
+                Object.keys(inventario).forEach(id => {
+                    inventario[id].equipado = false;
+                });
+
+                if (window.Marquinhos?.recargarAccesorios) {
+                    try { window.Marquinhos.recargarAccesorios(); } catch (e) {}
+                }
+            }
 
             renderGrid();
             renderAccesoriosEquipados();
             toast('Accesorios quitados', 'success');
-
-            if (window.Marquinhos?.recargarAccesorios) {
-                try { window.Marquinhos.recargarAccesorios(); } catch (e) {}
-            }
         } catch (e) {
             console.error(e);
         }
