@@ -1,10 +1,10 @@
 // ================================================================
-// MARQUINHOS · PET v8.0
+// MARQUINHOS · PET v8.1
 // arrastrable + memoria + conversación continua + accesorios
 // + MODO SOLO VOZ / SUBTÍTULOS
 // + BOCA DINÁMICA POR VISEMAS
-// + ✅ v8.0: SISTEMA DISNEY DE ANIMACIONES (respirar, parpadear,
-//   mirar, anticipar, squash & stretch, estados expresivos)
+// + SISTEMA DISNEY DE ANIMACIONES
+// + ✅ v8.1: MODAL DE ACEPTACIÓN DE TÉRMINOS DE USO
 // ================================================================
 
 'use strict';
@@ -50,6 +50,10 @@
     const HIST_TTL_MS = 7 * 24 * 60 * 60 * 1000;
     const HIST_KEY = 'marquinhos_hist_';
     const ACC_KEY = 'marquinhos_accesorios_equipados';
+
+    // ✅ v8.1: Versión de los términos (si cambia, vuelve a mostrarse el modal)
+    const TERMINOS_VERSION = '1.0';
+    const TERMINOS_KEY = 'marquinhos_terminos_aceptados_' + TERMINOS_VERSION;
 
     // ============================================================
     // FORMAS DE BOCA (paths SVG por visema)
@@ -327,6 +331,75 @@
     }
 
     // ============================================================
+    // ✅ v8.1: MODAL DE ACEPTACIÓN DE TÉRMINOS
+    // ============================================================
+    function mostrarModalTerminos() {
+        // Evitar duplicados
+        if (document.getElementById('mq-modal-terminos')) return;
+
+        const modal = document.createElement('div');
+        modal.id = 'mq-modal-terminos';
+        modal.innerHTML = `
+            <div class="mq-modal-overlay">
+                <div class="mq-modal-content">
+                    <h2>◈ Términos de Uso de Marquinhos</h2>
+                    <div class="mq-modal-body">
+                        <p>Antes de comenzar a hablar con Marquinhos, es importante que conozcas lo siguiente:</p>
+                        <ul>
+                            <li><strong>Marquinhos es una IA</strong>, no un humano ni un profesional de la salud, legal o financiero.</li>
+                            <li><strong>Puede cometer errores.</strong> Verifica siempre la información importante.</li>
+                            <li><strong>No reemplaza a un terapeuta, médico o asesor profesional.</strong></li>
+                            <li><strong>No genera contenido sexual, gore ni relaciones románticas.</strong></li>
+                            <li><strong>Respeta los derechos de autor</strong> y no reproduce material protegido.</li>
+                            <li><strong>Tu memoria es privada.</strong> Cada usuario tiene su propia burbuja de recuerdos aislada.</li>
+                            <li><strong>Edad mínima: 13 años.</strong></li>
+                        </ul>
+                        <p>Al continuar, aceptas los <a href="/legal/terminos-marquinhos" target="_blank" rel="noopener">Términos de Uso completos</a>.</p>
+                    </div>
+                    <div class="mq-modal-actions">
+                        <button id="mq-btn-aceptar" class="mq-btn-aceptar" type="button">Acepto y continúo</button>
+                        <button id="mq-btn-rechazar" class="mq-btn-rechazar" type="button">No acepto</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        // Ocultar el pet mientras no acepte
+        if (container) container.style.display = 'none';
+
+        document.getElementById('mq-btn-aceptar').addEventListener('click', function() {
+            localStorage.setItem(TERMINOS_KEY, 'true');
+            modal.remove();
+            if (container) container.style.display = '';
+            // Arrancar animaciones ahora que sí puede usar el pet
+            if (window.MarquinhosAnim && typeof window.MarquinhosAnim.iniciar === 'function') {
+                window.MarquinhosAnim.iniciar();
+            }
+            log('✅ Términos aceptados. Pet activado.');
+        });
+
+        document.getElementById('mq-btn-rechazar').addEventListener('click', function() {
+            modal.remove();
+            if (container) container.style.display = 'none';
+            log('❌ Usuario rechazó los términos. Pet oculto.');
+        });
+    }
+
+    function verificarTerminos() {
+        try {
+            const aceptados = localStorage.getItem(TERMINOS_KEY);
+            if (!aceptados) {
+                mostrarModalTerminos();
+                return false;
+            }
+            return true;
+        } catch (e) {
+            return true; // Si falla localStorage, no bloqueamos
+        }
+    }
+
+    // ============================================================
     // WIDGET
     // ============================================================
     function crearWidget() {
@@ -408,6 +481,8 @@
 
         avatar.addEventListener('click', function() {
             if (hasMoved) { hasMoved = false; return; }
+            // ✅ v8.1: Verificar términos antes de interactuar
+            if (!verificarTerminos()) return;
             onAvatarTap();
         });
 
@@ -465,13 +540,18 @@
         renderAccesoriosEnAvatar();
         aplicarModo();
 
-        setTimeout(function() {
-            if (window.MarquinhosAnim && typeof window.MarquinhosAnim.iniciar === 'function') {
-                window.MarquinhosAnim.iniciar();
-            }
-        }, 500);
+        // ✅ v8.1: Verificar términos ANTES de arrancar animaciones
+        const terminosOk = verificarTerminos();
 
-        log('Widget creado con animaciones Disney v8.0');
+        if (terminosOk) {
+            setTimeout(function() {
+                if (window.MarquinhosAnim && typeof window.MarquinhosAnim.iniciar === 'function') {
+                    window.MarquinhosAnim.iniciar();
+                }
+            }, 500);
+        }
+
+        log('Widget creado con Términos v8.1');
     }
 
     // ============================================================
@@ -854,7 +934,13 @@
             }
         },
         getUserInfo: function() { return userInfo; },
-        _visemasDisponibles: function() { return Object.keys(VISEMAS_SVG); }
+        _visemasDisponibles: function() { return Object.keys(VISEMAS_SVG); },
+        // ✅ v8.1: Métodos nuevos para términos
+        reiniciarTerminos: function() {
+            try { localStorage.removeItem(TERMINOS_KEY); } catch (e) {}
+            log('Términos reiniciados. El modal aparecerá de nuevo.');
+        },
+        getTerminosVersion: function() { return TERMINOS_VERSION; }
     };
 
     async function init() {
@@ -867,7 +953,7 @@
         await cargarAccesorios();
         crearWidget();
         instalarVisibility();
-        log('✅ Listo. Disney v8.0 activo. Mensajes: ' + historialLocal.length + ' · Accesorios: ' + accesoriosEquipados.length);
+        log('✅ Listo. Disney v8.1 activo (con términos). Mensajes: ' + historialLocal.length + ' · Accesorios: ' + accesoriosEquipados.length);
     }
 
     if (document.readyState === 'loading') {
