@@ -1,5 +1,9 @@
 // ================================================================
-// TIENDA DE MARQUINHOS · v3 (compra ultra-rápida + UI optimista)
+// TIENDA DE MARQUINHOS · v3.1
+// compra ultra-rápida + UI optimista
+// v3.1: al comprar, equipa el nuevo y quita el anterior de la misma
+//       categoría (ya no se ven dos sombreros "montados");
+//       sombrero reubicado para no cortarse arriba del avatar.
 // ================================================================
 
 'use strict';
@@ -64,9 +68,9 @@
             renderGrid();
             instalarEventos();
 
-            console.log('[Tienda v3] ✅ Lista');
+            console.log('[Tienda v3.1] ✅ Lista');
         } catch (e) {
-            console.error('[Tienda v3] Error init:', e);
+            console.error('[Tienda v3.1] Error init:', e);
             toast('Error cargando tienda', 'error');
         }
     }
@@ -89,7 +93,7 @@
 
             pintarSaldo();
         } catch (e) {
-            console.warn('[Tienda v3] Error saldo:', e);
+            console.warn('[Tienda v3.1] Error saldo:', e);
             $('saldoValor').textContent = '0.00';
         }
     }
@@ -100,7 +104,6 @@
         if (!el) return;
 
         // Mostrar el saldo de la moneda "predominante"
-        // (si tiene más USDC que USDT, mostramos USDC)
         if (saldoActual.usdc > saldoActual.usdt && saldoActual.usdc > 0) {
             el.textContent = saldoActual.usdc.toFixed(2);
             if (label) label.textContent = 'USDC';
@@ -144,6 +147,19 @@
     // ============================================================
     // RENDER
     // ============================================================
+    function instalarListenerBoton(btn) {
+        btn.addEventListener('click', () => {
+            const id = btn.dataset.id;
+            const acc = accesorios.find(x => x.id === id);
+            const inv = inventario[id];
+            if (inv) {
+                inv.equipado ? desequipar(id) : equipar(id);
+            } else {
+                comprar(acc, btn);
+            }
+        });
+    }
+
     function renderGrid() {
         const grid = $('tiendaGrid');
         const lista = filtroActual === 'todos'
@@ -156,19 +172,7 @@
         }
 
         grid.innerHTML = lista.map(a => cardHTML(a)).join('');
-
-        grid.querySelectorAll('.acc-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const id = btn.dataset.id;
-                const acc = accesorios.find(x => x.id === id);
-                const inv = inventario[id];
-                if (inv) {
-                    inv.equipado ? desequipar(id) : equipar(id);
-                } else {
-                    comprar(acc, btn);
-                }
-            });
-        });
+        grid.querySelectorAll('.acc-btn').forEach(instalarListenerBoton);
     }
 
     function cardHTML(a) {
@@ -219,7 +223,8 @@
 
     function posicionPorCategoria(cat) {
         switch (cat) {
-            case 'sombrero':   return { x: 100, y: 35,  size: 70 };
+            // sombrero bajado y más chico: antes (y=35, 70) se cortaba arriba del avatar
+            case 'sombrero':   return { x: 100, y: 52,  size: 56 };
             case 'playera':    return { x: 100, y: 195, size: 90 };
             case 'pantalon':   return { x: 100, y: 235, size: 70 };
             case 'zapatos':    return { x: 100, y: 258, size: 60 };
@@ -247,24 +252,22 @@
         }
 
         try {
-            // Llamar RPC
             const { data, error } = await supabase.rpc('comprar_cosmetico', {
                 p_item_id: acc.id
             });
 
             if (error) {
-                console.error('[Tienda v3] RPC error:', error);
+                console.error('[Tienda v3.1] RPC error:', error);
                 toast('Error al procesar la compra', 'error');
                 return;
             }
 
             if (!data || data.success !== true) {
-                // Mensaje enriquecido del backend
                 toast(data?.message || 'No se pudo completar la compra', 'error');
                 return;
             }
 
-            // ✅ Éxito · UI optimista (sin recargar toda la lista)
+            // ✅ Éxito
             inventario[acc.id] = data.inventario;
 
             // Actualizar saldo local sin ir al servidor
@@ -275,19 +278,16 @@
             }
             pintarSaldo();
 
-            // Re-pintar SOLO la tarjeta afectada (rapidísimo)
             repintarTarjeta(acc.id);
             renderAccesoriosEquipados();
 
-            // Toast de éxito con el mensaje del backend
             toast(data.message || ('¡' + acc.nombre + ' comprado! 🎉'), 'success');
 
-            // Refrescar el pet flotante (sin bloquear)
-            if (window.Marquinhos?.recargarAccesorios) {
-                try { window.Marquinhos.recargarAccesorios(); } catch (e) {}
-            }
+            // La RPC deja el nuevo accesorio equipado; equipar() además
+            // quita el anterior de la misma categoría (evita dos sombreros juntos)
+            await equipar(acc.id);
         } catch (e) {
-            console.error('[Tienda v3] Error comprando:', e);
+            console.error('[Tienda v3.1] Error comprando:', e);
             toast('Error al comprar: ' + (e.message || 'desconocido'), 'error');
         } finally {
             comprasEnVuelo.delete(acc.id);
@@ -298,7 +298,7 @@
         }
     }
 
-    // Re-pinta UNA sola tarjeta (mucho más rápido que re-renderizar todo)
+    // Re-pinta UNA sola tarjeta
     function repintarTarjeta(accId) {
         const grid = $('tiendaGrid');
         if (!grid) return;
@@ -309,24 +309,11 @@
         for (const card of cards) {
             const btn = card.querySelector('.acc-btn');
             if (btn && btn.dataset.id === accId) {
-                const newHTML = cardHTML(acc);
                 const wrapper = document.createElement('div');
-                wrapper.innerHTML = newHTML.trim();
+                wrapper.innerHTML = cardHTML(acc).trim();
                 const newCard = wrapper.firstElementChild;
                 card.replaceWith(newCard);
-                // Re-instalar listener en el nuevo botón
-                newCard.querySelectorAll('.acc-btn').forEach(b => {
-                    b.addEventListener('click', () => {
-                        const id = b.dataset.id;
-                        const a = accesorios.find(x => x.id === id);
-                        const inv = inventario[id];
-                        if (inv) {
-                            inv.equipado ? desequipar(id) : equipar(id);
-                        } else {
-                            comprar(a, b);
-                        }
-                    });
-                });
+                newCard.querySelectorAll('.acc-btn').forEach(instalarListenerBoton);
                 return;
             }
         }
@@ -347,12 +334,13 @@
 
             for (const id of mismaCategoria) {
                 if (id === accId) continue;
+                if (!inventario[id].equipado) continue;   // solo si estaba puesto
                 await supabase
                     .from('marquinhos_inventario')
                     .update({ equipado: false })
                     .eq('usuario_id', userId)
                     .eq('accesorio_id', id);
-                if (inventario[id]) inventario[id].equipado = false;
+                inventario[id].equipado = false;
                 repintarTarjeta(id);
             }
 
@@ -374,7 +362,7 @@
                 try { window.Marquinhos.recargarAccesorios(); } catch (e) {}
             }
         } catch (e) {
-            console.error('[Tienda v3] Error equipando:', e);
+            console.error('[Tienda v3.1] Error equipando:', e);
             toast('Error al equipar', 'error');
         }
     }
@@ -399,7 +387,7 @@
                 try { window.Marquinhos.recargarAccesorios(); } catch (e) {}
             }
         } catch (e) {
-            console.error('[Tienda v3] Error desequipando:', e);
+            console.error('[Tienda v3.1] Error desequipando:', e);
         }
     }
 
