@@ -1,5 +1,5 @@
 // ================================================================
-// MARQUINHOS · FIT SYSTEM — v1.1
+// MARQUINHOS · FIT SYSTEM — v1.2
 // ================================================================
 // FASE 1 (ajustada)
 // - Coordenadas únicas para TIENDA + PET
@@ -80,7 +80,7 @@
 
         // ============================================================
         // POSICIONES COMPATIBLES CON LOS EMOJIS ACTUALES
-        // v1.1 — Ajustadas tras pruebas visuales
+        // v1.2 — Ajustadas tras pruebas visuales
         // ============================================================
 
         categorias: Object.freeze({
@@ -107,8 +107,8 @@
 
             playera: Object.freeze({
                 x: 100,
-                y: 200,
-                size: 82,
+                y: 205,
+                size: 78,
                 scaleX: 1,
                 scaleY: 1,
                 rotation: 0,
@@ -117,8 +117,8 @@
 
             pantalon: Object.freeze({
                 x: 100,
-                y: 245,
-                size: 76,
+                y: 250,
+                size: 72,
                 scaleX: 1,
                 scaleY: 1,
                 rotation: 0,
@@ -138,7 +138,7 @@
             accesorio: Object.freeze({
                 x: 178,
                 y: 200,
-                size: 55,
+                size: 35,
                 scaleX: 1,
                 scaleY: 1,
                 rotation: 0,
