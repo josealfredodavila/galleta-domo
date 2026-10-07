@@ -1108,3 +1108,477 @@
             }
         );
 
+
+        agregar(
+            "seccionAccesibilidad",
+            {
+                icon: "database",
+                title:
+                    "Uso de datos",
+                desc:
+                    "Establece límites para el uso de datos de tu red",
+                href:
+                    BASE +
+                    "/accesibilidad/datos.html"
+            }
+        );
+
+
+        agregar(
+            "seccionAccesibilidad",
+            {
+                icon: "navigation",
+                title:
+                    "Navegación",
+                desc:
+                    "Administra cómo se abren los enlaces",
+                href:
+                    BASE +
+                    "/accesibilidad/navegacion.html"
+            }
+        );
+
+
+        /* ========================================================
+           CSARIEL'S
+           ======================================================== */
+
+        // ✅ Marquinhos — abre la página de CONFIGURACIÓN de Marquinhos
+        agregar(
+            "seccionSariels",
+            {
+                icon: "crown",
+                title:
+                    "Marquinhos",
+                desc:
+                    "Modo voz, subtítulos, voz y tienda de accesorios",
+                href:
+                    "/features/perfil/configuracion/marquinhos.html"
+            }
+        );
+
+
+        // ✅ Capitán Maíz — guardián ancestral
+        agregar(
+            "seccionSariels",
+            {
+                icon: "corn",
+                title:
+                    "Capitán Maíz",
+                desc:
+                    "Guardián ancestral · Modo voz, subtítulos y voz",
+                href:
+                    "/features/perfil/configuracion/capitan-maiz.html"
+            }
+        );
+
+
+        // ✅ Mascota Activa — selector de mascota flotante (NUEVO)
+        agregar(
+            "seccionSariels",
+            {
+                icon: "star",
+                title:
+                    "Mascota Activa",
+                desc:
+                    "Elige UNA mascota flotante: Marquinhos, Capitán Maíz, Itlasuhua o ninguna",
+                href:
+                    "/features/perfil/configuracion/mascota-activa.html"
+            }
+        );
+
+
+        agregar(
+            "seccionSariels",
+            {
+                icon: "owl",
+                title:
+                    "Derechos y Usos",
+                desc:
+                    "Reglas de convivencia y propiedad intelectual",
+                href:
+                    "/features/terminos/derechos-sariels.html"
+            }
+        );
+
+
+        agregar(
+            "seccionSariels",
+            {
+                icon: "coin",
+                title:
+                    "Es.stoks",
+                desc:
+                    "Administra tus tokens Es.stoks",
+                href:
+                    BASE +
+                    "/sariels/estoks.html"
+            }
+        );
+
+
+        agregar(
+            "seccionSariels",
+            {
+                icon: "crown",
+                title:
+                    "Membresía Pro",
+                desc:
+                    "Administra tu suscripción Csariel's Pro",
+                href:
+                    BASE +
+                    "/sariels/membresia.html"
+            }
+        );
+
+
+        agregar(
+            "seccionSariels",
+            {
+                icon: "user",
+                title:
+                    "Panel Repartidor",
+                desc:
+                    "Accede a tu panel de entregas y gestiona tu disponibilidad",
+                onclick:
+                    abrirPanelRepartidor
+            }
+        );
+
+
+        /* ========================================================
+           RECURSOS
+           ======================================================== */
+
+        agregar(
+            "seccionRecursos",
+            {
+                icon: "info",
+                title:
+                    "Términos y condiciones",
+                desc:
+                    "Consulta los términos de uso de Csariel's",
+                href:
+                    "/terminos"
+            }
+        );
+
+
+        agregar(
+            "seccionRecursos",
+            {
+                icon: "shield",
+                title:
+                    "Política de privacidad",
+                desc:
+                    "Consulta cómo protegemos tus datos",
+                href:
+                    "/privacidad.html"
+            }
+        );
+
+
+        agregar(
+            "seccionRecursos",
+            {
+                icon: "fileText",
+                title:
+                    "Cookies",
+                desc:
+                    "Consulta la política de cookies",
+                href:
+                    "/cookies.html"
+            }
+        );
+
+
+        agregar(
+            "seccionRecursos",
+            {
+                icon: "info",
+                title:
+                    "Términos del Live",
+                desc:
+                    "Consulta los términos de transmisiones en vivo",
+                href:
+                    "/live-terminos.html"
+            }
+        );
+
+
+        /* ========================================================
+           SESIÓN
+           ======================================================== */
+
+        agregar(
+            "seccionSesion",
+            {
+                icon: "logout",
+                title:
+                    "Cerrar sesión",
+                desc:
+                    "Salir de tu cuenta en este dispositivo",
+                danger:
+                    true,
+                onclick:
+                    cerrarSesion
+            }
+        );
+    }
+
+
+    /* ============================================================
+       CERRAR SESIÓN
+       ============================================================ */
+
+    async function cerrarSesion() {
+
+        const confirmed =
+            window.confirm(
+                "¿Quieres cerrar sesión en este dispositivo?"
+            );
+
+
+        if (!confirmed) {
+            return;
+        }
+
+
+        try {
+
+            if (
+                supabaseClient &&
+                supabaseClient.auth
+            ) {
+
+                const result =
+                    await supabaseClient
+                        .auth
+                        .signOut();
+
+
+                if (result.error) {
+                    throw result.error;
+                }
+            }
+
+
+            window.location.replace(
+                "/"
+            );
+
+        } catch (error) {
+
+            console.error(
+                "[Configuración] Error cerrando sesión:",
+                error
+            );
+
+            toast(
+                "No se pudo cerrar la sesión.",
+                "error"
+            );
+        }
+    }
+
+
+    /* ============================================================
+       PANEL REPARTIDOR
+       ============================================================ */
+
+    async function abrirPanelRepartidor() {
+
+        try {
+
+            const client =
+                supabaseClient ||
+                window.supabaseClient;
+
+
+            if (!client) {
+
+                window.location.href =
+                    "/features/mercado/repartidor/registro.html";
+
+                return;
+            }
+
+
+            const {
+                data:
+                    sessionData,
+                error:
+                    sessionError
+            } =
+                await client.auth.getSession();
+
+
+            if (sessionError) {
+                throw sessionError;
+            }
+
+
+            const session =
+                sessionData &&
+                sessionData.session;
+
+
+            if (!session) {
+
+                guardarReturnTo();
+
+                window.location.replace(
+                    "/"
+                );
+
+                return;
+            }
+
+
+            const result =
+                await client
+                    .from(
+                        "mercado_repartidores"
+                    )
+                    .select(
+                        "estado_verificacion"
+                    )
+                    .eq(
+                        "usuario_id",
+                        session.user.id
+                    )
+                    .maybeSingle();
+
+
+            if (
+                result.error
+            ) {
+
+                console.error(
+                    "[Configuración] Error mercado_repartidores:",
+                    result.error
+                );
+
+                window.location.href =
+                    "/features/mercado/repartidor/registro.html";
+
+                return;
+            }
+
+
+            if (
+                !result.data
+            ) {
+
+                window.location.href =
+                    "/features/mercado/repartidor/registro.html";
+
+                return;
+            }
+
+
+            const estado =
+                result.data
+                    .estado_verificacion;
+
+
+            if (
+                estado ===
+                "activo"
+            ) {
+
+                window.location.href =
+                    "/features/mercado/repartidor/panel.html";
+
+                return;
+            }
+
+
+            if (
+                estado ===
+                    "procesando" ||
+                estado ===
+                    "revision_manual" ||
+                estado ===
+                    "rechazado"
+            ) {
+
+                window.location.href =
+                    "/features/mercado/repartidor/estado-verificacion.html";
+
+                return;
+            }
+
+
+            window.location.href =
+                "/features/mercado/repartidor/registro.html";
+
+        } catch (error) {
+
+            console.error(
+                "[Configuración] Error del panel repartidor:",
+                error
+            );
+
+            window.location.href =
+                "/features/mercado/repartidor/registro.html";
+        }
+    }
+
+
+    /* ============================================================
+       INICIALIZACIÓN
+       ============================================================ */
+
+    async function iniciar() {
+
+        inicializarHeader();
+
+
+        const client =
+            await comprobarSesion();
+
+
+        if (!client) {
+            return;
+        }
+
+
+        renderConfiguracion();
+
+
+        await cargarUsuario(
+            client
+        );
+
+
+        client.auth.onAuthStateChange(
+            function (
+                event,
+                session
+            ) {
+
+                if (
+                    !session &&
+                    event !==
+                        "INITIAL_SESSION"
+                ) {
+
+                    guardarReturnTo();
+
+                    window.location.replace(
+                        "/"
+                    );
+                }
+            }
+        );
+    }
+
+
+    iniciar();
+
+})();
+</script>
+
+</body>
+</html>
