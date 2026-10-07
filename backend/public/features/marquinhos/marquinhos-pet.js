@@ -1,10 +1,11 @@
 // ================================================================
-// MARQUINHOS · PET v8.1
+// MARQUINHOS · PET v8.2
 // arrastrable + memoria + conversación continua + accesorios
 // + MODO SOLO VOZ / SUBTÍTULOS
 // + BOCA DINÁMICA POR VISEMAS
 // + SISTEMA DISNEY DE ANIMACIONES
-// + ✅ v8.1: MODAL DE ACEPTACIÓN DE TÉRMINOS DE USO
+// + MODAL DE ACEPTACIÓN DE TÉRMINOS DE USO
+// + ✅ v8.2: TAMAÑO CONFIGURABLE POR EL USUARIO (60% - 150%)
 // ================================================================
 
 'use strict';
@@ -34,7 +35,8 @@
         mostrar_subtitulos: false,
         idioma: null,
         posicion_x: null,
-        posicion_y: null
+        posicion_y: null,
+        tamano: 100   // ✅ v8.2: tamaño del muñeco (60 - 150, %)
     };
 
     const VOZ_ESTILOS = {
@@ -51,7 +53,7 @@
     const HIST_KEY = 'marquinhos_hist_';
     const ACC_KEY = 'marquinhos_accesorios_equipados';
 
-    // ✅ v8.1: Versión de los términos (si cambia, vuelve a mostrarse el modal)
+    // ✅ Versión de los términos (si cambia, vuelve a mostrarse el modal)
     const TERMINOS_VERSION = '1.0';
     const TERMINOS_KEY = 'marquinhos_terminos_aceptados_' + TERMINOS_VERSION;
 
@@ -120,6 +122,33 @@
 
     function guardarConfig() {
         try { localStorage.setItem('marquinhos_config', JSON.stringify(config)); } catch (e) {}
+    }
+
+    // ============================================================
+    // ✅ v8.2: APLICAR TAMAÑO DEL MUÑECO
+    // ============================================================
+    function aplicarTamano() {
+        if (!container) return;
+
+        const porcentaje = (config.tamano != null ? config.tamano : 100) / 100;
+        const baseAncho = 90;
+        const baseAlto = 130;
+        const ancho = Math.round(baseAncho * porcentaje);
+        const alto = Math.round(baseAlto * porcentaje);
+
+        // Setear las variables CSS que usa marquinhos-pet.css
+        container.style.setProperty('--mq-pet-ancho', ancho + 'px');
+        container.style.setProperty('--mq-pet-alto', alto + 'px');
+
+        // También aplicar directamente al container y al avatar por seguridad
+        container.style.width = ancho + 'px';
+        container.style.height = alto + 'px';
+
+        const avatar = document.getElementById('mq-avatar');
+        if (avatar) {
+            avatar.style.width = ancho + 'px';
+            avatar.style.height = alto + 'px';
+        }
     }
 
     // ============================================================
@@ -331,10 +360,9 @@
     }
 
     // ============================================================
-    // ✅ v8.1: MODAL DE ACEPTACIÓN DE TÉRMINOS
+    // MODAL DE ACEPTACIÓN DE TÉRMINOS
     // ============================================================
     function mostrarModalTerminos() {
-        // Evitar duplicados
         if (document.getElementById('mq-modal-terminos')) return;
 
         const modal = document.createElement('div');
@@ -365,14 +393,12 @@
         `;
         document.body.appendChild(modal);
 
-        // Ocultar el pet mientras no acepte
         if (container) container.style.display = 'none';
 
         document.getElementById('mq-btn-aceptar').addEventListener('click', function() {
             localStorage.setItem(TERMINOS_KEY, 'true');
             modal.remove();
             if (container) container.style.display = '';
-            // Arrancar animaciones ahora que sí puede usar el pet
             if (window.MarquinhosAnim && typeof window.MarquinhosAnim.iniciar === 'function') {
                 window.MarquinhosAnim.iniciar();
             }
@@ -395,7 +421,7 @@
             }
             return true;
         } catch (e) {
-            return true; // Si falla localStorage, no bloqueamos
+            return true;
         }
     }
 
@@ -481,7 +507,6 @@
 
         avatar.addEventListener('click', function() {
             if (hasMoved) { hasMoved = false; return; }
-            // ✅ v8.1: Verificar términos antes de interactuar
             if (!verificarTerminos()) return;
             onAvatarTap();
         });
@@ -506,10 +531,15 @@
             if (Math.abs(dx) > 5 || Math.abs(dy) > 5) hasMoved = true;
             if (!hasMoved) return;
 
+            // ✅ v8.2: usar el tamaño actual para los límites
+            const porcentaje = (config.tamano != null ? config.tamano : 100) / 100;
+            const ancho = Math.round(90 * porcentaje);
+            const alto = Math.round(130 * porcentaje);
+
             let newX = posStartX + dx;
             let newY = posStartY + dy;
-            const maxX = window.innerWidth - 90;
-            const maxY = window.innerHeight - 130;
+            const maxX = window.innerWidth - ancho;
+            const maxY = window.innerHeight - alto;
             newX = Math.max(0, Math.min(maxX, newX));
             newY = Math.max(0, Math.min(maxY, newY));
 
@@ -539,8 +569,8 @@
 
         renderAccesoriosEnAvatar();
         aplicarModo();
+        aplicarTamano();   // ✅ v8.2: aplicar el tamaño configurado
 
-        // ✅ v8.1: Verificar términos ANTES de arrancar animaciones
         const terminosOk = verificarTerminos();
 
         if (terminosOk) {
@@ -551,7 +581,7 @@
             }, 500);
         }
 
-        log('Widget creado con Términos v8.1');
+        log('Widget creado con Términos v8.2 (tamaño configurable)');
     }
 
     // ============================================================
@@ -885,10 +915,14 @@
         });
     }
 
+    // ============================================================
+    // ✅ v8.2: ESCUCHAR CAMBIOS EN LOCALSTORAGE
+    // ============================================================
     window.addEventListener('storage', function(e) {
         if (e.key === 'marquinhos_config') {
             cargarConfig();
             aplicarModo();
+            aplicarTamano();   // ✅ v8.2: aplicar tamaño si cambió
         }
         if (e.key === ACC_KEY) {
             try {
@@ -921,6 +955,7 @@
             config = { ...config, ...nuevos };
             guardarConfig();
             aplicarModo();
+            aplicarTamano();   // ✅ v8.2: aplicar tamaño si cambió
         },
         resetPosicion: function() {
             config.posicion_x = null;
@@ -935,12 +970,18 @@
         },
         getUserInfo: function() { return userInfo; },
         _visemasDisponibles: function() { return Object.keys(VISEMAS_SVG); },
-        // ✅ v8.1: Métodos nuevos para términos
         reiniciarTerminos: function() {
             try { localStorage.removeItem(TERMINOS_KEY); } catch (e) {}
             log('Términos reiniciados. El modal aparecerá de nuevo.');
         },
-        getTerminosVersion: function() { return TERMINOS_VERSION; }
+        getTerminosVersion: function() { return TERMINOS_VERSION; },
+        // ✅ v8.2: métodos nuevos para el tamaño
+        setTamano: function(porcentaje) {
+            config.tamano = Math.max(60, Math.min(150, parseInt(porcentaje, 10) || 100));
+            guardarConfig();
+            aplicarTamano();
+        },
+        getTamano: function() { return config.tamano != null ? config.tamano : 100; }
     };
 
     async function init() {
@@ -953,7 +994,7 @@
         await cargarAccesorios();
         crearWidget();
         instalarVisibility();
-        log('✅ Listo. Disney v8.1 activo (con términos). Mensajes: ' + historialLocal.length + ' · Accesorios: ' + accesoriosEquipados.length);
+        log('✅ Listo. Disney v8.2 activo (con términos + tamaño configurable). Mensajes: ' + historialLocal.length + ' · Accesorios: ' + accesoriosEquipados.length + ' · Tamaño: ' + (config.tamano || 100) + '%');
     }
 
     if (document.readyState === 'loading') {
