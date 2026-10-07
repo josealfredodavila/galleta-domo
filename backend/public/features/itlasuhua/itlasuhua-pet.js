@@ -21,10 +21,7 @@
         role="img"
         aria-label="Rey Itlasuhua, serpiente cósmica"
     >
-
         <defs>
-
-            <!-- FONDOS Y GRADIENTES -->
             <linearGradient id="itla-skin" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stop-color="#7EE7D8"/>
                 <stop offset="38%" stop-color="#19C7C4"/>
@@ -111,7 +108,6 @@
                 <stop offset="100%" stop-color="#31D7CC"/>
             </linearGradient>
 
-            <!-- FILTROS -->
             <filter id="itla-glow" x="-100%" y="-100%" width="300%" height="300%">
                 <feGaussianBlur stdDeviation="4" result="blur"/>
                 <feMerge>
@@ -128,7 +124,6 @@
                 <feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#000000" flood-opacity=".55"/>
             </filter>
 
-            <!-- PATRONES -->
             <pattern id="itla-stars" width="70" height="70" patternUnits="userSpaceOnUse">
                 <circle cx="8" cy="12" r="1.5" fill="#FFFFFF"/>
                 <circle cx="33" cy="27" r="1" fill="#8FFAFF"/>
@@ -136,18 +131,14 @@
                 <circle cx="19" cy="52" r="1.2" fill="#FFFFFF"/>
                 <circle cx="49" cy="57" r="1.5" fill="#73EFFF"/>
             </pattern>
-
         </defs>
 
-        <!-- ESCALA GENERAL -->
         <g id="itlasuhua-scene">
             <animateTransform attributeName="transform" type="translate" values="0 0; 0 -3; 0 0" dur="4s" repeatCount="indefinite"/>
 
-            <!-- BRILLO TRASERO -->
             <ellipse cx="300" cy="355" rx="245" ry="215" fill="#07112F" opacity=".35"/>
             <ellipse cx="300" cy="270" rx="205" ry="180" fill="#0A3552" opacity=".15" filter="url(#itla-soft-glow)"/>
 
-            <!-- ESTRELLAS DEL FONDO -->
             <g id="itla-background-stars">
                 <circle cx="76" cy="190" r="3" fill="#62FFF1" filter="url(#itla-glow)"/>
                 <circle cx="107" cy="105" r="2" fill="#FFD965"/>
@@ -166,7 +157,6 @@
                 <path d="M466 235 l3 7 7 3-7 3-3 7-3-7-7-3 7-3z" fill="#FFFFFF"/>
             </g>
 
-            <!-- GRAN ABANICO DE PLUMAS TRASERO -->
             <g id="itla-feather-crown" filter="url(#itla-shadow)">
                 <g id="feather-center">
                     <path d="M300 215 C280 160 278 92 300 35 C322 92 320 160 300 215Z" fill="url(#itla-feather-teal)" stroke="#7EFFF2" stroke-width="3"/>
@@ -193,7 +183,6 @@
                 <path d="M389 250 C455 247 512 221 538 181 C474 181 417 202 371 231Z" fill="url(#itla-feather-blue)" stroke="#76FFF4" stroke-width="3"/>
             </g>
 
-            <!-- ALAS PRINCIPALES -->
             <g id="itla-wings">
                 <g id="ala-izq">
                     <animateTransform attributeName="transform" type="rotate" values="0 222 300; -4 222 300; 0 222 300" dur="2.4s" repeatCount="indefinite"/>
@@ -220,7 +209,6 @@
                 </g>
             </g>
 
-            <!-- CUERPO ENROLLADO -->
             <g id="itla-body">
                 <ellipse cx="300" cy="445" rx="190" ry="86" fill="#06143C" opacity=".55" filter="url(#itla-soft-glow)"/>
 
@@ -270,7 +258,6 @@
                 </g>
             </g>
 
-            <!-- CUELLO -->
             <g id="itla-neck">
                 <path d="M300 274 C274 300 270 334 282 382 C289 406 311 406 320 383 C332 343 327 303 300 274" fill="#08143B" stroke="#07102D" stroke-width="5"/>
 
@@ -285,7 +272,6 @@
                 </g>
             </g>
 
-            <!-- CABEZA -->
             <g id="cabeza-itlasuhua" filter="url(#itla-shadow)">
                 <path d="M202 265 C185 245 183 218 196 198 C207 218 220 227 233 238 C222 216 229 193 247 181 C249 211 258 224 270 235" fill="url(#itla-feather-teal)" stroke="#53FFF0" stroke-width="3"/>
 
@@ -325,7 +311,6 @@
                 <path d="M300 295 Q300 300 307 300" fill="none" stroke="#241A29" stroke-width="3" stroke-linecap="round"/>
             </g>
 
-            <!-- CORONA AZTECA -->
             <g id="itla-crown" filter="url(#itla-shadow)">
                 <path d="M203 199 L210 164 L232 174 L238 142 L264 158 L274 121 L300 151 L326 121 L336 158 L362 142 L368 174 L390 164 L397 199 Q300 218 203 199Z" fill="url(#itla-gold)" stroke="#6D421B" stroke-width="5"/>
 
@@ -342,7 +327,6 @@
                 <rect x="289" y="130" width="22" height="18" rx="3" fill="#FFD74F" stroke="#6D421B" stroke-width="3"/>
             </g>
 
-            <!-- PLUMAS PEQUEÑAS ALREDEDOR DE LA CABEZA -->
             <g id="itla-side-feathers">
                 <path d="M207 222 C180 208 157 188 148 164 C177 168 199 184 221 210Z" fill="url(#itla-feather-blue)" stroke="#65FFF1" stroke-width="3"/>
                 <path d="M393 222 C420 208 443 188 452 164 C423 168 401 184 379 210Z" fill="url(#itla-feather-blue)" stroke="#65FFF1" stroke-width="3"/>
@@ -350,7 +334,6 @@
                 <path d="M398 241 C427 239 454 229 472 212 C442 208 415 216 389 230Z" fill="url(#itla-feather-gold)" stroke="#FFE79A" stroke-width="3"/>
             </g>
 
-            <!-- DESTELLOS -->
             <g id="itla-sparkles">
                 <path d="M174 282 l4 10 10 4-10 4-4 10-4-10-10-4 10-4z" fill="#FFF7A1" filter="url(#itla-glow)"/>
                 <path d="M426 282 l4 10 10 4-10 4-4 10-4-10-10-4 10-4z" fill="#62FFF3" filter="url(#itla-glow)"/>
@@ -359,7 +342,6 @@
                 <circle cx="190" cy="390" r="3" fill="#4EFFF1"/>
                 <circle cx="410" cy="390" r="3" fill="#FFD94F"/>
             </g>
-
         </g>
     </svg>
     `;
@@ -372,9 +354,7 @@
         const container = document.getElementById(containerId);
 
         if (!container) {
-            console.warn(
-                `[Itlasuhua] Contenedor "${containerId}" no encontrado.`
-            );
+            console.warn(`[Itlasuhua] Contenedor "${containerId}" no encontrado.`);
             return;
         }
 
@@ -382,9 +362,7 @@
         container.classList.add('itlasuhua-rendered');
 
         document.dispatchEvent(
-            new CustomEvent('itlasuhua:rendered', {
-                detail: { containerId }
-            })
+            new CustomEvent('itlasuhua:rendered', { detail: { containerId } })
         );
 
         log('✅ SVG renderizado en #' + containerId);
