@@ -1,12 +1,13 @@
 // ================================================================
-// CAPITÁN MAÍZ · PET v2.4
+// CAPITÁN MAÍZ · PET v2.5
 // "GUARDIAN ANCESTRAL · GALACTIC CHARRO"
 // ================================================================
-// Fix v2.4: Sombrero correctamente posicionado
-// - Sombrero subido 22px (ahora descansa sobre la cabeza, no encima)
-// - Copa proporcional a la nueva posición
-// - Ala con aire respecto a los ojos
-// - Sin antenas
+// Novedades v2.5:
+// ✅ Sin manchas en cachetes
+// ✅ Colores más neón y deslumbrantes
+// ✅ Modo resonancia: estrellas brillan al escuchar
+// ✅ Capa flotante con animación continua
+// ✅ Sistema de "aprendizaje" — cada conversación activa más brillo
 // ================================================================
 
 'use strict';
@@ -59,6 +60,11 @@
     const HIST_KEY = 'capitan_maiz_hist_';
     const ACC_KEY = 'capitan_maiz_accesorios_equipados';
 
+    // Sistema de resonancia — cada conversación aprende
+    const RESONANCIA_KEY = 'capitan_maiz_resonancia_';
+    const RESONANCIA_MAX = 10;
+    const RESONANCIA_DECAY_MS = 30 * 60 * 1000;
+
     const TERMINOS_VERSION = '1.0';
     const TERMINOS_KEY = 'capitan_maiz_terminos_aceptados_' + TERMINOS_VERSION;
 
@@ -95,6 +101,9 @@
     let recibioResultado = false;
     let accesoriosEquipados = [];
 
+    // Sistema de resonancia (aprendizaje)
+    let resonancia = 0;
+
     let _bocaTimeouts = [];
     let _bocaActiva = false;
     let _terminosProcesando = false;
@@ -112,7 +121,7 @@
     }
 
     function log(msg) {
-        console.log('[Capitán Maíz v2.4]', msg);
+        console.log('[Capitán Maíz v2.5]', msg);
     }
 
     function esc(v) {
@@ -143,6 +152,58 @@
         try {
             localStorage.setItem('capitan_maiz_config', JSON.stringify(config));
         } catch (e) {}
+    }
+
+    // ============================================================
+    // SISTEMA DE RESONANCIA
+    // Cada conversación incrementa el nivel (0-10).
+    // Al escuchar, el brillo se multiplica por el nivel.
+    // El nivel decae con el tiempo (30 min sin hablar → reset).
+    // ============================================================
+    function cargarResonancia() {
+        try {
+            const key = RESONANCIA_KEY + (userInfo ? userInfo.id : 'anon');
+            const raw = localStorage.getItem(key);
+            if (!raw) {
+                resonancia = 0;
+                return;
+            }
+            const data = JSON.parse(raw);
+            const ahora = Date.now();
+            if (data.ts && (ahora - data.ts) > RESONANCIA_DECAY_MS) {
+                resonancia = 0;
+            } else {
+                resonancia = Math.max(0, Math.min(RESONANCIA_MAX, parseInt(data.nivel) || 0));
+            }
+        } catch (e) {
+            resonancia = 0;
+        }
+    }
+
+    function guardarResonancia() {
+        try {
+            const key = RESONANCIA_KEY + (userInfo ? userInfo.id : 'anon');
+            localStorage.setItem(key, JSON.stringify({
+                nivel: resonancia,
+                ts: Date.now()
+            }));
+        } catch (e) {}
+    }
+
+    function subirResonancia() {
+        resonancia = Math.min(RESONANCIA_MAX, resonancia + 1);
+        guardarResonancia();
+        aplicarResonancia();
+        log('⚡ Resonancia: ' + resonancia + '/' + RESONANCIA_MAX);
+    }
+
+    function aplicarResonancia() {
+        if (!container) return;
+        container.setAttribute('data-resonancia', String(resonancia));
+
+        // Factor de brillo: 0.3 (mínimo) a 1.0 (máximo)
+        const factor = 0.3 + (resonancia / RESONANCIA_MAX) * 0.7;
+        container.style.setProperty('--cm-resonancia', String(factor));
     }
 
     function aplicarTamano() {
@@ -179,10 +240,8 @@
                 historialLocal = [];
                 return;
             }
-
             const arr = JSON.parse(raw);
             const limite = Date.now() - HIST_TTL_MS;
-
             historialLocal = (Array.isArray(arr) ? arr : [])
                 .filter(m =>
                     m &&
@@ -209,12 +268,12 @@
 
     function olvidarTodo() {
         historialLocal = [];
-
+        resonancia = 0;
         try {
-            localStorage.removeItem(
-                HIST_KEY + (userInfo ? userInfo.id : 'anon')
-            );
+            localStorage.removeItem(HIST_KEY + (userInfo ? userInfo.id : 'anon'));
+            localStorage.removeItem(RESONANCIA_KEY + (userInfo ? userInfo.id : 'anon'));
         } catch (e) {}
+        aplicarResonancia();
     }
 
     async function cargarUsuario() {
@@ -223,31 +282,24 @@
                 userInfo = { id: 'anon', nombre: 'paisano' };
                 return userInfo;
             }
-
             const sb = window.getSupabase();
             const r = await sb.auth.getSession();
-
             if (!r.data.session) {
                 userInfo = { id: 'anon', nombre: 'paisano' };
                 return userInfo;
             }
-
             const uid = r.data.session.user.id;
-
             const { data } = await sb
                 .from('usuarios')
                 .select('nombre, handle, avatar_url')
                 .eq('id', uid)
                 .maybeSingle();
-
             userInfo = {
                 id: uid,
                 nombre: (data && data.nombre) || 'paisano',
                 handle: (data && data.handle) || 'usuario'
             };
-
             return userInfo;
-
         } catch (e) {
             userInfo = { id: 'anon', nombre: 'paisano' };
             return userInfo;
@@ -266,12 +318,9 @@
 
         try {
             if (!window.getSupabase) return;
-
             const sb = window.getSupabase();
             const r = await sb.auth.getSession();
-
             if (!r.data.session) return;
-
             const uid = r.data.session.user.id;
 
             const { data, error } = await sb
@@ -297,7 +346,6 @@
                     svg: d.capitan_maiz_accesorios?.svg_data || '',
                     nombre: d.capitan_maiz_accesorios?.nombre || ''
                 }));
-
                 localStorage.setItem(ACC_KEY, JSON.stringify(accesoriosEquipados));
             }
         } catch (e) {}
@@ -365,9 +413,7 @@
 
     function cambiarVisema(nombre) {
         if (!bocaEl) return;
-
         const key = VISEMAS_SVG[nombre] ? nombre : 'REST';
-
         bocaEl.setAttribute('d', VISEMAS_SVG[key]);
         bocaEl.setAttribute('fill', VISEMAS_SIN_RELLENO[key] ? 'none' : '#0A0A0A');
     }
@@ -381,73 +427,55 @@
 
     function animarBoca(texto, rate) {
         detenerAnimacionBoca();
-
         if (!bocaEl) return;
-
         if (!window.CapitanMaizBoca) {
             animarBocaRandom();
             return;
         }
-
         const visemas = window.CapitanMaizBoca.analizar(texto);
-
         if (!visemas || !visemas.length) {
             animarBocaRandom();
             return;
         }
-
         _bocaActiva = true;
-
         const rateFactor = rate || 1.0;
         let tiempo = 0;
-
         visemas.forEach(function(v) {
             const dur = v.duracion / rateFactor;
-
             const t = setTimeout(function() {
                 if (!_bocaActiva) return;
                 cambiarVisema(v.visema);
             }, tiempo);
-
             _bocaTimeouts.push(t);
             tiempo += dur;
         });
-
         const tFin = setTimeout(function() {
             if (!_bocaActiva) return;
             cambiarVisema('REST');
             _bocaActiva = false;
         }, tiempo + 100);
-
         _bocaTimeouts.push(tFin);
     }
 
     function animarBocaRandom() {
         _bocaActiva = true;
-
         const visemas = ['A', 'E', 'O', 'I', 'A', 'U', 'E'];
         let idx = 0;
-
         function siguiente() {
             if (!_bocaActiva || !bocaEl) return;
-
             cambiarVisema(visemas[idx % visemas.length]);
             idx++;
-
             const t = setTimeout(siguiente, 90 + Math.random() * 70);
             _bocaTimeouts.push(t);
         }
-
         siguiente();
     }
 
     async function verificarTerminosEnSupabase() {
         if (!window.getSupabase) return false;
-
         try {
             const sb = window.getSupabase();
             const r = await sb.auth.getSession();
-
             if (!r.data.session) return false;
 
             const { data, error } = await sb.rpc(
@@ -460,21 +488,17 @@
                     localStorage.setItem(TERMINOS_KEY, 'true');
                     localStorage.setItem('capitan_maiz_terminos_fecha', data.fecha_aceptacion || '');
                 } catch (e) {}
-
                 return true;
             }
         } catch (e) {}
-
         return false;
     }
 
     async function registrarTerminosEnSupabase() {
         if (!window.getSupabase) return false;
-
         try {
             const sb = window.getSupabase();
             const r = await sb.auth.getSession();
-
             if (!r.data.session) return false;
 
             const { data, error } = await sb.rpc(
@@ -487,7 +511,6 @@
 
             if (!error && data && data.success === true) return true;
         } catch (e) {}
-
         return false;
     }
 
@@ -501,120 +524,50 @@
             <div class="cm-modal-overlay">
                 <div class="cm-modal-content">
                     <h2>🌽 Términos del Capitán Maíz</h2>
-
                     <div class="cm-modal-body">
-                        <p>
-                            Antes de hablar con el Capitán Maíz,
-                            guardián ancestral del ecosistema,
-                            conoce lo siguiente:
-                        </p>
-
+                        <p>Antes de hablar con el Capitán Maíz, guardián ancestral del ecosistema, conoce lo siguiente:</p>
                         <ul>
-                            <li>
-                                <strong>El Capitán Maíz es una IA</strong>,
-                                no un humano ni un profesional.
-                            </li>
-
-                            <li>
-                                <strong>Puede cometer errores.</strong>
-                                Verifica siempre la información importante.
-                            </li>
-
-                            <li>
-                                <strong>No reemplaza a un terapeuta,
-                                médico o asesor profesional.</strong>
-                            </li>
-
-                            <li>
-                                <strong>No genera contenido sexual,
-                                gore ni relaciones románticas.</strong>
-                            </li>
-
-                            <li>
-                                <strong>Respeta los derechos de autor.</strong>
-                            </li>
-
-                            <li>
-                                <strong>Tu memoria es privada</strong>,
-                                aislada por usuario.
-                            </li>
-
-                            <li>
-                                <strong>Edad mínima: 13 años.</strong>
-                            </li>
+                            <li><strong>El Capitán Maíz es una IA</strong>, no un humano ni un profesional.</li>
+                            <li><strong>Puede cometer errores.</strong> Verifica siempre la información importante.</li>
+                            <li><strong>No reemplaza a un terapeuta, médico o asesor profesional.</strong></li>
+                            <li><strong>No genera contenido sexual, gore ni relaciones románticas.</strong></li>
+                            <li><strong>Respeta los derechos de autor.</strong></li>
+                            <li><strong>Tu memoria es privada</strong>, aislada por usuario.</li>
+                            <li><strong>Edad mínima: 13 años.</strong></li>
                         </ul>
-
-                        <p>
-                            Al continuar, aceptas los
-                            <a
-                                href="/legal/terminos-capitan-maiz"
-                                target="_blank"
-                                rel="noopener">
-                                Términos completos
-                            </a>.
-                        </p>
+                        <p>Al continuar, aceptas los <a href="/legal/terminos-capitan-maiz" target="_blank" rel="noopener">Términos completos</a>.</p>
                     </div>
-
                     <div class="cm-modal-actions">
-                        <button
-                            id="cm-btn-aceptar"
-                            class="cm-btn-aceptar"
-                            type="button">
-                            Acepto y continúo
-                        </button>
-
-                        <button
-                            id="cm-btn-rechazar"
-                            class="cm-btn-rechazar"
-                            type="button">
-                            No acepto
-                        </button>
+                        <button id="cm-btn-aceptar" class="cm-btn-aceptar" type="button">Acepto y continúo</button>
+                        <button id="cm-btn-rechazar" class="cm-btn-rechazar" type="button">No acepto</button>
                     </div>
                 </div>
             </div>
         `;
 
         document.body.appendChild(modal);
-
-        if (container) {
-            container.style.display = 'none';
-        }
+        if (container) container.style.display = 'none';
 
         document.getElementById('cm-btn-aceptar').addEventListener('click', async function() {
             if (_terminosProcesando) return;
             _terminosProcesando = true;
-
             const btn = this;
             btn.disabled = true;
             btn.textContent = 'Guardando...';
-
-            try {
-                localStorage.setItem(TERMINOS_KEY, 'true');
-            } catch (e) {}
-
+            try { localStorage.setItem(TERMINOS_KEY, 'true'); } catch (e) {}
             await registrarTerminosEnSupabase();
-
             modal.remove();
             _terminosProcesando = false;
-
-            if (container) {
-                container.style.display = '';
-            }
-
+            if (container) container.style.display = '';
             if (window.CapitanMaizAnim && typeof window.CapitanMaizAnim.iniciar === 'function') {
                 window.CapitanMaizAnim.iniciar();
             }
-
             log('✅ Términos aceptados');
         });
 
         document.getElementById('cm-btn-rechazar').addEventListener('click', function() {
             modal.remove();
-
-            if (container) {
-                container.style.display = 'none';
-            }
-
+            if (container) container.style.display = 'none';
             log('❌ Términos rechazados.');
         });
     }
@@ -623,10 +576,8 @@
         try {
             const aceptados = localStorage.getItem(TERMINOS_KEY);
             if (aceptados) return true;
-
             const okServidor = await verificarTerminosEnSupabase();
             if (okServidor) return true;
-
             mostrarModalTerminos();
             return false;
         } catch (e) {
@@ -635,8 +586,7 @@
     }
 
     // ============================================================
-    // CREAR WIDGET — SVG v2.4
-    // Sombrero correctamente posicionado ARRIBA de la cabeza
+    // CREAR WIDGET — SVG v2.5
     // ============================================================
 
     function crearWidget() {
@@ -663,8 +613,8 @@
 
                 <defs>
                     <radialGradient id="cm-aura">
-                        <stop offset="0%" stop-color="#00D9FF" stop-opacity=".38"/>
-                        <stop offset="55%" stop-color="#6948C7" stop-opacity=".18"/>
+                        <stop offset="0%" stop-color="#00D9FF" stop-opacity=".5"/>
+                        <stop offset="55%" stop-color="#6948C7" stop-opacity=".22"/>
                         <stop offset="100%" stop-color="#6948C7" stop-opacity="0"/>
                     </radialGradient>
 
@@ -675,15 +625,15 @@
                     </linearGradient>
 
                     <linearGradient id="cm-grad-traje" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stop-color="#18202C"/>
-                        <stop offset="45%" stop-color="#080B12"/>
-                        <stop offset="100%" stop-color="#020408"/>
+                        <stop offset="0%" stop-color="#0F1824"/>
+                        <stop offset="45%" stop-color="#050810"/>
+                        <stop offset="100%" stop-color="#000104"/>
                     </linearGradient>
 
                     <linearGradient id="cm-grad-botas" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stop-color="#273342"/>
-                        <stop offset="55%" stop-color="#080B12"/>
-                        <stop offset="100%" stop-color="#010205"/>
+                        <stop offset="0%" stop-color="#1B2535"/>
+                        <stop offset="55%" stop-color="#050810"/>
+                        <stop offset="100%" stop-color="#000104"/>
                     </linearGradient>
 
                     <linearGradient id="cm-grad-pantalon" x1="0" y1="0" x2="0" y2="1">
@@ -692,14 +642,14 @@
                     </linearGradient>
 
                     <linearGradient id="cm-grad-capa" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stop-color="#050817"/>
-                        <stop offset="35%" stop-color="#111B46"/>
-                        <stop offset="65%" stop-color="#25195B"/>
-                        <stop offset="100%" stop-color="#050716"/>
+                        <stop offset="0%" stop-color="#04061A"/>
+                        <stop offset="35%" stop-color="#0A1466"/>
+                        <stop offset="65%" stop-color="#1B0F5C"/>
+                        <stop offset="100%" stop-color="#03040E"/>
                     </linearGradient>
 
                     <linearGradient id="cm-grad-sombrero" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stop-color="#3D4F68"/>
+                        <stop offset="0%" stop-color="#4A607C"/>
                         <stop offset="22%" stop-color="#1E2A3D"/>
                         <stop offset="65%" stop-color="#0A1018"/>
                         <stop offset="100%" stop-color="#02040A"/>
@@ -707,15 +657,26 @@
 
                     <radialGradient id="cm-grad-ojo">
                         <stop offset="0%" stop-color="#FFFFFF"/>
-                        <stop offset="18%" stop-color="#9EECFF"/>
-                        <stop offset="45%" stop-color="#397BFF"/>
-                        <stop offset="75%" stop-color="#182C6E"/>
+                        <stop offset="18%" stop-color="#B8F6FF"/>
+                        <stop offset="45%" stop-color="#4DA8FF"/>
+                        <stop offset="75%" stop-color="#1E3C8E"/>
                         <stop offset="100%" stop-color="#071126"/>
                     </radialGradient>
 
+                    <!-- Filtro glow base -->
                     <filter id="cm-glow">
                         <feGaussianBlur stdDeviation="1.7" result="blur"/>
                         <feMerge>
+                            <feMergeNode in="blur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
+
+                    <!-- Filtro glow fuerte (para resonancia) -->
+                    <filter id="cm-glow-fuerte">
+                        <feGaussianBlur stdDeviation="3" result="blur"/>
+                        <feMerge>
+                            <feMergeNode in="blur"/>
                             <feMergeNode in="blur"/>
                             <feMergeNode in="SourceGraphic"/>
                         </feMerge>
@@ -730,29 +691,75 @@
                     </clipPath>
                 </defs>
 
+                <!-- AURA que respira con la resonancia -->
                 <ellipse cx="100" cy="155" rx="98" ry="142" fill="url(#cm-aura)" opacity=".65">
                     <animate attributeName="opacity" values=".35;.7;.35" dur="3s" repeatCount="indefinite"/>
                 </ellipse>
 
+                <!-- ================================================
+                     CAPA FLOTANTE — animación continua
+                     Ondula suavemente como si estuviera en gravedad cero
+                     ================================================ -->
                 <g id="cm-capa" data-acc-slot="capa">
-                    <path d="M54 175 C34 181 17 198 11 223 C5 247 7 273 19 294 L47 278 C55 257 61 232 65 204 Z M146 175 C166 181 183 198 189 223 C195 247 193 273 181 294 L153 278 C145 257 139 232 135 204 Z" fill="url(#cm-grad-capa)" stroke="#314A83" stroke-width="2"/>
+                    <!-- El grupo completo ondula -->
+                    <g>
+                        <animateTransform
+                            attributeName="transform"
+                            type="translate"
+                            values="0,0; -1.5,-2; 0,-3; 1.5,-2; 0,0"
+                            dur="4.5s"
+                            repeatCount="indefinite"/>
 
-                    <path d="M19 294 C29 278 39 269 47 257 M181 294 C171 278 161 269 153 257" fill="none" stroke="#00D9FF" stroke-width="2" opacity=".85" filter="url(#cm-glow)"/>
+                        <path d="M54 175 C34 181 17 198 11 223 C5 247 7 273 19 294 L47 278 C55 257 61 232 65 204 Z M146 175 C166 181 183 198 189 223 C195 247 193 273 181 294 L153 278 C145 257 139 232 135 204 Z"
+                              fill="url(#cm-grad-capa)"
+                              stroke="#4A6FC8"
+                              stroke-width="2.2"/>
 
-                    <g fill="#FFFFFF" opacity=".9" clip-path="url(#cm-capa-clip)">
-                        <circle cx="25" cy="226" r="1.4"/>
-                        <circle cx="34" cy="250" r=".9"/>
-                        <circle cx="25" cy="270" r=".7"/>
-                        <circle cx="43" cy="215" r=".8"/>
-                        <circle cx="176" cy="226" r="1.4"/>
-                        <circle cx="166" cy="249" r=".9"/>
-                        <circle cx="176" cy="269" r=".7"/>
-                        <circle cx="158" cy="215" r=".8"/>
-                    </g>
+                        <!-- Borde neón que brilla más con resonancia -->
+                        <path d="M19 294 C29 278 39 269 47 257 M181 294 C171 278 161 269 153 257"
+                              fill="none"
+                              stroke="#00E5FF"
+                              stroke-width="2.4"
+                              opacity=".95"
+                              filter="url(#cm-glow)"/>
 
-                    <g fill="#FFFFFF" filter="url(#cm-glow)">
-                        <path d="M30 242 l2.2 5 l5 2.2 l-5 2.2 l-2.2 5 l-2.2-5 l-5-2.2 l5-2.2z"/>
-                        <path d="M171 238 l1.8 4 l4 1.8 l-4 1.8 l-1.8 4 l-1.8-4 l-4-1.8 l4-1.8z"/>
+                        <!-- Estrellas con parpadeo escalonado -->
+                        <g fill="#FFFFFF" opacity=".95" clip-path="url(#cm-capa-clip)">
+                            <circle cx="25" cy="226" r="1.4">
+                                <animate attributeName="opacity" values="1;0.3;1" dur="2.2s" repeatCount="indefinite"/>
+                            </circle>
+                            <circle cx="34" cy="250" r=".9">
+                                <animate attributeName="opacity" values="1;0.3;1" dur="2.8s" repeatCount="indefinite" begin="0.4s"/>
+                            </circle>
+                            <circle cx="25" cy="270" r=".7">
+                                <animate attributeName="opacity" values="1;0.3;1" dur="3.1s" repeatCount="indefinite" begin="0.8s"/>
+                            </circle>
+                            <circle cx="43" cy="215" r=".8">
+                                <animate attributeName="opacity" values="1;0.3;1" dur="2.5s" repeatCount="indefinite" begin="1.2s"/>
+                            </circle>
+                            <circle cx="176" cy="226" r="1.4">
+                                <animate attributeName="opacity" values="1;0.3;1" dur="2.4s" repeatCount="indefinite" begin="0.6s"/>
+                            </circle>
+                            <circle cx="166" cy="249" r=".9">
+                                <animate attributeName="opacity" values="1;0.3;1" dur="3s" repeatCount="indefinite" begin="1s"/>
+                            </circle>
+                            <circle cx="176" cy="269" r=".7">
+                                <animate attributeName="opacity" values="1;0.3;1" dur="2.7s" repeatCount="indefinite" begin="1.4s"/>
+                            </circle>
+                            <circle cx="158" cy="215" r=".8">
+                                <animate attributeName="opacity" values="1;0.3;1" dur="2.9s" repeatCount="indefinite" begin="1.8s"/>
+                            </circle>
+                        </g>
+
+                        <!-- Estrellas grandes flotando -->
+                        <g fill="#FFFFFF" filter="url(#cm-glow)">
+                            <path d="M30 242 l2.2 5 l5 2.2 l-5 2.2 l-2.2 5 l-2.2-5 l-5-2.2 l5-2.2z">
+                                <animate attributeName="opacity" values="1;0.4;1" dur="3.2s" repeatCount="indefinite"/>
+                            </path>
+                            <path d="M171 238 l1.8 4 l4 1.8 l-4 1.8 l-1.8 4 l-1.8-4 l-4-1.8 l4-1.8z">
+                                <animate attributeName="opacity" values="1;0.4;1" dur="3.6s" repeatCount="indefinite" begin="0.7s"/>
+                            </path>
+                        </g>
                     </g>
                 </g>
 
@@ -762,58 +769,76 @@
                         <path d="M70 230 L94 230 L96 267 L88 280 L69 275 L67 250 Z" fill="url(#cm-grad-pantalon)" stroke="#6C7A89" stroke-width="2"/>
                         <path d="M80 237 L78 269" stroke="#AAB8C8" stroke-width="1.2"/>
                         <path d="M69 252 Q80 246 91 252 L90 266 Q80 271 70 266 Z" fill="#E4E8ED" stroke="#5E6D7C" stroke-width="2"/>
-                        <path d="M72 254 Q80 250 88 254" fill="none" stroke="#00D9FF" stroke-width="1.4" filter="url(#cm-glow)"/>
+                        <path d="M72 254 Q80 250 88 254" fill="none" stroke="#00E5FF" stroke-width="1.4" filter="url(#cm-glow)"/>
                     </g>
 
                     <g id="cm-pierna-der" class="cm-pierna">
                         <path d="M106 230 L130 230 L133 250 L131 275 L112 280 L104 267 Z" fill="url(#cm-grad-pantalon)" stroke="#6C7A89" stroke-width="2"/>
                         <path d="M120 237 L122 269" stroke="#AAB8C8" stroke-width="1.2"/>
                         <path d="M109 252 Q120 246 131 252 L130 266 Q120 271 110 266 Z" fill="#E4E8ED" stroke="#5E6D7C" stroke-width="2"/>
-                        <path d="M112 254 Q120 250 128 254" fill="none" stroke="#00D9FF" stroke-width="1.4" filter="url(#cm-glow)"/>
+                        <path d="M112 254 Q120 250 128 254" fill="none" stroke="#00E5FF" stroke-width="1.4" filter="url(#cm-glow)"/>
                     </g>
 
                     <g id="cm-botas" data-acc-slot="pies">
                         <path d="M66 267 Q77 264 90 270 L93 283 Q92 290 83 293 L57 293 Q52 289 57 284 L66 278 Z" fill="url(#cm-grad-botas)" stroke="#4D6074" stroke-width="2"/>
                         <path d="M107 270 Q120 264 134 267 L143 278 Q148 284 143 290 Q139 293 117 293 L107 289 Z" fill="url(#cm-grad-botas)" stroke="#4D6074" stroke-width="2"/>
-                        <path d="M62 283 Q75 278 89 283" fill="none" stroke="#00D9FF" stroke-width="2" filter="url(#cm-glow)"/>
-                        <path d="M111 283 Q124 278 140 283" fill="none" stroke="#00D9FF" stroke-width="2" filter="url(#cm-glow)"/>
+                        <path d="M62 283 Q75 278 89 283" fill="none" stroke="#00E5FF" stroke-width="2.2" filter="url(#cm-glow)"/>
+                        <path d="M111 283 Q124 278 140 283" fill="none" stroke="#00E5FF" stroke-width="2.2" filter="url(#cm-glow)"/>
                         <path d="M57 290 Q74 294 90 289 M109 289 Q126 294 143 288" fill="none" stroke="#121A26" stroke-width="3"/>
                     </g>
 
+                    <!-- ================================================
+                         TORSO con estrella que brilla más con resonancia
+                         ================================================ -->
                     <g id="cm-torso" data-acc-slot="torso">
                         <path d="M65 148 Q100 137 135 148 L145 217 Q128 232 100 232 Q72 232 55 217 Z" fill="url(#cm-grad-traje)" stroke="#53657A" stroke-width="2.2"/>
+                        <path d="M72 151 L91 157 L100 171 L109 157 L128 151 L136 211 L119 220 L100 216 L81 220 L64 211 Z" fill="#0A1018" stroke="#00E5FF" stroke-width="2"/>
+                        <path d="M91 157 L100 171 L109 157 L106 207 L94 207 Z" fill="#05080E" stroke="#3A567F" stroke-width="1.3"/>
+                        <path d="M86 151 L100 168 L114 151 L108 146 L100 158 L92 146 Z" fill="#0F1A28" stroke="#8AA8D0" stroke-width="1.3"/>
 
-                        <path d="M72 151 L91 157 L100 171 L109 157 L128 151 L136 211 L119 220 L100 216 L81 220 L64 211 Z" fill="#101722" stroke="#00D9FF" stroke-width="1.8"/>
-
-                        <path d="M91 157 L100 171 L109 157 L106 207 L94 207 Z" fill="#0A0D13" stroke="#293849" stroke-width="1.3"/>
-
-                        <path d="M86 151 L100 168 L114 151 L108 146 L100 158 L92 146 Z" fill="#151C27" stroke="#708093" stroke-width="1.3"/>
-
-                        <g fill="#C7D3DF" stroke="#455467" stroke-width="1">
+                        <g fill="#E0ECFF" stroke="#4A6080" stroke-width="1">
                             <circle cx="100" cy="178" r="2"/>
                             <circle cx="100" cy="188" r="2"/>
                             <circle cx="100" cy="198" r="2"/>
                         </g>
 
-                        <g fill="none" stroke="#B7C5D5" stroke-width="1.2">
+                        <g fill="none" stroke="#C7D9EE" stroke-width="1.2">
                             <path d="M75 158 Q82 169 87 178"/>
                             <path d="M125 158 Q118 169 113 178"/>
                             <path d="M75 192 Q82 201 87 208"/>
                             <path d="M125 192 Q118 201 113 208"/>
                         </g>
 
-                        <path d="M67 151 Q60 179 65 210 M133 151 Q140 179 135 210" fill="none" stroke="#00D9FF" stroke-width="2" filter="url(#cm-glow)"/>
+                        <!-- Vivos neón que brillan al escuchar -->
+                        <path d="M67 151 Q60 179 65 210 M133 151 Q140 179 135 210"
+                              fill="none"
+                              stroke="#00E5FF"
+                              stroke-width="2.4"
+                              filter="url(#cm-glow)"/>
 
-                        <path d="M100 181 L103 188 L111 188 L105 193 L108 201 L100 196 L92 201 L95 193 L89 188 L97 188 Z" fill="#00D9FF" opacity=".9" filter="url(#cm-glow)"/>
+                        <!-- ESTRELLA CENTRAL que pulsa y brilla con resonancia -->
+                        <g>
+                            <animateTransform
+                                attributeName="transform"
+                                type="scale"
+                                values="1;1.05;1"
+                                dur="2s"
+                                repeatCount="indefinite"
+                                additive="sum"/>
+                            <path d="M100 181 L103 188 L111 188 L105 193 L108 201 L100 196 L92 201 L95 193 L89 188 L97 188 Z"
+                                  fill="#00E5FF"
+                                  filter="url(#cm-glow)">
+                                <animate attributeName="opacity" values=".85;1;.85" dur="1.8s" repeatCount="indefinite"/>
+                            </path>
+                        </g>
 
-                        <path d="M66 151 Q57 153 53 163 L64 171 L73 157 Z" fill="#151D2A" stroke="#00D9FF" stroke-width="1.4"/>
-                        <path d="M134 151 Q143 153 147 163 L136 171 L127 157 Z" fill="#151D2A" stroke="#00D9FF" stroke-width="1.4"/>
+                        <path d="M66 151 Q57 153 53 163 L64 171 L73 157 Z" fill="#0F1824" stroke="#00E5FF" stroke-width="1.6"/>
+                        <path d="M134 151 Q143 153 147 163 L136 171 L127 157 Z" fill="#0F1824" stroke="#00E5FF" stroke-width="1.6"/>
                     </g>
 
                     <g id="cm-brazo-izq" class="cm-brazo">
                         <path d="M66 158 Q54 158 47 170 L39 199 Q43 207 52 208 L64 179 L76 168 Z" fill="url(#cm-grad-traje)" stroke="#56697D" stroke-width="2"/>
-                        <path d="M52 166 Q45 182 45 198" fill="none" stroke="#00D9FF" stroke-width="2" filter="url(#cm-glow)"/>
-
+                        <path d="M52 166 Q45 182 45 198" fill="none" stroke="#00E5FF" stroke-width="2.2" filter="url(#cm-glow)"/>
                         <g id="cm-mano-izq" class="cm-mano">
                             <path d="M39 198 Q32 200 31 208 Q32 218 42 222 Q51 224 55 216 L55 207 Q48 199 39 198 Z" fill="url(#cm-grad-cabeza)" stroke="#596979" stroke-width="2"/>
                             <path d="M38 207 Q44 211 50 207" fill="none" stroke="#A6B4C3" stroke-width="1.2"/>
@@ -822,10 +847,8 @@
 
                     <g id="cm-brazo-der" class="cm-brazo">
                         <path d="M134 158 Q146 158 153 170 L162 193 Q158 202 149 204 L136 179 L124 168 Z" fill="url(#cm-grad-traje)" stroke="#56697D" stroke-width="2"/>
-                        <path d="M148 166 Q155 181 157 194" fill="none" stroke="#00D9FF" stroke-width="2" filter="url(#cm-glow)"/>
-
-                        <path d="M149 193 Q158 189 164 196 L164 207 Q158 214 149 210 L143 201 Z" fill="#111823" stroke="#596979" stroke-width="2"/>
-
+                        <path d="M148 166 Q155 181 157 194" fill="none" stroke="#00E5FF" stroke-width="2.2" filter="url(#cm-glow)"/>
+                        <path d="M149 193 Q158 189 164 196 L164 207 Q158 214 149 210 L143 201 Z" fill="#0A0E18" stroke="#596979" stroke-width="2"/>
                         <g id="cm-mano-der" class="cm-mano">
                             <path d="M157 193 Q158 181 165 175 Q171 168 177 172 Q181 176 178 181 Q184 177 188 181 Q191 186 186 190 Q191 188 194 193 Q195 199 188 202 Q178 207 168 203 L158 200 Z" fill="url(#cm-grad-cabeza)" stroke="#596979" stroke-width="2"/>
                             <path d="M178 181 L183 187 M187 190 L181 193 M174 202 L171 194" fill="none" stroke="#9DAAB7" stroke-width="1.2" stroke-linecap="round"/>
@@ -833,16 +856,20 @@
                     </g>
 
                     <g id="cm-cinturon" data-acc-slot="cinturon">
-                        <path d="M64 218 Q100 226 136 218 L137 231 Q100 240 63 231 Z" fill="#0A0E15" stroke="#3E4E61" stroke-width="2"/>
-                        <path d="M100 218 L105 226 L114 226 L107 232 L110 241 L100 235 L90 241 L93 232 L86 226 L95 226 Z" fill="#DCEBFF" stroke="#00D9FF" stroke-width="1.7" filter="url(#cm-glow)"/>
+                        <path d="M64 218 Q100 226 136 218 L137 231 Q100 240 63 231 Z" fill="#05080E" stroke="#3E4E61" stroke-width="2"/>
+                        <path d="M100 218 L105 226 L114 226 L107 232 L110 241 L100 235 L90 241 L93 232 L86 226 L95 226 Z"
+                              fill="#E8F4FF"
+                              stroke="#00E5FF"
+                              stroke-width="2"
+                              filter="url(#cm-glow)"/>
                     </g>
 
                     <g id="cm-cabeza-grupo">
                         <g>
                             <circle cx="45" cy="111" r="15" fill="#E7EBF0" stroke="#667687" stroke-width="2"/>
                             <circle cx="155" cy="111" r="15" fill="#E7EBF0" stroke="#667687" stroke-width="2"/>
-                            <circle cx="45" cy="111" r="8" fill="#111B2A" stroke="#00D9FF" stroke-width="1.5" filter="url(#cm-glow)"/>
-                            <circle cx="155" cy="111" r="8" fill="#111B2A" stroke="#00D9FF" stroke-width="1.5" filter="url(#cm-glow)"/>
+                            <circle cx="45" cy="111" r="8" fill="#111B2A" stroke="#00E5FF" stroke-width="1.5" filter="url(#cm-glow)"/>
+                            <circle cx="155" cy="111" r="8" fill="#111B2A" stroke="#00E5FF" stroke-width="1.5" filter="url(#cm-glow)"/>
                         </g>
 
                         <rect x="48" y="68" width="104" height="96" rx="40" fill="url(#cm-grad-cabeza)" stroke="#687888" stroke-width="2.5"/>
@@ -865,74 +892,33 @@
                             <ellipse id="cm-pupila-der" cx="126" cy="112" rx="6" ry="9" fill="#071126" opacity=".8"/>
                         </g>
 
-                        <g fill="#FF9CA8" opacity=".55">
-                            <ellipse cx="63" cy="132" rx="9" ry="4"/>
-                            <ellipse cx="137" cy="132" rx="9" ry="4"/>
-                        </g>
+                        <!-- ❌ MANCHAS ROSADAS ELIMINADAS -->
+                        <!-- Se quitaron los ellipse rosas de los cachetes -->
 
                         <path id="cm-boca" class="cm-pet-boca" d="M78 137 Q100 150 122 137" fill="none" stroke="#0A0A0A" stroke-width="3"/>
                     </g>
 
-                    <!-- =================================================
-                         SOMBRERO v2.4
-                         Ahora POSICIONADO ARRIBA de la cabeza
-                         Centro del ala: y=48 (antes y=70)
-                         ================================================= -->
+                    <!-- Sombrero v2.5 (mismo que v2.4, arriba de la cabeza) -->
                     <g id="cm-sombrero" data-acc-slot="sombrero">
+                        <path d="M70 46 Q68 30 75 18 Q83 6 100 5 Q117 6 125 18 Q132 30 130 46 Z"
+                              fill="url(#cm-grad-sombrero)"
+                              stroke="#4A5C72"
+                              stroke-width="2.5"/>
 
-                        <!-- COPA — sobre el ala, proporcional a nueva posición -->
-                        <path d="
-                            M70 46
-                            Q68 30 75 18
-                            Q83 6 100 5
-                            Q117 6 125 18
-                            Q132 30 130 46
-                            Z
-                        "
-                        fill="url(#cm-grad-sombrero)"
-                        stroke="#4A5C72"
-                        stroke-width="2.5"/>
+                        <path d="M70 44 Q100 36 130 44 L130 48 Q100 41 70 48 Z" fill="#05080E" opacity=".9"/>
 
-                        <!-- Sombra inferior de la copa sobre el ala -->
-                        <path d="
-                            M70 44
-                            Q100 36
-                            130 44
-                            L130 48
-                            Q100 41
-                            70 48
-                            Z
-                        "
-                        fill="#05080E"
-                        opacity=".9"/>
+                        <path d="M100 12 L103 20 L112 21 L105 27.5 L107 36.5 L100 31.5 L93 36.5 L95 27.5 L88 21 L97 20 Z"
+                              fill="none"
+                              stroke="#8FA5BF"
+                              stroke-width="1.4"
+                              stroke-linejoin="round"
+                              opacity=".95"/>
 
-                        <!-- Estrella central de la copa -->
-                        <path d="
-                            M100 12
-                            L103 20
-                            L112 21
-                            L105 27.5
-                            L107 36.5
-                            L100 31.5
-                            L93 36.5
-                            L95 27.5
-                            L88 21
-                            L97 20
-                            Z
-                        "
-                        fill="none"
-                        stroke="#8FA5BF"
-                        stroke-width="1.4"
-                        stroke-linejoin="round"
-                        opacity=".95"/>
-
-                        <!-- Núcleo luminoso de la estrella -->
                         <circle cx="100" cy="24" r="1.6"
-                                fill="#00D9FF"
-                                opacity=".75"
+                                fill="#00E5FF"
+                                opacity=".85"
                                 filter="url(#cm-glow)"/>
 
-                        <!-- Brillo lateral de la copa -->
                         <path d="M80 18 Q78 32 80 44"
                               fill="none"
                               stroke="#FFFFFF"
@@ -940,63 +926,60 @@
                               opacity=".24"
                               stroke-linecap="round"/>
 
-                        <!-- ALA — ahora en y=48, arriba de los ojos -->
                         <ellipse cx="100" cy="48" rx="96" ry="22"
                                  fill="url(#cm-grad-sombrero)"
                                  stroke="#4A5C72"
                                  stroke-width="2.5"/>
 
-                        <!-- Superficie interior del ala con patrón -->
                         <ellipse cx="100" cy="47" rx="85" ry="16"
                                  fill="url(#cm-patron-sombrero)"
                                  opacity=".82"/>
 
-                        <!-- BANDA del sombrero -->
-                        <path d="
-                            M68 34
-                            Q100 26
-                            132 34
-                            L132 46
-                            Q100 38
-                            68 46
-                            Z
-                        "
-                        fill="#05080E"
-                        stroke="#00D9FF"
-                        stroke-width="1.5"/>
+                        <path d="M68 34 Q100 26 132 34 L132 46 Q100 38 68 46 Z"
+                              fill="#05080E"
+                              stroke="#00E5FF"
+                              stroke-width="1.6"/>
 
-                        <!-- Línea superior de la banda -->
                         <path d="M70 34 Q100 27 130 34"
                               fill="none"
                               stroke="#6CEFFF"
                               stroke-width=".9"
-                              opacity=".55"/>
+                              opacity=".65"/>
 
-                        <!-- BORDE NEÓN EXTERIOR del ala -->
                         <ellipse cx="100" cy="48" rx="95" ry="21"
                                  fill="none"
-                                 stroke="#00D9FF"
-                                 stroke-width="2.4"
+                                 stroke="#00E5FF"
+                                 stroke-width="2.6"
                                  filter="url(#cm-glow)"/>
 
-                        <!-- Borde interior del ala -->
                         <ellipse cx="100" cy="51" rx="84" ry="14"
                                  fill="none"
-                                 stroke="#178BFF"
-                                 stroke-width="1.5"
-                                 opacity=".82"/>
+                                 stroke="#4DA8FF"
+                                 stroke-width="1.6"
+                                 opacity=".85"/>
 
-                        <!-- Detalles luminosos del ala -->
+                        <!-- Estrellas del sombrero que titilan -->
                         <g fill="#FFFFFF" filter="url(#cm-glow)">
-                            <circle cx="40" cy="42" r="1.5"/>
-                            <circle cx="160" cy="42" r="1.5"/>
-                            <circle cx="80" cy="36" r="1.1"/>
-                            <circle cx="120" cy="36" r="1.1"/>
-                            <circle cx="60" cy="54" r="1"/>
-                            <circle cx="140" cy="54" r="1"/>
+                            <circle cx="40" cy="42" r="1.5">
+                                <animate attributeName="opacity" values="1;0.4;1" dur="2s" repeatCount="indefinite"/>
+                            </circle>
+                            <circle cx="160" cy="42" r="1.5">
+                                <animate attributeName="opacity" values="1;0.4;1" dur="2.3s" repeatCount="indefinite" begin="0.5s"/>
+                            </circle>
+                            <circle cx="80" cy="36" r="1.1">
+                                <animate attributeName="opacity" values="1;0.4;1" dur="2.6s" repeatCount="indefinite" begin="1s"/>
+                            </circle>
+                            <circle cx="120" cy="36" r="1.1">
+                                <animate attributeName="opacity" values="1;0.4;1" dur="2.9s" repeatCount="indefinite" begin="1.5s"/>
+                            </circle>
+                            <circle cx="60" cy="54" r="1">
+                                <animate attributeName="opacity" values="1;0.4;1" dur="2.2s" repeatCount="indefinite" begin="0.3s"/>
+                            </circle>
+                            <circle cx="140" cy="54" r="1">
+                                <animate attributeName="opacity" values="1;0.4;1" dur="3.2s" repeatCount="indefinite" begin="0.8s"/>
+                            </circle>
                         </g>
 
-                        <!-- Remates charro en los extremos del ala -->
                         <path d="M24 48 Q34 54 45 54"
                               fill="none"
                               stroke="#56647A"
@@ -1008,7 +991,6 @@
                               stroke="#56647A"
                               stroke-width="1.2"
                               opacity=".75"/>
-
                     </g>
 
                 </g>
@@ -1041,7 +1023,6 @@
             hasMoved = false;
             dragStartX = e.clientX;
             dragStartY = e.clientY;
-
             try {
                 const rect = container.getBoundingClientRect();
                 posStartX = rect.left;
@@ -1050,25 +1031,20 @@
                 posStartX = 0;
                 posStartY = 0;
             }
-
             try {
                 avatar.setPointerCapture(e.pointerId);
             } catch (err) {}
-
             container.classList.add('cm-dragging');
             e.preventDefault();
         });
 
         avatar.addEventListener('pointermove', function(e) {
             if (!isDragging) return;
-
             const dx = e.clientX - dragStartX;
             const dy = e.clientY - dragStartY;
-
             if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
                 hasMoved = true;
             }
-
             if (!hasMoved) return;
 
             const porcentaje = (config.tamano != null ? config.tamano : 100) / 100;
@@ -1092,14 +1068,11 @@
 
         avatar.addEventListener('pointerup', function(e) {
             if (!isDragging) return;
-
             isDragging = false;
             container.classList.remove('cm-dragging');
-
             try {
                 avatar.releasePointerCapture(e.pointerId);
             } catch (err) {}
-
             if (hasMoved) {
                 try {
                     const rect = container.getBoundingClientRect();
@@ -1118,6 +1091,7 @@
         renderAccesoriosEnAvatar();
         aplicarModo();
         aplicarTamano();
+        aplicarResonancia();
         cambiarVisema('REST');
 
         (async function() {
@@ -1131,14 +1105,19 @@
             }
         })();
 
-        log('Widget v2.4 creado · sombrero arriba de la cabeza');
+        log('Widget v2.5 creado · sin manchas · con resonancia · capa flotante');
     }
 
     function setEstado(e) {
         if (container) {
             container.setAttribute('data-estado', e);
         }
-
+        // Cuando escucha, aplicar brillo máximo temporal
+        if (e === 'escuchando' && container) {
+            container.classList.add('cm-resonando');
+        } else if (container) {
+            container.classList.remove('cm-resonando');
+        }
         if (window.CapitanMaizAnim && typeof window.CapitanMaizAnim.setEstado === 'function') {
             window.CapitanMaizAnim.setEstado(e);
         }
@@ -1147,21 +1126,14 @@
     function mostrarBurbuja(texto) {
         if (!config.mostrar_subtitulos) return;
         if (!bubble) return;
-
         const t = document.getElementById('cm-bubble-text');
         const corto = texto.length > 160 ? texto.slice(0, 157) + '…' : texto;
-
-        if (t) {
-            t.textContent = corto;
-        }
-
+        if (t) t.textContent = corto;
         bubble.classList.add('cm-bubble-visible');
     }
 
     function ocultarBurbuja() {
-        if (bubble) {
-            bubble.classList.remove('cm-bubble-visible');
-        }
+        if (bubble) bubble.classList.remove('cm-bubble-visible');
     }
 
     function detenerConversacion() {
@@ -1179,17 +1151,12 @@
             detenerConversacion();
             return;
         }
-
         conversacionActiva = !!config.conversacion;
-
         const ok = iniciarReconocimiento();
-
         if (!ok) {
             conversacionActiva = false;
-
             if (config.mostrar_subtitulos) {
                 mostrarBurbuja('Tu navegador no soporta reconocimiento de voz.');
-
                 setTimeout(ocultarBurbuja, 4000);
             }
         }
@@ -1197,9 +1164,7 @@
 
     async function hablar(texto) {
         if (!texto) return false;
-
         detenerTTS();
-
         const miToken = ++ttsToken;
 
         const estilo = VOZ_ESTILOS[config.estilo_voz] || VOZ_ESTILOS.sabio;
@@ -1223,7 +1188,6 @@
             try {
                 const sb = window.getSupabase();
                 const s = await sb.auth.getSession();
-
                 if (s.data.session && miToken === ttsToken) {
                     const resp = await fetch('/api/ai/voice/tts', {
                         method: 'POST',
@@ -1238,11 +1202,9 @@
                             character: 'capitan-maiz'
                         })
                     });
-
                     if (resp.ok) {
                         const data = await resp.json();
                         const url = data.audio_url || data.audioUrl;
-
                         if (url && miToken === ttsToken) {
                             ok = true;
                             await reproducirAudio(url);
@@ -1261,19 +1223,16 @@
         }
 
         const completo = miToken === ttsToken;
-
         if (completo) {
             isSpeaking = false;
             setEstado('idle');
             detenerAnimacionBoca();
-
             setTimeout(function() {
                 if (!isSpeaking && !isListening && !procesando) {
                     ocultarBurbuja();
                 }
             }, 2500);
         }
-
         return completo;
     }
 
@@ -1281,7 +1240,6 @@
         const partes = texto.split(/(?<=[.!?…\n])\s+/);
         const out = [];
         let acc = '';
-
         partes.forEach(function(p) {
             if ((acc + ' ' + p).length > 170 && acc) {
                 out.push(acc.trim());
@@ -1290,24 +1248,16 @@
                 acc = acc ? acc + ' ' + p : p;
             }
         });
-
-        if (acc.trim()) {
-            out.push(acc.trim());
-        }
-
+        if (acc.trim()) out.push(acc.trim());
         return out;
     }
 
     async function hablarNavegador(texto, rate, pitch, volumen, miToken) {
         if (!window.speechSynthesis) return;
-
         window.speechSynthesis.cancel();
-
         const frases = dividirEnFrases(texto);
-
         for (let i = 0; i < frases.length; i++) {
             if (miToken !== ttsToken) return;
-
             await new Promise(function(resolve) {
                 const u = new SpeechSynthesisUtterance(frases[i]);
                 u.lang = config.idioma || 'es-MX';
@@ -1345,20 +1295,17 @@
 
     function detenerTTS() {
         ttsToken++;
-
         try {
             if (window.speechSynthesis) {
                 window.speechSynthesis.cancel();
             }
         } catch (e) {}
-
         if (audioActual) {
             try {
                 audioActual.pause();
             } catch (e) {}
             audioActual = null;
         }
-
         isSpeaking = false;
         detenerAnimacionBoca();
     }
@@ -1385,30 +1332,23 @@
             recognition.onresult = function(event) {
                 const transcript = event.results[0][0].transcript.trim();
                 if (!transcript) return;
-
                 recibioResultado = true;
                 const lower = transcript.toLowerCase();
 
                 if (/(adiós|adios|hasta luego|nos vemos|ya no|nos vidrios)/.test(lower) && lower.length < 30) {
                     conversacionActiva = false;
                     historialLocal.push({ role: 'user', content: transcript, ts: Date.now() });
-
                     hablar('¡Nos vidrios, paisano! Aquí andaré cuando me necesites.').then(function() {
                         guardarHistorial();
                     });
-
                     return;
                 }
 
                 if (/(olvida (todo|lo que hablamos)|borra (la )?conversaci[oó]n|empecemos de nuevo)/.test(lower)) {
                     olvidarTodo();
-
                     hablar('Listo, borrón y cuenta nueva. Empecemos de cero.').then(function() {
-                        if (conversacionActiva) {
-                            iniciarReconocimiento();
-                        }
+                        if (conversacionActiva) iniciarReconocimiento();
                     });
-
                     return;
                 }
 
@@ -1419,11 +1359,9 @@
                 recognitionActive = false;
                 isListening = false;
                 recognition = null;
-
                 if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
                     conversacionActiva = false;
                     setEstado('idle');
-
                     if (config.mostrar_subtitulos) {
                         mostrarBurbuja('Permite el micrófono, paisano.');
                         setTimeout(ocultarBurbuja, 5000);
@@ -1437,11 +1375,9 @@
                 recognitionActive = false;
                 isListening = false;
                 recognition = null;
-
                 if (!procesando && !isSpeaking) {
                     setEstado('idle');
                 }
-
                 if (!recibioResultado && !procesando && !isSpeaking) {
                     conversacionActiva = false;
                 }
@@ -1460,16 +1396,13 @@
                 recognition.abort ? recognition.abort() : recognition.stop();
             } catch (e) {}
         }
-
         recognitionActive = false;
         isListening = false;
     }
 
     async function procesarComando(texto) {
         if (!texto) return;
-
         const miConversacionToken = ++conversationToken;
-
         procesando = true;
         setEstado('pensando');
         cambiarVisema('M');
@@ -1478,7 +1411,6 @@
             historialLocal.push({ role: 'user', content: texto, ts: Date.now() });
 
             let respuesta = '';
-
             if (window.CapitanMaizBrain && typeof window.CapitanMaizBrain.preguntar === 'function') {
                 try {
                     const historialTruncado = historialLocal.slice(-HIST_MAX_ENVIO);
@@ -1491,20 +1423,19 @@
             }
 
             if (miConversacionToken !== conversationToken) return;
-
-            if (!respuesta) {
-                respuesta = 'No supe qué decirte, pero aquí andamos.';
-            }
+            if (!respuesta) respuesta = 'No supe qué decirte, pero aquí andamos.';
 
             historialLocal.push({ role: 'assistant', content: respuesta, ts: Date.now() });
             guardarHistorial();
+
+            // ⚡ Sube resonancia al completar una conversación exitosa
+            subirResonancia();
 
             procesando = false;
             const completo = await hablar(respuesta);
 
             if (completo && conversacionActiva && miConversacionToken === conversationToken) {
                 recibioResultado = false;
-
                 setTimeout(function() {
                     if (conversacionActiva && !isSpeaking && !isListening && !procesando) {
                         iniciarReconocimiento();
@@ -1515,7 +1446,6 @@
             console.error('[Capitán Maíz] Error en procesarComando:', e);
         } finally {
             procesando = false;
-
             if (!isSpeaking && !isListening) {
                 setEstado('idle');
             }
@@ -1562,7 +1492,6 @@
             config.posicion_x = null;
             config.posicion_y = null;
             guardarConfig();
-
             if (container) {
                 container.style.left = '';
                 container.style.top = '';
@@ -1583,22 +1512,28 @@
         },
         getTerminosVersion: function() {
             return TERMINOS_VERSION;
+        },
+        getResonancia: function() {
+            return resonancia;
+        },
+        getResonanciaMax: function() {
+            return RESONANCIA_MAX;
         }
     };
 
     async function init() {
         if (rutaExcluida()) return;
-
         cargarConfig();
         if (!config.activo) return;
 
         await cargarUsuario();
         cargarHistorial();
+        cargarResonancia();
         await cargarAccesorios();
         crearWidget();
         instalarVisibility();
 
-        log('✅ Capitán Maíz v2.4 activo');
+        log('✅ Capitán Maíz v2.5 activo');
     }
 
     if (document.readyState === 'loading') {
