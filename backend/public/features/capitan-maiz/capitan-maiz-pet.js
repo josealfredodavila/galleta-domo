@@ -1,13 +1,13 @@
 // ================================================================
-// CAPITÁN MAÍZ · PET v2.2
+// CAPITÁN MAÍZ · PET v2.3
 // "GUARDIAN ANCESTRAL · GALACTIC CHARRO"
 // ================================================================
-// Fix v2.2: Sombrero acomodado
-// - Copa mejor asentada sobre el ala
-// - Ala mejor integrada con la cabeza
-// - Banda alineada con la copa
-// - Antenas salen visualmente desde detrás del ala
-// - Se conserva el diseño Galactic Charro
+// Fix v2.3: Sombrero acomodado y sin antenas
+// - Se eliminaron por completo las antenas (base y puntas)
+// - Copa más baja y ancha para mejor asentamiento
+// - Ala mejor integrada a la cabeza
+// - Banda ajustada a la nueva copa
+// - Se conserva todo el diseño Galactic Charro y accesorios
 // ================================================================
 
 'use strict';
@@ -113,7 +113,7 @@
     }
 
     function log(msg) {
-        console.log('[Capitán Maíz v2.2]', msg);
+        console.log('[Capitán Maíz v2.3]', msg);
     }
 
     function esc(v) {
@@ -829,7 +829,7 @@
     }
 
     // ============================================================
-    // CREAR WIDGET — SVG COMPLETO v2.2
+    // CREAR WIDGET — SVG COMPLETO v2.3
     // ============================================================
 
     function crearWidget() {
@@ -1733,48 +1733,8 @@
                     </g>
 
                     <!-- =================================================
-                         ANTENAS
-                         Capa posterior: nacen detrás del ala
-                         ================================================= -->
-                    <g
-                        id="cm-antenas-base"
-                        data-acc-slot="cabeza">
-
-                        <path
-                            d="M78 69 L68 38"
-                            fill="none"
-                            stroke="#8799AB"
-                            stroke-width="4"
-                            stroke-linecap="round"
-                            opacity=".95"/>
-
-                        <path
-                            d="M78 69 L68 38"
-                            fill="none"
-                            stroke="#B8C8D8"
-                            stroke-width="2"
-                            stroke-linecap="round"/>
-
-                        <path
-                            d="M122 69 L132 38"
-                            fill="none"
-                            stroke="#8799AB"
-                            stroke-width="4"
-                            stroke-linecap="round"
-                            opacity=".95"/>
-
-                        <path
-                            d="M122 69 L132 38"
-                            fill="none"
-                            stroke="#B8C8D8"
-                            stroke-width="2"
-                            stroke-linecap="round"/>
-
-                    </g>
-
-                    <!-- =================================================
-                         SOMBRERO v2.2
-                         Acomodado y mejor integrado
+                         SOMBRERO v2.3
+                         Acomodado, sin antenas, mejor asentado
                          ================================================= -->
                     <g
                         id="cm-sombrero"
@@ -1782,16 +1742,16 @@
 
                         <!--
                             COPA
-                            Más estable visualmente y ligeramente
-                            más compacta para que se siente sobre el ala.
+                            Más baja y ancha en su base para que se asiente
+                            correctamente sobre el ala y la cabeza.
                         -->
                         <path
                             d="
-                                M67 68
-                                Q65 46 72 27
-                                Q80 9 100 8
-                                Q120 9 128 27
-                                Q135 46 133 68
+                                M68 68
+                                Q66 50 73 35
+                                Q81 20 100 19
+                                Q119 20 127 35
+                                Q134 50 132 68
                                 Z
                             "
                             fill="url(#cm-grad-sombrero)"
@@ -1801,12 +1761,12 @@
                         <!-- Sombra inferior de la copa -->
                         <path
                             d="
-                                M67 64
-                                Q100 55
-                                133 64
-                                L133 70
-                                Q100 62
-                                67 70
+                                M68 64
+                                Q100 56
+                                132 64
+                                L132 70
+                                Q100 63
+                                68 70
                                 Z
                             "
                             fill="#05080E"
@@ -1815,16 +1775,16 @@
                         <!-- Estrella central de la copa -->
                         <path
                             d="
-                                M100 15
-                                L103.5 25
-                                L114 26.5
-                                L106 34
-                                L108.5 44.5
-                                L100 38.5
-                                L91.5 44.5
-                                L94 34
-                                L86 26.5
-                                L96.5 25
+                                M100 25
+                                L103.5 34
+                                L114 35.5
+                                L106 43
+                                L108.5 53.5
+                                L100 47.5
+                                L91.5 53.5
+                                L94 43
+                                L86 35.5
+                                L96.5 34
                                 Z
                             "
                             fill="none"
@@ -1836,7 +1796,7 @@
                         <!-- Pequeño núcleo luminoso de la estrella -->
                         <circle
                             cx="100"
-                            cy="29"
+                            cy="39"
                             r="1.8"
                             fill="#00D9FF"
                             opacity=".75"
@@ -1844,7 +1804,7 @@
 
                         <!-- Brillo de la copa -->
                         <path
-                            d="M79 23 Q76 42 78 61"
+                            d="M79 32 Q76 50 78 66"
                             fill="none"
                             stroke="#FFFFFF"
                             stroke-width="2"
@@ -1858,9 +1818,9 @@
                         -->
                         <ellipse
                             cx="100"
-                            cy="72"
+                            cy="70"
                             rx="96"
-                            ry="25"
+                            ry="23"
                             fill="url(#cm-grad-sombrero)"
                             stroke="#4A5C72"
                             stroke-width="2.5"/>
@@ -1868,23 +1828,22 @@
                         <!-- Superficie interior del ala -->
                         <ellipse
                             cx="100"
-                            cy="71"
+                            cy="69"
                             rx="85"
-                            ry="19"
+                            ry="17"
                             fill="url(#cm-patron-sombrero)"
                             opacity=".82"/>
 
                         <!--
                             BANDA
-                            Ahora sigue mejor la curvatura de la copa
-                            y queda contenida dentro de ella.
+                            Ajustada a la nueva forma de la copa.
                         -->
                         <path
                             d="
-                                M66 55
-                                Q100 47 134 55
-                                L134 67
-                                Q100 59 66 67
+                                M67 56
+                                Q100 48 133 56
+                                L133 68
+                                Q100 60 67 68
                                 Z
                             "
                             fill="#05080E"
@@ -1893,7 +1852,7 @@
 
                         <!-- Línea superior de la banda -->
                         <path
-                            d="M68 55 Q100 48 132 55"
+                            d="M69 56 Q100 49 131 56"
                             fill="none"
                             stroke="#6CEFFF"
                             stroke-width=".9"
@@ -1905,9 +1864,9 @@
                         -->
                         <ellipse
                             cx="100"
-                            cy="72"
+                            cy="70"
                             rx="95"
-                            ry="24"
+                            ry="22"
                             fill="none"
                             stroke="#00D9FF"
                             stroke-width="2.4"
@@ -1916,9 +1875,9 @@
                         <!-- Borde interior -->
                         <ellipse
                             cx="100"
-                            cy="75"
+                            cy="73"
                             rx="84"
-                            ry="17"
+                            ry="15"
                             fill="none"
                             stroke="#178BFF"
                             stroke-width="1.5"
@@ -1931,91 +1890,50 @@
 
                             <circle
                                 cx="40"
-                                cy="66"
+                                cy="64"
                                 r="1.5"/>
 
                             <circle
                                 cx="160"
-                                cy="66"
+                                cy="64"
                                 r="1.5"/>
 
                             <circle
                                 cx="80"
-                                cy="59"
+                                cy="58"
                                 r="1.1"/>
 
                             <circle
                                 cx="120"
-                                cy="59"
+                                cy="58"
                                 r="1.1"/>
 
                             <circle
                                 cx="60"
-                                cy="79"
+                                cy="77"
                                 r="1"/>
 
                             <circle
                                 cx="140"
-                                cy="79"
+                                cy="77"
                                 r="1"/>
 
                         </g>
 
                         <!-- Pequeños remates charro -->
                         <path
-                            d="M24 72 Q34 78 45 78"
+                            d="M24 70 Q34 76 45 76"
                             fill="none"
                             stroke="#56647A"
                             stroke-width="1.2"
                             opacity=".75"/>
 
                         <path
-                            d="M176 72 Q166 78 155 78"
+                            d="M176 70 Q166 76 155 76"
                             fill="none"
                             stroke="#56647A"
                             stroke-width="1.2"
                             opacity=".75"/>
-
-                    </g>
-
-                    <!-- =================================================
-                         PUNTAS DE ANTENAS
-                         Quedan delante del sombrero únicamente en la
-                         parte superior para conservar visibilidad.
-                         ================================================= -->
-                    <g id="cm-antenas-puntas">
-
-                        <circle
-                            cx="68"
-                            cy="36"
-                            r="6"
-                            fill="#B8F6FF"
-                            stroke="#00D9FF"
-                            stroke-width="2"
-                            filter="url(#cm-glow)"/>
-
-                        <circle
-                            cx="132"
-                            cy="36"
-                            r="6"
-                            fill="#B8F6FF"
-                            stroke="#00D9FF"
-                            stroke-width="2"
-                            filter="url(#cm-glow)"/>
-
-                        <circle
-                            cx="66.5"
-                            cy="34.5"
-                            r="1.6"
-                            fill="#FFFFFF"
-                            opacity=".9"/>
-
-                        <circle
-                            cx="130.5"
-                            cy="34.5"
-                            r="1.6"
-                            fill="#FFFFFF"
-                            opacity=".9"/>
 
                     </g>
 
@@ -2263,7 +2181,7 @@
         })();
 
         log(
-            'Widget v2.2 creado · SVG Galactic Charro · sombrero acomodado'
+            'Widget v2.3 creado · SVG Galactic Charro · sombrero acomodado sin antenas'
         );
     }
 
@@ -3239,7 +3157,7 @@
         instalarVisibility();
 
         log(
-            '✅ Capitán Maíz v2.2 activo'
+            '✅ Capitán Maíz v2.3 activo'
         );
     }
 
