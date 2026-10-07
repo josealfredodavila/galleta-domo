@@ -1,5 +1,5 @@
 // ================================================================
-// MARQUINHOS · PET v9.8.1 "GALACTIC PRO"
+// MARQUINHOS · PET v9.8.2 "GALACTIC PRO"
 // Mejoras sobre v9.7:
 // - Fixes de auditoría (C-1, C-2, A-1, A-2, A-3, A-4, M-1, M-5, M-7, M-10)
 // - Términos sincronizados con Supabase (registro legal)
@@ -8,9 +8,12 @@
 // - procesando con finally garantizado
 // v9.8.1:
 // - FIX CRÍTICO: verificarTerminos() es async y se llamaba sin await
-//   → ahora bloquea correctamente hasta que el usuario acepta términos
 // - Términos en memoria (_terminosOkPara) para no consultar en cada tap
 // - Modal solo aparece al tocar el avatar (no al cargar la página)
+// v9.8.2:
+// - FIX: avisar() usa toast independiente (no depende del modo subtítulos)
+// - FIX: CSS del modal inyectado desde JS (no depende de archivo externo)
+// - FIX: console.log de diagnóstico en verificarTerminos()
 // ================================================================
 
 'use strict';
@@ -113,7 +116,7 @@
         return RUTAS_EXCLUIDAS.some(r => path.indexOf(r) !== -1);
     }
 
-    function log(msg) { console.log('[Marquinhos v9.8.1]', msg); }
+    function log(msg) { console.log('[Marquinhos v9.8.2]', msg); }
 
     function esc(v) {
         const d = document.createElement('div');
@@ -354,17 +357,28 @@
     }
 
     // ============================================================
-    // 🆕 v9.8.1: TÉRMINOS
-    // - verificarTerminos() ahora es la puerta única
-    // - cache en memoria (_terminosOkPara) para no consultar cada tap
-    // - avisar() muestra mensajes rápidos sin abrir modal
+    // 🆕 v9.8.2: TÉRMINOS
+    // - avisar() usa toast independiente (no depende de la burbuja)
+    // - asegurarEstilosModal() inyecta CSS del modal desde JS
+    // - console.log de diagnóstico en verificarTerminos()
     // ============================================================
 
+    // 🆕 v9.8.2: toast independiente que SIEMPRE se ve
     function avisar(texto) {
-        const t = document.getElementById('mq-bubble-text');
-        if (t) t.textContent = texto;
-        if (bubble) bubble.classList.add('mq-bubble-visible');
-        setTimeout(ocultarBurbuja, 4000);
+        let t = document.getElementById('mq-toast-aviso');
+        if (!t) {
+            t = document.createElement('div');
+            t.id = 'mq-toast-aviso';
+            t.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);' +
+                'background:#0a0f1a;color:#fff;border:1px solid #7C4DFF;border-radius:99px;' +
+                'padding:10px 18px;font:600 13px system-ui,sans-serif;z-index:2147483647;' +
+                'max-width:90vw;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.4)';
+            document.body.appendChild(t);
+        }
+        t.textContent = texto;
+        t.style.display = 'block';
+        clearTimeout(t._timer);
+        t._timer = setTimeout(function () { t.style.display = 'none'; }, 4000);
     }
 
     async function obtenerUidActual() {
@@ -391,6 +405,7 @@
             const { data, error } = await sb.rpc('verificar_aceptacion_terminos', {
                 p_version: TERMINOS_VERSION
             });
+            console.log('[Marquinhos] verificar términos →', { data, error });
             if (error) throw error;
 
             if (data && data.aceptado === true) {
@@ -400,8 +415,8 @@
             mostrarModalTerminos(uid);
             return false;
         } catch (e) {
-            console.warn('[Marquinhos] No se pudo verificar términos:', e);
-            avisar('Revisa tu conexión e intenta de nuevo.');
+            console.warn('[Marquinhos] Fallo al verificar términos:', e);
+            avisar('No pude verificar tus términos. Revisa tu conexión e intenta de nuevo.');
             return false;
         }
     }
@@ -421,7 +436,33 @@
         }
     }
 
+    // 🆕 v9.8.2: inyecta CSS del modal por si el archivo externo no carga
+    function asegurarEstilosModal() {
+        if (document.getElementById('mq-modal-estilos')) return;
+        const s = document.createElement('style');
+        s.id = 'mq-modal-estilos';
+        s.textContent = `
+            .mq-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:2147483646;
+                display:flex;align-items:center;justify-content:center;padding:20px}
+            .mq-modal-content{background:#0a0f1a;border:1px solid rgba(124,77,255,.4);border-radius:16px;
+                max-width:480px;width:100%;max-height:85vh;display:flex;flex-direction:column;color:#f0f4f8;
+                font-family:-apple-system,system-ui,sans-serif}
+            .mq-modal-content h2{color:#7C4DFF;font-size:1.1rem;margin:0;padding:20px 24px 12px;
+                border-bottom:1px solid rgba(124,77,255,.2)}
+            .mq-modal-body{padding:20px 24px;overflow-y:auto;font-size:.88rem;line-height:1.55;color:#c0d8e8}
+            .mq-modal-body ul{padding-left:20px}
+            .mq-modal-body a{color:#7C4DFF}
+            .mq-modal-actions{padding:16px 24px 20px;display:flex;gap:10px;border-top:1px solid rgba(124,77,255,.2)}
+            .mq-btn-aceptar,.mq-btn-rechazar{flex:1;padding:12px 16px;border-radius:99px;border:0;
+                font-weight:700;font-size:.85rem;cursor:pointer;font-family:inherit}
+            .mq-btn-aceptar{background:linear-gradient(135deg,#7C4DFF,#00E5FF);color:#fff}
+            .mq-btn-rechazar{background:transparent;border:1px solid rgba(138,168,184,.4);color:#8aa8b8}
+        `;
+        document.head.appendChild(s);
+    }
+
     function mostrarModalTerminos(uid) {
+        asegurarEstilosModal();
         if (document.getElementById('mq-modal-terminos')) return;
 
         const modal = document.createElement('div');
@@ -561,7 +602,6 @@
                     <g id="mq-cuerpo">
                         <g id="mq-acc-fondo" data-acc-slot="fondo"></g>
 
-                        <!-- ==================== CABEZA ==================== -->
                         <g id="mq-cabeza-grupo">
                             <rect x="35" y="40" width="130" height="120" rx="28" ry="28"
                                   fill="url(#mq-grad-cabeza)"
@@ -835,15 +875,13 @@
         cambiarVisema('REST');
 
         // 🆕 v9.8.1: sin verificación al cargar.
-        // Solo arranca la animación; el usuario tendrá que tocar el avatar
-        // y aceptar términos para hablar.
         setTimeout(function() {
             if (window.MarquinhosAnim && typeof window.MarquinhosAnim.iniciar === 'function') {
                 window.MarquinhosAnim.iniciar();
             }
         }, 500);
 
-        log('Widget v9.8.1 Galactic Pro creado');
+        log('Widget v9.8.2 Galactic Pro creado');
     }
 
     function mostrarDots() {}
@@ -1210,7 +1248,6 @@
         },
         getUserInfo: function() { return userInfo; },
         _visemasDisponibles: function() { return Object.keys(VISEMAS_SVG); },
-        // 🆕 v9.8.1: reiniciar términos en memoria + local
         reiniciarTerminos: function () {
             _terminosOkPara = null;
             try { localStorage.removeItem(TERMINOS_KEY); } catch (e) {}
@@ -1235,7 +1272,7 @@
         await cargarAccesorios();
         crearWidget();
         instalarVisibility();
-        log('✅ Marquinhos v9.8.1 Galactic Pro activo');
+        log('✅ Marquinhos v9.8.2 Galactic Pro activo');
     }
 
     if (document.readyState === 'loading') {
