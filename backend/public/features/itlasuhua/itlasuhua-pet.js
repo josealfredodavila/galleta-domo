@@ -1,8 +1,8 @@
 // ================================================================
-// ITLASUHUA · PET · SVG
+// ITLASUHUA · PET · SVG v2.1
 // ================================================================
 // Rey Itlasuhua, serpiente cósmica.
-// Renderiza el SVG y expone API pública.
+// v2.1: Sistema de drag integrado (como Marquinhos y Capitán Maíz)
 // ================================================================
 
 (function (window) {
@@ -10,6 +10,8 @@
 
     if (window.__itlasuhuaPetLoaded) return;
     window.__itlasuhuaPetLoaded = true;
+
+    const POS_KEY = 'itlasuhua_posicion';
 
     const svgString = `
     <svg
@@ -352,7 +354,6 @@
 
     const render = (containerId) => {
         const container = document.getElementById(containerId);
-
         if (!container) {
             console.warn(`[Itlasuhua] Contenedor "${containerId}" no encontrado.`);
             return;
@@ -374,6 +375,25 @@
         '#itlasuhua-svg #ala-izq, #itlasuhua-svg #ala-der'
     );
 
+    // ============================================================
+    // SISTEMA DE DRAG
+    // ============================================================
+    function guardarPosicion(x, y) {
+        try {
+            localStorage.setItem(POS_KEY, JSON.stringify({ x, y }));
+        } catch (e) {}
+    }
+
+    function cargarPosicion() {
+        try {
+            const raw = localStorage.getItem(POS_KEY);
+            if (!raw) return null;
+            const data = JSON.parse(raw);
+            if (data && data.x != null && data.y != null) return data;
+        } catch (e) {}
+        return null;
+    }
+
     const crearWidget = () => {
         if (document.getElementById('itlasuhua-container')) return;
 
@@ -381,9 +401,105 @@
         cont.id = 'itlasuhua-container';
         document.body.appendChild(cont);
 
+        // Restaurar posición guardada (si existe)
+        const posGuardada = cargarPosicion();
+        if (posGuardada) {
+            const ancho = cont.offsetWidth || 300;
+            const alto = cont.offsetHeight || 300;
+            const maxX = window.innerWidth - ancho;
+            const maxY = window.innerHeight - alto;
+            const x = Math.max(0, Math.min(maxX, posGuardada.x));
+            const y = Math.max(0, Math.min(maxY, posGuardada.y));
+            cont.style.left = x + 'px';
+            cont.style.top = y + 'px';
+            cont.style.right = 'auto';
+            cont.style.bottom = 'auto';
+        }
+
+        // Renderizar SVG primero
         render('itlasuhua-container');
 
-        log('✅ Widget Itlasuhua creado');
+        // ====================================================
+        // SISTEMA DE DRAG
+        // ====================================================
+        let isDragging = false;
+        let hasMoved = false;
+        let dragStartX = 0;
+        let dragStartY = 0;
+        let posStartX = 0;
+        let posStartY = 0;
+
+        cont.addEventListener('pointerdown', function (e) {
+            isDragging = true;
+            hasMoved = false;
+            dragStartX = e.clientX;
+            dragStartY = e.clientY;
+
+            try {
+                const rect = cont.getBoundingClientRect();
+                posStartX = rect.left;
+                posStartY = rect.top;
+            } catch (err) {
+                posStartX = 0;
+                posStartY = 0;
+            }
+
+            try { cont.setPointerCapture(e.pointerId); } catch (err) {}
+
+            cont.classList.add('itlasuhua-dragging');
+        });
+
+        cont.addEventListener('pointermove', function (e) {
+            if (!isDragging) return;
+
+            const dx = e.clientX - dragStartX;
+            const dy = e.clientY - dragStartY;
+
+            if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+                hasMoved = true;
+            }
+
+            if (!hasMoved) return;
+
+            let newX = posStartX + dx;
+            let newY = posStartY + dy;
+
+            const ancho = cont.offsetWidth || 300;
+            const alto = cont.offsetHeight || 300;
+            const maxX = window.innerWidth - ancho;
+            const maxY = window.innerHeight - alto;
+
+            newX = Math.max(0, Math.min(maxX, newX));
+            newY = Math.max(0, Math.min(maxY, newY));
+
+            cont.style.left = newX + 'px';
+            cont.style.top = newY + 'px';
+            cont.style.right = 'auto';
+            cont.style.bottom = 'auto';
+        });
+
+        cont.addEventListener('pointerup', function (e) {
+            if (!isDragging) return;
+            isDragging = false;
+            cont.classList.remove('itlasuhua-dragging');
+
+            try { cont.releasePointerCapture(e.pointerId); } catch (err) {}
+
+            if (hasMoved) {
+                try {
+                    const rect = cont.getBoundingClientRect();
+                    guardarPosicion(rect.left, rect.top);
+                    log('📍 Posición guardada');
+                } catch (err) {}
+            }
+        });
+
+        cont.addEventListener('pointercancel', function () {
+            isDragging = false;
+            cont.classList.remove('itlasuhua-dragging');
+        });
+
+        log('✅ Widget Itlasuhua creado · arrastrable');
     };
 
     window.ItlasuhuaPet = {
@@ -391,6 +507,8 @@
         getSVG,
         getWings,
         crearWidget,
+        guardarPosicion,
+        cargarPosicion,
         _svgString: svgString
     };
 
