@@ -169,7 +169,7 @@
     function loopParpadeo() {
         if (!_activo) return;
         if (_estadoActual !== 'pensando') parpadear();
-        programar(loopParpadeo, 2000 + Math.random() * 2000);
+        programar(loopParpadeo, 1800 + Math.random() * 1700);
     }
 
     function moverPupilas(dx, dy, dur) {
@@ -328,10 +328,10 @@
         _cejas.izq.setAttribute('d', izq);
         _cejas.der.setAttribute('d', der);
     }
-    function cejasNormales()     { cejas('M 56 80 Q 72 74 88 83', 'M 112 83 Q 128 74 144 80'); }
-    function cejasSorprendidas() { cejas('M 58 73 Q 72 66 86 72', 'M 114 72 Q 128 66 142 73'); }
-    function cejasPensativas()   { cejas('M 58 78 Q 72 71 86 74', 'M 114 78 Q 128 70 142 78'); }
-    function cejasFelices()      { cejas('M 58 76 Q 72 69 86 75', 'M 114 75 Q 128 69 142 76'); }
+    function cejasNormales()     { cejas('M 56 82 Q 72 73 88 78', 'M 112 78 Q 128 73 144 82'); }
+    function cejasSorprendidas() { cejas('M 58 72 Q 72 64 86 69', 'M 114 69 Q 128 64 142 72'); }
+    function cejasPensativas()   { cejas('M 58 80 Q 72 73 86 76', 'M 114 72 Q 128 66 142 74'); }
+    function cejasFelices()      { cejas('M 58 78 Q 72 68 86 74', 'M 114 74 Q 128 68 142 78'); }
     function cejasTristes()      { cejas('M 58 76 Q 72 80 86 78', 'M 114 78 Q 128 80 142 76'); }
 
     // ------------------------------------------------------------
