@@ -1,10 +1,11 @@
 /* ================================================================
-   APARIENCIA GLOBAL - SARIEL'S ECOSYSTEM v2.6
+   APARIENCIA GLOBAL - SARIEL'S ECOSYSTEM v2.7
    - Lee de localStorage (rápido, sin red)
    - Sincroniza con Supabase preferencias_usuario (persistente)
    - Aplica tema, color de acento y tamaño de fuente globalmente
    - Inyecta Marquinhos-pet en todas las páginas
-   - ✅ NUEVO v2.6: Inyecta Capitán Maíz (guardian ancestral) 🌽⚔️
+   - ✅ v2.6: Inyecta Capitán Maíz (guardian ancestral) 🌽⚔️
+   - ✅ NUEVO v2.7: Inyecta Rey Itlasuhua (serpiente cósmica) 🐍
    ================================================================ */
 
 (function() {
@@ -434,5 +435,65 @@
         }
     })();
 
-    console.log('[Apariencia] ✅ Módulo global v2.6 cargado (Marquinhos + Capitán Maíz 🌽⚔️)');
+    /* ================================================================
+       🆕 v2.7: Inyectar Rey Itlasuhua-pet en todas las páginas
+       ================================================================
+       Serpiente cósmica independiente de Marquinhos y Capitán Maíz.
+       Orden de carga: CSS → pet.js → brain.js
+       ================================================================ */
+    (function inyectarItlasuhuaPet() {
+        var path = window.location.pathname.toLowerCase();
+
+        var excluidas = [
+            '/login', '/registro',
+            '/pagar', '/pay', '/checkout', '/success', '/cancel',
+            '/terminos', '/privacidad', '/cookies', '/legal',
+            '/info', '/live-terminos', '/eliminar-cuenta',
+            '/actualizar-contrasena',
+            '/features/itlasuhua/tienda'
+        ];
+
+        for (var i = 0; i < excluidas.length; i++) {
+            if (path.indexOf(excluidas[i]) !== -1) return;
+        }
+
+        if (document.getElementById('itlasuhua-pet-script')) return;
+
+        var insertar = function() {
+            // CSS
+            var css = document.createElement('link');
+            css.rel = 'stylesheet';
+            css.href = '/features/itlasuhua/itlasuhua-pet.css';
+            css.id = 'itlasuhua-pet-css';
+            document.head.appendChild(css);
+
+            // Pet (SVG + render)
+            var js = document.createElement('script');
+            js.id = 'itlasuhua-pet-script';
+            js.src = '/features/itlasuhua/itlasuhua-pet.js';
+            js.defer = true;
+            js.onload = function() {
+                // Una vez cargado el pet, crear el widget
+                if (window.ItlasuhuaPet && typeof window.ItlasuhuaPet.crearWidget === 'function') {
+                    window.ItlasuhuaPet.crearWidget();
+                }
+            };
+            document.head.appendChild(js);
+
+            // Brain (control de alas)
+            var brain = document.createElement('script');
+            brain.id = 'itlasuhua-brain-script';
+            brain.src = '/features/itlasuhua/itlasuhua-brain.js';
+            brain.defer = true;
+            document.head.appendChild(brain);
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', insertar);
+        } else {
+            insertar();
+        }
+    })();
+
+    console.log('[Apariencia] ✅ Módulo global v2.7 cargado (Marquinhos + Capitán Maíz 🌽⚔️ + Rey Itlasuhua 🐍)');
 })();
