@@ -695,6 +695,384 @@
         }
 
         log('Widget v9.4.1 Galactic Pro creado');
+    }    // Las "tres bolitas" se eliminaron. Se dejan estas funciones vacías
+    // por si otro archivo todavía las llama.
+    function mostrarDots() {}
+    function ocultarDots() {}
+
+    // ✅ v9.4.1: la antena SOLO se enciende cuando escucha.
+    function setEstado(e) {
+        if (container) container.setAttribute('data-estado', e);
+
+        const apagada = document.getElementById('mq-antena-apagada');
+        const encendida = document.getElementById('mq-antena-encendida');
+        if (apagada && encendida) {
+            const escuchando = (e === 'escuchando');
+            apagada.setAttribute('visibility', escuchando ? 'hidden' : 'visible');
+            encendida.setAttribute('visibility', escuchando ? 'visible' : 'hidden');
+        }
+
+        if (window.MarquinhosAnim && typeof window.MarquinhosAnim.setEstado === 'function') {
+            window.MarquinhosAnim.setEstado(e);
+        }
     }
 
-    // ... [la segunda mitad sigue en el siguiente mensaje]
+    function mostrarBurbuja(texto) {
+        if (!config.mostrar_subtitulos) return;
+        if (!bubble) return;
+        const t = document.getElementById('mq-bubble-text');
+        const corto = texto.length > 160 ? texto.slice(0, 157) + '…' : texto;
+        if (t) t.textContent = corto;
+        bubble.classList.add('mq-bubble-visible');
+    }
+
+    function ocultarBurbuja() {
+        if (bubble) bubble.classList.remove('mq-bubble-visible');
+    }
+
+    function detenerConversacion() {
+        conversacionActiva = false;
+        detenerTTS();
+        detenerReconocimiento();
+        detenerAnimacionBoca();
+        setEstado('idle');
+        ocultarBurbuja();
+    }
+
+    async function onAvatarTap() {
+        if (isSpeaking || isListening || procesando) {
+            detenerConversacion();
+            return;
+        }
+        conversacionActiva = !!config.conversacion;
+        const ok = iniciarReconocimiento();
+        if (!ok) {
+            conversacionActiva = false;
+            if (config.mostrar_subtitulos) {
+                mostrarBurbuja('Tu navegador no soporta reconocimiento de voz.');
+                setTimeout(ocultarBurbuja, 4000);
+            }
+        }
+    }
+
+    async function hablar(texto) {
+        if (!texto) return false;
+        detenerTTS();
+        const miToken = ++ttsToken;
+
+        const estilo = VOZ_ESTILOS[config.estilo_voz] || VOZ_ESTILOS.natural;
+        const pitchBase = TONO_PITCH[config.tono] || 1.0;
+        const rate = estilo.rate * (config.velocidad || 1.0);
+        const pitch = estilo.pitch * pitchBase;
+        const volumen = Math.max(0, Math.min(1, config.volumen || 1.0));
+
+        if (config.mostrar_subtitulos) mostrarBurbuja(texto);
+        isSpeaking = true;
+        setEstado('hablando');
+
+        if (window.MarquinhosAnim && typeof window.MarquinhosAnim.anticipar === 'function') {
+            window.MarquinhosAnim.anticipar();
+        }
+
+        animarBoca(texto, rate);
+
+        let ok = false;
+        if (texto.length <= 300 && window.getSupabase && !window.__marquinhosNoBackendTTS) {
+            try {
+                const sb = window.getSupabase();
+                const s = await sb.auth.getSession();
+                if (s.data.session && miToken === ttsToken) {
+                    const resp = await fetch('/api/ai/voice/tts', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + s.data.session.access_token
+                        },
+                        body: JSON.stringify({ text: texto, rate: rate, pitch: pitch })
+                    });
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        const url = data.audio_url || data.audioUrl;
+                        if (url && miToken === ttsToken) { ok = true; await reproducirAudio(url); }
+                    } else {
+                        window.__marquinhosNoBackendTTS = true;
+                    }
+                }
+            } catch (e) {
+                window.__marquinhosNoBackendTTS = true;
+            }
+        }
+
+        if (!ok && miToken === ttsToken) {
+            await hablarNavegador(texto, rate, pitch, volumen, miToken);
+        }
+
+        const completo = (miToken === ttsToken);
+        if (completo) {
+            isSpeaking = false;
+            setEstado('idle');
+            detenerAnimacionBoca();
+            setTimeout(function() {
+                if (!isSpeaking && !isListening && !procesando) ocultarBurbuja();
+            }, 2500);
+        }
+        return completo;
+    }
+
+    function dividirEnFrases(texto) {
+        const partes = texto.split(/(?<=[.!?…\n])\s+/);
+        const out = [];
+        let acc = '';
+        partes.forEach(function(p) {
+            if ((acc + ' ' + p).length > 170 && acc) { out.push(acc.trim()); acc = p; }
+            else acc = acc ? acc + ' ' + p : p;
+        });
+        if (acc.trim()) out.push(acc.trim());
+        return out;
+    }
+
+    async function hablarNavegador(texto, rate, pitch, volumen, miToken) {
+        if (!window.speechSynthesis) return;
+        window.speechSynthesis.cancel();
+        const frases = dividirEnFrases(texto);
+        for (let i = 0; i < frases.length; i++) {
+            if (miToken !== ttsToken) return;
+            await new Promise(function(resolve) {
+                const u = new SpeechSynthesisUtterance(frases[i]);
+                u.lang = config.idioma || 'es-MX';
+                u.rate = Math.max(0.5, Math.min(2, rate));
+                u.pitch = Math.max(0.5, Math.min(2, pitch));
+                u.volume = volumen;
+                u.onend = resolve;
+                u.onerror = resolve;
+                window.speechSynthesis.speak(u);
+            });
+        }
+    }
+
+    function reproducirAudio(url) {
+        return new Promise(function(resolve) {
+            try {
+                audioActual = new Audio(url);
+                audioActual.volume = Math.max(0, Math.min(1, config.volumen || 1.0));
+                audioActual.onended = function() { audioActual = null; resolve(); };
+                audioActual.onerror = function() { audioActual = null; resolve(); };
+                audioActual.play().catch(function() { resolve(); });
+            } catch (e) { resolve(); }
+        });
+    }
+
+    function detenerTTS() {
+        ttsToken++;
+        try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
+        if (audioActual) { try { audioActual.pause(); } catch (e) {} audioActual = null; }
+        isSpeaking = false;
+        detenerAnimacionBoca();
+    }
+
+    function iniciarReconocimiento() {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SR) return false;
+        if (recognitionActive && recognition) return true;
+
+        try {
+            recognition = new SR();
+            recognition.lang = config.idioma || 'es-MX';
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+            recibioResultado = false;
+
+            recognition.onstart = function() {
+                recognitionActive = true;
+                isListening = true;
+                setEstado('escuchando');
+            };
+
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript.trim();
+                if (!transcript) return;
+                recibioResultado = true;
+                const lower = transcript.toLowerCase();
+
+                if (/(adiós|adios|hasta luego|nos vemos|ya no)/.test(lower) && lower.length < 30) {
+                    conversacionActiva = false;
+                    historialLocal.push({ role: 'user', content: transcript, ts: Date.now() });
+                    hablar('¡Hasta luego!').then(function() { guardarHistorial(); });
+                    return;
+                }
+
+                if (/(olvida (todo|lo que hablamos)|borra (la )?conversaci[oó]n|empecemos de nuevo)/.test(lower)) {
+                    olvidarTodo();
+                    hablar('Listo, empezamos de cero.').then(function() {
+                        if (conversacionActiva) iniciarReconocimiento();
+                    });
+                    return;
+                }
+
+                procesarComando(transcript);
+            };
+
+            recognition.onerror = function(event) {
+                recognitionActive = false;
+                isListening = false;
+                if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                    conversacionActiva = false;
+                    setEstado('idle');
+                    if (config.mostrar_subtitulos) {
+                        mostrarBurbuja('Permite el micrófono.');
+                        setTimeout(ocultarBurbuja, 5000);
+                    }
+                } else if (event.error === 'no-speech' || event.error === 'aborted') {
+                    conversacionActiva = false;
+                    setEstado('idle');
+                } else {
+                    setEstado('idle');
+                }
+            };
+
+            recognition.onend = function() {
+                recognitionActive = false;
+                isListening = false;
+                if (!procesando && !isSpeaking) { setEstado('idle'); }
+                if (!recibioResultado && !procesando && !isSpeaking) conversacionActiva = false;
+            };
+
+            recognition.start();
+            return true;
+        } catch (e) { return false; }
+    }
+
+    function detenerReconocimiento() {
+        if (recognition && recognitionActive) {
+            try { recognition.abort ? recognition.abort() : recognition.stop(); } catch (e) {}
+        }
+        recognitionActive = false;
+        isListening = false;
+    }
+
+    async function procesarComando(texto) {
+        if (!texto) return;
+        procesando = true;
+        setEstado('pensando');
+
+        cambiarVisema('M');
+
+        historialLocal.push({ role: 'user', content: texto, ts: Date.now() });
+
+        let respuesta = '';
+        if (window.MarquinhosBrain && typeof window.MarquinhosBrain.preguntar === 'function') {
+            try {
+                respuesta = await window.MarquinhosBrain.preguntar(texto, historialLocal);
+            } catch (e) {
+                respuesta = 'Ups, tuve un problema. ¿Puedes repetir?';
+            }
+        } else {
+            respuesta = 'No puedo pensar ahora mismo.';
+        }
+
+        if (!respuesta) respuesta = 'No supe qué decir.';
+
+        historialLocal.push({ role: 'assistant', content: respuesta, ts: Date.now() });
+        guardarHistorial();
+
+        procesando = false;
+        const completo = await hablar(respuesta);
+
+        if (completo && conversacionActiva) {
+            recibioResultado = false;
+            setTimeout(function() {
+                if (conversacionActiva && !isSpeaking && !isListening && !procesando) {
+                    iniciarReconocimiento();
+                }
+            }, 300);
+        }
+    }
+
+    function instalarVisibility() {
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) detenerConversacion();
+        });
+    }
+
+    window.addEventListener('storage', function(e) {
+        if (e.key === 'marquinhos_config') {
+            cargarConfig();
+            aplicarModo();
+            aplicarTamano();
+        }
+        if (e.key === ACC_KEY) {
+            try {
+                accesoriosEquipados = JSON.parse(e.newValue || '[]');
+                renderAccesoriosEnAvatar();
+            } catch (err) {}
+        }
+    });
+
+    window.Marquinhos = {
+        hablar: hablar,
+        procesar: procesarComando,
+        olvidar: olvidarTodo,
+        recargarAccesorios: async function() {
+            await cargarAccesorios();
+            renderAccesoriosEnAvatar();
+        },
+        setModoSubtitulos: function(activo) {
+            config.mostrar_subtitulos = !!activo;
+            guardarConfig();
+            aplicarModo();
+        },
+        getModoSubtitulos: function() { return !!config.mostrar_subtitulos; },
+        getHistorial: function() { return historialLocal.slice(); },
+        getConfig: function() { return { ...config }; },
+        setConfig: function(nuevos) {
+            config = { ...config, ...nuevos };
+            guardarConfig();
+            aplicarModo();
+            aplicarTamano();
+        },
+        resetPosicion: function() {
+            config.posicion_x = null;
+            config.posicion_y = null;
+            guardarConfig();
+            if (container) {
+                container.style.left = '';
+                container.style.top = '';
+                container.style.right = '16px';
+                container.style.bottom = '16px';
+            }
+        },
+        getUserInfo: function() { return userInfo; },
+        _visemasDisponibles: function() { return Object.keys(VISEMAS_SVG); },
+        reiniciarTerminos: function() {
+            try { localStorage.removeItem(TERMINOS_KEY); } catch (e) {}
+            log('Términos reiniciados.');
+        },
+        getTerminosVersion: function() { return TERMINOS_VERSION; },
+        setTamano: function(porcentaje) {
+            config.tamano = Math.max(60, Math.min(150, parseInt(porcentaje, 10) || 100));
+            guardarConfig();
+            aplicarTamano();
+        },
+        getTamano: function() { return config.tamano != null ? config.tamano : 100; }
+    };
+
+    async function init() {
+        if (rutaExcluida()) return;
+        cargarConfig();
+        if (!config.activo) return;
+
+        await cargarUsuario();
+        cargarHistorial();
+        await cargarAccesorios();
+        crearWidget();
+        instalarVisibility();
+        log('✅ Marquinhos v9.4.1 Galactic Pro activo');
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();
