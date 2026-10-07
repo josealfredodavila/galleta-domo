@@ -16,8 +16,8 @@
     --text: #f0f4f8;
     --muted: #8aa8b8;
     --border: rgba(212, 175, 55, 0.16);
-    --verde: #0F2D1A;
     --success: #00d68f;
+    --danger: #ff3366;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -64,7 +64,6 @@ h1 .hex { font-family: 'Orbitron', monospace; }
     letter-spacing: .5px;
 }
 
-/* LISTA DE MASCOTAS */
 .mascota-item {
     display: flex;
     align-items: center;
@@ -110,10 +109,7 @@ h1 .hex { font-family: 'Orbitron', monospace; }
     border: 1px solid var(--border);
 }
 
-.mascota-info {
-    flex: 1;
-    min-width: 0;
-}
+.mascota-info { flex: 1; min-width: 0; }
 .mascota-nombre {
     font-weight: 700;
     font-size: .95rem;
@@ -167,7 +163,6 @@ h1 .hex { font-family: 'Orbitron', monospace; }
     background: white;
 }
 
-/* BOTÓN GUARDAR */
 .btn-guardar {
     width: 100%;
     padding: 14px;
@@ -186,7 +181,6 @@ h1 .hex { font-family: 'Orbitron', monospace; }
 .btn-guardar:hover { transform: scale(1.02); box-shadow: 0 8px 24px rgba(212, 175, 55, 0.4); }
 .btn-guardar:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* TOAST */
 .toast {
     position: fixed;
     top: 20px;
@@ -203,11 +197,6 @@ h1 .hex { font-family: 'Orbitron', monospace; }
     transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .toast.visible { transform: translateX(-50%) translateY(0); }
-.toast.info {
-    background: rgba(33,150,243,0.15);
-    border-color: #2196F3;
-    color: #BBDEFB;
-}
 </style>
 </head>
 <body>
@@ -216,7 +205,7 @@ h1 .hex { font-family: 'Orbitron', monospace; }
     <a href="/features/perfil/configuracion/index.html" class="btn-back">← Configuración</a>
 
     <h1><span class="hex">◈</span> Mascota Activa</h1>
-    <p class="sub">Elige una sola mascota para que aparezca en la app</p>
+    <p class="sub">Elige UNA sola mascota para que aparezca en la app</p>
 
     <div class="card">
         <h2>MASCOTAS DISPONIBLES</h2>
@@ -287,10 +276,10 @@ h1 .hex { font-family: 'Orbitron', monospace; }
 
     let mascotaSeleccionada = DEFAULT_MASCOTA;
 
-    function toast(msg, tipo) {
+    function toast(msg) {
         const el = document.getElementById('toast');
         el.textContent = msg;
-        el.className = 'toast visible' + (tipo ? ' ' + tipo : '');
+        el.className = 'toast visible';
         clearTimeout(el._timer);
         el._timer = setTimeout(() => el.classList.remove('visible'), 3000);
     }
@@ -343,14 +332,13 @@ h1 .hex { font-family: 'Orbitron', monospace; }
 
             setTimeout(() => {
                 if (ok) {
-                    toast('✅ Mascota actualizada', 'success');
+                    toast('✅ Mascota actualizada');
                 } else {
-                    toast('⚠️ No se pudo guardar', 'error');
+                    toast('⚠️ No se pudo guardar');
                 }
                 btn.disabled = false;
                 btn.textContent = '◈ Guardar selección';
 
-                // Recargar para aplicar el cambio
                 setTimeout(() => {
                     window.location.reload();
                 }, 800);
