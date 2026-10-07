@@ -1,0 +1,110 @@
+/* ================================================================
+   ITLASUHUA · ESTILOS
+   ================================================================ */
+
+#itlasuhua-container {
+    position: fixed;
+    width: min(430px, 42vw);
+    height: min(430px, 42vw);
+    min-width: 280px;
+    min-height: 280px;
+    right: 18px;
+    bottom: 18px;
+    z-index: 1000;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: visible;
+    filter:
+        drop-shadow(0 0 10px rgba(32, 239, 220, .35))
+        drop-shadow(0 0 22px rgba(71, 111, 255, .22));
+    transition:
+        width .3s ease,
+        height .3s ease,
+        right .3s ease,
+        bottom .3s ease,
+        opacity .3s ease;
+}
+
+#itlasuhua-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    overflow: visible;
+    shape-rendering: geometricPrecision;
+}
+
+#itlasuhua-svg #itla-body,
+#itlasuhua-svg #itla-neck,
+#itlasuhua-svg #cabeza-itlasuhua,
+#itlasuhua-svg #itla-crown,
+#itlasuhua-svg #itla-feather-crown {
+    transform-box: fill-box;
+}
+
+#itlasuhua-svg circle[fill="#16D7D0"],
+#itlasuhua-svg circle[fill="#1BD8D2"] {
+    filter: drop-shadow(0 0 4px rgba(63, 255, 242, .8));
+}
+
+#itlasuhua-svg #ala-izq,
+#itlasuhua-svg #ala-der {
+    transform-box: fill-box;
+    transform-origin: center;
+    will-change: transform;
+}
+
+#itlasuhua-svg #itla-sparkles {
+    animation: itlaSparklePulse 3.5s ease-in-out infinite;
+}
+
+@keyframes itlaSparklePulse {
+    0% { opacity: .75; }
+    50% { opacity: 1; }
+    100% { opacity: .75; }
+}
+
+#itlasuhua-svg #ojo-izq,
+#itlasuhua-svg #ojo-der {
+    transform-box: fill-box;
+    transform-origin: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #itlasuhua-svg animateTransform {
+        display: none;
+    }
+    #itlasuhua-svg #itla-sparkles {
+        animation: none;
+    }
+}
+
+@media (max-width: 900px) {
+    #itlasuhua-container {
+        width: 340px;
+        height: 340px;
+        right: 12px;
+        bottom: 12px;
+    }
+}
+
+@media (max-width: 600px) {
+    #itlasuhua-container {
+        width: 300px;
+        height: 300px;
+        min-width: 0;
+        min-height: 0;
+        right: 4px;
+        bottom: 6px;
+    }
+}
+
+@media (max-width: 380px) {
+    #itlasuhua-container {
+        width: 260px;
+        height: 260px;
+        right: 2px;
+        bottom: 4px;
+    }
+}
