@@ -1,21 +1,12 @@
 /* ================================================================
-   MARQUINHOS · PET · CSS v6.4
-   (arrastrable + 3 burbujitas + boca dinámica + animaciones Disney
-    + modal de términos + aislamiento + TAMAÑO CONFIGURABLE)
+   MARQUINHOS · PET · CSS v6.5 "GALACTIC"
    ================================================================ */
 
-/* ================================================================
-   Variables globales del tamaño (se sobreescriben desde JS)
-   El usuario puede ajustar el tamaño desde /configuracion/marquinhos
-   ================================================================ */
 #marquinhos-pet {
     --mq-pet-ancho: 90px;
     --mq-pet-alto: 130px;
 }
 
-/* ================================================================
-   WIDGET BASE
-   ================================================================ */
 .mq-pet {
     position: fixed !important;
     bottom: 16px !important;
@@ -35,19 +26,15 @@
     transition: none;
 }
 
-.mq-pet.mq-dragging {
-    transition: none;
-    cursor: grabbing;
-}
+.mq-pet.mq-dragging { transition: none; cursor: grabbing; }
 
 .mq-pet-avatar {
     position: absolute;
-    bottom: 0;
-    right: 0;
+    bottom: 0; right: 0;
     width: var(--mq-pet-ancho, 90px);
     height: var(--mq-pet-alto, 130px);
     cursor: grab;
-    filter: drop-shadow(0 6px 16px rgba(21, 101, 192, 0.35));
+    filter: drop-shadow(0 6px 20px rgba(124, 77, 255, 0.5));
     animation: mq-float 4s ease-in-out infinite;
     touch-action: none;
     -webkit-tap-highlight-color: transparent;
@@ -62,11 +49,11 @@
 .mq-pet-avatar:active { cursor: grabbing; }
 
 .mq-pet-svg {
-    width: 100%;
-    height: 100%;
+    width: 100%; height: 100%;
     display: block;
     pointer-events: none;
     transform-origin: center center;
+    overflow: visible;
 }
 
 @keyframes mq-float {
@@ -74,17 +61,28 @@
     50% { transform: translateY(-4px); }
 }
 
-/* ================================================================
-   Cuerpo del pet (acepta transform del JS Disney)
-   ================================================================ */
 #mq-cuerpo {
-    transform-origin: 100px 200px;
+    transform-origin: 100px 190px;
     will-change: transform;
 }
 
-/* ================================================================
-   BURBUJA DE TEXTO (modo subtítulos)
-   ================================================================ */
+/* ✅ NUEVO: Transiciones suaves para brazos y manos */
+.mq-brazo {
+    transform-origin: center center;
+    will-change: transform;
+}
+
+.mq-mano {
+    transform-origin: center center;
+    will-change: transform;
+}
+
+.mq-pierna {
+    transform-origin: center center;
+    will-change: transform;
+}
+
+/* BURBUJA */
 .mq-pet-bubble {
     position: absolute;
     bottom: calc(100% - 20px);
@@ -93,20 +91,15 @@
     color: #0D47A1;
     padding: 8px 14px;
     border-radius: 14px;
-    font-size: 12px;
-    line-height: 1.35;
-    font-weight: 600;
-    max-width: 220px;
-    min-width: 60px;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(21, 101, 192, 0.12);
+    font-size: 12px; line-height: 1.35; font-weight: 600;
+    max-width: 220px; min-width: 60px;
+    box-shadow: 0 8px 30px rgba(124, 77, 255, 0.3), 0 0 0 1px rgba(124, 77, 255, 0.2);
     opacity: 0;
     transform: translateY(8px) scale(0.95);
     transform-origin: bottom right;
     transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
     pointer-events: none;
-    word-wrap: break-word;
-    white-space: normal;
-    z-index: 1;
+    word-wrap: break-word; white-space: normal; z-index: 1;
 }
 
 .mq-pet-bubble.mq-bubble-visible {
@@ -117,27 +110,22 @@
 .mq-pet-bubble::after {
     content: '';
     position: absolute;
-    bottom: -8px;
-    right: 20px;
-    width: 0;
-    height: 0;
+    bottom: -8px; right: 20px;
+    width: 0; height: 0;
     border-left: 8px solid transparent;
     border-right: 8px solid transparent;
     border-top: 8px solid rgba(255, 255, 255, 0.98);
 }
 
-/* ================================================================
-   INDICADOR DE 3 BURBUJITAS ANIMADAS
-   ================================================================ */
+/* BURBUJITAS */
 .mq-pet-bubble-dots {
     display: none;
     gap: 6px;
-    align-items: center;
-    justify-content: center;
+    align-items: center; justify-content: center;
     padding: 10px 16px;
     background: rgba(255, 255, 255, 0.98);
     border-radius: 20px;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(21, 101, 192, 0.12);
+    box-shadow: 0 6px 20px rgba(124, 77, 255, 0.3), 0 0 0 1px rgba(124, 77, 255, 0.2);
     position: absolute;
     bottom: calc(100% - 20px);
     left: 50%;
@@ -145,8 +133,7 @@
     transform-origin: bottom center;
     opacity: 0;
     transition: opacity 0.2s ease, transform 0.2s ease;
-    pointer-events: none;
-    z-index: 2;
+    pointer-events: none; z-index: 2;
 }
 
 .mq-pet-bubble-dots.mq-dots-visible {
@@ -158,21 +145,18 @@
 .mq-pet-bubble-dots::after {
     content: '';
     position: absolute;
-    bottom: -7px;
-    left: 50%;
+    bottom: -7px; left: 50%;
     transform: translateX(-50%);
-    width: 0;
-    height: 0;
+    width: 0; height: 0;
     border-left: 7px solid transparent;
     border-right: 7px solid transparent;
     border-top: 7px solid rgba(255, 255, 255, 0.98);
 }
 
 .mq-pet-bubble-dots .mq-dot {
-    width: 8px;
-    height: 8px;
+    width: 8px; height: 8px;
     border-radius: 50%;
-    background: #1565C0;
+    background: #7C4DFF;
     animation: mq-dot-bounce 1.2s ease-in-out infinite;
 }
 
@@ -181,42 +165,19 @@
 .mq-pet-bubble-dots .mq-dot:nth-child(3) { animation-delay: 0.3s; }
 
 @keyframes mq-dot-bounce {
-    0%, 80%, 100% {
-        transform: scale(0.6);
-        opacity: 0.4;
-    }
-    40% {
-        transform: scale(1);
-        opacity: 1;
-    }
+    0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+    40% { transform: scale(1); opacity: 1; }
 }
 
-.mq-pet[data-estado="hablando"] .mq-pet-bubble-dots .mq-dot {
-    background: #2ECC71;
-}
+.mq-pet[data-estado="hablando"] .mq-pet-bubble-dots .mq-dot { background: #2ECC71; }
+.mq-pet[data-estado="pensando"] .mq-pet-bubble-dots .mq-dot { background: #FFD700; }
+.mq-pet[data-estado="escuchando"] .mq-pet-bubble-dots .mq-dot { background: #00E5FF; }
 
-.mq-pet[data-estado="pensando"] .mq-pet-bubble-dots .mq-dot {
-    background: #FFD700;
-}
+.mq-pet.mq-modo-voz .mq-pet-bubble { display: none !important; }
 
-.mq-pet[data-estado="escuchando"] .mq-pet-bubble-dots .mq-dot {
-    background: #00E5FF;
-}
+.mq-pet-boca { transition: d 0.08s ease-out; }
 
-.mq-pet.mq-modo-voz .mq-pet-bubble {
-    display: none !important;
-}
-
-/* ================================================================
-   BOCA DINÁMICA — Visemas
-   ================================================================ */
-.mq-pet-boca {
-    transition: d 0.08s ease-out;
-}
-
-/* ================================================================
-   Estados del avatar (filtros y reflejos)
-   ================================================================ */
+/* ESTADOS */
 .mq-pet[data-estado="escuchando"] .mq-pet-avatar {
     animation: mq-pulse-listen 1.2s ease-in-out infinite;
 }
@@ -226,66 +187,50 @@
 }
 
 @keyframes mq-pulse-listen {
-    0%, 100% { filter: drop-shadow(0 6px 16px rgba(0, 229, 255, 0.3)); }
-    50% { filter: drop-shadow(0 6px 24px rgba(0, 229, 255, 0.7)); }
+    0%, 100% { filter: drop-shadow(0 6px 16px rgba(0, 229, 255, 0.4)); }
+    50% { filter: drop-shadow(0 6px 28px rgba(0, 229, 255, 0.85)); }
 }
 
 @keyframes mq-pulse-think {
-    0%, 100% { filter: drop-shadow(0 6px 16px rgba(255, 215, 0, 0.3)); }
-    50% { filter: drop-shadow(0 6px 24px rgba(255, 215, 0, 0.7)); }
+    0%, 100% { filter: drop-shadow(0 6px 16px rgba(255, 215, 0, 0.4)); }
+    50% { filter: drop-shadow(0 6px 28px rgba(255, 215, 0, 0.85)); }
 }
 
-/* ================================================================
-   ANIMACIONES DISNEY (controladas por JS)
-   ================================================================ */
-
-/* Los ojos y pupilas necesitan transform-origin centrado */
-#mq-pupila-izq,
-#mq-pupila-der,
-#mq-brillo-izq,
-#mq-brillo-der {
+#mq-pupila-izq, #mq-pupila-der,
+#mq-brillo-izq, #mq-brillo-der {
     transform-origin: center center;
     will-change: transform;
 }
 
-/* Suavizar la transición del parpadeo (ry) */
-#mq-ojo-izq,
-#mq-ojo-der {
+#mq-ojo-izq, #mq-ojo-der {
     transition: ry 0.08s ease-out;
 }
 
-/* ================================================================
-   MODAL DE TÉRMINOS DE USO
-   ================================================================ */
+#mq-ceja-izq, #mq-ceja-der {
+    transition: d 0.3s ease-out;
+}
+
+/* MODAL */
 .mq-modal-overlay {
-    position: fixed;
-    inset: 0;
+    position: fixed; inset: 0;
     background: rgba(0, 0, 0, 0.85);
     z-index: 2147483646;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: flex; align-items: center; justify-content: center;
     padding: 20px;
     animation: mq-fade-in 0.3s ease;
 }
 
-@keyframes mq-fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
+@keyframes mq-fade-in { from { opacity: 0; } to { opacity: 1; } }
 
 .mq-modal-content {
     background: #0a0f1a;
-    border: 1px solid rgba(212, 175, 55, 0.3);
+    border: 1px solid rgba(124, 77, 255, 0.4);
     border-radius: 16px;
-    max-width: 480px;
-    width: 100%;
-    max-height: 85vh;
-    display: flex;
-    flex-direction: column;
+    max-width: 480px; width: 100%; max-height: 85vh;
+    display: flex; flex-direction: column;
     color: #f0f4f8;
     font-family: -apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 20px 60px rgba(124, 77, 255, 0.3);
     animation: mq-slide-up 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -295,18 +240,15 @@
 }
 
 .mq-modal-content h2 {
-    color: #D4AF37;
-    font-size: 1.1rem;
-    margin: 0;
+    color: #7C4DFF; font-size: 1.1rem; margin: 0;
     padding: 20px 24px 12px;
-    border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+    border-bottom: 1px solid rgba(124, 77, 255, 0.2);
 }
 
 .mq-modal-body {
     padding: 20px 24px;
     overflow-y: auto;
-    font-size: 0.88rem;
-    line-height: 1.55;
+    font-size: 0.88rem; line-height: 1.55;
     color: #c0d8e8;
 }
 
@@ -314,30 +256,25 @@
 .mq-modal-body ul { padding-left: 20px; margin: 8px 0 16px; }
 .mq-modal-body li { margin-bottom: 6px; }
 .mq-modal-body strong { color: #f0f4f8; }
-.mq-modal-body a { color: #D4AF37; }
+.mq-modal-body a { color: #7C4DFF; }
 
 .mq-modal-actions {
     padding: 16px 24px 20px;
-    display: flex;
-    gap: 10px;
-    border-top: 1px solid rgba(212, 175, 55, 0.15);
+    display: flex; gap: 10px;
+    border-top: 1px solid rgba(124, 77, 255, 0.2);
 }
 
 .mq-btn-aceptar, .mq-btn-rechazar {
-    flex: 1;
-    padding: 12px 16px;
-    border-radius: 99px;
-    border: 0;
-    font-weight: 700;
-    font-size: 0.85rem;
-    cursor: pointer;
-    font-family: inherit;
+    flex: 1; padding: 12px 16px;
+    border-radius: 99px; border: 0;
+    font-weight: 700; font-size: 0.85rem;
+    cursor: pointer; font-family: inherit;
     transition: transform 0.15s ease;
 }
 
 .mq-btn-aceptar {
-    background: linear-gradient(135deg, #D4AF37, #b8923a);
-    color: #05080f;
+    background: linear-gradient(135deg, #7C4DFF, #00E5FF);
+    color: #ffffff;
 }
 
 .mq-btn-rechazar {
@@ -346,18 +283,9 @@
     color: #8aa8b8;
 }
 
-.mq-btn-aceptar:hover, .mq-btn-rechazar:hover {
-    transform: scale(1.03);
-}
+.mq-btn-aceptar:hover, .mq-btn-rechazar:hover { transform: scale(1.03); }
 
-/* ================================================================
-   AISLAMIENTO TOTAL DEL PET FLOTANTE
-   ================================================================
-   Evita conflictos con otras páginas (mensajes, tienda, etc.)
-   que tienen sus propios .header, .app, .avatar, etc.
-   El tamaño se controla con las variables --mq-pet-ancho / --mq-pet-alto
-   ================================================================ */
-
+/* AISLAMIENTO */
 #marquinhos-pet {
     all: initial;
     position: fixed !important;
@@ -379,9 +307,7 @@
     box-sizing: border-box !important;
 }
 
-#marquinhos-pet * {
-    box-sizing: border-box !important;
-}
+#marquinhos-pet * { box-sizing: border-box !important; }
 
 #marquinhos-pet .mq-pet-avatar {
     position: absolute !important;
@@ -408,49 +334,23 @@
     transform-origin: center center !important;
 }
 
-/* ================================================================
-   Responsive
-   ================================================================ */
+/* RESPONSIVE */
 @media (max-width: 520px) {
     .mq-pet-bubble {
         font-size: 11px;
         max-width: 180px;
         padding: 6px 10px;
     }
+    .mq-pet-bubble-dots { padding: 8px 12px; gap: 5px; }
+    .mq-pet-bubble-dots .mq-dot { width: 7px; height: 7px; }
 
-    .mq-pet-bubble-dots {
-        padding: 8px 12px;
-        gap: 5px;
-    }
-
-    .mq-pet-bubble-dots .mq-dot {
-        width: 7px;
-        height: 7px;
-    }
-
-    .mq-modal-content h2 {
-        font-size: 1rem;
-        padding: 16px 20px 10px;
-    }
-
-    .mq-modal-body {
-        padding: 16px 20px;
-        font-size: 0.83rem;
-    }
-
-    .mq-modal-actions {
-        padding: 14px 20px 18px;
-    }
-
-    .mq-btn-aceptar, .mq-btn-rechazar {
-        font-size: 0.8rem;
-        padding: 10px 12px;
-    }
+    .mq-modal-content h2 { font-size: 1rem; padding: 16px 20px 10px; }
+    .mq-modal-body { padding: 16px 20px; font-size: 0.83rem; }
+    .mq-modal-actions { padding: 14px 20px 18px; }
+    .mq-btn-aceptar, .mq-btn-rechazar { font-size: 0.8rem; padding: 10px 12px; }
 }
 
-/* ================================================================
-   Tema día
-   ================================================================ */
+/* TEMA DÍA */
 html.tema-dia .mq-pet-bubble,
 html[data-tema="dia"] .mq-pet-bubble {
     background: rgba(255, 255, 255, 0.99);
@@ -471,24 +371,20 @@ html.tema-dia .mq-modal-content,
 html[data-tema="dia"] .mq-modal-content {
     background: #ffffff;
     color: #0a1a3e;
-    border-color: rgba(212, 175, 55, 0.4);
+    border-color: rgba(124, 77, 255, 0.4);
 }
 
 html.tema-dia .mq-modal-content h2,
 html[data-tema="dia"] .mq-modal-content h2 {
-    color: #b8923a;
-    border-bottom-color: rgba(212, 175, 55, 0.3);
+    color: #7C4DFF;
+    border-bottom-color: rgba(124, 77, 255, 0.3);
 }
 
 html.tema-dia .mq-modal-body,
-html[data-tema="dia"] .mq-modal-body {
-    color: #334;
-}
+html[data-tema="dia"] .mq-modal-body { color: #334; }
 
 html.tema-dia .mq-modal-body strong,
-html[data-tema="dia"] .mq-modal-body strong {
-    color: #0a1a3e;
-}
+html[data-tema="dia"] .mq-modal-body strong { color: #0a1a3e; }
 
 html.tema-dia .mq-btn-rechazar,
 html[data-tema="dia"] .mq-btn-rechazar {
