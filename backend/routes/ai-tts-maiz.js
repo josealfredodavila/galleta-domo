@@ -18,27 +18,18 @@ const router = express.Router();
 const { createClient } = require('@supabase/supabase-js');
 const axios = require('axios');
 
-/* ================================================================
-   CONFIGURACIÓN
-================================================================ */
-
 const GOOGLE_TTS_API_KEY = process.env.GOOGLE_TTS_API_KEY;
 const ELEVEN_API_KEY = process.env.ELEVENLABS_API_KEY;
 
-// Voz propia del Capitán Maíz
 const ELEVEN_VOICE_ID =
     process.env.ELEVENLABS_VOICE_ID_CAPITAN_MAIZ ||
-    'pNInz6obpgDQGcFmaJgB'; // Voz default "Adam"
+    'pNInz6obpgDQGcFmaJgB';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const TTS_TIMEOUT_MS = 30000;
 const MAX_TEXTO = 800;
-
-/* ================================================================
-   SUPABASE ADMIN
-================================================================ */
 
 const supabaseAdmin =
     SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
@@ -50,10 +41,6 @@ const supabaseAdmin =
             }
         })
         : null;
-
-/* ================================================================
-   AUTENTICACIÓN
-================================================================ */
 
 async function autenticar(req, res, next) {
     try {
@@ -93,10 +80,6 @@ async function autenticar(req, res, next) {
     }
 }
 
-/* ================================================================
-   GOOGLE CLOUD TTS — Voz masculina grave
-================================================================ */
-
 async function generarGoogle(texto, rate, pitch) {
     if (!GOOGLE_TTS_API_KEY) return null;
 
@@ -132,10 +115,6 @@ async function generarGoogle(texto, rate, pitch) {
     }
 }
 
-/* ================================================================
-   ELEVENLABS TTS — Voz propia
-================================================================ */
-
 async function generarEleven(texto) {
     if (!ELEVEN_API_KEY) return null;
 
@@ -168,10 +147,6 @@ async function generarEleven(texto) {
         return null;
     }
 }
-
-/* ================================================================
-   POST /tts-maiz
-================================================================ */
 
 router.post('/tts-maiz', autenticar, async (req, res) => {
     try {
