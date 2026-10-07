@@ -1,7 +1,8 @@
 // ================================================================
 // server.js — Sariel's Ecosystem
 // Backend principal — Producción Railway
-// ✅ v2.1: Añadida ruta /legal/terminos-marquinhos
+// ✅ v2.2: Añadidas rutas /api/ai/chat-maiz y /api/ai/voice/tts-maiz
+//           (Capitán Maíz — separado de Marquinhos)
 // ================================================================
 
 require('dotenv').config();
@@ -895,6 +896,11 @@ montarRouter('/api/ai/voice', './routes/ai-voice', 'routes/ai-voice');
 montarRouter('/api/ai/chat-pet', './routes/ai-chat-pet', 'routes/ai-chat-pet');
 
 montarRouter('/api/ai/tts', './routes/ai-tts', 'routes/ai-tts');
+
+// ⚔️ Capitán Maíz — separado de Marquinhos (NUEVO)
+montarRouter('/api/ai/chat-maiz', './routes/ai-chat-maiz', 'routes/ai-chat-maiz');
+
+montarRouter('/api/ai/voice', './routes/ai-tts-maiz', 'routes/ai-tts-maiz');
 
 montarRouter('/api/telnyx', './routes/telnyx', 'routes/telnyx');
 
