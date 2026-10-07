@@ -1,9 +1,8 @@
 /* ================================================================
-   ITLASUHUA · ESTILOS v2.0
+   ITLASUHUA · ESTILOS v3.0
    ================================================================
-   - Se puede ARRASTRAR (drag) como Marquinhos y Capitán Maíz
-   - Posición persistente en localStorage
-   - Diseño original intacto
+   - Arrastrable, posición persistente
+   - Brillo pulsante, boca al hablar, polvo arcoíris
    ================================================================ */
 
 #itlasuhua-container {
@@ -16,7 +15,6 @@
     bottom: 18px;
     z-index: 1000;
 
-    /* ✅ CLAVE: pointer-events: auto para que reciba clicks y drag */
     pointer-events: auto;
     cursor: grab;
 
@@ -27,8 +25,8 @@
     overflow: visible;
 
     filter:
-        drop-shadow(0 0 10px rgba(32, 239, 220, .35))
-        drop-shadow(0 0 22px rgba(71, 111, 255, .22));
+        drop-shadow(0 0 12px rgba(60, 255, 232, .55))
+        drop-shadow(0 0 26px rgba(150, 90, 255, .35));
 
     transition:
         width .3s ease,
@@ -58,28 +56,35 @@
     pointer-events: none;
 }
 
-#itlasuhua-svg #itla-body,
-#itlasuhua-svg #itla-neck,
-#itlasuhua-svg #cabeza-itlasuhua,
-#itlasuhua-svg #itla-crown,
-#itlasuhua-svg #itla-feather-crown {
-    transform-box: fill-box;
-}
-
-#itlasuhua-svg circle[fill="#16D7D0"],
-#itlasuhua-svg circle[fill="#1BD8D2"] {
-    filter: drop-shadow(0 0 4px rgba(63, 255, 242, .8));
-}
-
-#itlasuhua-svg #ala-izq,
-#itlasuhua-svg #ala-der {
+/* Brillo pulsante de ojos, gemas y aura */
+#itlasuhua-svg .itla-ojo {
+    animation: itlaGlow 2.8s ease-in-out infinite;
     transform-box: fill-box;
     transform-origin: center;
-    will-change: transform;
+}
+
+#itlasuhua-svg .itla-gema {
+    animation: itlaGlow 2.2s ease-in-out infinite;
+}
+
+#itlasuhua-svg #itla-aura {
+    animation: itlaAura 3.2s ease-in-out infinite;
+    transform-box: fill-box;
+    transform-origin: center;
 }
 
 #itlasuhua-svg #itla-sparkles {
     animation: itlaSparklePulse 3.5s ease-in-out infinite;
+}
+
+@keyframes itlaGlow {
+    0%, 100% { filter: brightness(1) saturate(1); }
+    50% { filter: brightness(1.35) saturate(1.25); }
+}
+
+@keyframes itlaAura {
+    0%, 100% { opacity: .6; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.04); }
 }
 
 @keyframes itlaSparklePulse {
@@ -88,18 +93,79 @@
     100% { opacity: .75; }
 }
 
-#itlasuhua-svg #ojo-izq,
-#itlasuhua-svg #ojo-der {
+/* Boca: sonrisa en reposo, boca abierta al hablar */
+#itlasuhua-svg #itla-boca-abierta {
+    opacity: 0;
     transform-box: fill-box;
-    transform-origin: center;
+    transform-origin: 50% 0%;
+}
+
+#itlasuhua-container.is-talking #itla-boca-abierta {
+    opacity: 1;
+    animation: itlaMouth .32s ease-in-out infinite alternate;
+}
+
+#itlasuhua-container.is-talking #itla-sonrisa {
+    opacity: 0;
+}
+
+@keyframes itlaMouth {
+    0% { transform: scaleY(.35); }
+    100% { transform: scaleY(1.15); }
+}
+
+/* Polvo arcoíris */
+.itla-dust-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 3;
+    overflow: visible;
+}
+
+.itla-dust {
+    position: absolute;
+    left: 50%;
+    top: 58%;
+    width: var(--s, 8px);
+    height: var(--s, 8px);
+    border-radius: 50%;
+    background: radial-gradient(
+        circle,
+        #FFFFFF 0%,
+        hsl(var(--h, 180) 100% 65%) 55%,
+        transparent 72%
+    );
+    box-shadow: 0 0 8px hsl(var(--h, 180) 100% 70%);
+    transform: translate(-50%, -50%);
+    animation: itlaDust var(--t, 1.4s) ease-out forwards;
+    pointer-events: none;
+}
+
+@keyframes itlaDust {
+    0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(.6);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, 80px))) scale(1.1);
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
     #itlasuhua-svg animateTransform {
         display: none;
     }
-    #itlasuhua-svg #itla-sparkles {
+    #itlasuhua-svg .itla-ojo,
+    #itlasuhua-svg .itla-gema,
+    #itlasuhua-svg #itla-aura,
+    #itlasuhua-svg #itla-sparkles,
+    #itlasuhua-container.is-talking #itla-boca-abierta {
         animation: none;
+    }
+    .itla-dust {
+        display: none;
     }
 }
 
