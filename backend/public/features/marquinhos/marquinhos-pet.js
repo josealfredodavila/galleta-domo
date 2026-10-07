@@ -1,10 +1,11 @@
 // ================================================================
-// MARQUINHOS · PET v9.7 "GALACTIC PRO"
-// FUSIÓN: v9.6 (MarquinhosFit + Fase 2 SVG) 
-//       + v9.4 (slots data-acc-slot + visemas nuevos + antena en cabeza)
-// - Los accesorios se reparten por partes del cuerpo (cabeza, brazos, piernas)
-// - Compatible con marquinhos-accesorios-svg.js v2.0
-// - Compatible con marquinhos-fit.js v1.2
+// MARQUINHOS · PET v9.8 "GALACTIC PRO"
+// Mejoras sobre v9.7:
+// - Fixes de auditoría (C-1, C-2, A-1, A-2, A-3, A-4, M-1, M-5, M-7, M-10)
+// - Términos sincronizados con Supabase (registro legal)
+// - Cache TTS con TTL (recuperación automática)
+// - conversationToken para evitar respuestas fantasma
+// - procesando con finally garantizado
 // ================================================================
 
 'use strict';
@@ -48,6 +49,7 @@
     const TONO_PITCH = { grave: 0.85, medio: 1.0, agudo: 1.15 };
 
     const HIST_MAX = 40;
+    const HIST_MAX_ENVIO = 20; // 🆕 M-10: truncar antes de enviar al brain
     const HIST_TTL_MS = 7 * 24 * 60 * 60 * 1000;
     const HIST_KEY = 'marquinhos_hist_';
     const ACC_KEY = 'marquinhos_accesorios_equipados';
@@ -55,8 +57,12 @@
     const TERMINOS_VERSION = '1.0';
     const TERMINOS_KEY = 'marquinhos_terminos_aceptados_' + TERMINOS_VERSION;
 
+    // 🆕 #9: Cache TTS con TTL (recupera backend tras fallo temporal)
+    const TTS_FALLO_TTL_MS = 2 * 60 * 1000; // 2 minutos
+    let _ttsBackendFalloEn = 0;
+
     // ✅ v9.7: visemas actualizados (boca DENTRO de la cabeza, 132–154)
-    var VISEMAS_SVG = {
+    const VISEMAS_SVG = {
         REST: 'M 78 137 Q 100 150 122 137',
         A:    'M 70 134 Q 100 130 130 134 Q 126 154 100 154 Q 74 154 70 134 Z',
         E:    'M 72 137 Q 100 134 128 137 Q 122 150 100 150 Q 78 150 72 137 Z',
@@ -65,7 +71,7 @@
         U:    'M 100 135 Q 111 135 111 143 Q 111 151 100 151 Q 89 151 89 143 Q 89 135 100 135 Z',
         M:    'M 82 140 L 118 140'
     };
-    var VISEMAS_SIN_RELLENO = { REST: true, M: true };
+    const VISEMAS_SIN_RELLENO = { REST: true, M: true };
 
     let config = { ...CONFIG_DEFAULT };
     let container = null;
@@ -79,13 +85,15 @@
     let historialLocal = [];
     let userInfo = null;
     let ttsToken = 0;
+    let conversationToken = 0; // 🆕 A-3: evita respuestas fantasma
     let conversacionActiva = false;
     let procesando = false;
     let recibioResultado = false;
     let accesoriosEquipados = [];
 
-    var _bocaTimeouts = [];
-    var _bocaActiva = false;
+    let _bocaTimeouts = [];
+    let _bocaActiva = false;
+    let _terminosProcesando = false; // 🆕 M-7: anti-reentrada en modal
 
     let isDragging = false;
     let dragStartX = 0;
@@ -99,7 +107,7 @@
         return RUTAS_EXCLUIDAS.some(r => path.indexOf(r) !== -1);
     }
 
-    function log(msg) { console.log('[Marquinhos v9.7]', msg); }
+    function log(msg) { console.log('[Marquinhos v9.8]', msg); }
 
     function esc(v) {
         const d = document.createElement('div');
@@ -107,10 +115,15 @@
         return d.innerHTML;
     }
 
+    // 🆕 A-1: clamping de config al cargar
     function cargarConfig() {
         try {
             const g = localStorage.getItem('marquinhos_config');
             if (g) config = { ...CONFIG_DEFAULT, ...JSON.parse(g) };
+            // Clamping de seguridad (evita valores fuera de rango)
+            if (config.tamano != null) config.tamano = Math.max(60, Math.min(150, parseInt(config.tamano, 10) || 100));
+            if (config.volumen != null) config.volumen = Math.max(0, Math.min(1, parseFloat(config.volumen) || 1));
+            if (config.velocidad != null) config.velocidad = Math.max(0.5, Math.min(2, parseFloat(config.velocidad) || 1));
         } catch (e) {}
     }
 
@@ -138,6 +151,7 @@
 
     function aplicarModo() {
         if (!container) return;
+        // Nota: 'mq-modo-voz' = modo solo-voz (sin subtítulos visibles)
         if (config.mostrar_subtitulos) {
             container.classList.remove('mq-modo-voz');
         } else {
@@ -145,6 +159,7 @@
         }
     }
 
+    // 🆕 A-2: validar role en historial
     function cargarHistorial() {
         try {
             const raw = localStorage.getItem(HIST_KEY + (userInfo ? userInfo.id : 'anon'));
@@ -152,7 +167,8 @@
             const arr = JSON.parse(raw);
             const limite = Date.now() - HIST_TTL_MS;
             historialLocal = (Array.isArray(arr) ? arr : [])
-                .filter(m => m && m.content && m.ts && m.ts > limite)
+                .filter(m => m && m.content && m.ts && m.ts > limite &&
+                             (m.role === 'user' || m.role === 'assistant'))
                 .slice(-HIST_MAX);
         } catch (e) { historialLocal = []; }
     }
@@ -228,18 +244,24 @@
         } catch (e) {}
     }
 
+    // 🆕 M-1: guarda defensiva en posicionPorCategoria
     function posicionPorCategoria(cat) {
         if (window.MarquinhosFit && typeof window.MarquinhosFit.getCategoria === 'function') {
-            const fit = window.MarquinhosFit.getCategoria(cat);
-            return { x: fit.x, y: fit.y, size: fit.size };
+            try {
+                const fit = window.MarquinhosFit.getCategoria(cat);
+                if (fit && fit.x != null && fit.y != null && fit.size != null) {
+                    return { x: fit.x, y: fit.y, size: fit.size };
+                }
+            } catch (e) {}
         }
         return { x: 100, y: 100, size: 55 };
     }
 
     // ============================================================
-    // ✅ v9.7: Renderiza accesorios con slots por parte del cuerpo
-    // Usa marquinhos-accesorios-svg.js v2.0 (aplicar por data-acc-slot)
-    // Fallback: emoji si no hay SVG o si la lib no está cargada
+    // v9.8: Renderiza accesorios con slots + fixes de auditoría
+    // - C-1: valida que lib.aplicar() devuelva array
+    // - C-2: offset vertical en fallback emoji para evitar apilado
+    // - M-5: retry hasta 5 intentos para cargar MarquinhosAccesoriosSVG
     // ============================================================
     function renderAccesoriosEnAvatar(intento) {
         const svg = container ? container.querySelector('svg.mq-pet-svg') : null;
@@ -248,25 +270,36 @@
         const lib = window.MarquinhosAccesoriosSVG;
         const lista = accesoriosEquipados.map(a => a.svg).filter(Boolean);
 
-        // Si la biblioteca todavía no cargó, reintenta una vez
-        if ((!lib || !lib.aplicar) && lista.length && !intento) {
-            setTimeout(function() { renderAccesoriosEnAvatar(1); }, 900);
+        // 🆕 M-5: reintenta hasta 5 veces con backoff
+        const intentoActual = intento || 0;
+        if ((!lib || typeof lib.aplicar !== 'function') && lista.length > 0 && intentoActual < 5) {
+            setTimeout(function() {
+                renderAccesoriosEnAvatar(intentoActual + 1);
+            }, 600 + intentoActual * 400);
         }
 
         let resto = lista;
         if (lib && typeof lib.aplicar === 'function' && svg.querySelector('[data-acc-slot]')) {
-            try { resto = lib.aplicar(svg, lista); } catch (e) { resto = lista; }
+            try {
+                // 🆕 C-1: valida que devuelva array
+                const resultado = lib.aplicar(svg, lista);
+                resto = Array.isArray(resultado) ? resultado : lista;
+            } catch (e) {
+                resto = lista;
+            }
         }
 
         const layer = document.getElementById('mq-acc-layer');
         if (!layer) return;
 
+        // 🆕 C-2: offset vertical para evitar apilamiento en fallback
         layer.innerHTML = accesoriosEquipados
-            .filter(a => a.svg && resto.indexOf(a.svg) !== -1)
-            .map(a => {
+            .filter(a => a.svg && Array.isArray(resto) && resto.indexOf(a.svg) !== -1)
+            .map((a, i) => {
                 if (String(a.svg).trim().indexOf('<') === 0) return '<g>' + a.svg + '</g>';
                 const p = posicionPorCategoria(a.categoria);
-                return `<text x="${p.x}" y="${p.y}" font-size="${p.size}" text-anchor="middle">${esc(a.svg)}</text>`;
+                const yOffset = i * 30;
+                return `<text x="${p.x}" y="${p.y + yOffset}" font-size="${p.size}" text-anchor="middle">${esc(a.svg)}</text>`;
             }).join('');
     }
 
@@ -328,6 +361,56 @@
         siguiente();
     }
 
+    // ============================================================
+    // 🆕 #11: Términos sincronizados con Supabase
+    // - Al cargar: si localStorage vacío, consulta Supabase
+    // - Al aceptar: guarda en ambos lados (legal + local)
+    // ============================================================
+    async function verificarTerminosEnSupabase() {
+        if (!window.getSupabase) return false;
+        try {
+            const sb = window.getSupabase();
+            const r = await sb.auth.getSession();
+            if (!r.data.session) return false;
+
+            const { data, error } = await sb.rpc('verificar_aceptacion_terminos', {
+                p_version: TERMINOS_VERSION
+            });
+            if (!error && data && data.aceptado === true) {
+                // Restaura en localStorage
+                try {
+                    localStorage.setItem(TERMINOS_KEY, 'true');
+                    localStorage.setItem('marquinhos_terminos_fecha', data.fecha_aceptacion || '');
+                    localStorage.setItem('marquinhos_terminos_version', TERMINOS_VERSION);
+                } catch (e) {}
+                return true;
+            }
+        } catch (e) {
+            console.warn('[Marquinhos] Error consultando términos en Supabase:', e);
+        }
+        return false;
+    }
+
+    async function registrarTerminosEnSupabase() {
+        if (!window.getSupabase) return false;
+        try {
+            const sb = window.getSupabase();
+            const r = await sb.auth.getSession();
+            if (!r.data.session) return false;
+
+            const { data, error } = await sb.rpc('registrar_aceptacion_terminos', {
+                p_version: TERMINOS_VERSION,
+                p_user_agent: navigator.userAgent
+            });
+            if (!error && data && data.success === true) {
+                return true;
+            }
+        } catch (e) {
+            console.warn('[Marquinhos] Error registrando términos en Supabase:', e);
+        }
+        return false;
+    }
+
     function mostrarModalTerminos() {
         if (document.getElementById('mq-modal-terminos')) return;
 
@@ -360,14 +443,31 @@
         document.body.appendChild(modal);
         if (container) container.style.display = 'none';
 
-        document.getElementById('mq-btn-aceptar').addEventListener('click', function() {
-            localStorage.setItem(TERMINOS_KEY, 'true');
+        // 🆕 M-7: anti-reentrada + guarda en Supabase
+        document.getElementById('mq-btn-aceptar').addEventListener('click', async function() {
+            if (_terminosProcesando) return;
+            _terminosProcesando = true;
+
+            const btn = this;
+            btn.disabled = true;
+            btn.textContent = 'Guardando...';
+
+            // Guarda en localStorage (inmediato)
+            try { localStorage.setItem(TERMINOS_KEY, 'true'); } catch (e) {}
+
+            // Guarda en Supabase (respaldo legal)
+            const okLegal = await registrarTerminosEnSupabase();
+            if (!okLegal) {
+                console.warn('[Marquinhos] No se pudo registrar en Supabase, solo localStorage');
+            }
+
             modal.remove();
+            _terminosProcesando = false;
             if (container) container.style.display = '';
             if (window.MarquinhosAnim && typeof window.MarquinhosAnim.iniciar === 'function') {
                 window.MarquinhosAnim.iniciar();
             }
-            log('✅ Términos aceptados.');
+            log('✅ Términos aceptados' + (okLegal ? ' (con registro legal)' : ''));
         });
 
         document.getElementById('mq-btn-rechazar').addEventListener('click', function() {
@@ -377,11 +477,17 @@
         });
     }
 
-    function verificarTerminos() {
+    async function verificarTerminos() {
         try {
             const aceptados = localStorage.getItem(TERMINOS_KEY);
-            if (!aceptados) { mostrarModalTerminos(); return false; }
-            return true;
+            if (aceptados) return true;
+
+            // 🆕 #11: si no hay local, consulta Supabase
+            const okServidor = await verificarTerminosEnSupabase();
+            if (okServidor) return true;
+
+            mostrarModalTerminos();
+            return false;
         } catch (e) { return true; }
     }    function crearWidget() {
         if (document.getElementById('marquinhos-pet')) return;
@@ -494,7 +600,6 @@
                                   stroke-linejoin="round"
                                   fill="none" stroke-linecap="round"/>
 
-                            <!-- SLOTS DE CARA Y CABEZA -->
                             <g id="mq-acc-cara" data-acc-slot="cara"></g>
                             <g id="mq-acc-cabeza" data-acc-slot="cabeza"></g>
 
@@ -679,9 +784,11 @@
             hasMoved = false;
             dragStartX = e.clientX;
             dragStartY = e.clientY;
-            const rect = container.getBoundingClientRect();
-            posStartX = rect.left;
-            posStartY = rect.top;
+            try {
+                const rect = container.getBoundingClientRect();
+                posStartX = rect.left;
+                posStartY = rect.top;
+            } catch (err) { posStartX = 0; posStartY = 0; }
             avatar.setPointerCapture(e.pointerId);
             container.classList.add('mq-dragging');
             e.preventDefault();
@@ -717,10 +824,12 @@
             container.classList.remove('mq-dragging');
             try { avatar.releasePointerCapture(e.pointerId); } catch (err) {}
             if (hasMoved) {
-                const rect = container.getBoundingClientRect();
-                config.posicion_x = rect.left;
-                config.posicion_y = rect.top;
-                guardarConfig();
+                try {
+                    const rect = container.getBoundingClientRect();
+                    config.posicion_x = rect.left;
+                    config.posicion_y = rect.top;
+                    guardarConfig();
+                } catch (err) {}
             }
         });
 
@@ -734,21 +843,24 @@
         aplicarTamano();
         cambiarVisema('REST');
 
-        const terminosOk = verificarTerminos();
-        if (terminosOk) {
-            setTimeout(function() {
-                if (window.MarquinhosAnim && typeof window.MarquinhosAnim.iniciar === 'function') {
-                    window.MarquinhosAnim.iniciar();
-                }
-                if (window.MarquinhosAnim && typeof window.MarquinhosAnim.saludar === 'function') {
-                    setTimeout(function() {
-                        window.MarquinhosAnim.saludar();
-                    }, 800);
-                }
-            }, 500);
-        }
+        // 🆕 #11: verificarTerminos ahora es async
+        (async function() {
+            const terminosOk = await verificarTerminos();
+            if (terminosOk) {
+                setTimeout(function() {
+                    if (window.MarquinhosAnim && typeof window.MarquinhosAnim.iniciar === 'function') {
+                        window.MarquinhosAnim.iniciar();
+                    }
+                    if (window.MarquinhosAnim && typeof window.MarquinhosAnim.saludar === 'function') {
+                        setTimeout(function() {
+                            window.MarquinhosAnim.saludar();
+                        }, 800);
+                    }
+                }, 500);
+            }
+        })();
 
-        log('Widget v9.7 Galactic Pro creado');
+        log('Widget v9.8 Galactic Pro creado');
     }
 
     function mostrarDots() {}
@@ -785,6 +897,7 @@
 
     function detenerConversacion() {
         conversacionActiva = false;
+        conversationToken++; // 🆕 A-3: invalida procesamiento en curso
         detenerTTS();
         detenerReconocimiento();
         detenerAnimacionBoca();
@@ -830,7 +943,9 @@
         animarBoca(texto, rate);
 
         let ok = false;
-        if (texto.length <= 300 && window.getSupabase && !window.__marquinhosNoBackendTTS) {
+        // 🆕 #9: cache TTS con TTL — reintenta backend tras 2 min
+        const ttsBackendDisponible = (Date.now() - _ttsBackendFalloEn > TTS_FALLO_TTL_MS);
+        if (texto.length <= 300 && window.getSupabase && ttsBackendDisponible) {
             try {
                 const sb = window.getSupabase();
                 const s = await sb.auth.getSession();
@@ -848,11 +963,11 @@
                         const url = data.audio_url || data.audioUrl;
                         if (url && miToken === ttsToken) { ok = true; await reproducirAudio(url); }
                     } else {
-                        window.__marquinhosNoBackendTTS = true;
+                        _ttsBackendFalloEn = Date.now(); // 🆕 marca para TTL
                     }
                 }
             } catch (e) {
-                window.__marquinhosNoBackendTTS = true;
+                _ttsBackendFalloEn = Date.now(); // 🆕 marca para TTL
             }
         }
 
@@ -969,6 +1084,7 @@
             recognition.onerror = function(event) {
                 recognitionActive = false;
                 isListening = false;
+                recognition = null; // 🆕 A-4: libera referencia
                 if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
                     conversacionActiva = false;
                     setEstado('idle');
@@ -987,6 +1103,7 @@
             recognition.onend = function() {
                 recognitionActive = false;
                 isListening = false;
+                recognition = null; // 🆕 A-4: libera referencia
                 if (!procesando && !isSpeaking) { setEstado('idle'); }
                 if (!recibioResultado && !procesando && !isSpeaking) conversacionActiva = false;
             };
@@ -1004,41 +1121,64 @@
         isListening = false;
     }
 
+    // ============================================================
+    // 🆕 procesarComando con conversationToken y finally garantizado
+    // - A-3: si el usuario cierra durante el await, no se procesa
+    // - #12: procesando se resetea SIEMPRE con finally
+    // - M-10: historial truncado a HIST_MAX_ENVIO antes del brain
+    // ============================================================
     async function procesarComando(texto) {
         if (!texto) return;
+        const miConversacionToken = ++conversationToken; // 🆕 A-3
+
         procesando = true;
         setEstado('pensando');
-
         cambiarVisema('M');
 
-        historialLocal.push({ role: 'user', content: texto, ts: Date.now() });
+        try {
+            historialLocal.push({ role: 'user', content: texto, ts: Date.now() });
 
-        let respuesta = '';
-        if (window.MarquinhosBrain && typeof window.MarquinhosBrain.preguntar === 'function') {
-            try {
-                respuesta = await window.MarquinhosBrain.preguntar(texto, historialLocal);
-            } catch (e) {
-                respuesta = 'Ups, tuve un problema. ¿Puedes repetir?';
-            }
-        } else {
-            respuesta = 'No puedo pensar ahora mismo.';
-        }
-
-        if (!respuesta) respuesta = 'No supe qué decir.';
-
-        historialLocal.push({ role: 'assistant', content: respuesta, ts: Date.now() });
-        guardarHistorial();
-
-        procesando = false;
-        const completo = await hablar(respuesta);
-
-        if (completo && conversacionActiva) {
-            recibioResultado = false;
-            setTimeout(function() {
-                if (conversacionActiva && !isSpeaking && !isListening && !procesando) {
-                    iniciarReconocimiento();
+            let respuesta = '';
+            if (window.MarquinhosBrain && typeof window.MarquinhosBrain.preguntar === 'function') {
+                try {
+                    // 🆕 M-10: truncar antes de enviar
+                    const historialTruncado = historialLocal.slice(-HIST_MAX_ENVIO);
+                    respuesta = await window.MarquinhosBrain.preguntar(texto, historialTruncado);
+                } catch (e) {
+                    respuesta = 'Ups, tuve un problema. ¿Puedes repetir?';
                 }
-            }, 300);
+            } else {
+                respuesta = 'No puedo pensar ahora mismo.';
+            }
+
+            // 🆕 A-3: si la conversación fue abortada mientras esperábamos, no continuar
+            if (miConversacionToken !== conversationToken) {
+                console.log('[Marquinhos] Respuesta descartada (conversación abortada)');
+                return;
+            }
+
+            if (!respuesta) respuesta = 'No supe qué decir.';
+
+            historialLocal.push({ role: 'assistant', content: respuesta, ts: Date.now() });
+            guardarHistorial();
+
+            procesando = false;
+            const completo = await hablar(respuesta);
+
+            if (completo && conversacionActiva && miConversacionToken === conversationToken) {
+                recibioResultado = false;
+                setTimeout(function() {
+                    if (conversacionActiva && !isSpeaking && !isListening && !procesando) {
+                        iniciarReconocimiento();
+                    }
+                }, 300);
+            }
+        } catch (e) {
+            console.error('[Marquinhos] Error en procesarComando:', e);
+        } finally {
+            // 🆕 #12: procesando se resetea SIEMPRE
+            procesando = false;
+            if (!isSpeaking && !isListening) setEstado('idle');
         }
     }
 
@@ -1120,7 +1260,7 @@
         await cargarAccesorios();
         crearWidget();
         instalarVisibility();
-        log('✅ Marquinhos v9.7 Galactic Pro activo');
+        log('✅ Marquinhos v9.8 Galactic Pro activo');
     }
 
     if (document.readyState === 'loading') {
