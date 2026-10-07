@@ -1,22 +1,9 @@
 // ================================================================
-// ITLASUHUA · PET · SVG v4.0
+// ITLASUHUA · PET · SVG v3.0
 // ================================================================
-// REY ITLASUHUA · SERPIENTE CÓSMICA
-//
-// v4.0
-// - ViewBox oficial: 0 0 300 300
-// - Render oficial: 140x140
-// - Centro: 150,150
-// - Cuerpo en 3 vueltas
-// - Alas simétricas
-// - Ojos galaxia
-// - Corona de Rey
-// - Penacho de 11 plumas
-// - Glow cyan
-// - Escamas cósmicas
-// - Animaciones oficiales
-// - Arrastre + posición persistente
-// - Polvo arcoíris conservado
+// Rey Itlasuhua, serpiente cósmica chibi.
+// v3.0: estilo fiel a la referencia, brillo, boca animada,
+//       polvo arcoíris, alas suspendidas, cola en movimiento.
 // ================================================================
 
 (function (window) {
@@ -26,1173 +13,267 @@
     window.__itlasuhuaPetLoaded = true;
 
     const POS_KEY = 'itlasuhua_posicion';
-
-    const reduceMotion = !!(
-        window.matchMedia &&
-        window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    );
-
-    // ============================================================
-    // SVG OFICIAL
-    // ============================================================
+    const reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
     const svgString = `
     <svg
         id="itlasuhua-svg"
         class="itlasuhua-svg"
-        viewBox="0 0 300 300"
+        viewBox="0 0 600 600"
         xmlns="http://www.w3.org/2000/svg"
+        xmlns:xlink="http://www.w3.org/1999/xlink"
         preserveAspectRatio="xMidYMid meet"
         role="img"
         aria-label="Rey Itlasuhua, serpiente cósmica"
     >
-
         <defs>
-
-            <!-- ==================================================
-                 CUERPO / GALAXIA
-            ================================================== -->
-
-            <linearGradient
-                id="itla-body-galaxy"
-                x1="0%"
-                y1="0%"
-                x2="100%"
-                y2="100%"
-            >
-                <stop offset="0%" stop-color="#1A1033"/>
-                <stop offset="42%" stop-color="#2D1B69"/>
-                <stop offset="70%" stop-color="#17102F"/>
-                <stop offset="100%" stop-color="#1A1033"/>
+            <linearGradient id="itla-feather-teal" x1="0%" y1="100%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#0A6B82"/>
+                <stop offset="35%" stop-color="#00AEB5"/>
+                <stop offset="65%" stop-color="#43E6D6"/>
+                <stop offset="100%" stop-color="#C2FFF4"/>
             </linearGradient>
 
-            <linearGradient
-                id="itla-belly"
-                x1="0%"
-                y1="0%"
-                x2="100%"
-                y2="100%"
-            >
-                <stop offset="0%" stop-color="#FDE6A8"/>
-                <stop offset="65%" stop-color="#F0D48D"/>
-                <stop offset="100%" stop-color="#E8C87A"/>
+            <linearGradient id="itla-feather-blue" x1="0%" y1="100%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#152B77"/>
+                <stop offset="35%" stop-color="#126F9E"/>
+                <stop offset="65%" stop-color="#21C8D1"/>
+                <stop offset="100%" stop-color="#8CF5EA"/>
             </linearGradient>
 
-            <!-- ==================================================
-                 PLUMAS TURQUESA
-            ================================================== -->
-
-            <linearGradient
-                id="itla-feather-teal"
-                x1="0%"
-                y1="100%"
-                x2="100%"
-                y2="0%"
-            >
-                <stop offset="0%" stop-color="#0F8A82"/>
-                <stop offset="50%" stop-color="#14B8A6"/>
-                <stop offset="100%" stop-color="#5EE9D5"/>
+            <linearGradient id="itla-feather-gold" x1="0%" y1="100%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#B9741F"/>
+                <stop offset="38%" stop-color="#FFD76D"/>
+                <stop offset="70%" stop-color="#FFF0A5"/>
+                <stop offset="100%" stop-color="#FFE28A"/>
             </linearGradient>
 
-            <linearGradient
-                id="itla-feather-gold"
-                x1="0%"
-                y1="100%"
-                x2="100%"
-                y2="0%"
-            >
-                <stop offset="0%" stop-color="#D4AF37"/>
-                <stop offset="55%" stop-color="#FFD700"/>
-                <stop offset="100%" stop-color="#FFF1A0"/>
+            <linearGradient id="itla-gold" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#FFF3B0"/>
+                <stop offset="25%" stop-color="#FFD45A"/>
+                <stop offset="55%" stop-color="#E5A72E"/>
+                <stop offset="80%" stop-color="#FFF09A"/>
+                <stop offset="100%" stop-color="#9D641D"/>
             </linearGradient>
 
-            <!-- ==================================================
-                 CARA
-            ================================================== -->
-
-            <linearGradient
-                id="itla-face"
-                x1="0%"
-                y1="0%"
-                x2="0%"
-                y2="100%"
-            >
-                <stop offset="0%" stop-color="#D8D0C5"/>
-                <stop offset="55%" stop-color="#C8BEB0"/>
-                <stop offset="100%" stop-color="#B7AB9D"/>
+            <linearGradient id="itla-wing-galaxy" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#1B1F5C"/>
+                <stop offset="40%" stop-color="#4A2D8A"/>
+                <stop offset="70%" stop-color="#1F7FA8"/>
+                <stop offset="100%" stop-color="#3FE0D2"/>
             </linearGradient>
 
-            <!-- ==================================================
-                 OJO IZQUIERDO
-            ================================================== -->
+            <linearGradient id="itla-galaxy" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#11183F"/>
+                <stop offset="22%" stop-color="#29266A"/>
+                <stop offset="42%" stop-color="#46317E"/>
+                <stop offset="62%" stop-color="#164B76"/>
+                <stop offset="80%" stop-color="#0D7F8D"/>
+                <stop offset="100%" stop-color="#171A4A"/>
+            </linearGradient>
 
-            <radialGradient id="itla-eye-left">
-                <stop offset="0%" stop-color="#00E5FF"/>
-                <stop offset="30%" stop-color="#7C3AED"/>
-                <stop offset="58%" stop-color="#2D1B69"/>
-                <stop offset="100%" stop-color="#0A1A2F"/>
+            <linearGradient id="itla-belly" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#FFF0C4"/>
+                <stop offset="50%" stop-color="#E9C98E"/>
+                <stop offset="100%" stop-color="#B88A55"/>
+            </linearGradient>
+
+            <radialGradient id="itla-face" cx="50%" cy="40%" r="60%">
+                <stop offset="0%" stop-color="#FFF8E3"/>
+                <stop offset="60%" stop-color="#F1DFB4"/>
+                <stop offset="100%" stop-color="#C9A97A"/>
             </radialGradient>
 
-            <!-- ==================================================
-                 OJO DERECHO
-            ================================================== -->
-
-            <radialGradient id="itla-eye-right">
-                <stop offset="0%" stop-color="#FFD700"/>
-                <stop offset="32%" stop-color="#FFB800"/>
-                <stop offset="58%" stop-color="#7C3AED"/>
-                <stop offset="100%" stop-color="#1A1200"/>
+            <radialGradient id="itla-eye-cyan">
+                <stop offset="0%" stop-color="#FFFFFF"/>
+                <stop offset="18%" stop-color="#B5FFFF"/>
+                <stop offset="45%" stop-color="#2EE8DF"/>
+                <stop offset="78%" stop-color="#1368A8"/>
+                <stop offset="100%" stop-color="#081A49"/>
             </radialGradient>
 
-            <!-- ==================================================
-                 PUPILA
-            ================================================== -->
-
-            <radialGradient id="itla-pupil">
-                <stop offset="0%" stop-color="#000000"/>
-                <stop offset="72%" stop-color="#000000"/>
-                <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+            <radialGradient id="itla-eye-gold">
+                <stop offset="0%" stop-color="#FFFFFF"/>
+                <stop offset="18%" stop-color="#FFF8B0"/>
+                <stop offset="48%" stop-color="#FFD52D"/>
+                <stop offset="80%" stop-color="#E67D16"/>
+                <stop offset="100%" stop-color="#5B2A19"/>
             </radialGradient>
 
-            <!-- ==================================================
-                 GLOW
-            ================================================== -->
+            <radialGradient id="itla-aura">
+                <stop offset="0%" stop-color="#3CFFE8" stop-opacity=".55"/>
+                <stop offset="45%" stop-color="#7A4BFF" stop-opacity=".25"/>
+                <stop offset="100%" stop-color="#7A4BFF" stop-opacity="0"/>
+            </radialGradient>
 
-            <filter
-                id="itla-glow"
-                x="-100%"
-                y="-100%"
-                width="300%"
-                height="300%"
-            >
-                <feGaussianBlur
-                    stdDeviation="2.5"
-                    result="blur"
-                />
-
+            <filter id="itla-glow" x="-100%" y="-100%" width="300%" height="300%">
+                <feGaussianBlur stdDeviation="4" result="blur"/>
                 <feMerge>
                     <feMergeNode in="blur"/>
                     <feMergeNode in="SourceGraphic"/>
                 </feMerge>
             </filter>
 
-            <filter
-                id="itla-glow-crown"
-                x="-100%"
-                y="-100%"
-                width="300%"
-                height="300%"
-            >
-                <feGaussianBlur
-                    stdDeviation="4.5"
-                    result="blur"
-                />
-
-                <feFlood
-                    flood-color="#FFD700"
-                    flood-opacity=".75"
-                    result="gold"
-                />
-
-                <feComposite
-                    in="gold"
-                    in2="blur"
-                    operator="in"
-                    result="goldBlur"
-                />
-
+            <filter id="itla-glow-strong" x="-100%" y="-100%" width="300%" height="300%">
+                <feGaussianBlur stdDeviation="9" result="blur"/>
                 <feMerge>
-                    <feMergeNode in="goldBlur"/>
+                    <feMergeNode in="blur"/>
                     <feMergeNode in="SourceGraphic"/>
                 </feMerge>
             </filter>
 
-            <!-- ==================================================
-                 SOMBRA INTERIOR
-            ================================================== -->
-
-            <filter
-                id="itla-body-shadow"
-                x="-50%"
-                y="-50%"
-                width="200%"
-                height="200%"
-            >
-                <feOffset
-                    dx="0"
-                    dy="4"
-                    result="offset"
-                />
-
-                <feGaussianBlur
-                    in="offset"
-                    stdDeviation="3"
-                    result="blur"
-                />
-
-                <feComponentTransfer>
-                    <feFuncA
-                        type="linear"
-                        slope=".3"
-                    />
-                </feComponentTransfer>
-
-                <feMerge>
-                    <feMergeNode/>
-                    <feMergeNode in="SourceGraphic"/>
-                </feMerge>
+            <filter id="itla-shadow" x="-50%" y="-50%" width="200%" height="200%">
+                <feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#000000" flood-opacity=".5"/>
             </filter>
 
-            <!-- ==================================================
-                 PATRÓN DE ESCAMAS
-            ================================================== -->
-
-            <pattern
-                id="itla-scales"
-                width="32"
-                height="26"
-                patternUnits="userSpaceOnUse"
-            >
-                <path
-                    d="M 12 13
-                       L 16 10
-                       L 20 13
-                       L 16 16 Z"
-                    fill="#7C3AED"
-                    opacity=".9"
-                />
-
-                <circle
-                    cx="6"
-                    cy="7"
-                    r="1.2"
-                    fill="#00E5FF"
-                />
-
-                <circle
-                    cx="25"
-                    cy="19"
-                    r="1.4"
-                    fill="#FFD700"
-                />
-
-                <circle
-                    cx="27"
-                    cy="5"
-                    r="1"
-                    fill="#2D1B69"
-                />
+            <pattern id="itla-stars" width="60" height="60" patternUnits="userSpaceOnUse">
+                <circle cx="8" cy="12" r="1.5" fill="#FFFFFF"/>
+                <circle cx="33" cy="27" r="1.1" fill="#8FFAFF"/>
+                <circle cx="48" cy="8" r="1.4" fill="#FFD95A"/>
+                <circle cx="18" cy="44" r="1.2" fill="#FFFFFF"/>
+                <circle cx="46" cy="50" r="1.5" fill="#73EFFF"/>
             </pattern>
 
-            <!-- ==================================================
-                 AURA EXTERNA
-            ================================================== -->
+            <path id="itla-pluma" d="M0 0 C-26 -36 -28 -100 0 -160 C28 -100 26 -36 0 0Z"/>
 
-            <radialGradient id="itla-aura">
-                <stop
-                    offset="0%"
-                    stop-color="#00E5FF"
-                    stop-opacity=".28"
-                />
-
-                <stop
-                    offset="55%"
-                    stop-color="#00E5FF"
-                    stop-opacity=".10"
-                />
-
-                <stop
-                    offset="100%"
-                    stop-color="#00E5FF"
-                    stop-opacity="0"
-                />
-            </radialGradient>
-
-            <!-- ==================================================
-                 PLUMA BASE
-            ================================================== -->
-
-            <path
-                id="itla-feather"
-                d="
-                    M 0 0
-                    C -3 -8, -1 -18, 0 -25
-                    C 1 -18, 3 -8, 0 0
-                    Z
-                "
-            />
-
-            <!-- ==================================================
-                 ESCAMA INDIVIDUAL
-            ================================================== -->
-
-            <path
-                id="itla-scale"
-                d="
-                    M -4 0
-                    L 0 -3
-                    L 4 0
-                    L 0 3
-                    Z
-                "
-            />
-
+            <g id="itla-ala-base">
+                <path d="M240 292 C190 232 120 186 62 176 C112 214 170 252 240 306Z" fill="url(#itla-feather-teal)" stroke="#6FFFF2" stroke-width="3"/>
+                <path d="M248 296 C214 246 180 210 146 196 C172 232 200 262 252 306Z" fill="url(#itla-feather-blue)" stroke="#6FFFF2" stroke-width="3"/>
+                <path d="M236 300 C180 268 120 248 58 240 C110 268 166 290 238 314Z" fill="url(#itla-feather-gold)" stroke="#FFE99B" stroke-width="3"/>
+                <path d="M236 308 C180 300 120 300 66 306 C120 320 170 328 236 322Z" fill="url(#itla-wing-galaxy)" stroke="#7AFFF1" stroke-width="3"/>
+                <path d="M240 316 C190 332 136 352 96 380 C146 370 190 354 238 330Z" fill="url(#itla-feather-blue)" stroke="#74FFF4" stroke-width="3"/>
+                <path d="M244 324 C212 354 176 388 140 414 C180 406 214 370 242 336Z" fill="url(#itla-feather-gold)" stroke="#FFE99B" stroke-width="3"/>
+                <path d="M248 330 C226 366 206 396 186 430 C214 418 236 380 252 340Z" fill="url(#itla-feather-teal)" stroke="#6FFFF2" stroke-width="3"/>
+                <path d="M222 300 C180 280 130 270 92 268" fill="none" stroke="#FFE9A0" stroke-width="2" opacity=".7"/>
+                <path d="M224 316 C180 316 136 332 110 352" fill="none" stroke="#7FFFF0" stroke-width="2" opacity=".6"/>
+            </g>
         </defs>
 
-        <!-- ======================================================
-             ESCENA COMPLETA
-        ======================================================= -->
-
         <g id="itlasuhua-scene">
+            <animateTransform attributeName="transform" type="translate" values="0 0; 0 -10; 0 0" dur="3.2s" repeatCount="indefinite"/>
 
-            <!-- Flotación oficial -->
-            <animateTransform
-                attributeName="transform"
-                type="translate"
-                values="0 0; 0 -5; 0 0"
-                dur="3.5s"
-                calcMode="spline"
-                keySplines=".42 0 .58 1; .42 0 .58 1"
-                repeatCount="indefinite"
-            />
+            <ellipse id="itla-aura" cx="300" cy="330" rx="285" ry="255" fill="url(#itla-aura)"/>
 
-            <!-- ==================================================
-                 AURA
-            ================================================== -->
-
-            <ellipse
-                id="itla-aura"
-                cx="150"
-                cy="150"
-                rx="145"
-                ry="145"
-                fill="url(#itla-aura)"
-                filter="url(#itla-glow)"
-            />
-
-            <!-- ==================================================
-                 CAPA 2 · ALAS
-            ================================================== -->
+            <g id="itla-background-stars">
+                <circle cx="76" cy="190" r="3" fill="#62FFF1" filter="url(#itla-glow)"/>
+                <circle cx="107" cy="105" r="2" fill="#FFD965"/>
+                <circle cx="145" cy="65" r="3" fill="#FFFFFF"/>
+                <circle cx="457" cy="84" r="2" fill="#FFD95C"/>
+                <circle cx="510" cy="156" r="3" fill="#5DFFF5" filter="url(#itla-glow)"/>
+                <circle cx="550" cy="270" r="2" fill="#FFFFFF"/>
+                <circle cx="72" cy="390" r="2" fill="#FFD35C"/>
+                <circle cx="105" cy="465" r="3" fill="#56F7ED"/>
+                <circle cx="495" cy="455" r="3" fill="#FFD64F"/>
+                <circle cx="535" cy="380" r="2" fill="#FFFFFF"/>
+                <path d="M95 250 l4 9 9 4-9 4-4 9-4-9-9-4 9-4z" fill="#FFF7A5" filter="url(#itla-glow)"/>
+                <path d="M507 345 l4 9 9 4-9 4-4 9-4-9-9-4 9-4z" fill="#65FFF4" filter="url(#itla-glow)"/>
+                <path d="M137 425 l3 7 7 3-7 3-3 7-3-7-7-3 7-3z" fill="#FFD95D"/>
+                <path d="M466 235 l3 7 7 3-7 3-3 7-3-7-7-3 7-3z" fill="#FFFFFF"/>
+            </g>
 
             <g id="itla-wings">
-
-                <!-- ALA IZQUIERDA -->
-                <g
-                    id="ala-izq"
-                    transform-origin="125px 130px"
-                >
-
-                    <animateTransform
-                        attributeName="transform"
-                        type="rotate"
-                        values="0 125 130; -12 125 130; 8 125 130; 0 125 130"
-                        dur="0.8s"
-                        repeatCount="indefinite"
-                    />
-
-                    <path
-                        d="
-                        M 125 130
-                        C 80 110, 45 90, 20 60
-                        C 35 75, 70 85, 95 95
-                        C 60 75, 35 50, 15 20
-                        C 40 40, 75 60, 105 85
-                        C 80 60, 65 35, 50 15
-                        C 75 35, 100 65, 125 95
-                        Z"
-                        fill="url(#itla-feather-teal)"
-                        stroke="#0A0A0F"
-                        stroke-width="2"
-                        filter="url(#itla-glow)"
-                    />
-
-                    <!-- 3 plumas secundarias -->
-                    <g
-                        fill="#14B8A6"
-                        stroke="#0A0A0F"
-                        stroke-width="1.5"
-                    >
-                        <use
-                            href="#itla-feather"
-                            transform="translate(105 95) rotate(-15) scale(1)"
-                        />
-
-                        <use
-                            href="#itla-feather"
-                            transform="translate(92 82) rotate(-28) scale(.95)"
-                        />
-
-                        <use
-                            href="#itla-feather"
-                            transform="translate(78 68) rotate(-42) scale(.9)"
-                        />
-                    </g>
-
+                <g id="ala-izq">
+                    <animateTransform attributeName="transform" type="rotate" values="0 240 300; -5 240 300; 0 240 300" dur="2.6s" repeatCount="indefinite"/>
+                    <use href="#itla-ala-base" xlink:href="#itla-ala-base"/>
                 </g>
-
-                <!-- ALA DERECHA -->
-                <g
-                    id="ala-der"
-                    transform-origin="175px 130px"
-                >
-
-                    <animateTransform
-                        attributeName="transform"
-                        type="rotate"
-                        values="0 175 130; 12 175 130; -8 175 130; 0 175 130"
-                        dur="0.8s"
-                        repeatCount="indefinite"
-                    />
-
-                    <path
-                        d="
-                        M 175 130
-                        C 220 110, 255 90, 280 60
-                        C 265 75, 230 85, 205 95
-                        C 240 75, 265 50, 285 20
-                        C 260 40, 225 60, 195 85
-                        C 220 60, 235 35, 250 15
-                        C 225 35, 200 65, 175 95
-                        Z"
-                        fill="url(#itla-feather-teal)"
-                        stroke="#0A0A0F"
-                        stroke-width="2"
-                        filter="url(#itla-glow)"
-                    />
-
-                    <g
-                        fill="#14B8A6"
-                        stroke="#0A0A0F"
-                        stroke-width="1.5"
-                    >
-                        <use
-                            href="#itla-feather"
-                            transform="translate(195 95) rotate(15) scale(1)"
-                        />
-
-                        <use
-                            href="#itla-feather"
-                            transform="translate(208 82) rotate(28) scale(.95)"
-                        />
-
-                        <use
-                            href="#itla-feather"
-                            transform="translate(222 68) rotate(42) scale(.9)"
-                        />
-                    </g>
-
+                <g id="ala-der">
+                    <animateTransform attributeName="transform" type="rotate" values="0 360 300; 5 360 300; 0 360 300" dur="2.6s" repeatCount="indefinite"/>
+                    <use href="#itla-ala-base" xlink:href="#itla-ala-base" transform="translate(600 0) scale(-1 1)"/>
                 </g>
-
             </g>
 
-            <!-- ==================================================
-                 CAPA 1 · CUERPO ENROSCADO
-            ================================================== -->
-
-            <g
-                id="itla-body"
-                filter="url(#itla-body-shadow)"
-            >
-
-                <!-- Vuelta exterior -->
-                <path
-                    id="itla-coil-outer"
-                    d="
-                    M 150 255
-                    C 90 255, 55 230, 55 200
-                    C 55 165, 90 145, 150 145
-                    C 210 145, 245 165, 245 200
-                    C 245 235, 205 255, 150 255
-                    Z"
-                    fill="url(#itla-body-galaxy)"
-                    stroke="#0A0A0F"
-                    stroke-width="2"
-                />
-
-                <!-- Escamas exteriores -->
-                <g id="itla-scales-outer">
-
-                    <use href="#itla-scale"
-                         transform="translate(75 207)"
-                         fill="#2D1B69"/>
-
-                    <use href="#itla-scale"
-                         transform="translate(84 225)"
-                         fill="#7C3AED"/>
-
-                    <use href="#itla-scale"
-                         transform="translate(101 239)"
-                         fill="#00E5FF"/>
-
-                    <use href="#itla-scale"
-                         transform="translate(122 247)"
-                         fill="#FFD700"/>
-
-                    <use href="#itla-scale"
-                         transform="translate(146 250)"
-                         fill="#7C3AED"/>
-
-                    <use href="#itla-scale"
-                         transform="translate(171 248)"
-                         fill="#00E5FF"/>
-
-                    <use href="#itla-scale"
-                         transform="translate(194 241)"
-                         fill="#FFD700"/>
-
-                    <use href="#itla-scale"
-                         transform="translate(215 229)"
-                         fill="#7C3AED"/>
-
-                    <use href="#itla-scale"
-                         transform="translate(231 211)"
-                         fill="#00E5FF"/>
-
-                    <use href="#itla-scale"
-                         transform="translate(221 188)"
-                         fill="#FFD700"/>
-
-                    <use href="#itla-scale"
-                         transform="translate(198 173)"
-                         fill="#7C3AED"/>
-
-                    <use href="#itla-scale"
-                         transform="translate(174 166)"
-                         fill="#00E5FF"/>
-
-                    <use href="#itla-scale"
-                         transform="translate(148 164)"
-                         fill="#FFD700"/>
-
-                    <use href="#itla-scale"
-                         transform="translate(122 166)"
-                         fill="#7C3AED"/>
-
-                    <use href="#itla-scale"
-                         transform="translate(98 174)"
-                         fill="#00E5FF"/>
-
-                    <use href="#itla-scale"
-                         transform="translate(78 188)"
-                         fill="#FFD700"/>
-
-                    <use href="#itla-scale"
-                         transform="translate(67 204)"
-                         fill="#7C3AED"/>
-
-                    <use href="#itla-scale"
-                         transform="translate(150 226)"
-                         fill="#00E5FF"/>
-
-                </g>
-
-                <!-- Vuelta media -->
-                <path
-                    id="itla-coil-middle"
-                    d="
-                    M 150 225
-                    C 105 225, 78 210, 78 188
-                    C 78 165, 105 150, 150 150
-                    C 195 150, 222 165, 222 188
-                    C 222 215, 190 225, 150 225
-                    Z"
-                    fill="#2D1B69"
-                    stroke="#0A0A0F"
-                    stroke-width="2"
-                    opacity=".96"
-                />
-
-                <path
-                    d="
-                    M 150 225
-                    C 105 225, 78 210, 78 188
-                    C 78 165, 105 150, 150 150
-                    C 195 150, 222 165, 222 188
-                    C 222 215, 190 225, 150 225
-                    Z"
-                    fill="url(#itla-scales)"
-                    opacity=".38"
-                />
-
-                <!-- Conexión cuello -->
-                <path
-                    id="itla-neck"
-                    d="
-                    M 125 150
-                    C 115 120, 120 90, 135 75
-                    L 165 75
-                    C 180 90, 185 120, 175 150
-                    Z"
-                    fill="url(#itla-body-galaxy)"
-                    stroke="#0A0A0F"
-                    stroke-width="2"
-                />
-
-                <!-- Escamas cuello -->
-                <g opacity=".95">
-
-                    <use
-                        href="#itla-scale"
-                        transform="translate(135 132)"
-                        fill="#7C3AED"
-                    />
-
-                    <use
-                        href="#itla-scale"
-                        transform="translate(150 126)"
-                        fill="#00E5FF"
-                    />
-
-                    <use
-                        href="#itla-scale"
-                        transform="translate(165 132)"
-                        fill="#FFD700"
-                    />
-
-                    <use
-                        href="#itla-scale"
-                        transform="translate(130 112)"
-                        fill="#00E5FF"
-                    />
-
-                    <use
-                        href="#itla-scale"
-                        transform="translate(150 108)"
-                        fill="#7C3AED"
-                    />
-
-                    <use
-                        href="#itla-scale"
-                        transform="translate(170 112)"
-                        fill="#FFD700"
-                    />
-
-                    <use
-                        href="#itla-scale"
-                        transform="translate(140 92)"
-                        fill="#FFD700"
-                    />
-
-                    <use
-                        href="#itla-scale"
-                        transform="translate(160 92)"
-                        fill="#00E5FF"
-                    />
-
-                </g>
-
-                <!-- Panza -->
-                <path
-                    id="itla-belly"
-                    d="
-                    M 132 151
-                    C 132 174, 136 195, 150 210
-                    C 164 195, 168 174, 168 151
-                    Z"
-                    fill="#FDE6A8"
-                    stroke="#E8C87A"
-                    stroke-width="2"
-                    opacity=".98"
-                />
-
+            <g id="itla-cola">
+                <animateTransform attributeName="transform" type="rotate" values="-3 320 520; 3 320 520; -3 320 520" dur="3.6s" repeatCount="indefinite"/>
+                <path d="M250 470 C170 470 140 530 196 566 C260 604 436 586 448 520 C456 470 388 452 344 480" fill="none" stroke="#0B1638" stroke-width="72" stroke-linecap="round"/>
+                <path d="M250 470 C170 470 140 530 196 566 C260 604 436 586 448 520 C456 470 388 452 344 480" fill="none" stroke="url(#itla-galaxy)" stroke-width="62" stroke-linecap="round"/>
+                <path d="M250 470 C170 470 140 530 196 566 C260 604 436 586 448 520 C456 470 388 452 344 480" fill="none" stroke="url(#itla-stars)" stroke-width="54" stroke-linecap="round" opacity=".85"/>
+                <path d="M250 470 C170 470 140 530 196 566 C260 604 436 586 448 520 C456 470 388 452 344 480" fill="none" stroke="#E8C98A" stroke-width="5" stroke-dasharray="10 14" opacity=".55"/>
+                <path d="M250 470 C170 470 140 530 196 566 C260 604 436 586 448 520 C456 470 388 452 344 480" fill="none" stroke="#3CF0E2" stroke-width="3" opacity=".8" filter="url(#itla-glow)"/>
             </g>
 
-            <!-- ==================================================
-                 CAPA 3 · CABEZA
-            ================================================== -->
-
-            <g
-                id="itla-cabeza"
-            >
-
-                <path
-                    id="itla-head"
-                    d="
-                    M 85 85
-                    C 85 45, 115 25, 150 25
-                    C 185 25, 215 45, 215 85
-                    C 215 110, 195 125, 150 125
-                    C 105 125, 85 110, 85 85
-                    Z"
-                    fill="#C8BEB0"
-                    stroke="#0A0A0F"
-                    stroke-width="2"
-                />
-
-                <!-- Sombra inferior suave -->
-                <path
-                    d="
-                    M 87 87
-                    C 90 111, 110 124, 150 125
-                    C 190 124, 210 111, 213 87
-                    C 202 105, 182 113, 150 114
-                    C 118 113, 98 105, 87 87
-                    Z"
-                    fill="#AFA397"
-                    opacity=".25"
-                />
-
-                <!-- Hocico -->
-                <path
-                    id="itla-hocico"
-                    d="
-                    M 130 105
-                    C 135 108, 165 108, 170 105
-                    C 170 115, 130 115, 130 105
-                    Z"
-                    fill="#F1D9C5"
-                    stroke="#0A0A0F"
-                    stroke-width="1.5"
-                />
-
-                <!-- Chapitas -->
-                <circle
-                    cx="105"
-                    cy="100"
-                    r="4.5"
-                    fill="#FF8FA3"
-                    opacity=".6"
-                />
-
-                <circle
-                    cx="195"
-                    cy="100"
-                    r="4.5"
-                    fill="#FF8FA3"
-                    opacity=".6"
-                />
-
+            <path d="M264 368 C260 410 262 440 270 478 L330 478 C338 440 340 410 336 368Z" fill="url(#itla-belly)" stroke="#8A6A3E" stroke-width="3"/>
+            <g fill="none" stroke="#A8844E" stroke-width="3" stroke-linecap="round">
+                <path d="M262 392 Q300 402 338 392"/>
+                <path d="M264 414 Q300 424 337 414"/>
+                <path d="M266 436 Q300 446 335 436"/>
+                <path d="M268 458 Q300 468 333 458"/>
             </g>
 
-            <!-- ==================================================
-                 CAPA 4 · OJOS GALAXIA
-            ================================================== -->
-
-            <g id="itla-eyes">
-
-                <!-- IZQUIERDO -->
-                <g
-                    id="itla-ojo-izq"
-                    class="itla-ojo"
-                >
-
-                    <circle
-                        cx="115"
-                        cy="75"
-                        r="22"
-                        fill="#0A1A2F"
-                        stroke="#0A0A0F"
-                        stroke-width="2"
-                    />
-
-                    <g class="itla-eye-galaxy">
-                        <circle
-                            cx="115"
-                            cy="75"
-                            r="18"
-                            fill="url(#itla-eye-left)"
-                        />
-
-                        <circle
-                            cx="108"
-                            cy="68"
-                            r="4"
-                            fill="#00E5FF"
-                            filter="url(#itla-glow)"
-                        />
-
-                        <!-- 6 estrellas -->
-                        <circle cx="122" cy="63" r="1.5" fill="#FFFFFF"/>
-                        <circle cx="128" cy="72" r="1.5" fill="#00E5FF"/>
-                        <circle cx="120" cy="84" r="1.5" fill="#FFD700"/>
-                        <circle cx="108" cy="88" r="1.5" fill="#FFFFFF"/>
-                        <circle cx="102" cy="77" r="1.5" fill="#00E5FF"/>
-                        <circle cx="116" cy="71" r="1.5" fill="#FFD700"/>
-                    </g>
-
-                    <circle
-                        cx="115"
-                        cy="75"
-                        r="9"
-                        fill="url(#itla-pupil)"
-                    />
-
-                    <circle
-                        cx="108"
-                        cy="68"
-                        r="2"
-                        fill="#FFFFFF"
-                    />
-
-                    <path
-                        d="M 93 75 Q 115 55, 137 75"
-                        fill="none"
-                        stroke="#0A0A0F"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                    />
-
-                </g>
-
-                <!-- DERECHO -->
-                <g
-                    id="itla-ojo-der"
-                    class="itla-ojo"
-                >
-
-                    <circle
-                        cx="185"
-                        cy="75"
-                        r="22"
-                        fill="#1A1200"
-                        stroke="#0A0A0F"
-                        stroke-width="2"
-                    />
-
-                    <g class="itla-eye-galaxy">
-                        <circle
-                            cx="185"
-                            cy="75"
-                            r="18"
-                            fill="url(#itla-eye-right)"
-                        />
-
-                        <circle
-                            cx="192"
-                            cy="68"
-                            r="5"
-                            fill="#FFD700"
-                            filter="url(#itla-glow)"
-                        />
-
-                        <circle cx="178" cy="63" r="1.5" fill="#FFFFFF"/>
-                        <circle cx="172" cy="72" r="1.5" fill="#FFD700"/>
-                        <circle cx="180" cy="84" r="1.5" fill="#00E5FF"/>
-                        <circle cx="192" cy="88" r="1.5" fill="#FFFFFF"/>
-                        <circle cx="198" cy="77" r="1.5" fill="#FFD700"/>
-                        <circle cx="184" cy="71" r="1.5" fill="#00E5FF"/>
-                    </g>
-
-                    <circle
-                        cx="185"
-                        cy="75"
-                        r="9"
-                        fill="url(#itla-pupil)"
-                    />
-
-                    <circle
-                        cx="192"
-                        cy="68"
-                        r="2"
-                        fill="#FFFFFF"
-                    />
-
-                    <path
-                        d="M 163 75 Q 185 55, 207 75"
-                        fill="none"
-                        stroke="#0A0A0F"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                    />
-
-                </g>
-
+            <g id="itla-penacho" filter="url(#itla-shadow)">
+                <use href="#itla-pluma" xlink:href="#itla-pluma" transform="translate(204 300) rotate(-112) scale(.6)" fill="url(#itla-feather-gold)" stroke="#FFE79A" stroke-width="3"/>
+                <use href="#itla-pluma" xlink:href="#itla-pluma" transform="translate(396 300) rotate(112) scale(.6)" fill="url(#itla-feather-gold)" stroke="#FFE79A" stroke-width="3"/>
+                <use href="#itla-pluma" xlink:href="#itla-pluma" transform="translate(300 230) rotate(-80) scale(.8)" fill="url(#itla-feather-teal)" stroke="#6FFFF2" stroke-width="3"/>
+                <use href="#itla-pluma" xlink:href="#itla-pluma" transform="translate(300 230) rotate(-58) scale(.95)" fill="url(#itla-feather-gold)" stroke="#FFE99B" stroke-width="3"/>
+                <use href="#itla-pluma" xlink:href="#itla-pluma" transform="translate(300 230) rotate(-36) scale(1)" fill="url(#itla-feather-blue)" stroke="#74FFF4" stroke-width="3"/>
+                <use href="#itla-pluma" xlink:href="#itla-pluma" transform="translate(300 230) rotate(-15) scale(1.08)" fill="url(#itla-feather-teal)" stroke="#6FFFF2" stroke-width="3"/>
+                <use href="#itla-pluma" xlink:href="#itla-pluma" transform="translate(300 230) rotate(0) scale(1.15)" fill="url(#itla-feather-gold)" stroke="#FFE99B" stroke-width="3"/>
+                <use href="#itla-pluma" xlink:href="#itla-pluma" transform="translate(300 230) rotate(15) scale(1.08)" fill="url(#itla-feather-teal)" stroke="#6FFFF2" stroke-width="3"/>
+                <use href="#itla-pluma" xlink:href="#itla-pluma" transform="translate(300 230) rotate(36) scale(1)" fill="url(#itla-feather-blue)" stroke="#74FFF4" stroke-width="3"/>
+                <use href="#itla-pluma" xlink:href="#itla-pluma" transform="translate(300 230) rotate(58) scale(.95)" fill="url(#itla-feather-gold)" stroke="#FFE99B" stroke-width="3"/>
+                <use href="#itla-pluma" xlink:href="#itla-pluma" transform="translate(300 230) rotate(80) scale(.8)" fill="url(#itla-feather-teal)" stroke="#6FFFF2" stroke-width="3"/>
             </g>
 
-            <!-- ==================================================
-                 BOCA
-            ================================================== -->
+            <g id="itla-cabeza" filter="url(#itla-shadow)">
+                <ellipse cx="300" cy="280" rx="112" ry="104" fill="url(#itla-face)" stroke="#2B2038" stroke-width="5"/>
 
-            <g id="itla-mouth">
+                <ellipse cx="224" cy="334" rx="15" ry="8" fill="#FF8FA3" opacity=".6"/>
+                <ellipse cx="376" cy="334" rx="15" ry="8" fill="#FF8FA3" opacity=".6"/>
 
-                <path
-                    id="itla-sonrisa"
-                    d="M 135 108 Q 150 118 165 108"
-                    fill="none"
-                    stroke="#0A0A0F"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                />
+                <g id="itla-ojo-izq" class="itla-ojo">
+                    <ellipse cx="250" cy="296" rx="40" ry="46" fill="#0B1436" stroke="#151026" stroke-width="5"/>
+                    <ellipse cx="250" cy="296" rx="34" ry="41" fill="url(#itla-eye-cyan)" filter="url(#itla-glow)"/>
+                    <circle cx="238" cy="282" r="2.5" fill="#FFFFFF"/>
+                    <circle cx="262" cy="312" r="2" fill="#FFF6A0"/>
+                    <circle cx="244" cy="318" r="1.8" fill="#FFFFFF"/>
+                    <circle cx="262" cy="276" r="1.5" fill="#FFFFFF"/>
+                    <ellipse cx="240" cy="280" rx="8" ry="11" fill="#FFFFFF" opacity=".95"/>
+                    <circle cx="260" cy="314" r="4" fill="#FFFFFF" opacity=".8"/>
+                </g>
 
+                <g id="itla-ojo-der" class="itla-ojo">
+                    <ellipse cx="350" cy="296" rx="40" ry="46" fill="#291A1A" stroke="#151026" stroke-width="5"/>
+                    <ellipse cx="350" cy="296" rx="34" ry="41" fill="url(#itla-eye-gold)" filter="url(#itla-glow)"/>
+                    <circle cx="338" cy="282" r="2.5" fill="#FFFFFF"/>
+                    <circle cx="362" cy="312" r="2" fill="#FFF6A0"/>
+                    <circle cx="344" cy="318" r="1.8" fill="#FFFFFF"/>
+                    <circle cx="362" cy="276" r="1.5" fill="#FFFFFF"/>
+                    <ellipse cx="340" cy="280" rx="8" ry="11" fill="#FFFFFF" opacity=".95"/>
+                    <circle cx="360" cy="314" r="4" fill="#FFFFFF" opacity=".8"/>
+                </g>
+
+                <path d="M294 322 Q300 327 306 322" fill="none" stroke="#6B4E36" stroke-width="3" stroke-linecap="round"/>
+
+                <path id="itla-sonrisa" d="M280 342 Q300 360 320 342" fill="none" stroke="#3A2030" stroke-width="4.5" stroke-linecap="round"/>
                 <g id="itla-boca-abierta">
-                    <ellipse
-                        cx="150"
-                        cy="111"
-                        rx="9"
-                        ry="6"
-                        fill="#45182A"
-                        stroke="#0A0A0F"
-                        stroke-width="1.5"
-                    />
-
-                    <ellipse
-                        cx="150"
-                        cy="114"
-                        rx="5"
-                        ry="2.5"
-                        fill="#FF8FA3"
-                    />
+                    <ellipse cx="300" cy="352" rx="13" ry="10" fill="#4A1A34" stroke="#2B1020" stroke-width="3"/>
+                    <ellipse cx="300" cy="357" rx="8" ry="4" fill="#FF7A9A"/>
                 </g>
-
             </g>
 
-            <!-- ==================================================
-                 CAPA 5 · CORONA
-            ================================================== -->
-
-            <g
-                id="itla-corona"
-                filter="url(#itla-glow-crown)"
-            >
-
-                <path
-                    d="
-                    M 90 55
-                    L 90 35
-                    L 105 35
-                    L 110 20
-                    L 125 35
-                    L 135 35
-                    L 145 15
-                    L 155 15
-                    L 165 35
-                    L 175 35
-                    L 190 20
-                    L 195 35
-                    L 210 35
-                    L 210 55
-                    Z"
-                    fill="#FFD700"
-                    stroke="#8A6D00"
-                    stroke-width="2.5"
-                    stroke-linejoin="round"
-                />
-
-                <!-- Brillo de la corona -->
-                <path
-                    d="
-                    M 94 50
-                    L 94 39
-                    L 108 39
-                    L 112 28
-                    L 124 39
-                    L 136 39
-                    L 146 23
-                    L 154 23
-                    L 164 39
-                    L 176 39
-                    L 188 28
-                    L 192 39
-                    L 206 39
-                    L 206 50
-                    Z"
-                    fill="#FFD700"
-                    opacity=".35"
-                />
-
-                <!-- Gema central -->
-                <circle
-                    cx="150"
-                    cy="40"
-                    r="8"
-                    fill="#2DD4BF"
-                    stroke="#0F766E"
-                    stroke-width="2"
-                    filter="url(#itla-glow)"
-                    class="itla-gema"
-                />
-
-                <!-- Gemas laterales -->
-                <circle
-                    cx="105"
-                    cy="45"
-                    r="5"
-                    fill="#2DD4BF"
-                    stroke="#0F766E"
-                    stroke-width="2"
-                    class="itla-gema"
-                />
-
-                <circle
-                    cx="125"
-                    cy="45"
-                    r="5"
-                    fill="#2DD4BF"
-                    stroke="#0F766E"
-                    stroke-width="2"
-                    class="itla-gema"
-                />
-
-                <circle
-                    cx="175"
-                    cy="45"
-                    r="5"
-                    fill="#2DD4BF"
-                    stroke="#0F766E"
-                    stroke-width="2"
-                    class="itla-gema"
-                />
-
-                <circle
-                    cx="195"
-                    cy="45"
-                    r="5"
-                    fill="#2DD4BF"
-                    stroke="#0F766E"
-                    stroke-width="2"
-                    class="itla-gema"
-                />
-
+            <g id="itla-corona" filter="url(#itla-shadow)">
+                <path d="M194 230 L194 200 L212 200 L212 184 L232 184 L232 168 L268 168 L268 140 L300 112 L332 140 L332 168 L368 168 L368 184 L388 184 L388 200 L406 200 L406 230 Q300 246 194 230Z" fill="url(#itla-gold)" stroke="#6D421B" stroke-width="5"/>
+                <path d="M204 206 Q300 222 396 206" fill="none" stroke="#FFF1A0" stroke-width="2" opacity=".7"/>
+                <circle cx="212" cy="214" r="10" fill="#16D7D0" stroke="#6D421B" stroke-width="4" class="itla-gema"/>
+                <circle cx="250" cy="200" r="9" fill="#FFD83D" stroke="#6D421B" stroke-width="4"/>
+                <circle cx="300" cy="190" r="14" fill="#1BD8D2" stroke="#6D421B" stroke-width="5" filter="url(#itla-glow)" class="itla-gema"/>
+                <circle cx="350" cy="200" r="9" fill="#FFD83D" stroke="#6D421B" stroke-width="4"/>
+                <circle cx="388" cy="214" r="10" fill="#16D7D0" stroke="#6D421B" stroke-width="4" class="itla-gema"/>
+                <circle cx="300" cy="190" r="5" fill="#BFFFF8"/>
+                <path d="M286 168 L286 130 L300 112 L314 130 L314 168Z" fill="url(#itla-gold)" stroke="#6D421B" stroke-width="4"/>
+                <circle cx="300" cy="148" r="6" fill="#1BD8D2" stroke="#6D421B" stroke-width="3"/>
             </g>
 
-            <!-- ==================================================
-                 PENACHO · 11 PLUMAS
-            ================================================== -->
-
-            <g
-                id="itla-penacho"
-                fill="none"
-                stroke="#0A0A0F"
-                stroke-width="1.5"
-                stroke-linejoin="round"
-            >
-
-                <!-- -45° -->
-                <use
-                    href="#itla-feather"
-                    transform="translate(150 30) rotate(-45) scale(1.55)"
-                    fill="#14B8A6"
-                />
-
-                <!-- -36° -->
-                <use
-                    href="#itla-feather"
-                    transform="translate(150 30) rotate(-36) scale(1.5)"
-                    fill="#FFD700"
-                />
-
-                <!-- -27° -->
-                <use
-                    href="#itla-feather"
-                    transform="translate(150 30) rotate(-27) scale(1.55)"
-                    fill="#14B8A6"
-                />
-
-                <!-- -18° -->
-                <use
-                    href="#itla-feather"
-                    transform="translate(150 30) rotate(-18) scale(1.6)"
-                    fill="#FFD700"
-                />
-
-                <!-- -9° -->
-                <use
-                    href="#itla-feather"
-                    transform="translate(150 30) rotate(-9) scale(1.65)"
-                    fill="#14B8A6"
-                />
-
-                <!-- 0° central -->
-                <use
-                    href="#itla-feather"
-                    transform="translate(150 30) rotate(0) scale(1.8)"
-                    fill="#FFD700"
-                />
-
-                <!-- +9° -->
-                <use
-                    href="#itla-feather"
-                    transform="translate(150 30) rotate(9) scale(1.65)"
-                    fill="#14B8A6"
-                />
-
-                <!-- +18° -->
-                <use
-                    href="#itla-feather"
-                    transform="translate(150 30) rotate(18) scale(1.6)"
-                    fill="#FFD700"
-                />
-
-                <!-- +27° -->
-                <use
-                    href="#itla-feather"
-                    transform="translate(150 30) rotate(27) scale(1.55)"
-                    fill="#14B8A6"
-                />
-
-                <!-- +36° -->
-                <use
-                    href="#itla-feather"
-                    transform="translate(150 30) rotate(36) scale(1.5)"
-                    fill="#FFD700"
-                />
-
-                <!-- +45° -->
-                <use
-                    href="#itla-feather"
-                    transform="translate(150 30) rotate(45) scale(1.55)"
-                    fill="#14B8A6"
-                />
-
+            <g id="itla-sparkles">
+                <path d="M164 280 l4 10 10 4-10 4-4 10-4-10-10-4 10-4z" fill="#FFF7A1" filter="url(#itla-glow)"/>
+                <path d="M436 280 l4 10 10 4-10 4-4 10-4-10-10-4 10-4z" fill="#62FFF3" filter="url(#itla-glow)"/>
+                <path d="M150 380 l3 8 8 3-8 3-3 8-3-8-8-3 8-3z" fill="#FFD65C"/>
+                <path d="M450 380 l3 8 8 3-8 3-3 8-3-8-8-3 8-3z" fill="#FFFFFF"/>
+                <circle cx="186" cy="410" r="3" fill="#4EFFF1"/>
+                <circle cx="414" cy="410" r="3" fill="#FFD94F"/>
             </g>
-
-            <!-- ==================================================
-                 DESTELLOS
-            ================================================== -->
-
-            <g
-                id="itla-sparkles"
-                filter="url(#itla-glow)"
-            >
-                <path
-                    d="M 63 132
-                       l 2 5
-                       5 2
-                       -5 2
-                       -2 5
-                       -2 -5
-                       -5 -2
-                       5 -2
-                       Z"
-                    fill="#00E5FF"
-                />
-
-                <path
-                    d="M 237 132
-                       l 2 5
-                       5 2
-                       -5 2
-                       -2 5
-                       -2 -5
-                       -5 -2
-                       5 -2
-                       Z"
-                    fill="#FFD700"
-                />
-
-                <circle
-                    cx="58"
-                    cy="166"
-                    r="2"
-                    fill="#00E5FF"
-                />
-
-                <circle
-                    cx="242"
-                    cy="166"
-                    r="2"
-                    fill="#FFD700"
-                />
-
-            </g>
-
         </g>
     </svg>
     `;
-
-    // ============================================================
-    // LOG
-    // ============================================================
 
     function log(msg) {
         console.log('[Itlasuhua/Pet]', msg);
@@ -1201,13 +282,11 @@
     // ============================================================
     // POLVO ARCOÍRIS
     // ============================================================
-
     let dustLayer = null;
     let idleTimer = null;
 
     function spit(cantidad, fuerza) {
         const container = document.getElementById('itlasuhua-container');
-
         if (!container) return;
 
         cantidad = cantidad || 10;
@@ -1220,26 +299,13 @@
         }
 
         for (let i = 0; i < cantidad; i++) {
-
             const p = document.createElement('span');
-
             p.className = 'itla-dust';
-
             const hue = Math.floor(Math.random() * 360);
-            const size = 4 + Math.random() * 5;
-
-            const dx =
-                (Math.random() * 2 - 1) *
-                (30 + 40 * fuerza);
-
-            const dy =
-                25 +
-                Math.random() *
-                (50 + 60 * fuerza);
-
-            const dur =
-                0.9 +
-                Math.random() * 0.7;
+            const size = 5 + Math.random() * 7;
+            const dx = (Math.random() * 2 - 1) * (60 + 50 * fuerza);
+            const dy = 50 + Math.random() * (90 + 70 * fuerza);
+            const dur = 1.0 + Math.random() * 0.8;
 
             p.style.setProperty('--h', hue);
             p.style.setProperty('--s', size + 'px');
@@ -1247,417 +313,174 @@
             p.style.setProperty('--dy', dy + 'px');
             p.style.setProperty('--t', dur + 's');
 
-            p.addEventListener(
-                'animationend',
-                function () {
-                    p.remove();
-                },
-                { once: true }
-            );
-
+            p.addEventListener('animationend', () => p.remove());
             dustLayer.appendChild(p);
         }
     }
 
     function scheduleIdleSpit() {
-
         clearTimeout(idleTimer);
-
         if (reduceMotion) return;
-
-        idleTimer = setTimeout(
-            function () {
-
-                if (!document.hidden) {
-                    spit(4, 0.6);
-                }
-
-                scheduleIdleSpit();
-
-            },
-            3500 + Math.random() * 4000
-        );
+        idleTimer = setTimeout(() => {
+            if (!document.hidden) spit(4, 0.6);
+            scheduleIdleSpit();
+        }, 3500 + Math.random() * 4000);
     }
 
     // ============================================================
     // RENDER
     // ============================================================
-
-    const render = function (containerId) {
-
-        const container =
-            document.getElementById(containerId);
-
+    const render = (containerId) => {
+        const container = document.getElementById(containerId);
         if (!container) {
-            console.warn(
-                '[Itlasuhua] Contenedor "' +
-                containerId +
-                '" no encontrado.'
-            );
+            console.warn(`[Itlasuhua] Contenedor "${containerId}" no encontrado.`);
             return;
         }
 
         container.innerHTML = svgString;
-
-        container.classList.add(
-            'itlasuhua-rendered'
-        );
+        container.classList.add('itlasuhua-rendered');
 
         document.dispatchEvent(
-            new CustomEvent(
-                'itlasuhua:rendered',
-                {
-                    detail: {
-                        containerId
-                    }
-                }
-            )
+            new CustomEvent('itlasuhua:rendered', { detail: { containerId } })
         );
 
-        log(
-            '✅ SVG 300x300 renderizado en #' +
-            containerId
-        );
+        log('✅ SVG renderizado en #' + containerId);
     };
 
-    // ============================================================
-    // GETTERS
-    // ============================================================
+    const getSVG = () => document.getElementById('itlasuhua-svg');
 
-    const getSVG = function () {
-        return document.getElementById(
-            'itlasuhua-svg'
-        );
-    };
-
-    const getWings = function () {
-        return document.querySelectorAll(
-            '#itlasuhua-svg #ala-izq,' +
-            '#itlasuhua-svg #ala-der'
-        );
-    };
+    const getWings = () => document.querySelectorAll(
+        '#itlasuhua-svg #ala-izq, #itlasuhua-svg #ala-der'
+    );
 
     // ============================================================
-    // POSICIÓN
+    // PERSISTENCIA DE POSICIÓN
     // ============================================================
-
     function guardarPosicion(x, y) {
-
         try {
-
-            localStorage.setItem(
-                POS_KEY,
-                JSON.stringify({
-                    x: x,
-                    y: y
-                })
-            );
-
+            localStorage.setItem(POS_KEY, JSON.stringify({ x, y }));
         } catch (e) {}
     }
 
     function cargarPosicion() {
-
         try {
-
-            const raw =
-                localStorage.getItem(POS_KEY);
-
+            const raw = localStorage.getItem(POS_KEY);
             if (!raw) return null;
-
-            const data =
-                JSON.parse(raw);
-
-            if (
-                data &&
-                data.x != null &&
-                data.y != null
-            ) {
-                return data;
-            }
-
+            const data = JSON.parse(raw);
+            if (data && data.x != null && data.y != null) return data;
         } catch (e) {}
-
         return null;
     }
 
     // ============================================================
-    // WIDGET
+    // WIDGET + DRAG
     // ============================================================
+    const crearWidget = () => {
+        if (document.getElementById('itlasuhua-container')) return;
 
-    const crearWidget = function () {
-
-        if (
-            document.getElementById(
-                'itlasuhua-container'
-            )
-        ) {
-            return;
-        }
-
-        const cont =
-            document.createElement('div');
-
-        cont.id =
-            'itlasuhua-container';
-
+        const cont = document.createElement('div');
+        cont.id = 'itlasuhua-container';
         document.body.appendChild(cont);
 
-        const posGuardada =
-            cargarPosicion();
-
+        const posGuardada = cargarPosicion();
         if (posGuardada) {
-
-            const ancho =
-                cont.offsetWidth || 140;
-
-            const alto =
-                cont.offsetHeight || 140;
-
-            const maxX =
-                Math.max(
-                    0,
-                    window.innerWidth - ancho
-                );
-
-            const maxY =
-                Math.max(
-                    0,
-                    window.innerHeight - alto
-                );
-
-            const x =
-                Math.max(
-                    0,
-                    Math.min(
-                        maxX,
-                        posGuardada.x
-                    )
-                );
-
-            const y =
-                Math.max(
-                    0,
-                    Math.min(
-                        maxY,
-                        posGuardada.y
-                    )
-                );
-
-            cont.style.left =
-                x + 'px';
-
-            cont.style.top =
-                y + 'px';
-
-            cont.style.right =
-                'auto';
-
-            cont.style.bottom =
-                'auto';
+            const ancho = cont.offsetWidth || 300;
+            const alto = cont.offsetHeight || 300;
+            const maxX = window.innerWidth - ancho;
+            const maxY = window.innerHeight - alto;
+            const x = Math.max(0, Math.min(maxX, posGuardada.x));
+            const y = Math.max(0, Math.min(maxY, posGuardada.y));
+            cont.style.left = x + 'px';
+            cont.style.top = y + 'px';
+            cont.style.right = 'auto';
+            cont.style.bottom = 'auto';
         }
 
-        render(
-            'itlasuhua-container'
-        );
+        render('itlasuhua-container');
 
         let isDragging = false;
         let hasMoved = false;
-
         let dragStartX = 0;
         let dragStartY = 0;
-
         let posStartX = 0;
         let posStartY = 0;
 
-        cont.addEventListener(
-            'pointerdown',
-            function (e) {
+        cont.addEventListener('pointerdown', function (e) {
+            isDragging = true;
+            hasMoved = false;
+            dragStartX = e.clientX;
+            dragStartY = e.clientY;
 
-                isDragging = true;
-                hasMoved = false;
+            try {
+                const rect = cont.getBoundingClientRect();
+                posStartX = rect.left;
+                posStartY = rect.top;
+            } catch (err) {
+                posStartX = 0;
+                posStartY = 0;
+            }
 
-                dragStartX = e.clientX;
-                dragStartY = e.clientY;
+            try { cont.setPointerCapture(e.pointerId); } catch (err) {}
+            cont.classList.add('itlasuhua-dragging');
+        });
 
+        cont.addEventListener('pointermove', function (e) {
+            if (!isDragging) return;
+
+            const dx = e.clientX - dragStartX;
+            const dy = e.clientY - dragStartY;
+
+            if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+                hasMoved = true;
+            }
+            if (!hasMoved) return;
+
+            let newX = posStartX + dx;
+            let newY = posStartY + dy;
+
+            const ancho = cont.offsetWidth || 300;
+            const alto = cont.offsetHeight || 300;
+            const maxX = window.innerWidth - ancho;
+            const maxY = window.innerHeight - alto;
+
+            newX = Math.max(0, Math.min(maxX, newX));
+            newY = Math.max(0, Math.min(maxY, newY));
+
+            cont.style.left = newX + 'px';
+            cont.style.top = newY + 'px';
+            cont.style.right = 'auto';
+            cont.style.bottom = 'auto';
+        });
+
+        cont.addEventListener('pointerup', function (e) {
+            if (!isDragging) return;
+            isDragging = false;
+            cont.classList.remove('itlasuhua-dragging');
+
+            try { cont.releasePointerCapture(e.pointerId); } catch (err) {}
+
+            if (hasMoved) {
                 try {
-
-                    const rect =
-                        cont.getBoundingClientRect();
-
-                    posStartX =
-                        rect.left;
-
-                    posStartY =
-                        rect.top;
-
-                } catch (err) {
-
-                    posStartX = 0;
-                    posStartY = 0;
-                }
-
-                try {
-                    cont.setPointerCapture(
-                        e.pointerId
-                    );
+                    const rect = cont.getBoundingClientRect();
+                    guardarPosicion(rect.left, rect.top);
+                    log('📍 Posición guardada');
                 } catch (err) {}
-
-                cont.classList.add(
-                    'itlasuhua-dragging'
-                );
+            } else {
+                // Un toque sin arrastrar: la mascota suelta un estallido de polvo
+                spit(14, 1.2);
             }
-        );
+        });
 
-        cont.addEventListener(
-            'pointermove',
-            function (e) {
-
-                if (!isDragging) return;
-
-                const dx =
-                    e.clientX -
-                    dragStartX;
-
-                const dy =
-                    e.clientY -
-                    dragStartY;
-
-                if (
-                    Math.abs(dx) > 5 ||
-                    Math.abs(dy) > 5
-                ) {
-                    hasMoved = true;
-                }
-
-                if (!hasMoved) return;
-
-                let newX =
-                    posStartX + dx;
-
-                let newY =
-                    posStartY + dy;
-
-                const ancho =
-                    cont.offsetWidth || 140;
-
-                const alto =
-                    cont.offsetHeight || 140;
-
-                const maxX =
-                    Math.max(
-                        0,
-                        window.innerWidth -
-                        ancho
-                    );
-
-                const maxY =
-                    Math.max(
-                        0,
-                        window.innerHeight -
-                        alto
-                    );
-
-                newX =
-                    Math.max(
-                        0,
-                        Math.min(
-                            maxX,
-                            newX
-                        )
-                    );
-
-                newY =
-                    Math.max(
-                        0,
-                        Math.min(
-                            maxY,
-                            newY
-                        )
-                    );
-
-                cont.style.left =
-                    newX + 'px';
-
-                cont.style.top =
-                    newY + 'px';
-
-                cont.style.right =
-                    'auto';
-
-                cont.style.bottom =
-                    'auto';
-            }
-        );
-
-        cont.addEventListener(
-            'pointerup',
-            function (e) {
-
-                if (!isDragging) return;
-
-                isDragging = false;
-
-                cont.classList.remove(
-                    'itlasuhua-dragging'
-                );
-
-                try {
-                    cont.releasePointerCapture(
-                        e.pointerId
-                    );
-                } catch (err) {}
-
-                if (hasMoved) {
-
-                    try {
-
-                        const rect =
-                            cont.getBoundingClientRect();
-
-                        guardarPosicion(
-                            rect.left,
-                            rect.top
-                        );
-
-                        log(
-                            '📍 Posición guardada'
-                        );
-
-                    } catch (err) {}
-
-                } else {
-
-                    spit(14, 1.2);
-                }
-            }
-        );
-
-        cont.addEventListener(
-            'pointercancel',
-            function () {
-
-                isDragging = false;
-
-                cont.classList.remove(
-                    'itlasuhua-dragging'
-                );
-            }
-        );
+        cont.addEventListener('pointercancel', function () {
+            isDragging = false;
+            cont.classList.remove('itlasuhua-dragging');
+        });
 
         scheduleIdleSpit();
-
-        log(
-            '✅ Widget Itlasuhua creado · 140x140 · arrastrable'
-        );
+        log('✅ Widget Itlasuhua creado · arrastrable');
     };
 
-    // ============================================================
-    // API PÚBLICA
-    // ============================================================
-
     window.ItlasuhuaPet = {
-
         render,
         getSVG,
         getWings,
@@ -1665,12 +488,9 @@
         guardarPosicion,
         cargarPosicion,
         spit,
-
         _svgString: svgString
     };
 
-    log(
-        '✅ Itlasuhua Pet v4.0 cargado'
-    );
+    log('✅ Itlasuhua Pet cargado');
 
 })(window);
