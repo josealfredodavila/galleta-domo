@@ -1,23 +1,11 @@
 // ================================================================
-// CAPITÁN MAÍZ · PET v2.0
-// "GUARDIA ANCESTRAL · GALACTIC CHARRO"
+// CAPITÁN MAÍZ · PET v2.1
+// "GUARDIAN ANCESTRAL · GALACTIC CHARRO"
 // ================================================================
-//
-// DISEÑO VISUAL:
-// - Cabeza chibi blanca/perla
-// - Ojos grandes galácticos
-// - Mejillas rosas
-// - Antenas luminosas
-// - Sombrero charro galáctico
-// - Chaqueta negra con azul neón
-// - Detalles charros
-// - Cinturón con estrella
-// - Pantalón blanco
-// - Rodilleras
-// - Botas negras
-// - Capa galáctica
-//
-// SVG BASE: 200 × 300
+// Fix v2.1: Sombrero corregido
+// - Copa del sombrero más ancha y mejor conectada al ala
+// - Antenas reposicionadas para que salgan del ala (no se tapen)
+// - Estrella de la copa integrada al diseño
 // ================================================================
 
 'use strict';
@@ -123,7 +111,7 @@
     }
 
     function log(msg) {
-        console.log('[Capitán Maíz v2.0]', msg);
+        console.log('[Capitán Maíz v2.1]', msg);
     }
 
     function esc(v) {
@@ -510,7 +498,7 @@
     }
 
     // ============================================================
-    // CREAR WIDGET — SVG COMPLETO
+    // CREAR WIDGET — SVG COMPLETO v2.1
     // ============================================================
 
     function crearWidget() {
@@ -579,10 +567,10 @@
                     </linearGradient>
 
                     <linearGradient id="cm-grad-sombrero" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stop-color="#263246"/>
-                        <stop offset="30%" stop-color="#101622"/>
-                        <stop offset="75%" stop-color="#05070D"/>
-                        <stop offset="100%" stop-color="#010208"/>
+                        <stop offset="0%" stop-color="#2E3D52"/>
+                        <stop offset="25%" stop-color="#18202E"/>
+                        <stop offset="70%" stop-color="#0A0E15"/>
+                        <stop offset="100%" stop-color="#02040A"/>
                     </linearGradient>
 
                     <radialGradient id="cm-grad-ojo">
@@ -753,35 +741,108 @@
                         <path id="cm-boca" class="cm-pet-boca" d="M78 137 Q100 150 122 137" fill="none" stroke="#0A0A0A" stroke-width="3"/>
                     </g>
 
-                    <g id="cm-antenas" data-acc-slot="cabeza">
-                        <path d="M73 72 L62 51" fill="none" stroke="#DCE5F0" stroke-width="3"/>
-                        <circle cx="61" cy="49" r="6" fill="#B8F6FF" stroke="#00D9FF" stroke-width="2" filter="url(#cm-glow)"/>
+                    <!-- =================================================
+                         SOMBRERO (v2.1 — corregido)
+                         Copa más ancha y mejor conectada al ala
+                         ================================================= -->
+                    <g id="cm-sombrero" data-acc-slot="sombrero">
 
-                        <path d="M127 72 L138 51" fill="none" stroke="#DCE5F0" stroke-width="3"/>
-                        <circle cx="139" cy="49" r="6" fill="#B8F6FF" stroke="#00D9FF" stroke-width="2" filter="url(#cm-glow)"/>
+                        <!-- COPA (más ancha y más alta) -->
+                        <path d="M64 73 Q62 42 72 22 Q82 6 100 6 Q118 6 128 22 Q138 42 136 73 Z"
+                              fill="url(#cm-grad-sombrero)"
+                              stroke="#4A5C72"
+                              stroke-width="2.5"/>
+
+                        <!-- ESTRELLA DE LA COPA (integrada) -->
+                        <path d="M100 14 L103.5 24 L114 25.5 L106 33 L108.5 44 L100 38 L91.5 44 L94 33 L86 25.5 L96.5 24 Z"
+                              fill="none"
+                              stroke="#7B92AD"
+                              stroke-width="1.4"
+                              stroke-linejoin="round"/>
+
+                        <!-- BRILLO DE LA COPA -->
+                        <path d="M78 20 Q76 40 78 65"
+                              fill="none"
+                              stroke="#FFFFFF"
+                              stroke-width="2"
+                              opacity=".22"
+                              stroke-linecap="round"/>
+
+                        <!-- ALA (más ancha) -->
+                        <ellipse cx="100" cy="70" rx="96" ry="28"
+                                 fill="url(#cm-grad-sombrero)"
+                                 stroke="#4A5C72"
+                                 stroke-width="2.5"/>
+
+                        <!-- PATRÓN GEOMÉTRICO EN EL ALA -->
+                        <ellipse cx="100" cy="69" rx="84" ry="20"
+                                 fill="url(#cm-patron-sombrero)"
+                                 opacity=".85"/>
+
+                        <!-- BANDA DEL SOMBRERO (más ancha y al frente) -->
+                        <path d="M64 55 Q100 45 136 55 L137 68 Q100 58 63 68 Z"
+                              fill="#06080E"
+                              stroke="#00D9FF"
+                              stroke-width="1.4"/>
+
+                        <!-- BORDE NEÓN EXTERIOR DEL ALA -->
+                        <ellipse cx="100" cy="70" rx="95" ry="27"
+                                 fill="none"
+                                 stroke="#00D9FF"
+                                 stroke-width="2.4"
+                                 filter="url(#cm-glow)"/>
+
+                        <!-- BORDE NEÓN INTERIOR -->
+                        <ellipse cx="100" cy="75" rx="85" ry="19"
+                                 fill="none"
+                                 stroke="#178BFF"
+                                 stroke-width="1.6"
+                                 opacity=".85"/>
+
+                        <!-- ESTRELLAS DECORATIVAS EN EL ALA -->
+                        <g fill="#FFFFFF" filter="url(#cm-glow)">
+                            <circle cx="40" cy="62" r="1.5"/>
+                            <circle cx="160" cy="61" r="1.5"/>
+                            <circle cx="80" cy="56" r="1.1"/>
+                            <circle cx="120" cy="56" r="1.1"/>
+                            <circle cx="60" cy="80" r="1"/>
+                            <circle cx="140" cy="79" r="1"/>
+                        </g>
+
                     </g>
 
-                    <g id="cm-sombrero" data-acc-slot="sombrero">
-                        <path d="M67 72 Q66 44 74 25 Q83 8 100 8 Q117 8 126 25 Q134 44 133 72 Z" fill="url(#cm-grad-sombrero)" stroke="#53657A" stroke-width="2.5"/>
+                    <!-- =================================================
+                         ANTENAS (v2.1 — AHORA DESPUÉS DEL SOMBRERO)
+                         Salen del ala hacia arriba, visibles
+                         ================================================= -->
+                    <g id="cm-antenas" data-acc-slot="cabeza">
 
-                        <path d="M100 15 L104 25 L114 27 L106 34 L108 45 L100 39 L92 45 L94 34 L86 27 L96 25 Z" fill="none" stroke="#657890" stroke-width="1.3"/>
+                        <!-- ANTENA IZQUIERDA -->
+                        <path d="M78 68 L68 38"
+                              fill="none"
+                              stroke="#B8C8D8"
+                              stroke-width="3"
+                              stroke-linecap="round"/>
 
-                        <ellipse cx="100" cy="69" rx="94" ry="29" fill="url(#cm-grad-sombrero)" stroke="#53657A" stroke-width="2.5"/>
+                        <circle cx="68" cy="36" r="6"
+                                fill="#B8F6FF"
+                                stroke="#00D9FF"
+                                stroke-width="2"
+                                filter="url(#cm-glow)"/>
 
-                        <ellipse cx="100" cy="68" rx="82" ry="21" fill="url(#cm-patron-sombrero)" opacity=".85"/>
+                        <!-- ANTENA DERECHA -->
+                        <path d="M122 68 L132 38"
+                              fill="none"
+                              stroke="#B8C8D8"
+                              stroke-width="3"
+                              stroke-linecap="round"/>
 
-                        <ellipse cx="100" cy="68" rx="93" ry="28" fill="none" stroke="#00D9FF" stroke-width="2.2" filter="url(#cm-glow)"/>
+                        <circle cx="132" cy="36" r="6"
+                                fill="#B8F6FF"
+                                stroke="#00D9FF"
+                                stroke-width="2"
+                                filter="url(#cm-glow)"/>
 
-                        <ellipse cx="100" cy="73" rx="83" ry="20" fill="none" stroke="#178BFF" stroke-width="1.5" opacity=".8"/>
-
-                        <path d="M68 57 Q100 48 132 57 L133 67 Q100 58 67 67 Z" fill="#070A11" stroke="#00D9FF" stroke-width="1.3"/>
-
-                        <g fill="#FFFFFF" filter="url(#cm-glow)">
-                            <circle cx="45" cy="64" r="1.4"/>
-                            <circle cx="153" cy="63" r="1.4"/>
-                            <circle cx="80" cy="58" r="1"/>
-                            <circle cx="121" cy="58" r="1"/>
-                        </g>
                     </g>
                 </g>
 
@@ -894,7 +955,7 @@
             }
         })();
 
-        log('Widget v2.0 creado · SVG Galactic Charro');
+        log('Widget v2.1 creado · SVG Galactic Charro (sombrero corregido)');
     }
 
     function setEstado(e) {
@@ -1310,7 +1371,7 @@
         await cargarAccesorios();
         crearWidget();
         instalarVisibility();
-        log('✅ Capitán Maíz v2.0 activo');
+        log('✅ Capitán Maíz v2.1 activo');
     }
 
     if (document.readyState === 'loading') {
