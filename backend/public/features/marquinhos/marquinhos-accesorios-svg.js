@@ -1,16 +1,12 @@
 // ================================================================
-// MARQUINHOS · ACCESORIOS SVG REALES — v1.0
+// MARQUINHOS · ACCESORIOS SVG REALES — v1.1
 // ================================================================
 // Biblioteca de SVG reales para cada accesorio.
 // Los SVG están diseñados para el viewBox 0 0 200 300.
 //
-// CÓMO FUNCIONA:
-// - Cada clave es el emoji que estaba en la BD (ej: '📿').
-// - El valor es el SVG real que lo reemplaza.
-// - El código de la tienda y del pet detecta automáticamente
-//   si svg_data es un emoji o un SVG real.
-//
-// FASE 1: Todos los accesorios problemáticos migrados.
+// CAMBIOS v1.1:
+// - Sombrero vaquero: ala más ancha y visible por encima de la cabeza
+// - Traje formal: colores oscuros elegantes (negro/azul con corbata roja)
 // ================================================================
 
 (function (window) {
@@ -101,24 +97,43 @@
         `,
 
         // ============================================================
-        // 👔 TRAJE FORMAL
+        // 👔 TRAJE FORMAL (v1.1 — colores oscuros elegantes)
         // ============================================================
         '👔': `
             <g>
+                <!-- Cuerpo del traje (azul marino oscuro) -->
                 <path d="M 68 172 Q 65 175 65 185 L 65 245 Q 65 252 72 252 L 128 252 Q 135 252 135 245 L 135 185 Q 135 175 132 172 Z" 
-                      fill="#2C3E50" 
-                      stroke="#0D47A1" 
+                      fill="#1A237E" 
+                      stroke="#0D1B4D" 
                       stroke-width="2"/>
-                <path d="M 85 172 L 100 210 L 115 172 Z" 
+                
+                <!-- Solapas del saco -->
+                <path d="M 72 175 L 88 190 L 100 185 L 112 190 L 128 175 L 128 195 L 72 195 Z" 
+                      fill="#283593" 
+                      stroke="#0D1B4D" 
+                      stroke-width="1.5"/>
+                
+                <!-- Camisa blanca (triángulo) -->
+                <path d="M 88 175 L 100 210 L 112 175 Z" 
                       fill="#FFFFFF" 
-                      stroke="#0D47A1" 
+                      stroke="#0D1B4D" 
                       stroke-width="1.5"/>
-                <path d="M 97 195 L 103 195 L 105 215 L 100 220 L 95 215 Z" 
-                      fill="#8B0000" 
-                      stroke="#0D47A1" 
-                      stroke-width="1.5"/>
-                <rect x="97" y="190" width="6" height="6" 
-                      fill="#A00000"/>
+                
+                <!-- Nudo de la corbata -->
+                <path d="M 97 178 L 103 178 L 104 188 L 96 188 Z" 
+                      fill="#B71C1C" 
+                      stroke="#7F0000" 
+                      stroke-width="1"/>
+                
+                <!-- Cuerpo de la corbata -->
+                <path d="M 97 188 L 103 188 L 105 220 L 100 226 L 95 220 Z" 
+                      fill="#D32F2F" 
+                      stroke="#7F0000" 
+                      stroke-width="1"/>
+                
+                <!-- Botones del saco -->
+                <circle cx="90" cy="210" r="1.5" fill="#D4AF37"/>
+                <circle cx="90" cy="225" r="1.5" fill="#D4AF37"/>
             </g>
         `,
 
@@ -246,20 +261,32 @@
         `,
 
         // ============================================================
-        // 🤠 SOMBRERO VAQUERO
+        // 🤠 SOMBRERO VAQUERO (v1.1 — ala ancha visible)
         // ============================================================
         '🤠': `
             <g>
-                <path d="M 70 55 L 70 40 Q 70 35 80 35 L 120 35 Q 130 35 130 40 L 130 55 Z" 
+                <!-- Copa del sombrero (arriba, más alta) -->
+                <path d="M 78 40 L 78 25 Q 78 22 82 22 L 118 22 Q 122 22 122 25 L 122 40 Z" 
                       fill="#8D6E63" 
                       stroke="#4E342E" 
                       stroke-width="1.5"/>
-                <ellipse cx="100" cy="55" rx="36" ry="4" 
+                
+                <!-- Banda decorativa -->
+                <rect x="78" y="36" width="44" height="4" 
+                      fill="#4E342E"/>
+                <circle cx="100" cy="38" r="2" 
+                        fill="#D4AF37"/>
+                
+                <!-- Ala ancha del sombrero (por encima de la cabeza) -->
+                <ellipse cx="100" cy="42" rx="42" ry="7" 
                          fill="#A1887F" 
                          stroke="#4E342E" 
                          stroke-width="1.5"/>
-                <rect x="70" y="48" width="60" height="4" 
-                      fill="#4E342E"/>
+                
+                <!-- Sombra debajo del ala -->
+                <ellipse cx="100" cy="46" rx="36" ry="3" 
+                         fill="#4E342E" 
+                         opacity="0.4"/>
             </g>
         `,
 
@@ -458,7 +485,7 @@
 
     };
 
-    console.log('[Marquinhos/AccesoriosSVG] ✅ Biblioteca cargada · ' + 
+    console.log('[Marquinhos/AccesoriosSVG] ✅ v1.1 cargada · ' + 
                 Object.keys(SVG_ACCESORIOS).length + ' SVG disponibles');
 
 })(window);
