@@ -1,8 +1,8 @@
 // ================================================================
-// ITLASUHUA · BRAIN
+// ITLASUHUA · BRAIN v3.0
 // ================================================================
-// Cerebro y comportamiento del Rey Itlasuhua.
-// Controla las alas al hablar.
+// Controla al Rey Itlasuhua al hablar:
+// boca abierta, alas batiendo más fuerte y polvo arcoíris.
 // ================================================================
 
 (function (window) {
@@ -15,54 +15,66 @@
         console.log('[Itlasuhua/Brain]', msg);
     }
 
+    let spitTimer = null;
+
+    function setWings(talking) {
+        const izq = document.querySelector('#itlasuhua-svg #ala-izq animateTransform');
+        const der = document.querySelector('#itlasuhua-svg #ala-der animateTransform');
+
+        if (izq) {
+            izq.setAttribute('values', talking
+                ? '0 240 300; -14 240 300; 0 240 300'
+                : '0 240 300; -5 240 300; 0 240 300');
+            izq.setAttribute('dur', talking ? '0.5s' : '2.6s');
+        }
+
+        if (der) {
+            der.setAttribute('values', talking
+                ? '0 360 300; 14 360 300; 0 360 300'
+                : '0 360 300; 5 360 300; 0 360 300');
+            der.setAttribute('dur', talking ? '0.5s' : '2.6s');
+        }
+    }
+
+    function setClasses(talking) {
+        const container = document.getElementById('itlasuhua-container');
+        const svg = document.getElementById('itlasuhua-svg');
+        if (container) container.classList.toggle('is-talking', talking);
+        if (svg) svg.classList.toggle('is-talking', talking);
+    }
+
     const ItlasuhuaBrain = {
 
         isTalking: false,
 
         startTalking() {
+            if (this.isTalking) return;
             this.isTalking = true;
 
-            const alas = document.querySelectorAll(
-                '#itlasuhua-svg #ala-izq, #itlasuhua-svg #ala-der'
-            );
+            setClasses(true);
+            setWings(true);
 
-            alas.forEach((ala) => {
-                const animation = ala.querySelector('animateTransform');
-                if (!animation) return;
+            if (window.ItlasuhuaPet && window.ItlasuhuaPet.spit) {
+                window.ItlasuhuaPet.spit(8, 1);
+                clearInterval(spitTimer);
+                spitTimer = setInterval(() => {
+                    window.ItlasuhuaPet.spit(3, 0.8);
+                }, 260);
+            }
 
-                if (ala.id === 'ala-izq') {
-                    animation.setAttribute('values', '0 222 300; -10 222 300; 0 222 300');
-                } else {
-                    animation.setAttribute('values', '0 378 300; 10 378 300; 0 378 300');
-                }
-
-                animation.setAttribute('dur', '0.65s');
-            });
-
-            log('Las alas se despliegan al hablar.');
+            log('Hablando: boca, alas y polvo activados.');
         },
 
         stopTalking() {
             this.isTalking = false;
 
-            const alas = document.querySelectorAll(
-                '#itlasuhua-svg #ala-izq, #itlasuhua-svg #ala-der'
-            );
+            clearInterval(spitTimer);
+            spitTimer = null;
 
-            alas.forEach((ala) => {
-                const animation = ala.querySelector('animateTransform');
-                if (!animation) return;
+            setClasses(false);
+            setWings(false);
 
-                if (ala.id === 'ala-izq') {
-                    animation.setAttribute('values', '0 222 300; -4 222 300; 0 222 300');
-                } else {
-                    animation.setAttribute('values', '0 378 300; 4 378 300; 0 378 300');
-                }
-
-                animation.setAttribute('dur', '2.4s');
-            });
-
-            log('Alas en reposo.');
+            log('En reposo.');
         },
 
         toggleTalking() {
@@ -74,24 +86,7 @@
         },
 
         reset() {
-            this.isTalking = false;
-
-            const alas = document.querySelectorAll(
-                '#itlasuhua-svg #ala-izq, #itlasuhua-svg #ala-der'
-            );
-
-            alas.forEach((ala) => {
-                const animation = ala.querySelector('animateTransform');
-                if (!animation) return;
-
-                if (ala.id === 'ala-izq') {
-                    animation.setAttribute('values', '0 222 300; -4 222 300; 0 222 300');
-                } else {
-                    animation.setAttribute('values', '0 378 300; 4 378 300; 0 378 300');
-                }
-
-                animation.setAttribute('dur', '2.4s');
-            });
+            this.stopTalking();
         }
     };
 
