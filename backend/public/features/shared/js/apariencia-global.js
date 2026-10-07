@@ -1,10 +1,11 @@
 /* ================================================================
-   APARIENCIA GLOBAL - SARIEL'S ECOSYSTEM v2.3
+   APARIENCIA GLOBAL - SARIEL'S ECOSYSTEM v2.5
    - Lee de localStorage (rápido, sin red)
    - Sincroniza con Supabase preferencias_usuario (persistente)
    - Aplica tema, color de acento y tamaño de fuente globalmente
    - Inyecta Marquinhos-pet en todas las páginas
-   - ✅ v2.3: Carga marquinhos-animaciones.js (sistema Disney)
+   - ✅ v2.5: Carga marquinhos-fit.js + marquinhos-accesorios-svg.js
+              (FASE 1 y FASE 2 de accesorios con SVG real)
    ================================================================ */
 
 (function() {
@@ -292,7 +293,9 @@
     /* ================================================================
        ✅ Inyectar Marquinhos-pet en todas las páginas
        ================================================================
-       Orden de carga: CSS → boca.js → animaciones.js → pet.js → brain.js
+       Orden de carga:
+       CSS → boca.js → fit.js → accesorios-svg.js → animaciones.js
+       → pet.js → brain.js
        ================================================================ */
     (function inyectarMarquinhosPet() {
         var path = window.location.pathname.toLowerCase();
@@ -320,14 +323,28 @@
             css.id = 'marquinhos-pet-css';
             document.head.appendChild(css);
 
-            // Analizador de boca (visemas) — PRIMERO
+            // Analizador de boca (visemas)
             var boca = document.createElement('script');
             boca.id = 'marquinhos-boca-script';
             boca.src = '/features/marquinhos/marquinhos-boca.js';
             boca.defer = true;
             document.head.appendChild(boca);
 
-            // ✅ v2.3: Sistema de animaciones Disney (antes del pet)
+            // Sistema de fit compartido
+            var fit = document.createElement('script');
+            fit.id = 'marquinhos-fit-script';
+            fit.src = '/features/marquinhos/marquinhos-fit.js';
+            fit.defer = true;
+            document.head.appendChild(fit);
+
+            // ✅ NUEVO v2.5: Biblioteca de SVG reales de accesorios
+            var svgAcc = document.createElement('script');
+            svgAcc.id = 'marquinhos-accesorios-svg-script';
+            svgAcc.src = '/features/marquinhos/marquinhos-accesorios-svg.js';
+            svgAcc.defer = true;
+            document.head.appendChild(svgAcc);
+
+            // Sistema de animaciones Disney
             var anim = document.createElement('script');
             anim.id = 'marquinhos-anim-script';
             anim.src = '/features/marquinhos/marquinhos-animaciones.js';
@@ -356,5 +373,5 @@
         }
     })();
 
-    console.log('[Apariencia] ✅ Módulo global v2.3 cargado (localStorage + Supabase + Marquinhos-pet + Boca + Animaciones Disney)');
+    console.log('[Apariencia] ✅ Módulo global v2.5 cargado (localStorage + Supabase + Pet + Boca + Fit + SVG Accesorios + Animaciones Disney)');
 })();
