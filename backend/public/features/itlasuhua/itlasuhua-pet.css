@@ -37,29 +37,17 @@
         bottom .3s ease,
         opacity .3s ease;
 
-    /* ✅ Evita que el drag seleccione texto */
     user-select: none;
     -webkit-user-select: none;
     -webkit-tap-highlight-color: transparent;
-
-    /* ✅ Para touch */
     touch-action: none;
 }
-
-/* ================================================================
-   ESTADO: ARRASTRANDO
-   ================================================================ */
 
 #itlasuhua-container.itlasuhua-dragging {
     cursor: grabbing;
     transition: none;
-    /* Eleva un poco el z-index mientras se arrastra */
     z-index: 1001;
 }
-
-/* ================================================================
-   SVG
-   ================================================================ */
 
 #itlasuhua-svg {
     width: 100%;
@@ -67,13 +55,8 @@
     display: block;
     overflow: visible;
     shape-rendering: geometricPrecision;
-    /* El SVG no debe capturar los eventos, el contenedor sí */
     pointer-events: none;
 }
-
-/* ================================================================
-   TRANSFORM BOX
-   ================================================================ */
 
 #itlasuhua-svg #itla-body,
 #itlasuhua-svg #itla-neck,
@@ -83,18 +66,10 @@
     transform-box: fill-box;
 }
 
-/* ================================================================
-   BRILLO DE LOS ELEMENTOS TURQUESA
-   ================================================================ */
-
 #itlasuhua-svg circle[fill="#16D7D0"],
 #itlasuhua-svg circle[fill="#1BD8D2"] {
     filter: drop-shadow(0 0 4px rgba(63, 255, 242, .8));
 }
-
-/* ================================================================
-   ALAS
-   ================================================================ */
 
 #itlasuhua-svg #ala-izq,
 #itlasuhua-svg #ala-der {
@@ -102,10 +77,6 @@
     transform-origin: center;
     will-change: transform;
 }
-
-/* ================================================================
-   DESTELLOS
-   ================================================================ */
 
 #itlasuhua-svg #itla-sparkles {
     animation: itlaSparklePulse 3.5s ease-in-out infinite;
@@ -117,19 +88,11 @@
     100% { opacity: .75; }
 }
 
-/* ================================================================
-   OJOS
-   ================================================================ */
-
 #itlasuhua-svg #ojo-izq,
 #itlasuhua-svg #ojo-der {
     transform-box: fill-box;
     transform-origin: center;
 }
-
-/* ================================================================
-   ACCESIBILIDAD
-   ================================================================ */
 
 @media (prefers-reduced-motion: reduce) {
     #itlasuhua-svg animateTransform {
@@ -140,10 +103,6 @@
     }
 }
 
-/* ================================================================
-   TABLETS
-   ================================================================ */
-
 @media (max-width: 900px) {
     #itlasuhua-container {
         width: 340px;
@@ -152,10 +111,6 @@
         bottom: 12px;
     }
 }
-
-/* ================================================================
-   CELULARES
-   ================================================================ */
 
 @media (max-width: 600px) {
     #itlasuhua-container {
@@ -167,10 +122,6 @@
         bottom: 6px;
     }
 }
-
-/* ================================================================
-   CELULARES MUY PEQUEÑOS
-   ================================================================ */
 
 @media (max-width: 380px) {
     #itlasuhua-container {
