@@ -1,19 +1,11 @@
 // ================================================================
-// MARQUINHOS · PET v9.8.2 "GALACTIC PRO"
-// Mejoras sobre v9.7:
-// - Fixes de auditoría (C-1, C-2, A-1, A-2, A-3, A-4, M-1, M-5, M-7, M-10)
-// - Términos sincronizados con Supabase (registro legal)
-// - Cache TTS con TTL (recuperación automática)
-// - conversationToken para evitar respuestas fantasma
-// - procesando con finally garantizado
-// v9.8.1:
-// - FIX CRÍTICO: verificarTerminos() es async y se llamaba sin await
-// - Términos en memoria (_terminosOkPara) para no consultar en cada tap
-// - Modal solo aparece al tocar el avatar (no al cargar la página)
-// v9.8.2:
-// - FIX: avisar() usa toast independiente (no depende del modo subtítulos)
-// - FIX: CSS del modal inyectado desde JS (no depende de archivo externo)
-// - FIX: console.log de diagnóstico en verificarTerminos()
+// MARQUINHOS · PET v9.8.3 "GALACTIC PRO"
+// v9.8.3:
+// - FIX DEFINITIVO: helper obtenerClienteSupabase() que busca el
+//   cliente en window.getSupabase, window.supabaseClient o window.supabase
+// - Eliminadas TODAS las llamadas directas a window.getSupabase()
+// - Fallback de uid leyendo localStorage (sb-*-auth-token)
+// - Los términos ahora funcionan en cualquier página del perfil
 // ================================================================
 
 'use strict';
@@ -100,8 +92,6 @@
     let _bocaTimeouts = [];
     let _bocaActiva = false;
     let _terminosProcesando = false;
-
-    // 🆕 v9.8.1: cache en memoria del uid que ya aceptó
     let _terminosOkPara = null;
 
     let isDragging = false;
@@ -116,12 +106,28 @@
         return RUTAS_EXCLUIDAS.some(r => path.indexOf(r) !== -1);
     }
 
-    function log(msg) { console.log('[Marquinhos v9.8.2]', msg); }
+    function log(msg) { console.log('[Marquinhos v9.8.3]', msg); }
 
     function esc(v) {
         const d = document.createElement('div');
         d.textContent = v == null ? '' : String(v);
         return d.innerHTML;
+    }
+
+    // ============================================================
+    // 🆕 v9.8.3: HELPER ÚNICO para obtener el cliente de Supabase
+    // Busca en window.getSupabase, window.supabaseClient o window.supabase
+    // ============================================================
+    async function obtenerClienteSupabase() {
+        try {
+            if (typeof window.getSupabase === 'function') {
+                const c = await window.getSupabase();
+                if (c && c.auth) return c;
+            }
+        } catch (e) {}
+        if (window.supabaseClient && window.supabaseClient.auth) return window.supabaseClient;
+        if (window.supabase && window.supabase.auth) return window.supabase;
+        return null;
     }
 
     function cargarConfig() {
@@ -190,18 +196,13 @@
         try { localStorage.removeItem(HIST_KEY + (userInfo ? userInfo.id : 'anon')); } catch (e) {}
     }
 
+    // 🆕 v9.8.3: usa obtenerClienteSupabase()
     async function cargarUsuario() {
         try {
-            if (!window.getSupabase) {
-                userInfo = { id: 'anon', nombre: 'amigo' };
-                return userInfo;
-            }
-            const sb = window.getSupabase();
+            const sb = await obtenerClienteSupabase();
+            if (!sb) { userInfo = { id: 'anon', nombre: 'amigo' }; return userInfo; }
             const r = await sb.auth.getSession();
-            if (!r.data.session) {
-                userInfo = { id: 'anon', nombre: 'amigo' };
-                return userInfo;
-            }
+            if (!r.data.session) { userInfo = { id: 'anon', nombre: 'amigo' }; return userInfo; }
             const uid = r.data.session.user.id;
             const { data } = await sb.from('usuarios')
                 .select('nombre, handle, avatar_url')
@@ -218,6 +219,7 @@
         }
     }
 
+    // 🆕 v9.8.3: usa obtenerClienteSupabase()
     async function cargarAccesorios() {
         try {
             const cached = JSON.parse(localStorage.getItem(ACC_KEY) || '[]');
@@ -225,8 +227,8 @@
         } catch (e) { accesoriosEquipados = []; }
 
         try {
-            if (!window.getSupabase) return;
-            const sb = window.getSupabase();
+            const sb = await obtenerClienteSupabase();
+            if (!sb) return;
             const r = await sb.auth.getSession();
             if (!r.data.session) return;
             const uid = r.data.session.user.id;
@@ -357,13 +359,9 @@
     }
 
     // ============================================================
-    // 🆕 v9.8.2: TÉRMINOS
-    // - avisar() usa toast independiente (no depende de la burbuja)
-    // - asegurarEstilosModal() inyecta CSS del modal desde JS
-    // - console.log de diagnóstico en verificarTerminos()
+    // TÉRMINOS v9.8.3
     // ============================================================
 
-    // 🆕 v9.8.2: toast independiente que SIEMPRE se ve
     function avisar(texto) {
         let t = document.getElementById('mq-toast-aviso');
         if (!t) {
@@ -381,17 +379,30 @@
         t._timer = setTimeout(function () { t.style.display = 'none'; }, 4000);
     }
 
+    // 🆕 v9.8.3: usa obtenerClienteSupabase() + fallback localStorage
     async function obtenerUidActual() {
-        if (!window.getSupabase) return null;
-        try {
-            const sb = window.getSupabase();
-            const r = await sb.auth.getSession();
-            return r.data.session ? r.data.session.user.id : null;
-        } catch (e) {
-            return null;
+        const sb = await obtenerClienteSupabase();
+        if (sb) {
+            try {
+                const r = await sb.auth.getSession();
+                if (r.data && r.data.session) return r.data.session.user.id;
+            } catch (e) {}
         }
+        // Respaldo: sesión guardada por Supabase en localStorage
+        try {
+            for (let i = 0; i < localStorage.length; i++) {
+                const k = localStorage.key(i);
+                if (k && /^sb-.*-auth-token$/.test(k)) {
+                    const j = JSON.parse(localStorage.getItem(k));
+                    const uid = j && j.user && j.user.id;
+                    if (uid) return uid;
+                }
+            }
+        } catch (e) {}
+        return null;
     }
 
+    // 🆕 v9.8.3: usa obtenerClienteSupabase()
     async function verificarTerminos() {
         const uid = await obtenerUidActual();
         if (!uid) {
@@ -401,7 +412,9 @@
         if (_terminosOkPara === uid) return true;
 
         try {
-            const sb = window.getSupabase();
+            const sb = await obtenerClienteSupabase();
+            if (!sb) throw new Error('Cliente de Supabase no disponible');
+
             const { data, error } = await sb.rpc('verificar_aceptacion_terminos', {
                 p_version: TERMINOS_VERSION
             });
@@ -421,9 +434,11 @@
         }
     }
 
+    // 🆕 v9.8.3: usa obtenerClienteSupabase()
     async function registrarTerminosEnSupabase() {
         try {
-            const sb = window.getSupabase();
+            const sb = await obtenerClienteSupabase();
+            if (!sb) return false;
             const { data, error } = await sb.rpc('registrar_aceptacion_terminos', {
                 p_version: TERMINOS_VERSION,
                 p_user_agent: navigator.userAgent
@@ -436,7 +451,6 @@
         }
     }
 
-    // 🆕 v9.8.2: inyecta CSS del modal por si el archivo externo no carga
     function asegurarEstilosModal() {
         if (document.getElementById('mq-modal-estilos')) return;
         const s = document.createElement('style');
@@ -802,7 +816,6 @@
 
         const avatar = document.getElementById('mq-avatar');
 
-        // 🆕 v9.8.1: listener con await real
         avatar.addEventListener('click', async function () {
             if (hasMoved) { hasMoved = false; return; }
             const ok = await verificarTerminos();
@@ -874,14 +887,13 @@
         aplicarTamano();
         cambiarVisema('REST');
 
-        // 🆕 v9.8.1: sin verificación al cargar.
         setTimeout(function() {
             if (window.MarquinhosAnim && typeof window.MarquinhosAnim.iniciar === 'function') {
                 window.MarquinhosAnim.iniciar();
             }
         }, 500);
 
-        log('Widget v9.8.2 Galactic Pro creado');
+        log('Widget v9.8.3 Galactic Pro creado');
     }
 
     function mostrarDots() {}
@@ -965,10 +977,15 @@
 
         let ok = false;
         const ttsBackendDisponible = (Date.now() - _ttsBackendFalloEn > TTS_FALLO_TTL_MS);
-        if (texto.length <= 300 && window.getSupabase && ttsBackendDisponible) {
+
+        // 🆕 v9.8.3: usa obtenerClienteSupabase()
+        const sbTts = (texto.length <= 300 && ttsBackendDisponible)
+            ? await obtenerClienteSupabase()
+            : null;
+
+        if (sbTts) {
             try {
-                const sb = window.getSupabase();
-                const s = await sb.auth.getSession();
+                const s = await sbTts.auth.getSession();
                 if (s.data.session && miToken === ttsToken) {
                     const resp = await fetch('/api/ai/voice/tts', {
                         method: 'POST',
@@ -1272,7 +1289,7 @@
         await cargarAccesorios();
         crearWidget();
         instalarVisibility();
-        log('✅ Marquinhos v9.8.2 Galactic Pro activo');
+        log('✅ Marquinhos v9.8.3 Galactic Pro activo');
     }
 
     if (document.readyState === 'loading') {
