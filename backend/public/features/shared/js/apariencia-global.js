@@ -1,11 +1,10 @@
 /* ================================================================
-   APARIENCIA GLOBAL - SARIEL'S ECOSYSTEM v2.5
+   APARIENCIA GLOBAL - SARIEL'S ECOSYSTEM v2.6
    - Lee de localStorage (rápido, sin red)
    - Sincroniza con Supabase preferencias_usuario (persistente)
    - Aplica tema, color de acento y tamaño de fuente globalmente
    - Inyecta Marquinhos-pet en todas las páginas
-   - ✅ v2.5: Carga marquinhos-fit.js + marquinhos-accesorios-svg.js
-              (FASE 1 y FASE 2 de accesorios con SVG real)
+   - ✅ NUEVO v2.6: Inyecta Capitán Maíz (guardian ancestral) 🌽⚔️
    ================================================================ */
 
 (function() {
@@ -337,7 +336,7 @@
             fit.defer = true;
             document.head.appendChild(fit);
 
-            // ✅ NUEVO v2.5: Biblioteca de SVG reales de accesorios
+            // Biblioteca de SVG reales de accesorios
             var svgAcc = document.createElement('script');
             svgAcc.id = 'marquinhos-accesorios-svg-script';
             svgAcc.src = '/features/marquinhos/marquinhos-accesorios-svg.js';
@@ -373,5 +372,67 @@
         }
     })();
 
-    console.log('[Apariencia] ✅ Módulo global v2.5 cargado (localStorage + Supabase + Pet + Boca + Fit + SVG Accesorios + Animaciones Disney)');
+    /* ================================================================
+       🆕 v2.6: Inyectar Capitán Maíz-pet en todas las páginas
+       ================================================================
+       Personaje independiente de Marquinhos.
+       Orden de carga:
+       CSS → fit.js → pet.js → brain.js
+       ================================================================ */
+    (function inyectarCapitanMaizPet() {
+        var path = window.location.pathname.toLowerCase();
+
+        var excluidas = [
+            '/login', '/registro',
+            '/pagar', '/pay', '/checkout', '/success', '/cancel',
+            '/terminos', '/privacidad', '/cookies', '/legal',
+            '/info', '/live-terminos', '/eliminar-cuenta',
+            '/actualizar-contrasena',
+            '/features/capitan-maiz/tienda'
+        ];
+
+        for (var i = 0; i < excluidas.length; i++) {
+            if (path.indexOf(excluidas[i]) !== -1) return;
+        }
+
+        if (document.getElementById('capitan-maiz-pet-script')) return;
+
+        var insertar = function() {
+            // CSS
+            var css = document.createElement('link');
+            css.rel = 'stylesheet';
+            css.href = '/features/capitan-maiz/capitan-maiz-pet.css';
+            css.id = 'capitan-maiz-pet-css';
+            document.head.appendChild(css);
+
+            // Sistema de fit compartido (coordenadas)
+            var fit = document.createElement('script');
+            fit.id = 'capitan-maiz-fit-script';
+            fit.src = '/features/capitan-maiz/capitan-maiz-fit.js';
+            fit.defer = true;
+            document.head.appendChild(fit);
+
+            // Pet (widget principal)
+            var js = document.createElement('script');
+            js.id = 'capitan-maiz-pet-script';
+            js.src = '/features/capitan-maiz/capitan-maiz-pet.js';
+            js.defer = true;
+            document.head.appendChild(js);
+
+            // Brain (IA)
+            var brain = document.createElement('script');
+            brain.id = 'capitan-maiz-brain-script';
+            brain.src = '/features/capitan-maiz/capitan-maiz-brain.js';
+            brain.defer = true;
+            document.head.appendChild(brain);
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', insertar);
+        } else {
+            insertar();
+        }
+    })();
+
+    console.log('[Apariencia] ✅ Módulo global v2.6 cargado (Marquinhos + Capitán Maíz 🌽⚔️)');
 })();
