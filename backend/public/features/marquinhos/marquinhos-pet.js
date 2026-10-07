@@ -55,7 +55,7 @@
     // ✅ v9.3: la boca ahora está DENTRO de la cabeza (y 132–154) y las
     // formas abiertas llevan relleno oscuro para que se vea la boca abierta.
     var VISEMAS_SVG = {
-        REST: 'M 80 138 Q 100 148 120 138',
+        REST: 'M 78 137 Q 100 150 122 137',
         A:    'M 70 134 Q 100 130 130 134 Q 126 154 100 154 Q 74 154 70 134 Z',
         E:    'M 72 137 Q 100 134 128 137 Q 122 150 100 150 Q 78 150 72 137 Z',
         I:    'M 74 139 Q 100 143 126 139 Q 100 148 74 139 Z',
@@ -423,9 +423,9 @@
 
                         <!-- Iris cian tipo robot (menos tierno) -->
                         <radialGradient id="mq-grad-iris" cx="50%" cy="45%">
-                            <stop offset="0%" stop-color="#9CF6FF"/>
-                            <stop offset="55%" stop-color="#00C8FF"/>
-                            <stop offset="100%" stop-color="#0277BD"/>
+                            <stop offset="0%" stop-color="#C8F4FF"/>
+                            <stop offset="60%" stop-color="#5CCBFF"/>
+                            <stop offset="100%" stop-color="#2E8FE0"/>
                         </radialGradient>
 
                         <linearGradient id="mq-grad-bota" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -481,28 +481,30 @@
 
                             <!-- CEJAS (inclinadas hacia el centro = mirada más seria) -->
                             <g id="mq-cejas">
-                                <path id="mq-ceja-izq" d="M 56 80 Q 72 74 88 83" stroke="#0D47A1" stroke-width="3" fill="none" stroke-linecap="round"/>
-                                <path id="mq-ceja-der" d="M 112 83 Q 128 74 144 80" stroke="#0D47A1" stroke-width="3" fill="none" stroke-linecap="round"/>
+                                <path id="mq-ceja-izq" d="M 56 82 Q 72 73 88 78" stroke="#0D47A1" stroke-width="3" fill="none" stroke-linecap="round"/>
+                                <path id="mq-ceja-der" d="M 112 78 Q 128 73 144 82" stroke="#0D47A1" stroke-width="3" fill="none" stroke-linecap="round"/>
                             </g>
 
                             <!-- OJOS: más chicos, iris cian, un solo brillo -->
                             <g id="mq-ojo-izq" class="mq-ojo">
-                                <ellipse cx="72" cy="108" rx="16" ry="13" fill="#0a1a3e" stroke="#0D47A1" stroke-width="2"/>
-                                <ellipse cx="72" cy="108" rx="12" ry="9.5" fill="url(#mq-grad-iris)"/>
-                                <circle id="mq-pupila-izq" cx="72" cy="108" r="5" fill="#04102b"/>
-                                <circle cx="76" cy="104" r="1.8" fill="#FFFFFF" opacity="0.9"/>
+                                <ellipse cx="72" cy="108" rx="16" ry="14" fill="#1B3A8A" stroke="#0D47A1" stroke-width="2"/>
+                                <ellipse cx="72" cy="108" rx="12.5" ry="11" fill="url(#mq-grad-iris)"/>
+                                <circle id="mq-pupila-izq" cx="72" cy="108" r="4.2" fill="#0D2A66"/>
+                                <circle cx="77" cy="103" r="3" fill="#FFFFFF" opacity="0.95"/>
+                                <circle cx="68" cy="112" r="1.4" fill="#FFFFFF" opacity="0.7"/>
                             </g>
 
                             <g id="mq-ojo-der" class="mq-ojo">
-                                <ellipse cx="128" cy="108" rx="16" ry="13" fill="#0a1a3e" stroke="#0D47A1" stroke-width="2"/>
-                                <ellipse cx="128" cy="108" rx="12" ry="9.5" fill="url(#mq-grad-iris)"/>
-                                <circle id="mq-pupila-der" cx="128" cy="108" r="5" fill="#04102b"/>
-                                <circle cx="132" cy="104" r="1.8" fill="#FFFFFF" opacity="0.9"/>
+                                <ellipse cx="128" cy="108" rx="16" ry="14" fill="#1B3A8A" stroke="#0D47A1" stroke-width="2"/>
+                                <ellipse cx="128" cy="108" rx="12.5" ry="11" fill="url(#mq-grad-iris)"/>
+                                <circle id="mq-pupila-der" cx="128" cy="108" r="4.2" fill="#0D2A66"/>
+                                <circle cx="133" cy="103" r="3" fill="#FFFFFF" opacity="0.95"/>
+                                <circle cx="124" cy="112" r="1.4" fill="#FFFFFF" opacity="0.7"/>
                             </g>
 
                             <!-- BOCA (dentro de la cabeza) -->
                             <path id="mq-boca" class="mq-pet-boca"
-                                  d="M 80 138 Q 100 148 120 138"
+                                  d="M 78 137 Q 100 150 122 137"
                                   stroke="#0D47A1" stroke-width="3.5"
                                   stroke-linejoin="round"
                                   fill="none" stroke-linecap="round"/>
