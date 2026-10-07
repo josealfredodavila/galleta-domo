@@ -5,10 +5,7 @@
    Recibe:   { text }
    Devuelve: { success, audio_url }
 
-   ✅ SEPARADO DE MARQUINHOS:
-   - Voz propia de ElevenLabs (VOICE_ID_CAPITAN_MAIZ)
-   - Google TTS propio (voz masculina grave)
-   - Carpeta propia: capitan-maiz-tts/
+   Voz propia del Capitán Maíz. Separado de Marquinhos.
    ================================================================ */
 
 'use strict';
