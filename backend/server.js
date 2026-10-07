@@ -3,6 +3,9 @@
 // Backend principal — Producción Railway
 // ✅ v2.2: Añadidas rutas /api/ai/chat-maiz y /api/ai/voice/tts-maiz
 //           (Capitán Maíz — separado de Marquinhos)
+// ✅ v2.3: Añadidas rutas del Rey Itlasuhua
+//           (/api/ai/tts-itlasuhua, /api/ai/chat-itlasuhua,
+//            /api/ai/voice-itlasuhua)
 // ================================================================
 
 require('dotenv').config();
@@ -897,10 +900,15 @@ montarRouter('/api/ai/chat-pet', './routes/ai-chat-pet', 'routes/ai-chat-pet');
 
 montarRouter('/api/ai/tts', './routes/ai-tts', 'routes/ai-tts');
 
-// ⚔️ Capitán Maíz — separado de Marquinhos (NUEVO)
+// ⚔️ Capitán Maíz — separado de Marquinhos
 montarRouter('/api/ai/chat-maiz', './routes/ai-chat-maiz', 'routes/ai-chat-maiz');
 
 montarRouter('/api/ai/voice', './routes/ai-tts-maiz', 'routes/ai-tts-maiz');
+
+// 🐍 Rey Itlasuhua — serpiente cósmica (NUEVO v2.3)
+montarRouter('/api/ai/tts-itlasuhua', './routes/ai-tts-itlasuhua', 'routes/ai-tts-itlasuhua');
+montarRouter('/api/ai/chat-itlasuhua', './routes/ai-chat-itlasuhua', 'routes/ai-chat-itlasuhua');
+montarRouter('/api/ai/voice-itlasuhua', './routes/ai-voice-itlasuhua', 'routes/ai-voice-itlasuhua');
 
 montarRouter('/api/telnyx', './routes/telnyx', 'routes/telnyx');
 
@@ -979,7 +987,7 @@ app.get('/actualizar-contrasena', (req, res) => {
 });
 
 // ================================================================
-// ✅ v2.1: TÉRMINOS DE USO DE MARQUINHOS (IA)
+// TÉRMINOS DE USO DE LAS MASCOTAS IA
 // ================================================================
 
 app.get('/legal/terminos-marquinhos', (req, res) => {
@@ -988,6 +996,18 @@ app.get('/legal/terminos-marquinhos', (req, res) => {
     if (!fs.existsSync(filePath)) {
         console.error('❌ Archivo no encontrado:', filePath);
         return res.status(404).send('Términos de Marquinhos no disponibles');
+    }
+
+    return res.sendFile(filePath);
+});
+
+// 🐍 Términos del Rey Itlasuhua (NUEVO v2.3)
+app.get('/legal/terminos-itlasuhua', (req, res) => {
+    const filePath = path.join(publicPath, 'legal', 'terminos-itlasuhua.html');
+
+    if (!fs.existsSync(filePath)) {
+        console.error('❌ Archivo no encontrado:', filePath);
+        return res.status(404).send('Términos del Itlasuhua no disponibles');
     }
 
     return res.sendFile(filePath);
