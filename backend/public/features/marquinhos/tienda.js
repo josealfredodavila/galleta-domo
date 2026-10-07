@@ -1,7 +1,7 @@
 // ================================================================
-// TIENDA DE MARQUINHOS · v3.4
-// compra ultra-rápida + UI optimista + PROBAR ANTES DE COMPRAR
-// ✅ v3.4: posiciones de accesorios ajustadas al nuevo Marquinhos
+// TIENDA DE MARQUINHOS · v3.6
+// FASE 1: usa marquinhos-fit.js para coordenadas compartidas
+// FASE 2: usa marquinhos-accesorios-svg.js para SVG reales
 // ================================================================
 
 'use strict';
@@ -67,9 +67,9 @@
             renderGrid();
             instalarEventos();
 
-            console.log('[Tienda v3.4] ✅ Lista');
+            console.log('[Tienda v3.6] ✅ Lista');
         } catch (e) {
-            console.error('[Tienda v3.4] Error init:', e);
+            console.error('[Tienda v3.6] Error init:', e);
             toast('Error cargando tienda', 'error');
         }
     }
@@ -89,7 +89,7 @@
 
             pintarSaldo();
         } catch (e) {
-            console.warn('[Tienda v3.4] Error saldo:', e);
+            console.warn('[Tienda v3.6] Error saldo:', e);
             $('saldoValor').textContent = '0.00';
         }
     }
@@ -204,6 +204,9 @@
         `;
     }
 
+    // ============================================================
+    // ✅ v3.6: Render con SVG real (Fase 2)
+    // ============================================================
     function renderAccesoriosEquipados() {
         const layer = $('accesoriosLayer');
         if (!layer) return;
@@ -222,6 +225,18 @@
 
         layer.innerHTML = visibles.map(a => {
             const pos = posicionPorCategoria(a.categoria);
+
+            // Detectar si tiene SVG real disponible
+            const svgReal = window.MarquinhosAccesoriosSVG && window.MarquinhosAccesoriosSVG.render
+                ? window.MarquinhosAccesoriosSVG.render(a.svg_data || '')
+                : null;
+
+            if (svgReal) {
+                // SVG real → renderizar como <g>
+                return `<g>${svgReal}</g>`;
+            }
+
+            // Emoji → renderizar como <text> (compatible)
             return `<text x="${pos.x}" y="${pos.y}" font-size="${pos.size}" text-anchor="middle">${esc(a.svg_data || '')}</text>`;
         }).join('');
 
@@ -248,41 +263,14 @@
     }
 
     // ============================================================
-    // ✅ v3.4: POSICIONES AJUSTADAS AL NUEVO MARQUINHOS (v9.4)
-    // ============================================================
-    // El cuerpo nuevo (viewBox 0 0 200 300):
-    //   Antena:  y = 6 a 40
-    //   Cabeza:  y = 40 a 160 (rectángulo redondeado, ancho 130, x=35 a 165)
-    //   Ojos:    y = 108
-    //   Boca:    y = 138
-    //   Cuello:  y = 158 a 170
-    //   Torso:   y = 165 a 250 (cápsula, x=60 a 140)
-    //   Placa:   y = 185 a 207
-    //   Piernas: y = 250 a 278
-    //   Botas:   y = 278 a 290
+    // ✅ v3.6: usa el sistema compartido marquinhos-fit.js
     // ============================================================
     function posicionPorCategoria(cat) {
-        switch (cat) {
-            // Sombrero: sobre la cabeza, ligeramente arriba
-            case 'sombrero':   return { x: 100, y: 55,  size: 78 };
-
-            // Lentes: a la altura de los ojos (y=108)
-            case 'lentes':     return { x: 100, y: 110, size: 72 };
-
-            // Playera: en la parte alta del torso (y=180)
-            case 'playera':    return { x: 100, y: 190, size: 82 };
-
-            // Pantalón: en la parte media-baja del torso (y=225)
-            case 'pantalon':   return { x: 100, y: 235, size: 76 };
-
-            // Zapatos: sobre las botas (y=284)
-            case 'zapatos':    return { x: 100, y: 284, size: 68 };
-
-            // Accesorio: al lado derecho del cuerpo (torso)
-            case 'accesorio':  return { x: 178, y: 200, size: 62 };
-
-            default:           return { x: 100, y: 100, size: 55 };
+        if (window.MarquinhosFit && typeof window.MarquinhosFit.getCategoria === 'function') {
+            const fit = window.MarquinhosFit.getCategoria(cat);
+            return { x: fit.x, y: fit.y, size: fit.size };
         }
+        return { x: 100, y: 100, size: 55 };
     }
 
     function alternarPrueba(acc) {
@@ -319,7 +307,7 @@
             });
 
             if (error) {
-                console.error('[Tienda v3.4] RPC error:', error);
+                console.error('[Tienda v3.6] RPC error:', error);
                 toast('Error al procesar la compra', 'error');
                 return;
             }
@@ -347,7 +335,7 @@
 
             await equipar(acc.id);
         } catch (e) {
-            console.error('[Tienda v3.4] Error comprando:', e);
+            console.error('[Tienda v3.6] Error comprando:', e);
             toast('Error al comprar: ' + (e.message || 'desconocido'), 'error');
         } finally {
             comprasEnVuelo.delete(acc.id);
@@ -416,11 +404,11 @@
             renderGrid();
             renderAccesoriosEquipados();
 
-            if (window.Marquinhos?.recargarAccesorios) {
+            if (window.Marquinhos && window.Marquinhos.recargarAccesorios) {
                 try { window.Marquinhos.recargarAccesorios(); } catch (e) {}
             }
         } catch (e) {
-            console.error('[Tienda v3.4] Error equipando:', e);
+            console.error('[Tienda v3.6] Error equipando:', e);
             toast('Error al equipar', 'error');
         }
     }
@@ -441,11 +429,11 @@
             repintarTarjeta(accId);
             renderAccesoriosEquipados();
 
-            if (window.Marquinhos?.recargarAccesorios) {
+            if (window.Marquinhos && window.Marquinhos.recargarAccesorios) {
                 try { window.Marquinhos.recargarAccesorios(); } catch (e) {}
             }
         } catch (e) {
-            console.error('[Tienda v3.4] Error desequipando:', e);
+            console.error('[Tienda v3.6] Error desequipando:', e);
         }
     }
 
@@ -466,7 +454,7 @@
                     inventario[id].equipado = false;
                 });
 
-                if (window.Marquinhos?.recargarAccesorios) {
+                if (window.Marquinhos && window.Marquinhos.recargarAccesorios) {
                     try { window.Marquinhos.recargarAccesorios(); } catch (e) {}
                 }
             }
