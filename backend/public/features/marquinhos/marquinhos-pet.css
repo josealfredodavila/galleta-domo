@@ -1,7 +1,7 @@
 /* ================================================================
-   MARQUINHOS · PET · CSS v6.2
+   MARQUINHOS · PET · CSS v6.3
    (arrastrable + 3 burbujitas + boca dinámica + animaciones Disney
-    + modal de aceptación de términos)
+    + modal de términos + aislamiento total del widget flotante)
    ================================================================ */
 
 .mq-pet {
@@ -227,7 +227,6 @@
    ✅ v6.2: ANIMACIONES DISNEY (controladas por JS)
    ================================================================ */
 
-/* Los ojos y pupilas necesitan transform-origin centrado */
 #mq-pupila-izq,
 #mq-pupila-der,
 #mq-brillo-izq,
@@ -236,7 +235,6 @@
     will-change: transform;
 }
 
-/* Suavizar la transición del parpadeo (ry) */
 #mq-ojo-izq,
 #mq-ojo-der {
     transition: ry 0.08s ease-out;
@@ -354,6 +352,63 @@
 }
 
 /* ================================================================
+   ✅ v6.3: AISLAMIENTO TOTAL DEL PET FLOTANTE
+   ================================================================
+   Evita conflictos con otras páginas (especialmente mensajes.html)
+   que tienen sus propios .header, .app, .avatar, etc.
+   ================================================================ */
+
+#marquinhos-pet {
+    all: initial;
+    position: fixed !important;
+    bottom: 16px !important;
+    right: 16px !important;
+    z-index: 2147483647 !important;
+    width: 90px !important;
+    height: 130px !important;
+    pointer-events: auto !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: block !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    touch-action: none !important;
+    font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif !important;
+    -webkit-tap-highlight-color: transparent !important;
+    transition: none !important;
+    box-sizing: border-box !important;
+}
+
+#marquinhos-pet * {
+    box-sizing: border-box !important;
+}
+
+#marquinhos-pet .mq-pet-avatar {
+    position: absolute !important;
+    bottom: 0 !important;
+    right: 0 !important;
+    width: 90px !important;
+    height: 130px !important;
+    cursor: grab !important;
+    animation: mq-float 4s ease-in-out infinite !important;
+    touch-action: none !important;
+}
+
+#marquinhos-pet.mq-dragging .mq-pet-avatar {
+    animation: none !important;
+    cursor: grabbing !important;
+    transform: scale(1.05) !important;
+}
+
+#marquinhos-pet .mq-pet-svg {
+    width: 100% !important;
+    height: 100% !important;
+    display: block !important;
+    pointer-events: none !important;
+    transform-origin: center center !important;
+}
+
+/* ================================================================
    Responsive
    ================================================================ */
 @media (max-width: 520px) {
@@ -361,32 +416,43 @@
         width: 80px !important;
         height: 115px !important;
     }
+
+    #marquinhos-pet,
+    #marquinhos-pet .mq-pet-avatar {
+        width: 80px !important;
+        height: 115px !important;
+    }
+
     .mq-pet-bubble {
         font-size: 11px;
         max-width: 180px;
         padding: 6px 10px;
     }
+
     .mq-pet-bubble-dots {
         padding: 8px 12px;
         gap: 5px;
     }
+
     .mq-pet-bubble-dots .mq-dot {
         width: 7px;
         height: 7px;
     }
 
-    /* Modal responsive */
     .mq-modal-content h2 {
         font-size: 1rem;
         padding: 16px 20px 10px;
     }
+
     .mq-modal-body {
         padding: 16px 20px;
         font-size: 0.83rem;
     }
+
     .mq-modal-actions {
         padding: 14px 20px 18px;
     }
+
     .mq-btn-aceptar, .mq-btn-rechazar {
         font-size: 0.8rem;
         padding: 10px 12px;
@@ -412,7 +478,6 @@ html[data-tema="dia"] .mq-pet-bubble-dots::after {
     border-top-color: rgba(255, 255, 255, 0.99);
 }
 
-/* Modo día para el modal */
 html.tema-dia .mq-modal-content,
 html[data-tema="dia"] .mq-modal-content {
     background: #ffffff;
