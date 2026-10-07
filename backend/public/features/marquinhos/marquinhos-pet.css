@@ -1,5 +1,5 @@
 /* ================================================================
-   MARQUINHOS · PET · CSS v6.5 "GALACTIC"
+   MARQUINHOS · PET · CSS v6.6 "GALACTIC CARTOON"
    ================================================================ */
 
 #marquinhos-pet {
@@ -34,7 +34,7 @@
     width: var(--mq-pet-ancho, 90px);
     height: var(--mq-pet-alto, 130px);
     cursor: grab;
-    filter: drop-shadow(0 6px 20px rgba(124, 77, 255, 0.5));
+    filter: drop-shadow(0 6px 20px rgba(124, 77, 255, 0.45));
     animation: mq-float 4s ease-in-out infinite;
     touch-action: none;
     -webkit-tap-highlight-color: transparent;
@@ -62,22 +62,11 @@
 }
 
 #mq-cuerpo {
-    transform-origin: 100px 190px;
+    transform-origin: 100px 200px;
     will-change: transform;
 }
 
-/* ✅ NUEVO: Transiciones suaves para brazos y manos */
-.mq-brazo {
-    transform-origin: center center;
-    will-change: transform;
-}
-
-.mq-mano {
-    transform-origin: center center;
-    will-change: transform;
-}
-
-.mq-pierna {
+.mq-brazo, .mq-mano, .mq-pierna {
     transform-origin: center center;
     will-change: transform;
 }
@@ -188,27 +177,17 @@
 
 @keyframes mq-pulse-listen {
     0%, 100% { filter: drop-shadow(0 6px 16px rgba(0, 229, 255, 0.4)); }
-    50% { filter: drop-shadow(0 6px 28px rgba(0, 229, 255, 0.85)); }
+    50% { filter: drop-shadow(0 6px 28px rgba(0, 229, 255, 0.9)); }
 }
 
 @keyframes mq-pulse-think {
     0%, 100% { filter: drop-shadow(0 6px 16px rgba(255, 215, 0, 0.4)); }
-    50% { filter: drop-shadow(0 6px 28px rgba(255, 215, 0, 0.85)); }
+    50% { filter: drop-shadow(0 6px 28px rgba(255, 215, 0, 0.9)); }
 }
 
-#mq-pupila-izq, #mq-pupila-der,
-#mq-brillo-izq, #mq-brillo-der {
-    transform-origin: center center;
-    will-change: transform;
-}
-
-#mq-ojo-izq, #mq-ojo-der {
-    transition: ry 0.08s ease-out;
-}
-
-#mq-ceja-izq, #mq-ceja-der {
-    transition: d 0.3s ease-out;
-}
+#mq-pupila-izq, #mq-pupila-der { transform-origin: center center; will-change: transform; }
+#mq-ojo-izq, #mq-ojo-der { transition: ry 0.08s ease-out; }
+#mq-ceja-izq, #mq-ceja-der { transition: d 0.3s ease-out; }
 
 /* MODAL */
 .mq-modal-overlay {
@@ -343,7 +322,6 @@
     }
     .mq-pet-bubble-dots { padding: 8px 12px; gap: 5px; }
     .mq-pet-bubble-dots .mq-dot { width: 7px; height: 7px; }
-
     .mq-modal-content h2 { font-size: 1rem; padding: 16px 20px 10px; }
     .mq-modal-body { padding: 16px 20px; font-size: 0.83rem; }
     .mq-modal-actions { padding: 14px 20px 18px; }
