@@ -1,5 +1,5 @@
 /* ================================================================
-   MARQUINHOS · PET · CSS v6.6 "GALACTIC CARTOON"
+   MARQUINHOS · PET · CSS v6.7 "GALACTIC CARTOON PRO"
    ================================================================ */
 
 #marquinhos-pet {
@@ -34,7 +34,7 @@
     width: var(--mq-pet-ancho, 90px);
     height: var(--mq-pet-alto, 130px);
     cursor: grab;
-    filter: drop-shadow(0 6px 20px rgba(124, 77, 255, 0.45));
+    filter: drop-shadow(0 6px 20px rgba(124, 77, 255, 0.5));
     animation: mq-float 4s ease-in-out infinite;
     touch-action: none;
     -webkit-tap-highlight-color: transparent;
@@ -66,9 +66,17 @@
     will-change: transform;
 }
 
+/* ✅ v6.7: Transiciones elásticas para brazos, manos, piernas */
 .mq-brazo, .mq-mano, .mq-pierna {
     transform-origin: center center;
     will-change: transform;
+    transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+#mq-cabeza-grupo {
+    transform-origin: 100px 100px;
+    will-change: transform;
+    transition: transform 1.2s ease-in-out;
 }
 
 /* BURBUJA */
@@ -164,7 +172,19 @@
 
 .mq-pet.mq-modo-voz .mq-pet-bubble { display: none !important; }
 
-.mq-pet-boca { transition: d 0.08s ease-out; }
+.mq-pet-boca { 
+    transition: d 0.08s ease-out;
+    stroke-linecap: round;
+}
+
+/* ✅ v6.7: Antena con transición suave para activarse/desactivarse */
+#mq-antena-bola {
+    transition: r 0.3s ease-out, fill 0.3s ease-out;
+}
+
+#mq-antena-glow {
+    transition: opacity 0.3s ease-out, r 0.3s ease-out;
+}
 
 /* ESTADOS */
 .mq-pet[data-estado="escuchando"] .mq-pet-avatar {
@@ -177,12 +197,12 @@
 
 @keyframes mq-pulse-listen {
     0%, 100% { filter: drop-shadow(0 6px 16px rgba(0, 229, 255, 0.4)); }
-    50% { filter: drop-shadow(0 6px 28px rgba(0, 229, 255, 0.9)); }
+    50% { filter: drop-shadow(0 6px 28px rgba(0, 229, 255, 0.95)); }
 }
 
 @keyframes mq-pulse-think {
     0%, 100% { filter: drop-shadow(0 6px 16px rgba(255, 215, 0, 0.4)); }
-    50% { filter: drop-shadow(0 6px 28px rgba(255, 215, 0, 0.9)); }
+    50% { filter: drop-shadow(0 6px 28px rgba(255, 215, 0, 0.95)); }
 }
 
 #mq-pupila-izq, #mq-pupila-der { transform-origin: center center; will-change: transform; }
