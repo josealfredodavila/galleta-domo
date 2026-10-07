@@ -164,6 +164,27 @@ h1 .hex { font-family: 'Orbitron', monospace; }
     font-family: 'Orbitron', monospace;
     font-size: .8rem;
 }
+
+/* Preview del tamaño */
+.preview-tamano {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 0 8px;
+    min-height: 120px;
+}
+.preview-tamano-box {
+    background: rgba(212, 175, 55, 0.08);
+    border: 1px dashed rgba(212, 175, 55, 0.4);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: width 0.2s, height 0.2s;
+    font-size: 0.65rem;
+    color: var(--muted);
+    overflow: hidden;
+}
 </style>
 </head>
 <body>
@@ -183,6 +204,25 @@ h1 .hex { font-family: 'Orbitron', monospace; }
         <p style="color:var(--muted);font-size:.72rem;line-height:1.4;margin-top:12px;">
             Compra sombreros, playeras, zapatos, lentes y más. Paga con USDT/USDC.
         </p>
+    </div>
+
+    <!-- ✅ NUEVO: TAMAÑO DEL MUÑECO -->
+    <div class="card">
+        <h2>TAMAÑO DEL MUÑECO</h2>
+
+        <div class="opcion" style="display:block;">
+            <div class="info" style="padding-right:0;">
+                <div class="titulo">Tamaño <span class="valor-slider" id="valTamano">100%</span></div>
+                <div class="desc" style="margin-bottom:8px;">Ajusta qué tan grande se ve tu Marquinhos flotante en las páginas.</div>
+                <input type="range" class="slider" id="sliderTamano" min="60" max="150" step="5" value="100">
+            </div>
+        </div>
+
+        <div class="preview-tamano">
+            <div class="preview-tamano-box" id="previewBox">
+                <span id="previewTexto">90 × 130 px</span>
+            </div>
+        </div>
     </div>
 
     <!-- MODO DE INTERACCIÓN -->
@@ -265,6 +305,12 @@ h1 .hex { font-family: 'Orbitron', monospace; }
         toggleVoz.classList.toggle('activo', enModoVoz);
         toggleSub.classList.toggle('activo', !!cfg.mostrar_subtitulos);
 
+        // ✅ NUEVO: Tamaño
+        const tamano = cfg.tamano != null ? cfg.tamano : 100;
+        document.getElementById('sliderTamano').value = tamano;
+        document.getElementById('valTamano').textContent = tamano + '%';
+        actualizarPreviewTamano(tamano);
+
         // Volumen
         const vol = Math.round((cfg.volumen != null ? cfg.volumen : 1.0) * 100);
         document.getElementById('sliderVolumen').value = vol;
@@ -274,6 +320,24 @@ h1 .hex { font-family: 'Orbitron', monospace; }
         const vel = cfg.velocidad != null ? cfg.velocidad : 1.0;
         document.getElementById('sliderVelocidad').value = vel;
         document.getElementById('valVelocidad').textContent = vel.toFixed(2) + 'x';
+    }
+
+    // ✅ NUEVO: Actualizar preview del tamaño
+    function actualizarPreviewTamano(porcentaje) {
+        const baseAncho = 90;
+        const baseAlto = 130;
+        const ancho = Math.round(baseAncho * porcentaje / 100);
+        const alto = Math.round(baseAlto * porcentaje / 100);
+
+        const box = document.getElementById('previewBox');
+        const texto = document.getElementById('previewTexto');
+
+        // Escalar el preview visual (no puede pasar de 120px alto para caber)
+        const escala = Math.min(1, 120 / alto);
+        box.style.width = (ancho * escala) + 'px';
+        box.style.height = (alto * escala) + 'px';
+
+        texto.textContent = ancho + ' × ' + alto + ' px';
     }
 
     function init() {
@@ -293,6 +357,15 @@ h1 .hex { font-family: 'Orbitron', monospace; }
             cfg.mostrar_subtitulos = true;
             guardar();
             pintar();
+        });
+
+        // ✅ NUEVO: Slider de tamaño
+        document.getElementById('sliderTamano').addEventListener('input', function(e) {
+            leer();
+            cfg.tamano = parseInt(e.target.value, 10);
+            document.getElementById('valTamano').textContent = cfg.tamano + '%';
+            actualizarPreviewTamano(cfg.tamano);
+            guardar();
         });
 
         // Volumen
@@ -329,7 +402,6 @@ h1 .hex { font-family: 'Orbitron', monospace; }
             if (window.Marquinhos && typeof window.Marquinhos.olvidar === 'function') {
                 window.Marquinhos.olvidar();
             } else {
-                // Fallback: borrar todas las keys de historial
                 Object.keys(localStorage)
                     .filter(k => k.indexOf('marquinhos_hist_') === 0)
                     .forEach(k => localStorage.removeItem(k));
