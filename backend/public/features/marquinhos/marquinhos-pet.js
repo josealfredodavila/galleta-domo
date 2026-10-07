@@ -1,11 +1,16 @@
 // ================================================================
-// MARQUINHOS · PET v9.8 "GALACTIC PRO"
+// MARQUINHOS · PET v9.8.1 "GALACTIC PRO"
 // Mejoras sobre v9.7:
 // - Fixes de auditoría (C-1, C-2, A-1, A-2, A-3, A-4, M-1, M-5, M-7, M-10)
 // - Términos sincronizados con Supabase (registro legal)
 // - Cache TTS con TTL (recuperación automática)
 // - conversationToken para evitar respuestas fantasma
 // - procesando con finally garantizado
+// v9.8.1:
+// - FIX CRÍTICO: verificarTerminos() es async y se llamaba sin await
+//   → ahora bloquea correctamente hasta que el usuario acepta términos
+// - Términos en memoria (_terminosOkPara) para no consultar en cada tap
+// - Modal solo aparece al tocar el avatar (no al cargar la página)
 // ================================================================
 
 'use strict';
@@ -49,7 +54,7 @@
     const TONO_PITCH = { grave: 0.85, medio: 1.0, agudo: 1.15 };
 
     const HIST_MAX = 40;
-    const HIST_MAX_ENVIO = 20; // 🆕 M-10: truncar antes de enviar al brain
+    const HIST_MAX_ENVIO = 20;
     const HIST_TTL_MS = 7 * 24 * 60 * 60 * 1000;
     const HIST_KEY = 'marquinhos_hist_';
     const ACC_KEY = 'marquinhos_accesorios_equipados';
@@ -57,11 +62,9 @@
     const TERMINOS_VERSION = '1.0';
     const TERMINOS_KEY = 'marquinhos_terminos_aceptados_' + TERMINOS_VERSION;
 
-    // 🆕 #9: Cache TTS con TTL (recupera backend tras fallo temporal)
-    const TTS_FALLO_TTL_MS = 2 * 60 * 1000; // 2 minutos
+    const TTS_FALLO_TTL_MS = 2 * 60 * 1000;
     let _ttsBackendFalloEn = 0;
 
-    // ✅ v9.7: visemas actualizados (boca DENTRO de la cabeza, 132–154)
     const VISEMAS_SVG = {
         REST: 'M 78 137 Q 100 150 122 137',
         A:    'M 70 134 Q 100 130 130 134 Q 126 154 100 154 Q 74 154 70 134 Z',
@@ -85,7 +88,7 @@
     let historialLocal = [];
     let userInfo = null;
     let ttsToken = 0;
-    let conversationToken = 0; // 🆕 A-3: evita respuestas fantasma
+    let conversationToken = 0;
     let conversacionActiva = false;
     let procesando = false;
     let recibioResultado = false;
@@ -93,7 +96,10 @@
 
     let _bocaTimeouts = [];
     let _bocaActiva = false;
-    let _terminosProcesando = false; // 🆕 M-7: anti-reentrada en modal
+    let _terminosProcesando = false;
+
+    // 🆕 v9.8.1: cache en memoria del uid que ya aceptó
+    let _terminosOkPara = null;
 
     let isDragging = false;
     let dragStartX = 0;
@@ -107,7 +113,7 @@
         return RUTAS_EXCLUIDAS.some(r => path.indexOf(r) !== -1);
     }
 
-    function log(msg) { console.log('[Marquinhos v9.8]', msg); }
+    function log(msg) { console.log('[Marquinhos v9.8.1]', msg); }
 
     function esc(v) {
         const d = document.createElement('div');
@@ -115,12 +121,10 @@
         return d.innerHTML;
     }
 
-    // 🆕 A-1: clamping de config al cargar
     function cargarConfig() {
         try {
             const g = localStorage.getItem('marquinhos_config');
             if (g) config = { ...CONFIG_DEFAULT, ...JSON.parse(g) };
-            // Clamping de seguridad (evita valores fuera de rango)
             if (config.tamano != null) config.tamano = Math.max(60, Math.min(150, parseInt(config.tamano, 10) || 100));
             if (config.volumen != null) config.volumen = Math.max(0, Math.min(1, parseFloat(config.volumen) || 1));
             if (config.velocidad != null) config.velocidad = Math.max(0.5, Math.min(2, parseFloat(config.velocidad) || 1));
@@ -151,7 +155,6 @@
 
     function aplicarModo() {
         if (!container) return;
-        // Nota: 'mq-modo-voz' = modo solo-voz (sin subtítulos visibles)
         if (config.mostrar_subtitulos) {
             container.classList.remove('mq-modo-voz');
         } else {
@@ -159,7 +162,6 @@
         }
     }
 
-    // 🆕 A-2: validar role en historial
     function cargarHistorial() {
         try {
             const raw = localStorage.getItem(HIST_KEY + (userInfo ? userInfo.id : 'anon'));
@@ -244,7 +246,6 @@
         } catch (e) {}
     }
 
-    // 🆕 M-1: guarda defensiva en posicionPorCategoria
     function posicionPorCategoria(cat) {
         if (window.MarquinhosFit && typeof window.MarquinhosFit.getCategoria === 'function') {
             try {
@@ -257,12 +258,6 @@
         return { x: 100, y: 100, size: 55 };
     }
 
-    // ============================================================
-    // v9.8: Renderiza accesorios con slots + fixes de auditoría
-    // - C-1: valida que lib.aplicar() devuelva array
-    // - C-2: offset vertical en fallback emoji para evitar apilado
-    // - M-5: retry hasta 5 intentos para cargar MarquinhosAccesoriosSVG
-    // ============================================================
     function renderAccesoriosEnAvatar(intento) {
         const svg = container ? container.querySelector('svg.mq-pet-svg') : null;
         if (!svg) return;
@@ -270,7 +265,6 @@
         const lib = window.MarquinhosAccesoriosSVG;
         const lista = accesoriosEquipados.map(a => a.svg).filter(Boolean);
 
-        // 🆕 M-5: reintenta hasta 5 veces con backoff
         const intentoActual = intento || 0;
         if ((!lib || typeof lib.aplicar !== 'function') && lista.length > 0 && intentoActual < 5) {
             setTimeout(function() {
@@ -281,7 +275,6 @@
         let resto = lista;
         if (lib && typeof lib.aplicar === 'function' && svg.querySelector('[data-acc-slot]')) {
             try {
-                // 🆕 C-1: valida que devuelva array
                 const resultado = lib.aplicar(svg, lista);
                 resto = Array.isArray(resultado) ? resultado : lista;
             } catch (e) {
@@ -292,7 +285,6 @@
         const layer = document.getElementById('mq-acc-layer');
         if (!layer) return;
 
-        // 🆕 C-2: offset vertical para evitar apilamiento en fallback
         layer.innerHTML = accesoriosEquipados
             .filter(a => a.svg && Array.isArray(resto) && resto.indexOf(a.svg) !== -1)
             .map((a, i) => {
@@ -362,56 +354,74 @@
     }
 
     // ============================================================
-    // 🆕 #11: Términos sincronizados con Supabase
-    // - Al cargar: si localStorage vacío, consulta Supabase
-    // - Al aceptar: guarda en ambos lados (legal + local)
+    // 🆕 v9.8.1: TÉRMINOS
+    // - verificarTerminos() ahora es la puerta única
+    // - cache en memoria (_terminosOkPara) para no consultar cada tap
+    // - avisar() muestra mensajes rápidos sin abrir modal
     // ============================================================
-    async function verificarTerminosEnSupabase() {
-        if (!window.getSupabase) return false;
+
+    function avisar(texto) {
+        const t = document.getElementById('mq-bubble-text');
+        if (t) t.textContent = texto;
+        if (bubble) bubble.classList.add('mq-bubble-visible');
+        setTimeout(ocultarBurbuja, 4000);
+    }
+
+    async function obtenerUidActual() {
+        if (!window.getSupabase) return null;
         try {
             const sb = window.getSupabase();
             const r = await sb.auth.getSession();
-            if (!r.data.session) return false;
+            return r.data.session ? r.data.session.user.id : null;
+        } catch (e) {
+            return null;
+        }
+    }
 
+    async function verificarTerminos() {
+        const uid = await obtenerUidActual();
+        if (!uid) {
+            avisar('Inicia sesión para hablar conmigo.');
+            return false;
+        }
+        if (_terminosOkPara === uid) return true;
+
+        try {
+            const sb = window.getSupabase();
             const { data, error } = await sb.rpc('verificar_aceptacion_terminos', {
                 p_version: TERMINOS_VERSION
             });
-            if (!error && data && data.aceptado === true) {
-                // Restaura en localStorage
-                try {
-                    localStorage.setItem(TERMINOS_KEY, 'true');
-                    localStorage.setItem('marquinhos_terminos_fecha', data.fecha_aceptacion || '');
-                    localStorage.setItem('marquinhos_terminos_version', TERMINOS_VERSION);
-                } catch (e) {}
+            if (error) throw error;
+
+            if (data && data.aceptado === true) {
+                _terminosOkPara = uid;
                 return true;
             }
+            mostrarModalTerminos(uid);
+            return false;
         } catch (e) {
-            console.warn('[Marquinhos] Error consultando términos en Supabase:', e);
+            console.warn('[Marquinhos] No se pudo verificar términos:', e);
+            avisar('Revisa tu conexión e intenta de nuevo.');
+            return false;
         }
-        return false;
     }
 
     async function registrarTerminosEnSupabase() {
-        if (!window.getSupabase) return false;
         try {
             const sb = window.getSupabase();
-            const r = await sb.auth.getSession();
-            if (!r.data.session) return false;
-
             const { data, error } = await sb.rpc('registrar_aceptacion_terminos', {
                 p_version: TERMINOS_VERSION,
                 p_user_agent: navigator.userAgent
             });
-            if (!error && data && data.success === true) {
-                return true;
-            }
+            if (error) throw error;
+            return !!(data && data.success === true);
         } catch (e) {
-            console.warn('[Marquinhos] Error registrando términos en Supabase:', e);
+            console.warn('[Marquinhos] Error registrando términos:', e);
+            return false;
         }
-        return false;
     }
 
-    function mostrarModalTerminos() {
+    function mostrarModalTerminos(uid) {
         if (document.getElementById('mq-modal-terminos')) return;
 
         const modal = document.createElement('div');
@@ -443,7 +453,6 @@
         document.body.appendChild(modal);
         if (container) container.style.display = 'none';
 
-        // 🆕 M-7: anti-reentrada + guarda en Supabase
         document.getElementById('mq-btn-aceptar').addEventListener('click', async function() {
             if (_terminosProcesando) return;
             _terminosProcesando = true;
@@ -452,22 +461,24 @@
             btn.disabled = true;
             btn.textContent = 'Guardando...';
 
-            // Guarda en localStorage (inmediato)
-            try { localStorage.setItem(TERMINOS_KEY, 'true'); } catch (e) {}
+            const registrado = await registrarTerminosEnSupabase();
 
-            // Guarda en Supabase (respaldo legal)
-            const okLegal = await registrarTerminosEnSupabase();
-            if (!okLegal) {
-                console.warn('[Marquinhos] No se pudo registrar en Supabase, solo localStorage');
+            if (!registrado) {
+                btn.disabled = false;
+                btn.textContent = 'Acepto y continúo';
+                _terminosProcesando = false;
+                avisar('No se pudo registrar. Revisa tu conexión e intenta de nuevo.');
+                return;
             }
 
+            _terminosOkPara = uid;
             modal.remove();
             _terminosProcesando = false;
             if (container) container.style.display = '';
             if (window.MarquinhosAnim && typeof window.MarquinhosAnim.iniciar === 'function') {
                 window.MarquinhosAnim.iniciar();
             }
-            log('✅ Términos aceptados' + (okLegal ? ' (con registro legal)' : ''));
+            log('✅ Términos aceptados y registrados');
         });
 
         document.getElementById('mq-btn-rechazar').addEventListener('click', function() {
@@ -477,19 +488,7 @@
         });
     }
 
-    async function verificarTerminos() {
-        try {
-            const aceptados = localStorage.getItem(TERMINOS_KEY);
-            if (aceptados) return true;
-
-            // 🆕 #11: si no hay local, consulta Supabase
-            const okServidor = await verificarTerminosEnSupabase();
-            if (okServidor) return true;
-
-            mostrarModalTerminos();
-            return false;
-        } catch (e) { return true; }
-    }    function crearWidget() {
+    function crearWidget() {
         if (document.getElementById('marquinhos-pet')) return;
 
         container = document.createElement('div');
@@ -570,13 +569,11 @@
 
                             <ellipse cx="70" cy="58" rx="25" ry="9" fill="#FFFFFF" opacity="0.6"/>
 
-                            <!-- CEJAS -->
                             <g id="mq-cejas">
                                 <path id="mq-ceja-izq" d="M 56 82 Q 72 73 88 78" stroke="#0D47A1" stroke-width="3" fill="none" stroke-linecap="round"/>
                                 <path id="mq-ceja-der" d="M 112 78 Q 128 73 144 82" stroke="#0D47A1" stroke-width="3" fill="none" stroke-linecap="round"/>
                             </g>
 
-                            <!-- OJOS -->
                             <g id="mq-ojo-izq" class="mq-ojo">
                                 <ellipse cx="72" cy="108" rx="16" ry="14" fill="#1B3A8A" stroke="#0D47A1" stroke-width="2"/>
                                 <ellipse cx="72" cy="108" rx="12.5" ry="11" fill="url(#mq-grad-iris)"/>
@@ -593,7 +590,6 @@
                                 <circle cx="124" cy="112" r="1.4" fill="#FFFFFF" opacity="0.7"/>
                             </g>
 
-                            <!-- BOCA (dentro de la cabeza) -->
                             <path id="mq-boca" class="mq-pet-boca"
                                   d="M 78 137 Q 100 150 122 137"
                                   stroke="#0D47A1" stroke-width="3.5"
@@ -603,7 +599,6 @@
                             <g id="mq-acc-cara" data-acc-slot="cara"></g>
                             <g id="mq-acc-cabeza" data-acc-slot="cabeza"></g>
 
-                            <!-- ==================== ANTENA ==================== -->
                             <g id="mq-antena">
                                 <line x1="100" y1="40" x2="100" y2="12" stroke="#0D47A1" stroke-width="3" stroke-linecap="round"/>
 
@@ -627,10 +622,8 @@
                             </g>
                         </g>
 
-                        <!-- ==================== CUELLO ==================== -->
                         <rect x="88" y="158" width="24" height="12" fill="#A8C4DE" stroke="#0D47A1" stroke-width="2"/>
 
-                        <!-- ==================== TORSO ==================== -->
                         <g id="mq-torso">
                             <path d="M 60 170 Q 60 165 65 165 L 135 165 Q 140 165 140 170 L 140 235 Q 140 250 125 250 L 75 250 Q 60 250 60 235 Z"
                                   fill="url(#mq-grad-cuerpo)"
@@ -651,7 +644,6 @@
 
                         <g id="mq-acc-torso" data-acc-slot="torso"></g>
 
-                        <!-- ==================== BRAZO IZQUIERDO ==================== -->
                         <g id="mq-brazo-izq" class="mq-brazo">
                             <line x1="60" y1="180" x2="30" y2="205" stroke="#0D47A1" stroke-width="12.5" stroke-linecap="round"/>
                             <line x1="60" y1="180" x2="30" y2="205" stroke="#C9D8FF" stroke-width="9" stroke-linecap="round"/>
@@ -691,7 +683,6 @@
                             <g id="mq-acc-codo-izq" data-acc-slot="codo-izq"></g>
                         </g>
 
-                        <!-- ==================== BRAZO DERECHO ==================== -->
                         <g id="mq-brazo-der" class="mq-brazo">
                             <line x1="140" y1="180" x2="170" y2="205" stroke="#0D47A1" stroke-width="12.5" stroke-linecap="round"/>
                             <line x1="140" y1="180" x2="170" y2="205" stroke="#C9D8FF" stroke-width="9" stroke-linecap="round"/>
@@ -731,7 +722,6 @@
                             <g id="mq-acc-codo-der" data-acc-slot="codo-der"></g>
                         </g>
 
-                        <!-- ==================== PIERNA IZQUIERDA ==================== -->
                         <g id="mq-pierna-izq" class="mq-pierna">
                             <line x1="82" y1="250" x2="82" y2="268" stroke="#C9D8FF" stroke-width="10" stroke-linecap="round"/>
                             <line x1="82" y1="250" x2="82" y2="268" stroke="#0D47A1" stroke-width="2.5" stroke-linecap="round" fill="none"/>
@@ -744,7 +734,6 @@
                             <g id="mq-acc-pie-izq" data-acc-slot="pie-izq"></g>
                         </g>
 
-                        <!-- ==================== PIERNA DERECHA ==================== -->
                         <g id="mq-pierna-der" class="mq-pierna">
                             <line x1="118" y1="250" x2="118" y2="268" stroke="#C9D8FF" stroke-width="10" stroke-linecap="round"/>
                             <line x1="118" y1="250" x2="118" y2="268" stroke="#0D47A1" stroke-width="2.5" stroke-linecap="round" fill="none"/>
@@ -773,9 +762,11 @@
 
         const avatar = document.getElementById('mq-avatar');
 
-        avatar.addEventListener('click', function() {
+        // 🆕 v9.8.1: listener con await real
+        avatar.addEventListener('click', async function () {
             if (hasMoved) { hasMoved = false; return; }
-            if (!verificarTerminos()) return;
+            const ok = await verificarTerminos();
+            if (!ok) return;
             onAvatarTap();
         });
 
@@ -843,24 +834,16 @@
         aplicarTamano();
         cambiarVisema('REST');
 
-        // 🆕 #11: verificarTerminos ahora es async
-        (async function() {
-            const terminosOk = await verificarTerminos();
-            if (terminosOk) {
-                setTimeout(function() {
-                    if (window.MarquinhosAnim && typeof window.MarquinhosAnim.iniciar === 'function') {
-                        window.MarquinhosAnim.iniciar();
-                    }
-                    if (window.MarquinhosAnim && typeof window.MarquinhosAnim.saludar === 'function') {
-                        setTimeout(function() {
-                            window.MarquinhosAnim.saludar();
-                        }, 800);
-                    }
-                }, 500);
+        // 🆕 v9.8.1: sin verificación al cargar.
+        // Solo arranca la animación; el usuario tendrá que tocar el avatar
+        // y aceptar términos para hablar.
+        setTimeout(function() {
+            if (window.MarquinhosAnim && typeof window.MarquinhosAnim.iniciar === 'function') {
+                window.MarquinhosAnim.iniciar();
             }
-        })();
+        }, 500);
 
-        log('Widget v9.8 Galactic Pro creado');
+        log('Widget v9.8.1 Galactic Pro creado');
     }
 
     function mostrarDots() {}
@@ -897,7 +880,7 @@
 
     function detenerConversacion() {
         conversacionActiva = false;
-        conversationToken++; // 🆕 A-3: invalida procesamiento en curso
+        conversationToken++;
         detenerTTS();
         detenerReconocimiento();
         detenerAnimacionBoca();
@@ -943,7 +926,6 @@
         animarBoca(texto, rate);
 
         let ok = false;
-        // 🆕 #9: cache TTS con TTL — reintenta backend tras 2 min
         const ttsBackendDisponible = (Date.now() - _ttsBackendFalloEn > TTS_FALLO_TTL_MS);
         if (texto.length <= 300 && window.getSupabase && ttsBackendDisponible) {
             try {
@@ -963,11 +945,11 @@
                         const url = data.audio_url || data.audioUrl;
                         if (url && miToken === ttsToken) { ok = true; await reproducirAudio(url); }
                     } else {
-                        _ttsBackendFalloEn = Date.now(); // 🆕 marca para TTL
+                        _ttsBackendFalloEn = Date.now();
                     }
                 }
             } catch (e) {
-                _ttsBackendFalloEn = Date.now(); // 🆕 marca para TTL
+                _ttsBackendFalloEn = Date.now();
             }
         }
 
@@ -1084,7 +1066,7 @@
             recognition.onerror = function(event) {
                 recognitionActive = false;
                 isListening = false;
-                recognition = null; // 🆕 A-4: libera referencia
+                recognition = null;
                 if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
                     conversacionActiva = false;
                     setEstado('idle');
@@ -1103,7 +1085,7 @@
             recognition.onend = function() {
                 recognitionActive = false;
                 isListening = false;
-                recognition = null; // 🆕 A-4: libera referencia
+                recognition = null;
                 if (!procesando && !isSpeaking) { setEstado('idle'); }
                 if (!recibioResultado && !procesando && !isSpeaking) conversacionActiva = false;
             };
@@ -1121,15 +1103,9 @@
         isListening = false;
     }
 
-    // ============================================================
-    // 🆕 procesarComando con conversationToken y finally garantizado
-    // - A-3: si el usuario cierra durante el await, no se procesa
-    // - #12: procesando se resetea SIEMPRE con finally
-    // - M-10: historial truncado a HIST_MAX_ENVIO antes del brain
-    // ============================================================
     async function procesarComando(texto) {
         if (!texto) return;
-        const miConversacionToken = ++conversationToken; // 🆕 A-3
+        const miConversacionToken = ++conversationToken;
 
         procesando = true;
         setEstado('pensando');
@@ -1141,7 +1117,6 @@
             let respuesta = '';
             if (window.MarquinhosBrain && typeof window.MarquinhosBrain.preguntar === 'function') {
                 try {
-                    // 🆕 M-10: truncar antes de enviar
                     const historialTruncado = historialLocal.slice(-HIST_MAX_ENVIO);
                     respuesta = await window.MarquinhosBrain.preguntar(texto, historialTruncado);
                 } catch (e) {
@@ -1151,7 +1126,6 @@
                 respuesta = 'No puedo pensar ahora mismo.';
             }
 
-            // 🆕 A-3: si la conversación fue abortada mientras esperábamos, no continuar
             if (miConversacionToken !== conversationToken) {
                 console.log('[Marquinhos] Respuesta descartada (conversación abortada)');
                 return;
@@ -1176,7 +1150,6 @@
         } catch (e) {
             console.error('[Marquinhos] Error en procesarComando:', e);
         } finally {
-            // 🆕 #12: procesando se resetea SIEMPRE
             procesando = false;
             if (!isSpeaking && !isListening) setEstado('idle');
         }
@@ -1237,9 +1210,11 @@
         },
         getUserInfo: function() { return userInfo; },
         _visemasDisponibles: function() { return Object.keys(VISEMAS_SVG); },
-        reiniciarTerminos: function() {
+        // 🆕 v9.8.1: reiniciar términos en memoria + local
+        reiniciarTerminos: function () {
+            _terminosOkPara = null;
             try { localStorage.removeItem(TERMINOS_KEY); } catch (e) {}
-            log('Términos reiniciados.');
+            log('Verificación de términos reiniciada.');
         },
         getTerminosVersion: function() { return TERMINOS_VERSION; },
         setTamano: function(porcentaje) {
@@ -1260,7 +1235,7 @@
         await cargarAccesorios();
         crearWidget();
         instalarVisibility();
-        log('✅ Marquinhos v9.8 Galactic Pro activo');
+        log('✅ Marquinhos v9.8.1 Galactic Pro activo');
     }
 
     if (document.readyState === 'loading') {
