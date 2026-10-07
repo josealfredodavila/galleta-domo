@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Capitán Maíz · Configuración</title>
+<meta name="theme-color" content="#0A0A0A">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+<script src="/features/shared/js/apariencia-global.js"></script>
+
+<style>
+:root {
+    --cm-azul: #00D4FF;
+    --cm-azul-soft: rgba(0, 212, 255, 0.5);
+    --cm-azul-bg: rgba(0, 212, 255, 0.08);
+    --cm-azul-border: rgba(0, 212, 255, 0.3);
+    --cm-negro: #0A0A0A;
+    --cm-negro-soft: rgba(10, 10, 10, 0.4);
+    --cm-galaxia: #6B4DBA;
+    --cm-galaxia-soft: rgba(107, 77, 186, 0.3);
+    --cm-dorado: #D4AF37;
+    --cm-dorado-soft: rgba(212, 175, 55, 0.3);
+    --cm-text: #f0f4f8;
+    --cm-muted: #8aa8b8;
+    --cm-danger: #ff3366;
+    --cm-success: #00d68f;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    background: var(--cm-negro);
+    color: var(--cm-text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    padding: 20px;
+    background-image:
+        radial-gradient(ellipse at 20% 20%, rgba(107, 77, 186, 0.2), transparent 55%),
+        radial-gradient(ellipse at 80% 80%, rgba(0, 212, 255, 0.1), transparent 55%);
+}
+.app { max-width: 640px; margin: 0 auto; }
+h1 { font-size: 1.3rem; color: var(--cm-azul); margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
+h1 .hex { font-family: 'Orbitron', monospace; }
+h1 .corn { font-size: 1.5rem; }
+.sub { color: var(--cm-muted); font-size: .8rem; margin-bottom: 24px; }
+.card {
+    background: rgba(10, 10, 10, 0.6);
+    border: 1px solid var(--cm-azul-border);
+    border-radius: 16px;
+    padding: 18px;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 20px rgba(0, 212, 255, 0.05);
+}
+.card h2 {
+    font-size: .95rem;
+    color: var(--cm-azul);
+    margin-bottom: 14px;
+    font-weight: 700;
+    letter-spacing: .5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.card h2 .simbolo { font-family: 'Orbitron', monospace; }
+.opcion {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.opcion:last-child { border-bottom: 0; }
+.opcion .info { flex: 1; padding-right: 14px; }
+.opcion .titulo { font-weight: 600; font-size: .9rem; margin-bottom: 3px; }
+.opcion .desc { color: var(--cm-muted); font-size: .72rem; line-height: 1.35; }
+.toggle {
+    position: relative;
+    width: 48px;
+    height: 26px;
+    border-radius: 99px;
+    background: rgba(255,255,255,0.1);
+    cursor: pointer;
+    transition: background .25s;
+    flex-shrink: 0;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+.toggle.activo { background: var(--cm-azul); border-color: var(--cm-azul); }
+.toggle::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform .25s;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+.toggle.activo::after { transform: translateX(22px); }
+
+.btn {
+    width: 100%;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid var(--cm-azul-border);
+    background: transparent;
+    color: var(--cm-text);
+    font-weight: 700;
+    font-size: .85rem;
+    cursor: pointer;
+    font-family: inherit;
+    margin-top: 8px;
+    transition: all .2s;
+    text-decoration: none;
+    display: block;
+    text-align: center;
+}
+.btn:hover { border-color: var(--cm-azul); color: var(--cm-azul); }
+.btn-azul {
+    background: linear-gradient(135deg, var(--cm-azul), var(--cm-galaxia));
+    color: var(--cm-negro);
+    border-color: transparent;
+}
+.btn-azul:hover {
+    transform: scale(1.02);
+    box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4);
+    color: var(--cm-negro);
+}
+.btn-dorado {
+    background: linear-gradient(135deg, var(--cm-dorado), #b8923a);
+    color: var(--cm-negro);
+    border-color: transparent;
+}
+.btn-dorado:hover {
+    transform: scale(1.02);
+    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+    color: var(--cm-negro);
+}
+.btn-danger { color: var(--cm-danger); border-color: rgba(255,51,102,0.3); }
+.btn-danger:hover { background: rgba(255,51,102,0.1); border-color: var(--cm-danger); }
+.btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--cm-muted);
+    text-decoration: none;
+    font-size: .85rem;
+    margin-bottom: 20px;
+    padding: 8px 14px;
+    border: 1px solid var(--cm-azul-border);
+    border-radius: 99px;
+    transition: all .2s;
+}
+.btn-back:hover { color: var(--cm-azul); border-color: var(--cm-azul); }
+
+.slider {
+    width: 100%;
+    margin-top: 8px;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.1);
+    outline: none;
+}
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--cm-azul), var(--cm-galaxia));
+    cursor: pointer;
+    box-shadow: 0 0 12px rgba(0, 212, 255, 0.6);
+}
+.slider::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--cm-azul), var(--cm-galaxia));
+    cursor: pointer;
+    border: 0;
+    box-shadow: 0 0 12px rgba(0, 212, 255, 0.6);
+}
+.valor-slider {
+    float: right;
+    color: var(--cm-azul);
+    font-family: 'Orbitron', monospace;
+    font-size: .8rem;
+    text-shadow: 0 0 8px rgba(0, 212, 255, 0.5);
+}
+
+/* Preview del tamaño */
+.preview-tamano {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 0 8px;
+    min-height: 120px;
+}
+.preview-tamano-box {
+    background: var(--cm-azul-bg);
+    border: 1px dashed var(--cm-azul-border);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: width 0.2s, height 0.2s;
+    font-size: 0.65rem;
+    color: var(--cm-muted);
+    overflow: hidden;
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+    <a href="/features/perfil/configuracion/index.html" class="btn-back">← Configuración</a>
+
+    <h1><span class="corn">🌽</span> Capitán Maíz</h1>
+    <p class="sub">Configura a tu guardián ancestral del cosmos</p>
+
+    <!-- GUARDIÁN -->
+    <div class="card">
+        <h2><span class="simbolo">◈</span> GUARDIÁN ANCESTRAL</h2>
+        <p style="color:var(--cm-muted);font-size:.78rem;line-height:1.5;margin-bottom:12px;">
+            El Capitán Maíz es el guardián ancestral del ecosistema Csariel's.
+            Protege la abundancia, guía a los viajeros y vela por el orden cósmico
+            desde la milpa galáctica. 🌽⚔️
+        </p>
+        <div class="opcion">
+            <div class="info">
+                <div class="titulo">Estado del guardián</div>
+                <div class="desc">El Capitán está disponible y vigilando</div>
+            </div>
+            <span style="color: var(--cm-success); font-family: 'Orbitron', monospace; font-size: .7rem;">● ACTIVO</span>
+        </div>
+    </div>
+
+    <!-- TAMAÑO -->
+    <div class="card">
+        <h2><span class="simbolo">◈</span> TAMAÑO DEL GUARDIÁN</h2>
+
+        <div class="opcion" style="display:block;">
+            <div class="info" style="padding-right:0;">
+                <div class="titulo">Tamaño <span class="valor-slider" id="valTamano">100%</span></div>
+                <div class="desc" style="margin-bottom:8px;">Ajusta qué tan grande se ve el Capitán Maíz flotante en las páginas.</div>
+                <input type="range" class="slider" id="sliderTamano" min="60" max="150" step="5" value="100">
+            </div>
+        </div>
+
+        <div class="preview-tamano">
+            <div class="preview-tamano-box" id="previewBox">
+                <span id="previewTexto">90 × 130 px</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODO DE INTERACCIÓN -->
+    <div class="card">
+        <h2><span class="simbolo">◈</span> MODO DE INTERACCIÓN</h2>
+
+        <div class="opcion">
+            <div class="info">
+                <div class="titulo">Modo Solo Voz</div>
+                <div class="desc">El Capitán responde por audio. Ideal para móvil, sin saturar la pantalla.</div>
+            </div>
+            <div class="toggle" id="toggleModoVoz"></div>
+        </div>
+
+        <div class="opcion">
+            <div class="info">
+                <div class="titulo">Modo Subtítulos</div>
+                <div class="desc">Muestra el texto de cada respuesta en un globo. Útil sin auriculares o en lugares ruidosos.</div>
+            </div>
+            <div class="toggle" id="toggleSubtitulos"></div>
+        </div>
+    </div>
+
+    <!-- VOZ -->
+    <div class="card">
+        <h2><span class="simbolo">◈</span> VOZ DEL CAPITÁN</h2>
+
+        <div class="opcion" style="display:block;">
+            <div class="info" style="padding-right:0;">
+                <div class="titulo">Volumen <span class="valor-slider" id="valVolumen">100%</span></div>
+                <input type="range" class="slider" id="sliderVolumen" min="0" max="100" value="100">
+            </div>
+        </div>
+
+        <div class="opcion" style="display:block;margin-top:10px;">
+            <div class="info" style="padding-right:0;">
+                <div class="titulo">Velocidad <span class="valor-slider" id="valVelocidad">1.00x</span></div>
+                <input type="range" class="slider" id="sliderVelocidad" min="0.7" max="1.5" step="0.05" value="1.0">
+            </div>
+        </div>
+
+        <div class="opcion" style="display:block;margin-top:10px;">
+            <div class="info" style="padding-right:0;">
+                <div class="titulo">Tono de voz</div>
+                <div class="desc" style="margin-bottom:8px;">El Capitán habla con sabiduría ancestral</div>
+                <select id="selectTono" style="width:100%;padding:10px;border-radius:10px;background:rgba(0,0,0,0.5);border:1px solid var(--cm-azul-border);color:var(--cm-text);font-family:inherit;font-size:.85rem;">
+                    <option value="grave">Grave (más profundo y ancestral)</option>
+                    <option value="medio" selected>Medio (equilibrado)</option>
+                    <option value="agudo">Agudo (más joven)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="opcion" style="display:block;margin-top:10px;">
+            <div class="info" style="padding-right:0;">
+                <div class="titulo">Estilo de voz</div>
+                <div class="desc" style="margin-bottom:8px;">Cómo se expresa el Capitán al hablar</div>
+                <select id="selectEstilo" style="width:100%;padding:10px;border-radius:10px;background:rgba(0,0,0,0.5);border:1px solid var(--cm-azul-border);color:var(--cm-text);font-family:inherit;font-size:.85rem;">
+                    <option value="sabio" selected>Sabio ancestral (pausado, reflexivo)</option>
+                    <option value="natural">Natural (conversación normal)</option>
+                    <option value="energico">Enérgico (motivador, heroico)</option>
+                    <option value="sereno">Sereno (calmado, meditativo)</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- ACCIONES -->
+    <div class="card">
+        <h2><span class="simbolo">◈</span> ACCIONES</h2>
+        <button class="btn" id="btnResetPosicion" type="button">Resetear posición del Capitán</button>
+        <button class="btn btn-danger" id="btnLimpiarHistorial" type="button">Borrar historial de conversación</button>
+        <button class="btn btn-danger" id="btnResetTerminos" type="button">Volver a aceptar términos (reiniciar)</button>
+    </div>
+
+    <!-- INFO EXTRA -->
+    <div class="card">
+        <h2><span class="simbolo">◈</span> SOBRE EL CAPITÁN</h2>
+        <div class="opcion">
+            <div class="info">
+                <div class="titulo">🌽 Origen</div>
+                <div class="desc">Guardián ancestral de la milpa galáctica. Vela por el orden cósmico y la abundancia del ecosistema.</div>
+            </div>
+        </div>
+        <div class="opcion">
+            <div class="info">
+                <div class="titulo">⚔️ Misión</div>
+                <div class="desc">Guiar a los viajeros del ecosistema Csariel's con sabiduría ancestral y protección cósmica.</div>
+            </div>
+        </div>
+        <div class="opcion">
+            <div class="info">
+                <div class="titulo">✦ Relación con Marquinhos</div>
+                <div class="desc">Compañeros de misión. Cada uno con su propia memoria y personalidad.</div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+'use strict';
+
+(function() {
+    const KEY = 'capitan_maiz_config';
+    let cfg = {};
+
+    function leer() {
+        try {
+            cfg = JSON.parse(localStorage.getItem(KEY) || '{}') || {};
+        } catch (e) { cfg = {}; }
+    }
+
+    function guardar() {
+        try { localStorage.setItem(KEY, JSON.stringify(cfg)); } catch (e) {}
+        if (window.CapitanMaiz && typeof window.CapitanMaiz.setConfig === 'function') {
+            try { window.CapitanMaiz.setConfig(cfg); } catch (e) {}
+        }
+    }
+
+    function pintar() {
+        const toggleVoz = document.getElementById('toggleModoVoz');
+        const toggleSub = document.getElementById('toggleSubtitulos');
+
+        const enModoVoz = !cfg.mostrar_subtitulos;
+        toggleVoz.classList.toggle('activo', enModoVoz);
+        toggleSub.classList.toggle('activo', !!cfg.mostrar_subtitulos);
+
+        const tamano = cfg.tamano != null ? cfg.tamano : 100;
+        document.getElementById('sliderTamano').value = tamano;
+        document.getElementById('valTamano').textContent = tamano + '%';
+        actualizarPreviewTamano(tamano);
+
+        const vol = Math.round((cfg.volumen != null ? cfg.volumen : 1.0) * 100);
+        document.getElementById('sliderVolumen').value = vol;
+        document.getElementById('valVolumen').textContent = vol + '%';
+
+        const vel = cfg.velocidad != null ? cfg.velocidad : 1.0;
+        document.getElementById('sliderVelocidad').value = vel;
+        document.getElementById('valVelocidad').textContent = vel.toFixed(2) + 'x';
+
+        const tono = cfg.tono || 'medio';
+        document.getElementById('selectTono').value = tono;
+
+        const estilo = cfg.estilo_voz || 'sabio';
+        document.getElementById('selectEstilo').value = estilo;
+    }
+
+    function actualizarPreviewTamano(porcentaje) {
+        const baseAncho = 90;
+        const baseAlto = 130;
+        const ancho = Math.round(baseAncho * porcentaje / 100);
+        const alto = Math.round(baseAlto * porcentaje / 100);
+
+        const box = document.getElementById('previewBox');
+        const texto = document.getElementById('previewTexto');
+
+        const escala = Math.min(1, 120 / alto);
+        box.style.width = (ancho * escala) + 'px';
+        box.style.height = (alto * escala) + 'px';
+
+        texto.textContent = ancho + ' × ' + alto + ' px';
+    }
+
+    function init() {
+        leer();
+        pintar();
+
+        document.getElementById('toggleModoVoz').addEventListener('click', function() {
+            leer();
+            cfg.mostrar_subtitulos = false;
+            guardar();
+            pintar();
+        });
+
+        document.getElementById('toggleSubtitulos').addEventListener('click', function() {
+            leer();
+            cfg.mostrar_subtitulos = true;
+            guardar();
+            pintar();
+        });
+
+        document.getElementById('sliderTamano').addEventListener('input', function(e) {
+            leer();
+            cfg.tamano = parseInt(e.target.value, 10);
+            document.getElementById('valTamano').textContent = cfg.tamano + '%';
+            actualizarPreviewTamano(cfg.tamano);
+            guardar();
+        });
+
+        document.getElementById('sliderVolumen').addEventListener('input', function(e) {
+            leer();
+            cfg.volumen = parseInt(e.target.value, 10) / 100;
+            document.getElementById('valVolumen').textContent = e.target.value + '%';
+            guardar();
+        });
+
+        document.getElementById('sliderVelocidad').addEventListener('input', function(e) {
+            leer();
+            cfg.velocidad = parseFloat(e.target.value);
+            document.getElementById('valVelocidad').textContent = cfg.velocidad.toFixed(2) + 'x';
+            guardar();
+        });
+
+        document.getElementById('selectTono').addEventListener('change', function(e) {
+            leer();
+            cfg.tono = e.target.value;
+            guardar();
+        });
+
+        document.getElementById('selectEstilo').addEventListener('change', function(e) {
+            leer();
+            cfg.estilo_voz = e.target.value;
+            guardar();
+        });
+
+        document.getElementById('btnResetPosicion').addEventListener('click', function() {
+            if (window.CapitanMaiz && typeof window.CapitanMaiz.resetPosicion === 'function') {
+                window.CapitanMaiz.resetPosicion();
+            }
+            leer();
+            cfg.posicion_x = null;
+            cfg.posicion_y = null;
+            guardar();
+            alert('Posición del Capitán reseteada. Recarga la página para ver el cambio.');
+        });
+
+        document.getElementById('btnLimpiarHistorial').addEventListener('click', function() {
+            if (!confirm('¿Borrar todo el historial de conversación con el Capitán Maíz?')) return;
+            if (window.CapitanMaiz && typeof window.CapitanMaiz.olvidar === 'function') {
+                window.CapitanMaiz.olvidar();
+            } else {
+                Object.keys(localStorage)
+                    .filter(k => k.indexOf('capitan_maiz_hist_') === 0)
+                    .forEach(k => localStorage.removeItem(k));
+            }
+            alert('Historial del Capitán borrado.');
+        });
+
+        document.getElementById('btnResetTerminos').addEventListener('click', function() {
+            if (!confirm('¿Quieres volver a aceptar los términos del Capitán Maíz?\n\nAl confirmar, se te pedirá aceptarlos de nuevo la próxima vez que abras la app.')) return;
+            try {
+                localStorage.removeItem('capitan_maiz_terminos_aceptados_1.0');
+            } catch (e) {}
+            alert('Términos reiniciados. La próxima vez que uses al Capitán, se te pedirá aceptarlos de nuevo.');
+        });
+
+        console.log('[Config Capitán Maíz] ✅ Cargada');
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();
+</script>
+</body>
+</html>
