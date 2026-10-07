@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#05080f">
 
 <link rel="stylesheet" href="/features/marquinhos/tienda.css">
-<!-- ✅ apariencia-global.js se carga al final del body -->
+<!-- ✅ apariencia-global.js se carga al final del body (con defer) -->
 </head>
 <body>
 
@@ -65,7 +65,7 @@
                     </linearGradient>
                 </defs>
 
-                <!-- CUERPO BASE (idéntico al de marquinhos-pet.js v9.4.1) -->
+                <!-- CUERPO BASE (idéntico al de marquinhos-pet.js v9.6) -->
                 <g id="mq-cuerpo">
 
                     <line x1="100" y1="40" x2="100" y2="12" stroke="#0D47A1" stroke-width="3" stroke-linecap="round"/>
@@ -185,12 +185,19 @@
 
 <div class="tienda-toast" id="tiendaToast"></div>
 
-<!-- ✅ Scripts al final del body -->
+<!-- ✅ Scripts al final del body (orden importante) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
+<!-- Sistema de coordenadas compartidas -->
 <script src="/features/marquinhos/marquinhos-fit.js"></script>
+
+<!-- ✅ NUEVO: Biblioteca de SVG reales de accesorios -->
+<script src="/features/marquinhos/marquinhos-accesorios-svg.js"></script>
+
+<!-- Tienda -->
 <script src="/features/marquinhos/tienda.js"></script>
 
+<!-- Apariencia global (con defer) -->
 <script src="/features/shared/js/apariencia-global.js" defer></script>
 
 </body>
