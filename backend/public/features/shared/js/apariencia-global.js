@@ -1,11 +1,10 @@
 /* ================================================================
-   APARIENCIA GLOBAL - SARIEL'S ECOSYSTEM v2.7
+   APARIENCIA GLOBAL - SARIEL'S ECOSYSTEM v2.8
    - Lee de localStorage (rápido, sin red)
    - Sincroniza con Supabase preferencias_usuario (persistente)
    - Aplica tema, color de acento y tamaño de fuente globalmente
-   - Inyecta Marquinhos-pet en todas las páginas
-   - ✅ v2.6: Inyecta Capitán Maíz (guardian ancestral) 🌽⚔️
-   - ✅ NUEVO v2.7: Inyecta Rey Itlasuhua (serpiente cósmica) 🐍
+   - Inyecta SOLO la mascota activa (Marquinhos | Capitán Maíz | Itlasuhua)
+   - ✅ v2.8: Selector de mascota activa (una sola a la vez)
    ================================================================ */
 
 (function() {
@@ -291,13 +290,23 @@
     };
 
     /* ================================================================
-       ✅ Inyectar Marquinhos-pet en todas las páginas
-       ================================================================
-       Orden de carga:
-       CSS → boca.js → fit.js → accesorios-svg.js → animaciones.js
-       → pet.js → brain.js
+       Helper: Obtener mascota activa
+       ================================================================ */
+    function getMascotaActiva() {
+        try {
+            const v = localStorage.getItem('mascota_activa');
+            return v || 'marquinhos';
+        } catch (e) {
+            return 'marquinhos';
+        }
+    }
+
+    /* ================================================================
+       ✅ Inyectar Marquinhos-pet (SOLO si es la mascota activa)
        ================================================================ */
     (function inyectarMarquinhosPet() {
+        if (getMascotaActiva() !== 'marquinhos') return;
+
         var path = window.location.pathname.toLowerCase();
 
         var excluidas = [
@@ -316,49 +325,42 @@
         if (document.getElementById('marquinhos-pet-script')) return;
 
         var insertar = function() {
-            // CSS
             var css = document.createElement('link');
             css.rel = 'stylesheet';
             css.href = '/features/marquinhos/marquinhos-pet.css';
             css.id = 'marquinhos-pet-css';
             document.head.appendChild(css);
 
-            // Analizador de boca (visemas)
             var boca = document.createElement('script');
             boca.id = 'marquinhos-boca-script';
             boca.src = '/features/marquinhos/marquinhos-boca.js';
             boca.defer = true;
             document.head.appendChild(boca);
 
-            // Sistema de fit compartido
             var fit = document.createElement('script');
             fit.id = 'marquinhos-fit-script';
             fit.src = '/features/marquinhos/marquinhos-fit.js';
             fit.defer = true;
             document.head.appendChild(fit);
 
-            // Biblioteca de SVG reales de accesorios
             var svgAcc = document.createElement('script');
             svgAcc.id = 'marquinhos-accesorios-svg-script';
             svgAcc.src = '/features/marquinhos/marquinhos-accesorios-svg.js';
             svgAcc.defer = true;
             document.head.appendChild(svgAcc);
 
-            // Sistema de animaciones Disney
             var anim = document.createElement('script');
             anim.id = 'marquinhos-anim-script';
             anim.src = '/features/marquinhos/marquinhos-animaciones.js';
             anim.defer = true;
             document.head.appendChild(anim);
 
-            // Pet
             var js = document.createElement('script');
             js.id = 'marquinhos-pet-script';
             js.src = '/features/marquinhos/marquinhos-pet.js';
             js.defer = true;
             document.head.appendChild(js);
 
-            // Brain
             var brain = document.createElement('script');
             brain.id = 'marquinhos-brain-script';
             brain.src = '/features/marquinhos/marquinhos-brain.js';
@@ -374,13 +376,11 @@
     })();
 
     /* ================================================================
-       🆕 v2.6: Inyectar Capitán Maíz-pet en todas las páginas
-       ================================================================
-       Personaje independiente de Marquinhos.
-       Orden de carga:
-       CSS → fit.js → pet.js → brain.js
+       ✅ Inyectar Capitán Maíz-pet (SOLO si es la mascota activa)
        ================================================================ */
     (function inyectarCapitanMaizPet() {
+        if (getMascotaActiva() !== 'capitan-maiz') return;
+
         var path = window.location.pathname.toLowerCase();
 
         var excluidas = [
@@ -399,28 +399,24 @@
         if (document.getElementById('capitan-maiz-pet-script')) return;
 
         var insertar = function() {
-            // CSS
             var css = document.createElement('link');
             css.rel = 'stylesheet';
             css.href = '/features/capitan-maiz/capitan-maiz-pet.css';
             css.id = 'capitan-maiz-pet-css';
             document.head.appendChild(css);
 
-            // Sistema de fit compartido (coordenadas)
             var fit = document.createElement('script');
             fit.id = 'capitan-maiz-fit-script';
             fit.src = '/features/capitan-maiz/capitan-maiz-fit.js';
             fit.defer = true;
             document.head.appendChild(fit);
 
-            // Pet (widget principal)
             var js = document.createElement('script');
             js.id = 'capitan-maiz-pet-script';
             js.src = '/features/capitan-maiz/capitan-maiz-pet.js';
             js.defer = true;
             document.head.appendChild(js);
 
-            // Brain (IA)
             var brain = document.createElement('script');
             brain.id = 'capitan-maiz-brain-script';
             brain.src = '/features/capitan-maiz/capitan-maiz-brain.js';
@@ -436,12 +432,11 @@
     })();
 
     /* ================================================================
-       🆕 v2.7: Inyectar Rey Itlasuhua-pet en todas las páginas
-       ================================================================
-       Serpiente cósmica independiente de Marquinhos y Capitán Maíz.
-       Orden de carga: CSS → pet.js → brain.js
+       ✅ Inyectar Itlasuhua-pet (SOLO si es la mascota activa)
        ================================================================ */
     (function inyectarItlasuhuaPet() {
+        if (getMascotaActiva() !== 'itlasuhua') return;
+
         var path = window.location.pathname.toLowerCase();
 
         var excluidas = [
@@ -460,27 +455,23 @@
         if (document.getElementById('itlasuhua-pet-script')) return;
 
         var insertar = function() {
-            // CSS
             var css = document.createElement('link');
             css.rel = 'stylesheet';
             css.href = '/features/itlasuhua/itlasuhua-pet.css';
             css.id = 'itlasuhua-pet-css';
             document.head.appendChild(css);
 
-            // Pet (SVG + render)
             var js = document.createElement('script');
             js.id = 'itlasuhua-pet-script';
             js.src = '/features/itlasuhua/itlasuhua-pet.js';
             js.defer = true;
             js.onload = function() {
-                // Una vez cargado el pet, crear el widget
                 if (window.ItlasuhuaPet && typeof window.ItlasuhuaPet.crearWidget === 'function') {
                     window.ItlasuhuaPet.crearWidget();
                 }
             };
             document.head.appendChild(js);
 
-            // Brain (control de alas)
             var brain = document.createElement('script');
             brain.id = 'itlasuhua-brain-script';
             brain.src = '/features/itlasuhua/itlasuhua-brain.js';
@@ -495,5 +486,5 @@
         }
     })();
 
-    console.log('[Apariencia] ✅ Módulo global v2.7 cargado (Marquinhos + Capitán Maíz 🌽⚔️ + Rey Itlasuhua 🐍)');
+    console.log('[Apariencia] ✅ Módulo global v2.8 cargado · mascota activa: ' + getMascotaActiva());
 })();
