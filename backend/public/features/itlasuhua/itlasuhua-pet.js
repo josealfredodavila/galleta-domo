@@ -1,5 +1,5 @@
 // ================================================================
-// ITLASUHUA · PET · SVG v3.2
+// ITLASUHUA · PET · SVG v3.3
 // ================================================================
 // Rey Itlasuhua, serpiente cósmica chibi.
 //
@@ -10,6 +10,10 @@
 // - Mantiene estrellas, brillos y detalles dorados.
 // - Punta de cola actualizada al mismo acabado.
 // - No se modifican cabeza, corona, alas ni estructura general.
+//
+// v3.3:
+// - NUEVO: listener click → llama a ItlasuhuaVoice.onAvatarTap()
+//   (flujo híbrido: primer toque = saludo, siguientes = conversación)
 // ================================================================
 
 (function (window) {
@@ -2627,11 +2631,41 @@
         );
 
 
+        // ========================================================
+        // 🎙️ v3.3: Click → Voz híbrida
+        // ========================================================
+        // Primer toque: saludo ceremonial + escucha
+        // Toques siguientes: conversación
+        // Si está hablando/escuchando: detiene
+        // ========================================================
+
+        cont.addEventListener(
+            'click',
+            function (e) {
+
+                if (hasMoved) {
+                    hasMoved = false;
+                    return;
+                }
+
+                if (
+                    window.ItlasuhuaVoice &&
+                    typeof window.ItlasuhuaVoice.onAvatarTap === 'function'
+                ) {
+
+                    window.ItlasuhuaVoice.onAvatarTap();
+
+                }
+
+            }
+        );
+
+
         scheduleIdleSpit();
 
 
         log(
-            '✅ Widget Itlasuhua creado · arrastrable'
+            '✅ Widget Itlasuhua creado · arrastrable + voz'
         );
 
     };
