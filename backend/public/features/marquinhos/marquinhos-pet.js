@@ -1,7 +1,10 @@
 // ================================================================
-// MARQUINHOS · PET v9.4 "GALACTIC PRO"
-// Sin burbuja de puntos · antena solo brilla al escuchar
-// Ojos más serios · boca dentro de la cabeza y más expresiva
+// MARQUINHOS · PET v9.7 "GALACTIC PRO"
+// FUSIÓN: v9.6 (MarquinhosFit + Fase 2 SVG) 
+//       + v9.4 (slots data-acc-slot + visemas nuevos + antena en cabeza)
+// - Los accesorios se reparten por partes del cuerpo (cabeza, brazos, piernas)
+// - Compatible con marquinhos-accesorios-svg.js v2.0
+// - Compatible con marquinhos-fit.js v1.2
 // ================================================================
 
 'use strict';
@@ -52,8 +55,7 @@
     const TERMINOS_VERSION = '1.0';
     const TERMINOS_KEY = 'marquinhos_terminos_aceptados_' + TERMINOS_VERSION;
 
-    // ✅ v9.3: la boca ahora está DENTRO de la cabeza (y 132–154) y las
-    // formas abiertas llevan relleno oscuro para que se vea la boca abierta.
+    // ✅ v9.7: visemas actualizados (boca DENTRO de la cabeza, 132–154)
     var VISEMAS_SVG = {
         REST: 'M 78 137 Q 100 150 122 137',
         A:    'M 70 134 Q 100 130 130 134 Q 126 154 100 154 Q 74 154 70 134 Z',
@@ -97,7 +99,7 @@
         return RUTAS_EXCLUIDAS.some(r => path.indexOf(r) !== -1);
     }
 
-    function log(msg) { console.log('[Marquinhos]', msg); }
+    function log(msg) { console.log('[Marquinhos v9.7]', msg); }
 
     function esc(v) {
         const d = document.createElement('div');
@@ -227,22 +229,22 @@
     }
 
     function posicionPorCategoria(cat) {
-        switch (cat) {
-            case 'sombrero':   return { x: 100, y: 30,  size: 80 };
-            case 'playera':    return { x: 100, y: 175, size: 100 };
-            case 'pantalon':   return { x: 100, y: 220, size: 80 };
-            case 'zapatos':    return { x: 100, y: 250, size: 70 };
-            case 'lentes':     return { x: 100, y: 125, size: 75 };
-            case 'accesorio':  return { x: 185, y: 190, size: 70 };
-            default:           return { x: 100, y: 100, size: 55 };
+        if (window.MarquinhosFit && typeof window.MarquinhosFit.getCategoria === 'function') {
+            const fit = window.MarquinhosFit.getCategoria(cat);
+            return { x: fit.x, y: fit.y, size: fit.size };
         }
+        return { x: 100, y: 100, size: 55 };
     }
 
-    // v9.4: la ropa se reparte por partes del cuerpo (cabeza, brazos, piernas...)
-    // usando marquinhos-accesorios-svg.js v2. Lo que no se conoce se dibuja como emoji.
+    // ============================================================
+    // ✅ v9.7: Renderiza accesorios con slots por parte del cuerpo
+    // Usa marquinhos-accesorios-svg.js v2.0 (aplicar por data-acc-slot)
+    // Fallback: emoji si no hay SVG o si la lib no está cargada
+    // ============================================================
     function renderAccesoriosEnAvatar(intento) {
         const svg = container ? container.querySelector('svg.mq-pet-svg') : null;
         if (!svg) return;
+
         const lib = window.MarquinhosAccesoriosSVG;
         const lista = accesoriosEquipados.map(a => a.svg).filter(Boolean);
 
@@ -252,12 +254,13 @@
         }
 
         let resto = lista;
-        if (lib && lib.aplicar) {
+        if (lib && typeof lib.aplicar === 'function' && svg.querySelector('[data-acc-slot]')) {
             try { resto = lib.aplicar(svg, lista); } catch (e) { resto = lista; }
         }
 
         const layer = document.getElementById('mq-acc-layer');
         if (!layer) return;
+
         layer.innerHTML = accesoriosEquipados
             .filter(a => a.svg && resto.indexOf(a.svg) !== -1)
             .map(a => {
@@ -267,14 +270,10 @@
             }).join('');
     }
 
-    // ------------------------------------------------------------
-    // BOCA
-    // ------------------------------------------------------------
     function cambiarVisema(nombre) {
         if (!bocaEl) return;
         var key = VISEMAS_SVG[nombre] ? nombre : 'REST';
         bocaEl.setAttribute('d', VISEMAS_SVG[key]);
-        // Abierta = relleno oscuro (se ve la boca abierta); cerrada = solo línea
         bocaEl.setAttribute('fill', VISEMAS_SIN_RELLENO[key] ? 'none' : '#0a1a3e');
     }
 
@@ -297,8 +296,6 @@
         var rateFactor = rate || 1.0;
         var tiempo = 0;
 
-        // Los gestos de brazos/cabeza/pies los maneja MarquinhosAnim por su cuenta
-        // (ya NO se disparan en cada visema, eso causaba los giros rápidos).
         visemas.forEach(function(v) {
             var dur = v.duracion / rateFactor;
             var t = setTimeout(function() {
@@ -331,9 +328,6 @@
         siguiente();
     }
 
-    // ------------------------------------------------------------
-    // TÉRMINOS
-    // ------------------------------------------------------------
     function mostrarModalTerminos() {
         if (document.getElementById('mq-modal-terminos')) return;
 
@@ -389,12 +383,7 @@
             if (!aceptados) { mostrarModalTerminos(); return false; }
             return true;
         } catch (e) { return true; }
-    }
-
-    // ============================================================
-    // WIDGET v9.3
-    // ============================================================
-    function crearWidget() {
+    }    function crearWidget() {
         if (document.getElementById('marquinhos-pet')) return;
 
         container = document.createElement('div');
@@ -414,7 +403,7 @@
             </div>
 
             <div class="mq-pet-avatar" id="mq-avatar" role="button" tabindex="0" aria-label="Hablar con Marquinhos">
-                <svg viewBox="0 0 200 260" xmlns="http://www.w3.org/2000/svg" class="mq-pet-svg">
+                <svg viewBox="0 -22 200 322" xmlns="http://www.w3.org/2000/svg" class="mq-pet-svg" style="overflow:visible">
                     <defs>
                         <linearGradient id="mq-grad-cabeza" x1="0%" y1="0%" x2="0%" y2="100%">
                             <stop offset="0%" stop-color="#FFFFFF"/>
@@ -441,7 +430,6 @@
                             <stop offset="100%" stop-color="#5A6B82"/>
                         </radialGradient>
 
-                        <!-- Iris cian tipo robot (menos tierno) -->
                         <radialGradient id="mq-grad-iris" cx="50%" cy="45%">
                             <stop offset="0%" stop-color="#C8F4FF"/>
                             <stop offset="60%" stop-color="#5CCBFF"/>
@@ -468,7 +456,6 @@
                     <g id="mq-cuerpo">
                         <g id="mq-acc-fondo" data-acc-slot="fondo"></g>
 
-
                         <!-- ==================== CABEZA ==================== -->
                         <g id="mq-cabeza-grupo">
                             <rect x="35" y="40" width="130" height="120" rx="28" ry="28"
@@ -477,13 +464,13 @@
 
                             <ellipse cx="70" cy="58" rx="25" ry="9" fill="#FFFFFF" opacity="0.6"/>
 
-                            <!-- CEJAS (inclinadas hacia el centro = mirada más seria) -->
+                            <!-- CEJAS -->
                             <g id="mq-cejas">
                                 <path id="mq-ceja-izq" d="M 56 82 Q 72 73 88 78" stroke="#0D47A1" stroke-width="3" fill="none" stroke-linecap="round"/>
                                 <path id="mq-ceja-der" d="M 112 78 Q 128 73 144 82" stroke="#0D47A1" stroke-width="3" fill="none" stroke-linecap="round"/>
                             </g>
 
-                            <!-- OJOS: más chicos, iris cian, un solo brillo -->
+                            <!-- OJOS -->
                             <g id="mq-ojo-izq" class="mq-ojo">
                                 <ellipse cx="72" cy="108" rx="16" ry="14" fill="#1B3A8A" stroke="#0D47A1" stroke-width="2"/>
                                 <ellipse cx="72" cy="108" rx="12.5" ry="11" fill="url(#mq-grad-iris)"/>
@@ -506,32 +493,33 @@
                                   stroke="#0D47A1" stroke-width="3.5"
                                   stroke-linejoin="round"
                                   fill="none" stroke-linecap="round"/>
-                                                <g id="mq-acc-cara" data-acc-slot="cara"></g>
-                        <g id="mq-acc-cabeza" data-acc-slot="cabeza"></g>
 
-                        <!-- ==================== ANTENA ==================== -->
-                        <!-- Apagada = gris. Encendida (solo al escuchar) = brilla y pulsa -->
-                        <g id="mq-antena">
-                            <line x1="100" y1="40" x2="100" y2="12" stroke="#0D47A1" stroke-width="3" stroke-linecap="round"/>
+                            <!-- SLOTS DE CARA Y CABEZA -->
+                            <g id="mq-acc-cara" data-acc-slot="cara"></g>
+                            <g id="mq-acc-cabeza" data-acc-slot="cabeza"></g>
 
-                            <g id="mq-antena-apagada" visibility="visible">
-                                <circle cx="100" cy="6" r="9"
-                                        fill="url(#mq-grad-antena-off)"
-                                        stroke="#0D47A1" stroke-width="1.5"/>
+                            <!-- ==================== ANTENA ==================== -->
+                            <g id="mq-antena">
+                                <line x1="100" y1="40" x2="100" y2="12" stroke="#0D47A1" stroke-width="3" stroke-linecap="round"/>
+
+                                <g id="mq-antena-apagada" visibility="visible">
+                                    <circle cx="100" cy="6" r="9"
+                                            fill="url(#mq-grad-antena-off)"
+                                            stroke="#0D47A1" stroke-width="1.5"/>
+                                </g>
+
+                                <g id="mq-antena-encendida" visibility="hidden">
+                                    <circle cx="100" cy="6" r="14" fill="#00E5FF" opacity="0.5">
+                                        <animate attributeName="r" values="14;23;14" dur="0.9s" repeatCount="indefinite"/>
+                                        <animate attributeName="opacity" values="0.65;0.12;0.65" dur="0.9s" repeatCount="indefinite"/>
+                                    </circle>
+                                    <circle cx="100" cy="6" r="10"
+                                            fill="url(#mq-grad-antena-on)"
+                                            stroke="#0D47A1" stroke-width="1.5">
+                                        <animate attributeName="r" values="10;12.5;10" dur="0.9s" repeatCount="indefinite"/>
+                                    </circle>
+                                </g>
                             </g>
-
-                            <g id="mq-antena-encendida" visibility="hidden">
-                                <circle cx="100" cy="6" r="14" fill="#00E5FF" opacity="0.5">
-                                    <animate attributeName="r" values="14;23;14" dur="0.9s" repeatCount="indefinite"/>
-                                    <animate attributeName="opacity" values="0.65;0.12;0.65" dur="0.9s" repeatCount="indefinite"/>
-                                </circle>
-                                <circle cx="100" cy="6" r="10"
-                                        fill="url(#mq-grad-antena-on)"
-                                        stroke="#0D47A1" stroke-width="1.5">
-                                    <animate attributeName="r" values="10;12.5;10" dur="0.9s" repeatCount="indefinite"/>
-                                </circle>
-                            </g>
-                        </g>
                         </g>
 
                         <!-- ==================== CUELLO ==================== -->
@@ -558,7 +546,7 @@
 
                         <g id="mq-acc-torso" data-acc-slot="torso"></g>
 
-                        <!-- ==================== BRAZO IZQUIERDO (hombro > codo > muñeca > dedos) ==================== -->
+                        <!-- ==================== BRAZO IZQUIERDO ==================== -->
                         <g id="mq-brazo-izq" class="mq-brazo">
                             <line x1="60" y1="180" x2="30" y2="205" stroke="#0D47A1" stroke-width="12.5" stroke-linecap="round"/>
                             <line x1="60" y1="180" x2="30" y2="205" stroke="#C9D8FF" stroke-width="9" stroke-linecap="round"/>
@@ -596,10 +584,9 @@
                             </g>
                             <circle cx="30" cy="205" r="4.5" fill="#7C4DFF" stroke="#0D47A1" stroke-width="1.5"/>
                             <g id="mq-acc-codo-izq" data-acc-slot="codo-izq"></g>
-
                         </g>
 
-                        <!-- ==================== BRAZO DERECHO (hombro > codo > muñeca > dedos) ==================== -->
+                        <!-- ==================== BRAZO DERECHO ==================== -->
                         <g id="mq-brazo-der" class="mq-brazo">
                             <line x1="140" y1="180" x2="170" y2="205" stroke="#0D47A1" stroke-width="12.5" stroke-linecap="round"/>
                             <line x1="140" y1="180" x2="170" y2="205" stroke="#C9D8FF" stroke-width="9" stroke-linecap="round"/>
@@ -637,7 +624,6 @@
                             </g>
                             <circle cx="170" cy="205" r="4.5" fill="#7C4DFF" stroke="#0D47A1" stroke-width="1.5"/>
                             <g id="mq-acc-codo-der" data-acc-slot="codo-der"></g>
-
                         </g>
 
                         <!-- ==================== PIERNA IZQUIERDA ==================== -->
@@ -651,7 +637,6 @@
                                   fill="url(#mq-grad-bota)" stroke="#0D47A1" stroke-width="2"/>
                             <g id="mq-acc-pierna-izq" data-acc-slot="pierna-izq"></g>
                             <g id="mq-acc-pie-izq" data-acc-slot="pie-izq"></g>
-
                         </g>
 
                         <!-- ==================== PIERNA DERECHA ==================== -->
@@ -665,10 +650,9 @@
                                   fill="url(#mq-grad-bota)" stroke="#0D47A1" stroke-width="2"/>
                             <g id="mq-acc-pierna-der" data-acc-slot="pierna-der"></g>
                             <g id="mq-acc-pie-der" data-acc-slot="pie-der"></g>
-
                         </g>
 
-                                            <g id="mq-acc-cuerpo-frente" data-acc-slot="cuerpo-frente"></g>
+                        <g id="mq-acc-cuerpo-frente" data-acc-slot="cuerpo-frente"></g>
                     </g>
 
                     <g id="mq-acc-layer"></g>
@@ -764,15 +748,12 @@
             }, 500);
         }
 
-        log('Widget v9.4 Galactic Pro creado');
+        log('Widget v9.7 Galactic Pro creado');
     }
 
-    // Las "tres bolitas" se eliminaron. Se dejan estas funciones vacías
-    // por si otro archivo todavía las llama.
     function mostrarDots() {}
     function ocultarDots() {}
 
-    // ✅ v9.3: la antena SOLO se enciende cuando escucha.
     function setEstado(e) {
         if (container) container.setAttribute('data-estado', e);
 
@@ -958,7 +939,7 @@
             recognition.onstart = function() {
                 recognitionActive = true;
                 isListening = true;
-                setEstado('escuchando');  // enciende la antena
+                setEstado('escuchando');
             };
 
             recognition.onresult = function(event) {
@@ -1139,7 +1120,7 @@
         await cargarAccesorios();
         crearWidget();
         instalarVisibility();
-        log('✅ Marquinhos v9.4 Galactic Pro activo');
+        log('✅ Marquinhos v9.7 Galactic Pro activo');
     }
 
     if (document.readyState === 'loading') {
