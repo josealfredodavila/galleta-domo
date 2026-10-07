@@ -1,13 +1,15 @@
 // ================================================================
-// CAPITÁN MAÍZ · PET v2.6
+// CAPITÁN MAÍZ · PET v2.7
 // "GUARDIAN ANCESTRAL · GALACTIC CHARRO"
 // ================================================================
-// Novedades v2.6 (sobre v2.5):
-// ✅ Sombrero bien asentado sobre la cabeza (ya no flota)
-// ✅ Ojos hipnóticos: remolino/espiral girando
-// ✅ Ambas manos saludan (la derecha más)
-// ✅ Capa que ondea como si la moviera el viento
-// ✅ Todo con animación SVG: el CSS v2.5 NO necesita cambios
+// Novedades v2.7:
+// ✅ Sombrero realmente asentado sobre la cabeza
+// ✅ Ala ligeramente superpuesta a la cabeza para eliminar efecto flotante
+// ✅ Copa más ancha y mejor conectada con el ala
+// ✅ Base de la copa encaja exactamente con el ala
+// ✅ Se mantiene inclinación charra
+// ✅ Se conservan luces, estrellas y patrón del sombrero
+// ✅ Sin cambios en voz, IA, accesorios, Supabase ni lógica del PET
 // ================================================================
 
 'use strict';
@@ -119,7 +121,7 @@
     }
 
     function log(msg) {
-        console.log('[Capitán Maíz v2.6]', msg);
+        console.log('[Capitán Maíz v2.7]', msg);
     }
 
     function esc(v) {
@@ -561,7 +563,9 @@
             const btn = this;
             btn.disabled = true;
             btn.textContent = 'Guardando...';
-            try { localStorage.setItem(TERMINOS_KEY, 'true'); } catch (e) {}
+            try {
+                localStorage.setItem(TERMINOS_KEY, 'true');
+            } catch (e) {}
             await registrarTerminosEnSupabase();
             modal.remove();
             _terminosProcesando = false;
@@ -593,7 +597,7 @@
     }
 
     // ============================================================
-    // CREAR WIDGET — SVG v2.6
+    // CREAR WIDGET — SVG v2.7
     // ============================================================
 
     function crearWidget() {
@@ -688,29 +692,47 @@
                     </filter>
 
                     <pattern id="cm-patron-sombrero" width="14" height="10" patternUnits="userSpaceOnUse">
-                        <path d="M0 5 L7 0 L14 5 L7 10 Z" fill="none" stroke="#56647A" stroke-width="1" opacity=".55"/>
+                        <path d="M0 5 L7 0 L14 5 L7 10 Z"
+                              fill="none"
+                              stroke="#56647A"
+                              stroke-width="1"
+                              opacity=".55"/>
                     </pattern>
 
                     <!-- Recortes de los ojos para el remolino -->
-                    <clipPath id="cm-clip-ojo-izq"><ellipse cx="73" cy="111" rx="15" ry="20"/></clipPath>
-                    <clipPath id="cm-clip-ojo-der"><ellipse cx="127" cy="111" rx="15" ry="20"/></clipPath>
+                    <clipPath id="cm-clip-ojo-izq">
+                        <ellipse cx="73" cy="111" rx="15" ry="20"/>
+                    </clipPath>
+
+                    <clipPath id="cm-clip-ojo-der">
+                        <ellipse cx="127" cy="111" rx="15" ry="20"/>
+                    </clipPath>
                 </defs>
 
                 <!-- AURA -->
                 <ellipse cx="100" cy="155" rx="98" ry="142" fill="url(#cm-aura)" opacity=".65">
-                    <animate attributeName="opacity" values=".35;.7;.35" dur="3s" repeatCount="indefinite"/>
+                    <animate attributeName="opacity"
+                             values=".35;.7;.35"
+                             dur="3s"
+                             repeatCount="indefinite"/>
                 </ellipse>
 
                 <!-- ================================================
-                     CAPA AL VIENTO — las dos mitades ondean (morph)
+                     CAPA AL VIENTO
                      ================================================ -->
                 <g id="cm-capa" data-acc-slot="capa">
 
                     <!-- Mitad izquierda -->
-                    <path fill="url(#cm-grad-capa)" stroke="#4A6FC8" stroke-width="2.2"
+                    <path fill="url(#cm-grad-capa)"
+                          stroke="#4A6FC8"
+                          stroke-width="2.2"
                           d="M54 175 C34 181 17 198 11 223 C5 247 7 273 19 294 L47 278 C55 257 61 232 65 204 Z">
-                        <animate attributeName="d" dur="3.6s" repeatCount="indefinite"
-                                 calcMode="spline" keyTimes="0;.33;.66;1"
+
+                        <animate attributeName="d"
+                                 dur="3.6s"
+                                 repeatCount="indefinite"
+                                 calcMode="spline"
+                                 keyTimes="0;.33;.66;1"
                                  keySplines=".4 0 .6 1;.4 0 .6 1;.4 0 .6 1"
                                  values="
                                  M54 175 C34 181 17 198 11 223 C5 247 7 273 19 294 L47 278 C55 257 61 232 65 204 Z;
@@ -718,10 +740,19 @@
                                  M54 175 C40 178 24 201 17 220 C12 244 2 277 12 290 L44 281 C54 260 62 232 65 204 Z;
                                  M54 175 C34 181 17 198 11 223 C5 247 7 273 19 294 L47 278 C55 257 61 232 65 204 Z"/>
                     </path>
-                    <path fill="none" stroke="#00E5FF" stroke-width="2.4" opacity=".95" filter="url(#cm-glow)"
+
+                    <path fill="none"
+                          stroke="#00E5FF"
+                          stroke-width="2.4"
+                          opacity=".95"
+                          filter="url(#cm-glow)"
                           d="M19 294 C29 278 39 269 47 257">
-                        <animate attributeName="d" dur="3.6s" repeatCount="indefinite"
-                                 calcMode="spline" keyTimes="0;.33;.66;1"
+
+                        <animate attributeName="d"
+                                 dur="3.6s"
+                                 repeatCount="indefinite"
+                                 calcMode="spline"
+                                 keyTimes="0;.33;.66;1"
                                  keySplines=".4 0 .6 1;.4 0 .6 1;.4 0 .6 1"
                                  values="
                                  M19 294 C29 278 39 269 47 257;
@@ -730,11 +761,18 @@
                                  M19 294 C29 278 39 269 47 257"/>
                     </path>
 
-                    <!-- Mitad derecha (desfasada para que no se mueva igual) -->
-                    <path fill="url(#cm-grad-capa)" stroke="#4A6FC8" stroke-width="2.2"
+                    <!-- Mitad derecha -->
+                    <path fill="url(#cm-grad-capa)"
+                          stroke="#4A6FC8"
+                          stroke-width="2.2"
                           d="M146 175 C166 181 183 198 189 223 C195 247 193 273 181 294 L153 278 C145 257 139 232 135 204 Z">
-                        <animate attributeName="d" dur="3.6s" begin="-1.3s" repeatCount="indefinite"
-                                 calcMode="spline" keyTimes="0;.33;.66;1"
+
+                        <animate attributeName="d"
+                                 dur="3.6s"
+                                 begin="-1.3s"
+                                 repeatCount="indefinite"
+                                 calcMode="spline"
+                                 keyTimes="0;.33;.66;1"
                                  keySplines=".4 0 .6 1;.4 0 .6 1;.4 0 .6 1"
                                  values="
                                  M146 175 C166 181 183 198 189 223 C195 247 193 273 181 294 L153 278 C145 257 139 232 135 204 Z;
@@ -742,10 +780,20 @@
                                  M146 175 C160 178 176 201 183 220 C188 244 198 277 188 290 L156 281 C146 260 138 232 135 204 Z;
                                  M146 175 C166 181 183 198 189 223 C195 247 193 273 181 294 L153 278 C145 257 139 232 135 204 Z"/>
                     </path>
-                    <path fill="none" stroke="#00E5FF" stroke-width="2.4" opacity=".95" filter="url(#cm-glow)"
+
+                    <path fill="none"
+                          stroke="#00E5FF"
+                          stroke-width="2.4"
+                          opacity=".95"
+                          filter="url(#cm-glow)"
                           d="M181 294 C171 278 161 269 153 257">
-                        <animate attributeName="d" dur="3.6s" begin="-1.3s" repeatCount="indefinite"
-                                 calcMode="spline" keyTimes="0;.33;.66;1"
+
+                        <animate attributeName="d"
+                                 dur="3.6s"
+                                 begin="-1.3s"
+                                 repeatCount="indefinite"
+                                 calcMode="spline"
+                                 keyTimes="0;.33;.66;1"
                                  keySplines=".4 0 .6 1;.4 0 .6 1;.4 0 .6 1"
                                  values="
                                  M181 294 C171 278 161 269 153 257;
@@ -754,28 +802,98 @@
                                  M181 294 C171 278 161 269 153 257"/>
                     </path>
 
-                    <!-- Estrellas de la capa (ondean suavemente con ella) -->
+                    <!-- Estrellas -->
                     <g fill="#FFFFFF" opacity=".95">
-                        <animateTransform attributeName="transform" type="translate"
-                                          values="0,0; -2,1; 1,-1; 0,0" dur="3.6s" repeatCount="indefinite"/>
-                        <circle cx="25" cy="226" r="1.4"><animate attributeName="opacity" values="1;0.3;1" dur="2.2s" repeatCount="indefinite"/></circle>
-                        <circle cx="34" cy="250" r=".9"><animate attributeName="opacity" values="1;0.3;1" dur="2.8s" repeatCount="indefinite" begin="0.4s"/></circle>
-                        <circle cx="28" cy="268" r=".7"><animate attributeName="opacity" values="1;0.3;1" dur="3.1s" repeatCount="indefinite" begin="0.8s"/></circle>
-                        <circle cx="43" cy="215" r=".8"><animate attributeName="opacity" values="1;0.3;1" dur="2.5s" repeatCount="indefinite" begin="1.2s"/></circle>
-                        <circle cx="176" cy="226" r="1.4"><animate attributeName="opacity" values="1;0.3;1" dur="2.4s" repeatCount="indefinite" begin="0.6s"/></circle>
-                        <circle cx="166" cy="249" r=".9"><animate attributeName="opacity" values="1;0.3;1" dur="3s" repeatCount="indefinite" begin="1s"/></circle>
-                        <circle cx="172" cy="267" r=".7"><animate attributeName="opacity" values="1;0.3;1" dur="2.7s" repeatCount="indefinite" begin="1.4s"/></circle>
-                        <circle cx="158" cy="215" r=".8"><animate attributeName="opacity" values="1;0.3;1" dur="2.9s" repeatCount="indefinite" begin="1.8s"/></circle>
+                        <animateTransform attributeName="transform"
+                                          type="translate"
+                                          values="0,0; -2,1; 1,-1; 0,0"
+                                          dur="3.6s"
+                                          repeatCount="indefinite"/>
+
+                        <circle cx="25" cy="226" r="1.4">
+                            <animate attributeName="opacity"
+                                     values="1;0.3;1"
+                                     dur="2.2s"
+                                     repeatCount="indefinite"/>
+                        </circle>
+
+                        <circle cx="34" cy="250" r=".9">
+                            <animate attributeName="opacity"
+                                     values="1;0.3;1"
+                                     dur="2.8s"
+                                     repeatCount="indefinite"
+                                     begin="0.4s"/>
+                        </circle>
+
+                        <circle cx="28" cy="268" r=".7">
+                            <animate attributeName="opacity"
+                                     values="1;0.3;1"
+                                     dur="3.1s"
+                                     repeatCount="indefinite"
+                                     begin="0.8s"/>
+                        </circle>
+
+                        <circle cx="43" cy="215" r=".8">
+                            <animate attributeName="opacity"
+                                     values="1;0.3;1"
+                                     dur="2.5s"
+                                     repeatCount="indefinite"
+                                     begin="1.2s"/>
+                        </circle>
+
+                        <circle cx="176" cy="226" r="1.4">
+                            <animate attributeName="opacity"
+                                     values="1;0.3;1"
+                                     dur="2.4s"
+                                     repeatCount="indefinite"
+                                     begin="0.6s"/>
+                        </circle>
+
+                        <circle cx="166" cy="249" r=".9">
+                            <animate attributeName="opacity"
+                                     values="1;0.3;1"
+                                     dur="3s"
+                                     repeatCount="indefinite"
+                                     begin="1s"/>
+                        </circle>
+
+                        <circle cx="172" cy="267" r=".7">
+                            <animate attributeName="opacity"
+                                     values="1;0.3;1"
+                                     dur="2.7s"
+                                     repeatCount="indefinite"
+                                     begin="1.4s"/>
+                        </circle>
+
+                        <circle cx="158" cy="215" r=".8">
+                            <animate attributeName="opacity"
+                                     values="1;0.3;1"
+                                     dur="2.9s"
+                                     repeatCount="indefinite"
+                                     begin="1.8s"/>
+                        </circle>
                     </g>
 
                     <g fill="#FFFFFF" filter="url(#cm-glow)">
-                        <animateTransform attributeName="transform" type="translate"
-                                          values="0,0; -2,1; 1,-1; 0,0" dur="3.6s" repeatCount="indefinite"/>
+                        <animateTransform attributeName="transform"
+                                          type="translate"
+                                          values="0,0; -2,1; 1,-1; 0,0"
+                                          dur="3.6s"
+                                          repeatCount="indefinite"/>
+
                         <path d="M30 242 l2.2 5 l5 2.2 l-5 2.2 l-2.2 5 l-2.2-5 l-5-2.2 l5-2.2z">
-                            <animate attributeName="opacity" values="1;0.4;1" dur="3.2s" repeatCount="indefinite"/>
+                            <animate attributeName="opacity"
+                                     values="1;0.4;1"
+                                     dur="3.2s"
+                                     repeatCount="indefinite"/>
                         </path>
+
                         <path d="M171 238 l1.8 4 l4 1.8 l-4 1.8 l-1.8 4 l-1.8-4 l-4-1.8 l4-1.8z">
-                            <animate attributeName="opacity" values="1;0.4;1" dur="3.6s" repeatCount="indefinite" begin="0.7s"/>
+                            <animate attributeName="opacity"
+                                     values="1;0.4;1"
+                                     dur="3.6s"
+                                     repeatCount="indefinite"
+                                     begin="0.7s"/>
                         </path>
                     </g>
                 </g>
@@ -783,32 +901,98 @@
                 <g id="cm-cuerpo">
 
                     <g id="cm-pierna-izq" class="cm-pierna">
-                        <path d="M70 230 L94 230 L96 267 L88 280 L69 275 L67 250 Z" fill="url(#cm-grad-pantalon)" stroke="#6C7A89" stroke-width="2"/>
-                        <path d="M80 237 L78 269" stroke="#AAB8C8" stroke-width="1.2"/>
-                        <path d="M69 252 Q80 246 91 252 L90 266 Q80 271 70 266 Z" fill="#E4E8ED" stroke="#5E6D7C" stroke-width="2"/>
-                        <path d="M72 254 Q80 250 88 254" fill="none" stroke="#00E5FF" stroke-width="1.4" filter="url(#cm-glow)"/>
+                        <path d="M70 230 L94 230 L96 267 L88 280 L69 275 L67 250 Z"
+                              fill="url(#cm-grad-pantalon)"
+                              stroke="#6C7A89"
+                              stroke-width="2"/>
+
+                        <path d="M80 237 L78 269"
+                              stroke="#AAB8C8"
+                              stroke-width="1.2"/>
+
+                        <path d="M69 252 Q80 246 91 252 L90 266 Q80 271 70 266 Z"
+                              fill="#E4E8ED"
+                              stroke="#5E6D7C"
+                              stroke-width="2"/>
+
+                        <path d="M72 254 Q80 250 88 254"
+                              fill="none"
+                              stroke="#00E5FF"
+                              stroke-width="1.4"
+                              filter="url(#cm-glow)"/>
                     </g>
 
                     <g id="cm-pierna-der" class="cm-pierna">
-                        <path d="M106 230 L130 230 L133 250 L131 275 L112 280 L104 267 Z" fill="url(#cm-grad-pantalon)" stroke="#6C7A89" stroke-width="2"/>
-                        <path d="M120 237 L122 269" stroke="#AAB8C8" stroke-width="1.2"/>
-                        <path d="M109 252 Q120 246 131 252 L130 266 Q120 271 110 266 Z" fill="#E4E8ED" stroke="#5E6D7C" stroke-width="2"/>
-                        <path d="M112 254 Q120 250 128 254" fill="none" stroke="#00E5FF" stroke-width="1.4" filter="url(#cm-glow)"/>
+                        <path d="M106 230 L130 230 L133 250 L131 275 L112 280 L104 267 Z"
+                              fill="url(#cm-grad-pantalon)"
+                              stroke="#6C7A89"
+                              stroke-width="2"/>
+
+                        <path d="M120 237 L122 269"
+                              stroke="#AAB8C8"
+                              stroke-width="1.2"/>
+
+                        <path d="M109 252 Q120 246 131 252 L130 266 Q120 271 110 266 Z"
+                              fill="#E4E8ED"
+                              stroke="#5E6D7C"
+                              stroke-width="2"/>
+
+                        <path d="M112 254 Q120 250 128 254"
+                              fill="none"
+                              stroke="#00E5FF"
+                              stroke-width="1.4"
+                              filter="url(#cm-glow)"/>
                     </g>
 
                     <g id="cm-botas" data-acc-slot="pies">
-                        <path d="M66 267 Q77 264 90 270 L93 283 Q92 290 83 293 L57 293 Q52 289 57 284 L66 278 Z" fill="url(#cm-grad-botas)" stroke="#4D6074" stroke-width="2"/>
-                        <path d="M107 270 Q120 264 134 267 L143 278 Q148 284 143 290 Q139 293 117 293 L107 289 Z" fill="url(#cm-grad-botas)" stroke="#4D6074" stroke-width="2"/>
-                        <path d="M62 283 Q75 278 89 283" fill="none" stroke="#00E5FF" stroke-width="2.2" filter="url(#cm-glow)"/>
-                        <path d="M111 283 Q124 278 140 283" fill="none" stroke="#00E5FF" stroke-width="2.2" filter="url(#cm-glow)"/>
-                        <path d="M57 290 Q74 294 90 289 M109 289 Q126 294 143 288" fill="none" stroke="#121A26" stroke-width="3"/>
+                        <path d="M66 267 Q77 264 90 270 L93 283 Q92 290 83 293 L57 293 Q52 289 57 284 L66 278 Z"
+                              fill="url(#cm-grad-botas)"
+                              stroke="#4D6074"
+                              stroke-width="2"/>
+
+                        <path d="M107 270 Q120 264 134 267 L143 278 Q148 284 143 290 Q139 293 117 293 L107 289 Z"
+                              fill="url(#cm-grad-botas)"
+                              stroke="#4D6074"
+                              stroke-width="2"/>
+
+                        <path d="M62 283 Q75 278 89 283"
+                              fill="none"
+                              stroke="#00E5FF"
+                              stroke-width="2.2"
+                              filter="url(#cm-glow)"/>
+
+                        <path d="M111 283 Q124 278 140 283"
+                              fill="none"
+                              stroke="#00E5FF"
+                              stroke-width="2.2"
+                              filter="url(#cm-glow)"/>
+
+                        <path d="M57 290 Q74 294 90 289 M109 289 Q126 294 143 288"
+                              fill="none"
+                              stroke="#121A26"
+                              stroke-width="3"/>
                     </g>
 
                     <g id="cm-torso" data-acc-slot="torso">
-                        <path d="M65 148 Q100 137 135 148 L145 217 Q128 232 100 232 Q72 232 55 217 Z" fill="url(#cm-grad-traje)" stroke="#53657A" stroke-width="2.2"/>
-                        <path d="M72 151 L91 157 L100 171 L109 157 L128 151 L136 211 L119 220 L100 216 L81 220 L64 211 Z" fill="#0A1018" stroke="#00E5FF" stroke-width="2"/>
-                        <path d="M91 157 L100 171 L109 157 L106 207 L94 207 Z" fill="#05080E" stroke="#3A567F" stroke-width="1.3"/>
-                        <path d="M86 151 L100 168 L114 151 L108 146 L100 158 L92 146 Z" fill="#0F1A28" stroke="#8AA8D0" stroke-width="1.3"/>
+                        <path d="M65 148 Q100 137 135 148 L145 217 Q128 232 100 232 Q72 232 55 217 Z"
+                              fill="url(#cm-grad-traje)"
+                              stroke="#53657A"
+                              stroke-width="2.2"/>
+
+                        <path d="M72 151 L91 157 L100 171 L109 157 L128 151 L136 211 L119 220 L100 216 L81 220 L64 211 Z"
+                              fill="#0A1018"
+                              stroke="#00E5FF"
+                              stroke-width="2"/>
+
+                        <path d="M91 157 L100 171 L109 157 L106 207 L94 207 Z"
+                              fill="#05080E"
+                              stroke="#3A567F"
+                              stroke-width="1.3"/>
+
+                        <path d="M86 151 L100 168 L114 151 L108 146 L100 158 L92 146 Z"
+                              fill="#0F1A28"
+                              stroke="#8AA8D0"
+                              stroke-width="1.3"/>
 
                         <g fill="#E0ECFF" stroke="#4A6080" stroke-width="1">
                             <circle cx="100" cy="178" r="2"/>
@@ -824,171 +1008,533 @@
                         </g>
 
                         <path d="M67 151 Q60 179 65 210 M133 151 Q140 179 135 210"
-                              fill="none" stroke="#00E5FF" stroke-width="2.4" filter="url(#cm-glow)"/>
+                              fill="none"
+                              stroke="#00E5FF"
+                              stroke-width="2.4"
+                              filter="url(#cm-glow)"/>
 
                         <g>
-                            <animateTransform attributeName="transform" type="scale"
-                                              values="1;1.05;1" dur="2s" repeatCount="indefinite" additive="sum"/>
+                            <animateTransform attributeName="transform"
+                                              type="scale"
+                                              values="1;1.05;1"
+                                              dur="2s"
+                                              repeatCount="indefinite"
+                                              additive="sum"/>
+
                             <path d="M100 181 L103 188 L111 188 L105 193 L108 201 L100 196 L92 201 L95 193 L89 188 L97 188 Z"
-                                  fill="#00E5FF" filter="url(#cm-glow)">
-                                <animate attributeName="opacity" values=".85;1;.85" dur="1.8s" repeatCount="indefinite"/>
+                                  fill="#00E5FF"
+                                  filter="url(#cm-glow)">
+
+                                <animate attributeName="opacity"
+                                         values=".85;1;.85"
+                                         dur="1.8s"
+                                         repeatCount="indefinite"/>
                             </path>
                         </g>
 
-                        <path d="M66 151 Q57 153 53 163 L64 171 L73 157 Z" fill="#0F1824" stroke="#00E5FF" stroke-width="1.6"/>
-                        <path d="M134 151 Q143 153 147 163 L136 171 L127 157 Z" fill="#0F1824" stroke="#00E5FF" stroke-width="1.6"/>
+                        <path d="M66 151 Q57 153 53 163 L64 171 L73 157 Z"
+                              fill="#0F1824"
+                              stroke="#00E5FF"
+                              stroke-width="1.6"/>
+
+                        <path d="M134 151 Q143 153 147 163 L136 171 L127 157 Z"
+                              fill="#0F1824"
+                              stroke="#00E5FF"
+                              stroke-width="1.6"/>
                     </g>
 
-                    <!-- BRAZO IZQUIERDO + MANO QUE SALUDA (suave) -->
+                    <!-- BRAZO IZQUIERDO + MANO QUE SALUDA -->
                     <g id="cm-brazo-izq" class="cm-brazo">
-                        <path d="M66 158 Q54 158 47 170 L39 199 Q43 207 52 208 L64 179 L76 168 Z" fill="url(#cm-grad-traje)" stroke="#56697D" stroke-width="2"/>
-                        <path d="M52 166 Q45 182 45 198" fill="none" stroke="#00E5FF" stroke-width="2.2" filter="url(#cm-glow)"/>
+                        <path d="M66 158 Q54 158 47 170 L39 199 Q43 207 52 208 L64 179 L76 168 Z"
+                              fill="url(#cm-grad-traje)"
+                              stroke="#56697D"
+                              stroke-width="2"/>
+
+                        <path d="M52 166 Q45 182 45 198"
+                              fill="none"
+                              stroke="#00E5FF"
+                              stroke-width="2.2"
+                              filter="url(#cm-glow)"/>
+
                         <g>
-                            <animateTransform attributeName="transform" type="rotate"
-                                              values="10 45 200;-12 45 200;10 45 200" dur="1.3s" begin="0.3s"
-                                              repeatCount="indefinite" calcMode="spline"
-                                              keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/>
+                            <animateTransform attributeName="transform"
+                                              type="rotate"
+                                              values="10 45 200;-12 45 200;10 45 200"
+                                              dur="1.3s"
+                                              begin="0.3s"
+                                              repeatCount="indefinite"
+                                              calcMode="spline"
+                                              keyTimes="0;.5;1"
+                                              keySplines=".45 0 .55 1;.45 0 .55 1"/>
+
                             <g id="cm-mano-izq" class="cm-mano">
-                                <path d="M39 198 Q32 200 31 208 Q32 218 42 222 Q51 224 55 216 L55 207 Q48 199 39 198 Z" fill="url(#cm-grad-cabeza)" stroke="#596979" stroke-width="2"/>
-                                <path d="M38 207 Q44 211 50 207" fill="none" stroke="#A6B4C3" stroke-width="1.2"/>
+                                <path d="M39 198 Q32 200 31 208 Q32 218 42 222 Q51 224 55 216 L55 207 Q48 199 39 198 Z"
+                                      fill="url(#cm-grad-cabeza)"
+                                      stroke="#596979"
+                                      stroke-width="2"/>
+
+                                <path d="M38 207 Q44 211 50 207"
+                                      fill="none"
+                                      stroke="#A6B4C3"
+                                      stroke-width="1.2"/>
                             </g>
                         </g>
                     </g>
 
-                    <!-- BRAZO DERECHO + MANO LEVANTADA SALUDANDO -->
+                    <!-- BRAZO DERECHO + MANO LEVANTADA -->
                     <g id="cm-brazo-der" class="cm-brazo">
-                        <path d="M134 158 Q146 158 153 170 L162 193 Q158 202 149 204 L136 179 L124 168 Z" fill="url(#cm-grad-traje)" stroke="#56697D" stroke-width="2"/>
-                        <path d="M148 166 Q155 181 157 194" fill="none" stroke="#00E5FF" stroke-width="2.2" filter="url(#cm-glow)"/>
-                        <path d="M149 193 Q158 189 164 196 L164 207 Q158 214 149 210 L143 201 Z" fill="#0A0E18" stroke="#596979" stroke-width="2"/>
+                        <path d="M134 158 Q146 158 153 170 L162 193 Q158 202 149 204 L136 179 L124 168 Z"
+                              fill="url(#cm-grad-traje)"
+                              stroke="#56697D"
+                              stroke-width="2"/>
+
+                        <path d="M148 166 Q155 181 157 194"
+                              fill="none"
+                              stroke="#00E5FF"
+                              stroke-width="2.2"
+                              filter="url(#cm-glow)"/>
+
+                        <path d="M149 193 Q158 189 164 196 L164 207 Q158 214 149 210 L143 201 Z"
+                              fill="#0A0E18"
+                              stroke="#596979"
+                              stroke-width="2"/>
+
                         <g>
-                            <animateTransform attributeName="transform" type="rotate"
-                                              values="-16 158 198;18 158 198;-16 158 198" dur="0.9s"
-                                              repeatCount="indefinite" calcMode="spline"
-                                              keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/>
+                            <animateTransform attributeName="transform"
+                                              type="rotate"
+                                              values="-16 158 198;18 158 198;-16 158 198"
+                                              dur="0.9s"
+                                              repeatCount="indefinite"
+                                              calcMode="spline"
+                                              keyTimes="0;.5;1"
+                                              keySplines=".45 0 .55 1;.45 0 .55 1"/>
+
                             <g id="cm-mano-der" class="cm-mano">
-                                <path d="M157 193 Q158 181 165 175 Q171 168 177 172 Q181 176 178 181 Q184 177 188 181 Q191 186 186 190 Q191 188 194 193 Q195 199 188 202 Q178 207 168 203 L158 200 Z" fill="url(#cm-grad-cabeza)" stroke="#596979" stroke-width="2"/>
-                                <path d="M178 181 L183 187 M187 190 L181 193 M174 202 L171 194" fill="none" stroke="#9DAAB7" stroke-width="1.2" stroke-linecap="round"/>
+                                <path d="M157 193 Q158 181 165 175 Q171 168 177 172 Q181 176 178 181 Q184 177 188 181 Q191 186 186 190 Q191 188 194 193 Q195 199 188 202 Q178 207 168 203 L158 200 Z"
+                                      fill="url(#cm-grad-cabeza)"
+                                      stroke="#596979"
+                                      stroke-width="2"/>
+
+                                <path d="M178 181 L183 187 M187 190 L181 193 M174 202 L171 194"
+                                      fill="none"
+                                      stroke="#9DAAB7"
+                                      stroke-width="1.2"
+                                      stroke-linecap="round"/>
                             </g>
                         </g>
                     </g>
 
                     <g id="cm-cinturon" data-acc-slot="cinturon">
-                        <path d="M64 218 Q100 226 136 218 L137 231 Q100 240 63 231 Z" fill="#05080E" stroke="#3E4E61" stroke-width="2"/>
+                        <path d="M64 218 Q100 226 136 218 L137 231 Q100 240 63 231 Z"
+                              fill="#05080E"
+                              stroke="#3E4E61"
+                              stroke-width="2"/>
+
                         <path d="M100 218 L105 226 L114 226 L107 232 L110 241 L100 235 L90 241 L93 232 L86 226 L95 226 Z"
-                              fill="#E8F4FF" stroke="#00E5FF" stroke-width="2" filter="url(#cm-glow)"/>
+                              fill="#E8F4FF"
+                              stroke="#00E5FF"
+                              stroke-width="2"
+                              filter="url(#cm-glow)"/>
                     </g>
 
                     <g id="cm-cabeza-grupo">
+
                         <g>
-                            <circle cx="45" cy="111" r="15" fill="#E7EBF0" stroke="#667687" stroke-width="2"/>
-                            <circle cx="155" cy="111" r="15" fill="#E7EBF0" stroke="#667687" stroke-width="2"/>
-                            <circle cx="45" cy="111" r="8" fill="#111B2A" stroke="#00E5FF" stroke-width="1.5" filter="url(#cm-glow)"/>
-                            <circle cx="155" cy="111" r="8" fill="#111B2A" stroke="#00E5FF" stroke-width="1.5" filter="url(#cm-glow)"/>
+                            <circle cx="45" cy="111" r="15"
+                                    fill="#E7EBF0"
+                                    stroke="#667687"
+                                    stroke-width="2"/>
+
+                            <circle cx="155" cy="111" r="15"
+                                    fill="#E7EBF0"
+                                    stroke="#667687"
+                                    stroke-width="2"/>
+
+                            <circle cx="45" cy="111" r="8"
+                                    fill="#111B2A"
+                                    stroke="#00E5FF"
+                                    stroke-width="1.5"
+                                    filter="url(#cm-glow)"/>
+
+                            <circle cx="155" cy="111" r="8"
+                                    fill="#111B2A"
+                                    stroke="#00E5FF"
+                                    stroke-width="1.5"
+                                    filter="url(#cm-glow)"/>
                         </g>
 
-                        <rect x="48" y="68" width="104" height="96" rx="40" fill="url(#cm-grad-cabeza)" stroke="#687888" stroke-width="2.5"/>
+                        <rect x="48"
+                              y="68"
+                              width="104"
+                              height="96"
+                              rx="40"
+                              fill="url(#cm-grad-cabeza)"
+                              stroke="#687888"
+                              stroke-width="2.5"/>
 
-                        <path d="M66 90 Q76 84 87 86" fill="none" stroke="#FFFFFF" stroke-width="3" opacity=".75" stroke-linecap="round"/>
+                        <path d="M66 90 Q76 84 87 86"
+                              fill="none"
+                              stroke="#FFFFFF"
+                              stroke-width="3"
+                              opacity=".75"/>
 
-                        <!-- ============ OJO IZQUIERDO · REMOLINO HIPNÓTICO ============ -->
+                        <!-- OJO IZQUIERDO -->
                         <g id="cm-ojo-izq">
-                            <ellipse cx="73" cy="111" rx="16" ry="21" fill="url(#cm-grad-ojo)" stroke="#1A2742" stroke-width="2"/>
+                            <ellipse cx="73" cy="111" rx="16" ry="21"
+                                     fill="url(#cm-grad-ojo)"
+                                     stroke="#1A2742"
+                                     stroke-width="2"/>
 
                             <g clip-path="url(#cm-clip-ojo-izq)">
                                 <g>
-                                    <animateTransform attributeName="transform" type="rotate"
-                                                      from="0 73 111" to="360 73 111" dur="2.6s" repeatCount="indefinite"/>
-                                    <path d="${espiral(73, 111, 0)}" fill="none" stroke="#00E5FF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" filter="url(#cm-glow)"/>
-                                    <path d="${espiral(73, 111, Math.PI)}" fill="none" stroke="#E9A8FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/>
+                                    <animateTransform attributeName="transform"
+                                                      type="rotate"
+                                                      from="0 73 111"
+                                                      to="360 73 111"
+                                                      dur="2.6s"
+                                                      repeatCount="indefinite"/>
+
+                                    <path d="${espiral(73, 111, 0)}"
+                                          fill="none"
+                                          stroke="#00E5FF"
+                                          stroke-width="2.2"
+                                          stroke-linecap="round"
+                                          stroke-linejoin="round"
+                                          filter="url(#cm-glow)"/>
+
+                                    <path d="${espiral(73, 111, Math.PI)}"
+                                          fill="none"
+                                          stroke="#E9A8FF"
+                                          stroke-width="1.6"
+                                          stroke-linecap="round"
+                                          stroke-linejoin="round"
+                                          opacity=".9"/>
                                 </g>
                             </g>
 
-                            <ellipse cx="73" cy="111" rx="16" ry="21" fill="none" stroke="#00E5FF" stroke-width="1.2" opacity=".7" filter="url(#cm-glow)">
-                                <animate attributeName="opacity" values=".35;.9;.35" dur="1.6s" repeatCount="indefinite"/>
+                            <ellipse cx="73" cy="111" rx="16" ry="21"
+                                     fill="none"
+                                     stroke="#00E5FF"
+                                     stroke-width="1.2"
+                                     opacity=".7"
+                                     filter="url(#cm-glow)">
+
+                                <animate attributeName="opacity"
+                                         values=".35;.9;.35"
+                                         dur="1.6s"
+                                         repeatCount="indefinite"/>
                             </ellipse>
 
                             <circle cx="67" cy="105" r="3" fill="#FFFFFF"/>
                             <circle cx="78" cy="116" r="2" fill="#E9A8FF"/>
                             <circle cx="70" cy="121" r="1.5" fill="#FFFFFF"/>
-                            <ellipse id="cm-pupila-izq" cx="73" cy="111" rx="3.2" ry="4.2" fill="#FFFFFF" filter="url(#cm-glow)">
-                                <animate attributeName="opacity" values=".75;1;.75" dur="1.4s" repeatCount="indefinite"/>
+
+                            <ellipse id="cm-pupila-izq"
+                                     cx="73"
+                                     cy="111"
+                                     rx="3.2"
+                                     ry="4.2"
+                                     fill="#FFFFFF"
+                                     filter="url(#cm-glow)">
+
+                                <animate attributeName="opacity"
+                                         values=".75;1;.75"
+                                         dur="1.4s"
+                                         repeatCount="indefinite"/>
                             </ellipse>
                         </g>
 
-                        <!-- ============ OJO DERECHO · REMOLINO HIPNÓTICO ============ -->
+                        <!-- OJO DERECHO -->
                         <g id="cm-ojo-der">
-                            <ellipse cx="127" cy="111" rx="16" ry="21" fill="url(#cm-grad-ojo)" stroke="#1A2742" stroke-width="2"/>
+                            <ellipse cx="127" cy="111" rx="16" ry="21"
+                                     fill="url(#cm-grad-ojo)"
+                                     stroke="#1A2742"
+                                     stroke-width="2"/>
 
                             <g clip-path="url(#cm-clip-ojo-der)">
                                 <g>
-                                    <animateTransform attributeName="transform" type="rotate"
-                                                      from="0 127 111" to="360 127 111" dur="2.6s" repeatCount="indefinite"/>
-                                    <path d="${espiral(127, 111, 0)}" fill="none" stroke="#00E5FF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" filter="url(#cm-glow)"/>
-                                    <path d="${espiral(127, 111, Math.PI)}" fill="none" stroke="#E9A8FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/>
+                                    <animateTransform attributeName="transform"
+                                                      type="rotate"
+                                                      from="0 127 111"
+                                                      to="360 127 111"
+                                                      dur="2.6s"
+                                                      repeatCount="indefinite"/>
+
+                                    <path d="${espiral(127, 111, 0)}"
+                                          fill="none"
+                                          stroke="#00E5FF"
+                                          stroke-width="2.2"
+                                          stroke-linecap="round"
+                                          stroke-linejoin="round"
+                                          filter="url(#cm-glow)"/>
+
+                                    <path d="${espiral(127, 111, Math.PI)}"
+                                          fill="none"
+                                          stroke="#E9A8FF"
+                                          stroke-width="1.6"
+                                          stroke-linecap="round"
+                                          stroke-linejoin="round"
+                                          opacity=".9"/>
                                 </g>
                             </g>
 
-                            <ellipse cx="127" cy="111" rx="16" ry="21" fill="none" stroke="#00E5FF" stroke-width="1.2" opacity=".7" filter="url(#cm-glow)">
-                                <animate attributeName="opacity" values=".35;.9;.35" dur="1.6s" repeatCount="indefinite" begin="0.4s"/>
+                            <ellipse cx="127" cy="111" rx="16" ry="21"
+                                     fill="none"
+                                     stroke="#00E5FF"
+                                     stroke-width="1.2"
+                                     opacity=".7"
+                                     filter="url(#cm-glow)">
+
+                                <animate attributeName="opacity"
+                                         values=".35;.9;.35"
+                                         dur="1.6s"
+                                         repeatCount="indefinite"
+                                         begin="0.4s"/>
                             </ellipse>
 
                             <circle cx="121" cy="105" r="3" fill="#FFFFFF"/>
                             <circle cx="132" cy="116" r="2" fill="#E9A8FF"/>
                             <circle cx="124" cy="121" r="1.5" fill="#FFFFFF"/>
-                            <ellipse id="cm-pupila-der" cx="127" cy="111" rx="3.2" ry="4.2" fill="#FFFFFF" filter="url(#cm-glow)">
-                                <animate attributeName="opacity" values=".75;1;.75" dur="1.4s" repeatCount="indefinite" begin="0.3s"/>
+
+                            <ellipse id="cm-pupila-der"
+                                     cx="127"
+                                     cy="111"
+                                     rx="3.2"
+                                     ry="4.2"
+                                     fill="#FFFFFF"
+                                     filter="url(#cm-glow)">
+
+                                <animate attributeName="opacity"
+                                         values=".75;1;.75"
+                                         dur="1.4s"
+                                         repeatCount="indefinite"
+                                         begin="0.3s"/>
                             </ellipse>
                         </g>
 
-                        <path id="cm-boca" class="cm-pet-boca" d="M78 137 Q100 150 122 137" fill="none" stroke="#0A0A0A" stroke-width="3"/>
+                        <path id="cm-boca"
+                              class="cm-pet-boca"
+                              d="M78 137 Q100 150 122 137"
+                              fill="none"
+                              stroke="#0A0A0A"
+                              stroke-width="3"/>
                     </g>
 
-                    <!-- ================================================
-                         SOMBRERO v2.6 — ASENTADO SOBRE LA CABEZA
-                         Ala centrada en y=72 (la cabeza empieza en y=68),
-                         copa sale desde el ala, ligera inclinación charra.
-                         ================================================ -->
+                    <!-- ====================================================
+                         SOMBRERO v2.7 — TOTALMENTE ASENTADO
+                         
+                         IMPORTANTE:
+                         - La cabeza comienza en y=68.
+                         - El ala ahora está centrada en y=79.
+                         - El ala entra ligeramente en la cabeza.
+                         - La copa termina exactamente en y=79.
+                         - La copa es más ancha y robusta.
+                         - Esto elimina visualmente el efecto de sombrero flotando.
+                         ==================================================== -->
                     <g id="cm-sombrero" data-acc-slot="sombrero">
-                        <g transform="rotate(-4 100 72)">
 
-                            <!-- ALA (primero, detrás de la copa) -->
-                            <ellipse cx="100" cy="72" rx="90" ry="15"
-                                     fill="url(#cm-grad-sombrero)" stroke="#4A5C72" stroke-width="2.5"/>
-                            <ellipse cx="100" cy="72" rx="78" ry="10"
-                                     fill="url(#cm-patron-sombrero)" opacity=".8"/>
-                            <ellipse cx="100" cy="72" rx="89" ry="14"
-                                     fill="none" stroke="#00E5FF" stroke-width="2.6" filter="url(#cm-glow)"/>
-                            <ellipse cx="100" cy="75" rx="80" ry="10"
-                                     fill="none" stroke="#4DA8FF" stroke-width="1.4" opacity=".8"/>
+                        <g transform="rotate(-4 100 79)">
 
-                            <!-- COPA -->
-                            <path d="M74 72 Q72 44 78 28 Q86 12 100 12 Q114 12 122 28 Q128 44 126 72 Q100 80 74 72 Z"
-                                  fill="url(#cm-grad-sombrero)" stroke="#4A5C72" stroke-width="2.5"/>
+                            <!-- =================================================
+                                 ALA PRINCIPAL
+                                 El centro baja de 72 → 79 para que repose
+                                 físicamente sobre la parte superior de la cabeza.
+                                 ================================================= -->
+                            <ellipse cx="100"
+                                     cy="79"
+                                     rx="91"
+                                     ry="15"
+                                     fill="url(#cm-grad-sombrero)"
+                                     stroke="#4A5C72"
+                                     stroke-width="2.5"/>
+
+                            <!-- Patrón interno del ala -->
+                            <ellipse cx="100"
+                                     cy="79"
+                                     rx="79"
+                                     ry="10"
+                                     fill="url(#cm-patron-sombrero)"
+                                     opacity=".8"/>
+
+                            <!-- Borde luminoso exterior -->
+                            <ellipse cx="100"
+                                     cy="79"
+                                     rx="90"
+                                     ry="14"
+                                     fill="none"
+                                     stroke="#00E5FF"
+                                     stroke-width="2.6"
+                                     filter="url(#cm-glow)"/>
+
+                            <!-- Línea secundaria del ala -->
+                            <ellipse cx="100"
+                                     cy="82"
+                                     rx="81"
+                                     ry="10"
+                                     fill="none"
+                                     stroke="#4DA8FF"
+                                     stroke-width="1.4"
+                                     opacity=".8"/>
+
+                            <!-- =================================================
+                                 COPA
+                                 Ahora termina exactamente en y=79.
+                                 Más ancha para que se vea colocada sobre la cabeza.
+                                 ================================================= -->
+                            <path d="
+                                M70 79
+                                Q68 50 75 31
+                                Q82 12 100 11
+                                Q118 12 125 31
+                                Q132 50 130 79
+                                Q100 87 70 79
+                                Z"
+                                  fill="url(#cm-grad-sombrero)"
+                                  stroke="#4A5C72"
+                                  stroke-width="2.5"/>
+
+                            <!-- Sombra inferior de la copa para dar unión con el ala -->
+                            <path d="
+                                M70 72
+                                Q100 80 130 72
+                                L130 79
+                                Q100 87 70 79
+                                Z"
+                                  fill="#03060C"
+                                  opacity=".72"/>
 
                             <!-- Brillo de la copa -->
-                            <path d="M82 22 Q79 40 81 60" fill="none" stroke="#FFFFFF" stroke-width="2" opacity=".24" stroke-linecap="round"/>
+                            <path d="M79 22 Q76 42 79 65"
+                                  fill="none"
+                                  stroke="#FFFFFF"
+                                  stroke-width="2"
+                                  opacity=".24"
+                                  stroke-linecap="round"/>
+
+                            <!-- Segundo brillo suave -->
+                            <path d="M84 20 Q81 39 83 54"
+                                  fill="none"
+                                  stroke="#8FA5BF"
+                                  stroke-width="1"
+                                  opacity=".22"
+                                  stroke-linecap="round"/>
 
                             <!-- Estrella de la copa -->
-                            <path d="M100 20 L103 28 L112 29 L105 35 L107 44 L100 39 L93 44 L95 35 L88 29 L97 28 Z"
-                                  fill="none" stroke="#8FA5BF" stroke-width="1.4" stroke-linejoin="round" opacity=".95"/>
-                            <circle cx="100" cy="31" r="1.8" fill="#00E5FF" filter="url(#cm-glow)">
-                                <animate attributeName="opacity" values=".6;1;.6" dur="2s" repeatCount="indefinite"/>
+                            <path d="M100 19
+                                     L103 27
+                                     L112 28
+                                     L105 34
+                                     L107 43
+                                     L100 38
+                                     L93 43
+                                     L95 34
+                                     L88 28
+                                     L97 27
+                                     Z"
+                                  fill="none"
+                                  stroke="#8FA5BF"
+                                  stroke-width="1.4"
+                                  stroke-linejoin="round"
+                                  opacity=".95"/>
+
+                            <circle cx="100"
+                                    cy="30"
+                                    r="1.8"
+                                    fill="#00E5FF"
+                                    filter="url(#cm-glow)">
+
+                                <animate attributeName="opacity"
+                                         values=".6;1;.6"
+                                         dur="2s"
+                                         repeatCount="indefinite"/>
                             </circle>
 
-                            <!-- BANDA en la base de la copa -->
-                            <path d="M73 61 Q100 68 127 61 L126 72 Q100 80 74 72 Z"
-                                  fill="#05080E" stroke="#00E5FF" stroke-width="1.6"/>
-                            <path d="M74 62 Q100 69 126 62" fill="none" stroke="#6CEFFF" stroke-width=".9" opacity=".65"/>
+                            <!-- =================================================
+                                 BANDA
+                                 Se adapta a la nueva base de la copa.
+                                 ================================================= -->
+                            <path d="
+                                M70 67
+                                Q100 75
+                                130 67
+                                L130 79
+                                Q100 87
+                                70 79
+                                Z"
+                                  fill="#05080E"
+                                  stroke="#00E5FF"
+                                  stroke-width="1.6"/>
 
-                            <!-- Estrellitas que titilan en el ala -->
+                            <path d="M71 68 Q100 76 129 68"
+                                  fill="none"
+                                  stroke="#6CEFFF"
+                                  stroke-width=".9"
+                                  opacity=".65"/>
+
+                            <!-- Estrellitas del ala -->
                             <g fill="#FFFFFF" filter="url(#cm-glow)">
-                                <circle cx="26" cy="72" r="1.4"><animate attributeName="opacity" values="1;0.4;1" dur="2s" repeatCount="indefinite"/></circle>
-                                <circle cx="174" cy="72" r="1.4"><animate attributeName="opacity" values="1;0.4;1" dur="2.3s" repeatCount="indefinite" begin="0.5s"/></circle>
-                                <circle cx="52" cy="80" r="1.1"><animate attributeName="opacity" values="1;0.4;1" dur="2.6s" repeatCount="indefinite" begin="1s"/></circle>
-                                <circle cx="148" cy="80" r="1.1"><animate attributeName="opacity" values="1;0.4;1" dur="2.9s" repeatCount="indefinite" begin="1.5s"/></circle>
-                                <circle cx="60" cy="66" r="1"><animate attributeName="opacity" values="1;0.4;1" dur="2.2s" repeatCount="indefinite" begin="0.3s"/></circle>
-                                <circle cx="140" cy="66" r="1"><animate attributeName="opacity" values="1;0.4;1" dur="3.2s" repeatCount="indefinite" begin="0.8s"/></circle>
+
+                                <circle cx="26"
+                                        cy="79"
+                                        r="1.4">
+                                    <animate attributeName="opacity"
+                                             values="1;0.4;1"
+                                             dur="2s"
+                                             repeatCount="indefinite"/>
+                                </circle>
+
+                                <circle cx="174"
+                                        cy="79"
+                                        r="1.4">
+                                    <animate attributeName="opacity"
+                                             values="1;0.4;1"
+                                             dur="2.3s"
+                                             repeatCount="indefinite"
+                                             begin="0.5s"/>
+                                </circle>
+
+                                <circle cx="52"
+                                        cy="87"
+                                        r="1.1">
+                                    <animate attributeName="opacity"
+                                             values="1;0.4;1"
+                                             dur="2.6s"
+                                             repeatCount="indefinite"
+                                             begin="1s"/>
+                                </circle>
+
+                                <circle cx="148"
+                                        cy="87"
+                                        r="1.1">
+                                    <animate attributeName="opacity"
+                                             values="1;0.4;1"
+                                             dur="2.9s"
+                                             repeatCount="indefinite"
+                                             begin="1.5s"/>
+                                </circle>
+
+                                <circle cx="60"
+                                        cy="73"
+                                        r="1">
+                                    <animate attributeName="opacity"
+                                             values="1;0.4;1"
+                                             dur="2.2s"
+                                             repeatCount="indefinite"
+                                             begin="0.3s"/>
+                                </circle>
+
+                                <circle cx="140"
+                                        cy="73"
+                                        r="1">
+                                    <animate attributeName="opacity"
+                                             values="1;0.4;1"
+                                             dur="3.2s"
+                                             repeatCount="indefinite"
+                                             begin="0.8s"/>
+                                </circle>
+
                             </g>
+
                         </g>
                     </g>
 
@@ -1012,8 +1558,10 @@
                 hasMoved = false;
                 return;
             }
+
             const ok = await verificarTerminos();
             if (!ok) return;
+
             onAvatarTap();
         });
 
@@ -1022,6 +1570,7 @@
             hasMoved = false;
             dragStartX = e.clientX;
             dragStartY = e.clientY;
+
             try {
                 const rect = container.getBoundingClientRect();
                 posStartX = rect.left;
@@ -1030,20 +1579,25 @@
                 posStartX = 0;
                 posStartY = 0;
             }
+
             try {
                 avatar.setPointerCapture(e.pointerId);
             } catch (err) {}
+
             container.classList.add('cm-dragging');
             e.preventDefault();
         });
 
         avatar.addEventListener('pointermove', function(e) {
             if (!isDragging) return;
+
             const dx = e.clientX - dragStartX;
             const dy = e.clientY - dragStartY;
+
             if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
                 hasMoved = true;
             }
+
             if (!hasMoved) return;
 
             const porcentaje = (config.tamano != null ? config.tamano : 100) / 100;
@@ -1067,11 +1621,14 @@
 
         avatar.addEventListener('pointerup', function(e) {
             if (!isDragging) return;
+
             isDragging = false;
             container.classList.remove('cm-dragging');
+
             try {
                 avatar.releasePointerCapture(e.pointerId);
             } catch (err) {}
+
             if (hasMoved) {
                 try {
                     const rect = container.getBoundingClientRect();
@@ -1095,28 +1652,33 @@
 
         (async function() {
             const terminosOk = await verificarTerminos();
+
             if (terminosOk) {
                 setTimeout(function() {
-                    if (window.CapitanMaizAnim && typeof window.CapitanMaizAnim.iniciar === 'function') {
+                    if (window.CapitanMaizAnim &&
+                        typeof window.CapitanMaizAnim.iniciar === 'function') {
                         window.CapitanMaizAnim.iniciar();
                     }
                 }, 500);
             }
         })();
 
-        log('Widget v2.6 creado · sombrero asentado · ojos remolino · manos saludando · capa al viento');
+        log('Widget v2.7 creado · sombrero totalmente asentado · ojos remolino · manos saludando · capa al viento');
     }
 
     function setEstado(e) {
         if (container) {
             container.setAttribute('data-estado', e);
         }
+
         if (e === 'escuchando' && container) {
             container.classList.add('cm-resonando');
         } else if (container) {
             container.classList.remove('cm-resonando');
         }
-        if (window.CapitanMaizAnim && typeof window.CapitanMaizAnim.setEstado === 'function') {
+
+        if (window.CapitanMaizAnim &&
+            typeof window.CapitanMaizAnim.setEstado === 'function') {
             window.CapitanMaizAnim.setEstado(e);
         }
     }
@@ -1124,14 +1686,21 @@
     function mostrarBurbuja(texto) {
         if (!config.mostrar_subtitulos) return;
         if (!bubble) return;
+
         const t = document.getElementById('cm-bubble-text');
-        const corto = texto.length > 160 ? texto.slice(0, 157) + '…' : texto;
+        const corto = texto.length > 160
+            ? texto.slice(0, 157) + '…'
+            : texto;
+
         if (t) t.textContent = corto;
+
         bubble.classList.add('cm-bubble-visible');
     }
 
     function ocultarBurbuja() {
-        if (bubble) bubble.classList.remove('cm-bubble-visible');
+        if (bubble) {
+            bubble.classList.remove('cm-bubble-visible');
+        }
     }
 
     function detenerConversacion() {
@@ -1149,12 +1718,19 @@
             detenerConversacion();
             return;
         }
+
         conversacionActiva = !!config.conversacion;
+
         const ok = iniciarReconocimiento();
+
         if (!ok) {
             conversacionActiva = false;
+
             if (config.mostrar_subtitulos) {
-                mostrarBurbuja('Tu navegador no soporta reconocimiento de voz.');
+                mostrarBurbuja(
+                    'Tu navegador no soporta reconocimiento de voz.'
+                );
+
                 setTimeout(ocultarBurbuja, 4000);
             }
         }
@@ -1162,14 +1738,29 @@
 
     async function hablar(texto) {
         if (!texto) return false;
+
         detenerTTS();
+
         const miToken = ++ttsToken;
 
-        const estilo = VOZ_ESTILOS[config.estilo_voz] || VOZ_ESTILOS.sabio;
-        const pitchBase = TONO_PITCH[config.tono] || 1.0;
-        const rate = estilo.rate * (config.velocidad || 1.0);
-        const pitch = estilo.pitch * pitchBase;
-        const volumen = Math.max(0, Math.min(1, config.volumen || 1));
+        const estilo =
+            VOZ_ESTILOS[config.estilo_voz] ||
+            VOZ_ESTILOS.sabio;
+
+        const pitchBase =
+            TONO_PITCH[config.tono] || 1.0;
+
+        const rate =
+            estilo.rate * (config.velocidad || 1.0);
+
+        const pitch =
+            estilo.pitch * pitchBase;
+
+        const volumen =
+            Math.max(
+                0,
+                Math.min(1, config.volumen || 1)
+            );
 
         if (config.mostrar_subtitulos) {
             mostrarBurbuja(texto);
@@ -1180,30 +1771,54 @@
         animarBoca(texto, rate);
 
         let ok = false;
-        const ttsBackendDisponible = Date.now() - _ttsBackendFalloEn > TTS_FALLO_TTL_MS;
 
-        if (texto.length <= 300 && window.getSupabase && ttsBackendDisponible) {
+        const ttsBackendDisponible =
+            Date.now() - _ttsBackendFalloEn > TTS_FALLO_TTL_MS;
+
+        if (
+            texto.length <= 300 &&
+            window.getSupabase &&
+            ttsBackendDisponible
+        ) {
             try {
                 const sb = window.getSupabase();
+
                 const s = await sb.auth.getSession();
-                if (s.data.session && miToken === ttsToken) {
-                    const resp = await fetch('/api/ai/voice/tts', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': 'Bearer ' + s.data.session.access_token
-                        },
-                        body: JSON.stringify({
-                            text: texto,
-                            rate: rate,
-                            pitch: pitch,
-                            character: 'capitan-maiz'
-                        })
-                    });
+
+                if (
+                    s.data.session &&
+                    miToken === ttsToken
+                ) {
+                    const resp = await fetch(
+                        '/api/ai/voice/tts',
+                        {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization':
+                                    'Bearer ' +
+                                    s.data.session.access_token
+                            },
+                            body: JSON.stringify({
+                                text: texto,
+                                rate: rate,
+                                pitch: pitch,
+                                character: 'capitan-maiz'
+                            })
+                        }
+                    );
+
                     if (resp.ok) {
                         const data = await resp.json();
-                        const url = data.audio_url || data.audioUrl;
-                        if (url && miToken === ttsToken) {
+
+                        const url =
+                            data.audio_url ||
+                            data.audioUrl;
+
+                        if (
+                            url &&
+                            miToken === ttsToken
+                        ) {
                             ok = true;
                             await reproducirAudio(url);
                         }
@@ -1216,54 +1831,112 @@
             }
         }
 
-        if (!ok && miToken === ttsToken) {
-            await hablarNavegador(texto, rate, pitch, volumen, miToken);
+        if (
+            !ok &&
+            miToken === ttsToken
+        ) {
+            await hablarNavegador(
+                texto,
+                rate,
+                pitch,
+                volumen,
+                miToken
+            );
         }
 
-        const completo = miToken === ttsToken;
+        const completo =
+            miToken === ttsToken;
+
         if (completo) {
             isSpeaking = false;
             setEstado('idle');
             detenerAnimacionBoca();
+
             setTimeout(function() {
-                if (!isSpeaking && !isListening && !procesando) {
+                if (
+                    !isSpeaking &&
+                    !isListening &&
+                    !procesando
+                ) {
                     ocultarBurbuja();
                 }
             }, 2500);
         }
+
         return completo;
     }
 
     function dividirEnFrases(texto) {
-        const partes = texto.split(/(?<=[.!?…\n])\s+/);
+        const partes =
+            texto.split(/(?<=[.!?…\n])\s+/);
+
         const out = [];
         let acc = '';
+
         partes.forEach(function(p) {
-            if ((acc + ' ' + p).length > 170 && acc) {
+            if (
+                (acc + ' ' + p).length > 170 &&
+                acc
+            ) {
                 out.push(acc.trim());
                 acc = p;
             } else {
-                acc = acc ? acc + ' ' + p : p;
+                acc = acc
+                    ? acc + ' ' + p
+                    : p;
             }
         });
-        if (acc.trim()) out.push(acc.trim());
+
+        if (acc.trim()) {
+            out.push(acc.trim());
+        }
+
         return out;
     }
 
-    async function hablarNavegador(texto, rate, pitch, volumen, miToken) {
+    async function hablarNavegador(
+        texto,
+        rate,
+        pitch,
+        volumen,
+        miToken
+    ) {
         if (!window.speechSynthesis) return;
+
         window.speechSynthesis.cancel();
-        const frases = dividirEnFrases(texto);
+
+        const frases =
+            dividirEnFrases(texto);
+
         for (let i = 0; i < frases.length; i++) {
             if (miToken !== ttsToken) return;
+
             await new Promise(function(resolve) {
-                const u = new SpeechSynthesisUtterance(frases[i]);
-                u.lang = config.idioma || 'es-MX';
-                u.rate = Math.max(.5, Math.min(2, rate));
-                u.pitch = Math.max(.5, Math.min(2, pitch));
+                const u =
+                    new SpeechSynthesisUtterance(
+                        frases[i]
+                    );
+
+                u.lang =
+                    config.idioma || 'es-MX';
+
+                u.rate =
+                    Math.max(
+                        .5,
+                        Math.min(2, rate)
+                    );
+
+                u.pitch =
+                    Math.max(
+                        .5,
+                        Math.min(2, pitch)
+                    );
+
                 u.volume = volumen;
+
                 u.onend = resolve;
                 u.onerror = resolve;
+
                 window.speechSynthesis.speak(u);
             });
         }
@@ -1273,18 +1946,33 @@
         return new Promise(function(resolve) {
             try {
                 audioActual = new Audio(url);
-                audioActual.volume = Math.max(0, Math.min(1, config.volumen || 1));
-                audioActual.onended = function() {
-                    audioActual = null;
-                    resolve();
-                };
-                audioActual.onerror = function() {
-                    audioActual = null;
-                    resolve();
-                };
-                audioActual.play().catch(function() {
-                    resolve();
-                });
+
+                audioActual.volume =
+                    Math.max(
+                        0,
+                        Math.min(
+                            1,
+                            config.volumen || 1
+                        )
+                    );
+
+                audioActual.onended =
+                    function() {
+                        audioActual = null;
+                        resolve();
+                    };
+
+                audioActual.onerror =
+                    function() {
+                        audioActual = null;
+                        resolve();
+                    };
+
+                audioActual.play().catch(
+                    function() {
+                        resolve();
+                    }
+                );
             } catch (e) {
                 resolve();
             }
@@ -1293,248 +1981,439 @@
 
     function detenerTTS() {
         ttsToken++;
+
         try {
             if (window.speechSynthesis) {
                 window.speechSynthesis.cancel();
             }
         } catch (e) {}
+
         if (audioActual) {
             try {
                 audioActual.pause();
             } catch (e) {}
+
             audioActual = null;
         }
+
         isSpeaking = false;
         detenerAnimacionBoca();
     }
 
     function iniciarReconocimiento() {
-        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const SR =
+            window.SpeechRecognition ||
+            window.webkitSpeechRecognition;
+
         if (!SR) return false;
-        if (recognitionActive && recognition) return true;
+
+        if (
+            recognitionActive &&
+            recognition
+        ) {
+            return true;
+        }
 
         try {
             recognition = new SR();
-            recognition.lang = config.idioma || 'es-MX';
+
+            recognition.lang =
+                config.idioma || 'es-MX';
+
             recognition.continuous = false;
             recognition.interimResults = false;
             recognition.maxAlternatives = 1;
+
             recibioResultado = false;
 
-            recognition.onstart = function() {
-                recognitionActive = true;
-                isListening = true;
-                setEstado('escuchando');
-            };
+            recognition.onstart =
+                function() {
+                    recognitionActive = true;
+                    isListening = true;
+                    setEstado('escuchando');
+                };
 
-            recognition.onresult = function(event) {
-                const transcript = event.results[0][0].transcript.trim();
-                if (!transcript) return;
-                recibioResultado = true;
-                const lower = transcript.toLowerCase();
+            recognition.onresult =
+                function(event) {
+                    const transcript =
+                        event.results[0][0]
+                            .transcript
+                            .trim();
 
-                if (/(adiós|adios|hasta luego|nos vemos|ya no|nos vidrios)/.test(lower) && lower.length < 30) {
-                    conversacionActiva = false;
-                    historialLocal.push({ role: 'user', content: transcript, ts: Date.now() });
-                    hablar('¡Nos vidrios, paisano! Aquí andaré cuando me necesites.').then(function() {
-                        guardarHistorial();
-                    });
-                    return;
-                }
+                    if (!transcript) return;
 
-                if (/(olvida (todo|lo que hablamos)|borra (la )?conversaci[oó]n|empecemos de nuevo)/.test(lower)) {
-                    olvidarTodo();
-                    hablar('Listo, borrón y cuenta nueva. Empecemos de cero.').then(function() {
-                        if (conversacionActiva) iniciarReconocimiento();
-                    });
-                    return;
-                }
+                    recibioResultado = true;
 
-                procesarComando(transcript);
-            };
+                    const lower =
+                        transcript.toLowerCase();
 
-            recognition.onerror = function(event) {
-                recognitionActive = false;
-                isListening = false;
-                recognition = null;
-                if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-                    conversacionActiva = false;
-                    setEstado('idle');
-                    if (config.mostrar_subtitulos) {
-                        mostrarBurbuja('Permite el micrófono, paisano.');
-                        setTimeout(ocultarBurbuja, 5000);
+                    if (
+                        /(adiós|adios|hasta luego|nos vemos|ya no|nos vidrios)/
+                            .test(lower) &&
+                        lower.length < 30
+                    ) {
+                        conversacionActiva = false;
+
+                        historialLocal.push({
+                            role: 'user',
+                            content: transcript,
+                            ts: Date.now()
+                        });
+
+                        hablar(
+                            '¡Nos vidrios, paisano! Aquí andaré cuando me necesites.'
+                        ).then(function() {
+                            guardarHistorial();
+                        });
+
+                        return;
                     }
-                } else {
-                    setEstado('idle');
-                }
-            };
 
-            recognition.onend = function() {
-                recognitionActive = false;
-                isListening = false;
-                recognition = null;
-                if (!procesando && !isSpeaking) {
-                    setEstado('idle');
-                }
-                if (!recibioResultado && !procesando && !isSpeaking) {
-                    conversacionActiva = false;
-                }
-            };
+                    if (
+                        /(olvida (todo|lo que hablamos)|borra (la )?conversaci[oó]n|empecemos de nuevo)/
+                            .test(lower)
+                    ) {
+                        olvidarTodo();
+
+                        hablar(
+                            'Listo, borrón y cuenta nueva. Empecemos de cero.'
+                        ).then(function() {
+                            if (conversacionActiva) {
+                                iniciarReconocimiento();
+                            }
+                        });
+
+                        return;
+                    }
+
+                    procesarComando(transcript);
+                };
+
+            recognition.onerror =
+                function(event) {
+                    recognitionActive = false;
+                    isListening = false;
+                    recognition = null;
+
+                    if (
+                        event.error === 'not-allowed' ||
+                        event.error === 'service-not-allowed'
+                    ) {
+                        conversacionActiva = false;
+                        setEstado('idle');
+
+                        if (config.mostrar_subtitulos) {
+                            mostrarBurbuja(
+                                'Permite el micrófono, paisano.'
+                            );
+
+                            setTimeout(
+                                ocultarBurbuja,
+                                5000
+                            );
+                        }
+                    } else {
+                        setEstado('idle');
+                    }
+                };
+
+            recognition.onend =
+                function() {
+                    recognitionActive = false;
+                    isListening = false;
+                    recognition = null;
+
+                    if (
+                        !procesando &&
+                        !isSpeaking
+                    ) {
+                        setEstado('idle');
+                    }
+
+                    if (
+                        !recibioResultado &&
+                        !procesando &&
+                        !isSpeaking
+                    ) {
+                        conversacionActiva = false;
+                    }
+                };
 
             recognition.start();
+
             return true;
+
         } catch (e) {
             return false;
         }
     }
 
     function detenerReconocimiento() {
-        if (recognition && recognitionActive) {
+        if (
+            recognition &&
+            recognitionActive
+        ) {
             try {
-                recognition.abort ? recognition.abort() : recognition.stop();
+                recognition.abort
+                    ? recognition.abort()
+                    : recognition.stop();
             } catch (e) {}
         }
+
         recognitionActive = false;
         isListening = false;
     }
 
     async function procesarComando(texto) {
         if (!texto) return;
-        const miConversacionToken = ++conversationToken;
+
+        const miConversacionToken =
+            ++conversationToken;
+
         procesando = true;
+
         setEstado('pensando');
         cambiarVisema('M');
 
         try {
-            historialLocal.push({ role: 'user', content: texto, ts: Date.now() });
+            historialLocal.push({
+                role: 'user',
+                content: texto,
+                ts: Date.now()
+            });
 
             let respuesta = '';
-            if (window.CapitanMaizBrain && typeof window.CapitanMaizBrain.preguntar === 'function') {
+
+            if (
+                window.CapitanMaizBrain &&
+                typeof window.CapitanMaizBrain.preguntar === 'function'
+            ) {
                 try {
-                    const historialTruncado = historialLocal.slice(-HIST_MAX_ENVIO);
-                    respuesta = await window.CapitanMaizBrain.preguntar(texto, historialTruncado);
+                    const historialTruncado =
+                        historialLocal.slice(
+                            -HIST_MAX_ENVIO
+                        );
+
+                    respuesta =
+                        await window.CapitanMaizBrain.preguntar(
+                            texto,
+                            historialTruncado
+                        );
+
                 } catch (e) {
-                    respuesta = 'Ay, paisano. Tuve un cortocircuito en el sombrero. ¿Me repites?';
+                    respuesta =
+                        'Ay, paisano. Tuve un cortocircuito en el sombrero. ¿Me repites?';
                 }
+
             } else {
-                respuesta = 'Ahorita no puedo pensar, pero aquí sigo, firme como el maíz.';
+                respuesta =
+                    'Ahorita no puedo pensar, pero aquí sigo, firme como el maíz.';
             }
 
-            if (miConversacionToken !== conversationToken) return;
-            if (!respuesta) respuesta = 'No supe qué decirte, pero aquí andamos.';
+            if (
+                miConversacionToken !==
+                conversationToken
+            ) {
+                return;
+            }
 
-            historialLocal.push({ role: 'assistant', content: respuesta, ts: Date.now() });
+            if (!respuesta) {
+                respuesta =
+                    'No supe qué decirte, pero aquí andamos.';
+            }
+
+            historialLocal.push({
+                role: 'assistant',
+                content: respuesta,
+                ts: Date.now()
+            });
+
             guardarHistorial();
 
             subirResonancia();
 
             procesando = false;
-            const completo = await hablar(respuesta);
 
-            if (completo && conversacionActiva && miConversacionToken === conversationToken) {
+            const completo =
+                await hablar(respuesta);
+
+            if (
+                completo &&
+                conversacionActiva &&
+                miConversacionToken ===
+                    conversationToken
+            ) {
                 recibioResultado = false;
+
                 setTimeout(function() {
-                    if (conversacionActiva && !isSpeaking && !isListening && !procesando) {
+                    if (
+                        conversacionActiva &&
+                        !isSpeaking &&
+                        !isListening &&
+                        !procesando
+                    ) {
                         iniciarReconocimiento();
                     }
                 }, 300);
             }
+
         } catch (e) {
-            console.error('[Capitán Maíz] Error en procesarComando:', e);
+            console.error(
+                '[Capitán Maíz] Error en procesarComando:',
+                e
+            );
+
         } finally {
             procesando = false;
-            if (!isSpeaking && !isListening) {
+
+            if (
+                !isSpeaking &&
+                !isListening
+            ) {
                 setEstado('idle');
             }
         }
     }
 
     function instalarVisibility() {
-        document.addEventListener('visibilitychange', function() {
-            if (document.hidden) {
-                detenerConversacion();
+        document.addEventListener(
+            'visibilitychange',
+            function() {
+                if (document.hidden) {
+                    detenerConversacion();
+                }
             }
-        });
+        );
     }
 
     window.CapitanMaiz = {
         hablar: hablar,
+
         procesar: procesarComando,
+
         olvidar: olvidarTodo,
-        recargarAccesorios: async function() {
-            await cargarAccesorios();
-            renderAccesoriosEnAvatar();
-        },
-        setModoSubtitulos: function(activo) {
-            config.mostrar_subtitulos = !!activo;
-            guardarConfig();
-            aplicarModo();
-        },
-        getModoSubtitulos: function() {
-            return !!config.mostrar_subtitulos;
-        },
-        getHistorial: function() {
-            return historialLocal.slice();
-        },
-        getConfig: function() {
-            return { ...config };
-        },
-        setConfig: function(nuevos) {
-            config = { ...config, ...nuevos };
-            guardarConfig();
-            aplicarModo();
-            aplicarTamano();
-        },
-        resetPosicion: function() {
-            config.posicion_x = null;
-            config.posicion_y = null;
-            guardarConfig();
-            if (container) {
-                container.style.left = '';
-                container.style.top = '';
-                container.style.right = '16px';
-                container.style.bottom = '16px';
+
+        recargarAccesorios:
+            async function() {
+                await cargarAccesorios();
+                renderAccesoriosEnAvatar();
+            },
+
+        setModoSubtitulos:
+            function(activo) {
+                config.mostrar_subtitulos =
+                    !!activo;
+
+                guardarConfig();
+                aplicarModo();
+            },
+
+        getModoSubtitulos:
+            function() {
+                return !!config.mostrar_subtitulos;
+            },
+
+        getHistorial:
+            function() {
+                return historialLocal.slice();
+            },
+
+        getConfig:
+            function() {
+                return { ...config };
+            },
+
+        setConfig:
+            function(nuevos) {
+                config = {
+                    ...config,
+                    ...nuevos
+                };
+
+                guardarConfig();
+                aplicarModo();
+                aplicarTamano();
+            },
+
+        resetPosicion:
+            function() {
+                config.posicion_x = null;
+                config.posicion_y = null;
+
+                guardarConfig();
+
+                if (container) {
+                    container.style.left = '';
+                    container.style.top = '';
+                    container.style.right = '16px';
+                    container.style.bottom = '16px';
+                }
+            },
+
+        getUserInfo:
+            function() {
+                return userInfo;
+            },
+
+        _visemasDisponibles:
+            function() {
+                return Object.keys(
+                    VISEMAS_SVG
+                );
+            },
+
+        reiniciarTerminos:
+            function() {
+                try {
+                    localStorage.removeItem(
+                        TERMINOS_KEY
+                    );
+                } catch (e) {}
+            },
+
+        getTerminosVersion:
+            function() {
+                return TERMINOS_VERSION;
+            },
+
+        getResonancia:
+            function() {
+                return resonancia;
+            },
+
+        getResonanciaMax:
+            function() {
+                return RESONANCIA_MAX;
             }
-        },
-        getUserInfo: function() {
-            return userInfo;
-        },
-        _visemasDisponibles: function() {
-            return Object.keys(VISEMAS_SVG);
-        },
-        reiniciarTerminos: function() {
-            try {
-                localStorage.removeItem(TERMINOS_KEY);
-            } catch (e) {}
-        },
-        getTerminosVersion: function() {
-            return TERMINOS_VERSION;
-        },
-        getResonancia: function() {
-            return resonancia;
-        },
-        getResonanciaMax: function() {
-            return RESONANCIA_MAX;
-        }
     };
 
     async function init() {
         if (rutaExcluida()) return;
+
         cargarConfig();
+
         if (!config.activo) return;
 
         await cargarUsuario();
+
         cargarHistorial();
         cargarResonancia();
+
         await cargarAccesorios();
+
         crearWidget();
         instalarVisibility();
 
-        log('✅ Capitán Maíz v2.6 activo');
+        log('✅ Capitán Maíz v2.7 activo');
     }
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
+    if (
+        document.readyState === 'loading'
+    ) {
+        document.addEventListener(
+            'DOMContentLoaded',
+            init
+        );
     } else {
         init();
     }
