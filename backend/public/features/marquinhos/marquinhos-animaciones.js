@@ -1,14 +1,5 @@
 // ================================================================
-// MARQUINHOS · ANIMACIONES v2.0 "Galactic Mode"
-// ================================================================
-// Sistema completo de animaciones:
-//   - Respiración + parpadeo + mirada
-//   - Cejas expresivas
-//   - Manos que gesticulan al hablar
-//   - Saludo con la mano
-//   - Festejo (brazos arriba)
-//   - Pensar (mano en la barbilla)
-//   - Antenas que pulsan (CSS anim)
+// MARQUINHOS · ANIMACIONES v2.1 "Galactic Cartoon"
 // ================================================================
 
 'use strict';
@@ -22,6 +13,7 @@
     var _respirando = false;
     var _estadoActual = 'idle';
     var _cuerpoEl = null;
+    var _cabezaEl = null;
     var _ojos = null;
     var _pupilas = null;
     var _cejas = null;
@@ -31,15 +23,14 @@
 
     function capturarElementos() {
         _cuerpoEl = document.getElementById('mq-cuerpo');
+        _cabezaEl = document.getElementById('mq-cabeza-grupo');
         _ojos = {
             izq: document.getElementById('mq-ojo-izq'),
             der: document.getElementById('mq-ojo-der')
         };
         _pupilas = {
             izq: document.getElementById('mq-pupila-izq'),
-            der: document.getElementById('mq-pupila-der'),
-            brilloIzq: document.getElementById('mq-brillo-izq'),
-            brilloDer: document.getElementById('mq-brillo-der')
+            der: document.getElementById('mq-pupila-der')
         };
         _cejas = {
             izq: document.getElementById('mq-ceja-izq'),
@@ -70,9 +61,7 @@
         return t;
     }
 
-    // ============================================================
-    // 1. RESPIRACIÓN
-    // ============================================================
+    // RESPIRACIÓN
     function respirar() {
         if (!_activo || _respirando) return;
         _respirando = true;
@@ -80,7 +69,7 @@
 
         _cuerpoEl.style.transition = 'transform 1.8s ease-in-out';
         _cuerpoEl.style.transform = 'scale(1.015)';
-        _cuerpoEl.style.transformOrigin = '100px 190px';
+        _cuerpoEl.style.transformOrigin = '100px 200px';
 
         programar(function() {
             if (!_activo) return;
@@ -95,9 +84,7 @@
         programar(loopRespiracion, 4200);
     }
 
-    // ============================================================
-    // 2. PARPADEO (más frecuente ahora)
-    // ============================================================
+    // PARPADEO
     function parpadear() {
         if (!_activo || _parpadeando) return;
         _parpadeando = true;
@@ -111,8 +98,8 @@
 
         programar(function() {
             if (!_activo) return;
-            _ojos.izq.setAttribute('ry', '17');
-            _ojos.der.setAttribute('ry', '17');
+            _ojos.izq.setAttribute('ry', '20');
+            _ojos.der.setAttribute('ry', '20');
             programar(function() { _parpadeando = false; }, 200);
         }, 120);
     }
@@ -122,14 +109,11 @@
         if (_estadoActual === 'idle' || _estadoActual === 'escuchando') {
             parpadear();
         }
-        // ✅ v2.0: parpadeo más frecuente (2-4s)
         var delay = 2000 + Math.random() * 2000;
         programar(loopParpadeo, delay);
     }
 
-    // ============================================================
-    // 3. MIRADA ERRÁTICA
-    // ============================================================
+    // MIRADA
     function mirarAlrededor() {
         if (!_activo) return;
         if (_estadoActual !== 'idle') {
@@ -151,39 +135,28 @@
         _pupilas.izq.style.transform = transform;
         _pupilas.der.style.transform = transform;
 
-        if (_pupilas.brilloIzq && _pupilas.brilloDer) {
-            _pupilas.brilloIzq.style.transition = transition;
-            _pupilas.brilloDer.style.transition = transition;
-            _pupilas.brilloIzq.style.transform = transform;
-            _pupilas.brilloDer.style.transform = transform;
-        }
-
         var delay = 2000 + Math.random() * 2500;
         programar(mirarAlrededor, delay);
     }
 
-    // ============================================================
-    // 4. ANTICIPACIÓN AL HABLAR
-    // ============================================================
+    // ANTICIPACIÓN
     function anticiparHabla() {
         if (!_cuerpoEl) return;
         _cuerpoEl.style.transition = 'transform 0.25s ease-out';
         _cuerpoEl.style.transform = 'scale(1.06)';
-        _cuerpoEl.style.transformOrigin = '100px 190px';
+        _cuerpoEl.style.transformOrigin = '100px 200px';
         programar(function() {
             _cuerpoEl.style.transition = 'transform 0.3s ease-in-out';
             _cuerpoEl.style.transform = 'scale(1.01)';
         }, 300);
     }
 
-    // ============================================================
-    // 5. SQUASH & STRETCH (al hablar)
-    // ============================================================
+    // SQUASH
     function squashHablar() {
         if (!_cuerpoEl) return;
         _cuerpoEl.style.transition = 'transform 0.12s ease-out';
         _cuerpoEl.style.transform = 'scale(1.03, 0.98)';
-        _cuerpoEl.style.transformOrigin = '100px 190px';
+        _cuerpoEl.style.transformOrigin = '100px 200px';
         programar(function() {
             _cuerpoEl.style.transform = 'scale(0.99, 1.02)';
             programar(function() {
@@ -192,27 +165,22 @@
         }, 100);
     }
 
-    // ============================================================
-    // ✅ v2.0: 6. GESTICULAR CON LAS MANOS (al hablar)
-    // ============================================================
+    // GESTICULAR (manos al hablar)
     var _gestoActual = 0;
     function gesticular() {
         if (!_activo) return;
-        if (_estadoActual !== 'hablando' && _estadoActual !== 'escuchando') {
-            // Solo gesticular al hablar
-            return;
-        }
+        if (_estadoActual !== 'hablando' && _estadoActual !== 'escuchando') return;
         if (!_brazos.izq || !_brazos.der) return;
 
         _gestoActual++;
         var trans = 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)';
         _brazos.izq.style.transition = trans;
         _brazos.der.style.transition = trans;
+        _brazos.izq.style.transformOrigin = '60px 180px';
+        _brazos.der.style.transformOrigin = '140px 180px';
 
-        // Alternar gestos para que no sea monótono
         var g = _gestoActual % 4;
         var anguloIzq = 0, anguloDer = 0;
-
         if (g === 0) { anguloIzq = 15; anguloDer = -15; }
         else if (g === 1) { anguloIzq = -10; anguloDer = 10; }
         else if (g === 2) { anguloIzq = 20; anguloDer = -20; }
@@ -220,10 +188,7 @@
 
         _brazos.izq.style.transform = 'rotate(' + anguloIzq + 'deg)';
         _brazos.der.style.transform = 'rotate(' + anguloDer + 'deg)';
-        _brazos.izq.style.transformOrigin = '35px 165px';
-        _brazos.der.style.transformOrigin = '165px 165px';
 
-        // Volver a posición neutra después de 400ms
         programar(function() {
             if (!_brazos.izq) return;
             _brazos.izq.style.transition = 'transform 0.4s ease-out';
@@ -233,62 +198,45 @@
         }, 400);
     }
 
-    // ============================================================
-    // ✅ v2.0: 7. SALUDAR CON LA MANO
-    // ============================================================
+    // SALUDAR
     function saludar() {
         if (!_activo) return;
         if (!_brazos.der || !_manos.der) return;
 
-        // Levantar el brazo derecho
         _brazos.der.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
-        _brazos.der.style.transformOrigin = '165px 165px';
-        _brazos.der.style.transform = 'rotate(-50deg) translateY(-15px)';
+        _brazos.der.style.transformOrigin = '140px 180px';
+        _brazos.der.style.transform = 'rotate(-60deg)';
 
-        // Mover la mano varias veces (wave)
         var movimientos = 0;
         function ondear() {
             if (movimientos >= 4) {
-                // Bajar el brazo
                 _brazos.der.style.transition = 'transform 0.5s ease-in-out';
                 _brazos.der.style.transform = 'rotate(0deg)';
                 return;
             }
             _manos.der.style.transition = 'transform 0.2s ease-in-out';
-            _manos.der.style.transform = movimientos % 2 === 0 ? 'rotate(15deg)' : 'rotate(-15deg)';
-            _manos.der.style.transformOrigin = '170px 235px';
+            _manos.der.style.transform = movimientos % 2 === 0 ? 'rotate(20deg)' : 'rotate(-20deg)';
             movimientos++;
             programar(ondear, 200);
         }
         ondear();
-
-        // Reset
-        programar(function() {
-            if (_manos.der) {
-                _manos.der.style.transform = 'rotate(0deg)';
-            }
-        }, 1000);
     }
 
-    // ============================================================
-    // ✅ v2.0: 8. FESTEJAR (brazos arriba + saltito)
-    // ============================================================
+    // FESTEJAR
     function festejar() {
         if (!_activo) return;
         if (!_cuerpoEl || !_brazos.izq || !_brazos.der) return;
 
-        // Saltar
         _cuerpoEl.style.transition = 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
         _cuerpoEl.style.transform = 'scale(1.08) translateY(-15px)';
-        _cuerpoEl.style.transformOrigin = '100px 190px';
+        _cuerpoEl.style.transformOrigin = '100px 200px';
 
-        // Brazos arriba
         _brazos.izq.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
         _brazos.der.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
-        _brazos.izq.style.transformOrigin = '35px 165px';
-        _brazos.der.style.transformOrigin = '165px 165px';
-        _brazos.izq.style.transform = 'rotate(60deg) translateY(-15px)';
-        _brazos.der.style.transform = 'rotate(-60deg) translateY(-15px)';
+        _brazos.izq.style.transformOrigin = '60px 180px';
+        _brazos.der.style.transformOrigin = '140px 180px';
+        _brazos.izq.style.transform = 'rotate(70deg)';
+        _brazos.der.style.transform = 'rotate(-70deg)';
 
         programar(function() {
             _cuerpoEl.style.transform = 'scale(1) translateY(0)';
@@ -300,16 +248,13 @@
         }, 800);
     }
 
-    // ============================================================
-    // ✅ v2.0: 9. PENSAR (mano en la barbilla)
-    // ============================================================
+    // PENSAR
     function pensarConMano() {
         if (!_activo) return;
         if (!_brazos.der) return;
-
         _brazos.der.style.transition = 'transform 0.5s ease-in-out';
-        _brazos.der.style.transformOrigin = '165px 165px';
-        _brazos.der.style.transform = 'rotate(-120deg) translateY(-45px)';
+        _brazos.der.style.transformOrigin = '140px 180px';
+        _brazos.der.style.transform = 'rotate(-130deg)';
     }
 
     function dejarDePensar() {
@@ -318,49 +263,41 @@
         _brazos.der.style.transform = 'rotate(0deg)';
     }
 
-    // ============================================================
-    // ✅ v2.0: 10. CEJAS EXPRESIVAS
-    // ============================================================
+    // CEJAS
     function cejasNormales() {
         if (!_cejas.izq || !_cejas.der) return;
-        _cejas.izq.setAttribute('d', 'M 62 62 Q 74 55 86 62');
-        _cejas.der.setAttribute('d', 'M 114 62 Q 126 55 138 62');
+        _cejas.izq.setAttribute('d', 'M 60 78 Q 72 73 84 78');
+        _cejas.der.setAttribute('d', 'M 116 78 Q 128 73 140 78');
     }
-
     function cejasSorprendidas() {
         if (!_cejas.izq || !_cejas.der) return;
-        _cejas.izq.setAttribute('d', 'M 62 58 Q 74 48 86 58');
-        _cejas.der.setAttribute('d', 'M 114 58 Q 126 48 138 58');
+        _cejas.izq.setAttribute('d', 'M 60 73 Q 72 65 84 73');
+        _cejas.der.setAttribute('d', 'M 116 73 Q 128 65 140 73');
     }
-
     function cejasPensativas() {
         if (!_cejas.izq || !_cejas.der) return;
-        _cejas.izq.setAttribute('d', 'M 62 60 Q 74 52 86 58');
-        _cejas.der.setAttribute('d', 'M 114 58 Q 126 52 138 60');
+        _cejas.izq.setAttribute('d', 'M 60 76 Q 72 70 84 74');
+        _cejas.der.setAttribute('d', 'M 116 74 Q 128 70 140 76');
     }
-
     function cejasFelices() {
         if (!_cejas.izq || !_cejas.der) return;
-        _cejas.izq.setAttribute('d', 'M 62 60 Q 74 52 86 58');
-        _cejas.der.setAttribute('d', 'M 114 58 Q 126 52 138 60');
+        _cejas.izq.setAttribute('d', 'M 60 76 Q 72 70 84 74');
+        _cejas.der.setAttribute('d', 'M 116 74 Q 128 70 140 76');
     }
-
     function cejasTristes() {
         if (!_cejas.izq || !_cejas.der) return;
-        _cejas.izq.setAttribute('d', 'M 62 58 Q 74 62 86 60');
-        _cejas.der.setAttribute('d', 'M 114 60 Q 126 62 138 58');
+        _cejas.izq.setAttribute('d', 'M 60 74 Q 72 78 84 76');
+        _cejas.der.setAttribute('d', 'M 116 76 Q 128 78 140 74');
     }
 
-    // ============================================================
-    // 11. ESTADOS (con más animaciones)
-    // ============================================================
+    // ESTADOS
     function aplicarEstado(estado) {
         if (!_activo) return;
         _estadoActual = estado;
         if (!_cuerpoEl) return;
 
         _cuerpoEl.style.transition = 'transform 0.4s ease-in-out';
-        _cuerpoEl.style.transformOrigin = '100px 190px';
+        _cuerpoEl.style.transformOrigin = '100px 200px';
 
         switch (estado) {
             case 'idle':
@@ -372,52 +309,31 @@
                 cejasNormales();
                 dejarDePensar();
                 break;
-
             case 'escuchando':
                 _cuerpoEl.style.transition = 'transform 0.6s ease-in-out';
                 _cuerpoEl.style.transform = 'rotate(-4deg)';
-                if (_pupilas.izq) {
-                    _pupilas.izq.style.transform = 'translate(0, -1px)';
-                    _pupilas.der.style.transform = 'translate(0, -1px)';
-                }
                 cejasSorprendidas();
                 break;
-
             case 'pensando':
                 _cuerpoEl.style.transition = 'transform 0.6s ease-in-out';
                 _cuerpoEl.style.transform = 'translateY(-3px)';
-                if (_pupilas.izq) {
-                    _pupilas.izq.style.transform = 'translate(0, -3px)';
-                    _pupilas.der.style.transform = 'translate(0, -3px)';
-                }
                 cejasPensativas();
                 pensarConMano();
                 break;
-
             case 'feliz':
                 cejasFelices();
                 festejar();
                 break;
-
             case 'triste':
                 _cuerpoEl.style.transition = 'transform 0.6s ease-in-out';
                 _cuerpoEl.style.transform = 'translateY(3px)';
-                if (_pupilas.izq) {
-                    _pupilas.izq.style.transform = 'translate(0, 2px)';
-                    _pupilas.der.style.transform = 'translate(0, 2px)';
-                }
                 cejasTristes();
                 break;
-
             case 'hablando':
-                // gesticular se llama en cada visema desde pet.js
                 break;
         }
     }
 
-    // ============================================================
-    // API
-    // ============================================================
     function iniciar() {
         if (_activo) return;
         _activo = true;
@@ -425,7 +341,7 @@
         loopRespiracion();
         loopParpadeo();
         mirarAlrededor();
-        console.log('[Marquinhos/Anim] ✅ Galactic v2.0 activo');
+        console.log('[Marquinhos/Anim] ✅ Galactic Cartoon v2.1 activo');
     }
 
     function detener() {
@@ -434,8 +350,8 @@
         _parpadeando = false;
         _respirando = false;
         if (_ojos.izq && _ojos.der) {
-            _ojos.izq.setAttribute('ry', '17');
-            _ojos.der.setAttribute('ry', '17');
+            _ojos.izq.setAttribute('ry', '20');
+            _ojos.der.setAttribute('ry', '20');
         }
         if (_cuerpoEl) {
             _cuerpoEl.style.transition = 'none';
@@ -462,5 +378,5 @@
         festejar: festejo
     };
 
-    console.log('[Marquinhos/Anim] Módulo v2.0 Galactic cargado');
+    console.log('[Marquinhos/Anim] Módulo v2.1 Galactic Cartoon cargado');
 })();
