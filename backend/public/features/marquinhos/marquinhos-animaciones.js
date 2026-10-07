@@ -1,5 +1,6 @@
 // ================================================================
-// MARQUINHOS · ANIMACIONES v2.1 "Galactic Cartoon"
+// MARQUINHOS · ANIMACIONES v2.2 "Galactic Pro"
+// Manos/pies más elásticos + cabeza con balanceo
 // ================================================================
 
 'use strict';
@@ -84,6 +85,32 @@
         programar(loopRespiracion, 4200);
     }
 
+    // ✅ v2.2: Cabeceo suave en idle
+    function cabecear() {
+        if (!_activo) return;
+        if (_estadoActual !== 'idle') {
+            programar(cabecear, 3000);
+            return;
+        }
+        if (!_cabezaEl) {
+            programar(cabecear, 3000);
+            return;
+        }
+
+        // Balanceo lateral suave de la cabeza
+        var angulo = (Math.random() - 0.5) * 6; // -3° a +3°
+        _cabezaEl.style.transition = 'transform 1.2s ease-in-out';
+        _cabezaEl.style.transformOrigin = '100px 100px';
+        _cabezaEl.style.transform = 'rotate(' + angulo + 'deg)';
+
+        programar(function() {
+            if (!_cabezaEl) return;
+            _cabezaEl.style.transform = 'rotate(0deg)';
+        }, 1500);
+
+        programar(cabecear, 4000 + Math.random() * 3000);
+    }
+
     // PARPADEO
     function parpadear() {
         if (!_activo || _parpadeando) return;
@@ -98,8 +125,8 @@
 
         programar(function() {
             if (!_activo) return;
-            _ojos.izq.setAttribute('ry', '20');
-            _ojos.der.setAttribute('ry', '20');
+            _ojos.izq.setAttribute('ry', '17');
+            _ojos.der.setAttribute('ry', '17');
             programar(function() { _parpadeando = false; }, 200);
         }, 120);
     }
@@ -165,36 +192,46 @@
         }, 100);
     }
 
-    // GESTICULAR (manos al hablar)
+    // ✅ v2.2: GESTICULAR con movimiento ELÁSTICO
     var _gestoActual = 0;
     function gesticular() {
         if (!_activo) return;
         if (_estadoActual !== 'hablando' && _estadoActual !== 'escuchando') return;
-        if (!_brazos.izq || !_brazos.der) return;
+        if (!_brazos.izq || !_brazos.der || !_manos.izq || !_manos.der) return;
 
         _gestoActual++;
-        var trans = 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)';
+        var trans = 'transform 0.35s cubic-bezier(0.68, -0.55, 0.265, 1.55)'; // Elástico
         _brazos.izq.style.transition = trans;
         _brazos.der.style.transition = trans;
+        _manos.izq.style.transition = trans;
+        _manos.der.style.transition = trans;
         _brazos.izq.style.transformOrigin = '60px 180px';
         _brazos.der.style.transformOrigin = '140px 180px';
 
         var g = _gestoActual % 4;
         var anguloIzq = 0, anguloDer = 0;
-        if (g === 0) { anguloIzq = 15; anguloDer = -15; }
-        else if (g === 1) { anguloIzq = -10; anguloDer = 10; }
-        else if (g === 2) { anguloIzq = 20; anguloDer = -20; }
-        else { anguloIzq = -8; anguloDer = 8; }
+        if (g === 0) { anguloIzq = 18; anguloDer = -18; }
+        else if (g === 1) { anguloIzq = -12; anguloDer = 12; }
+        else if (g === 2) { anguloIzq = 22; anguloDer = -22; }
+        else { anguloIzq = -10; anguloDer = 10; }
 
         _brazos.izq.style.transform = 'rotate(' + anguloIzq + 'deg)';
         _brazos.der.style.transform = 'rotate(' + anguloDer + 'deg)';
+        // Manos también rotan un poco para más naturalidad
+        _manos.izq.style.transform = 'rotate(' + (-anguloIzq / 2) + 'deg)';
+        _manos.der.style.transform = 'rotate(' + (-anguloDer / 2) + 'deg)';
 
         programar(function() {
             if (!_brazos.izq) return;
-            _brazos.izq.style.transition = 'transform 0.4s ease-out';
-            _brazos.der.style.transition = 'transform 0.4s ease-out';
+            var backTrans = 'transform 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55)';
+            _brazos.izq.style.transition = backTrans;
+            _brazos.der.style.transition = backTrans;
+            _manos.izq.style.transition = backTrans;
+            _manos.der.style.transition = backTrans;
             _brazos.izq.style.transform = 'rotate(0deg)';
             _brazos.der.style.transform = 'rotate(0deg)';
+            _manos.izq.style.transform = 'rotate(0deg)';
+            _manos.der.style.transform = 'rotate(0deg)';
         }, 400);
     }
 
@@ -205,38 +242,48 @@
 
         _brazos.der.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
         _brazos.der.style.transformOrigin = '140px 180px';
-        _brazos.der.style.transform = 'rotate(-60deg)';
+        _brazos.der.style.transform = 'rotate(-70deg)';
 
         var movimientos = 0;
         function ondear() {
-            if (movimientos >= 4) {
+            if (movimientos >= 5) {
                 _brazos.der.style.transition = 'transform 0.5s ease-in-out';
                 _brazos.der.style.transform = 'rotate(0deg)';
                 return;
             }
-            _manos.der.style.transition = 'transform 0.2s ease-in-out';
-            _manos.der.style.transform = movimientos % 2 === 0 ? 'rotate(20deg)' : 'rotate(-20deg)';
+            _manos.der.style.transition = 'transform 0.18s ease-in-out';
+            _manos.der.style.transform = movimientos % 2 === 0 ? 'rotate(25deg)' : 'rotate(-25deg)';
             movimientos++;
-            programar(ondear, 200);
+            programar(ondear, 180);
         }
         ondear();
     }
 
-    // FESTEJAR
+    // FESTEJAR (con salto y manos arriba)
     function festejar() {
         if (!_activo) return;
         if (!_cuerpoEl || !_brazos.izq || !_brazos.der) return;
 
         _cuerpoEl.style.transition = 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
-        _cuerpoEl.style.transform = 'scale(1.08) translateY(-15px)';
+        _cuerpoEl.style.transform = 'scale(1.1) translateY(-18px)';
         _cuerpoEl.style.transformOrigin = '100px 200px';
 
         _brazos.izq.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
         _brazos.der.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
         _brazos.izq.style.transformOrigin = '60px 180px';
         _brazos.der.style.transformOrigin = '140px 180px';
-        _brazos.izq.style.transform = 'rotate(70deg)';
-        _brazos.der.style.transform = 'rotate(-70deg)';
+        _brazos.izq.style.transform = 'rotate(80deg)';
+        _brazos.der.style.transform = 'rotate(-80deg)';
+
+        // Piernas también saltan un poco
+        if (_piernas.izq && _piernas.der) {
+            _piernas.izq.style.transition = 'transform 0.3s ease-out';
+            _piernas.der.style.transition = 'transform 0.3s ease-out';
+            _piernas.izq.style.transformOrigin = '82px 250px';
+            _piernas.der.style.transformOrigin = '118px 250px';
+            _piernas.izq.style.transform = 'rotate(-8deg)';
+            _piernas.der.style.transform = 'rotate(8deg)';
+        }
 
         programar(function() {
             _cuerpoEl.style.transform = 'scale(1) translateY(0)';
@@ -245,6 +292,10 @@
         programar(function() {
             _brazos.izq.style.transform = 'rotate(0deg)';
             _brazos.der.style.transform = 'rotate(0deg)';
+            if (_piernas.izq) {
+                _piernas.izq.style.transform = 'rotate(0deg)';
+                _piernas.der.style.transform = 'rotate(0deg)';
+            }
         }, 800);
     }
 
@@ -254,7 +305,7 @@
         if (!_brazos.der) return;
         _brazos.der.style.transition = 'transform 0.5s ease-in-out';
         _brazos.der.style.transformOrigin = '140px 180px';
-        _brazos.der.style.transform = 'rotate(-130deg)';
+        _brazos.der.style.transform = 'rotate(-135deg)';
     }
 
     function dejarDePensar() {
@@ -341,7 +392,8 @@
         loopRespiracion();
         loopParpadeo();
         mirarAlrededor();
-        console.log('[Marquinhos/Anim] ✅ Galactic Cartoon v2.1 activo');
+        cabecear();  // ✅ v2.2: nuevo
+        console.log('[Marquinhos/Anim] ✅ Galactic Pro v2.2 activo');
     }
 
     function detener() {
@@ -350,12 +402,15 @@
         _parpadeando = false;
         _respirando = false;
         if (_ojos.izq && _ojos.der) {
-            _ojos.izq.setAttribute('ry', '20');
-            _ojos.der.setAttribute('ry', '20');
+            _ojos.izq.setAttribute('ry', '17');
+            _ojos.der.setAttribute('ry', '17');
         }
         if (_cuerpoEl) {
             _cuerpoEl.style.transition = 'none';
             _cuerpoEl.style.transform = 'scale(1) rotate(0deg) translateY(0)';
+        }
+        if (_cabezaEl) {
+            _cabezaEl.style.transform = 'rotate(0deg)';
         }
     }
 
@@ -378,5 +433,5 @@
         festejar: festejo
     };
 
-    console.log('[Marquinhos/Anim] Módulo v2.1 Galactic Cartoon cargado');
+    console.log('[Marquinhos/Anim] Módulo v2.2 Galactic Pro cargado');
 })();
