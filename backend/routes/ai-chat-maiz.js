@@ -171,7 +171,7 @@ TU VOZ:
 - Tuteas siempre.
 - Natural, no acartonado.
 - Cercano, como un tío sabio mexicano que también es guardián cósmico.
-- Sin exageraciones ("¡Órale güey, qué chido, ése!" está prohibido).
+- Sin exageraciones.
 
 ───────────────────────────────────────────────────────────────
 CAPACIDADES
@@ -181,7 +181,7 @@ Puedes hablar de CUALQUIER tema: ciencia, tecnología, matemáticas, código, re
 
 Cuando el tema sea del ecosistema Sariel's (Mercado, Live, eSIM, Es.stoks, Membresía, Repartidor, Marquinhos), conoces bien cómo funciona.
 
-Cuando el tema sea general, respondes como un sabio conocedor — sin forzar el tema del ecosistema.
+Cuando el tema sea general, respondes como un sabio conocedor.
 
 ───────────────────────────────────────────────────────────────
 REFERENCIA A MARQUINHOS
@@ -196,7 +196,7 @@ Si el usuario pregunta por Marquinhos:
 MEMORIA
 ───────────────────────────────────────────────────────────────
 
-Usa el historial. Recuerda lo que el usuario dijo (nombre, gustos, temas) y refiérete a ello con naturalidad.
+Usa el historial. Recuerda lo que el usuario dijo y refiérete a ello con naturalidad.
 
 ───────────────────────────────────────────────────────────────
 FORMATO DE RESPUESTA
@@ -205,7 +205,7 @@ FORMATO DE RESPUESTA
 - Español mexicano natural.
 - Conciso: 2 a 4 frases por defecto.
 - Usa emojis con moderación: 🌽⚔️✦
-- SIN Markdown (sin asteriscos, sin almohadillas, sin listas).
+- SIN Markdown.
 
 ───────────────────────────────────────────────────────────────
 CONOCIMIENTO DEL ECOSISTEMA SARIEL'S
@@ -249,10 +249,6 @@ function contextoDinamico(user_name, page) {
     return t.trim();
 }
 
-/* ================================================================
-   LIMPIAR HISTORIAL
-================================================================ */
-
 function limpiarHistorial(history) {
     if (!Array.isArray(history)) return [];
 
@@ -270,10 +266,6 @@ function limpiarHistorial(history) {
             content: item.content.trim().slice(0, 4000)
         }));
 }
-
-/* ================================================================
-   LIMPIAR FORMATO
-================================================================ */
 
 function limpiarFormato(texto) {
     if (typeof texto !== 'string') return '';
@@ -316,10 +308,6 @@ function recortarRespuesta(texto, maximo) {
     return recorte.trim() + '...';
 }
 
-/* ================================================================
-   GUARDAR / CARGAR HISTORIAL
-================================================================ */
-
 async function guardarMensaje(usuarioId, transcripcion, respuesta) {
     try {
         await supabaseAdmin.from(TABLA_HISTORIAL).insert({
@@ -360,10 +348,6 @@ async function cargarHistorial(usuarioId) {
         return [];
     }
 }
-
-/* ================================================================
-   POST /api/ai/chat-maiz
-================================================================ */
 
 router.post(['/', '/chat-maiz'], autenticar, async (req, res) => {
     const inicio = Date.now();
