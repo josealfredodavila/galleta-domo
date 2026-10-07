@@ -1,16 +1,28 @@
 /* ================================================================
-   MARQUINHOS · PET · CSS v6.3
+   MARQUINHOS · PET · CSS v6.4
    (arrastrable + 3 burbujitas + boca dinámica + animaciones Disney
-    + modal de términos + aislamiento total del widget flotante)
+    + modal de términos + aislamiento + TAMAÑO CONFIGURABLE)
    ================================================================ */
 
+/* ================================================================
+   Variables globales del tamaño (se sobreescriben desde JS)
+   El usuario puede ajustar el tamaño desde /configuracion/marquinhos
+   ================================================================ */
+#marquinhos-pet {
+    --mq-pet-ancho: 90px;
+    --mq-pet-alto: 130px;
+}
+
+/* ================================================================
+   WIDGET BASE
+   ================================================================ */
 .mq-pet {
     position: fixed !important;
     bottom: 16px !important;
     right: 16px !important;
     z-index: 2147483647 !important;
-    width: 90px !important;
-    height: 130px !important;
+    width: var(--mq-pet-ancho, 90px) !important;
+    height: var(--mq-pet-alto, 130px) !important;
     pointer-events: auto !important;
     opacity: 1 !important;
     visibility: visible !important;
@@ -32,8 +44,8 @@
     position: absolute;
     bottom: 0;
     right: 0;
-    width: 90px;
-    height: 130px;
+    width: var(--mq-pet-ancho, 90px);
+    height: var(--mq-pet-alto, 130px);
     cursor: grab;
     filter: drop-shadow(0 6px 16px rgba(21, 101, 192, 0.35));
     animation: mq-float 4s ease-in-out infinite;
@@ -63,7 +75,7 @@
 }
 
 /* ================================================================
-   ✅ v6.2: El <g> del cuerpo acepta transform del JS (Disney)
+   Cuerpo del pet (acepta transform del JS Disney)
    ================================================================ */
 #mq-cuerpo {
     transform-origin: 100px 200px;
@@ -224,9 +236,10 @@
 }
 
 /* ================================================================
-   ✅ v6.2: ANIMACIONES DISNEY (controladas por JS)
+   ANIMACIONES DISNEY (controladas por JS)
    ================================================================ */
 
+/* Los ojos y pupilas necesitan transform-origin centrado */
 #mq-pupila-izq,
 #mq-pupila-der,
 #mq-brillo-izq,
@@ -235,13 +248,14 @@
     will-change: transform;
 }
 
+/* Suavizar la transición del parpadeo (ry) */
 #mq-ojo-izq,
 #mq-ojo-der {
     transition: ry 0.08s ease-out;
 }
 
 /* ================================================================
-   ✅ v6.2: MODAL DE TÉRMINOS DE USO
+   MODAL DE TÉRMINOS DE USO
    ================================================================ */
 .mq-modal-overlay {
     position: fixed;
@@ -296,26 +310,11 @@
     color: #c0d8e8;
 }
 
-.mq-modal-body p {
-    margin: 0 0 12px;
-}
-
-.mq-modal-body ul {
-    padding-left: 20px;
-    margin: 8px 0 16px;
-}
-
-.mq-modal-body li {
-    margin-bottom: 6px;
-}
-
-.mq-modal-body strong {
-    color: #f0f4f8;
-}
-
-.mq-modal-body a {
-    color: #D4AF37;
-}
+.mq-modal-body p { margin: 0 0 12px; }
+.mq-modal-body ul { padding-left: 20px; margin: 8px 0 16px; }
+.mq-modal-body li { margin-bottom: 6px; }
+.mq-modal-body strong { color: #f0f4f8; }
+.mq-modal-body a { color: #D4AF37; }
 
 .mq-modal-actions {
     padding: 16px 24px 20px;
@@ -352,10 +351,11 @@
 }
 
 /* ================================================================
-   ✅ v6.3: AISLAMIENTO TOTAL DEL PET FLOTANTE
+   AISLAMIENTO TOTAL DEL PET FLOTANTE
    ================================================================
-   Evita conflictos con otras páginas (especialmente mensajes.html)
+   Evita conflictos con otras páginas (mensajes, tienda, etc.)
    que tienen sus propios .header, .app, .avatar, etc.
+   El tamaño se controla con las variables --mq-pet-ancho / --mq-pet-alto
    ================================================================ */
 
 #marquinhos-pet {
@@ -364,8 +364,8 @@
     bottom: 16px !important;
     right: 16px !important;
     z-index: 2147483647 !important;
-    width: 90px !important;
-    height: 130px !important;
+    width: var(--mq-pet-ancho, 90px) !important;
+    height: var(--mq-pet-alto, 130px) !important;
     pointer-events: auto !important;
     opacity: 1 !important;
     visibility: visible !important;
@@ -375,7 +375,7 @@
     touch-action: none !important;
     font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif !important;
     -webkit-tap-highlight-color: transparent !important;
-    transition: none !important;
+    transition: width 0.2s ease, height 0.2s ease !important;
     box-sizing: border-box !important;
 }
 
@@ -387,8 +387,8 @@
     position: absolute !important;
     bottom: 0 !important;
     right: 0 !important;
-    width: 90px !important;
-    height: 130px !important;
+    width: var(--mq-pet-ancho, 90px) !important;
+    height: var(--mq-pet-alto, 130px) !important;
     cursor: grab !important;
     animation: mq-float 4s ease-in-out infinite !important;
     touch-action: none !important;
@@ -412,17 +412,6 @@
    Responsive
    ================================================================ */
 @media (max-width: 520px) {
-    .mq-pet, .mq-pet-avatar {
-        width: 80px !important;
-        height: 115px !important;
-    }
-
-    #marquinhos-pet,
-    #marquinhos-pet .mq-pet-avatar {
-        width: 80px !important;
-        height: 115px !important;
-    }
-
     .mq-pet-bubble {
         font-size: 11px;
         max-width: 180px;
