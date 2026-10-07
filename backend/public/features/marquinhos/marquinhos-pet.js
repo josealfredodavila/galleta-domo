@@ -1,7 +1,6 @@
 // ================================================================
-// MARQUINHOS · PET v9.3 "GALACTIC PRO"
-// Sin burbuja de puntos · antena solo brilla al escuchar
-// Ojos más serios · boca dentro de la cabeza y más expresiva
+// MARQUINHOS · PET v9.4.1 "GALACTIC PRO"
+// Manos iguales a la tienda (claras) · Brazos y piernas mejorados
 // ================================================================
 
 'use strict';
@@ -52,10 +51,8 @@
     const TERMINOS_VERSION = '1.0';
     const TERMINOS_KEY = 'marquinhos_terminos_aceptados_' + TERMINOS_VERSION;
 
-    // ✅ v9.3: la boca ahora está DENTRO de la cabeza (y 132–154) y las
-    // formas abiertas llevan relleno oscuro para que se vea la boca abierta.
     var VISEMAS_SVG = {
-        REST: 'M 78 137 Q 100 150 122 137',
+        REST: 'M 80 138 Q 100 148 120 138',
         A:    'M 70 134 Q 100 130 130 134 Q 126 154 100 154 Q 74 154 70 134 Z',
         E:    'M 72 137 Q 100 134 128 137 Q 122 150 100 150 Q 78 150 72 137 Z',
         I:    'M 74 139 Q 100 143 126 139 Q 100 148 74 139 Z',
@@ -216,7 +213,7 @@
             if (error) return;
             if (Array.isArray(data)) {
                 accesoriosEquipados = data.map(d => ({
-                    id: d.accesorio_id,
+                    id: d.acceso_id || d.accesorio_id,
                     categoria: d.marquinhos_accesorios?.categoria || 'accesorio',
                     svg: d.marquinhos_accesorios?.svg_data || '',
                     nombre: d.marquinhos_accesorios?.nombre || ''
@@ -247,14 +244,10 @@
         }).join('');
     }
 
-    // ------------------------------------------------------------
-    // BOCA
-    // ------------------------------------------------------------
     function cambiarVisema(nombre) {
         if (!bocaEl) return;
         var key = VISEMAS_SVG[nombre] ? nombre : 'REST';
         bocaEl.setAttribute('d', VISEMAS_SVG[key]);
-        // Abierta = relleno oscuro (se ve la boca abierta); cerrada = solo línea
         bocaEl.setAttribute('fill', VISEMAS_SIN_RELLENO[key] ? 'none' : '#0a1a3e');
     }
 
@@ -277,8 +270,6 @@
         var rateFactor = rate || 1.0;
         var tiempo = 0;
 
-        // Los gestos de brazos/cabeza/pies los maneja MarquinhosAnim por su cuenta
-        // (ya NO se disparan en cada visema, eso causaba los giros rápidos).
         visemas.forEach(function(v) {
             var dur = v.duracion / rateFactor;
             var t = setTimeout(function() {
@@ -311,9 +302,6 @@
         siguiente();
     }
 
-    // ------------------------------------------------------------
-    // TÉRMINOS
-    // ------------------------------------------------------------
     function mostrarModalTerminos() {
         if (document.getElementById('mq-modal-terminos')) return;
 
@@ -372,7 +360,7 @@
     }
 
     // ============================================================
-    // WIDGET v9.3
+    // WIDGET v9.4.1 (SVG con manos claras)
     // ============================================================
     function crearWidget() {
         if (document.getElementById('marquinhos-pet')) return;
@@ -394,7 +382,7 @@
             </div>
 
             <div class="mq-pet-avatar" id="mq-avatar" role="button" tabindex="0" aria-label="Hablar con Marquinhos">
-                <svg viewBox="0 0 200 260" xmlns="http://www.w3.org/2000/svg" class="mq-pet-svg">
+                <svg viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg" class="mq-pet-svg">
                     <defs>
                         <linearGradient id="mq-grad-cabeza" x1="0%" y1="0%" x2="0%" y2="100%">
                             <stop offset="0%" stop-color="#FFFFFF"/>
@@ -421,11 +409,10 @@
                             <stop offset="100%" stop-color="#5A6B82"/>
                         </radialGradient>
 
-                        <!-- Iris cian tipo robot (menos tierno) -->
                         <radialGradient id="mq-grad-iris" cx="50%" cy="45%">
-                            <stop offset="0%" stop-color="#C8F4FF"/>
-                            <stop offset="60%" stop-color="#5CCBFF"/>
-                            <stop offset="100%" stop-color="#2E8FE0"/>
+                            <stop offset="0%" stop-color="#9CF6FF"/>
+                            <stop offset="55%" stop-color="#00C8FF"/>
+                            <stop offset="100%" stop-color="#0277BD"/>
                         </radialGradient>
 
                         <linearGradient id="mq-grad-bota" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -439,7 +426,7 @@
                         </radialGradient>
                     </defs>
 
-                    <ellipse cx="100" cy="140" rx="85" ry="110" fill="url(#mq-grad-aura)" opacity="0.6">
+                    <ellipse cx="100" cy="160" rx="85" ry="120" fill="url(#mq-grad-aura)" opacity="0.6">
                         <animate attributeName="opacity" values="0.3;0.7;0.3" dur="3s" repeatCount="indefinite"/>
                     </ellipse>
 
@@ -447,17 +434,14 @@
 
                     <g id="mq-cuerpo">
 
-                        <!-- ==================== ANTENA ==================== -->
-                        <!-- Apagada = gris. Encendida (solo al escuchar) = brilla y pulsa -->
+                        <!-- ANTENA -->
                         <g id="mq-antena">
                             <line x1="100" y1="40" x2="100" y2="12" stroke="#0D47A1" stroke-width="3" stroke-linecap="round"/>
-
                             <g id="mq-antena-apagada" visibility="visible">
                                 <circle cx="100" cy="6" r="9"
                                         fill="url(#mq-grad-antena-off)"
                                         stroke="#0D47A1" stroke-width="1.5"/>
                             </g>
-
                             <g id="mq-antena-encendida" visibility="hidden">
                                 <circle cx="100" cy="6" r="14" fill="#00E5FF" opacity="0.5">
                                     <animate attributeName="r" values="14;23;14" dur="0.9s" repeatCount="indefinite"/>
@@ -471,59 +455,50 @@
                             </g>
                         </g>
 
-                        <!-- ==================== CABEZA ==================== -->
+                        <!-- CABEZA -->
                         <g id="mq-cabeza-grupo">
                             <rect x="35" y="40" width="130" height="120" rx="28" ry="28"
                                   fill="url(#mq-grad-cabeza)"
                                   stroke="#0D47A1" stroke-width="3"/>
-
                             <ellipse cx="70" cy="58" rx="25" ry="9" fill="#FFFFFF" opacity="0.6"/>
 
-                            <!-- CEJAS (inclinadas hacia el centro = mirada más seria) -->
                             <g id="mq-cejas">
-                                <path id="mq-ceja-izq" d="M 56 82 Q 72 73 88 78" stroke="#0D47A1" stroke-width="3" fill="none" stroke-linecap="round"/>
-                                <path id="mq-ceja-der" d="M 112 78 Q 128 73 144 82" stroke="#0D47A1" stroke-width="3" fill="none" stroke-linecap="round"/>
+                                <path id="mq-ceja-izq" d="M 56 80 Q 72 74 88 83" stroke="#0D47A1" stroke-width="3" fill="none" stroke-linecap="round"/>
+                                <path id="mq-ceja-der" d="M 112 83 Q 128 74 144 80" stroke="#0D47A1" stroke-width="3" fill="none" stroke-linecap="round"/>
                             </g>
 
-                            <!-- OJOS: más chicos, iris cian, un solo brillo -->
                             <g id="mq-ojo-izq" class="mq-ojo">
-                                <ellipse cx="72" cy="108" rx="16" ry="14" fill="#1B3A8A" stroke="#0D47A1" stroke-width="2"/>
-                                <ellipse cx="72" cy="108" rx="12.5" ry="11" fill="url(#mq-grad-iris)"/>
-                                <circle id="mq-pupila-izq" cx="72" cy="108" r="4.2" fill="#0D2A66"/>
-                                <circle cx="77" cy="103" r="3" fill="#FFFFFF" opacity="0.95"/>
-                                <circle cx="68" cy="112" r="1.4" fill="#FFFFFF" opacity="0.7"/>
+                                <ellipse cx="72" cy="108" rx="16" ry="13" fill="#0a1a3e" stroke="#0D47A1" stroke-width="2"/>
+                                <ellipse cx="72" cy="108" rx="12" ry="9.5" fill="url(#mq-grad-iris)"/>
+                                <circle id="mq-pupila-izq" cx="72" cy="108" r="5" fill="#04102b"/>
+                                <circle cx="76" cy="104" r="1.8" fill="#FFFFFF" opacity="0.9"/>
                             </g>
 
                             <g id="mq-ojo-der" class="mq-ojo">
-                                <ellipse cx="128" cy="108" rx="16" ry="14" fill="#1B3A8A" stroke="#0D47A1" stroke-width="2"/>
-                                <ellipse cx="128" cy="108" rx="12.5" ry="11" fill="url(#mq-grad-iris)"/>
-                                <circle id="mq-pupila-der" cx="128" cy="108" r="4.2" fill="#0D2A66"/>
-                                <circle cx="133" cy="103" r="3" fill="#FFFFFF" opacity="0.95"/>
-                                <circle cx="124" cy="112" r="1.4" fill="#FFFFFF" opacity="0.7"/>
+                                <ellipse cx="128" cy="108" rx="16" ry="13" fill="#0a1a3e" stroke="#0D47A1" stroke-width="2"/>
+                                <ellipse cx="128" cy="108" rx="12" ry="9.5" fill="url(#mq-grad-iris)"/>
+                                <circle id="mq-pupila-der" cx="128" cy="108" r="5" fill="#04102b"/>
+                                <circle cx="132" cy="104" r="1.8" fill="#FFFFFF" opacity="0.9"/>
                             </g>
 
-                            <!-- BOCA (dentro de la cabeza) -->
                             <path id="mq-boca" class="mq-pet-boca"
-                                  d="M 78 137 Q 100 150 122 137"
+                                  d="M 80 138 Q 100 148 120 138"
                                   stroke="#0D47A1" stroke-width="3.5"
                                   stroke-linejoin="round"
                                   fill="none" stroke-linecap="round"/>
                         </g>
 
-                        <!-- ==================== CUELLO ==================== -->
+                        <!-- CUELLO -->
                         <rect x="88" y="158" width="24" height="12" fill="#A8C4DE" stroke="#0D47A1" stroke-width="2"/>
 
-                        <!-- ==================== TORSO ==================== -->
+                        <!-- TORSO -->
                         <g id="mq-torso">
                             <path d="M 60 170 Q 60 165 65 165 L 135 165 Q 140 165 140 170 L 140 235 Q 140 250 125 250 L 75 250 Q 60 250 60 235 Z"
                                   fill="url(#mq-grad-cuerpo)"
                                   stroke="#0D47A1" stroke-width="3"/>
-
                             <ellipse cx="100" cy="185" rx="30" ry="10" fill="#FFFFFF" opacity="0.5"/>
-
                             <rect x="70" y="185" width="60" height="22" rx="6" fill="#0D47A1"/>
                             <text x="100" y="200" text-anchor="middle" font-family="sans-serif" font-size="9" font-weight="800" fill="#FFFFFF" letter-spacing="0.5">MARQUINHOS</text>
-
                             <circle cx="80" cy="235" r="3" fill="#7C4DFF" opacity="0.9">
                                 <animate attributeName="opacity" values="0.5;1;0.5" dur="2s" repeatCount="indefinite"/>
                             </circle>
@@ -532,37 +507,77 @@
                             </circle>
                         </g>
 
-                        <!-- ==================== BRAZO IZQUIERDO ==================== -->
+                        <!-- BRAZO IZQUIERDO (manos claras como en la tienda) -->
                         <g id="mq-brazo-izq" class="mq-brazo">
-                            <line x1="60" y1="180" x2="30" y2="205" stroke="#0D47A1" stroke-width="2.5" stroke-linecap="round"/>
-                            <line x1="60" y1="180" x2="30" y2="205" stroke="#C9D8FF" stroke-width="10" stroke-linecap="round"/>
-                            <circle cx="30" cy="205" r="4" fill="#7C4DFF" stroke="#0D47A1" stroke-width="1.5"/>
-                            <line x1="30" y1="205" x2="18" y2="228" stroke="#C9D8FF" stroke-width="9" stroke-linecap="round"/>
-                            <line x1="30" y1="205" x2="18" y2="228" stroke="#0D47A1" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-                            <g id="mq-mano-izq" class="mq-mano">
-                                <circle cx="15" cy="230" r="7" fill="#C9D8FF" stroke="#0D47A1" stroke-width="2"/>
-                                <circle cx="9" cy="226" r="3" fill="#7C4DFF" stroke="#0D47A1" stroke-width="1.5"/>
-                                <circle cx="17" cy="223" r="3" fill="#7C4DFF" stroke="#0D47A1" stroke-width="1.5"/>
-                                <circle cx="23" cy="227" r="3" fill="#7C4DFF" stroke="#0D47A1" stroke-width="1.5"/>
+                            <line x1="60" y1="180" x2="30" y2="205" stroke="#0D47A1" stroke-width="12.5" stroke-linecap="round"/>
+                            <line x1="60" y1="180" x2="30" y2="205" stroke="#C9D8FF" stroke-width="9" stroke-linecap="round"/>
+                            <circle cx="30" cy="205" r="4.5" fill="#7C4DFF" stroke="#0D47A1" stroke-width="1.5"/>
+                            <g id="mq-antebrazo-izq" class="mq-antebrazo">
+                                <line x1="30" y1="205" x2="18" y2="228" stroke="#0D47A1" stroke-width="11.5" stroke-linecap="round"/>
+                                <line x1="30" y1="205" x2="18" y2="228" stroke="#C9D8FF" stroke-width="8" stroke-linecap="round"/>
+                                <circle cx="18" cy="228" r="3.8" fill="#7C4DFF" stroke="#0D47A1" stroke-width="1.5"/>
+                                <g id="mq-mano-izq" class="mq-mano">
+                                    <g class="mq-dedo" data-o="10 238" data-s="1">
+                                        <line x1="10" y1="238" x2="6" y2="249" stroke="#0D47A1" stroke-width="7.5" stroke-linecap="round"/>
+                                        <line x1="10" y1="238" x2="6" y2="249" stroke="#DCE6FF" stroke-width="4.5" stroke-linecap="round"/>
+                                        <circle cx="6" cy="249" r="1.6" fill="#7C4DFF"/>
+                                    </g>
+                                    <g class="mq-dedo" data-o="15 240" data-s="0">
+                                        <line x1="15" y1="240" x2="14" y2="252" stroke="#0D47A1" stroke-width="7.5" stroke-linecap="round"/>
+                                        <line x1="15" y1="240" x2="14" y2="252" stroke="#DCE6FF" stroke-width="4.5" stroke-linecap="round"/>
+                                        <circle cx="14" cy="252" r="1.6" fill="#7C4DFF"/>
+                                    </g>
+                                    <g class="mq-dedo" data-o="20 238" data-s="-1">
+                                        <line x1="20" y1="238" x2="23" y2="249" stroke="#0D47A1" stroke-width="7.5" stroke-linecap="round"/>
+                                        <line x1="20" y1="238" x2="23" y2="249" stroke="#DCE6FF" stroke-width="4.5" stroke-linecap="round"/>
+                                        <circle cx="23" cy="249" r="1.6" fill="#7C4DFF"/>
+                                    </g>
+                                    <g class="mq-dedo" data-o="21 232" data-s="-1">
+                                        <line x1="21" y1="232" x2="28" y2="238" stroke="#0D47A1" stroke-width="7.5" stroke-linecap="round"/>
+                                        <line x1="21" y1="232" x2="28" y2="238" stroke="#DCE6FF" stroke-width="4.5" stroke-linecap="round"/>
+                                        <circle cx="28" cy="238" r="1.6" fill="#7C4DFF"/>
+                                    </g>
+                                    <ellipse cx="15" cy="233" rx="8" ry="7.5" fill="#C9D8FF" stroke="#0D47A1" stroke-width="2"/>
+                                </g>
                             </g>
                         </g>
 
-                        <!-- ==================== BRAZO DERECHO ==================== -->
+                        <!-- BRAZO DERECHO -->
                         <g id="mq-brazo-der" class="mq-brazo">
-                            <line x1="140" y1="180" x2="170" y2="205" stroke="#C9D8FF" stroke-width="10" stroke-linecap="round"/>
-                            <line x1="140" y1="180" x2="170" y2="205" stroke="#0D47A1" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-                            <circle cx="170" cy="205" r="4" fill="#7C4DFF" stroke="#0D47A1" stroke-width="1.5"/>
-                            <line x1="170" y1="205" x2="182" y2="228" stroke="#C9D8FF" stroke-width="9" stroke-linecap="round"/>
-                            <line x1="170" y1="205" x2="182" y2="228" stroke="#0D47A1" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-                            <g id="mq-mano-der" class="mq-mano">
-                                <circle cx="185" cy="230" r="7" fill="#C9D8FF" stroke="#0D47A1" stroke-width="2"/>
-                                <circle cx="191" cy="226" r="3" fill="#7C4DFF" stroke="#0D47A1" stroke-width="1.5"/>
-                                <circle cx="183" cy="223" r="3" fill="#7C4DFF" stroke="#0D47A1" stroke-width="1.5"/>
-                                <circle cx="177" cy="227" r="3" fill="#7C4DFF" stroke="#0D47A1" stroke-width="1.5"/>
+                            <line x1="140" y1="180" x2="170" y2="205" stroke="#0D47A1" stroke-width="12.5" stroke-linecap="round"/>
+                            <line x1="140" y1="180" x2="170" y2="205" stroke="#C9D8FF" stroke-width="9" stroke-linecap="round"/>
+                            <circle cx="170" cy="205" r="4.5" fill="#7C4DFF" stroke="#0D47A1" stroke-width="1.5"/>
+                            <g id="mq-antebrazo-der" class="mq-antebrazo">
+                                <line x1="170" y1="205" x2="182" y2="228" stroke="#0D47A1" stroke-width="11.5" stroke-linecap="round"/>
+                                <line x1="170" y1="205" x2="182" y2="228" stroke="#C9D8FF" stroke-width="8" stroke-linecap="round"/>
+                                <circle cx="182" cy="228" r="3.8" fill="#7C4DFF" stroke="#0D47A1" stroke-width="1.5"/>
+                                <g id="mq-mano-der" class="mq-mano">
+                                    <g class="mq-dedo" data-o="190 238" data-s="-1">
+                                        <line x1="190" y1="238" x2="194" y2="249" stroke="#0D47A1" stroke-width="7.5" stroke-linecap="round"/>
+                                        <line x1="190" y1="238" x2="194" y2="249" stroke="#DCE6FF" stroke-width="4.5" stroke-linecap="round"/>
+                                        <circle cx="194" cy="249" r="1.6" fill="#7C4DFF"/>
+                                    </g>
+                                    <g class="mq-dedo" data-o="185 240" data-s="0">
+                                        <line x1="185" y1="240" x2="186" y2="252" stroke="#0D47A1" stroke-width="7.5" stroke-linecap="round"/>
+                                        <line x1="185" y1="240" x2="186" y2="252" stroke="#DCE6FF" stroke-width="4.5" stroke-linecap="round"/>
+                                        <circle cx="186" cy="252" r="1.6" fill="#7C4DFF"/>
+                                    </g>
+                                    <g class="mq-dedo" data-o="180 238" data-s="1">
+                                        <line x1="180" y1="238" x2="177" y2="249" stroke="#0D47A1" stroke-width="7.5" stroke-linecap="round"/>
+                                        <line x1="180" y1="238" x2="177" y2="249" stroke="#DCE6FF" stroke-width="4.5" stroke-linecap="round"/>
+                                        <circle cx="177" cy="249" r="1.6" fill="#7C4DFF"/>
+                                    </g>
+                                    <g class="mq-dedo" data-o="179 232" data-s="1">
+                                        <line x1="179" y1="232" x2="172" y2="238" stroke="#0D47A1" stroke-width="7.5" stroke-linecap="round"/>
+                                        <line x1="179" y1="232" x2="172" y2="238" stroke="#DCE6FF" stroke-width="4.5" stroke-linecap="round"/>
+                                        <circle cx="172" cy="238" r="1.6" fill="#7C4DFF"/>
+                                    </g>
+                                    <ellipse cx="185" cy="233" rx="8" ry="7.5" fill="#C9D8FF" stroke="#0D47A1" stroke-width="2"/>
+                                </g>
                             </g>
                         </g>
 
-                        <!-- ==================== PIERNA IZQUIERDA ==================== -->
+                        <!-- PIERNA IZQUIERDA (con detalle de bota) -->
                         <g id="mq-pierna-izq" class="mq-pierna">
                             <line x1="82" y1="250" x2="82" y2="268" stroke="#C9D8FF" stroke-width="10" stroke-linecap="round"/>
                             <line x1="82" y1="250" x2="82" y2="268" stroke="#0D47A1" stroke-width="2.5" stroke-linecap="round" fill="none"/>
@@ -573,7 +588,7 @@
                                   fill="url(#mq-grad-bota)" stroke="#0D47A1" stroke-width="2"/>
                         </g>
 
-                        <!-- ==================== PIERNA DERECHA ==================== -->
+                        <!-- PIERNA DERECHA -->
                         <g id="mq-pierna-der" class="mq-pierna">
                             <line x1="118" y1="250" x2="118" y2="268" stroke="#C9D8FF" stroke-width="10" stroke-linecap="round"/>
                             <line x1="118" y1="250" x2="118" y2="268" stroke="#0D47A1" stroke-width="2.5" stroke-linecap="round" fill="none"/>
@@ -679,387 +694,7 @@
             }, 500);
         }
 
-        log('Widget v9.3 Galactic Pro creado');
+        log('Widget v9.4.1 Galactic Pro creado');
     }
 
-    // Las "tres bolitas" se eliminaron. Se dejan estas funciones vacías
-    // por si otro archivo todavía las llama.
-    function mostrarDots() {}
-    function ocultarDots() {}
-
-    // ✅ v9.3: la antena SOLO se enciende cuando escucha.
-    function setEstado(e) {
-        if (container) container.setAttribute('data-estado', e);
-
-        const apagada = document.getElementById('mq-antena-apagada');
-        const encendida = document.getElementById('mq-antena-encendida');
-        if (apagada && encendida) {
-            const escuchando = (e === 'escuchando');
-            apagada.setAttribute('visibility', escuchando ? 'hidden' : 'visible');
-            encendida.setAttribute('visibility', escuchando ? 'visible' : 'hidden');
-        }
-
-        if (window.MarquinhosAnim && typeof window.MarquinhosAnim.setEstado === 'function') {
-            window.MarquinhosAnim.setEstado(e);
-        }
-    }
-
-    function mostrarBurbuja(texto) {
-        if (!config.mostrar_subtitulos) return;
-        if (!bubble) return;
-        const t = document.getElementById('mq-bubble-text');
-        const corto = texto.length > 160 ? texto.slice(0, 157) + '…' : texto;
-        if (t) t.textContent = corto;
-        bubble.classList.add('mq-bubble-visible');
-    }
-
-    function ocultarBurbuja() {
-        if (bubble) bubble.classList.remove('mq-bubble-visible');
-    }
-
-    function detenerConversacion() {
-        conversacionActiva = false;
-        detenerTTS();
-        detenerReconocimiento();
-        detenerAnimacionBoca();
-        setEstado('idle');
-        ocultarBurbuja();
-    }
-
-    async function onAvatarTap() {
-        if (isSpeaking || isListening || procesando) {
-            detenerConversacion();
-            return;
-        }
-        conversacionActiva = !!config.conversacion;
-        const ok = iniciarReconocimiento();
-        if (!ok) {
-            conversacionActiva = false;
-            if (config.mostrar_subtitulos) {
-                mostrarBurbuja('Tu navegador no soporta reconocimiento de voz.');
-                setTimeout(ocultarBurbuja, 4000);
-            }
-        }
-    }
-
-    async function hablar(texto) {
-        if (!texto) return false;
-        detenerTTS();
-        const miToken = ++ttsToken;
-
-        const estilo = VOZ_ESTILOS[config.estilo_voz] || VOZ_ESTILOS.natural;
-        const pitchBase = TONO_PITCH[config.tono] || 1.0;
-        const rate = estilo.rate * (config.velocidad || 1.0);
-        const pitch = estilo.pitch * pitchBase;
-        const volumen = Math.max(0, Math.min(1, config.volumen || 1.0));
-
-        if (config.mostrar_subtitulos) mostrarBurbuja(texto);
-        isSpeaking = true;
-        setEstado('hablando');
-
-        if (window.MarquinhosAnim && typeof window.MarquinhosAnim.anticipar === 'function') {
-            window.MarquinhosAnim.anticipar();
-        }
-
-        animarBoca(texto, rate);
-
-        let ok = false;
-        if (texto.length <= 300 && window.getSupabase && !window.__marquinhosNoBackendTTS) {
-            try {
-                const sb = window.getSupabase();
-                const s = await sb.auth.getSession();
-                if (s.data.session && miToken === ttsToken) {
-                    const resp = await fetch('/api/ai/voice/tts', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': 'Bearer ' + s.data.session.access_token
-                        },
-                        body: JSON.stringify({ text: texto, rate: rate, pitch: pitch })
-                    });
-                    if (resp.ok) {
-                        const data = await resp.json();
-                        const url = data.audio_url || data.audioUrl;
-                        if (url && miToken === ttsToken) { ok = true; await reproducirAudio(url); }
-                    } else {
-                        window.__marquinhosNoBackendTTS = true;
-                    }
-                }
-            } catch (e) {
-                window.__marquinhosNoBackendTTS = true;
-            }
-        }
-
-        if (!ok && miToken === ttsToken) {
-            await hablarNavegador(texto, rate, pitch, volumen, miToken);
-        }
-
-        const completo = (miToken === ttsToken);
-        if (completo) {
-            isSpeaking = false;
-            setEstado('idle');
-            detenerAnimacionBoca();
-            setTimeout(function() {
-                if (!isSpeaking && !isListening && !procesando) ocultarBurbuja();
-            }, 2500);
-        }
-        return completo;
-    }
-
-    function dividirEnFrases(texto) {
-        const partes = texto.split(/(?<=[.!?…\n])\s+/);
-        const out = [];
-        let acc = '';
-        partes.forEach(function(p) {
-            if ((acc + ' ' + p).length > 170 && acc) { out.push(acc.trim()); acc = p; }
-            else acc = acc ? acc + ' ' + p : p;
-        });
-        if (acc.trim()) out.push(acc.trim());
-        return out;
-    }
-
-    async function hablarNavegador(texto, rate, pitch, volumen, miToken) {
-        if (!window.speechSynthesis) return;
-        window.speechSynthesis.cancel();
-        const frases = dividirEnFrases(texto);
-        for (let i = 0; i < frases.length; i++) {
-            if (miToken !== ttsToken) return;
-            await new Promise(function(resolve) {
-                const u = new SpeechSynthesisUtterance(frases[i]);
-                u.lang = config.idioma || 'es-MX';
-                u.rate = Math.max(0.5, Math.min(2, rate));
-                u.pitch = Math.max(0.5, Math.min(2, pitch));
-                u.volume = volumen;
-                u.onend = resolve;
-                u.onerror = resolve;
-                window.speechSynthesis.speak(u);
-            });
-        }
-    }
-
-    function reproducirAudio(url) {
-        return new Promise(function(resolve) {
-            try {
-                audioActual = new Audio(url);
-                audioActual.volume = Math.max(0, Math.min(1, config.volumen || 1.0));
-                audioActual.onended = function() { audioActual = null; resolve(); };
-                audioActual.onerror = function() { audioActual = null; resolve(); };
-                audioActual.play().catch(function() { resolve(); });
-            } catch (e) { resolve(); }
-        });
-    }
-
-    function detenerTTS() {
-        ttsToken++;
-        try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
-        if (audioActual) { try { audioActual.pause(); } catch (e) {} audioActual = null; }
-        isSpeaking = false;
-        detenerAnimacionBoca();
-    }
-
-    function iniciarReconocimiento() {
-        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SR) return false;
-        if (recognitionActive && recognition) return true;
-
-        try {
-            recognition = new SR();
-            recognition.lang = config.idioma || 'es-MX';
-            recognition.continuous = false;
-            recognition.interimResults = false;
-            recognition.maxAlternatives = 1;
-            recibioResultado = false;
-
-            recognition.onstart = function() {
-                recognitionActive = true;
-                isListening = true;
-                setEstado('escuchando');  // enciende la antena
-            };
-
-            recognition.onresult = function(event) {
-                const transcript = event.results[0][0].transcript.trim();
-                if (!transcript) return;
-                recibioResultado = true;
-                const lower = transcript.toLowerCase();
-
-                if (/(adiós|adios|hasta luego|nos vemos|ya no)/.test(lower) && lower.length < 30) {
-                    conversacionActiva = false;
-                    historialLocal.push({ role: 'user', content: transcript, ts: Date.now() });
-                    hablar('¡Hasta luego!').then(function() { guardarHistorial(); });
-                    return;
-                }
-
-                if (/(olvida (todo|lo que hablamos)|borra (la )?conversaci[oó]n|empecemos de nuevo)/.test(lower)) {
-                    olvidarTodo();
-                    hablar('Listo, empezamos de cero.').then(function() {
-                        if (conversacionActiva) iniciarReconocimiento();
-                    });
-                    return;
-                }
-
-                procesarComando(transcript);
-            };
-
-            recognition.onerror = function(event) {
-                recognitionActive = false;
-                isListening = false;
-                if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-                    conversacionActiva = false;
-                    setEstado('idle');
-                    if (config.mostrar_subtitulos) {
-                        mostrarBurbuja('Permite el micrófono.');
-                        setTimeout(ocultarBurbuja, 5000);
-                    }
-                } else if (event.error === 'no-speech' || event.error === 'aborted') {
-                    conversacionActiva = false;
-                    setEstado('idle');
-                } else {
-                    setEstado('idle');
-                }
-            };
-
-            recognition.onend = function() {
-                recognitionActive = false;
-                isListening = false;
-                if (!procesando && !isSpeaking) { setEstado('idle'); }
-                if (!recibioResultado && !procesando && !isSpeaking) conversacionActiva = false;
-            };
-
-            recognition.start();
-            return true;
-        } catch (e) { return false; }
-    }
-
-    function detenerReconocimiento() {
-        if (recognition && recognitionActive) {
-            try { recognition.abort ? recognition.abort() : recognition.stop(); } catch (e) {}
-        }
-        recognitionActive = false;
-        isListening = false;
-    }
-
-    async function procesarComando(texto) {
-        if (!texto) return;
-        procesando = true;
-        setEstado('pensando');
-
-        cambiarVisema('M');
-
-        historialLocal.push({ role: 'user', content: texto, ts: Date.now() });
-
-        let respuesta = '';
-        if (window.MarquinhosBrain && typeof window.MarquinhosBrain.preguntar === 'function') {
-            try {
-                respuesta = await window.MarquinhosBrain.preguntar(texto, historialLocal);
-            } catch (e) {
-                respuesta = 'Ups, tuve un problema. ¿Puedes repetir?';
-            }
-        } else {
-            respuesta = 'No puedo pensar ahora mismo.';
-        }
-
-        if (!respuesta) respuesta = 'No supe qué decir.';
-
-        historialLocal.push({ role: 'assistant', content: respuesta, ts: Date.now() });
-        guardarHistorial();
-
-        procesando = false;
-        const completo = await hablar(respuesta);
-
-        if (completo && conversacionActiva) {
-            recibioResultado = false;
-            setTimeout(function() {
-                if (conversacionActiva && !isSpeaking && !isListening && !procesando) {
-                    iniciarReconocimiento();
-                }
-            }, 300);
-        }
-    }
-
-    function instalarVisibility() {
-        document.addEventListener('visibilitychange', function() {
-            if (document.hidden) detenerConversacion();
-        });
-    }
-
-    window.addEventListener('storage', function(e) {
-        if (e.key === 'marquinhos_config') {
-            cargarConfig();
-            aplicarModo();
-            aplicarTamano();
-        }
-        if (e.key === ACC_KEY) {
-            try {
-                accesoriosEquipados = JSON.parse(e.newValue || '[]');
-                renderAccesoriosEnAvatar();
-            } catch (err) {}
-        }
-    });
-
-    window.Marquinhos = {
-        hablar: hablar,
-        procesar: procesarComando,
-        olvidar: olvidarTodo,
-        recargarAccesorios: async function() {
-            await cargarAccesorios();
-            renderAccesoriosEnAvatar();
-        },
-        setModoSubtitulos: function(activo) {
-            config.mostrar_subtitulos = !!activo;
-            guardarConfig();
-            aplicarModo();
-        },
-        getModoSubtitulos: function() { return !!config.mostrar_subtitulos; },
-        getHistorial: function() { return historialLocal.slice(); },
-        getConfig: function() { return { ...config }; },
-        setConfig: function(nuevos) {
-            config = { ...config, ...nuevos };
-            guardarConfig();
-            aplicarModo();
-            aplicarTamano();
-        },
-        resetPosicion: function() {
-            config.posicion_x = null;
-            config.posicion_y = null;
-            guardarConfig();
-            if (container) {
-                container.style.left = '';
-                container.style.top = '';
-                container.style.right = '16px';
-                container.style.bottom = '16px';
-            }
-        },
-        getUserInfo: function() { return userInfo; },
-        _visemasDisponibles: function() { return Object.keys(VISEMAS_SVG); },
-        reiniciarTerminos: function() {
-            try { localStorage.removeItem(TERMINOS_KEY); } catch (e) {}
-            log('Términos reiniciados.');
-        },
-        getTerminosVersion: function() { return TERMINOS_VERSION; },
-        setTamano: function(porcentaje) {
-            config.tamano = Math.max(60, Math.min(150, parseInt(porcentaje, 10) || 100));
-            guardarConfig();
-            aplicarTamano();
-        },
-        getTamano: function() { return config.tamano != null ? config.tamano : 100; }
-    };
-
-    async function init() {
-        if (rutaExcluida()) return;
-        cargarConfig();
-        if (!config.activo) return;
-
-        await cargarUsuario();
-        cargarHistorial();
-        await cargarAccesorios();
-        crearWidget();
-        instalarVisibility();
-        log('✅ Marquinhos v9.3 Galactic Pro activo');
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
-    }
-})();
+    // ... [la segunda mitad sigue en el siguiente mensaje]
