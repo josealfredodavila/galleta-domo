@@ -1,9 +1,9 @@
 // ================================================================
-// ITLASUHUA · PET · SVG v3.0
+// ITLASUHUA · PET · SVG v3.1
 // ================================================================
 // Rey Itlasuhua, serpiente cósmica chibi.
-// v3.0: estilo fiel a la referencia, brillo, boca animada,
-//       polvo arcoíris, alas suspendidas, cola en movimiento.
+// v3.1: cola enroscada alrededor de la cara y el cuerpo,
+//       con más plumas y mismo estilo galáctico del cuerpo.
 // ================================================================
 
 (function (window) {
@@ -15,11 +15,75 @@
     const POS_KEY = 'itlasuhua_posicion';
     const reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
+    // ============================================================
+    // COLA ENROSCADA: anillos (parte trasera detrás del cuerpo,
+    // parte delantera por encima del cuerpo)
+    // ============================================================
+    const anillo = (cy, rx, ry = 42) => {
+        const x1 = 300 - rx;
+        const x2 = 300 + rx;
+        return {
+            cy,
+            rx,
+            back: `M${x1} ${cy} A${rx} ${ry} 0 0 1 ${x2} ${cy}`,
+            front: `M${x1} ${cy} A${rx} ${ry} 0 0 0 ${x2} ${cy}`
+        };
+    };
+
+    const capaCola = (d) => `
+        <path d="${d}" fill="none" stroke="#0B1638" stroke-width="50" stroke-linecap="round"/>
+        <path d="${d}" fill="none" stroke="url(#itla-galaxy)" stroke-width="42" stroke-linecap="round"/>
+        <path d="${d}" fill="none" stroke="url(#itla-stars)" stroke-width="36" stroke-linecap="round" opacity=".85"/>
+        <path d="${d}" fill="none" stroke="#3CF0E2" stroke-width="2.5" stroke-linecap="round" opacity=".8" filter="url(#itla-glow)"/>
+        <path d="${d}" fill="none" stroke="#FFE08A" stroke-width="3" stroke-linecap="round" stroke-dasharray="8 12" opacity=".7">
+            <animate attributeName="stroke-dashoffset" from="0" to="-40" dur="2.5s" repeatCount="indefinite"/>
+        </path>`;
+
+    const plumaEn = (x, y, rot, escala, relleno, borde) => `
+        <use href="#itla-pluma" xlink:href="#itla-pluma" transform="translate(${x} ${y}) rotate(${rot}) scale(${escala})" fill="${relleno}" stroke="${borde}" stroke-width="3"/>`;
+
+    const ORO = { f: 'url(#itla-feather-gold)', b: '#FFE99B' };
+    const TEAL = { f: 'url(#itla-feather-teal)', b: '#6FFFF2' };
+    const AZUL = { f: 'url(#itla-feather-blue)', b: '#74FFF4' };
+
+    const anillos = [
+        anillo(400, 172),
+        anillo(452, 184),
+        anillo(504, 190),
+        anillo(556, 180)
+    ];
+
+    const colaTrasera = anillos.map(a => capaCola(a.back)).join('');
+    const colaDelantera = anillos.map(a => capaCola(a.front)).join('');
+
+    // Punta izquierda y derecha de la cola, con forma de pluma
+    const puntaDer = `
+        <path d="M470 546 C520 540 548 506 540 470 C536 450 520 452 522 470 C524 494 500 514 466 528 Z" fill="url(#itla-galaxy)" stroke="#3CF0E2" stroke-width="2.5" filter="url(#itla-glow)"/>
+        <path d="M130 546 C80 540 52 506 60 470 C64 450 80 452 78 470 C76 494 100 514 134 528 Z" fill="url(#itla-galaxy)" stroke="#3CF0E2" stroke-width="2.5" filter="url(#itla-glow)"/>`;
+
+    // Plumas en los extremos de cada anillo y en la punta
+    const plumasCola = [
+        plumaEn(300 - 172, 400, -70, .42, ORO.f, ORO.b),
+        plumaEn(300 + 172, 400, 70, .42, ORO.f, ORO.b),
+        plumaEn(300 - 184, 452, -78, .46, TEAL.f, TEAL.b),
+        plumaEn(300 + 184, 452, 78, .46, TEAL.f, TEAL.b),
+        plumaEn(300 - 190, 504, -82, .48, AZUL.f, AZUL.b),
+        plumaEn(300 + 190, 504, 82, .48, AZUL.f, AZUL.b),
+        plumaEn(300 - 180, 556, -86, .44, ORO.f, ORO.b),
+        plumaEn(300 + 180, 556, 86, .44, ORO.f, ORO.b),
+        plumaEn(300, 598, 180, .46, TEAL.f, TEAL.b),
+        plumaEn(300, 352, 0, .36, AZUL.f, AZUL.b),
+        plumaEn(540, 446, 28, .40, ORO.f, ORO.b),
+        plumaEn(78, 446, -28, .40, TEAL.f, TEAL.b),
+        plumaEn(150, 572, -40, .34, AZUL.f, AZUL.b),
+        plumaEn(450, 572, 40, .34, AZUL.f, AZUL.b)
+    ].join('');
+
     const svgString = `
     <svg
         id="itlasuhua-svg"
         class="itlasuhua-svg"
-        viewBox="0 0 600 600"
+        viewBox="0 0 600 620"
         xmlns="http://www.w3.org/2000/svg"
         xmlns:xlink="http://www.w3.org/1999/xlink"
         preserveAspectRatio="xMidYMid meet"
@@ -114,14 +178,6 @@
                 </feMerge>
             </filter>
 
-            <filter id="itla-glow-strong" x="-100%" y="-100%" width="300%" height="300%">
-                <feGaussianBlur stdDeviation="9" result="blur"/>
-                <feMerge>
-                    <feMergeNode in="blur"/>
-                    <feMergeNode in="SourceGraphic"/>
-                </feMerge>
-            </filter>
-
             <filter id="itla-shadow" x="-50%" y="-50%" width="200%" height="200%">
                 <feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#000000" flood-opacity=".5"/>
             </filter>
@@ -182,13 +238,8 @@
                 </g>
             </g>
 
-            <g id="itla-cola">
-                <animateTransform attributeName="transform" type="rotate" values="-3 320 520; 3 320 520; -3 320 520" dur="3.6s" repeatCount="indefinite"/>
-                <path d="M250 470 C170 470 140 530 196 566 C260 604 436 586 448 520 C456 470 388 452 344 480" fill="none" stroke="#0B1638" stroke-width="72" stroke-linecap="round"/>
-                <path d="M250 470 C170 470 140 530 196 566 C260 604 436 586 448 520 C456 470 388 452 344 480" fill="none" stroke="url(#itla-galaxy)" stroke-width="62" stroke-linecap="round"/>
-                <path d="M250 470 C170 470 140 530 196 566 C260 604 436 586 448 520 C456 470 388 452 344 480" fill="none" stroke="url(#itla-stars)" stroke-width="54" stroke-linecap="round" opacity=".85"/>
-                <path d="M250 470 C170 470 140 530 196 566 C260 604 436 586 448 520 C456 470 388 452 344 480" fill="none" stroke="#E8C98A" stroke-width="5" stroke-dasharray="10 14" opacity=".55"/>
-                <path d="M250 470 C170 470 140 530 196 566 C260 604 436 586 448 520 C456 470 388 452 344 480" fill="none" stroke="#3CF0E2" stroke-width="3" opacity=".8" filter="url(#itla-glow)"/>
+            <g id="itla-cola-trasera">
+                ${colaTrasera}
             </g>
 
             <path d="M264 368 C260 410 262 440 270 478 L330 478 C338 440 340 410 336 368Z" fill="url(#itla-belly)" stroke="#8A6A3E" stroke-width="3"/>
@@ -197,6 +248,15 @@
                 <path d="M264 414 Q300 424 337 414"/>
                 <path d="M266 436 Q300 446 335 436"/>
                 <path d="M268 458 Q300 468 333 458"/>
+            </g>
+
+            <g id="itla-cola-delantera">
+                ${colaDelantera}
+                ${puntaDer}
+            </g>
+
+            <g id="itla-plumas-cola" filter="url(#itla-shadow)">
+                ${plumasCola}
             </g>
 
             <g id="itla-penacho" filter="url(#itla-shadow)">
@@ -466,7 +526,7 @@
                     log('📍 Posición guardada');
                 } catch (err) {}
             } else {
-                // Un toque sin arrastrar: la mascota suelta un estallido de polvo
+                // Un toque sin arrastrar: estallido de polvo
                 spit(14, 1.2);
             }
         });
