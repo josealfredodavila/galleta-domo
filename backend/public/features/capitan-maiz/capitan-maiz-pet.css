@@ -1,0 +1,374 @@
+/* ================================================================
+   CAPITÁN MAÍZ · PET · CSS v1.0
+   Estilo: Chibi Kawaii Galáctico + Neon Charro
+   Paleta: Blanco perla + Negro espacial + Azul neón + Galaxia
+   ================================================================ */
+
+#capitan-maiz-pet {
+    --cm-ancho: 90px;
+    --cm-alto: 130px;
+
+    /* Paleta del Capitán Maíz */
+    --cm-blanco-perla: #F5F5F5;
+    --cm-negro-espacial: #0A0A0A;
+    --cm-azul-neon: #00D4FF;
+    --cm-azul-neon-soft: rgba(0, 212, 255, 0.5);
+    --cm-trazo: #5A6C7D;
+    --cm-galaxia-morado: #6B4DBA;
+    --cm-galaxia-rosa: #D67BB8;
+    --cm-chapita: #FFB6C1;
+    --cm-estrella: #FFFFFF;
+
+    /* Aura galaxia */
+    --cm-aura: rgba(0, 212, 255, 0.4);
+}
+
+/* ============================================================
+   AVATAR
+   ============================================================ */
+.cm-pet-avatar {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: var(--cm-ancho, 90px);
+    height: var(--cm-alto, 130px);
+    cursor: grab;
+    filter: drop-shadow(0 6px 20px rgba(0, 212, 255, 0.5));
+    animation: cm-float 4s ease-in-out infinite;
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.cm-pet.cm-dragging .cm-pet-avatar {
+    animation: none;
+    cursor: grabbing;
+    transform: scale(1.05);
+}
+
+.cm-pet-avatar:active { cursor: grabbing; }
+
+.cm-pet-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    pointer-events: none;
+    transform-origin: center center;
+    overflow: visible;
+}
+
+@keyframes cm-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+}
+
+/* ============================================================
+   CUERPO Y ARTICULACIONES
+   ============================================================ */
+#cm-cuerpo {
+    transform-origin: 100px 200px;
+    will-change: transform;
+}
+
+.cm-brazo, .cm-antebrazo, .cm-mano, .cm-dedo, .cm-pierna {
+    will-change: transform;
+    transition: transform 0.4s cubic-bezier(0.34, 1.45, 0.64, 1);
+}
+
+/* Pivotes (se ajustarán cuando Anthropic entregue el SVG) */
+#cm-brazo-izq  { transform-origin: 60px 180px; }
+#cm-brazo-der  { transform-origin: 140px 180px; }
+#cm-antebrazo-izq { transform-origin: 30px 205px; }
+#cm-antebrazo-der { transform-origin: 170px 205px; }
+#cm-mano-izq   { transform-origin: 18px 228px; }
+#cm-mano-der   { transform-origin: 182px 228px; }
+#cm-pierna-izq { transform-origin: 82px 250px; }
+#cm-pierna-der { transform-origin: 118px 250px; }
+
+#cm-cabeza-grupo {
+    transform-origin: 100px 160px;
+    will-change: transform;
+    transition: transform 0.5s cubic-bezier(0.34, 1.45, 0.64, 1);
+}
+
+/* ============================================================
+   BURBUJA DE SUBTÍTULOS
+   ============================================================ */
+.cm-pet-bubble {
+    position: absolute;
+    bottom: calc(100% + 14px);
+    right: 0;
+    background: rgba(10, 10, 10, 0.95);
+    color: var(--cm-azul-neon);
+    padding: 8px 14px;
+    border-radius: 14px;
+    font-size: 12px;
+    line-height: 1.35;
+    font-weight: 600;
+    max-width: 220px;
+    min-width: 60px;
+    box-shadow:
+        0 8px 30px rgba(0, 212, 255, 0.35),
+        0 0 0 1px rgba(0, 212, 255, 0.4);
+    opacity: 0;
+    transform: translateY(8px) scale(0.95);
+    transform-origin: bottom right;
+    transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    pointer-events: none;
+    word-wrap: break-word;
+    white-space: normal;
+    z-index: 1;
+}
+
+.cm-pet-bubble.cm-bubble-visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+.cm-pet-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    right: 20px;
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 8px solid rgba(10, 10, 10, 0.95);
+}
+
+.cm-pet.cm-modo-voz .cm-pet-bubble { display: none !important; }
+
+.cm-pet-boca {
+    transition: d 0.08s ease-out;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* ============================================================
+   ESTADOS
+   ============================================================ */
+.cm-pet[data-estado="escuchando"] .cm-pet-avatar {
+    animation: cm-pulse-listen 1.2s ease-in-out infinite;
+}
+
+.cm-pet[data-estado="pensando"] .cm-pet-avatar {
+    animation: cm-pulse-think 1s ease-in-out infinite;
+}
+
+@keyframes cm-pulse-listen {
+    0%, 100% { filter: drop-shadow(0 6px 16px rgba(0, 212, 255, 0.6)); }
+    50% { filter: drop-shadow(0 6px 28px rgba(0, 212, 255, 1)); }
+}
+
+@keyframes cm-pulse-think {
+    0%, 100% { filter: drop-shadow(0 6px 16px rgba(107, 77, 186, 0.6)); }
+    50% { filter: drop-shadow(0 6px 28px rgba(107, 77, 186, 1)); }
+}
+
+#cm-pupila-izq, #cm-pupila-der { will-change: transform; }
+
+#cm-ojo-izq { transform-origin: 72px 108px; }
+#cm-ojo-der { transform-origin: 128px 108px; }
+#cm-ojo-izq, #cm-ojo-der { will-change: transform; }
+
+/* ============================================================
+   CONTENEDOR PRINCIPAL
+   ============================================================ */
+#capitan-maiz-pet {
+    all: initial;
+    position: fixed !important;
+    bottom: 16px !important;
+    right: 16px !important;
+    z-index: 2147483646 !important; /* Uno menos que Marquinhos */
+    width: var(--cm-ancho, 90px) !important;
+    height: var(--cm-alto, 130px) !important;
+    pointer-events: auto !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: block !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    touch-action: none !important;
+    font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif !important;
+    -webkit-tap-highlight-color: transparent !important;
+    transition: width 0.2s ease, height 0.2s ease !important;
+    box-sizing: border-box !important;
+}
+
+#capitan-maiz-pet * { box-sizing: border-box !important; }
+
+#capitan-maiz-pet .cm-pet-avatar {
+    position: absolute !important;
+    bottom: 0 !important;
+    right: 0 !important;
+    width: var(--cm-ancho, 90px) !important;
+    height: var(--cm-alto, 130px) !important;
+    cursor: grab !important;
+    animation: cm-float 4s ease-in-out infinite !important;
+    touch-action: none !important;
+}
+
+#capitan-maiz-pet.cm-dragging .cm-pet-avatar {
+    animation: none !important;
+    cursor: grabbing !important;
+    transform: scale(1.05) !important;
+}
+
+#capitan-maiz-pet .cm-pet-svg {
+    width: 100% !important;
+    height: 100% !important;
+    display: block !important;
+    pointer-events: none !important;
+    transform-origin: center center !important;
+}
+
+/* ============================================================
+   MODAL DE TÉRMINOS
+   ============================================================ */
+.cm-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 2147483645;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: cm-fade-in 0.3s ease;
+}
+
+@keyframes cm-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.cm-modal-content {
+    background: #0a0a0a;
+    border: 1px solid rgba(0, 212, 255, 0.5);
+    border-radius: 16px;
+    max-width: 480px;
+    width: 100%;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    color: #f0f4f8;
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif;
+    box-shadow: 0 20px 60px rgba(0, 212, 255, 0.3);
+    animation: cm-slide-up 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes cm-slide-up {
+    from { transform: translateY(30px) scale(0.95); opacity: 0; }
+    to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.cm-modal-content h2 {
+    color: #00D4FF;
+    font-size: 1.1rem;
+    margin: 0;
+    padding: 20px 24px 12px;
+    border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+}
+
+.cm-modal-body {
+    padding: 20px 24px;
+    overflow-y: auto;
+    font-size: 0.88rem;
+    line-height: 1.55;
+    color: #c0d8e8;
+}
+
+.cm-modal-body p { margin: 0 0 12px; }
+.cm-modal-body ul { padding-left: 20px; margin: 8px 0 16px; }
+.cm-modal-body li { margin-bottom: 6px; }
+.cm-modal-body strong { color: #f0f4f8; }
+.cm-modal-body a { color: #00D4FF; }
+
+.cm-modal-actions {
+    padding: 16px 24px 20px;
+    display: flex;
+    gap: 10px;
+    border-top: 1px solid rgba(0, 212, 255, 0.2);
+}
+
+.cm-btn-aceptar, .cm-btn-rechazar {
+    flex: 1;
+    padding: 12px 16px;
+    border-radius: 99px;
+    border: 0;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    font-family: inherit;
+    transition: transform 0.15s ease;
+}
+
+.cm-btn-aceptar {
+    background: linear-gradient(135deg, #00D4FF, #6B4DBA);
+    color: #0a0a0a;
+}
+
+.cm-btn-rechazar {
+    background: transparent;
+    border: 1px solid rgba(138, 168, 184, 0.4);
+    color: #8aa8b8;
+}
+
+.cm-btn-aceptar:hover, .cm-btn-rechazar:hover { transform: scale(1.03); }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 520px) {
+    .cm-pet-bubble {
+        font-size: 11px;
+        max-width: 180px;
+        padding: 6px 10px;
+    }
+    .cm-modal-content h2 { font-size: 1rem; padding: 16px 20px 10px; }
+    .cm-modal-body { padding: 16px 20px; font-size: 0.83rem; }
+    .cm-modal-actions { padding: 14px 20px 18px; }
+    .cm-btn-aceptar, .cm-btn-rechazar { font-size: 0.8rem; padding: 10px 12px; }
+}
+
+/* ============================================================
+   TEMA DÍA
+   ============================================================ */
+html.tema-dia .cm-pet-bubble,
+html[data-tema="dia"] .cm-pet-bubble {
+    background: rgba(255, 255, 255, 0.99);
+    color: #0A0A0A;
+    box-shadow:
+        0 8px 30px rgba(0, 212, 255, 0.35),
+        0 0 0 1px rgba(0, 212, 255, 0.5);
+}
+
+html.tema-dia .cm-pet-bubble::after,
+html[data-tema="dia"] .cm-pet-bubble::after {
+    border-top-color: rgba(255, 255, 255, 0.99);
+}
+
+html.tema-dia .cm-modal-content,
+html[data-tema="dia"] .cm-modal-content {
+    background: #ffffff;
+    color: #0a1a3e;
+    border-color: rgba(0, 212, 255, 0.5);
+}
+
+html.tema-dia .cm-modal-content h2,
+html[data-tema="dia"] .cm-modal-content h2 {
+    color: #00D4FF;
+    border-bottom-color: rgba(0, 212, 255, 0.3);
+}
+
+html.tema-dia .cm-modal-body,
+html[data-tema="dia"] .cm-modal-body { color: #334; }
+
+html.tema-dia .cm-modal-body strong,
+html[data-tema="dia"] .cm-modal-body strong { color: #0a1a3e; }
+
+html.tema-dia .cm-btn-rechazar,
+html[data-tema="dia"] .cm-btn-rechazar {
+    border-color: rgba(10, 26, 62, 0.3);
+    color: #556;
+}
