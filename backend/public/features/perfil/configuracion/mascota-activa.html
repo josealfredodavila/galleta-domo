@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Mascota Activa · Configuración</title>
+<meta name="theme-color" content="#05080f">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+<script src="/features/shared/js/apariencia-global.js"></script>
+
+<style>
+:root {
+    --gold: #D4AF37;
+    --space: #05080f;
+    --text: #f0f4f8;
+    --muted: #8aa8b8;
+    --border: rgba(212, 175, 55, 0.16);
+    --verde: #0F2D1A;
+    --success: #00d68f;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    background: var(--space);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    padding: 20px;
+    background-image:
+        radial-gradient(ellipse at 20% 20%, rgba(42, 106, 58, 0.25), transparent 55%),
+        radial-gradient(ellipse at 80% 80%, rgba(212, 175, 55, 0.06), transparent 55%);
+}
+.app { max-width: 640px; margin: 0 auto; }
+h1 { font-size: 1.3rem; color: var(--gold); margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
+h1 .hex { font-family: 'Orbitron', monospace; }
+.sub { color: var(--muted); font-size: .8rem; margin-bottom: 24px; }
+
+.btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--muted);
+    text-decoration: none;
+    font-size: .85rem;
+    margin-bottom: 20px;
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    border-radius: 99px;
+}
+.btn-back:hover { color: var(--gold); border-color: var(--gold); }
+
+.card {
+    background: rgba(15, 45, 26, 0.35);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px;
+    margin-bottom: 16px;
+}
+.card h2 {
+    font-size: .95rem;
+    color: var(--gold);
+    margin-bottom: 14px;
+    font-weight: 700;
+    letter-spacing: .5px;
+}
+
+/* LISTA DE MASCOTAS */
+.mascota-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 2px solid transparent;
+    border-radius: 14px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    position: relative;
+}
+.mascota-item:hover {
+    background: rgba(0, 0, 0, 0.5);
+    border-color: rgba(212, 175, 55, 0.3);
+}
+.mascota-item.activa {
+    background: rgba(212, 175, 55, 0.08);
+    border-color: var(--gold);
+    box-shadow: 0 4px 20px rgba(212, 175, 55, 0.2);
+}
+.mascota-item.activa::after {
+    content: '✓';
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    font-size: 1.1rem;
+    color: var(--success);
+    font-weight: 700;
+}
+
+.mascota-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    flex-shrink: 0;
+    border: 1px solid var(--border);
+}
+
+.mascota-info {
+    flex: 1;
+    min-width: 0;
+}
+.mascota-nombre {
+    font-weight: 700;
+    font-size: .95rem;
+    color: var(--text);
+    margin-bottom: 3px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.mascota-nombre .tag {
+    font-size: .55rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    font-family: 'Orbitron', monospace;
+    text-transform: uppercase;
+}
+.tag-activo {
+    background: rgba(0, 214, 143, 0.2);
+    color: var(--success);
+    border: 1px solid var(--success);
+}
+.mascota-desc {
+    font-size: .75rem;
+    color: var(--muted);
+    line-height: 1.4;
+}
+
+.radio-circulo {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid var(--muted);
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.25s ease;
+}
+.mascota-item.activa .radio-circulo {
+    border-color: var(--success);
+    background: var(--success);
+}
+.mascota-item.activa .radio-circulo::after {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: white;
+}
+
+/* BOTÓN GUARDAR */
+.btn-guardar {
+    width: 100%;
+    padding: 14px;
+    border-radius: 12px;
+    border: none;
+    background: linear-gradient(135deg, var(--gold), #b8923a);
+    color: var(--space);
+    font-family: 'Inter', sans-serif;
+    font-weight: 800;
+    font-size: .9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.3px;
+    margin-top: 8px;
+}
+.btn-guardar:hover { transform: scale(1.02); box-shadow: 0 8px 24px rgba(212, 175, 55, 0.4); }
+.btn-guardar:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* TOAST */
+.toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-80px);
+    background: rgba(0, 214, 143, 0.15);
+    border: 1px solid var(--success);
+    color: #A5D6A7;
+    padding: 12px 22px;
+    border-radius: 99px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    z-index: 9999;
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.toast.visible { transform: translateX(-50%) translateY(0); }
+.toast.info {
+    background: rgba(33,150,243,0.15);
+    border-color: #2196F3;
+    color: #BBDEFB;
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+    <a href="/features/perfil/configuracion/index.html" class="btn-back">← Configuración</a>
+
+    <h1><span class="hex">◈</span> Mascota Activa</h1>
+    <p class="sub">Elige una sola mascota para que aparezca en la app</p>
+
+    <div class="card">
+        <h2>MASCOTAS DISPONIBLES</h2>
+
+        <div class="mascota-item" data-mascota="marquinhos">
+            <div class="mascota-icon">👦</div>
+            <div class="mascota-info">
+                <div class="mascota-nombre">
+                    Marquinhos
+                    <span class="tag tag-activo" data-tag="marquinhos" hidden>ACTIVO</span>
+                </div>
+                <div class="mascota-desc">Asistente cercano, cálido y confiable. Ideal para el día a día.</div>
+            </div>
+            <div class="radio-circulo"></div>
+        </div>
+
+        <div class="mascota-item" data-mascota="capitan-maiz">
+            <div class="mascota-icon">🌽</div>
+            <div class="mascota-info">
+                <div class="mascota-nombre">
+                    Capitán Maíz
+                    <span class="tag tag-activo" data-tag="capitan-maiz" hidden>ACTIVO</span>
+                </div>
+                <div class="mascota-desc">Guardián ancestral mexicano. Sabio, cálido y con modismos.</div>
+            </div>
+            <div class="radio-circulo"></div>
+        </div>
+
+        <div class="mascota-item" data-mascota="itlasuhua">
+            <div class="mascota-icon">🐍</div>
+            <div class="mascota-info">
+                <div class="mascota-nombre">
+                    Rey Itlasuhua
+                    <span class="tag tag-activo" data-tag="itlasuhua" hidden>ACTIVO</span>
+                </div>
+                <div class="mascota-desc">Serpiente cósmica ceremonial. Guardián del cosmos.</div>
+            </div>
+            <div class="radio-circulo"></div>
+        </div>
+
+        <div class="mascota-item" data-mascota="ninguna">
+            <div class="mascota-icon">⭕</div>
+            <div class="mascota-info">
+                <div class="mascota-nombre">
+                    Sin mascota
+                    <span class="tag tag-activo" data-tag="ninguna" hidden>ACTIVO</span>
+                </div>
+                <div class="mascota-desc">No mostrar ninguna mascota flotante en la pantalla.</div>
+            </div>
+            <div class="radio-circulo"></div>
+        </div>
+    </div>
+
+    <button class="btn-guardar" id="btnGuardar" type="button">
+        ◈ Guardar selección
+    </button>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+
+(function() {
+    const KEY = 'mascota_activa';
+    const DEFAULT_MASCOTA = 'marquinhos';
+
+    let mascotaSeleccionada = DEFAULT_MASCOTA;
+
+    function toast(msg, tipo) {
+        const el = document.getElementById('toast');
+        el.textContent = msg;
+        el.className = 'toast visible' + (tipo ? ' ' + tipo : '');
+        clearTimeout(el._timer);
+        el._timer = setTimeout(() => el.classList.remove('visible'), 3000);
+    }
+
+    function leer() {
+        try {
+            const v = localStorage.getItem(KEY);
+            return v || DEFAULT_MASCOTA;
+        } catch (e) {
+            return DEFAULT_MASCOTA;
+        }
+    }
+
+    function guardar(mascota) {
+        try {
+            localStorage.setItem(KEY, mascota);
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function pintar() {
+        document.querySelectorAll('.mascota-item').forEach(item => {
+            const m = item.dataset.mascota;
+            const activa = m === mascotaSeleccionada;
+            item.classList.toggle('activa', activa);
+            const tag = item.querySelector('[data-tag]');
+            if (tag) tag.hidden = !activa;
+        });
+    }
+
+    function init() {
+        mascotaSeleccionada = leer();
+        pintar();
+
+        document.querySelectorAll('.mascota-item').forEach(item => {
+            item.addEventListener('click', () => {
+                mascotaSeleccionada = item.dataset.mascota;
+                pintar();
+            });
+        });
+
+        document.getElementById('btnGuardar').addEventListener('click', () => {
+            const btn = document.getElementById('btnGuardar');
+            btn.disabled = true;
+            btn.textContent = 'Guardando...';
+
+            const ok = guardar(mascotaSeleccionada);
+
+            setTimeout(() => {
+                if (ok) {
+                    toast('✅ Mascota actualizada', 'success');
+                } else {
+                    toast('⚠️ No se pudo guardar', 'error');
+                }
+                btn.disabled = false;
+                btn.textContent = '◈ Guardar selección';
+
+                // Recargar para aplicar el cambio
+                setTimeout(() => {
+                    window.location.reload();
+                }, 800);
+            }, 400);
+        });
+
+        console.log('[Mascota Activa] ✅ Cargada. Seleccionada:', mascotaSeleccionada);
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();
+</script>
+</body>
+</html>
