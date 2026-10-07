@@ -1,8 +1,9 @@
 // ================================================================
-// MARQUINHOS · FIT SYSTEM — v1.0
+// MARQUINHOS · FIT SYSTEM — v1.1
 // ================================================================
-// FASE 1
+// FASE 1 (ajustada)
 // - Coordenadas únicas para TIENDA + PET
+// - Posiciones afinadas según pruebas visuales
 // - NO modifica Supabase
 // - NO modifica svg_data
 // - Compatible con accesorios actuales basados en emoji
@@ -17,20 +18,12 @@
 
     const MQ_FIT = Object.freeze({
 
-        // ============================================================
-        // SISTEMA DE COORDENADAS
-        // ============================================================
-
         viewBox: Object.freeze({
             x: 0,
             y: 0,
             width: 200,
             height: 300
         }),
-
-        // ============================================================
-        // ZONAS ANATÓMICAS REALES
-        // ============================================================
 
         zonas: Object.freeze({
 
@@ -87,18 +80,14 @@
 
         // ============================================================
         // POSICIONES COMPATIBLES CON LOS EMOJIS ACTUALES
-        //
-        // x/y = punto de inserción del <text>
-        // size = font-size
-        //
-        // Estos valores pasan a ser los mismos en TIENDA y PET.
+        // v1.1 — Ajustadas tras pruebas visuales
         // ============================================================
 
         categorias: Object.freeze({
 
             sombrero: Object.freeze({
                 x: 100,
-                y: 55,
+                y: 62,
                 size: 78,
                 scaleX: 1,
                 scaleY: 1,
@@ -118,7 +107,7 @@
 
             playera: Object.freeze({
                 x: 100,
-                y: 190,
+                y: 200,
                 size: 82,
                 scaleX: 1,
                 scaleY: 1,
@@ -128,7 +117,7 @@
 
             pantalon: Object.freeze({
                 x: 100,
-                y: 235,
+                y: 245,
                 size: 76,
                 scaleX: 1,
                 scaleY: 1,
@@ -149,7 +138,7 @@
             accesorio: Object.freeze({
                 x: 178,
                 y: 200,
-                size: 62,
+                size: 55,
                 scaleX: 1,
                 scaleY: 1,
                 rotation: 0,
@@ -157,10 +146,6 @@
             })
 
         }),
-
-        // ============================================================
-        // CAPAS
-        // ============================================================
 
         layers: Object.freeze({
             back: 10,
@@ -173,12 +158,7 @@
             front: 80
         }),
 
-        // ============================================================
-        // OBTENER POSICIÓN POR CATEGORÍA
-        // ============================================================
-
         getCategoria: function (categoria) {
-
             const cat = String(categoria || '')
                 .trim()
                 .toLowerCase();
@@ -195,12 +175,7 @@
                 });
         },
 
-        // ============================================================
-        // OBTENER ZONA ANATÓMICA
-        // ============================================================
-
         getZona: function (categoria) {
-
             const cat = String(categoria || '')
                 .trim()
                 .toLowerCase();
@@ -217,22 +192,12 @@
             return this.zonas[mapa[cat] || 'torso'];
         },
 
-        // ============================================================
-        // OBTENER NIVEL DE CAPA
-        // ============================================================
-
         getLayer: function (categoria) {
-
             const posicion = this.getCategoria(categoria);
-
             return this.layers[posicion.layer] || this.layers.front;
         }
 
     });
-
-    // ================================================================
-    // EXPOSICIÓN GLOBAL
-    // ================================================================
 
     window.MarquinhosFit = MQ_FIT;
 
