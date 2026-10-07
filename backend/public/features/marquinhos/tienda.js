@@ -1,7 +1,8 @@
 // ================================================================
-// TIENDA DE MARQUINHOS · v3.6
-// FASE 1: usa marquinhos-fit.js para coordenadas compartidas
-// FASE 2: usa marquinhos-accesorios-svg.js para SVG reales
+// TIENDA DE MARQUINHOS · v3.7
+// - El preview usa el MISMO cuerpo que el pet (marquinhos-accesorios-svg.js)
+// - La ropa se reparte por partes: cabeza, brazos, piernas, torso...
+// - Respaldo con emoji si una prenda no tiene SVG
 // ================================================================
 
 'use strict';
@@ -37,8 +38,23 @@
         document.querySelectorAll('.acc-btn').forEach(instalarListenerBoton);
     }
 
+    // ============================================================
+    // v3.7: Cambia el cuerpo viejo del preview por el del pet
+    // ============================================================
+    function montarCuerpo() {
+        const svg = document.querySelector('.preview-svg');
+        const lib = window.MarquinhosAccesoriosSVG;
+        if (!svg || !lib || typeof lib.cuerpoBase !== 'function') return;
+        // Un poco más de aire arriba para la antena y los sombreros
+        svg.setAttribute('viewBox', '0 -22 200 322');
+        svg.style.overflow = 'visible';
+        svg.innerHTML = lib.cuerpoBase();
+    }
+
     async function init() {
         try {
+            montarCuerpo();
+
             supabase = window.supabaseClient
                 || (window.supabase && window.supabase.createClient
                     ? window.supabase.createClient(
@@ -67,9 +83,9 @@
             renderGrid();
             instalarEventos();
 
-            console.log('[Tienda v3.6] ✅ Lista');
+            console.log('[Tienda v3.7] ✅ Lista');
         } catch (e) {
-            console.error('[Tienda v3.6] Error init:', e);
+            console.error('[Tienda v3.7] Error init:', e);
             toast('Error cargando tienda', 'error');
         }
     }
@@ -89,7 +105,7 @@
 
             pintarSaldo();
         } catch (e) {
-            console.warn('[Tienda v3.6] Error saldo:', e);
+            console.warn('[Tienda v3.7] Error saldo:', e);
             $('saldoValor').textContent = '0.00';
         }
     }
@@ -205,11 +221,11 @@
     }
 
     // ============================================================
-    // ✅ v3.6: Render con SVG real (Fase 2)
+    // ✅ v3.7: la ropa se reparte por partes del cuerpo
     // ============================================================
     function renderAccesoriosEquipados() {
-        const layer = $('accesoriosLayer');
-        if (!layer) return;
+        const svg = document.querySelector('.preview-svg');
+        if (!svg) return;
 
         const visibles = [];
 
@@ -223,22 +239,24 @@
             if (a) visibles.push(a);
         });
 
-        layer.innerHTML = visibles.map(a => {
-            const pos = posicionPorCategoria(a.categoria);
+        const lib = window.MarquinhosAccesoriosSVG;
+        const lista = visibles.map(a => a.svg_data || '').filter(Boolean);
+        let resto = lista;
 
-            // Detectar si tiene SVG real disponible
-            const svgReal = window.MarquinhosAccesoriosSVG && window.MarquinhosAccesoriosSVG.render
-                ? window.MarquinhosAccesoriosSVG.render(a.svg_data || '')
-                : null;
+        if (lib && typeof lib.aplicar === 'function' && svg.querySelector('[data-acc-slot]')) {
+            try { resto = lib.aplicar(svg, lista); } catch (e) { resto = lista; }
+        }
 
-            if (svgReal) {
-                // SVG real → renderizar como <g>
-                return `<g>${svgReal}</g>`;
-            }
-
-            // Emoji → renderizar como <text> (compatible)
-            return `<text x="${pos.x}" y="${pos.y}" font-size="${pos.size}" text-anchor="middle">${esc(a.svg_data || '')}</text>`;
-        }).join('');
+        // Respaldo: lo que no tenga SVG se dibuja como emoji
+        const layer = $('mq-acc-layer') || $('accesoriosLayer');
+        if (layer) {
+            layer.innerHTML = visibles
+                .filter(a => a.svg_data && resto.indexOf(a.svg_data) !== -1)
+                .map(a => {
+                    const pos = posicionPorCategoria(a.categoria);
+                    return `<text x="${pos.x}" y="${pos.y}" font-size="${pos.size}" text-anchor="middle">${esc(a.svg_data || '')}</text>`;
+                }).join('');
+        }
 
         pintarAvisoPrueba();
     }
@@ -262,9 +280,6 @@
             ' · aún no los tienes (solo vista previa)';
     }
 
-    // ============================================================
-    // ✅ v3.6: usa el sistema compartido marquinhos-fit.js
-    // ============================================================
     function posicionPorCategoria(cat) {
         if (window.MarquinhosFit && typeof window.MarquinhosFit.getCategoria === 'function') {
             const fit = window.MarquinhosFit.getCategoria(cat);
@@ -307,7 +322,7 @@
             });
 
             if (error) {
-                console.error('[Tienda v3.6] RPC error:', error);
+                console.error('[Tienda v3.7] RPC error:', error);
                 toast('Error al procesar la compra', 'error');
                 return;
             }
@@ -335,7 +350,7 @@
 
             await equipar(acc.id);
         } catch (e) {
-            console.error('[Tienda v3.6] Error comprando:', e);
+            console.error('[Tienda v3.7] Error comprando:', e);
             toast('Error al comprar: ' + (e.message || 'desconocido'), 'error');
         } finally {
             comprasEnVuelo.delete(acc.id);
@@ -408,7 +423,7 @@
                 try { window.Marquinhos.recargarAccesorios(); } catch (e) {}
             }
         } catch (e) {
-            console.error('[Tienda v3.6] Error equipando:', e);
+            console.error('[Tienda v3.7] Error equipando:', e);
             toast('Error al equipar', 'error');
         }
     }
@@ -433,7 +448,7 @@
                 try { window.Marquinhos.recargarAccesorios(); } catch (e) {}
             }
         } catch (e) {
-            console.error('[Tienda v3.6] Error desequipando:', e);
+            console.error('[Tienda v3.7] Error desequipando:', e);
         }
     }
 
