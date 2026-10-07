@@ -4,72 +4,87 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Mascota Activa · Configuración</title>
-<meta name="theme-color" content="#05080f">
+<meta name="theme-color" content="#0A0A0A">
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 <script src="/features/shared/js/apariencia-global.js"></script>
 
 <style>
 :root {
-    --gold: #D4AF37;
-    --space: #05080f;
-    --text: #f0f4f8;
-    --muted: #8aa8b8;
-    --border: rgba(212, 175, 55, 0.16);
-    --success: #00d68f;
-    --danger: #ff3366;
+    --cm-azul: #00D4FF;
+    --cm-azul-soft: rgba(0, 212, 255, 0.5);
+    --cm-azul-bg: rgba(0, 212, 255, 0.08);
+    --cm-azul-border: rgba(0, 212, 255, 0.3);
+    --cm-negro: #0A0A0A;
+    --cm-negro-soft: rgba(10, 10, 10, 0.4);
+    --cm-galaxia: #6B4DBA;
+    --cm-galaxia-soft: rgba(107, 77, 186, 0.3);
+    --cm-dorado: #D4AF37;
+    --cm-dorado-soft: rgba(212, 175, 55, 0.3);
+    --cm-text: #f0f4f8;
+    --cm-muted: #8aa8b8;
+    --cm-danger: #ff3366;
+    --cm-success: #00d68f;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
-    background: var(--space);
-    color: var(--text);
+    background: var(--cm-negro);
+    color: var(--cm-text);
     font-family: 'Inter', sans-serif;
     min-height: 100vh;
     padding: 20px;
     background-image:
-        radial-gradient(ellipse at 20% 20%, rgba(42, 106, 58, 0.25), transparent 55%),
-        radial-gradient(ellipse at 80% 80%, rgba(212, 175, 55, 0.06), transparent 55%);
+        radial-gradient(ellipse at 20% 20%, rgba(107, 77, 186, 0.2), transparent 55%),
+        radial-gradient(ellipse at 80% 80%, rgba(0, 212, 255, 0.1), transparent 55%);
 }
 .app { max-width: 640px; margin: 0 auto; }
-h1 { font-size: 1.3rem; color: var(--gold); margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
+h1 { font-size: 1.3rem; color: var(--cm-azul); margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
 h1 .hex { font-family: 'Orbitron', monospace; }
-.sub { color: var(--muted); font-size: .8rem; margin-bottom: 24px; }
+h1 .corn { font-size: 1.5rem; }
+.sub { color: var(--cm-muted); font-size: .8rem; margin-bottom: 24px; }
 
 .btn-back {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    color: var(--muted);
+    color: var(--cm-muted);
     text-decoration: none;
     font-size: .85rem;
     margin-bottom: 20px;
     padding: 8px 14px;
-    border: 1px solid var(--border);
+    border: 1px solid var(--cm-azul-border);
     border-radius: 99px;
+    transition: all .2s;
 }
-.btn-back:hover { color: var(--gold); border-color: var(--gold); }
+.btn-back:hover { color: var(--cm-azul); border-color: var(--cm-azul); }
 
 .card {
-    background: rgba(15, 45, 26, 0.35);
-    border: 1px solid var(--border);
+    background: rgba(10, 10, 10, 0.6);
+    border: 1px solid var(--cm-azul-border);
     border-radius: 16px;
     padding: 18px;
     margin-bottom: 16px;
+    box-shadow: 0 4px 20px rgba(0, 212, 255, 0.05);
 }
 .card h2 {
     font-size: .95rem;
-    color: var(--gold);
+    color: var(--cm-azul);
     margin-bottom: 14px;
     font-weight: 700;
     letter-spacing: .5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
+.card h2 .simbolo { font-family: 'Orbitron', monospace; }
 
+/* LISTA DE MASCOTAS */
 .mascota-item {
     display: flex;
     align-items: center;
     gap: 14px;
     padding: 16px;
-    background: rgba(0, 0, 0, 0.35);
+    background: rgba(0, 0, 0, 0.4);
     border: 2px solid transparent;
     border-radius: 14px;
     margin-bottom: 10px;
@@ -78,13 +93,13 @@ h1 .hex { font-family: 'Orbitron', monospace; }
     position: relative;
 }
 .mascota-item:hover {
-    background: rgba(0, 0, 0, 0.5);
-    border-color: rgba(212, 175, 55, 0.3);
+    background: rgba(0, 0, 0, 0.55);
+    border-color: var(--cm-azul-border);
 }
 .mascota-item.activa {
-    background: rgba(212, 175, 55, 0.08);
-    border-color: var(--gold);
-    box-shadow: 0 4px 20px rgba(212, 175, 55, 0.2);
+    background: var(--cm-azul-bg);
+    border-color: var(--cm-azul);
+    box-shadow: 0 4px 20px rgba(0, 212, 255, 0.25);
 }
 .mascota-item.activa::after {
     content: '✓';
@@ -92,7 +107,7 @@ h1 .hex { font-family: 'Orbitron', monospace; }
     top: 12px;
     right: 14px;
     font-size: 1.1rem;
-    color: var(--success);
+    color: var(--cm-success);
     font-weight: 700;
 }
 
@@ -100,20 +115,23 @@ h1 .hex { font-family: 'Orbitron', monospace; }
     width: 56px;
     height: 56px;
     border-radius: 12px;
-    background: rgba(0, 0, 0, 0.4);
+    background: rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.8rem;
     flex-shrink: 0;
-    border: 1px solid var(--border);
+    border: 1px solid var(--cm-azul-border);
 }
 
-.mascota-info { flex: 1; min-width: 0; }
+.mascota-info {
+    flex: 1;
+    min-width: 0;
+}
 .mascota-nombre {
     font-weight: 700;
     font-size: .95rem;
-    color: var(--text);
+    color: var(--cm-text);
     margin-bottom: 3px;
     display: flex;
     align-items: center;
@@ -130,12 +148,12 @@ h1 .hex { font-family: 'Orbitron', monospace; }
 }
 .tag-activo {
     background: rgba(0, 214, 143, 0.2);
-    color: var(--success);
-    border: 1px solid var(--success);
+    color: var(--cm-success);
+    border: 1px solid var(--cm-success);
 }
 .mascota-desc {
     font-size: .75rem;
-    color: var(--muted);
+    color: var(--cm-muted);
     line-height: 1.4;
 }
 
@@ -143,7 +161,7 @@ h1 .hex { font-family: 'Orbitron', monospace; }
     width: 24px;
     height: 24px;
     border-radius: 50%;
-    border: 2px solid var(--muted);
+    border: 2px solid var(--cm-muted);
     background: transparent;
     display: flex;
     align-items: center;
@@ -152,33 +170,36 @@ h1 .hex { font-family: 'Orbitron', monospace; }
     transition: all 0.25s ease;
 }
 .mascota-item.activa .radio-circulo {
-    border-color: var(--success);
-    background: var(--success);
+    border-color: var(--cm-azul);
+    background: var(--cm-azul);
 }
 .mascota-item.activa .radio-circulo::after {
     content: '';
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: white;
+    background: var(--cm-negro);
 }
 
 .btn-guardar {
     width: 100%;
-    padding: 14px;
+    padding: 12px;
     border-radius: 12px;
     border: none;
-    background: linear-gradient(135deg, var(--gold), #b8923a);
-    color: var(--space);
-    font-family: 'Inter', sans-serif;
-    font-weight: 800;
-    font-size: .9rem;
+    background: linear-gradient(135deg, var(--cm-azul), var(--cm-galaxia));
+    color: var(--cm-negro);
+    font-weight: 700;
+    font-size: .85rem;
     cursor: pointer;
-    transition: all 0.2s;
+    font-family: inherit;
+    transition: all .2s;
     letter-spacing: 0.3px;
     margin-top: 8px;
 }
-.btn-guardar:hover { transform: scale(1.02); box-shadow: 0 8px 24px rgba(212, 175, 55, 0.4); }
+.btn-guardar:hover {
+    transform: scale(1.02);
+    box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4);
+}
 .btn-guardar:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .toast {
@@ -186,15 +207,16 @@ h1 .hex { font-family: 'Orbitron', monospace; }
     top: 20px;
     left: 50%;
     transform: translateX(-50%) translateY(-80px);
-    background: rgba(0, 214, 143, 0.15);
-    border: 1px solid var(--success);
-    color: #A5D6A7;
+    background: var(--cm-azul-bg);
+    border: 1px solid var(--cm-azul);
+    color: var(--cm-azul);
     padding: 12px 22px;
     border-radius: 99px;
     font-size: 0.85rem;
     font-weight: 600;
     z-index: 9999;
     transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 8px 30px rgba(0, 212, 255, 0.3);
 }
 .toast.visible { transform: translateX(-50%) translateY(0); }
 </style>
@@ -208,7 +230,7 @@ h1 .hex { font-family: 'Orbitron', monospace; }
     <p class="sub">Elige UNA sola mascota para que aparezca en la app</p>
 
     <div class="card">
-        <h2>MASCOTAS DISPONIBLES</h2>
+        <h2><span class="simbolo">◈</span> MASCOTAS DISPONIBLES</h2>
 
         <div class="mascota-item" data-mascota="marquinhos">
             <div class="mascota-icon">👦</div>
