@@ -1,6 +1,6 @@
 // ================================================================
-// MARQUINHOS · PET v9.1 "GALACTIC CARTOON"
-// Estructura según referencia + colores Web3 galácticos
+// MARQUINHOS · PET v9.2 "GALACTIC CARTOON PRO"
+// Ojos menos tiernos + colores más saturados + antena reactiva
 // ================================================================
 
 'use strict';
@@ -51,17 +51,15 @@
     const TERMINOS_VERSION = '1.0';
     const TERMINOS_KEY = 'marquinhos_terminos_aceptados_' + TERMINOS_VERSION;
 
-    // ============================================================
-    // VISEMAS (boca) — Ajustados al nuevo cuerpo
-    // ============================================================
+    // ✅ v9.2: Boca más grande y expresiva
     var VISEMAS_SVG = {
-        REST: 'M 82 162 Q 100 168 118 162',
-        A:    'M 75 160 Q 100 185 125 160 Q 100 192 75 160',
-        E:    'M 80 162 Q 100 174 120 162 Q 100 178 80 162',
-        I:    'M 76 164 Q 100 168 124 164',
-        O:    'M 100 155 Q 118 155 118 167 Q 118 178 100 178 Q 82 178 82 167 Q 82 155 100 155 Z',
-        U:    'M 100 158 Q 114 158 114 166 Q 114 174 100 174 Q 86 174 86 166 Q 86 158 100 158 Z',
-        M:    'M 82 164 L 118 164'
+        REST: 'M 76 165 Q 100 173 124 165',
+        A:    'M 68 160 Q 100 200 132 160 Q 100 210 68 160',
+        E:    'M 72 163 Q 100 182 128 163 Q 100 190 72 163',
+        I:    'M 70 166 Q 100 172 130 166',
+        O:    'M 100 152 Q 122 152 122 168 Q 122 184 100 184 Q 78 184 78 168 Q 78 152 100 152 Z',
+        U:    'M 100 156 Q 116 156 116 168 Q 116 178 100 178 Q 84 178 84 168 Q 84 156 100 156 Z',
+        M:    'M 76 168 L 124 168'
     };
 
     let config = { ...CONFIG_DEFAULT };
@@ -143,9 +141,6 @@
         }
     }
 
-    // ============================================================
-    // MEMORIA
-    // ============================================================
     function cargarHistorial() {
         try {
             const raw = localStorage.getItem(HIST_KEY + (userInfo ? userInfo.id : 'anon'));
@@ -198,9 +193,6 @@
         }
     }
 
-    // ============================================================
-    // ACCESORIOS
-    // ============================================================
     async function cargarAccesorios() {
         try {
             const cached = JSON.parse(localStorage.getItem(ACC_KEY) || '[]');
@@ -232,7 +224,6 @@
         } catch (e) {}
     }
 
-    // Posiciones ajustadas al cuerpo cápsula
     function posicionPorCategoria(cat) {
         switch (cat) {
             case 'sombrero':   return { x: 100, y: 30,  size: 80 };
@@ -254,9 +245,6 @@
         }).join('');
     }
 
-    // ============================================================
-    // ANIMACIÓN DE BOCA
-    // ============================================================
     function detenerAnimacionBoca() {
         _bocaActiva = false;
         _bocaTimeouts.forEach(t => clearTimeout(t));
@@ -317,9 +305,6 @@
         siguiente();
     }
 
-    // ============================================================
-    // MODAL DE TÉRMINOS
-    // ============================================================
     function mostrarModalTerminos() {
         if (document.getElementById('mq-modal-terminos')) return;
 
@@ -378,7 +363,7 @@
     }
 
     // ============================================================
-    // WIDGET — SVG NUEVA ESTRUCTURA SEGÚN REFERENCIA
+    // WIDGET v9.2 — SVG con mejoras
     // ============================================================
     function crearWidget() {
         if (document.getElementById('marquinhos-pet')) return;
@@ -408,35 +393,44 @@
             <div class="mq-pet-avatar" id="mq-avatar" role="button" tabindex="0" aria-label="Hablar con Marquinhos">
                 <svg viewBox="0 0 200 260" xmlns="http://www.w3.org/2000/svg" class="mq-pet-svg">
                     <defs>
-                        <!-- Degradado cabeza: blanco perla → cian claro -->
+                        <!-- Degradado cabeza: blanco perla con toque cian y púrpura -->
                         <linearGradient id="mq-grad-cabeza" x1="0%" y1="0%" x2="0%" y2="100%">
                             <stop offset="0%" stop-color="#FFFFFF"/>
-                            <stop offset="100%" stop-color="#E0F7FF"/>
+                            <stop offset="50%" stop-color="#D4EEFF"/>
+                            <stop offset="100%" stop-color="#C9D8FF"/>
                         </linearGradient>
 
-                        <!-- Degradado cuerpo: cian → púrpura galáctico -->
+                        <!-- Degradado cuerpo: cian más saturado → púrpura más fuerte -->
                         <linearGradient id="mq-grad-cuerpo" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" stop-color="#E0F7FF"/>
-                            <stop offset="40%" stop-color="#DCE4FF"/>
-                            <stop offset="100%" stop-color="#E8DEFF"/>
+                            <stop offset="0%" stop-color="#B8ECFF"/>
+                            <stop offset="40%" stop-color="#C9BCFF"/>
+                            <stop offset="100%" stop-color="#B69CFF"/>
                         </linearGradient>
 
-                        <!-- Degradado antena: cian → púrpura -->
-                        <radialGradient id="mq-grad-antena" cx="50%" cy="50%">
+                        <!-- Antena activa (brilla cuando escucha) -->
+                        <radialGradient id="mq-grad-antena-on" cx="50%" cy="50%">
                             <stop offset="0%" stop-color="#FFFFFF"/>
-                            <stop offset="40%" stop-color="#00E5FF"/>
-                            <stop offset="100%" stop-color="#7C4DFF"/>
+                            <stop offset="30%" stop-color="#00E5FF"/>
+                            <stop offset="70%" stop-color="#7C4DFF"/>
+                            <stop offset="100%" stop-color="#5E35B1"/>
                         </radialGradient>
 
-                        <!-- Degradado botas: cian → púrpura -->
+                        <!-- Antena inactiva (gris azulada opaca) -->
+                        <radialGradient id="mq-grad-antena-off" cx="50%" cy="50%">
+                            <stop offset="0%" stop-color="#B0C4DE"/>
+                            <stop offset="70%" stop-color="#7A8FA8"/>
+                            <stop offset="100%" stop-color="#5A6B82"/>
+                        </radialGradient>
+
+                        <!-- Botas galácticas -->
                         <linearGradient id="mq-grad-bota" x1="0%" y1="0%" x2="0%" y2="100%">
                             <stop offset="0%" stop-color="#7C4DFF"/>
-                            <stop offset="100%" stop-color="#00E5FF"/>
+                            <stop offset="100%" stop-color="#00C8FF"/>
                         </linearGradient>
 
                         <!-- Aura galáctica -->
                         <radialGradient id="mq-grad-aura" cx="50%" cy="50%">
-                            <stop offset="0%" stop-color="#7C4DFF" stop-opacity="0.5"/>
+                            <stop offset="0%" stop-color="#7C4DFF" stop-opacity="0.55"/>
                             <stop offset="100%" stop-color="#7C4DFF" stop-opacity="0"/>
                         </radialGradient>
                     </defs>
@@ -446,26 +440,24 @@
                         <animate attributeName="opacity" values="0.3;0.7;0.3" dur="3s" repeatCount="indefinite"/>
                     </ellipse>
 
-                    <!-- Capa accesorios fondo -->
                     <g id="mq-acc-layer-fondo"></g>
 
                     <g id="mq-cuerpo">
 
-                        <!-- ==================== ANTENA CENTRAL ==================== -->
+                        <!-- ==================== ANTENA ÚNICA REACTIVA ==================== -->
                         <g id="mq-antena">
                             <line x1="100" y1="30" x2="100" y2="8" stroke="#0D47A1" stroke-width="3" stroke-linecap="round"/>
-                            <line x1="100" y1="30" x2="100" y2="8" stroke="#7C4DFF" stroke-width="1.5" stroke-linecap="round" opacity="0.7"/>
-                            <circle cx="100" cy="6" r="9" fill="url(#mq-grad-antena)" stroke="#0D47A1" stroke-width="1.5">
-                                <animate attributeName="r" values="9;11;9" dur="2s" repeatCount="indefinite"/>
-                            </circle>
-                            <!-- Glow exterior -->
-                            <circle cx="100" cy="6" r="14" fill="#00E5FF" opacity="0.25">
-                                <animate attributeName="opacity" values="0.15;0.45;0.15" dur="2s" repeatCount="indefinite"/>
-                                <animate attributeName="r" values="14;18;14" dur="2s" repeatCount="indefinite"/>
+                            <!-- Esfera de la antena (brilla cuando escucha) -->
+                            <circle id="mq-antena-bola" cx="100" cy="6" r="9" 
+                                    fill="url(#mq-grad-antena-off)" 
+                                    stroke="#0D47A1" stroke-width="1.5"/>
+                            <!-- Glow exterior (se activa cuando escucha) -->
+                            <circle id="mq-antena-glow" cx="100" cy="6" r="14" fill="#00E5FF" opacity="0">
+                                <animate attributeName="opacity" values="0;0;0" dur="1s" repeatCount="indefinite"/>
                             </circle>
                         </g>
 
-                        <!-- ==================== CABEZA CUADRADA REDONDEADA ==================== -->
+                        <!-- ==================== CABEZA ==================== -->
                         <g id="mq-cabeza-grupo">
                             <rect x="35" y="40" width="130" height="120" rx="28" ry="28" 
                                   fill="url(#mq-grad-cabeza)" 
@@ -480,128 +472,104 @@
                                 <path id="mq-ceja-der" d="M 116 78 Q 128 73 140 78" stroke="#0D47A1" stroke-width="2.5" fill="none" stroke-linecap="round"/>
                             </g>
 
-                            <!-- OJOS GRANDES CON DESTELLOS Y PESTAÑAS -->
-                            <g id="mq-ojo-izq-grupo">
-                                <ellipse id="mq-ojo-izq" cx="72" cy="108" rx="18" ry="20" fill="#0D47A1"/>
-                                <ellipse cx="72" cy="108" rx="14" ry="16" fill="#1A237E"/>
-                                <circle id="mq-pupila-izq" cx="72" cy="110" r="9" fill="#0a1a3e"/>
-                                <!-- Destello estrella grande -->
-                                <circle cx="68" cy="105" r="4" fill="#FFFFFF" opacity="0.95"/>
-                                <!-- Destello estrella pequeña -->
-                                <circle cx="76" cy="112" r="2" fill="#00E5FF" opacity="0.9"/>
-                                <!-- Pestaña superior izquierda -->
-                                <path d="M 56 92 L 62 96" stroke="#0D47A1" stroke-width="2.5" stroke-linecap="round"/>
-                                <!-- Pestaña superior derecha -->
-                                <path d="M 88 92 L 82 96" stroke="#0D47A1" stroke-width="2.5" stroke-linecap="round"/>
-                            </g>
+                            <!-- OJOS (menos tiernos, más estilo robot pro) -->
+                            <!-- Ojo izquierdo -->
+                            <ellipse id="mq-ojo-izq" cx="72" cy="108" rx="15" ry="17" fill="#0D47A1"/>
+                            <ellipse cx="72" cy="108" rx="12" ry="14" fill="#1A237E"/>
+                            <circle id="mq-pupila-izq" cx="72" cy="110" r="8" fill="#0a1a3e"/>
+                            <!-- Brillo puntual, pequeño, no infantil -->
+                            <circle cx="69" cy="106" r="2.5" fill="#FFFFFF" opacity="0.95"/>
+                            <circle cx="75" cy="112" r="1.5" fill="#00E5FF" opacity="0.9"/>
 
-                            <g id="mq-ojo-der-grupo">
-                                <ellipse id="mq-ojo-der" cx="128" cy="108" rx="18" ry="20" fill="#0D47A1"/>
-                                <ellipse cx="128" cy="108" rx="14" ry="16" fill="#1A237E"/>
-                                <circle id="mq-pupila-der" cx="128" cy="110" r="9" fill="#0a1a3e"/>
-                                <circle cx="124" cy="105" r="4" fill="#FFFFFF" opacity="0.95"/>
-                                <circle cx="132" cy="112" r="2" fill="#00E5FF" opacity="0.9"/>
-                                <path d="M 112 92 L 118 96" stroke="#0D47A1" stroke-width="2.5" stroke-linecap="round"/>
-                                <path d="M 144 92 L 138 96" stroke="#0D47A1" stroke-width="2.5" stroke-linecap="round"/>
-                            </g>
+                            <!-- Ojo derecho -->
+                            <ellipse id="mq-ojo-der" cx="128" cy="108" rx="15" ry="17" fill="#0D47A1"/>
+                            <ellipse cx="128" cy="108" rx="12" ry="14" fill="#1A237E"/>
+                            <circle id="mq-pupila-der" cx="128" cy="110" r="8" fill="#0a1a3e"/>
+                            <circle cx="125" cy="106" r="2.5" fill="#FFFFFF" opacity="0.95"/>
+                            <circle cx="131" cy="112" r="1.5" fill="#00E5FF" opacity="0.9"/>
 
-                            <!-- MEJILLAS -->
-                            <ellipse cx="50" cy="135" rx="10" ry="6" fill="#7C4DFF" opacity="0.25"/>
-                            <ellipse cx="150" cy="135" rx="10" ry="6" fill="#7C4DFF" opacity="0.25"/>
+                            <!-- MEJILLAS MÁS DISCRETAS -->
+                            <ellipse cx="50" cy="135" rx="8" ry="5" fill="#7C4DFF" opacity="0.2"/>
+                            <ellipse cx="150" cy="135" rx="8" ry="5" fill="#7C4DFF" opacity="0.2"/>
 
-                            <!-- BOCA DINÁMICA -->
+                            <!-- BOCA MÁS GRANDE Y VISIBLE -->
                             <path id="mq-boca" class="mq-pet-boca"
-                                  d="M 82 162 Q 100 168 118 162"
-                                  stroke="#0D47A1" stroke-width="3"
+                                  d="M 76 165 Q 100 173 124 165"
+                                  stroke="#0D47A1" stroke-width="3.5"
                                   fill="none" stroke-linecap="round"/>
                         </g>
 
                         <!-- ==================== CUELLO ==================== -->
-                        <rect x="88" y="158" width="24" height="12" fill="#B0C4DE" stroke="#0D47A1" stroke-width="2"/>
+                        <rect x="88" y="158" width="24" height="12" fill="#A8C4DE" stroke="#0D47A1" stroke-width="2"/>
 
-                        <!-- ==================== TORSO CÁPSULA ==================== -->
+                        <!-- ==================== TORSO CÁPSULA (colores más saturados) ==================== -->
                         <g id="mq-torso">
-                            <!-- Cuerpo principal cápsula vertical -->
                             <path d="M 60 170 Q 60 165 65 165 L 135 165 Q 140 165 140 170 L 140 235 Q 140 250 125 250 L 75 250 Q 60 250 60 235 Z"
                                   fill="url(#mq-grad-cuerpo)" 
                                   stroke="#0D47A1" stroke-width="3"/>
 
-                            <!-- Brillo interno sutil -->
-                            <ellipse cx="100" cy="185" rx="30" ry="10" fill="#FFFFFF" opacity="0.4"/>
+                            <ellipse cx="100" cy="185" rx="30" ry="10" fill="#FFFFFF" opacity="0.5"/>
 
                             <!-- Placa MARQUINHOS -->
                             <rect x="70" y="185" width="60" height="22" rx="6" fill="#0D47A1"/>
                             <text x="100" y="200" text-anchor="middle" font-family="sans-serif" font-size="9" font-weight="800" fill="#FFFFFF" letter-spacing="0.5">MARQUINHOS</text>
 
-                            <!-- Detalles técnicos inferiores -->
-                            <circle cx="80" cy="235" r="3" fill="#7C4DFF" opacity="0.7">
-                                <animate attributeName="opacity" values="0.4;1;0.4" dur="2s" repeatCount="indefinite"/>
+                            <!-- Detalles técnicos -->
+                            <circle cx="80" cy="235" r="3" fill="#7C4DFF" opacity="0.9">
+                                <animate attributeName="opacity" values="0.5;1;0.5" dur="2s" repeatCount="indefinite"/>
                             </circle>
-                            <circle cx="120" cy="235" r="3" fill="#00E5FF" opacity="0.7">
-                                <animate attributeName="opacity" values="0.4;1;0.4" dur="2s" repeatCount="indefinite" begin="1s"/>
+                            <circle cx="120" cy="235" r="3" fill="#00E5FF" opacity="0.9">
+                                <animate attributeName="opacity" values="0.5;1;0.5" dur="2s" repeatCount="indefinite" begin="1s"/>
                             </circle>
-                            <rect x="95" y="232" width="10" height="3" rx="1.5" fill="#B0C4DE" stroke="#0D47A1" stroke-width="1"/>
                         </g>
 
-                        <!-- ==================== BRAZO IZQUIERDO (abierto) ==================== -->
+                        <!-- ==================== BRAZO IZQUIERDO ==================== -->
                         <g id="mq-brazo-izq" class="mq-brazo">
-                            <!-- Segmento superior (hombro → codo) -->
-                            <line x1="60" y1="180" x2="35" y2="200" stroke="#0D47A1" stroke-width="2.5" stroke-linecap="round"/>
-                            <line x1="60" y1="180" x2="35" y2="200" stroke="#E0F7FF" stroke-width="10" stroke-linecap="round"/>
-                            <line x1="60" y1="180" x2="35" y2="200" stroke="#0D47A1" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-                            <!-- Articulación codo -->
-                            <circle cx="35" cy="200" r="4" fill="#7C4DFF" stroke="#0D47A1" stroke-width="1.5"/>
-                            <!-- Segmento inferior (codo → muñeca) -->
-                            <line x1="35" y1="200" x2="18" y2="218" stroke="#E0F7FF" stroke-width="9" stroke-linecap="round"/>
-                            <line x1="35" y1="200" x2="18" y2="218" stroke="#0D47A1" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-                            <!-- Mano con deditos -->
+                            <line x1="60" y1="180" x2="30" y2="205" stroke="#0D47A1" stroke-width="2.5" stroke-linecap="round"/>
+                            <line x1="60" y1="180" x2="30" y2="205" stroke="#C9D8FF" stroke-width="10" stroke-linecap="round"/>
+                            <circle cx="30" cy="205" r="4" fill="#7C4DFF" stroke="#0D47A1" stroke-width="1.5"/>
+                            <line x1="30" y1="205" x2="18" y2="228" stroke="#C9D8FF" stroke-width="9" stroke-linecap="round"/>
+                            <line x1="30" y1="205" x2="18" y2="228" stroke="#0D47A1" stroke-width="2.5" stroke-linecap="round" fill="none"/>
                             <g id="mq-mano-izq" class="mq-mano">
-                                <circle cx="15" cy="220" r="7" fill="#E0F7FF" stroke="#0D47A1" stroke-width="2"/>
-                                <circle cx="10" cy="216" r="3" fill="#7C4DFF" stroke="#0D47A1" stroke-width="1.5"/>
-                                <circle cx="17" cy="213" r="3" fill="#7C4DFF" stroke="#0D47A1" stroke-width="1.5"/>
-                                <circle cx="23" cy="217" r="3" fill="#7C4DFF" stroke="#0D47A1" stroke-width="1.5"/>
+                                <circle cx="15" cy="230" r="7" fill="#C9D8FF" stroke="#0D47A1" stroke-width="2"/>
+                                <circle cx="9" cy="226" r="3" fill="#7C4DFF" stroke="#0D47A1" stroke-width="1.5"/>
+                                <circle cx="17" cy="223" r="3" fill="#7C4DFF" stroke="#0D47A1" stroke-width="1.5"/>
+                                <circle cx="23" cy="227" r="3" fill="#7C4DFF" stroke="#0D47A1" stroke-width="1.5"/>
                             </g>
                         </g>
 
-                        <!-- ==================== BRAZO DERECHO (relajado) ==================== -->
+                        <!-- ==================== BRAZO DERECHO ==================== -->
                         <g id="mq-brazo-der" class="mq-brazo">
-                            <line x1="140" y1="180" x2="165" y2="205" stroke="#E0F7FF" stroke-width="10" stroke-linecap="round"/>
-                            <line x1="140" y1="180" x2="165" y2="205" stroke="#0D47A1" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-                            <!-- Articulación codo -->
-                            <circle cx="165" cy="205" r="4" fill="#7C4DFF" stroke="#0D47A1" stroke-width="1.5"/>
-                            <!-- Segmento inferior -->
-                            <line x1="165" y1="205" x2="180" y2="228" stroke="#E0F7FF" stroke-width="9" stroke-linecap="round"/>
-                            <line x1="165" y1="205" x2="180" y2="228" stroke="#0D47A1" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-                            <!-- Mano con deditos -->
+                            <line x1="140" y1="180" x2="170" y2="205" stroke="#C9D8FF" stroke-width="10" stroke-linecap="round"/>
+                            <line x1="140" y1="180" x2="170" y2="205" stroke="#0D47A1" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+                            <circle cx="170" cy="205" r="4" fill="#7C4DFF" stroke="#0D47A1" stroke-width="1.5"/>
+                            <line x1="170" y1="205" x2="182" y2="228" stroke="#C9D8FF" stroke-width="9" stroke-linecap="round"/>
+                            <line x1="170" y1="205" x2="182" y2="228" stroke="#0D47A1" stroke-width="2.5" stroke-linecap="round" fill="none"/>
                             <g id="mq-mano-der" class="mq-mano">
-                                <circle cx="182" cy="230" r="7" fill="#E0F7FF" stroke="#0D47A1" stroke-width="2"/>
-                                <circle cx="185" cy="225" r="3" fill="#7C4DFF" stroke="#0D47A1" stroke-width="1.5"/>
-                                <circle cx="190" cy="229" r="3" fill="#7C4DFF" stroke="#0D47A1" stroke-width="1.5"/>
-                                <circle cx="187" cy="235" r="3" fill="#7C4DFF" stroke="#0D47A1" stroke-width="1.5"/>
+                                <circle cx="185" cy="230" r="7" fill="#C9D8FF" stroke="#0D47A1" stroke-width="2"/>
+                                <circle cx="191" cy="226" r="3" fill="#7C4DFF" stroke="#0D47A1" stroke-width="1.5"/>
+                                <circle cx="183" cy="223" r="3" fill="#7C4DFF" stroke="#0D47A1" stroke-width="1.5"/>
+                                <circle cx="177" cy="227" r="3" fill="#7C4DFF" stroke="#0D47A1" stroke-width="1.5"/>
                             </g>
                         </g>
 
                         <!-- ==================== PIERNA IZQUIERDA ==================== -->
                         <g id="mq-pierna-izq" class="mq-pierna">
-                            <!-- Segmento superior -->
-                            <line x1="82" y1="250" x2="82" y2="268" stroke="#E0F7FF" stroke-width="10" stroke-linecap="round"/>
+                            <line x1="82" y1="250" x2="82" y2="268" stroke="#C9D8FF" stroke-width="10" stroke-linecap="round"/>
                             <line x1="82" y1="250" x2="82" y2="268" stroke="#0D47A1" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-                            <!-- Articulación rodilla -->
                             <circle cx="82" cy="268" r="3.5" fill="#7C4DFF" stroke="#0D47A1" stroke-width="1.5"/>
-                            <!-- Segmento inferior -->
-                            <line x1="82" y1="268" x2="82" y2="278" stroke="#E0F7FF" stroke-width="9" stroke-linecap="round"/>
+                            <line x1="82" y1="268" x2="82" y2="278" stroke="#C9D8FF" stroke-width="9" stroke-linecap="round"/>
                             <line x1="82" y1="268" x2="82" y2="278" stroke="#0D47A1" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-                            <!-- Bota -->
                             <path d="M 70 278 Q 70 290 82 290 Q 94 290 94 282 L 94 278 Z" 
                                   fill="url(#mq-grad-bota)" stroke="#0D47A1" stroke-width="2"/>
                         </g>
 
                         <!-- ==================== PIERNA DERECHA ==================== -->
                         <g id="mq-pierna-der" class="mq-pierna">
-                            <line x1="118" y1="250" x2="118" y2="268" stroke="#E0F7FF" stroke-width="10" stroke-linecap="round"/>
+                            <line x1="118" y1="250" x2="118" y2="268" stroke="#C9D8FF" stroke-width="10" stroke-linecap="round"/>
                             <line x1="118" y1="250" x2="118" y2="268" stroke="#0D47A1" stroke-width="2.5" stroke-linecap="round" fill="none"/>
                             <circle cx="118" cy="268" r="3.5" fill="#7C4DFF" stroke="#0D47A1" stroke-width="1.5"/>
-                            <line x1="118" y1="268" x2="118" y2="278" stroke="#E0F7FF" stroke-width="9" stroke-linecap="round"/>
+                            <line x1="118" y1="268" x2="118" y2="278" stroke="#C9D8FF" stroke-width="9" stroke-linecap="round"/>
                             <line x1="118" y1="268" x2="118" y2="278" stroke="#0D47A1" stroke-width="2.5" stroke-linecap="round" fill="none"/>
                             <path d="M 106 278 Q 106 290 118 290 Q 130 290 130 282 L 130 278 Z" 
                                   fill="url(#mq-grad-bota)" stroke="#0D47A1" stroke-width="2"/>
@@ -702,14 +670,39 @@
             }, 500);
         }
 
-        log('Widget v9.1 Galactic Cartoon creado');
+        log('Widget v9.2 Galactic Cartoon Pro creado');
     }
 
     function mostrarDots() { if (dots) dots.classList.add('mq-dots-visible'); }
     function ocultarDots() { if (dots) dots.classList.remove('mq-dots-visible'); }
 
+    // ✅ v9.2: setEstado ahora también controla la antena reactiva
     function setEstado(e) {
         if (container) container.setAttribute('data-estado', e);
+
+        // Antena reactiva: brilla cuando escucha
+        const bolaAntena = document.getElementById('mq-antena-bola');
+        const glowAntena = document.getElementById('mq-antena-glow');
+
+        if (bolaAntena && glowAntena) {
+            if (e === 'escuchando' || e === 'hablando') {
+                // Antena ACTIVA
+                bolaAntena.setAttribute('fill', 'url(#mq-grad-antena-on)');
+                bolaAntena.setAttribute('r', '10');
+                glowAntena.setAttribute('opacity', '0.6');
+                // Animación de pulso
+                bolaAntena.innerHTML = '<animate attributeName="r" values="10;13;10" dur="0.8s" repeatCount="indefinite"/>';
+                glowAntena.innerHTML = '<animate attributeName="opacity" values="0.4;0.9;0.4" dur="0.8s" repeatCount="indefinite"/><animate attributeName="r" values="14;20;14" dur="0.8s" repeatCount="indefinite"/>';
+            } else {
+                // Antena INACTIVA
+                bolaAntena.setAttribute('fill', 'url(#mq-grad-antena-off)');
+                bolaAntena.setAttribute('r', '9');
+                bolaAntena.innerHTML = '';
+                glowAntena.setAttribute('opacity', '0');
+                glowAntena.innerHTML = '';
+            }
+        }
+
         if (window.MarquinhosAnim && typeof window.MarquinhosAnim.setEstado === 'function') {
             window.MarquinhosAnim.setEstado(e);
         }
@@ -888,7 +881,7 @@
             recognition.onstart = function() {
                 recognitionActive = true;
                 isListening = true;
-                setEstado('escuchando');
+                setEstado('escuchando');  // ✅ v9.2: activa la antena
                 mostrarDots();
             };
 
@@ -1072,7 +1065,7 @@
         await cargarAccesorios();
         crearWidget();
         instalarVisibility();
-        log('✅ Marquinhos Galactic Cartoon v9.1 activo');
+        log('✅ Marquinhos v9.2 Galactic Pro activo');
     }
 
     if (document.readyState === 'loading') {
