@@ -110,7 +110,7 @@
 <div class="estado-toast" id="estadoToast"></div>
 
 <h1>◈ Términos de Uso de Marquinhos</h1>
-<p class="fecha">Última actualización: 6 de octubre de 2026</p>
+<p class="fecha">Última actualización: 7 de octubre de 2026</p>
 
 <div class="aviso">
     <strong>Resumen rápido:</strong> Marquinhos es un asistente de inteligencia artificial. No es humano, no es un profesional de salud, no es tu terapeuta, no es tu pareja y no reemplaza a un especialista. Puede cometer errores. Úsalo con responsabilidad.
@@ -214,7 +214,7 @@
 </ul>
 
 <h2>11. Ley Aplicable y Jurisdicción</h2>
-<p>Estos Términos se rigen por las leyes de los Estados Unidos Mexicanos. Cualquier controversia derivada de su interpretación o cumplimiento será sometida a la jurisdicción de los tribunales competentes de la Ciudad de México, renunciando las partes a cualquier otro fuero que pudiera corresponderles.</p>
+<p>Estos Términos se rigen por las leyes de los Estados Unidos Mexicanos. Cualquier controversia derivada de su interpretación o cumplimiento será sometida a la jurisdicción de los tribunales competentes de la <strong>Heroica Puebla de Zaragoza, Puebla</strong>, renunciando las partes a cualquier otro fuero que pudiera corresponderles.</p>
 
 <h2>12. Contacto</h2>
 <p>Para dudas, aclaraciones, reportes de abuso o solicitudes relacionadas con estos Términos, puedes contactar a Sariel's a través de:</p>
@@ -261,7 +261,6 @@
 
     function volverAtras() {
         const ref = document.referrer;
-        // Si el referrer es del mismo sitio, volver ahí
         if (ref && ref.indexOf(window.location.host) !== -1) {
             window.location.href = ref;
         } else {
@@ -273,7 +272,6 @@
     // INICIALIZACIÓN
     // ═══════════════════════════════════════════════════════════
     async function init() {
-        // Inicializar Supabase
         try {
             supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             window.supabaseClient = supabase;
@@ -281,13 +279,11 @@
             console.warn('[Terminos] No se pudo inicializar Supabase:', e);
         }
 
-        // Verificar si ya aceptó (localStorage primero)
         let yaAceptoLocal = false;
         try {
             yaAceptoLocal = localStorage.getItem(TERMINOS_KEY) === 'true';
         } catch (e) {}
 
-        // Si no está en localStorage, consultar Supabase
         let yaAceptoServidor = false;
         let fechaServidor = null;
 
@@ -302,7 +298,6 @@
                     if (!error && data && data.aceptado === true) {
                         yaAceptoServidor = true;
                         fechaServidor = data.fecha_aceptacion;
-                        // Restaurar en localStorage
                         try {
                             localStorage.setItem(TERMINOS_KEY, 'true');
                             localStorage.setItem('marquinhos_terminos_fecha', fechaServidor || '');
@@ -315,7 +310,6 @@
             }
         }
 
-        // Si ya aceptó (local o servidor), marcar el botón como aceptado
         if (yaAceptoLocal || yaAceptoServidor) {
             const btn = document.getElementById('btnAceptar');
             btn.textContent = '✅ Ya aceptaste estos términos';
@@ -323,9 +317,7 @@
             toast('Ya aceptaste estos términos anteriormente', 'info');
         }
 
-        // ═══════════════════════════════════════════════════════
         // BOTÓN ACEPTAR
-        // ═══════════════════════════════════════════════════════
         document.getElementById('btnAceptar').addEventListener('click', async function() {
             const btn = this;
             btn.disabled = true;
@@ -334,7 +326,6 @@
             let guardadoServidor = false;
             let guardadoLocal = false;
 
-            // 1) Guardar en Supabase (registro legal)
             if (supabase) {
                 try {
                     const session = await supabase.auth.getSession();
@@ -360,7 +351,6 @@
                 }
             }
 
-            // 2) Guardar en localStorage (respaldo local)
             try {
                 localStorage.setItem(TERMINOS_KEY, 'true');
                 localStorage.setItem('marquinhos_terminos_fecha', new Date().toISOString());
@@ -370,7 +360,6 @@
                 console.warn('[Terminos] Error guardando en localStorage:', e);
             }
 
-            // 3) Feedback y redirección
             if (guardadoServidor) {
                 toast('✅ Términos aceptados y registrados legalmente', 'success');
             } else if (guardadoLocal) {
@@ -385,9 +374,7 @@
             setTimeout(volverAtras, 1200);
         });
 
-        // ═══════════════════════════════════════════════════════
         // BOTÓN RECHAZAR
-        // ═══════════════════════════════════════════════════════
         document.getElementById('btnRechazar').addEventListener('click', function() {
             const ok = confirm(
                 '¿Seguro que no aceptas los términos?\n\n' +
@@ -403,7 +390,6 @@
         });
     }
 
-    // Arrancar cuando el DOM esté listo
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {
