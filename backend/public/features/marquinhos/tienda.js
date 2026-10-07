@@ -1,11 +1,7 @@
 // ================================================================
-// TIENDA DE MARQUINHOS · v3.3
+// TIENDA DE MARQUINHOS · v3.4
 // compra ultra-rápida + UI optimista + PROBAR ANTES DE COMPRAR
-//
-// "Probar" solo cambia la vista previa en esta pantalla: NO escribe
-// nada en la base de datos ni cambia el Marquinhos flotante.
-//
-// ✅ v3.3: fix de reconexión de listeners tras renderGrid()
+// ✅ v3.4: posiciones de accesorios ajustadas al nuevo Marquinhos
 // ================================================================
 
 'use strict';
@@ -17,8 +13,8 @@
     let inventario = {};
     let filtroActual = 'todos';
     let saldoActual = { usdt: 0, usdc: 0 };
-    let comprasEnVuelo = new Set();   // bloqueo por item_id
-    let pruebas = {};                 // categoria -> id del accesorio que se está probando
+    let comprasEnVuelo = new Set();
+    let pruebas = {};
 
     function $(id) { return document.getElementById(id); }
 
@@ -37,14 +33,10 @@
         return d.innerHTML;
     }
 
-    // ✅ Helper: reconectar TODOS los botones después de re-renderizar
     function reconectarBotones() {
         document.querySelectorAll('.acc-btn').forEach(instalarListenerBoton);
     }
 
-    // ============================================================
-    // INIT
-    // ============================================================
     async function init() {
         try {
             supabase = window.supabaseClient
@@ -75,16 +67,13 @@
             renderGrid();
             instalarEventos();
 
-            console.log('[Tienda v3.3] ✅ Lista');
+            console.log('[Tienda v3.4] ✅ Lista');
         } catch (e) {
-            console.error('[Tienda v3.3] Error init:', e);
+            console.error('[Tienda v3.4] Error init:', e);
             toast('Error cargando tienda', 'error');
         }
     }
 
-    // ============================================================
-    // SALDO
-    // ============================================================
     async function cargarSaldo() {
         try {
             const { data, error } = await supabase
@@ -100,7 +89,7 @@
 
             pintarSaldo();
         } catch (e) {
-            console.warn('[Tienda v3.3] Error saldo:', e);
+            console.warn('[Tienda v3.4] Error saldo:', e);
             $('saldoValor').textContent = '0.00';
         }
     }
@@ -119,9 +108,6 @@
         }
     }
 
-    // ============================================================
-    // CATÁLOGO
-    // ============================================================
     async function cargarCatalogo() {
         const { data, error } = await supabase
             .from('marquinhos_accesorios')
@@ -133,9 +119,6 @@
         accesorios = data || [];
     }
 
-    // ============================================================
-    // INVENTARIO
-    // ============================================================
     async function cargarInventario() {
         const { data, error } = await supabase
             .from('marquinhos_inventario')
@@ -150,9 +133,6 @@
         renderAccesoriosEquipados();
     }
 
-    // ============================================================
-    // RENDER
-    // ============================================================
     function instalarListenerBoton(btn) {
         btn.addEventListener('click', () => {
             const id = btn.dataset.id;
@@ -179,7 +159,7 @@
         }
 
         grid.innerHTML = lista.map(a => cardHTML(a)).join('');
-        reconectarBotones();  // ✅ reconectar después de re-renderizar
+        reconectarBotones();
     }
 
     function cardHTML(a) {
@@ -224,8 +204,6 @@
         `;
     }
 
-    // Vista previa = accesorios equipados + pruebas.
-    // Una prueba reemplaza lo equipado en su misma categoría.
     function renderAccesoriosEquipados() {
         const layer = $('accesoriosLayer');
         if (!layer) return;
@@ -269,28 +247,51 @@
             ' · aún no los tienes (solo vista previa)';
     }
 
+    // ============================================================
+    // ✅ v3.4: POSICIONES AJUSTADAS AL NUEVO MARQUINHOS (v9.4)
+    // ============================================================
+    // El cuerpo nuevo (viewBox 0 0 200 300):
+    //   Antena:  y = 6 a 40
+    //   Cabeza:  y = 40 a 160 (rectángulo redondeado, ancho 130, x=35 a 165)
+    //   Ojos:    y = 108
+    //   Boca:    y = 138
+    //   Cuello:  y = 158 a 170
+    //   Torso:   y = 165 a 250 (cápsula, x=60 a 140)
+    //   Placa:   y = 185 a 207
+    //   Piernas: y = 250 a 278
+    //   Botas:   y = 278 a 290
+    // ============================================================
     function posicionPorCategoria(cat) {
         switch (cat) {
-            case 'sombrero':   return { x: 100, y: 52,  size: 56 };
-            case 'playera':    return { x: 100, y: 195, size: 90 };
-            case 'pantalon':   return { x: 100, y: 235, size: 70 };
-            case 'zapatos':    return { x: 100, y: 258, size: 60 };
-            case 'lentes':     return { x: 100, y: 82,  size: 60 };
-            case 'accesorio':  return { x: 175, y: 195, size: 60 };
-            default:           return { x: 100, y: 100, size: 50 };
+            // Sombrero: sobre la cabeza, ligeramente arriba
+            case 'sombrero':   return { x: 100, y: 55,  size: 78 };
+
+            // Lentes: a la altura de los ojos (y=108)
+            case 'lentes':     return { x: 100, y: 110, size: 72 };
+
+            // Playera: en la parte alta del torso (y=180)
+            case 'playera':    return { x: 100, y: 190, size: 82 };
+
+            // Pantalón: en la parte media-baja del torso (y=225)
+            case 'pantalon':   return { x: 100, y: 235, size: 76 };
+
+            // Zapatos: sobre las botas (y=284)
+            case 'zapatos':    return { x: 100, y: 284, size: 68 };
+
+            // Accesorio: al lado derecho del cuerpo (torso)
+            case 'accesorio':  return { x: 178, y: 200, size: 62 };
+
+            default:           return { x: 100, y: 100, size: 55 };
         }
     }
 
-    // ============================================================
-    // PROBAR ANTES DE COMPRAR (solo visual, sin base de datos)
-    // ============================================================
     function alternarPrueba(acc) {
         if (pruebas[acc.categoria] === acc.id) {
             delete pruebas[acc.categoria];
         } else {
             pruebas[acc.categoria] = acc.id;
         }
-        renderGrid();  // ✅ dentro ya se llama a reconectarBotones()
+        renderGrid();
         renderAccesoriosEquipados();
     }
 
@@ -300,9 +301,6 @@
         }
     }
 
-    // ============================================================
-    // COMPRAR · UI optimista + RPC atómica
-    // ============================================================
     async function comprar(acc, btn) {
         if (!acc) return;
 
@@ -321,7 +319,7 @@
             });
 
             if (error) {
-                console.error('[Tienda v3.3] RPC error:', error);
+                console.error('[Tienda v3.4] RPC error:', error);
                 toast('Error al procesar la compra', 'error');
                 return;
             }
@@ -331,7 +329,6 @@
                 return;
             }
 
-            // ✅ Éxito
             inventario[acc.id] = data.inventario;
 
             if (data.moneda === 'USDC') {
@@ -341,7 +338,6 @@
             }
             pintarSaldo();
 
-            // La prueba de este accesorio ya no hace falta: ahora es suyo
             limpiarPruebaDe(acc);
 
             repintarTarjeta(acc.id);
@@ -349,11 +345,9 @@
 
             toast(data.message || ('¡' + acc.nombre + ' comprado! 🎉'), 'success');
 
-            // La RPC lo deja equipado; equipar() además quita el anterior
-            // de la misma categoría (evita dos sombreros juntos)
             await equipar(acc.id);
         } catch (e) {
-            console.error('[Tienda v3.3] Error comprando:', e);
+            console.error('[Tienda v3.4] Error comprando:', e);
             toast('Error al comprar: ' + (e.message || 'desconocido'), 'error');
         } finally {
             comprasEnVuelo.delete(acc.id);
@@ -364,7 +358,6 @@
         }
     }
 
-    // Re-pinta UNA sola tarjeta
     function repintarTarjeta(accId) {
         const grid = $('tiendaGrid');
         if (!grid) return;
@@ -385,15 +378,11 @@
         }
     }
 
-    // ============================================================
-    // EQUIPAR / DESEQUIPAR
-    // ============================================================
     async function equipar(accId) {
         try {
             const acc = accesorios.find(x => x.id === accId);
             if (!acc) return;
 
-            // Si equipas algo, la prueba de esa categoría se descarta
             limpiarPruebaDe(acc);
 
             const mismaCategoria = accesorios
@@ -424,15 +413,14 @@
             if (error) throw error;
             inventario[accId] = upd;
 
-            // Las tarjetas de esa categoría pueden haber cambiado (pruebas)
-            renderGrid();  // ✅ reconecta botones
+            renderGrid();
             renderAccesoriosEquipados();
 
             if (window.Marquinhos?.recargarAccesorios) {
                 try { window.Marquinhos.recargarAccesorios(); } catch (e) {}
             }
         } catch (e) {
-            console.error('[Tienda v3.3] Error equipando:', e);
+            console.error('[Tienda v3.4] Error equipando:', e);
             toast('Error al equipar', 'error');
         }
     }
@@ -457,12 +445,11 @@
                 try { window.Marquinhos.recargarAccesorios(); } catch (e) {}
             }
         } catch (e) {
-            console.error('[Tienda v3.3] Error desequipando:', e);
+            console.error('[Tienda v3.4] Error desequipando:', e);
         }
     }
 
     async function resetAccesorios() {
-        // Solo pruebas, sin accesorios equipados: basta quitar la prueba, sin preguntar
         const hayEquipados = Object.values(inventario).some(i => i && i.equipado);
         if (hayEquipados && !confirm('¿Quitar todos los accesorios equipados?')) return;
 
@@ -484,7 +471,7 @@
                 }
             }
 
-            renderGrid();  // ✅ reconecta botones
+            renderGrid();
             renderAccesoriosEquipados();
             toast('Accesorios quitados', 'success');
         } catch (e) {
