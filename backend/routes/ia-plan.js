@@ -1,5 +1,5 @@
 /* ================================================================
-   routes/ia-plan.js - ENDPOINTS DE PLANES IA (v1.1)
+   routes/ia-plan.js - ENDPOINTS DE PLANES IA (v1.2)
    ================================================================
    Endpoints:
    - GET  /api/ai/plan/catalogo   → lista planes pagados disponibles
@@ -8,6 +8,9 @@
    - POST /api/ai/plan/cancelar   → cancela el plan al final del periodo
 
    FASE 1: solo NOWPayments. Stripe se rechaza con 400.
+
+   v1.2: usa req.usuario.id (no req.user.id) porque middleware/auth.js
+         deja el usuario en req.usuario.
 
    NO TOCA: payments.js, pay/*, membresia.js,
    membresia-webhook-handler.js, livepass-webhook-handler.js,
@@ -92,7 +95,8 @@ router.get('/catalogo', verificarToken, async (req, res) => {
 
 router.get('/', verificarToken, async (req, res) => {
     try {
-        const usuarioId = req.user.id;
+        // ✅ v1.2: req.usuario.id (no req.user.id)
+        const usuarioId = req.usuario.id;
 
         // 1. Plan vigente
         const { data: planRows, error: errPlan } = await supabase.rpc(
@@ -199,7 +203,8 @@ router.post('/checkout', verificarToken, limitadorPagos, async (req, res) => {
             return err(res, 503, 'El sistema de pagos aún no está disponible.');
         }
 
-        const usuarioId = req.user.id;
+        // ✅ v1.2: req.usuario.id (no req.user.id)
+        const usuarioId = req.usuario.id;
         const { plan, proveedor } = req.body || {};
 
         // 1. Validar proveedor
@@ -359,7 +364,8 @@ router.post('/checkout', verificarToken, limitadorPagos, async (req, res) => {
 
 router.post('/cancelar', verificarToken, async (req, res) => {
     try {
-        const usuarioId = req.user.id;
+        // ✅ v1.2: req.usuario.id (no req.user.id)
+        const usuarioId = req.usuario.id;
 
         const { data, error } = await supabase.rpc('cancelar_plan_ia', {
             p_usuario: usuarioId
