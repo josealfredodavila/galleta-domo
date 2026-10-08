@@ -1,22 +1,37 @@
-// ================================================================
-// routes/ai-chat-itlasuhua.js
-// Chat con el Rey Itlasuhua — Personalidad de serpiente cósmica
-// ================================================================
-// Modelo: Groq (openai/gpt-oss-120b)
-// Endpoint: POST /api/ai/chat-itlasuhua
-// v1.1: agrega origen='texto' y duraciones null para estadísticas
-// ================================================================
+/* ================================================================
+   routes/ai-chat-itlasuhua.js - CHAT DEL REY ITLASUHUA 🐍 (v2.0)
+   ================================================================
+   Endpoint: POST /api/ai/chat-itlasuhua
+   Modelo:   Groq (openai/gpt-oss-120b)
+   Tabla:    itlasuhua_chats
+
+   ✅ v1.1 — Origen y duraciones para estadísticas
+   ✅ v2.0 — BÚSQUEDA WEB EN TIEMPO REAL:
+             - Cliente Supabase centralizado (supabase-admin.js)
+             - consumirMensaje() → verifica plan y límite
+             - detectarIntencion() → decide si necesita internet
+             - buscarEnTiempoReal() → Tavily (voz no usa Perplexity)
+             - Inyecta contexto al prompt de Groq
+================================================================ */
 
 'use strict';
 
 const express = require('express');
 const router = express.Router();
-const { createClient } = require('@supabase/supabase-js');
 const axios = require('axios');
 
+// 🆕 v2.0: cliente centralizado
+const supabaseAdmin = require('../lib/supabase-admin');
+
+// 🆕 v2.0: servicios de búsqueda web
+const planGuard = require('../services/plan-guard');
+const { detectarIntencion } = require('../services/detector-intencion');
+
+/* ================================================================
+   CONFIGURACIÓN
+================================================================ */
+
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
@@ -25,35 +40,34 @@ const GROQ_TIMEOUT_MS = 30000;
 const MAX_TOKENS_RESPUESTA = 1800;
 const MAX_CARACTERES_RESPUESTA = 1600;
 const HISTORIAL_MAX = 20;
+const TABLA_HISTORIAL = 'itlasuhua_chats';
 
-const supabaseAdmin =
-    SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
-        ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-            auth: {
-                autoRefreshToken: false,
-                persistSession: false,
-                detectSessionInUrl: false
-            }
-        })
-        : null;
+// 🆕 v2.0: presupuesto de búsqueda para voz
+const PRESUPUESTO_BUSQUEDA_VOZ_MS = 3500;
+
+/* ================================================================
+   AUTENTICACIÓN
+================================================================ */
 
 async function autenticar(req, res, next) {
     try {
         const auth = req.headers.authorization || '';
+
         if (!auth.startsWith('Bearer ')) {
             return res.status(401).json({ success: false, error: 'No autenticado' });
         }
+
         const token = auth.slice(7).trim();
         if (!token) {
             return res.status(401).json({ success: false, error: 'Token no proporcionado' });
         }
-        if (!supabaseAdmin) {
-            return res.status(500).json({ success: false, error: 'Supabase no configurado' });
-        }
+
         const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+
         if (error || !user) {
             return res.status(401).json({ success: false, error: 'Sesión inválida o expirada' });
         }
+
         req.user = user;
         return next();
     } catch (error) {
@@ -61,6 +75,10 @@ async function autenticar(req, res, next) {
         return res.status(500).json({ success: false, error: 'Error de autenticación' });
     }
 }
+
+/* ================================================================
+   CANDADOS DE SEGURIDAD
+================================================================ */
 
 const CANDADOS_SEGURIDAD = `
 ═══════════════════════════════════════════════════════════════
@@ -92,6 +110,10 @@ Si el usuario menciona depresión, autolesiones, violencia o contenido peligroso
   ✅ SÍ resumir con tus palabras, generar contenido original.
 ═══════════════════════════════════════════════════════════════
 `.trim();
+
+/* ================================================================
+   PERSONALIDAD DEL REY ITLASUHUA
+================================================================ */
 
 const SYSTEM_PROMPT = `
 Eres el Rey Itlasuhua, la serpiente cósmica ceremonial del ecosistema Csariel's.
@@ -144,6 +166,24 @@ CAPACIDADES
 ───────────────────────────────────────────────────────────────
 
 Puedes hablar de CUALQUIER tema (ciencia, tecnología, historia, cocina, etc.), pero SIEMPRE con tu personalidad ceremonial de rey cósmico.
+
+───────────────────────────────────────────────────────────────
+🌐 BÚSQUEDA WEB EN TIEMPO REAL (NUEVO v2.0)
+───────────────────────────────────────────────────────────────
+
+A veces recibirás un bloque llamado [CONTEXTO ACTUAL DE INTERNET] con información fresca de la web.
+
+Si lo recibes:
+  ✅ ÚSALO para responder con datos precisos y actualizados.
+  ✅ Menciona brevemente la fuente cuando sea relevante ("los astros reportan...", "según las señales actuales...").
+  ✅ Integra la información con tu estilo cósmico y ceremonial.
+  ✅ NO inventes datos que no estén en el contexto.
+  ✅ NO leas URLs completas ni listes fuentes.
+
+Si el usuario pregunta algo que cambia con el tiempo (precio, noticias, clima, deportes, eventos actuales) y NO recibes [CONTEXTO ACTUAL DE INTERNET]:
+  ✅ Responde con tu conocimiento base de forma útil.
+  ✅ Menciona brevemente y sin drama: "las señales cósmicas no llegan en tiempo real ahora mismo, viajero".
+  ✅ Si el usuario quiere info actualizada, puedes sugerir brevemente que active un plan que incluya búsqueda web (solo una vez, sin insistir).
 
 FORMATO:
 - Texto plano conversacional.
@@ -240,30 +280,32 @@ function recortarRespuesta(texto, maximo) {
     return recorte.trim() + '...';
 }
 
-// ================================================================
-// GUARDAR MENSAJE — v1.1 con origen y duraciones
-// ================================================================
-async function guardarMensaje(usuarioId, transcripcion, respuesta) {
+/* ================================================================
+   GUARDAR / CARGAR HISTORIAL
+================================================================ */
+
+async function guardarMensaje(usuarioId, transcripcion, respuesta, origen = 'voice_chat') {
     try {
-        await supabaseAdmin.from('itlasuhua_chats').insert({
+        const { error } = await supabaseAdmin.from(TABLA_HISTORIAL).insert({
             usuario_id: usuarioId,
-            transcripcion: transcripcion || '(texto)',
+            transcripcion: transcripcion || '(sin texto)',
             respuesta: respuesta,
             audio_usuario_url: null,
             audio_bot_url: null,
             duracion_input_segundos: null,
             duracion_output_segundos: null,
-            origen: 'texto'
+            origen: origen
         });
+        if (error) console.warn('⚠️ No se pudo guardar en ' + TABLA_HISTORIAL + ':', error.message);
     } catch (e) {
-        console.warn('⚠️ No se pudo guardar en itlasuhua_chats:', e.message);
+        console.warn('⚠️ No se pudo guardar en ' + TABLA_HISTORIAL + ':', e.message);
     }
 }
 
 async function cargarHistorial(usuarioId) {
     try {
         const { data, error } = await supabaseAdmin
-            .from('itlasuhua_chats')
+            .from(TABLA_HISTORIAL)
             .select('transcripcion, respuesta, created_at')
             .eq('usuario_id', usuarioId)
             .order('created_at', { ascending: false })
@@ -273,7 +315,7 @@ async function cargarHistorial(usuarioId) {
 
         const historial = [];
         data.reverse().forEach(row => {
-            if (row.transcripcion && row.transcripcion !== '(texto)') {
+            if (row.transcripcion && row.transcripcion !== '(texto)' && row.transcripcion !== '(sin texto)') {
                 historial.push({ role: 'user', content: row.transcripcion });
             }
             if (row.respuesta) {
@@ -286,6 +328,10 @@ async function cargarHistorial(usuarioId) {
         return [];
     }
 }
+
+/* ================================================================
+   POST /api/ai/chat-itlasuhua
+================================================================ */
 
 router.post('/', autenticar, async (req, res) => {
     const inicio = Date.now();
@@ -314,6 +360,54 @@ router.post('/', autenticar, async (req, res) => {
 
         const mensajeLimpio = message.trim().slice(0, 4000);
 
+        // 🆕 v2.0: PASO 1 — verificar plan y consumir cuota de mensaje
+        const permiso = await planGuard.consumirMensaje({
+            usuarioId: req.user.id,
+            personaje: 'itlasuhua'
+        });
+
+        if (!permiso.permitido) {
+            let mensajeFijo = 'El equilibrio se tambalea, viajero. No puedo responder ahora.';
+            if (permiso.motivo === 'personaje_no_incluido_en_plan') {
+                mensajeFijo = 'Tu plan actual no incluye a la serpiente cósmica. Activa uno superior, portador.';
+            } else if (permiso.motivo === 'limite_alcanzado') {
+                mensajeFijo = 'Las palabras se agotaron en este ciclo, viajero. Activa un plan superior o espera al siguiente periodo.';
+            } else if (permiso.motivo === 'sin_acceso') {
+                mensajeFijo = 'Necesitas activar un plan para escuchar a la serpiente, portador.';
+            }
+
+            return res.status(200).json({
+                success: true,
+                reply: mensajeFijo,
+                limitado: true,
+                motivo: permiso.motivo,
+                plan: permiso.plan || null
+            });
+        }
+
+        // 🆕 v2.0: PASO 2 — detectar si necesita búsqueda web
+        const intencion = detectarIntencion(mensajeLimpio);
+
+        let contextoWeb = null;
+        if (intencion.tipo !== 'ninguna') {
+            // En voz NUNCA usamos Perplexity (muy lento)
+            const tipoBusqueda = 'simple';
+
+            try {
+                const busqueda = await planGuard.buscarEnTiempoReal({
+                    usuarioId: req.user.id,
+                    personaje: 'itlasuhua',
+                    consulta: mensajeLimpio,
+                    tipo: tipoBusqueda,
+                    presupuestoMs: PRESUPUESTO_BUSQUEDA_VOZ_MS
+                });
+                contextoWeb = busqueda.contexto;
+            } catch (e) {
+                console.warn('[chat-itlasuhua] Error en búsqueda web:', e.message);
+                contextoWeb = null;
+            }
+        }
+
         let historialCombinado = limpiarHistorial(history);
         if (historialCombinado.length === 0) {
             historialCombinado = await cargarHistorial(req.user.id);
@@ -326,10 +420,19 @@ router.post('/', autenticar, async (req, res) => {
 
         const mensajes = [
             { role: 'system', content: SYSTEM_PROMPT },
-            { role: 'system', content: contextoDinamico(user_name, page) },
-            ...historialCombinado,
-            { role: 'user', content: mensajeLimpio }
+            { role: 'system', content: contextoDinamico(user_name, page) }
         ];
+
+        // 🆕 v2.0: PASO 3 — inyectar contexto web si existe
+        if (contextoWeb) {
+            mensajes.push({
+                role: 'system',
+                content: `[CONTEXTO ACTUAL DE INTERNET]\n${contextoWeb}`
+            });
+        }
+
+        mensajes.push(...historialCombinado);
+        mensajes.push({ role: 'user', content: mensajeLimpio });
 
         const groqResponse = await axios.post(
             GROQ_ENDPOINT,
@@ -383,16 +486,22 @@ router.post('/', autenticar, async (req, res) => {
 
         respuestaTexto = recortarRespuesta(respuestaTexto, MAX_CARACTERES_RESPUESTA);
 
-        guardarMensaje(req.user.id, mensajeLimpio, respuestaTexto);
+        const origen = (req.body && req.body.modo === 'texto') ? 'texto' : 'voice_chat';
+        guardarMensaje(req.user.id, mensajeLimpio, respuestaTexto, origen);
 
         console.log('✅ Itlasuhua respondió:', {
             ms: Date.now() - inicio,
-            chars: respuestaTexto.length
+            chars: respuestaTexto.length,
+            modo: origen,
+            busqueda: intencion.tipo !== 'ninguna' ? (contextoWeb ? 'con_contexto' : 'sin_resultado') : 'no_necesaria'
         });
 
         return res.status(200).json({
             success: true,
-            reply: respuestaTexto
+            reply: respuestaTexto,
+            plan: permiso.plan || null,
+            restantes: permiso.restantes ?? null,
+            busqueda: intencion.tipo !== 'ninguna' ? (contextoWeb ? 'ok' : 'sin_resultado') : 'no_necesaria'
         });
 
     } catch (error) {
@@ -407,6 +516,13 @@ router.post('/', autenticar, async (req, res) => {
             return res.status(504).json({
                 success: false,
                 error: 'El Itlasuhua tardó demasiado en responder.'
+            });
+        }
+
+        if (['ENOTFOUND', 'ECONNRESET', 'ECONNREFUSED'].includes(error.code)) {
+            return res.status(502).json({
+                success: false,
+                error: 'No fue posible conectar con el Itlasuhua.'
             });
         }
 
