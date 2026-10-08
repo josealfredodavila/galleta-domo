@@ -1,10 +1,12 @@
 // ================================================================
-// ITLASUHUA · VOICE v1.0
+// ITLASUHUA · VOICE v1.1
 // ================================================================
 // Control de voz del Rey Itlasuhua.
 // Flujo híbrido:
 //   - Primer toque: habla frase ceremonial de bienvenida
 //   - Toques siguientes: escucha → transcribe → IA responde → habla
+//
+// v1.1: logs de diagnóstico detallados para detectar por qué falla.
 // ================================================================
 
 (function (window) {
@@ -13,8 +15,16 @@
     if (window.__itlasuhuaVoiceLoaded) return;
     window.__itlasuhuaVoiceLoaded = true;
 
-    function log(msg) {
-        console.log('[Itlasuhua/Voice]', msg);
+    function log(msg, datos) {
+        if (datos !== undefined) {
+            console.log('[Itlasuhua/Voice]', msg, datos);
+        } else {
+            console.log('[Itlasuhua/Voice]', msg);
+        }
+    }
+
+    function logError(msg, error) {
+        console.error('[Itlasuhua/Voice]', msg, error);
     }
 
     let isSpeaking = false;
@@ -98,6 +108,8 @@
                             finalizarHabla(miToken);
                             return true;
                         }
+                    } else {
+                        log('TTS backend devolvió error, usando navegador', { status: resp.status });
                     }
                 }
             }
@@ -136,7 +148,10 @@
     }
 
     async function hablarNavegador(texto, miToken) {
-        if (!window.speechSynthesis) return;
+        if (!window.speechSynthesis) {
+            log('speechSynthesis no está disponible');
+            return;
+        }
         window.speechSynthesis.cancel();
 
         const frases = texto.split(/(?<=[.!?…\n])\s+/).filter(Boolean);
@@ -173,10 +188,14 @@
     function iniciarReconocimiento() {
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SR) {
+            logError('❌ SpeechRecognition NO está disponible en este navegador');
             hablar(elegirAleatorio(FRASES_ERROR));
             return false;
         }
-        if (recognitionActive && recognition) return true;
+        if (recognitionActive && recognition) {
+            log('Reconocimiento ya activo, ignoro');
+            return true;
+        }
 
         try {
             recognition = new SR();
@@ -189,10 +208,12 @@
             recognition.onstart = function () {
                 recognitionActive = true;
                 isListening = true;
+                log('🎙️ Micrófono activo, escuchando...');
             };
 
             recognition.onresult = function (event) {
                 const transcript = event.results[0][0].transcript.trim();
+                log('📝 Transcripción:', transcript);
                 if (!transcript) return;
                 recibioResultado = true;
 
@@ -211,8 +232,16 @@
                 recognitionActive = false;
                 isListening = false;
                 recognition = null;
+                logError('❌ Error de reconocimiento:', event.error);
+
                 if (event.error === 'not-allowed') {
                     hablar('Permite el micrófono para que pueda escucharte, viajero.');
+                } else if (event.error === 'no-speech') {
+                    log('No se detectó voz, silencio');
+                } else if (event.error === 'audio-capture') {
+                    hablar('No detecto tu micrófono, viajero.');
+                } else if (event.error === 'network') {
+                    hablar('El reconocimiento de voz necesita internet, viajero.');
                 }
             };
 
@@ -220,11 +249,14 @@
                 recognitionActive = false;
                 isListening = false;
                 recognition = null;
+                log('Micrófono cerrado');
             };
 
             recognition.start();
+            log('✅ Reconocimiento iniciado');
             return true;
         } catch (e) {
+            logError('❌ Error al iniciar reconocimiento:', e);
             return false;
         }
     }
@@ -239,8 +271,12 @@
 
     async function procesarComando(texto) {
         if (!texto) return;
-        if (procesando) return;
+        if (procesando) {
+            log('Ya estoy procesando, ignoro');
+            return;
+        }
         procesando = true;
+        log('🧠 Procesando comando:', texto);
 
         try {
             historialLocal.push({ role: 'user', content: texto, ts: Date.now() });
@@ -248,6 +284,7 @@
 
             const sb = await obtenerClienteSupabase();
             if (!sb) {
+                logError('❌ No hay cliente Supabase disponible');
                 procesando = false;
                 hablar(elegirAleatorio(FRASES_ERROR));
                 return;
@@ -255,10 +292,13 @@
 
             const r = await sb.auth.getSession();
             if (!r.data.session) {
+                logError('❌ No hay sesión activa');
                 procesando = false;
                 hablar('Necesito tu presencia registrada, viajero. Inicia sesión.');
                 return;
             }
+
+            log('✅ Sesión OK, llamando al backend...');
 
             const resp = await fetch('/api/ai/chat-itlasuhua', {
                 method: 'POST',
@@ -274,6 +314,12 @@
             });
 
             if (!resp.ok) {
+                const errorText = await resp.text().catch(() => '');
+                logError('❌ Backend error:', {
+                    status: resp.status,
+                    statusText: resp.statusText,
+                    body: errorText.slice(0, 300)
+                });
                 procesando = false;
                 hablar(elegirAleatorio(FRASES_ERROR));
                 return;
@@ -281,6 +327,8 @@
 
             const data = await resp.json();
             const respuesta = data.reply || 'No tengo respuesta para eso, viajero.';
+
+            log('✅ Respuesta recibida:', respuesta.slice(0, 80) + '...');
 
             historialLocal.push({ role: 'assistant', content: respuesta, ts: Date.now() });
             historialLocal = historialLocal.slice(-20);
@@ -297,13 +345,21 @@
             }
         } catch (e) {
             procesando = false;
-            console.error('[Itlasuhua/Voice] Error procesando:', e);
+            logError('❌ Error procesando comando:', e);
             hablar(elegirAleatorio(FRASES_ERROR));
         }
     }
 
     async function onAvatarTap() {
+        log('👆 Toque en avatar. Estado:', {
+            isSpeaking,
+            isListening,
+            procesando,
+            saludoHecho
+        });
+
         if (isSpeaking || isListening || procesando) {
+            log('⏹️ Deteniendo conversación');
             conversacionActiva = false;
             detenerTTS();
             detenerReconocimiento();
@@ -313,6 +369,7 @@
         if (!saludoHecho) {
             saludoHecho = true;
             conversacionActiva = true;
+            log('👋 Primer toque, saludo ceremonial');
             await hablar(elegirAleatorio(FRASES_BIENVENIDA));
 
             setTimeout(function () {
@@ -341,6 +398,6 @@
         resetSaludo: function () { saludoHecho = false; }
     };
 
-    log('✅ Itlasuhua Voice v1.0 cargado');
+    log('✅ Itlasuhua Voice v1.1 cargado');
 
 })(window);
