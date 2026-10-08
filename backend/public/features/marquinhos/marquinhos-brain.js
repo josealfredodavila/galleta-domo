@@ -1,5 +1,5 @@
 // ================================================================
-// MARQUINHOS · BRAIN v6.1
+// MARQUINHOS · BRAIN v6.2
 // Memoria por usuario (RAG) + filtro inteligente de recuerdos
 // ================================================================
 // Sistema de memoria:
@@ -7,6 +7,8 @@
 //   2. Inyecta los recuerdos como contexto al modelo.
 //   3. DESPUÉS de responder: GUARDA solo el mensaje del usuario
 //      (con filtro de frases útiles para evitar basura).
+// v6.2: agrega parámetro 'modo' a preguntar() para clasificar
+//       correctamente las interacciones (voz vs texto).
 // ================================================================
 
 'use strict';
@@ -17,7 +19,7 @@
     const TIMEOUT_MS = 30000;
     const HISTORIAL_ENVIO = 20;
     const MEMORIA_LIMITE = 5;
-    const MEMORIA_UMBRAL = 0.55;       // ✅ v6.1: bajado de 0.65 a 0.55
+    const MEMORIA_UMBRAL = 0.55;
     const MEMORIA_MIN_LONGITUD = 8;
     const EMBEDDINGS_ENDPOINT = '/api/ai/embeddings';
 
@@ -48,26 +50,19 @@
         return null;
     }
 
-    // ============================================================
-    // ✅ v6.1: FILTRO INTELIGENTE DE FRASES ÚTILES
-    // ============================================================
     function esFraseUtil(texto) {
         if (!texto || typeof texto !== 'string') return false;
 
         const t = texto.toLowerCase().trim();
 
-        // Mínimo de longitud
         if (t.length < MEMORIA_MIN_LONGITUD) return false;
 
-        // Ignorar saludos y frases de cortesía cortas
         const saludos = /^(hola|buenas|hey|qué tal|que tal|estás|estas|cómo estás|como estas|gracias|adiós|adios|hasta luego|ok|vale|sí|no)\b/i;
         if (saludos.test(t) && t.length < 25) return false;
 
-        // Ignorar preguntas vacías o genéricas
         const preguntasVacias = /^(quién eres|quién soy|qué haces|qué puedes hacer|ayuda|ayúdame|qué hora|qué día|qué fecha)\b/i;
         if (preguntasVacias.test(t)) return false;
 
-        // ✅ Guardar si contiene información personal o datos del usuario
         const palabrasClave = [
             'mi ', 'me ', 'yo ', 'soy ', 'tengo ', 'estoy ', 'vivo ',
             'trabajo ', 'estudio ', 'prefiero ', 'me gusta ', 'me encanta ',
@@ -84,15 +79,11 @@
             if (t.indexOf(palabrasClave[i]) !== -1) return true;
         }
 
-        // Frases largas (>30 chars) probablemente contienen info útil
         if (t.length > 30) return true;
 
         return false;
     }
 
-    // ============================================================
-    // OBTENER TOKEN
-    // ============================================================
     async function tokenDesde(cliente) {
         try {
             if (cliente && cliente.auth && typeof cliente.auth.getSession === 'function') {
@@ -138,9 +129,6 @@
         return { token: null, motivo: motivo || 'sin sesión' };
     }
 
-    // ============================================================
-    // ✅ v6.1: OBTENER CLIENTE SUPABASE (helper unificado)
-    // ============================================================
     async function obtenerClienteSupabase() {
         try {
             if (typeof window.getSupabase === 'function') {
@@ -155,9 +143,6 @@
         }
     }
 
-    // ============================================================
-    // ✅ v6.1: EMBEDDINGS
-    // ============================================================
     async function generarEmbedding(texto, token) {
         if (!texto || !token) return null;
         try {
@@ -181,9 +166,6 @@
         }
     }
 
-    // ============================================================
-    // ✅ v6.1: BUSCAR RECUERDOS
-    // ============================================================
     async function buscarRecuerdos(texto, token) {
         try {
             const embedding = await generarEmbedding(texto, token);
@@ -211,12 +193,8 @@
         }
     }
 
-    // ============================================================
-    // ✅ v6.1: GUARDAR RECUERDO (solo mensaje del usuario, filtrado)
-    // ============================================================
     async function guardarRecuerdo(mensajeUsuario, token) {
         try {
-            // Filtro: solo guardar frases útiles
             if (!esFraseUtil(mensajeUsuario)) {
                 return;
             }
@@ -246,9 +224,6 @@
         }
     }
 
-    // ============================================================
-    // LLAMAR ENDPOINT
-    // ============================================================
     async function llamarEndpoint(url, payload, token) {
         try { if (_abort) _abort.abort(); } catch (e) {}
         const ctrl = new AbortController();
@@ -297,9 +272,9 @@
     }
 
     // ============================================================
-    // PREGUNTAR
+    // PREGUNTAR — v6.2 con modo
     // ============================================================
-    async function preguntar(texto, historialLocal) {
+    async function preguntar(texto, historialLocal, modo) {
         if (!texto || typeof texto !== 'string') return '';
 
         const userInfo = window.Marquinhos && window.Marquinhos.getUserInfo
@@ -307,7 +282,9 @@
         const ctx = { nombre: userInfo ? userInfo.nombre : null };
         const limpio = texto.trim();
 
-        // Historial sin el mensaje actual
+        // 🆕 v6.2: calcular modo a enviar (voz por defecto)
+        const modoEnvio = (modo === 'texto') ? 'texto' : 'voz';
+
         let hist = Array.isArray(historialLocal) ? historialLocal.slice() : [];
         const ult = hist[hist.length - 1];
         if (ult && ult.role === 'user' && String(ult.content).trim() === limpio) hist.pop();
@@ -327,23 +304,21 @@
             } else {
                 const token = auth.token;
 
-                // ✅ v6.1: Buscar recuerdos
                 const recuerdos = await buscarRecuerdos(limpio, token);
                 if (recuerdos && recuerdos.length > 0) {
                     contextoMemoria = 'Datos que recuerdas de este usuario (úsalos con naturalidad si son relevantes):\n' +
                         recuerdos.map(function(r) { return '- ' + r.contenido; }).join('\n');
                 }
 
-                // ✅ v6.1: Guardar el mensaje del usuario (asíncrono)
                 guardarRecuerdo(limpio, token);
 
-                // Llamar a chat-pet con memoria
                 const payload1 = {
                     message: limpio,
                     history: historialEnvio,
                     page: window.location.pathname,
                     user_name: ctx.nombre,
-                    memoria: contextoMemoria
+                    memoria: contextoMemoria,
+                    modo: modoEnvio
                 };
 
                 let r1 = await llamarEndpoint('/api/ai/chat-pet', payload1, token);
@@ -353,12 +328,12 @@
                 }
                 if (r1.ok) return r1.reply;
 
-                // Respaldo
                 const r2 = await llamarEndpoint('/api/ai/chat', {
                     message: limpio,
                     context: 'marquinhos_pet',
                     history: historialEnvio,
-                    memoria: contextoMemoria
+                    memoria: contextoMemoria,
+                    modo: modoEnvio
                 }, token);
                 if (r2.ok) return r2.reply;
 
@@ -375,5 +350,5 @@
     }
 
     window.MarquinhosBrain = { preguntar: preguntar };
-    console.log('[Marquinhos/Brain] ✅ v6.1 cargado (memoria con filtro inteligente)');
+    console.log('[Marquinhos/Brain] ✅ v6.2 cargado (memoria con filtro + modo)');
 })();
