@@ -1,10 +1,12 @@
 /* ================================================================
-   APARIENCIA GLOBAL - SARIEL'S ECOSYSTEM v2.8
+   APARIENCIA GLOBAL - SARIEL'S ECOSYSTEM v2.9
    - Lee de localStorage (rápido, sin red)
    - Sincroniza con Supabase preferencias_usuario (persistente)
    - Aplica tema, color de acento y tamaño de fuente globalmente
    - Inyecta SOLO la mascota activa (Marquinhos | Capitán Maíz | Itlasuhua)
    - ✅ v2.8: Selector de mascota activa (una sola a la vez)
+   - ✅ v2.9: Inyecta itlasuhua-voice.js para el Rey Itlasuhua
+             (el fix: sin este archivo la culebra no habla, solo escupe brillos)
    ================================================================ */
 
 (function() {
@@ -477,6 +479,15 @@
             brain.src = '/features/itlasuhua/itlasuhua-brain.js';
             brain.defer = true;
             document.head.appendChild(brain);
+
+            // 🆕 v2.9: cargar itlasuhua-voice.js DESPUÉS de brain.js
+            // para que window.ItlasuhuaVoice exista y el click del pet
+            // pueda llamar a onAvatarTap()
+            var voice = document.createElement('script');
+            voice.id = 'itlasuhua-voice-script';
+            voice.src = '/features/itlasuhua/itlasuhua-voice.js';
+            voice.defer = true;
+            document.head.appendChild(voice);
         };
 
         if (document.readyState === 'loading') {
@@ -486,5 +497,5 @@
         }
     })();
 
-    console.log('[Apariencia] ✅ Módulo global v2.8 cargado · mascota activa: ' + getMascotaActiva());
+    console.log('[Apariencia] ✅ Módulo global v2.9 cargado · mascota activa: ' + getMascotaActiva());
 })();
