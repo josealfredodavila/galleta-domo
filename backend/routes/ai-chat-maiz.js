@@ -1,10 +1,11 @@
 /* ================================================================
-   routes/ai-chat-maiz.js - CHAT DEL CAPITÁN MAÍZ 🌽⚔️
+   routes/ai-chat-maiz.js - CHAT DEL CAPITÁN MAÍZ 🌽⚔️ (v1.1)
    ================================================================
    Endpoint: POST /api/ai/chat-maiz
    Modelo:   Groq (openai/gpt-oss-120b)
    Tabla:    ai_voice_chats_maiz
-   ================================================================ */
+   v1.1: origen dinámico para estadísticas
+================================================================ */
 
 'use strict';
 
@@ -150,14 +151,10 @@ TU VOZ:
 CAPACIDADES:
 Puedes hablar de CUALQUIER tema: ciencia, tecnología, matemáticas, código, redacción, cocina, historia, finanzas, filosofía, consejos de vida.
 
-Cuando el tema sea del ecosistema Sariel's, conoces bien cómo funciona.
-Cuando sea general, respondes como un sabio conocedor.
-
 REFERENCIA A MARQUINHOS:
 Si el usuario pregunta por Marquinhos:
 - Es tu compañero de misión.
 - Marquinhos es más joven y curioso, tú más sabio y ancestral.
-- Trabajan juntos cuidando el ecosistema.
 
 MEMORIA:
 Usa el historial. Recuerda lo que el usuario dijo y refiérete a ello con naturalidad.
@@ -171,17 +168,13 @@ FORMATO DE RESPUESTA:
 CONOCIMIENTO DEL ECOSISTEMA SARIEL'S:
 Sariel's es un ecosistema Web3 sobre Polygon.
 Muro P2P: mercado peer-to-peer. Comisión del 3% en USDT/USDC.
-Perfil: foto, video, portada, stats, wallet.
-Wallet y Polygon: conexión desde Configuración.
 Live: transmisiones en vivo.
 Canales: públicos, solo el creador publica.
 Grupos: privados, todos publican. Algunos de pago.
 Mensajes: chat 1 a 1 con texto, fotos, videos, notas de voz.
 Internet (eSIMs): Telnyx, datos móviles.
-Videos: galería de la comunidad.
 Domos: productos físicos con QR para recibir Es.stoks.
 Es.stoks: tokens internos. 12 Es.stoks = 1 NFT Domo.
-NFT Domo: activo en blockchain.
 
 REGLAS FINALES:
 No inventes precios, saldos, transacciones ni datos personales.
@@ -260,15 +253,18 @@ function recortarRespuesta(texto, maximo) {
     return recorte.trim() + '...';
 }
 
-async function guardarMensaje(usuarioId, transcripcion, respuesta) {
+// 🆕 v1.1: origen como parámetro
+async function guardarMensaje(usuarioId, transcripcion, respuesta, origen = 'voice_chat') {
     try {
-        await supabaseAdmin.from(TABLA_HISTORIAL).insert({
+        const { error } = await supabaseAdmin.from(TABLA_HISTORIAL).insert({
             usuario_id: usuarioId,
-            transcripcion: transcripcion || '(texto)',
+            transcripcion: transcripcion || '(sin texto)',
             respuesta: respuesta,
             audio_usuario_url: null,
-            audio_bot_url: null
+            audio_bot_url: null,
+            origen: origen
         });
+        if (error) console.warn('⚠️ No se pudo guardar en ' + TABLA_HISTORIAL + ':', error.message);
     } catch (e) {
         console.warn('⚠️ No se pudo guardar en ' + TABLA_HISTORIAL + ':', e.message);
     }
@@ -287,7 +283,7 @@ async function cargarHistorial(usuarioId) {
 
         const historial = [];
         data.reverse().forEach(row => {
-            if (row.transcripcion && row.transcripcion !== '(texto)') {
+            if (row.transcripcion && row.transcripcion !== '(texto)' && row.transcripcion !== '(sin texto)') {
                 historial.push({ role: 'user', content: row.transcripcion });
             }
             if (row.respuesta) {
@@ -412,12 +408,15 @@ router.post(['/', '/chat-maiz'], autenticar, async (req, res) => {
 
         respuestaTexto = recortarRespuesta(respuestaTexto, MAX_CARACTERES_RESPUESTA);
 
-        guardarMensaje(req.user.id, mensajeLimpio, respuestaTexto);
+        // 🆕 v1.1: calcula origen según modo enviado por el frontend
+        const origen = (req.body && req.body.modo === 'texto') ? 'texto' : 'voice_chat';
+        guardarMensaje(req.user.id, mensajeLimpio, respuestaTexto, origen);
 
         console.log('🌽 Capitán Maíz respondió:', {
             ms: Date.now() - inicio,
             chars: respuestaTexto.length,
-            memoria: memoriaLimpia ? 'sí' : 'no'
+            memoria: memoriaLimpia ? 'sí' : 'no',
+            modo: origen
         });
 
         return res.status(200).json({
