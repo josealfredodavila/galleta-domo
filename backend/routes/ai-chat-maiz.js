@@ -1,17 +1,15 @@
 /* ================================================================
-   routes/ai-chat-maiz.js - CHAT DEL CAPITÁN MAÍZ 🌽⚔️ (v2.0)
+   routes/ai-chat-maiz.js - CHAT DEL CAPITÁN MAÍZ 🌽⚔️ (v2.1)
    ================================================================
    Endpoint: POST /api/ai/chat-maiz
    Modelo:   Groq (openai/gpt-oss-120b)
    Tabla:    ai_voice_chats_maiz
 
    ✅ v1.1 — Origen dinámico para estadísticas
-   ✅ v2.0 — BÚSQUEDA WEB EN TIEMPO REAL:
-             - Cliente Supabase centralizado (supabase-admin.js)
-             - consumirMensaje() → verifica plan y límite
-             - detectarIntencion() → decide si necesita internet
-             - buscarEnTiempoReal() → Tavily (voz no usa Perplexity)
-             - Inyecta contexto al prompt de Groq
+   ✅ v2.0 — Búsqueda web en tiempo real
+   ✅ v2.1 — System prompt mejorado para búsqueda web:
+             - Cuando NO hay contexto, responde útil en lugar de "desconectado"
+             - Cuando SÍ hay contexto, menciona fuente naturalmente
 ================================================================ */
 
 'use strict';
@@ -20,10 +18,7 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 
-// 🆕 v2.0: cliente centralizado
 const supabaseAdmin = require('../lib/supabase-admin');
-
-// 🆕 v2.0: servicios de búsqueda web
 const planGuard = require('../services/plan-guard');
 const { detectarIntencion } = require('../services/detector-intencion');
 
@@ -42,7 +37,6 @@ const MAX_CARACTERES_RESPUESTA = 1600;
 const HISTORIAL_MAX = 20;
 const TABLA_HISTORIAL = 'ai_voice_chats_maiz';
 
-// 🆕 v2.0: presupuesto de búsqueda para voz (nunca Perplexity)
 const PRESUPUESTO_BUSQUEDA_VOZ_MS = 3500;
 
 /* ================================================================
@@ -132,7 +126,7 @@ SÍ puedes:
 `.trim();
 
 /* ================================================================
-   PERSONALIDAD DEL CAPITÁN MAÍZ
+   PERSONALIDAD DEL CAPITÁN MAÍZ — v2.1
 ================================================================ */
 
 const SYSTEM_PROMPT = `
@@ -171,22 +165,35 @@ MEMORIA:
 Usa el historial. Recuerda lo que el usuario dijo y refiérete a ello con naturalidad.
 
 ───────────────────────────────────────────────────────────────
-🌐 BÚSQUEDA WEB EN TIEMPO REAL (NUEVO v2.0)
+🌐 BÚSQUEDA WEB EN TIEMPO REAL — REGLAS (v2.1)
 ───────────────────────────────────────────────────────────────
 
 A veces recibirás un bloque llamado [CONTEXTO ACTUAL DE INTERNET] con información fresca de la web.
 
-Si lo recibes:
+SI RECIBES EL CONTEXTO:
   ✅ ÚSALO para responder con datos precisos y actualizados.
-  ✅ Menciona brevemente la fuente cuando sea relevante ("según las noticias de hoy, paisano...", "el precio actual es...").
+  ✅ Menciona brevemente la fuente cuando sea relevante: "según las noticias de hoy, paisano...", "el precio actual es...".
   ✅ Integra la información con tu estilo mexicano natural.
   ✅ NO inventes datos que no estén en el contexto.
   ✅ NO leas URLs completas ni listes fuentes.
 
-Si el usuario pregunta algo que cambia con el tiempo (precio, noticias, clima, deportes, eventos actuales) y NO recibes [CONTEXTO ACTUAL DE INTERNET]:
-  ✅ Responde con tu conocimiento base de forma útil.
-  ✅ Menciona brevemente y sin drama: "no tengo acceso a datos en tiempo real ahora mismo, paisano".
-  ✅ Si el usuario quiere info actualizada, puedes sugerir brevemente que active un plan que incluya búsqueda web (solo una vez, sin insistir).
+SI NO RECIBES EL CONTEXTO y la pregunta es sobre algo que cambia con el tiempo:
+
+  ❌ NO digas frases cortantes como "estoy desconectado" o "no tengo acceso".
+
+  ✅ En su lugar, responde así:
+     - Si puedes responder con conocimiento base útil → hazlo primero.
+     - Luego menciona con naturalidad: "Eso sí, no tengo la señal en vivo ahora mismo, paisano. Si quieres el dato exacto al día, puedo revisarlo si activas un plan con búsqueda web."
+     - Si el usuario insiste o no sabe qué hacer, ofrece alternativas: "¿Quieres que te platique de algo más? De historia, cocina, consejos, o de cómo funciona Csariel's."
+
+  ✅ Suena como un tío sabio que no tiene la tele prendida, pero que sabe mucho igual.
+  ✅ NUNCA suenes como robot diciendo "no tengo acceso a datos en tiempo real".
+
+EJEMPLO BUENO cuando preguntan "¿Qué me cuentas del mundo real?" sin contexto:
+"Órale, paisano, pues te platico que andamos en tiempos interesantes: la tecnología avanza rapidísimo, la IA está moviendo todo, y la banda está aprendiendo a navegar eso. Eso sí, no tengo la señal en vivo ahora mismo; si quieres el detalle al día de algo específico —precios, noticias, deportes— actívame un plan con búsqueda web y te lo reviso. Mientras, ¿de qué quieres que platiquemos?"
+
+EJEMPLO MALO (nunca hacer esto):
+"No tengo acceso a datos en tiempo real ahora mismo, paisano."
 
 FORMATO DE RESPUESTA:
 - Español mexicano natural.
@@ -282,10 +289,6 @@ function recortarRespuesta(texto, maximo) {
     return recorte.trim() + '...';
 }
 
-/* ================================================================
-   GUARDAR / CARGAR HISTORIAL
-================================================================ */
-
 async function guardarMensaje(usuarioId, transcripcion, respuesta, origen = 'voice_chat') {
     try {
         const { error } = await supabaseAdmin.from(TABLA_HISTORIAL).insert({
@@ -361,7 +364,6 @@ router.post(['/', '/chat-maiz'], autenticar, async (req, res) => {
 
         const mensajeLimpio = message.trim().slice(0, 4000);
 
-        // 🆕 v2.0: PASO 1 — verificar plan y consumir cuota de mensaje
         const permiso = await planGuard.consumirMensaje({
             usuarioId: req.user.id,
             personaje: 'maiz'
@@ -386,12 +388,10 @@ router.post(['/', '/chat-maiz'], autenticar, async (req, res) => {
             });
         }
 
-        // 🆕 v2.0: PASO 2 — detectar si necesita búsqueda web
         const intencion = detectarIntencion(mensajeLimpio);
 
         let contextoWeb = null;
         if (intencion.tipo !== 'ninguna') {
-            // En voz NUNCA usamos Perplexity (muy lento)
             const tipoBusqueda = 'simple';
 
             try {
@@ -436,7 +436,6 @@ router.post(['/', '/chat-maiz'], autenticar, async (req, res) => {
             });
         }
 
-        // 🆕 v2.0: PASO 3 — inyectar contexto web si existe
         if (contextoWeb) {
             mensajes.push({
                 role: 'system',
