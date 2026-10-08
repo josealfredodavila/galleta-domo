@@ -1,17 +1,15 @@
 /* ================================================================
-   routes/ai-chat-pet.js - CHAT DE LA MASCOTA MARQUINHOS (v5.0)
+   routes/ai-chat-pet.js - CHAT DE LA MASCOTA MARQUINHOS (v5.1)
    ================================================================
    Endpoint: POST /api/ai/chat-pet
    Modelo:   Groq (openai/gpt-oss-120b)
 
    ✅ v4   — CANDADOS DE SEGURIDAD PROFESIONALES
    ✅ v4.1 — Origen (voz/texto) dinámico para estadísticas
-   ✅ v5.0 — BÚSQUEDA WEB EN TIEMPO REAL:
-             - Cliente Supabase centralizado (supabase-admin.js)
-             - consumirMensaje() → verifica plan y límite
-             - detectarIntencion() → decide si necesita internet
-             - buscarEnTiempoReal() → Tavily (voz no usa Perplexity)
-             - Inyecta contexto al prompt de Groq
+   ✅ v5.0 — Búsqueda web en tiempo real
+   ✅ v5.1 — System prompt mejorado para búsqueda web:
+             - Cuando NO hay contexto, responde útil en lugar de "desconectado"
+             - Cuando SÍ hay contexto, menciona fuente naturalmente
 ================================================================ */
 
 'use strict';
@@ -20,10 +18,7 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 
-// 🆕 v5.0: cliente centralizado
 const supabaseAdmin = require('../lib/supabase-admin');
-
-// 🆕 v5.0: servicios de búsqueda web
 const planGuard = require('../services/plan-guard');
 const { detectarIntencion } = require('../services/detector-intencion');
 
@@ -42,7 +37,6 @@ const MAX_CARACTERES_RESPUESTA = 1600;
 
 const HISTORIAL_MAX = 20;
 
-// 🆕 v5.0: presupuesto de búsqueda para voz (nunca Perplexity)
 const PRESUPUESTO_BUSQUEDA_VOZ_MS = 3500;
 
 /* ================================================================
@@ -144,7 +138,7 @@ SÍ puedes:
 `.trim();
 
 /* ================================================================
-   PERSONALIDAD DE MARQUINHOS
+   PERSONALIDAD DE MARQUINHOS — v5.1
 ================================================================ */
 
 const SYSTEM_PROMPT = `
@@ -179,22 +173,35 @@ CÓMO RESPONDER:
 7. Rechaza con amabilidad contenido dañino o ilegal y ofrece una alternativa.
 
 ───────────────────────────────────────────────────────────────
-🌐 BÚSQUEDA WEB EN TIEMPO REAL (NUEVO v5.0)
+🌐 BÚSQUEDA WEB EN TIEMPO REAL — REGLAS (v5.1)
 ───────────────────────────────────────────────────────────────
 
 A veces recibirás un bloque llamado [CONTEXTO ACTUAL DE INTERNET] con información fresca de la web.
 
-Si lo recibes:
+SI RECIBES EL CONTEXTO:
   ✅ ÚSALO para responder con datos precisos y actualizados.
   ✅ Menciona brevemente la fuente cuando sea relevante ("según las noticias de hoy...", "el precio actual es...").
   ✅ Integra la información con tu personalidad cálida y natural.
   ✅ NO inventes datos que no estén en el contexto.
   ✅ NO leas URLs completas ni listes fuentes.
 
-Si el usuario pregunta algo que cambia con el tiempo (precio, noticias, clima, deportes, eventos actuales) y NO recibes [CONTEXTO ACTUAL DE INTERNET]:
-  ✅ Responde con tu conocimiento base de forma útil.
-  ✅ Menciona brevemente y sin drama: "no tengo acceso a datos en tiempo real ahora mismo".
-  ✅ Si el usuario quiere info actualizada, puedes sugerir brevemente que active un plan que incluya búsqueda web (solo una vez, sin insistir).
+SI NO RECIBES EL CONTEXTO y la pregunta es sobre algo que cambia con el tiempo:
+
+  ❌ NO digas frases cortantes como "estoy desconectado" o "no tengo acceso".
+
+  ✅ En su lugar, responde así:
+     - Si puedes responder con conocimiento base útil → hazlo primero.
+     - Luego menciona con naturalidad: "Oye, no tengo la info al día ahora mismo, pero puedo revisarlo si activas un plan con búsqueda web."
+     - Si el usuario insiste, ofrece alternativas: "¿Quieres que te platique de algo más? Historia, consejos, cómo funciona la app…"
+
+  ✅ Suena como un amigo que no tiene el periódico abierto, pero sabe mucho igual.
+  ✅ NUNCA suenes como robot diciendo "no tengo acceso a datos en tiempo real".
+
+EJEMPLO BUENO cuando preguntan "¿Qué me cuentas del mundo real?" sin contexto:
+"¡Órale! Pues estamos en tiempos bien movidos: la IA está transformando todo, la tecnología avanza rapidísimo, y la banda anda aprendiendo a navegar eso. Eso sí, no tengo el detalle en vivo ahora mismo. Si quieres algo específico —precios, noticias, deportes— actívame un plan con búsqueda web y te lo reviso. Mientras, ¿de qué quieres que platiquemos?"
+
+EJEMPLO MALO (nunca hacer esto):
+"No tengo acceso a datos en tiempo real ahora mismo."
 
 FORMATO:
 Texto plano conversacional. Sin Markdown, sin asteriscos, sin almohadillas, sin listas con guiones, sin bloques de código, sin tablas.
@@ -247,10 +254,6 @@ function contextoDinamico(user_name, page) {
     return t.trim();
 }
 
-/* ================================================================
-   LIMPIAR HISTORIAL
-================================================================ */
-
 function limpiarHistorial(history) {
     if (!Array.isArray(history)) return [];
 
@@ -268,10 +271,6 @@ function limpiarHistorial(history) {
             content: item.content.trim().slice(0, 4000)
         }));
 }
-
-/* ================================================================
-   LIMPIAR FORMATO (quita Markdown residual)
-================================================================ */
 
 function limpiarFormato(texto) {
     if (typeof texto !== 'string') return '';
@@ -313,10 +312,6 @@ function recortarRespuesta(texto, maximo) {
     }
     return recorte.trim() + '...';
 }
-
-/* ================================================================
-   GUARDAR / CARGAR HISTORIAL — con origen dinámico
-================================================================ */
 
 async function guardarMensaje(usuarioId, transcripcion, respuesta, origen = 'voice_chat') {
     try {
@@ -393,14 +388,12 @@ router.post(['/', '/chat-pet'], autenticar, async (req, res) => {
 
         const mensajeLimpio = message.trim().slice(0, 4000);
 
-        // 🆕 v5.0: PASO 1 — verificar plan y consumir cuota de mensaje
         const permiso = await planGuard.consumirMensaje({
             usuarioId: req.user.id,
             personaje: 'marquinhos'
         });
 
         if (!permiso.permitido) {
-            // Mensaje fijo sin llamar a Groq
             let mensajeFijo = 'No puedo responder ahora mismo.';
             if (permiso.motivo === 'personaje_no_incluido_en_plan') {
                 mensajeFijo = 'Tu plan actual no incluye este personaje. Activa uno superior para hablar conmigo.';
@@ -419,13 +412,10 @@ router.post(['/', '/chat-pet'], autenticar, async (req, res) => {
             });
         }
 
-        // 🆕 v5.0: PASO 2 — detectar si necesita búsqueda web
         const intencion = detectarIntencion(mensajeLimpio);
 
         let contextoWeb = null;
         if (intencion.tipo !== 'ninguna') {
-            // En voz NUNCA usamos Perplexity (muy lento)
-            // Aunque el detector diga 'complejo', en voz lo tratamos como 'simple'
             const tipoBusqueda = 'simple';
 
             try {
@@ -470,7 +460,6 @@ router.post(['/', '/chat-pet'], autenticar, async (req, res) => {
             });
         }
 
-        // 🆕 v5.0: PASO 3 — inyectar contexto web si existe
         if (contextoWeb) {
             mensajes.push({
                 role: 'system',
@@ -534,7 +523,6 @@ router.post(['/', '/chat-pet'], autenticar, async (req, res) => {
 
         respuestaTexto = recortarRespuesta(respuestaTexto, MAX_CARACTERES_RESPUESTA);
 
-        // Origen según modo enviado por el frontend
         const origen = (req.body && req.body.modo === 'texto') ? 'texto' : 'voice_chat';
         guardarMensaje(req.user.id, mensajeLimpio, respuestaTexto, origen);
 
