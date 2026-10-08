@@ -1,17 +1,16 @@
 // ================================================================
 // ROUTES/LIVEPASS-WEBHOOK-HANDLER.JS - SARIEL'S ECOSYSTEM
-// ================================================================
-// Handler para procesar los webhooks (IPN) de NOWPayments
-// que corresponden al Live Pass (order_id empieza con "LP-").
+// IPN de NOWPayments para Live Pass (order_id con prefijo "LP-").
 //
-// Reutiliza la misma lógica que membresia-webhook-handler.js pero:
-// - Llama a la RPC `activar_live_pass` (no `activar_membresia_pro`)
-// - Extrae el plan_tipo del order_id o del payload
+// - Firma obligatoria: HMAC-SHA512 sobre JSON con claves ordenadas (utils/nowpayments-sig).
+// - Solo activa con estados finales (finished, confirmed). Nunca con partially_paid.
+// - Fallos permanentes responden 200 para que NOWPayments no reintente.
+// - Fallos temporales responden 500 para que NOWPayments reintente.
+// - Sin datos personales en logs.
 // ================================================================
-
-const crypto = require('crypto');
 
 const { createClient } = require('@supabase/supabase-js');
+const { verificarFirmaNowPayments } = require('../utils/nowpayments-sig.js');
 
 const supabaseAdmin = createClient(
     process.env.SUPABASE_URL,
@@ -20,66 +19,50 @@ const supabaseAdmin = createClient(
 
 const NOWPAYMENTS_IPN_SECRET = process.env.NOWPAYMENTS_IPN_SECRET;
 
-// ================================================================
-// VALIDAR FIRMA DE NOWPAYMENTS
-// ================================================================
+const ESTADOS_FINALES = ['finished', 'confirmed'];
+const PLANES_LIVE = ['live_basico', 'live_pro'];
 
-function validarFirmaNowPayments(req) {
-    if (!NOWPAYMENTS_IPN_SECRET) {
-        console.warn(
-            '⚠️ [LivePass Webhook] NOWPAYMENTS_IPN_SECRET no configurado. Saltando validación.'
-        );
-        return true;
-    }
+// Respaldo si el pedido no trae metadata. Frágil: si cambian precios, hay que actualizarlo.
+const PLAN_POR_MONTO = { 300: 'live_basico', 600: 'live_pro' };
 
-    const sig =
-        req.headers['x-nowpayments-sig'] ||
-        req.headers['x-signature'];
-
-    if (!sig) {
-        console.error(
-            '❌ [LivePass Webhook] Falta cabecera de firma (x-nowpayments-sig).'
-        );
-        return false;
-    }
-
-    const rawBody = req.rawBody || '';
-
-    if (!rawBody) {
-        console.error(
-            '❌ [LivePass Webhook] No hay rawBody para verificar firma.'
-        );
-        return false;
-    }
-
-    const hmac = crypto
-        .createHmac('sha512', NOWPAYMENTS_IPN_SECRET)
-        .update(rawBody)
-        .digest('hex');
-
-    if (hmac !== sig) {
-        console.error(
-            '❌ [LivePass Webhook] Firma inválida.'
-        );
-        return false;
-    }
-
-    return true;
+function log(evento, datos = {}) {
+    console.log(JSON.stringify({
+        t: new Date().toISOString(),
+        mod: 'livepass-webhook',
+        evento,
+        ...datos
+    }));
 }
 
-// ================================================================
-// DETERMINAR PLAN TIPO DESDE EL PAYLOAD
-// ================================================================
+// Respuesta de "no procesar, no reintentar"
+function ignorado(res, motivo, extra = {}) {
+    return res.status(200).json({ status: 'ignored', motivo, ...extra });
+}
 
+function firmaValida(req) {
+    const firma = req.headers['x-nowpayments-sig'];
+    if (!firma) return false;
+
+    try {
+        return verificarFirmaNowPayments(req.body, req.rawBody, firma, NOWPAYMENTS_IPN_SECRET);
+    } catch (err) {
+        log('firma_error', { motivo: err.message });
+        return false;
+    }
+}
+
+// Devuelve 'live_basico' | 'live_pro' | null. Lanza error solo si la base falla.
 async function determinarPlanTipo(orderId, payload) {
-    if (payload && payload.metadata) {
-        const meta =
-            typeof payload.metadata === 'string'
-                ? JSON.parse(payload.metadata || '{}')
+    if (payload.metadata) {
+        try {
+            const meta = typeof payload.metadata === 'string'
+                ? JSON.parse(payload.metadata)
                 : payload.metadata;
-
-        if (meta && (meta.plan_tipo === 'live_basico' || meta.plan_tipo === 'live_pro')) {
-            return meta.plan_tipo;
+            if (meta && PLANES_LIVE.includes(meta.plan_tipo)) {
+                return meta.plan_tipo;
+            }
+        } catch {
+            // metadata malformada: se intenta por monto
         }
     }
 
@@ -89,82 +72,41 @@ async function determinarPlanTipo(orderId, payload) {
         .eq('order_id', orderId)
         .maybeSingle();
 
-    if (error) {
-        console.error(
-            '❌ [LivePass Webhook] Error buscando pago:',
-            error
-        );
-        return null;
-    }
+    if (error) throw error;
+    if (!pago) return null;
 
-    if (!pago) {
-        console.error(
-            '❌ [LivePass Webhook] Pago no encontrado para order_id:',
-            orderId
-        );
-        return null;
-    }
-
-    const monto = parseFloat(pago.monto_mxn);
-
-    if (monto === 300) return 'live_basico';
-    if (monto === 600) return 'live_pro';
-
-    console.error(
-        '❌ [LivePass Webhook] No se pudo determinar plan por monto:',
-        monto
-    );
-    return null;
+    return PLAN_POR_MONTO[parseFloat(pago.monto_mxn)] || null;
 }
-
-// ================================================================
-// HANDLER PRINCIPAL
-// ================================================================
 
 async function handleWebhookLivePass(req, res) {
     try {
-        console.log(
-            '🎥 [LivePass Webhook] Procesando webhook de Live Pass...'
-        );
+        // 1) Configuración: sin secreto o sin cuerpo crudo no se procesa nada
+        if (!NOWPAYMENTS_IPN_SECRET || !req.rawBody) {
+            log('config_incompleta');
+            return res.status(500).json({ status: 'error', error: 'Configuración incompleta' });
+        }
 
-        if (!validarFirmaNowPayments(req)) {
-            console.error(
-                '❌ [LivePass Webhook] Firma inválida. Rechazando.'
-            );
-            return res.status(401).json({
-                status: 'error',
-                error: 'Firma inválida'
-            });
+        // 2) Firma obligatoria
+        if (!firmaValida(req)) {
+            log('firma_invalida');
+            return res.status(401).json({ status: 'error', error: 'Firma inválida' });
         }
 
         const payload = req.body || {};
         const orderId = String(payload.order_id || '');
         const paymentId = String(payload.payment_id || '');
-        const paymentStatus = String(payload.payment_status || '').toLowerCase();
+        const estado = String(payload.payment_status || '').toLowerCase();
 
-        console.log(
-            '🎥 [LivePass Webhook] Datos:',
-            {
-                order_id: orderId,
-                payment_id: paymentId,
-                payment_status: paymentStatus
-            }
-        );
-
-        const estadosOk = ['finished', 'confirmed', 'partially_paid'];
-
-        if (!estadosOk.includes(paymentStatus)) {
-            console.log(
-                `ℹ️ [LivePass Webhook] Estado "${paymentStatus}" no es válido para activar. Ignorando.`
-            );
-
-            return res.status(200).json({
-                status: 'ok',
-                message: 'Estado no procesable',
-                payment_status: paymentStatus
-            });
+        // 3) Filtros: ignorar sin reintentos lo que no es nuestro o no es final
+        if (!orderId.startsWith('LP-')) {
+            return ignorado(res, 'no_es_live_pass');
         }
 
+        if (!ESTADOS_FINALES.includes(estado)) {
+            return ignorado(res, 'estado_no_final', { payment_status: estado });
+        }
+
+        // 4) Buscar el pago
         const { data: pago, error: pagoError } = await supabaseAdmin
             .from('pagos_membresia')
             .select('id, usuario_id, monto_mxn, estado')
@@ -172,113 +114,69 @@ async function handleWebhookLivePass(req, res) {
             .maybeSingle();
 
         if (pagoError) {
-            console.error(
-                '❌ [LivePass Webhook] Error buscando pago:',
-                pagoError
-            );
-            return res.status(500).json({
-                status: 'error',
-                error: 'Error buscando pago'
-            });
+            log('error_consulta_pago', { order_id: orderId, motivo: pagoError.message });
+            return res.status(500).json({ status: 'error', error: 'Error buscando pago' });
         }
 
         if (!pago) {
-            console.error(
-                '❌ [LivePass Webhook] Pago no encontrado:',
-                orderId
-            );
-            return res.status(404).json({
-                status: 'error',
-                error: 'Pago no encontrado'
-            });
+            log('pago_no_encontrado', { order_id: orderId });
+            return ignorado(res, 'pago_no_encontrado');
         }
 
         if (pago.estado === 'finished') {
-            console.log(
-                'ℹ️ [LivePass Webhook] Pago ya procesado previamente. Ignorando.'
-            );
-            return res.status(200).json({
-                status: 'ok',
-                message: 'Ya procesado previamente'
-            });
+            return ignorado(res, 'ya_procesado');
         }
 
-        const planTipo = await determinarPlanTipo(orderId, payload);
+        // 5) Determinar el plan
+        let planTipo;
+        try {
+            planTipo = await determinarPlanTipo(orderId, payload);
+        } catch (err) {
+            log('error_determinar_plan', { order_id: orderId, motivo: err.message });
+            return res.status(500).json({ status: 'error', error: 'Error determinando plan' });
+        }
 
         if (!planTipo) {
-            console.error(
-                '❌ [LivePass Webhook] No se pudo determinar plan_tipo para:',
-                orderId
-            );
-            return res.status(400).json({
-                status: 'error',
-                error: 'No se pudo determinar plan_tipo'
-            });
+            log('plan_no_determinado', { order_id: orderId });
+            return ignorado(res, 'plan_no_determinado');
         }
 
-        console.log(
-            '🎯 [LivePass Webhook] Plan detectado:',
-            planTipo
-        );
-
+        // 6) Activar
         const payAddress =
-            payload.pay_address ||
-            payload.payin_address ||
-            payload.payout_address ||
-            null;
+            payload.pay_address || payload.payin_address || payload.payout_address || null;
 
-        const privacyVersion = '1.0';
-
-        const { data: rpcResult, error: rpcError } = await supabaseAdmin
-            .rpc('activar_live_pass', {
-                p_usuario_id: pago.usuario_id,
-                p_order_id: orderId,
-                p_payment_id: paymentId,
-                p_monto_mxn: parseFloat(pago.monto_mxn),
-                p_plan_tipo: planTipo,
-                p_pay_address: payAddress,
-                p_privacy_version: privacyVersion
-            });
+        const { data: rpcResult, error: rpcError } = await supabaseAdmin.rpc('activar_live_pass', {
+            p_usuario_id: pago.usuario_id,
+            p_order_id: orderId,
+            p_payment_id: paymentId,
+            p_monto_mxn: parseFloat(pago.monto_mxn),
+            p_plan_tipo: planTipo,
+            p_pay_address: payAddress,
+            p_privacy_version: '1.0'
+        });
 
         if (rpcError) {
-            console.error(
-                '❌ [LivePass Webhook] Error llamando RPC activar_live_pass:',
-                rpcError
-            );
-            return res.status(500).json({
-                status: 'error',
-                error: 'Error activando Live Pass'
-            });
+            log('error_rpc', { order_id: orderId, motivo: rpcError.message });
+            return res.status(500).json({ status: 'error', error: 'Error activando Live Pass' });
         }
 
-        console.log(
-            '✅ [LivePass Webhook] Live Pass activado:',
-            rpcResult
-        );
+        // La RPC puede responder { success: false } sin lanzar error: no se reporta como éxito
+        if (!rpcResult || rpcResult.success !== true) {
+            log('rechazo_requiere_revision', {
+                order_id: orderId,
+                motivo: rpcResult ? rpcResult.error : 'sin_respuesta'
+            });
+            return ignorado(res, 'rechazado_revision_manual');
+        }
 
-        return res.status(200).json({
-            status: 'ok',
-            message: 'Live Pass activado',
-            result: rpcResult
-        });
+        log('live_pass_activado', { order_id: orderId, plan_tipo: planTipo });
+
+        return res.status(200).json({ status: 'ok', message: 'Live Pass activado' });
 
     } catch (error) {
-        console.error(
-            '❌ [LivePass Webhook] Error inesperado:',
-            error
-        );
-
-        return res.status(500).json({
-            status: 'error',
-            error: 'Error interno'
-        });
+        log('error_inesperado', { motivo: error.message });
+        return res.status(500).json({ status: 'error', error: 'Error interno' });
     }
 }
 
-// ================================================================
-// EXPORT
-// ================================================================
-
-module.exports = {
-    handleWebhookLivePass
-};
+module.exports = { handleWebhookLivePass };
