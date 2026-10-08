@@ -7,6 +7,9 @@
 //
 // Devuelve { tipo: 'ninguna' | 'simple' | 'complejo', motivo }.
 // El motivo no contiene el texto del usuario.
+//
+// v2.0: amplía DATOS_VIVOS para capturar mejor "mundo real",
+//       "actualidad", "en vivo", "lo último", etc.
 // ================================================================
 
 'use strict';
@@ -33,11 +36,34 @@ function construirPatron(palabras) {
 
 // Temas que cambian con el tiempo: siempre requieren búsqueda
 const DATOS_VIVOS = construirPatron([
+    // 💰 Cripto / finanzas
     'precio', 'cotizacion', 'cuanto vale', 'cuanto cuesta', 'tipo de cambio',
-    'clima', 'pronostico', 'noticia', 'noticias', 'resultado', 'marcador',
-    'partido', 'elecciones', 'bolsa', 'dolar', 'bitcoin', 'btc', 'ethereum',
-    'eth', 'polygon', 'pol', 'usdt', 'usdc', 'cripto', 'criptomoneda',
-    'inflacion', 'tasa de interes', 'gasolina', 'sismo', 'temblor', 'huracan'
+    'bolsa', 'dolar', 'bitcoin', 'btc', 'ethereum', 'eth', 'polygon', 'pol',
+    'usdt', 'usdc', 'cripto', 'criptomoneda', 'inflacion', 'tasa de interes',
+    'gasolina',
+
+    // 🌤️ Clima
+    'clima', 'pronostico', 'tiempo en', 'temperatura',
+
+    // 📰 Noticias
+    'noticia', 'noticias', 'ultima hora',
+
+    // 🏆 Deportes
+    'resultado', 'marcador', 'partido', 'torneo',
+
+    // 🗳️ Política / eventos
+    'elecciones', 'presidente', 'politica',
+
+    // 🌋 Desastres
+    'sismo', 'temblor', 'huracan',
+
+    // 🆕 v2.0: actualidad / mundo real
+    'actualidad', 'mundo real', 'en vivo', 'en directo',
+    'novedades', 'lo ultimo', 'lo nuevo', 'que hay de nuevo',
+    'que esta pasando', 'que pasa', 'que paso', 'actual', 'reciente',
+    'informacion actual', 'breaking', 'hoy en dia', 'estos dias',
+    'por estos dias', 'lo que pasa en el mundo', 'como esta el mundo',
+    'que se dice', 'que se comenta', 'en el mundo'
 ]);
 
 // Señales temporales fuertes: bastan por sí solas
