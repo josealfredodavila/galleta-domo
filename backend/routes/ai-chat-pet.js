@@ -1,32 +1,37 @@
 /* ================================================================
-   routes/ai-chat-pet.js - CHAT DE LA MASCOTA MARQUINHOS (v4.1)
+   routes/ai-chat-pet.js - CHAT DE LA MASCOTA MARQUINHOS (v5.0)
    ================================================================
    Endpoint: POST /api/ai/chat-pet
    Modelo:   Groq (openai/gpt-oss-120b)
 
-   ✅ v4 — CANDADOS DE SEGURIDAD PROFESIONALES
+   ✅ v4   — CANDADOS DE SEGURIDAD PROFESIONALES
    ✅ v4.1 — Origen (voz/texto) dinámico para estadísticas
-
-   v4.1 cambios:
-   - guardarMensaje recibe 'origen' como parámetro (default 'voice_chat')
-   - Captura { error } de supabase (no lanza excepciones)
-   - Lee req.body.modo para clasificar correctamente
+   ✅ v5.0 — BÚSQUEDA WEB EN TIEMPO REAL:
+             - Cliente Supabase centralizado (supabase-admin.js)
+             - consumirMensaje() → verifica plan y límite
+             - detectarIntencion() → decide si necesita internet
+             - buscarEnTiempoReal() → Tavily (voz no usa Perplexity)
+             - Inyecta contexto al prompt de Groq
 ================================================================ */
 
 'use strict';
 
 const express = require('express');
 const router = express.Router();
-const { createClient } = require('@supabase/supabase-js');
 const axios = require('axios');
+
+// 🆕 v5.0: cliente centralizado
+const supabaseAdmin = require('../lib/supabase-admin');
+
+// 🆕 v5.0: servicios de búsqueda web
+const planGuard = require('../services/plan-guard');
+const { detectarIntencion } = require('../services/detector-intencion');
 
 /* ================================================================
    CONFIGURACIÓN
 ================================================================ */
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
@@ -37,20 +42,8 @@ const MAX_CARACTERES_RESPUESTA = 1600;
 
 const HISTORIAL_MAX = 20;
 
-/* ================================================================
-   SUPABASE ADMIN
-================================================================ */
-
-const supabaseAdmin =
-    SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
-        ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-            auth: {
-                autoRefreshToken: false,
-                persistSession: false,
-                detectSessionInUrl: false
-            }
-        })
-        : null;
+// 🆕 v5.0: presupuesto de búsqueda para voz (nunca Perplexity)
+const PRESUPUESTO_BUSQUEDA_VOZ_MS = 3500;
 
 /* ================================================================
    AUTENTICACIÓN
@@ -67,14 +60,6 @@ async function autenticar(req, res, next) {
         const token = auth.slice(7).trim();
         if (!token) {
             return res.status(401).json({ success: false, error: 'Token no proporcionado' });
-        }
-
-        if (!supabaseAdmin) {
-            console.error('❌ Supabase Admin no configurado');
-            return res.status(500).json({
-                success: false,
-                error: 'Supabase no está configurado correctamente'
-            });
         }
 
         const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
@@ -192,6 +177,24 @@ CÓMO RESPONDER:
 5. Si no sabes algo, dilo con honestidad. No inventes.
 6. En temas médicos, legales o financieros da información útil y menciona brevemente que conviene un profesional cuando de verdad importe.
 7. Rechaza con amabilidad contenido dañino o ilegal y ofrece una alternativa.
+
+───────────────────────────────────────────────────────────────
+🌐 BÚSQUEDA WEB EN TIEMPO REAL (NUEVO v5.0)
+───────────────────────────────────────────────────────────────
+
+A veces recibirás un bloque llamado [CONTEXTO ACTUAL DE INTERNET] con información fresca de la web.
+
+Si lo recibes:
+  ✅ ÚSALO para responder con datos precisos y actualizados.
+  ✅ Menciona brevemente la fuente cuando sea relevante ("según las noticias de hoy...", "el precio actual es...").
+  ✅ Integra la información con tu personalidad cálida y natural.
+  ✅ NO inventes datos que no estén en el contexto.
+  ✅ NO leas URLs completas ni listes fuentes.
+
+Si el usuario pregunta algo que cambia con el tiempo (precio, noticias, clima, deportes, eventos actuales) y NO recibes [CONTEXTO ACTUAL DE INTERNET]:
+  ✅ Responde con tu conocimiento base de forma útil.
+  ✅ Menciona brevemente y sin drama: "no tengo acceso a datos en tiempo real ahora mismo".
+  ✅ Si el usuario quiere info actualizada, puedes sugerir brevemente que active un plan que incluya búsqueda web (solo una vez, sin insistir).
 
 FORMATO:
 Texto plano conversacional. Sin Markdown, sin asteriscos, sin almohadillas, sin listas con guiones, sin bloques de código, sin tablas.
@@ -312,7 +315,7 @@ function recortarRespuesta(texto, maximo) {
 }
 
 /* ================================================================
-   GUARDAR / CARGAR HISTORIAL — v4.1 con origen dinámico
+   GUARDAR / CARGAR HISTORIAL — con origen dinámico
 ================================================================ */
 
 async function guardarMensaje(usuarioId, transcripcion, respuesta, origen = 'voice_chat') {
@@ -390,6 +393,56 @@ router.post(['/', '/chat-pet'], autenticar, async (req, res) => {
 
         const mensajeLimpio = message.trim().slice(0, 4000);
 
+        // 🆕 v5.0: PASO 1 — verificar plan y consumir cuota de mensaje
+        const permiso = await planGuard.consumirMensaje({
+            usuarioId: req.user.id,
+            personaje: 'marquinhos'
+        });
+
+        if (!permiso.permitido) {
+            // Mensaje fijo sin llamar a Groq
+            let mensajeFijo = 'No puedo responder ahora mismo.';
+            if (permiso.motivo === 'personaje_no_incluido_en_plan') {
+                mensajeFijo = 'Tu plan actual no incluye este personaje. Activa uno superior para hablar conmigo.';
+            } else if (permiso.motivo === 'limite_alcanzado') {
+                mensajeFijo = 'Has alcanzado el límite de mensajes de tu plan este mes. Activa un plan superior o espera al siguiente periodo.';
+            } else if (permiso.motivo === 'sin_acceso') {
+                mensajeFijo = 'Necesitas activar un plan para hablar conmigo.';
+            }
+
+            return res.status(200).json({
+                success: true,
+                reply: mensajeFijo,
+                limitado: true,
+                motivo: permiso.motivo,
+                plan: permiso.plan || null
+            });
+        }
+
+        // 🆕 v5.0: PASO 2 — detectar si necesita búsqueda web
+        const intencion = detectarIntencion(mensajeLimpio);
+
+        let contextoWeb = null;
+        if (intencion.tipo !== 'ninguna') {
+            // En voz NUNCA usamos Perplexity (muy lento)
+            // Aunque el detector diga 'complejo', en voz lo tratamos como 'simple'
+            const tipoBusqueda = 'simple';
+
+            try {
+                const busqueda = await planGuard.buscarEnTiempoReal({
+                    usuarioId: req.user.id,
+                    personaje: 'marquinhos',
+                    consulta: mensajeLimpio,
+                    tipo: tipoBusqueda,
+                    presupuestoMs: PRESUPUESTO_BUSQUEDA_VOZ_MS
+                });
+                contextoWeb = busqueda.contexto;
+            } catch (e) {
+                console.warn('[chat-pet] Error en búsqueda web:', e.message);
+                contextoWeb = null;
+            }
+        }
+
         const memoriaLimpia =
             typeof memoria === 'string'
                 ? memoria.trim().slice(0, 4000)
@@ -414,6 +467,14 @@ router.post(['/', '/chat-pet'], autenticar, async (req, res) => {
             mensajes.push({
                 role: 'system',
                 content: memoriaLimpia
+            });
+        }
+
+        // 🆕 v5.0: PASO 3 — inyectar contexto web si existe
+        if (contextoWeb) {
+            mensajes.push({
+                role: 'system',
+                content: `[CONTEXTO ACTUAL DE INTERNET]\n${contextoWeb}`
             });
         }
 
@@ -473,7 +534,7 @@ router.post(['/', '/chat-pet'], autenticar, async (req, res) => {
 
         respuestaTexto = recortarRespuesta(respuestaTexto, MAX_CARACTERES_RESPUESTA);
 
-        // 🆕 v4.1: calcula origen según modo enviado por el frontend
+        // Origen según modo enviado por el frontend
         const origen = (req.body && req.body.modo === 'texto') ? 'texto' : 'voice_chat';
         guardarMensaje(req.user.id, mensajeLimpio, respuestaTexto, origen);
 
@@ -481,12 +542,16 @@ router.post(['/', '/chat-pet'], autenticar, async (req, res) => {
             ms: Date.now() - inicio,
             chars: respuestaTexto.length,
             memoria: memoriaLimpia ? 'sí' : 'no',
-            modo: origen
+            modo: origen,
+            busqueda: intencion.tipo !== 'ninguna' ? (contextoWeb ? 'con_contexto' : 'sin_resultado') : 'no_necesaria'
         });
 
         return res.status(200).json({
             success: true,
-            reply: respuestaTexto
+            reply: respuestaTexto,
+            plan: permiso.plan || null,
+            restantes: permiso.restantes ?? null,
+            busqueda: intencion.tipo !== 'ninguna' ? (contextoWeb ? 'ok' : 'sin_resultado') : 'no_necesaria'
         });
 
     } catch (error) {
