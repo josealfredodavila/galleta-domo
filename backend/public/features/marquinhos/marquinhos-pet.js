@@ -1,11 +1,15 @@
 // ================================================================
-// MARQUINHOS · PET v9.8.3 "GALACTIC PRO"
+// MARQUINHOS · PET v9.8.4 "GALACTIC PRO"
 // v9.8.3:
 // - FIX DEFINITIVO: helper obtenerClienteSupabase() que busca el
 //   cliente en window.getSupabase, window.supabaseClient o window.supabase
 // - Eliminadas TODAS las llamadas directas a window.getSupabase()
 // - Fallback de uid leyendo localStorage (sb-*-auth-token)
 // - Los términos ahora funcionan en cualquier página del perfil
+// v9.8.4:
+// - procesarComando pasa 'voz' a MarquinhosBrain.preguntar() para
+//   que el backend clasifique correctamente origen='voice_chat'
+//   en las estadísticas.
 // ================================================================
 
 'use strict';
@@ -106,7 +110,7 @@
         return RUTAS_EXCLUIDAS.some(r => path.indexOf(r) !== -1);
     }
 
-    function log(msg) { console.log('[Marquinhos v9.8.3]', msg); }
+    function log(msg) { console.log('[Marquinhos v9.8.4]', msg); }
 
     function esc(v) {
         const d = document.createElement('div');
@@ -115,7 +119,7 @@
     }
 
     // ============================================================
-    // 🆕 v9.8.3: HELPER ÚNICO para obtener el cliente de Supabase
+    // HELPER ÚNICO para obtener el cliente de Supabase
     // Busca en window.getSupabase, window.supabaseClient o window.supabase
     // ============================================================
     async function obtenerClienteSupabase() {
@@ -196,7 +200,6 @@
         try { localStorage.removeItem(HIST_KEY + (userInfo ? userInfo.id : 'anon')); } catch (e) {}
     }
 
-    // 🆕 v9.8.3: usa obtenerClienteSupabase()
     async function cargarUsuario() {
         try {
             const sb = await obtenerClienteSupabase();
@@ -219,7 +222,6 @@
         }
     }
 
-    // 🆕 v9.8.3: usa obtenerClienteSupabase()
     async function cargarAccesorios() {
         try {
             const cached = JSON.parse(localStorage.getItem(ACC_KEY) || '[]');
@@ -359,7 +361,7 @@
     }
 
     // ============================================================
-    // TÉRMINOS v9.8.3
+    // TÉRMINOS
     // ============================================================
 
     function avisar(texto) {
@@ -379,7 +381,6 @@
         t._timer = setTimeout(function () { t.style.display = 'none'; }, 4000);
     }
 
-    // 🆕 v9.8.3: usa obtenerClienteSupabase() + fallback localStorage
     async function obtenerUidActual() {
         const sb = await obtenerClienteSupabase();
         if (sb) {
@@ -388,7 +389,6 @@
                 if (r.data && r.data.session) return r.data.session.user.id;
             } catch (e) {}
         }
-        // Respaldo: sesión guardada por Supabase en localStorage
         try {
             for (let i = 0; i < localStorage.length; i++) {
                 const k = localStorage.key(i);
@@ -402,7 +402,6 @@
         return null;
     }
 
-    // 🆕 v9.8.3: usa obtenerClienteSupabase()
     async function verificarTerminos() {
         const uid = await obtenerUidActual();
         if (!uid) {
@@ -434,7 +433,6 @@
         }
     }
 
-    // 🆕 v9.8.3: usa obtenerClienteSupabase()
     async function registrarTerminosEnSupabase() {
         try {
             const sb = await obtenerClienteSupabase();
@@ -893,7 +891,7 @@
             }
         }, 500);
 
-        log('Widget v9.8.3 Galactic Pro creado');
+        log('Widget v9.8.4 Galactic Pro creado');
     }
 
     function mostrarDots() {}
@@ -978,7 +976,6 @@
         let ok = false;
         const ttsBackendDisponible = (Date.now() - _ttsBackendFalloEn > TTS_FALLO_TTL_MS);
 
-        // 🆕 v9.8.3: usa obtenerClienteSupabase()
         const sbTts = (texto.length <= 300 && ttsBackendDisponible)
             ? await obtenerClienteSupabase()
             : null;
@@ -1173,7 +1170,8 @@
             if (window.MarquinhosBrain && typeof window.MarquinhosBrain.preguntar === 'function') {
                 try {
                     const historialTruncado = historialLocal.slice(-HIST_MAX_ENVIO);
-                    respuesta = await window.MarquinhosBrain.preguntar(texto, historialTruncado);
+                    // 🆕 v9.8.4: pasa 'voz' explícito
+                    respuesta = await window.MarquinhosBrain.preguntar(texto, historialTruncado, 'voz');
                 } catch (e) {
                     respuesta = 'Ups, tuve un problema. ¿Puedes repetir?';
                 }
@@ -1289,7 +1287,7 @@
         await cargarAccesorios();
         crearWidget();
         instalarVisibility();
-        log('✅ Marquinhos v9.8.3 Galactic Pro activo');
+        log('✅ Marquinhos v9.8.4 Galactic Pro activo');
     }
 
     if (document.readyState === 'loading') {
