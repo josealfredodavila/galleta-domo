@@ -19,14 +19,18 @@ async function cargarPerfil(forzarActualizacion = false) {
             return;
         }
         let perfil = null;
+
+        // ✅ NUEVO: leer perfil propio vía RPC seguro (devuelve SETOF usuarios → array)
         try {
-            const { data, error } = await window.supabaseClient
-                .from('usuarios')
-                .select(COLUMNAS_PERFIL)
-                .eq('id', session.user.id)
-                .maybeSingle();
-            if (!error) perfil = data;
-        } catch (e) {}
+            const { data, error } = await window.supabaseClient.rpc('mi_perfil_privado');
+            if (!error && data) {
+                perfil = Array.isArray(data) ? (data.length > 0 ? data[0] : null) : data;
+            }
+        } catch (rpcErr) {
+            console.warn('[Perfil] mi_perfil_privado falló:', rpcErr);
+        }
+
+        // Fallback: obtener_mi_perfil (RPC antiguo, por si acaso)
         if (!perfil) {
             try {
                 const { data, error } = await window.supabaseClient.rpc('obtener_mi_perfil');
@@ -35,7 +39,10 @@ async function cargarPerfil(forzarActualizacion = false) {
                 }
             } catch (rpcErr) {}
         }
+
+        // Último fallback: perfil básico desde la sesión
         if (!perfil) perfil = perfilBasico(session);
+
         perfilCache = perfil;
         window.perfilCache = perfil;
         ultimaActualizacion = ahora;
@@ -167,9 +174,11 @@ async function cargarContadoresSociales(usuarioId) {
             aplicarContadoresSociales(contadoresSocialesCache);
             return;
         }
+
+        // ✅ NUEVO: leer contadores desde perfiles_publicos (no de usuarios)
         try {
             const { data: usuario, error } = await window.supabaseClient
-                .from('usuarios')
+                .from('perfiles_publicos')
                 .select('seguidores_count, siguiendo_count')
                 .eq('id', usuarioId)
                 .maybeSingle();
@@ -182,7 +191,11 @@ async function cargarContadoresSociales(usuarioId) {
                 aplicarContadoresSociales(contadoresSocialesCache);
                 return;
             }
-        } catch (e) {}
+        } catch (e) {
+            console.warn('[Perfil] Error leyendo contadores desde perfiles_publicos:', e);
+        }
+
+        // Fallback: contar desde tabla contactos
         const [seguidoresRes, siguiendoRes] = await Promise.all([
             window.supabaseClient.from('contactos').select('*', { count: 'exact', head: true }).eq('contacto_id', usuarioId),
             window.supabaseClient.from('contactos').select('*', { count: 'exact', head: true }).eq('usuario_id', usuarioId)
