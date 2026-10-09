@@ -24,7 +24,7 @@ object LiveKitManager {
     fun getLiveKitUrl(): String = LIVEKIT_URL
 
     suspend fun obtenerToken(roomName: String, identity: String): String {
-        val session = SupabaseClient.client.auth.currentSessionOrNull()
+        val session = SupabaseProvider.client.auth.currentSessionOrNull()
             ?: throw IllegalStateException("No hay sesión de Supabase activa")
 
         val encodedRoom = URLEncoder.encode(roomName, "UTF-8")
