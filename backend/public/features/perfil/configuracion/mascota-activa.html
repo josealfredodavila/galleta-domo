@@ -112,9 +112,6 @@ h1 .corn { font-size: 1.5rem; }
     font-weight: 700;
 }
 
-/* ============================================================
-   ICONO DE MASCOTA — SVG ILUSTRADO (sin emoji genérico)
-   ============================================================ */
 .mascota-icon {
     width: 64px;
     height: 64px;
@@ -135,7 +132,6 @@ h1 .corn { font-size: 1.5rem; }
     display: block;
 }
 
-/* Fondo especial para cada mascota */
 .mascota-icon[data-mascota="marquinhos"] {
     background:
         radial-gradient(circle at 50% 60%, rgba(0, 229, 255, 0.25), transparent 65%),
@@ -162,7 +158,6 @@ h1 .corn { font-size: 1.5rem; }
     border-color: rgba(138, 168, 184, 0.25);
 }
 
-/* El activo brilla más */
 .mascota-item.activa .mascota-icon {
     box-shadow:
         0 0 18px rgba(0, 212, 255, 0.4),
@@ -247,6 +242,32 @@ h1 .corn { font-size: 1.5rem; }
 }
 .btn-guardar:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* 🆕 v2.4: botón "Ver mi plan IA" */
+.btn-ver-plan {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    padding: 12px 14px;
+    margin-top: 12px;
+    color: var(--cm-azul);
+    text-decoration: none;
+    font-size: .85rem;
+    font-weight: 600;
+    border: 1px solid var(--cm-azul);
+    border-radius: 12px;
+    background: var(--cm-azul-bg);
+    transition: all .2s;
+    font-family: inherit;
+}
+.btn-ver-plan:hover {
+    background: var(--cm-azul);
+    color: var(--cm-negro);
+    transform: scale(1.02);
+    box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4);
+}
+
 .toast {
     position: fixed;
     top: 20px;
@@ -277,9 +298,7 @@ h1 .corn { font-size: 1.5rem; }
     <div class="card">
         <h2><span class="simbolo">◈</span> MASCOTAS DISPONIBLES</h2>
 
-        <!-- ═══════════════════════════════════════════════════════
-             MARQUINHOS — Robot galáctico azul
-             ═══════════════════════════════════════════════════════ -->
+        <!-- MARQUINHOS -->
         <div class="mascota-item" data-mascota="marquinhos">
             <div class="mascota-icon" data-mascota="marquinhos">
                 <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -302,39 +321,21 @@ h1 .corn { font-size: 1.5rem; }
                             <stop offset="100%" stop-color="#00E5FF" stop-opacity="0"/>
                         </radialGradient>
                     </defs>
-
                     <ellipse cx="50" cy="55" rx="38" ry="38" fill="url(#mq-aura)"/>
-
-                    <!-- Antena -->
                     <line x1="50" y1="24" x2="50" y2="14" stroke="#0D47A1" stroke-width="2" stroke-linecap="round"/>
                     <circle cx="50" cy="11" r="4" fill="#00E5FF"/>
                     <circle cx="50" cy="11" r="2" fill="#FFFFFF"/>
-
-                    <!-- Cabeza -->
-                    <rect x="25" y="26" width="50" height="42" rx="12" ry="12"
-                          fill="url(#mq-head)" stroke="#0D47A1" stroke-width="2.5"/>
-
-                    <!-- Ojos -->
+                    <rect x="25" y="26" width="50" height="42" rx="12" ry="12" fill="url(#mq-head)" stroke="#0D47A1" stroke-width="2.5"/>
                     <ellipse cx="38" cy="45" rx="7" ry="7" fill="#1B3A8A"/>
                     <ellipse cx="38" cy="45" rx="5" ry="5" fill="url(#mq-eye)"/>
                     <circle cx="40" cy="43" r="1.8" fill="#FFFFFF"/>
-
                     <ellipse cx="62" cy="45" rx="7" ry="7" fill="#1B3A8A"/>
                     <ellipse cx="62" cy="45" rx="5" ry="5" fill="url(#mq-eye)"/>
                     <circle cx="64" cy="43" r="1.8" fill="#FFFFFF"/>
-
-                    <!-- Sonrisa -->
                     <path d="M42 58 Q50 64 58 58" fill="none" stroke="#0D47A1" stroke-width="2" stroke-linecap="round"/>
-
-                    <!-- Cuerpo -->
-                    <rect x="32" y="68" width="36" height="20" rx="6"
-                          fill="url(#mq-body)" stroke="#0D47A1" stroke-width="2.5"/>
-
-                    <!-- Brazos -->
+                    <rect x="32" y="68" width="36" height="20" rx="6" fill="url(#mq-body)" stroke="#0D47A1" stroke-width="2.5"/>
                     <line x1="32" y1="74" x2="20" y2="82" stroke="#0D47A1" stroke-width="4" stroke-linecap="round"/>
                     <line x1="68" y1="74" x2="80" y2="82" stroke="#0D47A1" stroke-width="4" stroke-linecap="round"/>
-
-                    <!-- Piernas -->
                     <line x1="42" y1="88" x2="42" y2="94" stroke="#0D47A1" stroke-width="4" stroke-linecap="round"/>
                     <line x1="58" y1="88" x2="58" y2="94" stroke="#0D47A1" stroke-width="4" stroke-linecap="round"/>
                 </svg>
@@ -349,9 +350,7 @@ h1 .corn { font-size: 1.5rem; }
             <div class="radio-circulo"></div>
         </div>
 
-        <!-- ═══════════════════════════════════════════════════════
-             CAPITÁN MAÍZ — Guardián ancestral dorado
-             ═══════════════════════════════════════════════════════ -->
+        <!-- CAPITÁN MAÍZ -->
         <div class="mascota-item" data-mascota="capitan-maiz">
             <div class="mascota-icon" data-mascota="capitan-maiz">
                 <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -370,18 +369,10 @@ h1 .corn { font-size: 1.5rem; }
                             <stop offset="100%" stop-color="#FFD700" stop-opacity="0"/>
                         </radialGradient>
                     </defs>
-
                     <ellipse cx="50" cy="55" rx="38" ry="38" fill="url(#cm-aura)"/>
-
-                    <!-- Hojas inferiores -->
                     <path d="M22 70 Q30 55 42 60 Q35 75 22 70 Z" fill="url(#cm-leaf)" stroke="#0A4A1E" stroke-width="1.5"/>
                     <path d="M78 70 Q70 55 58 60 Q65 75 78 70 Z" fill="url(#cm-leaf)" stroke="#0A4A1E" stroke-width="1.5"/>
-
-                    <!-- Corona de maíz (parte superior) -->
-                    <path d="M50 18 C40 22 32 30 34 42 L66 42 C68 30 60 22 50 18 Z"
-                          fill="url(#cm-corn)" stroke="#6B4513" stroke-width="2"/>
-
-                    <!-- Granos de maíz -->
+                    <path d="M50 18 C40 22 32 30 34 42 L66 42 C68 30 60 22 50 18 Z" fill="url(#cm-corn)" stroke="#6B4513" stroke-width="2"/>
                     <g fill="#8B6914" opacity="0.65">
                         <circle cx="42" cy="28" r="1.2"/>
                         <circle cx="50" cy="26" r="1.2"/>
@@ -394,22 +385,13 @@ h1 .corn { font-size: 1.5rem; }
                         <circle cx="50" cy="37" r="1.2"/>
                         <circle cx="58" cy="38" r="1.2"/>
                     </g>
-
-                    <!-- Cabeza ovalada -->
                     <ellipse cx="50" cy="55" rx="18" ry="16" fill="#F5DEB3" stroke="#8B6914" stroke-width="2"/>
-
-                    <!-- Ojos -->
                     <ellipse cx="44" cy="53" rx="2.5" ry="3" fill="#2B1810"/>
                     <ellipse cx="56" cy="53" rx="2.5" ry="3" fill="#2B1810"/>
                     <circle cx="44.5" cy="52" r="1" fill="#FFFFFF"/>
                     <circle cx="56.5" cy="52" r="1" fill="#FFFFFF"/>
-
-                    <!-- Sonrisa -->
                     <path d="M45 62 Q50 66 55 62" fill="none" stroke="#2B1810" stroke-width="1.8" stroke-linecap="round"/>
-
-                    <!-- Cuerpo pequeño -->
-                    <rect x="42" y="70" width="16" height="14" rx="4"
-                          fill="url(#cm-leaf)" stroke="#0A4A1E" stroke-width="1.8"/>
+                    <rect x="42" y="70" width="16" height="14" rx="4" fill="url(#cm-leaf)" stroke="#0A4A1E" stroke-width="1.8"/>
                 </svg>
             </div>
             <div class="mascota-info">
@@ -422,9 +404,7 @@ h1 .corn { font-size: 1.5rem; }
             <div class="radio-circulo"></div>
         </div>
 
-        <!-- ═══════════════════════════════════════════════════════
-             REY ITLASUHUA — Serpiente cósmica con corona
-             ═══════════════════════════════════════════════════════ -->
+        <!-- REY ITLASUHUA -->
         <div class="mascota-item" data-mascota="itlasuhua">
             <div class="mascota-icon" data-mascota="itlasuhua">
                 <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -449,47 +429,21 @@ h1 .corn { font-size: 1.5rem; }
                             <stop offset="100%" stop-color="#3CFFE8" stop-opacity="0"/>
                         </radialGradient>
                     </defs>
-
                     <ellipse cx="50" cy="55" rx="40" ry="40" fill="url(#it-aura)"/>
-
-                    <!-- Cuerpo enroscado (parte trasera) -->
-                    <ellipse cx="50" cy="80" rx="30" ry="12"
-                             fill="none" stroke="url(#it-body)" stroke-width="7"/>
-
-                    <!-- Cuerpo enroscado (parte delantera - más claro) -->
-                    <ellipse cx="50" cy="80" rx="30" ry="12"
-                             fill="none" stroke="#3CEFE1" stroke-width="1.5" opacity="0.7"/>
-
-                    <!-- Cuello de la serpiente -->
-                    <path d="M50 65 Q50 55 50 45"
-                          fill="none" stroke="url(#it-body)" stroke-width="9" stroke-linecap="round"/>
-                    <path d="M50 65 Q50 55 50 45"
-                          fill="none" stroke="#3CEFE1" stroke-width="1.5" opacity="0.6"/>
-
-                    <!-- Cabeza -->
+                    <ellipse cx="50" cy="80" rx="30" ry="12" fill="none" stroke="url(#it-body)" stroke-width="7"/>
+                    <ellipse cx="50" cy="80" rx="30" ry="12" fill="none" stroke="#3CEFE1" stroke-width="1.5" opacity="0.7"/>
+                    <path d="M50 65 Q50 55 50 45" fill="none" stroke="url(#it-body)" stroke-width="9" stroke-linecap="round"/>
+                    <path d="M50 65 Q50 55 50 45" fill="none" stroke="#3CEFE1" stroke-width="1.5" opacity="0.6"/>
                     <ellipse cx="50" cy="40" rx="16" ry="14" fill="#E8D8B0" stroke="#2B2038" stroke-width="2"/>
-
-                    <!-- Ojos grandes con galaxia -->
                     <ellipse cx="43" cy="38" rx="5" ry="5.5" fill="url(#it-eye)"/>
                     <ellipse cx="57" cy="38" rx="5" ry="5.5" fill="url(#it-eye)"/>
                     <circle cx="44" cy="36.5" r="1.5" fill="#FFFFFF"/>
                     <circle cx="58" cy="36.5" r="1.5" fill="#FFFFFF"/>
-
-                    <!-- Mejillas -->
                     <ellipse cx="37" cy="45" rx="3" ry="1.5" fill="#FF8FA3" opacity="0.6"/>
                     <ellipse cx="63" cy="45" rx="3" ry="1.5" fill="#FF8FA3" opacity="0.6"/>
-
-                    <!-- Sonrisa -->
                     <path d="M45 46 Q50 49 55 46" fill="none" stroke="#3A2030" stroke-width="1.5" stroke-linecap="round"/>
-
-                    <!-- Corona dorada -->
-                    <path d="M36 28 L38 22 L42 26 L46 19 L50 24 L54 19 L58 26 L62 22 L64 28 Z"
-                          fill="url(#it-crown)" stroke="#6D421B" stroke-width="1.5"/>
-
-                    <!-- Gema central de la corona -->
+                    <path d="M36 28 L38 22 L42 26 L46 19 L50 24 L54 19 L58 26 L62 22 L64 28 Z" fill="url(#it-crown)" stroke="#6D421B" stroke-width="1.5"/>
                     <circle cx="50" cy="24" r="2.5" fill="#1BD8D2" stroke="#6D421B" stroke-width="1"/>
-
-                    <!-- Plumas del penacho -->
                     <path d="M42 20 Q40 12 38 6" fill="none" stroke="#FFD45A" stroke-width="1.5" stroke-linecap="round"/>
                     <path d="M58 20 Q60 12 62 6" fill="none" stroke="#FFD45A" stroke-width="1.5" stroke-linecap="round"/>
                     <path d="M50 18 Q50 10 50 4" fill="none" stroke="#43E6D6" stroke-width="1.5" stroke-linecap="round"/>
@@ -505,9 +459,7 @@ h1 .corn { font-size: 1.5rem; }
             <div class="radio-circulo"></div>
         </div>
 
-        <!-- ═══════════════════════════════════════════════════════
-             SIN MASCOTA — Círculo minimalista
-             ═══════════════════════════════════════════════════════ -->
+        <!-- SIN MASCOTA -->
         <div class="mascota-item" data-mascota="ninguna">
             <div class="mascota-icon" data-mascota="ninguna">
                 <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -530,6 +482,11 @@ h1 .corn { font-size: 1.5rem; }
     <button class="btn-guardar" id="btnGuardar" type="button">
         ◈ Guardar selección
     </button>
+
+    <!-- 🆕 v2.4: enlace al panel de plan IA -->
+    <a href="/features/perfil/configuracion/mascotas/plan.html" class="btn-ver-plan">
+        ◈ Ver mi plan IA →
+    </a>
 
 </div>
 
