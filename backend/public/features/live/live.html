@@ -633,7 +633,7 @@ function iniciarConteoMinutos() {
     }, 1000);
     
     timerConteoMinutos = setInterval(async () => {
-        await registrarMinutoTranscurrido();
+        await registrarMinutoBackend(); // ✅ NUEVO: Llama al endpoint del backend
     }, 60000);
 }
 
@@ -641,13 +641,7 @@ function detenerConteoMinutos() {
     if (timerConteoMinutos) { clearInterval(timerConteoMinutos); timerConteoMinutos = null; }
     if (timerBarraTiempo) { clearInterval(timerBarraTiempo); timerBarraTiempo = null; }
     
-    if (tiempoInicioTransmision) {
-        const minutosTotales = Math.floor((Date.now() - tiempoInicioTransmision) / 60000);
-        if (minutosTotales > minutosTransmitiendo) {
-            registrarMinutosFinales(minutosTotales - minutosTransmitiendo);
-        }
-    }
-    
+    // ✅ SEGURIDAD: Se elimina el registro de "remanente". El backend solo suma minutos completos.
     tiempoInicioTransmision = null;
     minutosTransmitiendo = 0;
     
@@ -686,41 +680,32 @@ function actualizarBarraTiempo() {
     if (progressEl) progressEl.style.width = porcentaje + '%';
 }
 
-async function registrarMinutoTranscurrido() {
+// ✅ NUEVO: Función que llama al endpoint del backend cada minuto
+async function registrarMinutoBackend() {
     try {
         const session = await getSession();
         if (!session) return;
         
-        const { error } = await supabaseClient.rpc('registrar_minutos_live', {
-            p_usuario_id: session.user.id,
-            p_minutos: 1
+        const BACKEND_URL = 'https://galleta-domo-production.up.railway.app';
+        
+        const response = await fetch(`${BACKEND_URL}/api/live/registrar-minuto`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${session.access_token}`
+            }
         });
         
-        if (error) {
-            console.error('Error registrando minuto:', error);
+        if (response.status === 403 || response.status === 429) {
+            console.warn('⏳ Live/registrar-minuto: respuesta', response.status, '- No se insiste.');
             return;
         }
         
-        minutosTransmitiendo++;
+        if (response.ok) {
+            minutosTransmitiendo++;
+            console.log('✅ Minuto registrado en backend. Total:', minutosTransmitiendo);
+        }
     } catch (e) {
-        console.error('Error:', e);
-    }
-}
-
-async function registrarMinutosFinales(minutos) {
-    if (minutos <= 0) return;
-    try {
-        const session = await getSession();
-        if (!session) return;
-        
-        const { error } = await supabaseClient.rpc('registrar_minutos_live', {
-            p_usuario_id: session.user.id,
-            p_minutos: minutos
-        });
-        
-        if (error) console.error('Error registrando minutos finales:', error);
-    } catch (e) {
-        console.error('Error:', e);
+        console.error('Error registrando minuto en backend:', e);
     }
 }
 
