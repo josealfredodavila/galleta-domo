@@ -14,7 +14,7 @@ async function cargarEstadoPro() {
         const session = await getSession();
         if (!session) return;
 
-        // 1. Intento con RPC
+        // 1. Intento con RPC específico
         try {
             const { data, error } = await window.supabaseClient.rpc('obtener_estado_pro');
             if (!error && data && data.success) {
@@ -28,13 +28,16 @@ async function cargarEstadoPro() {
             }
         } catch (rpcErr) {}
 
-        // 2. Fallback: leer tabla directa
-        const { data: usuario, error: userErr } = await window.supabaseClient
-            .from('usuarios')
-            .select('plan, plan_expira_at, plan_meta, membresia_live_hasta')
-            .eq('id', session.user.id)
-            .maybeSingle();
-        if (userErr) return;
+        // 2. Fallback: leer perfil propio vía RPC seguro
+        let usuario = null;
+        try {
+            const { data, error } = await window.supabaseClient.rpc('mi_perfil_privado');
+            if (!error && data) {
+                usuario = Array.isArray(data) ? (data.length > 0 ? data[0] : null) : data;
+            }
+        } catch (rpcErr) {
+            console.warn('[Perfil] mi_perfil_privado (pro) falló:', rpcErr);
+        }
 
         if (usuario) {
             let diasRestantes = 0;
@@ -114,12 +117,17 @@ async function contratarPro() {
             return;
         }
 
-        // Verificar si ya es Pro
-        const { data: usuario } = await window.supabaseClient
-            .from('usuarios')
-            .select('plan, plan_expira_at')
-            .eq('id', session.user.id)
-            .maybeSingle();
+        // Verificar si ya es Pro (lectura segura vía RPC)
+        let usuario = null;
+        try {
+            const { data, error } = await window.supabaseClient.rpc('mi_perfil_privado');
+            if (!error && data) {
+                usuario = Array.isArray(data) ? (data.length > 0 ? data[0] : null) : data;
+            }
+        } catch (rpcErr) {
+            console.warn('[Perfil] mi_perfil_privado (contratarPro) falló:', rpcErr);
+        }
+
         if (usuario && usuario.plan && usuario.plan.toLowerCase().includes('pro')) {
             const expira = usuario.plan_expira_at
                 ? new Date(usuario.plan_expira_at).toLocaleDateString('es-MX')
