@@ -83,16 +83,23 @@ async function cargarUsuarioActual() {
         var session = await grpGetSession();
         if (!session) { sessionUser = null; return null; }
         sessionUser = session.user;
-        var result = await window.supabaseClient
-            .from('usuarios')
-            .select('nombre, handle, tokens')
-            .eq('id', session.user.id)
-            .single();
-        if (!result.error && result.data) {
-            var badge = document.getElementById('tokenBadgeCantidad');
-            if (badge) badge.textContent = result.data.tokens || 0;
+
+        // ✅ NUEVO: leer perfil propio vía RPC seguro (SETOF usuarios → array)
+        var data = null;
+        try {
+            var rpc = await window.supabaseClient.rpc('mi_perfil_privado');
+            if (!rpc.error && rpc.data) {
+                data = Array.isArray(rpc.data) ? (rpc.data.length > 0 ? rpc.data[0] : null) : rpc.data;
+            }
+        } catch (rpcErr) {
+            console.warn('[Grupos] mi_perfil_privado falló:', rpcErr);
         }
-        return result.data || null;
+
+        if (data) {
+            var badge = document.getElementById('tokenBadgeCantidad');
+            if (badge) badge.textContent = data.tokens || 0;
+        }
+        return data || null;
     } catch (e) {
         console.error('[Grupos] Error cargando usuario:', e);
         return null;
