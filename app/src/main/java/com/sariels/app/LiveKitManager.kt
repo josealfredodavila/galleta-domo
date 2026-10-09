@@ -2,6 +2,7 @@ package com.sariels.app
 
 import android.content.Context
 import android.util.Log
+import io.github.jan.supabase.gotrue.auth
 import io.livekit.android.room.Room
 import io.livekit.android.room.RoomOptions
 import kotlinx.coroutines.Dispatchers
@@ -57,7 +58,6 @@ object LiveKitManager {
         }
     }
 
-    // ✅ SUSPEND Y ESPERA LA CONEXIÓN
     suspend fun conectar(context: Context, roomName: String, token: String): Boolean {
         if (isConnected) {
             Log.d(TAG, "Ya conectado a LiveKit")
