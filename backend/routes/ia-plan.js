@@ -1,5 +1,5 @@
 /* ================================================================
-   routes/ia-plan.js - ENDPOINTS DE PLANES IA (v1.2)
+   routes/ia-plan.js - ENDPOINTS DE PLANES IA (v1.3)
    ================================================================
    Endpoints:
    - GET  /api/ai/plan/catalogo   → lista planes pagados disponibles
@@ -9,8 +9,8 @@
 
    FASE 1: solo NOWPayments. Stripe se rechaza con 400.
 
-   v1.2: usa req.usuario.id (no req.user.id) porque middleware/auth.js
-         deja el usuario en req.usuario.
+   v1.3: huella anti-abuso conectada (HUELLA_PEPPER) en GET /, /checkout y /cancelar.
+         Diagnóstico del feature flag IA_CHECKOUT_ENABLED (sin exponer el valor).
 
    NO TOCA: payments.js, pay/*, membresia.js,
    membresia-webhook-handler.js, livepass-webhook-handler.js,
@@ -19,6 +19,7 @@
 
 'use strict';
 
+const crypto = require('crypto');
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
@@ -30,6 +31,11 @@ const { limitadorPagos } = require('../middleware/rateLimit');
 /* ================================================================
    CONFIGURACIÓN
 ================================================================ */
+
+// Sin pepper no hay anti-abuso. Fallar al cargar es preferible a apagarlo en silencio.
+if (!process.env.HUELLA_PEPPER) {
+    throw new Error('Falta la variable HUELLA_PEPPER');
+}
 
 const NOWPAYMENTS_URL = 'https://api.nowpayments.io/v1/invoice';
 const NOWPAYMENTS_TIMEOUT_MS = 15000;
@@ -56,6 +62,30 @@ function ok(res, data) {
 
 function err(res, status, mensaje) {
     return res.status(status).json({ success: false, error: mensaje });
+}
+
+// Normaliza el email para que los alias de Gmail (puntos y +etiqueta)
+// no permitan repetir la prueba con otra cuenta.
+function normalizarEmail(email) {
+    const [local, dominio] = String(email).trim().toLowerCase().split('@');
+    if (!local || !dominio) return null;
+
+    const base = local.split('+')[0];
+    if (dominio === 'gmail.com' || dominio === 'googlemail.com') {
+        return `${base.replace(/\./g, '')}@gmail.com`;
+    }
+    return `${base}@${dominio}`;
+}
+
+// Huella HMAC-SHA256 del email normalizado, con pepper. Nunca se guarda el email.
+function huellaDeUsuario(usuario) {
+    const pepper = process.env.HUELLA_PEPPER;
+    if (!pepper || !usuario?.email) return null;
+
+    const normalizado = normalizarEmail(usuario.email);
+    if (!normalizado) return null;
+
+    return crypto.createHmac('sha256', pepper).update(normalizado).digest('hex');
 }
 
 /* ================================================================
@@ -90,18 +120,16 @@ router.get('/catalogo', verificarToken, async (req, res) => {
    GET /api/ai/plan
    ----------------------------------------------------------------
    Plan vigente del usuario + contadores de uso.
-   Llama a la función SQL obtener_plan_usuario().
 ================================================================ */
 
 router.get('/', verificarToken, async (req, res) => {
     try {
-        // ✅ v1.2: req.usuario.id (no req.user.id)
         const usuarioId = req.usuario.id;
 
-        // 1. Plan vigente
+        // 1. Plan vigente (crea la prueba o el plan gratis si hace falta)
         const { data: planRows, error: errPlan } = await supabase.rpc(
             'obtener_plan_usuario',
-            { p_usuario: usuarioId, p_huella: null }
+            { p_usuario: usuarioId, p_huella: huellaDeUsuario(req.usuario) }
         );
 
         if (errPlan) {
@@ -190,8 +218,12 @@ router.get('/', verificarToken, async (req, res) => {
 
 router.post('/checkout', verificarToken, limitadorPagos, async (req, res) => {
     try {
-        // 0. Feature flag
+        // 0. Feature flag. Diagnóstico sin exponer el valor.
         if (process.env.IA_CHECKOUT_ENABLED !== 'true') {
+            log('checkout_deshabilitado', {
+                definida: process.env.IA_CHECKOUT_ENABLED !== undefined,
+                longitud: (process.env.IA_CHECKOUT_ENABLED || '').length
+            });
             return err(res, 503, 'El sistema de pagos aún no está disponible.');
         }
 
@@ -203,7 +235,6 @@ router.post('/checkout', verificarToken, limitadorPagos, async (req, res) => {
             return err(res, 503, 'El sistema de pagos aún no está disponible.');
         }
 
-        // ✅ v1.2: req.usuario.id (no req.user.id)
         const usuarioId = req.usuario.id;
         const { plan, proveedor } = req.body || {};
 
@@ -236,7 +267,7 @@ router.post('/checkout', verificarToken, limitadorPagos, async (req, res) => {
         // 4. Control de downgrade
         const { data: planVigente } = await supabase.rpc('obtener_plan_usuario', {
             p_usuario: usuarioId,
-            p_huella: null
+            p_huella: huellaDeUsuario(req.usuario)
         });
 
         const vigente = Array.isArray(planVigente) ? planVigente[0] : planVigente;
@@ -251,7 +282,7 @@ router.post('/checkout', verificarToken, limitadorPagos, async (req, res) => {
             }
         }
 
-        // 5. Crear pedido
+        // 5. Crear pedido. El precio sale de la base, nunca del cliente.
         const montoMxn = Number(planDb.precio_mxn);
         const expiraAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
 
@@ -304,7 +335,6 @@ router.post('/checkout', verificarToken, limitadorPagos, async (req, res) => {
                 codigo: e.code
             });
 
-            // Marcar pedido como cancelado
             await supabase
                 .from('ai_pedidos_pago')
                 .update({ estado: 'cancelado' })
@@ -332,7 +362,6 @@ router.post('/checkout', verificarToken, limitadorPagos, async (req, res) => {
 
         if (errUpdate) {
             log('checkout_update_error', { codigo: errUpdate.code });
-            // No es crítico: el pedido ya está creado
         }
 
         log('checkout_ok', {
@@ -364,7 +393,6 @@ router.post('/checkout', verificarToken, limitadorPagos, async (req, res) => {
 
 router.post('/cancelar', verificarToken, async (req, res) => {
     try {
-        // ✅ v1.2: req.usuario.id (no req.user.id)
         const usuarioId = req.usuario.id;
 
         const { data, error } = await supabase.rpc('cancelar_plan_ia', {
@@ -380,10 +408,10 @@ router.post('/cancelar', verificarToken, async (req, res) => {
             return err(res, 404, 'No tienes un plan de pago activo para cancelar.');
         }
 
-        // Obtener fecha_fin del periodo vigente
+        // Fecha de fin del periodo vigente
         const { data: planRows } = await supabase.rpc('obtener_plan_usuario', {
             p_usuario: usuarioId,
-            p_huella: null
+            p_huella: huellaDeUsuario(req.usuario)
         });
 
         const vigente = Array.isArray(planRows) ? planRows[0] : planRows;
