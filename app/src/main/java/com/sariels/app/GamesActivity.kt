@@ -60,7 +60,7 @@ class GamesActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 val juegos = withContext(Dispatchers.IO) {
-                    SupabaseClient.client
+                    SupabaseProvider.client
                         .from("juegos")
                         .select { filter { eq("activo", true) } }
                         .decodeList<Juego>()
