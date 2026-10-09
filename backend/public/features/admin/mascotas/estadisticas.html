@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Estadísticas IA · Admin</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin:0; min-height:100vh; font-family: system-ui, sans-serif; color:#e8f0ff;
+         background: radial-gradient(circle at 20% 10%, #1b2a5a, #05070f 60%); padding:16px; box-sizing:border-box; }
+  .wrap { max-width:960px; margin:0 auto; }
+  h1 { font-size:20px; margin:0 0 12px; }
+  h2 { font-size:15px; margin:0 0 10px; color:#9fc3ff; }
+  .card { padding:14px; border-radius:14px; background:rgba(255,255,255,.05);
+          border:1px solid rgba(120,160,255,.25); margin-bottom:14px; overflow-x:auto; }
+  input, button { font: inherit; padding:8px 10px; border-radius:10px;
+                  border:1px solid rgba(120,160,255,.35); background:#0b1020; color:#e8f0ff; }
+  button { cursor:pointer; background:linear-gradient(90deg,#4f8cff,#a66bff); border:0; color:#fff; font-weight:600; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th, td { text-align:left; padding:6px 8px; border-bottom:1px solid rgba(255,255,255,.08); white-space:nowrap; }
+  th { color:#9fb0d0; font-weight:600; }
+  .msg { color:#9fb0d0; font-size:13px; margin-top:8px; }
+  .error { color:#ff9aa8; font-size:14px; }
+  .kpi { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:10px; }
+  .kpi div { background:rgba(0,0,0,.25); padding:10px 12px; border-radius:10px; min-width:150px; }
+  .kpi b { display:block; font-size:18px; }
+  .kpi span { color:#9fb0d0; font-size:12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Estadísticas IA</h1>
+
+  <div class="card">
+    <label>Mes <input type="month" id="mes"></label>
+    <button id="btnRecargar">Actualizar</button>
+  </div>
+
+  <div class="card"><h2>Ganancia del mes</h2><div id="ganancia">Cargando…</div></div>
+  <div class="card"><h2>Uso por usuario</h2><div id="uso">Cargando…</div></div>
+  <div class="card"><h2>Pruebas activas</h2><div id="pruebas">Cargando…</div></div>
+  <div class="card"><h2>Eventos de pago (últimos 50)</h2><div id="webhooks">Cargando…</div></div>
+</div>
+
+<script>
+const API = '';
+
+// Mismo método que plan.html: cliente cargado en la página o sesión en localStorage.
+async function obtenerToken() {
+  if (window.supabaseClient?.auth) {
+    const { data } = await window.supabaseClient.auth.getSession();
+    const token = data?.session?.access_token;
+    if (token) return token;
+  }
+  for (let i = 0; i < localStorage.length; i++) {
+    const clave = localStorage.key(i);
+    if (clave && clave.startsWith('sb-') && clave.endsWith('-auth-token')) {
+      try {
+        const sesion = JSON.parse(localStorage.getItem(clave));
+        if (sesion?.access_token) return sesion.access_token;
+      } catch (e) { /* ignorar */ }
+    }
+  }
+  throw new Error('No hay sesión activa. Inicia sesión de nuevo.');
+}
+
+async function api(ruta) {
+  const token = await obtenerToken();
+  const res = await fetch(API + ruta, { headers: { Authorization: `Bearer ${token}` } });
+  const json = await res.json().catch(() => ({}));
+  if (res.status === 403) throw new Error('No tienes acceso de administrador.');
+  if (!res.ok || json.success === false) throw new Error(json.error || `Error ${res.status}`);
+  return json.data;
+}
+
+function el(tag, texto, clase) {
+  const e = document.createElement(tag);
+  e.textContent = texto;
+  if (clase) e.className = clase;
+  return e;
+}
+
+function kpis(items) {
+  const cont = document.createElement('div');
+  cont.className = 'kpi';
+  items.forEach(([valor, etiqueta]) => {
+    const caja = document.createElement('div');
+    caja.append(el('b', valor), el('span', etiqueta));
+    cont.appendChild(caja);
+  });
+  return cont;
+}
+
+function tabla(columnas, filas) {
+  const t = document.createElement('table');
+  const tr = document.createElement('tr');
+  columnas.forEach((c) => tr.appendChild(el('th', c.titulo)));
+  const thead = document.createElement('thead');
+  thead.appendChild(tr);
+  t.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+  filas.forEach((f) => {
+    const fila = document.createElement('tr');
+    columnas.forEach((c) => {
+      const v = c.valor(f);
+      fila.appendChild(el('td', v === null || v === undefined || v === '' ? '—' : String(v)));
+    });
+    tbody.appendChild(fila);
+  });
+  t.appendChild(tbody);
+  return t;
+}
+
+function num(n) {
+  return n === null || n === undefined ? '—' : Number(n).toLocaleString('es-MX', { maximumFractionDigits: 2 });
+}
+function fecha(iso) {
+  return iso ? new Date(iso).toLocaleString('es-MX') : '—';
+}
+function mesActual() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+function mostrarError(id, e) {
+  document.getElementById(id).replaceChildren(el('div', e.message, 'error'));
+}
+
+async function cargarGanancia(mes) {
+  try {
+    const d = await api(`/api/admin/ai/ganancia?mes=${mes}`);
+    document.getElementById('ganancia').replaceChildren(
+      kpis([
+        [num(d.ingresos_mxn) + ' MXN', 'Ingresos'],
+        [num(d.costo_apis_usd) + ' USD', 'Costo APIs'],
+        [d.ganancia_mxn === null ? 'sin tipo de cambio' : num(d.ganancia_mxn) + ' MXN', 'Ganancia'],
+        [d.pedidos_pagados, 'Pedidos pagados']
+      ]),
+      el('div', d.nota, 'msg')
+    );
+  } catch (e) { mostrarError('ganancia', e); }
+}
+
+async function cargarUso(mes) {
+  try {
+    const d = await api(`/api/admin/ai/uso?mes=${mes}`);
+
+    // Une búsquedas y mensajes por usuario
+    const filas = new Map();
+    for (const b of d.busquedas) {
+      filas.set(b.usuario_id, { ...(filas.get(b.usuario_id) || {}), ...b });
+    }
+    for (const m of d.mensajes) {
+      filas.set(m.usuario_id, { ...(filas.get(m.usuario_id) || {}), ...m });
+    }
+
+    document.getElementById('uso').replaceChildren(
+      tabla(
+        [
+          { titulo: 'Usuario', valor: (f) => f.email || f.handle || f.usuario_id },
+          { titulo: 'Plan', valor: (f) => f.plan },
+          { titulo: 'Mensajes', valor: (f) => f.mensajes_usados != null ? `${f.mensajes_usados} / ${f.mensajes_max ?? '∞'}` : null },
+          { titulo: 'Tavily', valor: (f) => f.busquedas_tavily },
+          { titulo: 'Perplexity', valor: (f) => f.busquedas_perplexity },
+          { titulo: 'Caché', valor: (f) => f.hits_cache },
+          { titulo: 'Costo USD', valor: (f) => f.costo_apis_usd != null ? num(f.costo_apis_usd) : null }
+        ],
+        [...filas.values()]
+      )
+    );
+  } catch (e) { mostrarError('uso', e); }
+}
+
+async function cargarPruebas() {
+  try {
+    const datos = await api('/api/admin/ai/pruebas');
+    document.getElementById('pruebas').replaceChildren(
+      tabla(
+        [
+          { titulo: 'Usuario', valor: (f) => f.email || f.handle || f.usuario_id },
+          { titulo: 'Días restantes', valor: (f) => f.dias_restantes },
+          { titulo: 'Vence', valor: (f) => fecha(f.fecha_fin) }
+        ],
+        datos
+      )
+    );
+  } catch (e) { mostrarError('pruebas', e); }
+}
+
+async function cargarWebhooks() {
+  try {
+    const datos = await api('/api/admin/ai/webhooks?limit=50');
+    document.getElementById('webhooks').replaceChildren(
+      tabla(
+        [
+          { titulo: 'Fecha', valor: (f) => fecha(f.created_at) },
+          { titulo: 'Proveedor', valor: (f) => f.proveedor },
+          { titulo: 'Estado', valor: (f) => f.estado },
+          { titulo: 'Motivo', valor: (f) => f.motivo },
+          { titulo: 'Pago', valor: (f) => f.event_id }
+        ],
+        datos
+      )
+    );
+  } catch (e) { mostrarError('webhooks', e); }
+}
+
+function recargarTodo() {
+  const mes = document.getElementById('mes').value || mesActual();
+  cargarGanancia(mes);
+  cargarUso(mes);
+  cargarPruebas();
+  cargarWebhooks();
+}
+
+document.getElementById('mes').value = mesActual();
+document.getElementById('mes').addEventListener('change', recargarTodo);
+document.getElementById('btnRecargar').addEventListener('click', recargarTodo);
+recargarTodo();
+</script>
+</body>
+</html>
