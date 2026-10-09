@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mi plan IA · Sariel's</title>
+<meta name="theme-color" content="#0A0A0A">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+<script src="/features/shared/js/apariencia-global.js"></script>
+
+<style>
+:root { color-scheme: dark; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: 'Inter', system-ui, sans-serif;
+    color: #f0f4f8;
+    background: #0A0A0A;
+    background-image:
+        radial-gradient(ellipse at 20% 20%, rgba(107, 77, 186, 0.2), transparent 55%),
+        radial-gradient(ellipse at 80% 80%, rgba(0, 212, 255, 0.1), transparent 55%);
+    padding: 20px;
+}
+.app { max-width: 640px; margin: 0 auto; }
+
+h1 { font-size: 1.3rem; color: #00D4FF; margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
+h1 .hex { font-family: 'Orbitron', monospace; }
+.sub { color: #8aa8b8; font-size: .8rem; margin-bottom: 24px; }
+
+.btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #8aa8b8;
+    text-decoration: none;
+    font-size: .85rem;
+    margin-bottom: 20px;
+    padding: 8px 14px;
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    border-radius: 99px;
+    transition: all .2s;
+}
+.btn-back:hover { color: #00D4FF; border-color: #00D4FF; }
+
+.card {
+    background: rgba(10, 10, 10, 0.6);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    border-radius: 16px;
+    padding: 18px;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 20px rgba(0, 212, 255, 0.05);
+}
+.card h2 {
+    font-size: .95rem;
+    color: #00D4FF;
+    margin-bottom: 14px;
+    font-weight: 700;
+    letter-spacing: .5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.card h2 .simbolo { font-family: 'Orbitron', monospace; }
+
+.fila {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    font-size: .85rem;
+}
+.fila:last-child { border-bottom: 0; }
+.fila span:first-child { color: #8aa8b8; }
+.fila span:last-child { color: #f0f4f8; font-weight: 500; }
+
+.barra {
+    height: 6px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+    margin: 4px 0 8px;
+}
+.barra > i {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, #00D4FF, #6B4DBA);
+    transition: width 0.3s ease;
+}
+
+.plan-item {
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    margin-top: 8px;
+    background: rgba(0, 0, 0, 0.4);
+}
+.plan-item .titulo {
+    font-weight: 700;
+    font-size: .9rem;
+    color: #f0f4f8;
+    margin-bottom: 4px;
+}
+.plan-item .desc {
+    font-size: .75rem;
+    color: #8aa8b8;
+    line-height: 1.4;
+    margin-bottom: 8px;
+}
+
+button {
+    width: 100%;
+    padding: 12px;
+    margin-top: 8px;
+    border: 0;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: .85rem;
+    cursor: pointer;
+    font-family: inherit;
+    background: linear-gradient(135deg, #00D4FF, #6B4DBA);
+    color: #0A0A0A;
+    transition: all .2s;
+    letter-spacing: 0.3px;
+}
+button:hover:not(:disabled) {
+    transform: scale(1.02);
+    box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4);
+}
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+button.sec {
+    background: transparent;
+    border: 1px solid rgba(255, 51, 102, 0.5);
+    color: #ffb3b3;
+}
+button.sec:hover:not(:disabled) {
+    background: rgba(255, 51, 102, 0.1);
+    border-color: #ff3366;
+    box-shadow: none;
+}
+
+.msg { margin-top: 10px; font-size: 13px; color: #8aa8b8; min-height: 18px; line-height: 1.4; }
+.msg.error { color: #ff6b8a; }
+.msg.success { color: #00d68f; }
+
+.loading { color: #8aa8b8; font-size: .85rem; padding: 10px 0; }
+
+.zona-cancelar { display: none; }
+.zona-cancelar.visible { display: block; }
+</style>
+</head>
+<body>
+<div class="app">
+
+    <a href="/features/perfil/configuracion/index.html" class="btn-back">← Configuración</a>
+
+    <h1><span class="hex">◈</span> Mi plan IA</h1>
+    <p class="sub">Administra tu suscripción y consulta tu uso</p>
+
+    <div class="card">
+        <h2><span class="simbolo">◈</span> PLAN ACTUAL</h2>
+        <div id="estado"><div class="loading">Cargando…</div></div>
+    </div>
+
+    <div class="card">
+        <h2><span class="simbolo">◈</span> USO DE ESTE PERIODO</h2>
+        <div id="uso"><div class="loading">Cargando…</div></div>
+    </div>
+
+    <div class="card">
+        <h2><span class="simbolo">◈</span> PLANES DISPONIBLES</h2>
+        <div id="catalogo"><div class="loading">Cargando…</div></div>
+        <div class="msg" id="msgCheckout"></div>
+    </div>
+
+    <div class="card zona-cancelar" id="zonaCancelar">
+        <h2><span class="simbolo">◈</span> RENOVACIÓN</h2>
+        <p style="color:#8aa8b8;font-size:.8rem;line-height:1.5;margin-bottom:10px;">
+            Si cancelas, conservas el acceso hasta la fecha de fin. No hay reembolso.
+        </p>
+        <button class="sec" id="btnCancelar">Cancelar renovación</button>
+        <div class="msg" id="msgCancelar"></div>
+    </div>
+
+</div>
+
+<script>
+'use strict';
+
+(function() {
+    const API = '';
+
+    // ═══════════════════════════════════════════════════════
+    // OBTENER TOKEN (adaptado del proyecto)
+    // ═══════════════════════════════════════════════════════
+
+    async function obtenerToken() {
+        // 1) Cliente de Supabase ya cargado en la página
+        if (window.supabaseClient?.auth) {
+            const { data } = await window.supabaseClient.auth.getSession();
+            const token = data?.session?.access_token;
+            if (token) return token;
+        }
+
+        // 2) getSupabase() helper global
+        if (typeof window.getSupabase === 'function') {
+            try {
+                const sb = await window.getSupabase();
+                if (sb?.auth) {
+                    const { data } = await sb.auth.getSession();
+                    const token = data?.session?.access_token;
+                    if (token) return token;
+                }
+            } catch (e) {}
+        }
+
+        // 3) Respaldo: localStorage (sb-<ref>-auth-token)
+        for (let i = 0; i < localStorage.length; i++) {
+            const clave = localStorage.key(i);
+            if (clave && clave.startsWith('sb-') && clave.endsWith('-auth-token')) {
+                try {
+                    const sesion = JSON.parse(localStorage.getItem(clave));
+                    if (sesion?.access_token) return sesion.access_token;
+                } catch (e) {}
+            }
+        }
+
+        throw new Error('No hay sesión activa. Inicia sesión de nuevo.');
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // API helper
+    // ═══════════════════════════════════════════════════════
+
+    async function api(ruta, opciones = {}) {
+        const token = await obtenerToken();
+        const res = await fetch(API + ruta, {
+            ...opciones,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                ...(opciones.headers || {})
+            }
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok || json.success === false) {
+            throw new Error(json.error || `Error ${res.status}`);
+        }
+        return json.data;
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // Helpers de UI
+    // ═══════════════════════════════════════════════════════
+
+    function el(tag, texto, clase) {
+        const e = document.createElement(tag);
+        e.textContent = texto;
+        if (clase) e.className = clase;
+        return e;
+    }
+
+    function fila(etiqueta, valor) {
+        const f = document.createElement('div');
+        f.className = 'fila';
+        f.append(el('span', etiqueta), el('span', valor));
+        return f;
+    }
+
+    function fecha(iso) {
+        if (!iso) return '—';
+        try {
+            return new Date(iso).toLocaleDateString('es-MX', {
+                day: 'numeric', month: 'short', year: 'numeric'
+            });
+        } catch (e) { return '—'; }
+    }
+
+    function limite(usados, max) {
+        return max === null || max === undefined
+            ? `${usados} / ilimitado`
+            : `${usados} / ${max}`;
+    }
+
+    function barra(usados, max) {
+        const b = document.createElement('div');
+        b.className = 'barra';
+        const i = document.createElement('i');
+        i.style.width = max
+            ? Math.min(100, Math.round((usados / max) * 100)) + '%'
+            : '0%';
+        b.appendChild(i);
+        return b;
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // Cargar plan actual
+    // ═══════════════════════════════════════════════════════
+
+    async function cargarPlan() {
+        const estado = document.getElementById('estado');
+
+        try {
+            const data = await api('/api/ai/plan');
+            const { plan, uso } = data;
+
+            estado.replaceChildren(
+                fila('Plan', plan.nombre),
+                fila('Desde', fecha(plan.fecha_inicio)),
+                fila('Hasta', fecha(plan.fecha_fin)),
+                fila('Días restantes', plan.dias_restantes != null ? String(plan.dias_restantes) : '—'),
+                fila('Personajes', (plan.personajes || []).join(', ') || '—')
+            );
+
+            if (plan.cancelada_at) {
+                const aviso = el('div', `No se renovará. Termina el ${fecha(plan.fecha_fin)}.`, 'msg');
+                aviso.style.color = '#ffb3b3';
+                estado.appendChild(aviso);
+            }
+
+            document.getElementById('uso').replaceChildren(
+                fila('Mensajes', limite(uso.mensajes.usados, uso.mensajes.limite)),
+                barra(uso.mensajes.usados, uso.mensajes.limite),
+                fila('Búsquedas Tavily', limite(uso.tavily.usados, uso.tavily.limite)),
+                barra(uso.tavily.usados, uso.tavily.limite),
+                fila('Búsquedas Perplexity', limite(uso.perplexity.usados, uso.perplexity.limite)),
+                barra(uso.perplexity.usados, uso.perplexity.limite)
+            );
+
+            const puedeCancelar =
+                !plan.es_prueba &&
+                plan.codigo !== 'ia_gratis' &&
+                !plan.cancelada_at;
+
+            document.getElementById('zonaCancelar')
+                .classList.toggle('visible', puedeCancelar);
+
+        } catch (e) {
+            estado.replaceChildren(
+                el('div', 'No se pudo cargar tu plan: ' + e.message, 'msg error')
+            );
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // Cargar catálogo de planes
+    // ═══════════════════════════════════════════════════════
+
+    async function cargarCatalogo() {
+        const cont = document.getElementById('catalogo');
+
+        try {
+            const data = await api('/api/ai/plan/catalogo');
+            const planes = data.planes || [];
+
+            if (planes.length === 0) {
+                cont.replaceChildren(el('div', 'No hay planes disponibles.', 'msg'));
+                return;
+            }
+
+            cont.replaceChildren(...planes.map((p) => {
+                const caja = document.createElement('div');
+                caja.className = 'plan-item';
+
+                const titulo = el('div', `${p.nombre} · $${p.precio_mxn} MXN`, 'titulo');
+
+                const personajes = (p.personajes || []).join(', ');
+                const desc = el('div',
+                    `${personajes} · ${p.mensajes_max ?? 'ilimitados'} mensajes · ` +
+                    `${p.tavily_max ?? '∞'} Tavily · ${p.perplexity_max ?? '∞'} Perplexity`,
+                    'desc'
+                );
+
+                const boton = document.createElement('button');
+                boton.textContent = `Contratar ${p.nombre}`;
+                boton.onclick = () => contratar(p.plan, boton);
+
+                caja.append(titulo, desc, boton);
+                return caja;
+            }));
+
+        } catch (e) {
+            cont.replaceChildren(
+                el('div', 'No se pudo cargar el catálogo: ' + e.message, 'msg error')
+            );
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // Contratar plan
+    // ═══════════════════════════════════════════════════════
+
+    async function contratar(plan, boton) {
+        const msg = document.getElementById('msgCheckout');
+
+        boton.disabled = true;
+        msg.className = 'msg';
+        msg.textContent = 'Creando tu pago…';
+
+        try {
+            const data = await api('/api/ai/plan/checkout', {
+                method: 'POST',
+                body: JSON.stringify({ plan, proveedor: 'nowpayments' })
+            });
+
+            if (!data?.url) {
+                throw new Error('No se recibió URL de pago.');
+            }
+
+            msg.className = 'msg success';
+            msg.textContent = 'Redirigiendo a NOWPayments…';
+            window.location.href = data.url;
+
+        } catch (e) {
+            msg.className = 'msg error';
+            msg.textContent = 'Error: ' + e.message;
+            boton.disabled = false;
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // Cancelar renovación
+    // ═══════════════════════════════════════════════════════
+
+    document.getElementById('btnCancelar').addEventListener('click', async () => {
+        if (!confirm('¿Cancelar la renovación?\nConservas el acceso hasta la fecha de fin. No hay reembolso.')) {
+            return;
+        }
+
+        const msg = document.getElementById('msgCancelar');
+        msg.className = 'msg';
+        msg.textContent = 'Cancelando…';
+
+        try {
+            const data = await api('/api/ai/plan/cancelar', { method: 'POST' });
+            msg.className = 'msg success';
+            msg.textContent = data.mensaje || 'Plan cancelado correctamente.';
+            await cargarPlan();
+        } catch (e) {
+            msg.className = 'msg error';
+            msg.textContent = 'Error: ' + e.message;
+        }
+    });
+
+    // ═══════════════════════════════════════════════════════
+    // Retorno de NOWPayments (query string)
+    // ═══════════════════════════════════════════════════════
+
+    const pago = new URLSearchParams(location.search).get('pago');
+    if (pago === 'ok') {
+        document.getElementById('msgCheckout').className = 'msg success';
+        document.getElementById('msgCheckout').textContent =
+            '✅ Pago recibido. Tu plan se actualizará en unos minutos.';
+    }
+    if (pago === 'cancelado') {
+        document.getElementById('msgCheckout').className = 'msg';
+        document.getElementById('msgCheckout').textContent =
+            'Pago cancelado. Puedes intentar de nuevo cuando quieras.';
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // Init
+    // ═══════════════════════════════════════════════════════
+
+    cargarPlan();
+    cargarCatalogo();
+
+})();
+</script>
+</body>
+</html>
