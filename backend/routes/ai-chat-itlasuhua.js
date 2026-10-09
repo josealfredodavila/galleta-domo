@@ -1,5 +1,5 @@
 /* ================================================================
-   routes/ai-chat-itlasuhua.js - CHAT DEL REY ITLASUHUA 🐍 (v2.1)
+   routes/ai-chat-itlasuhua.js - CHAT DEL REY ITLASUHUA 🐍 (v2.2)
    ================================================================
    Endpoint: POST /api/ai/chat-itlasuhua
    Modelo:   Groq (openai/gpt-oss-120b)
@@ -7,9 +7,9 @@
 
    ✅ v1.1 — Origen y duraciones para estadísticas
    ✅ v2.0 — Búsqueda web en tiempo real
-   ✅ v2.1 — System prompt mejorado para búsqueda web:
-             - Cuando NO hay contexto, responde útil en lugar de "desconectado"
-             - Cuando SÍ hay contexto, menciona fuente naturalmente
+   ✅ v2.1 — System prompt mejorado
+   ✅ v2.2 — Fix prompt: nunca dice "desconectada"
+             + aviso interno cuando no hay datos recientes
 ================================================================ */
 
 'use strict';
@@ -37,7 +37,8 @@ const MAX_CARACTERES_RESPUESTA = 1600;
 const HISTORIAL_MAX = 20;
 const TABLA_HISTORIAL = 'itlasuhua_chats';
 
-const PRESUPUESTO_BUSQUEDA_VOZ_MS = 3500;
+// 🆕 v2.2: subido de 3500 a 4500
+const PRESUPUESTO_BUSQUEDA_VOZ_MS = 4500;
 
 /* ================================================================
    AUTENTICACIÓN
@@ -106,7 +107,7 @@ Si el usuario menciona depresión, autolesiones, violencia o contenido peligroso
 `.trim();
 
 /* ================================================================
-   PERSONALIDAD DEL REY ITLASUHUA — v2.1
+   PERSONALIDAD DEL REY ITLASUHUA — v2.2
 ================================================================ */
 
 const SYSTEM_PROMPT = `
@@ -162,35 +163,18 @@ CAPACIDADES
 Puedes hablar de CUALQUIER tema (ciencia, tecnología, historia, cocina, etc.), pero SIEMPRE con tu personalidad ceremonial de rey cósmico.
 
 ───────────────────────────────────────────────────────────────
-🌐 BÚSQUEDA WEB EN TIEMPO REAL — REGLAS (v2.1)
+🌐 INFORMACIÓN ACTUAL (v2.2)
 ───────────────────────────────────────────────────────────────
 
-A veces recibirás un bloque llamado [CONTEXTO ACTUAL DE INTERNET] con información fresca de la web.
+Nunca digas que estás desconectada, sin señal ni sin acceso al cosmos. Tú siempre estás presente.
 
-SI RECIBES EL CONTEXTO:
-  ✅ ÚSALO para responder con datos precisos y actualizados.
-  ✅ Menciona brevemente la fuente cuando sea relevante ("los astros reportan...", "según las señales actuales...").
-  ✅ Integra la información con tu estilo cósmico y ceremonial.
-  ✅ NO inventes datos que no estén en el contexto.
-  ✅ NO leas URLs completas ni listes fuentes.
+Si recibes un bloque [CONTEXTO ACTUAL DE INTERNET], úsalo como fuente principal para datos recientes, sin leer URLs ni listar fuentes, y sin inventar datos.
 
-SI NO RECIBES EL CONTEXTO y la pregunta es sobre algo que cambia con el tiempo:
+Si preguntan algo que cambia con el tiempo y no hay contexto, responde con lo que sabes y aclara al final, con naturalidad, que el dato pudo cambiar.
 
-  ❌ NO digas frases cortantes como "las señales cósmicas no llegan" o "estoy desconectado".
+NUNCA digas: "no tengo acceso", "estoy desconectada", "no puedo consultar", "sin señal".
 
-  ✅ En su lugar, responde así:
-     - Si puedes responder con conocimiento base útil → hazlo primero, con tu tono ceremonial.
-     - Luego menciona con naturalidad: "Las señales no llegan en vivo ahora, viajero. Si activas un plan con búsqueda, la serpiente puede leer los astros al instante."
-     - Si el usuario insiste, ofrece alternativas: "¿Quieres que la serpiente te guíe en otro tema? Historia, conocimiento, o los secretos de Csariel's."
-
-  ✅ Suena como un oráculo antiguo que no tiene el telescopio apuntando, pero ve mucho igual.
-  ✅ NUNCA suenes como robot diciendo "no tengo acceso a datos en tiempo real".
-
-EJEMPLO BUENO cuando preguntan "¿Qué me cuentas del mundo real?" sin contexto:
-"El tejido humano se agita, viajero: la inteligencia despierta en todas las esferas, los reinos se reacomodan, y el equilibrio busca su centro. Mas la serpiente no tiene la visión en vivo esta órbita. Si deseas leer los astros actuales —precios, señales, sucesos— activa un plan con búsqueda, portador. Entre tanto, ¿qué otra sabiduría buscas?"
-
-EJEMPLO MALO (nunca hacer esto):
-"Las señales cósmicas no llegan en tiempo real ahora mismo, viajero."
+NO sugieras planes ni suscripciones por tu cuenta. Solo si el usuario pregunta cómo obtener información en tiempo real.
 
 FORMATO:
 - Texto plano conversacional.
@@ -423,10 +407,16 @@ router.post('/', autenticar, async (req, res) => {
             { role: 'system', content: contextoDinamico(user_name, page) }
         ];
 
+        // 🆕 v2.2: contexto web si existe + aviso interno si no
         if (contextoWeb) {
             mensajes.push({
                 role: 'system',
                 content: `[CONTEXTO ACTUAL DE INTERNET]\n${contextoWeb}`
+            });
+        } else if (intencion.tipo !== 'ninguna') {
+            mensajes.push({
+                role: 'system',
+                content: 'Nota interna: no se encontraron datos recientes para esta pregunta. Responde con lo que sabes y aclara que el dato pudo cambiar. No digas que estás desconectada.'
             });
         }
 
