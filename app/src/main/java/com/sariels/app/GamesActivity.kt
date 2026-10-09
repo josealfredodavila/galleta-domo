@@ -9,6 +9,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.sariels.app.databinding.ActivityGamesBinding
+import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -26,7 +27,6 @@ class GamesActivity : AppCompatActivity() {
         binding = ActivityGamesBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // ✅ MANEJAR DEEP LINK DESDE HTML
         intent?.data?.let { uri ->
             val juegoId = uri.getQueryParameter("juego_id")
             val packageName = uri.getQueryParameter("package_name")
@@ -62,7 +62,11 @@ class GamesActivity : AppCompatActivity() {
                 val juegos = withContext(Dispatchers.IO) {
                     SupabaseProvider.client
                         .from("juegos")
-                        .select { filter { eq("activo", true) } }
+                        .select {
+                            filter {
+                                eq("activo", true)
+                            }
+                        }
                         .decodeList<Juego>()
                 }
 
