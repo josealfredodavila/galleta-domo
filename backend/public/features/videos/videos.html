@@ -1376,13 +1376,22 @@
             var session = await getSession();
             if (!session) { sessionUser = null; return null; }
             sessionUser = session.user;
-            var result = await sbVideos.from('usuarios').select('nombre, handle, tokens').eq('id', session.user.id).single();
-            if (!result.error && result.data) {
+
+            // ✅ SEGURIDAD: Leer perfil propio con mi_perfil_privado() en lugar de la tabla usuarios
+            var result = await sbVideos.rpc('mi_perfil_privado');
+            
+            if (result.error) throw result.error;
+            
+            var datos = result.data && result.data[0];
+            if (datos) {
                 var badgeCant = document.getElementById('tokenBadgeCantidad');
-                if (badgeCant) badgeCant.textContent = result.data.tokens || 0;
+                if (badgeCant) badgeCant.textContent = datos.tokens || 0;
             }
-            return result.data || null;
-        } catch (e) { return null; }
+            return datos || null;
+        } catch (e) { 
+            console.error('[Videos] Error cargando perfil:', e);
+            return null; 
+        }
     }
 
     // ================================================================
