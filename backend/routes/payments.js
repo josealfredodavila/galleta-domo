@@ -11,19 +11,12 @@
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
-const { createClient } = require('@supabase/supabase-js');
 
 const supabaseAdmin = require('../lib/supabase-admin');
 const logger = require('../utils/logger');
 const { verificarToken } = require('../middleware/auth');
 const { limitadorPagos } = require('../middleware/rateLimit');
 const { procesarOrdenInternet } = require('../services/telnyx/esim');
-
-// Cliente anon: solo para lecturas con RLS (/status/:ordenId)
-const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_ANON_KEY
-);
 
 // Middleware opcional de validación de errores
 let verificarErrores = (req, res, next) => next();
@@ -629,7 +622,7 @@ router.get('/status/:ordenId', verificarToken, async (req, res) => {
 
         if (!ordenId) return respuestaError(res, 400, 'ordenId requerido');
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAdmin
             .from('pagos_transmision')
             .select('*')
             .eq('id', ordenId)
@@ -983,7 +976,7 @@ router.get('/history', verificarToken, async (req, res) => {
     try {
         const userId = req.usuario.id;
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAdmin
             .from('pagos_transmision')
             .select('*')
             .eq('espectador_id', userId)
