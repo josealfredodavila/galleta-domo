@@ -1,11 +1,10 @@
 // ================================================================
 // server.js — Sariel's Ecosystem
 // Backend principal — Producción Railway
-// ✅ v2.2: Añadidas rutas /api/ai/chat-maiz y /api/ai/voice/tts-maiz
-//           (Capitán Maíz — separado de Marquinhos)
-// ✅ v2.3: Añadidas rutas del Rey Itlasuhua
-//           (/api/ai/tts-itlasuhua, /api/ai/chat-itlasuhua,
-//            /api/ai/voice-itlasuhua)
+// ✅ v2.2: Rutas /api/ai/chat-maiz y /api/ai/voice/tts-maiz
+// ✅ v2.3: Rutas del Rey Itlasuhua
+// ✅ v2.4: Rutas IA: /api/ai/plan, /api/webhooks/ia, /api/admin/ai
+//           + Skip de webhooks en rate limit
 // ================================================================
 
 require('dotenv').config();
@@ -408,7 +407,11 @@ const apiLimiter = rateLimit({
     legacyHeaders: false,
     message: {
         error: 'Demasiadas solicitudes. Intenta nuevamente más tarde.'
-    }
+    },
+    // 🆕 v2.4: Excluir webhooks (NOWPayments, membresías, etc.)
+    skip: (req) =>
+        req.originalUrl.startsWith('/api/webhook/') ||
+        req.originalUrl.startsWith('/api/webhooks/')
 });
 
 app.use('/api/', apiLimiter);
@@ -584,8 +587,7 @@ app.post('/api/livekit/token', authMiddleware, async (req, res) => {
 });
 
 // ================================================================
-// ✅ MARQUINHOS · EMBEDDINGS (texto → vector)
-// Sistema de memoria por usuario (RAG con pgvector)
+// MARQUINHOS · EMBEDDINGS
 // ================================================================
 
 let _embedderMarquinhos = null;
@@ -905,12 +907,24 @@ montarRouter('/api/ai/chat-maiz', './routes/ai-chat-maiz', 'routes/ai-chat-maiz'
 
 montarRouter('/api/ai/voice', './routes/ai-tts-maiz', 'routes/ai-tts-maiz');
 
-// 🐍 Rey Itlasuhua — serpiente cósmica (NUEVO v2.3)
+// 🐍 Rey Itlasuhua — serpiente cósmica
 montarRouter('/api/ai/tts-itlasuhua', './routes/ai-tts-itlasuhua', 'routes/ai-tts-itlasuhua');
 montarRouter('/api/ai/chat-itlasuhua', './routes/ai-chat-itlasuhua', 'routes/ai-chat-itlasuhua');
 montarRouter('/api/ai/voice-itlasuhua', './routes/ai-voice-itlasuhua', 'routes/ai-voice-itlasuhua');
 
 montarRouter('/api/telnyx', './routes/telnyx', 'routes/telnyx');
+
+// 🆕 v2.4 — IA: planes y webhook de pagos (FASE 1, solo NOWPayments)
+montarRouter('/api/ai/plan', './routes/ia-plan', 'routes/ia-plan');
+montarRouter('/api/webhooks/ia', './routes/webhooks/pagos-ia', 'routes/webhooks/pagos-ia');
+
+// 🆕 v2.4 — Admin IA (authMiddleware + adminMiddleware, ambos de este archivo)
+try {
+    app.use('/api/admin/ai', authMiddleware, adminMiddleware, require('./routes/admin/ai'));
+    console.log('✅ routes/admin/ai cargado en /api/admin/ai');
+} catch (error) {
+    console.error('❌ Error cargando routes/admin/ai:', error);
+}
 
 // ================================================================
 // HTML ROUTES
@@ -1001,7 +1015,6 @@ app.get('/legal/terminos-marquinhos', (req, res) => {
     return res.sendFile(filePath);
 });
 
-// 🐍 Términos del Rey Itlasuhua (NUEVO v2.3)
 app.get('/legal/terminos-itlasuhua', (req, res) => {
     const filePath = path.join(publicPath, 'legal', 'terminos-itlasuhua.html');
 
