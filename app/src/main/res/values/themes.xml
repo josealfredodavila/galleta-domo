@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Sariels" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">#D4AF37</item>
+        <item name="colorOnPrimary">#05080f</item>
+        <item name="colorSecondary">#00d68f</item>
+        <item name="colorOnSecondary">#05080f</item>
+        <item name="android:windowBackground">#05080f</item>
+        <item name="android:statusBarColor">#05080f</item>
+    </style>
+</resources>
