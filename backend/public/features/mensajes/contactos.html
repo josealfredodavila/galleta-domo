@@ -560,6 +560,9 @@
             border-radius: var(--radius);
 
             transition: var(--transition);
+
+            /* ✅ NUEVO: cursor pointer para indicar que es clickeable */
+            cursor: pointer;
         }
 
         .contacto-card:hover {
@@ -749,12 +752,13 @@
         }
 
         /* ========================================================
-           ✅ SKELETON LOADER (NUEVO)
+           ✅ SKELETON LOADER
         ======================================================== */
 
         .contacto-card.skeleton {
             pointer-events: none;
             opacity: 0.6;
+            cursor: default;
         }
 
         .contacto-card.skeleton .contacto-avatar {
@@ -882,7 +886,6 @@
             visibility: visible;
         }
 
-        /* ✅ FIX MODALES — soporte para clase .show (NUEVO) */
         .modal-overlay.show {
             opacity: 1;
             visibility: visible;
@@ -923,7 +926,6 @@
             transform: translateY(0) scale(1);
         }
 
-        /* ✅ FIX MODALES — también con .show (NUEVO) */
         .modal-overlay.show .modal {
             transform: translateY(0) scale(1);
         }
@@ -2095,11 +2097,6 @@
 
     <!-- ==========================================================
          GUARDIA DE CARGA
-         Evita que la página se quede en "Cargando..." si algo
-         falla al inicializar (Supabase, apariencia-global, contactos.js).
-         NO reemplaza la lógica de contactos.js — solo asegura
-         que si algo se rompe, el usuario vea un mensaje claro
-         en vez de una pantalla congelada.
     =========================================================== -->
 
     <script>
@@ -2134,7 +2131,6 @@
                 'load',
                 function () {
 
-                    // Supabase no cargó (CDN bloqueado, red, etc.)
                     if (
                         typeof window.supabase === 'undefined'
                     ) {
@@ -2145,11 +2141,8 @@
                         return;
                     }
 
-                    // apariencia-global.js no creó el cliente
                     if (!window.supabaseClient) {
 
-                        // Damos un pequeño margen por si
-                        // apariencia-global.js se inicializa async.
                         setTimeout(function () {
 
                             if (!window.supabaseClient) {
@@ -2162,8 +2155,6 @@
                         }, 1500);
                     }
 
-                    // Timeout duro: si en N segundos todavía
-                    // dice "Cargando contactos...", algo se rompió.
                     setTimeout(function () {
 
                         if (_loadingResuelto) return;
@@ -2173,7 +2164,6 @@
 
                         if (!lista) return;
 
-                        // ¿Sigue mostrando el estado inicial de carga?
                         var texto =
                             (lista.textContent || '').toLowerCase();
 
@@ -2234,13 +2224,11 @@
 
     <!-- ==========================================================
          CONTACTOS.JS
-         Se carga DESPUÉS de Supabase y apariencia-global.
-         defer mantiene el DOM disponible al ejecutarse.
-         ✅ v5: versión escala + fix modales + skeleton
+         ✅ v6: clic en tarjeta abre mensaje directo
     =========================================================== -->
 
     <script
-        src="/features/mensajes/contactos.js?v=5"
+        src="/features/mensajes/contactos.js?v=6"
         defer
     ></script>
 
