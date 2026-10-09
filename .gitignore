@@ -71,4 +71,6 @@ temp/
 
 uploads/
 storage/
-tmp/
+tmp/app/google-services.json
+local.properties
+gradle.properties
