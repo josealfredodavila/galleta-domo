@@ -72,6 +72,10 @@ async function cargarGrupos(esPaginaSiguiente) {
             .select('id, nombre, descripcion, avatar_url, municipio, estado_region, visibilidad, precio_usdt, marketplace_activo')
             .order('created_at', { ascending: false });
 
+        // ✅ NUEVO: solo mostrar canales públicos en el listado general.
+        // Los grupos privados solo aparecen en "Mis Canales" del dashboard.
+        query = query.eq('visibilidad', 'publico');
+
         if (buscar) query = query.or(`nombre.ilike.%${buscar}%,descripcion.ilike.%${buscar}%`);
         if (estado) query = query.eq('estado_region', estado);
         if (municipio) query = query.eq('municipio', municipio);
