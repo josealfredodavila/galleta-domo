@@ -89,32 +89,34 @@ async function publicarVenta() {
     btn.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Publicando...';
 
     try {
-        // Verificar tokens disponibles
-        var userResult = await supabaseClient
-            .from('usuarios')
-            .select('tokens')
-            .eq('id', sessionUser.id)
-            .single();
-        if (userResult.error) throw userResult.error;
+        // ✅ SEGURIDAD: Validar tokens con mi_perfil_privado() en lugar de leer la tabla usuarios
+        var perfilResult = await supabaseClient.rpc('mi_perfil_privado');
+        if (perfilResult.error) throw perfilResult.error;
+        
+        var misDatos = perfilResult.data && perfilResult.data[0];
+        var misTokens = misDatos ? (misDatos.tokens || 0) : 0;
 
-        if (userResult.data.tokens < cantidad) {
+        if (misTokens < cantidad) {
             showToast('Sin tokens suficientes', 'error');
             btn.disabled = false;
             btn.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/><polygon points="12 7 16 9.5 16 14.5 12 17 8 14.5 8 9.5 12 7"/></svg> Publicar venta';
             return;
         }
 
-        // Crear publicación de venta
-        var result = await supabaseClient
-            .from('muro_posts')
-            .insert({
-                usuario_id: sessionUser.id,
-                contenido: 'Venta de ' + cantidad + ' tokens a $' + precio.toFixed(2) + ' c/u',
-                cantidad_venta: cantidad,
-                precio_venta: precio,
-                tema_id: temaSeleccionado || null
-            });
-        if (result.error) throw result.error;
+        // ✅ SEGURIDAD: Publicar venta vía RPC (elimina el insert directo)
+        var result = await supabaseClient.rpc('publicar_venta_tokens', {
+            p_cantidad: cantidad,
+            p_precio: precio,
+            p_tema_id: temaSeleccionado || null
+        });
+
+        if (result.error) {
+            throw result.error;
+        }
+        
+        if (result.data && result.data.success === false) {
+            throw new Error(result.data.error || 'Error al publicar venta');
+        }
 
         showToast('Venta publicada', 'success');
         cerrarModalVenta();
@@ -123,7 +125,7 @@ async function publicarVenta() {
         await cargarTokensDestacados();
     } catch (e) {
         console.error('Error publicando venta:', e);
-        showToast('Error: ' + e.message, 'error');
+        showToast('Error: ' + (e.message || 'Error desconocido'), 'error');
     } finally {
         btn.disabled = false;
         btn.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/><polygon points="12 7 16 9.5 16 14.5 12 17 8 14.5 8 9.5 12 7"/></svg> Publicar venta';
@@ -207,13 +209,13 @@ function actualizarResumenCompra() {
 
     var total = cantidad * precioUnitario;
     var comision = total * COMISION_PORCENTAJE;
-    var vendedorRecibe = total - comision;
+    var vendedorRecibe = total - comision; // ✅ CORREGIDO: vendedorRecibe (antes vendedorRecibidor)
 
     document.getElementById('confirmPrecioUnitario').textContent = '$' + precioUnitario.toFixed(2) + ' MXN';
     document.getElementById('confirmCantidadLabel').textContent = cantidad + ' token' + (cantidad !== 1 ? 's' : '');
     document.getElementById('confirmTotal').textContent = '$' + total.toFixed(2) + ' MXN';
     document.getElementById('confirmComision').textContent = '$' + comision.toFixed(2) + ' MXN';
-    document.getElementById('confirmVendedor').textContent = '$' + vendedorRecibidor.toFixed(2) + ' MXN';
+    document.getElementById('confirmVendedor').textContent = '$' + vendedorRecibe.toFixed(2) + ' MXN';
 }
 
 // ================================================================
