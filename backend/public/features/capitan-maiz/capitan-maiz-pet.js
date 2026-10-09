@@ -298,11 +298,18 @@
                 return userInfo;
             }
             const uid = r.data.session.user.id;
-            const { data } = await sb
-                .from('usuarios')
-                .select('nombre, handle, avatar_url')
-                .eq('id', uid)
-                .maybeSingle();
+
+            // ✅ NUEVO: leer perfil propio vía RPC seguro (SETOF usuarios → array)
+            let data = null;
+            try {
+                const rpc = await sb.rpc('mi_perfil_privado');
+                if (!rpc.error && rpc.data) {
+                    data = Array.isArray(rpc.data) ? (rpc.data.length > 0 ? rpc.data[0] : null) : rpc.data;
+                }
+            } catch (rpcErr) {
+                console.warn('[Capitán Maíz] mi_perfil_privado falló:', rpcErr);
+            }
+
             userInfo = {
                 id: uid,
                 nombre: (data && data.nombre) || 'paisano',
@@ -314,1358 +321,1311 @@
             return userInfo;
         }
     }
+async function cargarAccesorios() {
+    try {
+        const cached = JSON.parse(localStorage.getItem(ACC_KEY) || '[]');
+        if (Array.isArray(cached)) {
+            accesoriosEquipados = cached;
+        }
+    } catch (e) {
+        accesoriosEquipados = [];
+    }
 
-    async function cargarAccesorios() {
+    try {
+        if (!window.getSupabase) return;
+        const sb = window.getSupabase();
+        const r = await sb.auth.getSession();
+        if (!r.data.session) return;
+        const uid = r.data.session.user.id;
+
+        const { data, error } = await sb
+            .from('capitan_maiz_inventario')
+            .select(`
+                accesorio_id,
+                equipado,
+                capitan_maiz_accesorios!inner (
+                    nombre,
+                    categoria,
+                    svg_data
+                )
+            `)
+            .eq('usuario_id', uid)
+            .eq('equipado', true);
+
+        if (error) return;
+
+        if (Array.isArray(data)) {
+            accesoriosEquipados = data.map(d => ({
+                id: d.accesorio_id,
+                categoria: d.capitan_maiz_accesorios?.categoria || 'accesorio',
+                svg: d.capitan_maiz_accesorios?.svg_data || '',
+                nombre: d.capitan_maiz_accesorios?.nombre || ''
+            }));
+            localStorage.setItem(ACC_KEY, JSON.stringify(accesoriosEquipados));
+        }
+    } catch (e) {}
+}
+
+function posicionPorCategoria(cat) {
+    if (window.CapitanMaizFit && typeof window.CapitanMaizFit.getCategoria === 'function') {
         try {
-            const cached = JSON.parse(localStorage.getItem(ACC_KEY) || '[]');
-            if (Array.isArray(cached)) {
-                accesoriosEquipados = cached;
+            const fit = window.CapitanMaizFit.getCategoria(cat);
+            if (fit && fit.x != null && fit.y != null && fit.size != null) {
+                return { x: fit.x, y: fit.y, size: fit.size };
             }
+        } catch (e) {}
+    }
+    return { x: 100, y: 180, size: 60 };
+}
+
+function renderAccesoriosEnAvatar(intento) {
+    const svg = container ? container.querySelector('svg.cm-pet-svg') : null;
+    if (!svg) return;
+
+    const lib = window.CapitanMaizAccesoriosSVG;
+    const lista = accesoriosEquipados.map(a => a.svg).filter(Boolean);
+
+    const intentoActual = intento || 0;
+    if ((!lib || typeof lib.aplicar !== 'function') && lista.length > 0 && intentoActual < 5) {
+        setTimeout(function() {
+            renderAccesoriosEnAvatar(intentoActual + 1);
+        }, 600 + intentoActual * 400);
+    }
+
+    let resto = lista;
+    if (lib && typeof lib.aplicar === 'function' && svg.querySelector('[data-acc-slot]')) {
+        try {
+            const resultado = lib.aplicar(svg, lista);
+            resto = Array.isArray(resultado) ? resultado : lista;
         } catch (e) {
-            accesoriosEquipados = [];
+            resto = lista;
         }
+    }
 
-        try {
-            if (!window.getSupabase) return;
-            const sb = window.getSupabase();
-            const r = await sb.auth.getSession();
-            if (!r.data.session) return;
-            const uid = r.data.session.user.id;
+    const layer = document.getElementById('cm-acc-layer');
+    if (!layer) return;
 
-            const { data, error } = await sb
-                .from('capitan_maiz_inventario')
-                .select(`
-                    accesorio_id,
-                    equipado,
-                    capitan_maiz_accesorios!inner (
-                        nombre,
-                        categoria,
-                        svg_data
-                    )
-                `)
-                .eq('usuario_id', uid)
-                .eq('equipado', true);
-
-            if (error) return;
-
-            if (Array.isArray(data)) {
-                accesoriosEquipados = data.map(d => ({
-                    id: d.accesorio_id,
-                    categoria: d.capitan_maiz_accesorios?.categoria || 'accesorio',
-                    svg: d.capitan_maiz_accesorios?.svg_data || '',
-                    nombre: d.capitan_maiz_accesorios?.nombre || ''
-                }));
-                localStorage.setItem(ACC_KEY, JSON.stringify(accesoriosEquipados));
+    layer.innerHTML = accesoriosEquipados
+        .filter(a => a.svg && Array.isArray(resto) && resto.indexOf(a.svg) !== -1)
+        .map((a, i) => {
+            if (String(a.svg).trim().indexOf('<') === 0) {
+                return '<g>' + a.svg + '</g>';
             }
-        } catch (e) {}
+            const p = posicionPorCategoria(a.categoria);
+            const yOffset = i * 30;
+            return `
+                <text
+                    x="${p.x}"
+                    y="${p.y + yOffset}"
+                    font-size="${p.size}"
+                    text-anchor="middle">
+                    ${esc(a.svg)}
+                </text>
+            `;
+        })
+        .join('');
+}
+
+function cambiarVisema(nombre) {
+    if (!bocaEl) return;
+    const key = VISEMAS_SVG[nombre] ? nombre : 'REST';
+    bocaEl.setAttribute('d', VISEMAS_SVG[key]);
+    bocaEl.setAttribute('fill', VISEMAS_SIN_RELLENO[key] ? 'none' : '#0A0A0A');
+}
+
+function detenerAnimacionBoca() {
+    _bocaActiva = false;
+    _bocaTimeouts.forEach(t => clearTimeout(t));
+    _bocaTimeouts = [];
+    cambiarVisema('REST');
+}
+
+function animarBoca(texto, rate) {
+    detenerAnimacionBoca();
+    if (!bocaEl) return;
+    if (!window.CapitanMaizBoca) {
+        animarBocaRandom();
+        return;
     }
-
-    function posicionPorCategoria(cat) {
-        if (window.CapitanMaizFit && typeof window.CapitanMaizFit.getCategoria === 'function') {
-            try {
-                const fit = window.CapitanMaizFit.getCategoria(cat);
-                if (fit && fit.x != null && fit.y != null && fit.size != null) {
-                    return { x: fit.x, y: fit.y, size: fit.size };
-                }
-            } catch (e) {}
-        }
-        return { x: 100, y: 180, size: 60 };
+    const visemas = window.CapitanMaizBoca.analizar(texto);
+    if (!visemas || !visemas.length) {
+        animarBocaRandom();
+        return;
     }
-
-    function renderAccesoriosEnAvatar(intento) {
-        const svg = container ? container.querySelector('svg.cm-pet-svg') : null;
-        if (!svg) return;
-
-        const lib = window.CapitanMaizAccesoriosSVG;
-        const lista = accesoriosEquipados.map(a => a.svg).filter(Boolean);
-
-        const intentoActual = intento || 0;
-        if ((!lib || typeof lib.aplicar !== 'function') && lista.length > 0 && intentoActual < 5) {
-            setTimeout(function() {
-                renderAccesoriosEnAvatar(intentoActual + 1);
-            }, 600 + intentoActual * 400);
-        }
-
-        let resto = lista;
-        if (lib && typeof lib.aplicar === 'function' && svg.querySelector('[data-acc-slot]')) {
-            try {
-                const resultado = lib.aplicar(svg, lista);
-                resto = Array.isArray(resultado) ? resultado : lista;
-            } catch (e) {
-                resto = lista;
-            }
-        }
-
-        const layer = document.getElementById('cm-acc-layer');
-        if (!layer) return;
-
-        layer.innerHTML = accesoriosEquipados
-            .filter(a => a.svg && Array.isArray(resto) && resto.indexOf(a.svg) !== -1)
-            .map((a, i) => {
-                if (String(a.svg).trim().indexOf('<') === 0) {
-                    return '<g>' + a.svg + '</g>';
-                }
-                const p = posicionPorCategoria(a.categoria);
-                const yOffset = i * 30;
-                return `
-                    <text
-                        x="${p.x}"
-                        y="${p.y + yOffset}"
-                        font-size="${p.size}"
-                        text-anchor="middle">
-                        ${esc(a.svg)}
-                    </text>
-                `;
-            })
-            .join('');
-    }
-
-    function cambiarVisema(nombre) {
-        if (!bocaEl) return;
-        const key = VISEMAS_SVG[nombre] ? nombre : 'REST';
-        bocaEl.setAttribute('d', VISEMAS_SVG[key]);
-        bocaEl.setAttribute('fill', VISEMAS_SIN_RELLENO[key] ? 'none' : '#0A0A0A');
-    }
-
-    function detenerAnimacionBoca() {
-        _bocaActiva = false;
-        _bocaTimeouts.forEach(t => clearTimeout(t));
-        _bocaTimeouts = [];
-        cambiarVisema('REST');
-    }
-
-    function animarBoca(texto, rate) {
-        detenerAnimacionBoca();
-        if (!bocaEl) return;
-        if (!window.CapitanMaizBoca) {
-            animarBocaRandom();
-            return;
-        }
-        const visemas = window.CapitanMaizBoca.analizar(texto);
-        if (!visemas || !visemas.length) {
-            animarBocaRandom();
-            return;
-        }
-        _bocaActiva = true;
-        const rateFactor = rate || 1.0;
-        let tiempo = 0;
-        visemas.forEach(function(v) {
-            const dur = v.duracion / rateFactor;
-            const t = setTimeout(function() {
-                if (!_bocaActiva) return;
-                cambiarVisema(v.visema);
-            }, tiempo);
-            _bocaTimeouts.push(t);
-            tiempo += dur;
-        });
-        const tFin = setTimeout(function() {
+    _bocaActiva = true;
+    const rateFactor = rate || 1.0;
+    let tiempo = 0;
+    visemas.forEach(function(v) {
+        const dur = v.duracion / rateFactor;
+        const t = setTimeout(function() {
             if (!_bocaActiva) return;
-            cambiarVisema('REST');
-            _bocaActiva = false;
-        }, tiempo + 100);
-        _bocaTimeouts.push(tFin);
+            cambiarVisema(v.visema);
+        }, tiempo);
+        _bocaTimeouts.push(t);
+        tiempo += dur;
+    });
+    const tFin = setTimeout(function() {
+        if (!_bocaActiva) return;
+        cambiarVisema('REST');
+        _bocaActiva = false;
+    }, tiempo + 100);
+    _bocaTimeouts.push(tFin);
+}
+
+function animarBocaRandom() {
+    _bocaActiva = true;
+    const visemas = ['A', 'E', 'O', 'I', 'A', 'U', 'E'];
+    let idx = 0;
+    function siguiente() {
+        if (!_bocaActiva || !bocaEl) return;
+        cambiarVisema(visemas[idx % visemas.length]);
+        idx++;
+        const t = setTimeout(siguiente, 90 + Math.random() * 70);
+        _bocaTimeouts.push(t);
     }
+    siguiente();
+}
 
-    function animarBocaRandom() {
-        _bocaActiva = true;
-        const visemas = ['A', 'E', 'O', 'I', 'A', 'U', 'E'];
-        let idx = 0;
-        function siguiente() {
-            if (!_bocaActiva || !bocaEl) return;
-            cambiarVisema(visemas[idx % visemas.length]);
-            idx++;
-            const t = setTimeout(siguiente, 90 + Math.random() * 70);
-            _bocaTimeouts.push(t);
-        }
-        siguiente();
-    }
+async function verificarTerminosEnSupabase() {
+    if (!window.getSupabase) return false;
+    try {
+        const sb = window.getSupabase();
+        const r = await sb.auth.getSession();
+        if (!r.data.session) return false;
 
-    async function verificarTerminosEnSupabase() {
-        if (!window.getSupabase) return false;
-        try {
-            const sb = window.getSupabase();
-            const r = await sb.auth.getSession();
-            if (!r.data.session) return false;
+        const { data, error } = await sb.rpc(
+            'verificar_aceptacion_terminos_capitan_maiz',
+            { p_version: TERMINOS_VERSION }
+        );
 
-            const { data, error } = await sb.rpc(
-                'verificar_aceptacion_terminos_capitan_maiz',
-                { p_version: TERMINOS_VERSION }
-            );
-
-            if (!error && data && data.aceptado === true) {
-                try {
-                    localStorage.setItem(TERMINOS_KEY, 'true');
-                    localStorage.setItem('capitan_maiz_terminos_fecha', data.fecha_aceptacion || '');
-                } catch (e) {}
-                return true;
-            }
-        } catch (e) {}
-        return false;
-    }
-
-    async function registrarTerminosEnSupabase() {
-        if (!window.getSupabase) return false;
-        try {
-            const sb = window.getSupabase();
-            const r = await sb.auth.getSession();
-            if (!r.data.session) return false;
-
-            const { data, error } = await sb.rpc(
-                'registrar_aceptacion_terminos_capitan_maiz',
-                {
-                    p_version: TERMINOS_VERSION,
-                    p_user_agent: navigator.userAgent
-                }
-            );
-
-            if (!error && data && data.success === true) return true;
-        } catch (e) {}
-        return false;
-    }
-
-    function mostrarModalTerminos() {
-        if (document.getElementById('cm-modal-terminos')) return;
-
-        const modal = document.createElement('div');
-        modal.id = 'cm-modal-terminos';
-
-        modal.innerHTML = `
-            <div class="cm-modal-overlay">
-                <div class="cm-modal-content">
-                    <h2>🌽 Términos del Capitán Maíz</h2>
-                    <div class="cm-modal-body">
-                        <p>Antes de hablar con el Capitán Maíz, guardián ancestral del ecosistema, conoce lo siguiente:</p>
-                        <ul>
-                            <li><strong>El Capitán Maíz es una IA</strong>, no un humano ni un profesional.</li>
-                            <li><strong>Puede cometer errores.</strong> Verifica siempre la información importante.</li>
-                            <li><strong>No reemplaza a un terapeuta, médico o asesor profesional.</strong></li>
-                            <li><strong>No genera contenido sexual, gore ni relaciones románticas.</strong></li>
-                            <li><strong>Respeta los derechos de autor.</strong></li>
-                            <li><strong>Tu memoria es privada</strong>, aislada por usuario.</li>
-                            <li><strong>Edad mínima: 13 años.</strong></li>
-                        </ul>
-                        <p>Al continuar, aceptas los <a href="/legal/terminos-capitan-maiz" target="_blank" rel="noopener">Términos completos</a>.</p>
-                    </div>
-                    <div class="cm-modal-actions">
-                        <button id="cm-btn-aceptar" class="cm-btn-aceptar" type="button">Acepto y continúo</button>
-                        <button id="cm-btn-rechazar" class="cm-btn-rechazar" type="button">No acepto</button>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        document.body.appendChild(modal);
-        if (container) container.style.display = 'none';
-
-        document.getElementById('cm-btn-aceptar').addEventListener('click', async function() {
-            if (_terminosProcesando) return;
-            _terminosProcesando = true;
-            const btn = this;
-            btn.disabled = true;
-            btn.textContent = 'Guardando...';
+        if (!error && data && data.aceptado === true) {
             try {
                 localStorage.setItem(TERMINOS_KEY, 'true');
+                localStorage.setItem('capitan_maiz_terminos_fecha', data.fecha_aceptacion || '');
             } catch (e) {}
-            await registrarTerminosEnSupabase();
-            modal.remove();
-            _terminosProcesando = false;
-            if (container) container.style.display = '';
-            if (window.CapitanMaizAnim && typeof window.CapitanMaizAnim.iniciar === 'function') {
-                window.CapitanMaizAnim.iniciar();
-            }
-            log('✅ Términos aceptados');
-        });
-
-        document.getElementById('cm-btn-rechazar').addEventListener('click', function() {
-            modal.remove();
-            if (container) container.style.display = 'none';
-            log('❌ Términos rechazados.');
-        });
-    }
-
-    async function verificarTerminos() {
-        try {
-            const aceptados = localStorage.getItem(TERMINOS_KEY);
-            if (aceptados) return true;
-            const okServidor = await verificarTerminosEnSupabase();
-            if (okServidor) return true;
-            mostrarModalTerminos();
-            return false;
-        } catch (e) {
             return true;
         }
+    } catch (e) {}
+    return false;
+}
+
+async function registrarTerminosEnSupabase() {
+    if (!window.getSupabase) return false;
+    try {
+        const sb = window.getSupabase();
+        const r = await sb.auth.getSession();
+        if (!r.data.session) return false;
+
+        const { data, error } = await sb.rpc(
+            'registrar_aceptacion_terminos_capitan_maiz',
+            {
+                p_version: TERMINOS_VERSION,
+                p_user_agent: navigator.userAgent
+            }
+        );
+
+        if (!error && data && data.success === true) return true;
+    } catch (e) {}
+    return false;
+}
+
+function mostrarModalTerminos() {
+    if (document.getElementById('cm-modal-terminos')) return;
+
+    const modal = document.createElement('div');
+    modal.id = 'cm-modal-terminos';
+
+    modal.innerHTML = `
+        <div class="cm-modal-overlay">
+            <div class="cm-modal-content">
+                <h2>🌽 Términos del Capitán Maíz</h2>
+                <div class="cm-modal-body">
+                    <p>Antes de hablar con el Capitán Maíz, guardián ancestral del ecosistema, conoce lo siguiente:</p>
+                    <ul>
+                        <li><strong>El Capitán Maíz es una IA</strong>, no un humano ni un profesional.</li>
+                        <li><strong>Puede cometer errores.</strong> Verifica siempre la información importante.</li>
+                        <li><strong>No reemplaza a un terapeuta, médico o asesor profesional.</strong></li>
+                        <li><strong>No genera contenido sexual, gore ni relaciones románticas.</strong></li>
+                        <li><strong>Respeta los derechos de autor.</strong></li>
+                        <li><strong>Tu memoria es privada</strong>, aislada por usuario.</li>
+                        <li><strong>Edad mínima: 13 años.</strong></li>
+                    </ul>
+                    <p>Al continuar, aceptas los <a href="/legal/terminos-capitan-maiz" target="_blank" rel="noopener">Términos completos</a>.</p>
+                </div>
+                <div class="cm-modal-actions">
+                    <button id="cm-btn-aceptar" class="cm-btn-aceptar" type="button">Acepto y continúo</button>
+                    <button id="cm-btn-rechazar" class="cm-btn-rechazar" type="button">No acepto</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    if (container) container.style.display = 'none';
+
+    document.getElementById('cm-btn-aceptar').addEventListener('click', async function() {
+        if (_terminosProcesando) return;
+        _terminosProcesando = true;
+        const btn = this;
+        btn.disabled = true;
+        btn.textContent = 'Guardando...';
+        try {
+            localStorage.setItem(TERMINOS_KEY, 'true');
+        } catch (e) {}
+        await registrarTerminosEnSupabase();
+        modal.remove();
+        _terminosProcesando = false;
+        if (container) container.style.display = '';
+        if (window.CapitanMaizAnim && typeof window.CapitanMaizAnim.iniciar === 'function') {
+            window.CapitanMaizAnim.iniciar();
+        }
+        log('✅ Términos aceptados');
+    });
+
+    document.getElementById('cm-btn-rechazar').addEventListener('click', function() {
+        modal.remove();
+        if (container) container.style.display = 'none';
+        log('❌ Términos rechazados.');
+    });
+}
+
+async function verificarTerminos() {
+    try {
+        const aceptados = localStorage.getItem(TERMINOS_KEY);
+        if (aceptados) return true;
+        const okServidor = await verificarTerminosEnSupabase();
+        if (okServidor) return true;
+        mostrarModalTerminos();
+        return false;
+    } catch (e) {
+        return true;
+    }
+}
+
+// ============================================================
+// CREAR WIDGET — SVG v2.7
+// ============================================================
+
+function crearWidget() {
+    if (document.getElementById('capitan-maiz-pet')) return;
+
+    container = document.createElement('div');
+    container.id = 'capitan-maiz-pet';
+    container.className = 'cm-pet';
+
+    if (config.posicion_x !== null && config.posicion_y !== null) {
+        container.style.left = config.posicion_x + 'px';
+        container.style.top = config.posicion_y + 'px';
+        container.style.right = 'auto';
+        container.style.bottom = 'auto';
     }
 
-    // ============================================================
-    // CREAR WIDGET — SVG v2.7
-    // ============================================================
+    container.innerHTML = `
+    <div class="cm-pet-bubble" id="cm-bubble">
+        <div class="cm-pet-bubble-text" id="cm-bubble-text"></div>
+    </div>
 
-    function crearWidget() {
-        if (document.getElementById('capitan-maiz-pet')) return;
+    <div class="cm-pet-avatar" id="cm-avatar" role="button" tabindex="0" aria-label="Hablar con el Capitán Maíz">
+        <svg viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg" class="cm-pet-svg" style="overflow:visible">
 
-        container = document.createElement('div');
-        container.id = 'capitan-maiz-pet';
-        container.className = 'cm-pet';
+            <defs>
+                <radialGradient id="cm-aura">
+                    <stop offset="0%" stop-color="#00D9FF" stop-opacity=".5"/>
+                    <stop offset="55%" stop-color="#6948C7" stop-opacity=".22"/>
+                    <stop offset="100%" stop-color="#6948C7" stop-opacity="0"/>
+                </radialGradient>
 
-        if (config.posicion_x !== null && config.posicion_y !== null) {
-            container.style.left = config.posicion_x + 'px';
-            container.style.top = config.posicion_y + 'px';
-            container.style.right = 'auto';
-            container.style.bottom = 'auto';
-        }
+                <linearGradient id="cm-grad-cabeza" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#FFFFFF"/>
+                    <stop offset="60%" stop-color="#F7F8FA"/>
+                    <stop offset="100%" stop-color="#DCE2E9"/>
+                </linearGradient>
 
-        container.innerHTML = `
-        <div class="cm-pet-bubble" id="cm-bubble">
-            <div class="cm-pet-bubble-text" id="cm-bubble-text"></div>
-        </div>
+                <linearGradient id="cm-grad-traje" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="#0F1824"/>
+                    <stop offset="45%" stop-color="#050810"/>
+                    <stop offset="100%" stop-color="#000104"/>
+                </linearGradient>
 
-        <div class="cm-pet-avatar" id="cm-avatar" role="button" tabindex="0" aria-label="Hablar con el Capitán Maíz">
-            <svg viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg" class="cm-pet-svg" style="overflow:visible">
+                <linearGradient id="cm-grad-botas" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#1B2535"/>
+                    <stop offset="55%" stop-color="#050810"/>
+                    <stop offset="100%" stop-color="#000104"/>
+                </linearGradient>
 
-                <defs>
-                    <radialGradient id="cm-aura">
-                        <stop offset="0%" stop-color="#00D9FF" stop-opacity=".5"/>
-                        <stop offset="55%" stop-color="#6948C7" stop-opacity=".22"/>
-                        <stop offset="100%" stop-color="#6948C7" stop-opacity="0"/>
-                    </radialGradient>
+                <linearGradient id="cm-grad-pantalon" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#FFFFFF"/>
+                    <stop offset="100%" stop-color="#D9DEE5"/>
+                </linearGradient>
 
-                    <linearGradient id="cm-grad-cabeza" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stop-color="#FFFFFF"/>
-                        <stop offset="60%" stop-color="#F7F8FA"/>
-                        <stop offset="100%" stop-color="#DCE2E9"/>
-                    </linearGradient>
+                <linearGradient id="cm-grad-capa" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="#04061A"/>
+                    <stop offset="35%" stop-color="#0A1466"/>
+                    <stop offset="65%" stop-color="#1B0F5C"/>
+                    <stop offset="100%" stop-color="#03040E"/>
+                </linearGradient>
 
-                    <linearGradient id="cm-grad-traje" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stop-color="#0F1824"/>
-                        <stop offset="45%" stop-color="#050810"/>
-                        <stop offset="100%" stop-color="#000104"/>
-                    </linearGradient>
+                <linearGradient id="cm-grad-sombrero" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#4A607C"/>
+                    <stop offset="22%" stop-color="#1E2A3D"/>
+                    <stop offset="65%" stop-color="#0A1018"/>
+                    <stop offset="100%" stop-color="#02040A"/>
+                </linearGradient>
 
-                    <linearGradient id="cm-grad-botas" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stop-color="#1B2535"/>
-                        <stop offset="55%" stop-color="#050810"/>
-                        <stop offset="100%" stop-color="#000104"/>
-                    </linearGradient>
+                <radialGradient id="cm-grad-ojo">
+                    <stop offset="0%" stop-color="#FFFFFF"/>
+                    <stop offset="18%" stop-color="#B8F6FF"/>
+                    <stop offset="45%" stop-color="#4DA8FF"/>
+                    <stop offset="75%" stop-color="#1E3C8E"/>
+                    <stop offset="100%" stop-color="#071126"/>
+                </radialGradient>
 
-                    <linearGradient id="cm-grad-pantalon" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stop-color="#FFFFFF"/>
-                        <stop offset="100%" stop-color="#D9DEE5"/>
-                    </linearGradient>
+                <filter id="cm-glow">
+                    <feGaussianBlur stdDeviation="1.7" result="blur"/>
+                    <feMerge>
+                        <feMergeNode in="blur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                </filter>
 
-                    <linearGradient id="cm-grad-capa" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stop-color="#04061A"/>
-                        <stop offset="35%" stop-color="#0A1466"/>
-                        <stop offset="65%" stop-color="#1B0F5C"/>
-                        <stop offset="100%" stop-color="#03040E"/>
-                    </linearGradient>
+                <filter id="cm-glow-fuerte">
+                    <feGaussianBlur stdDeviation="3" result="blur"/>
+                    <feMerge>
+                        <feMergeNode in="blur"/>
+                        <feMergeNode in="blur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                </filter>
 
-                    <linearGradient id="cm-grad-sombrero" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stop-color="#4A607C"/>
-                        <stop offset="22%" stop-color="#1E2A3D"/>
-                        <stop offset="65%" stop-color="#0A1018"/>
-                        <stop offset="100%" stop-color="#02040A"/>
-                    </linearGradient>
+                <pattern id="cm-patron-sombrero" width="14" height="10" patternUnits="userSpaceOnUse">
+                    <path d="M0 5 L7 0 L14 5 L7 10 Z"
+                          fill="none"
+                          stroke="#56647A"
+                          stroke-width="1"
+                          opacity=".55"/>
+                </pattern>
 
-                    <radialGradient id="cm-grad-ojo">
-                        <stop offset="0%" stop-color="#FFFFFF"/>
-                        <stop offset="18%" stop-color="#B8F6FF"/>
-                        <stop offset="45%" stop-color="#4DA8FF"/>
-                        <stop offset="75%" stop-color="#1E3C8E"/>
-                        <stop offset="100%" stop-color="#071126"/>
-                    </radialGradient>
+                <clipPath id="cm-clip-ojo-izq">
+                    <ellipse cx="73" cy="111" rx="15" ry="20"/>
+                </clipPath>
 
-                    <filter id="cm-glow">
-                        <feGaussianBlur stdDeviation="1.7" result="blur"/>
-                        <feMerge>
-                            <feMergeNode in="blur"/>
-                            <feMergeNode in="SourceGraphic"/>
-                        </feMerge>
-                    </filter>
+                <clipPath id="cm-clip-ojo-der">
+                    <ellipse cx="127" cy="111" rx="15" ry="20"/>
+                </clipPath>
+            </defs>
 
-                    <filter id="cm-glow-fuerte">
-                        <feGaussianBlur stdDeviation="3" result="blur"/>
-                        <feMerge>
-                            <feMergeNode in="blur"/>
-                            <feMergeNode in="blur"/>
-                            <feMergeNode in="SourceGraphic"/>
-                        </feMerge>
-                    </filter>
+            <ellipse cx="100" cy="155" rx="98" ry="142" fill="url(#cm-aura)" opacity=".65">
+                <animate attributeName="opacity"
+                         values=".35;.7;.35"
+                         dur="3s"
+                         repeatCount="indefinite"/>
+            </ellipse>
 
-                    <pattern id="cm-patron-sombrero" width="14" height="10" patternUnits="userSpaceOnUse">
-                        <path d="M0 5 L7 0 L14 5 L7 10 Z"
-                              fill="none"
-                              stroke="#56647A"
-                              stroke-width="1"
-                              opacity=".55"/>
-                    </pattern>
+            <g id="cm-capa" data-acc-slot="capa">
 
-                    <!-- Recortes de los ojos para el remolino -->
-                    <clipPath id="cm-clip-ojo-izq">
-                        <ellipse cx="73" cy="111" rx="15" ry="20"/>
-                    </clipPath>
+                <path fill="url(#cm-grad-capa)"
+                      stroke="#4A6FC8"
+                      stroke-width="2.2"
+                      d="M54 175 C34 181 17 198 11 223 C5 247 7 273 19 294 L47 278 C55 257 61 232 65 204 Z">
 
-                    <clipPath id="cm-clip-ojo-der">
-                        <ellipse cx="127" cy="111" rx="15" ry="20"/>
-                    </clipPath>
-                </defs>
+                    <animate attributeName="d"
+                             dur="3.6s"
+                             repeatCount="indefinite"
+                             calcMode="spline"
+                             keyTimes="0;.33;.66;1"
+                             keySplines=".4 0 .6 1;.4 0 .6 1;.4 0 .6 1"
+                             values="
+                             M54 175 C34 181 17 198 11 223 C5 247 7 273 19 294 L47 278 C55 257 61 232 65 204 Z;
+                             M54 175 C28 184 9 196 6 226 C0 252 14 272 30 298 L52 275 C58 255 60 232 65 204 Z;
+                             M54 175 C40 178 24 201 17 220 C12 244 2 277 12 290 L44 281 C54 260 62 232 65 204 Z;
+                             M54 175 C34 181 17 198 11 223 C5 247 7 273 19 294 L47 278 C55 257 61 232 65 204 Z"/>
+                </path>
 
-                <!-- AURA -->
-                <ellipse cx="100" cy="155" rx="98" ry="142" fill="url(#cm-aura)" opacity=".65">
-                    <animate attributeName="opacity"
-                             values=".35;.7;.35"
-                             dur="3s"
-                             repeatCount="indefinite"/>
-                </ellipse>
+                <path fill="none"
+                      stroke="#00E5FF"
+                      stroke-width="2.4"
+                      opacity=".95"
+                      filter="url(#cm-glow)"
+                      d="M19 294 C29 278 39 269 47 257">
 
-                <!-- ================================================
-                     CAPA AL VIENTO
-                     ================================================ -->
-                <g id="cm-capa" data-acc-slot="capa">
+                    <animate attributeName="d"
+                             dur="3.6s"
+                             repeatCount="indefinite"
+                             calcMode="spline"
+                             keyTimes="0;.33;.66;1"
+                             keySplines=".4 0 .6 1;.4 0 .6 1;.4 0 .6 1"
+                             values="
+                             M19 294 C29 278 39 269 47 257;
+                             M30 298 C37 281 45 270 52 256;
+                             M12 290 C24 277 36 270 44 259;
+                             M19 294 C29 278 39 269 47 257"/>
+                </path>
 
-                    <!-- Mitad izquierda -->
-                    <path fill="url(#cm-grad-capa)"
-                          stroke="#4A6FC8"
-                          stroke-width="2.2"
-                          d="M54 175 C34 181 17 198 11 223 C5 247 7 273 19 294 L47 278 C55 257 61 232 65 204 Z">
+                <path fill="url(#cm-grad-capa)"
+                      stroke="#4A6FC8"
+                      stroke-width="2.2"
+                      d="M146 175 C166 181 183 198 189 223 C195 247 193 273 181 294 L153 278 C145 257 139 232 135 204 Z">
 
-                        <animate attributeName="d"
-                                 dur="3.6s"
+                    <animate attributeName="d"
+                             dur="3.6s"
+                             begin="-1.3s"
+                             repeatCount="indefinite"
+                             calcMode="spline"
+                             keyTimes="0;.33;.66;1"
+                             keySplines=".4 0 .6 1;.4 0 .6 1;.4 0 .6 1"
+                             values="
+                             M146 175 C166 181 183 198 189 223 C195 247 193 273 181 294 L153 278 C145 257 139 232 135 204 Z;
+                             M146 175 C172 184 191 196 194 226 C200 252 186 272 170 298 L148 275 C142 255 140 232 135 204 Z;
+                             M146 175 C160 178 176 201 183 220 C188 244 198 277 188 290 L156 281 C146 260 138 232 135 204 Z;
+                             M146 175 C166 181 183 198 189 223 C195 247 193 273 181 294 L153 278 C145 257 139 232 135 204 Z"/>
+                </path>
+
+                <path fill="none"
+                      stroke="#00E5FF"
+                      stroke-width="2.4"
+                      opacity=".95"
+                      filter="url(#cm-glow)"
+                      d="M181 294 C171 278 161 269 153 257">
+
+                    <animate attributeName="d"
+                             dur="3.6s"
+                             begin="-1.3s"
+                             repeatCount="indefinite"
+                             calcMode="spline"
+                             keyTimes="0;.33;.66;1"
+                             keySplines=".4 0 .6 1;.4 0 .6 1;.4 0 .6 1"
+                             values="
+                             M181 294 C171 278 161 269 153 257;
+                             M170 298 C163 281 155 270 148 256;
+                             M188 290 C176 277 164 270 156 259;
+                             M181 294 C171 278 161 269 153 257"/>
+                </path>
+
+                <g fill="#FFFFFF" opacity=".95">
+                    <animateTransform attributeName="transform"
+                                      type="translate"
+                                      values="0,0; -2,1; 1,-1; 0,0"
+                                      dur="3.6s"
+                                      repeatCount="indefinite"/>
+
+                    <circle cx="25" cy="226" r="1.4">
+                        <animate attributeName="opacity"
+                                 values="1;0.3;1"
+                                 dur="2.2s"
+                                 repeatCount="indefinite"/>
+                    </circle>
+
+                    <circle cx="34" cy="250" r=".9">
+                        <animate attributeName="opacity"
+                                 values="1;0.3;1"
+                                 dur="2.8s"
                                  repeatCount="indefinite"
-                                 calcMode="spline"
-                                 keyTimes="0;.33;.66;1"
-                                 keySplines=".4 0 .6 1;.4 0 .6 1;.4 0 .6 1"
-                                 values="
-                                 M54 175 C34 181 17 198 11 223 C5 247 7 273 19 294 L47 278 C55 257 61 232 65 204 Z;
-                                 M54 175 C28 184 9 196 6 226 C0 252 14 272 30 298 L52 275 C58 255 60 232 65 204 Z;
-                                 M54 175 C40 178 24 201 17 220 C12 244 2 277 12 290 L44 281 C54 260 62 232 65 204 Z;
-                                 M54 175 C34 181 17 198 11 223 C5 247 7 273 19 294 L47 278 C55 257 61 232 65 204 Z"/>
+                                 begin="0.4s"/>
+                    </circle>
+
+                    <circle cx="28" cy="268" r=".7">
+                        <animate attributeName="opacity"
+                                 values="1;0.3;1"
+                                 dur="3.1s"
+                                 repeatCount="indefinite"
+                                 begin="0.8s"/>
+                    </circle>
+
+                    <circle cx="43" cy="215" r=".8">
+                        <animate attributeName="opacity"
+                                 values="1;0.3;1"
+                                 dur="2.5s"
+                                 repeatCount="indefinite"
+                                 begin="1.2s"/>
+                    </circle>
+
+                    <circle cx="176" cy="226" r="1.4">
+                        <animate attributeName="opacity"
+                                 values="1;0.3;1"
+                                 dur="2.4s"
+                                 repeatCount="indefinite"
+                                 begin="0.6s"/>
+                    </circle>
+
+                    <circle cx="166" cy="249" r=".9">
+                        <animate attributeName="opacity"
+                                 values="1;0.3;1"
+                                 dur="3s"
+                                 repeatCount="indefinite"
+                                 begin="1s"/>
+                    </circle>
+
+                    <circle cx="172" cy="267" r=".7">
+                        <animate attributeName="opacity"
+                                 values="1;0.3;1"
+                                 dur="2.7s"
+                                 repeatCount="indefinite"
+                                 begin="1.4s"/>
+                    </circle>
+
+                    <circle cx="158" cy="215" r=".8">
+                        <animate attributeName="opacity"
+                                 values="1;0.3;1"
+                                 dur="2.9s"
+                                 repeatCount="indefinite"
+                                 begin="1.8s"/>
+                    </circle>
+                </g>
+
+                <g fill="#FFFFFF" filter="url(#cm-glow)">
+                    <animateTransform attributeName="transform"
+                                      type="translate"
+                                      values="0,0; -2,1; 1,-1; 0,0"
+                                      dur="3.6s"
+                                      repeatCount="indefinite"/>
+
+                    <path d="M30 242 l2.2 5 l5 2.2 l-5 2.2 l-2.2 5 l-2.2-5 l-5-2.2 l5-2.2z">
+                        <animate attributeName="opacity"
+                                 values="1;0.4;1"
+                                 dur="3.2s"
+                                 repeatCount="indefinite"/>
                     </path>
 
-                    <path fill="none"
+                    <path d="M171 238 l1.8 4 l4 1.8 l-4 1.8 l-1.8 4 l-1.8-4 l-4-1.8 l4-1.8z">
+                        <animate attributeName="opacity"
+                                 values="1;0.4;1"
+                                 dur="3.6s"
+                                 repeatCount="indefinite"
+                                 begin="0.7s"/>
+                    </path>
+                </g>
+            </g>
+
+            <g id="cm-cuerpo">
+
+                <g id="cm-pierna-izq" class="cm-pierna">
+                    <path d="M70 230 L94 230 L96 267 L88 280 L69 275 L67 250 Z"
+                          fill="url(#cm-grad-pantalon)"
+                          stroke="#6C7A89"
+                          stroke-width="2"/>
+
+                    <path d="M80 237 L78 269"
+                          stroke="#AAB8C8"
+                          stroke-width="1.2"/>
+
+                    <path d="M69 252 Q80 246 91 252 L90 266 Q80 271 70 266 Z"
+                          fill="#E4E8ED"
+                          stroke="#5E6D7C"
+                          stroke-width="2"/>
+
+                    <path d="M72 254 Q80 250 88 254"
+                          fill="none"
                           stroke="#00E5FF"
-                          stroke-width="2.4"
-                          opacity=".95"
-                          filter="url(#cm-glow)"
-                          d="M19 294 C29 278 39 269 47 257">
+                          stroke-width="1.4"
+                          filter="url(#cm-glow)"/>
+                </g>
 
-                        <animate attributeName="d"
-                                 dur="3.6s"
-                                 repeatCount="indefinite"
-                                 calcMode="spline"
-                                 keyTimes="0;.33;.66;1"
-                                 keySplines=".4 0 .6 1;.4 0 .6 1;.4 0 .6 1"
-                                 values="
-                                 M19 294 C29 278 39 269 47 257;
-                                 M30 298 C37 281 45 270 52 256;
-                                 M12 290 C24 277 36 270 44 259;
-                                 M19 294 C29 278 39 269 47 257"/>
-                    </path>
+                <g id="cm-pierna-der" class="cm-pierna">
+                    <path d="M106 230 L130 230 L133 250 L131 275 L112 280 L104 267 Z"
+                          fill="url(#cm-grad-pantalon)"
+                          stroke="#6C7A89"
+                          stroke-width="2"/>
 
-                    <!-- Mitad derecha -->
-                    <path fill="url(#cm-grad-capa)"
-                          stroke="#4A6FC8"
-                          stroke-width="2.2"
-                          d="M146 175 C166 181 183 198 189 223 C195 247 193 273 181 294 L153 278 C145 257 139 232 135 204 Z">
+                    <path d="M120 237 L122 269"
+                          stroke="#AAB8C8"
+                          stroke-width="1.2"/>
 
-                        <animate attributeName="d"
-                                 dur="3.6s"
-                                 begin="-1.3s"
-                                 repeatCount="indefinite"
-                                 calcMode="spline"
-                                 keyTimes="0;.33;.66;1"
-                                 keySplines=".4 0 .6 1;.4 0 .6 1;.4 0 .6 1"
-                                 values="
-                                 M146 175 C166 181 183 198 189 223 C195 247 193 273 181 294 L153 278 C145 257 139 232 135 204 Z;
-                                 M146 175 C172 184 191 196 194 226 C200 252 186 272 170 298 L148 275 C142 255 140 232 135 204 Z;
-                                 M146 175 C160 178 176 201 183 220 C188 244 198 277 188 290 L156 281 C146 260 138 232 135 204 Z;
-                                 M146 175 C166 181 183 198 189 223 C195 247 193 273 181 294 L153 278 C145 257 139 232 135 204 Z"/>
-                    </path>
+                    <path d="M109 252 Q120 246 131 252 L130 266 Q120 271 110 266 Z"
+                          fill="#E4E8ED"
+                          stroke="#5E6D7C"
+                          stroke-width="2"/>
 
-                    <path fill="none"
+                    <path d="M112 254 Q120 250 128 254"
+                          fill="none"
                           stroke="#00E5FF"
-                          stroke-width="2.4"
-                          opacity=".95"
-                          filter="url(#cm-glow)"
-                          d="M181 294 C171 278 161 269 153 257">
+                          stroke-width="1.4"
+                          filter="url(#cm-glow)"/>
+                </g>
 
-                        <animate attributeName="d"
-                                 dur="3.6s"
-                                 begin="-1.3s"
-                                 repeatCount="indefinite"
-                                 calcMode="spline"
-                                 keyTimes="0;.33;.66;1"
-                                 keySplines=".4 0 .6 1;.4 0 .6 1;.4 0 .6 1"
-                                 values="
-                                 M181 294 C171 278 161 269 153 257;
-                                 M170 298 C163 281 155 270 148 256;
-                                 M188 290 C176 277 164 270 156 259;
-                                 M181 294 C171 278 161 269 153 257"/>
-                    </path>
+                <g id="cm-botas" data-acc-slot="pies">
+                    <path d="M66 267 Q77 264 90 270 L93 283 Q92 290 83 293 L57 293 Q52 289 57 284 L66 278 Z"
+                          fill="url(#cm-grad-botas)"
+                          stroke="#4D6074"
+                          stroke-width="2"/>
 
-                    <!-- Estrellas -->
-                    <g fill="#FFFFFF" opacity=".95">
-                        <animateTransform attributeName="transform"
-                                          type="translate"
-                                          values="0,0; -2,1; 1,-1; 0,0"
-                                          dur="3.6s"
-                                          repeatCount="indefinite"/>
+                    <path d="M107 270 Q120 264 134 267 L143 278 Q148 284 143 290 Q139 293 117 293 L107 289 Z"
+                          fill="url(#cm-grad-botas)"
+                          stroke="#4D6074"
+                          stroke-width="2"/>
 
-                        <circle cx="25" cy="226" r="1.4">
-                            <animate attributeName="opacity"
-                                     values="1;0.3;1"
-                                     dur="2.2s"
-                                     repeatCount="indefinite"/>
-                        </circle>
+                    <path d="M62 283 Q75 278 89 283"
+                          fill="none"
+                          stroke="#00E5FF"
+                          stroke-width="2.2"
+                          filter="url(#cm-glow)"/>
 
-                        <circle cx="34" cy="250" r=".9">
-                            <animate attributeName="opacity"
-                                     values="1;0.3;1"
-                                     dur="2.8s"
-                                     repeatCount="indefinite"
-                                     begin="0.4s"/>
-                        </circle>
+                    <path d="M111 283 Q124 278 140 283"
+                          fill="none"
+                          stroke="#00E5FF"
+                          stroke-width="2.2"
+                          filter="url(#cm-glow)"/>
 
-                        <circle cx="28" cy="268" r=".7">
-                            <animate attributeName="opacity"
-                                     values="1;0.3;1"
-                                     dur="3.1s"
-                                     repeatCount="indefinite"
-                                     begin="0.8s"/>
-                        </circle>
+                    <path d="M57 290 Q74 294 90 289 M109 289 Q126 294 143 288"
+                          fill="none"
+                          stroke="#121A26"
+                          stroke-width="3"/>
+                </g>
 
-                        <circle cx="43" cy="215" r=".8">
-                            <animate attributeName="opacity"
-                                     values="1;0.3;1"
-                                     dur="2.5s"
-                                     repeatCount="indefinite"
-                                     begin="1.2s"/>
-                        </circle>
+                <g id="cm-torso" data-acc-slot="torso">
+                    <path d="M65 148 Q100 137 135 148 L145 217 Q128 232 100 232 Q72 232 55 217 Z"
+                          fill="url(#cm-grad-traje)"
+                          stroke="#53657A"
+                          stroke-width="2.2"/>
 
-                        <circle cx="176" cy="226" r="1.4">
-                            <animate attributeName="opacity"
-                                     values="1;0.3;1"
-                                     dur="2.4s"
-                                     repeatCount="indefinite"
-                                     begin="0.6s"/>
-                        </circle>
+                    <path d="M72 151 L91 157 L100 171 L109 157 L128 151 L136 211 L119 220 L100 216 L81 220 L64 211 Z"
+                          fill="#0A1018"
+                          stroke="#00E5FF"
+                          stroke-width="2"/>
 
-                        <circle cx="166" cy="249" r=".9">
-                            <animate attributeName="opacity"
-                                     values="1;0.3;1"
-                                     dur="3s"
-                                     repeatCount="indefinite"
-                                     begin="1s"/>
-                        </circle>
+                    <path d="M91 157 L100 171 L109 157 L106 207 L94 207 Z"
+                          fill="#05080E"
+                          stroke="#3A567F"
+                          stroke-width="1.3"/>
 
-                        <circle cx="172" cy="267" r=".7">
-                            <animate attributeName="opacity"
-                                     values="1;0.3;1"
-                                     dur="2.7s"
-                                     repeatCount="indefinite"
-                                     begin="1.4s"/>
-                        </circle>
+                    <path d="M86 151 L100 168 L114 151 L108 146 L100 158 L92 146 Z"
+                          fill="#0F1A28"
+                          stroke="#8AA8D0"
+                          stroke-width="1.3"/>
 
-                        <circle cx="158" cy="215" r=".8">
-                            <animate attributeName="opacity"
-                                     values="1;0.3;1"
-                                     dur="2.9s"
-                                     repeatCount="indefinite"
-                                     begin="1.8s"/>
-                        </circle>
+                    <g fill="#E0ECFF" stroke="#4A6080" stroke-width="1">
+                        <circle cx="100" cy="178" r="2"/>
+                        <circle cx="100" cy="188" r="2"/>
+                        <circle cx="100" cy="198" r="2"/>
                     </g>
 
-                    <g fill="#FFFFFF" filter="url(#cm-glow)">
-                        <animateTransform attributeName="transform"
-                                          type="translate"
-                                          values="0,0; -2,1; 1,-1; 0,0"
-                                          dur="3.6s"
-                                          repeatCount="indefinite"/>
+                    <g fill="none" stroke="#C7D9EE" stroke-width="1.2">
+                        <path d="M75 158 Q82 169 87 178"/>
+                        <path d="M125 158 Q118 169 113 178"/>
+                        <path d="M75 192 Q82 201 87 208"/>
+                        <path d="M125 192 Q118 201 113 208"/>
+                    </g>
 
-                        <path d="M30 242 l2.2 5 l5 2.2 l-5 2.2 l-2.2 5 l-2.2-5 l-5-2.2 l5-2.2z">
+                    <path d="M67 151 Q60 179 65 210 M133 151 Q140 179 135 210"
+                          fill="none"
+                          stroke="#00E5FF"
+                          stroke-width="2.4"
+                          filter="url(#cm-glow)"/>
+
+                    <g>
+                        <animateTransform attributeName="transform"
+                                          type="scale"
+                                          values="1;1.05;1"
+                                          dur="2s"
+                                          repeatCount="indefinite"
+                                          additive="sum"/>
+
+                        <path d="M100 181 L103 188 L111 188 L105 193 L108 201 L100 196 L92 201 L95 193 L89 188 L97 188 Z"
+                              fill="#00E5FF"
+                              filter="url(#cm-glow)">
+
                             <animate attributeName="opacity"
-                                     values="1;0.4;1"
-                                     dur="3.2s"
+                                     values=".85;1;.85"
+                                     dur="1.8s"
                                      repeatCount="indefinite"/>
                         </path>
+                    </g>
 
-                        <path d="M171 238 l1.8 4 l4 1.8 l-4 1.8 l-1.8 4 l-1.8-4 l-4-1.8 l4-1.8z">
-                            <animate attributeName="opacity"
-                                     values="1;0.4;1"
-                                     dur="3.6s"
-                                     repeatCount="indefinite"
-                                     begin="0.7s"/>
-                        </path>
+                    <path d="M66 151 Q57 153 53 163 L64 171 L73 157 Z"
+                          fill="#0F1824"
+                          stroke="#00E5FF"
+                          stroke-width="1.6"/>
+
+                    <path d="M134 151 Q143 153 147 163 L136 171 L127 157 Z"
+                          fill="#0F1824"
+                          stroke="#00E5FF"
+                          stroke-width="1.6"/>
+                </g>
+
+                <g id="cm-brazo-izq" class="cm-brazo">
+                    <path d="M66 158 Q54 158 47 170 L39 199 Q43 207 52 208 L64 179 L76 168 Z"
+                          fill="url(#cm-grad-traje)"
+                          stroke="#56697D"
+                          stroke-width="2"/>
+
+                    <path d="M52 166 Q45 182 45 198"
+                          fill="none"
+                          stroke="#00E5FF"
+                          stroke-width="2.2"
+                          filter="url(#cm-glow)"/>
+
+                    <g>
+                        <animateTransform attributeName="transform"
+                                          type="rotate"
+                                          values="10 45 200;-12 45 200;10 45 200"
+                                          dur="1.3s"
+                                          begin="0.3s"
+                                          repeatCount="indefinite"
+                                          calcMode="spline"
+                                          keyTimes="0;.5;1"
+                                          keySplines=".45 0 .55 1;.45 0 .55 1"/>
+
+                        <g id="cm-mano-izq" class="cm-mano">
+                            <path d="M39 198 Q32 200 31 208 Q32 218 42 222 Q51 224 55 216 L55 207 Q48 199 39 198 Z"
+                                  fill="url(#cm-grad-cabeza)"
+                                  stroke="#596979"
+                                  stroke-width="2"/>
+
+                            <path d="M38 207 Q44 211 50 207"
+                                  fill="none"
+                                  stroke="#A6B4C3"
+                                  stroke-width="1.2"/>
+                        </g>
                     </g>
                 </g>
 
-                <g id="cm-cuerpo">
+                <g id="cm-brazo-der" class="cm-brazo">
+                    <path d="M134 158 Q146 158 153 170 L162 193 Q158 202 149 204 L136 179 L124 168 Z"
+                          fill="url(#cm-grad-traje)"
+                          stroke="#56697D"
+                          stroke-width="2"/>
 
-                    <g id="cm-pierna-izq" class="cm-pierna">
-                        <path d="M70 230 L94 230 L96 267 L88 280 L69 275 L67 250 Z"
-                              fill="url(#cm-grad-pantalon)"
-                              stroke="#6C7A89"
-                              stroke-width="2"/>
+                    <path d="M148 166 Q155 181 157 194"
+                          fill="none"
+                          stroke="#00E5FF"
+                          stroke-width="2.2"
+                          filter="url(#cm-glow)"/>
 
-                        <path d="M80 237 L78 269"
-                              stroke="#AAB8C8"
-                              stroke-width="1.2"/>
+                    <path d="M149 193 Q158 189 164 196 L164 207 Q158 214 149 210 L143 201 Z"
+                          fill="#0A0E18"
+                          stroke="#596979"
+                          stroke-width="2"/>
 
-                        <path d="M69 252 Q80 246 91 252 L90 266 Q80 271 70 266 Z"
-                              fill="#E4E8ED"
-                              stroke="#5E6D7C"
-                              stroke-width="2"/>
+                    <g>
+                        <animateTransform attributeName="transform"
+                                          type="rotate"
+                                          values="-16 158 198;18 158 198;-16 158 198"
+                                          dur="0.9s"
+                                          repeatCount="indefinite"
+                                          calcMode="spline"
+                                          keyTimes="0;.5;1"
+                                          keySplines=".45 0 .55 1;.45 0 .55 1"/>
 
-                        <path d="M72 254 Q80 250 88 254"
-                              fill="none"
-                              stroke="#00E5FF"
-                              stroke-width="1.4"
-                              filter="url(#cm-glow)"/>
-                    </g>
+                        <g id="cm-mano-der" class="cm-mano">
+                            <path d="M157 193 Q158 181 165 175 Q171 168 177 172 Q181 176 178 181 Q184 177 188 181 Q191 186 186 190 Q191 188 194 193 Q195 199 188 202 Q178 207 168 203 L158 200 Z"
+                                  fill="url(#cm-grad-cabeza)"
+                                  stroke="#596979"
+                                  stroke-width="2"/>
 
-                    <g id="cm-pierna-der" class="cm-pierna">
-                        <path d="M106 230 L130 230 L133 250 L131 275 L112 280 L104 267 Z"
-                              fill="url(#cm-grad-pantalon)"
-                              stroke="#6C7A89"
-                              stroke-width="2"/>
-
-                        <path d="M120 237 L122 269"
-                              stroke="#AAB8C8"
-                              stroke-width="1.2"/>
-
-                        <path d="M109 252 Q120 246 131 252 L130 266 Q120 271 110 266 Z"
-                              fill="#E4E8ED"
-                              stroke="#5E6D7C"
-                              stroke-width="2"/>
-
-                        <path d="M112 254 Q120 250 128 254"
-                              fill="none"
-                              stroke="#00E5FF"
-                              stroke-width="1.4"
-                              filter="url(#cm-glow)"/>
-                    </g>
-
-                    <g id="cm-botas" data-acc-slot="pies">
-                        <path d="M66 267 Q77 264 90 270 L93 283 Q92 290 83 293 L57 293 Q52 289 57 284 L66 278 Z"
-                              fill="url(#cm-grad-botas)"
-                              stroke="#4D6074"
-                              stroke-width="2"/>
-
-                        <path d="M107 270 Q120 264 134 267 L143 278 Q148 284 143 290 Q139 293 117 293 L107 289 Z"
-                              fill="url(#cm-grad-botas)"
-                              stroke="#4D6074"
-                              stroke-width="2"/>
-
-                        <path d="M62 283 Q75 278 89 283"
-                              fill="none"
-                              stroke="#00E5FF"
-                              stroke-width="2.2"
-                              filter="url(#cm-glow)"/>
-
-                        <path d="M111 283 Q124 278 140 283"
-                              fill="none"
-                              stroke="#00E5FF"
-                              stroke-width="2.2"
-                              filter="url(#cm-glow)"/>
-
-                        <path d="M57 290 Q74 294 90 289 M109 289 Q126 294 143 288"
-                              fill="none"
-                              stroke="#121A26"
-                              stroke-width="3"/>
-                    </g>
-
-                    <g id="cm-torso" data-acc-slot="torso">
-                        <path d="M65 148 Q100 137 135 148 L145 217 Q128 232 100 232 Q72 232 55 217 Z"
-                              fill="url(#cm-grad-traje)"
-                              stroke="#53657A"
-                              stroke-width="2.2"/>
-
-                        <path d="M72 151 L91 157 L100 171 L109 157 L128 151 L136 211 L119 220 L100 216 L81 220 L64 211 Z"
-                              fill="#0A1018"
-                              stroke="#00E5FF"
-                              stroke-width="2"/>
-
-                        <path d="M91 157 L100 171 L109 157 L106 207 L94 207 Z"
-                              fill="#05080E"
-                              stroke="#3A567F"
-                              stroke-width="1.3"/>
-
-                        <path d="M86 151 L100 168 L114 151 L108 146 L100 158 L92 146 Z"
-                              fill="#0F1A28"
-                              stroke="#8AA8D0"
-                              stroke-width="1.3"/>
-
-                        <g fill="#E0ECFF" stroke="#4A6080" stroke-width="1">
-                            <circle cx="100" cy="178" r="2"/>
-                            <circle cx="100" cy="188" r="2"/>
-                            <circle cx="100" cy="198" r="2"/>
+                            <path d="M178 181 L183 187 M187 190 L181 193 M174 202 L171 194"
+                                  fill="none"
+                                  stroke="#9DAAB7"
+                                  stroke-width="1.2"
+                                  stroke-linecap="round"/>
                         </g>
+                    </g>
+                </g>
 
-                        <g fill="none" stroke="#C7D9EE" stroke-width="1.2">
-                            <path d="M75 158 Q82 169 87 178"/>
-                            <path d="M125 158 Q118 169 113 178"/>
-                            <path d="M75 192 Q82 201 87 208"/>
-                            <path d="M125 192 Q118 201 113 208"/>
-                        </g>
+                <g id="cm-cinturon" data-acc-slot="cinturon">
+                    <path d="M64 218 Q100 226 136 218 L137 231 Q100 240 63 231 Z"
+                          fill="#05080E"
+                          stroke="#3E4E61"
+                          stroke-width="2"/>
 
-                        <path d="M67 151 Q60 179 65 210 M133 151 Q140 179 135 210"
-                              fill="none"
-                              stroke="#00E5FF"
-                              stroke-width="2.4"
-                              filter="url(#cm-glow)"/>
+                    <path d="M100 218 L105 226 L114 226 L107 232 L110 241 L100 235 L90 241 L93 232 L86 226 L95 226 Z"
+                          fill="#E8F4FF"
+                          stroke="#00E5FF"
+                          stroke-width="2"
+                          filter="url(#cm-glow)"/>
+                </g>
 
-                        <g>
-                            <animateTransform attributeName="transform"
-                                              type="scale"
-                                              values="1;1.05;1"
-                                              dur="2s"
-                                              repeatCount="indefinite"
-                                              additive="sum"/>
+                <g id="cm-cabeza-grupo">
 
-                            <path d="M100 181 L103 188 L111 188 L105 193 L108 201 L100 196 L92 201 L95 193 L89 188 L97 188 Z"
-                                  fill="#00E5FF"
-                                  filter="url(#cm-glow)">
+                    <g>
+                        <circle cx="45" cy="111" r="15"
+                                fill="#E7EBF0"
+                                stroke="#667687"
+                                stroke-width="2"/>
 
-                                <animate attributeName="opacity"
-                                         values=".85;1;.85"
-                                         dur="1.8s"
-                                         repeatCount="indefinite"/>
-                            </path>
-                        </g>
+                        <circle cx="155" cy="111" r="15"
+                                fill="#E7EBF0"
+                                stroke="#667687"
+                                stroke-width="2"/>
 
-                        <path d="M66 151 Q57 153 53 163 L64 171 L73 157 Z"
-                              fill="#0F1824"
-                              stroke="#00E5FF"
-                              stroke-width="1.6"/>
+                        <circle cx="45" cy="111" r="8"
+                                fill="#111B2A"
+                                stroke="#00E5FF"
+                                stroke-width="1.5"
+                                filter="url(#cm-glow)"/>
 
-                        <path d="M134 151 Q143 153 147 163 L136 171 L127 157 Z"
-                              fill="#0F1824"
-                              stroke="#00E5FF"
-                              stroke-width="1.6"/>
+                        <circle cx="155" cy="111" r="8"
+                                fill="#111B2A"
+                                stroke="#00E5FF"
+                                stroke-width="1.5"
+                                filter="url(#cm-glow)"/>
                     </g>
 
-                    <!-- BRAZO IZQUIERDO + MANO QUE SALUDA -->
-                    <g id="cm-brazo-izq" class="cm-brazo">
-                        <path d="M66 158 Q54 158 47 170 L39 199 Q43 207 52 208 L64 179 L76 168 Z"
-                              fill="url(#cm-grad-traje)"
-                              stroke="#56697D"
-                              stroke-width="2"/>
+                    <rect x="48"
+                          y="68"
+                          width="104"
+                          height="96"
+                          rx="40"
+                          fill="url(#cm-grad-cabeza)"
+                          stroke="#687888"
+                          stroke-width="2.5"/>
 
-                        <path d="M52 166 Q45 182 45 198"
-                              fill="none"
-                              stroke="#00E5FF"
-                              stroke-width="2.2"
-                              filter="url(#cm-glow)"/>
+                    <path d="M66 90 Q76 84 87 86"
+                          fill="none"
+                          stroke="#FFFFFF"
+                          stroke-width="3"
+                          opacity=".75"/>
 
-                        <g>
-                            <animateTransform attributeName="transform"
-                                              type="rotate"
-                                              values="10 45 200;-12 45 200;10 45 200"
-                                              dur="1.3s"
-                                              begin="0.3s"
-                                              repeatCount="indefinite"
-                                              calcMode="spline"
-                                              keyTimes="0;.5;1"
-                                              keySplines=".45 0 .55 1;.45 0 .55 1"/>
+                    <g id="cm-ojo-izq">
+                        <ellipse cx="73" cy="111" rx="16" ry="21"
+                                 fill="url(#cm-grad-ojo)"
+                                 stroke="#1A2742"
+                                 stroke-width="2"/>
 
-                            <g id="cm-mano-izq" class="cm-mano">
-                                <path d="M39 198 Q32 200 31 208 Q32 218 42 222 Q51 224 55 216 L55 207 Q48 199 39 198 Z"
-                                      fill="url(#cm-grad-cabeza)"
-                                      stroke="#596979"
-                                      stroke-width="2"/>
+                        <g clip-path="url(#cm-clip-ojo-izq)">
+                            <g>
+                                <animateTransform attributeName="transform"
+                                                  type="rotate"
+                                                  from="0 73 111"
+                                                  to="360 73 111"
+                                                  dur="2.6s"
+                                                  repeatCount="indefinite"/>
 
-                                <path d="M38 207 Q44 211 50 207"
+                                <path d="${espiral(73, 111, 0)}"
                                       fill="none"
-                                      stroke="#A6B4C3"
-                                      stroke-width="1.2"/>
+                                      stroke="#00E5FF"
+                                      stroke-width="2.2"
+                                      stroke-linecap="round"
+                                      stroke-linejoin="round"
+                                      filter="url(#cm-glow)"/>
+
+                                <path d="${espiral(73, 111, Math.PI)}"
+                                      fill="none"
+                                      stroke="#E9A8FF"
+                                      stroke-width="1.6"
+                                      stroke-linecap="round"
+                                      stroke-linejoin="round"
+                                      opacity=".9"/>
                             </g>
                         </g>
+
+                        <ellipse cx="73" cy="111" rx="16" ry="21"
+                                 fill="none"
+                                 stroke="#00E5FF"
+                                 stroke-width="1.2"
+                                 opacity=".7"
+                                 filter="url(#cm-glow)">
+
+                            <animate attributeName="opacity"
+                                     values=".35;.9;.35"
+                                     dur="1.6s"
+                                     repeatCount="indefinite"/>
+                        </ellipse>
+
+                        <circle cx="67" cy="105" r="3" fill="#FFFFFF"/>
+                        <circle cx="78" cy="116" r="2" fill="#E9A8FF"/>
+                        <circle cx="70" cy="121" r="1.5" fill="#FFFFFF"/>
+
+                        <ellipse id="cm-pupila-izq"
+                                 cx="73"
+                                 cy="111"
+                                 rx="3.2"
+                                 ry="4.2"
+                                 fill="#FFFFFF"
+                                 filter="url(#cm-glow)">
+
+                            <animate attributeName="opacity"
+                                     values=".75;1;.75"
+                                     dur="1.4s"
+                                     repeatCount="indefinite"/>
+                        </ellipse>
                     </g>
 
-                    <!-- BRAZO DERECHO + MANO LEVANTADA -->
-                    <g id="cm-brazo-der" class="cm-brazo">
-                        <path d="M134 158 Q146 158 153 170 L162 193 Q158 202 149 204 L136 179 L124 168 Z"
-                              fill="url(#cm-grad-traje)"
-                              stroke="#56697D"
-                              stroke-width="2"/>
+                    <g id="cm-ojo-der">
+                        <ellipse cx="127" cy="111" rx="16" ry="21"
+                                 fill="url(#cm-grad-ojo)"
+                                 stroke="#1A2742"
+                                 stroke-width="2"/>
 
-                        <path d="M148 166 Q155 181 157 194"
-                              fill="none"
-                              stroke="#00E5FF"
-                              stroke-width="2.2"
-                              filter="url(#cm-glow)"/>
+                        <g clip-path="url(#cm-clip-ojo-der)">
+                            <g>
+                                <animateTransform attributeName="transform"
+                                                  type="rotate"
+                                                  from="0 127 111"
+                                                  to="360 127 111"
+                                                  dur="2.6s"
+                                                  repeatCount="indefinite"/>
 
-                        <path d="M149 193 Q158 189 164 196 L164 207 Q158 214 149 210 L143 201 Z"
-                              fill="#0A0E18"
-                              stroke="#596979"
-                              stroke-width="2"/>
-
-                        <g>
-                            <animateTransform attributeName="transform"
-                                              type="rotate"
-                                              values="-16 158 198;18 158 198;-16 158 198"
-                                              dur="0.9s"
-                                              repeatCount="indefinite"
-                                              calcMode="spline"
-                                              keyTimes="0;.5;1"
-                                              keySplines=".45 0 .55 1;.45 0 .55 1"/>
-
-                            <g id="cm-mano-der" class="cm-mano">
-                                <path d="M157 193 Q158 181 165 175 Q171 168 177 172 Q181 176 178 181 Q184 177 188 181 Q191 186 186 190 Q191 188 194 193 Q195 199 188 202 Q178 207 168 203 L158 200 Z"
-                                      fill="url(#cm-grad-cabeza)"
-                                      stroke="#596979"
-                                      stroke-width="2"/>
-
-                                <path d="M178 181 L183 187 M187 190 L181 193 M174 202 L171 194"
+                                <path d="${espiral(127, 111, 0)}"
                                       fill="none"
-                                      stroke="#9DAAB7"
-                                      stroke-width="1.2"
-                                      stroke-linecap="round"/>
+                                      stroke="#00E5FF"
+                                      stroke-width="2.2"
+                                      stroke-linecap="round"
+                                      stroke-linejoin="round"
+                                      filter="url(#cm-glow)"/>
+
+                                <path d="${espiral(127, 111, Math.PI)}"
+                                      fill="none"
+                                      stroke="#E9A8FF"
+                                      stroke-width="1.6"
+                                      stroke-linecap="round"
+                                      stroke-linejoin="round"
+                                      opacity=".9"/>
                             </g>
                         </g>
+
+                        <ellipse cx="127" cy="111" rx="16" ry="21"
+                                 fill="none"
+                                 stroke="#00E5FF"
+                                 stroke-width="1.2"
+                                 opacity=".7"
+                                 filter="url(#cm-glow)">
+
+                            <animate attributeName="opacity"
+                                     values=".35;.9;.35"
+                                     dur="1.6s"
+                                     repeatCount="indefinite"
+                                     begin="0.4s"/>
+                        </ellipse>
+
+                        <circle cx="121" cy="105" r="3" fill="#FFFFFF"/>
+                        <circle cx="132" cy="116" r="2" fill="#E9A8FF"/>
+                        <circle cx="124" cy="121" r="1.5" fill="#FFFFFF"/>
+
+                        <ellipse id="cm-pupila-der"
+                                 cx="127"
+                                 cy="111"
+                                 rx="3.2"
+                                 ry="4.2"
+                                 fill="#FFFFFF"
+                                 filter="url(#cm-glow)">
+
+                            <animate attributeName="opacity"
+                                     values=".75;1;.75"
+                                     dur="1.4s"
+                                     repeatCount="indefinite"
+                                     begin="0.3s"/>
+                        </ellipse>
                     </g>
 
-                    <g id="cm-cinturon" data-acc-slot="cinturon">
-                        <path d="M64 218 Q100 226 136 218 L137 231 Q100 240 63 231 Z"
-                              fill="#05080E"
-                              stroke="#3E4E61"
-                              stroke-width="2"/>
+                    <path id="cm-boca"
+                          class="cm-pet-boca"
+                          d="M78 137 Q100 150 122 137"
+                          fill="none"
+                          stroke="#0A0A0A"
+                          stroke-width="3"/>
+                </g>
 
-                        <path d="M100 218 L105 226 L114 226 L107 232 L110 241 L100 235 L90 241 L93 232 L86 226 L95 226 Z"
-                              fill="#E8F4FF"
-                              stroke="#00E5FF"
-                              stroke-width="2"
-                              filter="url(#cm-glow)"/>
-                    </g>
+                <g id="cm-sombrero" data-acc-slot="sombrero">
 
-                    <g id="cm-cabeza-grupo">
+                    <g transform="rotate(-4 100 79)">
 
-                        <g>
-                            <circle cx="45" cy="111" r="15"
-                                    fill="#E7EBF0"
-                                    stroke="#667687"
-                                    stroke-width="2"/>
+                        <ellipse cx="100"
+                                 cy="79"
+                                 rx="91"
+                                 ry="15"
+                                 fill="url(#cm-grad-sombrero)"
+                                 stroke="#4A5C72"
+                                 stroke-width="2.5"/>
 
-                            <circle cx="155" cy="111" r="15"
-                                    fill="#E7EBF0"
-                                    stroke="#667687"
-                                    stroke-width="2"/>
+                        <ellipse cx="100"
+                                 cy="79"
+                                 rx="79"
+                                 ry="10"
+                                 fill="url(#cm-patron-sombrero)"
+                                 opacity=".8"/>
 
-                            <circle cx="45" cy="111" r="8"
-                                    fill="#111B2A"
-                                    stroke="#00E5FF"
-                                    stroke-width="1.5"
-                                    filter="url(#cm-glow)"/>
+                        <ellipse cx="100"
+                                 cy="79"
+                                 rx="90"
+                                 ry="14"
+                                 fill="none"
+                                 stroke="#00E5FF"
+                                 stroke-width="2.6"
+                                 filter="url(#cm-glow)"/>
 
-                            <circle cx="155" cy="111" r="8"
-                                    fill="#111B2A"
-                                    stroke="#00E5FF"
-                                    stroke-width="1.5"
-                                    filter="url(#cm-glow)"/>
-                        </g>
+                        <ellipse cx="100"
+                                 cy="82"
+                                 rx="81"
+                                 ry="10"
+                                 fill="none"
+                                 stroke="#4DA8FF"
+                                 stroke-width="1.4"
+                                 opacity=".8"/>
 
-                        <rect x="48"
-                              y="68"
-                              width="104"
-                              height="96"
-                              rx="40"
-                              fill="url(#cm-grad-cabeza)"
-                              stroke="#687888"
+                        <path d="
+                            M70 79
+                            Q68 50 75 31
+                            Q82 12 100 11
+                            Q118 12 125 31
+                            Q132 50 130 79
+                            Q100 87 70 79
+                            Z"
+                              fill="url(#cm-grad-sombrero)"
+                              stroke="#4A5C72"
                               stroke-width="2.5"/>
 
-                        <path d="M66 90 Q76 84 87 86"
+                        <path d="
+                            M70 72
+                            Q100 80 130 72
+                            L130 79
+                            Q100 87 70 79
+                            Z"
+                              fill="#03060C"
+                              opacity=".72"/>
+
+                        <path d="M79 22 Q76 42 79 65"
                               fill="none"
                               stroke="#FFFFFF"
-                              stroke-width="3"
-                              opacity=".75"/>
+                              stroke-width="2"
+                              opacity=".24"
+                              stroke-linecap="round"/>
 
-                        <!-- OJO IZQUIERDO -->
-                        <g id="cm-ojo-izq">
-                            <ellipse cx="73" cy="111" rx="16" ry="21"
-                                     fill="url(#cm-grad-ojo)"
-                                     stroke="#1A2742"
-                                     stroke-width="2"/>
-
-                            <g clip-path="url(#cm-clip-ojo-izq)">
-                                <g>
-                                    <animateTransform attributeName="transform"
-                                                      type="rotate"
-                                                      from="0 73 111"
-                                                      to="360 73 111"
-                                                      dur="2.6s"
-                                                      repeatCount="indefinite"/>
-
-                                    <path d="${espiral(73, 111, 0)}"
-                                          fill="none"
-                                          stroke="#00E5FF"
-                                          stroke-width="2.2"
-                                          stroke-linecap="round"
-                                          stroke-linejoin="round"
-                                          filter="url(#cm-glow)"/>
-
-                                    <path d="${espiral(73, 111, Math.PI)}"
-                                          fill="none"
-                                          stroke="#E9A8FF"
-                                          stroke-width="1.6"
-                                          stroke-linecap="round"
-                                          stroke-linejoin="round"
-                                          opacity=".9"/>
-                                </g>
-                            </g>
-
-                            <ellipse cx="73" cy="111" rx="16" ry="21"
-                                     fill="none"
-                                     stroke="#00E5FF"
-                                     stroke-width="1.2"
-                                     opacity=".7"
-                                     filter="url(#cm-glow)">
-
-                                <animate attributeName="opacity"
-                                         values=".35;.9;.35"
-                                         dur="1.6s"
-                                         repeatCount="indefinite"/>
-                            </ellipse>
-
-                            <circle cx="67" cy="105" r="3" fill="#FFFFFF"/>
-                            <circle cx="78" cy="116" r="2" fill="#E9A8FF"/>
-                            <circle cx="70" cy="121" r="1.5" fill="#FFFFFF"/>
-
-                            <ellipse id="cm-pupila-izq"
-                                     cx="73"
-                                     cy="111"
-                                     rx="3.2"
-                                     ry="4.2"
-                                     fill="#FFFFFF"
-                                     filter="url(#cm-glow)">
-
-                                <animate attributeName="opacity"
-                                         values=".75;1;.75"
-                                         dur="1.4s"
-                                         repeatCount="indefinite"/>
-                            </ellipse>
-                        </g>
-
-                        <!-- OJO DERECHO -->
-                        <g id="cm-ojo-der">
-                            <ellipse cx="127" cy="111" rx="16" ry="21"
-                                     fill="url(#cm-grad-ojo)"
-                                     stroke="#1A2742"
-                                     stroke-width="2"/>
-
-                            <g clip-path="url(#cm-clip-ojo-der)">
-                                <g>
-                                    <animateTransform attributeName="transform"
-                                                      type="rotate"
-                                                      from="0 127 111"
-                                                      to="360 127 111"
-                                                      dur="2.6s"
-                                                      repeatCount="indefinite"/>
-
-                                    <path d="${espiral(127, 111, 0)}"
-                                          fill="none"
-                                          stroke="#00E5FF"
-                                          stroke-width="2.2"
-                                          stroke-linecap="round"
-                                          stroke-linejoin="round"
-                                          filter="url(#cm-glow)"/>
-
-                                    <path d="${espiral(127, 111, Math.PI)}"
-                                          fill="none"
-                                          stroke="#E9A8FF"
-                                          stroke-width="1.6"
-                                          stroke-linecap="round"
-                                          stroke-linejoin="round"
-                                          opacity=".9"/>
-                                </g>
-                            </g>
-
-                            <ellipse cx="127" cy="111" rx="16" ry="21"
-                                     fill="none"
-                                     stroke="#00E5FF"
-                                     stroke-width="1.2"
-                                     opacity=".7"
-                                     filter="url(#cm-glow)">
-
-                                <animate attributeName="opacity"
-                                         values=".35;.9;.35"
-                                         dur="1.6s"
-                                         repeatCount="indefinite"
-                                         begin="0.4s"/>
-                            </ellipse>
-
-                            <circle cx="121" cy="105" r="3" fill="#FFFFFF"/>
-                            <circle cx="132" cy="116" r="2" fill="#E9A8FF"/>
-                            <circle cx="124" cy="121" r="1.5" fill="#FFFFFF"/>
-
-                            <ellipse id="cm-pupila-der"
-                                     cx="127"
-                                     cy="111"
-                                     rx="3.2"
-                                     ry="4.2"
-                                     fill="#FFFFFF"
-                                     filter="url(#cm-glow)">
-
-                                <animate attributeName="opacity"
-                                         values=".75;1;.75"
-                                         dur="1.4s"
-                                         repeatCount="indefinite"
-                                         begin="0.3s"/>
-                            </ellipse>
-                        </g>
-
-                        <path id="cm-boca"
-                              class="cm-pet-boca"
-                              d="M78 137 Q100 150 122 137"
+                        <path d="M84 20 Q81 39 83 54"
                               fill="none"
-                              stroke="#0A0A0A"
-                              stroke-width="3"/>
-                    </g>
+                              stroke="#8FA5BF"
+                              stroke-width="1"
+                              opacity=".22"
+                              stroke-linecap="round"/>
 
-                    <!-- ====================================================
-                         SOMBRERO v2.7 — TOTALMENTE ASENTADO
-                         
-                         IMPORTANTE:
-                         - La cabeza comienza en y=68.
-                         - El ala ahora está centrada en y=79.
-                         - El ala entra ligeramente en la cabeza.
-                         - La copa termina exactamente en y=79.
-                         - La copa es más ancha y robusta.
-                         - Esto elimina visualmente el efecto de sombrero flotando.
-                         ==================================================== -->
-                    <g id="cm-sombrero" data-acc-slot="sombrero">
+                        <path d="M100 19
+                                 L103 27
+                                 L112 28
+                                 L105 34
+                                 L107 43
+                                 L100 38
+                                 L93 43
+                                 L95 34
+                                 L88 28
+                                 L97 27
+                                 Z"
+                              fill="none"
+                              stroke="#8FA5BF"
+                              stroke-width="1.4"
+                              stroke-linejoin="round"
+                              opacity=".95"/>
 
-                        <g transform="rotate(-4 100 79)">
+                        <circle cx="100"
+                                cy="30"
+                                r="1.8"
+                                fill="#00E5FF"
+                                filter="url(#cm-glow)">
 
-                            <!-- =================================================
-                                 ALA PRINCIPAL
-                                 El centro baja de 72 → 79 para que repose
-                                 físicamente sobre la parte superior de la cabeza.
-                                 ================================================= -->
-                            <ellipse cx="100"
-                                     cy="79"
-                                     rx="91"
-                                     ry="15"
-                                     fill="url(#cm-grad-sombrero)"
-                                     stroke="#4A5C72"
-                                     stroke-width="2.5"/>
+                            <animate attributeName="opacity"
+                                     values=".6;1;.6"
+                                     dur="2s"
+                                     repeatCount="indefinite"/>
+                        </circle>
 
-                            <!-- Patrón interno del ala -->
-                            <ellipse cx="100"
-                                     cy="79"
-                                     rx="79"
-                                     ry="10"
-                                     fill="url(#cm-patron-sombrero)"
-                                     opacity=".8"/>
+                        <path d="
+                            M70 67
+                            Q100 75
+                            130 67
+                            L130 79
+                            Q100 87
+                            70 79
+                            Z"
+                              fill="#05080E"
+                              stroke="#00E5FF"
+                              stroke-width="1.6"/>
 
-                            <!-- Borde luminoso exterior -->
-                            <ellipse cx="100"
-                                     cy="79"
-                                     rx="90"
-                                     ry="14"
-                                     fill="none"
-                                     stroke="#00E5FF"
-                                     stroke-width="2.6"
-                                     filter="url(#cm-glow)"/>
+                        <path d="M71 68 Q100 76 129 68"
+                              fill="none"
+                              stroke="#6CEFFF"
+                              stroke-width=".9"
+                              opacity=".65"/>
 
-                            <!-- Línea secundaria del ala -->
-                            <ellipse cx="100"
-                                     cy="82"
-                                     rx="81"
-                                     ry="10"
-                                     fill="none"
-                                     stroke="#4DA8FF"
-                                     stroke-width="1.4"
-                                     opacity=".8"/>
+                        <g fill="#FFFFFF" filter="url(#cm-glow)">
 
-                            <!-- =================================================
-                                 COPA
-                                 Ahora termina exactamente en y=79.
-                                 Más ancha para que se vea colocada sobre la cabeza.
-                                 ================================================= -->
-                            <path d="
-                                M70 79
-                                Q68 50 75 31
-                                Q82 12 100 11
-                                Q118 12 125 31
-                                Q132 50 130 79
-                                Q100 87 70 79
-                                Z"
-                                  fill="url(#cm-grad-sombrero)"
-                                  stroke="#4A5C72"
-                                  stroke-width="2.5"/>
-
-                            <!-- Sombra inferior de la copa para dar unión con el ala -->
-                            <path d="
-                                M70 72
-                                Q100 80 130 72
-                                L130 79
-                                Q100 87 70 79
-                                Z"
-                                  fill="#03060C"
-                                  opacity=".72"/>
-
-                            <!-- Brillo de la copa -->
-                            <path d="M79 22 Q76 42 79 65"
-                                  fill="none"
-                                  stroke="#FFFFFF"
-                                  stroke-width="2"
-                                  opacity=".24"
-                                  stroke-linecap="round"/>
-
-                            <!-- Segundo brillo suave -->
-                            <path d="M84 20 Q81 39 83 54"
-                                  fill="none"
-                                  stroke="#8FA5BF"
-                                  stroke-width="1"
-                                  opacity=".22"
-                                  stroke-linecap="round"/>
-
-                            <!-- Estrella de la copa -->
-                            <path d="M100 19
-                                     L103 27
-                                     L112 28
-                                     L105 34
-                                     L107 43
-                                     L100 38
-                                     L93 43
-                                     L95 34
-                                     L88 28
-                                     L97 27
-                                     Z"
-                                  fill="none"
-                                  stroke="#8FA5BF"
-                                  stroke-width="1.4"
-                                  stroke-linejoin="round"
-                                  opacity=".95"/>
-
-                            <circle cx="100"
-                                    cy="30"
-                                    r="1.8"
-                                    fill="#00E5FF"
-                                    filter="url(#cm-glow)">
-
+                            <circle cx="26"
+                                    cy="79"
+                                    r="1.4">
                                 <animate attributeName="opacity"
-                                         values=".6;1;.6"
+                                         values="1;0.4;1"
                                          dur="2s"
                                          repeatCount="indefinite"/>
                             </circle>
 
-                            <!-- =================================================
-                                 BANDA
-                                 Se adapta a la nueva base de la copa.
-                                 ================================================= -->
-                            <path d="
-                                M70 67
-                                Q100 75
-                                130 67
-                                L130 79
-                                Q100 87
-                                70 79
-                                Z"
-                                  fill="#05080E"
-                                  stroke="#00E5FF"
-                                  stroke-width="1.6"/>
+                            <circle cx="174"
+                                    cy="79"
+                                    r="1.4">
+                                <animate attributeName="opacity"
+                                         values="1;0.4;1"
+                                         dur="2.3s"
+                                         repeatCount="indefinite"
+                                         begin="0.5s"/>
+                            </circle>
 
-                            <path d="M71 68 Q100 76 129 68"
-                                  fill="none"
-                                  stroke="#6CEFFF"
-                                  stroke-width=".9"
-                                  opacity=".65"/>
+                            <circle cx="52"
+                                    cy="87"
+                                    r="1.1">
+                                <animate attributeName="opacity"
+                                         values="1;0.4;1"
+                                         dur="2.6s"
+                                         repeatCount="indefinite"
+                                         begin="1s"/>
+                            </circle>
 
-                            <!-- Estrellitas del ala -->
-                            <g fill="#FFFFFF" filter="url(#cm-glow)">
+                            <circle cx="148"
+                                    cy="87"
+                                    r="1.1">
+                                <animate attributeName="opacity"
+                                         values="1;0.4;1"
+                                         dur="2.9s"
+                                         repeatCount="indefinite"
+                                         begin="1.5s"/>
+                            </circle>
 
-                                <circle cx="26"
-                                        cy="79"
-                                        r="1.4">
-                                    <animate attributeName="opacity"
-                                             values="1;0.4;1"
-                                             dur="2s"
-                                             repeatCount="indefinite"/>
-                                </circle>
+                            <circle cx="60"
+                                    cy="73"
+                                    r="1">
+                                <animate attributeName="opacity"
+                                         values="1;0.4;1"
+                                         dur="2.2s"
+                                         repeatCount="indefinite"
+                                         begin="0.3s"/>
+                            </circle>
 
-                                <circle cx="174"
-                                        cy="79"
-                                        r="1.4">
-                                    <animate attributeName="opacity"
-                                             values="1;0.4;1"
-                                             dur="2.3s"
-                                             repeatCount="indefinite"
-                                             begin="0.5s"/>
-                                </circle>
-
-                                <circle cx="52"
-                                        cy="87"
-                                        r="1.1">
-                                    <animate attributeName="opacity"
-                                             values="1;0.4;1"
-                                             dur="2.6s"
-                                             repeatCount="indefinite"
-                                             begin="1s"/>
-                                </circle>
-
-                                <circle cx="148"
-                                        cy="87"
-                                        r="1.1">
-                                    <animate attributeName="opacity"
-                                             values="1;0.4;1"
-                                             dur="2.9s"
-                                             repeatCount="indefinite"
-                                             begin="1.5s"/>
-                                </circle>
-
-                                <circle cx="60"
-                                        cy="73"
-                                        r="1">
-                                    <animate attributeName="opacity"
-                                             values="1;0.4;1"
-                                             dur="2.2s"
-                                             repeatCount="indefinite"
-                                             begin="0.3s"/>
-                                </circle>
-
-                                <circle cx="140"
-                                        cy="73"
-                                        r="1">
-                                    <animate attributeName="opacity"
-                                             values="1;0.4;1"
-                                             dur="3.2s"
-                                             repeatCount="indefinite"
-                                             begin="0.8s"/>
-                                </circle>
-
-                            </g>
+                            <circle cx="140"
+                                    cy="73"
+                                    r="1">
+                                <animate attributeName="opacity"
+                                         values="1;0.4;1"
+                                         dur="3.2s"
+                                         repeatCount="indefinite"
+                                         begin="0.8s"/>
+                            </circle>
 
                         </g>
-                    </g>
 
+                    </g>
                 </g>
 
-                <g id="cm-acc-layer" data-acc-slot="accesorios"></g>
+            </g>
 
-            </svg>
-        </div>
-        `;
+            <g id="cm-acc-layer" data-acc-slot="accesorios"></g>
 
-        document.body.appendChild(container);
+        </svg>
+    </div>
+    `;
 
-        bubble = document.getElementById('cm-bubble');
-        bocaEl = document.getElementById('cm-boca');
+    document.body.appendChild(container);
 
-        const avatar = document.getElementById('cm-avatar');
+    bubble = document.getElementById('cm-bubble');
+    bocaEl = document.getElementById('cm-boca');
 
-        avatar.addEventListener('click', async function() {
-            if (hasMoved) {
-                hasMoved = false;
-                return;
-            }
+    const avatar = document.getElementById('cm-avatar');
 
-            const ok = await verificarTerminos();
-            if (!ok) return;
-
-            onAvatarTap();
-        });
-
-        avatar.addEventListener('pointerdown', function(e) {
-            isDragging = true;
+    avatar.addEventListener('click', async function() {
+        if (hasMoved) {
             hasMoved = false;
-            dragStartX = e.clientX;
-            dragStartY = e.clientY;
+            return;
+        }
 
+        const ok = await verificarTerminos();
+        if (!ok) return;
+
+        onAvatarTap();
+    });
+
+    avatar.addEventListener('pointerdown', function(e) {
+        isDragging = true;
+        hasMoved = false;
+        dragStartX = e.clientX;
+        dragStartY = e.clientY;
+
+        try {
+            const rect = container.getBoundingClientRect();
+            posStartX = rect.left;
+            posStartY = rect.top;
+        } catch (err) {
+            posStartX = 0;
+            posStartY = 0;
+        }
+
+        try {
+            avatar.setPointerCapture(e.pointerId);
+        } catch (err) {}
+
+        container.classList.add('cm-dragging');
+        e.preventDefault();
+    });
+
+    avatar.addEventListener('pointermove', function(e) {
+        if (!isDragging) return;
+
+        const dx = e.clientX - dragStartX;
+        const dy = e.clientY - dragStartY;
+
+        if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+            hasMoved = true;
+        }
+
+        if (!hasMoved) return;
+
+        const porcentaje = (config.tamano != null ? config.tamano : 100) / 100;
+        const ancho = Math.round(90 * porcentaje);
+        const alto = Math.round(130 * porcentaje);
+
+        let newX = posStartX + dx;
+        let newY = posStartY + dy;
+
+        const maxX = window.innerWidth - ancho;
+        const maxY = window.innerHeight - alto;
+
+        newX = Math.max(0, Math.min(maxX, newX));
+        newY = Math.max(0, Math.min(maxY, newY));
+
+        container.style.left = newX + 'px';
+        container.style.top = newY + 'px';
+        container.style.right = 'auto';
+        container.style.bottom = 'auto';
+    });
+
+    avatar.addEventListener('pointerup', function(e) {
+        if (!isDragging) return;
+
+        isDragging = false;
+        container.classList.remove('cm-dragging');
+
+        try {
+            avatar.releasePointerCapture(e.pointerId);
+        } catch (err) {}
+
+        if (hasMoved) {
             try {
                 const rect = container.getBoundingClientRect();
-                posStartX = rect.left;
-                posStartY = rect.top;
-            } catch (err) {
-                posStartX = 0;
-                posStartY = 0;
-            }
-
-            try {
-                avatar.setPointerCapture(e.pointerId);
+                config.posicion_x = rect.left;
+                config.posicion_y = rect.top;
+                guardarConfig();
             } catch (err) {}
+        }
+    });
 
-            container.classList.add('cm-dragging');
-            e.preventDefault();
-        });
+    avatar.addEventListener('pointercancel', function() {
+        isDragging = false;
+        container.classList.remove('cm-dragging');
+    });
 
-        avatar.addEventListener('pointermove', function(e) {
-            if (!isDragging) return;
+    renderAccesoriosEnAvatar();
+    aplicarModo();
+    aplicarTamano();
+    aplicarResonancia();
+    cambiarVisema('REST');
 
-            const dx = e.clientX - dragStartX;
-            const dy = e.clientY - dragStartY;
+    (async function() {
+        const terminosOk = await verificarTerminos();
 
-            if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
-                hasMoved = true;
-            }
+        if (terminosOk) {
+            setTimeout(function() {
+                if (window.CapitanMaizAnim &&
+                    typeof window.CapitanMaizAnim.iniciar === 'function') {
+                    window.CapitanMaizAnim.iniciar();
+                }
+            }, 500);
+        }
+    })();
 
-            if (!hasMoved) return;
-
-            const porcentaje = (config.tamano != null ? config.tamano : 100) / 100;
-            const ancho = Math.round(90 * porcentaje);
-            const alto = Math.round(130 * porcentaje);
-
-            let newX = posStartX + dx;
-            let newY = posStartY + dy;
-
-            const maxX = window.innerWidth - ancho;
-            const maxY = window.innerHeight - alto;
-
-            newX = Math.max(0, Math.min(maxX, newX));
-            newY = Math.max(0, Math.min(maxY, newY));
-
-            container.style.left = newX + 'px';
-            container.style.top = newY + 'px';
-            container.style.right = 'auto';
-            container.style.bottom = 'auto';
-        });
-
-        avatar.addEventListener('pointerup', function(e) {
-            if (!isDragging) return;
-
-            isDragging = false;
-            container.classList.remove('cm-dragging');
-
-            try {
-                avatar.releasePointerCapture(e.pointerId);
-            } catch (err) {}
-
-            if (hasMoved) {
-                try {
-                    const rect = container.getBoundingClientRect();
-                    config.posicion_x = rect.left;
-                    config.posicion_y = rect.top;
-                    guardarConfig();
-                } catch (err) {}
-            }
-        });
-
-        avatar.addEventListener('pointercancel', function() {
-            isDragging = false;
-            container.classList.remove('cm-dragging');
-        });
-
-        renderAccesoriosEnAvatar();
-        aplicarModo();
-        aplicarTamano();
-        aplicarResonancia();
-        cambiarVisema('REST');
-
-        (async function() {
-            const terminosOk = await verificarTerminos();
-
-            if (terminosOk) {
-                setTimeout(function() {
-                    if (window.CapitanMaizAnim &&
-                        typeof window.CapitanMaizAnim.iniciar === 'function') {
-                        window.CapitanMaizAnim.iniciar();
-                    }
-                }, 500);
-            }
-        })();
-
-        log('Widget v2.7 creado · sombrero totalmente asentado · ojos remolino · manos saludando · capa al viento');
-    }
-
+    log('Widget v2.7 creado · sombrero totalmente asentado · ojos remolino · manos saludando · capa al viento');
+}
     function setEstado(e) {
         if (container) {
             container.setAttribute('data-estado', e);
