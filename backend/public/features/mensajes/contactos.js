@@ -17,7 +17,7 @@
    - ✅ Sin memory leaks (cleanup de observers)
    - ✅ LOCK GLOBAL: evita cargas simultáneas
    - ✅ Contador online proporcional
-   - ✅ v6: Clic en tarjeta abre mensaje directo
+   - ✅ v6: Clic en cualquier parte de la tarjeta abre el mensaje
 
    Tablas/vistas:
    - public.contactos
@@ -203,7 +203,7 @@
     window.showToast = showToast;
 
     /* ============================================================
-       SESIÓN CACHEADa
+       SESIÓN CACHEADa — evita round-trips a Supabase Auth
        ============================================================ */
 
     async function getSession() {
@@ -434,18 +434,7 @@
             });
         }
 
-        // Event delegation — botones de contactos
-        const lista =
-            document.getElementById('contactosList');
-
-        if (lista) {
-            lista.addEventListener(
-                'click',
-                manejarClickListaContactos
-            );
-        }
-
-        // Event delegation — resultados búsqueda
+        // ✅ v6: Event delegation para los resultados de búsqueda del modal
         const resultados =
             document.getElementById('resultadosBusqueda');
 
@@ -493,47 +482,8 @@
     }
 
     /* ============================================================
-       EVENT DELEGATION
+       EVENT DELEGATION (solo para el modal de búsqueda)
        ============================================================ */
-
-    /**
-     * ✅ v6 — Maneja clics en la lista de contactos.
-     *
-     * Prioridad:
-     * 1. Si el clic fue en un botón con [data-action], ejecuta esa acción.
-     * 2. Si el clic fue en cualquier otra parte de la tarjeta, abre el chat.
-     */
-    function manejarClickListaContactos(event) {
-        const boton =
-            event.target.closest('button[data-action]');
-
-        // Si el clic fue en un botón de acción, ejecutar su lógica
-        if (boton) {
-            const accion = boton.dataset.action;
-            const id = boton.dataset.id || '';
-
-            if (accion === 'mensaje') return abrirMensaje(id);
-            if (accion === 'favorito') {
-                return toggleFavorito(
-                    id,
-                    boton.dataset.value === 'true'
-                );
-            }
-            if (accion === 'bloquear') return bloquearContacto(id);
-            if (accion === 'eliminar') return eliminarContacto(id);
-            return;
-        }
-
-        // ✅ NUEVO: Si no fue un botón, buscar la tarjeta completa
-        const tarjeta = event.target.closest('.contacto-card');
-        if (!tarjeta) return;
-
-        const contactoId = tarjeta.dataset.contactoId;
-        if (!contactoId) return;
-
-        // Abrir el chat con ese contacto
-        abrirMensaje(contactoId);
-    }
 
     function manejarClickResultadosBusqueda(event) {
         const boton = event.target.closest(
@@ -547,9 +497,13 @@
 
     /* ============================================================
        ✅ CARGAR CONTACTOS (PAGINADO) — CON LOCK GLOBAL
+       ============================================================
+       El lock `state.cargando` evita que dos cargas corran a la
+       vez, sea cual sea el origen (reset o scroll infinito).
        ============================================================ */
 
     async function cargarContactos({ reset = false } = {}) {
+        /* ✅ LOCK GLOBAL */
         if (state.cargando) return;
 
         const client = sb();
@@ -569,6 +523,7 @@
             return;
         }
 
+        /* ✅ Activar lock */
         state.cargando = true;
 
         if (reset) {
@@ -589,6 +544,7 @@
 
             const hasta = desde + CONFIG.PAGE_SIZE - 1;
 
+            // 1) Contar total (solo en el reset)
             if (reset) {
                 const { count } = await withRetry(
                     () =>
@@ -605,6 +561,7 @@
                 state.totalContactos = count || 0;
             }
 
+            // 2) Traer una página de contactos (SIN JOIN)
             const { data: contactosRaw, error: errContactos } =
                 await withRetry(
                     () =>
@@ -643,6 +600,7 @@
                 return;
             }
 
+            // 3) Enriquecer con perfiles públicos (en chunks + caché)
             const idsPagina = pagina
                 .map((c) => c?.contacto_id)
                 .filter(Boolean);
@@ -666,6 +624,7 @@
                 return { ...c, contacto: perfil };
             });
 
+            // 4) Acumular
             if (reset) {
                 state.contactos = enriquecidos;
             } else {
@@ -675,8 +634,10 @@
             state.paginaActual++;
             state.hayMas = pagina.length === CONFIG.PAGE_SIZE;
 
+            // 5) Recalcular stats
             recalcularEstadisticas();
 
+            // 6) Render
             renderizarContactos();
 
             quitarCargandoMas();
@@ -711,6 +672,7 @@
                 );
             }
         } finally {
+            /* ✅ Liberar lock SIEMPRE */
             state.cargando = false;
         }
     }
@@ -723,12 +685,14 @@
         const client = sb();
         if (!client) return;
 
+        // Separar: los que ya están en caché vs los que faltan
         const faltantes = ids.filter(
             (id) => !getPerfilCacheado(id)
         );
 
         if (faltantes.length === 0) return;
 
+        // Chunks de 100 para no saturar PostgREST
         const CHUNK_SIZE = 100;
 
         for (let i = 0; i < faltantes.length; i += CHUNK_SIZE) {
@@ -805,9 +769,11 @@
         let listaContactos =
             state.contactos.map(normalizarContacto);
 
+        // Filtros locales
         if (state.filtroActual === 'online') {
             listaContactos = listaContactos.filter(
-                (c) => c.online            );
+                (c) => c.online
+            );
         }
 
         if (state.filtroActual === 'favoritos') {
@@ -827,6 +793,7 @@
                 .slice(0, 10);
         }
 
+        // Búsqueda local
         if (state.textoBusqueda) {
             const q = state.textoBusqueda;
 
@@ -849,14 +816,23 @@
             return;
         }
 
+        // Render
         lista.innerHTML =
             listaContactos.map(renderizarTarjeta).join('') +
             (state.hayMas
                 ? '<div id="cargandoMasSentinel" style="height:1px;"></div>'
                 : '');
 
+        // Configurar observer para scroll infinito
         configurarScrollInfinito();
     }
+
+    /* ============================================================
+       ✅ v6 — TARJETA DE CONTACTO
+       Clic en cualquier parte de la tarjeta abre el mensaje.
+       Los botones de acción detienen la propagación para no
+       disparar el mensaje por accidente.
+       ============================================================ */
 
     function renderizarTarjeta(contacto) {
         const inicial = escapeHtml(
@@ -896,10 +872,14 @@
             ? 'false'
             : 'true';
 
+        const contactoIdSeguro = escapeHtml(contacto.contacto_id);
+        const filaIdSeguro = escapeHtml(contacto.id);
+
         return `
             <article
                 class="contacto-card"
-                data-contacto-id="${escapeHtml(contacto.contacto_id)}"
+                data-contacto-id="${contactoIdSeguro}"
+                onclick="window.abrirMensaje('${contactoIdSeguro}')"
             >
                 <div class="contacto-avatar ${contacto.online ? 'online' : ''}">
                     ${avatar}
@@ -921,10 +901,29 @@
                 </div>
 
                 <div class="contacto-actions">
-                    <button type="button" class="mensaje" data-action="mensaje" data-id="${escapeHtml(contacto.contacto_id)}">◈</button>
-                    <button type="button" class="favorito ${favorito}" data-action="favorito" data-id="${escapeHtml(contacto.id)}" data-value="${favoritoNuevo}">◆</button>
-                    <button type="button" class="bloquear" data-action="bloquear" data-id="${escapeHtml(contacto.contacto_id)}">⛔</button>
-                    <button type="button" class="eliminar" data-action="eliminar" data-id="${escapeHtml(contacto.id)}">✕</button>
+                    <button
+                        type="button"
+                        class="mensaje"
+                        onclick="event.stopPropagation(); window.abrirMensaje('${contactoIdSeguro}')"
+                    >◈</button>
+
+                    <button
+                        type="button"
+                        class="favorito ${favorito}"
+                        onclick="event.stopPropagation(); window.toggleFavorito('${filaIdSeguro}', ${favoritoNuevo})"
+                    >◆</button>
+
+                    <button
+                        type="button"
+                        class="bloquear"
+                        onclick="event.stopPropagation(); window.bloquearContacto('${contactoIdSeguro}')"
+                    >⛔</button>
+
+                    <button
+                        type="button"
+                        class="eliminar"
+                        onclick="event.stopPropagation(); window.eliminarContacto('${filaIdSeguro}')"
+                    >✕</button>
                 </div>
             </article>
         `;
@@ -975,6 +974,7 @@
 
         lista.setAttribute('aria-busy', 'true');
 
+        // Skeleton loader
         lista.innerHTML = Array(5)
             .fill(
                 `
@@ -1174,6 +1174,7 @@
         try {
             const patron = `%${termino}%`;
 
+            // Con índice pg_trgm + GIN, esto vuela incluso con 100k+ filas
             const [resultadoNombre, resultadoHandle] =
                 await Promise.all([
                     withRetry(
@@ -1219,6 +1220,7 @@
                 if (usuario?.id && !mapa.has(usuario.id)) {
                     mapa.set(usuario.id, usuario);
 
+                    // Guardar en caché
                     setPerfilCache(usuario.id, usuario);
                 }
             });
@@ -1236,6 +1238,7 @@
                 return;
             }
 
+            // Filtrar contactos existentes y bloqueados
             const idsContactos = state.idsContactosSet;
 
             let idsBloqueados = new Set();
@@ -1397,6 +1400,7 @@
 
             showToast('✅ Contacto agregado', 'success');
 
+            // Limpiar modal
             const input =
                 document.getElementById('searchInputModal');
 
@@ -1409,6 +1413,7 @@
 
             cerrarModalBuscar();
 
+            // Recargar la lista (reset)
             await cargarContactos({ reset: true });
         } catch (error) {
             console.error('Error agregando contacto:', error);
@@ -1436,6 +1441,7 @@
 
         if (!contactoRowId) return;
 
+        // Actualizar UI optimistamente
         const item = state.contactos.find(
             (c) => c.id === contactoRowId
         );
@@ -1471,6 +1477,7 @@
         } catch (error) {
             console.error('Error actualizando favorito:', error);
 
+            // Revertir UI
             if (item) {
                 item.es_favorito = valorAnterior;
                 renderizarContactos();
@@ -1507,6 +1514,7 @@
         const backupSet = new Set(state.idsContactosSet);
         const backupTotal = state.totalContactos;
 
+        // Optimistic UI
         state.contactos = state.contactos.filter(
             (c) => c.id !== contactoRowId
         );
@@ -1546,6 +1554,7 @@
         } catch (error) {
             console.error('Error eliminando contacto:', error);
 
+            // Revertir todo
             state.contactos = backup;
             state.idsContactosSet = backupSet;
             state.totalContactos = backupTotal;
