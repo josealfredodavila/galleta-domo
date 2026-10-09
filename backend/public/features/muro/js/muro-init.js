@@ -25,14 +25,17 @@ async function cargarUsuarioActual() {
 
         sessionUser = session.user;
 
-        var result = await supabaseClient
-            .from('usuarios')
-            .select('nombre, handle, avatar_url, tokens')
-            .eq('id', session.user.id)
-            .single();
-        if (result.error) throw result.error;
+        // ✅ NUEVO: leer perfil propio vía RPC seguro (SETOF usuarios → array)
+        var data = null;
+        try {
+            var result = await supabaseClient.rpc('mi_perfil_privado');
+            if (!result.error && result.data) {
+                data = Array.isArray(result.data) ? (result.data.length > 0 ? result.data[0] : null) : result.data;
+            }
+        } catch (rpcErr) {
+            console.warn('[Muro] mi_perfil_privado falló:', rpcErr);
+        }
 
-        var data = result.data;
         if (data) {
             var elNombre = document.getElementById('userNombre');
             var elHandle = document.getElementById('userHandle');
