@@ -1,10 +1,12 @@
 /* ================================================================
-   routes/webhooks/pagos-ia.js - IPN de NOWPayments para planes IA (v0.2)
+   routes/webhooks/pagos-ia.js - IPN de NOWPayments para planes IA (v0.3)
    ================================================================
    FASE 1: solo NOWPayments.
 
-   - Firma HMAC-SHA512 sobre el JSON con claves ordenadas (método documentado).
-     PENDIENTE DE PRUEBA con un IPN real antes de activar IA_CHECKOUT_ENABLED.
+   - Acepta DOS métodos de firma:
+     A) HMAC-SHA512 sobre JSON con claves ordenadas.
+     B) utils/nowpayments-sig.js (raw body).
+     Registra en log cuál coincidió. Si ninguno coincide, responde 401.
    - Solo procesa payment_status finished / confirmed.
    - order_id debe ser UUID de un pedido de IA; cualquier otra cosa se ignora (200).
    - Idempotente por payment_id (ai_webhook_eventos) y por referencia_pago (activar_plan_pago).
@@ -22,6 +24,7 @@ const express = require('express');
 const router = express.Router();
 
 const supabase = require('../../lib/supabase-admin');
+const { verificarFirmaNowPayments } = require('../../utils/nowpayments-sig.js');
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ESTADOS_PAGADOS = ['finished', 'confirmed'];
@@ -62,6 +65,22 @@ function verificarFirmaIA(payload, firma, secreto) {
     const a = Buffer.from(String(firma).toLowerCase(), 'utf8');
     const b = Buffer.from(esperada, 'utf8');
     return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+// Acepta cualquiera de los dos métodos. Ambos requieren el secreto.
+// Devuelve el método que coincidió, para dejarlo en el log.
+function verificarFirmaTodos(req, firma, secreto) {
+    if (!firma || !secreto) return { ok: false, metodo: null };
+
+    if (verificarFirmaIA(req.body, firma, secreto)) {
+        return { ok: true, metodo: 'claves_ordenadas' };
+    }
+
+    if (req.rawBody && verificarFirmaNowPayments(req.body, req.rawBody, firma, secreto)) {
+        return { ok: true, metodo: 'raw_body' };
+    }
+
+    return { ok: false, metodo: null };
 }
 
 // Respuesta de "recibido pero no aplica": 200 para que NOWPayments no reintente.
@@ -106,10 +125,14 @@ router.post('/nowpayments', express.json(), async (req, res) => {
         }
 
         const firma = req.headers['x-nowpayments-sig'];
-        if (!verificarFirmaIA(req.body, firma, secreto)) {
+        const resultadoFirma = verificarFirmaTodos(req, firma, secreto);
+
+        if (!resultadoFirma.ok) {
             log('firma_invalida');
             return res.status(401).json({ error: 'firma_invalida' });
         }
+
+        log('firma_ok', { metodo: resultadoFirma.metodo });
 
         const pago = req.body || {};
 
@@ -124,7 +147,7 @@ router.post('/nowpayments', express.json(), async (req, res) => {
             return ignorado(res, 'estado_no_final', { estado: pago.payment_status });
         }
 
-        // 3. order_id debe ser UUID de un pedido de IA. Otros IPN (membresías, Pay, Live Pass) se ignoran.
+        // 3. order_id debe ser UUID de un pedido de IA.
         const orderId = String(pago.order_id || '');
         if (!UUID_RE.test(orderId)) {
             return ignorado(res, 'no_es_ia');
@@ -165,7 +188,7 @@ router.post('/nowpayments', express.json(), async (req, res) => {
             return ignorado(res, 'no_es_ia');
         }
 
-        // 6. Pedido ya pagado con otro payment_id: posible pago doble. No extender; revisar a mano.
+        // 6. Pago doble
         if (pedido.estado === 'pagado') {
             log('pedido_ya_pagado', { pedido_id: pedido.id });
             await registrarEvento({
@@ -197,7 +220,7 @@ router.post('/nowpayments', express.json(), async (req, res) => {
             return ignorado(res, 'monto_no_coincide');
         }
 
-        // 8. Activar plan (la RPC es idempotente por referencia_pago)
+        // 8. Activar plan
         const { error: errActivar } = await supabase.rpc('activar_plan_pago', {
             p_usuario: pedido.usuario_id,
             p_plan: pedido.plan,
@@ -205,7 +228,6 @@ router.post('/nowpayments', express.json(), async (req, res) => {
         });
 
         if (errActivar) {
-            // 23503 = usuario inexistente: permanente, no reintentar
             const permanente = errActivar.code === '23503';
 
             log('activar_error', {
@@ -226,7 +248,7 @@ router.post('/nowpayments', express.json(), async (req, res) => {
                 : res.status(500).json({ error: 'temporal' });
         }
 
-        // 9. Marcar pedido como pagado (si falla, el reintento lo corrige)
+        // 9. Marcar pedido como pagado
         const { error: errUpdate } = await supabase
             .from('ai_pedidos_pago')
             .update({ estado: 'pagado', pagado_at: new Date().toISOString() })
