@@ -717,8 +717,7 @@
             .producto-card .foto { height: 110px; }
         }
     </style>
-</head>
-<body>
+</head><body>
 
     <div class="nebula nebula-1" aria-hidden="true"></div>
     <div class="nebula nebula-2" aria-hidden="true"></div>
@@ -801,7 +800,6 @@
             Cerrar
         </button>
     </div>
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/features/shared/js/idiomas.js"></script>
 
@@ -981,16 +979,23 @@ async function cargarUsuarioActual() {
         var session = result.data.session;
         if (!session) return null;
         sessionUser = session.user;
-        var u = await supabase
-            .from('usuarios')
-            .select('nombre, handle, tokens')
-            .eq('id', session.user.id)
-            .single();
-        if (!u.error && u.data) {
-            var badge = document.getElementById('tokenBadgeCantidad');
-            if (badge) badge.textContent = u.data.tokens || 0;
+
+        // ✅ NUEVO: leer perfil propio vía RPC seguro (SETOF usuarios → array)
+        var data = null;
+        try {
+            var rpc = await supabase.rpc('mi_perfil_privado');
+            if (!rpc.error && rpc.data) {
+                data = Array.isArray(rpc.data) ? (rpc.data.length > 0 ? rpc.data[0] : null) : rpc.data;
+            }
+        } catch (rpcErr) {
+            console.warn('[Mercado/tienda] mi_perfil_privado falló:', rpcErr);
         }
-        return u.data || null;
+
+        if (data) {
+            var badge = document.getElementById('tokenBadgeCantidad');
+            if (badge) badge.textContent = data.tokens || 0;
+        }
+        return data || null;
     } catch (e) { console.error('Error cargando usuario:', e); return null; }
 }
 
