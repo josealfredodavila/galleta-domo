@@ -24,7 +24,10 @@
     --cm-rosa-galaxia: #E79BCB;
     --cm-trazo: #4A5C72;
     --cm-estrella: #FFFFFF;
-    --cm-aura: rgba(0, 229, 255, calc(0.35 + var(--cm-resonancia) * 0.4));
+
+    /* FIX v2.5.1: rgba() no acepta calc() en WebView móvil.
+       Se reemplaza por valor fijo. */
+    --cm-aura: rgba(0, 229, 255, 0.55);
 
     box-sizing: border-box;
 }
@@ -48,9 +51,11 @@
     font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif !important;
     -webkit-tap-highlight-color: transparent !important;
     transition: width .2s ease, height .2s ease, filter .6s ease !important;
+
+    /* FIX v2.5.1: reemplazado calc() dentro de rgba() por valores fijos. */
     filter:
-        drop-shadow(0 0 calc(8px + var(--cm-resonancia) * 20px) rgba(0, 229, 255, calc(0.4 + var(--cm-resonancia) * 0.5)))
-        drop-shadow(0 0 calc(4px + var(--cm-resonancia) * 12px) rgba(123, 77, 216, calc(0.3 + var(--cm-resonancia) * 0.4)));
+        drop-shadow(0 0 16px rgba(0, 229, 255, 0.65))
+        drop-shadow(0 0 8px rgba(123, 77, 216, 0.5));
 }
 
 #capitan-maiz-pet * { box-sizing: border-box !important; }
@@ -158,9 +163,12 @@
     font-size: 12px;
     line-height: 1.35;
     font-weight: 600;
+
+    /* FIX v2.5.1: reemplazado calc() dentro de rgba() por valores fijos. */
     box-shadow:
-        0 8px 30px rgba(0, 229, 255, calc(0.4 + var(--cm-resonancia) * 0.3)),
-        0 0 0 1px rgba(0, 229, 255, calc(0.5 + var(--cm-resonancia) * 0.4));
+        0 8px 30px rgba(0, 229, 255, 0.6),
+        0 0 0 1px rgba(0, 229, 255, 0.7);
+
     opacity: 0;
     transform: translateY(8px) scale(.95);
     transform-origin: bottom right;
