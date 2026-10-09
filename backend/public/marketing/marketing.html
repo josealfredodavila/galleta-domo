@@ -1508,15 +1508,26 @@
         currentWizardData = {};
         document.querySelectorAll('.wizard-step input, .wizard-step select, .wizard-step textarea')
             .forEach(el => el.value = '');
+
         // Reset selector de redes
         const selectRedes = document.getElementById('pay-currency');
         if (selectRedes) {
             selectRedes.innerHTML = '<option value="">Ingresa un presupuesto primero…</option>';
         }
+
         const info = document.getElementById('red-info');
         if (info) {
             info.innerHTML = '◈ Elige cuánto vas a invertir para ver las redes disponibles.';
         }
+
+        // 🆕 Fix: volver a mostrar el botón de pago tras ocultarlo en mostrarPagoPendiente()
+        const btnPay = document.getElementById('btn-pay');
+        if (btnPay) {
+            btnPay.style.display = '';
+            btnPay.disabled = false;
+            btnPay.textContent = '◈ Continuar al Pago';
+        }
+
         showWizardStep('1');
     }
 
