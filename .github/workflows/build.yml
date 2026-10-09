@@ -38,14 +38,14 @@ jobs:
 
       - name: Crear google-services.json
         env:
-          GS_B64: ${{ secrets.GOOGLE_SERVICES_JSON }}
+          GS_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
         run: |
           set -eu
-          if [ -z "$GS_B64" ]; then
+          if [ -z "$GS_JSON" ]; then
             echo "::error::El secret GOOGLE_SERVICES_JSON está vacío o no existe"
             exit 1
           fi
-          echo "$GS_B64" | base64 -d > app/google-services.json
+          printf '%s' "$GS_JSON" > app/google-services.json
           python3 -c "import json; json.load(open('app/google-services.json')); print('google-services.json válido')"
 
       - name: Compilar APK debug
