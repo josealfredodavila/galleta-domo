@@ -5,6 +5,7 @@
 // ✅ v2.3: Rutas del Rey Itlasuhua
 // ✅ v2.4: Rutas IA: /api/ai/plan, /api/webhooks/ia, /api/admin/ai
 //           + Skip de webhooks en rate limit
+// ✅ v2.5: Rutas de campañas de marketing (/api/campanas)
 // ================================================================
 
 require('dotenv').config();
@@ -888,8 +889,6 @@ montarRouter('/api/pay', './routes/pay', 'routes/pay');
 
 montarRouter('/api/mensajes', './routes/mensajes', 'routes/mensajes');
 
-montarRouter('/api/marketing', './routes/marketing', 'routes/marketing');
-
 montarRouter('/api/tendencias', './routes/tendencias', 'routes/tendencias');
 
 montarRouter('/api/video', './routes/video-processor', 'routes/video-processor');
@@ -917,6 +916,9 @@ montarRouter('/api/telnyx', './routes/telnyx', 'routes/telnyx');
 // 🆕 v2.4 — IA: planes y webhook de pagos (FASE 1, solo NOWPayments)
 montarRouter('/api/ai/plan', './routes/ia-plan', 'routes/ia-plan');
 montarRouter('/api/webhooks/ia', './routes/webhooks/pagos-ia', 'routes/webhooks/pagos-ia');
+
+// 🆕 v2.5 — Campañas de marketing (creación segura desde el backend)
+montarRouter('/api/campanas', './routes/campanas', 'routes/campanas');
 
 // 🆕 v2.4 — Admin IA (authMiddleware + adminMiddleware, ambos de este archivo)
 try {
