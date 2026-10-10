@@ -4,12 +4,28 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#000000" />
-    <title>Idiomas · Sariel's</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
-    
-    <link rel="stylesheet" href="../../../shared/config-layout.css" />
-    
+
+    <title data-clave="idi_titulo_pagina">Idiomas · Sariel's</title>
+
+    <link
+        rel="icon"
+        type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron,monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>"
+    />
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap"
+        rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="/features/shared/config-layout.css" />
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="/features/shared/config-icons.js"></script>
+    <script src="/features/shared/config-layout.js"></script>
+    <script src="/features/shared/js/idiomas.js?v=9" defer></script>
+    <script src="/features/shared/js/apariencia-global.js?v=6" defer></script>
+
     <style>
         .cfg-idioma-card {
             display: flex;
@@ -32,6 +48,7 @@
         .cfg-idioma-card.active {
             background: rgba(212, 175, 55, 0.08);
             border-left: 3px solid var(--cfg-gold);
+            cursor: default;
         }
 
         .cfg-idioma-flag {
@@ -104,302 +121,411 @@
         html:not(.auth-ready) body {
             visibility: hidden;
         }
+
         html.auth-ready body {
             visibility: visible;
         }
     </style>
 </head>
+
 <body class="cfg-page">
 
-    <div id="cfgHeaderSlot"></div>
+<header class="cfg-header">
+    <button id="cfgBackButton" class="cfg-header-back" type="button" aria-label="Volver"></button>
 
-    <main class="cfg-content">
+    <div class="cfg-header-text">
+        <h1 class="cfg-header-title" data-clave="idi_titulo">Idiomas</h1>
+        <p class="cfg-header-subtitle" data-clave="idi_subtitulo">Personaliza tu experiencia</p>
+    </div>
+</header>
 
-        <h2 class="cfg-section-title">Idioma de la aplicación</h2>
-        <div class="cfg-list" id="seccionIdiomas">
-            <div class="cfg-loading">
-                <div class="spinner"></div>
-                <div>Cargando idiomas disponibles...</div>
-            </div>
+<main class="cfg-content">
+
+    <h2 class="cfg-section-title" data-clave="idi_sec_app">Idioma de la aplicación</h2>
+
+    <div class="cfg-list" id="seccionIdiomas">
+        <div class="cfg-loading">
+            <div class="spinner"></div>
+            <div data-clave="idi_cargando">Cargando idiomas disponibles...</div>
         </div>
+    </div>
 
-        <h2 class="cfg-section-title">Idiomas de contenido</h2>
-        <div class="cfg-list" id="seccionContenido"></div>
+    <h2 class="cfg-section-title" data-clave="idi_sec_contenido">Idiomas de contenido</h2>
 
-        <div class="cfg-aviso cfg-aviso-info">
-            ℹ️ El idioma se sincroniza con tu cuenta. Cambiar aquí afecta a todos tus dispositivos.
-        </div>
+    <div class="cfg-list" id="seccionContenido">
+        <button type="button" class="cfg-item" id="btnIdiomasFeed">
+            <span class="cfg-item-icon" data-icono="globe"></span>
+            <span class="cfg-item-content">
+                <span class="cfg-item-title" data-clave="idi_contenido_titulo">Idiomas del contenido que ves</span>
+                <span class="cfg-item-desc" data-clave="idi_contenido_desc">Elige en qué idiomas quieres ver contenido en tu feed</span>
+            </span>
+            <span class="cfg-item-chevron" data-icono="chevronRight"></span>
+        </button>
 
-        <div class="cfg-footer">
-            <strong>◈ Sariel's</strong> · Accesibilidad · Idiomas
-        </div>
-    </main>
+        <button type="button" class="cfg-item" id="btnTraduccionAuto">
+            <span class="cfg-item-icon" data-icono="messageCircle"></span>
+            <span class="cfg-item-content">
+                <span class="cfg-item-title" data-clave="idi_traduccion_titulo">Traducir publicaciones automáticamente</span>
+                <span class="cfg-item-desc" data-clave="idi_traduccion_desc">Traduce automáticamente publicaciones en otros idiomas</span>
+            </span>
+            <span class="cfg-item-chevron" data-icono="chevronRight"></span>
+        </button>
+    </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script src="../../../shared/config-icons.js"></script>
-    <script src="../../../shared/config-layout.js"></script>
+    <div class="cfg-aviso cfg-aviso-info" data-clave="idi_aviso">
+        ℹ️ El idioma se sincroniza con tu cuenta. Cambiar aquí afecta a todos tus dispositivos.
+    </div>
 
-    <script>
-    (function () {
-        'use strict';
+    <div class="cfg-footer">
+        <strong>◈ Sariel's</strong> · <span data-clave="idi_footer">Accesibilidad · Idiomas</span>
+    </div>
 
-        const $ = (sel) => document.querySelector(sel);
+</main>
 
-        let clienteSupabase = null;
-        let sesionActual = null;
+<script>
+'use strict';
 
-        async function obtenerCliente() {
-            if (clienteSupabase) return clienteSupabase;
-            if (typeof window.cfgEsperarSupabase === 'function') {
-                clienteSupabase = await window.cfgEsperarSupabase();
+(function () {
+
+    const AUTH_TIMEOUT_MS = 10000;
+
+    const $ = (sel) => document.querySelector(sel);
+
+    let clienteSupabase = null;
+    let sesionActual = null;
+
+    /* ============================================================
+       HELPERS
+       ============================================================ */
+
+    function icon(name) {
+        return (window.CFG_ICONS && window.CFG_ICONS[name]) || '';
+    }
+
+    function escapeHtml(valor) {
+        const div = document.createElement('div');
+        div.textContent = valor == null ? '' : String(valor);
+        return div.innerHTML;
+    }
+
+    // Texto traducido con respaldo en español
+    function tt(clave, respaldo) {
+        return typeof window.tConFallback === 'function'
+            ? window.tConFallback(clave, respaldo)
+            : respaldo;
+    }
+
+    // Reemplaza {nombre} y similares en una traducción
+    function reemplazarVars(texto, vars) {
+        return Object.keys(vars).reduce(function (acc, k) {
+            return acc.split('{' + k + '}').join(vars[k]);
+        }, texto);
+    }
+
+    function traducir(raiz) {
+        if (typeof window.aplicarTraducciones === 'function') {
+            window.aplicarTraducciones(raiz || document);
+        }
+    }
+
+    function toast(mensaje, tipo) {
+        if (typeof window.cfgToast === 'function') {
+            window.cfgToast(mensaje, tipo);
+        }
+    }
+
+    function esRutaInternaSegura(valor) {
+        return typeof valor === 'string' &&
+               valor.startsWith('/') &&
+               !valor.startsWith('//') &&
+               !valor.startsWith('/\\');
+    }
+
+    function irAlIndexConReturnTo() {
+        try {
+            const returnTo =
+                window.location.pathname +
+                window.location.search +
+                window.location.hash;
+
+            if (esRutaInternaSegura(returnTo)) {
+                localStorage.setItem('wallet_returnTo', returnTo);
             }
-            if (!clienteSupabase) {
-                clienteSupabase = window.supabaseClient || null;
-            }
+
+            window.location.replace('/');
+        } catch (e) {
+            window.location.replace('/');
+        }
+    }
+
+    async function obtenerCliente() {
+        if (clienteSupabase) {
             return clienteSupabase;
         }
 
-        function esRutaInternaSegura(valor) {
-            if (typeof valor !== 'string') return false;
-            if (!valor.startsWith('/')) return false;
-            if (valor.startsWith('//')) return false;
-            if (valor.startsWith('/\\')) return false;
-            return true;
+        if (typeof window.cfgEsperarSupabase === 'function') {
+            clienteSupabase = await window.cfgEsperarSupabase();
         }
 
-        function irAlIndexConReturnTo() {
-            try {
-                var returnTo = window.location.pathname + window.location.search + window.location.hash;
-                if (esRutaInternaSegura(returnTo)) {
-                    localStorage.setItem('wallet_returnTo', returnTo);
-                }
-                window.location.replace('/');
-            } catch (e) {
-                window.location.replace('/');
+        if (!clienteSupabase) {
+            clienteSupabase = window.supabaseClient || null;
+        }
+
+        return clienteSupabase;
+    }
+
+    /* ============================================================
+       GUARD DE AUTENTICACIÓN
+       ============================================================ */
+
+    async function guardiaDeAutenticacion() {
+        const salvaguarda = setTimeout(function () {
+            console.warn('[Idiomas] Sin confirmación de sesión, redirigiendo.');
+            irAlIndexConReturnTo();
+        }, AUTH_TIMEOUT_MS);
+
+        try {
+            const client = await obtenerCliente();
+
+            if (!client) {
+                throw new Error('Cliente Supabase no disponible.');
             }
-        }
 
-        // ============================================================
-        // GUARD DE AUTENTICACIÓN
-        // ============================================================
-        async function guardiaDeAutenticacion() {
-            var salvaguarda = setTimeout(function () {
-                console.warn('[Idiomas] Salvaguarda activada sin confirmación → redirigiendo al index');
-                irAlIndexConReturnTo();
-            }, 10000);
+            const resultado = await client.auth.getSession();
+            const session = resultado && resultado.data ? resultado.data.session : null;
 
-            try {
-                const client = await obtenerCliente();
-                if (!client) {
-                    throw new Error('Cliente Supabase no disponible.');
-                }
+            clearTimeout(salvaguarda);
 
-                const resultado = await client.auth.getSession();
-                const session = resultado && resultado.data ? resultado.data.session : null;
-
-                clearTimeout(salvaguarda);
-
-                if (!session) {
-                    irAlIndexConReturnTo();
-                    return null;
-                }
-
-                sesionActual = session;
-                document.documentElement.classList.add('auth-ready');
-                return client;
-
-            } catch (error) {
-                console.error('[Idiomas] Error crítico de autenticación:', error);
-                clearTimeout(salvaguarda);
+            if (!session) {
                 irAlIndexConReturnTo();
                 return null;
             }
+
+            sesionActual = session;
+            return client;
+        } catch (error) {
+            clearTimeout(salvaguarda);
+            console.error('[Idiomas] Error de autenticación:', error);
+            irAlIndexConReturnTo();
+            return null;
         }
+    }
 
-        // ============================================================
-        // CARGAR IDIOMAS DESDE SUPABASE
-        // ============================================================
-        async function cargarIdiomas(client) {
-            try {
-                if (!client) {
-                    mostrarErrorIdiomas();
-                    return;
+    /* ============================================================
+       CARGAR IDIOMAS DISPONIBLES
+       ============================================================ */
+
+    async function cargarIdiomas(client) {
+        try {
+            let idiomaActualId = null;
+
+            if (sesionActual) {
+                const { data: usuario } = await client
+                    .from('usuarios')
+                    .select('idioma_preferido_id')
+                    .eq('id', sesionActual.user.id)
+                    .maybeSingle();
+
+                if (usuario && usuario.idioma_preferido_id) {
+                    idiomaActualId = usuario.idioma_preferido_id;
                 }
-
-                let idiomaActualId = null;
-
-                if (sesionActual) {
-                    const { data: usuario } = await client
-                        .from('usuarios')
-                        .select('idioma_preferido_id')
-                        .eq('id', sesionActual.user.id)
-                        .maybeSingle();
-
-                    if (usuario && usuario.idioma_preferido_id) {
-                        idiomaActualId = usuario.idioma_preferido_id;
-                    }
-                }
-
-                if (!idiomaActualId) {
-                    idiomaActualId = localStorage.getItem('idioma_preferido');
-                }
-
-                const { data: idiomas, error } = await client
-                    .from('idiomas_sistema')
-                    .select('id, codigo, nombre, nombre_nativo, bandera, activo')
-                    .eq('activo', true)
-                    .order('nombre', { ascending: true });
-
-                if (error) throw error;
-
-                if (!idiomas || idiomas.length === 0) {
-                    mostrarSinIdiomas();
-                    return;
-                }
-
-                if (!idiomaActualId) {
-                    const español = idiomas.find(i => i.codigo === 'es-MX') || idiomas[0];
-                    idiomaActualId = español.id;
-                }
-
-                renderizarIdiomas(idiomas, idiomaActualId);
-
-            } catch (error) {
-                console.error('Error cargando idiomas:', error);
-                mostrarErrorIdiomas();
             }
-        }
 
-        function renderizarIdiomas(idiomas, idiomaActualId) {
-            $('#seccionIdiomas').innerHTML = idiomas.map(idioma => {
-                const activo = idioma.id === idiomaActualId;
-                const nombreSeguro = (idioma.nombre || '').replace(/'/g, "\\'");
-                const codigoSeguro = (idioma.codigo || '').replace(/'/g, "\\'");
-                return `
-                    <div class="cfg-idioma-card ${activo ? 'active' : ''}" 
-                         onclick="window.onSeleccionarIdioma('${idioma.id}', '${codigoSeguro}', '${nombreSeguro}')">
-                        <span class="cfg-idioma-flag">${idioma.bandera || '🌐'}</span>
-                        <div class="cfg-idioma-info">
-                            <div class="cfg-idioma-nombre">${escapeHtml(idioma.nombre || '')}</div>
-                            <div class="cfg-idioma-nativo">${escapeHtml(idioma.nombre_nativo || '')}</div>
-                        </div>
-                        <div class="cfg-idioma-codigo">${escapeHtml(idioma.codigo || '')}</div>
-                        ${activo ? '<span class="cfg-idioma-check">✓</span>' : ''}
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function mostrarSinIdiomas() {
-            $('#seccionIdiomas').innerHTML = `
-                <div class="cfg-empty">
-                    <span class="cfg-empty-icon">🌐</span>
-                    <div class="cfg-empty-text">No hay idiomas disponibles</div>
-                </div>
-            `;
-        }
-
-        function mostrarErrorIdiomas() {
-            $('#seccionIdiomas').innerHTML = `
-                <div class="cfg-empty">
-                    <span class="cfg-empty-icon">⚠️</span>
-                    <div class="cfg-empty-text">Error al cargar idiomas</div>
-                </div>
-            `;
-        }
-
-        function escapeHtml(texto) {
-            if (!texto) return '';
-            const div = document.createElement('div');
-            div.textContent = texto;
-            return div.innerHTML;
-        }
-
-        // ============================================================
-        // SELECCIONAR IDIOMA
-        // ============================================================
-        window.onSeleccionarIdioma = async (idiomaId, codigo, nombre) => {
-            const ok = await cfgConfirm({
-                title: `¿Cambiar a ${nombre}?`,
-                text: 'La página se recargará para aplicar el idioma.',
-                confirmText: 'Cambiar',
-                cancelText: 'Cancelar',
-                danger: false,
-            });
-
-            if (!ok) return;
-
-            try {
-                localStorage.setItem('idioma_preferido', idiomaId);
-
-                const client = await obtenerCliente();
-                if (client && sesionActual) {
-                    const { error } = await client
-                        .from('usuarios')
-                        .update({ idioma_preferido_id: idiomaId })
-                        .eq('id', sesionActual.user.id);
-
-                    if (error) throw error;
-                }
-
-                cfgToast(`🌐 Idioma cambiado a ${nombre}`, 'success');
-
-                setTimeout(() => {
-                    window.location.reload();
-                }, 800);
-
-            } catch (error) {
-                console.error('Error cambiando idioma:', error);
-                cfgToast('❌ Error al cambiar idioma', 'error');
+            if (!idiomaActualId) {
+                idiomaActualId = localStorage.getItem('idioma_preferido');
             }
-        };
 
-        // ============================================================
-        // SECCIÓN IDIOMAS DE CONTENIDO
-        // ============================================================
-        function renderizarContenido() {
-            $('#seccionContenido').innerHTML = [
-                cfgRenderItem({
-                    icon: 'globe',
-                    title: 'Idiomas del contenido que ves',
-                    desc: 'Elige en qué idiomas quieres ver contenido en tu feed',
-                    onclick: 'window.onIdiomasContenido()',
-                }),
-                cfgRenderItem({
-                    icon: 'messageCircle',
-                    title: 'Traducir publicaciones automáticamente',
-                    desc: 'Traduce automáticamente publicaciones en otros idiomas',
-                    onclick: 'window.onTraduccionAuto()',
-                }),
-            ].join('');
+            const { data: idiomas, error } = await client
+                .from('idiomas_sistema')
+                .select('id, codigo, nombre, nombre_nativo, bandera, activo')
+                .eq('activo', true)
+                .order('nombre', { ascending: true });
+
+            if (error) {
+                throw error;
+            }
+
+            if (!idiomas || idiomas.length === 0) {
+                $('#seccionIdiomas').innerHTML =
+                    '<div class="cfg-empty"><span class="cfg-empty-icon">🌐</span>' +
+                    '<div class="cfg-empty-text" data-clave="idi_sin">No hay idiomas disponibles</div></div>';
+                traducir($('#seccionIdiomas'));
+                return;
+            }
+
+            if (!idiomaActualId) {
+                const predeterminado = idiomas.find(i => i.codigo === 'es-MX') || idiomas[0];
+                idiomaActualId = predeterminado.id;
+            }
+
+            renderizarIdiomas(idiomas, idiomaActualId);
+
+        } catch (error) {
+            console.error('[Idiomas] Error cargando idiomas:', error);
+
+            $('#seccionIdiomas').innerHTML =
+                '<div class="cfg-empty"><span class="cfg-empty-icon">⚠️</span>' +
+                '<div class="cfg-empty-text" data-clave="idi_error">Error al cargar idiomas</div></div>';
+            traducir($('#seccionIdiomas'));
         }
+    }
 
-        window.onIdiomasContenido = () => {
-            cfgToast('⏳ Selector de idiomas del feed próximamente', 'warning');
-        };
+    function renderizarIdiomas(idiomas, idiomaActualId) {
+        const contenedor = $('#seccionIdiomas');
+        contenedor.innerHTML = '';
 
-        window.onTraduccionAuto = () => {
-            cfgToast('⏳ Traducción automática próximamente', 'warning');
-        };
+        idiomas.forEach(function (idioma) {
+            const activo = idioma.id === idiomaActualId;
 
-        // ============================================================
-        // INICIALIZAR
-        // ============================================================
-        window.addEventListener('DOMContentLoaded', async () => {
-            const client = await guardiaDeAutenticacion();
-            if (!client) return;
+            const card = document.createElement('div');
+            card.className = 'cfg-idioma-card' + (activo ? ' active' : '');
+            card.setAttribute('role', 'button');
+            card.tabIndex = 0;
 
-            cfgInitPage({
-                title: 'Idiomas',
-                subtitle: 'Personaliza tu experiencia',
-                backUrl: '/features/perfil/configuracion/index.html',
-            });
+            card.innerHTML = `
+                <span class="cfg-idioma-flag">${escapeHtml(idioma.bandera || '🌐')}</span>
+                <div class="cfg-idioma-info">
+                    <div class="cfg-idioma-nombre">${escapeHtml(idioma.nombre)}</div>
+                    <div class="cfg-idioma-nativo">${escapeHtml(idioma.nombre_nativo)}</div>
+                </div>
+                <div class="cfg-idioma-codigo">${escapeHtml(idioma.codigo)}</div>
+                ${activo ? '<span class="cfg-idioma-check">✓</span>' : ''}
+            `;
 
-            renderizarContenido();
-            await cargarIdiomas(client);
+            if (!activo) {
+                card.addEventListener('click', function () {
+                    seleccionarIdioma(idioma);
+                });
+            }
+
+            contenedor.appendChild(card);
+        });
+    }
+
+    /* ============================================================
+       SELECCIONAR IDIOMA
+       ============================================================ */
+
+    async function seleccionarIdioma(idioma) {
+        const nombre = idioma.nombre_nativo || idioma.nombre;
+
+        const ok = await window.cfgConfirm({
+            title: reemplazarVars(
+                tt('idi_confirm_titulo', '¿Cambiar a {nombre}?'),
+                { nombre: nombre }
+            ),
+            text: tt('idi_confirm_texto', 'La página se recargará para aplicar el idioma.'),
+            confirmText: tt('idi_cambiar', 'Cambiar'),
+            cancelText: tt('cfg_cancelar', 'Cancelar'),
+            danger: false
         });
 
-    })();
-    </script>
+        if (!ok) {
+            return;
+        }
+
+        try {
+            localStorage.setItem('idioma_preferido', idioma.id);
+
+            const client = await obtenerCliente();
+
+            if (client && sesionActual) {
+                const { error } = await client
+                    .from('usuarios')
+                    .update({ idioma_preferido_id: idioma.id })
+                    .eq('id', sesionActual.user.id);
+
+                if (error) {
+                    throw error;
+                }
+            }
+
+            toast(
+                reemplazarVars(
+                    tt('idi_toast_cambiado', '🌐 Idioma cambiado a {nombre}'),
+                    { nombre: nombre }
+                ),
+                'success'
+            );
+
+            setTimeout(function () {
+                window.location.reload();
+            }, 800);
+
+        } catch (error) {
+            console.error('[Idiomas] Error cambiando idioma:', error);
+            toast(tt('idi_toast_error', '❌ Error al cambiar idioma'), 'error');
+        }
+    }
+
+    /* ============================================================
+       SECCIÓN DE CONTENIDO (próximamente)
+       ============================================================ */
+
+    function iniciarSeccionContenido() {
+        document.querySelectorAll('[data-icono]').forEach(function (el) {
+            el.innerHTML = icon(el.getAttribute('data-icono'));
+        });
+
+        $('#btnIdiomasFeed').addEventListener('click', function () {
+            toast(
+                tt('idi_proximamente_feed', '⏳ Selector de idiomas del feed próximamente'),
+                'warning'
+            );
+        });
+
+        $('#btnTraduccionAuto').addEventListener('click', function () {
+            toast(
+                tt('idi_traduccion_proximamente', '⏳ Traducción automática próximamente'),
+                'warning'
+            );
+        });
+    }
+
+    function iniciarBotonVolver() {
+        const back = $('#cfgBackButton');
+
+        if (back) {
+            back.innerHTML = icon('back');
+
+            back.addEventListener('click', function () {
+                window.location.href = '/features/perfil/configuracion/index.html';
+            });
+        }
+    }
+
+    /* ============================================================
+       INICIO
+       ============================================================ */
+
+    window.addEventListener('DOMContentLoaded', async function () {
+        const client = await guardiaDeAutenticacion();
+
+        if (!client) {
+            return;
+        }
+
+        iniciarBotonVolver();
+        iniciarSeccionContenido();
+
+        await cargarIdiomas(client);
+
+        // Esperar traducciones y aplicarlas antes de mostrar la página
+        if (typeof window.esperarIdiomas === 'function') {
+            try {
+                await window.esperarIdiomas();
+            } catch (e) {
+                console.warn('[Idiomas] Error esperando traducciones:', e);
+            }
+        }
+
+        traducir(document);
+
+        document.documentElement.classList.add('auth-ready');
+    });
+
+})();
+</script>
+
 </body>
 </html>
