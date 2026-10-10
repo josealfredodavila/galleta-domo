@@ -4,6 +4,11 @@
 // Maneja el estado online, detector de inactividad y notificaciones
 // a contactos cuando cambia el estado.
 // Depende de: perfil-config.js, perfil-utils.js
+//
+// CAMBIO v2 (traducciones):
+// - Todos los textos usan perfilT(clave, respaldo).
+// - Nota: la notificación que reciben tus contactos se guarda en el
+//   idioma de quien cambia el estado (se escribe en la base de datos).
 // ================================================================
 
 // ================================================================
@@ -48,8 +53,8 @@ function actualizarUIEstado(online) {
         estadoTexto.removeAttribute('data-clave');
         estadoTexto.setAttribute('data-no-traducir', '1');
         estadoTexto.textContent = online
-            ? t('perfil_activo_ahora', 'Activo ahora')
-            : t('perfil_inactivo', 'Inactivo');
+            ? perfilT('perfil_activo_ahora', 'Activo ahora')
+            : perfilT('perfil_inactivo', 'Inactivo');
         estadoTexto.style.color = online ? 'var(--success)' : 'var(--text-muted)';
     }
 }
@@ -74,7 +79,7 @@ function iniciarDetectorInactividad() {
         tiempoInactividad += 30000;
         if (tiempoInactividad >= maxInactividad && perfilCache && perfilCache.online) {
             await actualizarEstadoEnLinea(false);
-            showToast('⭕ ' + t('perfil_inactivo', 'Inactivo'), 'warning');
+            showToast('⭕ ' + perfilT('perfil_inactivo', 'Inactivo'), 'warning');
         }
     }, 30000);
 }
@@ -86,16 +91,18 @@ async function cambiarEstado(online) {
     try {
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+            showToast('⚠️ ' + perfilT('perfil_inicia_sesion', 'Inicia sesión'), 'error');
             return;
         }
         const ok = await actualizarEstadoEnLinea(online);
         if (!ok) {
-            showToast('❌ No se pudo cambiar el estado', 'error');
+            showToast(perfilT('perfil_error_cambiar_estado', '❌ No se pudo cambiar el estado'), 'error');
             return;
         }
         showToast(
-            online ? '🟢 ' + t('perfil_activo_ahora', 'Activo ahora') : '⭕ ' + t('perfil_inactivo', 'Inactivo'),
+            online
+                ? '🟢 ' + perfilT('perfil_activo_ahora', 'Activo ahora')
+                : '⭕ ' + perfilT('perfil_inactivo', 'Inactivo'),
             online ? 'success' : 'warning'
         );
         await notificarCambioEstado(online);
@@ -114,10 +121,12 @@ async function notificarCambioEstado(online) {
             .select('contacto_id')
             .eq('usuario_id', session.user.id);
         if (error || !contactos || contactos.length === 0) return;
-        const nombre = perfilCache?.nombre || 'Un usuario';
+
+        const nombre = perfilCache?.nombre || perfilT('perfil_usuario_generico', 'Un usuario');
         const estado = online
-            ? '🟢 ' + t('perfil_activo_ahora', 'activo')
-            : '⭕ ' + t('perfil_desconectado', 'inactivo');
+            ? '🟢 ' + perfilT('perfil_notif_activo', 'activo')
+            : '⭕ ' + perfilT('perfil_notif_inactivo', 'inactivo');
+
         const notifs = contactos.map(c => ({
             user_id: c.contacto_id,
             tipo: 'estado',
@@ -126,6 +135,7 @@ async function notificarCambioEstado(online) {
             leida: false,
             fecha: new Date().toISOString()
         }));
+
         for (let i = 0; i < notifs.length; i += 50) {
             await window.supabaseClient.from('notificaciones').insert(notifs.slice(i, i + 50));
         }
