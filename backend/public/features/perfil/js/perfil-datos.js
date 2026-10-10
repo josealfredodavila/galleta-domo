@@ -3,6 +3,10 @@
 // ================================================================
 // Cargar/actualizar perfil, contadores sociales, avatar, guardar.
 // Depende de: perfil-config.js, perfil-utils.js
+//
+// CAMBIO v2 (traducciones):
+// - Todos los textos visibles y mensajes usan perfilT(clave, respaldo).
+// - Los textos fijos se reemplazan por claves perfil_*.
 // ================================================================
 
 // ================================================================
@@ -20,7 +24,7 @@ async function cargarPerfil(forzarActualizacion = false) {
         }
         let perfil = null;
 
-        // ✅ NUEVO: leer perfil propio vía RPC seguro (devuelve SETOF usuarios → array)
+        // Leer perfil propio vía RPC seguro (devuelve SETOF usuarios → array)
         try {
             const { data, error } = await window.supabaseClient.rpc('mi_perfil_privado');
             if (!error && data) {
@@ -57,7 +61,7 @@ async function cargarPerfil(forzarActualizacion = false) {
         ]).catch(function(){});
         await aplicarI18NPerfil();
     } catch (error) {
-        showToast('❌ Error al cargar perfil', 'error');
+        showToast(perfilT('perfil_toast_error_cargar', '❌ Error al cargar perfil'), 'error');
     }
 }
 
@@ -72,8 +76,10 @@ function actualizarUI(data) {
     const avatarEl = document.getElementById('perfilAvatar');
 
     if (nombreEl) {
-        const verificado = data.verificado ? '<span class="verified">✦ VERIFICADO</span>' : '';
-        const nombreSafe = escaparHTML(data.nombre || t('perfil_nombre_usuario', 'Explorador'));
+        const verificado = data.verificado
+            ? '<span class="verified">' + escaparHTML(perfilT('perfil_verificado', '✦ VERIFICADO')) + '</span>'
+            : '';
+        const nombreSafe = escaparHTML(data.nombre || perfilT('perfil_nombre_usuario', 'Explorador'));
         nombreEl.innerHTML = '<span data-no-traducir="1">' + nombreSafe + '</span> ' + verificado;
         nombreEl.setAttribute('data-no-traducir', '1');
     }
@@ -81,9 +87,10 @@ function actualizarUI(data) {
 
     if (bioEl) {
         const bioDefault = "Explorando el ecosistema Sariel's · WEB3 · Comunidad";
-        const bioT = t('perfil_biografia_default', bioDefault);
+        const bioT = perfilT('perfil_biografia_default', bioDefault);
         if (!data.bio || data.bio === bioDefault) {
             bioEl.setAttribute('data-clave', 'perfil_biografia_default');
+            bioEl.removeAttribute('data-no-traducir');
             bioEl.textContent = bioT;
         } else {
             bioEl.removeAttribute('data-clave');
@@ -92,7 +99,9 @@ function actualizarUI(data) {
         }
     }
     if (avatarEl) {
-        const toggle = '<span class="avatar-menu-toggle" onclick="event.stopPropagation(); window.toggleAvatarMenu(event)" title="Opciones">✎</span>';
+        const toggle =
+            '<span class="avatar-menu-toggle" onclick="event.stopPropagation(); window.toggleAvatarMenu(event)" title="' +
+            escaparHTML(perfilT('perfil_opciones', 'Opciones')) + '">✎</span>';
         if (data.avatar_url) {
             const urlSafe = escaparHTML(data.avatar_url);
             avatarEl.innerHTML = '<img src="' + urlSafe + '" alt="Avatar">' + toggle;
@@ -149,12 +158,12 @@ function actualizarUI(data) {
             btnCanjear.style.background = 'linear-gradient(135deg, var(--gold), #f7971e)';
             btnCanjear.style.border = 'none';
             btnCanjear.style.color = '#fff';
-            btnCanjear.innerHTML = '🎁 CANJEAR NFT';
+            btnCanjear.textContent = '🎁 ' + perfilT('perfil_canjear_nft', 'CANJEAR NFT');
         } else {
             btnCanjear.style.background = 'var(--bg-card)';
             btnCanjear.style.border = '1px solid var(--text-muted)';
             btnCanjear.style.color = 'var(--text-muted)';
-            btnCanjear.innerHTML = '🔒 NECESITAS 12 TOKENS';
+            btnCanjear.textContent = '🔒 ' + perfilT('perfil_necesitas_tokens', 'NECESITAS 12 TOKENS');
         }
     }
 
@@ -175,7 +184,7 @@ async function cargarContadoresSociales(usuarioId) {
             return;
         }
 
-        // ✅ NUEVO: leer contadores desde perfiles_publicos (no de usuarios)
+        // Leer contadores desde perfiles_publicos (no de usuarios)
         try {
             const { data: usuario, error } = await window.supabaseClient
                 .from('perfiles_publicos')
@@ -222,16 +231,16 @@ function aplicarContadoresSociales(c) {
 async function guardarPerfil() {
     const session = await getSession();
     if (!session) {
-        showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+        showToast('⚠️ ' + perfilT('perfil_inicia_sesion', 'Inicia sesión'), 'error');
         return;
     }
     const perfil = {
-        nombre: (document.getElementById('editNombre')?.value || '').trim() || t('perfil_nombre_usuario', 'Explorador'),
+        nombre: (document.getElementById('editNombre')?.value || '').trim() || perfilT('perfil_nombre_usuario', 'Explorador'),
         handle: (document.getElementById('editHandle')?.value || '').trim().replace('@', '') || 'explorador',
-        bio: (document.getElementById('editBio')?.value || '').trim() || t('perfil_biografia_default', "Explorando el ecosistema Sariel's · WEB3 · Comunidad")
+        bio: (document.getElementById('editBio')?.value || '').trim() || perfilT('perfil_biografia_default', "Explorando el ecosistema Sariel's · WEB3 · Comunidad")
     };
     if (!/^[a-zA-Z0-9_]+$/.test(perfil.handle)) {
-        showToast('❌ Handle inválido', 'error');
+        showToast(perfilT('perfil_handle_invalido', '❌ Handle inválido'), 'error');
         return;
     }
     try {
@@ -245,10 +254,10 @@ async function guardarPerfil() {
             })
             .eq('id', session.user.id);
         if (error) throw error;
-        showToast('✅ Perfil guardado', 'success');
+        showToast(perfilT('perfil_guardado', '✅ Perfil guardado'), 'success');
         await cargarPerfil(true);
     } catch (error) {
-        showToast('❌ Error al guardar: ' + msgError(error), 'error');
+        showToast(perfilT('perfil_error_guardar', '❌ Error al guardar: ') + msgError(error), 'error');
     }
 }
 
@@ -270,16 +279,23 @@ function editarPerfil() {
 // COMPARTIR PERFIL
 // ================================================================
 function compartirPerfil() {
-    const nombre = document.getElementById('perfilNombre')?.textContent.replace('✦ VERIFICADO', '').trim().split(' ')[0] || 'Explorador';
+    const nombreCompleto = document.getElementById('perfilNombre')?.textContent || '';
+    const nombre = nombreCompleto
+        .replace(perfilT('perfil_verificado', '✦ VERIFICADO'), '')
+        .replace('✦ VERIFICADO', '')
+        .trim()
+        .split(' ')[0] || perfilT('perfil_nombre_usuario', 'Explorador');
     const handle = document.getElementById('perfilHandle')?.textContent.replace('@', '') || 'explorador';
     const url = window.location.origin + '/perfil/' + encodeURIComponent(handle);
-    const texto = "◈ Perfil de " + nombre + " en Sariel's\n◈ " + url + "\n\n#Sariels #WEB3";
+    const textoBase = perfilT('perfil_compartir_texto', "◈ Perfil de {nombre} en Sariel's")
+        .split('{nombre}').join(nombre);
+    const texto = textoBase + "\n◈ " + url + "\n\n#Sariels #WEB3";
     if (navigator.share) {
-        navigator.share({ title: 'Perfil de ' + nombre, text: texto, url: url }).catch(() => {});
+        navigator.share({ title: textoBase, text: texto, url: url }).catch(() => {});
     } else {
         navigator.clipboard.writeText(texto)
-            .then(() => { showToast('◈ Copiado', 'success'); })
-            .catch(() => { prompt('Copia:', url); });
+            .then(() => { showToast(perfilT('perfil_copiado', '◈ Copiado'), 'success'); })
+            .catch(() => { prompt(perfilT('perfil_copiar_prompt', 'Copia:'), url); });
     }
 }
 
@@ -296,14 +312,15 @@ async function generarQRPerfil() {
         const modal = document.createElement('div');
         modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; z-index: 9999;';
         modal.innerHTML = '<div style="background: var(--bg-card); border-radius: 20px; padding: 30px; text-align: center; max-width: 90vw;">'
-            + '<h3 style="color: var(--gold); margin-bottom: 20px;">📱 Share QR</h3>'
+            + '<h3 style="color: var(--gold); margin-bottom: 20px;">' + escaparHTML(perfilT('perfil_share_qr_titulo', '📱 Compartir QR')) + '</h3>'
             + '<img src="' + escaparHTML(qrUrl) + '" alt="QR" style="border-radius: 10px; max-width: 200px;">'
             + '<p style="color: var(--text-muted); margin-top: 15px; font-size: 12px; word-break: break-all;">' + escaparHTML(url) + '</p>'
-            + '<button onclick="this.parentElement.parentElement.remove()" style="margin-top: 20px; background: var(--gold); border: none; color: #fff; padding: 10px 30px; border-radius: 10px; cursor: pointer;">Cerrar</button></div>';
+            + '<button onclick="this.parentElement.parentElement.remove()" style="margin-top: 20px; background: var(--gold); border: none; color: #fff; padding: 10px 30px; border-radius: 10px; cursor: pointer;" data-clave="perfil_cerrar">'
+            + escaparHTML(perfilT('perfil_cerrar', 'Cerrar')) + '</button></div>';
         document.body.appendChild(modal);
         aplicarI18NPerfil(modal);
     } catch (error) {
-        showToast('❌ Error al generar QR', 'error');
+        showToast(perfilT('perfil_error_generar_qr', '❌ Error al generar QR'), 'error');
     }
 }
 
@@ -353,23 +370,23 @@ async function subirFoto(event) {
     if (!file) return;
     const session = await getSession();
     if (!session) {
-        showToast('⚠️ Inicia sesión', 'error');
+        showToast('⚠️ ' + perfilT('perfil_inicia_sesion', 'Inicia sesión'), 'error');
         return;
     }
     if (file.size > 5 * 1024 * 1024) {
-        showToast('❌ Máximo 5 MB', 'error');
+        showToast(perfilT('perfil_foto_max', '❌ Máximo 5 MB'), 'error');
         event.target.value = '';
         return;
     }
     if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) {
-        showToast('❌ Solo JPG/PNG/WEBP/GIF', 'error');
+        showToast(perfilT('perfil_foto_tipo', '❌ Solo JPG/PNG/WEBP/GIF'), 'error');
         event.target.value = '';
         return;
     }
     const fileExt = file.name.split('.').pop().toLowerCase();
     const filePath = session.user.id + '/avatar.' + fileExt;
     try {
-        showToast('⏳ Subiendo foto...', '', 5000);
+        showToast(perfilT('perfil_foto_subiendo', '⏳ Subiendo foto...'), '', 5000);
         const { error: uploadError } = await window.supabaseClient.storage
             .from('sariels-avatars')
             .upload(filePath, file, { upsert: true, contentType: file.type });
@@ -383,11 +400,11 @@ async function subirFoto(event) {
             .update({ avatar_url: publicUrl })
             .eq('id', session.user.id);
         if (updateError) throw updateError;
-        showToast('✅ Foto actualizada', 'success');
+        showToast(perfilT('perfil_foto_actualizada', '✅ Foto actualizada'), 'success');
         event.target.value = '';
         await cargarPerfil(true);
     } catch (error) {
-        showToast('❌ Error al subir: ' + msgError(error), 'error');
+        showToast(perfilT('perfil_error_subir', '❌ Error al subir: ') + msgError(error), 'error');
     }
 }
 
@@ -397,12 +414,12 @@ async function subirFoto(event) {
 async function eliminarFotoPerfil() {
     const session = await getSession();
     if (!session) {
-        showToast('⚠️ Inicia sesión', 'error');
+        showToast('⚠️ ' + perfilT('perfil_inicia_sesion', 'Inicia sesión'), 'error');
         return;
     }
-    if (!confirm(t('perfil_confirma_eliminar_foto', '¿Eliminar foto de perfil?'))) return;
+    if (!confirm(perfilT('perfil_confirma_eliminar_foto', '¿Eliminar foto de perfil?'))) return;
     try {
-        showToast('⏳ Eliminando...', '', 4000);
+        showToast(perfilT('perfil_eliminando', '⏳ Eliminando...'), '', 4000);
         const extensiones = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
         const paths = extensiones.map(ext => session.user.id + '/avatar.' + ext);
         try {
@@ -413,10 +430,10 @@ async function eliminarFotoPerfil() {
             .update({ avatar_url: null })
             .eq('id', session.user.id);
         if (error) throw error;
-        showToast('✅ Foto eliminada', 'success');
+        showToast(perfilT('perfil_foto_eliminada', '✅ Foto eliminada'), 'success');
         await cargarPerfil(true);
     } catch (error) {
-        showToast('❌ Error: ' + msgError(error), 'error');
+        showToast(perfilT('perfil_error_generico', '❌ Error: ') + msgError(error), 'error');
     }
 }
 
@@ -428,21 +445,21 @@ async function subirVideo(event) {
     if (!file) return;
     const session = await getSession();
     if (!session) {
-        showToast('⚠️ Inicia sesión', 'error');
+        showToast('⚠️ ' + perfilT('perfil_inicia_sesion', 'Inicia sesión'), 'error');
         return;
     }
     if (!file.type.startsWith('video/')) {
-        showToast('❌ Solo videos', 'error');
+        showToast(perfilT('perfil_video_tipo', '❌ Solo videos'), 'error');
         event.target.value = '';
         return;
     }
     if (file.size > 50 * 1024 * 1024) {
-        showToast('❌ Máximo 50 MB', 'error');
+        showToast(perfilT('perfil_video_max', '❌ Máximo 50 MB'), 'error');
         event.target.value = '';
         return;
     }
     try {
-        showToast('⏳ Subiendo video...', '', 15000);
+        showToast(perfilT('perfil_video_subiendo', '⏳ Subiendo video...'), '', 15000);
         const fileExt = file.name.split('.').pop().toLowerCase();
         const filePath = session.user.id + '/video_' + Date.now() + '.' + fileExt;
         const { error: uploadError } = await window.supabaseClient.storage
@@ -452,16 +469,16 @@ async function subirVideo(event) {
         const { data: urlData } = window.supabaseClient.storage
             .from('muro-videos')
             .getPublicUrl(filePath);
-        showToast('✅ Video subido', 'success');
+        showToast(perfilT('perfil_video_subido', '✅ Video subido'), 'success');
         event.target.value = '';
         return urlData.publicUrl;
     } catch (error) {
-        showToast('❌ Error: ' + msgError(error), 'error');
+        showToast(perfilT('perfil_error_generico', '❌ Error: ') + msgError(error), 'error');
     }
 }
 
 // ================================================================
-// CARGAR ORDENES DE INTERNET
+// ESTADÍSTICAS (para el nivel del usuario)
 // ================================================================
 async function obtenerEstadisticas() {
     try {
@@ -483,14 +500,14 @@ async function obtenerEstadisticas() {
 // CERRAR SESIÓN
 // ================================================================
 async function cerrarSesion() {
-    if (!confirm(t('perfil_cerrar_sesion', '¿Cerrar sesión?'))) return;
+    if (!confirm(perfilT('perfil_cerrar_sesion', '¿Cerrar sesión?'))) return;
     try {
         await actualizarEstadoEnLinea(false);
     } catch (e) {}
     try {
         await window.supabaseClient.auth.signOut();
     } catch (error) {
-        showToast('❌ Error al cerrar sesión', 'error');
+        showToast(perfilT('perfil_error_cerrar_sesion', '❌ Error al cerrar sesión'), 'error');
         return;
     }
     window.location.replace('/');
