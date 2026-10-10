@@ -4,7 +4,22 @@
 // Conectar/desconectar wallet con MetaMask, cambiar a Polygon Amoy
 // y vincular la dirección al perfil del usuario.
 // Depende de: perfil-config.js, perfil-utils.js
+//
+// CAMBIO v2 (traducciones):
+// - Todos los textos usan perfilT(clave, respaldo).
+// - El nombre de la red se inserta en el texto con {red}.
 // ================================================================
+
+// Reemplaza {nombre} dentro de una traducción por su valor
+function walletTexto(clave, respaldo, vars) {
+    let texto = perfilT(clave, respaldo);
+    if (vars) {
+        Object.keys(vars).forEach(function (nombre) {
+            texto = texto.split('{' + nombre + '}').join(String(vars[nombre]));
+        });
+    }
+    return texto;
+}
 
 // ================================================================
 // CONECTAR WALLET
@@ -12,7 +27,7 @@
 async function conectarWallet() {
     // 1. Verificar que MetaMask esté disponible
     if (typeof window.ethereum === 'undefined') {
-        showToast('⚠️ Instala MetaMask para conectar tu wallet', 'error', 5000);
+        showToast(perfilT('perfil_wallet_instalar', '⚠️ Instala MetaMask para conectar tu wallet'), 'error', 5000);
         setTimeout(() => {
             window.open('https://metamask.io/es/download', '_blank', 'noopener,noreferrer');
         }, 800);
@@ -22,7 +37,7 @@ async function conectarWallet() {
     try {
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+            showToast('⚠️ ' + perfilT('perfil_inicia_sesion', 'Inicia sesión'), 'error');
             return;
         }
 
@@ -31,12 +46,15 @@ async function conectarWallet() {
         try {
             accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         } catch (err) {
-            if (err.code === 4001) showToast('❌ Cancelaste la conexión en MetaMask', 'warning');
-            else showToast('❌ Error al abrir MetaMask', 'error');
+            if (err.code === 4001) {
+                showToast(perfilT('perfil_wallet_cancelado', '❌ Cancelaste la conexión en MetaMask'), 'warning');
+            } else {
+                showToast(perfilT('perfil_wallet_error_abrir', '❌ Error al abrir MetaMask'), 'error');
+            }
             return;
         }
         if (!accounts || accounts.length === 0) {
-            showToast('❌ No se obtuvo ninguna cuenta', 'error');
+            showToast(perfilT('perfil_wallet_sin_cuenta', '❌ No se obtuvo ninguna cuenta'), 'error');
             return;
         }
 
@@ -72,11 +90,11 @@ async function conectarWallet() {
                         });
                         chainId = ENV.networkChainId;
                     } catch (addError) {
-                        showToast('❌ No se pudo agregar la red Polygon Amoy', 'error');
+                        showToast(perfilT('perfil_wallet_error_agregar_red', '❌ No se pudo agregar la red Polygon Amoy'), 'error');
                         return;
                     }
                 } else {
-                    showToast('❌ No se pudo cambiar a Polygon Amoy', 'error');
+                    showToast(perfilT('perfil_wallet_error_cambiar_red', '❌ No se pudo cambiar a Polygon Amoy'), 'error');
                     return;
                 }
             }
@@ -90,13 +108,13 @@ async function conectarWallet() {
         });
         if (rpcErr) throw rpcErr;
 
-        showToast('✅ Wallet conectada a ' + ENV.networkName, 'success', 4000);
+        showToast(walletTexto('perfil_wallet_conectada', '✅ Wallet conectada a {red}', { red: ENV.networkName }), 'success', 4000);
         await cargarPerfil(true);
     } catch (error) {
         if (error.code === -32002) {
-            showToast('⚠️ MetaMask ya tiene una solicitud pendiente', 'warning', 5000);
+            showToast(perfilT('perfil_wallet_pendiente', '⚠️ MetaMask ya tiene una solicitud pendiente'), 'warning', 5000);
         } else {
-            showToast('❌ Error al conectar wallet: ' + msgError(error), 'error');
+            showToast('❌ ' + perfilT('perfil_wallet_error_conectar', 'Error al conectar wallet:') + ' ' + msgError(error), 'error');
         }
     }
 }
@@ -108,15 +126,15 @@ async function desconectarWallet() {
     try {
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+            showToast('⚠️ ' + perfilT('perfil_inicia_sesion', 'Inicia sesión'), 'error');
             return;
         }
         const { error: rpcError } = await window.supabaseClient.rpc('desvincular_wallet');
         if (rpcError) throw rpcError;
-        showToast('🔌 Wallet desconectada', 'warning');
+        showToast(perfilT('perfil_wallet_desconectada', '🔌 Wallet desconectada'), 'warning');
         await cargarPerfil(true);
     } catch (error) {
-        showToast('❌ Error al desconectar wallet: ' + msgError(error), 'error');
+        showToast('❌ ' + perfilT('perfil_wallet_error_desconectar', 'Error al desconectar wallet:') + ' ' + msgError(error), 'error');
     }
 }
 
@@ -130,16 +148,20 @@ function iniciarEscuchaWallet() {
         window.ethereum.on('accountsChanged', (accounts) => {
             if (perfilCache?.wallet_address) {
                 if (!accounts || accounts.length === 0) {
-                    showToast('🔌 Wallet desconectada desde MetaMask', 'warning');
+                    showToast(perfilT('perfil_wallet_desconectada_mm', '🔌 Wallet desconectada desde MetaMask'), 'warning');
                 } else if (accounts[0].toLowerCase() !== (perfilCache.wallet_address || '').toLowerCase()) {
-                    showToast('🔄 Cuenta cambiada en MetaMask. Vuelve a vincular.', 'warning', 5000);
+                    showToast(perfilT('perfil_wallet_cuenta_cambiada', '🔄 Cuenta cambiada en MetaMask. Vuelve a vincular.'), 'warning', 5000);
                 }
             }
         });
 
         window.ethereum.on('chainChanged', (chainId) => {
             if (perfilCache?.wallet_address && chainId !== ENV.networkChainId) {
-                showToast('⚠️ Cambiaste a una red distinta de Polygon Amoy', 'warning', 5000);
+                showToast(walletTexto(
+                    'perfil_wallet_red_distinta',
+                    '⚠️ Cambiaste a una red distinta de {red}',
+                    { red: ENV.networkName }
+                ), 'warning', 5000);
             }
         });
     } catch (e) {
