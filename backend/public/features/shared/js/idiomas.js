@@ -18,14 +18,11 @@
 // - public.traducciones usa: idioma_id, clave, valor, modulo
 // - No se crea un segundo sistema de traducciones
 //
-// FIX (v3):
-// - aplicarTraducciones() NUNCA sobrescribe el contenido de un
-//   elemento que tenga hijos HTML (children.length > 0).
-//   Esto evita que se borren botones, spans, e iconos internos.
-// - Se respeta el atributo data-no-traducir="1" para blindar
-//   elementos que no deben ser tocados por el sistema.
-// - Si un elemento está vacío o solo contiene texto plano, se
-//   traduce con textContent. Si tiene hijos, se ignora.
+// FIX (v4):
+// - aplicarTraducciones() ahora traduce también elementos que
+//   tienen hijos HTML (iconos, spans). Solo cambia los nodos de
+//   texto directos y conserva el resto intacto.
+// - Se respeta data-no-traducir="1" para blindar elementos.
 // ================================================================
 
 // ================================================================
@@ -469,12 +466,11 @@ function tConFallback(
 //
 // Acepta una raíz opcional (document, un elemento, etc.).
 //
-// FIX v3:
-// - Ahora es ESTRICTO: NUNCA sobrescribe el contenido de un
-//   elemento que tenga hijos HTML. Solo traduce elementos cuyo
-//   contenido sea texto plano (sin children).
+// FIX v4:
+// - Traduce también elementos con hijos HTML (íconos, spans).
+//   Solo cambia los nodos de texto directos; los hijos se quedan.
 // - Respeta data-no-traducir="1" para saltar elementos blindados.
-// - Esto evita que se borren botones, íconos o spans internos.
+// - Solo sobrescribe si existe traducción real en el idioma actual.
 // ================================================================
 
 function aplicarTraducciones(raiz = document) {
@@ -483,51 +479,28 @@ function aplicarTraducciones(raiz = document) {
             raiz = document;
         }
 
+        if (!raiz.querySelectorAll) {
+            return true;
+        }
+
         // ----------------------------------------------------------
         // DATA-CLAVE
         // ----------------------------------------------------------
 
-        const elementosClave =
-            raiz.querySelectorAll
-                ? raiz.querySelectorAll('[data-clave]')
-                : [];
+        raiz.querySelectorAll('[data-clave]').forEach(el => {
+            const clave = el.getAttribute('data-clave');
 
-        elementosClave.forEach(el => {
-            const clave =
-                el.getAttribute('data-clave');
-
-            if (!clave) {
+            if (!clave || el.hasAttribute('data-no-traducir')) {
                 return;
             }
 
-            // ✅ BLINDAJE 1: Si tiene hijos HTML, NO tocar.
-            // Ejemplo: <div><span>texto</span><button>...</button></div>
-            // NO se debe sobrescribir con textContent.
-            if (el.children && el.children.length > 0) {
-                return;
-            }
+            const traduccion = obtenerTraduccionReal(
+                clave,
+                el.getAttribute('data-modulo') || null
+            );
 
-            // ✅ BLINDAJE 2: Si tiene data-no-traducir, NO tocar.
-            if (el.hasAttribute('data-no-traducir')) {
-                return;
-            }
-
-            // ✅ BLINDAJE 3: Si tiene contenido con elementos (svg, img, etc.),
-            // NO tocar aunque children esté vacío.
-            if (el.innerHTML && el.innerHTML.indexOf('<') !== -1) {
-                return;
-            }
-
-            const modulo =
-                el.getAttribute('data-modulo') || null;
-
-            // Obtener traducción REAL (null si no existe).
-            const traduccion =
-                obtenerTraduccionReal(clave, modulo);
-
-            // SOLO sobrescribir si hay traducción real.
             if (traduccion !== null) {
-                el.textContent = traduccion;
+                escribirTextoTraducido(el, traduccion);
             }
         });
 
@@ -535,27 +508,15 @@ function aplicarTraducciones(raiz = document) {
         // DATA-PLACEHOLDER
         // ----------------------------------------------------------
 
-        const elementosPlaceholder =
-            raiz.querySelectorAll
-                ? raiz.querySelectorAll('[data-placeholder]')
-                : [];
+        raiz.querySelectorAll('[data-placeholder]').forEach(el => {
+            const clave = el.getAttribute('data-placeholder');
 
-        elementosPlaceholder.forEach(el => {
-            const clave =
-                el.getAttribute('data-placeholder');
-
-            if (!clave) {
+            if (!clave || el.hasAttribute('data-no-traducir')) {
                 return;
             }
 
-            if (el.hasAttribute('data-no-traducir')) {
-                return;
-            }
+            const traduccion = obtenerTraduccionReal(clave);
 
-            const traduccion =
-                obtenerTraduccionReal(clave);
-
-            // SOLO sobrescribir el placeholder si hay traducción real.
             if (traduccion !== null) {
                 el.setAttribute('placeholder', traduccion);
             }
@@ -570,6 +531,49 @@ function aplicarTraducciones(raiz = document) {
 
         return false;
     }
+}
+
+// ================================================================
+// ESCRIBIR TEXTO TRADUCIDO SIN BORRAR HIJOS
+// ================================================================
+//
+// - Sin hijos: reemplaza el contenido completo.
+// - Con hijos (íconos, spans): cambia solo el primer nodo de
+//   texto no vacío y conserva espacios al inicio y al final.
+//   Si no hay texto directo, lo inserta al principio.
+// ================================================================
+
+function escribirTextoTraducido(el, texto) {
+    if (!el.children || el.children.length === 0) {
+        el.textContent = texto;
+        return;
+    }
+
+    const nodos = Array.from(el.childNodes).filter(
+        n => n.nodeType === Node.TEXT_NODE &&
+             n.textContent.trim() !== ''
+    );
+
+    if (nodos.length === 0) {
+        el.insertBefore(
+            document.createTextNode(texto),
+            el.firstChild
+        );
+        return;
+    }
+
+    const primero = nodos[0];
+    const espacioInicial =
+        (primero.textContent.match(/^\s*/) || [''])[0];
+    const espacioFinal =
+        (primero.textContent.match(/\s*$/) || [''])[0];
+
+    primero.textContent =
+        espacioInicial + texto + espacioFinal;
+
+    nodos.slice(1).forEach(n => {
+        n.textContent = '';
+    });
 }
 
 // ================================================================
@@ -929,5 +933,5 @@ window.esIdioma =
 // ================================================================
 
 console.log(
-    '✅ Sistema de idiomas cargado correctamente (v3 - blindaje estricto)'
+    '✅ Sistema de idiomas cargado correctamente (v4 - hijos HTML preservados)'
 );
