@@ -4,6 +4,11 @@
 // Arranque del módulo, eventos globales, exposición a window y
 // sincronización realtime con Supabase.
 // Depende de: TODOS los archivos anteriores.
+//
+// CAMBIO v2 (traducciones):
+// - Antes de pintar espera a que idiomas.js tenga las traducciones.
+// - El nivel del usuario se traduce y ya no borra el ícono del badge.
+// - Textos de realtime y de avatar usan perfilT.
 // ================================================================
 
 // ================================================================
@@ -96,7 +101,7 @@ function publicarFuncionesGlobales() {
     window.cambiarTab = cambiarTab;
 
     // i18n
-    window.perfilT = t;
+    window.perfilT = perfilT;
     window.aplicarI18NPerfil = aplicarI18NPerfil;
     window.traducirPlanMeta = traducirPlanMeta;
 }
@@ -125,6 +130,24 @@ function cambiarTab(tab) {
 }
 
 // ================================================================
+// NIVEL DEL USUARIO (badge)
+// ================================================================
+// Conserva el ícono SVG del badge. Solo cambia el texto del <span>
+// interno y quita data-clave para que no lo sobrescriba el sistema
+// de traducciones con el nombre equivocado.
+// ================================================================
+function aplicarNivelUsuario(nivel) {
+    const nivelEl = document.getElementById('nivelUsuario');
+    if (!nivelEl || !nivel) return;
+
+    const destino = nivelEl.querySelector('span') || nivelEl;
+
+    destino.removeAttribute('data-clave');
+    destino.setAttribute('data-no-traducir', '1');
+    destino.textContent = nivel.emoji + ' ' + perfilT(nivel.clave, nivel.nombre);
+}
+
+// ================================================================
 // SINCRONIZACIÓN REALTIME
 // ================================================================
 var ultimaRecargaPerfilSync = 0;
@@ -132,33 +155,41 @@ var ultimaRecargaPerfilSync = 0;
 function actualizarDOMDesdeRealtime(usuario) {
     try {
         if (!usuario) return;
+
         var nombreContainer = document.querySelector('#perfilNombre');
         if (nombreContainer) {
             var nombreSpan = nombreContainer.querySelector('[data-clave="perfil_nombre_usuario"]');
+            var nombreTexto = usuario.nombre || perfilT('perfil_nombre_usuario', 'Explorador');
             if (nombreSpan) {
-                nombreSpan.textContent = usuario.nombre || 'Explorador';
+                nombreSpan.textContent = nombreTexto;
             } else {
-                nombreContainer.textContent = usuario.nombre || 'Explorador';
+                nombreContainer.textContent = nombreTexto;
             }
         }
+
         var handleElement = document.querySelector('#perfilHandle');
         if (handleElement) {
             handleElement.textContent = usuario.handle ? '@' + usuario.handle : '@explorador';
         }
+
         var avatarElement = document.querySelector('#perfilAvatar');
         if (avatarElement) {
+            var tituloOpciones = escaparHTML(perfilT('perfil_titulo_opciones_foto', 'Opciones de foto'));
+            var iconoEditar =
+                '<span class="avatar-menu-toggle" title="' + tituloOpciones + '">' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">' +
+                '<path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></span>';
+
             if (usuario.avatar_url) {
                 avatarElement.innerHTML =
-                    '<img src="' + escaparHTML(usuario.avatar_url) + '" alt="Avatar">' +
-                    '<span class="avatar-menu-toggle" title="Opciones de foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></span>';
+                    '<img src="' + escaparHTML(usuario.avatar_url) + '" alt="Avatar">' + iconoEditar;
             } else {
-                avatarElement.innerHTML =
-                    '◈' +
-                    '<span class="avatar-menu-toggle" title="Opciones de foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></span>';
+                avatarElement.innerHTML = '◈' + iconoEditar;
             }
+
             var toggle = avatarElement.querySelector('.avatar-menu-toggle');
             if (toggle) {
-                toggle.onclick = function(ev) {
+                toggle.onclick = function (ev) {
                     ev.stopPropagation();
                     if (typeof window.toggleAvatarMenu === 'function') window.toggleAvatarMenu(ev);
                 };
@@ -176,7 +207,7 @@ async function recargarPerfilRealtime(forzar) {
         ultimaRecargaPerfilSync = ahora;
 
         if (!window.supabaseClient) {
-            setTimeout(function() { recargarPerfilRealtime(true); }, 500);
+            setTimeout(function () { recargarPerfilRealtime(true); }, 500);
             return;
         }
         var sessionResult = await window.supabaseClient.auth.getSession();
@@ -224,7 +255,7 @@ async function iniciarRealtimePerfil() {
                 schema: 'public',
                 table: 'usuarios',
                 filter: 'id=eq.' + userId
-            }, function(payload) {
+            }, function (payload) {
                 if (payload && payload.new) {
                     actualizarDOMDesdeRealtime(payload.new);
                 }
@@ -244,13 +275,13 @@ function aplicarParametrosURL() {
     var action = params.get('action');
 
     if (tab && typeof window.cambiarTab === 'function') {
-        setTimeout(function() {
+        setTimeout(function () {
             window.cambiarTab(tab);
             console.log('[Perfil] Tab cambiada a:', tab);
             if (tab === 'qr') {
                 var tabContent = document.getElementById('tab-qr');
                 if (tabContent) {
-                    setTimeout(function() {
+                    setTimeout(function () {
                         tabContent.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }, 300);
                 }
@@ -259,11 +290,11 @@ function aplicarParametrosURL() {
     }
 
     if (action === 'canjear') {
-        setTimeout(function() {
+        setTimeout(function () {
             if (typeof window.cambiarTab === 'function') {
                 window.cambiarTab('tokens');
             }
-            setTimeout(function() {
+            setTimeout(function () {
                 if (typeof window.canjearNFT === 'function') {
                     window.canjearNFT();
                     console.log('[Perfil] Acción canjear ejecutada');
@@ -273,7 +304,7 @@ function aplicarParametrosURL() {
     }
 
     if (tab || action) {
-        setTimeout(function() {
+        setTimeout(function () {
             try {
                 var urlLimpia = window.location.pathname;
                 window.history.replaceState({}, document.title, urlLimpia);
@@ -285,10 +316,36 @@ function aplicarParametrosURL() {
 }
 
 // ================================================================
+// ESPERAR TRADUCCIONES
+// ================================================================
+// Espera a que idiomas.js cargue las traducciones (máximo ~5 s)
+// y aplica el idioma a la página antes de pintar los datos.
+// ================================================================
+async function esperarTraduccionesPerfil() {
+    for (var i = 0; i < 50 && typeof window.esperarIdiomas !== 'function'; i++) {
+        await new Promise(function (resolve) { setTimeout(resolve, 100); });
+    }
+
+    if (typeof window.esperarIdiomas === 'function') {
+        try {
+            await window.esperarIdiomas();
+        } catch (e) {
+            console.warn('[Perfil] No se pudieron cargar las traducciones:', e);
+        }
+    }
+
+    await aplicarI18NPerfil(document);
+}
+
+// ================================================================
 // INICIALIZACIÓN PRINCIPAL
 // ================================================================
 async function iniciarPerfil() {
     asegurarEstilosPerfil();
+
+    // Primero traducciones, después datos (así no se pinta en español
+    // y luego cambia)
+    await esperarTraduccionesPerfil();
 
     if (typeof jsQR === 'undefined') {
         try {
@@ -305,15 +362,13 @@ async function iniciarPerfil() {
     // Cargar perfil principal
     await cargarPerfil();
 
-    // ⭐ ARREGLO DE CLAUDE: Cargar mis publicaciones al arrancar
+    // Cargar mis publicaciones al arrancar
     cargarMisPublicaciones();
 
-    // Cargar estadísticas y nivel
+    // Nivel del usuario según tokens
     const stats = await obtenerEstadisticas();
     if (stats) {
-        const nivel = calcularNivel(stats.tokens_actuales || 0);
-        const nivelEl = document.getElementById('nivelUsuario');
-        if (nivelEl) nivelEl.textContent = nivel.emoji + ' ' + nivel.nombre;
+        aplicarNivelUsuario(calcularNivel(stats.tokens_actuales || 0));
     }
 
     // Iniciar módulos
@@ -352,23 +407,23 @@ publicarFuncionesGlobales();
 asegurarEstilosPerfil();
 
 iniciarRecargaRealtime();
-setTimeout(function() { recargarPerfilRealtime(true); }, 800);
-setTimeout(function() { recargarPerfilRealtime(true); }, 1600);
-setTimeout(function() { recargarPerfilRealtime(true); }, 3000);
+setTimeout(function () { recargarPerfilRealtime(true); }, 800);
+setTimeout(function () { recargarPerfilRealtime(true); }, 1600);
+setTimeout(function () { recargarPerfilRealtime(true); }, 3000);
 setTimeout(iniciarRealtimePerfil, 1000);
 
-document.addEventListener('visibilitychange', function() {
+document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'visible') recargarPerfilRealtime(true);
 });
-window.addEventListener('focus', function() {
+window.addEventListener('focus', function () {
     recargarPerfilRealtime(true);
 });
 
-document.addEventListener('click', function(e) {
+document.addEventListener('click', function (e) {
     var menu = document.getElementById('avatarMenu');
     var avatar = document.getElementById('perfilAvatar');
     if (menu && menu.classList.contains('show')) {
-        if (!menu.contains(e.target) && !avatar.contains(e.target)) {
+        if (!menu.contains(e.target) && avatar && !avatar.contains(e.target)) {
             menu.classList.remove('show');
         }
     }
@@ -379,7 +434,7 @@ document.addEventListener('click', function(e) {
         }
     }
     var rd = document.querySelectorAll('.reaccion-dropdown.show');
-    rd.forEach(function(dd) {
+    rd.forEach(function (dd) {
         if (!dd.contains(e.target) && !dd.parentElement.contains(e.target)) {
             dd.classList.remove('show');
         }
