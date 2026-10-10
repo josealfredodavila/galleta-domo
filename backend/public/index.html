@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" data-public>
+<html lang="es" data-public class="verificando">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -20,6 +20,23 @@
     if (esRecuperacion) {
         window.location.replace('/actualizar-contrasena.html' + window.location.hash + window.location.search);
         return;
+    }
+
+    // Si no hay ningún rastro de sesión guardado en el navegador, no hace falta
+    // esperar la verificación: se muestra el login de inmediato.
+    // Supabase guarda la sesión en localStorage con la clave sb-<proyecto>-auth-token.
+    var hayRastroSesion = false;
+    try {
+        for (var i = 0; i < localStorage.length; i++) {
+            var k = localStorage.key(i);
+            if (k && k.indexOf('sb-') === 0 && k.slice(-11) === '-auth-token') {
+                hayRastroSesion = true;
+                break;
+            }
+        }
+    } catch (_) {}
+    if (!hayRastroSesion) {
+        document.documentElement.classList.remove('verificando');
     }
 
     var SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
@@ -82,6 +99,10 @@
 * { margin:0; padding:0; box-sizing:border-box; }
 body { background:var(--space); color:var(--text-primary); font-family:'Inter',sans-serif; min-height:100vh; background-image:radial-gradient(ellipse at 20% 50%,rgba(26,74,42,.4) 0%,transparent 60%),radial-gradient(ellipse at 80% 50%,rgba(212,175,55,.08) 0%,transparent 60%); }
 .app { position:relative; z-index:1; max-width:1280px; margin:0 auto; padding:20px 24px 30px; }
+.verificando .app { visibility:hidden; }
+#pantallaCarga { display:none; position:fixed; inset:0; z-index:5000; background:var(--space); align-items:center; justify-content:center; }
+.verificando #pantallaCarga { display:flex; }
+#pantallaCarga .hex { font-size:2.6rem; color:var(--gold); font-family:'Orbitron',monospace; text-shadow:0 0 30px rgba(212,175,55,.3); animation:pulse-live 1.4s infinite; }
 .header { display:flex; justify-content:space-between; align-items:center; padding:12px 0 16px; border-bottom:2px solid var(--glass-border); background:rgba(5,8,15,.9); position:sticky; top:0; z-index:100; box-shadow:0 4px 30px rgba(0,0,0,.3); border-radius:var(--radius) var(--radius) 0 0; gap:12px; flex-wrap:wrap; }
 .logo { display:flex; align-items:center; gap:12px; }
 .logo-main { display:flex; align-items:center; gap:12px; text-decoration:none; }
@@ -146,6 +167,7 @@ body { background:var(--space); color:var(--text-primary); font-family:'Inter',s
 </style>
 </head>
 <body>
+<div id="pantallaCarga"><span class="hex">◈</span></div>
 <div class="nebula nebula-1"></div>
 <div class="nebula nebula-2"></div>
 <div class="nebula nebula-3"></div>
@@ -214,16 +236,34 @@ function showToast(msg, type, duration) {
 }
 window.showToast = showToast;
 
+// Muestra el login (quita la pantalla de carga)
+function mostrarLogin() {
+    document.documentElement.classList.remove('verificando');
+}
+
 async function redirigirSiYaHaySesion() {
-    // No redirigir si el enlace es de recuperación de contraseña
-    if (/type=recovery/.test(window.location.hash) || /type=recovery/.test(window.location.search)) return;
+    // Si es un enlace de recuperación, la redirección ya se hizo en el head
+    if (/type=recovery/.test(window.location.hash) || /type=recovery/.test(window.location.search)) {
+        mostrarLogin();
+        return;
+    }
     try {
         const client = window.getSupabase ? window.getSupabase() : null;
-        if (!client || !client.auth) return;
+        if (!client || !client.auth) { mostrarLogin(); return; }
+
+        // Si la verificación tarda demasiado, mostrar el login para no dejar al usuario esperando
+        const limite = setTimeout(mostrarLogin, 4000);
         const r = await client.auth.getSession();
+        clearTimeout(limite);
+
         const s = r && r.data ? r.data.session : null;
-        if (s) window.location.replace(RUTA_PERFIL);
+        if (s) {
+            // Sesión válida: ir a Perfil sin mostrar el login (la pantalla de carga se mantiene)
+            window.location.replace(RUTA_PERFIL);
+            return;
+        }
     } catch (e) {}
+    mostrarLogin();
 }
 
 async function iniciarSesionDesdeIndex() {
