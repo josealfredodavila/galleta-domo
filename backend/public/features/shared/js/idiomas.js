@@ -1,28 +1,24 @@
 // ================================================================
-// IDIOMAS - VERSIÓN COMPLETA Y CORREGIDA
-// I18N GLOBAL DE SARIEL'S ECOSYSTEM
+// IDIOMAS · I18N GLOBAL DE SARIEL'S ECOSYSTEM · v5
 //
 // Compatible con:
-// - window.supabaseClient
-// - window.supabase
-// - data-clave
-// - data-placeholder
-// - contenido HTML dinámico
-// - window.t()
-// - window.tConFallback()
-// - window.aplicarTraducciones()
-// - window.aplicarTraduccionesDinamicas()
-// - window.inicializarIdiomas()
+// - data-clave, data-clave-title, data-placeholder
+// - <title data-clave="..."> y <html lang> dinámicos
+// - window.t(), window.tConFallback(), window.obtenerTraduccionReal()
+// - window.aplicarTraducciones(), window.aplicarTraduccionesDinamicas()
+// - window.esperarIdiomas() (promesa, idempotente)
+// - window.inicializarIdiomas() (idempotente)
 //
-// IMPORTANTE:
-// - public.traducciones usa: idioma_id, clave, valor, modulo
-// - No se crea un segundo sistema de traducciones
-//
-// FIX (v4):
-// - aplicarTraducciones() ahora traduce también elementos que
-//   tienen hijos HTML (iconos, spans). Solo cambia los nodos de
-//   texto directos y conserva el resto intacto.
-// - Se respeta data-no-traducir="1" para blindar elementos.
+// CAMBIOS v5:
+// - inicializarIdiomas() ya no se ejecuta dos veces: devuelve la misma promesa.
+// - esperarIdiomas() permite que cualquier script espere a que las
+//   traducciones estén listas antes de pintar textos.
+// - data-clave-title traduce el atributo title.
+// - <title data-clave> y <html lang> se actualizan con el idioma actual.
+// - MutationObserver traduce elementos que se agregan después
+//   (publicaciones, amigos, toasts, modales, filas dinámicas).
+// - Se marca cada elemento traducido con data-i18n-ok para no
+//   volver a procesarlo en bucle.
 // ================================================================
 
 // ================================================================
@@ -30,20 +26,16 @@
 // ================================================================
 
 function getSupabaseClient() {
-    // 1. Usar cliente global existente (creado por el bloque del HTML)
     if (window.supabaseClient) {
         return window.supabaseClient;
     }
 
-    // 2. Fallback: crear cliente desde la librería global
     if (
         window.supabase &&
         typeof window.supabase.createClient === 'function'
     ) {
         try {
-            // ⚠️ Nota: estas credenciales solo se usan si el bloque
-            // centralizado del HTML no pudo crear window.supabaseClient.
-            // En producción /api/config/public es la fuente de verdad.
+            // Solo se usan si el bloque centralizado del HTML no creó el cliente.
             const client = window.supabase.createClient(
                 'https://zultnlogdoajehbswlih.supabase.co',
                 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
@@ -53,10 +45,7 @@ function getSupabaseClient() {
 
             return client;
         } catch (e) {
-            console.warn(
-                '⚠️ No se pudo crear cliente Supabase:',
-                e
-            );
+            console.warn('⚠️ No se pudo crear cliente Supabase:', e);
         }
     }
 
@@ -82,11 +71,7 @@ async function getSession() {
 
         return session;
     } catch (e) {
-        console.error(
-            '❌ Error obteniendo sesión:',
-            e
-        );
-
+        console.error('❌ Error obteniendo sesión:', e);
         return null;
     }
 }
@@ -97,8 +82,10 @@ async function getSession() {
 
 let idiomaActual = null;
 let traducciones = {};
+let observadorDinamico = null;
+let aplicandoTraducciones = false;
+let inicializacionPromesa = null;
 
-// Exponer el objeto globalmente.
 window.traducciones = traducciones;
 window.idiomaActual = idiomaActual;
 
@@ -127,10 +114,7 @@ async function obtenerIdiomaUsuario() {
             return idiomaActual;
         }
 
-        // ------------------------------------------------------------
-        // 1. Intentar desde el perfil del usuario
-        // ------------------------------------------------------------
-
+        // 1. Perfil del usuario (fuente de verdad)
         const session = await getSession();
 
         if (session && session.user) {
@@ -148,47 +132,31 @@ async function obtenerIdiomaUsuario() {
                 usuario &&
                 usuario.idioma_preferido_id
             ) {
-                const {
-                    data: idioma
-                } = await client
+                const { data: idioma } = await client
                     .from('idiomas_sistema')
                     .select('*')
-                    .eq(
-                        'id',
-                        usuario.idioma_preferido_id
-                    )
+                    .eq('id', usuario.idioma_preferido_id)
                     .maybeSingle();
 
                 if (idioma) {
                     idiomaActual = idioma;
                     window.idiomaActual = idiomaActual;
-
                     return idioma;
                 }
             }
         }
 
-        // ------------------------------------------------------------
-        // 2. Intentar desde localStorage
-        // ------------------------------------------------------------
-
+        // 2. localStorage (visitantes o cuando no hay perfil)
         let localId = null;
 
         try {
-            localId = localStorage.getItem(
-                'idioma_preferido'
-            );
+            localId = localStorage.getItem('idioma_preferido');
         } catch (e) {
-            console.warn(
-                '⚠️ No se pudo leer idioma_preferido:',
-                e
-            );
+            console.warn('⚠️ No se pudo leer idioma_preferido:', e);
         }
 
         if (localId) {
-            const {
-                data: idioma
-            } = await client
+            const { data: idioma } = await client
                 .from('idiomas_sistema')
                 .select('*')
                 .eq('id', localId)
@@ -197,36 +165,24 @@ async function obtenerIdiomaUsuario() {
             if (idioma) {
                 idiomaActual = idioma;
                 window.idiomaActual = idiomaActual;
-
                 return idioma;
             }
         }
 
-        // ------------------------------------------------------------
         // 3. Idioma por defecto: es-MX
-        // ------------------------------------------------------------
-
-        const {
-            data: idiomaDefault
-        } = await client
+        const { data: idiomaDefault } = await client
             .from('idiomas_sistema')
             .select('*')
             .eq('codigo', 'es-MX')
             .eq('activo', true)
             .maybeSingle();
 
-        idiomaActual =
-            idiomaDefault ||
-            IDIOMA_DEFAULT;
-
+        idiomaActual = idiomaDefault || IDIOMA_DEFAULT;
         window.idiomaActual = idiomaActual;
 
         return idiomaActual;
     } catch (error) {
-        console.error(
-            'Error obteniendo idioma:',
-            error
-        );
+        console.error('Error obteniendo idioma:', error);
 
         idiomaActual = IDIOMA_DEFAULT;
         window.idiomaActual = idiomaActual;
@@ -246,59 +202,36 @@ async function cargarTraducciones(idiomaId) {
         if (!client || !idiomaId) {
             traducciones = {};
             window.traducciones = traducciones;
-
             return traducciones;
         }
 
-        const {
-            data,
-            error
-        } = await client
+        const { data, error } = await client
             .from('traducciones')
-            .select(
-                'clave, valor, modulo'
-            )
-            .eq(
-                'idioma_id',
-                idiomaId
-            );
+            .select('clave, valor, modulo')
+            .eq('idioma_id', idiomaId);
 
         if (error) {
             throw error;
         }
 
-        // ------------------------------------------------------------
-        // Crear nuevo mapa de traducciones
-        // ------------------------------------------------------------
-
         const nuevoMapa = {};
 
         if (Array.isArray(data)) {
             data.forEach(item => {
-                if (
-                    !item ||
-                    !item.clave
-                ) {
+                if (!item || !item.clave) {
                     return;
                 }
 
-                // La columna correcta es "valor".
-                nuevoMapa[item.clave] =
-                    item.valor ?? '';
+                nuevoMapa[item.clave] = item.valor ?? '';
             });
         }
 
         traducciones = nuevoMapa;
-
-        // Sincronizar referencia global
         window.traducciones = traducciones;
 
         return traducciones;
     } catch (error) {
-        console.error(
-            'Error cargando traducciones:',
-            error
-        );
+        console.error('Error cargando traducciones:', error);
 
         traducciones = {};
         window.traducciones = traducciones;
@@ -311,85 +244,8 @@ async function cargarTraducciones(idiomaId) {
 // OBTENER TEXTO TRADUCIDO
 // ================================================================
 //
-// Comportamiento:
-// - Si la clave existe en el mapa: devuelve el valor.
-// - Si no existe: devuelve la clave humanizada (con espacios).
-//
-// IMPORTANTE: aplicarTraducciones() NO usa el valor humanizado
-// para sobrescribir el DOM. Lo usa solo si tú llamas a t() desde
-// tu código JS explícitamente.
-// ================================================================
-
-function t(clave, modulo = null) {
-    if (!clave) {
-        return '';
-    }
-
-    // ------------------------------------------------------------
-    // Buscar clave exacta
-    // ------------------------------------------------------------
-
-    if (
-        Object.prototype.hasOwnProperty.call(
-            traducciones,
-            clave
-        )
-    ) {
-        const valor =
-            traducciones[clave];
-
-        if (
-            valor !== null &&
-            valor !== undefined &&
-            String(valor).trim() !== ''
-        ) {
-            return String(valor);
-        }
-    }
-
-    // ------------------------------------------------------------
-    // Buscar clave usando módulo
-    // ------------------------------------------------------------
-
-    if (modulo) {
-        const keyModulo =
-            `${modulo}_${clave}`;
-
-        if (
-            Object.prototype.hasOwnProperty.call(
-                traducciones,
-                keyModulo
-            )
-        ) {
-            const valor =
-                traducciones[keyModulo];
-
-            if (
-                valor !== null &&
-                valor !== undefined &&
-                String(valor).trim() !== ''
-            ) {
-                return String(valor);
-            }
-        }
-    }
-
-    // ------------------------------------------------------------
-    // Fallback seguro
-    //
-    // Si no existe traducción, devuelve la clave legible.
-    // ------------------------------------------------------------
-
-    return String(clave)
-        .replace(/_/g, ' ');
-}
-
-// ================================================================
-// VERIFICAR SI UNA CLAVE TIENE TRADUCCIÓN REAL
-// ================================================================
-//
-// Devuelve la traducción si existe, o null si no.
-// NO usa el fallback humanizado. Útil para aplicarTraducciones().
+// Si la clave existe: devuelve el valor.
+// Si no existe: devuelve la clave humanizada (con espacios).
 // ================================================================
 
 function obtenerTraduccionReal(clave, modulo = null) {
@@ -397,33 +253,15 @@ function obtenerTraduccionReal(clave, modulo = null) {
         return null;
     }
 
-    if (
-        Object.prototype.hasOwnProperty.call(
-            traducciones,
-            clave
-        )
-    ) {
-        const valor = traducciones[clave];
-
-        if (
-            valor !== null &&
-            valor !== undefined &&
-            String(valor).trim() !== ''
-        ) {
-            return String(valor);
-        }
-    }
+    const candidatas = [clave];
 
     if (modulo) {
-        const keyModulo = `${modulo}_${clave}`;
+        candidatas.push(`${modulo}_${clave}`);
+    }
 
-        if (
-            Object.prototype.hasOwnProperty.call(
-                traducciones,
-                keyModulo
-            )
-        ) {
-            const valor = traducciones[keyModulo];
+    for (const k of candidatas) {
+        if (Object.prototype.hasOwnProperty.call(traducciones, k)) {
+            const valor = traducciones[k];
 
             if (
                 valor !== null &&
@@ -438,15 +276,21 @@ function obtenerTraduccionReal(clave, modulo = null) {
     return null;
 }
 
-// ================================================================
-// OBTENER TRADUCCIÓN CON FALLBACK PERSONALIZADO
-// ================================================================
+function t(clave, modulo = null) {
+    if (!clave) {
+        return '';
+    }
 
-function tConFallback(
-    clave,
-    fallback = '',
-    modulo = null
-) {
+    const real = obtenerTraduccionReal(clave, modulo);
+
+    if (real !== null) {
+        return real;
+    }
+
+    return String(clave).replace(/_/g, ' ');
+}
+
+function tConFallback(clave, fallback = '', modulo = null) {
     const real = obtenerTraduccionReal(clave, modulo);
 
     if (real !== null) {
@@ -461,16 +305,92 @@ function tConFallback(
 }
 
 // ================================================================
-// APLICAR TRADUCCIONES A HTML
+// ESCRIBIR TEXTO TRADUCIDO SIN BORRAR HIJOS
 // ================================================================
 //
-// Acepta una raíz opcional (document, un elemento, etc.).
-//
-// FIX v4:
-// - Traduce también elementos con hijos HTML (íconos, spans).
-//   Solo cambia los nodos de texto directos; los hijos se quedan.
-// - Respeta data-no-traducir="1" para saltar elementos blindados.
-// - Solo sobrescribe si existe traducción real en el idioma actual.
+// - Sin hijos: reemplaza el contenido completo.
+// - Con hijos (iconos, spans): cambia solo el primer nodo de texto
+//   no vacío y conserva espacios. Si no hay texto directo, lo inserta.
+// ================================================================
+
+function escribirTextoTraducido(el, texto) {
+    if (!el.children || el.children.length === 0) {
+        el.textContent = texto;
+        return;
+    }
+
+    const nodos = Array.from(el.childNodes).filter(
+        n => n.nodeType === Node.TEXT_NODE && n.textContent.trim() !== ''
+    );
+
+    if (nodos.length === 0) {
+        el.insertBefore(document.createTextNode(texto), el.firstChild);
+        return;
+    }
+
+    const primero = nodos[0];
+    const espacioInicial = (primero.textContent.match(/^\s*/) || [''])[0];
+    const espacioFinal = (primero.textContent.match(/\s*$/) || [''])[0];
+
+    primero.textContent = espacioInicial + texto + espacioFinal;
+
+    nodos.slice(1).forEach(n => {
+        n.textContent = '';
+    });
+}
+
+// ================================================================
+// SELECCIONAR ELEMENTOS (la raíz también cuenta)
+// ================================================================
+
+function elementosConAtributo(raiz, selector) {
+    const lista = [];
+
+    if (!raiz) {
+        return lista;
+    }
+
+    if (raiz.nodeType === 1 && raiz.matches && raiz.matches(selector)) {
+        lista.push(raiz);
+    }
+
+    if (raiz.querySelectorAll) {
+        lista.push(...raiz.querySelectorAll(selector));
+    }
+
+    return lista;
+}
+
+// ================================================================
+// TÍTULO DE PÁGINA E IDIOMA DEL HTML
+// ================================================================
+
+function aplicarMetaPagina() {
+    try {
+        const tituloEl = document.querySelector('title[data-clave]');
+
+        if (tituloEl) {
+            const traduccion = obtenerTraduccionReal(
+                tituloEl.getAttribute('data-clave')
+            );
+
+            if (traduccion !== null) {
+                document.title = traduccion;
+            }
+        }
+
+        const codigo = obtenerCodigoIdiomaActual();
+
+        if (codigo) {
+            document.documentElement.setAttribute('lang', codigo);
+        }
+    } catch (e) {
+        console.warn('⚠️ No se pudo aplicar meta de página:', e);
+    }
+}
+
+// ================================================================
+// APLICAR TRADUCCIONES
 // ================================================================
 
 function aplicarTraducciones(raiz = document) {
@@ -479,18 +399,19 @@ function aplicarTraducciones(raiz = document) {
             raiz = document;
         }
 
-        if (!raiz.querySelectorAll) {
-            return true;
-        }
+        const codigo = obtenerCodigoIdiomaActual();
 
-        // ----------------------------------------------------------
-        // DATA-CLAVE
-        // ----------------------------------------------------------
+        aplicandoTraducciones = true;
 
-        raiz.querySelectorAll('[data-clave]').forEach(el => {
+        // DATA-CLAVE (texto)
+        elementosConAtributo(raiz, '[data-clave]').forEach(el => {
+            if (el.hasAttribute('data-no-traducir')) {
+                return;
+            }
+
             const clave = el.getAttribute('data-clave');
 
-            if (!clave || el.hasAttribute('data-no-traducir')) {
+            if (!clave) {
                 return;
             }
 
@@ -502,89 +423,97 @@ function aplicarTraducciones(raiz = document) {
             if (traduccion !== null) {
                 escribirTextoTraducido(el, traduccion);
             }
+
+            el.setAttribute('data-i18n-ok', codigo);
         });
 
-        // ----------------------------------------------------------
-        // DATA-PLACEHOLDER
-        // ----------------------------------------------------------
-
-        raiz.querySelectorAll('[data-placeholder]').forEach(el => {
-            const clave = el.getAttribute('data-placeholder');
-
-            if (!clave || el.hasAttribute('data-no-traducir')) {
+        // DATA-CLAVE-TITLE (atributo title)
+        elementosConAtributo(raiz, '[data-clave-title]').forEach(el => {
+            if (el.hasAttribute('data-no-traducir')) {
                 return;
             }
 
-            const traduccion = obtenerTraduccionReal(clave);
+            const traduccion = obtenerTraduccionReal(
+                el.getAttribute('data-clave-title')
+            );
+
+            if (traduccion !== null) {
+                el.setAttribute('title', traduccion);
+            }
+        });
+
+        // DATA-PLACEHOLDER (atributo placeholder)
+        elementosConAtributo(raiz, '[data-placeholder]').forEach(el => {
+            if (el.hasAttribute('data-no-traducir')) {
+                return;
+            }
+
+            const traduccion = obtenerTraduccionReal(
+                el.getAttribute('data-placeholder')
+            );
 
             if (traduccion !== null) {
                 el.setAttribute('placeholder', traduccion);
             }
         });
 
+        if (raiz === document) {
+            aplicarMetaPagina();
+        }
+
         return true;
     } catch (error) {
-        console.error(
-            '❌ Error aplicando traducciones:',
-            error
-        );
-
+        console.error('❌ Error aplicando traducciones:', error);
         return false;
+    } finally {
+        aplicandoTraducciones = false;
     }
 }
-
-// ================================================================
-// ESCRIBIR TEXTO TRADUCIDO SIN BORRAR HIJOS
-// ================================================================
-//
-// - Sin hijos: reemplaza el contenido completo.
-// - Con hijos (íconos, spans): cambia solo el primer nodo de
-//   texto no vacío y conserva espacios al inicio y al final.
-//   Si no hay texto directo, lo inserta al principio.
-// ================================================================
-
-function escribirTextoTraducido(el, texto) {
-    if (!el.children || el.children.length === 0) {
-        el.textContent = texto;
-        return;
-    }
-
-    const nodos = Array.from(el.childNodes).filter(
-        n => n.nodeType === Node.TEXT_NODE &&
-             n.textContent.trim() !== ''
-    );
-
-    if (nodos.length === 0) {
-        el.insertBefore(
-            document.createTextNode(texto),
-            el.firstChild
-        );
-        return;
-    }
-
-    const primero = nodos[0];
-    const espacioInicial =
-        (primero.textContent.match(/^\s*/) || [''])[0];
-    const espacioFinal =
-        (primero.textContent.match(/\s*$/) || [''])[0];
-
-    primero.textContent =
-        espacioInicial + texto + espacioFinal;
-
-    nodos.slice(1).forEach(n => {
-        n.textContent = '';
-    });
-}
-
-// ================================================================
-// APLICAR TRADUCCIONES A CONTENIDO DINÁMICO
-// ================================================================
-//
-// Alias explícito. No crea sistema nuevo.
-// ================================================================
 
 function aplicarTraduccionesDinamicas(raiz = document) {
     return aplicarTraducciones(raiz);
+}
+
+// ================================================================
+// OBSERVADOR DE CONTENIDO DINÁMICO
+// ================================================================
+//
+// Traduce elementos que el JS agrega después de cargar la página.
+// Solo mira nodos agregados (childList), no cambios de texto, para
+// no entrar en bucle con las propias traducciones.
+// ================================================================
+
+function iniciarObservadorDinamico() {
+    if (observadorDinamico || !window.MutationObserver || !document.body) {
+        return;
+    }
+
+    observadorDinamico = new MutationObserver(function (mutaciones) {
+        const codigo = obtenerCodigoIdiomaActual();
+        const pendientes = [];
+
+        mutaciones.forEach(function (mutacion) {
+            mutacion.addedNodes.forEach(function (nodo) {
+                if (
+                    nodo.nodeType === 1 &&
+                    nodo.getAttribute('data-i18n-ok') !== codigo
+                ) {
+                    pendientes.push(nodo);
+                }
+            });
+        });
+
+        pendientes.forEach(function (nodo) {
+            if (document.contains(nodo)) {
+                aplicarTraducciones(nodo);
+            }
+        });
+    });
+
+    observadorDinamico.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
 }
 
 // ================================================================
@@ -599,15 +528,8 @@ function obtenerCodigoIdiomaActual() {
     );
 }
 
-// ================================================================
-// COMPROBAR SI EL IDIOMA ACTUAL ES UNO ESPECÍFICO
-// ================================================================
-
 function esIdioma(codigo) {
-    return (
-        obtenerCodigoIdiomaActual() ===
-        codigo
-    );
+    return obtenerCodigoIdiomaActual() === codigo;
 }
 
 // ================================================================
@@ -621,317 +543,188 @@ async function cambiarIdioma(idiomaId) {
         }
 
         try {
-            localStorage.setItem(
-                'idioma_preferido',
-                idiomaId
-            );
+            localStorage.setItem('idioma_preferido', idiomaId);
         } catch (e) {
-            console.warn(
-                '⚠️ No se pudo guardar idioma_preferido:',
-                e
-            );
+            console.warn('⚠️ No se pudo guardar idioma_preferido:', e);
         }
 
-        const session =
-            await getSession();
+        const session = await getSession();
 
-        if (
-            session &&
-            session.user
-        ) {
-            const client =
-                getSupabaseClient();
+        if (session && session.user) {
+            const client = getSupabaseClient();
 
             if (client) {
-                const {
-                    error
-                } = await client
+                const { error } = await client
                     .from('usuarios')
-                    .update({
-                        idioma_preferido_id:
-                            idiomaId
-                    })
-                    .eq(
-                        'id',
-                        session.user.id
-                    );
+                    .update({ idioma_preferido_id: idiomaId })
+                    .eq('id', session.user.id);
 
                 if (error) {
-                    console.warn(
-                        '⚠️ No se pudo guardar idioma en perfil:',
-                        error
-                    );
+                    console.warn('⚠️ No se pudo guardar idioma en perfil:', error);
                 }
             }
         }
 
         window.location.reload();
     } catch (error) {
-        console.error(
-            'Error cambiando idioma:',
-            error
-        );
+        console.error('Error cambiando idioma:', error);
 
-        if (
-            typeof window.showToast ===
-            'function'
-        ) {
-            window.showToast(
-                '❌ Error al cambiar idioma',
-                'error'
-            );
+        if (typeof window.showToast === 'function') {
+            window.showToast('❌ Error al cambiar idioma', 'error');
         }
     }
 }
 
 // ================================================================
-// CARGAR SELECTOR DE IDIOMAS
+// CARGAR SELECTOR DE IDIOMAS (solo si la página tiene #selectorIdioma)
 // ================================================================
 
 async function cargarSelectorIdiomas() {
     try {
-        const select =
-            document.getElementById(
-                'selectorIdioma'
-            );
+        const select = document.getElementById('selectorIdioma');
 
         if (!select) {
             return;
         }
 
-        const client =
-            getSupabaseClient();
+        const client = getSupabaseClient();
 
         if (!client) {
-            select.innerHTML =
-                '<option value="es-MX" selected>🌐 Español</option>';
-
+            select.innerHTML = '<option value="es-MX" selected>🌐 Español</option>';
             return;
         }
 
         select.innerHTML = '';
 
-        const {
-            data,
-            error
-        } = await client
+        const { data, error } = await client
             .from('idiomas_sistema')
-            .select(
-                'id, codigo, nombre, nombre_nativo, bandera'
-            )
-            .eq(
-                'activo',
-                true
-            )
-            .order(
-                'nombre',
-                {
-                    ascending: true
-                }
-            );
+            .select('id, codigo, nombre, nombre_nativo, bandera')
+            .eq('activo', true)
+            .order('nombre', { ascending: true });
 
         if (error) {
             throw error;
         }
 
-        if (
-            !data ||
-            data.length === 0
-        ) {
-            select.innerHTML =
-                '<option value="es-MX" selected>🌐 Español</option>';
-
+        if (!data || data.length === 0) {
+            select.innerHTML = '<option value="es-MX" selected>🌐 Español</option>';
             return;
         }
 
-        const idiomaUsuario =
-            await obtenerIdiomaUsuario();
-
-        const idiomaIdActual =
-            idiomaUsuario?.id;
-
-        const codigosVistos =
-            new Set();
+        const idiomaUsuario = await obtenerIdiomaUsuario();
+        const idiomaIdActual = idiomaUsuario?.id;
+        const codigosVistos = new Set();
 
         data.forEach(idioma => {
-            if (
-                !idioma ||
-                !idioma.codigo
-            ) {
+            if (!idioma || !idioma.codigo || codigosVistos.has(idioma.codigo)) {
                 return;
             }
 
-            if (
-                codigosVistos.has(
-                    idioma.codigo
-                )
-            ) {
-                return;
-            }
+            codigosVistos.add(idioma.codigo);
 
-            codigosVistos.add(
-                idioma.codigo
-            );
+            const option = document.createElement('option');
 
-            const option =
-                document.createElement(
-                    'option'
-                );
-
-            option.value =
-                idioma.id;
-
-            const bandera =
-                idioma.bandera ||
-                '🌐';
-
-            const nombre =
-                idioma.nombre_nativo ||
-                idioma.nombre ||
-                idioma.codigo;
-
+            option.value = idioma.id;
             option.textContent =
-                `${bandera} ${nombre}`;
+                `${idioma.bandera || '🌐'} ${idioma.nombre_nativo || idioma.nombre || idioma.codigo}`;
 
-            if (
-                idioma.id ===
-                idiomaIdActual
-            ) {
-                option.selected =
-                    true;
+            if (idioma.id === idiomaIdActual) {
+                option.selected = true;
             }
 
-            select.appendChild(
-                option
-            );
+            select.appendChild(option);
         });
-
-        console.log(
-            `✅ Selector de idiomas cargado: ${select.options.length} idiomas`
-        );
     } catch (error) {
-        console.error(
-            'Error cargando selector de idiomas:',
-            error
-        );
+        console.error('Error cargando selector de idiomas:', error);
 
-        const select =
-            document.getElementById(
-                'selectorIdioma'
-            );
+        const select = document.getElementById('selectorIdioma');
 
         if (select) {
-            select.innerHTML =
-                '<option value="es-MX" selected>🌐 Español</option>';
+            select.innerHTML = '<option value="es-MX" selected>🌐 Español</option>';
         }
     }
 }
 
 // ================================================================
-// INICIALIZAR SISTEMA COMPLETO
+// INICIALIZACIÓN (idempotente)
 // ================================================================
 
-async function inicializarIdiomas() {
+async function inicializarIdiomasInterno() {
     try {
+        if (document.readyState === 'loading') {
+            await new Promise(resolve =>
+                document.addEventListener('DOMContentLoaded', resolve, { once: true })
+            );
+        }
+
         let intentos = 0;
 
-        while (
-            !getSupabaseClient() &&
-            intentos < 30
-        ) {
-            await new Promise(
-                resolve =>
-                    setTimeout(
-                        resolve,
-                        100
-                    )
-            );
-
+        while (!getSupabaseClient() && intentos < 30) {
+            await new Promise(resolve => setTimeout(resolve, 100));
             intentos++;
         }
 
-        const idioma =
-            await obtenerIdiomaUsuario();
+        const idioma = await obtenerIdiomaUsuario();
 
-        if (
-            idioma &&
-            idioma.id
-        ) {
-            await cargarTraducciones(
-                idioma.id
-            );
-
-            aplicarTraducciones();
+        if (idioma && idioma.id) {
+            await cargarTraducciones(idioma.id);
         }
+
+        aplicarTraducciones(document);
+        iniciarObservadorDinamico();
 
         await cargarSelectorIdiomas();
     } catch (error) {
-        console.error(
-            'Error inicializando idiomas:',
-            error
-        );
+        console.error('Error inicializando idiomas:', error);
 
         try {
             await cargarSelectorIdiomas();
         } catch (e) {
-            console.warn(
-                '⚠️ Error cargando selector:',
-                e
-            );
+            console.warn('⚠️ Error cargando selector:', e);
         }
     }
+
+    return true;
+}
+
+function inicializarIdiomas() {
+    if (!inicializacionPromesa) {
+        inicializacionPromesa = inicializarIdiomasInterno();
+    }
+
+    return inicializacionPromesa;
+}
+
+function esperarIdiomas() {
+    return inicializarIdiomas();
 }
 
 // ================================================================
 // EXPOSICIÓN GLOBAL
 // ================================================================
 
-window.getSession =
-    getSession;
-
-window.getSupabaseClient =
-    getSupabaseClient;
-
-window.obtenerIdiomaUsuario =
-    obtenerIdiomaUsuario;
-
-window.cargarTraducciones =
-    cargarTraducciones;
-
-window.t =
-    t;
-
-window.tConFallback =
-    tConFallback;
-
-window.obtenerTraduccionReal =
-    obtenerTraduccionReal;
-
-window.cambiarIdioma =
-    cambiarIdioma;
-
-window.aplicarTraducciones =
-    aplicarTraducciones;
-
-window.aplicarTraduccionesDinamicas =
-    aplicarTraduccionesDinamicas;
-
-window.cargarSelectorIdiomas =
-    cargarSelectorIdiomas;
-
-window.inicializarIdiomas =
-    inicializarIdiomas;
-
-window.obtenerCodigoIdiomaActual =
-    obtenerCodigoIdiomaActual;
-
-window.esIdioma =
-    esIdioma;
+window.getSession = getSession;
+window.getSupabaseClient = getSupabaseClient;
+window.obtenerIdiomaUsuario = obtenerIdiomaUsuario;
+window.cargarTraducciones = cargarTraducciones;
+window.t = t;
+window.tConFallback = tConFallback;
+window.obtenerTraduccionReal = obtenerTraduccionReal;
+window.cambiarIdioma = cambiarIdioma;
+window.aplicarTraducciones = aplicarTraducciones;
+window.aplicarTraduccionesDinamicas = aplicarTraduccionesDinamicas;
+window.cargarSelectorIdiomas = cargarSelectorIdiomas;
+window.inicializarIdiomas = inicializarIdiomas;
+window.esperarIdiomas = esperarIdiomas;
+window.obtenerCodigoIdiomaActual = obtenerCodigoIdiomaActual;
+window.esIdioma = esIdioma;
 
 // ================================================================
-// LOG
+// AUTO-ARRANQUE
 // ================================================================
+// Cualquier página que cargue este archivo queda traducida.
+// Como es idempotente, si otra página también lo llama, no duplica nada.
 
-console.log(
-    '✅ Sistema de idiomas cargado correctamente (v4 - hijos HTML preservados)'
-);
+inicializarIdiomas();
+
+console.log('✅ Sistema de idiomas v5 cargado');
