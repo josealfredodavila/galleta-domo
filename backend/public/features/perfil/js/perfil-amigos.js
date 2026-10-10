@@ -3,6 +3,9 @@
 // ================================================================
 // Carga amigos en línea, escucha realtime y muestra solicitudes.
 // Depende de: perfil-config.js, perfil-utils.js
+//
+// CAMBIO v2 (traducciones):
+// - Todos los textos usan perfilT(clave, respaldo).
 // ================================================================
 
 // ================================================================
@@ -102,8 +105,8 @@ function actualizarUIAmigos(todosAmigos = [], enLinea = []) {
     if (!todosAmigos || todosAmigos.length === 0) {
         container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-muted); font-size:0.8rem;">'
             + '<span style="font-size:2rem;">👥</span>'
-            + '<p style="margin-top:8px;">Aún no tienes amigos agregados</p>'
-            + '<p style="font-size:0.6rem;">Explora el muro para conectar con otros</p>'
+            + '<p style="margin-top:8px;">' + escaparHTML(perfilT('perfil_amigos_vacio', 'Aún no tienes amigos agregados')) + '</p>'
+            + '<p style="font-size:0.6rem;">' + escaparHTML(perfilT('perfil_amigos_explorar', 'Explora el muro para conectar con otros')) + '</p>'
             + '</div>';
         aplicarI18NPerfil(container);
         return;
@@ -115,9 +118,9 @@ function actualizarUIAmigos(todosAmigos = [], enLinea = []) {
         ...todosAmigos.filter(a => !enLineaIds.has(a.id))
     ];
 
-    const activoAhoraT = t('perfil_activo_ahora', 'Activo ahora');
-    const desconectadoT = t('perfil_desconectado', 'Desconectado');
-    const enLineaT = t('perfil_en_linea', 'EN LÍNEA');
+    const activoAhoraT = perfilT('perfil_activo_ahora', 'Activo ahora');
+    const desconectadoT = perfilT('perfil_desconectado', 'Desconectado');
+    const enLineaT = perfilT('perfil_en_linea', 'EN LÍNEA');
 
     container.innerHTML = ordenados.map(amigo => {
         const estaEnLinea = enLineaIds.has(amigo.id);
@@ -135,7 +138,7 @@ function actualizarUIAmigos(todosAmigos = [], enLinea = []) {
             + estadoTxt + (!estaEnLinea && amigo.ultima_conexion ? ' · ' + haceTiempo(amigo.ultima_conexion) : '')
             + '</div>'
             + '</div>'
-            + (estaEnLinea ? '<div class="badge-online">' + enLineaT + '</div>' : '')
+            + (estaEnLinea ? '<div class="badge-online">' + escaparHTML(enLineaT) + '</div>' : '')
             + '</div>';
     }).join('');
 
@@ -161,7 +164,7 @@ async function agregarAmigo(amigoId) {
     try {
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ Inicia sesión', 'error');
+            showToast('⚠️ ' + perfilT('perfil_inicia_sesion', 'Inicia sesión'), 'error');
             return;
         }
         const { error } = await window.supabaseClient
@@ -173,14 +176,14 @@ async function agregarAmigo(amigoId) {
             });
         if (error) {
             if (error.code === '23505') {
-                showToast('⚠️ Ya enviaste solicitud', 'warning');
+                showToast(perfilT('perfil_ya_enviada', '⚠️ Ya enviaste solicitud'), 'warning');
             } else {
-                showToast('❌ Error: ' + error.message, 'error');
+                showToast(perfilT('perfil_error_generico', '❌ Error: ') + error.message, 'error');
             }
             return;
         }
-        showToast('🤝 Solicitud enviada', 'success');
+        showToast(perfilT('perfil_solicitud_enviada', '🤝 Solicitud enviada'), 'success');
     } catch (error) {
-        showToast('❌ No se pudo enviar', 'error');
+        showToast(perfilT('perfil_error_enviar', '❌ No se pudo enviar'), 'error');
     }
 }
