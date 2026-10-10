@@ -1,90 +1,765 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Nueva contraseña · Sariel's</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
-  *{box-sizing:border-box}
-  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0B3D2E;font-family:Inter,system-ui,sans-serif;color:#f5ecd0;padding:16px}
-  .card{width:100%;max-width:400px;background:#0F2D1A;border:1px solid #D4AF37;border-radius:16px;padding:28px 22px}
-  h1{margin:0 0 6px;font-size:22px;color:#D4AF37;text-align:center}
-  p.sub{margin:0 0 20px;text-align:center;font-size:14px;opacity:.85}
-  label{display:block;font-size:13px;margin:12px 0 4px;color:#D4AF37}
-  input{width:100%;padding:12px;border-radius:8px;border:1px solid #D4AF37;background:#05080F;color:#fff;font-size:16px}
-  button{width:100%;margin-top:20px;padding:13px;border:0;border-radius:8px;background:#D4AF37;color:#0B3D2E;font-weight:700;font-size:16px}
-  button:disabled{opacity:.5}
-  #msg{margin-top:16px;font-size:14px;text-align:center;min-height:20px;word-break:break-word}
-  .err{color:#ff8a80}.ok{color:#9be7a6}
-</style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#000000" />
+
+    <title data-clave="cfg_titulo_pagina">Configuración · Csariel's</title>
+
+    <link
+        rel="icon"
+        type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron,monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>"
+    />
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap"
+        rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="/features/shared/config-layout.css" />
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="/features/shared/config-icons.js"></script>
+    <script src="/features/shared/js/idiomas.js?v=9" defer></script>
+    <script src="/features/shared/js/apariencia-global.js?v=6" defer></script>
+
+    <style>
+        html:not(.auth-ready) body {
+            visibility: hidden;
+        }
+
+        html.auth-ready body {
+            visibility: visible;
+        }
+
+        .cfg-error-panel {
+            max-width: 480px;
+            margin: 80px auto;
+            padding: 28px 22px;
+            background: rgba(255, 51, 102, 0.08);
+            border: 1px solid rgba(255, 51, 102, 0.35);
+            border-radius: 16px;
+            text-align: center;
+            color: #f0f4f8;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .cfg-error-panel h2 {
+            color: #ff3366;
+            margin: 0 0 12px;
+            font-size: 1.1rem;
+        }
+
+        .cfg-error-panel p {
+            color: #8aa8b8;
+            font-size: .85rem;
+            line-height: 1.6;
+            margin: 0 0 18px;
+        }
+
+        .cfg-error-panel button {
+            border: 0;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #d4af37, #b8923a);
+            color: #05080f;
+            font-weight: 800;
+            border-radius: 10px;
+            font-size: .85rem;
+            cursor: pointer;
+        }
+
+        .cfg-item-danger .cfg-item-icon,
+        .cfg-item-danger .cfg-item-title {
+            color: var(--cfg-danger);
+        }
+    </style>
 </head>
-<body>
-<div class="card">
-  <h1>Sariel's</h1>
-  <p class="sub">Escribe tu nueva contraseña</p>
-  <div id="form" style="display:none">
-    <label for="p1">Nueva contraseña</label>
-    <input id="p1" type="password" minlength="6" autocomplete="new-password">
-    <label for="p2">Confirmar contraseña</label>
-    <input id="p2" type="password" minlength="6" autocomplete="new-password">
-    <button id="btn" type="button">Guardar contraseña</button>
-  </div>
-  <div id="msg">Verificando enlace...</div>
-</div>
+
+<body class="cfg-page">
+
+<header class="cfg-header">
+    <button id="cfgBackButton" class="cfg-header-back" type="button" aria-label="Volver al perfil"></button>
+
+    <div class="cfg-header-text">
+        <h1 class="cfg-header-title" data-clave="cfg_titulo">Configuración</h1>
+        <p id="cfgHeaderSubtitle" class="cfg-header-subtitle" data-clave="cfg_cargando">Cargando…</p>
+    </div>
+</header>
+
+<main class="cfg-content">
+
+    <h2 class="cfg-section-title" data-clave="cfg_sec_cuenta">Tu cuenta</h2>
+    <div class="cfg-list" id="seccionCuenta"></div>
+
+    <h2 class="cfg-section-title" data-clave="cfg_sec_seguridad">Seguridad</h2>
+    <div class="cfg-list" id="seccionSeguridad"></div>
+
+    <h2 class="cfg-section-title" data-clave="cfg_sec_privacidad">Privacidad y seguridad</h2>
+    <div class="cfg-list" id="seccionPrivacidad"></div>
+
+    <h2 class="cfg-section-title" data-clave="cfg_sec_notificaciones">Notificaciones</h2>
+    <div class="cfg-list" id="seccionNotificaciones"></div>
+
+    <h2 class="cfg-section-title" data-clave="cfg_sec_accesibilidad">Accesibilidad, pantalla e idiomas</h2>
+    <div class="cfg-list" id="seccionAccesibilidad"></div>
+
+    <h2 class="cfg-section-title">Csariel's</h2>
+    <div class="cfg-list" id="seccionSariels"></div>
+
+    <h2 class="cfg-section-title" data-clave="cfg_sec_recursos">Recursos adicionales</h2>
+    <div class="cfg-list" id="seccionRecursos"></div>
+
+    <h2 class="cfg-section-title" data-clave="cfg_sec_sesion">Sesión</h2>
+    <div class="cfg-list" id="seccionSesion"></div>
+
+    <div class="cfg-footer">
+        <strong>© Csariel's</strong> · Csariel's Ecosystem · WEB3
+        <br />
+        <span data-clave="cfg_version">Versión de configuración 2.4</span>
+    </div>
+
+</main>
+
 <script>
-const SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
-const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-  auth: { detectSessionInUrl: false, persistSession: true }
-});
-const msg = document.getElementById('msg');
-const form = document.getElementById('form');
-function show(t, cls){ msg.textContent = t; msg.className = cls || ''; }
+'use strict';
 
-(async () => {
-  try {
-    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-    const query = new URLSearchParams(window.location.search);
-    if (hash.get('error_description') || query.get('error_description')) {
-      throw new Error((hash.get('error_description') || query.get('error_description')).replace(/\+/g, ' '));
+(function () {
+
+    const BASE = "/features/perfil/configuracion";
+    const AUTH_TIMEOUT_MS = 10000;
+
+    let supabaseClient = null;
+
+    /* ============================================================
+       CONTENIDO DE CADA SECCIÓN
+       tk / dk = claves de traducción (título / descripción)
+       title / desc = texto de respaldo en español
+       ============================================================ */
+
+    const SECCIONES = {
+        seccionCuenta: [
+            { icon: 'user', tk: 'cuenta_titulo', dk: 'cuenta_desc',
+              title: 'Tu cuenta', desc: 'Consulta tu información de cuenta y descarga tus datos',
+              href: '/features/perfil/configuracion/cuenta.html' },
+            { icon: 'lock', tk: 'cuenta_pass_titulo', dk: 'cuenta_pass_desc',
+              title: 'Cambiar contraseña', desc: 'Actualiza tu contraseña para mantener tu cuenta segura',
+              onclick: function () { cambiarContrasena(); } },
+            { icon: 'logout', tk: 'cuenta_eliminar_titulo', dk: 'cuenta_eliminar_desc',
+              title: 'Eliminar cuenta', desc: 'Solicita eliminar tu cuenta permanentemente',
+              href: '/eliminar-cuenta.html' }
+        ],
+
+        seccionSeguridad: [
+            { icon: 'shield', tk: 'seg_acceso_titulo', dk: 'seg_acceso_desc',
+              title: 'Seguridad y acceso a la cuenta', desc: 'Administra la seguridad de tu cuenta y apps conectadas',
+              href: BASE + '/seguridad.html' },
+            { icon: 'wallet', tk: 'seg_wallet_titulo', dk: 'seg_wallet_desc',
+              title: 'Wallet y Polygon', desc: 'Administra tu wallet conectada',
+              href: BASE + '/sariels/wallet.html' }
+        ],
+
+        seccionPrivacidad: [
+            { icon: 'users', tk: 'priv_audiencia_titulo', dk: 'priv_audiencia_desc',
+              title: 'Audiencia y etiquetas', desc: 'Administra qué información permites que vean otras personas',
+              href: BASE + '/privacidad/audiencia.html' },
+            { icon: 'fileText', tk: 'priv_posts_titulo', dk: 'priv_posts_desc',
+              title: 'Tus publicaciones', desc: 'Administra la información asociada a tus publicaciones',
+              href: BASE + '/privacidad/posts.html' },
+            { icon: 'eye', tk: 'priv_contenido_titulo', dk: 'priv_contenido_desc',
+              title: 'Contenido que ves', desc: 'Decide qué ver en Csariel\'s según tus preferencias',
+              href: BASE + '/privacidad/contenido.html' },
+            { icon: 'ban', tk: 'priv_silenciar_titulo', dk: 'priv_silenciar_desc',
+              title: 'Silenciar y bloquear', desc: 'Administra las cuentas, palabras y notificaciones bloqueadas',
+              href: BASE + '/privacidad/silenciar.html' },
+            { icon: 'messageCircle', tk: 'priv_chats_titulo', dk: 'priv_chats_desc',
+              title: 'Chats', desc: 'Administra quiénes pueden enviarte mensajes directos',
+              href: BASE + '/privacidad/chats.html' },
+            { icon: 'mapPin', tk: 'priv_visibilidad_titulo', dk: 'priv_visibilidad_desc',
+              title: 'Visibilidad y contactos', desc: 'Controla tu configuración de visibilidad y contactos importados',
+              href: BASE + '/privacidad/visibilidad.html' },
+            { icon: 'globe', tk: 'priv_ubicacion_titulo', dk: 'priv_ubicacion_desc',
+              title: 'Acerca de tu cuenta', desc: 'Administra la ubicación asociada a tu cuenta',
+              href: BASE + '/privacidad/ubicacion.html' }
+        ],
+
+        seccionNotificaciones: [
+            { icon: 'bell', tk: 'notif_titulo', dk: 'notif_desc',
+              title: 'Preferencias de notificaciones', desc: 'Elige cómo quieres recibir notificaciones',
+              href: BASE + '/notificaciones.html' }
+        ],
+
+        seccionAccesibilidad: [
+            { icon: 'accessibility', tk: 'acc_titulo', dk: 'acc_desc',
+              title: 'Accesibilidad', desc: 'Administra contraste, movimiento y otras opciones',
+              href: BASE + '/accesibilidad/accesibilidad.html' },
+            { icon: 'brush', tk: 'acc_mostrar_titulo', dk: 'acc_mostrar_desc',
+              title: 'Mostrar', desc: 'Administra fondo, color y tamaño de fuente',
+              href: BASE + '/accesibilidad/mostrar.html' },
+            { icon: 'globe', tk: 'acc_idiomas_titulo', dk: 'acc_idiomas_desc',
+              title: 'Idiomas', desc: 'Administra los idiomas de tu experiencia',
+              href: BASE + '/accesibilidad/idiomas.html' },
+            { icon: 'database', tk: 'acc_datos_titulo', dk: 'acc_datos_desc',
+              title: 'Uso de datos', desc: 'Establece límites para el uso de datos de tu red',
+              href: BASE + '/accesibilidad/datos.html' },
+            { icon: 'navigation', tk: 'acc_navegacion_titulo', dk: 'acc_navegacion_desc',
+              title: 'Navegación', desc: 'Administra cómo se abren los enlaces',
+              href: BASE + '/accesibilidad/navegacion.html' }
+        ],
+
+        seccionSariels: [
+            { icon: 'crown', tk: 'sar_marquinhos_titulo', dk: 'sar_marquinhos_desc',
+              title: 'Marquinhos', desc: 'Modo voz, subtítulos, voz y tienda de accesorios',
+              href: '/features/perfil/configuracion/marquinhos.html' },
+            { icon: 'corn', tk: 'sar_capitan_titulo', dk: 'sar_capitan_desc',
+              title: 'Capitán Maíz', desc: 'Guardián ancestral · Modo voz, subtítulos y voz',
+              href: '/features/perfil/configuracion/capitan-maiz.html' },
+            { icon: 'users', tk: 'sar_mascota_titulo', dk: 'sar_mascota_desc',
+              title: 'Mascota Activa', desc: 'Elige UNA mascota flotante: Marquinhos, Capitán Maíz, Itlasuhua o ninguna',
+              href: '/features/perfil/configuracion/mascota-activa.html' },
+            { icon: 'owl', tk: 'sar_derechos_titulo', dk: 'sar_derechos_desc',
+              title: 'Derechos y Usos', desc: 'Reglas de convivencia y propiedad intelectual',
+              href: '/features/terminos/derechos-sariels.html' },
+            { icon: 'coin', tk: 'sar_estoks_titulo', dk: 'sar_estoks_desc',
+              title: 'Es.stoks', desc: 'Administra tus tokens Es.stoks',
+              href: BASE + '/sariels/estoks.html' },
+            { icon: 'crown', tk: 'sar_membresia_titulo', dk: 'sar_membresia_desc',
+              title: 'Membresía Pro', desc: 'Administra tu suscripción Csariel\'s Pro',
+              href: BASE + '/sariels/membresia.html' },
+            { icon: 'user', tk: 'sar_repartidor_titulo', dk: 'sar_repartidor_desc',
+              title: 'Panel Repartidor', desc: 'Accede a tu panel de entregas y gestiona tu disponibilidad',
+              onclick: function () { abrirPanelRepartidor(); } }
+        ],
+
+        seccionRecursos: [
+            { icon: 'info', tk: 'rec_terminos_titulo', dk: 'rec_terminos_desc',
+              title: 'Términos y condiciones', desc: 'Consulta los términos de uso de Csariel\'s',
+              href: '/terminos' },
+            { icon: 'shield', tk: 'rec_privacidad_titulo', dk: 'rec_privacidad_desc',
+              title: 'Política de privacidad', desc: 'Consulta cómo protegemos tus datos',
+              href: '/privacidad.html' },
+            { icon: 'fileText', tk: 'rec_cookies_titulo', dk: 'rec_cookies_desc',
+              title: 'Cookies', desc: 'Consulta la política de cookies',
+              href: '/cookies.html' },
+            { icon: 'info', tk: 'rec_live_titulo', dk: 'rec_live_desc',
+              title: 'Términos del Live', desc: 'Consulta los términos de transmisiones en vivo',
+              href: '/live-terminos.html' }
+        ],
+
+        seccionSesion: [
+            { icon: 'logout', tk: 'ses_cerrar_titulo', dk: 'ses_cerrar_desc',
+              title: 'Cerrar sesión', desc: 'Salir de tu cuenta en este dispositivo',
+              danger: true,
+              onclick: function () { cerrarSesion(); } }
+        ]
+    };
+
+    /* ============================================================
+       HELPERS
+       ============================================================ */
+
+    function icon(name) {
+        if (window.CFG_ICONS && window.CFG_ICONS[name]) {
+            return window.CFG_ICONS[name];
+        }
+
+        if (typeof window.cfgIcon === 'function') {
+            return window.cfgIcon(name);
+        }
+
+        return '';
     }
-    const access_token = hash.get('access_token');
-    const refresh_token = hash.get('refresh_token');
-    if (access_token && refresh_token) {
-      const { error } = await client.auth.setSession({ access_token, refresh_token });
-      if (error) throw error;
-    } else if (query.get('code')) {
-      const { error } = await client.auth.exchangeCodeForSession(query.get('code'));
-      if (error) throw error;
-    } else {
-      throw new Error('Enlace inválido o expirado. Pide un nuevo correo de recuperación.');
+
+    function escapeHtml(value) {
+        const div = document.createElement('div');
+        div.textContent = value == null ? '' : String(value);
+        return div.innerHTML;
     }
-    history.replaceState(null, '', window.location.pathname);
-    form.style.display = 'block';
-    show('');
-  } catch (e) {
-    show(e.message || String(e), 'err');
-  }
+
+    // Texto traducido con respaldo en español
+    function tt(clave, respaldo) {
+        return typeof window.tConFallback === 'function'
+            ? window.tConFallback(clave, respaldo)
+            : respaldo;
+    }
+
+    // Aplica traducciones a un contenedor (si idiomas.js ya cargó)
+    function traducir(raiz) {
+        if (typeof window.aplicarTraducciones === 'function') {
+            window.aplicarTraducciones(raiz || document);
+        }
+    }
+
+    // Espera a que idiomas.js esté listo (máximo ~5 s)
+    async function esperarIdiomasListos() {
+        for (let i = 0; i < 50 && typeof window.esperarIdiomas !== 'function'; i++) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+
+        if (typeof window.esperarIdiomas === 'function') {
+            try {
+                await window.esperarIdiomas();
+            } catch (e) {
+                console.warn('[Configuración] Error esperando idiomas:', e);
+            }
+        }
+    }
+
+    /* ============================================================
+       ITEM DE CONFIGURACIÓN
+       ============================================================ */
+
+    function renderItem(op) {
+        const element = document.createElement(op.href ? 'a' : 'button');
+
+        element.className = 'cfg-item' + (op.danger ? ' cfg-item-danger' : '');
+
+        if (op.href) {
+            element.href = op.href;
+        } else {
+            element.type = 'button';
+
+            if (typeof op.onclick === 'function') {
+                element.addEventListener('click', op.onclick);
+            }
+        }
+
+        element.innerHTML = `
+            <span class="cfg-item-icon">${icon(op.icon)}</span>
+            <span class="cfg-item-content">
+                <span class="cfg-item-title" data-clave="${escapeHtml(op.tk)}">${escapeHtml(op.title)}</span>
+                <span class="cfg-item-desc" data-clave="${escapeHtml(op.dk)}">${escapeHtml(op.desc)}</span>
+            </span>
+            <span class="cfg-item-chevron">${icon('chevronRight')}</span>
+        `;
+
+        return element;
+    }
+
+    function renderConfiguracion() {
+        Object.keys(SECCIONES).forEach(function (idContenedor) {
+            const contenedor = document.getElementById(idContenedor);
+
+            if (!contenedor) {
+                return;
+            }
+
+            SECCIONES[idContenedor].forEach(function (op) {
+                contenedor.appendChild(renderItem(op));
+            });
+        });
+    }
+
+    /* ============================================================
+       TOAST
+       ============================================================ */
+
+    function toast(message, type) {
+        let element = document.getElementById('cfgToast');
+
+        if (!element) {
+            element = document.createElement('div');
+            element.id = 'cfgToast';
+            element.className = 'cfg-toast';
+            document.body.appendChild(element);
+        }
+
+        element.textContent = message;
+        element.className = 'cfg-toast show' + (type ? ' cfg-toast-' + type : '');
+
+        clearTimeout(toast.timer);
+
+        toast.timer = setTimeout(function () {
+            element.className = 'cfg-toast';
+        }, 3000);
+    }
+
+    /* ============================================================
+       RUTAS INTERNAS Y RETURN TO
+       ============================================================ */
+
+    function rutaSegura(path) {
+        return typeof path === 'string' &&
+               path.startsWith('/') &&
+               !path.startsWith('//');
+    }
+
+    function guardarReturnTo() {
+        try {
+            const current =
+                window.location.pathname +
+                window.location.search +
+                window.location.hash;
+
+            if (rutaSegura(current)) {
+                localStorage.setItem('wallet_returnTo', current);
+            }
+        } catch (error) {
+            console.warn('[Configuración] No se pudo guardar returnTo:', error);
+        }
+    }
+
+    /* ============================================================
+       ERROR CONTROLADO
+       ============================================================ */
+
+    function mostrarError(message) {
+        document.documentElement.classList.add('auth-ready');
+
+        const main = document.querySelector('.cfg-content');
+
+        if (!main) {
+            return;
+        }
+
+        main.innerHTML = `
+            <div class="cfg-error-panel">
+                <h2 data-clave="cfg_error_titulo">⚠️ No se pudo cargar la configuración</h2>
+                <p>${escapeHtml(message)}</p>
+                <button type="button" id="cfgErrorBack" data-clave="cfg_volver_inicio">Volver al inicio</button>
+            </div>
+        `;
+
+        const button = document.getElementById('cfgErrorBack');
+
+        if (button) {
+            button.addEventListener('click', function () {
+                window.location.replace('/');
+            });
+        }
+
+        esperarIdiomasListos().then(function () {
+            traducir(main);
+        });
+    }
+
+    /* ============================================================
+       SUPABASE
+       ============================================================ */
+
+    async function inicializarSupabase() {
+        if (window.supabaseClient) {
+            supabaseClient = window.supabaseClient;
+            return supabaseClient;
+        }
+
+        if (
+            !window.supabase ||
+            typeof window.supabase.createClient !== 'function'
+        ) {
+            throw new Error('Supabase SDK no disponible.');
+        }
+
+        const response = await fetch('/api/config/public', {
+            method: 'GET',
+            credentials: 'same-origin',
+            cache: 'no-store',
+            headers: { Accept: 'application/json' }
+        });
+
+        if (!response.ok) {
+            throw new Error(
+                'No se pudo obtener la configuración pública de Supabase. HTTP ' +
+                response.status
+            );
+        }
+
+        const config = await response.json();
+        const url = config && config.supabaseUrl;
+        const anonKey = config && config.supabaseAnonKey;
+
+        if (typeof url !== 'string' || !url.trim()) {
+            throw new Error('supabaseUrl no está disponible.');
+        }
+
+        if (typeof anonKey !== 'string' || !anonKey.trim()) {
+            throw new Error('supabaseAnonKey no está disponible.');
+        }
+
+        supabaseClient = window.supabase.createClient(
+            url.trim(),
+            anonKey.trim(),
+            {
+                auth: {
+                    persistSession: true,
+                    autoRefreshToken: true,
+                    detectSessionInUrl: true
+                }
+            }
+        );
+
+        window.supabaseClient = supabaseClient;
+
+        return supabaseClient;
+    }
+
+    /* ============================================================
+       AUTENTICACIÓN
+       ============================================================ */
+
+    async function comprobarSesion() {
+        let timeoutId;
+
+        const timeout = new Promise(function (_, reject) {
+            timeoutId = setTimeout(function () {
+                reject(new Error('Tiempo de espera agotado verificando la sesión.'));
+            }, AUTH_TIMEOUT_MS);
+        });
+
+        try {
+            const client = await Promise.race([inicializarSupabase(), timeout]);
+            clearTimeout(timeoutId);
+
+            const result = await Promise.race([client.auth.getSession(), timeout]);
+            clearTimeout(timeoutId);
+
+            const session = result && result.data ? result.data.session : null;
+
+            if (!session) {
+                guardarReturnTo();
+                window.location.replace('/');
+                return null;
+            }
+
+            window.__sarielsAuthenticated = true;
+            document.documentElement.classList.add('auth-ready');
+
+            return client;
+        } catch (error) {
+            clearTimeout(timeoutId);
+
+            console.error('[Configuración] Error de autenticación:', error);
+
+            window.__sarielsAuthenticated = false;
+
+            mostrarError(
+                error && error.message
+                    ? error.message
+                    : 'No fue posible verificar tu sesión.'
+            );
+
+            return null;
+        }
+    }
+
+    /* ============================================================
+       HEADER
+       ============================================================ */
+
+    function inicializarHeader() {
+        const back = document.getElementById('cfgBackButton');
+
+        if (back) {
+            back.innerHTML = icon('back');
+
+            back.addEventListener('click', function () {
+                window.location.href = '/features/perfil/perfil.html';
+            });
+        }
+    }
+
+    /* ============================================================
+       CARGAR USUARIO (subtítulo con @handle)
+       ============================================================ */
+
+    async function cargarUsuario(client) {
+        try {
+            const result = await client.auth.getUser();
+            const user = result && result.data ? result.data.user : null;
+
+            if (!user) {
+                return;
+            }
+
+            const subtitle = document.getElementById('cfgHeaderSubtitle');
+
+            if (!subtitle) {
+                return;
+            }
+
+            const email = user.email || '';
+            const handle = email ? email.split('@')[0] : 'usuario';
+
+            // Quitar la clave para que la traducción no sobrescriba el @handle
+            subtitle.removeAttribute('data-clave');
+            subtitle.textContent = '@' + handle;
+        } catch (error) {
+            console.warn('[Configuración] No se pudo cargar el usuario:', error);
+        }
+    }
+
+    /* ============================================================
+       CAMBIAR CONTRASEÑA (envía correo de recuperación)
+       ============================================================ */
+
+    async function cambiarContrasena() {
+        try {
+            const client = supabaseClient || window.supabaseClient;
+
+            if (!client) {
+                toast('No hay conexión con el servidor', 'error');
+                return;
+            }
+
+            const { data } = await client.auth.getUser();
+            const email = data && data.user ? data.user.email : null;
+
+            if (!email) {
+                toast('No se pudo obtener tu correo', 'error');
+                return;
+            }
+
+            const { error } = await client.auth.resetPasswordForEmail(email, {
+                redirectTo: window.location.origin + '/actualizar-contrasena.html'
+            });
+
+            if (error) {
+                toast(error.message, 'error');
+                return;
+            }
+
+            toast('Te enviamos un correo para cambiar tu contraseña', 'success');
+        } catch (error) {
+            console.error('[Configuración] Error cambiando contraseña:', error);
+            toast('No se pudo enviar el correo. Intenta de nuevo.', 'error');
+        }
+    }
+
+    /* ============================================================
+       CERRAR SESIÓN
+       ============================================================ */
+
+    async function cerrarSesion() {
+        const confirmed = window.confirm(
+            tt('cfg_confirm_cerrar_sesion', '¿Quieres cerrar sesión en este dispositivo?')
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            if (supabaseClient && supabaseClient.auth) {
+                const result = await supabaseClient.auth.signOut();
+
+                if (result.error) {
+                    throw result.error;
+                }
+            }
+
+            window.location.replace('/');
+        } catch (error) {
+            console.error('[Configuración] Error cerrando sesión:', error);
+
+            toast(
+                tt('cfg_error_cerrar_sesion', 'No se pudo cerrar la sesión.'),
+                'error'
+            );
+        }
+    }
+
+    /* ============================================================
+       PANEL REPARTIDOR
+       ============================================================ */
+
+    async function abrirPanelRepartidor() {
+        try {
+            const client = supabaseClient || window.supabaseClient;
+
+            if (!client) {
+                window.location.href = '/features/mercado/repartidor/registro.html';
+                return;
+            }
+
+            const { data: sessionData, error: sessionError } =
+                await client.auth.getSession();
+
+            if (sessionError) {
+                throw sessionError;
+            }
+
+            const session = sessionData && sessionData.session;
+
+            if (!session) {
+                guardarReturnTo();
+                window.location.replace('/');
+                return;
+            }
+
+            const result = await client
+                .from('mercado_repartidores')
+                .select('estado_verificacion')
+                .eq('usuario_id', session.user.id)
+                .maybeSingle();
+
+            if (result.error) {
+                console.error('[Configuración] Error mercado_repartidores:', result.error);
+                window.location.href = '/features/mercado/repartidor/registro.html';
+                return;
+            }
+
+            if (!result.data) {
+                window.location.href = '/features/mercado/repartidor/registro.html';
+                return;
+            }
+
+            const estado = result.data.estado_verificacion;
+
+            if (estado === 'activo') {
+                window.location.href = '/features/mercado/repartidor/panel.html';
+                return;
+            }
+
+            if (
+                estado === 'procesando' ||
+                estado === 'revision_manual' ||
+                estado === 'rechazado'
+            ) {
+                window.location.href = '/features/mercado/repartidor/estado-verificacion.html';
+                return;
+            }
+
+            window.location.href = '/features/mercado/repartidor/registro.html';
+        } catch (error) {
+            console.error('[Configuración] Error del panel repartidor:', error);
+            window.location.href = '/features/mercado/repartidor/registro.html';
+        }
+    }
+
+    /* ============================================================
+       INICIALIZACIÓN
+       ============================================================ */
+
+    async function iniciar() {
+        inicializarHeader();
+
+        const client = await comprobarSesion();
+
+        if (!client) {
+            return;
+        }
+
+        renderConfiguracion();
+
+        await cargarUsuario(client);
+
+        // Esperar traducciones y aplicarlas a todo lo renderizado
+        await esperarIdiomasListos();
+        traducir(document);
+
+        client.auth.onAuthStateChange(function (event, session) {
+            if (!session && event !== 'INITIAL_SESSION') {
+                guardarReturnTo();
+                window.location.replace('/');
+            }
+        });
+    }
+
+    iniciar();
+
 })();
-
-document.getElementById('btn').addEventListener('click', async () => {
-  const p1 = document.getElementById('p1').value;
-  const p2 = document.getElementById('p2').value;
-  const btn = document.getElementById('btn');
-  if (p1.length < 6) return show('La contraseña debe tener mínimo 6 caracteres.', 'err');
-  if (p1 !== p2) return show('Las contraseñas no coinciden.', 'err');
-  btn.disabled = true;
-  show('Guardando...');
-  const { error } = await client.auth.updateUser({ password: p1 });
-  if (error) {
-    btn.disabled = false;
-    return show(error.message, 'err');
-  }
-  show('¡Contraseña actualizada! Redirigiendo al login...', 'ok');
-  await client.auth.signOut();
-  setTimeout(() => { window.location.href = '/'; }, 2500);
-});
 </script>
+
 </body>
 </html>
