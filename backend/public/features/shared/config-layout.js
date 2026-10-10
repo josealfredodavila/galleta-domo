@@ -1,6 +1,7 @@
 /* ================================================================
    SARIEL'S · CONFIGURACIÓN
    LAYOUT COMPARTIDO
+   v2 · textos del modal traducibles
    ================================================================ */
 
 (function () {
@@ -28,15 +29,19 @@
         return div.innerHTML;
     }
 
+    // Texto traducido con respaldo (si idiomas.js aún no cargó, usa respaldo)
+    function tt(clave, respaldo) {
+        return typeof window.tConFallback === 'function'
+            ? window.tConFallback(clave, respaldo)
+            : respaldo;
+    }
+
     function obtenerIcono(nombre) {
         if (typeof window.cfgIcon === 'function') {
             return window.cfgIcon(nombre);
         }
 
-        if (
-            window.CFG_ICONS &&
-            window.CFG_ICONS[nombre]
-        ) {
+        if (window.CFG_ICONS && window.CFG_ICONS[nombre]) {
             return window.CFG_ICONS[nombre];
         }
 
@@ -846,19 +851,19 @@
 
             titulo.textContent =
                 opciones.title ||
-                'Confirmar acción';
+                tt('cfg_confirmar_accion', 'Confirmar acción');
 
             texto.textContent =
                 opciones.text ||
-                '¿Quieres continuar?';
+                tt('cfg_quieres_continuar', '¿Quieres continuar?');
 
             cancelar.textContent =
                 opciones.cancelText ||
-                'Cancelar';
+                tt('cfg_cancelar', 'Cancelar');
 
             confirmar.textContent =
                 opciones.confirmText ||
-                'Confirmar';
+                tt('cfg_confirmar', 'Confirmar');
 
             confirmar.className =
                 'cfg-btn ' +
