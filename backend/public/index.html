@@ -10,6 +10,18 @@
 <script>
 (function () {
     'use strict';
+
+    // Si el enlace viene de un correo de recuperación, mandar directo a la
+    // página de nueva contraseña ANTES de crear cualquier sesión.
+    var esRecuperacion =
+        /type=recovery/.test(window.location.hash) ||
+        /type=recovery/.test(window.location.search);
+
+    if (esRecuperacion) {
+        window.location.replace('/actualizar-contrasena.html' + window.location.hash + window.location.search);
+        return;
+    }
+
     var SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
     var SUPABASE_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
     window.__sarielsAuthenticated = null;
@@ -190,7 +202,7 @@ body { background:var(--space); color:var(--text-primary); font-family:'Inter',s
 <script>
 'use strict';
 var RUTA_PERFIL = '/features/perfil/perfil.html';
-var RUTA_ACTUALIZAR_CONTRASENA = '/actualizar-contrasena';
+var RUTA_ACTUALIZAR_CONTRASENA = '/actualizar-contrasena.html';
 
 function showToast(msg, type, duration) {
     var el = document.getElementById('toast');
@@ -203,6 +215,8 @@ function showToast(msg, type, duration) {
 window.showToast = showToast;
 
 async function redirigirSiYaHaySesion() {
+    // No redirigir si el enlace es de recuperación de contraseña
+    if (/type=recovery/.test(window.location.hash) || /type=recovery/.test(window.location.search)) return;
     try {
         const client = window.getSupabase ? window.getSupabase() : null;
         if (!client || !client.auth) return;
@@ -271,7 +285,7 @@ async function enviarRecuperacion() {
         const client = window.getSupabase();
         if (!client) throw new Error('Sin conexión');
         var redirectTo = window.location.origin + RUTA_ACTUALIZAR_CONTRASENA;
-        const r = await client.auth.resetPasswordForEmail(email, { redirectTo });
+        const r = await client.auth.resetPasswordForEmail(email, { redirectTo: redirectTo });
         if (r && r.error) throw new Error(r.error.message);
         showToast('✅ Revisa tu correo. Te enviamos un enlace.', 'success', 6000);
         cerrarModalRecuperar();
@@ -286,7 +300,6 @@ window.enviarRecuperacion = enviarRecuperacion;
 document.addEventListener('DOMContentLoaded', function () {
     redirigirSiYaHaySesion();
 
-    // Conexión de listeners (sin handlers inline)
     var loginForm = document.getElementById('loginForm');
     if (loginForm) {
         loginForm.addEventListener('submit', function (e) {
