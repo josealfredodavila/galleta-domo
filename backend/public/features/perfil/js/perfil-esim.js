@@ -3,6 +3,11 @@
 // ================================================================
 // Panel de eSIM: estado, consumo, QR de activación, sincronización.
 // Depende de: perfil-config.js, perfil-utils.js
+//
+// CAMBIO v2 (traducciones):
+// - Todos los textos usan perfilT(clave, respaldo).
+// - El botón "Instalar en este iPhone" se identifica por data-accion
+//   (antes buscaba el texto "Instalar", que cambia según el idioma).
 // ================================================================
 
 // ================================================================
@@ -23,7 +28,7 @@ async function getTokenEsim() {
 async function fetchAuthEsim(url, opciones) {
     var token = await getTokenEsim();
     if (!token) {
-        if (window.showToast) window.showToast('⚠️ Inicia sesión', 'error');
+        if (window.showToast) window.showToast('⚠️ ' + perfilT('perfil_inicia_sesion', 'Inicia sesión'), 'error');
         return null;
     }
     var opts = opciones || {};
@@ -76,19 +81,28 @@ function limpiarErrorEsim() {
 
 function resetUISinEsim() {
     var e = obtenerElementosEsim();
-    if (e.estado) { e.estado.textContent = 'Sin eSIM'; e.estado.style.color = 'var(--text-muted)'; }
+    if (e.estado) {
+        e.estado.textContent = perfilT('perfil_esim_sin', 'Sin eSIM');
+        e.estado.style.color = 'var(--text-muted)';
+    }
     if (e.used) e.used.textContent = '0 MB';
     if (e.limit) e.limit.textContent = '0 MB';
-    if (e.rest) { e.rest.textContent = '0 MB'; e.rest.style.color = 'var(--text-muted)'; }
+    if (e.rest) {
+        e.rest.textContent = '0 MB';
+        e.rest.style.color = 'var(--text-muted)';
+    }
     if (e.iccid) e.iccid.textContent = '—';
-    if (e.progress) { e.progress.style.width = '0%'; e.progress.style.background = 'var(--success)'; }
+    if (e.progress) {
+        e.progress.style.width = '0%';
+        e.progress.style.background = 'var(--success)';
+    }
     if (e.avisoSinSaldo) e.avisoSinSaldo.style.display = 'none';
     if (e.btnQr) e.btnQr.style.display = 'none';
     if (e.btnSync) e.btnSync.style.display = 'none';
     if (e.btnComprar) {
         e.btnComprar.style.display = '';
         var txt = document.getElementById('btnComprarEsimTxt');
-        if (txt) txt.textContent = 'Comprar eSIM';
+        if (txt) txt.textContent = perfilT('perfil_esim_comprar', 'Comprar eSIM');
     }
     limpiarErrorEsim();
 }
@@ -102,11 +116,11 @@ function mostrarUIEsim(esim) {
 
     var estado = esim.estado || 'pendiente';
     var mapTexto = {
-        activa: 'Activa',
-        sin_saldo: 'Sin saldo',
-        pendiente: 'Pendiente',
-        aprovisionando: 'Aprovisionando',
-        reemplazando: 'Reemplazando'
+        activa: perfilT('perfil_esim_estado_activa', 'Activa'),
+        sin_saldo: perfilT('perfil_esim_estado_sin_saldo', 'Sin saldo'),
+        pendiente: perfilT('perfil_esim_estado_pendiente', 'Pendiente'),
+        aprovisionando: perfilT('perfil_esim_estado_aprovisionando', 'Aprovisionando'),
+        reemplazando: perfilT('perfil_esim_estado_reemplazando', 'Reemplazando')
     };
     var mapColor = {
         activa: 'var(--success)',
@@ -142,7 +156,7 @@ function mostrarUIEsim(esim) {
     if (e.btnSync) e.btnSync.style.display = '';
     if (e.btnComprar) {
         var txt = document.getElementById('btnComprarEsimTxt');
-        if (txt) txt.textContent = 'Recargar gigas';
+        if (txt) txt.textContent = perfilT('perfil_esim_recargar', 'Recargar gigas');
         e.btnComprar.style.display = '';
     }
     limpiarErrorEsim();
@@ -154,7 +168,7 @@ function mostrarUIEsim(esim) {
 async function cargarEsimNueva() {
     var e = obtenerElementosEsim();
     if (e.estado) {
-        e.estado.textContent = 'Cargando…';
+        e.estado.textContent = perfilT('perfil_esim_cargando', 'Cargando…');
         e.estado.style.color = 'var(--text-secondary)';
     }
     limpiarErrorEsim();
@@ -163,18 +177,19 @@ async function cargarEsimNueva() {
         var resp = await fetchAuthEsim(BACKEND_URL + '/api/telnyx/esim/mia');
         if (!resp) {
             resetUISinEsim();
-            mostrarErrorEsim('No se pudo conectar. Inicia sesión e intenta de nuevo.');
+            mostrarErrorEsim(perfilT('perfil_esim_err_conexion', 'No se pudo conectar. Inicia sesión e intenta de nuevo.'));
             return;
         }
         if (resp.status === 401) {
             resetUISinEsim();
-            mostrarErrorEsim('Tu sesión expiró. Inicia sesión de nuevo.');
+            mostrarErrorEsim(perfilT('perfil_esim_sesion_expirada', 'Tu sesión expiró. Inicia sesión de nuevo.'));
             return;
         }
         var data = await resp.json();
         if (!resp.ok || !data || !data.success) {
             resetUISinEsim();
-            mostrarErrorEsim('No se pudo obtener tu eSIM: ' + ((data && data.error) || ('HTTP ' + resp.status)));
+            var detalle = (data && data.error) || ('HTTP ' + resp.status);
+            mostrarErrorEsim(perfilT('perfil_esim_err_obtener', 'No se pudo obtener tu eSIM:') + ' ' + detalle);
             return;
         }
         var esim = data.data || {};
@@ -186,7 +201,7 @@ async function cargarEsimNueva() {
     } catch (err) {
         console.warn('[Perfil] Error cargando eSIM nueva:', err);
         resetUISinEsim();
-        mostrarErrorEsim('Error de red al cargar tu eSIM. Intenta de nuevo.');
+        mostrarErrorEsim(perfilT('perfil_esim_err_red_cargar', 'Error de red al cargar tu eSIM. Intenta de nuevo.'));
     }
 }
 
@@ -195,21 +210,24 @@ async function cargarEsimNueva() {
 // ================================================================
 async function sincronizarEsimNuevo() {
     limpiarErrorEsim();
-    if (window.showToast) window.showToast('⏳ Sincronizando consumo...', '', 3000);
+    if (window.showToast) window.showToast(perfilT('perfil_esim_sincronizando', '⏳ Sincronizando consumo...'), '', 3000);
     try {
         var resp = await fetchAuthEsim(BACKEND_URL + '/api/telnyx/esim/sync', { method: 'POST' });
         if (!resp) return;
         var data = await resp.json();
         if (!resp.ok || !data.success) {
-            if (window.showToast) window.showToast('❌ ' + (data.error || 'No se pudo sincronizar'), 'error', 4000);
+            if (window.showToast) {
+                window.showToast('❌ ' + (data.error || perfilT('perfil_esim_err_sincronizar', 'No se pudo sincronizar')), 'error', 4000);
+            }
             return;
         }
-        if (window.showToast) window.showToast('✅ Datos actualizados', 'success', 3000);
+        if (window.showToast) window.showToast(perfilT('perfil_esim_actualizado', '✅ Datos actualizados'), 'success', 3000);
         if (data.data && data.data.tiene_esim) mostrarUIEsim(data.data);
     } catch (err) {
         console.error('[Perfil] Error sincronizarEsimNuevo:', err);
-        mostrarErrorEsim('Error al sincronizar: ' + (err && err.message ? err.message : 'desconocido'));
-        if (window.showToast) window.showToast('❌ Error al sincronizar', 'error', 4000);
+        var detalle = (err && err.message) ? err.message : perfilT('perfil_desconocido', 'desconocido');
+        mostrarErrorEsim(perfilT('perfil_esim_err_sync_detalle', 'Error al sincronizar:') + ' ' + detalle);
+        if (window.showToast) window.showToast(perfilT('perfil_esim_err_sincronizar_corto', '❌ Error al sincronizar'), 'error', 4000);
     }
 }
 
@@ -218,26 +236,31 @@ async function sincronizarEsimNuevo() {
 // ================================================================
 async function verQREsimNuevo() {
     limpiarErrorEsim();
-    if (window.showToast) window.showToast('⏳ Cargando eSIM...', '', 3000);
+    if (window.showToast) window.showToast(perfilT('perfil_esim_cargando_toast', '⏳ Cargando eSIM...'), '', 3000);
     try {
         var resp = await fetchAuthEsim(BACKEND_URL + '/api/telnyx/esim/mia');
         if (!resp) return;
         var data = await resp.json();
         if (!resp.ok || !data.success || !data.data || !data.data.tiene_esim) {
-            if (window.showToast) window.showToast('⚠️ No tienes eSIM activa. Compra un paquete primero.', 'warning', 5000);
+            if (window.showToast) {
+                window.showToast(perfilT('perfil_esim_no_activa', '⚠️ No tienes eSIM activa. Compra un paquete primero.'), 'warning', 5000);
+            }
             return;
         }
         var esim = data.data;
         var code = esim.activation_code || '';
         if (!code || !LPA_REGEX.test(code)) {
-            if (window.showToast) window.showToast('⚠️ La eSIM no tiene código QR disponible', 'warning', 4000);
+            if (window.showToast) {
+                window.showToast(perfilT('perfil_esim_sin_qr', '⚠️ La eSIM no tiene código QR disponible'), 'warning', 4000);
+            }
             return;
         }
         mostrarModalQREsim(code);
     } catch (err) {
         console.error('[Perfil] Error verQREsimNuevo:', err);
-        mostrarErrorEsim('Error al cargar la eSIM: ' + (err && err.message ? err.message : 'desconocido'));
-        if (window.showToast) window.showToast('❌ Error al cargar la eSIM', 'error', 4000);
+        var detalle = (err && err.message) ? err.message : perfilT('perfil_desconocido', 'desconocido');
+        mostrarErrorEsim(perfilT('perfil_esim_err_cargar_detalle', 'Error al cargar la eSIM:') + ' ' + detalle);
+        if (window.showToast) window.showToast(perfilT('perfil_esim_err_cargar', '❌ Error al cargar la eSIM'), 'error', 4000);
     }
 }
 
@@ -254,16 +277,16 @@ function crearModalEsim() {
 
     var btnCerrar = document.createElement('button');
     btnCerrar.textContent = '✕';
-    btnCerrar.setAttribute('aria-label', 'Cerrar');
+    btnCerrar.setAttribute('aria-label', perfilT('perfil_cerrar', 'Cerrar'));
     btnCerrar.style.cssText = 'position:absolute;top:10px;right:15px;background:transparent;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;';
     btnCerrar.addEventListener('click', cerrarModalEsim);
 
     var h = document.createElement('h3');
-    h.textContent = '📱 Activar eSIM';
+    h.textContent = perfilT('perfil_esim_activar_titulo', '📱 Activar eSIM');
     h.style.cssText = 'color:var(--gold);margin-bottom:12px;font-family:Orbitron,monospace;font-size:1rem;';
 
     var p = document.createElement('p');
-    p.textContent = 'Escanea este código con la cámara de tu celular';
+    p.textContent = perfilT('perfil_esim_escanea', 'Escanea este código con la cámara de tu celular');
     p.style.cssText = 'color:var(--text-secondary);font-size:0.8rem;margin-bottom:14px;';
 
     var qrBox = document.createElement('div');
@@ -275,7 +298,7 @@ function crearModalEsim() {
     var lpaBox = document.createElement('div');
     lpaBox.style.cssText = 'background:rgba(0,0,0,0.6);border:1px solid var(--glass-border);border-radius:8px;padding:10px;word-break:break-all;margin-bottom:12px;text-align:left;';
     var lpaLabel = document.createElement('div');
-    lpaLabel.textContent = 'CÓDIGO LPA';
+    lpaLabel.textContent = perfilT('perfil_esim_lpa', 'CÓDIGO LPA');
     lpaLabel.style.cssText = 'font-size:0.55rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;';
     var lpaValue = document.createElement('div');
     lpaValue.id = 'esimLpaValue';
@@ -297,7 +320,7 @@ function crearModalEsim() {
     var actBox = document.createElement('div');
     actBox.style.cssText = 'background:rgba(0,0,0,0.6);border:1px solid var(--glass-border);border-radius:8px;padding:10px;word-break:break-all;margin-bottom:12px;text-align:left;';
     var actLabel = document.createElement('div');
-    actLabel.textContent = 'CÓDIGO DE ACTIVACIÓN';
+    actLabel.textContent = perfilT('perfil_esim_codigo_activacion', 'CÓDIGO DE ACTIVACIÓN');
     actLabel.style.cssText = 'font-size:0.55rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;';
     var actValue = document.createElement('div');
     actValue.id = 'esimActValue';
@@ -306,22 +329,23 @@ function crearModalEsim() {
     actBox.appendChild(actValue);
 
     var notaLbl = document.createElement('div');
-    notaLbl.textContent = 'No puedes escanear el QR con el mismo celular donde lo ves; usa el botón o el código copiado.';
+    notaLbl.textContent = perfilT('perfil_esim_nota', 'No puedes escanear el QR con el mismo celular donde lo ves; usa el botón o el código copiado.');
     notaLbl.style.cssText = 'color:var(--text-muted);font-size:0.65rem;margin:6px 0 12px;line-height:1.4;';
 
     var actions = document.createElement('div');
     actions.style.cssText = 'display:flex;gap:8px;justify-content:center;flex-wrap:wrap;';
 
     var btnCopiar = document.createElement('button');
-    btnCopiar.textContent = '📋 Copiar código';
+    btnCopiar.textContent = perfilT('perfil_esim_copiar', '📋 Copiar código');
     btnCopiar.style.cssText = 'background:rgba(212,175,55,0.1);border:1px solid var(--gold);color:var(--gold);padding:8px 18px;border-radius:30px;font-size:0.7rem;font-weight:600;cursor:pointer;';
 
     var btnInstalar = document.createElement('button');
-    btnInstalar.textContent = '📲 Instalar en este iPhone';
+    btnInstalar.dataset.accion = 'instalar';
+    btnInstalar.textContent = perfilT('perfil_esim_instalar', '📲 Instalar en este iPhone');
     btnInstalar.style.cssText = 'background:linear-gradient(135deg,var(--gold),var(--gold-dark));border:1px solid var(--line-black);color:var(--space);padding:8px 18px;border-radius:30px;font-size:0.7rem;font-weight:700;cursor:pointer;display:none;';
 
     var btnCerrarSec = document.createElement('button');
-    btnCerrarSec.textContent = 'Cerrar';
+    btnCerrarSec.textContent = perfilT('perfil_cerrar', 'Cerrar');
     btnCerrarSec.style.cssText = 'background:transparent;border:1px solid var(--text-muted);color:var(--text-muted);padding:8px 18px;border-radius:30px;font-size:0.7rem;cursor:pointer;';
     btnCerrarSec.addEventListener('click', cerrarModalEsim);
 
@@ -340,12 +364,12 @@ function crearModalEsim() {
     card.appendChild(actions);
     modal.appendChild(card);
 
-    btnCopiar.addEventListener('click', function() {
+    btnCopiar.addEventListener('click', function () {
         try {
             if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(modal.dataset.lpa).then(function() {
-                    if (window.showToast) window.showToast('📋 Código copiado', 'success');
-                }).catch(function() {
+                navigator.clipboard.writeText(modal.dataset.lpa).then(function () {
+                    if (window.showToast) window.showToast(perfilT('perfil_esim_copiado', '📋 Código copiado'), 'success');
+                }).catch(function () {
                     copiarConFallback(modal.dataset.lpa);
                 });
             } else {
@@ -369,10 +393,15 @@ function copiarConFallback(texto) {
         ta.select();
         var ok = document.execCommand('copy');
         document.body.removeChild(ta);
-        if (ok && window.showToast) window.showToast('📋 Código copiado', 'success');
-        else if (window.showToast) window.showToast('No se pudo copiar. Selecciona el texto manualmente.', 'warning', 4000);
+        if (ok && window.showToast) {
+            window.showToast(perfilT('perfil_esim_copiado', '📋 Código copiado'), 'success');
+        } else if (window.showToast) {
+            window.showToast(perfilT('perfil_esim_no_copiar', 'No se pudo copiar. Selecciona el texto manualmente.'), 'warning', 4000);
+        }
     } catch (e) {
-        if (window.showToast) window.showToast('No se pudo copiar. Selecciona el texto manualmente.', 'warning', 4000);
+        if (window.showToast) {
+            window.showToast(perfilT('perfil_esim_no_copiar', 'No se pudo copiar. Selecciona el texto manualmente.'), 'warning', 4000);
+        }
     }
 }
 
@@ -401,21 +430,20 @@ function mostrarModalQREsim(code) {
     modal.querySelector('#esimSmdpValue').textContent = smdp || '—';
     modal.querySelector('#esimActValue').textContent = actCode || '—';
 
+    // Botón de instalación solo en iPhone/iPad (se identifica por data-accion)
     var esIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
     if (esIOS) {
-        var btnInstalar = modal.querySelectorAll('button');
-        btnInstalar.forEach(function(b){
-            if (b.textContent.indexOf('Instalar') !== -1) {
-                b.style.display = '';
-                b.addEventListener('click', function() {
-                    var url = 'https://esimsetup.apple.com/esim_qrcode_provisioning?carddata=' + encodeURI(code);
-                    window.location.href = url;
-                });
-            }
-        });
+        var btnInstalar = modal.querySelector('[data-accion="instalar"]');
+        if (btnInstalar) {
+            btnInstalar.style.display = '';
+            btnInstalar.addEventListener('click', function () {
+                var url = 'https://esimsetup.apple.com/esim_qrcode_provisioning?carddata=' + encodeURI(code);
+                window.location.href = url;
+            });
+        }
     }
 
-    modal.addEventListener('click', function(ev) {
+    modal.addEventListener('click', function (ev) {
         if (ev.target === modal) cerrarModalEsim();
     });
     document.addEventListener('keydown', onKeyEscEsim);
@@ -428,7 +456,7 @@ function mostrarModalQREsim(code) {
             width: 220,
             margin: 1,
             color: { dark: '#05080f', light: '#ffffff' }
-        }, function(err) {
+        }, function (err) {
             if (err) console.error('[Perfil] Error QR:', err);
         });
     } else if (canvas) {
@@ -440,7 +468,7 @@ function mostrarModalQREsim(code) {
         ctx.fillStyle = '#D4AF37';
         ctx.font = '13px Inter, sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('QR no disponible', 110, 110);
+        ctx.fillText(perfilT('perfil_esim_qr_no_disponible', 'QR no disponible'), 110, 110);
     }
 }
 
