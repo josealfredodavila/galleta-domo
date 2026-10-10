@@ -3,14 +3,40 @@
 // ================================================================
 // Helpers: toast, escape HTML, tiempo relativo, formateo, traducción.
 // Depende de: perfil-config.js
+//
+// CAMBIO v2 (traducciones):
+// - La función de traducción del perfil se llama perfilT y se expone
+//   también como window.t. Usa window.tConFallback si existe y, si no,
+//   devuelve el respaldo en español.
+// - window.t queda protegido para que idiomas.js no lo reemplace.
+//   Así t(clave, respaldo) siempre devuelve el respaldo cuando falta
+//   una traducción, en lugar de mostrar el nombre técnico de la clave.
 // ================================================================
 
 // ================================================================
 // TRADUCCIONES
 // ================================================================
-function t(clave, fallback) {
-    if (typeof window.tConFallback === 'function') return window.tConFallback(clave, fallback);
-    return fallback !== undefined ? fallback : clave;
+var perfilT = function (clave, respaldo) {
+    if (typeof window.tConFallback === 'function') {
+        return window.tConFallback(clave, respaldo);
+    }
+
+    return respaldo !== undefined ? respaldo : clave;
+};
+
+window.perfilT = perfilT;
+
+try {
+    // idiomas.js hace window.t = t al cargar. Con writable:false
+    // esa asignación no surte efecto y perfilT se conserva.
+    Object.defineProperty(window, 't', {
+        value: perfilT,
+        writable: false,
+        configurable: true,
+        enumerable: true
+    });
+} catch (e) {
+    window.t = perfilT;
 }
 
 async function aplicarI18NPerfil(raiz) {
@@ -23,7 +49,7 @@ async function aplicarI18NPerfil(raiz) {
 
 function traducirPlanMeta(meta) {
     if (!meta || typeof meta !== 'string') return meta;
-    var diasT = t('perfil_dias', 'días');
+    var diasT = perfilT('perfil_dias', 'días');
     return meta.replace(/\bd[ií]as?\b/gi, diasT);
 }
 
@@ -94,10 +120,10 @@ async function getSession() {
 // MENSAJES DE ERROR AMIGABLES
 // ================================================================
 function msgError(e) {
-    var m = (e && e.message) ? e.message : String(e || 'Error desconocido');
-    if (/protected profile field/i.test(m)) return 'Ese dato solo lo puede cambiar el servidor.';
-    if (/No autorizado/i.test(m)) return 'No tienes permiso para esta acción.';
-    if (/Failed to fetch|NetworkError/i.test(m)) return 'Sin conexión con el servidor.';
+    var m = (e && e.message) ? e.message : String(e || perfilT('perfil_error_desconocido', 'Error desconocido'));
+    if (/protected profile field/i.test(m)) return perfilT('perfil_error_solo_servidor', 'Ese dato solo lo puede cambiar el servidor.');
+    if (/No autorizado/i.test(m)) return perfilT('perfil_error_permiso', 'No tienes permiso para esta acción.');
+    if (/Failed to fetch|NetworkError/i.test(m)) return perfilT('perfil_error_sin_conexion', 'Sin conexión con el servidor.');
     return m;
 }
 
@@ -166,9 +192,9 @@ function perfilBasico(session) {
     return {
         id: session.user.id,
         email: session.user.email,
-        nombre: session.user.user_metadata?.nombre || t('perfil_nombre_usuario', 'Explorador'),
+        nombre: session.user.user_metadata?.nombre || perfilT('perfil_nombre_usuario', 'Explorador'),
         handle: session.user.email?.split('@')[0] || 'explorador',
-        bio: t('perfil_biografia_default', "Explorando el ecosistema Sariel's · WEB3 · Comunidad"),
+        bio: perfilT('perfil_biografia_default', "Explorando el ecosistema Sariel's · WEB3 · Comunidad"),
         avatar_url: null,
         tokens: 0,
         online: true
@@ -178,13 +204,15 @@ function perfilBasico(session) {
 // ================================================================
 // NIVELES
 // ================================================================
+// El nombre del nivel se traduce en perfil-init.js con la clave
+// perfil_nivel_<nombre en minúsculas>.
 function calcularNivel(tokens) {
     const niveles = [
-        { min: 0, max: 4, nombre: 'Explorador', emoji: '🌱' },
-        { min: 5, max: 9, nombre: 'Cazador', emoji: '⚡' },
-        { min: 10, max: 14, nombre: 'Leyenda', emoji: '🏆' },
-        { min: 15, max: 19, nombre: 'Maestro', emoji: '👑' },
-        { min: 20, max: Infinity, nombre: 'Inmortal', emoji: '✨' }
+        { min: 0, max: 4, nombre: 'Explorador', emoji: '🌱', clave: 'perfil_nivel_explorador' },
+        { min: 5, max: 9, nombre: 'Cazador', emoji: '⚡', clave: 'perfil_nivel_cazador' },
+        { min: 10, max: 14, nombre: 'Leyenda', emoji: '🏆', clave: 'perfil_nivel_leyenda' },
+        { min: 15, max: 19, nombre: 'Maestro', emoji: '👑', clave: 'perfil_nivel_maestro' },
+        { min: 20, max: Infinity, nombre: 'Inmortal', emoji: '✨', clave: 'perfil_nivel_inmortal' }
     ];
     for (const nivel of niveles) if (tokens >= nivel.min && tokens <= nivel.max) return nivel;
     return niveles[0];
@@ -262,7 +290,7 @@ function crearConfeti() {
 
 function mostrarCelebracion() {
     crearConfeti();
-    showToast('🎉 ¡Transacción exitosa!', 'success');
+    showToast(perfilT('perfil_transaccion_exitosa', '🎉 ¡Transacción exitosa!'), 'success');
 }
 
 // ================================================================
