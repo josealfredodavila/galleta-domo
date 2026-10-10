@@ -4,6 +4,9 @@
 // Detecta el tipo de conexión (WiFi o Datos móviles), muestra la
 // velocidad y la señal, y permite al usuario cambiar manualmente.
 // Depende de: perfil-config.js, perfil-utils.js
+//
+// CAMBIO v2 (traducciones):
+// - Todos los textos usan perfilT(clave, respaldo).
 // ================================================================
 
 // ================================================================
@@ -54,12 +57,12 @@ async function cargarEstadoConexion() {
 async function cambiarConexion(tipo) {
     try {
         if (!['wifi', 'datos'].includes(tipo)) {
-            showToast('❌ Tipo de conexión no válido', 'error');
+            showToast(perfilT('perfil_conexion_tipo_invalido', '❌ Tipo de conexión no válido'), 'error');
             return;
         }
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+            showToast('⚠️ ' + perfilT('perfil_inicia_sesion', 'Inicia sesión'), 'error');
             return;
         }
 
@@ -73,16 +76,16 @@ async function cambiarConexion(tipo) {
                 });
                 j = await r.json().catch(() => null);
             } catch (netErr) {
-                showToast('❌ Error de red al verificar tu eSIM. Intenta de nuevo.', 'error', 5000);
+                showToast(perfilT('perfil_esim_error_red', '❌ Error de red al verificar tu eSIM. Intenta de nuevo.'), 'error', 5000);
                 return;
             }
             const e = j && j.success ? j.data : null;
             if (!e || !e.tiene_esim) {
-                showToast('⚠️ Aún no tienes eSIM. Compra un paquete en Internet.', 'warning', 5000);
+                showToast(perfilT('perfil_esim_no_tiene', '⚠️ Aún no tienes eSIM. Compra un paquete en Internet.'), 'warning', 5000);
                 return;
             }
             if (e.estado !== 'activa') {
-                showToast('⚠️ Tu eSIM no tiene saldo. Recarga gigas en Internet.', 'warning', 5000);
+                showToast(perfilT('perfil_esim_sin_saldo', '⚠️ Tu eSIM no tiene saldo. Recarga gigas en Internet.'), 'warning', 5000);
                 return;
             }
         }
@@ -108,12 +111,12 @@ async function cambiarConexion(tipo) {
         actualizarUIConexion(estadoConexion);
         showToast(
             tipo === 'wifi'
-                ? '🛜 ' + t('perfil_conexion_wifi', 'WiFi')
-                : '📶 ' + t('perfil_conexion_datos', 'Datos'),
+                ? '🛜 ' + perfilT('perfil_conexion_wifi', 'WiFi')
+                : '📶 ' + perfilT('perfil_conexion_datos', 'Datos'),
             'success'
         );
     } catch (error) {
-        showToast('❌ Error al cambiar conexión: ' + msgError(error), 'error');
+        showToast(perfilT('perfil_error_cambiar_conexion', '❌ Error al cambiar conexión: ') + msgError(error), 'error');
     }
 }
 
@@ -151,20 +154,20 @@ function actualizarUIConexion(estado) {
     const datosBtn = document.getElementById('btnDatos');
     const conexionOperador = document.getElementById('conexionOperador');
 
-    const wifiT = t('perfil_conexion_wifi', 'WiFi');
-    const datosT = t('perfil_conexion_datos', 'Datos');
+    const wifiT = perfilT('perfil_conexion_wifi', 'WiFi');
+    const datosT = perfilT('perfil_conexion_datos', 'Datos');
 
     if (conexionStatus) {
         conexionStatus.removeAttribute('data-clave');
         conexionStatus.setAttribute('data-no-traducir', '1');
         if (!estado.activa) {
-            conexionStatus.innerHTML = '⛔ Sin conexión';
+            conexionStatus.textContent = perfilT('perfil_sin_conexion', '⛔ Sin conexión');
             conexionStatus.style.color = 'var(--danger)';
         } else if (estado.tipo === 'wifi') {
-            conexionStatus.innerHTML = '🛜 ' + wifiT;
+            conexionStatus.textContent = '🛜 ' + wifiT;
             conexionStatus.style.color = 'var(--success)';
         } else {
-            conexionStatus.innerHTML = '📶 ' + datosT;
+            conexionStatus.textContent = '📶 ' + datosT;
             conexionStatus.style.color = 'var(--cyan)';
         }
     }
@@ -199,13 +202,13 @@ function iniciarEscuchaConexion() {
         estadoConexion.activa = true;
         actualizarUIConexion(estadoConexion);
         guardarEstadoConexion(estadoConexion);
-        showToast('🛜 ' + t('perfil_conexion', 'Conexión'), 'success');
+        showToast('🛜 ' + perfilT('perfil_conexion', 'Conexión'), 'success');
     });
 
     window.addEventListener('offline', () => {
         estadoConexion.activa = false;
         actualizarUIConexion(estadoConexion);
-        showToast('⛔ Sin conexión', 'error');
+        showToast(perfilT('perfil_sin_conexion', '⛔ Sin conexión'), 'error');
     });
 
     if (navigator.connection && navigator.connection.addEventListener) {
