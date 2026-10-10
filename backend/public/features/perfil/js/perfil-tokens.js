@@ -3,7 +3,43 @@
 // ================================================================
 // Canjear NFT, estado Pro, contratación de Pro, polling de pago.
 // Depende de: perfil-config.js, perfil-utils.js
+//
+// CAMBIO v2 (traducciones):
+// - Textos con perfilT(clave, respaldo) y reemplazo de variables
+//   ({precio}, {dias}, {id}).
+// - Las fechas usan el idioma actual en lugar de fijar es-MX.
+// - Se separaron claves que antes compartían el mismo nombre con
+//   textos distintos (por ejemplo, el mensaje de pago).
 // ================================================================
+
+// ================================================================
+// TEXTOS CON VARIABLES
+// ================================================================
+// Reemplaza {nombre} dentro de una traducción por su valor.
+function perfilTConVars(clave, respaldo, vars) {
+    let texto = perfilT(clave, respaldo);
+    if (vars) {
+        Object.keys(vars).forEach(function (nombre) {
+            texto = texto.split('{' + nombre + '}').join(String(vars[nombre]));
+        });
+    }
+    return texto;
+}
+
+// Precio de Pro para mostrar en los textos
+function precioProTexto() {
+    return '$' + PRO_PRECIO_MXN + ' MXN';
+}
+
+// Código de idioma actual para formatear fechas
+function codigoIdiomaFechas() {
+    try {
+        if (typeof window.obtenerCodigoIdiomaActual === 'function') {
+            return window.obtenerCodigoIdiomaActual();
+        }
+    } catch (e) {}
+    return 'es-MX';
+}
 
 // ================================================================
 // CARGAR ESTADO PRO (plan, expiración, días restantes)
@@ -46,14 +82,14 @@ async function cargarEstadoPro() {
                 diasRestantes = Math.max(0, Math.ceil((expira - Date.now()) / (1000 * 60 * 60 * 24)));
             }
             aplicarEstadoProUI({
-                plan: usuario.plan || 'Gratis',
+                plan: usuario.plan || perfilT('perfil_pro_gratis', 'Gratis'),
                 plan_expira_at: usuario.plan_expira_at,
                 plan_meta: usuario.plan_meta || '1 GB · 90 días',
                 dias_restantes: diasRestantes
             });
         } else {
             aplicarEstadoProUI({
-                plan: 'Gratis',
+                plan: perfilT('perfil_pro_gratis', 'Gratis'),
                 plan_expira_at: null,
                 plan_meta: '1 GB · 90 días',
                 dias_restantes: 0
@@ -73,7 +109,7 @@ function aplicarEstadoProUI(usuario) {
     const proExpiraEl = document.getElementById('proExpira');
     const btnContratarPro = document.getElementById('btnContratarPro');
 
-    const planActual = usuario.plan || 'Gratis';
+    const planActual = usuario.plan || perfilT('perfil_pro_gratis', 'Gratis');
     const planMeta = usuario.plan_meta || '1 GB · 90 días';
     const esPro = planActual.toLowerCase().includes('pro');
 
@@ -89,18 +125,22 @@ function aplicarEstadoProUI(usuario) {
         if (proExpiraEl && usuario.plan_expira_at) {
             const fecha = new Date(usuario.plan_expira_at);
             const dias = usuario.dias_restantes || 0;
-            proExpiraEl.textContent = fecha.toLocaleDateString('es-MX', {
+            proExpiraEl.textContent = fecha.toLocaleDateString(codigoIdiomaFechas(), {
                 day: 'numeric', month: 'long', year: 'numeric'
-            }) + (dias > 0 ? ' (' + dias + ' ' + t('perfil_dias', 'días') + ')' : '');
+            }) + (dias > 0 ? ' (' + dias + ' ' + perfilT('perfil_dias', 'días') + ')' : '');
         }
         if (btnContratarPro) {
-            btnContratarPro.textContent = '✅ ' + t('perfil_pro_ya_eres', 'Ya eres Pro');
+            btnContratarPro.textContent = '✅ ' + perfilT('perfil_pro_ya_eres', 'Ya eres Pro');
         }
     } else {
         if (proUpgradeCard) proUpgradeCard.style.display = 'block';
         if (proActiveInfo) proActiveInfo.style.display = 'none';
         if (btnContratarPro) {
-            btnContratarPro.textContent = '🚀 ' + t('perfil_pro_contratar', 'Contratar Pro por $60 MXN');
+            btnContratarPro.textContent = '🚀 ' + perfilTConVars(
+                'perfil_pro_contratar_btn',
+                'Contratar Pro por {precio}',
+                { precio: precioProTexto() }
+            );
         }
     }
     aplicarI18NPerfil();
@@ -113,7 +153,7 @@ async function contratarPro() {
     try {
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión') + ' Pro', 'error');
+            showToast('⚠️ ' + perfilT('perfil_inicia_sesion', 'Inicia sesión') + ' Pro', 'error');
             return;
         }
 
@@ -130,16 +170,20 @@ async function contratarPro() {
 
         if (usuario && usuario.plan && usuario.plan.toLowerCase().includes('pro')) {
             const expira = usuario.plan_expira_at
-                ? new Date(usuario.plan_expira_at).toLocaleDateString('es-MX')
+                ? new Date(usuario.plan_expira_at).toLocaleDateString(codigoIdiomaFechas())
                 : '';
-            showToast('✅ ' + t('perfil_pro_ya_eres', 'Ya eres Pro') + '. ' + expira, 'success', 4000);
+            showToast('✅ ' + perfilT('perfil_pro_ya_eres', 'Ya eres Pro') + '. ' + expira, 'success', 4000);
             return;
         }
 
-        const confirmMsg = t('perfil_confirmar_pro', '¿Contratar Sariel\'s Pro por $' + PRO_PRECIO_MXN + ' MXN / ' + PRO_DURACION_DIAS + ' días?');
+        const confirmMsg = perfilTConVars(
+            'perfil_pro_confirmar',
+            "¿Contratar Sariel's Pro por {precio} / {dias} días?",
+            { precio: precioProTexto(), dias: PRO_DURACION_DIAS }
+        );
         if (!confirm(confirmMsg)) return;
 
-        showToast('⏳ ' + t('perfil_pro_activando', 'Iniciando contratación...'), '', 4000);
+        showToast('⏳ ' + perfilT('perfil_pro_iniciando', 'Iniciando contratación...'), '', 4000);
 
         // Crear registro pendiente en pagos_pro
         let pago = null;
@@ -185,7 +229,7 @@ async function contratarPro() {
                 if (result.data.payment_url || result.data.pay_address) {
                     pasarelaOk = true;
                     window.open(result.data.payment_url || result.data.pay_address, '_blank');
-                    showToast('💳 ' + t('perfil_pro_activando', 'Completa el pago en la ventana que se abrió'), 'success', 5000);
+                    showToast('💳 ' + perfilT('perfil_pro_completa_pago', 'Completa el pago en la ventana que se abrió'), 'success', 5000);
                     if (pago?.id) iniciarPollingPagoPro(pago.id);
                     return;
                 }
@@ -195,14 +239,20 @@ async function contratarPro() {
         // Si no hay pasarela, activar directo SOLO si es admin
         if (!pasarelaOk) {
             if (perfilCache?.es_admin === true) {
-                const activar = confirm('No se pudo conectar con la pasarela de pago.\n\n¿Activar Pro en modo administrador (prueba)?');
+                const activar = confirm(perfilT(
+                    'perfil_pro_admin_confirm',
+                    'No se pudo conectar con la pasarela de pago. ¿Activar Pro en modo administrador (prueba)?'
+                ));
                 if (activar) await activarProDirecto(session.user.id);
             } else {
-                showToast('⚠️ No se pudo conectar con la pasarela de pago. Intenta de nuevo en unos minutos.', 'warning', 6000);
+                showToast(perfilT(
+                    'perfil_pro_sin_pasarela',
+                    '⚠️ No se pudo conectar con la pasarela de pago. Intenta de nuevo en unos minutos.'
+                ), 'warning', 6000);
             }
         }
     } catch (error) {
-        showToast('❌ Error: ' + msgError(error), 'error');
+        showToast(perfilT('perfil_error_generico', '❌ Error: ') + msgError(error), 'error');
     }
 }
 
@@ -212,22 +262,22 @@ async function contratarPro() {
 async function activarProDirecto(usuarioId) {
     try {
         if (perfilCache?.es_admin !== true) {
-            showToast('⚠️ Solo un administrador puede activar Pro manualmente', 'warning');
+            showToast(perfilT('perfil_pro_solo_admin', '⚠️ Solo un administrador puede activar Pro manualmente'), 'warning');
             return;
         }
-        showToast('⏳ ' + t('perfil_pro_activando', 'Activando Sariel\'s Pro...'), '', 4000);
+        showToast('⏳ ' + perfilT('perfil_pro_activando_admin', "Activando Sariel's Pro..."), '', 4000);
         const { data, error } = await window.supabaseClient.rpc('activar_pro', {
             p_usuario_id: usuarioId,
             p_plan_id: PRO_PLAN_ID
         });
         if (error) throw new Error(error.message);
         if (!data || !data.success) throw new Error((data && data.error) || 'No se pudo activar');
-        showToast('🎉 ' + t('perfil_pro_activado', "¡Sariel's Pro activado!"), 'success', 5000);
+        showToast('🎉 ' + perfilT('perfil_pro_activado_ok', "🎉 ¡Sariel's Pro activado!").replace(/^🎉\s*/, ''), 'success', 5000);
         crearConfeti();
         await cargarEstadoPro();
         await cargarPerfil(true);
     } catch (error) {
-        showToast('❌ Error al activar Pro: ' + msgError(error), 'error');
+        showToast(perfilT('perfil_error_activar_pro', '❌ Error al activar Pro: ') + msgError(error), 'error');
     }
 }
 
@@ -250,7 +300,7 @@ function iniciarPollingPagoPro(pagoProId) {
             if (pago && pago.estado === 'completado') {
                 clearInterval(pollingPagoProInterval);
                 pollingPagoProInterval = null;
-                showToast('🎉 ' + t('perfil_pro_activado', '¡Pago confirmado! Pro activado'), 'success', 5000);
+                showToast(perfilT('perfil_pro_pago_confirmado', '🎉 ¡Pago confirmado! Pro activado'), 'success', 5000);
                 crearConfeti();
                 await cargarEstadoPro();
                 await cargarPerfil(true);
@@ -260,7 +310,10 @@ function iniciarPollingPagoPro(pagoProId) {
         if (intentos >= maxIntentos) {
             clearInterval(pollingPagoProInterval);
             pollingPagoProInterval = null;
-            showToast('⏳ ' + t('perfil_procesando_pago', 'El pago aún no se confirma. Revísalo más tarde.'), 'warning', 5000);
+            showToast(perfilT(
+                'perfil_pro_pago_pendiente',
+                '⏳ El pago aún no se confirma. Revísalo más tarde.'
+            ), 'warning', 5000);
         }
     }, 5000);
 }
@@ -272,23 +325,27 @@ async function canjearNFT() {
     try {
         const session = await getSession();
         if (!session) {
-            showToast('⚠️ ' + t('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+            showToast('⚠️ ' + perfilT('perfil_inicia_sesion', 'Inicia sesión'), 'error');
             return;
         }
-        showToast('⏳ Verificando tokens...', '', 4000);
+        showToast(perfilT('perfil_nft_verificando', '⏳ Verificando tokens...'), '', 4000);
         const { data, error } = await window.supabaseClient.rpc('canjear_nft');
         if (error) {
             const m = error.message || '';
-            if (m.includes('insufficient tokens')) showToast('❌ Necesitas exactamente 12 Es.stoks', 'error');
-            else if (m.includes('already redeemed')) showToast('⚠️ Ya has canjeado tu NFT', 'warning');
-            else throw error;
+            if (m.includes('insufficient tokens')) {
+                showToast(perfilT('perfil_nft_necesitas', '❌ Necesitas exactamente 12 Es.stoks'), 'error');
+            } else if (m.includes('already redeemed')) {
+                showToast(perfilT('perfil_nft_ya_canjeado', '⚠️ Ya has canjeado tu NFT'), 'warning');
+            } else {
+                throw error;
+            }
             return;
         }
-        showToast('🎁 ¡NFT Canjeado!', 'success', 8000);
+        showToast(perfilT('perfil_nft_canjeado_toast', '🎁 ¡NFT Canjeado!'), 'success', 8000);
         await cargarPerfil(true);
         mostrarModalNFT(data);
     } catch (error) {
-        showToast('❌ Error al canjear NFT: ' + msgError(error), 'error');
+        showToast(perfilT('perfil_error_canjear_nft', '❌ Error al canjear NFT: ') + msgError(error), 'error');
     }
 }
 
@@ -299,18 +356,26 @@ function mostrarModalNFT(data) {
     const modal = document.createElement('div');
     modal.id = 'nftModal';
     modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; z-index: 9999;';
-    const nftId = escaparHTML((data && data.nft_id) ? data.nft_id : ('NFT-' + Date.now().toString().slice(-6)));
+
+    const idNft = (data && data.nft_id) ? data.nft_id : ('NFT-' + Date.now().toString().slice(-6));
+    const nftId = escaparHTML(idNft);
+    const vigencia = escaparHTML(perfilTConVars('perfil_nft_vigencia', '⏳ Vigencia: {dias} días', { dias: 30 }));
+    const idTexto = escaparHTML(perfilTConVars('perfil_nft_id', 'ID: {id}', { id: idNft }));
+
     modal.innerHTML = '<div style="background: linear-gradient(135deg, var(--bg-card), var(--bg-dark)); border: 2px solid var(--gold); border-radius: 20px; padding: 40px; max-width: 500px; width: 90%; text-align: center;">'
         + '<div style="font-size: 80px; margin-bottom: 20px;">🎁</div>'
-        + '<h2 style="color: var(--gold); font-size: 28px; margin-bottom: 10px;">¡NFT Canjeado!</h2>'
-        + '<p style="color: var(--text-primary); margin-bottom: 20px; font-size: 18px;">Tu Domo físico te espera</p>'
+        + '<h2 style="color: var(--gold); font-size: 28px; margin-bottom: 10px;">' + escaparHTML(perfilT('perfil_nft_titulo', '¡NFT Canjeado!')) + '</h2>'
+        + '<p style="color: var(--text-primary); margin-bottom: 20px; font-size: 18px;">' + escaparHTML(perfilT('perfil_nft_domo_espera', 'Tu Domo físico te espera')) + '</p>'
         + '<div style="background: var(--bg-dark); border-radius: 10px; padding: 15px; margin-bottom: 20px;">'
-        + '<p style="color: var(--text-muted); font-size: 14px;">⏳ Vigencia: 30 días</p>'
-        + '<p style="color: var(--cyan); font-size: 12px; margin-top: 5px;">ID: ' + nftId + '</p></div>'
+        + '<p style="color: var(--text-muted); font-size: 14px;">' + vigencia + '</p>'
+        + '<p style="color: var(--cyan); font-size: 12px; margin-top: 5px;">' + idTexto + '</p></div>'
         + '<div style="display: flex; gap: 10px; justify-content: center;">'
-        + '<button onclick="this.closest(\'#nftModal\').remove()" style="background: linear-gradient(135deg, var(--gold), #f7971e); border: none; color: #fff; padding: 12px 30px; border-radius: 10px; font-weight: 600; cursor: pointer;">✅ Entendido</button>'
-        + '<button onclick="window.compartirLogro()" style="background: transparent; border: 2px solid var(--cyan); color: var(--cyan); padding: 12px 30px; border-radius: 10px; font-weight: 600; cursor: pointer;">📤 Compartir</button>'
+        + '<button onclick="this.closest(\'#nftModal\').remove()" style="background: linear-gradient(135deg, var(--gold), #f7971e); border: none; color: #fff; padding: 12px 30px; border-radius: 10px; font-weight: 600; cursor: pointer;">'
+        + escaparHTML(perfilT('perfil_entendido', '✅ Entendido')) + '</button>'
+        + '<button onclick="window.compartirLogro()" style="background: transparent; border: 2px solid var(--cyan); color: var(--cyan); padding: 12px 30px; border-radius: 10px; font-weight: 600; cursor: pointer;">'
+        + escaparHTML(perfilT('perfil_nft_btn_compartir', '📤 Compartir')) + '</button>'
         + '</div></div>';
+
     document.body.appendChild(modal);
     crearConfeti();
 }
@@ -319,12 +384,12 @@ function mostrarModalNFT(data) {
 // COMPARTIR LOGRO
 // ================================================================
 function compartirLogro() {
-    const texto = "🎁 ¡Acabo de canjear mi NFT en Sariel's! #Sariels #WEB3 #NFT";
+    const texto = perfilT('perfil_nft_texto_compartir', "🎁 ¡Acabo de canjear mi NFT en Sariel's! #Sariels #WEB3 #NFT");
     if (navigator.share) {
-        navigator.share({ title: "Mi logro", text: texto }).catch(() => {});
+        navigator.share({ title: perfilT('perfil_mi_logro', 'Mi logro'), text: texto }).catch(() => {});
     } else {
         navigator.clipboard.writeText(texto).then(() => {
-            showToast('📋 Copiado', 'success');
+            showToast(perfilT('perfil_copiado', '📋 Copiado'), 'success');
         });
     }
 }
