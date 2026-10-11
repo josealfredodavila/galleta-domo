@@ -96,7 +96,7 @@
         </div>
         <div class="info">
             <div class="nombre" id="perfilNombre">
-                <span id="perfilNombreTexto">Explorador</span>
+                <span data-clave="perfil_nombre_usuario" data-no-traducir="1">Explorador</span>
                 <span class="verified" id="verificadoBadge" style="display:none;">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg>
                     VERIFICADO
@@ -725,16 +725,13 @@
     }
     window.mostrarErrorEnPantalla = mostrarErrorEnPantalla;
     window.addEventListener('error', function (event) {
-        // REVISAR: mensajes de debug interno, no traducibles (solo visibles con ?debug=1)
         mostrarErrorEnPantalla((event.message || 'Error desconocido') + ' — línea ' + event.lineno + ' de ' + (event.filename || 'este archivo'));
     });
     window.addEventListener('unhandledrejection', function (event) {
-        // REVISAR: mensaje de debug interno, no traducible
         mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason?.message || event.reason));
     });
     window.addEventListener('load', function () {
         if (typeof window.supabase === 'undefined') {
-            // REVISAR: mensaje de debug interno, no traducible
             mostrarErrorEnPantalla('No se pudo cargar la conexión a la base de datos (Supabase). Revisa tu internet o si algo está bloqueando cdn.jsdelivr.net.');
         }
     });
