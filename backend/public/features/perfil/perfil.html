@@ -1,268 +1,225 @@
-<!DOCTYPE html>
-<html lang="es" data-require-auth>
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>Perfil · Csariel's</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+// ================================================================
+// MURO · PUBLICACIONES (feed)
+// ================================================================
+// Cargar feed, renderizar posts, scroll infinito, verificar like.
+// Depende de: muro-config.js, muro-utils.js
+// ================================================================
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="/features/shared/js/auth-global.js"></script>
-
-<link rel="stylesheet" href="/features/perfil/css/perfil.css">
-
-<style>
-    html:not(.auth-ready) .app { display: none !important; }
-    .pub-aviso {
-        margin: 16px auto;
-        max-width: 720px;
-        padding: 18px;
-        border-radius: 16px;
-        border: 1px solid var(--line-black, rgba(255,255,255,.12));
-        background: rgba(255,255,255,.03);
-        text-align: center;
-        font-size: .8rem;
-        color: var(--text-muted, #8ba0b3);
+// ================================================================
+// CARGAR PUBLICACIONES (con scroll infinito)
+// ================================================================
+async function cargarPublicaciones(reset) {
+    if (reset === undefined) reset = true;
+    if (isLoading) return;
+    if (reset) {
+        currentPage = 0;
+        hasMorePosts = true;
+        var fc = document.getElementById('feedContainer');
+        if (fc) fc.innerHTML = '';
     }
-    .pub-volver {
-        display: inline-block;
-        margin: 14px 16px 0;
-        font-size: .75rem;
-        color: var(--cyan, #00e5ff);
-        text-decoration: none;
-    }
-</style>
-</head>
-<body>
+    if (!hasMorePosts) return;
 
-<canvas id="stars-canvas"></canvas>
-<div class="nebula nebula-1"></div>
-<div class="nebula nebula-2"></div>
-<div class="nebula nebula-3"></div>
+    isLoading = true;
+    var feedContainer = document.getElementById('feedContainer');
 
-<div class="app">
+    try {
+        var from = currentPage * POSTS_PER_PAGE;
+        var to = from + POSTS_PER_PAGE - 1;
 
-<header class="header">
-    <a href="/" class="logo">
-        <span class="logo-hex">◈</span>
-        <span class="logo-text">Csariel<span>'s</span></span>
-        <span class="logo-badge">✦ WEB3</span>
-    </a>
-    <div class="header-actions">
-        <span class="network-badge" data-no-traducir="1"><span class="dot"></span> Polygon</span>
-    </div>
-</header>
+        var query = supabaseClient
+            .from('muro_posts_publicos')
+            .select('*, temas:tema_id (id, nombre, emoji, slug), muro_likes(count), muro_comentarios(count)')
+            .order('created_at', { ascending: false })
+            .range(from, to);
 
-<a class="pub-volver" href="/features/muro/muro.html">← Volver al Muro</a>
+        if (filtroTemasActivo && temasUsuario.length > 0) {
+            query = query.in('tema_id', temasUsuario);
+        }
 
-<div class="perfil-container">
+        var result = await query;
+        if (result.error) throw result.error;
+        var data = result.data;
 
-    <div id="pubEstadoCargando" class="pub-aviso">Cargando perfil…</div>
-
-    <div id="pubNoEncontrado" class="pub-aviso" style="display:none;">
-        Este perfil no existe o ya no está disponible.
-    </div>
-
-    <div class="perfil-header" id="pubPerfil" style="display:none;">
-
-        <div class="avatar-container" style="position:relative;">
-            <div class="avatar" id="pubAvatar">◈</div>
-        </div>
-
-        <div class="info">
-            <div class="nombre" id="pubNombre">
-                <span></span>
-                <span class="verified" id="pubVerificado" style="display:none;">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg>
-                    VERIFICADO
-                </span>
-            </div>
-            <div class="handle" id="pubHandle"></div>
-
-            <div class="badges">
-                <span class="badge" id="pubWalletChip" data-no-traducir="1" title="Toca para copiar"
-                      style="display:none;cursor:pointer;border-color:var(--cyan);color:var(--cyan);background:rgba(0,229,255,0.05);font-family:monospace;">
-                    ◈ 0x…
-                </span>
-            </div>
-        </div>
-
-        <div class="stats">
-            <div class="stat">
-                <div class="number" id="pubSeguidores">0</div>
-                <div class="label">Seguidores</div>
-            </div>
-            <div class="stat">
-                <div class="number" id="pubSiguiendo">0</div>
-                <div class="label">Siguiendo</div>
-            </div>
-        </div>
-
-    </div>
-
-</div>
-
-</div>
-
-<div class="toast" id="toast"></div>
-
-<script>
-(function () {
-    'use strict';
-
-    var $ = function (id) { return document.getElementById(id); };
-
-    var chip = $('pubWalletChip');
-    var direccionCompleta = null;
-
-    function esperar(ms) {
-        return new Promise(function (resolve) { setTimeout(resolve, ms); });
-    }
-
-    async function obtenerCliente() {
-        var inicio = Date.now();
-        while (Date.now() - inicio < 10000) {
-            if (window.supabaseClient) return window.supabaseClient;
-            if (typeof window.getSupabaseClient === 'function') {
-                try {
-                    var c = await window.getSupabaseClient();
-                    if (c) return c;
-                } catch (e) { /* reintenta */ }
+        if (!data || data.length === 0) {
+            hasMorePosts = false;
+            if (currentPage === 0 && feedContainer) {
+                var emptyMsg = filtroTemasActivo
+                    ? '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24" style="width:2.5rem;height:2.5rem;margin:0 auto 16px;color:var(--gold);opacity:0.4;display:block;"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/><polygon points="12 7 16 9.5 16 14.5 12 17 8 14.5 8 9.5 12 7"/></svg><h3>Sin publicaciones con tus temas</h3><p>Prueba a explorar todo el muro</p><button onclick="toggleFiltroTemas()" class="btn-gold" style="margin-top:12px;"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> Explorar todo</button></div>'
+                    : '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24" style="width:2.5rem;height:2.5rem;margin:0 auto 16px;color:var(--gold);opacity:0.4;display:block;"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/><polygon points="12 7 16 9.5 16 14.5 12 17 8 14.5 8 9.5 12 7"/></svg><h3>Sin publicaciones</h3><p>Sé el primero en compartir algo.</p></div>';
+                feedContainer.innerHTML = emptyMsg;
             }
-            await esperar(150);
-        }
-        return null;
-    }
-
-    function acortar(direccion) {
-        return direccion.slice(0, 6) + '...' + direccion.slice(-4);
-    }
-
-    function mostrarNoEncontrado() {
-        $('pubEstadoCargando').style.display = 'none';
-        $('pubPerfil').style.display = 'none';
-        $('pubNoEncontrado').style.display = 'block';
-    }
-
-    function pintarPerfil(perfil) {
-        $('pubEstadoCargando').style.display = 'none';
-        $('pubNoEncontrado').style.display = 'none';
-
-        var avatar = $('pubAvatar');
-        avatar.textContent = '';
-        if (perfil.avatar_url) {
-            var img = document.createElement('img');
-            img.src = perfil.avatar_url;
-            img.alt = '';
-            img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;';
-            avatar.appendChild(img);
-        } else {
-            avatar.textContent = '◈';
-        }
-
-        var nombre = $('pubNombre').querySelector('span');
-        nombre.textContent = perfil.nombre || 'Explorador';
-
-        if (perfil.verificado) $('pubVerificado').style.display = 'inline-flex';
-
-        $('pubHandle').textContent = '@' + perfil.handle;
-        $('pubSeguidores').textContent = perfil.seguidores_count || 0;
-        $('pubSiguiendo').textContent = perfil.siguiendo_count || 0;
-
-        $('pubPerfil').style.display = 'flex';
-    }
-
-    function pintarWallet(address) {
-        if (!address) {
-            chip.style.display = 'none';
-            direccionCompleta = null;
+            isLoading = false;
             return;
         }
-        direccionCompleta = address;
-        chip.textContent = '◈ ' + acortar(address);
-        chip.style.display = 'inline-flex';
-    }
 
-    async function copiarWallet() {
-        if (!direccionCompleta) return;
-        try {
-            if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-                await navigator.clipboard.writeText(direccionCompleta);
-            } else {
-                var t = document.createElement('textarea');
-                t.value = direccionCompleta;
-                t.style.position = 'fixed';
-                t.style.opacity = '0';
-                document.body.appendChild(t);
-                t.select();
-                document.execCommand('copy');
-                t.remove();
+        if (currentPage === 0 && feedContainer) feedContainer.innerHTML = '';
+
+        data.forEach(function(post) {
+            var postElement = renderizarPost(post);
+            if (feedContainer) feedContainer.appendChild(postElement);
+        });
+
+        currentPage++;
+        hasMorePosts = data.length === POSTS_PER_PAGE;
+
+        // Scroll infinito
+        if (hasMorePosts && feedContainer) {
+            var lastPost = feedContainer.lastElementChild;
+            if (lastPost) {
+                if (observerGlobal) observerGlobal.disconnect();
+                observerGlobal = new IntersectionObserver(function(entries) {
+                    if (entries[0].isIntersecting && !isLoading) {
+                        cargarPublicaciones(false);
+                    }
+                }, { threshold: 0.1 });
+                observerGlobal.observe(lastPost);
             }
-            var previo = chip.textContent;
-            chip.textContent = '✓ Copiada';
-            setTimeout(function () { chip.textContent = previo; }, 1500);
-        } catch (e) {
-            console.warn('[PerfilPublico] Error copiando:', e);
+        }
+    } catch (e) {
+        console.error('Error cargando publicaciones:', e);
+        showToast('Error al cargar publicaciones', 'error');
+    } finally {
+        isLoading = false;
+    }
+}
+
+// ================================================================
+// RENDERIZAR POST (HTML)
+// ================================================================
+function renderizarPost(post) {
+    var div = document.createElement('div');
+    div.className = 'post-card';
+    div.dataset.postId = post.id;
+
+    var avatarUrl = post.usuario_avatar_url;
+    var avatar = avatarUrl ? '<img src="' + escapeHTML(avatarUrl) + '">' : '◈';
+    var nombre = escapeHTML(post.usuario_nombre || 'Explorador');
+    var likesCount = (post.muro_likes && post.muro_likes[0]) ? post.muro_likes[0].count || 0 : 0;
+    var comentariosCount = (post.muro_comentarios && post.muro_comentarios[0]) ? post.muro_comentarios[0].count || 0 : 0;
+    var contenidoSanitizado = sanitizarHTML(post.contenido || '');
+
+    // Enlace al perfil del autor
+    var esMiPost = sessionUser && post.usuario_id === sessionUser.id;
+    var perfilHref = null;
+    if (esMiPost) {
+        perfilHref = '/features/perfil/perfil.html';
+    } else if (post.usuario_handle) {
+        perfilHref = '/features/perfil/perfil-publico.html?u=' + encodeURIComponent(post.usuario_handle);
+    }
+
+    var avatarHtml = avatar;
+    var nombreHtml = nombre;
+    if (perfilHref) {
+        avatarHtml = '<a href="' + perfilHref + '" style="display:block;width:100%;height:100%;color:inherit;text-decoration:none;">' + avatar + '</a>';
+        nombreHtml = '<a href="' + perfilHref + '" style="color:inherit;text-decoration:none;">' + nombre + '</a>';
+    }
+
+    // Badge de tema
+    var temaBadge = '';
+    if (post.tema_id && post.temas) {
+        var temaInfo = Array.isArray(post.temas) ? post.temas[0] : post.temas;
+        if (temaInfo) {
+            temaBadge = '<div class="post-tema-badge">' + escapeHTML(temaInfo.nombre || '') + '</div>';
         }
     }
 
-    chip.addEventListener('click', copiarWallet);
+    // Sección de venta de tokens
+    var seccionVenta = '';
+    if (post.cantidad_venta && post.cantidad_venta > 0 && post.precio_venta) {
+        var precioPorToken = parseFloat(post.precio_venta).toFixed(2);
+        var esMiPropiaVenta = sessionUser && post.usuario_id === sessionUser.id;
+        var botonComprar = esMiPropiaVenta
+            ? '<button class="btn-comprar" disabled style="opacity:0.5;cursor:not-allowed;">Tu venta</button>'
+            : '<button class="btn-comprar" onclick="abrirModalCompra(\'' + post.id + '\')">Comprar</button>';
+        seccionVenta = '<div class="post-venta">' +
+            '<div>' +
+                '<span style="font-size:0.7rem;color:var(--text-muted);display:inline-flex;align-items:center;gap:4px;">' +
+                    '<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/><path d="M2 9h20M12 3l-4 6 4 12 4-12-4-6"/></svg> Venta de tokens' +
+                '</span>' +
+                '<div style="font-weight:600;color:var(--gold);">' + post.cantidad_venta + ' tokens disponibles</div>' +
+                '<div style="font-size:0.65rem;color:var(--text-muted);">Precio unitario: $' + precioPorToken + ' MXN</div>' +
+            '</div>' +
+            botonComprar +
+        '</div>';
+    }
 
-    async function cargarPerfil() {
-        var client = await obtenerCliente();
-        if (!client) return mostrarNoEncontrado();
+    var fecha = new Date(post.created_at).toLocaleString();
+    var imagenHtml = post.imagen_url ? '<img class="post-imagen" src="' + escapeHTML(post.imagen_url) + '" />' : '';
 
-        var sesion = await client.auth.getSession();
-        var session = sesion && sesion.data && sesion.data.session;
-        if (!session) {
-            window.location.replace('/');
-            return;
-        }
+    div.innerHTML =
+        '<div class="post-header">' +
+            '<div class="post-avatar">' + avatarHtml + '</div>' +
+            '<div>' +
+                '<div class="post-author">' + nombreHtml + ' <span class="badge-verificado">✦ Verificado</span></div>' +
+                '<div class="post-date">' + fecha + '</div>' +
+            '</div>' +
+            '<div class="post-actions-header">' +
+                (esMiPost
+                    ? '<button class="btn-delete" onclick="eliminarPublicacion(\'' + post.id + '\')" title="Eliminar"><svg class="icon" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>'
+                    : '<button class="btn-report" onclick="reportarPublicacion(\'' + post.id + '\')" title="Reportar"><svg class="icon" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>') +
+                '<button class="btn-share" onclick="compartirPublicacion(\'' + post.id + '\')" title="Compartir"><svg class="icon" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg></button>' +
+            '</div>' +
+        '</div>' +
+        temaBadge +
+        '<div class="post-content">' + contenidoSanitizado + '</div>' +
+        imagenHtml +
+        seccionVenta +
+        '<div class="post-stats">' +
+            '<span class="like-btn" onclick="toggleLike(\'' + post.id + '\')" data-liked="false">' +
+                '<svg class="icon" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> <span class="count">' + likesCount + '</span>' +
+            '</span>' +
+            '<span onclick="toggleComentarios(\'' + post.id + '\')">' +
+                '<svg class="icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> <span class="count">' + comentariosCount + '</span>' +
+            '</span>' +
+            (post.cantidad_venta
+                ? '<span style="color:var(--gold);font-size:0.7rem;display:inline-flex;align-items:center;gap:4px;"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/></svg> ' + post.cantidad_venta + ' tokens en venta</span>'
+                : '') +
+        '</div>' +
+        '<div class="post-comentarios" id="comentarios-' + post.id + '" style="display:none;">' +
+            '<div class="comentarios-lista" id="comentarios-lista-' + post.id + '"></div>' +
+            '<div class="input-comentario">' +
+                '<input type="text" id="input-comentario-' + post.id + '" placeholder="Escribe un comentario..." />' +
+                '<button type="button" class="btn-enviar-comentario" data-post-id="' + post.id + '">Enviar</button>' +
+            '</div>' +
+        '</div>';
 
-        var u = (new URLSearchParams(window.location.search).get('u') || '')
-            .replace(/^@/, '').trim();
-        if (!u) return mostrarNoEncontrado();
+    // Verificar like en paralelo
+    if (sessionUser) {
+        verificarLike(post.id).then(function(liked) {
+            var likeBtn = div.querySelector('.like-btn');
+            if (likeBtn && liked) likeBtn.dataset.liked = 'true';
+        });
+    }
 
-        var perfilRes = await client
-            .from('perfiles_publicos')
-            .select('id, nombre, handle, avatar_url, verificado, seguidores_count, siguiendo_count')
-            .eq('handle', u)
+    return div;
+}
+
+// ================================================================
+// VERIFICAR LIKE (con cache)
+// ================================================================
+async function verificarLike(postId) {
+    if (!sessionUser) return false;
+    var cacheKey = postId + '_' + sessionUser.id;
+    if (likeCache.has(cacheKey)) return likeCache.get(cacheKey);
+
+    try {
+        var result = await supabaseClient
+            .from('muro_likes')
+            .select('id')
+            .eq('post_id', postId)
+            .eq('usuario_id', sessionUser.id)
             .maybeSingle();
+        if (result.error) throw result.error;
 
-        if (perfilRes.error || !perfilRes.data) return mostrarNoEncontrado();
-
-        var perfil = perfilRes.data;
-
-        // Si abres tu propio enlace, te llevo a tu perfil completo
-        if (perfil.id === session.user.id) {
-            window.location.replace('/features/perfil/perfil.html');
-            return;
+        var liked = !!result.data;
+        likeCache.set(cacheKey, liked);
+        likeCacheOrden.push(cacheKey);
+        if (likeCacheOrden.length > 100) {
+            likeCache.delete(likeCacheOrden.shift());
         }
-
-        pintarPerfil(perfil);
-
-        // La dirección solo llega si el dueño la dejó visible (la vista lo filtra)
-        var walletRes = await client
-            .from('wallet_publica')
-            .select('wallet_address')
-            .eq('id', perfil.id)
-            .maybeSingle();
-
-        if (!walletRes.error && walletRes.data) {
-            pintarWallet(walletRes.data.wallet_address);
-        } else {
-            pintarWallet(null);
-        }
+        return liked;
+    } catch (e) {
+        console.error('Error verificando like:', e);
+        return false;
     }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', cargarPerfil, { once: true });
-    } else {
-        cargarPerfil();
-    }
-})();
-</script>
-
-</body>
-</html>
+}
