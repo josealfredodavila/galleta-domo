@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#05080f">
-<title>◈ Mensajes · Sariel's</title>
+<title>◈ Mensajes · Csariel's</title>
 
 <!-- ✅ APARIENCIA GLOBAL - Se carga PRIMERO (aplica tema, color, tamaño) -->
 <script src="/features/shared/js/apariencia-global.js"></script>
@@ -19,7 +19,7 @@
 <body>
 <div class="app">
 <header class="header">
-    <a class="logo" href="/"><b>◈</b><span>Sariel's</span><em class="badge">WEB3</em></a>
+    <a class="logo" href="/"><b>◈</b><span>Csariel's</span><em class="badge">WEB3</em></a>
     <div class="header-right">
         <div class="network"><i></i>Polygon</div>
         <div class="header-avatar" id="headerAvatar" title="Mi perfil">◈</div>
@@ -44,7 +44,7 @@
             <span class="tab-label">Chats</span>
         </button>
         <button class="sidebar-tab" data-tab="canales" onclick="cambiarPestana('canales')">
-            <span class="tab-icon">✦</span>
+            <span class="tab-icon">⬡</span>
             <span class="tab-label">Canales</span>
         </button>
         <button class="sidebar-tab" data-tab="grupos" onclick="cambiarPestana('grupos')">
@@ -59,7 +59,7 @@
             <span>◈ Conversaciones</span>
         </div>
         <div class="searchbox">
-            <input type="text" id="searchConversations" placeholder="🔍 Buscar conversación…" autocomplete="off">
+            <input type="text" id="searchConversations" placeholder="◇ Buscar conversación…" autocomplete="off">
         </div>
         <div class="estados-bar">
             <div class="estados-header">
@@ -74,10 +74,10 @@
     <!-- TAB: CANALES -->
     <div class="tab-content hidden" id="tabCanales">
         <div class="sidehead">
-            <span>✦ Canales Públicos</span>
+            <span>⬡ Canales Públicos</span>
         </div>
         <div class="searchbox">
-            <input type="text" id="searchCanales" placeholder="🔍 Buscar canal…" autocomplete="off" oninput="buscarCanalesDebounce()">
+            <input type="text" id="searchCanales" placeholder="◇ Buscar canal…" autocomplete="off" oninput="buscarCanalesDebounce()">
         </div>
         <div class="filtros-canales">
             <select id="filtroEstadoCanal" onchange="cargarCanales()">
@@ -93,7 +93,7 @@
             <span>◆ Grupos Privados</span>
         </div>
         <div class="searchbox">
-            <input type="text" id="searchGrupos" placeholder="🔍 Buscar grupo…" autocomplete="off" oninput="buscarGruposDebounce()">
+            <input type="text" id="searchGrupos" placeholder="◇ Buscar grupo…" autocomplete="off" oninput="buscarGruposDebounce()">
         </div>
         <div class="filtros-canales">
             <select id="filtroEstadoGrupo" onchange="cargarGrupos()">
@@ -114,9 +114,9 @@
             <div class="status" id="chatStatus">◈ En espera</div>
         </div>
         <div class="actions" id="chatActions" style="display:none;">
-            <button class="iconbtn" id="deleteChat" title="Eliminar conversación">🗑️</button>
-            <button class="iconbtn" id="videoCall" title="Videollamada">📹</button>
-            <button class="iconbtn" id="searchChat" title="Buscar en la conversación">🔍</button>
+            <button class="iconbtn" id="deleteChat" title="Eliminar conversación">◇</button>
+            <button class="iconbtn" id="videoCall" title="Videollamada">▶</button>
+            <button class="iconbtn" id="searchChat" title="Buscar en la conversación">◇</button>
         </div>
     </header>
     <div class="messages" id="messages">
@@ -132,16 +132,16 @@
         </button>
     </div>
     <form class="composer" id="composer" style="display:none;">
-        <button type="button" class="btn" id="attach" title="Adjuntar">📎</button>
-        <button type="button" class="btn" id="audio" title="Grabar audio">🎙️</button>
-        <button type="button" class="btn" id="voiceBot" title="Hablar con Marquinhos" style="display:none;">🔊</button>
+        <button type="button" class="btn" id="attach" title="Adjuntar">◆</button>
+        <button type="button" class="btn" id="audio" title="Grabar audio">●</button>
+        <button type="button" class="btn" id="voiceBot" title="Hablar con Marquinhos" style="display:none;">◉</button>
         <input id="messageInput" autocomplete="off" placeholder="Escribe un mensaje…">
         <button class="btn send" type="submit">Enviar</button>
         <input id="fileInput" type="file" hidden multiple accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt">
     </form>
 </section>
 </main>
-<footer style="padding:18px 2px;color:var(--muted);font-size:.68rem">◈ Sariel's · Sabor al Paladar · WEB3</footer>
+<footer style="padding:18px 2px;color:var(--muted);font-size:.68rem">◈ Csariel's · Sabor al Paladar · WEB3</footer>
 </div>
 
 <!-- MODAL: Nueva conversación -->
@@ -162,7 +162,7 @@
         <div class="profile-modal-handle" id="profileModalHandle">@usuario</div>
         <div class="profile-modal-actions">
             <button class="profile-modal-btn" id="btnCambiarFoto">
-                <span class="icon">📷</span>
+                <span class="icon">◆</span>
                 <span>Cambiar foto de perfil</span>
             </button>
         </div>
@@ -174,7 +174,7 @@
 <div class="modal" id="vistasModal">
     <div class="modalbox" style="max-width:420px;">
         <button class="iconbtn" id="closeVistasModal" style="float:right">✕</button>
-        <h2 style="display:flex;align-items:center;gap:8px;">👁️ Vistas <span id="vistasModalCount" style="color:var(--muted);font-size:.85rem;font-weight:400;"></span></h2>
+        <h2 style="display:flex;align-items:center;gap:8px;">◉ Vistas <span id="vistasModalCount" style="color:var(--muted);font-size:.85rem;font-weight:400;"></span></h2>
         <div id="vistasList" style="margin-top:10px;">
             <div style="text-align:center;padding:20px;color:var(--muted);font-size:.8rem;">Cargando…</div>
         </div>
@@ -185,7 +185,7 @@
 <div class="modal" id="modalCrearCanal">
     <div class="modalbox" style="max-width:520px;">
         <button class="iconbtn" id="closeModalCanal" style="float:right" onclick="cerrarModalCrearCanal()">✕</button>
-        <h2>✦ Crear Canal Público</h2>
+        <h2>⬡ Crear Canal Público</h2>
         <p style="color:var(--muted);font-size:.75rem;margin-bottom:14px;">Los canales son públicos: cualquier usuario puede verlos y unirse.</p>
         <input class="search" id="canalNombre" placeholder="Nombre del canal *" maxlength="80" style="margin-bottom:10px;">
         <textarea id="canalDescripcion" placeholder="Descripción (opcional)" maxlength="200" style="width:100%;padding:11px 13px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--text);outline:0;font-family:inherit;resize:none;min-height:70px;margin-bottom:10px;"></textarea>
@@ -197,7 +197,7 @@
             <input class="search" id="canalCiudad" placeholder="Ciudad (opcional)">
             <input class="search" id="canalPais" placeholder="País" value="México">
         </div>
-        <button class="btn send" id="btnCrearCanal" onclick="crearCanal()" style="width:100%;">✦ Crear Canal</button>
+        <button class="btn send" id="btnCrearCanal" onclick="crearCanal()" style="width:100%;">⬡ Crear Canal</button>
     </div>
 </div>
 
@@ -231,7 +231,7 @@
             <img id="estadoPreviewImg" style="max-width:100%;max-height:240px;border-radius:12px;border:2px solid var(--gold);">
         </div>
         <input type="file" id="estadoFileInput" accept="image/*" style="display:none;">
-        <button class="btn" id="btnSeleccionarEstado" style="width:100%;margin-bottom:10px;">📷 Seleccionar imagen</button>
+        <button class="btn" id="btnSeleccionarEstado" style="width:100%;margin-bottom:10px;">◆ Seleccionar imagen</button>
         <textarea id="estadoCaption" placeholder="Escribe un mensaje (opcional)" maxlength="120" style="width:100%;padding:10px 14px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--text);outline:0;font-family:inherit;resize:none;min-height:60px;margin-bottom:12px;"></textarea>
         <button class="btn send" id="btnPublicarEstado" style="width:100%;" disabled>Publicar estado</button>
     </div>
@@ -264,7 +264,7 @@
     </div>
     <div class="estado-viewer-vistas hidden" id="evVistas">
         <div class="estado-viewer-vistas-pill">
-            👁️ <span id="evVistasCount">0</span> vistas
+            ◉ <span id="evVistasCount">0</span> vistas
         </div>
     </div>
 </div>
@@ -277,10 +277,10 @@
     </div>
     <div class="callinfo" id="callInfo">◈ Conectando…</div>
     <div class="controls">
-        <button id="toggleMic">🎤</button>
-        <button id="toggleCam">📷</button>
-        <button id="toggleScreen">🖥️</button>
-        <button class="hang" id="hangup">📞</button>
+        <button id="toggleMic">◉</button>
+        <button id="toggleCam">◆</button>
+        <button id="toggleScreen">▣</button>
+        <button class="hang" id="hangup">✕</button>
     </div>
 </div>
 
@@ -288,9 +288,9 @@
 <div class="call" id="incomingOverlay">
     <div class="avatar" style="width:80px;height:80px;font-size:2rem" id="incomingAvatar">◈</div>
     <h2 id="incomingName">Usuario</h2>
-    <div class="callinfo">📞 Llamada entrante…</div>
+    <div class="callinfo">◉ Llamada entrante…</div>
     <div class="controls">
-        <button id="acceptCall">📞</button>
+        <button id="acceptCall">◉</button>
         <button class="hang" id="rejectCall">✕</button>
     </div>
 </div>
