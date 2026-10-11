@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>◉ Live · Sariel's</title>
+    <title>◉ Live · Csariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="/features/shared/js/apariencia-global.js"></script>
@@ -277,8 +277,8 @@
         <header class="header">
             <a href="/" class="logo">
                 <span class="logo-hex">◈</span>
-                <span class="logo-text">Sariel<span>'s</span></span>
-                <span class="logo-badge">✦ WEB3</span>
+                <span class="logo-text">Csariel<span>'s</span></span>
+                <span class="logo-badge">◇ WEB3</span>
             </a>
             <div class="header-actions">
                 <span class="network-badge"><span class="dot"></span> Polygon</span>
@@ -291,8 +291,8 @@
             <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
             <a href="/features/live/live.html" class="nav-link active live">◉ Live</a>
             <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
-            <a href="/features/videos/videos.html" class="nav-link">▶ Videos</a>
-            <a href="/features/grupos/grupos.html" class="nav-link">◇ Grupos</a>
+            <a href="/features/videos/videos.html" class="nav-link">▣ Videos</a>
+            <a href="/features/grupos/grupos.html" class="nav-link">⬡ Grupos</a>
             <a href="/marketing/marketing.html" class="nav-link">◈ Marketing</a>
         </nav>
         <div class="live-container">
@@ -302,7 +302,7 @@
                     <button class="btn btn-gold btn-sm" onclick="iniciarTransmisionGeneral()" data-clave="live_iniciar">◉ Iniciar live</button>
                     <button class="btn btn-outline btn-sm" onclick="cargarTransmisionesActivas()" data-clave="live_ver_todas">◈ Ver todas</button>
                     <button class="btn btn-outline btn-sm" onclick="cargarEstadisticas()" data-clave="live_estadisticas">◈ Estadísticas</button>
-                    <button class="btn btn-outline btn-sm" onclick="abrirMembresiaLive()" data-clave="live_mi_pass">💎 Mi Live Pass</button>
+                    <button class="btn btn-outline btn-sm" onclick="abrirMembresiaLive()" data-clave="live_mi_pass">◆ Mi Live Pass</button>
                 </div>
             </div>
             <div class="live-video-container" id="liveVideoContainer">
@@ -312,13 +312,13 @@
                     <div class="live-title" id="liveTitle">Transmisión en vivo</div>
                 </div>
                 <div class="livepass-time-bar" id="livepassTimeBar">
-                    <div class="info">⏱ <strong id="tiempoRestante">--:--</strong> restantes hoy</div>
+                    <div class="info">◉ <strong id="tiempoRestante">--:--</strong> restantes hoy</div>
                     <div class="progress"><div class="progress-bar" id="tiempoProgress" style="width: 100%;"></div></div>
                 </div>
                 <div class="watermark-live">
                     <span class="icon">◈</span>
-                    <span class="text">Sariel<span>'s</span></span>
-                    <span class="badge-web3">✦ WEB3</span>
+                    <span class="text">Csariel<span>'s</span></span>
+                    <span class="badge-web3">◇ WEB3</span>
                 </div>
                 <div class="live-controls-bottom">
                     <button onclick="togglePlay()" id="playBtn" class="ctrl-btn ctrl-play" title="Play/Pause">
@@ -379,7 +379,7 @@
                 </div>
             </div>
             <div class="donaciones-rapidas">
-                <button class="btn-donacion" onclick="abrirModalDonacion()"><span class="monto">💎</span><span class="label">Donar</span></button>
+                <button class="btn-donacion" onclick="abrirModalDonacion()"><span class="monto">◆</span><span class="label">Donar</span></button>
             </div>
             <div class="live-chat-container">
                 <div class="chat-header">
@@ -390,9 +390,9 @@
                     <div class="chat-msg">
                         <div class="avatar">◈</div>
                         <div class="msg">
-                            <span class="name">Sariel's Bot</span>
+                            <span class="name">Csariel's Bot</span>
                             <span class="time">●</span>
-                            <div class="text">¡Bienvenido al Live de Sariel's!</div>
+                            <div class="text">¡Bienvenido al Live de Csariel's!</div>
                         </div>
                     </div>
                 </div>
@@ -414,7 +414,7 @@
             </div>
         </div>
         <footer class="footer">
-            <span><span class="brand">◈ Sariel's</span> · <span data-clave="live_footer">Sabor al Paladar · WEB3</span></span>
+            <span><span class="brand">◈ Csariel's</span> · <span data-clave="live_footer">Sabor al Paladar · WEB3</span></span>
             <div class="footer-links">
                 <a href="/terminos" data-clave="footer_terminos">◈ Términos</a>
                 <a href="/privacidad" data-clave="footer_privacidad">◈ Privacidad</a>
@@ -440,12 +440,12 @@ const LIVEKIT_CONFIG = { url: 'wss://csariels-domo-57ujk04t.livekit.cloud' };
 // ✅ DONACIONES ACTUALIZADAS (2, 5, 10, 20, 50, 100 USD)
 // ================================================================
 const DONACIONES = {
-    2: { nombre: 'Cubo Plata', emoji: '🥈', color: '#C0C0C0', duracion: 3000, efecto: 'cubo_plata' },
-    5: { nombre: 'Cubo Bronce', emoji: '🥉', color: '#CD7F32', duracion: 4000, efecto: 'cubo_bronce' },
-    10: { nombre: 'Cubo Oro', emoji: '🥇', color: '#D4AF37', duracion: 5000, efecto: 'cubo_oro' },
-    20: { nombre: 'Cohete Bronce', emoji: '🚀', color: '#CD7F32', duracion: 6000, efecto: 'cohete_explosion' },
-    50: { nombre: 'Cohete Esmeralda', emoji: '💚', color: '#50C878', duracion: 8000, efecto: 'cohete_esmeralda' },
-    100: { nombre: 'Cohete Diamante', emoji: '💎', color: '#B9F2FF', duracion: 10000, efecto: 'cohete_diamante' }
+    2: { nombre: 'Cubo Plata', emoji: '◈', color: '#C0C0C0', duracion: 3000, efecto: 'cubo_plata' },
+    5: { nombre: 'Cubo Bronce', emoji: '◈', color: '#CD7F32', duracion: 4000, efecto: 'cubo_bronce' },
+    10: { nombre: 'Cubo Oro', emoji: '◈', color: '#D4AF37', duracion: 5000, efecto: 'cubo_oro' },
+    20: { nombre: 'Cohete Bronce', emoji: '▲', color: '#CD7F32', duracion: 6000, efecto: 'cohete_explosion' },
+    50: { nombre: 'Cohete Esmeralda', emoji: '▲', color: '#50C878', duracion: 8000, efecto: 'cohete_esmeralda' },
+    100: { nombre: 'Cohete Diamante', emoji: '◇', color: '#B9F2FF', duracion: 10000, efecto: 'cohete_diamante' }
 };
 
 // ✅ Redes permitidas para donaciones
@@ -569,7 +569,7 @@ function mostrarModalLivePass(mensaje, razon) {
     modal.innerHTML = `
         <div class="livepass-modal" role="dialog" aria-modal="true">
             <span class="livepass-modal-icon">◉</span>
-            <div class="livepass-modal-title">Sariel's Live Pass</div>
+            <div class="livepass-modal-title">Csariel's Live Pass</div>
             <div class="livepass-modal-text">${mensaje || 'Necesitas un Live Pass activo para transmitir'}</div>
             <div class="livepass-modal-benefits">
                 <div class="livepass-modal-benefit">Transmite desde 2 horas al día</div>
@@ -579,7 +579,7 @@ function mostrarModalLivePass(mensaje, razon) {
             </div>
             <div class="livepass-modal-actions">
                 <button type="button" class="livepass-modal-btn-primary" onclick="abrirMembresiaLive()">
-                    🚀 Ver planes Live Pass
+                    ◈ Ver planes Live Pass
                 </button>
                 <button type="button" class="livepass-modal-btn-secondary" onclick="cerrarModalLivePass()">
                     Ahora no
@@ -845,7 +845,7 @@ async function iniciarTransmisionGeneral() {
         if (streamActivo) { showToast('⚠️ Ya tienes una transmisión profesional activa', 'warning'); return; }
 
         showToast('⏳ Iniciando transmisión...', '', 3000);
-        const titulo = prompt('Título de tu transmisión:', 'Mi live en Sariel\'s') || 'Live en Sariel\'s';
+        const titulo = prompt('Título de tu transmisión:', 'Mi live en Csariel\'s') || 'Live en Csariel\'s';
         const categoria = prompt('Categoría (gaming, musica, educacion, comunidad, tecnologia, general):', 'general') || 'general';
 
         // ✅ CAMBIO 1: Definir roomNameNuevo ANTES de llamar crear_transmision
@@ -1041,7 +1041,7 @@ function abrirModalDonacion() {
     modal.className = 'livepass-modal-backdrop';
     modal.innerHTML = `
         <div class="livepass-modal" role="dialog" aria-modal="true" style="max-width: 520px;">
-            <span class="livepass-modal-icon">💎</span>
+            <span class="livepass-modal-icon">◆</span>
             <div class="livepass-modal-title">Donar al Streamer</div>
             <div class="livepass-modal-text">Elige el monto y la red para tu donación</div>
             
@@ -1069,7 +1069,7 @@ function abrirModalDonacion() {
 
             <div class="livepass-modal-actions">
                 <button type="button" class="livepass-modal-btn-primary" id="btnConfirmarDonacion" onclick="confirmarDonacion()" disabled>
-                    💎 Donar
+                    ◆ Donar
                 </button>
                 <button type="button" class="livepass-modal-btn-secondary" onclick="cerrarModalDonacion()">
                     Cancelar
@@ -1168,7 +1168,7 @@ async function confirmarDonacion() {
         console.error('Error creando donación:', e);
         showToast('❌ ' + (e.message || 'Error al crear donación'), 'error', 6000);
         btn.disabled = false;
-        btn.textContent = '💎 Donar';
+        btn.textContent = '◆ Donar';
     }
 }
 
@@ -1249,7 +1249,7 @@ function mostrarEfectoDonacion(monto, d, usuario) {
         case 'cubo_oro': contenido = `<div style="background:linear-gradient(135deg,#F0D060,#D4AF37);border-radius:8px;padding:30px;font-size:6rem;text-align:center;"><div>◈</div><div style="font-size:1.5rem;color:#D4AF37;margin-top:10px;">${nombre} donó $${monto}</div></div>`; break;
         case 'cohete_explosion': contenido = `<div style="text-align:center;"><div style="font-size:8rem;">▲</div><div style="font-size:1.5rem;color:#CD7F32;">${nombre} donó $${monto}</div></div>`; break;
         case 'cohete_esmeralda': contenido = `<div style="text-align:center;"><div style="font-size:10rem;">▲</div><div style="font-size:2rem;color:#50C878;">${nombre} donó $${monto}</div></div>`; break;
-        case 'cohete_diamante': contenido = `<div style="text-align:center;"><div style="font-size:12rem;">💎</div><div style="font-size:2.5rem;color:#B9F2FF;">${nombre} donó $${monto}</div></div>`; break;
+        case 'cohete_diamante': contenido = `<div style="text-align:center;"><div style="font-size:12rem;">◇</div><div style="font-size:2.5rem;color:#B9F2FF;">${nombre} donó $${monto}</div></div>`; break;
     }
     overlay.innerHTML = contenido;
     container.appendChild(overlay);
@@ -1379,7 +1379,7 @@ async function abrirSelectorJuego() {
     const modal = document.createElement('div');
     modal.id = 'gameSelectorModal';
     modal.className = 'game-modal-backdrop';
-    modal.innerHTML = `<div class="game-modal" role="dialog" aria-modal="true"><div class="game-modal-header"><div><div class="game-modal-kicker">SARIEL'S · LIVE</div><h2 id="gameModalTitle">◈ ¿Qué juego vas a transmitir?</h2></div><button type="button" class="game-modal-close" onclick="cerrarSelectorJuego()">×</button></div><div class="game-grid" id="gameGrid"><div style="grid-column:1/-1;padding:20px;text-align:center;">Cargando juegos...</div></div><div id="otroJuegoWrap" class="otro-juego-wrap" hidden><label for="otroJuegoInput">Nombre del juego</label><div class="otro-juego-row"><input id="otroJuegoInput" maxlength="80" autocomplete="off" placeholder="Ej. Apex Legends" /><button type="button" class="btn btn-gold btn-sm" onclick="confirmarOtroJuego()">Continuar</button></div></div></div>`;
+    modal.innerHTML = `<div class="game-modal" role="dialog" aria-modal="true"><div class="game-modal-header"><div><div class="game-modal-kicker">CSARIEL'S · LIVE</div><h2 id="gameModalTitle">◈ ¿Qué juego vas a transmitir?</h2></div><button type="button" class="game-modal-close" onclick="cerrarSelectorJuego()">×</button></div><div class="game-grid" id="gameGrid"><div style="grid-column:1/-1;padding:20px;text-align:center;">Cargando juegos...</div></div><div id="otroJuegoWrap" class="otro-juego-wrap" hidden><label for="otroJuegoInput">Nombre del juego</label><div class="otro-juego-row"><input id="otroJuegoInput" maxlength="80" autocomplete="off" placeholder="Ej. Apex Legends" /><button type="button" class="btn btn-gold btn-sm" onclick="confirmarOtroJuego()">Continuar</button></div></div></div>`;
     modal.addEventListener('click', (e) => { if (e.target === modal) cerrarSelectorJuego(); });
     document.body.appendChild(modal);
     try {
@@ -1390,7 +1390,7 @@ async function abrirSelectorJuego() {
         if (!grid) return;
         grid.innerHTML = '';
         juegosDisponibles.forEach(j => { const b = document.createElement('button'); b.type = 'button'; b.className = 'game-option'; b.textContent = `◈ ${j.nombre}`; b.addEventListener('click', () => seleccionarJuego(j)); grid.appendChild(b); });
-        const o = document.createElement('button'); o.type = 'button'; o.className = 'game-option game-option-other'; o.textContent = '✏ Otro'; o.addEventListener('click', mostrarOtroJuego); grid.appendChild(o);
+        const o = document.createElement('button'); o.type = 'button'; o.className = 'game-option game-option-other'; o.textContent = '◆ Otro'; o.addEventListener('click', mostrarOtroJuego); grid.appendChild(o);
     } catch (e) { const grid = document.getElementById('gameGrid'); if (grid) grid.innerHTML = '<div style="padding:20px;text-align:center;">✕ Error</div>'; }
 }
 function mostrarOtroJuego() { const w = document.getElementById('otroJuegoWrap'); if (w) w.hidden = false; const i = document.getElementById('otroJuegoInput'); if (i) { i.focus(); i.select(); } }
@@ -1521,7 +1521,7 @@ async function cargarEstadisticas() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('◈ Sariel\'s Live - cargando...');
+    console.log('◈ Csariel\'s Live - cargando...');
     const session = await getSession();
     if (session) currentUser = session.user;
     else showToast('⚠️ Inicia sesión', 'warning');
