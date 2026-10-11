@@ -9,7 +9,36 @@
 // - Todos los textos usan perfilT(clave, respaldo).
 // - Nota: la notificación que reciben tus contactos se guarda en el
 //   idioma de quien cambia el estado (se escribe en la base de datos).
+//
+// CAMBIO v3 (Inactivo manual):
+// - Si tocas "Inactivo", el detector de actividad ya no te vuelve a
+//   poner activo al mover el mouse, hacer scroll o tocar la pantalla.
+// - Solo vuelves a activo al tocar "Activo". La decisión se guarda en
+//   localStorage para que no se pierda al recargar.
 // ================================================================
+
+// ================================================================
+// INACTIVO MANUAL (persistente)
+// ================================================================
+var PERFIL_INACTIVO_MANUAL_KEY = 'perfil_inactivo_manual';
+
+function esInactivoManual() {
+    try {
+        return localStorage.getItem(PERFIL_INACTIVO_MANUAL_KEY) === '1';
+    } catch (e) {
+        return false;
+    }
+}
+
+function setInactivoManual(valor) {
+    try {
+        if (valor) {
+            localStorage.setItem(PERFIL_INACTIVO_MANUAL_KEY, '1');
+        } else {
+            localStorage.removeItem(PERFIL_INACTIVO_MANUAL_KEY);
+        }
+    } catch (e) {}
+}
 
 // ================================================================
 // ACTUALIZAR ESTADO EN SUPABASE
@@ -68,6 +97,8 @@ function iniciarDetectorInactividad() {
 
     const resetInactividad = () => {
         tiempoInactividad = 0;
+        // Si el usuario eligió "Inactivo" a mano, no lo volvemos a activar solos
+        if (esInactivoManual()) return;
         if (perfilCache && !perfilCache.online) actualizarEstadoEnLinea(true);
     };
 
@@ -99,6 +130,10 @@ async function cambiarEstado(online) {
             showToast(perfilT('perfil_error_cambiar_estado', '❌ No se pudo cambiar el estado'), 'error');
             return;
         }
+
+        // Guardamos la elección manual: Inactivo se queda hasta que toques Activo
+        setInactivoManual(!online);
+
         showToast(
             online
                 ? '🟢 ' + perfilT('perfil_activo_ahora', 'Activo ahora')
