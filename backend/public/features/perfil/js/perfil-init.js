@@ -3,107 +3,120 @@
 // ================================================================
 // Arranque del módulo, eventos globales, exposición a window y
 // sincronización realtime con Supabase.
-// Depende de: TODOS los archivos anteriores.
 //
-// CAMBIO v2 (traducciones):
-// - Antes de pintar espera a que idiomas.js tenga las traducciones.
-// - El nivel del usuario se traduce y ya no borra el ícono del badge.
-// - Textos de realtime y de avatar usan perfilT.
+// CAMBIO v5 (robustez):
+// - Cada función se publica solo si existe. Si un módulo no carga
+//   (por ejemplo perfil-amigos.js), el resto del perfil sigue
+//   funcionando en lugar de detenerse por completo.
+// - Las llamadas a módulos opcionales se hacen solo si están definidos.
 // ================================================================
 
 // ================================================================
-// EXPOSICIÓN GLOBAL A WINDOW
+// EXPOSICIÓN GLOBAL A WINDOW (segura: no falla si falta alguna función)
 // ================================================================
 function publicarFuncionesGlobales() {
     // Utils
-    window.showToast = showToast;
-    window.toggleAvatarMenu = toggleAvatarMenu;
-    window.cerrarAvatarMenu = cerrarAvatarMenu;
-    window.escapeHtmlPerfil = escapeHtmlPerfil;
+    window.showToast = typeof showToast === 'function' ? showToast : null;
+    window.toggleAvatarMenu = typeof toggleAvatarMenu === 'function' ? toggleAvatarMenu : null;
+    window.cerrarAvatarMenu = typeof cerrarAvatarMenu === 'function' ? cerrarAvatarMenu : null;
+    window.escapeHtmlPerfil = typeof escapeHtmlPerfil === 'function' ? escapeHtmlPerfil : null;
 
     // Datos
-    window.cargarPerfil = cargarPerfil;
-    window.guardarPerfil = guardarPerfil;
-    window.editarPerfil = editarPerfil;
-    window.compartirPerfil = compartirPerfil;
-    window.generarQRPerfil = generarQRPerfil;
-    window.abrirSelectorArchivo = abrirSelectorArchivo;
-    window.expandirAvatar = expandirAvatar;
-    window.expandirFotoPublicacion = expandirFotoPublicacion;
-    window.subirFoto = subirFoto;
-    window.subirVideo = subirVideo;
-    window.eliminarFotoPerfil = eliminarFotoPerfil;
-    window.cerrarSesion = cerrarSesion;
-    window.irAMuro = irAMuro;
-    window.obtenerEstadisticas = obtenerEstadisticas;
-    window.calcularNivel = calcularNivel;
+    window.cargarPerfil = typeof cargarPerfil === 'function' ? cargarPerfil : null;
+    window.guardarPerfil = typeof guardarPerfil === 'function' ? guardarPerfil : null;
+    window.editarPerfil = typeof editarPerfil === 'function' ? editarPerfil : null;
+    window.compartirPerfil = typeof compartirPerfil === 'function' ? compartirPerfil : null;
+    window.generarQRPerfil = typeof generarQRPerfil === 'function' ? generarQRPerfil : null;
+    window.abrirSelectorArchivo = typeof abrirSelectorArchivo === 'function' ? abrirSelectorArchivo : null;
+    window.expandirAvatar = typeof expandirAvatar === 'function' ? expandirAvatar : null;
+    window.expandirFotoPublicacion = typeof expandirFotoPublicacion === 'function' ? expandirFotoPublicacion : null;
+    window.subirFoto = typeof subirFoto === 'function' ? subirFoto : null;
+    window.subirVideo = typeof subirVideo === 'function' ? subirVideo : null;
+    window.eliminarFotoPerfil = typeof eliminarFotoPerfil === 'function' ? eliminarFotoPerfil : null;
+    window.cerrarSesion = typeof cerrarSesion === 'function' ? cerrarSesion : null;
+    window.irAMuro = typeof irAMuro === 'function' ? irAMuro : null;
+    window.obtenerEstadisticas = typeof obtenerEstadisticas === 'function' ? obtenerEstadisticas : null;
+    window.calcularNivel = typeof calcularNivel === 'function' ? calcularNivel : null;
 
     // Estado
-    window.cambiarEstado = cambiarEstado;
-    window.actualizarEstadoEnLinea = actualizarEstadoEnLinea;
+    window.cambiarEstado = typeof cambiarEstado === 'function' ? cambiarEstado : null;
+    window.actualizarEstadoEnLinea = typeof actualizarEstadoEnLinea === 'function' ? actualizarEstadoEnLinea : null;
 
     // Amigos
-    window.cargarAmigosEnLinea = cargarAmigosEnLinea;
-    window.actualizarListaAmigos = actualizarListaAmigos;
-    window.agregarAmigo = agregarAmigo;
+    window.cargarAmigosEnLinea = typeof cargarAmigosEnLinea === 'function' ? cargarAmigosEnLinea : null;
+    window.actualizarListaAmigos = typeof actualizarListaAmigos === 'function' ? actualizarListaAmigos : null;
+    window.agregarAmigo = typeof agregarAmigo === 'function' ? agregarAmigo : null;
 
     // Conexión
-    window.cambiarConexion = cambiarConexion;
-    window.cargarEstadoConexion = cargarEstadoConexion;
+    window.cambiarConexion = typeof cambiarConexion === 'function' ? cambiarConexion : null;
+    window.cargarEstadoConexion = typeof cargarEstadoConexion === 'function' ? cargarEstadoConexion : null;
 
     // Tokens / NFT / Pro
-    window.cargarEstadoPro = cargarEstadoPro;
-    window.contratarPro = contratarPro;
-    window.activarProDirecto = activarProDirecto;
-    window.canjearNFT = canjearNFT;
-    window.compartirLogro = compartirLogro;
+    window.cargarEstadoPro = typeof cargarEstadoPro === 'function' ? cargarEstadoPro : null;
+    window.contratarPro = typeof contratarPro === 'function' ? contratarPro : null;
+    window.activarProDirecto = typeof activarProDirecto === 'function' ? activarProDirecto : null;
+    window.canjearNFT = typeof canjearNFT === 'function' ? canjearNFT : null;
+    window.compartirLogro = typeof compartirLogro === 'function' ? compartirLogro : null;
 
     // QR
-    window.escanearQR = escanearQR;
-    window.abrirCamaraQR = abrirCamaraQR;
-    window.cerrarCamaraQR = cerrarCamaraQR;
-    window.cargarHistorialQR = cargarHistorialQR;
-    window.actualizarUIHistorialQR = actualizarUIHistorialQR;
-    window.procesarQR = procesarQR;
+    window.escanearQR = typeof escanearQR === 'function' ? escanearQR : null;
+    window.abrirCamaraQR = typeof abrirCamaraQR === 'function' ? abrirCamaraQR : null;
+    window.cerrarCamaraQR = typeof cerrarCamaraQR === 'function' ? cerrarCamaraQR : null;
+    window.cargarHistorialQR = typeof cargarHistorialQR === 'function' ? cargarHistorialQR : null;
+    window.actualizarUIHistorialQR = typeof actualizarUIHistorialQR === 'function' ? actualizarUIHistorialQR : null;
+    window.procesarQR = typeof procesarQR === 'function' ? procesarQR : null;
 
     // eSIM
-    window.cargarEsimNueva = cargarEsimNueva;
-    window.sincronizarEsimNuevo = sincronizarEsimNuevo;
-    window.verQREsimNuevo = verQREsimNuevo;
-    window.irAComprarInternet = irAComprarInternet;
+    window.cargarEsimNueva = typeof cargarEsimNueva === 'function' ? cargarEsimNueva : null;
+    window.sincronizarEsimNuevo = typeof sincronizarEsimNuevo === 'function' ? sincronizarEsimNuevo : null;
+    window.verQREsimNuevo = typeof verQREsimNuevo === 'function' ? verQREsimNuevo : null;
+    window.irAComprarInternet = typeof irAComprarInternet === 'function' ? irAComprarInternet : null;
 
     // Wallet
-    window.conectarWallet = conectarWallet;
-    window.desconectarWallet = desconectarWallet;
+    window.conectarWallet = typeof conectarWallet === 'function' ? conectarWallet : null;
+    window.desconectarWallet = typeof desconectarWallet === 'function' ? desconectarWallet : null;
 
     // Publicaciones
-    window.toggleEmojiPickerPerfil = toggleEmojiPickerPerfil;
-    window.insertarHashtagPerfil = insertarHashtagPerfil;
-    window.seleccionarArchivoPerfil = seleccionarArchivoPerfil;
-    window.quitarArchivoPerfil = quitarArchivoPerfil;
-    window.publicarDesdePerfil = publicarDesdePerfil;
-    window.cargarMisPublicaciones = cargarMisPublicaciones;
-    window.toggleReaccionDropdown = toggleReaccionDropdown;
-    window.reaccionarPublicacionPerfil = reaccionarPublicacionPerfil;
-    window.toggleComentariosPerfil = toggleComentariosPerfil;
-    window.enviarComentarioPerfil = enviarComentarioPerfil;
-    window.eliminarMiPublicacion = eliminarMiPublicacion;
+    window.toggleEmojiPickerPerfil = typeof toggleEmojiPickerPerfil === 'function' ? toggleEmojiPickerPerfil : null;
+    window.insertarHashtagPerfil = typeof insertarHashtagPerfil === 'function' ? insertarHashtagPerfil : null;
+    window.seleccionarArchivoPerfil = typeof seleccionarArchivoPerfil === 'function' ? seleccionarArchivoPerfil : null;
+    window.quitarArchivoPerfil = typeof quitarArchivoPerfil === 'function' ? quitarArchivoPerfil : null;
+    window.publicarDesdePerfil = typeof publicarDesdePerfil === 'function' ? publicarDesdePerfil : null;
+    window.cargarMisPublicaciones = typeof cargarMisPublicaciones === 'function' ? cargarMisPublicaciones : null;
+    window.toggleReaccionDropdown = typeof toggleReaccionDropdown === 'function' ? toggleReaccionDropdown : null;
+    window.reaccionarPublicacionPerfil = typeof reaccionarPublicacionPerfil === 'function' ? reaccionarPublicacionPerfil : null;
+    window.toggleComentariosPerfil = typeof toggleComentariosPerfil === 'function' ? toggleComentariosPerfil : null;
+    window.enviarComentarioPerfil = typeof enviarComentarioPerfil === 'function' ? enviarComentarioPerfil : null;
+    window.eliminarMiPublicacion = typeof eliminarMiPublicacion === 'function' ? eliminarMiPublicacion : null;
 
     // Internet
-    window.cargarOrdenesInternet = cargarOrdenesInternet;
-    window.filtrarOrdenesInternet = filtrarOrdenesInternet;
+    window.cargarOrdenesInternet = typeof cargarOrdenesInternet === 'function' ? cargarOrdenesInternet : null;
+    window.filtrarOrdenesInternet = typeof filtrarOrdenesInternet === 'function' ? filtrarOrdenesInternet : null;
 
     // Repartidor
-    window.verificarEstadoRepartidorPerfil = verificarEstadoRepartidorPerfil;
-    window.irARepartidorDesdePerfil = irARepartidorDesdePerfil;
+    window.verificarEstadoRepartidorPerfil = typeof verificarEstadoRepartidorPerfil === 'function' ? verificarEstadoRepartidorPerfil : null;
+    window.irARepartidorDesdePerfil = typeof irARepartidorDesdePerfil === 'function' ? irARepartidorDesdePerfil : null;
 
     // Cambiar tab
-    window.cambiarTab = cambiarTab;
+    window.cambiarTab = typeof cambiarTab === 'function' ? cambiarTab : null;
 
     // i18n
-    window.perfilT = perfilT;
-    window.aplicarI18NPerfil = aplicarI18NPerfil;
-    window.traducirPlanMeta = traducirPlanMeta;
+    window.perfilT = typeof perfilT === 'function' ? perfilT : null;
+    window.aplicarI18NPerfil = typeof aplicarI18NPerfil === 'function' ? aplicarI18NPerfil : null;
+    window.traducirPlanMeta = typeof traducirPlanMeta === 'function' ? traducirPlanMeta : null;
+}
+
+// ================================================================
+// LLAMADA SEGURA A MÓDULOS OPCIONALES
+// ================================================================
+function llamarSiExiste(nombre, ...args) {
+    try {
+        var fn = window[nombre];
+        if (typeof fn === 'function') return fn.apply(null, args);
+    } catch (e) {
+        console.warn('[Perfil] Error en ' + nombre + ':', e);
+    }
+    return undefined;
 }
 
 // ================================================================
@@ -121,20 +134,12 @@ function cambiarTab(tab) {
     const tabBtn = document.querySelector('.tab-btn[onclick*="\'' + tab + '\'"]');
     if (tabBtn) tabBtn.classList.add('active');
 
-    if (tab === 'esim' && typeof window.cargarEsimNueva === 'function') {
-        window.cargarEsimNueva();
-    }
-    if (tab === 'internet' && typeof window.cargarOrdenesInternet === 'function') {
-        window.cargarOrdenesInternet();
-    }
+    if (tab === 'esim') llamarSiExiste('cargarEsimNueva');
+    if (tab === 'internet') llamarSiExiste('cargarOrdenesInternet');
 }
 
 // ================================================================
 // NIVEL DEL USUARIO (badge)
-// ================================================================
-// Conserva el ícono SVG del badge. Solo cambia el texto del <span>
-// interno y quita data-clave para que no lo sobrescriba el sistema
-// de traducciones con el nombre equivocado.
 // ================================================================
 function aplicarNivelUsuario(nivel) {
     const nivelEl = document.getElementById('nivelUsuario');
@@ -277,7 +282,6 @@ function aplicarParametrosURL() {
     if (tab && typeof window.cambiarTab === 'function') {
         setTimeout(function () {
             window.cambiarTab(tab);
-            console.log('[Perfil] Tab cambiada a:', tab);
             if (tab === 'qr') {
                 var tabContent = document.getElementById('tab-qr');
                 if (tabContent) {
@@ -291,14 +295,9 @@ function aplicarParametrosURL() {
 
     if (action === 'canjear') {
         setTimeout(function () {
-            if (typeof window.cambiarTab === 'function') {
-                window.cambiarTab('tokens');
-            }
+            if (typeof window.cambiarTab === 'function') window.cambiarTab('tokens');
             setTimeout(function () {
-                if (typeof window.canjearNFT === 'function') {
-                    window.canjearNFT();
-                    console.log('[Perfil] Acción canjear ejecutada');
-                }
+                if (typeof window.canjearNFT === 'function') window.canjearNFT();
             }, 500);
         }, 800);
     }
@@ -306,11 +305,8 @@ function aplicarParametrosURL() {
     if (tab || action) {
         setTimeout(function () {
             try {
-                var urlLimpia = window.location.pathname;
-                window.history.replaceState({}, document.title, urlLimpia);
-            } catch (e) {
-                console.warn('[Perfil] No se pudo limpiar la URL:', e);
-            }
+                window.history.replaceState({}, document.title, window.location.pathname);
+            } catch (e) {}
         }, 2000);
     }
 }
@@ -331,17 +327,19 @@ async function esperarTraduccionesPerfil() {
         }
     }
 
-    await aplicarI18NPerfil(document);
+    try {
+        await aplicarI18NPerfil(document);
+    } catch (e) {
+        console.warn('[Perfil] Error aplicando traducciones:', e);
+    }
 }
 
 // ================================================================
 // INICIALIZACIÓN PRINCIPAL
 // ================================================================
 async function iniciarPerfil() {
-    asegurarEstilosPerfil();
+    try { asegurarEstilosPerfil(); } catch (e) {}
 
-    // Primero traducciones, después datos (así no se pinta en español
-    // y luego cambia)
     await esperarTraduccionesPerfil();
 
     if (typeof jsQR === 'undefined') {
@@ -356,52 +354,42 @@ async function iniciarPerfil() {
         } catch (e) {}
     }
 
-    // Cargar perfil principal
-    await cargarPerfil();
+    // Cargar perfil principal (lo que más importa que aparezca)
+    await llamarSiExiste('cargarPerfil');
 
-    // Cargar mis publicaciones al arrancar
-    cargarMisPublicaciones();
+    // Módulos opcionales: cada uno se llama solo si existe
+    llamarSiExiste('cargarMisPublicaciones');
 
-    // Nivel del usuario según tokens
-    const stats = await obtenerEstadisticas();
-    if (stats) {
-        aplicarNivelUsuario(calcularNivel(stats.tokens_actuales || 0));
-    }
-
-    // Iniciar módulos
-    iniciarNotificacionesRealtime();
-    iniciarEscuchaConexion();
-    iniciarEscuchaAmigos();
-    iniciarDetectorInactividad();
-    iniciarEscuchaWallet();
-
-    // Refrescos periódicos
-    setInterval(() => {
-        if (!document.hidden) cargarEstadoConexion();
-    }, 60000);
-    setInterval(() => {
-        if (!document.hidden) cargarAmigosEnLinea();
-    }, 60000);
-
-    // Aplicar parámetros de URL
-    setTimeout(aplicarParametrosURL, 500);
-
-    // Cargar repartidor
-    setTimeout(verificarEstadoRepartidorPerfil, 1500);
-
-    // Verificar eSIM
-    setTimeout(() => {
-        if (typeof window.cargarEsimNueva === 'function') {
-            window.cargarEsimNueva();
+    try {
+        const stats = await llamarSiExiste('obtenerEstadisticas');
+        if (stats && typeof calcularNivel === 'function') {
+            aplicarNivelUsuario(calcularNivel(stats.tokens_actuales || 0));
         }
-    }, 2000);
+    } catch (e) {}
+
+    llamarSiExiste('iniciarNotificacionesRealtime');
+    llamarSiExiste('iniciarEscuchaConexion');
+    llamarSiExiste('iniciarEscuchaAmigos');
+    llamarSiExiste('iniciarDetectorInactividad');
+    llamarSiExiste('iniciarEscuchaWallet');
+
+    setInterval(function () {
+        if (!document.hidden) llamarSiExiste('cargarEstadoConexion');
+    }, 60000);
+    setInterval(function () {
+        if (!document.hidden) llamarSiExiste('cargarAmigosEnLinea');
+    }, 60000);
+
+    setTimeout(aplicarParametrosURL, 500);
+    setTimeout(function () { llamarSiExiste('verificarEstadoRepartidorPerfil'); }, 1500);
+    setTimeout(function () { llamarSiExiste('cargarEsimNueva'); }, 2000);
 }
 
 // ================================================================
 // ARRANQUE
 // ================================================================
-publicarFuncionesGlobales();
-asegurarEstilosPerfil();
+try { publicarFuncionesGlobales(); } catch (e) { console.warn('[Perfil] publicarFuncionesGlobales:', e); }
+try { asegurarEstilosPerfil(); } catch (e) {}
 
 iniciarRecargaRealtime();
 setTimeout(function () { recargarPerfilRealtime(true); }, 800);
@@ -443,5 +431,3 @@ if (document.readyState === 'loading') {
 } else {
     iniciarPerfil();
 }
-
-console.log('[Perfil] ✅ Módulo dividido cargado correctamente');
