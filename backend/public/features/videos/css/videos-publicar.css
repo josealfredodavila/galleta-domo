@@ -1,0 +1,533 @@
+/* ================================================================
+   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v1.0
+   ================================================================
+   Solo estilos NUEVOS. No sobrescribe los estilos existentes de
+   videos.html (usa prefijos cs- para todo).
+   ================================================================ */
+
+/* ---------- BOTONES EN HEADER ---------- */
+.cs-btn-header {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    margin-right: 8px;
+    background: rgba(212, 175, 55, 0.08);
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    border-radius: 20px;
+    color: #D4AF37;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    -webkit-tap-highlight-color: transparent;
+    white-space: nowrap;
+}
+.cs-btn-header:hover {
+    background: rgba(212, 175, 55, 0.18);
+    border-color: #D4AF37;
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.35);
+    transform: translateY(-1px);
+}
+.cs-btn-header:active { transform: scale(0.96); }
+.cs-btn-header .cs-ico {
+    font-size: 0.9rem;
+    line-height: 1;
+    filter: drop-shadow(0 0 4px rgba(212, 175, 55, 0.6));
+}
+.cs-btn-sonido { border-color: rgba(212, 175, 55, 0.55); }
+.cs-btn-ubicacion { border-color: rgba(0, 229, 255, 0.4); color: #00E5FF; background: rgba(0, 229, 255, 0.06); }
+.cs-btn-ubicacion:hover { background: rgba(0, 229, 255, 0.12); border-color: #00E5FF; box-shadow: 0 0 20px rgba(0, 229, 255, 0.35); }
+
+@media (max-width: 640px) {
+    .cs-btn-header { font-size: 0.55rem; padding: 5px 10px; }
+    .cs-btn-header .cs-ico { font-size: 0.75rem; }
+}
+
+/* ---------- BOTTOM SHEETS ---------- */
+.cs-sheet-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    z-index: 9500;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+.cs-sheet-backdrop.show { opacity: 1; visibility: visible; }
+
+.cs-sheet {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9501;
+    max-height: 80vh;
+    background: rgba(15, 15, 15, 0.96);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border-top-left-radius: 22px;
+    border-top-right-radius: 22px;
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    border-bottom: none;
+    display: flex;
+    flex-direction: column;
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 -10px 50px rgba(0, 0, 0, 0.7), 0 0 40px rgba(212, 175, 55, 0.08);
+    will-change: transform;
+    color: #f0f4f8;
+    font-family: 'Inter', sans-serif;
+}
+.cs-sheet.show { transform: translateY(0); }
+
+.cs-sheet-handle {
+    padding: 8px 0 4px;
+    display: flex;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.cs-sheet-handle::before {
+    content: '';
+    width: 42px;
+    height: 4px;
+    background: rgba(212, 175, 55, 0.35);
+    border-radius: 4px;
+}
+
+.cs-sheet-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 16px 12px;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.12);
+    flex-shrink: 0;
+}
+.cs-sheet-titulo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #D4AF37;
+    letter-spacing: 0.5px;
+}
+.cs-sheet-titulo .cs-ico {
+    font-size: 1rem;
+    filter: drop-shadow(0 0 6px rgba(212, 175, 55, 0.7));
+}
+.cs-sheet-close {
+    background: transparent;
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    color: #8aa8b8;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+    padding: 0;
+    line-height: 1;
+}
+.cs-sheet-close:hover {
+    color: #ff3366;
+    border-color: #ff3366;
+    transform: scale(1.05);
+}
+
+.cs-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 10px 14px 0;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+    flex-shrink: 0;
+}
+.cs-tab {
+    flex: 1;
+    padding: 8px 12px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: #8aa8b8;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+.cs-tab:hover { color: #f0f4f8; }
+.cs-tab.active {
+    color: #D4AF37;
+    border-bottom-color: #D4AF37;
+    text-shadow: 0 0 8px rgba(212, 175, 55, 0.4);
+}
+
+.cs-sheet-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 12px 14px;
+}
+.cs-sheet-body::-webkit-scrollbar { width: 4px; }
+.cs-sheet-body::-webkit-scrollbar-thumb { background: #D4AF37; border-radius: 4px; }
+
+.cs-buscar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(212, 175, 55, 0.15);
+    border-radius: 24px;
+    padding: 8px 14px;
+    margin-bottom: 12px;
+}
+.cs-buscar-wrap .cs-ico-buscar {
+    color: #D4AF37;
+    font-size: 0.9rem;
+    filter: drop-shadow(0 0 6px rgba(212, 175, 55, 0.4));
+}
+.cs-buscar-wrap input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #f0f4f8;
+    font-size: 0.85rem;
+    font-family: inherit;
+}
+.cs-buscar-wrap input::placeholder { color: #8aa8b8; }
+
+/* ---------- LISTA DE SONIDOS ---------- */
+.cs-sonidos-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.cs-sonido-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(212, 175, 55, 0.1);
+    border-radius: 12px;
+    cursor: pointer;
+    text-align: left;
+    color: #f0f4f8;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+.cs-sonido-item:hover {
+    background: rgba(212, 175, 55, 0.06);
+    border-color: rgba(212, 175, 55, 0.35);
+    transform: translateX(2px);
+}
+.cs-sonido-item.activo {
+    background: rgba(212, 175, 55, 0.12);
+    border-color: #D4AF37;
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
+}
+.cs-sonido-ico {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.05));
+    color: #D4AF37;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+    filter: drop-shadow(0 0 4px rgba(212, 175, 55, 0.4));
+}
+.cs-sonido-info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
+.cs-sonido-nombre {
+    color: #f0f4f8;
+    font-weight: 700;
+    font-size: 0.82rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.cs-sonido-artista {
+    color: #8aa8b8;
+    font-size: 0.68rem;
+    margin-top: 2px;
+}
+.cs-sonido-check {
+    color: #D4AF37;
+    font-size: 0.9rem;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+.cs-sonido-item.activo .cs-sonido-check { opacity: 1; }
+
+/* ---------- LISTA DE UBICACIONES ---------- */
+.cs-ubicaciones-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.cs-ubicacion-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(0, 229, 255, 0.1);
+    border-radius: 12px;
+    cursor: pointer;
+    text-align: left;
+    color: #f0f4f8;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+.cs-ubicacion-item:hover {
+    background: rgba(0, 229, 255, 0.06);
+    border-color: rgba(0, 229, 255, 0.4);
+    transform: translateX(2px);
+}
+.cs-ubicacion-item.activo {
+    background: rgba(0, 229, 255, 0.12);
+    border-color: #00E5FF;
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.2);
+}
+.cs-ubicacion-ico {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(0, 229, 255, 0.2), rgba(0, 229, 255, 0.05));
+    color: #00E5FF;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+    filter: drop-shadow(0 0 4px rgba(0, 229, 255, 0.4));
+}
+.cs-ubicacion-info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
+.cs-ubicacion-nombre {
+    color: #f0f4f8;
+    font-weight: 700;
+    font-size: 0.82rem;
+}
+.cs-ubicacion-pais {
+    color: #8aa8b8;
+    font-size: 0.68rem;
+    margin-top: 2px;
+}
+.cs-ubicacion-check {
+    color: #00E5FF;
+    font-size: 0.9rem;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+.cs-ubicacion-item.activo .cs-ubicacion-check { opacity: 1; }
+
+/* ---------- FOOTER DEL SHEET ---------- */
+.cs-sheet-footer {
+    flex-shrink: 0;
+    padding: 12px 16px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid rgba(212, 175, 55, 0.12);
+    background: rgba(0, 0, 0, 0.35);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    justify-content: space-between;
+}
+.cs-sonido-actual,
+.cs-ubicacion-actual {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.75rem;
+    color: #8aa8b8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.cs-btn-primary {
+    padding: 10px 22px;
+    background: linear-gradient(135deg, #D4AF37, #b8923a);
+    color: #05080f;
+    border: none;
+    border-radius: 24px;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    -webkit-tap-highlight-color: transparent;
+    white-space: nowrap;
+}
+.cs-btn-primary:hover:not(:disabled) {
+    transform: scale(1.03);
+    box-shadow: 0 0 24px rgba(212, 175, 55, 0.5);
+}
+.cs-btn-primary:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* ---------- PREVIEW EN UPLOAD SECTION ---------- */
+.cs-preview-wrap {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(212, 175, 55, 0.15);
+    border-radius: 14px;
+    margin-bottom: 12px;
+}
+.cs-preview-video {
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #000;
+    aspect-ratio: 9 / 16;
+    max-height: 240px;
+}
+.cs-preview-video video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #000;
+    display: block;
+}
+.cs-preview-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    background: rgba(212, 175, 55, 0.9);
+    color: #05080f;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.55rem;
+    font-weight: 700;
+    border-radius: 12px;
+    box-shadow: 0 0 12px rgba(212, 175, 55, 0.5);
+}
+.cs-preview-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.cs-preview-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(212, 175, 55, 0.1);
+    border-radius: 10px;
+    font-size: 0.75rem;
+}
+.cs-preview-line .cs-ico {
+    color: #D4AF37;
+    font-size: 0.85rem;
+    filter: drop-shadow(0 0 4px rgba(212, 175, 55, 0.4));
+}
+.cs-preview-txt {
+    color: #c0d8e8;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.cs-preview-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.cs-btn-ghost {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 9px 14px;
+    background: transparent;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    border-radius: 20px;
+    color: #D4AF37;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.65rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+.cs-btn-ghost:hover {
+    background: rgba(212, 175, 55, 0.08);
+    border-color: #D4AF37;
+    box-shadow: 0 0 14px rgba(212, 175, 55, 0.25);
+}
+
+/* ---------- VACÍO ---------- */
+.cs-vacio {
+    text-align: center;
+    padding: 30px 20px;
+    color: #8aa8b8;
+}
+.cs-vacio .cs-ico-vacio {
+    display: block;
+    font-size: 2rem;
+    color: #D4AF37;
+    opacity: 0.35;
+    margin-bottom: 10px;
+    font-family: 'Orbitron', monospace;
+}
+.cs-vacio p {
+    font-size: 0.8rem;
+    margin: 0;
+}
+
+/* ---------- BORRADORES ---------- */
+.cs-borradores-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* ---------- RESPONSIVE ---------- */
+@media (min-width: 640px) {
+    .cs-preview-wrap {
+        grid-template-columns: 200px 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .cs-sheet { max-height: 86vh; }
+    .cs-sheet-header { padding: 4px 12px 10px; }
+    .cs-sheet-titulo { font-size: 0.8rem; }
+    .cs-sheet-body { padding: 10px 12px; }
+    .cs-sheet-footer { padding: 10px 12px; padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
+    .cs-btn-primary { padding: 9px 16px; font-size: 0.65rem; }
+}
