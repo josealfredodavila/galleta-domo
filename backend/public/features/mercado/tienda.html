@@ -10,7 +10,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>◈ Tienda · Csariel's</title>
+    <title data-clave="mercado_tienda_titulo">◈ Tienda · Csariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
@@ -773,7 +773,7 @@
                 <a href="/privacidad" data-clave="footer_privacidad"><span class="simbolo">◆</span> Privacidad</a>
                 <a href="/cookies" data-clave="footer_cookies"><span class="simbolo">◇</span> Cookies</a>
                 <a href="/live-terminos" data-clave="footer_terminos_live"><span class="simbolo">◆</span> Términos de Live</a>
-                <span style="opacity:0.3;">⚡ Polygon</span>
+                <span style="opacity:0.3;" data-no-traducir="1">⚡ Polygon</span>
             </div>
         </footer>
 
@@ -793,15 +793,15 @@
         background:#ff3366; color:#fff; padding:12px 16px; font-family:monospace;
         font-size:0.75rem; word-break:break-word; box-shadow:0 4px 20px rgba(0,0,0,0.4);
     ">
-        <strong><span style="font-family:Orbitron,monospace;">✶</span> Error detectado:</strong>
+        <strong data-clave="error_detectado_titulo"><span style="font-family:Orbitron,monospace;">✶</span> Error detectado:</strong>
         <span id="errorBannerText"></span>
         <button onclick="document.getElementById('errorBanner').style.display='none'"
-            style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">
+            style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;" data-clave="error_cerrar">
             Cerrar
         </button>
     </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="/features/shared/js/idiomas.js"></script>
+<script src="/features/shared/js/idiomas.js?v=6"></script>
 
 <script>
 var supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
@@ -980,7 +980,6 @@ async function cargarUsuarioActual() {
         if (!session) return null;
         sessionUser = session.user;
 
-        // ✅ NUEVO: leer perfil propio vía RPC seguro (SETOF usuarios → array)
         var data = null;
         try {
             var rpc = await supabase.rpc('mi_perfil_privado');
@@ -1044,9 +1043,9 @@ async function cargarTienda() {
         if (tienda.estado !== 'activa') {
             container.innerHTML = '<div class="empty-state">' +
                 '<span class="icon">✶</span>' +
-                '<h3>Esta tienda no está disponible</h3>' +
+                '<h3 data-clave="mercado_tienda_no_disponible">Esta tienda no está disponible</h3>' +
                 '<p>Estado: ' + escapeHTML(tienda.estado) + '</p>' +
-                '<a href="/features/mercado/index.html" class="btn-back" style="margin-top:16px;"><span class="simbolo">◈</span> Volver al Mercado</a>' +
+                '<a href="/features/mercado/index.html" class="btn-back" style="margin-top:16px;"><span class="simbolo">◈</span> <span data-clave="mercado_volver_mercado">Volver al Mercado</span></a>' +
             '</div>';
             return;
         }
@@ -1058,7 +1057,7 @@ async function cargarTienda() {
         console.error('Error cargando tienda:', e);
         container.innerHTML = '<div class="empty-state">' +
             '<span class="icon">✶</span>' +
-            '<h3>Error al cargar la tienda</h3>' +
+            '<h3 data-clave="mercado_error_cargar_tienda">Error al cargar la tienda</h3>' +
             '<p>' + escapeHTML(e.message) + '</p>' +
         '</div>';
     }
@@ -1106,8 +1105,8 @@ function renderTienda() {
         : '◈';
 
     var horarioBadge = '';
-    if (abierta === true) horarioBadge = '<span class="badge-horario abierto">● Abierto</span>';
-    else if (abierta === false) horarioBadge = '<span class="badge-horario cerrado">○ Cerrado</span>';
+    if (abierta === true) horarioBadge = '<span class="badge-horario abierto" data-clave="mercado_abierto">● Abierto</span>';
+    else if (abierta === false) horarioBadge = '<span class="badge-horario cerrado" data-clave="mercado_cerrado">○ Cerrado</span>';
 
     var nivelHTML = '';
     if (nivel === 'max') nivelHTML = '<span class="badge-nivel max">✪ MAX</span>';
@@ -1115,18 +1114,18 @@ function renderTienda() {
     else nivelHTML = '<span class="badge-nivel basico">● BÁSICO</span>';
 
     var chips = '';
-    chips += '<span class="meta-chip gold"><span class="simbolo">✩</span> ' + (tienda.total_pedidos || 0) + ' pedidos</span>';
+    chips += '<span class="meta-chip gold"><span class="simbolo">✩</span> ' + (tienda.total_pedidos || 0) + ' <span data-clave="mercado_pedidos">pedidos</span></span>';
     if (totalResenas > 0) {
         chips += '<span class="meta-chip gold"><span class="simbolo">★</span> ' + rating.toFixed(1) + ' (' + totalResenas + ')</span>';
     }
     if (tienda.acepta_delivery) chips += '<span class="meta-chip cyan"><span class="simbolo">◆</span> Delivery</span>';
-    if (tienda.acepta_pickup) chips += '<span class="meta-chip purple"><span class="simbolo">◇</span> Recoger</span>';
+    if (tienda.acepta_pickup) chips += '<span class="meta-chip purple"><span class="simbolo">◇</span> <span data-clave="mercado_recoger">Recoger</span></span>';
 
     var envioMxn = parseFloat(tienda.envio_mxn || 0);
     if (envioMxn > 0) {
-        chips += '<span class="meta-chip success"><span class="simbolo">◆</span> Envío ' + formatearPrecio(envioMxn) + '</span>';
+        chips += '<span class="meta-chip success"><span class="simbolo">◆</span> <span data-clave="mercado_envio">Envío</span> ' + formatearPrecio(envioMxn) + '</span>';
     } else if (tienda.acepta_delivery) {
-        chips += '<span class="meta-chip"><span class="simbolo">◈</span> Envío a coordinar</span>';
+        chips += '<span class="meta-chip"><span class="simbolo">◈</span> <span data-clave="mercado_envio_a_coordinar">Envío a coordinar</span></span>';
     }
 
     if (tienda.horario_apertura && tienda.horario_cierre) {
@@ -1137,7 +1136,7 @@ function renderTienda() {
 
     html += '<div class="tienda-portada">' +
         portadaHTML +
-        '<a href="/features/mercado/index.html" class="btn-atras-overlay" aria-label="Atrás">◈</a>' +
+        '<a href="/features/mercado/index.html" class="btn-atras-overlay" data-clave-title="mercado_atras" aria-label="Atrás">◈</a>' +
     '</div>';
 
     html += '<div class="tienda-info">' +
@@ -1199,7 +1198,7 @@ function renderContacto() {
 
     if (tienda.telefono) {
         html += '<a href="tel:' + escapeHTML(tienda.telefono) + '" class="btn-contacto">' +
-            '<span class="simbolo">◆</span> Llamar' +
+            '<span class="simbolo">◆</span> <span data-clave="mercado_llamar">Llamar</span>' +
         '</a>';
     }
 
@@ -1241,7 +1240,7 @@ function renderCategoriasTienda() {
         return;
     }
 
-    var html = '<button class="cat-t-btn ' + (filtroCategoria === null ? 'active' : '') + '" onclick="filtrarCategoriaTienda(null, this)"><span class="simbolo">◈</span> Todos</button>';
+    var html = '<button class="cat-t-btn ' + (filtroCategoria === null ? 'active' : '') + '" onclick="filtrarCategoriaTienda(null, this)"><span class="simbolo">◈</span> <span data-clave="mercado_todos">Todos</span></button>';
 
     idsUsados.forEach(function (catId) {
         var cat = categoriasCache.find(function (c) { return c.id === catId; });
@@ -1252,6 +1251,7 @@ function renderCategoriasTienda() {
     });
 
     scroll.innerHTML = html;
+    if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(scroll);
 }
 
 function filtrarCategoriaTienda(catId, btn) {
@@ -1300,11 +1300,11 @@ function renderProductos() {
 
         var stockBadge = '';
         if (ilimitado) {
-            stockBadge = '<span class="stock-badge ilimitado"><span class="simbolo">◆</span> Disponible</span>';
+            stockBadge = '<span class="stock-badge ilimitado"><span class="simbolo">◆</span> <span data-clave="mercado_disponible">Disponible</span></span>';
         } else if (stock <= 0) {
-            stockBadge = '<span class="stock-badge agotado"><span class="simbolo">✶</span> Agotado</span>';
+            stockBadge = '<span class="stock-badge agotado"><span class="simbolo">✶</span> <span data-clave="mercado_agotado">Agotado</span></span>';
         } else if (stock <= 5) {
-            stockBadge = '<span class="stock-badge pocas"><span class="simbolo">✧</span> Solo ' + stock + '</span>';
+            stockBadge = '<span class="stock-badge pocas"><span class="simbolo">✧</span> <span data-clave="mercado_solo">Solo</span> ' + stock + '</span>';
         } else {
             stockBadge = '<span class="stock-badge disponible"><span class="simbolo">●</span> ' + stock + '</span>';
         }
@@ -1328,7 +1328,7 @@ function renderProductos() {
                     stockBadge +
                 '</div>' +
                 '<button class="btn-agregar" ' + (agotado ? 'disabled' : '') + ' onclick="event.stopPropagation();abrirDetalleProducto(' + p.id + ')">' +
-                    (agotado ? '<span class="simbolo">✶</span> Agotado' : '<span class="simbolo">◆</span> Agregar') +
+                    (agotado ? '<span class="simbolo">✶</span> <span data-clave="mercado_agotado">Agotado</span>' : '<span class="simbolo">◆</span> <span data-clave="mercado_agregar">Agregar</span>') +
                 '</button>' +
             '</div>' +
         '</div>';
@@ -1371,7 +1371,7 @@ function renderModalProducto() {
         '<div class="nombre-m">' + escapeHTML(p.nombre) + '</div>' +
         (p.descripcion ? '<div class="desc-m">' + escapeHTML(p.descripcion) + '</div>' : '') +
         '<div class="precio-m">' + formatearPrecio(precio) + '</div>' +
-        (promo ? '<div class="precio-original-m">Antes: ' + formatearPrecio(original) + '</div>' : '');
+        (promo ? '<div class="precio-original-m"><span data-clave="mercado_antes">Antes:</span> ' + formatearPrecio(original) + '</div>' : '');
 
     if (ilimitado || stock > 0) {
         html += '<div class="cantidad-box">' +
@@ -1379,17 +1379,18 @@ function renderModalProducto() {
             '<span class="cantidad-valor">' + cantidadActual + '</span>' +
             '<button onclick="cambiarCantidad(1)" ' + (cantidadActual >= maxCantidad ? 'disabled' : '') + '>+</button>' +
         '</div>' +
-        '<div class="subtotal-m">Subtotal: <strong>' + formatearPrecio(precio * cantidadActual) + '</strong></div>' +
+        '<div class="subtotal-m"><span data-clave="mercado_subtotal">Subtotal:</span> <strong>' + formatearPrecio(precio * cantidadActual) + '</strong></div>' +
         '<button class="btn-primario" onclick="agregarSeleccionado()">' +
-            '<span class="simbolo">◆</span> Agregar ' + cantidadActual + ' al carrito' +
+            '<span class="simbolo">◆</span> <span data-clave="mercado_agregar_al_carrito">Agregar</span> ' + cantidadActual + ' <span data-clave="mercado_al_carrito">al carrito</span>' +
         '</button>';
     } else {
         html += '<div style="text-align:center; padding:14px; color:var(--danger); font-size:0.8rem;">' +
-            '<span style="font-family:Orbitron,monospace;">✶</span> Producto agotado' +
+            '<span style="font-family:Orbitron,monospace;">✶</span> <span data-clave="mercado_producto_agotado">Producto agotado</span>' +
         '</div>';
     }
 
     cont.innerHTML = html;
+    if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(cont);
 }
 
 function cambiarCantidad(delta) {
@@ -1425,8 +1426,8 @@ document.addEventListener('DOMContentLoaded', async function () {
     if (!tiendaId) {
         document.getElementById('tiendaContainer').innerHTML = '<div class="empty-state">' +
             '<span class="icon">◈</span>' +
-            '<h3>Falta el ID de la tienda</h3>' +
-            '<a href="/features/mercado/index.html" class="btn-back" style="margin-top:16px;"><span class="simbolo">◈</span> Volver al Mercado</a>' +
+            '<h3 data-clave="mercado_falta_id">Falta el ID de la tienda</h3>' +
+            '<a href="/features/mercado/index.html" class="btn-back" style="margin-top:16px;"><span class="simbolo">◈</span> <span data-clave="mercado_volver_mercado">Volver al Mercado</span></a>' +
         '</div>';
         return;
     }
