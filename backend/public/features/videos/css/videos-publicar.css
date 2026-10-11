@@ -1,17 +1,29 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v1.0
+   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v1.1
    ================================================================
-   Solo estilos NUEVOS. No sobrescribe los estilos existentes de
-   videos.html (usa prefijos cs- para todo).
+   Novedades v1.1:
+   - ✅ Toast propio del ecosistema (.cs-toast)
+   - ✅ Modal de confirmación estilizado (.cs-confirm-*)
+   - ✅ Botón estilizado de archivo (.cs-file-btn)
+   - ✅ Mejor espaciado en header (gap, flex-wrap)
    ================================================================ */
 
-/* ---------- BOTONES EN HEADER ---------- */
+/* ----------------------------------------------------------------
+   BOTONES EN HEADER · v1.1 con mejor espaciado móvil
+   ---------------------------------------------------------------- */
+.header .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
 .cs-btn-header {
     display: inline-flex;
     align-items: center;
     gap: 6px;
     padding: 6px 14px;
-    margin-right: 8px;
     background: rgba(212, 175, 55, 0.08);
     border: 1px solid rgba(212, 175, 55, 0.35);
     border-radius: 20px;
@@ -38,15 +50,283 @@
     filter: drop-shadow(0 0 4px rgba(212, 175, 55, 0.6));
 }
 .cs-btn-sonido { border-color: rgba(212, 175, 55, 0.55); }
-.cs-btn-ubicacion { border-color: rgba(0, 229, 255, 0.4); color: #00E5FF; background: rgba(0, 229, 255, 0.06); }
-.cs-btn-ubicacion:hover { background: rgba(0, 229, 255, 0.12); border-color: #00E5FF; box-shadow: 0 0 20px rgba(0, 229, 255, 0.35); }
-
-@media (max-width: 640px) {
-    .cs-btn-header { font-size: 0.55rem; padding: 5px 10px; }
-    .cs-btn-header .cs-ico { font-size: 0.75rem; }
+.cs-btn-ubicacion {
+    border-color: rgba(0, 229, 255, 0.4);
+    color: #00E5FF;
+    background: rgba(0, 229, 255, 0.06);
+}
+.cs-btn-ubicacion:hover {
+    background: rgba(0, 229, 255, 0.12);
+    border-color: #00E5FF;
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.35);
 }
 
-/* ---------- BOTTOM SHEETS ---------- */
+@media (max-width: 640px) {
+    .header .header-actions { gap: 6px; }
+    .cs-btn-header { font-size: 0.55rem; padding: 5px 10px; }
+    .cs-btn-header .cs-ico { font-size: 0.75rem; }
+    .cs-btn-header .cs-btn-txt { display: none; }
+    .cs-btn-header { padding: 6px 10px; }
+}
+
+/* ----------------------------------------------------------------
+   ✨ TOAST PROPIO DEL ECOSISTEMA
+   ---------------------------------------------------------------- */
+.cs-toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(120px);
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 22px;
+    background: linear-gradient(135deg, rgba(15, 45, 26, 0.98), rgba(5, 8, 15, 0.98));
+    border: 1px solid rgba(212, 175, 55, 0.6);
+    border-radius: 14px;
+    color: #D4AF37;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(212, 175, 55, 0.2);
+    z-index: 99999;
+    opacity: 0;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+    pointer-events: none;
+    max-width: min(92vw, 420px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+.cs-toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+.cs-toast-ico {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    font-family: 'Orbitron', monospace;
+    font-weight: 900;
+    font-size: 0.85rem;
+    filter: drop-shadow(0 0 6px currentColor);
+}
+.cs-toast-txt { flex: 1; min-width: 0; word-wrap: break-word; }
+
+.cs-toast-info {
+    border-color: rgba(0, 229, 255, 0.6);
+    color: #00E5FF;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(0, 229, 255, 0.25);
+}
+.cs-toast-success {
+    border-color: rgba(0, 214, 143, 0.7);
+    color: #00d68f;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(0, 214, 143, 0.3);
+}
+.cs-toast-warning {
+    border-color: rgba(247, 212, 74, 0.7);
+    color: #f7d44a;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(247, 212, 74, 0.3);
+}
+.cs-toast-error {
+    border-color: rgba(255, 51, 102, 0.7);
+    color: #ff3366;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(255, 51, 102, 0.3);
+}
+
+/* ----------------------------------------------------------------
+   ✨ CONFIRM MODAL ESTILIZADO
+   ---------------------------------------------------------------- */
+.cs-confirm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.72);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 99998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+.cs-confirm-overlay.show { opacity: 1; visibility: visible; }
+
+.cs-confirm-modal {
+    width: min(100%, 420px);
+    background: linear-gradient(145deg, rgba(15, 45, 26, 0.98), rgba(5, 8, 15, 0.98));
+    border: 1px solid rgba(212, 175, 55, 0.5);
+    border-radius: 20px;
+    padding: 24px 22px 20px;
+    text-align: center;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.7), 0 0 40px rgba(212, 175, 55, 0.15);
+    transform: scale(0.92);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    color: #f0f4f8;
+    font-family: 'Inter', sans-serif;
+}
+.cs-confirm-overlay.show .cs-confirm-modal { transform: scale(1); }
+
+.cs-confirm-ico {
+    width: 54px;
+    height: 54px;
+    margin: 0 auto 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(212, 175, 55, 0.12);
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    color: #D4AF37;
+    font-family: 'Orbitron', monospace;
+    font-size: 1.4rem;
+    font-weight: 900;
+    filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.5));
+}
+.cs-confirm-titulo {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #D4AF37;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}
+.cs-confirm-mensaje {
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: #c0d8e8;
+    margin-bottom: 20px;
+    word-wrap: break-word;
+}
+.cs-confirm-acciones {
+    display: flex;
+    gap: 8px;
+}
+.cs-confirm-btn {
+    flex: 1;
+    padding: 11px 16px;
+    border-radius: 24px;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+    border: none;
+}
+.cs-confirm-cancel {
+    background: transparent;
+    border: 1px solid rgba(138, 168, 184, 0.35);
+    color: #8aa8b8;
+}
+.cs-confirm-cancel:hover {
+    border-color: #8aa8b8;
+    color: #c0d8e8;
+    background: rgba(138, 168, 184, 0.08);
+}
+.cs-confirm-ok {
+    background: linear-gradient(135deg, #D4AF37, #b8923a);
+    color: #05080f;
+}
+.cs-confirm-ok:hover {
+    transform: scale(1.03);
+    box-shadow: 0 0 24px rgba(212, 175, 55, 0.5);
+}
+.cs-confirm-danger {
+    background: linear-gradient(135deg, #ff3366, #cc1144);
+    color: #fff;
+}
+.cs-confirm-danger:hover {
+    transform: scale(1.03);
+    box-shadow: 0 0 24px rgba(255, 51, 102, 0.5);
+}
+
+/* ----------------------------------------------------------------
+   🎨 BOTÓN ESTILIZADO DE ARCHIVO
+   ---------------------------------------------------------------- */
+.cs-file-btn-wrap {
+    margin-bottom: 8px;
+}
+
+.cs-file-btn {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 20px 18px;
+    background: linear-gradient(155deg, rgba(15, 45, 26, 0.55), rgba(8, 15, 26, 0.75));
+    border: 2px dashed rgba(212, 175, 55, 0.4);
+    border-radius: 14px;
+    color: #D4AF37;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    -webkit-tap-highlight-color: transparent;
+    position: relative;
+    overflow: hidden;
+}
+.cs-file-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(212, 175, 55, 0.12), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+.cs-file-btn:hover {
+    border-color: #D4AF37;
+    box-shadow: 0 0 30px rgba(212, 175, 55, 0.25), inset 0 0 20px rgba(212, 175, 55, 0.05);
+    transform: translateY(-2px);
+}
+.cs-file-btn:hover::before { opacity: 1; }
+.cs-file-btn:active { transform: scale(0.98); }
+
+.cs-file-btn-ico {
+    font-size: 1.8rem;
+    line-height: 1;
+    color: #D4AF37;
+    filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.7));
+    margin-bottom: 2px;
+}
+.cs-file-btn-txt {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: #f0f4f8;
+    text-align: center;
+    word-break: break-word;
+    max-width: 100%;
+}
+.cs-file-btn-hint {
+    font-size: 0.6rem;
+    color: #8aa8b8;
+    letter-spacing: 0.5px;
+}
+
+/* Estado cuando ya hay archivo seleccionado */
+.cs-file-con-archivo .cs-file-btn {
+    border-style: solid;
+    border-color: rgba(0, 214, 143, 0.6);
+    background: linear-gradient(155deg, rgba(0, 214, 143, 0.1), rgba(15, 45, 26, 0.6));
+    box-shadow: 0 0 25px rgba(0, 214, 143, 0.2);
+}
+.cs-file-con-archivo .cs-file-btn-ico {
+    color: #00d68f;
+    filter: drop-shadow(0 0 10px rgba(0, 214, 143, 0.7));
+}
+.cs-file-con-archivo .cs-file-btn-hint { color: #00d68f; }
+
+/* ----------------------------------------------------------------
+   BOTTOM SHEETS (sin cambios)
+   ---------------------------------------------------------------- */
 .cs-sheet-backdrop {
     position: fixed;
     inset: 0;
@@ -98,7 +378,6 @@
     background: rgba(212, 175, 55, 0.35);
     border-radius: 4px;
 }
-
 .cs-sheet-header {
     display: flex;
     justify-content: space-between;
@@ -207,12 +486,7 @@
 }
 .cs-buscar-wrap input::placeholder { color: #8aa8b8; }
 
-/* ---------- LISTA DE SONIDOS ---------- */
-.cs-sonidos-lista {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
+.cs-sonidos-lista { display: flex; flex-direction: column; gap: 6px; }
 .cs-sonido-item {
     display: flex;
     align-items: center;
@@ -251,12 +525,7 @@
     flex-shrink: 0;
     filter: drop-shadow(0 0 4px rgba(212, 175, 55, 0.4));
 }
-.cs-sonido-info {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-width: 0;
-}
+.cs-sonido-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
 .cs-sonido-nombre {
     color: #f0f4f8;
     font-weight: 700;
@@ -265,25 +534,11 @@
     overflow: hidden;
     text-overflow: ellipsis;
 }
-.cs-sonido-artista {
-    color: #8aa8b8;
-    font-size: 0.68rem;
-    margin-top: 2px;
-}
-.cs-sonido-check {
-    color: #D4AF37;
-    font-size: 0.9rem;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-}
+.cs-sonido-artista { color: #8aa8b8; font-size: 0.68rem; margin-top: 2px; }
+.cs-sonido-check { color: #D4AF37; font-size: 0.9rem; opacity: 0; transition: opacity 0.2s ease; }
 .cs-sonido-item.activo .cs-sonido-check { opacity: 1; }
 
-/* ---------- LISTA DE UBICACIONES ---------- */
-.cs-ubicaciones-lista {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
+.cs-ubicaciones-lista { display: flex; flex-direction: column; gap: 6px; }
 .cs-ubicacion-item {
     display: flex;
     align-items: center;
@@ -322,31 +577,12 @@
     flex-shrink: 0;
     filter: drop-shadow(0 0 4px rgba(0, 229, 255, 0.4));
 }
-.cs-ubicacion-info {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-width: 0;
-}
-.cs-ubicacion-nombre {
-    color: #f0f4f8;
-    font-weight: 700;
-    font-size: 0.82rem;
-}
-.cs-ubicacion-pais {
-    color: #8aa8b8;
-    font-size: 0.68rem;
-    margin-top: 2px;
-}
-.cs-ubicacion-check {
-    color: #00E5FF;
-    font-size: 0.9rem;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-}
+.cs-ubicacion-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.cs-ubicacion-nombre { color: #f0f4f8; font-weight: 700; font-size: 0.82rem; }
+.cs-ubicacion-pais { color: #8aa8b8; font-size: 0.68rem; margin-top: 2px; }
+.cs-ubicacion-check { color: #00E5FF; font-size: 0.9rem; opacity: 0; transition: opacity 0.2s ease; }
 .cs-ubicacion-item.activo .cs-ubicacion-check { opacity: 1; }
 
-/* ---------- FOOTER DEL SHEET ---------- */
 .cs-sheet-footer {
     flex-shrink: 0;
     padding: 12px 16px;
@@ -386,12 +622,11 @@
     transform: scale(1.03);
     box-shadow: 0 0 24px rgba(212, 175, 55, 0.5);
 }
-.cs-btn-primary:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-}
+.cs-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
 
-/* ---------- PREVIEW EN UPLOAD SECTION ---------- */
+/* ----------------------------------------------------------------
+   PREVIEW EN UPLOAD SECTION
+   ---------------------------------------------------------------- */
 .cs-preview-wrap {
     display: grid;
     grid-template-columns: 1fr;
@@ -433,11 +668,7 @@
     border-radius: 12px;
     box-shadow: 0 0 12px rgba(212, 175, 55, 0.5);
 }
-.cs-preview-meta {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
+.cs-preview-meta { display: flex; flex-direction: column; gap: 8px; }
 .cs-preview-line {
     display: flex;
     align-items: center;
@@ -461,11 +692,7 @@
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.cs-preview-actions {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-}
+.cs-preview-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .cs-btn-ghost {
     flex: 1;
     display: inline-flex;
@@ -490,7 +717,6 @@
     box-shadow: 0 0 14px rgba(212, 175, 55, 0.25);
 }
 
-/* ---------- VACÍO ---------- */
 .cs-vacio {
     text-align: center;
     padding: 30px 20px;
@@ -504,30 +730,32 @@
     margin-bottom: 10px;
     font-family: 'Orbitron', monospace;
 }
-.cs-vacio p {
-    font-size: 0.8rem;
-    margin: 0;
-}
+.cs-vacio p { font-size: 0.8rem; margin: 0; }
 
-/* ---------- BORRADORES ---------- */
-.cs-borradores-lista {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
+.cs-borradores-lista { display: flex; flex-direction: column; gap: 10px; }
 
-/* ---------- RESPONSIVE ---------- */
+/* ----------------------------------------------------------------
+   RESPONSIVE
+   ---------------------------------------------------------------- */
 @media (min-width: 640px) {
-    .cs-preview-wrap {
-        grid-template-columns: 200px 1fr;
-    }
+    .cs-preview-wrap { grid-template-columns: 200px 1fr; }
 }
-
 @media (max-width: 480px) {
     .cs-sheet { max-height: 86vh; }
     .cs-sheet-header { padding: 4px 12px 10px; }
     .cs-sheet-titulo { font-size: 0.8rem; }
     .cs-sheet-body { padding: 10px 12px; }
-    .cs-sheet-footer { padding: 10px 12px; padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
+    .cs-sheet-footer {
+        padding: 10px 12px;
+        padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    }
     .cs-btn-primary { padding: 9px 16px; font-size: 0.65rem; }
+    .cs-file-btn { padding: 16px 14px; }
+    .cs-file-btn-ico { font-size: 1.5rem; }
+    .cs-file-btn-txt { font-size: 0.72rem; }
+    .cs-toast {
+        bottom: 20px;
+        font-size: 0.75rem;
+        padding: 10px 18px;
+    }
 }
