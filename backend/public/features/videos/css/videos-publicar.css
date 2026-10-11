@@ -2,10 +2,11 @@
    CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v1.2
    ================================================================
    Novedades v1.2:
-   - ✅ Input file 100% oculto (display:none !important)
-   - ✅ Botón de archivo con diseño ciberpunk reforzado
-   - ✅ Preview se limpia tras publicación
-   - ✅ Mejor espaciado en header móvil
+   - Input file 100% oculto (display:none !important)
+   - Botón de archivo con diseño ciberpunk reforzado
+   - Preview se limpia tras publicación
+   - Mejor espaciado en header móvil
+   - Chips de sonido/ubicación en las cards
    ================================================================ */
 
 /* ----------------------------------------------------------------
@@ -70,10 +71,8 @@
 }
 
 /* ----------------------------------------------------------------
-   🔥 BOTÓN DE ARCHIVO ESTILIZADO (reemplaza input nativo)
+   BOTÓN DE ARCHIVO ESTILIZADO
    ---------------------------------------------------------------- */
-
-/* Ocultar absolutamente el input nativo en todos los navegadores */
 #inputArchivoVideo,
 input#inputArchivoVideo[type="file"] {
     display: none !important;
@@ -164,7 +163,6 @@ input#inputArchivoVideo[type="file"] {
     letter-spacing: 0.5px;
 }
 
-/* Estado cuando ya hay archivo seleccionado */
 .cs-file-con-archivo .cs-file-btn {
     border-style: solid;
     border-color: rgba(0, 214, 143, 0.7);
@@ -175,18 +173,53 @@ input#inputArchivoVideo[type="file"] {
     color: #00d68f;
     filter: drop-shadow(0 0 12px rgba(0, 214, 143, 0.8));
 }
-.cs-file-con-archivo .cs-file-btn-txt {
-    color: #00d68f;
-}
-.cs-file-con-archivo .cs-file-btn-hint {
-    color: #00d68f;
-}
+.cs-file-con-archivo .cs-file-btn-txt { color: #00d68f; }
+.cs-file-con-archivo .cs-file-btn-hint { color: #00d68f; }
 
 @media (max-width: 480px) {
     .cs-file-btn { padding: 18px 14px; }
     .cs-file-btn-ico { font-size: 1.6rem; }
     .cs-file-btn-txt { font-size: 0.72rem; }
     .cs-file-btn-hint { font-size: 0.58rem; }
+}
+
+/* ----------------------------------------------------------------
+   CHIPS DE METADATA EN LAS CARDS
+   ---------------------------------------------------------------- */
+.video-meta-chips {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+}
+.video-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.62rem;
+    font-weight: 600;
+    font-family: 'Orbitron', monospace;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+.video-chip-sonido {
+    background: rgba(212, 175, 55, 0.2);
+    border: 1px solid rgba(212, 175, 55, 0.55);
+    color: #D4AF37;
+    box-shadow: 0 0 12px rgba(212, 175, 55, 0.25);
+}
+.video-chip-ubicacion {
+    background: rgba(0, 229, 255, 0.15);
+    border: 1px solid rgba(0, 229, 255, 0.5);
+    color: #00E5FF;
+    box-shadow: 0 0 12px rgba(0, 229, 255, 0.2);
 }
 
 /* ----------------------------------------------------------------
@@ -257,7 +290,7 @@ input#inputArchivoVideo[type="file"] {
 }
 
 /* ----------------------------------------------------------------
-   CONFIRM MODAL ESTILIZADO
+   CONFIRM MODAL
    ---------------------------------------------------------------- */
 .cs-confirm-overlay {
     position: fixed;
@@ -799,7 +832,7 @@ input#inputArchivoVideo[type="file"] {
 }
 
 /* ----------------------------------------------------------------
-   PULL TO REFRESH · asegurar que el scroll vertical funciona
+   PULL TO REFRESH
    ---------------------------------------------------------------- */
 html, body {
     overscroll-behavior-y: auto !important;
