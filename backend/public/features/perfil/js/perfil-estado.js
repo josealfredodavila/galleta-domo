@@ -1,30 +1,51 @@
 // ================================================================
-// PERFIL · ESTADO (UI + escritura BD, presencia delegada)
+// PERFIL · ESTADO (UI + escritura BD, delegando presencia al global)
 // ================================================================
-// Depende de: perfil-config.js, perfil-utils.js, presencia-global.js
+// Depende de:
+//   perfil-config.js   (cli, getSession, canalNotificaciones)
+//   perfil-utils.js    (perfilT, showToast)
+//   presencia-global.js (window.Presencia)
 //
-// API pública (sin cambios): cambiarEstado, actualizarEstadoEnLinea,
-// iniciarPresenciaEstado, iniciarDetectorInactividad, notificaciones.
+// API pública (sin cambios):
+//   window.cambiarEstado(mostrar)
+//   window.actualizarEstadoEnLinea(online)
+//   window.iniciarPresenciaEstado()
+//   window.iniciarDetectorInactividad()
+//   window.formatearTiempoRelativo(iso)
+//
+// CAMBIO v6:
+//   - El canal Supabase Presence ya no se crea aquí.
+//     Lo hace presencia-global.js (un único canal por pestaña).
+//   - Este módulo solo reacciona a window.Presencia.
+//   - Se elimina la duplicación de listeners y el track manual.
 // ================================================================
 
-var estadoOcultoRemoto = false;   // usuarios.ocultar_estado
-var estadoEscritoOnline = null;   // último valor visible escrito en BD
+var ESTADO_IDLE_MS = 10 * 60 * 1000;
+
+var estadoOcultoRemoto = false;      // usuarios.ocultar_estado
+var estadoEscritoOnline = null;      // último valor visible escrito en BD
 var lastOfflineIso = null;
 var estadoIniciado = false;
 var relativoTimer = null;
 
 // ================================================================
+// FORMATEAR TIEMPO RELATIVO (delegado al módulo global)
+// ================================================================
+// Se mantiene window.formatearTiempoRelativo con la misma firma
+// por compatibilidad (ya lo define presencia-global.js).
+// ================================================================
+
+// ================================================================
 // UI DEL ESTADO
 // ================================================================
-function actualizarUIEstado(visibleReal) {
+function actualizarUIEstado(visible) {
     var estadoBadge = document.getElementById('estadoBadge');
     var estadoTexto = document.getElementById('estadoTexto');
 
-    var conectado = window.Presencia && window.Presencia.estaConectado();
-    var ocultoConectado = estadoOcultoRemoto && conectado;
+    var ocultoConectado = estadoOcultoRemoto && window.Presencia && window.Presencia.esVisible() === false;
 
     if (estadoBadge) {
-        if (visibleReal) {
+        if (visible) {
             estadoBadge.innerHTML = '🟢';
             estadoBadge.style.color = 'var(--success)';
         } else if (ocultoConectado) {
@@ -40,7 +61,7 @@ function actualizarUIEstado(visibleReal) {
         estadoTexto.removeAttribute('data-clave');
         estadoTexto.setAttribute('data-no-traducir', '1');
 
-        if (visibleReal) {
+        if (visible) {
             estadoTexto.textContent = perfilT('perfil_activo_ahora', 'Activo ahora');
             estadoTexto.style.color = 'var(--success)';
         } else if (ocultoConectado) {
@@ -55,16 +76,12 @@ function actualizarUIEstado(visibleReal) {
     }
 }
 
-function calcularVisibleReal() {
-    var conectado = window.Presencia && window.Presencia.estaConectado();
-    return conectado === true && !estadoOcultoRemoto;
-}
-
 function iniciarRefrescoRelativo() {
     if (relativoTimer) return;
-    // Solo repinta el texto "hace X min". No consulta la base.
+    // Solo repinta "hace X min" en pantalla cada minuto. Sin consultas.
     relativoTimer = setInterval(function () {
-        if (!calcularVisibleReal()) actualizarUIEstado(false);
+        var visible = window.Presencia && window.Presencia.esVisible();
+        if (!visible) actualizarUIEstado(false);
     }, 60000);
 }
 
@@ -72,7 +89,8 @@ function iniciarRefrescoRelativo() {
 // ESCRITURA EN BD (solo en transiciones)
 // ================================================================
 async function sincronizarVisibilidadDB() {
-    var visible = calcularVisibleReal();
+    var visibleAhora = window.Presencia && window.Presencia.esVisible();
+    var visible = visibleAhora && !estadoOcultoRemoto;
 
     // Primera vez sin valor previo: no escribas "desconectado"
     if (!visible && estadoEscritoOnline === null) {
@@ -130,7 +148,8 @@ async function aplicarOcultarEstado(ocultar) {
 
         estadoOcultoRemoto = ocultar === true;
 
-        if (window.Presencia) {
+        // Refresca el track con el nuevo `visible`
+        if (window.Presencia && window.Presencia.setVisible) {
             await window.Presencia.setVisible(!estadoOcultoRemoto);
         }
 
@@ -222,7 +241,7 @@ async function leerEstadoInicial() {
 
         var res = await window.supabaseClient
             .from('usuarios')
-            .select('ocultar_estado, offline_desde, ultima_conexion')
+            .select('ocultar_estado, online, offline_desde, ultima_conexion')
             .eq('id', session.user.id)
             .maybeSingle();
         if (res.error || !res.data) return null;
@@ -245,28 +264,29 @@ async function iniciarPresenciaEstado() {
     var session = await leerEstadoInicial();
     if (!session) return;
 
-    if (!window.Presencia) {
+    actualizarUIEstado(false);
+    iniciarRefrescoRelativo();
+
+    // Delegar canal + track + idle a presencia-global.js
+    if (!window.Presencia || !window.Presencia.iniciar) {
         console.warn('[Perfil] presencia-global.js no cargado');
         return;
     }
 
-    actualizarUIEstado(false);
-    iniciarRefrescoRelativo();
-
-    // Aplica la preferencia de ocultar antes de anunciarte
     await window.Presencia.setVisible(!estadoOcultoRemoto);
 
-    // Cuando tu conexión cambie (conectar / ausente), se escribe en BD
     await window.Presencia.iniciar(session.user.id, {
         track: true,
-        onConexionCambia: function () {
+        onVisibilidadCambia: function (visible) {
+            // Se llama cuando el idle timer local cambia el track
             sincronizarVisibilidadDB();
         }
     });
 
-    // Repinta la UI con cada sincronización de presencia
+    // Repintar UI al recibir syncs
     window.addEventListener('sar:presence:sync', function () {
-        actualizarUIEstado(calcularVisibleReal());
+        var visible = window.Presencia.esVisible();
+        actualizarUIEstado(visible && !estadoOcultoRemoto);
     });
 }
 
@@ -276,7 +296,7 @@ function iniciarDetectorInactividad() {
 }
 
 // ================================================================
-// NOTIFICACIONES REALTIME (sin cambios)
+// NOTIFICACIONES REALTIME (de Supabase) — sin cambios
 // ================================================================
 function iniciarNotificacionesRealtime() {
     if (!cli() || !perfilCache || !perfilCache.id) return;
