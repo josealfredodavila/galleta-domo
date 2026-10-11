@@ -8,7 +8,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>◈ Mercado · Csariel's</title>
+    <title data-clave="mercado_titulo_pagina">◈ Mercado · Csariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
@@ -392,7 +392,7 @@
 
         <div class="cta-vendedor">
             <div class="texto">
-                <div class="titulo"><span class="simbolo">◆</span> ¿Tienes un negocio?</div>
+                <div class="titulo"><span class="simbolo">◆</span> <span data-clave="mercado_cta_vendedor_titulo">¿Tienes un negocio?</span></div>
                 <div class="subtitulo" data-clave="mercado_cta_vendedor">
                     Abre tu tienda en el Mercado y empieza a vender con cripto.
                 </div>
@@ -404,13 +404,13 @@
 
         <div class="cta-repartidor">
             <div class="texto">
-                <div class="titulo"><span class="simbolo">✦</span> ¿Quieres ganar dinero?</div>
-                <div class="subtitulo">
+                <div class="titulo"><span class="simbolo">✦</span> <span data-clave="mercado_cta_repartidor_titulo">¿Quieres ganar dinero?</span></div>
+                <div class="subtitulo" data-clave="mercado_cta_repartidor_desc">
                     Regístrate como repartidor y empieza a ganar entregando pedidos en tu ciudad.
                 </div>
             </div>
             <button class="btn-repartidor" onclick="irARepartidor()" id="btnCtaRepartidor">
-                <span class="simbolo">✦</span> Registrarme como repartidor
+                <span class="simbolo">✦</span> <span data-clave="mercado_cta_repartidor_btn">Registrarme como repartidor</span>
             </button>
         </div>
 
@@ -421,7 +421,7 @@
                 <a href="/privacidad" data-clave="footer_privacidad"><span class="simbolo">◆</span> Privacidad</a>
                 <a href="/cookies" data-clave="footer_cookies"><span class="simbolo">◇</span> Cookies</a>
                 <a href="/live-terminos" data-clave="footer_terminos_live"><span class="simbolo">◆</span> Términos de Live</a>
-                <span style="opacity:0.3;">⚡ Polygon</span>
+                <span style="opacity:0.3;" data-no-traducir="1">⚡ Polygon</span>
             </div>
         </footer>
 
@@ -434,19 +434,17 @@
         background:#ff3366; color:#fff; padding:12px 16px; font-family:monospace;
         font-size:0.75rem; word-break:break-word; box-shadow:0 4px 20px rgba(0,0,0,0.4);
     ">
-        <strong><span style="font-family:Orbitron,monospace;">✶</span> Error detectado:</strong>
+        <strong data-clave="error_detectado_titulo"><span style="font-family:Orbitron,monospace;">✶</span> Error detectado:</strong>
         <span id="errorBannerText"></span>
         <button onclick="document.getElementById('errorBanner').style.display='none'"
-            style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">
+            style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;" data-clave="error_cerrar">
             Cerrar
         </button>
     </div>
 
-    <!-- Librerías -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script src="/features/shared/js/idiomas.js"></script>
+    <script src="/features/shared/js/idiomas.js?v=6"></script>
 
-    <!-- Lógica del mercado -->
     <script>
     var CONFIG_LEGAL = {
         nombre_comercial: 'Csariel\'s',
@@ -621,7 +619,7 @@
         } else {
             txt.textContent = 'Ser repartidor';
             if (btnCta) {
-                btnCta.innerHTML = '<span class="simbolo" style="color:inherit;">✦</span> Registrarme como repartidor';
+                btnCta.innerHTML = '<span class="simbolo" style="color:inherit;">✦</span> <span data-clave="mercado_cta_repartidor_btn">Registrarme como repartidor</span>';
             }
         }
     }
@@ -694,8 +692,6 @@
         grid.innerHTML = '<div class="loading-state"><div class="spinner"></div><p data-clave="mercado_cargando_tiendas">Cargando tiendas...</p></div>';
 
         try {
-            // Solo los campos que la lista muestra. No se piden teléfono, WhatsApp,
-            // redes ni dirección: esos datos se consultan en la ficha de la tienda.
             var query = supabase
                 .from('mercado_tiendas')
                 .select('id, slug, nombre_negocio, descripcion, categoria_id, logo_url, portada_url, horario_apertura, horario_cierre, acepta_delivery, acepta_pickup, nivel, activa_hasta, estado, total_pedidos, calificacion_promedio, total_resenas, envio_mxn, created_at')
