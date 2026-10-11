@@ -4,13 +4,16 @@
 // Cargar/actualizar perfil, contadores sociales, avatar, guardar.
 // Depende de: perfil-config.js, perfil-utils.js
 //
+// CAMBIO v4 (robustez del arranque):
+// - Los auxiliares (conexión, amigos, historialQR, Pro, contadores)
+//   se llaman por separado con su propio catch. Si uno falla, ya no
+//   dispara el toast "Error al cargar perfil" ni tumba al perfil.
+// - El perfil principal (nombre, avatar, badges, stats) se pinta
+//   primero y siempre, aunque algún auxiliar falle.
+//
 // CAMBIO v3 (corrección de carga):
-// - El perfil se lee directamente de la tabla usuarios (las funciones
-//   RPC mi_perfil_privado / obtener_mi_perfil no existen en la base).
-// - Ya no se fuerza online=true al cargar: el estado lo maneja
-//   perfil-estado.js y respeta la opción "Ocultar mi estado".
-// - Los errores de renderizado parciales no se muestran como
-//   "Error al cargar perfil": solo se registran en consola.
+// - El perfil se lee directamente de la tabla usuarios.
+// - Ya no se fuerza online=true al cargar.
 //
 // CAMBIO v2 (traducciones):
 // - Todos los textos visibles y mensajes usan perfilT(clave, respaldo).
@@ -53,7 +56,7 @@ async function cargarPerfil(forzarActualizacion = false) {
             return;
         }
 
-        // Fila propia de usuarios (la RLS solo permite leer tu propia fila)
+        // Fila propia de usuarios (la RLS permite leer tu propia fila)
         let perfil = null;
         try {
             const { data, error } = await window.supabaseClient
@@ -76,16 +79,31 @@ async function cargarPerfil(forzarActualizacion = false) {
         window.perfilCache = perfil;
         ultimaActualizacion = ahora;
 
-        actualizarUI(perfil);
+        // 1) Pintar el perfil principal SIEMPRE, antes de los auxiliares.
+        try {
+            actualizarUI(perfil);
+        } catch (e) {
+            console.warn('[Perfil] Error pintando UI principal:', e);
+        }
 
-        Promise.all([
-            cargarEstadoConexion(),
-            cargarAmigosEnLinea(),
-            cargarHistorialQR(),
-            cargarEstadoPro(),
-            cargarContadoresSociales(session.user.id)
-        ]).catch(function () {});
+        // 2) Auxiliares: cada uno con su propio catch.
+        //    Si uno falla, no tumba al resto ni dispara el toast rojo.
+        try { cargarEstadoConexion(); }
+        catch (e) { console.warn('[Perfil] conexión:', e); }
 
+        try { cargarAmigosEnLinea(); }
+        catch (e) { console.warn('[Perfil] amigos:', e); }
+
+        try { cargarHistorialQR(); }
+        catch (e) { console.warn('[Perfil] historialQR:', e); }
+
+        try { cargarEstadoPro(); }
+        catch (e) { console.warn('[Perfil] pro:', e); }
+
+        try { cargarContadoresSociales(session.user.id); }
+        catch (e) { console.warn('[Perfil] contadores:', e); }
+
+        // 3) Aplicar traducciones después de pintar.
         try {
             await aplicarI18NPerfil();
         } catch (e) {
@@ -93,7 +111,11 @@ async function cargarPerfil(forzarActualizacion = false) {
         }
     } catch (error) {
         console.error('[Perfil] cargarPerfil:', error && (error.message || error));
-        showToast(perfilT('perfil_toast_error_cargar', '❌ Error al cargar perfil'), 'error');
+        // Solo mostramos el toast si el fallo fue en el corazón del perfil,
+        // no en un auxiliar. Para no asustar al usuario con errores menores.
+        if (!perfilCache) {
+            showToast(perfilT('perfil_toast_error_cargar', '❌ Error al cargar perfil'), 'error');
+        }
     }
 }
 
