@@ -782,7 +782,7 @@
 <script src="/features/perfil/js/perfil-repartidor.js?v=8"></script>
 <script src="/features/perfil/js/perfil-init.js?v=8"></script>
 
-<!-- Chip de wallet: muestra TU dirección (solo tú la lees de tu propia fila) y la copia al tocarla -->
+<!-- Chip de wallet: muestra TU dirección y su estado de visibilidad; la copia al tocarla -->
 <script>
 (function () {
     'use strict';
@@ -815,6 +815,14 @@
         return null;
     }
 
+    function pintarChip(visible) {
+        var etiqueta = visible ? '👁 pública' : '🔒 privada';
+        chip.textContent = '◈ ' + acortar(direccionCompleta) + ' · ' + etiqueta;
+        chip.title = visible
+            ? 'Visible para otros usuarios · Toca para copiar'
+            : 'Solo tú la ves · Toca para copiar';
+    }
+
     async function cargarWalletPropia() {
         try {
             var client = await obtenerCliente();
@@ -826,14 +834,14 @@
 
             var resultado = await client
                 .from('usuarios')
-                .select('wallet_address')
+                .select('wallet_address, wallet_visible')
                 .eq('id', session.user.id)
                 .maybeSingle();
 
             if (resultado.error || !resultado.data || !resultado.data.wallet_address) return;
 
             direccionCompleta = resultado.data.wallet_address;
-            chip.textContent = '◈ ' + acortar(direccionCompleta);
+            pintarChip(resultado.data.wallet_visible);
             chip.style.display = 'inline-flex';
         } catch (e) {
             console.warn('[Perfil] No se pudo cargar la wallet:', e);
