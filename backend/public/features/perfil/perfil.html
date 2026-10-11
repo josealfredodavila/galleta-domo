@@ -97,7 +97,7 @@
         <div class="info">
             <div class="nombre" id="perfilNombre">
                 <span data-clave="perfil_nombre_usuario">Explorador</span>
-                <span class="verified" data-clave="perfil_badge_verificado">
+                <span class="verified" id="verificadoBadge" style="display:none;">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg>
                     VERIFICADO
                 </span>
@@ -109,20 +109,20 @@
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg>
                     MIEMBRO
                 </span>
-                <span class="badge success" data-clave="perfil_badge_activo">
+                <span class="badge" id="badgeActividad" data-no-traducir="1">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="currentColor" stroke="none"/></svg>
-                    ACTIVO
+                    <span id="badgeActividadTexto">…</span>
                 </span>
                 <span class="badge" id="walletChip" data-no-traducir="1" title="Toca para copiar" style="display:none;cursor:pointer;border-color:var(--cyan);color:var(--cyan);background:rgba(0,229,255,0.05);font-family:monospace;">
                     ◈ 0x…
                 </span>
-                <span class="badge" data-clave="perfil_badge_web3">
+                <span class="badge" id="badgeWeb3" data-no-traducir="1" style="cursor:pointer;">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/><polygon points="12 7 16 9.5 16 14.5 12 17 8 14.5 8 9.5 12 7"/></svg>
-                    WEB3
+                    <span id="badgeWeb3Texto">WEB3</span>
                 </span>
-                <span class="badge" id="nivelUsuario" style="border-color:var(--purple);color:var(--purple);background:rgba(168,85,247,0.05);">
+                <span class="badge" id="nivelUsuario" data-no-traducir="1" style="border-color:var(--purple);color:var(--purple);background:rgba(168,85,247,0.05);">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg>
-                    <span data-clave="perfil_nivel_explorador">Explorador</span>
+                    <span id="nivelTexto">Explorador</span>
                 </span>
             </div>
         </div>
@@ -782,19 +782,31 @@
 <script src="/features/perfil/js/perfil-repartidor.js?v=8"></script>
 <script src="/features/perfil/js/perfil-init.js?v=8"></script>
 
-<!-- Chip de wallet: muestra TU dirección y su estado de visibilidad; la copia al tocarla -->
+<!-- Estado vivo del perfil: wallet, nivel, actividad, WEB3 y verificado leídos de tu fila de usuarios -->
 <script>
 (function () {
     'use strict';
 
-    var chip = document.getElementById('walletChip');
-    if (!chip) return;
+    // ── Configuración de niveles (edítala aquí sin tocar la lógica) ──
+    var NIVELES = [
+        { min: 0,   nombre: 'Explorador' },
+        { min: 50,  nombre: 'Pionero' },
+        { min: 200, nombre: 'Veterano' },
+        { min: 500, nombre: 'Leyenda' }
+    ];
+
+    var $ = function (id) { return document.getElementById(id); };
+
+    var chip = $('walletChip');
+    var badgeActividad = $('badgeActividad');
+    var badgeActividadTexto = $('badgeActividadTexto');
+    var badgeWeb3 = $('badgeWeb3');
+    var badgeWeb3Texto = $('badgeWeb3Texto');
+    var nivelTexto = $('nivelTexto');
+    var verificadoBadge = $('verificadoBadge');
 
     var direccionCompleta = null;
-
-    function acortar(direccion) {
-        return direccion.slice(0, 6) + '...' + direccion.slice(-4);
-    }
+    var ultimaWalletVisible = false;
 
     function esperar(ms) {
         return new Promise(function (resolve) { setTimeout(resolve, ms); });
@@ -815,36 +827,55 @@
         return null;
     }
 
-    function pintarChip(visible) {
-        var etiqueta = visible ? '👁 pública' : '🔒 privada';
-        chip.textContent = '◈ ' + acortar(direccionCompleta) + ' · ' + etiqueta;
+    function acortar(direccion) {
+        return direccion.slice(0, 6) + '...' + direccion.slice(-4);
+    }
+
+    function nivelPara(tokensAcumulados) {
+        var total = Number(tokensAcumulados) || 0;
+        var nivel = NIVELES[0];
+        NIVELES.forEach(function (n) { if (total >= n.min) nivel = n; });
+        return nivel.nombre;
+    }
+
+    function pintarWallet(address, visible) {
+        if (!address) {
+            chip.style.display = 'none';
+            direccionCompleta = null;
+            return;
+        }
+        direccionCompleta = address;
+        ultimaWalletVisible = !!visible;
+        chip.textContent = '◈ ' + acortar(address) + ' · ' + (visible ? '👁 pública' : '🔒 privada');
         chip.title = visible
             ? 'Visible para otros usuarios · Toca para copiar'
             : 'Solo tú la ves · Toca para copiar';
+        chip.style.display = 'inline-flex';
     }
 
-    async function cargarWalletPropia() {
-        try {
-            var client = await obtenerCliente();
-            if (!client) return;
+    function pintarActividad(online) {
+        if (online) {
+            badgeActividad.className = 'badge success';
+            badgeActividad.style.cssText = '';
+            badgeActividadTexto.textContent = 'ACTIVO';
+        } else {
+            badgeActividad.className = 'badge';
+            badgeActividad.style.cssText = 'border-color:var(--text-muted);color:var(--text-muted);';
+            badgeActividadTexto.textContent = 'INACTIVO';
+        }
+    }
 
-            var sesion = await client.auth.getSession();
-            var session = sesion && sesion.data && sesion.data.session;
-            if (!session) return;
-
-            var resultado = await client
-                .from('usuarios')
-                .select('wallet_address, wallet_visible')
-                .eq('id', session.user.id)
-                .maybeSingle();
-
-            if (resultado.error || !resultado.data || !resultado.data.wallet_address) return;
-
-            direccionCompleta = resultado.data.wallet_address;
-            pintarChip(resultado.data.wallet_visible);
-            chip.style.display = 'inline-flex';
-        } catch (e) {
-            console.warn('[Perfil] No se pudo cargar la wallet:', e);
+    function pintarWeb3(tieneWallet) {
+        if (tieneWallet) {
+            badgeWeb3Texto.textContent = 'WEB3 · Conectada';
+            badgeWeb3.title = 'Wallet vinculada';
+            badgeWeb3.onclick = null;
+        } else {
+            badgeWeb3Texto.textContent = 'WEB3 · Sin wallet';
+            badgeWeb3.title = 'Toca para conectar tu wallet';
+            badgeWeb3.onclick = function () {
+                window.location.href = '/features/perfil/configuracion/index.html';
+            };
         }
     }
 
@@ -873,11 +904,48 @@
 
     chip.addEventListener('click', copiarWallet);
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', cargarWalletPropia, { once: true });
-    } else {
-        cargarWalletPropia();
+    async function refrescarPerfilVivo() {
+        try {
+            var client = await obtenerCliente();
+            if (!client) return;
+
+            var sesion = await client.auth.getSession();
+            var session = sesion && sesion.data && sesion.data.session;
+            if (!session) return;
+
+            var res = await client
+                .from('usuarios')
+                .select('wallet_address, wallet_visible, online, tokens_acumulados, verificado')
+                .eq('id', session.user.id)
+                .maybeSingle();
+
+            if (res.error || !res.data) return;
+            var u = res.data;
+
+            pintarWallet(u.wallet_address, u.wallet_visible);
+            pintarActividad(u.online === true);
+            pintarWeb3(!!u.wallet_address);
+            nivelTexto.textContent = nivelPara(u.tokens_acumulados);
+            verificadoBadge.style.display = u.verificado ? 'inline-flex' : 'none';
+        } catch (e) {
+            console.warn('[Perfil] No se pudo actualizar el estado vivo:', e);
+        }
     }
+
+    // Al tocar Activo / Inactivo, espera un momento y vuelve a leer el estado real
+    document.addEventListener('click', function (ev) {
+        if (ev.target.closest && ev.target.closest('.btn-estado')) {
+            setTimeout(refrescarPerfilVivo, 1200);
+        }
+    });
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', refrescarPerfilVivo, { once: true });
+    } else {
+        refrescarPerfilVivo();
+    }
+
+    setInterval(refrescarPerfilVivo, 30000);
 })();
 </script>
 
