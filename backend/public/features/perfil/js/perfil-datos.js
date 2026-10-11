@@ -4,10 +4,39 @@
 // Cargar/actualizar perfil, contadores sociales, avatar, guardar.
 // Depende de: perfil-config.js, perfil-utils.js
 //
+// CAMBIO v3 (corrección de carga):
+// - El perfil se lee directamente de la tabla usuarios (las funciones
+//   RPC mi_perfil_privado / obtener_mi_perfil no existen en la base).
+// - Ya no se fuerza online=true al cargar: el estado lo maneja
+//   perfil-estado.js y respeta la opción "Ocultar mi estado".
+// - Los errores de renderizado parciales no se muestran como
+//   "Error al cargar perfil": solo se registran en consola.
+//
 // CAMBIO v2 (traducciones):
 // - Todos los textos visibles y mensajes usan perfilT(clave, respaldo).
-// - Los textos fijos se reemplazan por claves perfil_*.
 // ================================================================
+
+// ================================================================
+// PERFIL DE RESPALDO (si no hay fila en usuarios)
+// ================================================================
+function perfilDesdeSesion(session) {
+    var u = (session && session.user) || {};
+    var meta = u.user_metadata || {};
+    return {
+        id: u.id,
+        nombre: meta.nombre || meta.full_name || 'Explorador',
+        handle: (u.email || 'explorador').split('@')[0],
+        bio: null,
+        avatar_url: null,
+        tokens: 0,
+        tokens_acumulados: 0,
+        nft_canjeado: false,
+        domos: 0,
+        puede_canjear: false,
+        verificado: false,
+        online: true
+    };
+}
 
 // ================================================================
 // CARGAR PERFIL
@@ -17,50 +46,53 @@ async function cargarPerfil(forzarActualizacion = false) {
         if (!cli()) return;
         const session = await getSession();
         if (!session) { window.location.replace('/'); return; }
+
         const ahora = Date.now();
         if (!forzarActualizacion && perfilCache && (ahora - ultimaActualizacion) < CACHE_DURATION) {
             actualizarUI(perfilCache);
             return;
         }
+
+        // Fila propia de usuarios (la RLS solo permite leer tu propia fila)
         let perfil = null;
-
-        // Leer perfil propio vía RPC seguro (devuelve SETOF usuarios → array)
         try {
-            const { data, error } = await window.supabaseClient.rpc('mi_perfil_privado');
-            if (!error && data) {
-                perfil = Array.isArray(data) ? (data.length > 0 ? data[0] : null) : data;
+            const { data, error } = await window.supabaseClient
+                .from('usuarios')
+                .select('*')
+                .eq('id', session.user.id)
+                .maybeSingle();
+            if (error) {
+                console.warn('[Perfil] No se pudo leer usuarios:', error.message);
+            } else {
+                perfil = data || null;
             }
-        } catch (rpcErr) {
-            console.warn('[Perfil] mi_perfil_privado falló:', rpcErr);
+        } catch (e) {
+            console.warn('[Perfil] Error leyendo usuarios:', e);
         }
 
-        // Fallback: obtener_mi_perfil (RPC antiguo, por si acaso)
-        if (!perfil) {
-            try {
-                const { data, error } = await window.supabaseClient.rpc('obtener_mi_perfil');
-                if (!error && data) {
-                    perfil = Array.isArray(data) ? (data.length > 0 ? data[0] : null) : data;
-                }
-            } catch (rpcErr) {}
-        }
-
-        // Último fallback: perfil básico desde la sesión
-        if (!perfil) perfil = perfilBasico(session);
+        if (!perfil) perfil = perfilDesdeSesion(session);
 
         perfilCache = perfil;
         window.perfilCache = perfil;
         ultimaActualizacion = ahora;
-        await actualizarEstadoEnLinea(true);
+
         actualizarUI(perfil);
+
         Promise.all([
             cargarEstadoConexion(),
             cargarAmigosEnLinea(),
             cargarHistorialQR(),
             cargarEstadoPro(),
             cargarContadoresSociales(session.user.id)
-        ]).catch(function(){});
-        await aplicarI18NPerfil();
+        ]).catch(function () {});
+
+        try {
+            await aplicarI18NPerfil();
+        } catch (e) {
+            console.warn('[Perfil] Traducciones no aplicadas:', e);
+        }
     } catch (error) {
+        console.error('[Perfil] cargarPerfil:', error && (error.message || error));
         showToast(perfilT('perfil_toast_error_cargar', '❌ Error al cargar perfil'), 'error');
     }
 }
@@ -98,6 +130,7 @@ function actualizarUI(data) {
             bioEl.innerHTML = formatearTexto(data.bio);
         }
     }
+
     if (avatarEl) {
         const toggle =
             '<span class="avatar-menu-toggle" onclick="event.stopPropagation(); window.toggleAvatarMenu(event)" title="' +
@@ -112,10 +145,11 @@ function actualizarUI(data) {
         }
     }
 
-    // ---- STATS (tokens, NFTs, seguidores, siguiendo) ----
+    // ---- STATS (tokens, NFTs) ----
+    const tokens = Number(data.tokens) || 0;
     const stats = [
-        { id: 'statTokens', value: data.tokens || 0 },
-        { id: 'statNFTS', value: data.nft_canjeado ? 1 : (data.domos || 0) }
+        { id: 'statTokens', value: tokens },
+        { id: 'statNFTS', value: data.nft_canjeado ? 1 : (Number(data.domos) || 0) }
     ];
     stats.forEach(stat => {
         const el = document.getElementById(stat.id);
@@ -125,7 +159,6 @@ function actualizarUI(data) {
     });
 
     // ---- PROGRESO NFT ----
-    const tokens = data.tokens || 0;
     const progreso = Math.min(tokens, 12);
     const puedeCanjear = data.puede_canjear || false;
     const progressFill = document.getElementById('progressFill');
@@ -147,7 +180,10 @@ function actualizarUI(data) {
     if (tokenTotal) tokenTotal.textContent = tokens;
     if (tokenDisponibles) tokenDisponibles.textContent = tokens;
     if (tokenNFTs) tokenNFTs.textContent = data.nft_canjeado ? 1 : 0;
-    if (tokenVendidos) tokenVendidos.textContent = data.tokens_acumulados ? Math.max(0, (data.tokens_acumulados || 0) - tokens) : 0;
+    if (tokenVendidos) {
+        const acumulados = Number(data.tokens_acumulados) || 0;
+        tokenVendidos.textContent = Math.max(0, acumulados - tokens);
+    }
 
     // ---- BOTÓN CANJEAR NFT ----
     const btnCanjear = document.getElementById('canjearNft');
@@ -167,8 +203,13 @@ function actualizarUI(data) {
         }
     }
 
-    actualizarUIConexion(estadoConexion);
-    actualizarUIEstado(data.online !== false);
+    // Estas funciones viven en otros módulos: se llaman solo si existen
+    if (typeof actualizarUIConexion === 'function') {
+        actualizarUIConexion(typeof estadoConexion !== 'undefined' ? estadoConexion : null);
+    }
+    if (typeof actualizarUIEstado === 'function') {
+        actualizarUIEstado(data.online !== false);
+    }
 }
 
 // ================================================================
@@ -184,7 +225,6 @@ async function cargarContadoresSociales(usuarioId) {
             return;
         }
 
-        // Leer contadores desde perfiles_publicos (no de usuarios)
         try {
             const { data: usuario, error } = await window.supabaseClient
                 .from('perfiles_publicos')
@@ -204,7 +244,6 @@ async function cargarContadoresSociales(usuarioId) {
             console.warn('[Perfil] Error leyendo contadores desde perfiles_publicos:', e);
         }
 
-        // Fallback: contar desde tabla contactos
         const [seguidoresRes, siguiendoRes] = await Promise.all([
             window.supabaseClient.from('contactos').select('*', { count: 'exact', head: true }).eq('contacto_id', usuarioId),
             window.supabaseClient.from('contactos').select('*', { count: 'exact', head: true }).eq('usuario_id', usuarioId)
@@ -215,7 +254,9 @@ async function cargarContadoresSociales(usuarioId) {
         };
         ultimaActualizacionContadores = ahora;
         aplicarContadoresSociales(contadoresSocialesCache);
-    } catch (error) {}
+    } catch (error) {
+        console.warn('[Perfil] Contadores sociales:', error);
+    }
 }
 
 function aplicarContadoresSociales(c) {
@@ -286,7 +327,7 @@ function compartirPerfil() {
         .trim()
         .split(' ')[0] || perfilT('perfil_nombre_usuario', 'Explorador');
     const handle = document.getElementById('perfilHandle')?.textContent.replace('@', '') || 'explorador';
-    const url = window.location.origin + '/perfil/' + encodeURIComponent(handle);
+    const url = window.location.origin + '/features/perfil/perfil-publico.html?u=' + encodeURIComponent(handle);
     const textoBase = perfilT('perfil_compartir_texto', "◈ Perfil de {nombre} en Sariel's")
         .split('{nombre}').join(nombre);
     const texto = textoBase + "\n◈ " + url + "\n\n#Sariels #WEB3";
@@ -307,7 +348,7 @@ async function generarQRPerfil() {
         const session = await getSession();
         if (!session) return;
         const handle = document.getElementById('perfilHandle')?.textContent.replace('@', '') || 'explorador';
-        const url = window.location.origin + '/perfil/' + encodeURIComponent(handle);
+        const url = window.location.origin + '/features/perfil/perfil-publico.html?u=' + encodeURIComponent(handle);
         const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(url);
         const modal = document.createElement('div');
         modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; z-index: 9999;';
@@ -501,9 +542,6 @@ async function obtenerEstadisticas() {
 // ================================================================
 async function cerrarSesion() {
     if (!confirm(perfilT('perfil_cerrar_sesion', '¿Cerrar sesión?'))) return;
-    try {
-        await actualizarEstadoEnLinea(false);
-    } catch (e) {}
     try {
         await window.supabaseClient.auth.signOut();
     } catch (error) {
