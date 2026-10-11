@@ -98,6 +98,22 @@ function renderizarPost(post) {
     var comentariosCount = (post.muro_comentarios && post.muro_comentarios[0]) ? post.muro_comentarios[0].count || 0 : 0;
     var contenidoSanitizado = sanitizarHTML(post.contenido || '');
 
+    // Enlace al perfil del autor
+    var esMiPost = sessionUser && post.usuario_id === sessionUser.id;
+    var perfilHref = null;
+    if (esMiPost) {
+        perfilHref = '/features/perfil/perfil.html';
+    } else if (post.usuario_handle) {
+        perfilHref = '/features/perfil/perfil-publico.html?u=' + encodeURIComponent(post.usuario_handle);
+    }
+
+    var avatarHtml = avatar;
+    var nombreHtml = nombre;
+    if (perfilHref) {
+        avatarHtml = '<a href="' + perfilHref + '" style="display:block;width:100%;height:100%;color:inherit;text-decoration:none;">' + avatar + '</a>';
+        nombreHtml = '<a href="' + perfilHref + '" style="color:inherit;text-decoration:none;">' + nombre + '</a>';
+    }
+
     // Badge de tema
     var temaBadge = '';
     if (post.tema_id && post.temas) {
@@ -132,13 +148,13 @@ function renderizarPost(post) {
 
     div.innerHTML =
         '<div class="post-header">' +
-            '<div class="post-avatar">' + avatar + '</div>' +
+            '<div class="post-avatar">' + avatarHtml + '</div>' +
             '<div>' +
-                '<div class="post-author">' + nombre + ' <span class="badge-verificado">✦ Verificado</span></div>' +
+                '<div class="post-author">' + nombreHtml + ' <span class="badge-verificado">✦ Verificado</span></div>' +
                 '<div class="post-date">' + fecha + '</div>' +
             '</div>' +
             '<div class="post-actions-header">' +
-                (sessionUser && post.usuario_id === sessionUser.id
+                (esMiPost
                     ? '<button class="btn-delete" onclick="eliminarPublicacion(\'' + post.id + '\')" title="Eliminar"><svg class="icon" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>'
                     : '<button class="btn-report" onclick="reportarPublicacion(\'' + post.id + '\')" title="Reportar"><svg class="icon" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>') +
                 '<button class="btn-share" onclick="compartirPublicacion(\'' + post.id + '\')" title="Compartir"><svg class="icon" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg></button>' +
