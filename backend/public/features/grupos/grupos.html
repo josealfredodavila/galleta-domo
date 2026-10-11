@@ -34,8 +34,165 @@
     <!-- CSS del módulo grupos -->
     <link rel="stylesheet" href="/features/grupos/css/grupos.css">
 
-    <!-- 🎭 Marquinhos Pet · CSS -->
-    <link rel="stylesheet" href="/features/marquinhos/marquinhos-pet.css">
+    <!-- ============================================================
+         🎭 MASCOTAS · CARGA CONDICIONAL
+         ============================================================
+         Aquí vivía la carga estática de Marquinhos que provocaba que
+         se dibujara SIEMPRE, incluso si el usuario había elegido otra
+         mascota (ej. Capitán Maíz) o "Sin mascota".
+         
+         Ahora se lee la preferencia del usuario y SOLO se carga la
+         mascota que realmente está activa.
+         ============================================================ -->
+    <script>
+    (function () {
+        'use strict';
+
+        // ---- 1. Claves candidatas donde puede estar guardada la mascota activa ----
+        // Si tu app usa otra clave, agrégala aquí. Se prueban todas en orden.
+        var CLAVES_MASCOTA = [
+            'mascota_activa',
+            'sariels_mascota_activa',
+            'user_mascota_activa',
+            'mascotaActiva',
+            'mascota',
+            'capitan_maiz_mascota_activa',
+            'sariels_mascota'
+        ];
+
+        // Valores que significan "sin mascota"
+        var SIN_MASCOTA = ['', 'none', 'null', 'undefined', 'sin_mascota', 'ninguna'];
+
+        // ---- 2. Definición de mascotas soportadas ----
+        // Para agregar otra mascota, copia este bloque y cambia las rutas.
+        var MASCOTAS = {
+            marquinhos: {
+                css: [
+                    '/features/marquinhos/marquinhos-pet.css'
+                ],
+                js: [
+                    '/features/marquinhos/marquinhos-pet.js',
+                    '/features/marquinhos/marquinhos-brain.js'
+                ]
+            },
+            capitan_maiz: {
+                css: [
+                    '/features/capitan-maiz/capitan-maiz-pet.css'
+                ],
+                js: [
+                    '/features/capitan-maiz/capitan-maiz-fit.js',
+                    '/features/capitan-maiz/capitan-maiz-boca.js',
+                    '/features/capitan-maiz/capitan-maiz-anim.js',
+                    '/features/capitan-maiz/capitan-maiz-brain.js',
+                    '/features/capitan-maiz/capitan-maiz-pet.js'
+                ]
+            }
+            // Agrega aquí más mascotas si las tienes
+        };
+
+        // ---- 3. Leer preferencia local ----
+        function leerMascotaLocal() {
+            try {
+                for (var i = 0; i < CLAVES_MASCOTA.length; i++) {
+                    var raw = localStorage.getItem(CLAVES_MASCOTA[i]);
+                    if (raw == null) continue;
+
+                    // Puede venir como string plano o como JSON
+                    var valor = raw;
+                    try {
+                        var parsed = JSON.parse(raw);
+                        if (typeof parsed === 'string') valor = parsed;
+                        else if (parsed && typeof parsed === 'object' && parsed.mascota) valor = parsed.mascota;
+                        else if (parsed && typeof parsed === 'object' && parsed.id) valor = parsed.id;
+                    } catch (e) { /* no era JSON, usar raw */ }
+
+                    valor = String(valor).trim().toLowerCase();
+
+                    if (SIN_MASCOTA.indexOf(valor) !== -1) return null;
+                    if (MASCOTAS[valor]) return valor;
+                }
+            } catch (e) {}
+            return undefined; // undefined = no hay preferencia guardada
+        }
+
+        // ---- 4. Inyectar CSS/JS de una mascota ----
+        var _mascotasCargadas = {};
+
+        function inyectarCSS(href) {
+            if (document.querySelector('link[data-mascota-css="' + href + '"]')) return;
+            var l = document.createElement('link');
+            l.rel = 'stylesheet';
+            l.href = href;
+            l.setAttribute('data-mascota-css', href);
+            document.head.appendChild(l);
+        }
+
+        function inyectarJS(src) {
+            return new Promise(function (resolve) {
+                if (document.querySelector('script[data-mascota-js="' + src + '"]')) {
+                    resolve();
+                    return;
+                }
+                var s = document.createElement('script');
+                s.src = src;
+                s.defer = true;
+                s.setAttribute('data-mascota-js', src);
+                s.onload = resolve;
+                s.onerror = resolve; // no bloquear si falla
+                document.head.appendChild(s);
+            });
+        }
+
+        function cargarMascota(nombre) {
+            if (!nombre || !MASCOTAS[nombre]) return;
+            if (_mascotasCargadas[nombre]) return;
+            _mascotasCargadas[nombre] = true;
+
+            var def = MASCOTAS[nombre];
+
+            def.css.forEach(inyectarCSS);
+
+            // Cargar JS en orden secuencial para respetar dependencias
+            (function secuencia(i) {
+                if (i >= def.js.length) return;
+                inyectarJS(def.js[i]).then(function () {
+                    secuencia(i + 1);
+                });
+            })(0);
+
+            console.log('[Mascotas] Cargando mascota activa:', nombre);
+        }
+
+        // Exponer API pública por si necesitas cargar después de Supabase
+        window.__cargarMascotaActiva = cargarMascota;
+
+        // ---- 5. Arranque: intentar leer preferencia local inmediatamente ----
+        var preferida = leerMascotaLocal();
+
+        if (preferida === undefined) {
+            // No hay preferencia local todavía.
+            // Esperamos un momento a ver si otra parte del código la escribe
+            // (por ejemplo, tras consultar Supabase).
+            var intentos = 0;
+            var timer = setInterval(function () {
+                intentos++;
+                var p = leerMascotaLocal();
+                if (p !== undefined) {
+                    clearInterval(timer);
+                    if (p) cargarMascota(p);
+                } else if (intentos >= 15) {
+                    // 15 × 100ms = 1.5s y nada. No cargamos ninguna mascota
+                    // hasta que alguien llame a window.__cargarMascotaActiva().
+                    clearInterval(timer);
+                }
+            }, 100);
+        } else if (preferida) {
+            cargarMascota(preferida);
+        }
+        // Si preferida === null → "sin mascota", no cargamos nada.
+
+    })();
+    </script>
 </head>
 <body>
     <div class="app">
@@ -739,8 +896,10 @@
     <script src="/features/grupos/js/grupos-live.js"></script>
     <script src="/features/grupos/js/grupos-init.js"></script>
 
-    <!-- 🎭 Marquinhos Pet · JS (orden correcto) -->
-    <script src="/features/marquinhos/marquinhos-pet.js" defer></script>
-    <script src="/features/marquinhos/marquinhos-brain.js" defer></script>
+    <!--
+        ⚠️ AQUÍ YA NO VAN los <script> ni <link> estáticos de Marquinhos.
+        La carga se hace dinámicamente en el <head> según la mascota
+        activa del usuario (ver bloque "MASCOTAS · CARGA CONDICIONAL").
+    -->
 </body>
 </html>
