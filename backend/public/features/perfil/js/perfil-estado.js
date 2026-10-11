@@ -7,59 +7,79 @@
 //
 // CAMBIO v2 (traducciones):
 // - Todos los textos usan perfilT(clave, respaldo).
-// - Nota: la notificación que reciben tus contactos se guarda en el
-//   idioma de quien cambia el estado (se escribe en la base de datos).
 //
-// CAMBIO v3 (Inactivo manual):
-// - Si tocas "Inactivo", el detector de actividad ya no te vuelve a
-//   poner activo al mover el mouse, hacer scroll o tocar la pantalla.
-// - Solo vuelves a activo al tocar "Activo". La decisión se guarda en
-//   localStorage para que no se pierda al recargar.
+// CAMBIO v4 (Inactivo en cualquier navegador):
+// - La elección "Inactivo" se guarda en usuarios.inactivo_manual (BD),
+//   no en localStorage. Así aplica en celular, PC u otro navegador.
+// - Cada 30 s se sincroniza el estado real desde la base de datos.
+// - Si inactivo_manual es true, el sistema no vuelve a activarte solo.
 // ================================================================
 
 // ================================================================
-// INACTIVO MANUAL (persistente)
+// ESTADO MANUAL (desde la base de datos)
 // ================================================================
-var PERFIL_INACTIVO_MANUAL_KEY = 'perfil_inactivo_manual';
+var inactivoManualRemoto = false;
 
-function esInactivoManual() {
+async function sincronizarEstadoDesdeServidor() {
     try {
-        return localStorage.getItem(PERFIL_INACTIVO_MANUAL_KEY) === '1';
-    } catch (e) {
-        return false;
-    }
-}
+        const session = await getSession();
+        if (!session) return;
 
-function setInactivoManual(valor) {
-    try {
-        if (valor) {
-            localStorage.setItem(PERFIL_INACTIVO_MANUAL_KEY, '1');
-        } else {
-            localStorage.removeItem(PERFIL_INACTIVO_MANUAL_KEY);
+        const { data, error } = await window.supabaseClient
+            .from('usuarios')
+            .select('online, inactivo_manual')
+            .eq('id', session.user.id)
+            .maybeSingle();
+        if (error || !data) return;
+
+        inactivoManualRemoto = data.inactivo_manual === true;
+
+        if (perfilCache) {
+            perfilCache.inactivo_manual = inactivoManualRemoto;
         }
-    } catch (e) {}
+
+        // Si elegiste Inactivo y en otro lado quedó activo, lo corregimos
+        if (inactivoManualRemoto && data.online === true) {
+            await actualizarEstadoEnLinea(false);
+            return;
+        }
+
+        actualizarUIEstado(data.online === true);
+    } catch (error) {}
 }
 
 // ================================================================
 // ACTUALIZAR ESTADO EN SUPABASE
+// opciones.inactivoManual: true/false guarda la elección manual.
+// Si no se pasa, no se toca la marca manual (cambio automático).
 // ================================================================
-async function actualizarEstadoEnLinea(online) {
+async function actualizarEstadoEnLinea(online, opciones) {
     try {
         const session = await getSession();
         if (!session) return false;
         const ahora = new Date().toISOString();
+
+        const payload = {
+            online: online === true,
+            ultima_conexion: ahora,
+            offline_desde: online ? null : ahora
+        };
+        if (opciones && typeof opciones.inactivoManual === 'boolean') {
+            payload.inactivo_manual = opciones.inactivoManual;
+        }
+
         const { error } = await window.supabaseClient
             .from('usuarios')
-            .update({
-                online: online === true,
-                ultima_conexion: ahora,
-                offline_desde: online ? null : ahora
-            })
+            .update(payload)
             .eq('id', session.user.id);
         if (error) return false;
+
         if (perfilCache) {
             perfilCache.online = online;
             perfilCache.ultima_conexion = ahora;
+            if (typeof payload.inactivo_manual === 'boolean') {
+                perfilCache.inactivo_manual = payload.inactivo_manual;
+            }
         }
         actualizarUIEstado(online);
         return true;
@@ -95,10 +115,13 @@ function iniciarDetectorInactividad() {
     if (detectorInactividadIniciado) return;
     detectorInactividadIniciado = true;
 
+    // Al entrar, leemos el estado real (respeta el Inactivo puesto desde otro navegador)
+    sincronizarEstadoDesdeServidor();
+
     const resetInactividad = () => {
         tiempoInactividad = 0;
-        // Si el usuario eligió "Inactivo" a mano, no lo volvemos a activar solos
-        if (esInactivoManual()) return;
+        // Si elegiste Inactivo a mano (en cualquier dispositivo), no te activamos solo
+        if (inactivoManualRemoto) return;
         if (perfilCache && !perfilCache.online) actualizarEstadoEnLinea(true);
     };
 
@@ -107,8 +130,16 @@ function iniciarDetectorInactividad() {
     });
 
     setInterval(async () => {
+        // Cada 30 s sincronizamos con la base de datos (otros navegadores)
+        await sincronizarEstadoDesdeServidor();
+
         tiempoInactividad += 30000;
-        if (tiempoInactividad >= maxInactividad && perfilCache && perfilCache.online) {
+        if (
+            tiempoInactividad >= maxInactividad &&
+            perfilCache &&
+            perfilCache.online &&
+            !inactivoManualRemoto
+        ) {
             await actualizarEstadoEnLinea(false);
             showToast('⭕ ' + perfilT('perfil_inactivo', 'Inactivo'), 'warning');
         }
@@ -125,14 +156,14 @@ async function cambiarEstado(online) {
             showToast('⚠️ ' + perfilT('perfil_inicia_sesion', 'Inicia sesión'), 'error');
             return;
         }
-        const ok = await actualizarEstadoEnLinea(online);
+
+        const ok = await actualizarEstadoEnLinea(online, { inactivoManual: !online });
         if (!ok) {
             showToast(perfilT('perfil_error_cambiar_estado', '❌ No se pudo cambiar el estado'), 'error');
             return;
         }
 
-        // Guardamos la elección manual: Inactivo se queda hasta que toques Activo
-        setInactivoManual(!online);
+        inactivoManualRemoto = !online;
 
         showToast(
             online
