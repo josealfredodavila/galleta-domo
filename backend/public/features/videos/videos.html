@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>◈ Videos · Sariel's</title>
+    <title>◈ Videos · Csariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    <!-- Módulo Publicar · CSS modular -->
+    <link rel="stylesheet" href="/features/videos/css/videos-publicar.css">
     <script src="/features/shared/js/apariencia-global.js"></script>
     <style>
         :root {
@@ -866,7 +868,7 @@
         <header class="header">
             <a href="/" class="logo">
                 <span class="logo-hex">◈</span>
-                <span class="logo-text">Sariel<span>'s</span></span>
+                <span class="logo-text">Csariel<span>'s</span></span>
                 <span class="logo-badge">✦ WEB3</span>
             </a>
             <div class="header-actions">
@@ -892,7 +894,7 @@
             <form id="formSubirVideo" onsubmit="event.preventDefault(); subirVideo();">
                 <div class="form-group">
                     <label data-clave="videos_titulo_video">Título del video</label>
-                    <input type="text" id="inputTituloVideo" placeholder="Ej: Mi primer video en Sariel's" required maxlength="200" />
+                    <input type="text" id="inputTituloVideo" placeholder="Ej: Mi primer video en Csariel's" required maxlength="200" />
                 </div>
                 <div class="form-group">
                     <label data-clave="videos_descripcion">Descripción</label>
@@ -918,7 +920,7 @@
         <div class="processing-state" id="processingState">
             <div class="spinner"></div>
             <h3>◈ Procesando video</h3>
-            <p id="processingMessage">Eliminando marca de agua externa y aplicando marca de Sariel's...</p>
+            <p id="processingMessage">Eliminando marca de agua externa y aplicando marca de Csariel's...</p>
             <div class="progress-bar-big"><div class="fill" id="processingProgressFill"></div></div>
             <div class="progress-text" id="processingProgressText">0%</div>
             <p style="font-size:0.6rem;color:var(--text-muted);">Este proceso puede tardar entre 30 y 90 segundos</p>
@@ -943,12 +945,12 @@
             <div class="empty-state">
                 <span class="icon">◈</span>
                 <h3>No hay videos aún</h3>
-                <p>Sé el primero en compartir un video en Sariel's.</p>
+                <p>Sé el primero en compartir un video en Csariel's.</p>
             </div>
         </div>
 
         <footer class="footer">
-            <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
+            <span><span class="brand">◈ Csariel's</span> · Sabor al Paladar · WEB3</span>
             <div class="footer-links">
                 <a href="/terminos">◈ Términos</a>
                 <a href="/privacidad">◈ Privacidad</a>
@@ -994,7 +996,10 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script src="/features/shared/js/idiomas.js"></script><script>
+    <script src="/features/shared/js/idiomas.js"></script>
+    <!-- Módulo Publicar · JS modular (Fases 1 y 2) -->
+    <script src="/features/videos/js/videos-publicar.js" defer></script>
+    <script>
     // ================================================================
     // VIDEOS · v15.4 — Reels + Fullscreen + Audio + Eliminar + SVG Premium
     // ================================================================
@@ -2072,7 +2077,7 @@
         var url = window.location.origin + '/features/videos/videos.html?v=' + videoId;
         try {
             if (navigator.share) {
-                await navigator.share({ title: "Sariel's Video", url: url });
+                await navigator.share({ title: "Csariel's Video", url: url });
             } else {
                 await navigator.clipboard.writeText(url);
                 showToast('◈ Enlace copiado', 'success');
@@ -2576,7 +2581,7 @@
                 if (message) {
                     if (progreso < 15) message.textContent = 'Descargando video original...';
                     else if (progreso < 25) message.textContent = 'Analizando video...';
-                    else if (progreso < 80) message.textContent = "Aplicando marca de Sariel's...";
+                    else if (progreso < 80) message.textContent = "Aplicando marca de Csariel's...";
                     else if (progreso < 95) message.textContent = 'Subiendo video procesado...';
                     else message.textContent = 'Finalizando...';
                 }
@@ -2699,7 +2704,7 @@
     // INIT
     // ================================================================
     document.addEventListener('DOMContentLoaded', function() {
-        console.log("◈ Sariel's - Videos v15.4 (Audio + Eliminar + SVG Premium)");
+        console.log("◈ Csariel's - Videos v15.4 (Audio + Eliminar + SVG Premium)");
         aplicarI18N();
         configurarTecladoMovil();
         cargarUsuarioActual().then(async function() {
@@ -2733,7 +2738,7 @@
     window.showToast = showToast;
     window.incrementarVista = incrementarVista;
     window.activarAudioGlobal = activarAudioGlobal;
-</script>
+    </script>
 
 </body>
 </html>
