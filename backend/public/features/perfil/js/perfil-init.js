@@ -11,10 +11,12 @@
 // - Textos de realtime y de avatar usan perfilT.
 //
 // CAMBIO v3 (presencia):
-// - El estado usa Supabase Presence (perfil-estado.js) en lugar del
-//   detector con consultas periódicas.
-// - Se quitan las recargas repetidas al enfocar la ventana. El canal
-//   realtime de tu fila ya mantiene los datos al día.
+// - El estado usa Supabase Presence (perfil-estado.js).
+// - Se quitan las recargas repetidas al enfocar la ventana.
+//
+// CAMBIO v4:
+// - Se quita el refresco cada 60 s de amigos en línea. Ahora lo
+//   resuelve la presencia (perfil-amigos.js).
 // ================================================================
 
 // ================================================================
@@ -376,16 +378,13 @@ async function iniciarPerfil() {
     // Iniciar módulos
     iniciarNotificacionesRealtime();
     iniciarEscuchaConexion();
-    iniciarEscuchaAmigos();
-    iniciarPresenciaEstado();   // Presence en tiempo real (reemplaza el detector anterior)
+    iniciarEscuchaAmigos();     // Carga contactos una vez y escucha presencia
+    iniciarPresenciaEstado();   // Presence en tiempo real
     iniciarEscuchaWallet();
 
-    // Refrescos periódicos existentes de otros módulos
+    // Refresco de conexión (no relacionado con presencia)
     setInterval(() => {
         if (!document.hidden) cargarEstadoConexion();
-    }, 60000);
-    setInterval(() => {
-        if (!document.hidden) cargarAmigosEnLinea();
     }, 60000);
 
     // Aplicar parámetros de URL
