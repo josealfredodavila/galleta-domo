@@ -3,13 +3,14 @@
    ================================================================
    FASE 1: UI de modales (sonidos, ubicación, borradores, preview)
    FASE 2: Carga modular de archivos (subirMultimedia)
+   FASE 3C: (N/A aquí, el INSERT lo hace videos.html)
 
    Novedades v1.2:
-   - ✅ Input file 100% oculto con display:none !important
-   - ✅ Label estilizado que reemplaza visualmente el input
-   - ✅ Reset completo del formulario tras publicar exitosamente
-   - ✅ Refresco automático del feed sin recargar URL
-   - ✅ Reset de preview, sonido, ubicación y progreso
+   - Input file 100% oculto con display:none !important
+   - Label estilizado que reemplaza visualmente el input
+   - Reset completo del formulario tras publicar exitosamente
+   - Refresco automático del feed sin recargar URL
+   - Reset de preview, sonido, ubicación y progreso
    ================================================================ */
 
 (function () {
@@ -113,7 +114,7 @@
     }
 
     // ============================================================
-    // ✨ TOAST PROPIO
+    // TOAST
     // ============================================================
     function csToast(mensaje, tipo, duracion) {
         const t = document.createElement('div');
@@ -130,7 +131,7 @@
     }
 
     // ============================================================
-    // ✨ CONFIRM MODAL
+    // CONFIRM MODAL
     // ============================================================
     function csConfirm(opts) {
         return new Promise((resolve) => {
@@ -223,22 +224,19 @@
     }
 
     // ============================================================
-    // ✨ RESET COMPLETO DEL FORMULARIO
+    // RESET COMPLETO DEL FORMULARIO
     // ============================================================
     function resetFormularioPublicacion() {
-        // 1) Campos de texto
         const inputTitulo = document.getElementById('inputTituloVideo');
         const inputDesc = document.getElementById('inputDescripcionVideo');
         if (inputTitulo) inputTitulo.value = '';
         if (inputDesc) inputDesc.value = '';
 
-        // 2) Input de archivo
         const inputArchivo = document.getElementById('inputArchivoVideo');
         if (inputArchivo) {
             try { inputArchivo.value = ''; } catch (e) {}
         }
 
-        // 3) Preview video
         const preview = document.getElementById('csPreviewVideo');
         if (preview) {
             try { preview.pause(); } catch (e) {}
@@ -246,7 +244,6 @@
             try { preview.load(); } catch (e) {}
         }
 
-        // 4) Liberar objectURL
         if (state.previewURL) {
             try { URL.revokeObjectURL(state.previewURL); } catch (e) {}
             state.previewURL = null;
@@ -255,7 +252,6 @@
         state.urlVideoSubida = null;
         state.pathVideoSubida = null;
 
-        // 5) Botón file
         const btnTxt = document.getElementById('csFileBtnTxt');
         const btnHint = document.getElementById('csFileBtnHint');
         const btnWrap = document.querySelector('.cs-file-btn-wrap');
@@ -263,7 +259,6 @@
         if (btnHint) btnHint.textContent = 'MP4 · WebM · MOV · Máx 100 MB';
         if (btnWrap) btnWrap.classList.remove('cs-file-con-archivo');
 
-        // 6) Sonido + ubicación (reset visual)
         state.sonidoSeleccionado = null;
         state.ubicacionSeleccionada = null;
         const previewSonido = $('csPreviewSonido');
@@ -273,7 +268,6 @@
         const badge = $('csPreviewBadge');
         if (badge) badge.style.display = 'none';
 
-        // 7) Barra de progreso del form
         const progressEl = document.getElementById('uploadProgress');
         const progressFill = document.getElementById('progressFill');
         const progressText = document.getElementById('progressText');
@@ -281,7 +275,6 @@
         if (progressFill) progressFill.style.width = '0%';
         if (progressText) progressText.textContent = '0%';
 
-        // 8) Barra de progreso de procesamiento
         const pFill = document.getElementById('processingProgressFill');
         const pText = document.getElementById('processingProgressText');
         if (pFill) pFill.style.width = '0%';
@@ -292,10 +285,9 @@
     window.csResetFormularioPublicacion = resetFormularioPublicacion;
 
     // ============================================================
-    // ✨ REFRESCAR FEED SIN RECARGAR
+    // REFRESCAR FEED
     // ============================================================
     function refrescarFeedAutomatico() {
-        // Intentar llamar directamente a la función global del feed
         try {
             if (typeof window.cargarVideos === 'function') {
                 log('🔄 Refrescando feed con cargarVideos()...');
@@ -307,7 +299,6 @@
             }
         } catch (e) { warn('Error llamando cargarVideos:', e); }
 
-        // Fallback: disparar evento custom
         dispararEventoRefresh();
     }
 
@@ -317,7 +308,6 @@
             log('📡 Evento csariels:videos:refresh disparado');
         } catch (e) { warn('No se pudo disparar el evento:', e); }
 
-        // Fallback final: scroll al top del contenedor
         try {
             const feed = document.getElementById('videosContainer');
             if (feed) feed.scrollTo({ top: 0, behavior: 'smooth' });
@@ -375,7 +365,6 @@
         if (document.getElementById('csModalSonidos')) return;
         const contenedor = document.createElement('div');
         contenedor.innerHTML = `
-            <!-- SHEET · SONIDOS -->
             <div class="cs-sheet-backdrop" id="csSheetSonidosBackdrop"></div>
             <div class="cs-sheet" id="csModalSonidos" role="dialog" aria-modal="true" aria-label="Biblioteca de sonidos">
                 <div class="cs-sheet-handle"></div>
@@ -404,7 +393,6 @@
                 </div>
             </div>
 
-            <!-- SHEET · UBICACIÓN -->
             <div class="cs-sheet-backdrop" id="csSheetUbicacionBackdrop"></div>
             <div class="cs-sheet" id="csModalUbicacion" role="dialog" aria-modal="true" aria-label="Seleccionar ubicación">
                 <div class="cs-sheet-handle"></div>
@@ -428,7 +416,6 @@
                 </div>
             </div>
 
-            <!-- SHEET · BORRADORES -->
             <div class="cs-sheet-backdrop" id="csSheetBorradoresBackdrop"></div>
             <div class="cs-sheet" id="csModalBorradores" role="dialog" aria-modal="true" aria-label="Borradores">
                 <div class="cs-sheet-handle"></div>
@@ -460,7 +447,6 @@
         const form = uploadSection.querySelector('form');
         if (!form) return;
 
-        // 🔥 PRIMERO: transformar el input file nativo
         transformarInputArchivo(uploadSection);
 
         const wrap = document.createElement('div');
@@ -498,16 +484,12 @@
         $('csBtnGuardarBorrador').addEventListener('click', guardarBorrador);
     }
 
-    // ============================================================
-    // 🔥 TRANSFORMACIÓN TOTAL DEL INPUT FILE
-    // ============================================================
     function transformarInputArchivo(scope) {
         const input = scope.querySelector('#inputArchivoVideo') || document.getElementById('inputArchivoVideo');
         if (!input) { warn('inputArchivoVideo no encontrado'); return; }
         if (input.dataset.csTransformado === '1') return;
         input.dataset.csTransformado = '1';
 
-        // 1) Ocultar el input de forma agresiva
         input.style.setProperty('display', 'none', 'important');
         input.style.setProperty('visibility', 'hidden', 'important');
         input.style.setProperty('position', 'absolute', 'important');
@@ -518,7 +500,6 @@
         input.setAttribute('tabindex', '-1');
         input.setAttribute('aria-hidden', 'true');
 
-        // 2) Crear el botón estilizado
         const btnWrap = document.createElement('div');
         btnWrap.className = 'cs-file-btn-wrap';
         btnWrap.innerHTML = `
@@ -529,12 +510,10 @@
             </button>
         `;
 
-        // 3) Insertar el botón justo después del input (o antes)
         if (input.parentNode) {
             input.parentNode.insertBefore(btnWrap, input.nextSibling);
         }
 
-        // 4) Conectar el click
         const btn = btnWrap.querySelector('#csFileBtnVideo');
         btn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -542,7 +521,6 @@
             input.click();
         });
 
-        // 5) Actualizar UI al elegir archivo
         input.addEventListener('change', () => {
             const file = input.files && input.files[0];
             const txt = document.getElementById('csFileBtnTxt');
@@ -565,7 +543,7 @@
     }
 
     // ============================================================
-    // LÓGICA DE MODALES
+    // MODALES · LÓGICA
     // ============================================================
     function abrirModalSonidos() {
         renderSonidos(state.tabSonidosActiva, '');
@@ -738,14 +716,10 @@
         });
     }
 
-    // ============================================================
-    // ✨ LISTENER PARA PUBLICACIÓN EXITOSA
-    // ============================================================
     function engancharEventoPublicacionExitosa() {
         if (window.__csPublicacionListener) return;
         window.__csPublicacionListener = true;
 
-        // Escuchar evento personalizado que puede disparar el código del feed
         window.addEventListener('csariels:videos:publicado', () => {
             log('✅ Evento publicado recibido — reseteando formulario y refrescando feed');
             resetFormularioPublicacion();
@@ -823,7 +797,7 @@
         engancharInputArchivo();
         engancharListenersGlobales();
         engancharEventoPublicacionExitosa();
-        log('✅ Módulo Publicar v1.2 listo');
+        log('✅ Módulo Publicar v1.2 listo (Fase 3C soportada)');
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
