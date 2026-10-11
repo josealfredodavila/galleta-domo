@@ -6,7 +6,6 @@
     <title>◈ Videos · Csariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
-    <!-- Módulo Publicar · CSS modular -->
     <link rel="stylesheet" href="/features/videos/css/videos-publicar.css">
     <script src="/features/shared/js/apariencia-global.js"></script>
     <style>
@@ -23,7 +22,6 @@
             --line-black-soft: rgba(0, 0, 0, 0.85);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        /* ✅ v15.5 FIX: permite pull-to-refresh en móvil */
         html { overscroll-behavior-y: auto; }
         body {
             overscroll-behavior-y: auto;
@@ -66,7 +64,6 @@
         .upload-section .form-group textarea:focus { border-color: var(--gold); }
         .upload-section .form-group textarea { resize: vertical; min-height: 60px; }
         .upload-section .form-group .file-input-wrapper { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-        .upload-section .form-group .file-input-wrapper input[type="file"] { flex: 1; padding: 8px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--text-primary); font-size: 0.7rem; }
         .btn-subir-video { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border: none; padding: 10px 24px; border-radius: 30px; font-family: 'Orbitron', monospace; font-weight: 700; font-size: 0.8rem; cursor: pointer; transition: var(--transition); }
         .btn-subir-video:hover { transform: scale(1.02); box-shadow: var(--shadow-gold); }
         .btn-subir-video:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
@@ -301,7 +298,6 @@
             filter: drop-shadow(0 0 14px rgba(212, 175, 55, 0.9));
         }
 
-        /* ✅ v15.4: Iconos premium SVG (reemplazo de emojis) */
         .ico-premium {
             width: 22px;
             height: 22px;
@@ -843,8 +839,6 @@
         @media (max-width: 768px) {
             .app { padding: 12px 14px; }
             .video-card { min-height: 72vh; max-height: 72vh; }
-            .upload-section .form-group .file-input-wrapper { flex-direction: column; }
-            .upload-section .form-group .file-input-wrapper input[type="file"] { width: 100%; }
         }
         @media (max-width: 480px) {
             .video-card { min-height: 68vh; max-height: 68vh; }
@@ -997,19 +991,17 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="/features/shared/js/idiomas.js"></script>
-    <!-- Módulo Publicar · JS modular (Fases 1 y 2) -->
     <script src="/features/videos/js/videos-publicar.js" defer></script>
     <script>
     // ================================================================
-    // VIDEOS · v15.5 — Reels + Fullscreen + Audio + Eliminar + SVG Premium
+    // VIDEOS · v15.6 — Reels + Fullscreen + Audio + Eliminar + SVG + FASE 3C
     // ================================================================
-    // ✅ v15.5 — NUEVO:
-    //   🔄 Al completar publicación:
-    //      - Reset completo del formulario (título, descripción, preview, sonido, ubicación)
-    //      - Refresh automático del feed sin recargar URL
-    //      - Scroll suave al top del feed
-    //   📜 PULL-TO-REFRESH habilitado en móvil
-    //   🔔 Evento csariels:videos:publicado disparado
+    // ✅ v15.6 — NUEVO (Fase 3C):
+    //   🎵📍 El INSERT de videos ahora guarda:
+    //      - sonido_id, sonido_url, sonido_nombre
+    //      - ubicacion_id, ubicacion_nombre, ubicacion_lat, ubicacion_lng
+    //      - es_borrador = false
+    //   🔄 Reset post-publicación + auto-refresh del feed
     // ================================================================
 
     // ================================================================
@@ -1503,8 +1495,9 @@
 
             var result = await sbVideos
                 .from('videos')
-                .select('id, titulo, descripcion, url_video, url_miniatura, usuario_id, reproducciones, likes, comentarios, created_at, usuarios:usuario_id (id, nombre, handle, avatar_url)')
+                .select('id, titulo, descripcion, url_video, url_miniatura, usuario_id, reproducciones, likes, comentarios, created_at, sonido_id, sonido_nombre, ubicacion_nombre, usuarios:usuario_id (id, nombre, handle, avatar_url)')
                 .eq('estado', 'publicado')
+                .eq('es_borrador', false)
                 .order('created_at', { ascending: false })
                 .limit(20);
 
@@ -1516,6 +1509,7 @@
                     .from('videos')
                     .select('id, titulo, descripcion, url_video, url_miniatura, usuario_id, reproducciones, likes, comentarios, created_at')
                     .eq('estado', 'publicado')
+                    .eq('es_borrador', false)
                     .order('created_at', { ascending: false })
                     .limit(20);
                 if (result2.error) throw new Error(result.error.message + ' || ' + result2.error.message);
@@ -1669,6 +1663,10 @@
         var titulo = escapeHTML(v.titulo || '');
         var descripcion = escapeHTML((v.descripcion || '').substring(0, 140));
 
+        // 🎵📍 Metadata opcional para mostrar en overlay
+        var sonidoNombre = v.sonido_nombre ? escapeHTML(v.sonido_nombre) : null;
+        var ubicacionNombre = v.ubicacion_nombre ? escapeHTML(v.ubicacion_nombre) : null;
+
         var card = document.createElement('div');
         card.className = 'video-card';
         card.dataset.videoId = v.id;
@@ -1698,6 +1696,18 @@
         html += '</div>';
         if (titulo) html += '<div class="titulo">' + titulo + '</div>';
         if (descripcion) html += '<div class="descripcion-corta">' + descripcion + '</div>';
+
+        // 🎵📍 Mostrar sonido y ubicación si existen
+        if (sonidoNombre || ubicacionNombre) {
+            html += '<div class="video-meta-chips">';
+            if (sonidoNombre) {
+                html += '<span class="video-chip video-chip-sonido">♪ ' + sonidoNombre + '</span>';
+            }
+            if (ubicacionNombre) {
+                html += '<span class="video-chip video-chip-ubicacion">◆ ' + ubicacionNombre + '</span>';
+            }
+            html += '</div>';
+        }
         html += '</div>';
 
         var claseLiked = tipoMiReaccion ? ' liked' : '';
@@ -2317,7 +2327,6 @@
                 video.preload = 'auto';
                 video.src = video.dataset.src;
                 video.load();
-                console.log('[Video] 🔄 Cargando src:', video.dataset.src);
             }
         }
 
@@ -2424,7 +2433,7 @@
     }
 
     // ================================================================
-    // SUBIR VIDEO
+    // SUBIR VIDEO — ✅ FASE 3C integrada
     // ================================================================
     var subiendoVideo = false;
 
@@ -2492,10 +2501,68 @@
             if (progressFill) progressFill.style.width = '60%';
             if (progressText) progressText.textContent = 'Creando registro...';
 
+            // ==============================================================
+            // 🎵📍 FASE 3C — Leer metadatos seleccionados del módulo Publicar
+            // ==============================================================
+            var sonidoId = null;
+            var sonidoUrl = null;
+            var sonidoNombre = null;
+            var ubicacionId = null;
+            var ubicacionNombre = null;
+            var ubicacionLat = null;
+            var ubicacionLng = null;
+
+            try {
+                if (window.VideosPublicar && typeof window.VideosPublicar.getState === 'function') {
+                    var _state = window.VideosPublicar.getState() || {};
+
+                    if (_state.sonido && typeof _state.sonido === 'object') {
+                        sonidoId     = _state.sonido.id      || null;
+                        sonidoUrl    = _state.sonido.url     || null;
+                        sonidoNombre = _state.sonido.nombre  || null;
+                    }
+
+                    if (_state.ubicacion && typeof _state.ubicacion === 'object') {
+                        ubicacionId     = _state.ubicacion.id     || null;
+                        ubicacionNombre = _state.ubicacion.nombre || null;
+                        ubicacionLat    = (typeof _state.ubicacion.lat === 'number') ? _state.ubicacion.lat : null;
+                        ubicacionLng    = (typeof _state.ubicacion.lng === 'number') ? _state.ubicacion.lng : null;
+                    }
+
+                    console.log('[Videos] 📦 Metadata a guardar:', {
+                        sonido_id: sonidoId,
+                        sonido_nombre: sonidoNombre,
+                        ubicacion_id: ubicacionId,
+                        ubicacion_nombre: ubicacionNombre
+                    });
+                } else {
+                    console.warn('[Videos] VideosPublicar.getState() no disponible — guardando sin metadata extra');
+                }
+            } catch (e) {
+                console.warn('[Videos] Error leyendo metadata del módulo Publicar:', e);
+            }
+
+            // ==============================================================
+            // INSERT con los 7 metadatos nuevos
+            // ==============================================================
             var ins = await sbVideos.from('videos').insert({
-                usuario_id: session.user.id, titulo: titulo, descripcion: descripcion || null,
-                url_video: videoUrl, url_miniatura: null, estado: 'procesando', duracion: 0
+                usuario_id: session.user.id,
+                titulo: titulo,
+                descripcion: descripcion || null,
+                url_video: videoUrl,
+                url_miniatura: null,
+                estado: 'procesando',
+                duracion: 0,
+                sonido_id:     sonidoId,
+                sonido_url:    sonidoUrl,
+                sonido_nombre: sonidoNombre,
+                ubicacion_id:     ubicacionId,
+                ubicacion_nombre: ubicacionNombre,
+                ubicacion_lat:    ubicacionLat,
+                ubicacion_lng:    ubicacionLng,
+                es_borrador: false
             }).select().single();
+
             if (ins.error) throw ins.error;
             videoId = ins.data.id;
             videoEnProcesamiento = videoId;
@@ -2537,7 +2604,7 @@
     }
 
     // ================================================================
-    // POLLING PROCESAMIENTO — ✅ v15.5 con reset + refresh automático
+    // POLLING PROCESAMIENTO
     // ================================================================
     function iniciarPollingProcesamiento(jobId, videoId) {
         if (pollingVideoInterval) clearInterval(pollingVideoInterval);
@@ -2575,31 +2642,26 @@
                     if (progressText) progressText.textContent = '100%';
                     showToast('◈ ¡Video publicado con éxito!', 'success', 4000);
                     setTimeout(function() {
-                        // Ocultar estado de procesamiento
                         document.getElementById('processingState').classList.remove('visible');
                         document.getElementById('uploadSection').style.display = 'block';
                         document.getElementById('btnSubirVideo').disabled = false;
                         document.getElementById('btnSubirVideo').textContent = '◈ Subir video';
                         videoEnProcesamiento = null;
 
-                        // 🔥 RESET COMPLETO del formulario y previews
                         if (window.csResetFormularioPublicacion) {
                             window.csResetFormularioPublicacion();
                         }
 
-                        // 🔥 Notificar al módulo para que haga su propio reset + refresh
                         try {
                             window.dispatchEvent(new CustomEvent('csariels:videos:publicado'));
                         } catch (e) {}
 
-                        // 🔥 Refrescar el feed SIN recargar la URL
                         if (window.csRefrescarFeedVideos) {
                             window.csRefrescarFeedVideos();
                         } else {
                             cargarVideos();
                         }
 
-                        // 🔥 Scroll suave al inicio del feed para ver el nuevo video
                         setTimeout(function() {
                             var feed = document.getElementById('videosContainer');
                             if (feed) feed.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2712,7 +2774,7 @@
     // INIT
     // ================================================================
     document.addEventListener('DOMContentLoaded', function() {
-        console.log("◈ Csariel's - Videos v15.5 (Reset + Refresh automático)");
+        console.log("◈ Csariel's - Videos v15.6 (Fase 3C: sonido + ubicación)");
         aplicarI18N();
         configurarTecladoMovil();
         cargarUsuarioActual().then(async function() {
