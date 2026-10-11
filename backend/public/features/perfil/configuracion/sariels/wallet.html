@@ -564,6 +564,89 @@
             transform: translateY(-1px);
         }
 
+        /* ── Privacidad: visibilidad pública de la wallet ── */
+        .privacidad-card {
+            margin: 16px;
+            padding: 16px 18px;
+            border-radius: 18px;
+            border: 1px solid var(--cfg-border);
+            background: rgba(255,255,255,.035);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+        }
+
+        .privacidad-texto {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .privacidad-texto strong {
+            display: block;
+            color: var(--cfg-text);
+            font-size: .8rem;
+            margin-bottom: 4px;
+        }
+
+        .privacidad-texto small {
+            display: block;
+            color: var(--cfg-text-muted);
+            font-size: .68rem;
+            line-height: 1.45;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 52px;
+            height: 30px;
+            flex: 0 0 52px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+            position: absolute;
+        }
+
+        .switch-slider {
+            position: absolute;
+            inset: 0;
+            cursor: pointer;
+            background: rgba(255,255,255,.12);
+            border: 1px solid var(--cfg-border);
+            border-radius: 30px;
+            transition: .25s;
+        }
+
+        .switch-slider::before {
+            content: '';
+            position: absolute;
+            height: 22px;
+            width: 22px;
+            left: 3px;
+            top: 3px;
+            background: #fff;
+            border-radius: 50%;
+            transition: .25s;
+        }
+
+        .switch input:checked + .switch-slider {
+            background: linear-gradient(135deg, #00e5ff, #8b5cf6);
+            border-color: transparent;
+        }
+
+        .switch input:checked + .switch-slider::before {
+            transform: translateX(22px);
+        }
+
+        .switch input:disabled + .switch-slider {
+            opacity: .5;
+            cursor: wait;
+        }
+
         .wallet-error {
             margin: 16px;
             padding: 20px;
@@ -863,6 +946,19 @@
 
             </div>
 
+            <div class="privacidad-card">
+                <div class="privacidad-texto">
+                    <strong>Mostrar dirección en mi perfil</strong>
+                    <small id="visibleDescripcion">
+                        Oculta: solo tú puedes ver tu dirección en tu perfil.
+                    </small>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="toggleWalletVisible" />
+                    <span class="switch-slider"></span>
+                </label>
+            </div>
+
             <div class="explorer-card">
 
                 <div class="explorer-title">
@@ -1101,7 +1197,23 @@
             return false;
         }
 
-        function mostrarWalletConectada(address) {
+        function pintarVisibilidad(visible) {
+            const toggle = $('#toggleWalletVisible');
+            const descripcion = $('#visibleDescripcion');
+            const activo = Boolean(visible);
+
+            if (toggle) {
+                toggle.checked = activo;
+            }
+
+            if (descripcion) {
+                descripcion.textContent = activo
+                    ? 'Visible: otros usuarios pueden ver tu dirección en tu perfil.'
+                    : 'Oculta: solo tú puedes ver tu dirección en tu perfil.';
+            }
+        }
+
+        function mostrarWalletConectada(address, visible) {
             mostrarEstado('#estadoWalletConectada');
 
             const direccion = String(address || '').trim();
@@ -1115,6 +1227,7 @@
                 elemento.setAttribute('data-full', direccion);
             }
 
+            pintarVisibilidad(visible);
             actualizarLinksPolygonScan(direccion);
             actualizarDatosRed();
         }
@@ -1180,7 +1293,7 @@
                 const resultado = await conTimeout(
                     client
                         .from('usuarios')
-                        .select('wallet_address')
+                        .select('wallet_address, wallet_visible')
                         .eq('id', session.user.id)
                         .maybeSingle(),
                     SUPABASE_TIMEOUT_MS,
@@ -1194,7 +1307,7 @@
                 const usuario = resultado && resultado.data;
 
                 if (usuario && usuario.wallet_address) {
-                    mostrarWalletConectada(usuario.wallet_address);
+                    mostrarWalletConectada(usuario.wallet_address, usuario.wallet_visible);
                     estadoCargado = true;
                     return;
                 }
@@ -1213,6 +1326,60 @@
                 mostrarError('No fue posible cargar el estado de tu wallet.', error);
             } finally {
                 cargandoWallet = false;
+            }
+        }
+
+        async function cambiarVisibilidadWallet() {
+            const toggle = $('#toggleWalletVisible');
+            if (!toggle) return;
+
+            const nuevoValor = toggle.checked;
+            toggle.disabled = true;
+
+            try {
+                const client = await esperarSupabase();
+                const session = await obtenerSesionSegura(client);
+
+                if (!session) {
+                    window.location.replace('/');
+                    return;
+                }
+
+                const resultado = await conTimeout(
+                    client
+                        .from('usuarios')
+                        .update({ wallet_visible: nuevoValor })
+                        .eq('id', session.user.id),
+                    SUPABASE_TIMEOUT_MS,
+                    'SUPABASE_VISIBILITY_TIMEOUT'
+                );
+
+                if (resultado && resultado.error) {
+                    throw resultado.error;
+                }
+
+                pintarVisibilidad(nuevoValor);
+
+                if (typeof window.cfgToast === 'function') {
+                    window.cfgToast(
+                        nuevoValor
+                            ? '👁️ Tu dirección ahora es visible en tu perfil'
+                            : '🔒 Tu dirección ahora está oculta',
+                        'success',
+                        3500
+                    );
+                }
+
+            } catch (error) {
+                console.error('[wallet] Error cambiando visibilidad:', error);
+
+                pintarVisibilidad(!nuevoValor);
+
+                if (typeof window.cfgToast === 'function') {
+                    window.cfgToast('❌ No se pudo cambiar la visibilidad', 'error', 4000);
+                }
+            } finally {
+                toggle.disabled = false;
             }
         }
 
@@ -1481,6 +1648,11 @@
             const reintentar = $('#btnReintentar');
             if (reintentar) {
                 reintentar.addEventListener('click', reintentarWallet);
+            }
+
+            const toggleVisible = $('#toggleWalletVisible');
+            if (toggleVisible) {
+                toggleVisible.addEventListener('change', cambiarVisibilidadWallet);
             }
         }
 
