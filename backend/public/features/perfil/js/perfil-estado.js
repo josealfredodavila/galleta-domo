@@ -1,304 +1,563 @@
 // ================================================================
-// PERFIL · ESTADO (botones Activo/Inactivo + presencia opcional)
+// PERFIL · DATOS DEL USUARIO
 // ================================================================
-// Depende de: perfil-config.js (getSession, cli, canalNotificaciones),
-//             perfil-utils.js (perfilT, showToast)
-// Opcional:   presencia-global.js (window.Presencia)
+// Cargar/actualizar perfil, contadores sociales, avatar, guardar.
+// Depende de: perfil-config.js, perfil-utils.js
 //
-// CAMBIO v7:
-//   - Los botones escriben en la base directamente (no dependen de presencia).
-//   - Si el error ocurre, se registra en la consola con el motivo real.
-//   - Si presencia-global.js está cargado, se sincroniza en vivo.
+// CAMBIO v5 (fix toast rojo):
+// - actualizarUI() se envuelve en try/catch en sus dos puntos de
+//   llamada. Si algo menor falla al pintar, no tumba todo el perfil.
+// - El toast "❌ Error al cargar perfil" solo aparece si el perfil
+//   NO se pudo pintar en absoluto (perfilCache sigue null).
+// - Los 5 auxiliares se llaman por separado, sin Promise.all.
+//
+// CAMBIO v3 (corrección de carga):
+// - El perfil se lee directamente de la tabla usuarios.
+// - Ya no se fuerza online=true al cargar.
 // ================================================================
 
-var estadoOcultoRemoto = false;   // usuarios.ocultar_estado
-var estadoEscritoOnline = null;   // último valor de online guardado en BD
-var lastOfflineIso = null;
-var estadoIniciado = false;
-var relativoTimer = null;
-
-function presenciaDisponible() {
-    return !!(window.Presencia && typeof window.Presencia.iniciar === 'function');
+function perfilDesdeSesion(session) {
+    var u = (session && session.user) || {};
+    var meta = u.user_metadata || {};
+    return {
+        id: u.id,
+        nombre: meta.nombre || meta.full_name || 'Explorador',
+        handle: (u.email || 'explorador').split('@')[0],
+        bio: null,
+        avatar_url: null,
+        tokens: 0,
+        tokens_acumulados: 0,
+        nft_canjeado: false,
+        domos: 0,
+        puede_canjear: false,
+        verificado: false,
+        online: true
+    };
 }
 
 // ================================================================
-// ESCRITURA EN BD
+// CARGAR PERFIL
 // ================================================================
-async function escribirEstadoDB(campos) {
-    var session = await getSession();
-    if (!session) throw new Error('No hay sesión activa');
-
-    var res = await window.supabaseClient
-        .from('usuarios')
-        .update(campos)
-        .eq('id', session.user.id);
-
-    if (res.error) throw res.error;
-    return session;
-}
-
-// ================================================================
-// UI DEL ESTADO
-// ================================================================
-function actualizarUIEstado(visible) {
-    var estadoBadge = document.getElementById('estadoBadge');
-    var estadoTexto = document.getElementById('estadoTexto');
-
-    var conectado = presenciaDisponible() && window.Presencia.estaConectado();
-    var ocultoConectado = estadoOcultoRemoto && conectado;
-
-    if (estadoBadge) {
-        if (visible) {
-            estadoBadge.innerHTML = '🟢';
-            estadoBadge.style.color = 'var(--success)';
-        } else if (ocultoConectado) {
-            estadoBadge.innerHTML = '🔒';
-            estadoBadge.style.color = 'var(--text-muted)';
-        } else {
-            estadoBadge.innerHTML = '⭕';
-            estadoBadge.style.color = 'var(--text-muted)';
-        }
-    }
-
-    if (estadoTexto) {
-        estadoTexto.removeAttribute('data-clave');
-        estadoTexto.setAttribute('data-no-traducir', '1');
-
-        if (visible) {
-            estadoTexto.textContent = perfilT('perfil_activo_ahora', 'Activo ahora');
-            estadoTexto.style.color = 'var(--success)';
-        } else if (ocultoConectado) {
-            estadoTexto.textContent = perfilT('perfil_estado_oculto', 'Estado oculto');
-            estadoTexto.style.color = 'var(--text-muted)';
-        } else {
-            var relativo = window.formatearTiempoRelativo
-                ? window.formatearTiempoRelativo(lastOfflineIso)
-                : '';
-            estadoTexto.textContent = perfilT('perfil_inactivo', 'Inactivo') +
-                (relativo ? ' · ' + relativo : '');
-            estadoTexto.style.color = 'var(--text-muted)';
-        }
-    }
-}
-
-function iniciarRefrescoRelativo() {
-    if (relativoTimer) return;
-    // Solo repinta el texto "hace X min". No consulta la base.
-    relativoTimer = setInterval(function () {
-        if (!estadoEscritoOnline) actualizarUIEstado(false);
-    }, 60000);
-}
-
-// ================================================================
-// CAMBIAR ESTADO (botones Activo / Inactivo)
-// ================================================================
-// mostrar = true  -> Activo (visible para los demás)
-// mostrar = false -> Inactivo / oculto
-// ================================================================
-async function cambiarEstado(mostrar) {
+async function cargarPerfil(forzarActualizacion = false) {
     try {
-        var ahora = new Date().toISOString();
+        if (!cli()) return;
+        const session = await getSession();
+        if (!session) { window.location.replace('/'); return; }
 
-        await escribirEstadoDB({
-            ocultar_estado: !mostrar,
-            online: mostrar === true,
-            ultima_conexion: ahora,
-            offline_desde: mostrar ? null : ahora
-        });
-
-        estadoOcultoRemoto = !mostrar;
-        estadoEscritoOnline = mostrar === true;
-        if (!mostrar) lastOfflineIso = ahora;
-
-        if (presenciaDisponible()) {
-            await window.Presencia.setVisible(mostrar === true);
-        }
-
-        actualizarUIEstado(mostrar === true);
-
-        showToast(
-            mostrar
-                ? '🟢 ' + perfilT('perfil_estado_mostrado', 'Tu estado es visible')
-                : '🔒 ' + perfilT('perfil_estado_oculto', 'Tu estado está oculto'),
-            mostrar ? 'success' : 'warning'
-        );
-
-        await notificarCambioEstado(mostrar === true);
-    } catch (error) {
-        console.error('[Estado] No se pudo cambiar el estado:', error && (error.message || error));
-        showToast(perfilT('perfil_error_cambiar_estado', '❌ No se pudo cambiar el estado'), 'error');
-    }
-}
-
-// Compatibilidad con el API anterior
-async function actualizarEstadoEnLinea(online) {
-    try {
-        await cambiarEstadoSinAviso(online === true);
-        return true;
-    } catch (error) {
-        console.error('[Estado] actualizarEstadoEnLinea:', error && (error.message || error));
-        return false;
-    }
-}
-
-async function cambiarEstadoSinAviso(mostrar) {
-    var ahora = new Date().toISOString();
-    await escribirEstadoDB({
-        ocultar_estado: !mostrar,
-        online: mostrar,
-        ultima_conexion: ahora,
-        offline_desde: mostrar ? null : ahora
-    });
-    estadoOcultoRemoto = !mostrar;
-    estadoEscritoOnline = mostrar;
-    if (!mostrar) lastOfflineIso = ahora;
-    actualizarUIEstado(mostrar);
-}
-
-// ================================================================
-// SINCRONIZACIÓN CON PRESENCIA (solo si presencia-global.js está cargado)
-// ================================================================
-async function sincronizarVisibilidadDB() {
-    if (!presenciaDisponible()) return;
-
-    var visible = window.Presencia.estaConectado() && !estadoOcultoRemoto;
-    if (visible === estadoEscritoOnline) {
-        actualizarUIEstado(visible);
-        return;
-    }
-
-    try {
-        var ahora = new Date().toISOString();
-        await escribirEstadoDB({
-            online: visible,
-            ultima_conexion: ahora,
-            offline_desde: visible ? null : ahora
-        });
-        estadoEscritoOnline = visible;
-        if (!visible) lastOfflineIso = ahora;
-        actualizarUIEstado(visible);
-    } catch (error) {
-        console.error('[Estado] Sincronización con presencia falló:', error && (error.message || error));
-    }
-}
-
-// ================================================================
-// NOTIFICAR A CONTACTOS
-// ================================================================
-async function notificarCambioEstado(visible) {
-    try {
-        var session = await getSession();
-        if (!session) return;
-
-        var res = await window.supabaseClient
-            .from('contactos')
-            .select('contacto_id')
-            .eq('usuario_id', session.user.id);
-        if (res.error || !res.data || res.data.length === 0) return;
-
-        var nombre = (typeof perfilCache !== 'undefined' && perfilCache && perfilCache.nombre)
-            ? perfilCache.nombre
-            : perfilT('perfil_usuario_generico', 'Un usuario');
-
-        var estado = visible
-            ? '🟢 ' + perfilT('perfil_notif_activo', 'activo')
-            : '🔒 ' + perfilT('perfil_notif_oculto', 'ocultó su estado');
-
-        var notifs = res.data.map(function (c) {
-            return {
-                user_id: c.contacto_id,
-                tipo: 'estado',
-                mensaje: nombre + ' ' + estado,
-                emisor_id: session.user.id,
-                leida: false,
-                fecha: new Date().toISOString()
-            };
-        });
-
-        for (var i = 0; i < notifs.length; i += 50) {
-            await window.supabaseClient
-                .from('notificaciones')
-                .insert(notifs.slice(i, i + 50));
-        }
-    } catch (e) {
-        console.warn('[Estado] No se pudieron notificar los contactos:', e);
-    }
-}
-
-// ================================================================
-// INICIO
-// ================================================================
-async function iniciarPresenciaEstado() {
-    if (estadoIniciado) return;
-    estadoIniciado = true;
-
-    try {
-        var session = await getSession();
-        if (!session) return;
-
-        var res = await window.supabaseClient
-            .from('usuarios')
-            .select('ocultar_estado, online, offline_desde, ultima_conexion')
-            .eq('id', session.user.id)
-            .maybeSingle();
-        if (res.error || !res.data) {
-            console.error('[Estado] No se pudo leer el estado inicial:', res.error && res.error.message);
+        const ahora = Date.now();
+        if (!forzarActualizacion && perfilCache && (ahora - ultimaActualizacion) < CACHE_DURATION) {
+            try { actualizarUI(perfilCache); }
+            catch (e) { console.warn('[Perfil] UI desde cache falló:', e); }
             return;
         }
 
-        estadoOcultoRemoto = res.data.ocultar_estado === true;
-        estadoEscritoOnline = res.data.online === true;
-        lastOfflineIso = res.data.offline_desde || res.data.ultima_conexion || null;
-
-        actualizarUIEstado(estadoEscritoOnline && !estadoOcultoRemoto);
-        iniciarRefrescoRelativo();
-
-        if (!presenciaDisponible()) return;
-
-        await window.Presencia.setVisible(!estadoOcultoRemoto);
-        await window.Presencia.iniciar(session.user.id, {
-            track: true,
-            onConexionCambia: sincronizarVisibilidadDB
-        });
-
-        window.addEventListener('sar:presence:sync', function () {
-            actualizarUIEstado(window.Presencia.esVisible() && !estadoOcultoRemoto);
-        });
-    } catch (e) {
-        console.error('[Estado] Error al iniciar:', e && (e.message || e));
-    }
-}
-
-// Compatibilidad con perfil-init.js
-function iniciarDetectorInactividad() {
-    iniciarPresenciaEstado();
-}
-
-// ================================================================
-// NOTIFICACIONES REALTIME (sin cambios)
-// ================================================================
-function iniciarNotificacionesRealtime() {
-    if (!cli() || !perfilCache || !perfilCache.id) return;
-    if (canalNotificaciones) {
-        try { window.supabaseClient.removeChannel(canalNotificaciones); } catch (e) {}
-    }
-    canalNotificaciones = window.supabaseClient
-        .channel('notificaciones_' + perfilCache.id)
-        .on('postgres_changes', {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'notificaciones',
-            filter: 'user_id=eq.' + perfilCache.id
-        }, function (payload) {
-            var notificacion = payload.new;
-            if (notificacion && notificacion.user_id === perfilCache.id) {
-                showToast('🔔 ' + notificacion.mensaje, 'warning', 4000);
-                try {
-                    var audio = new Audio('/sound/notification.mp3');
-                    audio.play().catch(function () {});
-                } catch (e) {}
+        // Fila propia de usuarios
+        let perfil = null;
+        try {
+            const { data, error } = await window.supabaseClient
+                .from('usuarios')
+                .select('*')
+                .eq('id', session.user.id)
+                .maybeSingle();
+            if (error) {
+                console.warn('[Perfil] No se pudo leer usuarios:', error.message);
+            } else {
+                perfil = data || null;
             }
-        })
-        .subscribe();
-    return canalNotificaciones;
+        } catch (e) {
+            console.warn('[Perfil] Error leyendo usuarios:', e);
+        }
+
+        if (!perfil) perfil = perfilDesdeSesion(session);
+
+        perfilCache = perfil;
+        window.perfilCache = perfil;
+        ultimaActualizacion = ahora;
+
+        // 1) Pintar el perfil principal SIEMPRE, antes de los auxiliares.
+        try { actualizarUI(perfil); }
+        catch (e) { console.warn('[Perfil] UI principal falló:', e); }
+
+        // 2) Auxiliares: cada uno con su propio try/catch.
+        try { cargarEstadoConexion(); }
+        catch (e) { console.warn('[Perfil] conexión:', e); }
+
+        try { cargarAmigosEnLinea(); }
+        catch (e) { console.warn('[Perfil] amigos:', e); }
+
+        try { cargarHistorialQR(); }
+        catch (e) { console.warn('[Perfil] historialQR:', e); }
+
+        try { cargarEstadoPro(); }
+        catch (e) { console.warn('[Perfil] pro:', e); }
+
+        try { cargarContadoresSociales(session.user.id); }
+        catch (e) { console.warn('[Perfil] contadores:', e); }
+
+        // 3) Aplicar traducciones
+        try { await aplicarI18NPerfil(); }
+        catch (e) { console.warn('[Perfil] Traducciones no aplicadas:', e); }
+    } catch (error) {
+        console.error('[Perfil] cargarPerfil:', error && (error.message || error));
+        // Solo mostramos el toast si el perfil NO se pintó.
+        if (!perfilCache) {
+            showToast(perfilT('perfil_toast_error_cargar', '❌ Error al cargar perfil'), 'error');
+        }
+    }
+}
+
+// ================================================================
+// ACTUALIZAR UI
+// ================================================================
+function actualizarUI(data) {
+    if (!data) return;
+    const nombreEl = document.getElementById('perfilNombre');
+    const handleEl = document.getElementById('perfilHandle');
+    const bioEl = document.getElementById('perfilBio');
+    const avatarEl = document.getElementById('perfilAvatar');
+
+    if (nombreEl) {
+        const verificado = data.verificado
+            ? '<span class="verified">' + escaparHTML(perfilT('perfil_verificado', '✦ VERIFICADO')) + '</span>'
+            : '';
+        const nombreSafe = escaparHTML(data.nombre || perfilT('perfil_nombre_usuario', 'Explorador'));
+        nombreEl.innerHTML = '<span data-no-traducir="1">' + nombreSafe + '</span> ' + verificado;
+        nombreEl.setAttribute('data-no-traducir', '1');
+    }
+    if (handleEl) handleEl.textContent = '@' + (data.handle || 'explorador');
+
+    if (bioEl) {
+        const bioDefault = "Explorando el ecosistema Sariel's · WEB3 · Comunidad";
+        const bioT = perfilT('perfil_biografia_default', bioDefault);
+        if (!data.bio || data.bio === bioDefault) {
+            bioEl.setAttribute('data-clave', 'perfil_biografia_default');
+            bioEl.removeAttribute('data-no-traducir');
+            bioEl.textContent = bioT;
+        } else {
+            bioEl.removeAttribute('data-clave');
+            bioEl.setAttribute('data-no-traducir', '1');
+            bioEl.innerHTML = formatearTexto(data.bio);
+        }
+    }
+
+    if (avatarEl) {
+        const toggle =
+            '<span class="avatar-menu-toggle" onclick="event.stopPropagation(); window.toggleAvatarMenu(event)" title="' +
+            escaparHTML(perfilT('perfil_opciones', 'Opciones')) + '">✎</span>';
+        if (data.avatar_url) {
+            const urlSafe = escaparHTML(data.avatar_url);
+            avatarEl.innerHTML = '<img src="' + urlSafe + '" alt="Avatar">' + toggle;
+            const img = avatarEl.querySelector('img');
+            if (img) img.addEventListener('error', function () { avatarEl.innerHTML = '◈' + toggle; });
+        } else {
+            avatarEl.innerHTML = '◈' + toggle;
+        }
+    }
+
+    const tokens = Number(data.tokens) || 0;
+    const stats = [
+        { id: 'statTokens', value: tokens },
+        { id: 'statNFTS', value: data.nft_canjeado ? 1 : (Number(data.domos) || 0) }
+    ];
+    stats.forEach(stat => {
+        const el = document.getElementById(stat.id);
+        if (el && el.textContent !== String(stat.value)) {
+            animarContador(el, parseInt(el.textContent) || 0, stat.value);
+        }
+    });
+
+    const progreso = Math.min(tokens, 12);
+    const puedeCanjear = data.puede_canjear || false;
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
+    if (progressFill) {
+        progressFill.style.width = ((progreso / 12) * 100) + '%';
+        progressFill.style.transition = 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+    }
+    if (progressText) {
+        progressText.textContent = progreso + ' / 12' + (progreso >= 12 ? ' 🎯' : '');
+        progressText.style.color = progreso >= 12 ? 'var(--gold)' : '';
+    }
+
+    const tokenTotal = document.getElementById('tokenTotal');
+    const tokenDisponibles = document.getElementById('tokenDisponibles');
+    const tokenNFTs = document.getElementById('tokenNFTs');
+    const tokenVendidos = document.getElementById('tokenVendidos');
+    if (tokenTotal) tokenTotal.textContent = tokens;
+    if (tokenDisponibles) tokenDisponibles.textContent = tokens;
+    if (tokenNFTs) tokenNFTs.textContent = data.nft_canjeado ? 1 : 0;
+    if (tokenVendidos) {
+        const acumulados = Number(data.tokens_acumulados) || 0;
+        tokenVendidos.textContent = Math.max(0, acumulados - tokens);
+    }
+
+    const btnCanjear = document.getElementById('canjearNft');
+    if (btnCanjear) {
+        btnCanjear.removeAttribute('data-clave');
+        btnCanjear.disabled = !puedeCanjear;
+        if (puedeCanjear) {
+            btnCanjear.style.background = 'linear-gradient(135deg, var(--gold), #f7971e)';
+            btnCanjear.style.border = 'none';
+            btnCanjear.style.color = '#fff';
+            btnCanjear.textContent = '🎁 ' + perfilT('perfil_canjear_nft', 'CANJEAR NFT');
+        } else {
+            btnCanjear.style.background = 'var(--bg-card)';
+            btnCanjear.style.border = '1px solid var(--text-muted)';
+            btnCanjear.style.color = 'var(--text-muted)';
+            btnCanjear.textContent = '🔒 ' + perfilT('perfil_necesitas_tokens', 'NECESITAS 12 TOKENS');
+        }
+    }
+
+    if (typeof actualizarUIConexion === 'function') {
+        actualizarUIConexion(typeof estadoConexion !== 'undefined' ? estadoConexion : null);
+    }
+    if (typeof actualizarUIEstado === 'function') {
+        actualizarUIEstado(data.online !== false);
+    }
+}
+
+// ================================================================
+// CONTADORES SOCIALES
+// ================================================================
+async function cargarContadoresSociales(usuarioId) {
+    try {
+        if (!usuarioId) return;
+        if (!cli()) return;
+        const ahora = Date.now();
+        if (contadoresSocialesCache && (ahora - ultimaActualizacionContadores) < CONTADORES_CACHE_DURATION) {
+            aplicarContadoresSociales(contadoresSocialesCache);
+            return;
+        }
+
+        try {
+            const { data: usuario, error } = await window.supabaseClient
+                .from('perfiles_publicos')
+                .select('seguidores_count, siguiendo_count')
+                .eq('id', usuarioId)
+                .maybeSingle();
+            if (!error && usuario && (typeof usuario.seguidores_count === 'number' || typeof usuario.siguiendo_count === 'number')) {
+                contadoresSocialesCache = {
+                    seguidores: usuario.seguidores_count || 0,
+                    siguiendo: usuario.siguiendo_count || 0
+                };
+                ultimaActualizacionContadores = ahora;
+                aplicarContadoresSociales(contadoresSocialesCache);
+                return;
+            }
+        } catch (e) {
+            console.warn('[Perfil] Error leyendo contadores desde perfiles_publicos:', e);
+        }
+
+        const [seguidoresRes, siguiendoRes] = await Promise.all([
+            window.supabaseClient.from('contactos').select('*', { count: 'exact', head: true }).eq('contacto_id', usuarioId),
+            window.supabaseClient.from('contactos').select('*', { count: 'exact', head: true }).eq('usuario_id', usuarioId)
+        ]);
+        contadoresSocialesCache = {
+            seguidores: seguidoresRes.count || 0,
+            siguiendo: siguiendoRes.count || 0
+        };
+        ultimaActualizacionContadores = ahora;
+        aplicarContadoresSociales(contadoresSocialesCache);
+    } catch (error) {
+        console.warn('[Perfil] Contadores sociales:', error);
+    }
+}
+
+function aplicarContadoresSociales(c) {
+    const segEl = document.getElementById('statSeguidores');
+    const sigEl = document.getElementById('statSiguiendo');
+    if (segEl) segEl.textContent = String(c?.seguidores ?? 0);
+    if (sigEl) sigEl.textContent = String(c?.siguiendo ?? 0);
+}
+
+// ================================================================
+// GUARDAR PERFIL
+// ================================================================
+async function guardarPerfil() {
+    const session = await getSession();
+    if (!session) {
+        showToast('⚠️ ' + perfilT('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+        return;
+    }
+    const perfil = {
+        nombre: (document.getElementById('editNombre')?.value || '').trim() || perfilT('perfil_nombre_usuario', 'Explorador'),
+        handle: (document.getElementById('editHandle')?.value || '').trim().replace('@', '') || 'explorador',
+        bio: (document.getElementById('editBio')?.value || '').trim() || perfilT('perfil_biografia_default', "Explorando el ecosistema Sariel's · WEB3 · Comunidad")
+    };
+    if (!/^[a-zA-Z0-9_]+$/.test(perfil.handle)) {
+        showToast(perfilT('perfil_handle_invalido', '❌ Handle inválido'), 'error');
+        return;
+    }
+    try {
+        const { error } = await window.supabaseClient
+            .from('usuarios')
+            .update({
+                nombre: perfil.nombre,
+                handle: perfil.handle,
+                bio: perfil.bio,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', session.user.id);
+        if (error) throw error;
+        showToast(perfilT('perfil_guardado', '✅ Perfil guardado'), 'success');
+        await cargarPerfil(true);
+    } catch (error) {
+        showToast(perfilT('perfil_error_guardar', '❌ Error al guardar: ') + msgError(error), 'error');
+    }
+}
+
+// ================================================================
+// EDITAR PERFIL
+// ================================================================
+function editarPerfil() {
+    cambiarTab('config');
+    setTimeout(() => {
+        const input = document.getElementById('editNombre');
+        if (input) {
+            input.focus();
+            input.select();
+        }
+    }, 300);
+}
+
+// ================================================================
+// COMPARTIR PERFIL
+// ================================================================
+function compartirPerfil() {
+    const nombreCompleto = document.getElementById('perfilNombre')?.textContent || '';
+    const nombre = nombreCompleto
+        .replace(perfilT('perfil_verificado', '✦ VERIFICADO'), '')
+        .replace('✦ VERIFICADO', '')
+        .trim()
+        .split(' ')[0] || perfilT('perfil_nombre_usuario', 'Explorador');
+    const handle = document.getElementById('perfilHandle')?.textContent.replace('@', '') || 'explorador';
+    const url = window.location.origin + '/features/perfil/perfil-publico.html?u=' + encodeURIComponent(handle);
+    const textoBase = perfilT('perfil_compartir_texto', "◈ Perfil de {nombre} en Sariel's")
+        .split('{nombre}').join(nombre);
+    const texto = textoBase + "\n◈ " + url + "\n\n#Sariels #WEB3";
+    if (navigator.share) {
+        navigator.share({ title: textoBase, text: texto, url: url }).catch(() => {});
+    } else {
+        navigator.clipboard.writeText(texto)
+            .then(() => { showToast(perfilT('perfil_copiado', '◈ Copiado'), 'success'); })
+            .catch(() => { prompt(perfilT('perfil_copiar_prompt', 'Copia:'), url); });
+    }
+}
+
+// ================================================================
+// GENERAR QR DEL PERFIL
+// ================================================================
+async function generarQRPerfil() {
+    try {
+        const session = await getSession();
+        if (!session) return;
+        const handle = document.getElementById('perfilHandle')?.textContent.replace('@', '') || 'explorador';
+        const url = window.location.origin + '/features/perfil/perfil-publico.html?u=' + encodeURIComponent(handle);
+        const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(url);
+        const modal = document.createElement('div');
+        modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; z-index: 9999;';
+        modal.innerHTML = '<div style="background: var(--bg-card); border-radius: 20px; padding: 30px; text-align: center; max-width: 90vw;">'
+            + '<h3 style="color: var(--gold); margin-bottom: 20px;">' + escaparHTML(perfilT('perfil_share_qr_titulo', '📱 Compartir QR')) + '</h3>'
+            + '<img src="' + escaparHTML(qrUrl) + '" alt="QR" style="border-radius: 10px; max-width: 200px;">'
+            + '<p style="color: var(--text-muted); margin-top: 15px; font-size: 12px; word-break: break-all;">' + escaparHTML(url) + '</p>'
+            + '<button onclick="this.parentElement.parentElement.remove()" style="margin-top: 20px; background: var(--gold); border: none; color: #fff; padding: 10px 30px; border-radius: 10px; cursor: pointer;" data-clave="perfil_cerrar">'
+            + escaparHTML(perfilT('perfil_cerrar', 'Cerrar')) + '</button></div>';
+        document.body.appendChild(modal);
+        aplicarI18NPerfil(modal);
+    } catch (error) {
+        showToast(perfilT('perfil_error_generar_qr', '❌ Error al generar QR'), 'error');
+    }
+}
+
+// ================================================================
+// ABRIR SELECTOR DE ARCHIVO
+// ================================================================
+function abrirSelectorArchivo() {
+    const input = document.getElementById('fileInput');
+    if (input) input.click();
+}
+
+// ================================================================
+// AVATAR MENU
+// ================================================================
+function toggleAvatarMenu(event) {
+    if (event) event.stopPropagation();
+    var menu = document.getElementById('avatarMenu');
+    if (!menu) return;
+    menu.classList.toggle('show');
+}
+
+function cerrarAvatarMenu() {
+    var menu = document.getElementById('avatarMenu');
+    if (menu) menu.classList.remove('show');
+}
+
+// ================================================================
+// EXPANDIR AVATAR
+// ================================================================
+function expandirAvatar() {
+    const avatarEl = document.getElementById('perfilAvatar');
+    if (!avatarEl) return;
+    const img = avatarEl.querySelector('img');
+    if (!img || !img.src) return;
+    abrirVisorImagen(img.src, 'Avatar', 'perfilAvatarModal');
+}
+
+function expandirFotoPublicacion(src) {
+    abrirVisorImagen(src, 'Imagen', 'fotoPublicacionModal');
+}
+
+// ================================================================
+// SUBIR FOTO DE PERFIL
+// ================================================================
+async function subirFoto(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const session = await getSession();
+    if (!session) {
+        showToast('⚠️ ' + perfilT('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+        return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+        showToast(perfilT('perfil_foto_max', '❌ Máximo 5 MB'), 'error');
+        event.target.value = '';
+        return;
+    }
+    if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) {
+        showToast(perfilT('perfil_foto_tipo', '❌ Solo JPG/PNG/WEBP/GIF'), 'error');
+        event.target.value = '';
+        return;
+    }
+    const fileExt = file.name.split('.').pop().toLowerCase();
+    const filePath = session.user.id + '/avatar.' + fileExt;
+    try {
+        showToast(perfilT('perfil_foto_subiendo', '⏳ Subiendo foto...'), '', 5000);
+        const { error: uploadError } = await window.supabaseClient.storage
+            .from('sariels-avatars')
+            .upload(filePath, file, { upsert: true, contentType: file.type });
+        if (uploadError) throw uploadError;
+        const { data: urlData } = window.supabaseClient.storage
+            .from('sariels-avatars')
+            .getPublicUrl(filePath);
+        const publicUrl = urlData.publicUrl + '?t=' + Date.now();
+        const { error: updateError } = await window.supabaseClient
+            .from('usuarios')
+            .update({ avatar_url: publicUrl })
+            .eq('id', session.user.id);
+        if (updateError) throw updateError;
+        showToast(perfilT('perfil_foto_actualizada', '✅ Foto actualizada'), 'success');
+        event.target.value = '';
+        await cargarPerfil(true);
+    } catch (error) {
+        showToast(perfilT('perfil_error_subir', '❌ Error al subir: ') + msgError(error), 'error');
+    }
+}
+
+// ================================================================
+// ELIMINAR FOTO DE PERFIL
+// ================================================================
+async function eliminarFotoPerfil() {
+    const session = await getSession();
+    if (!session) {
+        showToast('⚠️ ' + perfilT('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+        return;
+    }
+    if (!confirm(perfilT('perfil_confirma_eliminar_foto', '¿Eliminar foto de perfil?'))) return;
+    try {
+        showToast(perfilT('perfil_eliminando', '⏳ Eliminando...'), '', 4000);
+        const extensiones = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+        const paths = extensiones.map(ext => session.user.id + '/avatar.' + ext);
+        try {
+            await window.supabaseClient.storage.from('sariels-avatars').remove(paths);
+        } catch (e) {}
+        const { error } = await window.supabaseClient
+            .from('usuarios')
+            .update({ avatar_url: null })
+            .eq('id', session.user.id);
+        if (error) throw error;
+        showToast(perfilT('perfil_foto_eliminada', '✅ Foto eliminada'), 'success');
+        await cargarPerfil(true);
+    } catch (error) {
+        showToast(perfilT('perfil_error_generico', '❌ Error: ') + msgError(error), 'error');
+    }
+}
+
+// ================================================================
+// SUBIR VIDEO
+// ================================================================
+async function subirVideo(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const session = await getSession();
+    if (!session) {
+        showToast('⚠️ ' + perfilT('perfil_inicia_sesion', 'Inicia sesión'), 'error');
+        return;
+    }
+    if (!file.type.startsWith('video/')) {
+        showToast(perfilT('perfil_video_tipo', '❌ Solo videos'), 'error');
+        event.target.value = '';
+        return;
+    }
+    if (file.size > 50 * 1024 * 1024) {
+        showToast(perfilT('perfil_video_max', '❌ Máximo 50 MB'), 'error');
+        event.target.value = '';
+        return;
+    }
+    try {
+        showToast(perfilT('perfil_video_subiendo', '⏳ Subiendo video...'), '', 15000);
+        const fileExt = file.name.split('.').pop().toLowerCase();
+        const filePath = session.user.id + '/video_' + Date.now() + '.' + fileExt;
+        const { error: uploadError } = await window.supabaseClient.storage
+            .from('muro-videos')
+            .upload(filePath, file, { cacheControl: '3600', upsert: false, contentType: file.type });
+        if (uploadError) throw uploadError;
+        const { data: urlData } = window.supabaseClient.storage
+            .from('muro-videos')
+            .getPublicUrl(filePath);
+        showToast(perfilT('perfil_video_subido', '✅ Video subido'), 'success');
+        event.target.value = '';
+        return urlData.publicUrl;
+    } catch (error) {
+        showToast(perfilT('perfil_error_generico', '❌ Error: ') + msgError(error), 'error');
+    }
+}
+
+// ================================================================
+// ESTADÍSTICAS
+// ================================================================
+async function obtenerEstadisticas() {
+    try {
+        const session = await getSession();
+        if (!session) return null;
+        const { data, error } = await window.supabaseClient
+            .from('estadisticas_usuarios')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .maybeSingle();
+        if (error && error.code !== 'PGRST116') throw error;
+        return data || null;
+    } catch (error) {
+        return null;
+    }
+}
+
+// ================================================================
+// CERRAR SESIÓN
+// ================================================================
+async function cerrarSesion() {
+    if (!confirm(perfilT('perfil_cerrar_sesion', '¿Cerrar sesión?'))) return;
+    try {
+        await window.supabaseClient.auth.signOut();
+    } catch (error) {
+        showToast(perfilT('perfil_error_cerrar_sesion', '❌ Error al cerrar sesión'), 'error');
+        return;
+    }
+    window.location.replace('/');
+}
+
+// ================================================================
+// IR AL MURO
+// ================================================================
+function irAMuro() {
+    window.location.href = '/features/muro/muro.html';
 }
