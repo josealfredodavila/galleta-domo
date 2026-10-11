@@ -1,54 +1,43 @@
 // ================================================================
-// IDIOMAS · I18N GLOBAL DE SARIEL'S ECOSYSTEM · v5
+// IDIOMAS · I18N GLOBAL DE SARIEL'S ECOSYSTEM · v6
 //
 // Compatible con:
-// - data-clave, data-clave-title, data-placeholder
+// - data-clave, data-clave-title, data-placeholder, data-vars
 // - <title data-clave="..."> y <html lang> dinámicos
 // - window.t(), window.tConFallback(), window.obtenerTraduccionReal()
 // - window.aplicarTraducciones(), window.aplicarTraduccionesDinamicas()
 // - window.esperarIdiomas() (promesa, idempotente)
 // - window.inicializarIdiomas() (idempotente)
 //
-// CAMBIOS v5:
-// - inicializarIdiomas() ya no se ejecuta dos veces: devuelve la misma promesa.
-// - esperarIdiomas() permite que cualquier script espere a que las
-//   traducciones estén listas antes de pintar textos.
+// CAMBIOS v6:
+// - Se elimina la clave pública hardcodeada. getSupabaseClient() usa
+//   SOLO window.supabaseClient (lo crea auth-global.js o el HTML).
+// - Nueva función interpolarVariables(): reemplaza {x} por valores.
+// - t() y tConFallback() aceptan un 3er argumento opcional "vars".
+// - aplicarTraducciones() lee el atributo data-vars de cada elemento
+//   (JSON) y lo pasa a interpolarVariables().
+//
+// CAMBIOS v5 (se mantienen):
+// - inicializarIdiomas() idempotente.
+// - esperarIdiomas() permite que cualquier script espere.
 // - data-clave-title traduce el atributo title.
-// - <title data-clave> y <html lang> se actualizan con el idioma actual.
-// - MutationObserver traduce elementos que se agregan después
-//   (publicaciones, amigos, toasts, modales, filas dinámicas).
-// - Se marca cada elemento traducido con data-i18n-ok para no
-//   volver a procesarlo en bucle.
+// - <title data-clave> y <html lang> se actualizan.
+// - MutationObserver traduce elementos dinámicos.
+// - data-i18n-ok evita re-procesar en bucle.
 // ================================================================
 
 // ================================================================
 // OBTENER CLIENTE SUPABASE
 // ================================================================
+// v6: ya no se crea un cliente nuevo con credenciales hardcodeadas.
+// Si no hay window.supabaseClient, es porque auth-global.js o el
+// bloque centralizado del HTML aún no lo crearon. Los llamadores
+// deben esperar (ver inicializarIdiomasInterno, que reintenta).
 
 function getSupabaseClient() {
     if (window.supabaseClient) {
         return window.supabaseClient;
     }
-
-    if (
-        window.supabase &&
-        typeof window.supabase.createClient === 'function'
-    ) {
-        try {
-            // Solo se usan si el bloque centralizado del HTML no creó el cliente.
-            const client = window.supabase.createClient(
-                'https://zultnlogdoajehbswlih.supabase.co',
-                'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
-            );
-
-            window.supabaseClient = client;
-
-            return client;
-        } catch (e) {
-            console.warn('⚠️ No se pudo crear cliente Supabase:', e);
-        }
-    }
-
     return null;
 }
 
@@ -99,6 +88,32 @@ const IDIOMA_DEFAULT = {
     nombre_nativo: 'Español',
     bandera: '🌐'
 };
+
+// ================================================================
+// INTERPOLAR VARIABLES EN UN TEXTO
+// ================================================================
+// Reemplaza {clave} por el valor correspondiente en el objeto vars.
+// Si una variable no existe en vars, deja {clave} tal cual (para no
+// perder información visible en pantalla).
+// Ej: interpolarVariables("Hola {nombre}", {nombre: "Alfredo"})
+//     => "Hola Alfredo"
+
+function interpolarVariables(texto, vars) {
+    if (texto === null || texto === undefined) {
+        return texto;
+    }
+    if (!vars || typeof vars !== 'object') {
+        return String(texto);
+    }
+
+    return String(texto).replace(/\{(\w+)\}/g, function (match, clave) {
+        if (Object.prototype.hasOwnProperty.call(vars, clave)) {
+            const valor = vars[clave];
+            return valor === null || valor === undefined ? '' : String(valor);
+        }
+        return match; // deja {clave} si no hay valor
+    });
+}
 
 // ================================================================
 // OBTENER EL IDIOMA DEL USUARIO
@@ -241,12 +256,9 @@ async function cargarTraducciones(idiomaId) {
 }
 
 // ================================================================
-// OBTENER TEXTO TRADUCIDO
+// OBTENER TEXTO TRADUCIDO (sin interpolar)
 // ================================================================
-//
-// Si la clave existe: devuelve el valor.
-// Si no existe: devuelve la clave humanizada (con espacios).
-// ================================================================
+// Devuelve el valor crudo de la traducción, o null si no existe.
 
 function obtenerTraduccionReal(clave, modulo = null) {
     if (!clave) {
@@ -276,7 +288,15 @@ function obtenerTraduccionReal(clave, modulo = null) {
     return null;
 }
 
-function t(clave, modulo = null) {
+// ================================================================
+// TRADUCIR + INTERPOLAR
+// ================================================================
+// t() y tConFallback() aceptan un 3er argumento opcional `vars`:
+// - Si se pasa, los {x} se reemplazan por los valores.
+// - Si no se pasa, se devuelve el texto sin interpolar (comportamiento
+//   anterior, retrocompatible).
+
+function t(clave, modulo = null, vars = null) {
     if (!clave) {
         return '';
     }
@@ -284,21 +304,21 @@ function t(clave, modulo = null) {
     const real = obtenerTraduccionReal(clave, modulo);
 
     if (real !== null) {
-        return real;
+        return interpolarVariables(real, vars);
     }
 
     return String(clave).replace(/_/g, ' ');
 }
 
-function tConFallback(clave, fallback = '', modulo = null) {
+function tConFallback(clave, fallback = '', modulo = null, vars = null) {
     const real = obtenerTraduccionReal(clave, modulo);
 
     if (real !== null) {
-        return real;
+        return interpolarVariables(real, vars);
     }
 
     if (fallback !== undefined && fallback !== null) {
-        return fallback;
+        return interpolarVariables(fallback, vars);
     }
 
     return String(clave).replace(/_/g, ' ');
@@ -362,6 +382,27 @@ function elementosConAtributo(raiz, selector) {
 }
 
 // ================================================================
+// LEER VARIABLES DE UN ELEMENTO (data-vars)
+// ================================================================
+// Espera un JSON: <span data-vars='{"nombre":"Alfredo"}'>
+// Si es inválido, se ignora sin romper.
+
+function leerVarsDeElemento(el) {
+    if (!el || !el.hasAttribute || !el.hasAttribute('data-vars')) {
+        return null;
+    }
+    const raw = el.getAttribute('data-vars');
+    if (!raw) return null;
+    try {
+        const parsed = JSON.parse(raw);
+        return (parsed && typeof parsed === 'object') ? parsed : null;
+    } catch (e) {
+        console.warn('⚠️ data-vars inválido en', el, e);
+        return null;
+    }
+}
+
+// ================================================================
 // TÍTULO DE PÁGINA E IDIOMA DEL HTML
 // ================================================================
 
@@ -403,7 +444,7 @@ function aplicarTraducciones(raiz = document) {
 
         aplicandoTraducciones = true;
 
-        // DATA-CLAVE (texto)
+        // DATA-CLAVE (texto) + DATA-VARS (interpolación)
         elementosConAtributo(raiz, '[data-clave]').forEach(el => {
             if (el.hasAttribute('data-no-traducir')) {
                 return;
@@ -415,12 +456,16 @@ function aplicarTraducciones(raiz = document) {
                 return;
             }
 
-            const traduccion = obtenerTraduccionReal(
+            let traduccion = obtenerTraduccionReal(
                 clave,
                 el.getAttribute('data-modulo') || null
             );
 
             if (traduccion !== null) {
+                const vars = leerVarsDeElemento(el);
+                if (vars) {
+                    traduccion = interpolarVariables(traduccion, vars);
+                }
                 escribirTextoTraducido(el, traduccion);
             }
 
@@ -433,11 +478,15 @@ function aplicarTraducciones(raiz = document) {
                 return;
             }
 
-            const traduccion = obtenerTraduccionReal(
+            let traduccion = obtenerTraduccionReal(
                 el.getAttribute('data-clave-title')
             );
 
             if (traduccion !== null) {
+                const vars = leerVarsDeElemento(el);
+                if (vars) {
+                    traduccion = interpolarVariables(traduccion, vars);
+                }
                 el.setAttribute('title', traduccion);
             }
         });
@@ -448,11 +497,15 @@ function aplicarTraducciones(raiz = document) {
                 return;
             }
 
-            const traduccion = obtenerTraduccionReal(
+            let traduccion = obtenerTraduccionReal(
                 el.getAttribute('data-placeholder')
             );
 
             if (traduccion !== null) {
+                const vars = leerVarsDeElemento(el);
+                if (vars) {
+                    traduccion = interpolarVariables(traduccion, vars);
+                }
                 el.setAttribute('placeholder', traduccion);
             }
         });
@@ -710,6 +763,7 @@ window.cargarTraducciones = cargarTraducciones;
 window.t = t;
 window.tConFallback = tConFallback;
 window.obtenerTraduccionReal = obtenerTraduccionReal;
+window.interpolarVariables = interpolarVariables;
 window.cambiarIdioma = cambiarIdioma;
 window.aplicarTraducciones = aplicarTraducciones;
 window.aplicarTraduccionesDinamicas = aplicarTraduccionesDinamicas;
@@ -727,4 +781,4 @@ window.esIdioma = esIdioma;
 
 inicializarIdiomas();
 
-console.log('✅ Sistema de idiomas v5 cargado');
+console.log('✅ Sistema de idiomas v6 cargado');
