@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>◈ Videos · Csariel's</title>
+    <title data-clave="videos_titulo_pagina">◈ Videos · Csariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/features/videos/css/videos-publicar.css">
@@ -888,19 +888,19 @@
             <form id="formSubirVideo" onsubmit="event.preventDefault(); subirVideo();">
                 <div class="form-group">
                     <label data-clave="videos_titulo_video">Título del video</label>
-                    <input type="text" id="inputTituloVideo" placeholder="Ej: Mi primer video en Csariel's" required maxlength="200" />
+                    <input type="text" id="inputTituloVideo" data-placeholder="videos_titulo_placeholder" placeholder="Ej: Mi primer video en Csariel's" required maxlength="200" />
                 </div>
                 <div class="form-group">
                     <label data-clave="videos_descripcion">Descripción</label>
-                    <textarea id="inputDescripcionVideo" placeholder="Describe tu video..." maxlength="5000"></textarea>
+                    <textarea id="inputDescripcionVideo" data-placeholder="videos_descripcion_placeholder" placeholder="Describe tu video..." maxlength="5000"></textarea>
                 </div>
                 <div class="form-group">
                     <label data-clave="videos_seleccionar_archivo">Selecciona el archivo de video</label>
                     <div class="file-input-wrapper">
                         <input type="file" id="inputArchivoVideo" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov" required />
-                        <button type="submit" class="btn-subir-video" id="btnSubirVideo">◈ Subir video</button>
+                        <button type="submit" class="btn-subir-video" id="btnSubirVideo" data-clave="videos_btn_subir">◈ Subir video</button>
                     </div>
-                    <div style="font-size:0.55rem;color:var(--text-muted);margin-top:4px;">Formatos: MP4, WebM, MOV · Máx 100 MB · Full HD</div>
+                    <div style="font-size:0.55rem;color:var(--text-muted);margin-top:4px;" data-clave="videos_formatos">Formatos: MP4, WebM, MOV · Máx 100 MB · Full HD</div>
                 </div>
                 <div id="uploadProgress" style="display:none;margin-top:8px;">
                     <div style="background:rgba(255,255,255,0.05);border-radius:10px;height:6px;overflow:hidden;">
@@ -913,24 +913,24 @@
 
         <div class="processing-state" id="processingState">
             <div class="spinner"></div>
-            <h3>◈ Procesando video</h3>
-            <p id="processingMessage">Eliminando marca de agua externa y aplicando marca de Csariel's...</p>
+            <h3 data-clave="videos_procesando_titulo">◈ Procesando video</h3>
+            <p id="processingMessage" data-clave="videos_procesando_desc">Eliminando marca de agua externa y aplicando marca de Csariel's...</p>
             <div class="progress-bar-big"><div class="fill" id="processingProgressFill"></div></div>
             <div class="progress-text" id="processingProgressText">0%</div>
-            <p style="font-size:0.6rem;color:var(--text-muted);">Este proceso puede tardar entre 30 y 90 segundos</p>
+            <p style="font-size:0.6rem;color:var(--text-muted);" data-clave="videos_procesando_tiempo">Este proceso puede tardar entre 30 y 90 segundos</p>
         </div>
 
         <div class="marketing-ad-container" id="marketingAdContainer">
             <div class="marketing-ad-header">
-                <span class="marketing-ad-label">Patrocinado</span>
+                <span class="marketing-ad-label" data-clave="videos_patrocinado">Patrocinado</span>
                 <button class="marketing-ad-close" onclick="cerrarAnuncioVideo()" aria-label="Cerrar"><svg viewBox="0 0 24 24" class="ico-premium"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
             <div class="marketing-ad-body">
                 <div class="marketing-ad-media" id="marketingAdMediaVideo"><span>◈</span></div>
                 <div class="marketing-ad-content">
-                    <div class="marketing-ad-title" id="marketingAdTitleVideo">Cargando anuncio...</div>
+                    <div class="marketing-ad-title" id="marketingAdTitleVideo" data-clave="videos_cargando_anuncio">Cargando anuncio...</div>
                     <div class="marketing-ad-desc" id="marketingAdDescVideo"></div>
-                    <button class="marketing-ad-cta" id="marketingAdCtaVideo" onclick="registrarClicAnuncioVideo()">Ver más</button>
+                    <button class="marketing-ad-cta" id="marketingAdCtaVideo" onclick="registrarClicAnuncioVideo()" data-clave="videos_ver_mas">Ver más</button>
                 </div>
             </div>
         </div>
@@ -938,18 +938,18 @@
         <div id="videosContainer">
             <div class="empty-state">
                 <span class="icon">◈</span>
-                <h3>No hay videos aún</h3>
-                <p>Sé el primero en compartir un video en Csariel's.</p>
+                <h3 data-clave="videos_sin_videos">No hay videos aún</h3>
+                <p data-clave="videos_se_el_primero">Sé el primero en compartir un video en Csariel's.</p>
             </div>
         </div>
 
         <footer class="footer">
-            <span><span class="brand">◈ Csariel's</span> · Sabor al Paladar · WEB3</span>
+            <span><span class="brand">◈ Csariel's</span> · <span data-clave="videos_footer_tagline">Sabor al Paladar · WEB3</span></span>
             <div class="footer-links">
-                <a href="/terminos">◈ Términos</a>
-                <a href="/privacidad">◈ Privacidad</a>
-                <a href="/cookies">◈ Cookies</a>
-                <span style="opacity:0.3;">⚡ Polygon</span>
+                <a href="/terminos" data-clave="footer_terminos">◈ Términos</a>
+                <a href="/privacidad" data-clave="footer_privacidad">◈ Privacidad</a>
+                <a href="/cookies" data-clave="footer_cookies">◈ Cookies</a>
+                <span style="opacity:0.3;" data-no-traducir="1">⚡ Polygon</span>
             </div>
         </footer>
     </div>
@@ -961,36 +961,36 @@
         <div class="sheet-header">
             <div class="sheet-titulo">
                 <svg viewBox="0 0 24 24" class="ico-premium" style="width:18px;height:18px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                <span>Comentarios</span>
+                <span data-clave="videos_comentarios_titulo">Comentarios</span>
                 <span class="sheet-contador" id="sheetContador">0</span>
             </div>
             <button class="sheet-close" onclick="cerrarBottomSheet()" aria-label="Cerrar"><svg viewBox="0 0 24 24" class="ico-premium"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
         <div class="comentarios-lista" id="comentariosLista">
-            <div style="color:var(--text-muted);font-size:0.8rem;padding:20px;text-align:center;">Sin comentarios. ¡Sé el primero!</div>
+            <div style="color:var(--text-muted);font-size:0.8rem;padding:20px;text-align:center;" data-clave="videos_sin_comentarios">Sin comentarios. ¡Sé el primero!</div>
         </div>
         <div class="sheet-input">
-            <input type="text" id="inputComentarioSheet" placeholder="Escribe un comentario..." maxlength="2000" autocomplete="off" />
+            <input type="text" id="inputComentarioSheet" data-placeholder="videos_escribe_comentario" placeholder="Escribe un comentario..." maxlength="2000" autocomplete="off" />
             <button id="btnEnviarComentarioSheet" onclick="enviarComentarioSheet()" aria-label="Enviar"><svg viewBox="0 0 24 24" class="ico-premium"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
         </div>
     </div>
 
-    <button class="btn-audio-global" id="btnAudioGlobal" onclick="activarAudioGlobal()" title="Activar sonido">
+    <button class="btn-audio-global" id="btnAudioGlobal" onclick="activarAudioGlobal()" data-clave-title="videos_activar_sonido" title="Activar sonido">
         <span class="ico"><svg viewBox="0 0 24 24" class="ico-premium"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg></span>
-        <span class="txt">Activar sonido</span>
+        <span class="txt" data-clave="videos_activar_sonido_txt">Activar sonido</span>
     </button>
 
     <div class="toast" id="toast"></div>
     <div class="toast-siguiente" id="toastSiguiente"></div>
 
     <div id="errorBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#ff3366;color:#fff;padding:12px 16px;font-family:monospace;font-size:0.75rem;word-break:break-word;">
-        <strong>◈ Error detectado:</strong>
+        <strong data-clave="error_detectado_titulo">◈ Error detectado:</strong>
         <span id="errorBannerText"></span>
-        <button onclick="document.getElementById('errorBanner').style.display='none'" style="float:right;background:none;border:1px solid #fff;color:#fff;border-radius:6px;padding:2px 10px;cursor:pointer;">Cerrar</button>
+        <button onclick="document.getElementById('errorBanner').style.display='none'" style="float:right;background:none;border:1px solid #fff;color:#fff;border-radius:6px;padding:2px 10px;cursor:pointer;" data-clave="error_cerrar">Cerrar</button>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script src="/features/shared/js/idiomas.js"></script>
+    <script src="/features/shared/js/idiomas.js?v=6"></script>
     <script src="/features/videos/js/videos-publicar.js" defer></script>
     <script>
     // ================================================================
@@ -1522,7 +1522,8 @@
 
             if (data.length === 0) {
                 container.className = '';
-                container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>No hay videos aún</h3><p>Sé el primero en compartir un video.</p></div>';
+                container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3 data-clave="videos_sin_videos">No hay videos aún</h3><p data-clave="videos_se_el_primero">Sé el primero en compartir un video.</p></div>';
+                aplicarI18N(container);
                 return;
             }
 
@@ -1536,6 +1537,7 @@
                 container.appendChild(card);
             });
 
+            aplicarI18N(container);
             activarAutoplayScroll();
         } catch (e) {
             console.error('[Videos] ❌ Error al cargar:', e);
@@ -1663,7 +1665,6 @@
         var titulo = escapeHTML(v.titulo || '');
         var descripcion = escapeHTML((v.descripcion || '').substring(0, 140));
 
-        // 🎵📍 Metadata opcional para mostrar en overlay
         var sonidoNombre = v.sonido_nombre ? escapeHTML(v.sonido_nombre) : null;
         var ubicacionNombre = v.ubicacion_nombre ? escapeHTML(v.ubicacion_nombre) : null;
 
@@ -1697,7 +1698,6 @@
         if (titulo) html += '<div class="titulo">' + titulo + '</div>';
         if (descripcion) html += '<div class="descripcion-corta">' + descripcion + '</div>';
 
-        // 🎵📍 Mostrar sonido y ubicación si existen
         if (sonidoNombre || ubicacionNombre) {
             html += '<div class="video-meta-chips">';
             if (sonidoNombre) {
@@ -2092,7 +2092,7 @@
         if (!sheet || !backdrop) return;
 
         var lista = document.getElementById('comentariosLista');
-        if (lista) lista.innerHTML = '<div style="color:var(--text-muted);font-size:0.8rem;padding:20px;text-align:center;">Cargando...</div>';
+        if (lista) lista.innerHTML = '<div style="color:var(--text-muted);font-size:0.8rem;padding:20px;text-align:center;" data-clave="videos_cargando_comentarios">Cargando...</div>';
 
         var contadorEl = document.getElementById('sheetContador');
         if (contadorEl) contadorEl.textContent = '0';
@@ -2136,7 +2136,7 @@
             if (contadorEl) contadorEl.textContent = data.length;
 
             if (data.length === 0) {
-                lista.innerHTML = '<div style="color:var(--text-muted);font-size:0.85rem;padding:30px 20px;text-align:center;">Sin comentarios todavía. ¡Sé el primero! ◈</div>';
+                lista.innerHTML = '<div style="color:var(--text-muted);font-size:0.85rem;padding:30px 20px;text-align:center;" data-clave="videos_sin_comentarios_aun">Sin comentarios todavía. ¡Sé el primero! ◈</div>';
                 return;
             }
 
@@ -2179,7 +2179,7 @@
             setTimeout(function(){ lista.scrollTop = lista.scrollHeight; }, 100);
         } catch (e) {
             console.error('[Comentarios] Error:', e);
-            lista.innerHTML = '<div style="color:var(--danger);font-size:0.8rem;padding:20px;text-align:center;">Error al cargar comentarios</div>';
+            lista.innerHTML = '<div style="color:var(--danger);font-size:0.8rem;padding:20px;text-align:center;" data-clave="videos_error_comentarios">Error al cargar comentarios</div>';
         }
     }
 
@@ -2501,9 +2501,6 @@
             if (progressFill) progressFill.style.width = '60%';
             if (progressText) progressText.textContent = 'Creando registro...';
 
-            // ==============================================================
-            // 🎵📍 FASE 3C — Leer metadatos seleccionados del módulo Publicar
-            // ==============================================================
             var sonidoId = null;
             var sonidoUrl = null;
             var sonidoNombre = null;
@@ -2542,9 +2539,6 @@
                 console.warn('[Videos] Error leyendo metadata del módulo Publicar:', e);
             }
 
-            // ==============================================================
-            // INSERT con los 7 metadatos nuevos
-            // ==============================================================
             var ins = await sbVideos.from('videos').insert({
                 usuario_id: session.user.id,
                 titulo: titulo,
