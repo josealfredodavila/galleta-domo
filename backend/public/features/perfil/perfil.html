@@ -113,6 +113,9 @@
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="currentColor" stroke="none"/></svg>
                     ACTIVO
                 </span>
+                <span class="badge" id="walletChip" data-no-traducir="1" title="Toca para copiar" style="display:none;cursor:pointer;border-color:var(--cyan);color:var(--cyan);background:rgba(0,229,255,0.05);font-family:monospace;">
+                    ◈ 0x…
+                </span>
                 <span class="badge" data-clave="perfil_badge_web3">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/><polygon points="12 7 16 9.5 16 14.5 12 17 8 14.5 8 9.5 12 7"/></svg>
                     WEB3
@@ -576,7 +579,7 @@
     <div class="panel">
         <div class="panel-header">
             <h3 data-clave="perfil_escanear_qr">
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="17"/><line x1="17" y1="14" x2="21" y2="14"/><line x1="14" y1="21" x2="21" y2="21"/></svg>
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="17"/><line x1="17" y1="14" x2="21" y2="14"/><line x1="14" y1="21" x2="21" y2="21"/><line x1="17" y1="17" x2="21" y2="21"/></svg>
                 Escanear QR
             </h3>
             <span class="panel-badge" data-clave="perfil_recibe_estoks">Recibe Es.stoks</span>
@@ -778,6 +781,97 @@
 <script src="/features/perfil/js/perfil-internet.js?v=8"></script>
 <script src="/features/perfil/js/perfil-repartidor.js?v=8"></script>
 <script src="/features/perfil/js/perfil-init.js?v=8"></script>
+
+<!-- Chip de wallet: muestra TU dirección (solo tú la lees de tu propia fila) y la copia al tocarla -->
+<script>
+(function () {
+    'use strict';
+
+    var chip = document.getElementById('walletChip');
+    if (!chip) return;
+
+    var direccionCompleta = null;
+
+    function acortar(direccion) {
+        return direccion.slice(0, 6) + '...' + direccion.slice(-4);
+    }
+
+    function esperar(ms) {
+        return new Promise(function (resolve) { setTimeout(resolve, ms); });
+    }
+
+    async function obtenerCliente() {
+        var inicio = Date.now();
+        while (Date.now() - inicio < 10000) {
+            if (window.supabaseClient) return window.supabaseClient;
+            if (typeof window.getSupabaseClient === 'function') {
+                try {
+                    var c = await window.getSupabaseClient();
+                    if (c) return c;
+                } catch (e) { /* reintenta */ }
+            }
+            await esperar(150);
+        }
+        return null;
+    }
+
+    async function cargarWalletPropia() {
+        try {
+            var client = await obtenerCliente();
+            if (!client) return;
+
+            var sesion = await client.auth.getSession();
+            var session = sesion && sesion.data && sesion.data.session;
+            if (!session) return;
+
+            var resultado = await client
+                .from('usuarios')
+                .select('wallet_address')
+                .eq('id', session.user.id)
+                .maybeSingle();
+
+            if (resultado.error || !resultado.data || !resultado.data.wallet_address) return;
+
+            direccionCompleta = resultado.data.wallet_address;
+            chip.textContent = '◈ ' + acortar(direccionCompleta);
+            chip.style.display = 'inline-flex';
+        } catch (e) {
+            console.warn('[Perfil] No se pudo cargar la wallet:', e);
+        }
+    }
+
+    async function copiarWallet() {
+        if (!direccionCompleta) return;
+        try {
+            if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                await navigator.clipboard.writeText(direccionCompleta);
+            } else {
+                var t = document.createElement('textarea');
+                t.value = direccionCompleta;
+                t.style.position = 'fixed';
+                t.style.opacity = '0';
+                document.body.appendChild(t);
+                t.select();
+                document.execCommand('copy');
+                t.remove();
+            }
+            var previo = chip.textContent;
+            chip.textContent = '✓ Copiada';
+            setTimeout(function () { chip.textContent = previo; }, 1500);
+        } catch (e) {
+            console.warn('[Perfil] Error copiando wallet:', e);
+        }
+    }
+
+    chip.addEventListener('click', copiarWallet);
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', cargarWalletPropia, { once: true });
+    } else {
+        cargarWalletPropia();
+    }
+})();
+</script>
 
 </body>
 </html>
