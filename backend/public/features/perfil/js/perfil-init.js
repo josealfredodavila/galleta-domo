@@ -9,14 +9,6 @@
 // - Antes de pintar espera a que idiomas.js tenga las traducciones.
 // - El nivel del usuario se traduce y ya no borra el ícono del badge.
 // - Textos de realtime y de avatar usan perfilT.
-//
-// CAMBIO v3 (presencia):
-// - El estado usa Supabase Presence (perfil-estado.js).
-// - Se quitan las recargas repetidas al enfocar la ventana.
-//
-// CAMBIO v4:
-// - Se quita el refresco cada 60 s de amigos en línea. Ahora lo
-//   resuelve la presencia (perfil-amigos.js).
 // ================================================================
 
 // ================================================================
@@ -46,7 +38,7 @@ function publicarFuncionesGlobales() {
     window.obtenerEstadisticas = obtenerEstadisticas;
     window.calcularNivel = calcularNivel;
 
-    // Estado (presencia)
+    // Estado
     window.cambiarEstado = cambiarEstado;
     window.actualizarEstadoEnLinea = actualizarEstadoEnLinea;
 
@@ -156,7 +148,7 @@ function aplicarNivelUsuario(nivel) {
 }
 
 // ================================================================
-// SINCRONIZACIÓN REALTIME (tu propia fila)
+// SINCRONIZACIÓN REALTIME
 // ================================================================
 var ultimaRecargaPerfilSync = 0;
 
@@ -348,7 +340,8 @@ async function esperarTraduccionesPerfil() {
 async function iniciarPerfil() {
     asegurarEstilosPerfil();
 
-    // Primero traducciones, después datos
+    // Primero traducciones, después datos (así no se pinta en español
+    // y luego cambia)
     await esperarTraduccionesPerfil();
 
     if (typeof jsQR === 'undefined') {
@@ -378,13 +371,16 @@ async function iniciarPerfil() {
     // Iniciar módulos
     iniciarNotificacionesRealtime();
     iniciarEscuchaConexion();
-    iniciarEscuchaAmigos();     // Carga contactos una vez y escucha presencia
-    iniciarPresenciaEstado();   // Presence en tiempo real
+    iniciarEscuchaAmigos();
+    iniciarDetectorInactividad();
     iniciarEscuchaWallet();
 
-    // Refresco de conexión (no relacionado con presencia)
+    // Refrescos periódicos
     setInterval(() => {
         if (!document.hidden) cargarEstadoConexion();
+    }, 60000);
+    setInterval(() => {
+        if (!document.hidden) cargarAmigosEnLinea();
     }, 60000);
 
     // Aplicar parámetros de URL
@@ -408,7 +404,17 @@ publicarFuncionesGlobales();
 asegurarEstilosPerfil();
 
 iniciarRecargaRealtime();
+setTimeout(function () { recargarPerfilRealtime(true); }, 800);
+setTimeout(function () { recargarPerfilRealtime(true); }, 1600);
+setTimeout(function () { recargarPerfilRealtime(true); }, 3000);
 setTimeout(iniciarRealtimePerfil, 1000);
+
+document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') recargarPerfilRealtime(true);
+});
+window.addEventListener('focus', function () {
+    recargarPerfilRealtime(true);
+});
 
 document.addEventListener('click', function (e) {
     var menu = document.getElementById('avatarMenu');
