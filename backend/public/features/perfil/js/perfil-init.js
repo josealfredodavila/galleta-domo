@@ -9,6 +9,12 @@
 // - Antes de pintar espera a que idiomas.js tenga las traducciones.
 // - El nivel del usuario se traduce y ya no borra el ícono del badge.
 // - Textos de realtime y de avatar usan perfilT.
+//
+// CAMBIO v3 (presencia):
+// - El estado usa Supabase Presence (perfil-estado.js) en lugar del
+//   detector con consultas periódicas.
+// - Se quitan las recargas repetidas al enfocar la ventana. El canal
+//   realtime de tu fila ya mantiene los datos al día.
 // ================================================================
 
 // ================================================================
@@ -38,7 +44,7 @@ function publicarFuncionesGlobales() {
     window.obtenerEstadisticas = obtenerEstadisticas;
     window.calcularNivel = calcularNivel;
 
-    // Estado
+    // Estado (presencia)
     window.cambiarEstado = cambiarEstado;
     window.actualizarEstadoEnLinea = actualizarEstadoEnLinea;
 
@@ -148,7 +154,7 @@ function aplicarNivelUsuario(nivel) {
 }
 
 // ================================================================
-// SINCRONIZACIÓN REALTIME
+// SINCRONIZACIÓN REALTIME (tu propia fila)
 // ================================================================
 var ultimaRecargaPerfilSync = 0;
 
@@ -318,9 +324,6 @@ function aplicarParametrosURL() {
 // ================================================================
 // ESPERAR TRADUCCIONES
 // ================================================================
-// Espera a que idiomas.js cargue las traducciones (máximo ~5 s)
-// y aplica el idioma a la página antes de pintar los datos.
-// ================================================================
 async function esperarTraduccionesPerfil() {
     for (var i = 0; i < 50 && typeof window.esperarIdiomas !== 'function'; i++) {
         await new Promise(function (resolve) { setTimeout(resolve, 100); });
@@ -343,8 +346,7 @@ async function esperarTraduccionesPerfil() {
 async function iniciarPerfil() {
     asegurarEstilosPerfil();
 
-    // Primero traducciones, después datos (así no se pinta en español
-    // y luego cambia)
+    // Primero traducciones, después datos
     await esperarTraduccionesPerfil();
 
     if (typeof jsQR === 'undefined') {
@@ -375,10 +377,10 @@ async function iniciarPerfil() {
     iniciarNotificacionesRealtime();
     iniciarEscuchaConexion();
     iniciarEscuchaAmigos();
-    iniciarDetectorInactividad();
+    iniciarPresenciaEstado();   // Presence en tiempo real (reemplaza el detector anterior)
     iniciarEscuchaWallet();
 
-    // Refrescos periódicos
+    // Refrescos periódicos existentes de otros módulos
     setInterval(() => {
         if (!document.hidden) cargarEstadoConexion();
     }, 60000);
@@ -407,17 +409,7 @@ publicarFuncionesGlobales();
 asegurarEstilosPerfil();
 
 iniciarRecargaRealtime();
-setTimeout(function () { recargarPerfilRealtime(true); }, 800);
-setTimeout(function () { recargarPerfilRealtime(true); }, 1600);
-setTimeout(function () { recargarPerfilRealtime(true); }, 3000);
 setTimeout(iniciarRealtimePerfil, 1000);
-
-document.addEventListener('visibilitychange', function () {
-    if (document.visibilityState === 'visible') recargarPerfilRealtime(true);
-});
-window.addEventListener('focus', function () {
-    recargarPerfilRealtime(true);
-});
 
 document.addEventListener('click', function (e) {
     var menu = document.getElementById('avatarMenu');
