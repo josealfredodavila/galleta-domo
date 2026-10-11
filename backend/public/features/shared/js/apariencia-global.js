@@ -1,73 +1,77 @@
 // ================================================================
-// PRESENCIA GLOBAL · Sariel's Ecosystem
+// PRESENCIA GLOBAL · Sariel's Ecosystem · v3
 // ================================================================
-// Un único canal Supabase Presence por pestaña.
+// Un único canal "presencia-usuarios" por pestaña.
 //
-// API pública:
-//   window.Presencia.iniciar(userId, { track: true|false })
-//   window.Presencia.estaEnPresencia(userId) -> boolean
-//   window.Presencia.obtenerMapa() -> { userId: meta }
-//   window.Presencia.esVisible() -> boolean
-//   window.Presencia.formatearTiempoRelativo(iso) -> string
+// API:
+//   Presencia.iniciar(userId, { track, onConexionCambia })
+//   Presencia.estaConectado()        -> tú estás anunciado ahora (no ausente)
+//   Presencia.esVisible()            -> los demás te ven (conectado y no oculto)
+//   Presencia.setVisible(bool)       -> true = mostrar, false = ocultar
+//   Presencia.estaEnPresencia(id)    -> ese usuario está conectado y visible
+//   Presencia.obtenerMapa()          -> { id: meta } (solo visibles)
+//   Presencia.formatearTiempoRelativo(iso)
 //
-// Eventos:
-//   window 'sar:presence:sync'  → detail: mapa { userId: meta }
-//
-// Contrato con el resto del sistema:
-//   - Mapa SOLO contiene usuarios con visible !== false.
-//   - Si un usuario oculta su estado, desaparece del mapa.
-//   - Si nadie está trackeando en la pestaña, el canal igual
-//     observa y emite el evento (para perfil-publico, etc.).
+// Evento: window 'sar:presence:sync' (detail = mapa de visibles)
 // ================================================================
 
 (function () {
     'use strict';
 
-    if (window.Presencia && window.Presencia.__sariel_presencia) return;
+    if (window.Presencia && window.Presencia.__sariel_v3) return;
 
-    var CANAL_NOMBRE = 'presencia-usuarios';
+    var CANAL = 'presencia-usuarios';
+    var IDLE_MS = 10 * 60 * 1000;   // 10 min sin actividad => ausente
+    var THROTTLE_MS = 5000;
 
     var canal = null;
     var subscrito = false;
-    var userId = null;
-    var trackeando = false;
-    var visible = true;               // estado de visibilidad lógica
-    var iniciando = false;
     var promesaInicio = null;
-
-    // Timer local de inactividad (NO es polling de BD)
-    var IDLE_MS = 10 * 60 * 1000;
+    var userId = null;
+    var quiereTrackear = false;
+    var conectado = false;      // anunciado ahora mismo
+    var visible = true;         // false = ocultar mi estado
     var idleTimer = null;
-    var ultimaActividadTs = 0;
-    var listenersActividad = false;
-
-    var CALLBACKS_VISIBILIDAD = [];
+    var ultimaActividad = 0;
+    var listenersOk = false;
+    var callbacks = [];
 
     // ============================================================
     // Utilidades
     // ============================================================
-    function getSupabase() {
-        if (window.supabaseClient) return window.supabaseClient;
-        if (window.supabase && typeof window.supabase.createClient === 'function') {
-            try {
-                window.supabaseClient = window.supabase.createClient(
-                    'https://zultnlogdoajehbswlih.supabase.co',
-                    'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
-                );
+    function esperar(ms) {
+        return new Promise(function (resolve) { setTimeout(resolve, ms); });
+    }
+
+    // Usa SOLO window.supabaseClient. Nunca crea otro cliente.
+    async function obtenerCliente(timeoutMs) {
+        var inicio = Date.now();
+        while (Date.now() - inicio < timeoutMs) {
+            if (window.supabaseClient && typeof window.supabaseClient.channel === 'function') {
                 return window.supabaseClient;
-            } catch (e) { return null; }
+            }
+            if (typeof window.getSupabaseClient === 'function') {
+                try {
+                    var c = await window.getSupabaseClient();
+                    if (c && typeof c.channel === 'function') {
+                        // getSupabaseClient de idiomas.js devuelve window.supabaseClient
+                        // o crea uno con credenciales. Lo aceptamos solo si reutiliza
+                        // el existente; si no, esperamos.
+                        if (window.supabaseClient) return window.supabaseClient;
+                    }
+                } catch (e) {}
+            }
+            await esperar(150);
         }
         return null;
     }
 
     function emitirSync() {
         var mapa = {};
-        if (canal && typeof canal.presenceState === 'function') {
-            var state = canal.presenceState();
-            Object.keys(state).forEach(function (clave) {
-                var lista = state[clave] || [];
-                var meta = lista[0];
-                // Solo cuentan usuarios que NO ocultaron su estado
+        if (canal && subscrito) {
+            var estado = canal.presenceState();
+            Object.keys(estado).forEach(function (clave) {
+                var meta = (estado[clave] || [])[0];
                 if (meta && meta.visible !== false) mapa[clave] = meta;
             });
         }
@@ -77,9 +81,164 @@
         } catch (e) {}
     }
 
-    // ============================================================
-    // Tiempo relativo (expuesto globalmente)
-    // ============================================================
+    function notificar(conectadoAhora) {
+        callbacks.forEach(function (cb) {
+            try { cb(conectadoAhora); } catch (e) {}
+        });
+    }
+
+    async function anunciar() {
+        if (!canal || !subscrito || !quiereTrackear) return;
+        try {
+            await canal.track({
+                user_id: userId,
+                visible: visible,
+                en: new Date().toISOString()
+            });
+        } catch (e) {}
+    }
+
+    async function retirar() {
+        if (!canal || !subscrito) return;
+        try { await canal.untrack(); } catch (e) {}
+    }
+
+    async function conectar() {
+        if (conectado || !subscrito || !quiereTrackear) return;
+        conectado = true;
+        await anunciar();
+        notificar(true);
+    }
+
+    async function desconectar() {
+        if (!conectado) return;
+        conectado = false;
+        await retirar();
+        notificar(false);
+    }
+
+    function programarIdle() {
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(desconectar, IDLE_MS);
+    }
+
+    function registrarActividad() {
+        if (!quiereTrackear) return;
+        var ahora = Date.now();
+        if (ahora - ultimaActividad < THROTTLE_MS) return;
+        ultimaActividad = ahora;
+        programarIdle();
+        conectar();
+    }
+
+    function registrarListeners() {
+        if (listenersOk) return;
+        listenersOk = true;
+
+        ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'].forEach(function (ev) {
+            document.addEventListener(ev, registrarActividad, { passive: true });
+        });
+
+        document.addEventListener('visibilitychange', function () {
+            if (document.visibilityState === 'visible') registrarActividad();
+        });
+
+        window.addEventListener('pagehide', function () {
+            conectado = false;
+            retirar();
+            notificar(false);
+        });
+    }
+
+    function iniciar(uid, opciones) {
+        opciones = opciones || {};
+        userId = uid;
+        quiereTrackear = opciones.track === true;
+
+        if (opciones.onConexionCambia && callbacks.indexOf(opciones.onConexionCambia) === -1) {
+            callbacks.push(opciones.onConexionCambia);
+        }
+
+        // Ya hay canal en esta pestaña: solo ajustamos el modo
+        if (canal && subscrito) {
+            if (quiereTrackear) {
+                registrarListeners();
+                programarIdle();
+                conectar();
+            }
+            return Promise.resolve(true);
+        }
+
+        if (promesaInicio) return promesaInicio;
+
+        promesaInicio = new Promise(async function (resolve) {
+            var client = await obtenerCliente(10000);
+            if (!client) {
+                promesaInicio = null;
+                resolve(false);
+                return;
+            }
+
+            try {
+                canal = client.channel(CANAL, { config: { presence: { key: uid } } });
+
+                canal.on('presence', { event: 'sync' }, emitirSync);
+                canal.on('presence', { event: 'join' }, emitirSync);
+                canal.on('presence', { event: 'leave' }, emitirSync);
+
+                canal.subscribe(async function (status) {
+                    if (status === 'SUBSCRIBED') {
+                        subscrito = true;
+                        emitirSync();
+                        if (quiereTrackear) {
+                            registrarListeners();
+                            programarIdle();
+                            conectado = false;
+                            await conectar();
+                        }
+                        resolve(true);
+                    } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+                        subscrito = false;
+                        if (conectado) {
+                            conectado = false;
+                            notificar(false);
+                        }
+                        resolve(false);
+                    }
+                });
+            } catch (e) {
+                promesaInicio = null;
+                resolve(false);
+            }
+        });
+
+        return promesaInicio;
+    }
+
+    function estaConectado() {
+        return conectado === true && subscrito === true;
+    }
+
+    // Los demás me ven: estoy conectado y no oculté mi estado
+    function esVisible() {
+        return estaConectado() && visible === true;
+    }
+
+    async function setVisible(v) {
+        visible = v === true;
+        if (conectado) await anunciar();
+        emitirSync();
+    }
+
+    function estaEnPresencia(id) {
+        var mapa = window.presenciaUsuarios || {};
+        return Object.prototype.hasOwnProperty.call(mapa, id);
+    }
+
+    function obtenerMapa() {
+        return window.presenciaUsuarios || {};
+    }
+
     function formatearTiempoRelativo(fechaIso) {
         if (!fechaIso) return '';
         var texto = String(fechaIso);
@@ -95,198 +254,19 @@
         if (minutos < 60) return 'hace ' + minutos + ' min';
         var horas = Math.floor(minutos / 60);
         if (horas < 24) return 'hace ' + horas + ' h';
-        var dias = Math.floor(horas / 24);
-        return 'hace ' + dias + ' d';
-    }
-
-    // ============================================================
-    // Track / Untrack
-    // ============================================================
-    async function trackear() {
-        if (!canal || !subscrito || !trackeando || !userId) return;
-        try {
-            await canal.track({
-                user_id: userId,
-                visible: visible,
-                en: new Date().toISOString()
-            });
-        } catch (e) {
-            console.warn('[Presencia] Error al trackear:', e);
-        }
-    }
-
-    async function destrackear() {
-        if (!canal || !subscrito) return;
-        try { await canal.untrack(); } catch (e) {}
-    }
-
-    // ============================================================
-    // Inactividad (por eventos locales, NO consultas)
-    // ============================================================
-    function programarIdle() {
-        if (!trackeando) return;
-        clearTimeout(idleTimer);
-        idleTimer = setTimeout(function () {
-            // Deja de trackear (los demás te ven desconectado),
-            // pero NO escribimos en BD: eso lo decide el módulo que
-            // llamó a iniciar() con onVisibilidadCambia.
-            destrackear().then(function () {
-                notificarVisibilidad(false);
-            });
-        }, IDLE_MS);
-    }
-
-    function registrarActividad() {
-        if (!trackeando) return;
-        var ahora = Date.now();
-        if (ahora - ultimaActividadTs < 5000) return;
-        ultimaActividadTs = ahora;
-
-        var estabaInactivo = !canal || !subscrito;
-        programarIdle();
-
-        // Si estábamos "ausentes", volvemos a trackear
-        if (estabaInactivo === false) {
-            trackear().then(function () {
-                notificarVisibilidad(true);
-            });
-        }
-    }
-
-    function iniciarListenersActividad() {
-        if (listenersActividad || !trackeando) return;
-        listenersActividad = true;
-
-        var eventos = ['mousedown', 'keydown', 'touchstart', 'scroll', 'click', 'mousemove'];
-        eventos.forEach(function (ev) {
-            document.addEventListener(ev, registrarActividad, { passive: true });
-        });
-
-        document.addEventListener('visibilitychange', function () {
-            if (document.visibilityState === 'visible') registrarActividad();
-        });
-
-        window.addEventListener('pagehide', function () {
-            destrackear();
-            notificarVisibilidad(false);
-        });
-    }
-
-    function notificarVisibilidad(v) {
-        CALLBACKS_VISIBILIDAD.forEach(function (cb) {
-            try { cb(v); } catch (e) {}
-        });
-    }
-
-    // ============================================================
-    // Iniciar canal
-    // ============================================================
-    function iniciar(uid, opciones) {
-        opciones = opciones || {};
-        var quiereTrackear = opciones.track === true;
-        var onVisibilidadCambia = opciones.onVisibilidadCambia || null;
-
-        if (onVisibilidadCambia) CALLBACKS_VISIBILIDAD.push(onVisibilidadCambia);
-
-        // Si ya está iniciado y solo se pide trackear sin canal:
-        if (canal && subscrito) {
-            if (quiereTrackear && !trackeando) {
-                trackeando = true;
-                userId = uid;
-                trackear();
-                iniciarListenersActividad();
-                programarIdle();
-            }
-            return promesaInicio || Promise.resolve(true);
-        }
-
-        if (iniciando) return promesaInicio;
-
-        iniciando = true;
-        promesaInicio = new Promise(function (resolve) {
-            var client = getSupabase();
-            if (!client) {
-                iniciando = false;
-                resolve(false);
-                return;
-            }
-
-            userId = uid;
-            trackeando = quiereTrackear;
-
-            canal = client.channel(CANAL_NOMBRE, {
-                config: { presence: { key: uid } }
-            });
-
-            canal.on('presence', { event: 'sync' }, emitirSync);
-            canal.on('presence', { event: 'join' }, emitirSync);
-            canal.on('presence', { event: 'leave' }, emitirSync);
-
-            canal.subscribe(function (status) {
-                if (status === 'SUBSCRIBED') {
-                    subscrito = true;
-                    iniciando = false;
-
-                    if (trackeando) {
-                        trackear();
-                        iniciarListenersActividad();
-                        programarIdle();
-                    }
-
-                    // Primer sync inmediato (aunque aún no haya nadie)
-                    emitirSync();
-                    resolve(true);
-                } else if (
-                    status === 'CHANNEL_ERROR' ||
-                    status === 'TIMED_OUT' ||
-                    status === 'CLOSED'
-                ) {
-                    subscrito = false;
-                    iniciando = false;
-                    resolve(false);
-                }
-            });
-        });
-
-        return promesaInicio;
-    }
-
-    // ============================================================
-    // API pública
-    // ============================================================
-    function estaEnPresencia(id) {
-        var mapa = window.presenciaUsuarios || {};
-        return Object.prototype.hasOwnProperty.call(mapa, id);
-    }
-
-    function obtenerMapa() {
-        return window.presenciaUsuarios || {};
-    }
-
-    function esVisible() {
-        return visible === true;
-    }
-
-    // Permite al módulo dueño actualizar `visible` y forzar re-track
-    async function setVisible(v) {
-        visible = v === true;
-        if (trackeando) {
-            await destrackear();
-            await trackear();
-        }
-        emitirSync();
+        return 'hace ' + Math.floor(horas / 24) + ' d';
     }
 
     window.Presencia = {
-        __sariel_presencia: true,
+        __sariel_v3: true,
         iniciar: iniciar,
-        estaEnPresencia: estaEnPresencia,
-        obtenerMapa: obtenerMapa,
+        estaConectado: estaConectado,
         esVisible: esVisible,
         setVisible: setVisible,
+        estaEnPresencia: estaEnPresencia,
+        obtenerMapa: obtenerMapa,
         formatearTiempoRelativo: formatearTiempoRelativo
     };
 
-    // Compatibilidad: exponer formateador global como antes
     window.formatearTiempoRelativo = formatearTiempoRelativo;
 })();
