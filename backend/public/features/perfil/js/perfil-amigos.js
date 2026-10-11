@@ -1,97 +1,89 @@
 // ================================================================
 // PERFIL · AMIGOS
 // ================================================================
-// Carga amigos y muestra quién está en línea.
-// Depende de: perfil-config.js, perfil-utils.js, perfil-estado.js
-//
-// CAMBIO v3 (Presence):
-// - Quién está en línea se decide por el canal de presencia
-//   (window.presenciaUsuarios), no por consultas periódicas.
-// - La lista de contactos se lee una vez y se reutiliza.
-// - Al tocar un amigo se abre su perfil público.
+// Carga amigos en línea, escucha realtime y muestra solicitudes.
+// Depende de: perfil-config.js, perfil-utils.js
 //
 // CAMBIO v2 (traducciones):
 // - Todos los textos usan perfilT(clave, respaldo).
 // ================================================================
 
-var contactosAmigosCache = [];
-var presenciaAmigosListener = false;
-
-function estaEnPresencia(userId) {
-    var mapa = window.presenciaUsuarios || {};
-    return Object.prototype.hasOwnProperty.call(mapa, userId);
-}
-
 // ================================================================
-// ESCUCHA DE PRESENCIA (sin consultas a la base)
+// ESCUCHA REALTIME DE AMIGOS
 // ================================================================
 function iniciarEscuchaAmigos() {
-    if (!presenciaAmigosListener) {
-        presenciaAmigosListener = true;
-        window.addEventListener('sar:presence:sync', function () {
-            renderizarAmigos();
-        });
+    if (!cli()) return;
+    if (canalAmigos) {
+        try { window.supabaseClient.removeChannel(canalAmigos); } catch (e) {}
     }
-    // Carga inicial de la lista de contactos (una sola vez)
-    cargarAmigosEnLinea();
+    canalAmigos = window.supabaseClient
+        .channel('amigos_online')
+        .on('postgres_changes', {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'usuarios'
+        }, (payload) => {
+            const usuario = payload.new;
+            if (usuario && usuario.id !== perfilCache?.id && idsAmigos.has(usuario.id)) {
+                clearTimeout(temporizadorAmigos);
+                temporizadorAmigos = setTimeout(actualizarListaAmigos, 2000);
+            }
+        })
+        .subscribe();
+    return canalAmigos;
 }
 
 // ================================================================
-// RENDERIZAR CON LO QUE HAY EN MEMORIA + PRESENCIA
-// ================================================================
-function renderizarAmigos() {
-    var enLinea = contactosAmigosCache.filter(function (u) {
-        return estaEnPresencia(u.id);
-    });
-    actualizarUIAmigos(contactosAmigosCache, enLinea);
-}
-
-// ================================================================
-// CARGAR CONTACTOS (una lectura; luego se reutiliza)
+// CARGAR AMIGOS EN LÍNEA
 // ================================================================
 async function cargarAmigosEnLinea() {
     try {
         const session = await getSession();
         if (!session) return null;
 
+        // 1. Obtener mis contactos
         const { data: contactos, error: contactosError } = await window.supabaseClient
             .from('contactos')
             .select('contacto_id, es_favorito, estado')
             .eq('usuario_id', session.user.id);
 
-        if (contactosError || !contactos || contactos.length === 0) {
+        if (contactosError) {
+            actualizarUIAmigos([], []);
+            return null;
+        }
+        if (!contactos || contactos.length === 0) {
             idsAmigos = new Set();
-            contactosAmigosCache = [];
-            renderizarAmigos();
+            actualizarUIAmigos([], []);
             return { enLinea: [], todosContactos: [] };
         }
 
         const idsContactos = contactos.map(c => c?.contacto_id).filter(Boolean);
         idsAmigos = new Set(idsContactos);
 
-        let perfiles = [];
+        if (idsContactos.length === 0) {
+            actualizarUIAmigos([], []);
+            return { enLinea: [], todosContactos: [] };
+        }
+
+        // 2. Leer perfiles públicos SOLO de mis contactos
+        let todosContactos = [];
         try {
             const { data, error } = await window.supabaseClient
                 .from('perfiles_publicos')
-                .select('id, nombre, handle, avatar_url, ultima_conexion')
+                .select('id, nombre, handle, avatar_url, online, ultima_conexion')
                 .in('id', idsContactos);
             if (error) throw error;
-            perfiles = data || [];
+            todosContactos = data || [];
         } catch (e) {
             console.warn('[Perfil] Error cargando perfiles públicos:', e);
-            perfiles = [];
+            todosContactos = [];
         }
 
-        contactosAmigosCache = perfiles;
-        renderizarAmigos();
-
-        return {
-            todosContactos: perfiles,
-            enLinea: perfiles.filter(u => estaEnPresencia(u.id))
-        };
+        const enLinea = todosContactos.filter(u => u.online === true);
+        actualizarUIAmigos(todosContactos, enLinea);
+        return { enLinea, todosContactos };
     } catch (error) {
-        contactosAmigosCache = [];
-        renderizarAmigos();
+        actualizarUIAmigos([], []);
         return null;
     }
 }
@@ -135,19 +127,15 @@ function actualizarUIAmigos(todosAmigos = [], enLinea = []) {
         const estadoTxt = estaEnLinea
             ? '🟢 ' + activoAhoraT
             : '⭕ ' + desconectadoT;
-        const relativo = !estaEnLinea && amigo.ultima_conexion && window.formatearTiempoRelativo
-            ? window.formatearTiempoRelativo(amigo.ultima_conexion)
-            : '';
-        const handleRaw = String(amigo.handle || '');
+        const handleRaw = String(amigo.handle || amigo.id || '');
         const nombreSafe = escaparHTML(amigo.nombre || amigo.handle || '');
         const avatarSafe = amigo.avatar_url ? escaparHTML(amigo.avatar_url) : '';
-
         return '<div class="amigo-item ' + (estaEnLinea ? 'online' : '') + '" data-handle="' + escaparHTML(handleRaw) + '" style="cursor:pointer;">'
             + '<div class="avatar-mini">' + (avatarSafe ? '<img src="' + avatarSafe + '">' : '◈') + '</div>'
             + '<div class="info">'
             + '<div class="nombre" style="color:' + (estaEnLinea ? 'var(--text-primary)' : 'var(--text-muted)') + '">' + nombreSafe + '</div>'
             + '<div class="estado" style="color:' + (estaEnLinea ? 'var(--success)' : 'var(--text-muted)') + '">'
-            + estadoTxt + (relativo ? ' · ' + relativo : '')
+            + estadoTxt + (!estaEnLinea && amigo.ultima_conexion ? ' · ' + haceTiempo(amigo.ultima_conexion) : '')
             + '</div>'
             + '</div>'
             + (estaEnLinea ? '<div class="badge-online">' + escaparHTML(enLineaT) + '</div>' : '')
@@ -157,8 +145,7 @@ function actualizarUIAmigos(todosAmigos = [], enLinea = []) {
     container.querySelectorAll('.amigo-item[data-handle]').forEach(el => {
         el.addEventListener('click', function () {
             const handle = el.getAttribute('data-handle') || '';
-            if (!handle) return;
-            window.location.href = '/features/perfil/perfil-publico.html?u=' + encodeURIComponent(handle);
+            window.location.href = '/perfil/' + encodeURIComponent(handle);
         });
     });
 }
