@@ -1,13 +1,15 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v1.0
+   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v1.1
    ================================================================
    FASE 1: UI de modales (sonidos, ubicación, borradores, preview)
    FASE 2: Carga modular de archivos (subirMultimedia)
 
-   - No toca videos.html existente más que: botón + 2 includes
-   - Encapsulado, sin colisiones de nombres globales
-   - Preparado para migrar de Supabase Storage a R2/S3 sin
-     cambiar llamadores (variable PROVIDER)
+   Novedades v1.1:
+   - ✅ Toast propio del ecosistema (reemplaza alert() nativos)
+   - ✅ Botón estilizado "Elegir video de la galería"
+   - ✅ Botón estilizado "Elegir imagen" (para futuro)
+   - ✅ Modal de confirmación estilizado (reemplaza confirm())
+   - ✅ API pública csToast() y csConfirm() para reutilizar en todo el proyecto
    ================================================================ */
 
 (function () {
@@ -20,27 +22,18 @@
     // CONFIGURACIÓN
     // ============================================================
     const CONFIG = {
-        // 'supabase' | 'r2' | 's3'  (mañana cambias aquí y todo sigue)
         PROVIDER: 'supabase',
-
-        // Bucket lógico (en supabase es el nombre real; en R2 será prefijo)
         BUCKET: 'videos',
-
-        // Endpoints de la API backend para R2/S3 (futuro)
         API_UPLOAD_R2: '/api/storage/r2/sign',
         API_UPLOAD_S3: '/api/storage/s3/sign',
-
-        // Máximos
         MAX_VIDEO_MB: 100,
-        MAX_VIDEO_MB_R2: 500,   // cuando migremos a R2 subimos el límite
-
-        // Tipos permitidos
+        MAX_VIDEO_MB_R2: 500,
         VIDEO_TYPES: ['video/mp4', 'video/webm', 'video/quicktime'],
         IMAGE_TYPES: ['image/jpeg', 'image/png', 'image/webp']
     };
 
     // ============================================================
-    // SEMILLA DE SONIDOS (placeholder hasta conectar biblioteca real)
+    // SEMILLA DE SONIDOS
     // ============================================================
     const SONIDOS_SEED = {
         parati: [
@@ -61,7 +54,7 @@
     };
 
     // ============================================================
-    // UBICACIONES SEED (Puebla y México)
+    // UBICACIONES SEED
     // ============================================================
     const UBICACIONES_SEED = [
         { id: 'pue-capital',    nombre: 'Puebla Capital',    pais: 'México', lat: 19.0414, lng: -98.2063 },
@@ -79,37 +72,30 @@
     ];
 
     // ============================================================
-    // ESTADO INTERNO DEL MÓDULO
+    // ESTADO
     // ============================================================
     const state = {
-        sonidoSeleccionado: null,      // { id, nombre, artista, url, duracion }
-        ubicacionSeleccionada: null,   // { id, nombre, pais, lat, lng }
-        archivoVideo: null,            // File
-        urlVideoSubida: null,          // string pública
-        pathVideoSubida: null,         // string path interno
-        previewURL: null,              // objectURL para preview
+        sonidoSeleccionado: null,
+        ubicacionSeleccionada: null,
+        archivoVideo: null,
+        urlVideoSubida: null,
+        pathVideoSubida: null,
+        previewURL: null,
         tabSonidosActiva: 'parati',
-        sbCliente: null                // se toma de window si existe
+        sbCliente: null
     };
 
     // ============================================================
     // UTILIDADES
     // ============================================================
     function $(id) { return document.getElementById(id); }
-
     function esc(v) {
         const d = document.createElement('div');
         d.textContent = v == null ? '' : String(v);
         return d.innerHTML;
     }
-
-    function log(...args) {
-        console.log('[VideosPublicar]', ...args);
-    }
-
-    function warn(...args) {
-        console.warn('[VideosPublicar]', ...args);
-    }
+    function log(...args) { console.log('[VideosPublicar]', ...args); }
+    function warn(...args) { console.warn('[VideosPublicar]', ...args); }
 
     function getSupabaseClient() {
         if (state.sbCliente) return state.sbCliente;
@@ -122,48 +108,109 @@
                 state.sbCliente = window.supabaseClient;
                 return state.sbCliente;
             }
-        } catch (e) { /* noop */ }
+        } catch (e) {}
         return null;
     }
 
     // ============================================================
-    // FASE 2 · subirMultimedia(archivo, tipo)
+    // ✨ TOAST PROPIO DEL ECOSISTEMA
     // ============================================================
     /**
-     * Sube un archivo multimedia de forma modular.
-     * @param {File} archivo
-     * @param {'video'|'imagen'} tipo
-     * @param {Object} [opciones]
-     * @returns {Promise<{ok:boolean,url?:string,path?:string,provider?:string,error?:string}>}
+     * Muestra una notificación estilizada tipo ciberpunk.
+     * @param {string} mensaje
+     * @param {'info'|'success'|'warning'|'error'} [tipo='info']
+     * @param {number} [duracion=3200]
      */
+    function csToast(mensaje, tipo, duracion) {
+        const t = document.createElement('div');
+        t.className = 'cs-toast cs-toast-' + (tipo || 'info');
+        const iconos = { info: '◈', success: '✓', warning: '⚠', error: '✕' };
+        const icono = iconos[tipo] || iconos.info;
+        t.innerHTML = `<span class="cs-toast-ico">${icono}</span><span class="cs-toast-txt">${esc(mensaje)}</span>`;
+        document.body.appendChild(t);
+        requestAnimationFrame(() => t.classList.add('show'));
+        setTimeout(() => {
+            t.classList.remove('show');
+            setTimeout(() => t.remove(), 400);
+        }, duracion || 3200);
+    }
+
+    // ============================================================
+    // ✨ CONFIRM MODAL ESTILIZADO (reemplaza confirm() nativo)
+    // ============================================================
+    /**
+     * Modal de confirmación estilizado. Devuelve una Promise<boolean>.
+     * @param {Object} opts
+     * @param {string} opts.titulo
+     * @param {string} opts.mensaje
+     * @param {string} [opts.textoOk='Aceptar']
+     * @param {string} [opts.textoCancelar='Cancelar']
+     * @param {boolean} [opts.peligroso=false]
+     * @returns {Promise<boolean>}
+     */
+    function csConfirm(opts) {
+        return new Promise((resolve) => {
+            const o = opts || {};
+            const overlay = document.createElement('div');
+            overlay.className = 'cs-confirm-overlay';
+            overlay.innerHTML = `
+                <div class="cs-confirm-modal" role="dialog" aria-modal="true">
+                    <div class="cs-confirm-ico">
+                        ${o.peligroso ? '⚠' : '◈'}
+                    </div>
+                    <div class="cs-confirm-titulo">${esc(o.titulo || 'Confirmar')}</div>
+                    <div class="cs-confirm-mensaje">${esc(o.mensaje || '')}</div>
+                    <div class="cs-confirm-acciones">
+                        <button type="button" class="cs-confirm-btn cs-confirm-cancel" data-res="0">${esc(o.textoCancelar || 'Cancelar')}</button>
+                        <button type="button" class="cs-confirm-btn ${o.peligroso ? 'cs-confirm-danger' : 'cs-confirm-ok'}" data-res="1">${esc(o.textoOk || 'Aceptar')}</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            requestAnimationFrame(() => overlay.classList.add('show'));
+
+            function cerrar(res) {
+                overlay.classList.remove('show');
+                setTimeout(() => overlay.remove(), 250);
+                document.removeEventListener('keydown', onKey);
+                resolve(res);
+            }
+            function onKey(e) { if (e.key === 'Escape') cerrar(false); }
+
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) return cerrar(false);
+                const btn = e.target.closest('[data-res]');
+                if (!btn) return;
+                cerrar(btn.dataset.res === '1');
+            });
+            document.addEventListener('keydown', onKey);
+        });
+    }
+
+    // Exponer API global reutilizable
+    window.csToast = csToast;
+    window.csConfirm = csConfirm;
+
+    // ============================================================
+    // FASE 2 · subirMultimedia(archivo, tipo)
+    // ============================================================
     async function subirMultimedia(archivo, tipo, opciones) {
         const opts = opciones || {};
-
-        if (!archivo) {
-            return { ok: false, error: 'Archivo vacío' };
-        }
+        if (!archivo) return { ok: false, error: 'Archivo vacío' };
         if (tipo === 'video' && CONFIG.VIDEO_TYPES.indexOf(archivo.type) === -1) {
             return { ok: false, error: 'Formato de video no soportado' };
         }
         if (tipo === 'imagen' && CONFIG.IMAGE_TYPES.indexOf(archivo.type) === -1) {
             return { ok: false, error: 'Formato de imagen no soportado' };
         }
-
         const limiteMB = CONFIG.PROVIDER === 'supabase' ? CONFIG.MAX_VIDEO_MB : CONFIG.MAX_VIDEO_MB_R2;
         if (tipo === 'video' && archivo.size > limiteMB * 1024 * 1024) {
             return { ok: false, error: `Archivo supera ${limiteMB} MB` };
         }
-
         try {
-            if (CONFIG.PROVIDER === 'supabase') {
-                return await subirMultimediaSupabase(archivo, tipo, opts);
-            }
-            if (CONFIG.PROVIDER === 'r2') {
-                return await subirMultimediaR2(archivo, tipo, opts);
-            }
-            if (CONFIG.PROVIDER === 's3') {
-                return await subirMultimediaS3(archivo, tipo, opts);
-            }
+            if (CONFIG.PROVIDER === 'supabase') return await subirMultimediaSupabase(archivo, tipo, opts);
+            if (CONFIG.PROVIDER === 'r2')       return await subirMultimediaR2(archivo, tipo, opts);
+            if (CONFIG.PROVIDER === 's3')       return await subirMultimediaS3(archivo, tipo, opts);
             return { ok: false, error: 'Provider desconocido' };
         } catch (e) {
             warn('Error subiendo:', e);
@@ -171,60 +218,35 @@
         }
     }
 
-    // -------- Provider: Supabase Storage (por defecto hoy) --------
     async function subirMultimediaSupabase(archivo, tipo, opts) {
         const sb = getSupabaseClient();
         if (!sb) return { ok: false, error: 'Cliente Supabase no disponible' };
-
         const sessionResp = await sb.auth.getSession();
         const session = sessionResp && sessionResp.data && sessionResp.data.session;
         if (!session) return { ok: false, error: 'Sin sesión activa' };
-
         const ext = (archivo.name.split('.').pop() || '').toLowerCase();
         const carpeta = tipo === 'video' ? 'videos' : 'miniaturas';
         const path = `${session.user.id}/${carpeta}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
-
         const up = await sb.storage
             .from(CONFIG.BUCKET)
-            .upload(path, archivo, {
-                cacheControl: '31536000',
-                upsert: false,
-                contentType: archivo.type
-            });
-
+            .upload(path, archivo, { cacheControl: '31536000', upsert: false, contentType: archivo.type });
         if (up.error) return { ok: false, error: up.error.message };
-
         const pub = sb.storage.from(CONFIG.BUCKET).getPublicUrl(path);
         const url = pub && pub.data && pub.data.publicUrl;
         if (!url) return { ok: false, error: 'No se pudo obtener URL pública' };
-
         return { ok: true, url, path, provider: 'supabase' };
     }
-
-    // -------- Provider: R2 (stub, mañana se implementa) --------
     async function subirMultimediaR2(archivo, tipo, opts) {
-        // Cuando migremos: pedir URL prefirmada al backend y PUT directo.
-        // Por ahora devolvemos error para que no se confunda.
-        return {
-            ok: false,
-            error: 'Proveedor R2 aún no habilitado (Fase 3 del proyecto)'
-        };
+        return { ok: false, error: 'Proveedor R2 aún no habilitado (Fase 3 del proyecto)' };
     }
-
-    // -------- Provider: S3 (stub, mañana se implementa) --------
     async function subirMultimediaS3(archivo, tipo, opts) {
-        return {
-            ok: false,
-            error: 'Proveedor S3 aún no habilitado (Fase 3 del proyecto)'
-        };
+        return { ok: false, error: 'Proveedor S3 aún no habilitado (Fase 3 del proyecto)' };
     }
 
     // ============================================================
-    // FASE 1 · UI · INYECCIÓN DE MODALES Y BOTONES
+    // FASE 1 · UI
     // ============================================================
     function inyectarEstilosExtra() {
-        // El CSS pesado vive en videos-publicar.css
-        // Aquí solo un spinner mínimo para no depender del orden de carga
         if (document.getElementById('cs-videos-publicar-inline')) return;
         const st = document.createElement('style');
         st.id = 'cs-videos-publicar-inline';
@@ -246,10 +268,7 @@
 
     function inyectarBotonesHeader() {
         const header = document.querySelector('.header .header-actions');
-        if (!header) {
-            warn('Header no encontrado — no se inyectan botones');
-            return;
-        }
+        if (!header) { warn('Header no encontrado'); return; }
         if (document.getElementById('csBtnAgregarSonido')) return;
 
         // Botón "Agregar sonido"
@@ -257,7 +276,7 @@
         btnSonido.id = 'csBtnAgregarSonido';
         btnSonido.type = 'button';
         btnSonido.className = 'cs-btn-header cs-btn-sonido';
-        btnSonido.innerHTML = '<span class="cs-ico">♪</span> Agregar sonido';
+        btnSonido.innerHTML = '<span class="cs-ico">♪</span><span class="cs-btn-txt">Agregar sonido</span>';
         btnSonido.addEventListener('click', abrirModalSonidos);
 
         // Botón "Ubicación"
@@ -265,7 +284,7 @@
         btnUbic.id = 'csBtnUbicacion';
         btnUbic.type = 'button';
         btnUbic.className = 'cs-btn-header cs-btn-ubicacion';
-        btnUbic.innerHTML = '<span class="cs-ico">◆</span> Ubicación';
+        btnUbic.innerHTML = '<span class="cs-ico">◆</span><span class="cs-btn-txt">Ubicación</span>';
         btnUbic.addEventListener('click', abrirModalUbicacion);
 
         header.insertBefore(btnSonido, header.firstChild);
@@ -274,12 +293,9 @@
 
     function inyectarModales() {
         if (document.getElementById('csModalSonidos')) return;
-
         const contenedor = document.createElement('div');
         contenedor.innerHTML = `
-            <!-- ==================================================
-                 MODAL · BOTTOM SHEET · SONIDOS
-            =================================================== -->
+            <!-- SHEET · SONIDOS -->
             <div class="cs-sheet-backdrop" id="csSheetSonidosBackdrop"></div>
             <div class="cs-sheet" id="csModalSonidos" role="dialog" aria-modal="true" aria-label="Biblioteca de sonidos">
                 <div class="cs-sheet-handle"></div>
@@ -290,13 +306,11 @@
                     </div>
                     <button type="button" class="cs-sheet-close" aria-label="Cerrar" data-cs-close="sonidos">✕</button>
                 </div>
-
                 <div class="cs-tabs" role="tablist">
                     <button type="button" role="tab" class="cs-tab active" data-tab="parati">Para ti</button>
                     <button type="button" role="tab" class="cs-tab" data-tab="populares">Populares</button>
                     <button type="button" role="tab" class="cs-tab" data-tab="favoritos">Favoritos</button>
                 </div>
-
                 <div class="cs-sheet-body">
                     <div class="cs-buscar-wrap">
                         <span class="cs-ico-buscar">◇</span>
@@ -304,16 +318,13 @@
                     </div>
                     <div class="cs-sonidos-lista" id="csSonidosLista"></div>
                 </div>
-
                 <div class="cs-sheet-footer">
                     <div class="cs-sonido-actual" id="csSonidoActualInfo">Sin sonido seleccionado</div>
                     <button type="button" class="cs-btn-primary" id="csBtnConfirmarSonido" disabled>Usar este sonido</button>
                 </div>
             </div>
 
-            <!-- ==================================================
-                 MODAL · BOTTOM SHEET · UBICACIÓN
-            =================================================== -->
+            <!-- SHEET · UBICACIÓN -->
             <div class="cs-sheet-backdrop" id="csSheetUbicacionBackdrop"></div>
             <div class="cs-sheet" id="csModalUbicacion" role="dialog" aria-modal="true" aria-label="Seleccionar ubicación">
                 <div class="cs-sheet-handle"></div>
@@ -324,7 +335,6 @@
                     </div>
                     <button type="button" class="cs-sheet-close" aria-label="Cerrar" data-cs-close="ubicacion">✕</button>
                 </div>
-
                 <div class="cs-sheet-body">
                     <div class="cs-buscar-wrap">
                         <span class="cs-ico-buscar">◇</span>
@@ -332,16 +342,13 @@
                     </div>
                     <div class="cs-ubicaciones-lista" id="csUbicacionesLista"></div>
                 </div>
-
                 <div class="cs-sheet-footer">
                     <div class="cs-ubicacion-actual" id="csUbicacionActualInfo">Sin ubicación seleccionada</div>
                     <button type="button" class="cs-btn-primary" id="csBtnConfirmarUbicacion" disabled>Usar esta ubicación</button>
                 </div>
             </div>
 
-            <!-- ==================================================
-                 MODAL · BORRADORES
-            =================================================== -->
+            <!-- SHEET · BORRADORES -->
             <div class="cs-sheet-backdrop" id="csSheetBorradoresBackdrop"></div>
             <div class="cs-sheet" id="csModalBorradores" role="dialog" aria-modal="true" aria-label="Borradores">
                 <div class="cs-sheet-handle"></div>
@@ -362,15 +369,13 @@
                 </div>
             </div>
         `;
-
-        // Añadir todo al body
-        while (contenedor.firstChild) {
-            document.body.appendChild(contenedor.firstChild);
-        }
+        while (contenedor.firstChild) document.body.appendChild(contenedor.firstChild);
     }
 
+    // ============================================================
+    // 🔥 SECCIÓN PREVIEW + BOTONES ESTILIZADOS DE ARCHIVO
+    // ============================================================
     function inyectarSeccionPreviewEnUpload() {
-        // Se agrega dentro de .upload-section, antes del botón de subir
         const uploadSection = document.getElementById('uploadSection');
         if (!uploadSection) return;
         if (document.getElementById('csPreviewWrap')) return;
@@ -378,6 +383,10 @@
         const form = uploadSection.querySelector('form');
         if (!form) return;
 
+        // 1) Reemplazar el input[type=file] por botón estilizado
+        mejorarInputArchivo(uploadSection);
+
+        // 2) Insertar bloque de preview + borradores
         const wrap = document.createElement('div');
         wrap.id = 'csPreviewWrap';
         wrap.className = 'cs-preview-wrap';
@@ -405,33 +414,75 @@
                 </div>
             </div>
         `;
-
-        // Insertar antes del último form-group (el de archivo)
         const grupos = form.querySelectorAll('.form-group');
-        if (grupos.length > 0) {
-            form.insertBefore(wrap, grupos[grupos.length - 1]);
-        } else {
-            form.appendChild(wrap);
-        }
+        if (grupos.length > 0) form.insertBefore(wrap, grupos[grupos.length - 1]);
+        else form.appendChild(wrap);
 
-        // Listeners
         $('csBtnVerBorradores').addEventListener('click', abrirModalBorradores);
         $('csBtnGuardarBorrador').addEventListener('click', guardarBorrador);
     }
 
     // ============================================================
-    // FASE 1 · LÓGICA DE MODALES
+    // 🎨 CONVERTIR input[type=file] NATIVO EN BOTÓN ESTILIZADO
+    // ============================================================
+    function mejorarInputArchivo(scope) {
+        const input = scope.querySelector('#inputArchivoVideo') || document.getElementById('inputArchivoVideo');
+        if (!input) return;
+        if (input.dataset.csEstilizado === '1') return;
+        input.dataset.csEstilizado = '1';
+
+        // Ocultar el input nativo
+        input.style.position = 'absolute';
+        input.style.width = '1px';
+        input.style.height = '1px';
+        input.style.opacity = '0';
+        input.style.pointerEvents = 'none';
+
+        // Crear el botón estilizado
+        const btnWrap = document.createElement('div');
+        btnWrap.className = 'cs-file-btn-wrap';
+        btnWrap.innerHTML = `
+            <button type="button" class="cs-file-btn" id="csFileBtnVideo">
+                <span class="cs-file-btn-ico">▶</span>
+                <span class="cs-file-btn-txt" id="csFileBtnTxt">Elegir video de la galería</span>
+                <span class="cs-file-btn-hint" id="csFileBtnHint">MP4 · WebM · MOV · Máx 100 MB</span>
+            </button>
+        `;
+        input.parentNode.insertBefore(btnWrap, input);
+
+        const btn = btnWrap.querySelector('#csFileBtnVideo');
+        btn.addEventListener('click', () => input.click());
+
+        input.addEventListener('change', () => {
+            const file = input.files && input.files[0];
+            const txt = document.getElementById('csFileBtnTxt');
+            const hint = document.getElementById('csFileBtnHint');
+            if (file) {
+                if (txt) txt.textContent = '◈ ' + file.name;
+                if (hint) {
+                    const mb = (file.size / (1024 * 1024)).toFixed(2);
+                    hint.textContent = mb + ' MB · Listo para subir';
+                }
+                btnWrap.classList.add('cs-file-con-archivo');
+            } else {
+                if (txt) txt.textContent = 'Elegir video de la galería';
+                if (hint) hint.textContent = 'MP4 · WebM · MOV · Máx 100 MB';
+                btnWrap.classList.remove('cs-file-con-archivo');
+            }
+        });
+    }
+
+    // ============================================================
+    // LÓGICA DE MODALES
     // ============================================================
     function abrirModalSonidos() {
         renderSonidos(state.tabSonidosActiva, '');
         mostrarSheet('csModalSonidos', 'csSheetSonidosBackdrop');
     }
-
     function abrirModalUbicacion() {
         renderUbicaciones('');
         mostrarSheet('csModalUbicacion', 'csSheetUbicacionBackdrop');
     }
-
     function abrirModalBorradores() {
         renderBorradores();
         mostrarSheet('csModalBorradores', 'csSheetBorradoresBackdrop');
@@ -445,7 +496,6 @@
         sheet.classList.add('show');
         document.body.style.overflow = 'hidden';
     }
-
     function cerrarSheet(sheetId, backdropId) {
         const sheet = $(sheetId);
         const backdrop = $(backdropId);
@@ -453,34 +503,26 @@
         if (backdrop) backdrop.classList.remove('show');
         document.body.style.overflow = '';
     }
-
     function cerrarTodosLosSheets() {
         cerrarSheet('csModalSonidos', 'csSheetSonidosBackdrop');
         cerrarSheet('csModalUbicacion', 'csSheetUbicacionBackdrop');
         cerrarSheet('csModalBorradores', 'csSheetBorradoresBackdrop');
     }
 
-    // -------- Render sonidos --------
+    // -------- Sonidos --------
     function renderSonidos(tab, filtro) {
         state.tabSonidosActiva = tab || 'parati';
         const lista = $('csSonidosLista');
         if (!lista) return;
-
         const fuente = SONIDOS_SEED[state.tabSonidosActiva] || [];
         const term = (filtro || '').toLowerCase().trim();
         const arr = term
             ? fuente.filter(s => (s.nombre + ' ' + s.artista).toLowerCase().indexOf(term) !== -1)
             : fuente;
-
         if (arr.length === 0) {
-            lista.innerHTML = `
-                <div class="cs-vacio">
-                    <span class="cs-ico-vacio">♪</span>
-                    <p>Sin pistas en esta sección.</p>
-                </div>`;
+            lista.innerHTML = `<div class="cs-vacio"><span class="cs-ico-vacio">♪</span><p>Sin pistas en esta sección.</p></div>`;
             return;
         }
-
         lista.innerHTML = arr.map(s => `
             <button type="button" class="cs-sonido-item ${state.sonidoSeleccionado && state.sonidoSeleccionado.id === s.id ? 'activo' : ''}" data-sonido-id="${esc(s.id)}">
                 <span class="cs-sonido-ico">▶</span>
@@ -491,23 +533,15 @@
                 <span class="cs-sonido-check">◆</span>
             </button>
         `).join('');
-
-        // Listeners (delegado simple, sin tocar onclick)
         lista.querySelectorAll('.cs-sonido-item').forEach(btn => {
             btn.addEventListener('click', () => seleccionarSonido(btn.dataset.sonidoId));
         });
     }
-
     function seleccionarSonido(id) {
-        const todas = []
-            .concat(SONIDOS_SEED.parati)
-            .concat(SONIDOS_SEED.populares)
-            .concat(SONIDOS_SEED.favoritos);
+        const todas = [].concat(SONIDOS_SEED.parati).concat(SONIDOS_SEED.populares).concat(SONIDOS_SEED.favoritos);
         const s = todas.find(x => x.id === id);
         if (!s) return;
         state.sonidoSeleccionado = s;
-
-        // Actualizar UI
         document.querySelectorAll('.cs-sonido-item').forEach(el => {
             el.classList.toggle('activo', el.dataset.sonidoId === id);
         });
@@ -516,19 +550,15 @@
         const btn = $('csBtnConfirmarSonido');
         if (btn) btn.disabled = false;
     }
-
     function confirmarSonido() {
         const s = state.sonidoSeleccionado;
         const preview = $('csPreviewSonido');
-        if (preview) {
-            preview.querySelector('.cs-preview-txt').textContent =
-                s ? `${s.nombre} — ${s.artista}` : 'Sin sonido';
-        }
+        if (preview) preview.querySelector('.cs-preview-txt').textContent = s ? `${s.nombre} — ${s.artista}` : 'Sin sonido';
         actualizarBadgePreview();
         cerrarTodosLosSheets();
     }
 
-    // -------- Render ubicaciones --------
+    // -------- Ubicaciones --------
     function renderUbicaciones(filtro) {
         const lista = $('csUbicacionesLista');
         if (!lista) return;
@@ -536,16 +566,10 @@
         const arr = term
             ? UBICACIONES_SEED.filter(u => u.nombre.toLowerCase().indexOf(term) !== -1)
             : UBICACIONES_SEED;
-
         if (arr.length === 0) {
-            lista.innerHTML = `
-                <div class="cs-vacio">
-                    <span class="cs-ico-vacio">◆</span>
-                    <p>Sin resultados.</p>
-                </div>`;
+            lista.innerHTML = `<div class="cs-vacio"><span class="cs-ico-vacio">◆</span><p>Sin resultados.</p></div>`;
             return;
         }
-
         lista.innerHTML = arr.map(u => `
             <button type="button" class="cs-ubicacion-item ${state.ubicacionSeleccionada && state.ubicacionSeleccionada.id === u.id ? 'activo' : ''}" data-ubicacion-id="${esc(u.id)}">
                 <span class="cs-ubicacion-ico">◆</span>
@@ -556,17 +580,14 @@
                 <span class="cs-ubicacion-check">◆</span>
             </button>
         `).join('');
-
         lista.querySelectorAll('.cs-ubicacion-item').forEach(btn => {
             btn.addEventListener('click', () => seleccionarUbicacion(btn.dataset.ubicacionId));
         });
     }
-
     function seleccionarUbicacion(id) {
         const u = UBICACIONES_SEED.find(x => x.id === id);
         if (!u) return;
         state.ubicacionSeleccionada = u;
-
         document.querySelectorAll('.cs-ubicacion-item').forEach(el => {
             el.classList.toggle('activo', el.dataset.ubicacionId === id);
         });
@@ -575,18 +596,14 @@
         const btn = $('csBtnConfirmarUbicacion');
         if (btn) btn.disabled = false;
     }
-
     function confirmarUbicacion() {
         const u = state.ubicacionSeleccionada;
         const preview = $('csPreviewUbicacion');
-        if (preview) {
-            preview.querySelector('.cs-preview-txt').textContent =
-                u ? `${u.nombre}, ${u.pais}` : 'Sin ubicación';
-        }
+        if (preview) preview.querySelector('.cs-preview-txt').textContent = u ? `${u.nombre}, ${u.pais}` : 'Sin ubicación';
         cerrarTodosLosSheets();
     }
 
-    // -------- Borradores (placeholder hasta fase 3) --------
+    // -------- Borradores --------
     async function renderBorradores() {
         const lista = $('csBorradoresLista');
         if (!lista) return;
@@ -594,28 +611,23 @@
             <div class="cs-vacio">
                 <span class="cs-ico-vacio">◈</span>
                 <p>Función de borradores en preparación.</p>
-                <p style="font-size:0.7rem;color:var(--text-muted);margin-top:6px;">
-                    Pronto podrás guardar y reanudar tus publicaciones.
-                </p>
+                <p style="font-size:0.7rem;color:var(--text-muted);margin-top:6px;">Pronto podrás guardar y reanudar tus publicaciones.</p>
             </div>`;
     }
 
+    // ✨ AHORA USA csToast EN VEZ DE alert()
     function guardarBorrador() {
-        alert('Guardado de borradores estará disponible en la Fase 3.');
+        csToast('El guardado de borradores estará disponible muy pronto', 'info', 3200);
     }
 
     function actualizarBadgePreview() {
         const badge = $('csPreviewBadge');
         if (!badge) return;
-        if (state.sonidoSeleccionado) {
-            badge.style.display = 'inline-flex';
-        } else {
-            badge.style.display = 'none';
-        }
+        badge.style.display = state.sonidoSeleccionado ? 'inline-flex' : 'none';
     }
 
     // ============================================================
-    // FASE 2 · PREVIEW DE VIDEO CUANDO SE SELECCIONA ARCHIVO
+    // PREVIEW DE VIDEO
     // ============================================================
     function engancharInputArchivo() {
         const input = document.getElementById('inputArchivoVideo');
@@ -627,46 +639,34 @@
             const file = input.files && input.files[0];
             if (!file) return;
             state.archivoVideo = file;
-
-            // Revocar el anterior si existe
             if (state.previewURL) {
                 URL.revokeObjectURL(state.previewURL);
                 state.previewURL = null;
             }
             state.previewURL = URL.createObjectURL(file);
             const v = $('csPreviewVideo');
-            if (v) {
-                v.src = state.previewURL;
-                v.load();
-            }
+            if (v) { v.src = state.previewURL; v.load(); }
             log('Preview listo para:', file.name);
         });
     }
 
     // ============================================================
-    // LISTENERS GLOBALES (una sola vez)
+    // LISTENERS GLOBALES
     // ============================================================
     function engancharListenersGlobales() {
         if (window.__csVideosPublicarListeners) return;
         window.__csVideosPublicarListeners = true;
 
-        // Cerrar sheets con click en backdrop
         document.body.addEventListener('click', function (e) {
             const t = e.target;
-            if (t.classList && t.classList.contains('cs-sheet-backdrop')) {
-                cerrarTodosLosSheets();
-            }
-            if (t.closest && t.closest('[data-cs-close]')) {
-                cerrarTodosLosSheets();
-            }
+            if (t.classList && t.classList.contains('cs-sheet-backdrop')) cerrarTodosLosSheets();
+            if (t.closest && t.closest('[data-cs-close]')) cerrarTodosLosSheets();
         });
 
-        // Escape
         document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') cerrarTodosLosSheets();
         });
 
-        // Tabs sonidos
         document.addEventListener('click', function (e) {
             const tab = e.target.closest && e.target.closest('.cs-tab[data-tab]');
             if (!tab) return;
@@ -675,32 +675,14 @@
             renderSonidos(tab.dataset.tab, ($('csBuscarSonido') || {}).value || '');
         });
 
-        // Buscador sonidos
         document.addEventListener('input', function (e) {
-            if (e.target && e.target.id === 'csBuscarSonido') {
-                renderSonidos(state.tabSonidosActiva, e.target.value);
-            }
+            if (e.target && e.target.id === 'csBuscarSonido') renderSonidos(state.tabSonidosActiva, e.target.value);
+            if (e.target && e.target.id === 'csBuscarUbicacion') renderUbicaciones(e.target.value);
         });
 
-        // Buscador ubicación
-        document.addEventListener('input', function (e) {
-            if (e.target && e.target.id === 'csBuscarUbicacion') {
-                renderUbicaciones(e.target.value);
-            }
-        });
-
-        // Botón confirmar sonido
         document.addEventListener('click', function (e) {
-            if (e.target && e.target.id === 'csBtnConfirmarSonido') {
-                confirmarSonido();
-            }
-        });
-
-        // Botón confirmar ubicación
-        document.addEventListener('click', function (e) {
-            if (e.target && e.target.id === 'csBtnConfirmarUbicacion') {
-                confirmarUbicacion();
-            }
+            if (e.target && e.target.id === 'csBtnConfirmarSonido') confirmarSonido();
+            if (e.target && e.target.id === 'csBtnConfirmarUbicacion') confirmarUbicacion();
         });
     }
 
@@ -708,27 +690,20 @@
     // API PÚBLICA
     // ============================================================
     window.VideosPublicar = {
-        // Fase 1
         abrirModalSonidos,
         abrirModalUbicacion,
         abrirModalBorradores,
         cerrarTodosLosSheets,
-
-        // Fase 2
         subirMultimedia,
-
-        // Configuración viva
+        csToast,
+        csConfirm,
         getConfig: () => ({ ...CONFIG }),
         setProvider: (p) => { CONFIG.PROVIDER = p; },
-
-        // Estado (útil para debug)
         getState: () => ({
             sonido: state.sonidoSeleccionado,
             ubicacion: state.ubicacionSeleccionada,
             archivoVideo: state.archivoVideo ? state.archivoVideo.name : null
         }),
-
-        // Semilla editable en caliente (mientras no haya backend real)
         _seed: { SONIDOS_SEED, UBICACIONES_SEED }
     };
 
@@ -742,13 +717,10 @@
         inyectarSeccionPreviewEnUpload();
         engancharInputArchivo();
         engancharListenersGlobales();
-        log('✅ Módulo Publicar listo (Fase 1 + 2)');
+        log('✅ Módulo Publicar v1.1 listo');
     }
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
-    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
 
 })();
