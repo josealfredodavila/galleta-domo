@@ -1,15 +1,15 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v1.1
+   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v1.2
    ================================================================
    FASE 1: UI de modales (sonidos, ubicación, borradores, preview)
    FASE 2: Carga modular de archivos (subirMultimedia)
 
-   Novedades v1.1:
-   - ✅ Toast propio del ecosistema (reemplaza alert() nativos)
-   - ✅ Botón estilizado "Elegir video de la galería"
-   - ✅ Botón estilizado "Elegir imagen" (para futuro)
-   - ✅ Modal de confirmación estilizado (reemplaza confirm())
-   - ✅ API pública csToast() y csConfirm() para reutilizar en todo el proyecto
+   Novedades v1.2:
+   - ✅ Input file 100% oculto con display:none !important
+   - ✅ Label estilizado que reemplaza visualmente el input
+   - ✅ Reset completo del formulario tras publicar exitosamente
+   - ✅ Refresco automático del feed sin recargar URL
+   - ✅ Reset de preview, sonido, ubicación y progreso
    ================================================================ */
 
 (function () {
@@ -113,14 +113,8 @@
     }
 
     // ============================================================
-    // ✨ TOAST PROPIO DEL ECOSISTEMA
+    // ✨ TOAST PROPIO
     // ============================================================
-    /**
-     * Muestra una notificación estilizada tipo ciberpunk.
-     * @param {string} mensaje
-     * @param {'info'|'success'|'warning'|'error'} [tipo='info']
-     * @param {number} [duracion=3200]
-     */
     function csToast(mensaje, tipo, duracion) {
         const t = document.createElement('div');
         t.className = 'cs-toast cs-toast-' + (tipo || 'info');
@@ -136,18 +130,8 @@
     }
 
     // ============================================================
-    // ✨ CONFIRM MODAL ESTILIZADO (reemplaza confirm() nativo)
+    // ✨ CONFIRM MODAL
     // ============================================================
-    /**
-     * Modal de confirmación estilizado. Devuelve una Promise<boolean>.
-     * @param {Object} opts
-     * @param {string} opts.titulo
-     * @param {string} opts.mensaje
-     * @param {string} [opts.textoOk='Aceptar']
-     * @param {string} [opts.textoCancelar='Cancelar']
-     * @param {boolean} [opts.peligroso=false]
-     * @returns {Promise<boolean>}
-     */
     function csConfirm(opts) {
         return new Promise((resolve) => {
             const o = opts || {};
@@ -155,9 +139,7 @@
             overlay.className = 'cs-confirm-overlay';
             overlay.innerHTML = `
                 <div class="cs-confirm-modal" role="dialog" aria-modal="true">
-                    <div class="cs-confirm-ico">
-                        ${o.peligroso ? '⚠' : '◈'}
-                    </div>
+                    <div class="cs-confirm-ico">${o.peligroso ? '⚠' : '◈'}</div>
                     <div class="cs-confirm-titulo">${esc(o.titulo || 'Confirmar')}</div>
                     <div class="cs-confirm-mensaje">${esc(o.mensaje || '')}</div>
                     <div class="cs-confirm-acciones">
@@ -168,7 +150,6 @@
             `;
             document.body.appendChild(overlay);
             requestAnimationFrame(() => overlay.classList.add('show'));
-
             function cerrar(res) {
                 overlay.classList.remove('show');
                 setTimeout(() => overlay.remove(), 250);
@@ -176,7 +157,6 @@
                 resolve(res);
             }
             function onKey(e) { if (e.key === 'Escape') cerrar(false); }
-
             overlay.addEventListener('click', (e) => {
                 if (e.target === overlay) return cerrar(false);
                 const btn = e.target.closest('[data-res]');
@@ -187,12 +167,11 @@
         });
     }
 
-    // Exponer API global reutilizable
     window.csToast = csToast;
     window.csConfirm = csConfirm;
 
     // ============================================================
-    // FASE 2 · subirMultimedia(archivo, tipo)
+    // FASE 2 · subirMultimedia
     // ============================================================
     async function subirMultimedia(archivo, tipo, opciones) {
         const opts = opciones || {};
@@ -244,6 +223,109 @@
     }
 
     // ============================================================
+    // ✨ RESET COMPLETO DEL FORMULARIO
+    // ============================================================
+    function resetFormularioPublicacion() {
+        // 1) Campos de texto
+        const inputTitulo = document.getElementById('inputTituloVideo');
+        const inputDesc = document.getElementById('inputDescripcionVideo');
+        if (inputTitulo) inputTitulo.value = '';
+        if (inputDesc) inputDesc.value = '';
+
+        // 2) Input de archivo
+        const inputArchivo = document.getElementById('inputArchivoVideo');
+        if (inputArchivo) {
+            try { inputArchivo.value = ''; } catch (e) {}
+        }
+
+        // 3) Preview video
+        const preview = document.getElementById('csPreviewVideo');
+        if (preview) {
+            try { preview.pause(); } catch (e) {}
+            preview.removeAttribute('src');
+            try { preview.load(); } catch (e) {}
+        }
+
+        // 4) Liberar objectURL
+        if (state.previewURL) {
+            try { URL.revokeObjectURL(state.previewURL); } catch (e) {}
+            state.previewURL = null;
+        }
+        state.archivoVideo = null;
+        state.urlVideoSubida = null;
+        state.pathVideoSubida = null;
+
+        // 5) Botón file
+        const btnTxt = document.getElementById('csFileBtnTxt');
+        const btnHint = document.getElementById('csFileBtnHint');
+        const btnWrap = document.querySelector('.cs-file-btn-wrap');
+        if (btnTxt) btnTxt.textContent = 'Elegir video de la galería';
+        if (btnHint) btnHint.textContent = 'MP4 · WebM · MOV · Máx 100 MB';
+        if (btnWrap) btnWrap.classList.remove('cs-file-con-archivo');
+
+        // 6) Sonido + ubicación (reset visual)
+        state.sonidoSeleccionado = null;
+        state.ubicacionSeleccionada = null;
+        const previewSonido = $('csPreviewSonido');
+        const previewUbic = $('csPreviewUbicacion');
+        if (previewSonido) previewSonido.querySelector('.cs-preview-txt').textContent = 'Sin sonido';
+        if (previewUbic) previewUbic.querySelector('.cs-preview-txt').textContent = 'Sin ubicación';
+        const badge = $('csPreviewBadge');
+        if (badge) badge.style.display = 'none';
+
+        // 7) Barra de progreso del form
+        const progressEl = document.getElementById('uploadProgress');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        if (progressEl) progressEl.style.display = 'none';
+        if (progressFill) progressFill.style.width = '0%';
+        if (progressText) progressText.textContent = '0%';
+
+        // 8) Barra de progreso de procesamiento
+        const pFill = document.getElementById('processingProgressFill');
+        const pText = document.getElementById('processingProgressText');
+        if (pFill) pFill.style.width = '0%';
+        if (pText) pText.textContent = '0%';
+
+        log('🔄 Formulario reseteado');
+    }
+    window.csResetFormularioPublicacion = resetFormularioPublicacion;
+
+    // ============================================================
+    // ✨ REFRESCAR FEED SIN RECARGAR
+    // ============================================================
+    function refrescarFeedAutomatico() {
+        // Intentar llamar directamente a la función global del feed
+        try {
+            if (typeof window.cargarVideos === 'function') {
+                log('🔄 Refrescando feed con cargarVideos()...');
+                Promise.resolve(window.cargarVideos()).catch((e) => {
+                    warn('cargarVideos() falló, disparando evento:', e);
+                    dispararEventoRefresh();
+                });
+                return;
+            }
+        } catch (e) { warn('Error llamando cargarVideos:', e); }
+
+        // Fallback: disparar evento custom
+        dispararEventoRefresh();
+    }
+
+    function dispararEventoRefresh() {
+        try {
+            window.dispatchEvent(new CustomEvent('csariels:videos:refresh'));
+            log('📡 Evento csariels:videos:refresh disparado');
+        } catch (e) { warn('No se pudo disparar el evento:', e); }
+
+        // Fallback final: scroll al top del contenedor
+        try {
+            const feed = document.getElementById('videosContainer');
+            if (feed) feed.scrollTo({ top: 0, behavior: 'smooth' });
+        } catch (e) {}
+    }
+    window.csRefrescarFeedVideos = refrescarFeedAutomatico;
+
+    // ============================================================
     // FASE 1 · UI
     // ============================================================
     function inyectarEstilosExtra() {
@@ -271,7 +353,6 @@
         if (!header) { warn('Header no encontrado'); return; }
         if (document.getElementById('csBtnAgregarSonido')) return;
 
-        // Botón "Agregar sonido"
         const btnSonido = document.createElement('button');
         btnSonido.id = 'csBtnAgregarSonido';
         btnSonido.type = 'button';
@@ -279,7 +360,6 @@
         btnSonido.innerHTML = '<span class="cs-ico">♪</span><span class="cs-btn-txt">Agregar sonido</span>';
         btnSonido.addEventListener('click', abrirModalSonidos);
 
-        // Botón "Ubicación"
         const btnUbic = document.createElement('button');
         btnUbic.id = 'csBtnUbicacion';
         btnUbic.type = 'button';
@@ -372,9 +452,6 @@
         while (contenedor.firstChild) document.body.appendChild(contenedor.firstChild);
     }
 
-    // ============================================================
-    // 🔥 SECCIÓN PREVIEW + BOTONES ESTILIZADOS DE ARCHIVO
-    // ============================================================
     function inyectarSeccionPreviewEnUpload() {
         const uploadSection = document.getElementById('uploadSection');
         if (!uploadSection) return;
@@ -383,10 +460,9 @@
         const form = uploadSection.querySelector('form');
         if (!form) return;
 
-        // 1) Reemplazar el input[type=file] por botón estilizado
-        mejorarInputArchivo(uploadSection);
+        // 🔥 PRIMERO: transformar el input file nativo
+        transformarInputArchivo(uploadSection);
 
-        // 2) Insertar bloque de preview + borradores
         const wrap = document.createElement('div');
         wrap.id = 'csPreviewWrap';
         wrap.className = 'cs-preview-wrap';
@@ -423,36 +499,50 @@
     }
 
     // ============================================================
-    // 🎨 CONVERTIR input[type=file] NATIVO EN BOTÓN ESTILIZADO
+    // 🔥 TRANSFORMACIÓN TOTAL DEL INPUT FILE
     // ============================================================
-    function mejorarInputArchivo(scope) {
+    function transformarInputArchivo(scope) {
         const input = scope.querySelector('#inputArchivoVideo') || document.getElementById('inputArchivoVideo');
-        if (!input) return;
-        if (input.dataset.csEstilizado === '1') return;
-        input.dataset.csEstilizado = '1';
+        if (!input) { warn('inputArchivoVideo no encontrado'); return; }
+        if (input.dataset.csTransformado === '1') return;
+        input.dataset.csTransformado = '1';
 
-        // Ocultar el input nativo
-        input.style.position = 'absolute';
-        input.style.width = '1px';
-        input.style.height = '1px';
-        input.style.opacity = '0';
-        input.style.pointerEvents = 'none';
+        // 1) Ocultar el input de forma agresiva
+        input.style.setProperty('display', 'none', 'important');
+        input.style.setProperty('visibility', 'hidden', 'important');
+        input.style.setProperty('position', 'absolute', 'important');
+        input.style.setProperty('width', '0', 'important');
+        input.style.setProperty('height', '0', 'important');
+        input.style.setProperty('opacity', '0', 'important');
+        input.style.setProperty('pointer-events', 'none', 'important');
+        input.setAttribute('tabindex', '-1');
+        input.setAttribute('aria-hidden', 'true');
 
-        // Crear el botón estilizado
+        // 2) Crear el botón estilizado
         const btnWrap = document.createElement('div');
         btnWrap.className = 'cs-file-btn-wrap';
         btnWrap.innerHTML = `
-            <button type="button" class="cs-file-btn" id="csFileBtnVideo">
+            <button type="button" class="cs-file-btn" id="csFileBtnVideo" aria-label="Elegir video de la galería">
                 <span class="cs-file-btn-ico">▶</span>
                 <span class="cs-file-btn-txt" id="csFileBtnTxt">Elegir video de la galería</span>
                 <span class="cs-file-btn-hint" id="csFileBtnHint">MP4 · WebM · MOV · Máx 100 MB</span>
             </button>
         `;
-        input.parentNode.insertBefore(btnWrap, input);
 
+        // 3) Insertar el botón justo después del input (o antes)
+        if (input.parentNode) {
+            input.parentNode.insertBefore(btnWrap, input.nextSibling);
+        }
+
+        // 4) Conectar el click
         const btn = btnWrap.querySelector('#csFileBtnVideo');
-        btn.addEventListener('click', () => input.click());
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            input.click();
+        });
 
+        // 5) Actualizar UI al elegir archivo
         input.addEventListener('change', () => {
             const file = input.files && input.files[0];
             const txt = document.getElementById('csFileBtnTxt');
@@ -470,6 +560,8 @@
                 btnWrap.classList.remove('cs-file-con-archivo');
             }
         });
+
+        log('✅ Input file transformado en botón estilizado');
     }
 
     // ============================================================
@@ -509,7 +601,6 @@
         cerrarSheet('csModalBorradores', 'csSheetBorradoresBackdrop');
     }
 
-    // -------- Sonidos --------
     function renderSonidos(tab, filtro) {
         state.tabSonidosActiva = tab || 'parati';
         const lista = $('csSonidosLista');
@@ -558,7 +649,6 @@
         cerrarTodosLosSheets();
     }
 
-    // -------- Ubicaciones --------
     function renderUbicaciones(filtro) {
         const lista = $('csUbicacionesLista');
         if (!lista) return;
@@ -603,7 +693,6 @@
         cerrarTodosLosSheets();
     }
 
-    // -------- Borradores --------
     async function renderBorradores() {
         const lista = $('csBorradoresLista');
         if (!lista) return;
@@ -615,7 +704,6 @@
             </div>`;
     }
 
-    // ✨ AHORA USA csToast EN VEZ DE alert()
     function guardarBorrador() {
         csToast('El guardado de borradores estará disponible muy pronto', 'info', 3200);
     }
@@ -647,6 +735,21 @@
             const v = $('csPreviewVideo');
             if (v) { v.src = state.previewURL; v.load(); }
             log('Preview listo para:', file.name);
+        });
+    }
+
+    // ============================================================
+    // ✨ LISTENER PARA PUBLICACIÓN EXITOSA
+    // ============================================================
+    function engancharEventoPublicacionExitosa() {
+        if (window.__csPublicacionListener) return;
+        window.__csPublicacionListener = true;
+
+        // Escuchar evento personalizado que puede disparar el código del feed
+        window.addEventListener('csariels:videos:publicado', () => {
+            log('✅ Evento publicado recibido — reseteando formulario y refrescando feed');
+            resetFormularioPublicacion();
+            setTimeout(refrescarFeedAutomatico, 300);
         });
     }
 
@@ -697,6 +800,8 @@
         subirMultimedia,
         csToast,
         csConfirm,
+        resetFormularioPublicacion,
+        refrescarFeedAutomatico,
         getConfig: () => ({ ...CONFIG }),
         setProvider: (p) => { CONFIG.PROVIDER = p; },
         getState: () => ({
@@ -717,7 +822,8 @@
         inyectarSeccionPreviewEnUpload();
         engancharInputArchivo();
         engancharListenersGlobales();
-        log('✅ Módulo Publicar v1.1 listo');
+        engancharEventoPublicacionExitosa();
+        log('✅ Módulo Publicar v1.2 listo');
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
