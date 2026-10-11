@@ -73,7 +73,7 @@
         <a href="/features/perfil/configuracion/index.html" class="config-btn" data-clave-title="perfil_titulo_config" title="Configuración">
             <svg class="icon icon-lg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         </a>
-        
+
         <div class="avatar-container" style="position:relative;">
             <div class="avatar" id="perfilAvatar" onclick="window.toggleAvatarMenu(event)">
                 ◈
@@ -97,7 +97,7 @@
         <div class="info">
             <div class="nombre" id="perfilNombre">
                 <span data-clave="perfil_nombre_usuario">Explorador</span>
-                <span class="verified" id="verificadoBadge" style="display:none;">
+                <span class="verified" data-clave="perfil_badge_verificado">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg>
                     VERIFICADO
                 </span>
@@ -109,20 +109,20 @@
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg>
                     MIEMBRO
                 </span>
-                <span class="badge" id="badgeActividad" data-no-traducir="1">
+                <span class="badge success" data-clave="perfil_badge_activo">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="currentColor" stroke="none"/></svg>
-                    <span id="badgeActividadTexto">…</span>
+                    ACTIVO
                 </span>
                 <span class="badge" id="walletChip" data-no-traducir="1" title="Toca para copiar" style="display:none;cursor:pointer;border-color:var(--cyan);color:var(--cyan);background:rgba(0,229,255,0.05);font-family:monospace;">
                     ◈ 0x…
                 </span>
-                <span class="badge" id="badgeWeb3" data-no-traducir="1" style="cursor:pointer;">
+                <span class="badge" data-clave="perfil_badge_web3">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/><polygon points="12 7 16 9.5 16 14.5 12 17 8 14.5 8 9.5 12 7"/></svg>
-                    <span id="badgeWeb3Texto">WEB3</span>
+                    WEB3
                 </span>
-                <span class="badge" id="nivelUsuario" data-no-traducir="1" style="border-color:var(--purple);color:var(--purple);background:rgba(168,85,247,0.05);">
+                <span class="badge" id="nivelUsuario" style="border-color:var(--purple);color:var(--purple);background:rgba(168,85,247,0.05);">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg>
-                    <span id="nivelTexto">Explorador</span>
+                    <span data-clave="perfil_nivel_explorador">Explorador</span>
                 </span>
             </div>
         </div>
@@ -194,14 +194,13 @@
                 <span class="amigos-online">· <span id="amigosEnLineaContador">0</span> <span data-clave="perfil_amigos_en_linea">amigos en línea</span></span>
             </div>
             <div class="estado-buttons">
-                <!-- ⬅️ CAMBIO 3: botones Mostrar/Ocultar estado -->
-                <button class="btn-estado online" onclick="window.cambiarEstado(true)" data-clave="perfil_btn_mostrar_estado">
+                <button class="btn-estado online" onclick="window.cambiarEstado(true)" data-clave="perfil_btn_activo">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="currentColor" stroke="none"/></svg>
-                    Mostrar estado
+                    Activo
                 </button>
-                <button class="btn-estado offline" onclick="window.cambiarEstado(false)" data-clave="perfil_btn_ocultar_estado">
+                <button class="btn-estado offline" onclick="window.cambiarEstado(false)" data-clave="perfil_btn_inactivo">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg>
-                    Ocultar estado
+                    Inactivo
                 </button>
             </div>
         </div>
@@ -222,8 +221,6 @@
 
         <div id="amigosContainer"></div>
     </div>
-
-    <!-- ... (resto del perfil.html IGUAL hasta el final) ... -->
 
     <div class="pro-section" id="proSection">
         <div class="pro-header">
@@ -333,80 +330,349 @@
         </button>
     </div>
 
-    <!-- AQUÍ VA TODO EL CONTENIDO DE TABS (idéntico a tu archivo original) -->
+<div id="tab-mis-publicaciones" class="tab-content active">
+    <div class="panel">
+        <div class="panel-header">
+            <h3 data-clave="perfil_crear_publicacion">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg>
+                Crear publicación
+            </h3>
+            <span class="panel-badge" data-clave="perfil_badge_nuevo">Nuevo</span>
+        </div>
+        <div class="panel-body">
+            <div class="form-publicacion">
+                <textarea id="inputNuevaPublicacion" data-placeholder="perfil_que_piensas" placeholder="¿Qué estás pensando? Puedes usar #hashtags, @menciones y símbolos ◈"></textarea>
 
-    <div id="tab-mis-publicaciones" class="tab-content active">
-        <div class="panel">
-            <div class="panel-header">
-                <h3 data-clave="perfil_crear_publicacion">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg>
-                    Crear publicación
-                </h3>
-                <span class="panel-badge" data-clave="perfil_badge_nuevo">Nuevo</span>
-            </div>
-            <div class="panel-body">
-                <div class="form-publicacion">
-                    <textarea id="inputNuevaPublicacion" data-placeholder="perfil_que_piensas" placeholder="¿Qué estás pensando? Puedes usar #hashtags, @menciones y símbolos ◈"></textarea>
-                    
-                    <div class="acciones">
-                        <button type="button" class="accion-btn" onclick="window.toggleEmojiPickerPerfil()" id="btnEmojiPerfil" data-clave="perfil_emoji">
-                            <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-                            Emoji
-                        </button>
-                        <button type="button" class="accion-btn" onclick="window.insertarHashtagPerfil()" data-clave="perfil_hashtag">
-                            <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>
-                            Hashtag
-                        </button>
-                        <button type="button" class="accion-btn" onclick="document.getElementById('inputFotoPerfilPost').click()" data-clave="perfil_foto">
-                            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                            Foto
-                        </button>
-                        <button type="button" class="accion-btn" onclick="document.getElementById('inputVideoPerfilPost').click()" data-clave="perfil_video">
-                            <svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-                            Video
-                        </button>
-                        
-                        <input type="file" id="inputFotoPerfilPost" accept="image/*" style="display:none;" onchange="window.seleccionarArchivoPerfil(event, 'imagen')" />
-                        <input type="file" id="inputVideoPerfilPost" accept="video/*" style="display:none;" onchange="window.seleccionarArchivoPerfil(event, 'video')" />
-                        
-                        <button type="button" class="btn-publicar" onclick="window.publicarDesdePerfil()" id="btnPublicarPerfil" data-clave="perfil_publicar">
-                            <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                            Publicar
-                        </button>
+                <div class="acciones">
+                    <button type="button" class="accion-btn" onclick="window.toggleEmojiPickerPerfil()" id="btnEmojiPerfil" data-clave="perfil_emoji">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+                        Emoji
+                    </button>
+                    <button type="button" class="accion-btn" onclick="window.insertarHashtagPerfil()" data-clave="perfil_hashtag">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>
+                        Hashtag
+                    </button>
+                    <button type="button" class="accion-btn" onclick="document.getElementById('inputFotoPerfilPost').click()" data-clave="perfil_foto">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                        Foto
+                    </button>
+                    <button type="button" class="accion-btn" onclick="document.getElementById('inputVideoPerfilPost').click()" data-clave="perfil_video">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                        Video
+                    </button>
 
-                        <div class="emoji-picker" id="emojiPickerPerfil">
-                            <div class="titulo" data-clave="perfil_elige_emoji">✦ Elige tu emoji</div>
-                            <div class="grid" id="emojiGridPerfil"></div>
-                        </div>
+                    <input type="file" id="inputFotoPerfilPost" accept="image/*" style="display:none;" onchange="window.seleccionarArchivoPerfil(event, 'imagen')" />
+                    <input type="file" id="inputVideoPerfilPost" accept="video/*" style="display:none;" onchange="window.seleccionarArchivoPerfil(event, 'video')" />
+
+                    <button type="button" class="btn-publicar" onclick="window.publicarDesdePerfil()" id="btnPublicarPerfil" data-clave="perfil_publicar">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                        Publicar
+                    </button>
+
+                    <div class="emoji-picker" id="emojiPickerPerfil">
+                        <div class="titulo" data-clave="perfil_elige_emoji">✦ Elige tu emoji</div>
+                        <div class="grid" id="emojiGridPerfil"></div>
                     </div>
+                </div>
 
-                    <div id="previewArchivosPerfil" class="preview-archivos"></div>
+                <div id="previewArchivosPerfil" class="preview-archivos"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header">
+            <h3 data-clave="perfil_mis_publicaciones">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Mis publicaciones
+            </h3>
+            <span class="panel-badge" id="misPostsCount">0</span>
+        </div>
+        <div class="panel-body">
+            <div id="misPublicacionesList">
+                <div class="empty-state">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/><path d="M2 9h20M12 3l-4 6 4 12 4-12-4-6"/></svg>
+                    <h4 data-clave="perfil_sin_publicaciones">Sin publicaciones aún</h4>
+                    <p data-clave="perfil_crea_primera">Publica algo para verlo aquí</p>
                 </div>
             </div>
         </div>
+    </div>
+</div>
 
-        <div class="panel">
-            <div class="panel-header">
-                <h3 data-clave="perfil_mis_publicaciones">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                    Mis publicaciones
-                </h3>
-                <span class="panel-badge" id="misPostsCount">0</span>
+<div id="tab-actividad" class="tab-content">
+    <div class="panel">
+        <div class="panel-header">
+            <h3 data-clave="perfil_seccion_ultima_actividad">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                Última actividad
+            </h3>
+            <span class="panel-badge" data-clave="perfil_tiempo_real">En tiempo real</span>
+        </div>
+        <div class="panel-body" id="actividadList">
+            <div class="empty-state">
+                <svg class="icon" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                <h4 data-clave="perfil_sin_actividad">Sin actividad reciente</h4>
+                <p data-clave="perfil_comienza_muro">Comienza a interactuar en el Muro</p>
             </div>
-            <div class="panel-body">
-                <div id="misPublicacionesList">
-                    <div class="empty-state">
-                        <svg class="icon" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/><path d="M2 9h20M12 3l-4 6 4 12 4-12-4-6"/></svg>
-                        <h4 data-clave="perfil_sin_publicaciones">Sin publicaciones aún</h4>
-                        <p data-clave="perfil_crea_primera">Publica algo para verlo aquí</p>
+        </div>
+    </div>
+    <div class="panel">
+        <div class="panel-header">
+            <h3 data-clave="perfil_seccion_historial_tx">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                Historial de transacciones
+            </h3>
+            <span class="panel-badge" id="historialCount">0</span>
+        </div>
+        <div class="panel-body" id="historialList">
+            <div class="empty-state">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/><path d="M2 9h20M12 3l-4 6 4 12 4-12-4-6"/></svg>
+                <h4 data-clave="perfil_sin_transacciones">Sin transacciones</h4>
+                <p data-clave="perfil_compra_domos_tokens">Compra domos para acumular tokens</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="tab-tokens" class="tab-content">
+    <div class="panel">
+        <div class="panel-header">
+            <h3 data-clave="perfil_seccion_estado_tokens">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/><path d="M2 9h20M12 3l-4 6 4 12 4-12-4-6"/></svg>
+                Estado de tokens
+            </h3>
+            <span class="panel-badge" data-clave="perfil_actualizado">Actualizado</span>
+        </div>
+        <div class="panel-body">
+            <div class="token-status">
+                <div class="item">
+                    <div class="value" id="tokenTotal">0</div>
+                    <div class="label" data-clave="perfil_balance_tokens">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/><path d="M2 9h20M12 3l-4 6 4 12 4-12-4-6"/></svg>
+                        Total tokens
+                    </div>
+                </div>
+                <div class="item">
+                    <div class="value" id="tokenDisponibles">0</div>
+                    <div class="label" data-clave="perfil_disponibles">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                        Disponibles
+                    </div>
+                </div>
+                <div class="item">
+                    <div class="value" id="tokenVendidos">0</div>
+                    <div class="label" data-clave="perfil_vendidos">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/></svg>
+                        Vendidos
+                    </div>
+                </div>
+                <div class="item">
+                    <div class="value" id="tokenNFTs">0</div>
+                    <div class="label" data-clave="perfil_nfts_info">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg>
+                        NFTs
+                    </div>
+                </div>
+            </div>
+
+            <div class="progress-bar-container">
+                <div class="bar">
+                    <div class="fill" id="progressFill" style="width: 0%;"></div>
+                </div>
+                <div class="label">
+                    <span data-clave="perfil_progreso_meta">Progreso NFT</span>
+                    <span id="progressText">0 / 12</span>
+                </div>
+            </div>
+
+            <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+                <button class="btn btn-gold" style="flex:1;justify-content:center;" id="canjearNft" onclick="window.canjearNFT()" disabled data-clave="perfil_canjear_nft">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    CANJEAR NFT
+                </button>
+            </div>
+
+            <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;" onclick="window.irAMuro()" data-clave="perfil_ir_muro">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                Ir al Muro
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="tab-esim" class="tab-content">
+    <div class="panel">
+        <div class="panel-header">
+            <h3 data-clave="perfil_telnyx">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                Mi eSIM
+            </h3>
+            <span class="panel-badge" data-no-traducir="1">Telnyx</span>
+        </div>
+        <div class="panel-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                <div style="background:rgba(0,0,0,0.4);padding:10px;border-radius:10px;border:2px solid var(--line-black);">
+                    <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_esim_estado">ESTADO</span>
+                    <div id="esimStatus" data-clave="perfil_esim_cargando" style="font-weight:600;font-size:0.9rem;">Cargando…</div>
+                </div>
+                <div style="background:rgba(0,0,0,0.4);padding:10px;border-radius:10px;border:2px solid var(--line-black);">
+                    <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_datos_consumidos">DATOS USADOS</span>
+                    <div id="esimDataUsed" data-no-traducir="1" style="font-weight:600;font-size:0.9rem;">0 GB</div>
+                </div>
+                <div style="background:rgba(0,0,0,0.4);padding:10px;border-radius:10px;border:2px solid var(--line-black);">
+                    <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_limite_plan">LÍMITE</span>
+                    <div id="esimDataLimit" data-no-traducir="1" style="font-weight:600;font-size:0.9rem;">0 GB</div>
+                </div>
+                <div style="background:rgba(0,0,0,0.4);padding:10px;border-radius:10px;border:2px solid var(--line-black);">
+                    <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_datos_restantes">RESTANTE</span>
+                    <div id="esimDataRestante" data-no-traducir="1" style="font-weight:600;font-size:0.9rem;color:var(--success);">0 GB</div>
+                </div>
+                <div style="background:rgba(0,0,0,0.4);padding:10px;border-radius:10px;border:2px solid var(--line-black);grid-column:span 2;">
+                    <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_iccid">ICCID</span>
+                    <div id="esimIccid" data-no-traducir="1" style="font-weight:600;font-size:0.8rem;font-family:monospace;">—</div>
+                </div>
+            </div>
+
+            <div style="margin-top:10px;">
+                <div style="background:rgba(0,0,0,0.6);border:1px solid var(--line-black);border-radius:10px;height:8px;overflow:hidden;">
+                    <div id="esimDataProgress" style="height:100%;width:0%;background:var(--success);transition:width 0.8s;"></div>
+                </div>
+            </div>
+
+            <div id="esimAvisoSinSaldo" style="display:none;margin-top:12px;padding:10px;border-radius:10px;background:rgba(255,51,102,0.12);border:1px solid var(--danger);color:var(--danger);font-size:0.75rem;" data-clave="perfil_esim_sin_datos">
+                Se acabaron tus datos. Recarga y tu eSIM se reactiva sola.
+            </div>
+
+            <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+                <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" id="btnComprarEsim" onclick="window.irAComprarInternet()">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                    <span id="btnComprarEsimTxt" data-clave="perfil_esim_comprar">Comprar eSIM</span>
+                </button>
+                <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" id="btnQrEsim" onclick="window.verQREsimNuevo()" data-clave="perfil_obtener_qr">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="17"/><line x1="17" y1="14" x2="21" y2="14"/><line x1="14" y1="21" x2="21" y2="21"/></svg>
+                    QR Activación
+                </button>
+                <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" id="btnSyncEsim" onclick="window.sincronizarEsimNuevo()" data-clave="perfil_sincronizar">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                    Sincronizar
+                </button>
+            </div>
+
+            <div style="margin-top:12px;">
+                <a href="/features/internet/internet.html" class="btn btn-outline btn-sm" style="border-color:var(--cyan);color:var(--cyan);" data-clave="perfil_cambiar_celular">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
+                    Cambiar de celular
+                </a>
+            </div>
+
+            <div style="margin-top:10px;font-size:0.6rem;color:var(--text-muted);">
+                <span data-clave="perfil_apn_requerido">APN:</span> <span id="esimApn" data-no-traducir="1" style="font-family:monospace;color:var(--text-secondary);">data00.telnyx</span>
+            </div>
+
+            <div id="esimError" style="display:none;margin-top:12px;padding:10px;border-radius:10px;background:rgba(255,51,102,0.12);border:1px solid var(--danger);color:var(--danger);font-size:0.75rem;"></div>
+        </div>
+    </div>
+</div>
+
+<div id="tab-qr" class="tab-content">
+    <div class="panel">
+        <div class="panel-header">
+            <h3 data-clave="perfil_escanear_qr">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="17"/><line x1="17" y1="14" x2="21" y2="14"/><line x1="14" y1="21" x2="21" y2="21"/><line x1="17" y1="17" x2="21" y2="21"/></svg>
+                Escanear QR
+            </h3>
+            <span class="panel-badge" data-clave="perfil_recibe_estoks">Recibe Es.stoks</span>
+        </div>
+        <div class="panel-body">
+            <div class="config-group">
+                <label data-clave="perfil_codigo_qr">Código del QR (escanea o escribe)</label>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <input type="text" id="qrInput" data-placeholder="perfil_ejemplo_codigo_qr" placeholder="Ej: DOMO-2025-ABC123"
+                           style="flex:1;padding:10px 14px;background:rgba(0,0,0,0.5);border:2px solid var(--line-black);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;">
+                    <button class="btn btn-gold" onclick="window.escanearQR()" id="btnEscanearQR" data-clave="perfil_validar_codigo">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        Escanear QR
+                    </button>
+                </div>
+                <div class="hint" data-clave="perfil_escanea_qr_hint">⚡ Escanea el QR de tu domo físico para recibir 1 Es.stok</div>
+            </div>
+
+            <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;" onclick="window.abrirCamaraQR()" data-clave="perfil_abrir_camara">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                Escanear con cámara
+            </button>
+
+            <div id="qrReaderContainer">
+                <video id="qrVideo" style="width:100%;max-width:300px;border-radius:10px;background:black;"></video>
+                <canvas id="qrCanvas" style="display:none;"></canvas>
+                <button class="btn btn-danger btn-sm" onclick="window.cerrarCamaraQR()" style="margin-top:8px;" data-clave="perfil_cerrar_camara">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    Cerrar cámara
+                </button>
+                <div id="qrCamaraStatus" style="font-size:0.7rem;color:var(--text-muted);margin-top:4px;"></div>
+            </div>
+
+            <div id="qrStatus" style="margin-top:12px;font-size:0.8rem;color:var(--text-muted);min-height:24px;text-align:center;"></div>
+
+            <div style="margin-top:16px;border-top:1px solid var(--line-black-soft);padding-top:12px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.7rem;color:var(--text-muted);">
+                    <span data-clave="perfil_historial">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        Últimos escaneos
+                    </span>
+                    <span id="qrHistorialCount">0</span>
+                </div>
+                <div id="qrHistorialList" style="margin-top:8px;">
+                    <div class="empty-state" style="padding:10px;">
+                        <svg class="icon" viewBox="0 0 24 24" style="width:1.5rem;height:1.5rem;"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/></svg>
+                        <p style="font-size:0.7rem;" data-clave="perfil_sin_escaneos">Sin escaneos recientes</p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- ⚠️ IMPORTANTE: El resto de tabs (actividad, tokens, esim, qr, internet) van IGUAL que en tu archivo original. NO las toqué. -->
-    <!-- ⚠️ El footer va IGUAL. NO lo toqué. -->
+<div id="tab-internet" class="tab-content">
+    <div class="panel">
+        <div class="panel-header">
+            <h3 data-clave="perfil_mis_compras_internet">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+                Mis compras de Internet
+            </h3>
+            <span class="panel-badge" id="internetOrdenesCount">0</span>
+        </div>
+        <div class="panel-body">
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
+                <button class="btn btn-outline btn-sm internet-filter active" data-filter="all" onclick="window.filtrarOrdenesInternet('all')" data-clave="perfil_filtro_todas">Todas</button>
+                <button class="btn btn-outline btn-sm internet-filter" data-filter="activa" onclick="window.filtrarOrdenesInternet('activa')" data-clave="perfil_filtro_activas">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                    Activas
+                </button>
+                <button class="btn btn-outline btn-sm internet-filter" data-filter="pendiente" onclick="window.filtrarOrdenesInternet('pendiente')" data-clave="perfil_filtro_pendientes">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    Pendientes
+                </button>
+                <button class="btn btn-outline btn-sm internet-filter" data-filter="cancelada" onclick="window.filtrarOrdenesInternet('cancelada')" data-clave="perfil_filtro_canceladas">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    Canceladas
+                </button>
+                <button class="btn btn-outline btn-sm" onclick="window.cargarOrdenesInternet()" style="margin-left:auto;" data-clave="perfil_refrescar">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                    Refrescar
+                </button>
+            </div>
+
+            <div id="ordenesInternetList">
+                <div class="empty-state">
+                    <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+                    <h4 data-clave="perfil_cargando_ordenes">Cargando órdenes...</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 </div>
 
@@ -459,19 +725,23 @@
     }
     window.mostrarErrorEnPantalla = mostrarErrorEnPantalla;
     window.addEventListener('error', function (event) {
+        // REVISAR: mensajes de debug interno, no traducibles (solo visibles con ?debug=1)
         mostrarErrorEnPantalla((event.message || 'Error desconocido') + ' — línea ' + event.lineno + ' de ' + (event.filename || 'este archivo'));
     });
     window.addEventListener('unhandledrejection', function (event) {
+        // REVISAR: mensaje de debug interno, no traducible
         mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason?.message || event.reason));
     });
     window.addEventListener('load', function () {
         if (typeof window.supabase === 'undefined') {
+            // REVISAR: mensaje de debug interno, no traducible
             mostrarErrorEnPantalla('No se pudo cargar la conexión a la base de datos (Supabase). Revisa tu internet o si algo está bloqueando cdn.jsdelivr.net.');
         }
     });
 </script>
 
 <script>
+/* INICIALIZACIÓN DE IDIOMAS — UNA SOLA VEZ */
 (function() {
     'use strict';
     var intentos = 0;
@@ -496,48 +766,35 @@
 
 <script src="/features/shared/js/idiomas.js?v=9" defer></script>
 
-<!-- ⬅️ CAMBIO 1: presencia-global.js ANTES de perfil-estado.js -->
-<script src="/features/shared/js/presencia-global.js?v=1"></script>
-
 <!-- Scripts del módulo perfil (en orden de dependencia) -->
-<script src="/features/perfil/js/perfil-config.js?v=9"></script>
-<script src="/features/perfil/js/perfil-utils.js?v=9"></script>
-<script src="/features/perfil/js/perfil-datos.js?v=9"></script>
-<script src="/features/perfil/js/perfil-estado.js?v=9"></script>
-<script src="/features/perfil/js/perfil-amigos.js?v=9"></script>
-<script src="/features/perfil/js/perfil-conexion.js?v=9"></script>
-<script src="/features/perfil/js/perfil-tokens.js?v=9"></script>
-<script src="/features/perfil/js/perfil-qr.js?v=9"></script>
-<script src="/features/perfil/js/perfil-esim.js?v=9"></script>
-<script src="/features/perfil/js/perfil-wallet.js?v=9"></script>
-<script src="/features/perfil/js/perfil-publicaciones.js?v=9"></script>
-<script src="/features/perfil/js/perfil-internet.js?v=9"></script>
-<script src="/features/perfil/js/perfil-repartidor.js?v=9"></script>
-<script src="/features/perfil/js/perfil-init.js?v=9"></script>
+<script src="/features/perfil/js/perfil-config.js?v=8"></script>
+<script src="/features/perfil/js/perfil-utils.js?v=8"></script>
+<script src="/features/perfil/js/perfil-datos.js?v=8"></script>
+<script src="/features/perfil/js/perfil-estado.js?v=8"></script>
+<script src="/features/perfil/js/perfil-amigos.js?v=8"></script>
+<script src="/features/perfil/js/perfil-conexion.js?v=8"></script>
+<script src="/features/perfil/js/perfil-tokens.js?v=8"></script>
+<script src="/features/perfil/js/perfil-qr.js?v=8"></script>
+<script src="/features/perfil/js/perfil-esim.js?v=8"></script>
+<script src="/features/perfil/js/perfil-wallet.js?v=8"></script>
+<script src="/features/perfil/js/perfil-publicaciones.js?v=8"></script>
+<script src="/features/perfil/js/perfil-internet.js?v=8"></script>
+<script src="/features/perfil/js/perfil-repartidor.js?v=8"></script>
+<script src="/features/perfil/js/perfil-init.js?v=8"></script>
 
-<!-- ⬅️ CAMBIO 4 y 5: sin setInterval(refrescarPerfilVivo, 30000) y sin setTimeout(refrescarPerfilVivo, 1200) -->
+<!-- Chip de wallet: muestra TU dirección y su estado de visibilidad; la copia al tocarla -->
 <script>
 (function () {
     'use strict';
 
-    var NIVELES = [
-        { min: 0,   nombre: 'Explorador' },
-        { min: 50,  nombre: 'Pionero' },
-        { min: 200, nombre: 'Veterano' },
-        { min: 500, nombre: 'Leyenda' }
-    ];
-
-    var $ = function (id) { return document.getElementById(id); };
-
-    var chip = $('walletChip');
-    var badgeActividad = $('badgeActividad');
-    var badgeActividadTexto = $('badgeActividadTexto');
-    var badgeWeb3 = $('badgeWeb3');
-    var badgeWeb3Texto = $('badgeWeb3Texto');
-    var nivelTexto = $('nivelTexto');
-    var verificadoBadge = $('verificadoBadge');
+    var chip = document.getElementById('walletChip');
+    if (!chip) return;
 
     var direccionCompleta = null;
+
+    function acortar(direccion) {
+        return direccion.slice(0, 6) + '...' + direccion.slice(-4);
+    }
 
     function esperar(ms) {
         return new Promise(function (resolve) { setTimeout(resolve, ms); });
@@ -551,61 +808,43 @@
                 try {
                     var c = await window.getSupabaseClient();
                     if (c) return c;
-                } catch (e) { }
+                } catch (e) { /* reintenta */ }
             }
             await esperar(150);
         }
         return null;
     }
 
-    function acortar(d) {
-        return d.slice(0, 6) + '...' + d.slice(-4);
-    }
-
-    function nivelPara(t) {
-        var total = Number(t) || 0;
-        var nivel = NIVELES[0];
-        NIVELES.forEach(function (n) { if (total >= n.min) nivel = n; });
-        return nivel.nombre;
-    }
-
-    function pintarWallet(address, visible) {
-        if (!address) {
-            chip.style.display = 'none';
-            direccionCompleta = null;
-            return;
-        }
-        direccionCompleta = address;
-        chip.textContent = '◈ ' + acortar(address) + ' · ' + (visible ? '👁 pública' : '🔒 privada');
+    function pintarChip(visible) {
+        var etiqueta = visible ? '👁 pública' : '🔒 privada';
+        chip.textContent = '◈ ' + acortar(direccionCompleta) + ' · ' + etiqueta;
         chip.title = visible
             ? 'Visible para otros usuarios · Toca para copiar'
             : 'Solo tú la ves · Toca para copiar';
-        chip.style.display = 'inline-flex';
     }
 
-    function pintarActividad(online) {
-        if (online) {
-            badgeActividad.className = 'badge success';
-            badgeActividad.style.cssText = '';
-            badgeActividadTexto.textContent = 'ACTIVO';
-        } else {
-            badgeActividad.className = 'badge';
-            badgeActividad.style.cssText = 'border-color:var(--text-muted);color:var(--text-muted);';
-            badgeActividadTexto.textContent = 'INACTIVO';
-        }
-    }
+    async function cargarWalletPropia() {
+        try {
+            var client = await obtenerCliente();
+            if (!client) return;
 
-    function pintarWeb3(tieneWallet) {
-        if (tieneWallet) {
-            badgeWeb3Texto.textContent = 'WEB3 · Conectada';
-            badgeWeb3.title = 'Wallet vinculada';
-            badgeWeb3.onclick = null;
-        } else {
-            badgeWeb3Texto.textContent = 'WEB3 · Sin wallet';
-            badgeWeb3.title = 'Toca para conectar tu wallet';
-            badgeWeb3.onclick = function () {
-                window.location.href = '/features/perfil/configuracion/index.html';
-            };
+            var sesion = await client.auth.getSession();
+            var session = sesion && sesion.data && sesion.data.session;
+            if (!session) return;
+
+            var resultado = await client
+                .from('usuarios')
+                .select('wallet_address, wallet_visible')
+                .eq('id', session.user.id)
+                .maybeSingle();
+
+            if (resultado.error || !resultado.data || !resultado.data.wallet_address) return;
+
+            direccionCompleta = resultado.data.wallet_address;
+            pintarChip(resultado.data.wallet_visible);
+            chip.style.display = 'inline-flex';
+        } catch (e) {
+            console.warn('[Perfil] No se pudo cargar la wallet:', e);
         }
     }
 
@@ -634,47 +873,11 @@
 
     chip.addEventListener('click', copiarWallet);
 
-    async function refrescarPerfilVivo() {
-        try {
-            var client = await obtenerCliente();
-            if (!client) return;
-
-            var sesion = await client.auth.getSession();
-            var session = sesion && sesion.data && sesion.data.session;
-            if (!session) return;
-
-            var res = await client
-                .from('usuarios')
-                .select('wallet_address, wallet_visible, online, tokens_acumulados, verificado')
-                .eq('id', session.user.id)
-                .maybeSingle();
-
-            if (res.error || !res.data) return;
-            var u = res.data;
-
-            pintarWallet(u.wallet_address, u.wallet_visible);
-            pintarActividad(u.online === true);
-            pintarWeb3(!!u.wallet_address);
-            nivelTexto.textContent = nivelPara(u.tokens_acumulados);
-            verificadoBadge.style.display = u.verificado ? 'inline-flex' : 'none';
-        } catch (e) {
-            console.warn('[Perfil] No se pudo actualizar el estado vivo:', e);
-        }
-    }
-
-    // ⬅️ CAMBIO: Solo carga inicial. Sin setInterval ni setTimeout.
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', refrescarPerfilVivo, { once: true });
+        document.addEventListener('DOMContentLoaded', cargarWalletPropia, { once: true });
     } else {
-        refrescarPerfilVivo();
+        cargarWalletPropia();
     }
-
-    // ⬅️ CAMBIO 5: escucha sincronización de presencia en vez de setInterval
-    // para repintar el badge de "ACTIVO/INACTIVO" sin consultas a la BD.
-    window.addEventListener('sar:presence:sync', function () {
-        var visible = window.Presencia && window.Presencia.esVisible();
-        if (typeof visible === 'boolean') pintarActividad(visible);
-    });
 })();
 </script>
 
