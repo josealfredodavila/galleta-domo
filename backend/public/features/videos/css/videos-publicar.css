@@ -1,15 +1,15 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v1.1
+   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v1.2
    ================================================================
-   Novedades v1.1:
-   - ✅ Toast propio del ecosistema (.cs-toast)
-   - ✅ Modal de confirmación estilizado (.cs-confirm-*)
-   - ✅ Botón estilizado de archivo (.cs-file-btn)
-   - ✅ Mejor espaciado en header (gap, flex-wrap)
+   Novedades v1.2:
+   - ✅ Input file 100% oculto (display:none !important)
+   - ✅ Botón de archivo con diseño ciberpunk reforzado
+   - ✅ Preview se limpia tras publicación
+   - ✅ Mejor espaciado en header móvil
    ================================================================ */
 
 /* ----------------------------------------------------------------
-   BOTONES EN HEADER · v1.1 con mejor espaciado móvil
+   HEADER · Botones agregados con mejor espaciado
    ---------------------------------------------------------------- */
 .header .header-actions {
     display: flex;
@@ -70,7 +70,127 @@
 }
 
 /* ----------------------------------------------------------------
-   ✨ TOAST PROPIO DEL ECOSISTEMA
+   🔥 BOTÓN DE ARCHIVO ESTILIZADO (reemplaza input nativo)
+   ---------------------------------------------------------------- */
+
+/* Ocultar absolutamente el input nativo en todos los navegadores */
+#inputArchivoVideo,
+input#inputArchivoVideo[type="file"] {
+    display: none !important;
+    visibility: hidden !important;
+    position: absolute !important;
+    width: 0 !important;
+    height: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    overflow: hidden !important;
+    clip: rect(0 0 0 0) !important;
+    clip-path: inset(50%) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.cs-file-btn-wrap {
+    margin-bottom: 8px;
+    display: block;
+}
+
+.cs-file-btn {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 22px 18px;
+    background:
+        linear-gradient(155deg, rgba(15, 45, 26, 0.65), rgba(8, 15, 26, 0.85)),
+        radial-gradient(circle at center, rgba(212, 175, 55, 0.05), transparent 70%);
+    border: 2px dashed rgba(212, 175, 55, 0.5);
+    border-radius: 16px;
+    color: #D4AF37;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    -webkit-tap-highlight-color: transparent;
+    position: relative;
+    overflow: hidden;
+    text-align: center;
+}
+.cs-file-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(212, 175, 55, 0.15), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+.cs-file-btn:hover {
+    border-color: #D4AF37;
+    box-shadow: 0 0 30px rgba(212, 175, 55, 0.3), inset 0 0 20px rgba(212, 175, 55, 0.05);
+    transform: translateY(-2px);
+}
+.cs-file-btn:hover::before { opacity: 1; }
+.cs-file-btn:active { transform: scale(0.98); }
+
+.cs-file-btn-ico {
+    font-size: 2rem;
+    line-height: 1;
+    color: #D4AF37;
+    filter: drop-shadow(0 0 12px rgba(212, 175, 55, 0.8));
+    margin-bottom: 2px;
+    transition: transform 0.3s ease;
+}
+.cs-file-btn:hover .cs-file-btn-ico {
+    transform: scale(1.1);
+}
+.cs-file-btn-txt {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: #f0f4f8;
+    text-align: center;
+    word-break: break-word;
+    max-width: 100%;
+    line-height: 1.3;
+}
+.cs-file-btn-hint {
+    font-size: 0.62rem;
+    color: #8aa8b8;
+    letter-spacing: 0.5px;
+}
+
+/* Estado cuando ya hay archivo seleccionado */
+.cs-file-con-archivo .cs-file-btn {
+    border-style: solid;
+    border-color: rgba(0, 214, 143, 0.7);
+    background: linear-gradient(155deg, rgba(0, 214, 143, 0.12), rgba(15, 45, 26, 0.7));
+    box-shadow: 0 0 30px rgba(0, 214, 143, 0.25), inset 0 0 15px rgba(0, 214, 143, 0.05);
+}
+.cs-file-con-archivo .cs-file-btn-ico {
+    color: #00d68f;
+    filter: drop-shadow(0 0 12px rgba(0, 214, 143, 0.8));
+}
+.cs-file-con-archivo .cs-file-btn-txt {
+    color: #00d68f;
+}
+.cs-file-con-archivo .cs-file-btn-hint {
+    color: #00d68f;
+}
+
+@media (max-width: 480px) {
+    .cs-file-btn { padding: 18px 14px; }
+    .cs-file-btn-ico { font-size: 1.6rem; }
+    .cs-file-btn-txt { font-size: 0.72rem; }
+    .cs-file-btn-hint { font-size: 0.58rem; }
+}
+
+/* ----------------------------------------------------------------
+   TOAST PROPIO
    ---------------------------------------------------------------- */
 .cs-toast {
     position: fixed;
@@ -137,7 +257,7 @@
 }
 
 /* ----------------------------------------------------------------
-   ✨ CONFIRM MODAL ESTILIZADO
+   CONFIRM MODAL ESTILIZADO
    ---------------------------------------------------------------- */
 .cs-confirm-overlay {
     position: fixed;
@@ -246,86 +366,7 @@
 }
 
 /* ----------------------------------------------------------------
-   🎨 BOTÓN ESTILIZADO DE ARCHIVO
-   ---------------------------------------------------------------- */
-.cs-file-btn-wrap {
-    margin-bottom: 8px;
-}
-
-.cs-file-btn {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    padding: 20px 18px;
-    background: linear-gradient(155deg, rgba(15, 45, 26, 0.55), rgba(8, 15, 26, 0.75));
-    border: 2px dashed rgba(212, 175, 55, 0.4);
-    border-radius: 14px;
-    color: #D4AF37;
-    font-family: 'Inter', sans-serif;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-    -webkit-tap-highlight-color: transparent;
-    position: relative;
-    overflow: hidden;
-}
-.cs-file-btn::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at center, rgba(212, 175, 55, 0.12), transparent 70%);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
-}
-.cs-file-btn:hover {
-    border-color: #D4AF37;
-    box-shadow: 0 0 30px rgba(212, 175, 55, 0.25), inset 0 0 20px rgba(212, 175, 55, 0.05);
-    transform: translateY(-2px);
-}
-.cs-file-btn:hover::before { opacity: 1; }
-.cs-file-btn:active { transform: scale(0.98); }
-
-.cs-file-btn-ico {
-    font-size: 1.8rem;
-    line-height: 1;
-    color: #D4AF37;
-    filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.7));
-    margin-bottom: 2px;
-}
-.cs-file-btn-txt {
-    font-family: 'Orbitron', monospace;
-    font-size: 0.8rem;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    color: #f0f4f8;
-    text-align: center;
-    word-break: break-word;
-    max-width: 100%;
-}
-.cs-file-btn-hint {
-    font-size: 0.6rem;
-    color: #8aa8b8;
-    letter-spacing: 0.5px;
-}
-
-/* Estado cuando ya hay archivo seleccionado */
-.cs-file-con-archivo .cs-file-btn {
-    border-style: solid;
-    border-color: rgba(0, 214, 143, 0.6);
-    background: linear-gradient(155deg, rgba(0, 214, 143, 0.1), rgba(15, 45, 26, 0.6));
-    box-shadow: 0 0 25px rgba(0, 214, 143, 0.2);
-}
-.cs-file-con-archivo .cs-file-btn-ico {
-    color: #00d68f;
-    filter: drop-shadow(0 0 10px rgba(0, 214, 143, 0.7));
-}
-.cs-file-con-archivo .cs-file-btn-hint { color: #00d68f; }
-
-/* ----------------------------------------------------------------
-   BOTTOM SHEETS (sin cambios)
+   BOTTOM SHEETS
    ---------------------------------------------------------------- */
 .cs-sheet-backdrop {
     position: fixed;
@@ -625,7 +666,7 @@
 .cs-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* ----------------------------------------------------------------
-   PREVIEW EN UPLOAD SECTION
+   PREVIEW EN UPLOAD
    ---------------------------------------------------------------- */
 .cs-preview-wrap {
     display: grid;
@@ -750,12 +791,20 @@
         padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
     }
     .cs-btn-primary { padding: 9px 16px; font-size: 0.65rem; }
-    .cs-file-btn { padding: 16px 14px; }
-    .cs-file-btn-ico { font-size: 1.5rem; }
-    .cs-file-btn-txt { font-size: 0.72rem; }
     .cs-toast {
         bottom: 20px;
         font-size: 0.75rem;
         padding: 10px 18px;
     }
+}
+
+/* ----------------------------------------------------------------
+   PULL TO REFRESH · asegurar que el scroll vertical funciona
+   ---------------------------------------------------------------- */
+html, body {
+    overscroll-behavior-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+}
+#videosContainer {
+    overscroll-behavior-y: auto !important;
 }
