@@ -1,501 +1,256 @@
-/* ================================================================
-   APARIENCIA GLOBAL - SARIEL'S ECOSYSTEM v2.9
-   - Lee de localStorage (rápido, sin red)
-   - Sincroniza con Supabase preferencias_usuario (persistente)
-   - Aplica tema, color de acento y tamaño de fuente globalmente
-   - Inyecta SOLO la mascota activa (Marquinhos | Capitán Maíz | Itlasuhua)
-   - ✅ v2.8: Selector de mascota activa (una sola a la vez)
-   - ✅ v2.9: Inyecta itlasuhua-voice.js para el Rey Itlasuhua
-             (el fix: sin este archivo la culebra no habla, solo escupe brillos)
-   ================================================================ */
+// ================================================================
+// PRESENCIA GLOBAL · Csariel's (v2)
+// ================================================================
+// Un único canal "presencia-usuarios" por pestaña.
+//
+// API:
+//   Presencia.iniciar(userId, { track, onConexionCambia })
+//   Presencia.estaConectado()        -> tú estás anunciado ahora (no ausente)
+//   Presencia.esVisible()            -> los demás te ven (conectado y no oculto)
+//   Presencia.setVisible(bool)       -> true = mostrar, false = ocultar
+//   Presencia.estaEnPresencia(id)    -> ese usuario está conectado y visible
+//   Presencia.obtenerMapa()          -> { id: meta } (solo visibles)
+//   Presencia.formatearTiempoRelativo(iso)
+//
+// Evento: window 'sar:presence:sync' (detail = mapa de visibles)
+// ================================================================
 
-(function() {
+(function () {
     'use strict';
+    if (window.Presencia && window.Presencia.__sariel) return;
 
-    const KEYS = {
-        tema: 'mostrar_tema',
-        tamano_fuente: 'mostrar_tamano_fuente',
-        color_acento: 'mostrar_color_acento'
-    };
+    var CANAL = 'presencia-usuarios';
+    var IDLE_MS = 10 * 60 * 1000;   // 10 min sin actividad => ausente
+    var THROTTLE_MS = 5000;
 
-    const DEFAULTS = {
-        tema: 'sistema',
-        tamano_fuente: 100,
-        color_acento: '#D4AF37'
-    };
+    var canal = null;
+    var subscrito = false;
+    var promesaInicio = null;
+    var userId = null;
+    var quiereTrackear = false;     // esta pestaña debe anunciarse
+    var conectado = false;          // anunciado ahora mismo
+    var visible = true;             // false = ocultar mi estado
 
-    let prefsActuales = { ...DEFAULTS };
-    let syncConSupabaseListo = false;
+    var idleTimer = null;
+    var ultimaActividad = 0;
+    var listenersOk = false;
+    var callbacks = [];
 
-    function getSupabase() {
-        if (window.supabaseClient) return window.supabaseClient;
-        if (window.supabase && typeof window.supabase.createClient === 'function') {
-            try {
-                const c = window.supabase.createClient(
-                    'https://zultnlogdoajehbswlih.supabase.co',
-                    'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
-                );
-                window.supabaseClient = c;
-                return c;
-            } catch (e) { return null; }
+    function esperar(ms) {
+        return new Promise(function (resolve) { setTimeout(resolve, ms); });
+    }
+
+    async function obtenerCliente(timeoutMs) {
+        var inicio = Date.now();
+        while (Date.now() - inicio < timeoutMs) {
+            if (window.supabaseClient) return window.supabaseClient;
+            if (typeof window.getSupabaseClient === 'function') {
+                try {
+                    var c = await window.getSupabaseClient();
+                    if (c) return c;
+                } catch (e) {}
+            }
+            await esperar(150);
         }
         return null;
     }
 
-    function leerPref(clave, defecto) {
+    function emitirSync() {
+        var mapa = {};
+        if (canal && subscrito) {
+            var estado = canal.presenceState();
+            Object.keys(estado).forEach(function (clave) {
+                var meta = (estado[clave] || [])[0];
+                if (meta && meta.visible !== false) mapa[clave] = meta;
+            });
+        }
+        window.presenciaUsuarios = mapa;
         try {
-            const v = localStorage.getItem(clave);
-            return v !== null ? v : defecto;
-        } catch (e) {
-            return defecto;
-        }
+            window.dispatchEvent(new CustomEvent('sar:presence:sync', { detail: mapa }));
+        } catch (e) {}
     }
 
-    function leerDeLocalStorage() {
-        return {
-            tema: leerPref(KEYS.tema, DEFAULTS.tema),
-            tamano_fuente: parseInt(leerPref(KEYS.tamano_fuente, DEFAULTS.tamano_fuente)) || 100,
-            color_acento: leerPref(KEYS.color_acento, DEFAULTS.color_acento)
-        };
-    }
-
-    async function leerDeSupabase() {
-        try {
-            const client = getSupabase();
-            if (!client) return null;
-
-            const sessionResult = await client.auth.getSession();
-            if (sessionResult.error || !sessionResult.data?.session?.user) return null;
-
-            try {
-                const { data, error } = await client.rpc('obtener_mis_preferencias');
-                if (!error && data) {
-                    return {
-                        tema: data.mostrar_tema || DEFAULTS.tema,
-                        tamano_fuente: parseInt(data.mostrar_tamano_fuente) || DEFAULTS.tamano_fuente,
-                        color_acento: data.mostrar_color_acento || DEFAULTS.color_acento
-                    };
-                }
-            } catch (rpcError) {
-                console.warn('[Apariencia] RPC obtener_mis_preferencias falló:', rpcError);
-            }
-
-            const { data: pref, error: errTabla } = await client
-                .from('preferencias_usuario')
-                .select('prefs')
-                .eq('usuario_id', sessionResult.data.session.user.id)
-                .maybeSingle();
-
-            if (errTabla || !pref || !pref.prefs) return null;
-
-            return {
-                tema: pref.prefs.mostrar_tema || DEFAULTS.tema,
-                tamano_fuente: parseInt(pref.prefs.mostrar_tamano_fuente) || DEFAULTS.tamano_fuente,
-                color_acento: pref.prefs.mostrar_color_acento || DEFAULTS.color_acento
-            };
-        } catch (e) {
-            console.warn('[Apariencia] Error leyendo de Supabase:', e);
-            return null;
-        }
-    }
-
-    async function guardarPref(clave, valor) {
-        try {
-            localStorage.setItem(clave, valor);
-        } catch (e) {
-            console.warn('[Apariencia] No se pudo guardar en localStorage:', e);
-        }
-
-        const client = getSupabase();
-        if (!client) return;
-
-        try {
-            const sessionResult = await client.auth.getSession();
-            if (!sessionResult.data?.session?.user) return;
-
-            const keyPrefs = clave === KEYS.tema ? 'mostrar_tema' :
-                             clave === KEYS.tamano_fuente ? 'mostrar_tamano_fuente' :
-                             clave === KEYS.color_acento ? 'mostrar_color_acento' : clave;
-
-            try {
-                await client.rpc('actualizar_preferencia', {
-                    p_key: keyPrefs,
-                    p_value: valor
-                });
-                return;
-            } catch (rpcError) {
-                const { data: pref } = await client
-                    .from('preferencias_usuario')
-                    .select('prefs')
-                    .eq('usuario_id', sessionResult.data.session.user.id)
-                    .maybeSingle();
-
-                const nuevoPrefs = { ...(pref?.prefs || {}), [keyPrefs]: valor };
-                await client
-                    .from('preferencias_usuario')
-                    .upsert({
-                        usuario_id: sessionResult.data.session.user.id,
-                        prefs: nuevoPrefs
-                    }, { onConflict: 'usuario_id' });
-            }
-        } catch (e) {
-            console.warn('[Apariencia] No se pudo guardar en Supabase:', e);
-        }
-    }
-
-    function ajustarColor(hex, porcentaje) {
-        try {
-            let r = parseInt(hex.substring(1, 3), 16);
-            let g = parseInt(hex.substring(3, 5), 16);
-            let b = parseInt(hex.substring(5, 7), 16);
-
-            const factor = porcentaje / 100;
-
-            if (factor > 0) {
-                r = Math.round(r + (255 - r) * factor);
-                g = Math.round(g + (255 - g) * factor);
-                b = Math.round(b + (255 - b) * factor);
-            } else {
-                r = Math.round(r * (1 + factor));
-                g = Math.round(g * (1 + factor));
-                b = Math.round(b * (1 + factor));
-            }
-
-            r = Math.max(0, Math.min(255, r));
-            g = Math.max(0, Math.min(255, g));
-            b = Math.max(0, Math.min(255, b));
-
-            return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
-        } catch (e) {
-            return hex;
-        }
-    }
-
-    function aplicarTema(tema) {
-        const html = document.documentElement;
-
-        html.classList.remove('tema-dia', 'tema-noche');
-        html.removeAttribute('data-tema');
-
-        if (tema === 'dia') {
-            html.classList.add('tema-dia');
-            html.setAttribute('data-tema', 'dia');
-        } else if (tema === 'noche') {
-            html.classList.add('tema-noche');
-            html.setAttribute('data-tema', 'noche');
-        } else {
-            const prefiereOscuro = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            html.setAttribute('data-tema', prefiereOscuro ? 'noche' : 'dia');
-            html.classList.add(prefiereOscuro ? 'tema-noche' : 'tema-dia');
-        }
-    }
-
-    function aplicarColorAcento(color) {
-        const html = document.documentElement;
-
-        html.style.setProperty('--gold', color);
-        html.style.setProperty('--gold-dark', ajustarColor(color, -15));
-        html.style.setProperty('--gold-light', ajustarColor(color, 15));
-        html.style.setProperty('--gold-bright', ajustarColor(color, 25));
-        html.style.setProperty('--cfg-gold', color);
-        html.style.setProperty('--accent', color);
-        html.style.setProperty('--accent-dark', ajustarColor(color, -15));
-        html.style.setProperty('--accent-light', ajustarColor(color, 15));
-    }
-
-    function aplicarTamanoFuente(porcentaje) {
-        const html = document.documentElement;
-        const valor = Math.max(80, Math.min(140, porcentaje));
-
-        html.style.fontSize = (16 * valor / 100) + 'px';
-        html.setAttribute('data-font-size', valor);
-        html.style.setProperty('--preview-size', (15 * valor / 100) + 'px');
-    }
-
-    function aplicarTodo(prefs) {
-        const p = prefs || prefsActuales;
-        aplicarTema(p.tema);
-        aplicarColorAcento(p.color_acento);
-        aplicarTamanoFuente(p.tamano_fuente);
-        prefsActuales = { ...p };
-    }
-
-    async function inicializar() {
-        const prefsLocal = leerDeLocalStorage();
-        aplicarTodo(prefsLocal);
-
-        let intentos = 0;
-        while (!getSupabase() && intentos < 20) {
-            await new Promise(r => setTimeout(r, 100));
-            intentos++;
-        }
-
-        const prefsSupabase = await leerDeSupabase();
-        if (prefsSupabase) {
-            const hayDiferencias =
-                prefsSupabase.tema !== prefsLocal.tema ||
-                prefsSupabase.tamano_fuente !== prefsLocal.tamano_fuente ||
-                prefsSupabase.color_acento !== prefsLocal.color_acento;
-
-            if (hayDiferencias) {
-                aplicarTodo(prefsSupabase);
-
-                try {
-                    localStorage.setItem(KEYS.tema, prefsSupabase.tema);
-                    localStorage.setItem(KEYS.tamano_fuente, String(prefsSupabase.tamano_fuente));
-                    localStorage.setItem(KEYS.color_acento, prefsSupabase.color_acento);
-                } catch (e) {}
-
-                console.log('[Apariencia] 🔄 Sincronizado desde Supabase:', prefsSupabase);
-            }
-        }
-
-        syncConSupabaseListo = true;
-    }
-
-    window.addEventListener('storage', function(e) {
-        if (e.key && (e.key === KEYS.tema || e.key === KEYS.tamano_fuente || e.key === KEYS.color_acento)) {
-            const prefs = leerDeLocalStorage();
-            aplicarTodo(prefs);
-        }
-    });
-
-    try {
-        const mq = window.matchMedia('(prefers-color-scheme: dark)');
-        mq.addEventListener('change', function() {
-            if (prefsActuales.tema === 'sistema') {
-                aplicarTema('sistema');
-            }
+    function notificar(conectadoAhora) {
+        callbacks.forEach(function (cb) {
+            try { cb(conectadoAhora); } catch (e) {}
         });
-    } catch (e) {}
-
-    inicializar();
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function() { aplicarTodo(); }, { once: true });
     }
 
-    window.SarielApariencia = {
-        aplicar: aplicarTodo,
-        aplicarTema: aplicarTema,
-        aplicarColorAcento: aplicarColorAcento,
-        aplicarTamanoFuente: aplicarTamanoFuente,
-        leer: leerDeLocalStorage,
-        leerSupabase: leerDeSupabase,
-        guardarPref: guardarPref,
-        setTema: function(t) { guardarPref(KEYS.tema, t); aplicarTema(t); prefsActuales.tema = t; },
-        setColor: function(c) { guardarPref(KEYS.color_acento, c); aplicarColorAcento(c); prefsActuales.color_acento = c; },
-        setFuente: function(f) { guardarPref(KEYS.tamano_fuente, f); aplicarTamanoFuente(f); prefsActuales.tamano_fuente = f; },
-        recargar: inicializar,
-        KEYS: KEYS,
-        DEFAULTS: DEFAULTS
+    async function anunciar() {
+        if (!canal || !subscrito || !quiereTrackear) return;
+        try {
+            await canal.track({
+                user_id: userId,
+                visible: visible,
+                en: new Date().toISOString()
+            });
+        } catch (e) {}
+    }
+
+    async function retirar() {
+        if (!canal || !subscrito) return;
+        try { await canal.untrack(); } catch (e) {}
+    }
+
+    async function conectar() {
+        if (conectado || !subscrito || !quiereTrackear) return;
+        conectado = true;
+        await anunciar();
+        notificar(true);
+    }
+
+    async function desconectar() {
+        if (!conectado) return;
+        conectado = false;
+        await retirar();
+        notificar(false);
+    }
+
+    function programarIdle() {
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(desconectar, IDLE_MS);
+    }
+
+    function registrarActividad() {
+        if (!quiereTrackear) return;
+        var ahora = Date.now();
+        if (ahora - ultimaActividad < THROTTLE_MS) return;
+        ultimaActividad = ahora;
+        programarIdle();
+        conectar();
+    }
+
+    function registrarListeners() {
+        if (listenersOk) return;
+        listenersOk = true;
+
+        ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'].forEach(function (ev) {
+            document.addEventListener(ev, registrarActividad, { passive: true });
+        });
+
+        document.addEventListener('visibilitychange', function () {
+            if (document.visibilityState === 'visible') registrarActividad();
+        });
+
+        window.addEventListener('pagehide', function () {
+            conectado = false;
+            retirar();
+            notificar(false);
+        });
+    }
+
+    function iniciar(uid, opciones) {
+        opciones = opciones || {};
+        userId = uid;
+        quiereTrackear = opciones.track === true;
+
+        if (opciones.onConexionCambia && callbacks.indexOf(opciones.onConexionCambia) === -1) {
+            callbacks.push(opciones.onConexionCambia);
+        }
+
+        // Ya hay canal en esta pestaña: solo ajustamos el modo
+        if (canal && subscrito) {
+            if (quiereTrackear) {
+                registrarListeners();
+                programarIdle();
+                conectar();
+            }
+            return Promise.resolve(true);
+        }
+
+        if (promesaInicio) return promesaInicio;
+
+        promesaInicio = new Promise(async function (resolve) {
+            var client = await obtenerCliente(10000);
+            if (!client) {
+                promesaInicio = null;
+                resolve(false);
+                return;
+            }
+
+            canal = client.channel(CANAL, { config: { presence: { key: uid } } });
+
+            canal.on('presence', { event: 'sync' }, emitirSync);
+            canal.on('presence', { event: 'join' }, emitirSync);
+            canal.on('presence', { event: 'leave' }, emitirSync);
+
+            canal.subscribe(async function (status) {
+                if (status === 'SUBSCRIBED') {
+                    subscrito = true;
+                    emitirSync();
+                    if (quiereTrackear) {
+                        registrarListeners();
+                        programarIdle();
+                        conectado = false;
+                        await conectar();
+                    }
+                    resolve(true);
+                } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+                    subscrito = false;
+                    if (conectado) {
+                        conectado = false;
+                        notificar(false);
+                    }
+                    resolve(false);
+                }
+            });
+        });
+
+        return promesaInicio;
+    }
+
+    function estaConectado() {
+        return conectado && subscrito;
+    }
+
+    // Los demás me ven: estoy conectado y no oculté mi estado
+    function esVisible() {
+        return conectado && subscrito && visible;
+    }
+
+    async function setVisible(v) {
+        visible = v === true;
+        if (conectado) await anunciar();
+        emitirSync();
+    }
+
+    function estaEnPresencia(id) {
+        var mapa = window.presenciaUsuarios || {};
+        return Object.prototype.hasOwnProperty.call(mapa, id);
+    }
+
+    function obtenerMapa() {
+        return window.presenciaUsuarios || {};
+    }
+
+    function formatearTiempoRelativo(fechaIso) {
+        if (!fechaIso) return '';
+        var texto = String(fechaIso);
+        if (!/([zZ]|[+-]\d{2}:?\d{2})$/.test(texto)) texto += 'Z';
+        var t = new Date(texto).getTime();
+        if (isNaN(t)) return '';
+        var minutos = Math.floor(Math.max(0, Date.now() - t) / 60000);
+        if (minutos < 1) {
+            return (typeof window.perfilT === 'function')
+                ? window.perfilT('perfil_hace_momento', 'hace un momento')
+                : 'hace un momento';
+        }
+        if (minutos < 60) return 'hace ' + minutos + ' min';
+        var horas = Math.floor(minutos / 60);
+        if (horas < 24) return 'hace ' + horas + ' h';
+        return 'hace ' + Math.floor(horas / 24) + ' d';
+    }
+
+    window.Presencia = {
+        __sariel: true,
+        iniciar: iniciar,
+        estaConectado: estaConectado,
+        esVisible: esVisible,
+        setVisible: setVisible,
+        estaEnPresencia: estaEnPresencia,
+        obtenerMapa: obtenerMapa,
+        formatearTiempoRelativo: formatearTiempoRelativo
     };
 
-    /* ================================================================
-       Helper: Obtener mascota activa
-       ================================================================ */
-    function getMascotaActiva() {
-        try {
-            const v = localStorage.getItem('mascota_activa');
-            return v || 'marquinhos';
-        } catch (e) {
-            return 'marquinhos';
-        }
-    }
-
-    /* ================================================================
-       ✅ Inyectar Marquinhos-pet (SOLO si es la mascota activa)
-       ================================================================ */
-    (function inyectarMarquinhosPet() {
-        if (getMascotaActiva() !== 'marquinhos') return;
-
-        var path = window.location.pathname.toLowerCase();
-
-        var excluidas = [
-            '/login', '/registro',
-            '/pagar', '/pay', '/checkout', '/success', '/cancel',
-            '/terminos', '/privacidad', '/cookies', '/legal',
-            '/info', '/live-terminos', '/eliminar-cuenta',
-            '/actualizar-contrasena',
-            '/features/marquinhos/tienda'
-        ];
-
-        for (var i = 0; i < excluidas.length; i++) {
-            if (path.indexOf(excluidas[i]) !== -1) return;
-        }
-
-        if (document.getElementById('marquinhos-pet-script')) return;
-
-        var insertar = function() {
-            var css = document.createElement('link');
-            css.rel = 'stylesheet';
-            css.href = '/features/marquinhos/marquinhos-pet.css';
-            css.id = 'marquinhos-pet-css';
-            document.head.appendChild(css);
-
-            var boca = document.createElement('script');
-            boca.id = 'marquinhos-boca-script';
-            boca.src = '/features/marquinhos/marquinhos-boca.js';
-            boca.defer = true;
-            document.head.appendChild(boca);
-
-            var fit = document.createElement('script');
-            fit.id = 'marquinhos-fit-script';
-            fit.src = '/features/marquinhos/marquinhos-fit.js';
-            fit.defer = true;
-            document.head.appendChild(fit);
-
-            var svgAcc = document.createElement('script');
-            svgAcc.id = 'marquinhos-accesorios-svg-script';
-            svgAcc.src = '/features/marquinhos/marquinhos-accesorios-svg.js';
-            svgAcc.defer = true;
-            document.head.appendChild(svgAcc);
-
-            var anim = document.createElement('script');
-            anim.id = 'marquinhos-anim-script';
-            anim.src = '/features/marquinhos/marquinhos-animaciones.js';
-            anim.defer = true;
-            document.head.appendChild(anim);
-
-            var js = document.createElement('script');
-            js.id = 'marquinhos-pet-script';
-            js.src = '/features/marquinhos/marquinhos-pet.js';
-            js.defer = true;
-            document.head.appendChild(js);
-
-            var brain = document.createElement('script');
-            brain.id = 'marquinhos-brain-script';
-            brain.src = '/features/marquinhos/marquinhos-brain.js';
-            brain.defer = true;
-            document.head.appendChild(brain);
-        };
-
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', insertar);
-        } else {
-            insertar();
-        }
-    })();
-
-    /* ================================================================
-       ✅ Inyectar Capitán Maíz-pet (SOLO si es la mascota activa)
-       ================================================================ */
-    (function inyectarCapitanMaizPet() {
-        if (getMascotaActiva() !== 'capitan-maiz') return;
-
-        var path = window.location.pathname.toLowerCase();
-
-        var excluidas = [
-            '/login', '/registro',
-            '/pagar', '/pay', '/checkout', '/success', '/cancel',
-            '/terminos', '/privacidad', '/cookies', '/legal',
-            '/info', '/live-terminos', '/eliminar-cuenta',
-            '/actualizar-contrasena',
-            '/features/capitan-maiz/tienda'
-        ];
-
-        for (var i = 0; i < excluidas.length; i++) {
-            if (path.indexOf(excluidas[i]) !== -1) return;
-        }
-
-        if (document.getElementById('capitan-maiz-pet-script')) return;
-
-        var insertar = function() {
-            var css = document.createElement('link');
-            css.rel = 'stylesheet';
-            css.href = '/features/capitan-maiz/capitan-maiz-pet.css';
-            css.id = 'capitan-maiz-pet-css';
-            document.head.appendChild(css);
-
-            var fit = document.createElement('script');
-            fit.id = 'capitan-maiz-fit-script';
-            fit.src = '/features/capitan-maiz/capitan-maiz-fit.js';
-            fit.defer = true;
-            document.head.appendChild(fit);
-
-            var js = document.createElement('script');
-            js.id = 'capitan-maiz-pet-script';
-            js.src = '/features/capitan-maiz/capitan-maiz-pet.js';
-            js.defer = true;
-            document.head.appendChild(js);
-
-            var brain = document.createElement('script');
-            brain.id = 'capitan-maiz-brain-script';
-            brain.src = '/features/capitan-maiz/capitan-maiz-brain.js';
-            brain.defer = true;
-            document.head.appendChild(brain);
-        };
-
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', insertar);
-        } else {
-            insertar();
-        }
-    })();
-
-    /* ================================================================
-       ✅ Inyectar Itlasuhua-pet (SOLO si es la mascota activa)
-       ================================================================ */
-    (function inyectarItlasuhuaPet() {
-        if (getMascotaActiva() !== 'itlasuhua') return;
-
-        var path = window.location.pathname.toLowerCase();
-
-        var excluidas = [
-            '/login', '/registro',
-            '/pagar', '/pay', '/checkout', '/success', '/cancel',
-            '/terminos', '/privacidad', '/cookies', '/legal',
-            '/info', '/live-terminos', '/eliminar-cuenta',
-            '/actualizar-contrasena',
-            '/features/itlasuhua/tienda'
-        ];
-
-        for (var i = 0; i < excluidas.length; i++) {
-            if (path.indexOf(excluidas[i]) !== -1) return;
-        }
-
-        if (document.getElementById('itlasuhua-pet-script')) return;
-
-        var insertar = function() {
-            var css = document.createElement('link');
-            css.rel = 'stylesheet';
-            css.href = '/features/itlasuhua/itlasuhua-pet.css';
-            css.id = 'itlasuhua-pet-css';
-            document.head.appendChild(css);
-
-            var js = document.createElement('script');
-            js.id = 'itlasuhua-pet-script';
-            js.src = '/features/itlasuhua/itlasuhua-pet.js';
-            js.defer = true;
-            js.onload = function() {
-                if (window.ItlasuhuaPet && typeof window.ItlasuhuaPet.crearWidget === 'function') {
-                    window.ItlasuhuaPet.crearWidget();
-                }
-            };
-            document.head.appendChild(js);
-
-            var brain = document.createElement('script');
-            brain.id = 'itlasuhua-brain-script';
-            brain.src = '/features/itlasuhua/itlasuhua-brain.js';
-            brain.defer = true;
-            document.head.appendChild(brain);
-
-            // 🆕 v2.9: cargar itlasuhua-voice.js DESPUÉS de brain.js
-            // para que window.ItlasuhuaVoice exista y el click del pet
-            // pueda llamar a onAvatarTap()
-            var voice = document.createElement('script');
-            voice.id = 'itlasuhua-voice-script';
-            voice.src = '/features/itlasuhua/itlasuhua-voice.js';
-            voice.defer = true;
-            document.head.appendChild(voice);
-        };
-
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', insertar);
-        } else {
-            insertar();
-        }
-    })();
-
-    console.log('[Apariencia] ✅ Módulo global v2.9 cargado · mascota activa: ' + getMascotaActiva());
+    window.formatearTiempoRelativo = formatearTiempoRelativo;
 })();
