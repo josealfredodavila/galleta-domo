@@ -1,8 +1,9 @@
 // ================================================================
 // server.js — Sariel's Ecosystem
 // Backend principal — Producción Railway
-// v2.8: LiveKit seguro (routes/livekit.js), caché HTML/JS desactivada,
-//       Live Pass con fallback de nombre de archivo, /live → live.html
+// v2.9: marketing montado, LiveKit seguro (routes/livekit.js),
+//       caché HTML/JS desactivada, Live Pass con fallback de nombre,
+//       /live → features/live/live.html
 // ================================================================
 
 require('dotenv').config();
@@ -602,8 +603,7 @@ async function verificarTurnstile(token, remoteip) {
 // ================================================================
 // ESTÁTICOS
 // HTML y JS sin caché: el navegador revalida con ETag (304, barato)
-// y así un despliegue se ve de inmediato. Antes, maxAge de 1 h
-// dejaba páginas viejas en el teléfono.
+// y así un despliegue se ve de inmediato.
 // ================================================================
 
 const publicPath = path.join(__dirname, 'public');
@@ -792,6 +792,9 @@ montarRouter('/api/webhooks/ia', './routes/webhooks/pagos-ia', 'routes/webhooks/
 
 montarRouter('/api/campanas', './routes/campanas', 'routes/campanas');
 
+// Marketing (anuncios en live, grupos y videos): /get-ad, /register-event
+montarRouter('/api/marketing', './routes/marketing', 'routes/marketing');
+
 // Live (donaciones + registro de minutos)
 montarRouter('/api/live', './routes/live', 'routes/live');
 
@@ -827,7 +830,7 @@ const friendlyRoutes = {
     '/mercado': 'features/mercado/index.html',
     '/muro': 'features/muro/index.html',
     '/videos': 'features/videos/index.html',
-    '/live': 'features/live/live.html'   // antes apuntaba a index.html, que no existe
+    '/live': 'features/live/live.html'
 };
 
 for (const [route, file] of Object.entries(friendlyRoutes)) {
