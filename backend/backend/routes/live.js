@@ -5,27 +5,17 @@
 //   POST /api/live/registrar-minuto       → Descuenta 1 minuto del Live Pass
 //   POST /api/live/donacion/crear         → Crea donación en NOWPayments
 //   GET  /api/live/donacion/:id/estado    → Consulta estado de donación
-//
-// Depende de:
-//   - Supabase (RPCs: registrar_minuto_live, iniciar_donacion_live)
-//   - NOWPayments (API key en variables de entorno)
 // ================================================================
 
 const express = require('express');
 const router = express.Router();
 const { createClient } = require('@supabase/supabase-js');
 
-// ================================================================
-// SUPABASE ADMIN
-// ================================================================
 const supabaseAdmin = createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// ================================================================
-// CONFIG
-// ================================================================
 const NOWPAYMENTS_API_KEY = process.env.NOWPAYMENTS_API_KEY;
 const NOWPAYMENTS_API_URL = 'https://api.nowpayments.io/v1';
 const SITE_URL =
@@ -34,57 +24,32 @@ const SITE_URL =
     'https://galleta-domo-production.up.railway.app';
 
 // ================================================================
-// MIDDLEWARE: Verificar autenticación
+// MIDDLEWARE
 // ================================================================
 async function verificarAutenticacion(req, res, next) {
     try {
         const authHeader = req.headers.authorization;
-
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({
-                success: false,
-                error: 'No autenticado'
-            });
+            return res.status(401).json({ success: false, error: 'No autenticado' });
         }
-
         const token = authHeader.slice(7).trim();
         if (!token) {
-            return res.status(401).json({
-                success: false,
-                error: 'Token vacío'
-            });
+            return res.status(401).json({ success: false, error: 'Token vacío' });
         }
-
         const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
-
         if (error || !user) {
-            return res.status(401).json({
-                success: false,
-                error: 'Token inválido'
-            });
+            return res.status(401).json({ success: false, error: 'Token inválido' });
         }
-
         req.user = user;
         next();
     } catch (error) {
         console.error('[Live] Error auth:', error);
-        return res.status(500).json({
-            success: false,
-            error: 'Error de autenticación'
-        });
+        return res.status(500).json({ success: false, error: 'Error de autenticación' });
     }
 }
 
 // ================================================================
 // POST /api/live/registrar-minuto
-// ================================================================
-// Descuenta 1 minuto del Live Pass del usuario autenticado.
-// Llamado por el frontend cada 60 segundos durante una transmisión.
-//
-// Respuestas:
-//   200 → minuto registrado OK
-//   403 → límite alcanzado o sin Live Pass (no reintentar)
-//   500 → error real
 // ================================================================
 router.post('/registrar-minuto', verificarAutenticacion, async (req, res) => {
     try {
@@ -96,14 +61,10 @@ router.post('/registrar-minuto', verificarAutenticacion, async (req, res) => {
 
         if (error) {
             console.error('[Live] Error registrar_minuto_live:', error);
-            return res.status(500).json({
-                success: false,
-                error: 'Error registrando minuto'
-            });
+            return res.status(500).json({ success: false, error: 'Error registrando minuto' });
         }
 
         if (!data || data.success !== true) {
-            // Sin Live Pass, expirado o límite alcanzado
             return res.status(403).json({
                 success: false,
                 error: data?.error || 'limite_alcanzado',
@@ -121,41 +82,18 @@ router.post('/registrar-minuto', verificarAutenticacion, async (req, res) => {
         });
     } catch (error) {
         console.error('[Live] Error en /registrar-minuto:', error);
-        return res.status(500).json({
-            success: false,
-            error: 'Error interno'
-        });
+        return res.status(500).json({ success: false, error: 'Error interno' });
     }
 });
 
 // ================================================================
 // POST /api/live/donacion/crear
 // ================================================================
-// Crea una donación y genera invoice en NOWPayments.
-//
-// Body:
-//   {
-//     transmision_id: number,
-//     monto_usd: number,
-//     pay_currency: string (ej. 'usdttrc20')
-//   }
-//
-// Respuesta 201:
-//   {
-//     success: true,
-//     id: number (donacion_id),
-//     donacion_id: number,
-//     payment_url: string,
-//     monto_usd: number,
-//     pay_currency: string
-//   }
-// ================================================================
 router.post('/donacion/crear', verificarAutenticacion, async (req, res) => {
     try {
         const { transmision_id, monto_usd, pay_currency } = req.body;
         const donanteId = req.user.id;
 
-        // Validaciones
         if (!transmision_id || !monto_usd || !pay_currency) {
             return res.status(400).json({
                 success: false,
@@ -172,13 +110,9 @@ router.post('/donacion/crear', verificarAutenticacion, async (req, res) => {
         }
 
         if (!NOWPAYMENTS_API_KEY) {
-            return res.status(500).json({
-                success: false,
-                error: 'NOWPayments no configurado'
-            });
+            return res.status(500).json({ success: false, error: 'NOWPayments no configurado' });
         }
 
-        // Verificar transmisión activa
         const { data: transmision, error: errT } = await supabaseAdmin
             .from('transmisiones')
             .select('id, streamer_id, estado, is_live')
@@ -187,30 +121,19 @@ router.post('/donacion/crear', verificarAutenticacion, async (req, res) => {
 
         if (errT) {
             console.error('[Live] Error consultando transmisión:', errT);
-            return res.status(500).json({
-                success: false,
-                error: 'Error consultando transmisión'
-            });
+            return res.status(500).json({ success: false, error: 'Error consultando transmisión' });
         }
 
         if (!transmision || transmision.estado !== 'en_vivo' || !transmision.is_live) {
-            return res.status(404).json({
-                success: false,
-                error: 'Transmisión no activa'
-            });
+            return res.status(404).json({ success: false, error: 'Transmisión no activa' });
         }
 
         if (transmision.streamer_id === donanteId) {
-            return res.status(400).json({
-                success: false,
-                error: 'No puedes donarte a ti mismo'
-            });
+            return res.status(400).json({ success: false, error: 'No puedes donarte a ti mismo' });
         }
 
-        // Crear idempotency_key
         const idempotencyKey = `don-${transmision_id}-${donanteId}-${Date.now()}`;
 
-        // Crear donación en Supabase vía RPC
         const { data: donacion, error: errD } = await supabaseAdmin.rpc(
             'iniciar_donacion_live',
             {
@@ -223,10 +146,7 @@ router.post('/donacion/crear', verificarAutenticacion, async (req, res) => {
 
         if (errD) {
             console.error('[Live] Error iniciar_donacion_live:', errD);
-            return res.status(500).json({
-                success: false,
-                error: 'Error creando donación'
-            });
+            return res.status(500).json({ success: false, error: 'Error creando donación' });
         }
 
         if (!donacion || donacion.success !== true || !donacion.donacion_id) {
@@ -237,8 +157,6 @@ router.post('/donacion/crear', verificarAutenticacion, async (req, res) => {
         }
 
         const donacionId = donacion.donacion_id;
-
-        // Crear invoice en NOWPayments
         const orderId = `DON-${donacionId}`;
 
         const controller = new AbortController();
@@ -278,13 +196,10 @@ router.post('/donacion/crear', verificarAutenticacion, async (req, res) => {
 
         if (!npOk || !npData.invoice_url) {
             console.error('[Live] Error NOWPayments:', npData);
-
-            // Marcar donación como fallida
             await supabaseAdmin
                 .from('live_donaciones')
                 .update({ estado: 'fallida' })
                 .eq('id', donacionId);
-
             return res.status(502).json({
                 success: false,
                 error: npData.message || 'Error al crear pago en NOWPayments'
@@ -301,28 +216,19 @@ router.post('/donacion/crear', verificarAutenticacion, async (req, res) => {
         });
     } catch (error) {
         console.error('[Live] Error en /donacion/crear:', error);
-        return res.status(500).json({
-            success: false,
-            error: 'Error interno'
-        });
+        return res.status(500).json({ success: false, error: 'Error interno' });
     }
 });
 
 // ================================================================
 // GET /api/live/donacion/:id/estado
 // ================================================================
-// Consulta el estado de una donación.
-// Solo el donante puede consultarla.
-// ================================================================
 router.get('/donacion/:id/estado', verificarAutenticacion, async (req, res) => {
     try {
         const donacionId = parseInt(req.params.id, 10);
 
         if (!Number.isInteger(donacionId) || donacionId <= 0) {
-            return res.status(400).json({
-                success: false,
-                error: 'ID inválido'
-            });
+            return res.status(400).json({ success: false, error: 'ID inválido' });
         }
 
         const { data, error } = await supabaseAdmin
@@ -333,24 +239,15 @@ router.get('/donacion/:id/estado', verificarAutenticacion, async (req, res) => {
 
         if (error) {
             console.error('[Live] Error consultando donación:', error);
-            return res.status(500).json({
-                success: false,
-                error: 'Error consultando donación'
-            });
+            return res.status(500).json({ success: false, error: 'Error consultando donación' });
         }
 
         if (!data) {
-            return res.status(404).json({
-                success: false,
-                error: 'Donación no encontrada'
-            });
+            return res.status(404).json({ success: false, error: 'Donación no encontrada' });
         }
 
         if (data.donante_id !== req.user.id) {
-            return res.status(403).json({
-                success: false,
-                error: 'No autorizado'
-            });
+            return res.status(403).json({ success: false, error: 'No autorizado' });
         }
 
         return res.json({
@@ -361,10 +258,7 @@ router.get('/donacion/:id/estado', verificarAutenticacion, async (req, res) => {
         });
     } catch (error) {
         console.error('[Live] Error en /donacion/:id/estado:', error);
-        return res.status(500).json({
-            success: false,
-            error: 'Error interno'
-        });
+        return res.status(500).json({ success: false, error: 'Error interno' });
     }
 });
 
