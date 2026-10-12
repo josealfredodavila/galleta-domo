@@ -1,319 +1,94 @@
 // ================================================================
-// UTILS/ENCRYPTION.JS
-// FUNCIONES CRIPTOGRÁFICAS - SARIEL'S BACKEND
+// UTILS/ENCRYPTION.JS — Csariel's
+// Cifrado AES-256-GCM, IDs y códigos aleatorios.
+// NO usar para verificar IPN de NOWPayments: para eso está
+// utils/nowpayments-sig.js (llaves ordenadas + timing-safe).
 // ================================================================
+
+'use strict';
 
 const crypto = require('crypto');
 
 // ================================================================
-// HMAC-SHA-512
+// IDs Y CÓDIGOS
 // ================================================================
 
-/**
- * Genera una firma HMAC-SHA-512.
- *
- * IMPORTANTE:
- * NOWPayments firma el JSON recibido.
- * La serialización debe mantenerse consistente con el payload
- * que llega al backend.
- */
-function generarHMAC(payload, secret) {
-    if (!secret || typeof secret !== 'string') {
-        throw new Error('HMAC secret no configurado');
-    }
-
-    if (payload === undefined || payload === null) {
-        throw new Error('Payload requerido para generar HMAC');
-    }
-
-    return crypto
-        .createHmac('sha512', secret)
-        .update(JSON.stringify(payload), 'utf8')
-        .digest('hex');
-}
-
-// ================================================================
-// VERIFICACIÓN HMAC
-// ================================================================
-
-/**
- * Verifica una firma HMAC-SHA-512 utilizando comparación
- * resistente a ataques de timing.
- */
-function verificarHMAC(payload, firmaRecibida, secret) {
-    try {
-        if (!firmaRecibida || typeof firmaRecibida !== 'string') {
-            return false;
-        }
-
-        if (!secret || typeof secret !== 'string') {
-            console.error('❌ HMAC secret no configurado');
-            return false;
-        }
-
-        const firmaCalculada = generarHMAC(payload, secret);
-
-        const recibida = Buffer.from(firmaRecibida, 'utf8');
-        const calculada = Buffer.from(firmaCalculada, 'utf8');
-
-        // timingSafeEqual exige buffers de igual longitud.
-        if (recibida.length !== calculada.length) {
-            return false;
-        }
-
-        return crypto.timingSafeEqual(
-            calculada,
-            recibida
-        );
-    } catch (error) {
-        console.error('❌ Error verificando HMAC:', error.message);
-        return false;
-    }
-}
-
-// ================================================================
-// HMAC RECURSIVO
-// ================================================================
-
-/**
- * Verificación recursiva de estructuras.
- *
- * Se utiliza para normalizar estructuras JSON antes de generar
- * firmas cuando sea necesario mantener un orden determinista
- * de propiedades.
- *
- * NO modifica el objeto original.
- */
-function normalizarRecursivo(valor) {
-    if (Array.isArray(valor)) {
-        return valor.map(normalizarRecursivo);
-    }
-
-    if (
-        valor !== null &&
-        typeof valor === 'object'
-    ) {
-        return Object.keys(valor)
-            .sort()
-            .reduce((resultado, clave) => {
-                resultado[clave] = normalizarRecursivo(valor[clave]);
-                return resultado;
-            }, {});
-    }
-
-    return valor;
-}
-
-/**
- * Genera HMAC sobre una estructura normalizada.
- *
- * Se mantiene separado de generarHMAC() para no cambiar
- * silenciosamente la serialización utilizada por otros módulos.
- */
-function generarHMACRecursivo(payload, secret) {
-    if (!secret || typeof secret !== 'string') {
-        throw new Error('HMAC secret no configurado');
-    }
-
-    const payloadNormalizado = normalizarRecursivo(payload);
-
-    return crypto
-        .createHmac('sha512', secret)
-        .update(JSON.stringify(payloadNormalizado), 'utf8')
-        .digest('hex');
-}
-
-/**
- * Verifica HMAC recursivo.
- */
-function verificarHMACRecursivo(payload, firmaRecibida, secret) {
-    try {
-        if (!firmaRecibida || typeof firmaRecibida !== 'string') {
-            return false;
-        }
-
-        if (!secret || typeof secret !== 'string') {
-            console.error('❌ HMAC secret no configurado');
-            return false;
-        }
-
-        const firmaCalculada = generarHMACRecursivo(
-            payload,
-            secret
-        );
-
-        const recibida = Buffer.from(firmaRecibida, 'utf8');
-        const calculada = Buffer.from(firmaCalculada, 'utf8');
-
-        if (recibida.length !== calculada.length) {
-            return false;
-        }
-
-        return crypto.timingSafeEqual(
-            calculada,
-            recibida
-        );
-    } catch (error) {
-        console.error(
-            '❌ Error verificando HMAC recursivo:',
-            error.message
-        );
-
-        return false;
-    }
-}
-
-// ================================================================
-// ID ÚNICO
-// ================================================================
-
-function generarId(prefix = '') {
+function generarId(prefijo = '') {
     const id = crypto.randomUUID();
-
-    return prefix
-        ? `${prefix}-${id}`
-        : id;
+    return prefijo ? `${prefijo}-${id}` : id;
 }
 
-// ================================================================
-// CÓDIGO ALEATORIO
-// ================================================================
-
-function generarCodigo(prefix = 'SAR', length = 6) {
-    if (!Number.isInteger(length) || length < 4 || length > 64) {
-        throw new Error(
-            'La longitud del código debe estar entre 4 y 64 caracteres'
-        );
+function generarCodigo(prefijo = 'SAR', longitud = 6) {
+    if (!Number.isInteger(longitud) || longitud < 4 || longitud > 64) {
+        throw new Error('La longitud del código debe estar entre 4 y 64 caracteres');
     }
-
-    const random = crypto
-        .randomBytes(Math.ceil(length / 2))
+    const aleatorio = crypto
+        .randomBytes(Math.ceil(longitud / 2))
         .toString('hex')
         .toUpperCase()
-        .slice(0, length);
-
-    return `${prefix}-${random}`;
+        .slice(0, longitud);
+    return `${prefijo}-${aleatorio}`;
 }
 
 // ================================================================
-// ENCRIPTACIÓN AES-256-GCM
+// AES-256-GCM
+// La clave debe ser 64 caracteres hex (32 bytes).
 // ================================================================
 
 function obtenerClaveAES(secret) {
     if (!secret || typeof secret !== 'string') {
         throw new Error('Encryption secret no configurado');
     }
-
-    const key = Buffer.from(secret, 'hex');
-
-    if (key.length !== 32) {
-        throw new Error(
-            'El secret AES-256 debe contener exactamente 32 bytes en hexadecimal'
-        );
+    if (!/^[0-9a-f]{64}$/i.test(secret)) {
+        throw new Error('El secret AES-256 debe ser exactamente 64 caracteres hexadecimales (32 bytes)');
     }
-
-    return key;
+    return Buffer.from(secret, 'hex');
 }
 
-// ================================================================
-// ENCRIPTAR DATOS
-// ================================================================
-
-function encriptarDatos(data, secret) {
-    const key = obtenerClaveAES(secret);
+function encriptarDatos(datos, secret) {
+    const clave = obtenerClaveAES(secret);
     const iv = crypto.randomBytes(12);
 
-    const cipher = crypto.createCipheriv(
-        'aes-256-gcm',
-        key,
-        iv
-    );
+    const cipher = crypto.createCipheriv('aes-256-gcm', clave, iv);
+    const texto = JSON.stringify(datos);
 
-    const plaintext = JSON.stringify(data);
-
-    let encrypted = cipher.update(
-        plaintext,
-        'utf8',
-        'hex'
-    );
-
-    encrypted += cipher.final('hex');
-
-    const tag = cipher.getAuthTag();
+    let cifrado = cipher.update(texto, 'utf8', 'hex');
+    cifrado += cipher.final('hex');
 
     return {
         iv: iv.toString('hex'),
-        encrypted,
-        tag: tag.toString('hex')
+        encrypted: cifrado,
+        tag: cipher.getAuthTag().toString('hex')
     };
 }
 
-// ================================================================
-// DESENCRIPTAR DATOS
-// ================================================================
-
-function desencriptarDatos(encryptedData, secret) {
-    if (
-        !encryptedData ||
-        typeof encryptedData !== 'object'
-    ) {
+function desencriptarDatos(datosCifrados, secret) {
+    if (!datosCifrados || typeof datosCifrados !== 'object') {
         throw new Error('Datos cifrados inválidos');
     }
 
-    const {
-        iv,
-        encrypted,
-        tag
-    } = encryptedData;
-
+    const { iv, encrypted, tag } = datosCifrados;
     if (!iv || !encrypted || !tag) {
-        throw new Error(
-            'Faltan campos requeridos para desencriptar'
-        );
+        throw new Error('Faltan campos requeridos para desencriptar');
     }
 
-    const key = obtenerClaveAES(secret);
+    const clave = obtenerClaveAES(secret);
+    const ivBuf = Buffer.from(iv, 'hex');
+    const tagBuf = Buffer.from(tag, 'hex');
 
-    const ivBuffer = Buffer.from(iv, 'hex');
-    const tagBuffer = Buffer.from(tag, 'hex');
+    if (ivBuf.length !== 12) throw new Error('IV inválido');
+    if (tagBuf.length !== 16) throw new Error('Auth tag inválido');
 
-    if (ivBuffer.length !== 12) {
-        throw new Error('IV inválido');
-    }
+    const decipher = crypto.createDecipheriv('aes-256-gcm', clave, ivBuf);
+    decipher.setAuthTag(tagBuf);
 
-    if (tagBuffer.length !== 16) {
-        throw new Error('Auth tag inválido');
-    }
+    let texto = decipher.update(encrypted, 'hex', 'utf8');
+    texto += decipher.final('utf8');
 
-    const decipher = crypto.createDecipheriv(
-        'aes-256-gcm',
-        key,
-        ivBuffer
-    );
-
-    decipher.setAuthTag(tagBuffer);
-
-    let decrypted = decipher.update(
-        encrypted,
-        'hex',
-        'utf8'
-    );
-
-    decrypted += decipher.final('utf8');
-
-    return JSON.parse(decrypted);
+    return JSON.parse(texto);
 }
 
-// ================================================================
-// EXPORTACIONES
-// ================================================================
-
 module.exports = {
-    generarHMAC,
-    verificarHMAC,
-    generarHMACRecursivo,
-    verificarHMACRecursivo,
-    normalizarRecursivo,
     generarId,
     generarCodigo,
     encriptarDatos,
