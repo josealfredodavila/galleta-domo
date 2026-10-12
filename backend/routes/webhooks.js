@@ -1,172 +1,110 @@
 // ================================================================
-// ROUTES/WEBHOOKS.JS - SARIEL'S ECOSYSTEM
-// ================================================================
-// Router principal de webhooks. server.js lo monta en /api/webhook
-//
-// Webhooks soportados:
-//   POST /api/webhook/nowpayments → IPN de NOWPayments
-//   POST /api/webhook/membresia   → Membresía Pro (alias)
-//   POST /api/webhook/stripe      → Placeholder
-//   POST /api/webhook/fintoc      → Placeholder
-//
-// Depende de:
-//   - handleWebhookMembresia      (membresías Pro)
-//   - handleWebhookLivePass       (Live Pass - order_id "LP-")
-//   - handleWebhookDonacionLive   (Donaciones Live - order_id "DON-")
-//   - handleWebhookInternet       (Paquetes Internet - order_id "NET-")
-//   - procesarWebhookMuro         (Muro P2P - resto)
+// ROUTES/WEBHOOKS.JS — Csariel's
+// Montado en /api/webhook
+//   POST /api/webhook/nowpayments → IPN de NOWPayments (firma verificada)
+//   POST /api/webhook/membresia   → alias de membresía PRO (firma verificada)
+//   POST /api/webhook/stripe      → placeholder
+//   POST /api/webhook/fintoc      → placeholder
+// Toda petición de NOWPayments pasa primero por verificarFirmaNowPayments.
 // ================================================================
 
 const express = require('express');
 const router = express.Router();
 
+const { verificarFirmaNowPayments } = require('../utils/nowpayments-sig');
+const nowpayments = require('./webhooks/nowpayments');               // procesarLivePass, procesarDonacion, procesarMembresia
+const { handleWebhookMembresia } = require('./membresia-webhook-handler'); // PRO- (legacy, pendiente de revisión)
+const { handleWebhookInternet } = require('./webhooks/nowpayments-internet'); // NET- (legacy, pendiente de revisión)
+
+const NOWPAYMENTS_IPN_SECRET = process.env.NOWPAYMENTS_IPN_SECRET;
+
+const log = (...args) => console.log('[Webhook]', ...args);
+const logError = (...args) => console.error('[Webhook ERROR]', ...args);
+
 // ================================================================
-// HANDLERS
+// VERIFICACIÓN DE FIRMA (obligatoria para todo IPN de NOWPayments)
 // ================================================================
-const { handleWebhookMembresia } = require('./membresia-webhook-handler');
-
-const { handleWebhookLivePass } = require('./livepass-webhook-handler');
-
-const { handleWebhookDonacionLive } = require('./live-donacion-webhook-handler');
-
-const { handleWebhookInternet } = require('./webhooks/nowpayments-internet');
-
-// Muro P2P — puede no existir
-let procesarWebhookMuro = null;
-try {
-    const nowpaymentsHandler = require('./webhooks/nowpayments');
-
-    if (typeof nowpaymentsHandler === 'function') {
-        procesarWebhookMuro = nowpaymentsHandler;
-    } else if (
-        nowpaymentsHandler &&
-        typeof nowpaymentsHandler.procesarWebhookMuro === 'function'
-    ) {
-        procesarWebhookMuro = nowpaymentsHandler.procesarWebhookMuro;
+function firmaValida(req) {
+    if (!NOWPAYMENTS_IPN_SECRET) {
+        logError('NOWPAYMENTS_IPN_SECRET ausente: se rechazan todos los IPN');
+        return false;
     }
-} catch (e) {
-    console.log(
-        'ℹ️ routes/webhooks/nowpayments.js no disponible o sin export compatible'
+    return verificarFirmaNowPayments(
+        req.body,
+        req.rawBody,
+        req.headers['x-nowpayments-sig'],
+        NOWPAYMENTS_IPN_SECRET
     );
 }
 
 // ================================================================
-// POST /api/webhook/nowpayments
-// ================================================================
-// Según order_id:
-//   "PRO-"  → Membresía Pro
-//   "LP-"   → Live Pass
-//   "DON-"  → Donación de Live
-//   "NET-"  → Paquete Internet
-//   otro    → Muro P2P
+// POST /nowpayments  (URL final: /api/webhook/nowpayments)
 // ================================================================
 router.post('/nowpayments', async (req, res) => {
     try {
-        const payload = req.body || {};
-        const orderId = String(payload.order_id || '');
+        if (!firmaValida(req)) {
+            logError('Firma inválida en /nowpayments');
+            return res.status(401).json({ ok: false, error: 'firma' });
+        }
+
+        const data = req.body || {};
+        const orderId = String(data.order_id || '');
         const orderUpper = orderId.toUpperCase();
+        const npStatus = String(data.payment_status || '').toLowerCase();
 
-        console.log(
-            '📩 Webhook recibido en /api/webhook/nowpayments:',
-            {
-                order_id: orderId,
-                payment_status: payload.payment_status,
-                payment_id: payload.payment_id
-            }
-        );
+        log('IPN', { order_id: orderId, status: npStatus, payment_id: data.payment_id });
 
-        // 1) MEMBRESÍA PRO
-        if (orderUpper.startsWith('PRO-')) {
-            console.log('💳 Webhook identificado como membresía Pro:', orderId);
-            return await handleWebhookMembresia(req, res);
-        }
-
-        // 2) LIVE PASS
         if (orderUpper.startsWith('LP-')) {
-            console.log('🎥 Webhook identificado como Live Pass:', orderId);
-            return await handleWebhookLivePass(req, res);
+            return nowpayments.procesarLivePass(orderId, npStatus, data, res);
         }
-
-        // 3) DONACIÓN DE LIVE
         if (orderUpper.startsWith('DON-')) {
-            console.log('💎 Webhook identificado como donación de Live:', orderId);
-            return await handleWebhookDonacionLive(req, res);
+            return nowpayments.procesarDonacion(orderId, npStatus, data, res);
         }
-
-        // 4) PAQUETE DE INTERNET
+        if (orderUpper.startsWith('PRO-')) {
+            return handleWebhookMembresia(req, res);
+        }
         if (orderUpper.startsWith('NET-')) {
-            console.log('🌐 Webhook identificado como paquete de Internet:', orderId);
-            return await handleWebhookInternet(req, res);
+            return handleWebhookInternet(req, res);
         }
 
-        // 5) MURO P2P
-        if (procesarWebhookMuro) {
-            return procesarWebhookMuro(req, res);
-        }
-
-        // 6) FALLBACK
-        console.warn('⚠️ Webhook sin handler específico:', { order_id: orderId });
-
-        return res.status(200).json({
-            status: 'ok',
-            message: 'Recibido (sin handler)'
-        });
-
-    } catch (error) {
-        console.error('❌ Error en /api/webhook/nowpayments:', error);
-        return res.status(500).json({
-            status: 'error',
-            error: 'Error interno'
-        });
+        // Resto: membresías de Mercado. Busca por payment_id; si no existe, responde 200 sin activar nada.
+        return nowpayments.procesarMembresia(npStatus, data, res);
+    } catch (e) {
+        logError('/nowpayments:', e.message);
+        return res.status(500).json({ ok: false, error: 'interno' });
     }
 });
 
 // ================================================================
-// POST /api/webhook/membresia
+// POST /membresia  (alias legacy, también con firma)
 // ================================================================
 router.post('/membresia', async (req, res) => {
     try {
-        console.log('📩 Webhook de membresía recibido en /api/webhook/membresia');
-        return await handleWebhookMembresia(req, res);
-    } catch (error) {
-        console.error('❌ Error en /api/webhook/membresia:', error);
-        return res.status(500).json({
-            status: 'error',
-            error: 'Error interno'
-        });
+        if (!firmaValida(req)) {
+            logError('Firma inválida en /membresia');
+            return res.status(401).json({ ok: false, error: 'firma' });
+        }
+        return handleWebhookMembresia(req, res);
+    } catch (e) {
+        logError('/membresia:', e.message);
+        return res.status(500).json({ ok: false, error: 'interno' });
     }
 });
 
 // ================================================================
-// POST /api/webhook/stripe
+// PLACEHOLDERS (sin lógica de negocio)
 // ================================================================
-router.post('/stripe', (req, res) => {
-    console.log('📩 Webhook Stripe recibido (no implementado)');
-    return res.status(200).json({ received: true });
-});
+router.post('/stripe', (req, res) => res.status(200).json({ received: true }));
+router.post('/fintoc', (req, res) => res.status(200).json({ received: true }));
 
 // ================================================================
-// POST /api/webhook/fintoc
-// ================================================================
-router.post('/fintoc', (req, res) => {
-    console.log('📩 Webhook Fintoc recibido (no implementado)');
-    return res.status(200).json({ received: true });
-});
-
-// ================================================================
-// GET /api/webhook/health
+// GET /health
 // ================================================================
 router.get('/health', (req, res) => {
-    return res.status(200).json({
+    res.status(200).json({
         status: 'ok',
         router: 'webhooks',
-        handlers: {
-            membresia_pro: !!handleWebhookMembresia,
-            live_pass: !!handleWebhookLivePass,
-            donacion_live: !!handleWebhookDonacionLive,
-            internet: !!handleWebhookInternet,
-            muro_p2p: !!procesarWebhookMuro
-        },
+        firma_configurada: !!NOWPAYMENTS_IPN_SECRET,
         timestamp: new Date().toISOString()
     });
 });
