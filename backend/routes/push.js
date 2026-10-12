@@ -1,15 +1,10 @@
 // ================================================================
-// ROUTES/PUSH.JS - SARIEL'S ECOSYSTEM
-// ================================================================
-// Endpoints para Web Push Notifications.
-//
-// Endpoints:
-//   GET  /api/push/vapid-public-key  → Devuelve VAPID key pública
-//   POST /api/push/subscribe         → Guarda suscripción
-//   POST /api/push/unsubscribe       → Borra suscripción
-//   POST /api/push/test              → Notificación de prueba
-//   POST /api/push/broadcast-live    → Notifica seguidores (live)
-//
+// ROUTES/PUSH.JS — Csariel's
+//   GET  /api/push/vapid-public-key → clave pública VAPID
+//   POST /api/push/subscribe        → guarda suscripción
+//   POST /api/push/unsubscribe      → desactiva suscripción
+//   POST /api/push/test             → notificación de prueba
+//   POST /api/push/broadcast-live   → avisa a seguidores de un live ACTIVO
 // Exporta:
 //   enviarPushAUsuarios(ids, payload)
 //   enviarPushASeguidores(streamerId, payload)
@@ -18,16 +13,15 @@
 const express = require('express');
 const router = express.Router();
 const webpush = require('web-push');
-const { createClient } = require('@supabase/supabase-js');
+const { supabaseAdmin } = require('../config/supabase');
 
-// ================================================================
-// CONFIGURACIÓN VAPID
-// ================================================================
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
 const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:noreply@csariels.com';
 
-if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
+const PUSH_ACTIVO = Boolean(VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY);
+
+if (!PUSH_ACTIVO) {
     console.error('⚠️ [Push] VAPID keys NO configuradas. Push deshabilitadas.');
 } else {
     webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
@@ -35,20 +29,12 @@ if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
 }
 
 // ================================================================
-// SUPABASE ADMIN (usa service_role para leer subs de otros)
-// ================================================================
-const supabaseAdmin = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
-// ================================================================
-// MIDDLEWARE AUTENTICACIÓN
+// AUTENTICACIÓN
 // ================================================================
 async function verificarAutenticacion(req, res, next) {
     try {
-        const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        const authHeader = req.headers.authorization || '';
+        if (!authHeader.startsWith('Bearer ')) {
             return res.status(401).json({ success: false, error: 'No autenticado' });
         }
         const token = authHeader.slice(7).trim();
@@ -60,44 +46,33 @@ async function verificarAutenticacion(req, res, next) {
             return res.status(401).json({ success: false, error: 'Token inválido' });
         }
         req.user = user;
-        next();
+        return next();
     } catch (error) {
-        console.error('[Push] Error auth:', error);
+        console.error('[Push] Error auth:', error.message);
         return res.status(500).json({ success: false, error: 'Error de autenticación' });
     }
 }
 
 // ================================================================
-// GET /api/push/vapid-public-key
+// GET /vapid-public-key
 // ================================================================
 router.get('/vapid-public-key', (req, res) => {
-    if (!VAPID_PUBLIC_KEY) {
-        return res.status(503).json({
-            success: false,
-            error: 'Push notifications no configuradas'
-        });
+    if (!PUSH_ACTIVO) {
+        return res.status(503).json({ success: false, error: 'Push notifications no configuradas' });
     }
-    return res.json({
-        success: true,
-        publicKey: VAPID_PUBLIC_KEY
-    });
+    return res.json({ success: true, publicKey: VAPID_PUBLIC_KEY });
 });
 
 // ================================================================
-// POST /api/push/subscribe
+// POST /subscribe
 // ================================================================
 router.post('/subscribe', verificarAutenticacion, async (req, res) => {
     try {
-        const { endpoint, keys, device_type } = req.body;
+        const { endpoint, keys, device_type } = req.body || {};
 
-        if (!endpoint || !keys || !keys.p256dh || !keys.auth) {
-            return res.status(400).json({
-                success: false,
-                error: 'Faltan datos de suscripción'
-            });
+        if (!endpoint || typeof endpoint !== 'string' || !keys || !keys.p256dh || !keys.auth) {
+            return res.status(400).json({ success: false, error: 'Faltan datos de suscripción' });
         }
-
-        const userAgent = req.headers['user-agent'] || null;
 
         const { error } = await supabaseAdmin
             .from('push_subscriptions')
@@ -106,36 +81,31 @@ router.post('/subscribe', verificarAutenticacion, async (req, res) => {
                 endpoint,
                 p256dh: keys.p256dh,
                 auth: keys.auth,
-                device_type: device_type || 'unknown',
-                user_agent: userAgent,
+                device_type: String(device_type || 'unknown').slice(0, 20),
+                user_agent: String(req.headers['user-agent'] || '').slice(0, 300) || null,
                 activo: true,
                 ultima_vez_usado: new Date().toISOString(),
                 updated_at: new Date().toISOString()
-            }, {
-                onConflict: 'endpoint'
-            });
+            }, { onConflict: 'endpoint' });
 
         if (error) {
-            console.error('[Push] Error guardando suscripción:', error);
+            console.error('[Push] Error guardando suscripción:', error.message);
             return res.status(500).json({ success: false, error: 'Error guardando suscripción' });
         }
 
-        console.log(`[Push] Suscripción guardada para usuario ${req.user.id}`);
-
         return res.json({ success: true, message: 'Suscripción registrada' });
     } catch (error) {
-        console.error('[Push] Error en /subscribe:', error);
+        console.error('[Push] Error en /subscribe:', error.message);
         return res.status(500).json({ success: false, error: 'Error interno' });
     }
 });
 
 // ================================================================
-// POST /api/push/unsubscribe
+// POST /unsubscribe
 // ================================================================
 router.post('/unsubscribe', verificarAutenticacion, async (req, res) => {
     try {
-        const { endpoint } = req.body;
-
+        const { endpoint } = req.body || {};
         if (!endpoint) {
             return res.status(400).json({ success: false, error: 'Falta endpoint' });
         }
@@ -147,75 +117,89 @@ router.post('/unsubscribe', verificarAutenticacion, async (req, res) => {
             .eq('usuario_id', req.user.id);
 
         if (error) {
-            console.error('[Push] Error borrando suscripción:', error);
+            console.error('[Push] Error desactivando suscripción:', error.message);
             return res.status(500).json({ success: false, error: 'Error borrando suscripción' });
         }
 
         return res.json({ success: true, message: 'Suscripción eliminada' });
     } catch (error) {
-        console.error('[Push] Error en /unsubscribe:', error);
+        console.error('[Push] Error en /unsubscribe:', error.message);
         return res.status(500).json({ success: false, error: 'Error interno' });
     }
 });
 
 // ================================================================
-// POST /api/push/test
+// POST /test
 // ================================================================
 router.post('/test', verificarAutenticacion, async (req, res) => {
     try {
-        const resultado = await enviarPushAUsuarios(
-            [req.user.id],
-            {
-                title: "◈ Csariel's",
-                body: 'Notificación de prueba ✅',
-                icon: '/icon-192.png',
-                badge: '/badge-72.png',
-                url: '/features/live/live.html',
-                tag: 'test-notification'
-            }
-        );
-
+        const resultado = await enviarPushAUsuarios([req.user.id], {
+            title: "◈ Csariel's",
+            body: 'Notificación de prueba ✅',
+            icon: '/icon-192.png',
+            badge: '/badge-72.png',
+            url: '/features/live/live.html',
+            tag: 'test-notification'
+        });
         return res.json({ success: true, resultado });
     } catch (error) {
-        console.error('[Push] Error en /test:', error);
-        return res.status(500).json({ success: false, error: error.message });
+        console.error('[Push] Error en /test:', error.message);
+        return res.status(500).json({ success: false, error: 'Error interno' });
     }
 });
 
 // ================================================================
-// POST /api/push/broadcast-live
-// ================================================================
-// Notifica a todos los seguidores que un streamer inició live.
+// POST /broadcast-live
+// Solo el dueño de un live EN VIVO puede avisar a sus seguidores.
+// El título sale de la base de datos, no del cliente.
 // ================================================================
 router.post('/broadcast-live', verificarAutenticacion, async (req, res) => {
     try {
-        const { streamer_id, stream_id, titulo } = req.body;
-        const streamerId = streamer_id || req.user.id;
+        const streamId = Number(req.body?.stream_id);
+        if (!Number.isInteger(streamId) || streamId <= 0) {
+            return res.status(400).json({ success: false, error: 'stream_id inválido' });
+        }
 
-        if (streamerId !== req.user.id) {
+        // El live debe existir, estar activo y ser del usuario autenticado
+        const { data: stream, error: errStream } = await supabaseAdmin
+            .from('transmisiones')
+            .select('id, titulo, streamer_id, estado, is_live')
+            .eq('id', streamId)
+            .maybeSingle();
+
+        if (errStream) {
+            console.error('[Push] Error consultando transmisión:', errStream.message);
+            return res.status(500).json({ success: false, error: 'Error consultando transmisión' });
+        }
+
+        if (!stream || stream.estado !== 'en_vivo' || stream.is_live !== true) {
+            return res.status(404).json({ success: false, error: 'Transmisión no activa' });
+        }
+
+        if (stream.streamer_id !== req.user.id) {
             return res.status(403).json({ success: false, error: 'No autorizado' });
         }
 
-        // Obtener nombre del streamer
         const { data: usuario } = await supabaseAdmin
             .from('usuarios')
             .select('nombre')
-            .eq('id', streamerId)
+            .eq('id', req.user.id)
             .maybeSingle();
 
         const nombre = usuario?.nombre || 'Un streamer';
+        const titulo = String(stream.titulo || '¡Únete ahora!').slice(0, 120);
 
-        const resultado = await enviarPushASeguidores(streamerId, {
+        const resultado = await enviarPushASeguidores(req.user.id, {
             title: `🔴 ${nombre} está en vivo`,
-            body: titulo || '¡Únete ahora!',
+            body: titulo,
             icon: '/icon-192.png',
             badge: '/badge-72.png',
-            url: `/features/live/live.html?transmision=${stream_id}`,
-            tag: `live-${stream_id}`,
-            data: { stream_id, streamer_id: streamerId, tipo: 'live_iniciado' }
+            url: '/features/live/live.html',
+            tag: `live-${stream.id}`,
+            data: { stream_id: stream.id, streamer_id: req.user.id, tipo: 'live_iniciado' }
         });
 
-        console.log(`[Push] Live broadcast: ${resultado.enviados} enviados, ${resultado.fallidos} fallidos`);
+        console.log(`[Push] Live ${stream.id}: ${resultado.enviados} enviados, ${resultado.fallidos} fallidos`);
 
         return res.json({
             success: true,
@@ -223,16 +207,16 @@ router.post('/broadcast-live', verificarAutenticacion, async (req, res) => {
             fallidos: resultado.fallidos
         });
     } catch (error) {
-        console.error('[Push] Error en /broadcast-live:', error);
-        return res.status(500).json({ success: false, error: error.message });
+        console.error('[Push] Error en /broadcast-live:', error.message);
+        return res.status(500).json({ success: false, error: 'Error interno' });
     }
 });
 
 // ================================================================
-// HELPER: Enviar push a usuarios específicos
+// HELPER: push a usuarios específicos
 // ================================================================
 async function enviarPushAUsuarios(usuarioIds, payload) {
-    if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
+    if (!PUSH_ACTIVO) {
         console.warn('[Push] VAPID no configurado, saltando envío');
         return { enviados: 0, fallidos: 0 };
     }
@@ -248,7 +232,7 @@ async function enviarPushAUsuarios(usuarioIds, payload) {
         .eq('activo', true);
 
     if (error) {
-        console.error('[Push] Error consultando suscripciones:', error);
+        console.error('[Push] Error consultando suscripciones:', error.message);
         return { enviados: 0, fallidos: 0 };
     }
 
@@ -274,10 +258,7 @@ async function enviarPushAUsuarios(usuarioIds, payload) {
     for (const sub of subs) {
         const pushSubscription = {
             endpoint: sub.endpoint,
-            keys: {
-                p256dh: sub.p256dh,
-                auth: sub.auth
-            }
+            keys: { p256dh: sub.p256dh, auth: sub.auth }
         };
 
         try {
@@ -288,7 +269,7 @@ async function enviarPushAUsuarios(usuarioIds, payload) {
             if (err.statusCode === 410 || err.statusCode === 404) {
                 endpointsExpirados.push(sub.endpoint);
             } else {
-                console.warn(`[Push] Error enviando:`, err.statusCode || err.message);
+                console.warn('[Push] Error enviando:', err.statusCode || err.message);
             }
         }
     }
@@ -301,12 +282,11 @@ async function enviarPushAUsuarios(usuarioIds, payload) {
         console.log(`[Push] ${endpointsExpirados.length} suscripciones expiradas desactivadas`);
     }
 
-    console.log(`[Push] Enviados: ${enviados}, Fallidos: ${fallidos}`);
     return { enviados, fallidos };
 }
 
 // ================================================================
-// HELPER: Enviar push a seguidores de un streamer
+// HELPER: push a seguidores de un streamer
 // ================================================================
 async function enviarPushASeguidores(streamerId, payload) {
     try {
@@ -320,12 +300,12 @@ async function enviarPushASeguidores(streamerId, payload) {
         }
 
         const ids = seguidores
-            .map(s => s.seguidor_id)
-            .filter(id => id !== streamerId); // No notificar al streamer mismo
+            .map((s) => s.seguidor_id)
+            .filter((id) => id && id !== streamerId);
 
         return await enviarPushAUsuarios(ids, payload);
     } catch (error) {
-        console.error('[Push] Error enviando a seguidores:', error);
+        console.error('[Push] Error enviando a seguidores:', error.message);
         return { enviados: 0, fallidos: 0 };
     }
 }
