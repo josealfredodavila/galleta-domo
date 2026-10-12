@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>◈ Canales · Csariel's</title>
+    <title data-clave="grupos_titulo_pagina">◈ Canales · Csariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     
     <!-- Debug de errores -->
@@ -36,20 +36,11 @@
 
     <!-- ============================================================
          🎭 MASCOTAS · CARGA CONDICIONAL
-         ============================================================
-         Aquí vivía la carga estática de Marquinhos que provocaba que
-         se dibujara SIEMPRE, incluso si el usuario había elegido otra
-         mascota (ej. Capitán Maíz) o "Sin mascota".
-         
-         Ahora se lee la preferencia del usuario y SOLO se carga la
-         mascota que realmente está activa.
          ============================================================ -->
     <script>
     (function () {
         'use strict';
 
-        // ---- 1. Claves candidatas donde puede estar guardada la mascota activa ----
-        // Si tu app usa otra clave, agrégala aquí. Se prueban todas en orden.
         var CLAVES_MASCOTA = [
             'mascota_activa',
             'sariels_mascota_activa',
@@ -60,25 +51,18 @@
             'sariels_mascota'
         ];
 
-        // Valores que significan "sin mascota"
         var SIN_MASCOTA = ['', 'none', 'null', 'undefined', 'sin_mascota', 'ninguna'];
 
-        // ---- 2. Definición de mascotas soportadas ----
-        // Para agregar otra mascota, copia este bloque y cambia las rutas.
         var MASCOTAS = {
             marquinhos: {
-                css: [
-                    '/features/marquinhos/marquinhos-pet.css'
-                ],
+                css: ['/features/marquinhos/marquinhos-pet.css'],
                 js: [
                     '/features/marquinhos/marquinhos-pet.js',
                     '/features/marquinhos/marquinhos-brain.js'
                 ]
             },
             capitan_maiz: {
-                css: [
-                    '/features/capitan-maiz/capitan-maiz-pet.css'
-                ],
+                css: ['/features/capitan-maiz/capitan-maiz-pet.css'],
                 js: [
                     '/features/capitan-maiz/capitan-maiz-fit.js',
                     '/features/capitan-maiz/capitan-maiz-boca.js',
@@ -87,35 +71,28 @@
                     '/features/capitan-maiz/capitan-maiz-pet.js'
                 ]
             }
-            // Agrega aquí más mascotas si las tienes
         };
 
-        // ---- 3. Leer preferencia local ----
         function leerMascotaLocal() {
             try {
                 for (var i = 0; i < CLAVES_MASCOTA.length; i++) {
                     var raw = localStorage.getItem(CLAVES_MASCOTA[i]);
                     if (raw == null) continue;
-
-                    // Puede venir como string plano o como JSON
                     var valor = raw;
                     try {
                         var parsed = JSON.parse(raw);
                         if (typeof parsed === 'string') valor = parsed;
                         else if (parsed && typeof parsed === 'object' && parsed.mascota) valor = parsed.mascota;
                         else if (parsed && typeof parsed === 'object' && parsed.id) valor = parsed.id;
-                    } catch (e) { /* no era JSON, usar raw */ }
-
+                    } catch (e) {}
                     valor = String(valor).trim().toLowerCase();
-
                     if (SIN_MASCOTA.indexOf(valor) !== -1) return null;
                     if (MASCOTAS[valor]) return valor;
                 }
             } catch (e) {}
-            return undefined; // undefined = no hay preferencia guardada
+            return undefined;
         }
 
-        // ---- 4. Inyectar CSS/JS de una mascota ----
         var _mascotasCargadas = {};
 
         function inyectarCSS(href) {
@@ -129,16 +106,13 @@
 
         function inyectarJS(src) {
             return new Promise(function (resolve) {
-                if (document.querySelector('script[data-mascota-js="' + src + '"]')) {
-                    resolve();
-                    return;
-                }
+                if (document.querySelector('script[data-mascota-js="' + src + '"]')) { resolve(); return; }
                 var s = document.createElement('script');
                 s.src = src;
                 s.defer = true;
                 s.setAttribute('data-mascota-js', src);
                 s.onload = resolve;
-                s.onerror = resolve; // no bloquear si falla
+                s.onerror = resolve;
                 document.head.appendChild(s);
             });
         }
@@ -149,30 +123,21 @@
             _mascotasCargadas[nombre] = true;
 
             var def = MASCOTAS[nombre];
-
             def.css.forEach(inyectarCSS);
 
-            // Cargar JS en orden secuencial para respetar dependencias
             (function secuencia(i) {
                 if (i >= def.js.length) return;
-                inyectarJS(def.js[i]).then(function () {
-                    secuencia(i + 1);
-                });
+                inyectarJS(def.js[i]).then(function () { secuencia(i + 1); });
             })(0);
 
             console.log('[Mascotas] Cargando mascota activa:', nombre);
         }
 
-        // Exponer API pública por si necesitas cargar después de Supabase
         window.__cargarMascotaActiva = cargarMascota;
 
-        // ---- 5. Arranque: intentar leer preferencia local inmediatamente ----
         var preferida = leerMascotaLocal();
 
         if (preferida === undefined) {
-            // No hay preferencia local todavía.
-            // Esperamos un momento a ver si otra parte del código la escribe
-            // (por ejemplo, tras consultar Supabase).
             var intentos = 0;
             var timer = setInterval(function () {
                 intentos++;
@@ -181,16 +146,12 @@
                     clearInterval(timer);
                     if (p) cargarMascota(p);
                 } else if (intentos >= 15) {
-                    // 15 × 100ms = 1.5s y nada. No cargamos ninguna mascota
-                    // hasta que alguien llame a window.__cargarMascotaActiva().
                     clearInterval(timer);
                 }
             }, 100);
         } else if (preferida) {
             cargarMascota(preferida);
         }
-        // Si preferida === null → "sin mascota", no cargamos nada.
-
     })();
     </script>
 </head>
@@ -257,11 +218,11 @@
             <div class="mobile-tabs">
                 <div class="mobile-tab active" onclick="switchTab('mis-canales')" id="tabMisCanales">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg>
-                    Mis Canales
+                    <span data-clave="grupos_mis_canales">Mis Canales</span>
                 </div>
                 <div class="mobile-tab" onclick="switchTab('en-vivo')" id="tabEnVivo">
                     <svg class="icon icon-sm" viewBox="0 0 24 24" style="color:var(--live-red);"><circle cx="12" cy="12" r="8" fill="currentColor" stroke="none"/></svg>
-                    En Vivo Ahora
+                    <span data-clave="grupos_en_vivo_ahora">En Vivo Ahora</span>
                 </div>
             </div>
 
@@ -270,17 +231,17 @@
                     <div class="seccion-titulo">
                         <span>
                             <svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg>
-                            MIS CANALES
+                            <span data-clave="grupos_mis_canales_titulo">MIS CANALES</span>
                         </span>
                         <button class="btn-outline btn-sm" onclick="toggleMisGrupos()" id="btnMisGrupos">
                             <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                            Ver Todos
+                            <span data-clave="grupos_ver_todos">Ver Todos</span>
                         </button>
                     </div>
                     <div class="mis-canales-lista" id="misCanalesLista">
                         <div class="empty-state" style="padding:20px;">
                             <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                            <h3>Cargando...</h3>
+                            <h3 data-clave="grupos_cargando">Cargando...</h3>
                         </div>
                     </div>
                 </div>
@@ -288,13 +249,13 @@
                     <div class="seccion-titulo">
                         <span>
                             <svg class="icon" viewBox="0 0 24 24" style="color:var(--live-red);"><circle cx="12" cy="12" r="8" fill="currentColor" stroke="none"/></svg>
-                            EN VIVO AHORA
+                            <span data-clave="grupos_en_vivo_ahora">EN VIVO AHORA</span>
                         </span>
                     </div>
                     <div class="en-vivo-grid" id="enVivoGrid">
                         <div class="empty-state" style="padding:20px;">
                             <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                            <h3>Cargando parrilla...</h3>
+                            <h3 data-clave="grupos_cargando_parrilla">Cargando parrilla...</h3>
                         </div>
                     </div>
                 </div>
@@ -302,35 +263,35 @@
 
             <div style="margin-top: 30px;">
                 <div class="grupos-header">
-                    <h1 data-clave="grupos_titulo" style="color: var(--gold) !important; display: inline-flex; align-items: center; gap: 8px;">
+                    <h1 data-clave="grupos_channel_directory" style="color: var(--gold) !important; display: inline-flex; align-items: center; gap: 8px;">
                         <svg class="icon icon-lg" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/><polygon points="12 7 16 9.5 16 14.5 12 17 8 14.5 8 9.5 12 7"/></svg>
-                        Directorio de Canales
+                        <span>Channel Directory</span>
                     </h1>
                     <div class="filtros" style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:12px;">
-                        <input type="text" id="inputBuscar" placeholder="Buscar..." oninput="buscarGruposDebounce()" style="padding:8px 14px; border-radius:20px; font-size:0.7rem; min-width:180px;" />
+                        <input type="text" id="inputBuscar" data-placeholder="grupos_buscar_placeholder" placeholder="Buscar..." oninput="buscarGruposDebounce()" style="padding:8px 14px; border-radius:20px; font-size:0.7rem; min-width:180px;" />
                         <select id="selectEstado" onchange="cargarGrupos()" style="padding:8px 14px; border-radius:20px; font-size:0.7rem;">
-                            <option value="">Todos los estados</option>
+                            <option value="" data-clave="grupos_todos_estados">Todos los estados</option>
                         </select>
                         <select id="selectMunicipio" onchange="cargarGrupos()" style="padding:8px 14px; border-radius:20px; font-size:0.7rem;">
-                            <option value="">Todos los municipios</option>
+                            <option value="" data-clave="grupos_todos_municipios">Todos los municipios</option>
                         </select>
                         <select id="selectCategoria" onchange="cargarGrupos()" style="padding:8px 14px; border-radius:20px; font-size:0.7rem;">
-                            <option value="">Todas las categorías</option>
+                            <option value="" data-clave="grupos_todas_categorias">Todas las categorías</option>
                         </select>
                         <button class="btn-gold btn-sm" onclick="abrirModalCrearGrupo()">
                             <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                            Crear Comunidad
+                            <span data-clave="grupos_crear_comunidad">Crear Comunidad</span>
                         </button>
                     </div>
                 </div>
                 <div class="grupos-grid" id="gruposGrid" style="margin-top:16px;">
                     <div class="empty-state">
                         <svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg>
-                        <h3 data-clave="grupos_cargando">Cargando canales...</h3>
+                        <h3 data-clave="grupos_cargando_canales">Cargando canales...</h3>
                     </div>
                 </div>
                 <div id="btnCargarMasContainer" style="text-align:center; margin-top:16px; display:none;">
-                    <button class="btn-outline" onclick="cargarMasGrupos()" id="btnCargarMas">Cargar más</button>
+                    <button class="btn-outline" onclick="cargarMasGrupos()" id="btnCargarMas" data-clave="grupos_cargar_mas">Cargar más</button>
                 </div>
             </div>
         </div>
@@ -338,11 +299,11 @@
         <div class="grupo-interno" id="vistaGrupo">
             <button class="btn-outline btn-sm" onclick="volverALista()" style="margin-bottom:12px;">
                 <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-                Volver a Canales
+                <span data-clave="grupos_volver_a_canales">Volver a Canales</span>
             </button>
 
             <div class="grupo-header-interno" id="grupoHeaderInterno">
-                <button class="btn-ajustes-canal" onclick="abrirAjustesCanal()" id="btnAjustesCanal" style="display:none;" title="Ajustes del Canal">
+                <button class="btn-ajustes-canal" onclick="abrirAjustesCanal()" id="btnAjustesCanal" style="display:none;" data-clave-title="grupos_ajustes_canal" title="Ajustes del Canal">
                     <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                 </button>
                 <div class="portada" id="grupoPortada">◈</div>
@@ -378,23 +339,23 @@
                 <div class="acciones" id="grupoAcciones">
                     <button class="btn-donar btn-sm" onclick="abrirModalRegalos(grupoActual?.creador_id, grupoActual?.nombre)" id="btnDonar">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9 11h6"/></svg>
-                        Donar USDT
+                        <span data-clave="grupos_donar_usdt">Donar USDT</span>
                     </button>
                     <button class="btn-gold btn-sm" onclick="abrirFormPublicacion()">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                        Subir al Canal
+                        <span data-clave="grupos_subir_al_canal">Subir al Canal</span>
                     </button>
                     <button class="btn-salir-aire" onclick="iniciarLiveEnGrupo()" id="btnIniciarLive">
                         <svg class="icon icon-sm" viewBox="0 0 24 24" style="fill:currentColor;stroke:none;"><circle cx="12" cy="12" r="6"/></svg>
-                        SALIR AL AIRE
+                        <span data-clave="grupos_salir_al_aire">SALIR AL AIRE</span>
                     </button>
                     <button class="btn-danger btn-sm" onclick="verLiveActivo()" id="btnVerLive" style="display:none;">
                         <svg class="icon icon-sm" viewBox="0 0 24 24" style="fill:currentColor;stroke:none;"><circle cx="12" cy="12" r="6"/></svg>
-                        VER LIVE
+                        <span data-clave="grupos_ver_live">VER LIVE</span>
                     </button>
                     <button class="btn-danger btn-sm" onclick="finalizarLiveGrupo()" id="btnFinalizarLive" style="display:none;">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1" fill="currentColor" stroke="none"/></svg>
-                        Finalizar LIVE
+                        <span data-clave="grupos_finalizar_live">Finalizar LIVE</span>
                     </button>
                 </div>
             </div>
@@ -403,7 +364,7 @@
                 <div class="live-header-bar">
                     <div class="live-tag">
                         <span class="dot"></span>
-                        <span>EN VIVO · <span id="grupoLiveTitulo">Transmisión del canal</span></span>
+                        <span><span data-clave="grupos_en_vivo">EN VIVO</span> · <span id="grupoLiveTitulo">Transmisión del canal</span></span>
                     </div>
                     <button class="live-close" onclick="cerrarLiveGrupoInline()" title="Cerrar">×</button>
                 </div>
@@ -421,64 +382,64 @@
                 <div class="live-info">
                     <span style="display:inline-flex;align-items:center;gap:5px;">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                        <span id="grupoLiveEspectadores">0</span> espectadores
+                        <span id="grupoLiveEspectadores">0</span> <span data-clave="grupos_espectadores">espectadores</span>
                     </span>
                     <span id="grupoLiveEstado" style="display:inline-flex;align-items:center;gap:5px;">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6" fill="currentColor" stroke="none"/></svg>
-                        Conectando...
+                        <span data-clave="grupos_conectando">Conectando...</span>
                     </span>
                 </div>
                 <div class="live-chat-inline" id="grupoLiveChat"></div>
                 <div class="live-chat-input-row">
-                    <input type="text" id="grupoLiveChatInput" placeholder="Escribe un mensaje..." />
-                    <button onclick="enviarMensajeLiveGrupo()">Enviar</button>
+                    <input type="text" id="grupoLiveChatInput" data-placeholder="grupos_escribe_mensaje" placeholder="Escribe un mensaje..." />
+                    <button onclick="enviarMensajeLiveGrupo()" data-clave="grupos_enviar">Enviar</button>
                 </div>
             </div>
 
             <div class="marketing-ad-container" id="marketingAdContainer">
                 <div class="marketing-ad-header">
-                    <span class="marketing-ad-label">Patrocinado</span>
+                    <span class="marketing-ad-label" data-clave="grupos_patrocinado">Patrocinado</span>
                     <button class="marketing-ad-close" onclick="cerrarAnuncio()" aria-label="Cerrar anuncio">&times;</button>
                 </div>
                 <div class="marketing-ad-body">
                     <div class="marketing-ad-media" id="marketingAdMedia"><span>◈</span></div>
                     <div class="marketing-ad-content">
-                        <div class="marketing-ad-title" id="marketingAdTitle">Cargando anuncio...</div>
+                        <div class="marketing-ad-title" id="marketingAdTitle" data-clave="grupos_cargando_anuncio">Cargando anuncio...</div>
                         <div class="marketing-ad-desc" id="marketingAdDesc"></div>
-                        <button class="marketing-ad-cta" id="marketingAdCta" onclick="registrarClicAnuncio()">Ver más</button>
+                        <button class="marketing-ad-cta" id="marketingAdCta" onclick="registrarClicAnuncio()" data-clave="grupos_ver_mas">Ver más</button>
                     </div>
                 </div>
             </div>
 
             <div class="form-publicacion" id="formPublicacion" style="display:none;">
-                <textarea id="inputPublicacion" placeholder="¿Qué está pasando en el canal?"></textarea>
+                <textarea id="inputPublicacion" data-placeholder="grupos_que_pasa_canal" placeholder="¿Qué está pasando en el canal?"></textarea>
                 <div class="acciones">
                     <button onclick="toggleEmojiPickerGrupo()" id="btnEmojiGrupo">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-                        Emoji
+                        <span data-clave="grupos_emoji">Emoji</span>
                     </button>
                     <button onclick="insertarHashtagGrupo()">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>
-                        Hashtag
+                        <span data-clave="grupos_hashtag">Hashtag</span>
                     </button>
                     <button onclick="subirFotoGrupo()">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                        Foto
+                        <span data-clave="grupos_foto">Foto</span>
                     </button>
                     <button onclick="subirVideoGrupo()">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-                        Video
+                        <span data-clave="grupos_video">Video</span>
                     </button>
                     <button class="btn-mk" onclick="abrirModalMarketplace()" id="btnMarketplace">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-                        Marketplace
+                        <span data-clave="grupos_marketplace">Marketplace</span>
                     </button>
                     <button class="btn-publicar" onclick="publicarEnGrupo()">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                        Subir al Canal
+                        <span data-clave="grupos_subir_al_canal">Subir al Canal</span>
                     </button>
                     <div class="emoji-picker" id="emojiPickerGrupo">
-                        <div class="titulo">◇ Elige tu emoji</div>
+                        <div class="titulo" data-clave="grupos_elige_emoji">◇ Elige tu emoji</div>
                         <div class="grid" id="emojiGridGrupo"></div>
                     </div>
                 </div>
@@ -487,19 +448,19 @@
             <div class="feed-filtros" id="feedFiltros">
                 <button class="feed-filtro-btn active" data-filtro="todo" onclick="filtrarFeed('todo')">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg>
-                    Todo
+                    <span data-clave="grupos_todo">Todo</span>
                 </button>
                 <button class="feed-filtro-btn" data-filtro="marketplace" onclick="filtrarFeed('marketplace')">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-                    Solo Marketplace
+                    <span data-clave="grupos_solo_marketplace">Solo Marketplace</span>
                 </button>
                 <button class="feed-filtro-btn" data-filtro="publicaciones" onclick="filtrarFeed('publicaciones')">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                    Solo Publicaciones
+                    <span data-clave="grupos_solo_publicaciones">Solo Publicaciones</span>
                 </button>
                 <button class="feed-filtro-btn" data-filtro="interesados" onclick="filtrarFeed('interesados')">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg>
-                    Me Interesa
+                    <span data-clave="grupos_me_interesa">Me Interesa</span>
                 </button>
             </div>
 
@@ -517,7 +478,7 @@
                 <div class="modal-header">
                     <h2>
                         <svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg>
-                        Crear Comunidad
+                        <span data-clave="grupos_crear_comunidad">Crear Comunidad</span>
                     </h2>
                     <button class="btn-cerrar" onclick="cerrarModalCrearGrupo()">×</button>
                 </div>
@@ -532,13 +493,13 @@
                             <option value="Marketplace">Marketplace</option>
                         </select>
                     </div>
-                    <div class="form-group"><label>Estado / Región</label><input type="text" id="inputEstadoGrupo" placeholder="Ej: Puebla" /></div>
-                    <div class="form-group"><label>Municipio *</label><input type="text" id="inputMunicipioGrupo" required /></div>
+                    <div class="form-group"><label data-clave="grupos_estado_region">Estado / Región</label><input type="text" id="inputEstadoGrupo" placeholder="Ej: Puebla" /></div>
+                    <div class="form-group"><label data-clave="grupos_municipio">Municipio *</label><input type="text" id="inputMunicipioGrupo" required /></div>
                     <div class="form-group"><label data-clave="grupos_ciudad">Ciudad / Localidad</label><input type="text" id="inputCiudadGrupo" /></div>
                     <div class="form-group"><label data-clave="grupos_pais">País</label><input type="text" id="inputPaisGrupo" value="México" /></div>
-                    <div class="form-group"><label>Precio del Búho (USDT/Mes)</label>
+                    <div class="form-group"><label data-clave="grupos_precio_buho">Precio del Búho (USDT/Mes)</label>
                         <select id="inputPrecioUsdt">
-                            <option value="0">Gratis</option>
+                            <option value="0" data-clave="grupos_gratis">Gratis</option>
                             <option value="2">$2 USDT</option>
                             <option value="5">$5 USDT</option>
                             <option value="10">$10 USDT</option>
@@ -549,22 +510,29 @@
                         <input type="checkbox" id="inputMarketplaceActivo" />
                         <label for="inputMarketplaceActivo">
                             <svg class="icon icon-sm" viewBox="0 0 24 24" style="vertical-align:middle;"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-                            Activar Marketplace del grupo
+                            <span data-clave="grupos_activar_marketplace">Activar Marketplace del grupo</span>
                         </label>
-                        <span class="hint">Opcional</span>
+                        <span class="hint" data-clave="grupos_opcional">Opcional</span>
                     </div>
                     <div style="font-size:0.65rem;color:var(--text-muted);margin:-6px 0 12px 0;line-height:1.5;">
-                        Si activas el Marketplace, los <strong>miembros</strong> del grupo podrán publicar productos/servicios. Si NO lo activas, nadie puede vender. <strong>Esta opción no se puede cambiar después.</strong>
+                        <span data-clave="grupos_aviso_marketplace">Si activas el Marketplace, los miembros del grupo podrán publicar productos/servicios. Si NO lo activas, nadie puede vender. Esta opción no se puede cambiar después.</span>
                     </div>
                     <div class="form-group"><label data-clave="grupos_visibilidad">Visibilidad</label>
-                        <select id="inputVisibilidadGrupo"><option value="publico">Público</option><option value="privado">Privado</option></select>
+                        <select id="inputVisibilidadGrupo">
+                            <option value="publico" data-clave="grupos_publico">Público</option>
+                            <option value="privado" data-clave="grupos_privado">Privado</option>
+                        </select>
                     </div>
                     <div class="form-group"><label data-clave="grupos_modo_ingreso">Modo de ingreso</label>
-                        <select id="inputModoIngresoGrupo"><option value="abierto">Abierto</option><option value="solicitud">Solicitud</option><option value="invitacion">Invitación</option></select>
+                        <select id="inputModoIngresoGrupo">
+                            <option value="abierto" data-clave="grupos_abierto">Abierto</option>
+                            <option value="solicitud" data-clave="grupos_solicitud">Solicitud</option>
+                            <option value="invitacion" data-clave="grupos_invitacion">Invitación</option>
+                        </select>
                     </div>
                     <button class="btn-guardar" id="btnCrearGrupo">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg>
-                        Crear Comunidad
+                        <span data-clave="grupos_crear_comunidad">Crear Comunidad</span>
                     </button>
                 </form>
             </div>
@@ -575,35 +543,35 @@
                 <div class="modal-header">
                     <h2>
                         <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                        Ajustes del Canal
+                        <span data-clave="grupos_ajustes_canal">Ajustes del Canal</span>
                     </h2>
                     <button class="btn-cerrar" onclick="cerrarAjustesCanal()">×</button>
                 </div>
                 <div class="ajustes-menu">
                     <div id="marketplaceAviso" style="font-size:0.65rem;color:var(--text-muted);padding:10px 12px;background:rgba(0,0,0,0.2);border-radius:10px;margin-bottom:8px;line-height:1.5;display:none;">
                         <svg class="icon icon-sm" viewBox="0 0 24 24" style="vertical-align:middle;"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-                        El Marketplace se activó (o no) al crear el grupo. <strong>No se puede cambiar después.</strong>
+                        <span data-clave="grupos_aviso_marketplace_no_cambia">El Marketplace se activó (o no) al crear el grupo. No se puede cambiar después.</span>
                     </div>
                     <button onclick="abrirAdminGrupo()">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-                        Administrar Miembros y Publicaciones
+                        <span data-clave="grupos_admin_miembros">Administrar Miembros y Publicaciones</span>
                     </button>
                     <button onclick="cambiarAvatarGrupo()">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                        Cambiar Foto de Perfil
+                        <span data-clave="grupos_cambiar_foto">Cambiar Foto de Perfil</span>
                     </button>
                     <button onclick="cambiarPortadaGrupo()">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                        Cambiar Portada (Video/Imagen)
+                        <span data-clave="grupos_cambiar_portada">Cambiar Portada (Video/Imagen)</span>
                     </button>
                     <a href="/features/terminos/derechos-sariels.html" target="_blank" style="text-decoration:none;">
                         <button style="width:100%;">
-                            Ver Derechos y Usos
+                            <span data-clave="grupos_ver_derechos">Ver Derechos y Usos</span>
                         </button>
                     </a>
                     <button onclick="mostrarConfirmacionEliminarGrupo()" style="color:var(--danger); border-color:rgba(255,51,102,0.3);">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-                        Eliminar Canal
+                        <span data-clave="grupos_eliminar_canal">Eliminar Canal</span>
                     </button>
                 </div>
             </div>
@@ -614,7 +582,7 @@
                 <div class="modal-header">
                     <h2>
                         <svg class="icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-                        Administrar Canal
+                        <span data-clave="grupos_administrar_canal">Administrar Canal</span>
                     </h2>
                     <button class="btn-cerrar" onclick="cerrarModalAdmin()">×</button>
                 </div>
@@ -625,11 +593,11 @@
                     </div>
                 </div>
                 <div style="margin-top:16px; display:flex; gap:8px; flex-wrap:wrap;">
-                    <button class="btn-gold btn-sm" onclick="cargarAdminMiembros()" style="flex:1;">Miembros</button>
-                    <button class="btn-gold btn-sm" onclick="cargarAdminPublicaciones()" style="flex:1;">Publicaciones</button>
-                    <button class="btn-gold btn-sm" onclick="cargarAdminSolicitudes()" style="flex:1;">Solicitudes</button>
-                    <button class="btn-gold btn-sm" onclick="cargarAdminReportes()" style="flex:1;">Reportes</button>
-                    <button class="btn-gold btn-sm" onclick="cargarAdminEditar()" style="flex:1;">Editar Datos</button>
+                    <button class="btn-gold btn-sm" onclick="cargarAdminMiembros()" style="flex:1;" data-clave="grupos_miembros">Miembros</button>
+                    <button class="btn-gold btn-sm" onclick="cargarAdminPublicaciones()" style="flex:1;" data-clave="grupos_publicaciones">Publicaciones</button>
+                    <button class="btn-gold btn-sm" onclick="cargarAdminSolicitudes()" style="flex:1;" data-clave="grupos_solicitudes">Solicitudes</button>
+                    <button class="btn-gold btn-sm" onclick="cargarAdminReportes()" style="flex:1;" data-clave="grupos_reportes">Reportes</button>
+                    <button class="btn-gold btn-sm" onclick="cargarAdminEditar()" style="flex:1;" data-clave="grupos_editar_datos">Editar Datos</button>
                 </div>
             </div>
         </div>
@@ -639,17 +607,17 @@
                 <div class="modal-header">
                     <h2 style="color:var(--danger);">
                         <svg class="icon" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-                        Eliminar Canal
+                        <span data-clave="grupos_eliminar_canal">Eliminar Canal</span>
                     </h2>
                     <button class="btn-cerrar" onclick="cerrarConfirmacionEliminarGrupo()">×</button>
                 </div>
                 <div style="padding:12px 0;">
-                    <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:12px;">¿Eliminar este canal?</p>
-                    <p style="color:var(--danger); font-size:0.85rem; font-weight:600; margin-bottom:8px;">Esta acción es permanente.</p>
-                    <p style="color:var(--text-muted); font-size:0.8rem; margin-bottom:16px;">Se eliminarán el canal y su contenido asociado. Esta acción no se puede deshacer.</p>
+                    <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:12px;" data-clave="grupos_confirmar_eliminar_pregunta">¿Eliminar este canal?</p>
+                    <p style="color:var(--danger); font-size:0.85rem; font-weight:600; margin-bottom:8px;" data-clave="grupos_confirmar_eliminar_aviso">Esta acción es permanente.</p>
+                    <p style="color:var(--text-muted); font-size:0.8rem; margin-bottom:16px;" data-clave="grupos_confirmar_eliminar_detalle">Se eliminarán el canal y su contenido asociado. Esta acción no se puede deshacer.</p>
                     <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                        <button class="btn-outline" onclick="cerrarConfirmacionEliminarGrupo()" style="flex:1; text-align:center; justify-content:center;">Cancelar</button>
-                        <button class="btn-confirmar-eliminar" onclick="ejecutarEliminarGrupo()" style="flex:1; text-align:center;">Eliminar Canal</button>
+                        <button class="btn-outline" onclick="cerrarConfirmacionEliminarGrupo()" style="flex:1; text-align:center; justify-content:center;" data-clave="grupos_cancelar">Cancelar</button>
+                        <button class="btn-confirmar-eliminar" onclick="ejecutarEliminarGrupo()" style="flex:1; text-align:center;" data-clave="grupos_eliminar_canal">Eliminar Canal</button>
                     </div>
                     <div id="eliminarGrupoStatus" style="margin-top:12px; font-size:0.75rem; color:var(--text-muted); text-align:center;"></div>
                 </div>
@@ -661,20 +629,22 @@
                 <div class="modal-header">
                     <h2>
                         <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9 11h6"/></svg>
-                        Donar USDT
+                        <span data-clave="grupos_donar_usdt">Donar USDT</span>
                     </h2>
                     <button class="btn-cerrar" onclick="cerrarModalRegalos()">×</button>
                 </div>
                 <div style="text-align:center;padding:10px 0;">
-                    <p style="color:var(--text-muted);font-size:0.8rem;margin-bottom:12px;">Apoya a <strong id="giftStreamerName" style="color:var(--gold);">el creador</strong> con USDT/USDC</p>
+                    <p style="color:var(--text-muted);font-size:0.8rem;margin-bottom:12px;">
+                        <span data-clave="grupos_apoya_creador">Apoya a</span> <strong id="giftStreamerName" style="color:var(--gold);">el creador</strong> <span data-clave="grupos_con_usdt">con USDT/USDC</span>
+                    </p>
                     <div class="gift-options" id="giftOptions">
-                        <button class="gift-btn" onclick="enviarRegalo(2)"><span class="monto">$2</span><span class="label">Básico</span></button>
-                        <button class="gift-btn" onclick="enviarRegalo(5)"><span class="monto">$5</span><span class="label">Plata</span></button>
-                        <button class="gift-btn" onclick="enviarRegalo(10)"><span class="monto">$10</span><span class="label">Oro</span></button>
-                        <button class="gift-btn" onclick="enviarRegalo(20)" style="border-color:var(--bronze);"><span class="monto" style="color:var(--bronze);">$20</span><span class="label" style="color:var(--bronze-light);">Platino</span></button>
-                        <button class="gift-btn" onclick="enviarRegalo(50)" style="border-color:var(--esmeralda);"><span class="monto" style="color:var(--esmeralda);">$50</span><span class="label" style="color:var(--esmeralda);">Esmeralda</span></button>
+                        <button class="gift-btn" onclick="enviarRegalo(2)"><span class="monto">$2</span><span class="label" data-clave="grupos_basico">Básico</span></button>
+                        <button class="gift-btn" onclick="enviarRegalo(5)"><span class="monto">$5</span><span class="label" data-clave="grupos_plata">Plata</span></button>
+                        <button class="gift-btn" onclick="enviarRegalo(10)"><span class="monto">$10</span><span class="label" data-clave="grupos_oro">Oro</span></button>
+                        <button class="gift-btn" onclick="enviarRegalo(20)" style="border-color:var(--bronze);"><span class="monto" style="color:var(--bronze);">$20</span><span class="label" style="color:var(--bronze-light);" data-clave="grupos_platino">Platino</span></button>
+                        <button class="gift-btn" onclick="enviarRegalo(50)" style="border-color:var(--esmeralda);"><span class="monto" style="color:var(--esmeralda);">$50</span><span class="label" style="color:var(--esmeralda);" data-clave="grupos_esmeralda">Esmeralda</span></button>
                     </div>
-                    <div id="giftStatus" style="margin-top:12px;font-size:0.7rem;color:var(--text-muted);">Selecciona un monto para apoyar</div>
+                    <div id="giftStatus" style="margin-top:12px;font-size:0.7rem;color:var(--text-muted);" data-clave="grupos_selecciona_monto">Selecciona un monto para apoyar</div>
                 </div>
             </div>
         </div>
@@ -684,31 +654,31 @@
                 <div class="modal-header">
                     <h2>
                         <svg class="icon" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
-                        Reportar Publicación
+                        <span data-clave="grupos_reportar_publicacion">Reportar Publicación</span>
                     </h2>
                     <button class="btn-cerrar" onclick="cerrarModalReportar()">×</button>
                 </div>
                 <div class="form-group">
-                    <label>Motivo del reporte *</label>
+                    <label data-clave="grupos_motivo_reporte">Motivo del reporte *</label>
                     <select id="inputMotivoReporte">
-                        <option value="">Selecciona un motivo</option>
-                        <option value="spam">Spam o publicidad no deseada</option>
-                        <option value="contenido_inapropiado">Contenido inapropiado</option>
-                        <option value="acoso">Acoso o bullying</option>
-                        <option value="estafa">Estafa o fraude</option>
-                        <option value="violencia">Violencia o peligro</option>
-                        <option value="derechos_autor">Violación de derechos de autor</option>
-                        <option value="cripto">Venta de cripto/tokens (prohibido)</option>
-                        <option value="otro">Otro</option>
+                        <option value="" data-clave="grupos_selecciona_motivo">Selecciona un motivo</option>
+                        <option value="spam" data-clave="grupos_motivo_spam">Spam o publicidad no deseada</option>
+                        <option value="contenido_inapropiado" data-clave="grupos_motivo_contenido">Contenido inapropiado</option>
+                        <option value="acoso" data-clave="grupos_motivo_acoso">Acoso o bullying</option>
+                        <option value="estafa" data-clave="grupos_motivo_estafa">Estafa o fraude</option>
+                        <option value="violencia" data-clave="grupos_motivo_violencia">Violencia o peligro</option>
+                        <option value="derechos_autor" data-clave="grupos_motivo_derechos">Violación de derechos de autor</option>
+                        <option value="cripto" data-clave="grupos_motivo_cripto">Venta de cripto/tokens (prohibido)</option>
+                        <option value="otro" data-clave="grupos_motivo_otro">Otro</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Descripción adicional (opcional)</label>
-                    <textarea id="inputDescripcionReporte" rows="3" placeholder="Cuéntanos más sobre el problema..."></textarea>
+                    <label data-clave="grupos_descripcion_adicional">Descripción adicional (opcional)</label>
+                    <textarea id="inputDescripcionReporte" rows="3" data-placeholder="grupos_cuentanos_mas" placeholder="Cuéntanos más sobre el problema..."></textarea>
                 </div>
                 <button class="btn-guardar" onclick="enviarReportePublicacion()">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                    Enviar Reporte
+                    <span data-clave="grupos_enviar_reporte">Enviar Reporte</span>
                 </button>
                 <div id="reporteStatus" style="margin-top:12px;font-size:0.7rem;color:var(--text-muted);text-align:center;"></div>
             </div>
@@ -719,36 +689,36 @@
                 <div class="modal-header">
                     <h2>
                         <svg class="icon" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                        Reportar al Administrador
+                        <span data-clave="grupos_reportar_admin">Reportar al Administrador</span>
                     </h2>
                     <button class="btn-cerrar" onclick="cerrarModalReportarAdmin()">×</button>
                 </div>
                 <div class="form-group">
-                    <label>Tipo de reporte *</label>
+                    <label data-clave="grupos_tipo_reporte">Tipo de reporte *</label>
                     <select id="inputTipoReporteAdmin">
-                        <option value="">Selecciona el tipo</option>
-                        <option value="usuario">Un usuario del grupo</option>
-                        <option value="grupo">El grupo completo</option>
+                        <option value="" data-clave="grupos_selecciona_tipo">Selecciona el tipo</option>
+                        <option value="usuario" data-clave="grupos_tipo_usuario">Un usuario del grupo</option>
+                        <option value="grupo" data-clave="grupos_tipo_grupo">El grupo completo</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Motivo *</label>
+                    <label data-clave="grupos_motivo">Motivo *</label>
                     <select id="inputMotivoReporteAdmin">
-                        <option value="">Selecciona un motivo</option>
-                        <option value="abuso_autoridad">Abuso de autoridad</option>
-                        <option value="mal_moderacion">Mal moderación</option>
-                        <option value="contenido_repetido">Contenido repetido</option>
-                        <option value="falta_respeto">Falta de respeto</option>
-                        <option value="otro">Otro</option>
+                        <option value="" data-clave="grupos_selecciona_motivo">Selecciona un motivo</option>
+                        <option value="abuso_autoridad" data-clave="grupos_motivo_abuso">Abuso de autoridad</option>
+                        <option value="mal_moderacion" data-clave="grupos_motivo_moderacion">Mal moderación</option>
+                        <option value="contenido_repetido" data-clave="grupos_motivo_repetido">Contenido repetido</option>
+                        <option value="falta_respeto" data-clave="grupos_motivo_respeto">Falta de respeto</option>
+                        <option value="otro" data-clave="grupos_motivo_otro">Otro</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Descripción *</label>
-                    <textarea id="inputDescripcionReporteAdmin" rows="3" placeholder="Explícanos qué está pasando..." required></textarea>
+                    <label data-clave="grupos_descripcion">Descripción *</label>
+                    <textarea id="inputDescripcionReporteAdmin" rows="3" data-placeholder="grupos_explica_que_pasa" placeholder="Explícanos qué está pasando..." required></textarea>
                 </div>
                 <button class="btn-guardar" onclick="enviarReporteAdmin()">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                    Enviar Reporte al Admin
+                    <span data-clave="grupos_enviar_admin">Enviar Reporte al Admin</span>
                 </button>
                 <div id="reporteAdminStatus" style="margin-top:12px;font-size:0.7rem;color:var(--text-muted);text-align:center;"></div>
             </div>
@@ -759,7 +729,7 @@
                 <div class="modal-header">
                     <h2>
                         <svg class="icon" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-                        Etiquetar Foto
+                        <span data-clave="grupos_etiquetar_foto">Etiquetar Foto</span>
                     </h2>
                     <button class="btn-cerrar" onclick="cerrarModalEtiquetar()">×</button>
                 </div>
@@ -767,14 +737,14 @@
                     <img id="imagenEtiquetar" src="" style="max-width:100%;max-height:200px;border-radius:8px;" />
                 </div>
                 <div class="form-group">
-                    <label>Buscar usuario</label>
-                    <input type="text" id="inputBuscarUsuarioEtiqueta" placeholder="Nombre o @usuario..." oninput="buscarUsuariosEtiqueta()" />
+                    <label data-clave="grupos_buscar_usuario">Buscar usuario</label>
+                    <input type="text" id="inputBuscarUsuarioEtiqueta" data-placeholder="grupos_nombre_usuario" placeholder="Nombre o @usuario..." oninput="buscarUsuariosEtiqueta()" />
                 </div>
                 <div id="resultadosUsuariosEtiqueta" style="max-height:200px;overflow-y:auto;margin-bottom:12px;"></div>
                 <div id="etiquetadosSeleccionados" style="margin-bottom:12px;display:flex;flex-wrap:wrap;gap:6px;"></div>
                 <button class="btn-guardar" onclick="guardarEtiquetas()">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                    Guardar Etiquetas
+                    <span data-clave="grupos_guardar_etiquetas">Guardar Etiquetas</span>
                 </button>
             </div>
         </div>
@@ -784,69 +754,69 @@
                 <div class="modal-header">
                     <h2>
                         <svg class="icon" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-                        Publicar en Marketplace
+                        <span data-clave="grupos_publicar_marketplace">Publicar en Marketplace</span>
                     </h2>
                     <button class="btn-cerrar" onclick="cerrarModalMarketplace()">×</button>
                 </div>
                 <div class="form-group">
-                    <label>Tipo de publicación *</label>
+                    <label data-clave="grupos_tipo_publicacion">Tipo de publicación *</label>
                     <select id="inputTipoMarketplace" required>
-                        <option value="">Selecciona el tipo</option>
-                        <option value="vendo">Vendo</option>
-                        <option value="rento">Rento</option>
-                        <option value="busco">Busco</option>
-                        <option value="regalo">Regalo</option>
-                        <option value="servicio">Servicio</option>
+                        <option value="" data-clave="grupos_selecciona_tipo">Selecciona el tipo</option>
+                        <option value="vendo" data-clave="grupos_vendo">Vendo</option>
+                        <option value="rento" data-clave="grupos_rento">Rento</option>
+                        <option value="busco" data-clave="grupos_busco">Busco</option>
+                        <option value="regalo" data-clave="grupos_regalo">Regalo</option>
+                        <option value="servicio" data-clave="grupos_servicio">Servicio</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Título *</label>
-                    <input type="text" id="inputTituloMarketplace" placeholder="Ej: Carpa con mesa para eventos" required maxlength="150" />
+                    <label data-clave="grupos_titulo">Título *</label>
+                    <input type="text" id="inputTituloMarketplace" data-placeholder="grupos_ejemplo_titulo" placeholder="Ej: Carpa con mesa para eventos" required maxlength="150" />
                 </div>
                 <div class="form-group">
-                    <label>Descripción *</label>
-                    <textarea id="inputDescripcionMarketplace" rows="3" placeholder="Describe tu producto o servicio..." required maxlength="1000"></textarea>
+                    <label data-clave="grupos_descripcion">Descripción *</label>
+                    <textarea id="inputDescripcionMarketplace" rows="3" data-placeholder="grupos_describe_producto" placeholder="Describe tu producto o servicio..." required maxlength="1000"></textarea>
                 </div>
                 <div class="form-group" style="display:flex; gap:8px;">
                     <div style="flex:1;">
-                        <label>Precio MXN</label>
+                        <label data-clave="grupos_precio_mxn">Precio MXN</label>
                         <input type="number" id="inputPrecioMxnMarketplace" placeholder="0.00" min="0" step="0.01" />
                     </div>
                     <div style="flex:1;">
-                        <label>Precio USDT</label>
+                        <label data-clave="grupos_precio_usdt">Precio USDT</label>
                         <input type="number" id="inputPrecioUsdtMarketplace" placeholder="0.00" min="0" step="0.01" />
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>Estado / Región</label>
+                    <label data-clave="grupos_estado_region">Estado / Región</label>
                     <input type="text" id="inputEstadoMarketplace" placeholder="Ej: Puebla" />
                 </div>
                 <div class="form-group">
-                    <label>Municipio *</label>
+                    <label data-clave="grupos_municipio">Municipio *</label>
                     <input type="text" id="inputMunicipioMarketplace" required />
                 </div>
                 <div class="form-group">
-                    <label>WhatsApp (opcional)</label>
+                    <label data-clave="grupos_whatsapp">WhatsApp (opcional)</label>
                     <input type="tel" id="inputWhatsappMarketplace" placeholder="Ej: 5512345678" maxlength="20" />
                 </div>
                 <div class="form-group">
-                    <label>Teléfono (opcional)</label>
+                    <label data-clave="grupos_telefono">Teléfono (opcional)</label>
                     <input type="tel" id="inputTelefonoMarketplace" placeholder="Ej: 2221234567" maxlength="20" />
                 </div>
                 <div class="form-group">
-                    <label>Foto del producto (opcional)</label>
+                    <label data-clave="grupos_foto_producto">Foto del producto (opcional)</label>
                     <input type="file" id="inputImagenMarketplace" accept="image/*" />
                 </div>
                 <div class="form-group">
-                    <label>Video del producto (opcional, máx 40 seg)</label>
+                    <label data-clave="grupos_video_producto">Video del producto (opcional, máx 40 seg)</label>
                     <input type="file" id="inputVideoMarketplace" accept="video/*" />
-                    <div style="font-size:0.6rem;color:var(--text-muted);margin-top:4px;">
+                    <div style="font-size:0.6rem;color:var(--text-muted);margin-top:4px;" data-clave="grupos_video_limite">
                         Duración máxima: 40 segundos · Peso máximo: 50 MB
                     </div>
                 </div>
                 <button class="btn-guardar" onclick="publicarMarketplace()" id="btnPublicarMarketplace">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-                    Publicar en Marketplace
+                    <span data-clave="grupos_publicar_marketplace">Publicar en Marketplace</span>
                 </button>
                 <div id="marketplaceStatus" style="margin-top:12px;font-size:0.7rem;color:var(--text-muted);text-align:center;"></div>
             </div>
@@ -855,22 +825,22 @@
         <div class="toast" id="toast"></div>
 
         <footer class="footer">
-            <span><span class="brand">◈ Csariel's</span> · Csariels.s ecosystem · WEB3</span>
+            <span><span class="brand">◈ Csariel's</span> · <span data-clave="grupos_csariels_ecosystem">Csariels.s ecosystem · WEB3</span></span>
             <div class="footer-links">
-                <a href="/terminos" data-clave="grupos_footer_terminos">
+                <a href="/terminos" data-clave="footer_terminos">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                     Términos
                 </a>
-                <a href="/privacidad" data-clave="grupos_footer_privacidad">
+                <a href="/privacidad" data-clave="footer_privacidad">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                     Privacidad
                 </a>
-                <a href="/cookies" data-clave="grupos_footer_cookies">
+                <a href="/cookies" data-clave="footer_cookies">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="8.5" cy="8.5" r="1"/><circle cx="15.5" cy="15.5" r="1"/><circle cx="12" cy="12" r="1"/></svg>
                     Cookies
                 </a>
-                <a href="/features/terminos/derechos-sariels.html">Derechos y Usos</a>
-                <span style="opacity:0.3;display:inline-flex;align-items:center;gap:4px;">
+                <a href="/features/terminos/derechos-sariels.html" data-clave="grupos_derechos_usos">Derechos y Usos</a>
+                <span style="opacity:0.3;display:inline-flex;align-items:center;gap:4px;" data-no-traducir="1">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
                     Polygon
                 </span>
@@ -881,7 +851,7 @@
     <!-- Scripts externos -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script>window.__SB_SDK = window.supabase;</script>
-    <script src="/features/shared/js/idiomas.js"></script>
+    <script src="/features/shared/js/idiomas.js?v=6"></script>
     <script src="/app.js"></script>
 
     <!-- Scripts del módulo grupos (en orden de dependencia) -->
@@ -895,11 +865,5 @@
     <script src="/features/grupos/js/grupos-marketplace.js"></script>
     <script src="/features/grupos/js/grupos-live.js"></script>
     <script src="/features/grupos/js/grupos-init.js"></script>
-
-    <!--
-        ⚠️ AQUÍ YA NO VAN los <script> ni <link> estáticos de Marquinhos.
-        La carga se hace dinámicamente en el <head> según la mascota
-        activa del usuario (ver bloque "MASCOTAS · CARGA CONDICIONAL").
-    -->
 </body>
 </html>
