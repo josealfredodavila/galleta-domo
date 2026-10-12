@@ -1,53 +1,68 @@
 // ================================================================
 // UTILS/NOWPAYMENTS-SIG.JS
-// VERIFICACIÓN DE FIRMA HMAC-SHA512 PARA WEBHOOKS DE NOWPAYMENTS
-// ================================================================
-// NowPayments envía webhooks con firma HMAC-SHA512 en el header
-// x-nowpayments-sig. Esta utilidad verifica que la firma sea válida.
+// Verificación de firma HMAC-SHA512 de los IPN de NOWPayments.
+// Método oficial: JSON con llaves ordenadas (recursivo) → HMAC-SHA512.
+// Respaldo: HMAC sobre el cuerpo crudo, si está disponible.
 // ================================================================
 
 'use strict';
 
 const crypto = require('crypto');
 
+const FIRMA_HEX_RE = /^[0-9a-f]{128}$/i;
+
+// Ordena las llaves de forma recursiva, como exige NOWPayments
+function ordenarLlaves(valor) {
+    if (Array.isArray(valor)) return valor.map(ordenarLlaves);
+    if (valor && typeof valor === 'object') {
+        const ordenado = {};
+        for (const k of Object.keys(valor).sort()) {
+            ordenado[k] = ordenarLlaves(valor[k]);
+        }
+        return ordenado;
+    }
+    return valor;
+}
+
+function hmacHex(texto, secret) {
+    return crypto.createHmac('sha512', secret).update(texto, 'utf8').digest('hex');
+}
+
+function firmasIguales(firmaRecibida, firmaCalculada) {
+    const a = Buffer.from(firmaRecibida, 'hex');
+    const b = Buffer.from(firmaCalculada, 'hex');
+    return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
 /**
- * Verifica la firma HMAC-SHA512 de un webhook de NowPayments
- * @param {Object} payload - Objeto JSON parseado del body
- * @param {Buffer} rawBody - Body sin parsear como Buffer
- * @param {String} signature - Firma recibida en header (hex)
- * @param {String} secret - Secret de NowPayments IPN
- * @returns {Boolean} true si la firma es válida, false si no
+ * @param {Object} payload  - body ya parseado (JSON)
+ * @param {Buffer|string} rawBody - body crudo (opcional, respaldo)
+ * @param {string} signature - valor del header x-nowpayments-sig
+ * @param {string} secret    - IPN secret de NOWPayments
+ * @returns {boolean}
  */
 function verificarFirmaNowPayments(payload, rawBody, signature, secret) {
-    if (!signature || !secret || !rawBody) {
-        return false;
-    }
+    if (!signature || !secret || payload == null) return false;
+
+    const firma = String(signature).trim().toLowerCase();
+    if (!FIRMA_HEX_RE.test(firma)) return false;
 
     try {
-        // Calcular HMAC-SHA512 sobre el rawBody
-        const firmaCalculada = crypto
-            .createHmac('sha512', secret)
-            .update(rawBody, 'utf8')
-            .digest('hex');
+        // 1) Método oficial: JSON con llaves ordenadas
+        const canonico = JSON.stringify(ordenarLlaves(payload));
+        if (firmasIguales(firma, hmacHex(canonico, secret))) return true;
 
-        // Comparación timing-safe para evitar timing attacks
-        const bufRecibida = Buffer.from(signature, 'hex');
-        const bufCalculada = Buffer.from(firmaCalculada, 'hex');
-
-        if (bufRecibida.length !== bufCalculada.length) {
-            return false;
+        // 2) Respaldo: cuerpo crudo (solo si el servidor lo capturó)
+        if (rawBody && (Buffer.isBuffer(rawBody) || typeof rawBody === 'string')) {
+            const texto = Buffer.isBuffer(rawBody) ? rawBody.toString('utf8') : rawBody;
+            if (firmasIguales(firma, hmacHex(texto, secret))) return true;
         }
 
-        // timingSafeEqual lanza error si los buffers tienen tamaño diferente
-        // pero ya lo verificamos arriba
-        return crypto.timingSafeEqual(bufRecibida, bufCalculada);
-
+        return false;
     } catch (error) {
-        console.error('[NowPayments Sig] Error verificando firma:', error.message);
+        console.error('[NOWPayments Sig] Error verificando firma:', error.message);
         return false;
     }
 }
 
-module.exports = {
-    verificarFirmaNowPayments
-};
+module.exports = { verificarFirmaNowPayments, ordenarLlaves };
