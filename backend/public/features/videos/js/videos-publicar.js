@@ -1,9 +1,13 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v1.2
+   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v1.3
    ================================================================
    FASE 1: UI de modales (sonidos, ubicación, borradores, preview)
    FASE 2: Carga modular de archivos (subirMultimedia)
    FASE 3C: (N/A aquí, el INSERT lo hace videos.html)
+
+   Novedades v1.3:
+   - Traducciones i18n completas (helper vt + data-clave en HTML generado)
+   - Claves nuevas en Supabase: videos_agregar_sonido, videos_ubicacion_btn, etc.
 
    Novedades v1.2:
    - Input file 100% oculto con display:none !important
@@ -18,6 +22,17 @@
 
     if (window.__csarielsVideosPublicarLoaded) return;
     window.__csarielsVideosPublicarLoaded = true;
+
+    // ============================================================
+    // HELPER DE TRADUCCIÓN
+    // ============================================================
+    // Usa el respaldo en español si la clave no existe en la BD.
+    function vt(clave, respaldo) {
+        if (typeof window.tConFallback === 'function') {
+            return window.tConFallback(clave, respaldo);
+        }
+        return respaldo !== undefined ? respaldo : clave;
+    }
 
     // ============================================================
     // CONFIGURACIÓN
@@ -144,7 +159,7 @@
                     <div class="cs-confirm-titulo">${esc(o.titulo || 'Confirmar')}</div>
                     <div class="cs-confirm-mensaje">${esc(o.mensaje || '')}</div>
                     <div class="cs-confirm-acciones">
-                        <button type="button" class="cs-confirm-btn cs-confirm-cancel" data-res="0">${esc(o.textoCancelar || 'Cancelar')}</button>
+                        <button type="button" class="cs-confirm-btn cs-confirm-cancel" data-res="0">${esc(o.textoCancelar || vt('cfg_cancelar', 'Cancelar'))}</button>
                         <button type="button" class="cs-confirm-btn ${o.peligroso ? 'cs-confirm-danger' : 'cs-confirm-ok'}" data-res="1">${esc(o.textoOk || 'Aceptar')}</button>
                     </div>
                 </div>
@@ -255,16 +270,16 @@
         const btnTxt = document.getElementById('csFileBtnTxt');
         const btnHint = document.getElementById('csFileBtnHint');
         const btnWrap = document.querySelector('.cs-file-btn-wrap');
-        if (btnTxt) btnTxt.textContent = 'Elegir video de la galería';
-        if (btnHint) btnHint.textContent = 'MP4 · WebM · MOV · Máx 100 MB';
+        if (btnTxt) btnTxt.textContent = vt('videos_elegir_galeria', 'Elegir video de la galería');
+        if (btnHint) btnHint.textContent = vt('videos_archivo_hint', 'MP4 · WebM · MOV · Máx 100 MB');
         if (btnWrap) btnWrap.classList.remove('cs-file-con-archivo');
 
         state.sonidoSeleccionado = null;
         state.ubicacionSeleccionada = null;
         const previewSonido = $('csPreviewSonido');
         const previewUbic = $('csPreviewUbicacion');
-        if (previewSonido) previewSonido.querySelector('.cs-preview-txt').textContent = 'Sin sonido';
-        if (previewUbic) previewUbic.querySelector('.cs-preview-txt').textContent = 'Sin ubicación';
+        if (previewSonido) previewSonido.querySelector('.cs-preview-txt').textContent = vt('videos_preview_sin_sonido', 'Sin sonido');
+        if (previewUbic) previewUbic.querySelector('.cs-preview-txt').textContent = vt('videos_preview_sin_ubicacion', 'Sin ubicación');
         const badge = $('csPreviewBadge');
         if (badge) badge.style.display = 'none';
 
@@ -347,14 +362,14 @@
         btnSonido.id = 'csBtnAgregarSonido';
         btnSonido.type = 'button';
         btnSonido.className = 'cs-btn-header cs-btn-sonido';
-        btnSonido.innerHTML = '<span class="cs-ico">♪</span><span class="cs-btn-txt">Agregar sonido</span>';
+        btnSonido.innerHTML = '<span class="cs-ico">♪</span><span class="cs-btn-txt" data-clave="videos_agregar_sonido">Agregar sonido</span>';
         btnSonido.addEventListener('click', abrirModalSonidos);
 
         const btnUbic = document.createElement('button');
         btnUbic.id = 'csBtnUbicacion';
         btnUbic.type = 'button';
         btnUbic.className = 'cs-btn-header cs-btn-ubicacion';
-        btnUbic.innerHTML = '<span class="cs-ico">◆</span><span class="cs-btn-txt">Ubicación</span>';
+        btnUbic.innerHTML = '<span class="cs-ico">◆</span><span class="cs-btn-txt" data-clave="videos_ubicacion_btn">Ubicación</span>';
         btnUbic.addEventListener('click', abrirModalUbicacion);
 
         header.insertBefore(btnSonido, header.firstChild);
@@ -371,25 +386,25 @@
                 <div class="cs-sheet-header">
                     <div class="cs-sheet-titulo">
                         <span class="cs-ico">♪</span>
-                        <span>Agregar sonido</span>
+                        <span data-clave="videos_agregar_sonido">Agregar sonido</span>
                     </div>
                     <button type="button" class="cs-sheet-close" aria-label="Cerrar" data-cs-close="sonidos">✕</button>
                 </div>
                 <div class="cs-tabs" role="tablist">
-                    <button type="button" role="tab" class="cs-tab active" data-tab="parati">Para ti</button>
-                    <button type="button" role="tab" class="cs-tab" data-tab="populares">Populares</button>
-                    <button type="button" role="tab" class="cs-tab" data-tab="favoritos">Favoritos</button>
+                    <button type="button" role="tab" class="cs-tab active" data-tab="parati" data-clave="videos_sonidos_parati">Para ti</button>
+                    <button type="button" role="tab" class="cs-tab" data-tab="populares" data-clave="videos_sonidos_populares">Populares</button>
+                    <button type="button" role="tab" class="cs-tab" data-tab="favoritos" data-clave="videos_sonidos_favoritos">Favoritos</button>
                 </div>
                 <div class="cs-sheet-body">
                     <div class="cs-buscar-wrap">
                         <span class="cs-ico-buscar">◇</span>
-                        <input type="text" id="csBuscarSonido" placeholder="Buscar pista o artista..." autocomplete="off" />
+                        <input type="text" id="csBuscarSonido" data-placeholder="videos_buscar_sonido" placeholder="Buscar pista o artista..." autocomplete="off" />
                     </div>
                     <div class="cs-sonidos-lista" id="csSonidosLista"></div>
                 </div>
                 <div class="cs-sheet-footer">
-                    <div class="cs-sonido-actual" id="csSonidoActualInfo">Sin sonido seleccionado</div>
-                    <button type="button" class="cs-btn-primary" id="csBtnConfirmarSonido" disabled>Usar este sonido</button>
+                    <div class="cs-sonido-actual" id="csSonidoActualInfo" data-clave="videos_sonido_sin_sel">Sin sonido seleccionado</div>
+                    <button type="button" class="cs-btn-primary" id="csBtnConfirmarSonido" disabled data-clave="videos_btn_usar_sonido">Usar este sonido</button>
                 </div>
             </div>
 
@@ -399,20 +414,20 @@
                 <div class="cs-sheet-header">
                     <div class="cs-sheet-titulo">
                         <span class="cs-ico">◆</span>
-                        <span>Ubicación</span>
+                        <span data-clave="videos_ubicacion_btn">Ubicación</span>
                     </div>
                     <button type="button" class="cs-sheet-close" aria-label="Cerrar" data-cs-close="ubicacion">✕</button>
                 </div>
                 <div class="cs-sheet-body">
                     <div class="cs-buscar-wrap">
                         <span class="cs-ico-buscar">◇</span>
-                        <input type="text" id="csBuscarUbicacion" placeholder="Buscar ciudad o municipio..." autocomplete="off" />
+                        <input type="text" id="csBuscarUbicacion" data-placeholder="videos_buscar_ubicacion" placeholder="Buscar ciudad o municipio..." autocomplete="off" />
                     </div>
                     <div class="cs-ubicaciones-lista" id="csUbicacionesLista"></div>
                 </div>
                 <div class="cs-sheet-footer">
-                    <div class="cs-ubicacion-actual" id="csUbicacionActualInfo">Sin ubicación seleccionada</div>
-                    <button type="button" class="cs-btn-primary" id="csBtnConfirmarUbicacion" disabled>Usar esta ubicación</button>
+                    <div class="cs-ubicacion-actual" id="csUbicacionActualInfo" data-clave="videos_ubicacion_sin_sel">Sin ubicación seleccionada</div>
+                    <button type="button" class="cs-btn-primary" id="csBtnConfirmarUbicacion" disabled data-clave="videos_btn_usar_ubicacion">Usar esta ubicación</button>
                 </div>
             </div>
 
@@ -422,7 +437,7 @@
                 <div class="cs-sheet-header">
                     <div class="cs-sheet-titulo">
                         <span class="cs-ico">◈</span>
-                        <span>Mis borradores</span>
+                        <span data-clave="videos_borradores_titulo">Mis borradores</span>
                     </div>
                     <button type="button" class="cs-sheet-close" aria-label="Cerrar" data-cs-close="borradores">✕</button>
                 </div>
@@ -430,7 +445,7 @@
                     <div id="csBorradoresLista" class="cs-borradores-lista">
                         <div class="cs-vacio">
                             <span class="cs-ico-vacio">◈</span>
-                            <p>Aún no tienes borradores.</p>
+                            <p data-clave="videos_borradores_vacio">Aún no tienes borradores.</p>
                         </div>
                     </div>
                 </div>
@@ -455,23 +470,23 @@
         wrap.innerHTML = `
             <div class="cs-preview-video">
                 <video id="csPreviewVideo" playsinline muted preload="metadata"></video>
-                <div class="cs-preview-badge" id="csPreviewBadge" style="display:none;">◆ Sonido + video</div>
+                <div class="cs-preview-badge" id="csPreviewBadge" style="display:none;" data-clave="videos_sonido_video_badge">◆ Sonido + video</div>
             </div>
             <div class="cs-preview-meta">
                 <div class="cs-preview-line" id="csPreviewSonido">
                     <span class="cs-ico">♪</span>
-                    <span class="cs-preview-txt">Sin sonido</span>
+                    <span class="cs-preview-txt" data-clave="videos_preview_sin_sonido">Sin sonido</span>
                 </div>
                 <div class="cs-preview-line" id="csPreviewUbicacion">
                     <span class="cs-ico">◆</span>
-                    <span class="cs-preview-txt">Sin ubicación</span>
+                    <span class="cs-preview-txt" data-clave="videos_preview_sin_ubicacion">Sin ubicación</span>
                 </div>
                 <div class="cs-preview-actions">
                     <button type="button" class="cs-btn-ghost" id="csBtnVerBorradores">
-                        <span class="cs-ico">◈</span> Borradores
+                        <span class="cs-ico">◈</span> <span data-clave="videos_borradores_btn">Borradores</span>
                     </button>
                     <button type="button" class="cs-btn-ghost" id="csBtnGuardarBorrador">
-                        <span class="cs-ico">◇</span> Guardar borrador
+                        <span class="cs-ico">◇</span> <span data-clave="videos_guardar_borrador_btn">Guardar borrador</span>
                     </button>
                 </div>
             </div>
@@ -505,8 +520,8 @@
         btnWrap.innerHTML = `
             <button type="button" class="cs-file-btn" id="csFileBtnVideo" aria-label="Elegir video de la galería">
                 <span class="cs-file-btn-ico">▶</span>
-                <span class="cs-file-btn-txt" id="csFileBtnTxt">Elegir video de la galería</span>
-                <span class="cs-file-btn-hint" id="csFileBtnHint">MP4 · WebM · MOV · Máx 100 MB</span>
+                <span class="cs-file-btn-txt" id="csFileBtnTxt" data-clave="videos_elegir_galeria">Elegir video de la galería</span>
+                <span class="cs-file-btn-hint" id="csFileBtnHint" data-clave="videos_archivo_hint">MP4 · WebM · MOV · Máx 100 MB</span>
             </button>
         `;
 
@@ -526,15 +541,22 @@
             const txt = document.getElementById('csFileBtnTxt');
             const hint = document.getElementById('csFileBtnHint');
             if (file) {
-                if (txt) txt.textContent = '◈ ' + file.name;
+                if (txt) { txt.removeAttribute('data-clave'); txt.textContent = '◈ ' + file.name; }
                 if (hint) {
                     const mb = (file.size / (1024 * 1024)).toFixed(2);
+                    hint.removeAttribute('data-clave');
                     hint.textContent = mb + ' MB · Listo para subir';
                 }
                 btnWrap.classList.add('cs-file-con-archivo');
             } else {
-                if (txt) txt.textContent = 'Elegir video de la galería';
-                if (hint) hint.textContent = 'MP4 · WebM · MOV · Máx 100 MB';
+                if (txt) {
+                    txt.setAttribute('data-clave', 'videos_elegir_galeria');
+                    txt.textContent = vt('videos_elegir_galeria', 'Elegir video de la galería');
+                }
+                if (hint) {
+                    hint.setAttribute('data-clave', 'videos_archivo_hint');
+                    hint.textContent = vt('videos_archivo_hint', 'MP4 · WebM · MOV · Máx 100 MB');
+                }
                 btnWrap.classList.remove('cs-file-con-archivo');
             }
         });
@@ -565,6 +587,11 @@
         backdrop.classList.add('show');
         sheet.classList.add('show');
         document.body.style.overflow = 'hidden';
+
+        // Aplicar traducciones al sheet recién abierto
+        if (typeof window.aplicarTraducciones === 'function') {
+            try { window.aplicarTraducciones(sheet); } catch (e) {}
+        }
     }
     function cerrarSheet(sheetId, backdropId) {
         const sheet = $(sheetId);
@@ -589,7 +616,7 @@
             ? fuente.filter(s => (s.nombre + ' ' + s.artista).toLowerCase().indexOf(term) !== -1)
             : fuente;
         if (arr.length === 0) {
-            lista.innerHTML = `<div class="cs-vacio"><span class="cs-ico-vacio">♪</span><p>Sin pistas en esta sección.</p></div>`;
+            lista.innerHTML = `<div class="cs-vacio"><span class="cs-ico-vacio">♪</span><p data-clave="videos_sin_pistas">Sin pistas en esta sección.</p></div>`;
             return;
         }
         lista.innerHTML = arr.map(s => `
@@ -615,14 +642,23 @@
             el.classList.toggle('activo', el.dataset.sonidoId === id);
         });
         const info = $('csSonidoActualInfo');
-        if (info) info.textContent = `${s.nombre} — ${s.artista}`;
+        if (info) {
+            info.removeAttribute('data-clave');
+            info.textContent = `${s.nombre} — ${s.artista}`;
+        }
         const btn = $('csBtnConfirmarSonido');
         if (btn) btn.disabled = false;
     }
     function confirmarSonido() {
         const s = state.sonidoSeleccionado;
         const preview = $('csPreviewSonido');
-        if (preview) preview.querySelector('.cs-preview-txt').textContent = s ? `${s.nombre} — ${s.artista}` : 'Sin sonido';
+        if (preview) {
+            const txt = preview.querySelector('.cs-preview-txt');
+            if (txt) {
+                txt.removeAttribute('data-clave');
+                txt.textContent = s ? `${s.nombre} — ${s.artista}` : vt('videos_preview_sin_sonido', 'Sin sonido');
+            }
+        }
         actualizarBadgePreview();
         cerrarTodosLosSheets();
     }
@@ -635,7 +671,7 @@
             ? UBICACIONES_SEED.filter(u => u.nombre.toLowerCase().indexOf(term) !== -1)
             : UBICACIONES_SEED;
         if (arr.length === 0) {
-            lista.innerHTML = `<div class="cs-vacio"><span class="cs-ico-vacio">◆</span><p>Sin resultados.</p></div>`;
+            lista.innerHTML = `<div class="cs-vacio"><span class="cs-ico-vacio">◆</span><p data-clave="videos_sin_resultados">Sin resultados.</p></div>`;
             return;
         }
         lista.innerHTML = arr.map(u => `
@@ -660,14 +696,23 @@
             el.classList.toggle('activo', el.dataset.ubicacionId === id);
         });
         const info = $('csUbicacionActualInfo');
-        if (info) info.textContent = `${u.nombre}, ${u.pais}`;
+        if (info) {
+            info.removeAttribute('data-clave');
+            info.textContent = `${u.nombre}, ${u.pais}`;
+        }
         const btn = $('csBtnConfirmarUbicacion');
         if (btn) btn.disabled = false;
     }
     function confirmarUbicacion() {
         const u = state.ubicacionSeleccionada;
         const preview = $('csPreviewUbicacion');
-        if (preview) preview.querySelector('.cs-preview-txt').textContent = u ? `${u.nombre}, ${u.pais}` : 'Sin ubicación';
+        if (preview) {
+            const txt = preview.querySelector('.cs-preview-txt');
+            if (txt) {
+                txt.removeAttribute('data-clave');
+                txt.textContent = u ? `${u.nombre}, ${u.pais}` : vt('videos_preview_sin_ubicacion', 'Sin ubicación');
+            }
+        }
         cerrarTodosLosSheets();
     }
 
@@ -677,13 +722,13 @@
         lista.innerHTML = `
             <div class="cs-vacio">
                 <span class="cs-ico-vacio">◈</span>
-                <p>Función de borradores en preparación.</p>
-                <p style="font-size:0.7rem;color:var(--text-muted);margin-top:6px;">Pronto podrás guardar y reanudar tus publicaciones.</p>
+                <p data-clave="videos_borradores_preparando">Función de borradores en preparación.</p>
+                <p style="font-size:0.7rem;color:var(--text-muted);margin-top:6px;" data-clave="videos_borradores_pronto">Pronto podrás guardar y reanudar tus publicaciones.</p>
             </div>`;
     }
 
     function guardarBorrador() {
-        csToast('El guardado de borradores estará disponible muy pronto', 'info', 3200);
+        csToast(vt('videos_borradores_proximamente', 'El guardado de borradores estará disponible muy pronto'), 'info', 3200);
     }
 
     function actualizarBadgePreview() {
@@ -797,7 +842,7 @@
         engancharInputArchivo();
         engancharListenersGlobales();
         engancharEventoPublicacionExitosa();
-        log('✅ Módulo Publicar v1.2 listo (Fase 3C soportada)');
+        log('✅ Módulo Publicar v1.3 listo (Fase 3C + i18n soportadas)');
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
