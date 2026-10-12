@@ -1,18 +1,13 @@
 // ================================================================
 // routes/campanas.js — Campañas de marketing (creación segura)
-// ================================================================
 // Endpoint: POST /api/campanas/crear
 //
-// Reemplaza la creación directa desde el frontend a Supabase.
-// El frontend envía los datos aquí, el backend:
-//   1. Valida todos los campos (nombre, objetivo, presupuesto, destino, ad).
-//   2. Verifica que el destino exista y sea válido según su tipo.
-//   3. Inserta campaña + anuncio + target de forma atómica (con rollback).
-//   4. Devuelve campaign_id al frontend, que luego pide el pago.
-//
-// El pago y la activación viven en:
-//   POST /api/payments/marketing/create
-//   GET  /api/payments/marketing/status/:pagoId
+// El frontend envía los datos aquí. El backend:
+//   1. Valida campos (nombre, objetivo, presupuesto, destino, anuncio, red de pago).
+//   2. Verifica que el destino exista y esté en vivo (live) o exista (grupo).
+//   3. Inserta campaña, anuncio y destino; si algo falla, revierte todo.
+//   4. Devuelve campaign_id. El pago se pide después en
+//      POST /api/payments/marketing/create.
 // ================================================================
 
 'use strict';
@@ -20,7 +15,7 @@
 const express = require('express');
 const router = express.Router();
 
-const supabaseAdmin = require('../lib/supabase-admin');
+const { supabaseAdmin } = require('../config/supabase');
 const logger = require('../utils/logger');
 const { verificarToken } = require('../middleware/auth');
 const { limitadorPagos } = require('../middleware/rateLimit');
@@ -30,42 +25,37 @@ const { limitadorPagos } = require('../middleware/rateLimit');
 // ================================================================
 
 const OBJETIVOS = ['alcance', 'reproducciones', 'interacciones', 'clics'];
-
 const DESTINOS = ['live', 'grupo'];
 
-// Mismo valor que routes/payments.js — mantener sincronizado.
+// Mismo valor que routes/payments.js. Mantener sincronizado.
 const MXN_A_USD_APROX = 0.055;
 
 // Mínimos por red. Debe coincidir con REDES_PERMITIDAS de routes/payments.js.
-// Si agregas o cambias una red en payments.js, actualiza aquí también.
 const REDES_PERMITIDAS = {
-    'usdttrc20': { moneda: 'USDT', red: 'TRON',     minimo_usd: 1  },
-    'usdtbsc':   { moneda: 'USDT', red: 'BSC',      minimo_usd: 1  },
-    'usdtmatic': { moneda: 'USDT', red: 'Polygon',  minimo_usd: 1  },
-    'usdtsol':   { moneda: 'USDT', red: 'Solana',   minimo_usd: 1  },
-    'usdterc20': { moneda: 'USDT', red: 'Ethereum', minimo_usd: 20 },
-    'usdcsol':   { moneda: 'USDC', red: 'Solana',   minimo_usd: 1  },
-    'usdcmatic': { moneda: 'USDC', red: 'Polygon',  minimo_usd: 1  },
-    'usdcbsc':   { moneda: 'USDC', red: 'BSC',      minimo_usd: 1  },
-    'usdc':      { moneda: 'USDC', red: 'Ethereum', minimo_usd: 20 }
+    usdttrc20: { moneda: 'USDT', red: 'TRON',     minimo_usd: 1  },
+    usdtbsc:   { moneda: 'USDT', red: 'BSC',      minimo_usd: 1  },
+    usdtmatic: { moneda: 'USDT', red: 'Polygon',  minimo_usd: 1  },
+    usdtsol:   { moneda: 'USDT', red: 'Solana',   minimo_usd: 1  },
+    usdterc20: { moneda: 'USDT', red: 'Ethereum', minimo_usd: 20 },
+    usdcsol:   { moneda: 'USDC', red: 'Solana',   minimo_usd: 1  },
+    usdcmatic: { moneda: 'USDC', red: 'Polygon',  minimo_usd: 1  },
+    usdcbsc:   { moneda: 'USDC', red: 'BSC',      minimo_usd: 1  },
+    usdc:      { moneda: 'USDC', red: 'Ethereum', minimo_usd: 20 }
 };
 
-// Límites de la campaña
-const MAX_MXN = 1000000;        // 1 millón de pesos
-const MAX_PENDIENTES = 10;      // campañas sin pagar por usuario (ajustable)
+const MAX_MXN = 1000000;
+const MAX_PENDIENTES = 10;
+const DIAS_CAMPANA = 30;
 
-// Regex UUID v4 (suficientemente estricta para validar IDs de Supabase)
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // ================================================================
 // HELPERS
 // ================================================================
 
-function respuestaError(res, status, error) {
-    return res.status(status).json({ success: false, error });
-}
+const respuestaError = (res, status, error) => res.status(status).json({ success: false, error });
 
-// Devuelve URL válida (http/https) o null si es inválida.
+// URL http/https válida o null
 function urlSegura(valor) {
     if (!valor || typeof valor !== 'string') return null;
     try {
@@ -76,8 +66,7 @@ function urlSegura(valor) {
     }
 }
 
-// Verifica que payCurrency sea una red soportada y que el monto
-// en MXN alcance el mínimo en USD de esa red.
+// La red debe existir y el monto debe alcanzar su mínimo en USD
 function validarRedPago(payCurrency, montoMxn) {
     const red = REDES_PERMITIDAS[payCurrency];
     if (!red) return { valido: false, error: 'Red de pago no soportada' };
@@ -87,9 +76,7 @@ function validarRedPago(payCurrency, montoMxn) {
         const minimoMxn = Math.ceil(red.minimo_usd / MXN_A_USD_APROX);
         return {
             valido: false,
-            error:
-                `El monto es demasiado bajo para ${red.moneda} en ${red.red}. ` +
-                `Mínimo: ${red.minimo_usd} USD (~$${minimoMxn} MXN)`
+            error: `El monto es demasiado bajo para ${red.moneda} en ${red.red}. Mínimo: ${red.minimo_usd} USD (~$${minimoMxn} MXN)`
         };
     }
     return { valido: true, red };
@@ -98,106 +85,56 @@ function validarRedPago(payCurrency, montoMxn) {
 // ================================================================
 // POST /api/campanas/crear
 // ================================================================
-
 router.post('/crear', verificarToken, limitadorPagos, async (req, res) => {
+    const userId = req.usuario?.id;
+    if (!userId) return respuestaError(res, 401, 'No autenticado');
+
     try {
-        const userId = req.usuario?.id;
-
-        if (!userId) {
-            return respuestaError(res, 401, 'No autenticado');
-        }
-
         const b = req.body || {};
         const ad = b.ad || {};
 
-        // ---------------------------------------------------------
-        // Normalización
-        // ---------------------------------------------------------
-
+        // ---------- Normalización ----------
         const nombre = String(b.nombre || '').trim().slice(0, 120);
         const objetivo = String(b.objetivo || '').trim();
         const presupuesto = Number(b.presupuesto);
         const destinoTipo = String(b.destino_tipo || '').trim();
         const destinoIdRaw = String(b.destino_id || '').trim();
-
-        const titulo = String(ad.titulo || '').trim().slice(0, 150);
-        const descripcion = String(ad.descripcion || '').trim().slice(0, 500);
-        const cta = String(ad.cta_texto || 'Ver más').trim().slice(0, 40);
-
-        const imagen = urlSegura(ad.imagen_url);
-        const video = urlSegura(ad.video_url);
-
-        // Pay currency: default usdttrc20 para no romper si el frontend
-        // todavía no lo envía.
         const payCurrency = String(b.pay_currency || 'usdttrc20').trim().toLowerCase();
 
-        // ---------------------------------------------------------
-        // Validaciones básicas
-        // ---------------------------------------------------------
+        const titulo = String(ad.titulo || '').trim().slice(0, 150);
+        const descripcion = String(ad.descripcion || '').trim().slice(0, 500) || null;
+        const cta = String(ad.cta_texto || 'Ver más').trim().slice(0, 40);
+        const imagen = ad.imagen_url ? urlSegura(ad.imagen_url) : null;
+        const video = ad.video_url ? urlSegura(ad.video_url) : null;
 
+        // ---------- Validaciones ----------
         if (!nombre) return respuestaError(res, 400, 'Nombre requerido');
-
-        if (!OBJETIVOS.includes(objetivo)) {
-            return respuestaError(res, 400, 'Objetivo inválido');
-        }
-
+        if (!OBJETIVOS.includes(objetivo)) return respuestaError(res, 400, 'Objetivo inválido');
         if (!Number.isFinite(presupuesto) || presupuesto <= 0 || presupuesto > MAX_MXN) {
             return respuestaError(res, 400, 'Presupuesto inválido');
         }
-
-        if (!DESTINOS.includes(destinoTipo)) {
-            return respuestaError(res, 400, 'Tipo de destino inválido');
-        }
-
-        if (!destinoIdRaw) {
-            return respuestaError(res, 400, 'Destino requerido');
-        }
-
+        if (!DESTINOS.includes(destinoTipo)) return respuestaError(res, 400, 'Tipo de destino inválido');
+        if (!destinoIdRaw) return respuestaError(res, 400, 'Destino requerido');
         if (!titulo) return respuestaError(res, 400, 'Título requerido');
+        if (ad.imagen_url && !imagen) return respuestaError(res, 400, 'URL de imagen inválida');
+        if (ad.video_url && !video) return respuestaError(res, 400, 'URL de video inválida');
 
-        if (ad.imagen_url && !imagen) {
-            return respuestaError(res, 400, 'URL de imagen inválida');
-        }
+        const validacionRed = validarRedPago(payCurrency, presupuesto);
+        if (!validacionRed.valido) return respuestaError(res, 400, validacionRed.error);
 
-        if (ad.video_url && !video) {
-            return respuestaError(res, 400, 'URL de video inválida');
-        }
-
-        // ---------------------------------------------------------
-        // Validación del destino según su tipo
-        // live   -> INTEGER positivo (transmisiones.id)
-        // grupo  -> UUID (grupos_video.id)
-        // ---------------------------------------------------------
-
+        // ---------- Destino: tipo de dato según la tabla ----------
+        // live → transmisiones.id (integer); grupo → grupos_video.id (uuid)
         let destinoRef;
-
         if (destinoTipo === 'live') {
-            const num = Number(destinoIdRaw);
-            if (!Number.isInteger(num) || num <= 0) {
-                return respuestaError(res, 400, 'ID de live inválido');
-            }
-            destinoRef = num;
+            const n = Number(destinoIdRaw);
+            if (!Number.isInteger(n) || n <= 0) return respuestaError(res, 400, 'ID de live inválido');
+            destinoRef = n;
         } else {
-            // grupo
-            if (!UUID_REGEX.test(destinoIdRaw)) {
-                return respuestaError(res, 400, 'ID de grupo inválido');
-            }
+            if (!UUID_REGEX.test(destinoIdRaw)) return respuestaError(res, 400, 'ID de grupo inválido');
             destinoRef = destinoIdRaw;
         }
 
-        // ---------------------------------------------------------
-        // Validar red de pago contra presupuesto
-        // ---------------------------------------------------------
-
-        const validacionRed = validarRedPago(payCurrency, presupuesto);
-        if (!validacionRed.valido) {
-            return respuestaError(res, 400, validacionRed.error);
-        }
-
-        // ---------------------------------------------------------
-        // Límite de campañas pendientes por usuario
-        // ---------------------------------------------------------
-
+        // ---------- Límite de campañas sin pagar ----------
         const { count: pendientes, error: errCount } = await supabaseAdmin
             .from('marketing_campaigns')
             .select('id', { count: 'exact', head: true })
@@ -208,40 +145,43 @@ router.post('/crear', verificarToken, limitadorPagos, async (req, res) => {
             logger.error(`campanas/crear conteo: ${errCount.message}`);
             return respuestaError(res, 500, 'Error interno');
         }
-
         if ((pendientes || 0) >= MAX_PENDIENTES) {
-            return respuestaError(
-                res,
-                429,
-                'Tienes demasiadas campañas sin pagar. Completa o cancela alguna antes de crear otra.'
-            );
+            return respuestaError(res, 429,
+                'Tienes demasiadas campañas sin pagar. Completa o cancela alguna antes de crear otra.');
         }
 
-        // ---------------------------------------------------------
-        // Verificar que el destino exista
-        // ---------------------------------------------------------
-
-        const tabla = destinoTipo === 'live' ? 'transmisiones' : 'grupos_video';
-
-        const { data: destino, error: errDest } = await supabaseAdmin
-            .from(tabla)
-            .select('id')
-            .eq('id', destinoRef)
-            .maybeSingle();
-
-        if (errDest) {
-            logger.error(`campanas/crear destino: ${errDest.message}`);
-            return respuestaError(res, 500, 'Error verificando el destino');
+        // ---------- Destino existente (y en vivo si es live) ----------
+        let destinoValido;
+        if (destinoTipo === 'live') {
+            const { data, error } = await supabaseAdmin
+                .from('transmisiones')
+                .select('id')
+                .eq('id', destinoRef)
+                .eq('estado', 'en_vivo')
+                .eq('is_live', true)
+                .maybeSingle();
+            if (error) {
+                logger.error(`campanas/crear live: ${error.message}`);
+                return respuestaError(res, 500, 'Error verificando el destino');
+            }
+            destinoValido = data;
+            if (!destinoValido) return respuestaError(res, 400, 'El live no está en vivo');
+        } else {
+            const { data, error } = await supabaseAdmin
+                .from('grupos_video')
+                .select('id')
+                .eq('id', destinoRef)
+                .maybeSingle();
+            if (error) {
+                logger.error(`campanas/crear grupo: ${error.message}`);
+                return respuestaError(res, 500, 'Error verificando el destino');
+            }
+            destinoValido = data;
+            if (!destinoValido) return respuestaError(res, 400, 'Grupo no encontrado');
         }
 
-        if (!destino) {
-            return respuestaError(res, 400, 'Destino no encontrado');
-        }
-
-        // ---------------------------------------------------------
-        // Insert 1: campaña
-        // ---------------------------------------------------------
-
+        // ---------- Insert 1: campaña ----------
+        const ahora = Date.now();
         const { data: camp, error: e1 } = await supabaseAdmin
             .from('marketing_campaigns')
             .insert({
@@ -251,8 +191,8 @@ router.post('/crear', verificarToken, limitadorPagos, async (req, res) => {
                 presupuesto,
                 moneda: 'MXN',
                 estado: 'pendiente_pago',
-                fecha_inicio: new Date().toISOString(),
-                fecha_fin: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+                fecha_inicio: new Date(ahora).toISOString(),
+                fecha_fin: new Date(ahora + DIAS_CAMPANA * 86400000).toISOString()
             })
             .select('id')
             .single();
@@ -264,32 +204,18 @@ router.post('/crear', verificarToken, limitadorPagos, async (req, res) => {
 
         const campaignId = camp.id;
 
-        // Rollback manual: si algo falla después, borramos todo lo insertado.
+        // Revierte todo lo insertado si un paso posterior falla
         const revertir = async () => {
             try {
-                await supabaseAdmin
-                    .from('marketing_ads')
-                    .delete()
-                    .eq('campaign_id', campaignId);
-
-                await supabaseAdmin
-                    .from('marketing_campaign_targets')
-                    .delete()
-                    .eq('campaign_id', campaignId);
-
-                await supabaseAdmin
-                    .from('marketing_campaigns')
-                    .delete()
-                    .eq('id', campaignId);
+                await supabaseAdmin.from('marketing_campaign_targets').delete().eq('campaign_id', campaignId);
+                await supabaseAdmin.from('marketing_ads').delete().eq('campaign_id', campaignId);
+                await supabaseAdmin.from('marketing_campaigns').delete().eq('id', campaignId);
             } catch (e) {
-                logger.error(`campanas/crear rollback falló: ${e.message}`);
+                logger.error(`campanas/crear rollback: ${e.message}`);
             }
         };
 
-        // ---------------------------------------------------------
-        // Insert 2: anuncio
-        // ---------------------------------------------------------
-
+        // ---------- Insert 2: anuncio ----------
         const { error: e2 } = await supabaseAdmin
             .from('marketing_ads')
             .insert({
@@ -311,34 +237,21 @@ router.post('/crear', verificarToken, limitadorPagos, async (req, res) => {
             return respuestaError(res, 500, 'No se pudo crear el anuncio');
         }
 
-        // ---------------------------------------------------------
-        // Insert 3: target
-        // ---------------------------------------------------------
-
-        const targetRow = {
-            campaign_id: campaignId,
-            target_tipo: destinoTipo
-        };
-
-        if (destinoTipo === 'live') {
-            targetRow.live_id = destinoRef;
-        } else {
-            targetRow.grupo_id = destinoRef;
-        }
-
+        // ---------- Insert 3: destino de la campaña ----------
         const { error: e3 } = await supabaseAdmin
             .from('marketing_campaign_targets')
-            .insert(targetRow);
+            .insert({
+                campaign_id: campaignId,
+                target_tipo: destinoTipo,
+                live_id: destinoTipo === 'live' ? destinoRef : null,
+                grupo_id: destinoTipo === 'grupo' ? destinoRef : null
+            });
 
         if (e3) {
             logger.error(`campanas/crear target: ${e3.message}`);
             await revertir();
             return respuestaError(res, 500, 'No se pudo crear el destino de la campaña');
         }
-
-        // ---------------------------------------------------------
-        // Respuesta
-        // ---------------------------------------------------------
 
         logger.info(`Campaña creada: ${campaignId} (anunciante ${userId})`);
 
@@ -351,15 +264,10 @@ router.post('/crear', verificarToken, limitadorPagos, async (req, res) => {
                 moneda: 'MXN'
             }
         });
-
     } catch (error) {
         logger.error(`campanas/crear: ${error.message}`);
         return respuestaError(res, 500, 'Error interno creando la campaña');
     }
 });
-
-// ================================================================
-// EXPORT
-// ================================================================
 
 module.exports = router;
