@@ -1,11 +1,7 @@
 // ================================================================
 // server.js — Sariel's Ecosystem
 // Backend principal — Producción Railway
-// ✅ v2.2: Rutas /api/ai/chat-maiz y /api/ai/voice/tts-maiz
-// ✅ v2.3: Rutas del Rey Itlasuhua
-// ✅ v2.4: Rutas IA: /api/ai/plan, /api/webhooks/ia, /api/admin/ai
-//           + Skip de webhooks en rate limit
-// ✅ v2.5: Rutas de campañas de marketing (/api/campanas)
+// ✅ v2.6: Router /api/live montado (donaciones + registro de minutos)
 // ================================================================
 
 require('dotenv').config();
@@ -409,7 +405,6 @@ const apiLimiter = rateLimit({
     message: {
         error: 'Demasiadas solicitudes. Intenta nuevamente más tarde.'
     },
-    // 🆕 v2.4: Excluir webhooks (NOWPayments, membresías, etc.)
     skip: (req) =>
         req.originalUrl.startsWith('/api/webhook/') ||
         req.originalUrl.startsWith('/api/webhooks/')
@@ -901,26 +896,25 @@ montarRouter('/api/ai/chat-pet', './routes/ai-chat-pet', 'routes/ai-chat-pet');
 
 montarRouter('/api/ai/tts', './routes/ai-tts', 'routes/ai-tts');
 
-// ⚔️ Capitán Maíz — separado de Marquinhos
 montarRouter('/api/ai/chat-maiz', './routes/ai-chat-maiz', 'routes/ai-chat-maiz');
 
 montarRouter('/api/ai/voice', './routes/ai-tts-maiz', 'routes/ai-tts-maiz');
 
-// 🐍 Rey Itlasuhua — serpiente cósmica
 montarRouter('/api/ai/tts-itlasuhua', './routes/ai-tts-itlasuhua', 'routes/ai-tts-itlasuhua');
 montarRouter('/api/ai/chat-itlasuhua', './routes/ai-chat-itlasuhua', 'routes/ai-chat-itlasuhua');
 montarRouter('/api/ai/voice-itlasuhua', './routes/ai-voice-itlasuhua', 'routes/ai-voice-itlasuhua');
 
 montarRouter('/api/telnyx', './routes/telnyx', 'routes/telnyx');
 
-// 🆕 v2.4 — IA: planes y webhook de pagos (FASE 1, solo NOWPayments)
 montarRouter('/api/ai/plan', './routes/ia-plan', 'routes/ia-plan');
 montarRouter('/api/webhooks/ia', './routes/webhooks/pagos-ia', 'routes/webhooks/pagos-ia');
 
-// 🆕 v2.5 — Campañas de marketing (creación segura desde el backend)
 montarRouter('/api/campanas', './routes/campanas', 'routes/campanas');
 
-// 🆕 v2.4 — Admin IA (authMiddleware + adminMiddleware, ambos de este archivo)
+// 🆕 v2.6 — Router /api/live (donaciones + registro de minutos)
+montarRouter('/api/live', './routes/live', 'routes/live');
+
+// Admin IA
 try {
     app.use('/api/admin/ai', authMiddleware, adminMiddleware, require('./routes/admin/ai'));
     console.log('✅ routes/admin/ai cargado en /api/admin/ai');
