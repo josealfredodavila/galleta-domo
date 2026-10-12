@@ -1,85 +1,42 @@
 // ================================================================
-// MIDDLEWARE/RATELIMIT.JS
-// RATE LIMITING - PROTECCIÓN DEL BACKEND SARIEL'S
+// MIDDLEWARE/RATELIMIT.JS — Csariel's
+// Requiere app.set('trust proxy', 1) en server.js (Railway usa proxy),
+// si no, req.ip es siempre la IP del proxy y todos comparten el límite.
+// Pagos: se cuenta por usuario autenticado (req.usuario), no por IP.
+// Webhooks: sin límite. NOWPayments reintenta, y un 429 podría perder IPNs.
 // ================================================================
 
 const rateLimit = require('express-rate-limit');
 
-// ================================================================
-// CONFIGURACIÓN GENERAL
-// ================================================================
+const base = { standardHeaders: true, legacyHeaders: false };
+
+// Clave por usuario si hay sesión; si no, por IP. Usar después de verificarToken.
+const clavePorUsuario = (req) => (req.usuario?.id ? `u:${req.usuario.id}` : `ip:${req.ip}`);
 
 const limitadorGeneral = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutos
+    ...base,
+    windowMs: 15 * 60 * 1000,
     max: 100,
-
-    standardHeaders: true,
-    legacyHeaders: false,
-
-    message: {
-        success: false,
-        error: 'Demasiadas peticiones. Intenta nuevamente más tarde.'
-    }
+    message: { success: false, error: 'Demasiadas peticiones. Intenta nuevamente más tarde.' }
 });
-
-// ================================================================
-// AUTENTICACIÓN
-// ================================================================
 
 const limitadorAuth = rateLimit({
+    ...base,
     windowMs: 15 * 60 * 1000,
     max: 10,
-
-    standardHeaders: true,
-    legacyHeaders: false,
-
-    message: {
-        success: false,
-        error: 'Demasiados intentos de autenticación. Intenta nuevamente más tarde.'
-    }
+    message: { success: false, error: 'Demasiados intentos de autenticación. Intenta nuevamente más tarde.' }
 });
-
-// ================================================================
-// PAGOS
-// ================================================================
 
 const limitadorPagos = rateLimit({
+    ...base,
     windowMs: 60 * 60 * 1000,
     max: 20,
-
-    standardHeaders: true,
-    legacyHeaders: false,
-
-    message: {
-        success: false,
-        error: 'Se alcanzó el límite temporal de operaciones de pago.'
-    }
+    keyGenerator: clavePorUsuario,
+    message: { success: false, error: 'Se alcanzó el límite temporal de operaciones de pago.' }
 });
-
-// ================================================================
-// WEBHOOKS
-// ================================================================
-
-const limitadorWebhook = rateLimit({
-    windowMs: 60 * 60 * 1000,
-    max: 100,
-
-    standardHeaders: true,
-    legacyHeaders: false,
-
-    message: {
-        success: false,
-        error: 'Demasiadas notificaciones recibidas. Intenta nuevamente más tarde.'
-    }
-});
-
-// ================================================================
-// EXPORTACIONES
-// ================================================================
 
 module.exports = {
     limitadorGeneral,
     limitadorAuth,
-    limitadorPagos,
-    limitadorWebhook
+    limitadorPagos
 };
