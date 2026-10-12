@@ -6,13 +6,20 @@
 <title>◈ Sariel's · Ecosistema WEB3</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet" />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+
+<!-- ✅ PWA -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#05080f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Csariel's">
+<link rel="apple-touch-icon" href="/icon-192.png">
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 (function () {
     'use strict';
 
-    // Si el enlace viene de un correo de recuperación, mandar directo a la
-    // página de nueva contraseña ANTES de crear cualquier sesión.
     var esRecuperacion =
         /type=recovery/.test(window.location.hash) ||
         /type=recovery/.test(window.location.search);
@@ -22,9 +29,6 @@
         return;
     }
 
-    // Si no hay ningún rastro de sesión guardado en el navegador, no hace falta
-    // esperar la verificación: se muestra el login de inmediato.
-    // Supabase guarda la sesión en localStorage con la clave sb-<proyecto>-auth-token.
     var hayRastroSesion = false;
     try {
         for (var i = 0; i < localStorage.length; i++) {
@@ -236,13 +240,11 @@ function showToast(msg, type, duration) {
 }
 window.showToast = showToast;
 
-// Muestra el login (quita la pantalla de carga)
 function mostrarLogin() {
     document.documentElement.classList.remove('verificando');
 }
 
 async function redirigirSiYaHaySesion() {
-    // Si es un enlace de recuperación, la redirección ya se hizo en el head
     if (/type=recovery/.test(window.location.hash) || /type=recovery/.test(window.location.search)) {
         mostrarLogin();
         return;
@@ -250,15 +252,11 @@ async function redirigirSiYaHaySesion() {
     try {
         const client = window.getSupabase ? window.getSupabase() : null;
         if (!client || !client.auth) { mostrarLogin(); return; }
-
-        // Si la verificación tarda demasiado, mostrar el login para no dejar al usuario esperando
         const limite = setTimeout(mostrarLogin, 4000);
         const r = await client.auth.getSession();
         clearTimeout(limite);
-
         const s = r && r.data ? r.data.session : null;
         if (s) {
-            // Sesión válida: ir a Perfil sin mostrar el login (la pantalla de carga se mantiene)
             window.location.replace(RUTA_PERFIL);
             return;
         }
@@ -380,5 +378,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 300);
 });
 </script>
+
+<!-- ✅ Push Notifications -->
+<script src="/js/push-client.js" defer></script>
 </body>
 </html>
