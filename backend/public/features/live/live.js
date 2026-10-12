@@ -1,15 +1,14 @@
 // ================================================================
-// LIVE · JS v3.3 — Csariel's
-// Cliente de transmisión en vivo. El SERVIDOR es la autoridad:
-// roles, publicación, Live Pass, dueño del live y autor de mensajes.
-// Este archivo presenta la UI y pide solo acciones permitidas.
-// Validaciones de contenido y montos aquí son UX; se repiten en backend.
+// LIVE · JS v3.4 — Csariel's
+// Cliente de transmisión en vivo. El SERVIDOR decide roles, publicación,
+// Live Pass, dueño del live y autor de los mensajes.
+// Las validaciones del navegador son solo experiencia de usuario.
 // ================================================================
 'use strict';
 
 // ---------- CONFIGURACIÓN ----------
 const LIVEKIT_URL = 'wss://csariels-domo-57ujk04t.livekit.cloud';
-// Fija la versión exacta que hayas probado y verifica que exista en jsDelivr.
+// Verificar que esta versión exista en jsDelivr antes de desplegar.
 const LIVEKIT_MODULE_URL = 'https://cdn.jsdelivr.net/npm/livekit-client@2.9.4/dist/livekit-client.esm.mjs';
 
 const ENDPOINTS = {
@@ -22,10 +21,11 @@ const ENDPOINTS = {
     broadcast: '/api/push/broadcast-live'
 };
 
+// Funciones reales de la base de datos (firmas verificadas)
 const RPC = {
-    crear: 'crear_transmision_v2',
-    finalizar: 'finalizar_transmision_v2',
-    puedeTransmitir: 'puede_transmitir_live_v2'
+    crear: 'crear_transmision',          // (p_titulo, p_categoria, p_room_name, p_grupo_id) → bigint
+    finalizar: 'finalizar_transmision',  // (p_transmision_id integer) → jsonb
+    puedeTransmitir: 'puede_transmitir_live' // (p_usuario_id uuid) → jsonb
 };
 
 const DONACIONES = {
@@ -69,30 +69,28 @@ const PALABRAS_SPAM_IGNORADAS = [
 ];
 
 const MAX_MENSAJES_DOM = 100;
-const MAX_FALLOS_MINUTO = 5;          // ~5 min sin poder registrar antes de cerrar
+const MAX_FALLOS_MINUTO = 5;
 const INTERVALO_MINUTO_MS = 60000;
 const INTERVALO_RESYNC_MINUTOS = 5;
 const COOLDOWN_CHAT_MS = 1500;
 const INTERVALO_SONDEO_MS = 5000;
 const TIMEOUT_DONACION_MS = 10 * 60 * 1000;
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const COLOR_HEX_RE = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
 const LABEL_STYLE = 'display:block;color:var(--text-secondary);font-size:.75rem;margin-bottom:6px;text-align:left;';
 const INPUT_STYLE = 'width:100%;padding:12px 14px;margin-bottom:14px;border-radius:12px;border:1px solid var(--glass-border);background:rgba(0,0,0,.35);color:var(--text-primary);font-size:.9rem;outline:none;font-family:inherit;';
 
 // ---------- ESTADO ----------
 let supabaseClient = null;
-let LK = null;                         // módulo de livekit (cache)
-let liveKitRoom = null;                // sala activa; null = sin sala
+let LK = null;
+let liveKitRoom = null;
 let _rol = 'idle';                     // 'idle' | 'streamer' | 'viewer'
 let _modoActual = null;                // 'camara' | 'juego'
 let currentUser = null;
-let currentStreamId = null;
+let currentStreamId = null;            // entero (bigint de la base)
 let gameScreenStream = null;
 let _pendienteFinalizar = null;        // id que no se pudo cerrar en servidor
 let _iniciando = false;
 let _finalizando = false;
-let _capturandoPantalla = false;
 let _pubPantalla = null;
 let _ultimoEnvioChat = 0;
 let _chatChannel = null;
@@ -101,21 +99,18 @@ let _streamsPoller = null;
 const _elementosRemotos = new Map();   // track.sid -> { track, el }
 const _donacionesPendientes = new Map();
 
-// Live Pass (snapshot del servidor + conteo local)
 let _passSnapshot = null;
 let _minutosRegistrados = 0;
 let _fallosMinuto = 0;
 let _timerMinuto = null;
 let _timerBarra = null;
 
-// Anuncios (solo viewers)
 let anuncioActual = null;
 let adSessionId = null;
 let adCerrado = false;
 let adRefresh = null;
 let adVistaTimer = null;
 
-// Donaciones (selección del modal)
 let montoDonacionSeleccionado = null;
 let redDonacionSeleccionada = null;
 let _donacionEnCurso = false;
@@ -125,7 +120,7 @@ const $ = (id) => document.getElementById(id);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
 
-// Crea nodos sin innerHTML. Los textos siempre entran por textContent.
+// Crea nodos sin innerHTML: los textos entran siempre por textContent
 function el(tag, attrs, ...hijos) {
     const n = document.createElement(tag);
     for (const [k, v] of Object.entries(attrs ?? {})) {
@@ -171,6 +166,8 @@ function safeUrl(u) {
     } catch { return ''; }
 }
 
+const esIdValido = (v) => Number.isInteger(Number(v)) && Number(v) > 0;
+
 function esIOS() { return /iPad|iPhone|iPod/i.test(navigator.userAgent); }
 function soportaCompartirPantalla() {
     return !!(navigator.mediaDevices && typeof navigator.mediaDevices.getDisplayMedia === 'function');
@@ -196,7 +193,8 @@ function mensajeErrorServidor(code, status) {
         live_pass_invalido: 'Tu Live Pass no es válido para transmitir.',
         transmision_no_activa: 'Esta transmisión ya finalizó.',
         no_autenticado: 'Inicia sesión para continuar.',
-        sesion_invalida: 'Tu sesión expiró. Vuelve a iniciar sesión.'
+        sesion_invalida: 'Tu sesión expiró. Vuelve a iniciar sesión.',
+        streamId_invalido: 'Transmisión no válida.'
     };
     return mapa[code] || `Error de servidor${status ? ` (${status})` : ''}`;
 }
@@ -243,14 +241,14 @@ async function cargarLiveKit() {
     return LK;
 }
 
-// ---------- TOKEN Y ROL (el servidor decide) ----------
+// ---------- TOKEN (el servidor decide sala y permisos) ----------
 async function pedirTokenSala(streamId, rol) {
     const session = await getSession();
     if (!session) throw new Error('Inicia sesión para continuar');
     const r = await fetch(ENDPOINTS.token, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ streamId, rol })
+        body: JSON.stringify({ streamId: Number(streamId), rol })
     });
     if (!r.ok) {
         const d = await r.json().catch(() => ({}));
@@ -262,17 +260,22 @@ async function pedirTokenSala(streamId, rol) {
 }
 
 // ---------- LIVE PASS ----------
-// Devuelve estado: 'ok' | 'sin_pass' | 'expirado' | 'sin_horas' | 'error' (red/servidor, NO es falta de horas)
+// Estados: 'ok' | 'sin_pass' | 'expirado' | 'sin_horas' | 'error' (red; NO es falta de horas)
 async function consultarLivePass() {
     try {
         const sb = await sbOrThrow();
-        const { data, error } = await sb.rpc(RPC.puedeTransmitir);
+        const session = await getSession();
+        if (!session) return { estado: 'error' };
+
+        const { data, error } = await sb.rpc(RPC.puedeTransmitir, { p_usuario_id: session.user.id });
         if (error) return { estado: 'error' };
+
         const info = Array.isArray(data) ? data[0] : data;
         if (!info || typeof info !== 'object') return { estado: 'error' };
         if (info.puede === true) return { estado: 'ok', info };
-        const razon = ['sin_pass', 'expirado', 'sin_horas'].includes(info.razon) ? info.razon : 'sin_pass';
-        return { estado: razon, mensaje: info.mensaje };
+
+        const razon = ['sin_live_pass', 'expirado', 'sin_horas'].includes(info.razon) ? info.razon : 'sin_live_pass';
+        return { estado: razon === 'sin_live_pass' ? 'sin_pass' : razon, mensaje: info.mensaje };
     } catch { return { estado: 'error' }; }
 }
 
@@ -346,7 +349,6 @@ function detenerTimers() {
     $('livepassTimeBar')?.classList.remove('visible');
 }
 
-// Cuenta regresiva desde el último snapshot del servidor. El servidor es la fuente de verdad.
 function actualizarBarraTiempo() {
     if (!_passSnapshot || _rol !== 'streamer') return;
     const transcurridos = Math.floor((Date.now() - _passSnapshot.tiempo) / 60000);
@@ -363,7 +365,7 @@ function actualizarBarraTiempo() {
     }
 }
 
-// Un fallo de red NO corta el live; solo se corta tras MAX_FALLOS_MINUTO consecutivos.
+// Un fallo de red NO corta el live; solo se corta tras MAX_FALLOS_MINUTO seguidos
 async function tickMinuto() {
     if (_rol !== 'streamer' || !liveKitRoom) return;
     try {
@@ -392,7 +394,6 @@ async function resincronizarPass() {
     const pass = await consultarLivePass();
     if (pass.estado === 'ok') sincronizarPass(pass.info);
     else if (pass.estado !== 'error') finalizarPorMotivo(mensajePorEstadoPass(pass));
-    // 'error' de red: no se corta; se reintenta en el siguiente ciclo
 }
 
 function finalizarPorMotivo(mensaje) {
@@ -476,9 +477,9 @@ const LEET = { '0': 'o', '1': 'i', '3': 'e', '4': 'a', '5': 's', '7': 't', '@': 
 
 function normalizarTexto(t) {
     return String(t ?? '')
-        .normalize('NFKC')                                   // fullwidth -> ASCII
-        .replace(/[\u200B-\u200F\u2060\uFEFF\u00AD]/g, '')   // caracteres invisibles
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')    // quita acentos (ñ -> n)
+        .normalize('NFKC')
+        .replace(/[\u200B-\u200F\u2060\uFEFF\u00AD]/g, '')
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
         .toLowerCase()
         .replace(/[013457@$]/g, (c) => LEET[c]);
 }
@@ -555,7 +556,7 @@ function setTitulo(t) {
     if (n) n.textContent = t;
 }
 
-// Media remota: video -> #liveVideo (siempre muted), audio -> <audio> propio por track
+// Video remoto -> #liveVideo (siempre muted); audio -> <audio> propio por track
 function adjuntarTrackRemoto(track) {
     if (!track || _elementosRemotos.has(track.sid)) return;
     if (track.kind === 'video') {
@@ -614,8 +615,7 @@ function mostrarTocarParaReproducir() {
 async function reanudarMediaRemota() {
     const promesas = elementosMedia().map((m) => m.play().catch(() => {}));
     await Promise.allSettled(promesas);
-    const algunoPausado = elementosMedia().some((m) => m.paused);
-    if (!algunoPausado) $('tocarOverlay')?.remove();
+    if (!elementosMedia().some((m) => m.paused)) $('tocarOverlay')?.remove();
 }
 
 function limpiarMediaRemota() {
@@ -680,13 +680,19 @@ async function limpiarFallido(streamId) {
     resetearEstadoLocal();
 }
 
-// ---------- CREAR / ACTIVAR TRANSMISIÓN (streamer) ----------
-async function crearTransmisionServidor(titulo, categoria, tipo) {
+// ---------- CREAR TRANSMISIÓN (servidor) ----------
+// crear_transmision ignora p_room_name: la sala la genera el servidor
+async function crearTransmisionServidor(titulo, categoria) {
     const sb = await sbOrThrow();
-    const { data, error } = await sb.rpc(RPC.crear, { p_titulo: titulo, p_categoria: categoria, p_tipo: tipo });
+    const { data, error } = await sb.rpc(RPC.crear, {
+        p_titulo: titulo,
+        p_categoria: categoria,
+        p_room_name: null,
+        p_grupo_id: null
+    });
     if (error) throw new Error(error.message || 'No se pudo crear la transmisión');
-    const id = typeof data === 'string' ? data : data?.id;
-    if (!id || !UUID_RE.test(id)) throw new Error('No se pudo crear la transmisión');
+    const id = Number(data);
+    if (!esIdValido(id)) throw new Error('No se pudo crear la transmisión');
     return id;
 }
 
@@ -700,7 +706,7 @@ async function conectarStreamer({ streamId, modo, gameStream }) {
     const room = new Room({ adaptiveStream: true, dynacast: true });
     registrarEventosSala(room, LKmod);
     await room.connect(token.url, token.token);
-    liveKitRoom = room;  // asignar antes de publicar para que la limpieza funcione
+    liveKitRoom = room;
 
     if (modo === 'camara') {
         await room.localParticipant.setCameraEnabled(true);
@@ -755,7 +761,7 @@ async function iniciarCamara() {
         if (!datos) return;
 
         showToast('⏳ Iniciando transmisión…', '', 3000);
-        streamId = await crearTransmisionServidor(datos.titulo, datos.categoria, 'camara');
+        streamId = await crearTransmisionServidor(datos.titulo, datos.categoria);
         await activarStreamer({ streamId, titulo: datos.titulo, modo: 'camara', pass: pass.info });
     } catch (e) {
         console.error('[Live] iniciarCamara', e);
@@ -770,15 +776,13 @@ async function iniciarCamara() {
 async function capturarPantalla() {
     if (_rol !== 'streamer' || !liveKitRoom) { showToast('⚠️ No estás transmitiendo', 'warning'); return; }
     if (!soportaCompartirPantalla() || esIOS()) { showToast('⚠️ Compartir pantalla no disponible aquí', 'warning'); return; }
-    if (_capturandoPantalla) return;
-    _capturandoPantalla = true;
+    if (_pubPantalla) { showToast('⚠️ Ya estás compartiendo pantalla', 'warning'); return; }
 
     // getDisplayMedia debe ser la primera operación asíncrona (gesto del usuario)
     let ss;
     try {
         ss = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
     } catch (e) {
-        _capturandoPantalla = false;
         showToast('⚠️ ' + mensajeErrorPantalla(e), 'warning');
         return;
     }
@@ -797,12 +801,10 @@ async function capturarPantalla() {
                 if (_pubPantalla?.track && liveKitRoom) await liveKitRoom.localParticipant.unpublishTrack(_pubPantalla.track);
             } catch {}
             _pubPantalla = null;
-            _capturandoPantalla = false;
             $('screenBtn')?.classList.remove('active');
         });
     } catch (e) {
         ss.getTracks().forEach((t) => t.stop());
-        _capturandoPantalla = false;
         showToast('⚠️ ' + mensajeErrorCamara(e), 'error');
     }
 }
@@ -838,7 +840,7 @@ async function abrirSelectorJuego() {
         ...(juegos.length
             ? juegos.map((j) => {
                 const bt = el('button', { type: 'button', class: 'game-option', text: `◈ ${j.nombre}` });
-                // El clic llama a iniciarJuego síncronamente: getDisplayMedia conserva el gesto
+                // Clic → iniciarJuego síncronamente: getDisplayMedia conserva el gesto
                 bt.addEventListener('click', () => { cerrarSelectorJuego(); iniciarJuego(j); });
                 return bt;
             })
@@ -878,6 +880,7 @@ function iniciarJuego(juego) {
             return;
         }
 
+        let streamId = null;
         try {
             if (!capturada.getVideoTracks()[0]) throw new Error('No se obtuvo la pantalla');
             gameScreenStream = capturada;
@@ -886,20 +889,16 @@ function iniciarJuego(juego) {
             const pass = await consultarLivePass();
             if (pass.estado !== 'ok') throw new Error(mensajePorEstadoPass(pass));
 
-            const nombre = (juego?.nombre || 'Juego').toString();
+            const nombre = String(juego?.nombre || 'Juego');
             const titulo = `◈ Jugando ${nombre}`.slice(0, 80);
             if (verificarContenido(titulo).prohibido) throw new Error('Título bloqueado por filtro de contenido');
 
             showToast('⏳ Iniciando transmisión…', '', 3000);
-            const streamId = await crearTransmisionServidor(titulo, 'gaming', 'juego');
-            try {
-                await activarStreamer({ streamId, titulo, modo: 'juego', pass: pass.info, gameStream: capturada });
-            } catch (e) {
-                await limpiarFallido(streamId);
-                throw e;
-            }
+            streamId = await crearTransmisionServidor(titulo, 'gaming');
+            await activarStreamer({ streamId, titulo, modo: 'juego', pass: pass.info, gameStream: capturada });
         } catch (e) {
             console.error('[Live] iniciarJuego', e);
+            await limpiarFallido(streamId);
             detenerGameStream();
             showToast('✕ ' + (e.message || 'No se pudo iniciar el juego'), 'error', 6000);
         } finally {
@@ -908,7 +907,7 @@ function iniciarJuego(juego) {
     })();
 }
 
-// Si el usuario deja de compartir la pantalla del juego, el live se cierra para no emitir sin imagen
+// Si el usuario deja de compartir la pantalla del juego, el live se cierra
 function onPantallaJuegoTerminada() {
     if (_rol !== 'streamer' || _modoActual !== 'juego' || !liveKitRoom) return;
     showToast('⚠️ Se detuvo la pantalla compartida. Finalizando el live…', 'warning', 6000);
@@ -933,13 +932,13 @@ async function finalizarTransmision({ skipConfirm = false } = {}) {
         await desconectarSala();
         const sb = await sbOrThrow();
         const { error } = await sb.rpc(RPC.finalizar, { p_transmision_id: id });
-        if (error) throw error;
+        // Si ya estaba finalizada en servidor, el objetivo se cumple igual
+        if (error && !/finaliz/i.test(error.message || '')) throw error;
         _pendienteFinalizar = null;
         resetearEstadoLocal();
         showToast('✅ Transmisión finalizada', 'success');
     } catch (e) {
         console.error('[Live] finalizar', e);
-        // La sala ya se cerró; el live queda pendiente y el botón puede reintentar
         showToast('❌ No se pudo cerrar en el servidor. Pulsa Finalizar otra vez.', 'error', 7000);
     } finally {
         _finalizando = false;
@@ -971,25 +970,26 @@ async function cargarFila(id) {
 }
 
 async function unirseATransmision(streamId) {
+    const id = Number(streamId);
     if (_iniciando || _finalizando) return;
-    if (!UUID_RE.test(String(streamId))) return;
+    if (!esIdValido(id)) return;
     if (!(await requerirSesion())) return;
     if (_rol === 'streamer' || _pendienteFinalizar) {
         showToast('⚠️ Tienes tu propio live activo. Finalízalo antes de unirte a otro.', 'warning', 6000);
         return;
     }
-    if (_rol === 'viewer' && currentStreamId === streamId) return;
+    if (_rol === 'viewer' && currentStreamId === id) return;
 
     _iniciando = true;
     try {
         if (_rol === 'viewer') resetearEstadoLocal();
         showToast('⏳ Uniéndose…', '', 2000);
 
-        const fila = await cargarFila(streamId);
+        const fila = await cargarFila(id);
         if (!fila) throw new Error('Transmisión no encontrada');
         if (fila.estado !== 'en_vivo') throw new Error('Esta transmisión ya finalizó');
 
-        const token = await pedirTokenSala(streamId, 'viewer');
+        const token = await pedirTokenSala(id, 'viewer');
         const LKmod = await cargarLiveKit();
         const room = new LKmod.Room({ adaptiveStream: true, dynacast: true });
         registrarEventosSala(room, LKmod);
@@ -997,10 +997,9 @@ async function unirseATransmision(streamId) {
         liveKitRoom = room;
 
         _rol = 'viewer';
-        currentStreamId = streamId;
+        currentStreamId = id;
         setTitulo(fila.titulo || 'EN VIVO');
 
-        // Adjuntar lo ya publicado antes de conectar
         room.remoteParticipants.forEach((p) => {
             p.trackPublications.forEach((pub) => {
                 if (pub.track && pub.isSubscribed) adjuntarTrackRemoto(pub.track);
@@ -1009,7 +1008,7 @@ async function unirseATransmision(streamId) {
         actualizarContadorEspectadores();
 
         aplicarRolUI('viewer');
-        suscribirseAlChat(streamId);
+        suscribirseAlChat(id);
         resetEstadoAnuncios();
         iniciarRefrescoAnuncios();
         showToast('📺 Conectado', 'success', 2000);
@@ -1062,7 +1061,7 @@ function actualizarBotonMic(encendido) {
     if (linea) linea.style.display = encendido ? 'none' : '';
 }
 
-// Muestra solo los controles que corresponden al rol. El servidor igual rechaza lo que no toca.
+// Muestra solo los controles del rol. El servidor igual rechaza lo que no toca.
 function aplicarRolUI(rol) {
     const mostrar = (id, visible) => { const n = $(id); if (n) n.style.display = visible ? '' : 'none'; };
     const esStreamer = rol === 'streamer';
@@ -1074,7 +1073,6 @@ function aplicarRolUI(rol) {
     mostrar('screenBtn', esStreamer && puedeCompartir);
     mostrar('gameBtn', esStreamer && puedeCompartir && _modoActual !== 'juego');
     mostrar('endBtn', esStreamer || esViewer);
-    mostrar('gameBtn', rol === 'idle' && puedeCompartir ? false : (esStreamer && puedeCompartir && _modoActual !== 'juego'));
 
     const fin = $('endBtn');
     if (fin) {
@@ -1089,11 +1087,10 @@ function aplicarRolUI(rol) {
     const chatBtn = document.querySelector('[data-action="enviar-mensaje"]');
     if (chatBtn) chatBtn.disabled = rol === 'idle';
 
-    const ad = $('marketingAdContainer');
-    if (ad && !esViewer) ad.classList.remove('visible');
+    if (!esViewer) $('marketingAdContainer')?.classList.remove('visible');
 }
 
-// ---------- LISTADO DE TRANSMISIONES ----------
+// ---------- LISTADO ----------
 async function cargarTransmisionesActivas() {
     try {
         const sb = await sbOrThrow();
@@ -1198,12 +1195,12 @@ async function enviarMensaje() {
         return;
     }
     const mod = verificarContenido(texto);
-    if (mod.prohibido) { showToast(`⚠️ ${mod.razon}`, 'warning'); return; }  // conserva el texto para editarlo
+    if (mod.prohibido) { showToast(`⚠️ ${mod.razon}`, 'warning'); return; }
 
     try {
         const sb = await sbOrThrow();
         _ultimoEnvioChat = Date.now();
-        // usuario_id, nombre_usuario y creado_en los fija el trigger del servidor
+        // autor, nombre y fecha los fija el trigger del servidor
         const { error } = await sb.from('mensajes_live').insert({ transmision_id: currentStreamId, mensaje: texto });
         if (error) throw error;
         input.value = '';
@@ -1213,7 +1210,7 @@ async function enviarMensaje() {
     }
 }
 
-// ---------- NOTIFICACIONES (delegadas al servidor) ----------
+// ---------- NOTIFICACIONES (el servidor deduce al streamer desde el token) ----------
 async function notificarSeguidores(streamId, titulo) {
     try {
         const session = await getSession();
@@ -1221,7 +1218,7 @@ async function notificarSeguidores(streamId, titulo) {
         await fetch(ENDPOINTS.broadcast, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-            body: JSON.stringify({ stream_id: streamId, titulo })  // el servidor deduce al streamer desde el token
+            body: JSON.stringify({ stream_id: streamId, titulo })
         });
     } catch {}
 }
@@ -1297,7 +1294,7 @@ function actualizarBotonDonacion() {
     if (btn) btn.disabled = !(montoDonacionSeleccionado && redDonacionSeleccionada) || _donacionEnCurso;
 }
 
-// El enlace de pago se muestra como <a> para que el usuario lo toque: ningún navegador bloquea eso
+// El enlace de pago es un <a> que toca el usuario: ningún navegador lo bloquea
 function mostrarEnlacePago(url) {
     $('pagoModalBackdrop')?.remove();
     const b = crearModal({
@@ -1318,7 +1315,7 @@ function mostrarEnlacePago(url) {
 async function confirmarDonacion() {
     if (_donacionEnCurso) return;
     if (_rol !== 'viewer' || !currentStreamId) { showToast('⚠️ Entra a un live para donar', 'warning'); return; }
-    if (!DONACIONES[montoDonacionSeleccionado]) { showToast('⚠️ Monto no válido', 'error'); return; }
+    if (!Object.prototype.hasOwnProperty.call(DONACIONES, String(montoDonacionSeleccionado))) { showToast('⚠️ Monto no válido', 'error'); return; }
     if (!REDES_DONACION.some((r) => r.id === redDonacionSeleccionada)) { showToast('⚠️ Red no válida', 'error'); return; }
 
     const btn = $('btnConfirmarDonacion');
@@ -1493,7 +1490,7 @@ async function registrarEventoAnuncio(evento) {
     } catch {}
 }
 
-// Sin awaits antes de window.open: el gesto del usuario sigue activo y no hay bloqueo de popups
+// Sin awaits antes de window.open: el gesto del usuario sigue activo
 function registrarClicAnuncio() {
     const ad = anuncioActual;
     if (!ad) return;
@@ -1517,7 +1514,7 @@ function detenerRefrescoAnuncios() {
     adVistaTimer = null;
 }
 
-// ---------- ESTADÍSTICAS ----------
+// ---------- ESTADÍSTICAS (solo las propias) ----------
 async function cargarEstadisticas() {
     const session = await getSession();
     if (!session) { showToast('⚠️ Inicia sesión', 'error'); return; }
@@ -1574,7 +1571,7 @@ document.addEventListener('click', (e) => {
     if (!fn) return;
     e.preventDefault();
     try {
-        const r = fn(target);  // llamada síncrona: conserva el gesto del usuario
+        const r = fn(target);
         if (r && typeof r.catch === 'function') {
             r.catch((err) => {
                 console.error('[Live] acción', target.dataset.action, err);
@@ -1620,7 +1617,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }, 500);
 });
 
-// Salir de la página: cierre best-effort de la sala. El servidor limpia lo que quede (ver SQL, pg_cron).
+// Salir de la página: cierre best-effort de la sala
 window.addEventListener('pagehide', () => { desconectarSala(); });
 
 // ---------- API PÚBLICA MÍNIMA ----------
