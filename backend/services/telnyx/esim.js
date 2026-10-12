@@ -1,16 +1,26 @@
 // backend/services/telnyx/esim.js
 // UNA eSIM por usuario (tabla public.esims_usuario). Cada compra de internet SUMA gigas a esa eSIM.
-// - procesarOrdenInternet(ordenId): crea la eSIM si no existe y acredita los GB (idempotente por orden).
-// - sincronizarFila / sincronizarPorSimId: lee consumo en Telnyx, corta la SIM si se acabó, la reactiva al recargar.
+// - procesarOrdenInternet(ordenId): crea la eSIM si no existe y acredita los GB. Idempotente por orden.
+// - sincronizarFila / sincronizarPorSimId: lee consumo en Telnyx, corta la SIM si se acabó y la reactiva al recargar.
 // - reemplazarEsim(usuarioId): cambio de celular (nueva eSIM, conserva el saldo restante).
+// - cicloMantenimientoEsims(): debe ejecutarse cada 5 minutos desde server.js.
+//
+// ENDPOINTS DE TELNYX
+//   Verificados en la documentación oficial:
+//     POST /actions/purchase/esims
+//     POST /sim_cards/{id}/actions/enable
+//   NO verificados (confirmar en el portal o en la referencia de la API antes de cobrar):
+//     GET  /sim_cards/{id}/activation_code
+//     POST /sim_cards/{id}/actions/disable
+//
+// Estados de ordenes_internet permitidos por la base: pendiente, pagado, activo, cancelado.
 // Solo backend (service_role). Escrituras con control optimista por la columna "version".
-// Estados de ordenes_internet: pendiente, pagado, activo, cancelado.
 
 const { telnyx } = require('./client');
 const { supabaseAdmin } = require('./supabase');
 
-const MB_POR_GB = 1000;                                 // criterio conservador (decimal)
-const ESTADOS_PAGADOS = ['pagado', 'activo'];           // valores permitidos por ordenes_internet_estado_check
+const MB_POR_GB = 1000;                                  // criterio conservador (decimal)
+const ESTADOS_PAGADOS = ['pagado', 'activo'];            // valores permitidos por ordenes_internet_estado_check
 const REEMPLAZO_DIAS = Number(process.env.TELNYX_REEMPLAZO_DIAS || 30);
 const CLAIM_CADUCA_MS = 5 * 60 * 1000;
 
@@ -23,12 +33,13 @@ async function asegurarFila(usuarioId) {
   await supabaseAdmin
     .from('esims_usuario')
     .upsert({ usuario_id: usuarioId }, { onConflict: 'usuario_id', ignoreDuplicates: true });
-  const { data, error } = await supabaseAdmin.from('esims_usuario').select('*').eq('usuario_id', usuarioId).single();
+  const { data, error } = await supabaseAdmin
+    .from('esims_usuario').select('*').eq('usuario_id', usuarioId).single();
   if (error) throw error;
   return data;
 }
 
-// Actualiza solo si nadie más tocó la fila (version). Devuelve la fila nueva o null.
+// Actualiza solo si nadie más modificó la fila (version). Devuelve la fila nueva o null.
 async function actualizarFila(fila, cambios) {
   const { data, error } = await supabaseAdmin
     .from('esims_usuario')
@@ -58,22 +69,26 @@ async function comprarEsimTelnyx(usuarioId) {
   if (!sim?.id) throw new Error('Telnyx no devolvió el id de la eSIM');
 
   try {
+    // Endpoint pendiente de verificar (ver encabezado)
     const act = await telnyx('GET', `/sim_cards/${sim.id}/activation_code`);
     const codigo = act?.data?.activation_code;
     if (!codigo) throw new Error('sin activation_code');
     return { simId: sim.id, iccid: sim.iccid || null, codigo };
   } catch (e) {
+    // La eSIM ya se cobró: queda registrada en Telnyx para revisión manual
     console.error(`[telnyx] eSIM ${sim.id} comprada pero sin código de activación (revisar en portal):`, e.message);
     throw e;
   }
 }
 
 const habilitarSim = (id) => telnyx('POST', `/sim_cards/${id}/actions/enable`);
+// Endpoint pendiente de verificar (ver encabezado)
 const deshabilitarSim = (id) => telnyx('POST', `/sim_cards/${id}/actions/disable`);
 
 // ---------------------------------------------------------------- aprovisionar (primera compra)
 async function aprovisionar(fila, usuarioId) {
-  const caduco = fila.estado === 'aprovisionando' && Date.now() - new Date(fila.updated_at).getTime() > CLAIM_CADUCA_MS;
+  const caduco = fila.estado === 'aprovisionando'
+    && Date.now() - new Date(fila.updated_at).getTime() > CLAIM_CADUCA_MS;
   if (fila.estado === 'aprovisionando' && !caduco) throw fallo('Aprovisionamiento en curso', 409, 'EN_CURSO');
 
   const claim = await actualizarFila(fila, { estado: 'aprovisionando' });
@@ -93,7 +108,8 @@ async function aprovisionar(fila, usuarioId) {
     if (error) throw error;
     return data;
   } catch (e) {
-    await supabaseAdmin.from('esims_usuario').update({ estado: 'pendiente', updated_at: ahora() })
+    await supabaseAdmin.from('esims_usuario')
+      .update({ estado: 'pendiente', updated_at: ahora() })
       .eq('id', claim.id).eq('estado', 'aprovisionando');
     throw e;
   }
@@ -172,7 +188,8 @@ async function sincronizarFila(fila) {
 }
 
 async function sincronizarPorSimId(simId) {
-  const { data: fila } = await supabaseAdmin.from('esims_usuario').select('*').eq('telnyx_sim_id', simId).maybeSingle();
+  const { data: fila } = await supabaseAdmin
+    .from('esims_usuario').select('*').eq('telnyx_sim_id', simId).maybeSingle();
   return fila ? sincronizarFila(fila) : null;
 }
 
@@ -183,7 +200,9 @@ async function reemplazarEsim(usuarioId) {
 
   if (fila.ultimo_reemplazo_at) {
     const dias = (Date.now() - new Date(fila.ultimo_reemplazo_at).getTime()) / 86400000;
-    if (dias < REEMPLAZO_DIAS) throw fallo(`Solo puedes cambiar de celular una vez cada ${REEMPLAZO_DIAS} días`, 429, 'LIMITE');
+    if (dias < REEMPLAZO_DIAS) {
+      throw fallo(`Solo puedes cambiar de celular una vez cada ${REEMPLAZO_DIAS} días`, 429, 'LIMITE');
+    }
   }
 
   fila = (await sincronizarFila(fila)) || fila; // capturar el último consumo antes del cambio
@@ -207,11 +226,14 @@ async function reemplazarEsim(usuarioId) {
     if (error) throw error;
 
     console.log(`[telnyx] eSIM reemplazada usuario=${usuarioId} anterior=${claim.telnyx_sim_id} nueva=${nueva.simId}`);
-    try { if (restante > 0) await habilitarSim(nueva.simId); } catch (e) { console.warn('[telnyx] enable nueva falló:', e.message); }
-    try { await deshabilitarSim(claim.telnyx_sim_id); } catch (e) { console.warn('[telnyx] disable anterior falló:', e.message); }
+    try { if (restante > 0) await habilitarSim(nueva.simId); }
+    catch (e) { console.warn('[telnyx] enable nueva falló:', e.message); }
+    try { await deshabilitarSim(claim.telnyx_sim_id); }
+    catch (e) { console.warn('[telnyx] disable anterior falló:', e.message); }
     return data;
   } catch (e) {
-    await supabaseAdmin.from('esims_usuario').update({ estado: estadoPrevio, updated_at: ahora() })
+    await supabaseAdmin.from('esims_usuario')
+      .update({ estado: estadoPrevio, updated_at: ahora() })
       .eq('id', claim.id).eq('estado', 'reemplazando');
     throw e;
   }
@@ -222,7 +244,8 @@ function vistaEsim(fila) {
   if (!fila) return { tiene_esim: false };
   const restante = Math.max(0, Number(fila.datos_total_mb) - Number(fila.datos_usados_mb));
   const proximo = fila.ultimo_reemplazo_at
-    ? new Date(new Date(fila.ultimo_reemplazo_at).getTime() + REEMPLAZO_DIAS * 86400000).toISOString() : null;
+    ? new Date(new Date(fila.ultimo_reemplazo_at).getTime() + REEMPLAZO_DIAS * 86400000).toISOString()
+    : null;
   return {
     tiene_esim: Boolean(fila.telnyx_sim_id),
     estado: fila.estado,
@@ -238,15 +261,17 @@ function vistaEsim(fila) {
   };
 }
 
-// ---------------------------------------------------------------- mantenimiento periódico (cron)
+// ---------------------------------------------------------------- mantenimiento periódico
 async function reconciliarOrdenes() {
   const desde = new Date(Date.now() - 14 * 86400000).toISOString();
   const { data: ordenes } = await supabaseAdmin
-    .from('ordenes_internet').select('id, usuario_id').in('estado', ESTADOS_PAGADOS).gte('created_at', desde).limit(200);
+    .from('ordenes_internet').select('id, usuario_id')
+    .in('estado', ESTADOS_PAGADOS).gte('created_at', desde).limit(200);
   if (!ordenes?.length) return 0;
 
   const usuarios = [...new Set(ordenes.map((o) => o.usuario_id))];
-  const { data: filas } = await supabaseAdmin.from('esims_usuario').select('usuario_id, ordenes_acreditadas').in('usuario_id', usuarios);
+  const { data: filas } = await supabaseAdmin
+    .from('esims_usuario').select('usuario_id, ordenes_acreditadas').in('usuario_id', usuarios);
   const acreditadas = new Map((filas || []).map((f) => [f.usuario_id, new Set(f.ordenes_acreditadas)]));
 
   let n = 0;
@@ -262,9 +287,11 @@ async function cicloMantenimientoEsims() {
   try {
     const rec = await reconciliarOrdenes();
     const { data: filas } = await supabaseAdmin
-      .from('esims_usuario').select('*').in('estado', ['activa', 'sin_saldo']).not('telnyx_sim_id', 'is', null).limit(500);
+      .from('esims_usuario').select('*')
+      .in('estado', ['activa', 'sin_saldo']).not('telnyx_sim_id', 'is', null).limit(500);
     for (const f of filas || []) {
-      try { await sincronizarFila(f); } catch (e) { console.warn(`[telnyx] sync ${f.telnyx_sim_id}:`, e.message); }
+      try { await sincronizarFila(f); }
+      catch (e) { console.warn(`[telnyx] sync ${f.telnyx_sim_id}:`, e.message); }
     }
     console.log(`🕒 Ciclo eSIM: ${rec} órdenes reconciliadas, ${(filas || []).length} eSIMs sincronizadas.`);
   } catch (e) {
@@ -273,6 +300,11 @@ async function cicloMantenimientoEsims() {
 }
 
 module.exports = {
-  procesarOrdenInternet, sincronizarFila, sincronizarPorSimId, reemplazarEsim,
-  vistaEsim, asegurarFila, cicloMantenimientoEsims,
+  procesarOrdenInternet,
+  sincronizarFila,
+  sincronizarPorSimId,
+  reemplazarEsim,
+  vistaEsim,
+  asegurarFila,
+  cicloMantenimientoEsims,
 };
