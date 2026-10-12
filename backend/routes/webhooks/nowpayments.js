@@ -1,13 +1,11 @@
 /* ================================================================
    NOWPAYMENTS IPN — backend/routes/webhooks/nowpayments.js
-   Un solo endpoint atiende dos flujos:
-     - order_id "DON-<id>"  → donaciones de Live
-     - cualquier otro       → membresías de Csariel's Mercado
-   La lógica crítica (estado, activación, idempotencia y monto)
-   vive en funciones SQL atómicas. Este archivo solo verifica la
-   firma, enruta y responde.
-   Respuestas: 500 = reintentar (NOWPayments volverá a enviar),
-               200 = procesado o no reintentable.
+   Un solo endpoint, tres flujos según order_id:
+     - "LP-..."   → Live Pass           (confirmar_live_pass_ipn)
+     - "DON-<id>" → donaciones de Live  (confirmar_donacion_live)
+     - resto      → membresías Mercado  (confirmar_pago_membresia)
+   Toda la lógica crítica vive en funciones SQL atómicas.
+   200 = procesado o no reintentable. 500 = NOWPayments reintenta.
    ================================================================ */
 
 const express = require('express');
@@ -53,17 +51,42 @@ router.post('/', async (req, res) => {
         const npStatus = String(data.payment_status || '').toLowerCase();
         const orderId = String(data.order_id || '');
 
-        log('IPN recibido', { order_id: orderId, status: npStatus, payment_id: data.payment_id });
+        log('IPN', { order_id: orderId, status: npStatus, payment_id: data.payment_id });
 
-        if (orderId.startsWith('DON-')) {
-            return await procesarDonacion(orderId, npStatus, data, res);
-        }
+        if (orderId.startsWith('LP-')) return await procesarLivePass(orderId, npStatus, data, res);
+        if (orderId.startsWith('DON-')) return await procesarDonacion(orderId, npStatus, data, res);
         return await procesarMembresia(npStatus, data, res);
     } catch (e) {
         logError('Excepción en webhook:', e);
         return res.status(500).json({ ok: false, error: 'interno' });
     }
 });
+
+// ================================================================
+// LIVE PASS
+// ================================================================
+async function procesarLivePass(orderId, npStatus, data, res) {
+    const { data: r, error } = await supabaseAdmin.rpc('confirmar_live_pass_ipn', {
+        p_order_id: orderId,
+        p_payment_id: data.payment_id != null ? String(data.payment_id) : null,
+        p_np_status: npStatus,
+        p_price_amount: Number(data.price_amount) || 0,
+        p_pay_address: data.pay_address || null
+    });
+
+    if (error) {
+        logError('RPC confirmar_live_pass_ipn:', error.message);
+        return res.status(500).json({ ok: false, error: 'db' });   // NOWPayments reintenta
+    }
+
+    if (!r?.ok) {
+        logError('Live Pass no activado:', orderId, r?.motivo);
+        return res.status(200).json({ ok: true, ignorado: r?.motivo });
+    }
+
+    log('Live Pass', orderId, '→', r.motivo);
+    return res.status(200).json({ ok: true, estado: r.motivo });
+}
 
 // ================================================================
 // DONACIONES DE LIVE
@@ -103,7 +126,6 @@ async function procesarMembresia(npStatus, data, res) {
         return res.status(200).json({ ok: true, ignorado: 'sin_payment_id' });
     }
 
-    // Estados de fallo: se registran directamente (no activan nada)
     if (ESTADOS_FALLIDOS.includes(npStatus)) {
         const { error } = await supabaseAdmin
             .from('mercado_membresias_pagos')
@@ -122,7 +144,6 @@ async function procesarMembresia(npStatus, data, res) {
         return res.status(200).json({ ok: true, estado: MAPA_FALLIDO[npStatus] });
     }
 
-    // Confirmación atómica: bloquea el pago, valida monto, activa tienda y marca pagada
     const { data: r, error } = await supabaseAdmin.rpc('confirmar_pago_membresia', {
         p_payment_id: paymentId,
         p_np_status: npStatus,
@@ -131,7 +152,7 @@ async function procesarMembresia(npStatus, data, res) {
 
     if (error) {
         logError('RPC confirmar_pago_membresia:', error.message);
-        return res.status(500).json({ ok: false, error: 'db' });   // NOWPayments reintenta
+        return res.status(500).json({ ok: false, error: 'db' });
     }
 
     if (!r?.ok) {
@@ -148,7 +169,7 @@ async function procesarMembresia(npStatus, data, res) {
 }
 
 // ================================================================
-// NOTIFICACIÓN AL USUARIO (best-effort, no bloquea la respuesta)
+// NOTIFICACIÓN AL USUARIO (best-effort)
 // ================================================================
 async function crearNotificacionMembresia(usuarioId, planSlug, fechaFin) {
     try {
