@@ -1,165 +1,68 @@
 // ================================================================
-// MIDDLEWARE/AUTH.JS
-// AUTENTICACIÓN - SARIEL'S BACKEND
+// MIDDLEWARE/AUTH.JS — Csariel's Backend
+// verificarToken: valida el JWT con Supabase.
+// verificarRol:   autoriza por app_metadata.role (solo lo escribe el servidor).
+//                 NUNCA user_metadata: el usuario puede cambiarlo.
 // ================================================================
 
-const {
-    supabase
-} = require('../config/supabase');
-
+const { supabase, supabaseAdmin } = require('../config/supabase');
 const logger = require('../utils/logger');
-
-// ================================================================
-// VERIFICAR TOKEN SUPABASE
-// ================================================================
 
 async function verificarToken(req, res, next) {
     try {
-        const authHeader = req.headers.authorization;
-
-        // --------------------------------------------------------
-        // COMPROBAR HEADER
-        // --------------------------------------------------------
-
-        if (
-            !authHeader ||
-            !authHeader.startsWith('Bearer ')
-        ) {
-            return res.status(401).json({
-                success: false,
-                error: 'Token no proporcionado'
-            });
+        const authHeader = req.headers.authorization || '';
+        if (!authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({ success: false, error: 'Token no proporcionado' });
         }
 
-        const token =
-            authHeader.substring(7).trim();
-
+        const token = authHeader.slice(7).trim();
         if (!token) {
-            return res.status(401).json({
-                success: false,
-                error: 'Token vacío'
-            });
+            return res.status(401).json({ success: false, error: 'Token vacío' });
         }
 
-        // --------------------------------------------------------
-        // VALIDAR TOKEN CON SUPABASE
-        // --------------------------------------------------------
+        const cliente = supabaseAdmin || supabase;
+        if (!cliente) {
+            logger.error('[Auth] Cliente de Supabase no configurado');
+            return res.status(500).json({ success: false, error: 'Auth no configurado' });
+        }
 
-        const {
-            data,
-            error
-        } = await supabase.auth.getUser(token);
-
+        const { data, error } = await cliente.auth.getUser(token);
         if (error || !data?.user) {
-            logger.warn(
-                `Token Supabase inválido: ${
-                    error?.message || 'usuario no encontrado'
-                }`
-            );
-
-            return res.status(401).json({
-                success: false,
-                error: 'Token inválido o expirado'
-            });
+            logger.warn(`Token inválido: ${error?.message || 'usuario no encontrado'}`);
+            return res.status(401).json({ success: false, error: 'Token inválido o expirado' });
         }
-
-        // --------------------------------------------------------
-        // USUARIO AUTENTICADO
-        // --------------------------------------------------------
 
         req.usuario = data.user;
-
-        // También dejamos disponible el ID directamente.
         req.usuarioId = data.user.id;
-
         return next();
-
-    } catch (error) {
-
-        logger.error(
-            `Error verificando token: ${error.message}`
-        );
-
-        return res.status(401).json({
-            success: false,
-            error: 'Token inválido o expirado'
-        });
+    } catch (e) {
+        logger.error(`Error verificando token: ${e.message}`);
+        return res.status(401).json({ success: false, error: 'Token inválido o expirado' });
     }
 }
 
-// ================================================================
-// VERIFICAR ROL
-// ================================================================
-
 function verificarRol(rolesPermitidos = []) {
-
     return (req, res, next) => {
-
         try {
-
             if (!req.usuario) {
-                return res.status(401).json({
-                    success: false,
-                    error: 'No autenticado'
-                });
+                return res.status(401).json({ success: false, error: 'No autenticado' });
             }
-
             if (!Array.isArray(rolesPermitidos)) {
-                return res.status(500).json({
-                    success: false,
-                    error: 'Configuración de roles inválida'
-                });
+                return res.status(500).json({ success: false, error: 'Configuración de roles inválida' });
             }
 
-            // ----------------------------------------------------
-            // OBTENER ROL
-            // ----------------------------------------------------
+            const rol = req.usuario.app_metadata?.role || 'user';
 
-            const userRole =
-                req.usuario.user_metadata?.role ||
-                'user';
-
-            // ----------------------------------------------------
-            // COMPROBAR PERMISO
-            // ----------------------------------------------------
-
-            if (
-                rolesPermitidos.length === 0 ||
-                !rolesPermitidos.includes(userRole)
-            ) {
-                logger.warn(
-                    `Acceso denegado por rol. Usuario: ${
-                        req.usuario.id
-                    }, rol: ${userRole}`
-                );
-
-                return res.status(403).json({
-                    success: false,
-                    error: 'No tienes permisos para esta acción'
-                });
+            if (rolesPermitidos.length === 0 || !rolesPermitidos.includes(rol)) {
+                logger.warn(`Acceso denegado por rol. Usuario: ${req.usuario.id}, rol: ${rol}`);
+                return res.status(403).json({ success: false, error: 'No tienes permisos para esta acción' });
             }
-
             return next();
-
-        } catch (error) {
-
-            logger.error(
-                `Error verificando rol: ${error.message}`
-            );
-
-            return res.status(500).json({
-                success: false,
-                error: 'Error verificando permisos'
-            });
+        } catch (e) {
+            logger.error(`Error verificando rol: ${e.message}`);
+            return res.status(500).json({ success: false, error: 'Error verificando permisos' });
         }
     };
 }
 
-// ================================================================
-// EXPORTACIONES
-// ================================================================
-
-module.exports = {
-    verificarToken,
-    verificarRol
-};
+module.exports = { verificarToken, verificarRol };
