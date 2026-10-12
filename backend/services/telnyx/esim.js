@@ -1,14 +1,16 @@
 // backend/services/telnyx/esim.js
 // UNA eSIM por usuario (tabla public.esims_usuario). Cada compra de internet SUMA gigas a esa eSIM.
-// - procesarOrdenInternet(ordenId): crea la eSIM si no existe y acredita los GB (idempotente).
+// - procesarOrdenInternet(ordenId): crea la eSIM si no existe y acredita los GB (idempotente por orden).
 // - sincronizarFila / sincronizarPorSimId: lee consumo en Telnyx, corta la SIM si se acabó, la reactiva al recargar.
 // - reemplazarEsim(usuarioId): cambio de celular (nueva eSIM, conserva el saldo restante).
-// Solo backend (service_role). Las escrituras usan control optimista con la columna "version".
+// Solo backend (service_role). Escrituras con control optimista por la columna "version".
+// Estados de ordenes_internet: pendiente, pagado, activo, cancelado.
+
 const { telnyx } = require('./client');
 const { supabaseAdmin } = require('./supabase');
 
-const MB_POR_GB = 1000; // criterio conservador (decimal)
-const ESTADOS_PAGADOS = ['pagada', 'activa', 'activada', 'completado'];
+const MB_POR_GB = 1000;                                 // criterio conservador (decimal)
+const ESTADOS_PAGADOS = ['pagado', 'activo'];           // valores permitidos por ordenes_internet_estado_check
 const REEMPLAZO_DIAS = Number(process.env.TELNYX_REEMPLAZO_DIAS || 30);
 const CLAIM_CADUCA_MS = 5 * 60 * 1000;
 
@@ -91,7 +93,8 @@ async function aprovisionar(fila, usuarioId) {
     if (error) throw error;
     return data;
   } catch (e) {
-    await supabaseAdmin.from('esims_usuario').update({ estado: 'pendiente', updated_at: ahora() }).eq('id', claim.id).eq('estado', 'aprovisionando');
+    await supabaseAdmin.from('esims_usuario').update({ estado: 'pendiente', updated_at: ahora() })
+      .eq('id', claim.id).eq('estado', 'aprovisionando');
     throw e;
   }
 }
@@ -208,7 +211,8 @@ async function reemplazarEsim(usuarioId) {
     try { await deshabilitarSim(claim.telnyx_sim_id); } catch (e) { console.warn('[telnyx] disable anterior falló:', e.message); }
     return data;
   } catch (e) {
-    await supabaseAdmin.from('esims_usuario').update({ estado: estadoPrevio, updated_at: ahora() }).eq('id', claim.id).eq('estado', 'reemplazando');
+    await supabaseAdmin.from('esims_usuario').update({ estado: estadoPrevio, updated_at: ahora() })
+      .eq('id', claim.id).eq('estado', 'reemplazando');
     throw e;
   }
 }
