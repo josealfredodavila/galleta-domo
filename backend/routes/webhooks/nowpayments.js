@@ -1,441 +1,170 @@
 /* ================================================================
-   MERCADO - CSARIEL'S ECOSYSTEM
-   Webhook dedicado: NOTIFICACIONES IPN DE NOWPAYMENTS
-   Ruta: /backend/routes/webhooks/nowpayments.js
-
-   CAMBIOS RESPECTO A LA VERSIÓN ANTERIOR
-   1) Firma: usa utils/nowpayments-sig.js (HMAC-SHA512 sobre el JSON
-      con llaves ordenadas, con respaldo sobre rawBody).
-   2) Bug del paso 7: antes el pago se marcaba 'pagada' ANTES de
-      activar la membresía. Si la activación fallaba, el reintento de
-      NOWPayments veía 'pagada' y se saltaba todo (usuario pagó y
-      nunca recibió el plan). Ahora:
-        a) se "reclama" el pago con un UPDATE condicional
-           (estado <> 'pagada'), lo que también evita doble proceso
-           si llegan dos IPN a la vez;
-        b) se activa la membresía;
-        c) si la activación falla, se REVIERTE el pago a su estado
-           anterior y se responde 500 para que NOWPayments reintente.
-   3) Errores reales de base de datos responden 500 (reintentable).
-      Solo se responde 200 cuando no hay nada que reintentar
-      (pago desconocido, ya procesado, error no reintentable).
-   4) 'canceled' y 'expired' ya no caen en 'pendiente'.
-
-   Esquema real confirmado:
-   - mercado_membresias_pagos:
-       id, tienda_id (FK), usuario_id (FK), plan_slug, plan_nombre,
-       monto_mxn, duracion_dias, estado, payment_id, pay_address,
-       pay_amount, pay_currency, nowpayments_status,
-       activa_desde, activa_hasta, pagado_en, created_at, updated_at
-     Estados: pendiente, pagando, confirmando, pagada, cancelada, expirada, fallida
-   - Al confirmar → actualiza mercado_tiendas.nivel + activa_hasta + estado
-   - notificaciones usa: user_id, tipo, mensaje, fecha, emisor_id, leida, metadata
+   NOWPAYMENTS IPN — backend/routes/webhooks/nowpayments.js
+   Un solo endpoint atiende dos flujos:
+     - order_id "DON-<id>"  → donaciones de Live
+     - cualquier otro       → membresías de Csariel's Mercado
+   La lógica crítica (estado, activación, idempotencia y monto)
+   vive en funciones SQL atómicas. Este archivo solo verifica la
+   firma, enruta y responde.
+   Respuestas: 500 = reintentar (NOWPayments volverá a enviar),
+               200 = procesado o no reintentable.
    ================================================================ */
 
 const express = require('express');
 const router = express.Router();
-const { createClient } = require('@supabase/supabase-js');
+const { supabaseAdmin } = require('../../config/supabase');
 const { verificarFirmaNowPayments } = require('../../utils/nowpayments-sig');
 
-// ================================================================
-// SUPABASE ADMIN
-// ================================================================
-const supabaseAdmin = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
-// ================================================================
-// CONFIG
-// ================================================================
 const NOWPAYMENTS_IPN_SECRET = process.env.NOWPAYMENTS_IPN_SECRET;
 
-// Planes válidos (duplicados aquí para evitar dependencia circular con mercado.js)
-const PLANES = {
-    basico: { slug: 'basico', nombre: 'Básico', precio_mxn: 99,  duracion_dias: 30 },
-    pro:    { slug: 'pro',    nombre: 'Pro',    precio_mxn: 299, duracion_dias: 30 },
-    max:    { slug: 'max',    nombre: 'Max',    precio_mxn: 599, duracion_dias: 30 }
+const ESTADOS_FALLIDOS = ['failed', 'refunded', 'expired', 'canceled', 'cancelled'];
+const MAPA_FALLIDO = {
+    failed: 'fallida',
+    refunded: 'fallida',
+    expired: 'expirada',
+    canceled: 'cancelada',
+    cancelled: 'cancelada'
 };
 
-// ================================================================
-// LOGS CON SÍMBOLOS CSARIEL'S
-// ================================================================
-function log(...args) {
-    console.log('[◈ NOWPayments Webhook]', ...args);
-}
-
-function logError(...args) {
-    console.error('[✶ NOWPayments Webhook ERROR]', ...args);
-}
+const log = (...args) => console.log('[NOWPayments]', ...args);
+const logError = (...args) => console.error('[NOWPayments ERROR]', ...args);
 
 // ================================================================
-// MAPEAR ESTADO DE NOWPAYMENTS A ESTADO INTERNO
-// (los 7 estados reales de mercado_membresias_pagos)
-// Si el estado de NOWPayments no se reconoce, se conserva el actual.
-// ================================================================
-function mapearEstado(npStatus, estadoActual) {
-    const s = (npStatus || '').toLowerCase();
-
-    if (s === 'finished' || s === 'confirmed') return 'pagada';
-    if (s === 'failed' || s === 'refunded') return 'fallida';
-    if (s === 'expired') return 'expirada';
-    if (s === 'canceled' || s === 'cancelled') return 'cancelada';
-    if (s === 'confirming' || s === 'sending' || s === 'partially_paid') return 'confirmando';
-    if (s === 'waiting') return 'pendiente';
-
-    return estadoActual || 'pendiente';
-}
-
-// ================================================================
-// ACTIVAR O EXTENDER MEMBRESÍA
-// Actualiza:
-// - mercado_tiendas.nivel + activa_hasta + estado
-// - mercado_membresias_pagos.activa_desde / activa_hasta
-//   (el estado 'pagada' ya lo dejó el "reclamo" del handler)
-//
-// Devuelve { ok, error, reintentable }
-// - reintentable=true  → fallo temporal (DB), conviene que NOWPayments reintente
-// - reintentable=false → fallo permanente (plan/tienda inválidos), requiere revisión manual
-// ================================================================
-async function activarMembresia(tiendaId, pagoId, planSlug, duracionDias) {
-    try {
-        const planData = PLANES[planSlug];
-        if (!planData) {
-            logError('Plan inválido:', planSlug);
-            return { ok: false, error: 'Plan inválido: ' + planSlug, reintentable: false };
-        }
-
-        const ahora = new Date();
-        const duracionParseada = parseInt(duracionDias, 10);
-        const duracion = Number.isFinite(duracionParseada) && duracionParseada > 0
-            ? duracionParseada
-            : planData.duracion_dias;
-
-        // 1) Obtener tienda actual
-        const { data: tienda, error: errT } = await supabaseAdmin
-            .from('mercado_tiendas')
-            .select('id, nivel, activa_hasta, usuario_id')
-            .eq('id', tiendaId)
-            .maybeSingle();
-
-        if (errT) {
-            logError('Error consultando tienda:', errT);
-            return { ok: false, error: errT.message, reintentable: true };
-        }
-
-        if (!tienda) {
-            logError('Tienda no encontrada:', tiendaId);
-            return { ok: false, error: 'Tienda no encontrada', reintentable: false };
-        }
-
-        // 2) Calcular nueva fecha de vencimiento
-        // Si ya hay una fecha futura, se extiende desde ahí
-        let fechaBase = ahora;
-        if (tienda.activa_hasta) {
-            const fechaAnterior = new Date(tienda.activa_hasta);
-            if (fechaAnterior > ahora) {
-                fechaBase = fechaAnterior;
-            }
-        }
-
-        const nuevaFechaFin = new Date(fechaBase);
-        nuevaFechaFin.setDate(nuevaFechaFin.getDate() + duracion);
-
-        // 3) Actualizar tienda
-        const { error: errUpd } = await supabaseAdmin
-            .from('mercado_tiendas')
-            .update({
-                nivel: planSlug,
-                activa_hasta: nuevaFechaFin.toISOString(),
-                estado: 'activa',
-                updated_at: ahora.toISOString()
-            })
-            .eq('id', tiendaId);
-
-        if (errUpd) {
-            logError('Error actualizando tienda:', errUpd);
-            return { ok: false, error: errUpd.message, reintentable: true };
-        }
-
-        // 4) Fechas de activación en el pago (no crítico: la tienda ya está activa)
-        const { error: errPago } = await supabaseAdmin
-            .from('mercado_membresias_pagos')
-            .update({
-                activa_desde: ahora.toISOString(),
-                activa_hasta: nuevaFechaFin.toISOString(),
-                updated_at: ahora.toISOString()
-            })
-            .eq('id', pagoId);
-
-        if (errPago) {
-            logError('Error guardando fechas en el pago (tienda ya activada):', errPago);
-        }
-
-        log('● Membresía activada:', tiendaId, '→ nivel', planSlug, '→ hasta', nuevaFechaFin.toISOString());
-
-        return {
-            ok: true,
-            tienda_id: tiendaId,
-            usuario_id: tienda.usuario_id,
-            nivel: planSlug,
-            fecha_fin: nuevaFechaFin.toISOString(),
-            extendida: !!tienda.activa_hasta && new Date(tienda.activa_hasta) > ahora
-        };
-
-    } catch (e) {
-        logError('Excepción activarMembresia:', e);
-        return { ok: false, error: e.message, reintentable: true };
-    }
-}
-
-// ================================================================
-// CREAR NOTIFICACIÓN PARA EL USUARIO
-// Adaptado a la estructura real de la tabla notificaciones:
-// user_id, tipo, mensaje, fecha, emisor_id, leida, metadata
-// ================================================================
-async function crearNotificacionMembresia(usuarioId, planSlug, fechaFin) {
-    try {
-        const { error } = await supabaseAdmin
-            .from('notificaciones')
-            .insert({
-                user_id: usuarioId,
-                tipo: 'membresia_activada',
-                mensaje: '◈ Tu membresía ' + planSlug.toUpperCase() + ' está activa hasta ' + new Date(fechaFin).toLocaleDateString('es-MX'),
-                fecha: new Date().toISOString(),
-                emisor_id: null,
-                leida: false,
-                metadata: {
-                    tipo_evento: 'membresia_activada',
-                    plan: planSlug,
-                    fecha_fin: fechaFin,
-                    plataforma: 'Csariel\'s Mercado'
-                }
-            });
-
-        if (error) {
-            log('ℹ️ No se pudo insertar notificación:', error.message);
-            return { ok: false, error: error.message };
-        }
-
-        log('◆ Notificación creada para usuario:', usuarioId);
-        return { ok: true };
-    } catch (e) {
-        log('ℹ️ Excepción insertando notificación:', e.message);
-        return { ok: false, error: e.message };
-    }
-}
-
-// ================================================================
-// POST /
-// Recibe notificaciones IPN de NOWPayments
-// (NO autentica con JWT, usa firma HMAC)
+// POST /  (montado en /api/webhook/nowpayments)
 // ================================================================
 router.post('/', async (req, res) => {
-    const inicio = Date.now();
-
     try {
-        // ============ 1) VERIFICAR FIRMA HMAC-SHA512 ============
-        const firmaRecibida = req.headers['x-nowpayments-sig'];
-
-        const firmaValida = verificarFirmaNowPayments(
-            req.body,
-            req.rawBody,
-            firmaRecibida,
-            NOWPAYMENTS_IPN_SECRET
-        );
-
-        if (!firmaValida) {
-            logError('✶ Firma inválida o IPN secret ausente — solicitud rechazada');
-            return res.status(401).json({ ok: false, error: 'Firma inválida' });
+        if (!supabaseAdmin) {
+            logError('supabaseAdmin no configurado');
+            return res.status(500).json({ ok: false, error: 'config' });
+        }
+        if (!NOWPAYMENTS_IPN_SECRET) {
+            logError('NOWPAYMENTS_IPN_SECRET ausente');
+            return res.status(500).json({ ok: false, error: 'config' });
         }
 
-        log('● Firma verificada');
-
-        // ============ 2) EXTRAER DATOS ============
-        const data = req.body;
-        const paymentId = data.payment_id;
-        const npStatus = data.payment_status;
-        const payCurrency = data.pay_currency;
-        const actuallyPaid = data.actually_paid;
-        const payinHash = data.payin_hash;
-        const outcomeHash = data.outcome_hash;
-
-        log('◈ IPN:', {
-            payment_id: paymentId,
-            status: npStatus,
-            pay_currency: payCurrency,
-            actually_paid: actuallyPaid,
-            payin_hash: payinHash ? String(payinHash).substring(0, 16) + '...' : null,
-            outcome_hash: outcomeHash ? String(outcomeHash).substring(0, 16) + '...' : null
-        });
-
-        // ============ 3) VALIDAR ============
-        if (!paymentId) {
-            logError('✶ Sin payment_id — ignorando');
-            return res.status(200).json({ ok: true, ignorado: 'sin payment_id' });
+        const firma = req.headers['x-nowpayments-sig'];
+        if (!verificarFirmaNowPayments(req.body, req.rawBody, firma, NOWPAYMENTS_IPN_SECRET)) {
+            logError('Firma inválida, solicitud rechazada');
+            return res.status(401).json({ ok: false, error: 'firma' });
         }
 
-        // ============ 4) BUSCAR PAGO EN DB ============
-        const { data: pago, error: errBuscar } = await supabaseAdmin
-            .from('mercado_membresias_pagos')
-            .select('id, tienda_id, usuario_id, plan_slug, monto_mxn, duracion_dias, estado, payment_id')
-            .eq('payment_id', String(paymentId))
-            .maybeSingle();
+        const data = req.body || {};
+        const npStatus = String(data.payment_status || '').toLowerCase();
+        const orderId = String(data.order_id || '');
 
-        if (errBuscar) {
-            logError('✶ Error consultando pago:', errBuscar.message);
-            return res.status(500).json({ ok: false, error: 'Error consultando pago' });
+        log('IPN recibido', { order_id: orderId, status: npStatus, payment_id: data.payment_id });
+
+        if (orderId.startsWith('DON-')) {
+            return await procesarDonacion(orderId, npStatus, data, res);
         }
-
-        if (!pago) {
-            log('ℹ️ Pago no registrado — ignorando:', paymentId);
-            return res.status(200).json({ ok: true, ignorado: 'pago no registrado' });
-        }
-
-        // ============ 5) IDEMPOTENCIA ESTRICTA ============
-        // Si ya está 'pagada', respondemos 200 sin tocar nada.
-        if (pago.estado === 'pagada') {
-            log('ℹ️ Pago ya procesado — ignorando:', paymentId);
-            return res.status(200).json({ ok: true, ignorado: 'ya procesado' });
-        }
-
-        // ============ 6) RECLAMO CONDICIONAL ============
-        // Intentamos pasar el pago a 'pagando' con un UPDATE condicional.
-        // Solo si el estado actual NO es 'pagada' (estado previo guardado
-        // en pago.estado). Si otro IPN concurrente ya lo reclamó, el
-        // UPDATE no afectará filas y salimos.
-        const estadoAnterior = pago.estado;
-
-        const { data: reclamado, error: errReclamo } = await supabaseAdmin
-            .from('mercado_membresias_pagos')
-            .update({
-                estado: 'pagando',
-                nowpayments_status: npStatus || null,
-                payment_id: String(paymentId),
-                updated_at: new Date().toISOString()
-            })
-            .eq('id', pago.id)
-            .neq('estado', 'pagada')
-            .select('id')
-            .maybeSingle();
-
-        if (errReclamo) {
-            logError('✶ Error en reclamo condicional:', errReclamo.message);
-            return res.status(500).json({ ok: false, error: 'Error reclamando pago' });
-        }
-
-        if (!reclamado) {
-            // Otro IPN concurrente lo procesó primero.
-            log('ℹ️ Pago reclamado por otro IPN concurrente — ignorando:', paymentId);
-            return res.status(200).json({ ok: true, ignorado: 'concurrente' });
-        }
-
-        // ============ 7) ESTADOS NO FINALES ============
-        // Si el IPN no es 'finished' ni 'confirmed', solo registramos
-        // el estado mapeado y salimos.
-        const esFinal =
-            npStatus === 'finished' ||
-            npStatus === 'confirmed';
-
-        if (!esFinal) {
-            const nuevoEstado = mapearEstado(npStatus, estadoAnterior);
-
-            const { error: errEstado } = await supabaseAdmin
-                .from('mercado_membresias_pagos')
-                .update({
-                    estado: nuevoEstado,
-                    nowpayments_status: npStatus || null,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', pago.id);
-
-            if (errEstado) {
-                logError('✶ Error actualizando estado intermedio:', errEstado.message);
-                return res.status(500).json({ ok: false, error: 'Error actualizando estado' });
-            }
-
-            log('◈ Estado intermedio registrado:', npStatus, '→', nuevoEstado);
-            return res.status(200).json({ ok: true, estado: nuevoEstado });
-        }
-
-        // ============ 8) ACTIVAR MEMBRESÍA ============
-        const resultado = await activarMembresia(
-            pago.tienda_id,
-            pago.id,
-            pago.plan_slug,
-            pago.duracion_dias
-        );
-
-        if (!resultado.ok) {
-            // Revertimos el 'pagando' al estado anterior para que el
-            // siguiente reintento de NOWPayments lo pueda reclamar.
-            await supabaseAdmin
-                .from('mercado_membresias_pagos')
-                .update({
-                    estado: estadoAnterior,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', pago.id);
-
-            if (resultado.reintentable === false) {
-                logError('✶ Activación fallida (no reintentable):', resultado.error);
-                return res.status(200).json({ ok: true, ignorado: 'activación no reintentable' });
-            }
-
-            logError('✶ Activación fallida (reintentable):', resultado.error);
-            return res.status(500).json({ ok: false, error: 'Activación fallida' });
-        }
-
-        // ============ 9) MARCAR COMO PAGADA ============
-        const ahora = new Date();
-
-        const { error: errPagada } = await supabaseAdmin
-            .from('mercado_membresias_pagos')
-            .update({
-                estado: 'pagada',
-                nowpayments_status: npStatus || null,
-                pagado_en: ahora.toISOString(),
-                updated_at: ahora.toISOString()
-            })
-            .eq('id', pago.id);
-
-        if (errPagada) {
-            // La membresía ya fue activada; el error al marcar 'pagada'
-            // es no-reintentable (no queremos re-activar). Lo logueamos.
-            logError('⚠️ Membresía activada pero no se pudo marcar pagada:', errPagada.message);
-        }
-
-        // ============ 10) NOTIFICACIÓN (best-effort) ============
-        if (resultado.usuario_id) {
-            await crearNotificacionMembresia(
-                resultado.usuario_id,
-                resultado.nivel,
-                resultado.fecha_fin
-            );
-        }
-
-        const duracionMs = Date.now() - inicio;
-        log('✔ Webhook procesado en', duracionMs, 'ms');
-
-        return res.status(200).json({
-            ok: true,
-            estado: 'pagada',
-            tienda_id: resultado.tienda_id,
-            nivel: resultado.nivel,
-            fecha_fin: resultado.fecha_fin
-        });
-
-    } catch (error) {
-        logError('✶ Excepción en POST /:', error);
-        return res.status(500).json({ ok: false, error: 'Error interno' });
+        return await procesarMembresia(npStatus, data, res);
+    } catch (e) {
+        logError('Excepción en webhook:', e);
+        return res.status(500).json({ ok: false, error: 'interno' });
     }
 });
 
 // ================================================================
-// EXPORT
+// DONACIONES DE LIVE
 // ================================================================
-// Router Express. routes/webhooks.js lo captura como función y lo
-// delega con (req, res) para que pueda verificar req.rawBody y
-// req.headers['x-nowpayments-sig'].
+async function procesarDonacion(orderId, npStatus, data, res) {
+    const donacionId = parseInt(orderId.slice(4), 10);
+    if (!Number.isInteger(donacionId) || donacionId <= 0) {
+        return res.status(200).json({ ok: true, ignorado: 'order_id_invalido' });
+    }
+
+    const { data: r, error } = await supabaseAdmin.rpc('confirmar_donacion_live', {
+        p_donacion_id: donacionId,
+        p_np_status: npStatus,
+        p_price_amount: Number(data.price_amount) || 0
+    });
+
+    if (error) {
+        logError('RPC confirmar_donacion_live:', error.message);
+        return res.status(500).json({ ok: false, error: 'db' });
+    }
+
+    if (!r?.ok) {
+        logError('Donación no confirmada:', donacionId, r?.motivo);
+        return res.status(200).json({ ok: true, ignorado: r?.motivo });
+    }
+
+    log('Donación', donacionId, '→', r.motivo);
+    return res.status(200).json({ ok: true, estado: r.motivo });
+}
+
 // ================================================================
+// MEMBRESÍAS DE MERCADO
+// ================================================================
+async function procesarMembresia(npStatus, data, res) {
+    const paymentId = data.payment_id != null ? String(data.payment_id) : '';
+    if (!paymentId) {
+        return res.status(200).json({ ok: true, ignorado: 'sin_payment_id' });
+    }
+
+    // Estados de fallo: se registran directamente (no activan nada)
+    if (ESTADOS_FALLIDOS.includes(npStatus)) {
+        const { error } = await supabaseAdmin
+            .from('mercado_membresias_pagos')
+            .update({
+                estado: MAPA_FALLIDO[npStatus],
+                nowpayments_status: npStatus,
+                updated_at: new Date().toISOString()
+            })
+            .eq('payment_id', paymentId)
+            .neq('estado', 'pagada');
+
+        if (error) {
+            logError('Error registrando fallo de pago:', error.message);
+            return res.status(500).json({ ok: false, error: 'db' });
+        }
+        return res.status(200).json({ ok: true, estado: MAPA_FALLIDO[npStatus] });
+    }
+
+    // Confirmación atómica: bloquea el pago, valida monto, activa tienda y marca pagada
+    const { data: r, error } = await supabaseAdmin.rpc('confirmar_pago_membresia', {
+        p_payment_id: paymentId,
+        p_np_status: npStatus,
+        p_monto_pagado: Number(data.actually_paid) || 0
+    });
+
+    if (error) {
+        logError('RPC confirmar_pago_membresia:', error.message);
+        return res.status(500).json({ ok: false, error: 'db' });   // NOWPayments reintenta
+    }
+
+    if (!r?.ok) {
+        logError('Membresía no activada:', paymentId, r?.motivo);
+        return res.status(200).json({ ok: true, ignorado: r?.motivo });
+    }
+
+    if (r.motivo === 'activada') {
+        await crearNotificacionMembresia(r.usuario_id, r.nivel, r.fecha_fin);
+    }
+
+    log('Membresía', paymentId, '→', r.motivo);
+    return res.status(200).json({ ok: true, estado: r.motivo });
+}
+
+// ================================================================
+// NOTIFICACIÓN AL USUARIO (best-effort, no bloquea la respuesta)
+// ================================================================
+async function crearNotificacionMembresia(usuarioId, planSlug, fechaFin) {
+    try {
+        const { error } = await supabaseAdmin.from('notificaciones').insert({
+            user_id: usuarioId,
+            tipo: 'membresia_activada',
+            mensaje: `Tu membresía ${String(planSlug).toUpperCase()} está activa hasta ${new Date(fechaFin).toLocaleDateString('es-MX')}`,
+            fecha: new Date().toISOString(),
+            emisor_id: null,
+            leida: false,
+            metadata: { tipo_evento: 'membresia_activada', plan: planSlug, fecha_fin: fechaFin, plataforma: "Csariel's Mercado" }
+        });
+        if (error) logError('Notificación no creada:', error.message);
+    } catch (e) {
+        logError('Excepción en notificación:', e.message);
+    }
+}
+
 module.exports = router;
