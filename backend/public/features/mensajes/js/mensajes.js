@@ -1,6 +1,12 @@
 // ================================================================
-// MENSAJES · JS v2.0 (Parte 1 de 3)
+// MENSAJES · JS v2.2 (Parte 1 de 3)
 // Configuración, utilidades, autenticación, avatar, perfil, estados
+//
+// CAMBIO v2.2:
+// - Textos de llamadas más claros ("Llamar", "Aceptar", "Rechazar").
+// - Al iniciar llamada muestra "📞 Llamando a X…" en vez de "📞 ...".
+// - Al recibir muestra "🔔 Llamada entrante de X".
+// - Botones del overlay usan texto + ícono (Micrófono, Cámara, etc.).
 // ================================================================
 
 'use strict';
@@ -8,17 +14,10 @@
 // ================================================================
 // CONFIGURACIÓN
 // ================================================================
-const SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
 const BOT_ID = 'bot-marquinhos';
 const BOT_UUID = '0a000000-0000-4000-8000-000000000001';
 const ESTADOS_BUCKET = 'sariels-estados';
 const BOT_MAX_HISTORY = 6;
-
-// ✅ Exponer supabaseClient globalmente (por si acaso)
-if (typeof window.supabase !== 'undefined' && !window.supabaseClient) {
-    window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-}
 
 // ================================================================
 // ESTADO GLOBAL
@@ -86,7 +85,7 @@ function esc(v) {
 }
 
 /* ================================================================
-   LIMPIEZA DE MARKDOWN - Doble protección (frontend)
+   LIMPIEZA DE MARKDOWN
    ================================================================ */
 function limpiarMarkdown(texto) {
     if (typeof texto !== 'string') return '';
@@ -662,7 +661,7 @@ async function publicarEstado() {
     }
 }
 // ================================================================
-// MENSAJES · JS v2.0 (Parte 2 de 3)
+// MENSAJES · JS v2.2 (Parte 2 de 3)
 // Conversaciones, chat, Marquinhos (candados + términos), voz, archivos
 // ================================================================
 
@@ -936,6 +935,19 @@ async function openConversation(id) {
 
     $('voiceBot').style.display = esBot ? 'inline-flex' : 'none';
     $('chatActions').style.display = 'flex';
+
+    // ✅ v2.2: Botón de llamada con texto según contexto
+    const callBtn = $('videoCall');
+    if (callBtn) {
+        if (esBot) {
+            callBtn.style.display = 'none';
+        } else {
+            callBtn.style.display = 'inline-flex';
+            callBtn.innerHTML = '<span class="call-icon">📹</span><span class="call-label">Llamar</span>';
+            callBtn.title = 'Iniciar videollamada con ' + (p.nombre || 'usuario');
+        }
+    }
+
     $('composer').style.display = 'flex';
     $('emptyState').style.display = 'none';
     $('panel').classList.add('chat-open');
@@ -1272,7 +1284,7 @@ async function cargarHistorialParaBot() {
 }
 
 // ================================================================
-// PREGUNTAR AL BOT CON MEMORIA Y CANDADOS
+// PREGUNTAR AL BOT
 // ================================================================
 async function preguntarAlBotConMemoria(mensaje, historial) {
     const s = await session();
@@ -1469,7 +1481,7 @@ function subscribeMessages(id) {
 }
 
 // ================================================================
-// GRABAR VOZ PARA EL BOT (con memoria)
+// GRABAR VOZ
 // ================================================================
 async function grabarVozParaBot() {
     if (!current?.bot) return;
@@ -1809,7 +1821,7 @@ async function createConversation(id) {
 }
 
 // ================================================================
-// RECORD AUDIO NOTA (chat normal)
+// RECORD AUDIO NOTA
 // ================================================================
 function getSupportedAudioMime() {
     const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/ogg', 'audio/mp4'];
@@ -1886,8 +1898,12 @@ async function recordAudioNota() {
     }
 }
 // ================================================================
-// MENSAJES · JS v2.0 (Parte 3 de 3) — FINAL
+// MENSAJES · JS v2.2 (Parte 3 de 3) — FINAL
 // Canales, grupos, llamadas, inicialización y listeners
+//
+// CAMBIO v2.2:
+// - Botones de llamada con etiquetas de texto (Micrófono, Cámara, etc.)
+// - Mensajes de estado más claros: "📞 Llamando a X…", "🔔 Llamada entrante"
 // ================================================================
 
 // ================================================================
@@ -1969,16 +1985,11 @@ async function cargarCanales() {
             .order('created_at', { ascending: false })
             .limit(50);
 
-        if (result.error) {
-            console.error('[Mensajes/Canales] Error Supabase:', result.error);
-            throw result.error;
-        }
-
+        if (result.error) throw result.error;
         var canales = result.data || [];
 
         var searchInput = document.getElementById('searchCanales');
         var buscar = searchInput ? (searchInput.value || '').trim().toLowerCase() : '';
-
         var filtroEstado = document.getElementById('filtroEstadoCanal');
         var estadoSeleccionado = filtroEstado ? filtroEstado.value : '';
 
@@ -2039,16 +2050,11 @@ async function cargarGrupos() {
             .order('created_at', { ascending: false })
             .limit(50);
 
-        if (result.error) {
-            console.error('[Mensajes/Grupos] Error Supabase:', result.error);
-            throw result.error;
-        }
-
+        if (result.error) throw result.error;
         var grupos = result.data || [];
 
         var searchInput = document.getElementById('searchGrupos');
         var buscar = searchInput ? (searchInput.value || '').trim().toLowerCase() : '';
-
         var filtroEstado = document.getElementById('filtroEstadoGrupo');
         var estadoSeleccionado = filtroEstado ? filtroEstado.value : '';
 
@@ -2086,9 +2092,6 @@ async function cargarGrupos() {
             '<div class="empty-state-small">' +
                 '<div class="empty-icon">!</div>' +
                 '<div class="empty-text">No se pudieron cargar los grupos</div>' +
-                '<div style="font-size:.6rem;color:#ff3366;margin-top:8px;padding:8px;background:rgba(255,51,102,.1);border-radius:8px;max-width:100%;word-break:break-all;">' +
-                    esc(e.message || 'Error desconocido') +
-                '</div>' +
             '</div>';
     }
 }
@@ -2201,7 +2204,6 @@ async function crearCanal() {
 
     if (!nombre) { toast('⚠️ El nombre es obligatorio', 'error'); return; }
     if (!municipio) { toast('⚠️ El municipio es obligatorio', 'error'); return; }
-    if (nombre.length > 80) { toast('⚠️ El nombre es muy largo', 'error'); return; }
 
     var btn = document.getElementById('btnCrearCanal');
     if (btn) { btn.disabled = true; btn.textContent = 'Creando...'; }
@@ -2227,10 +2229,7 @@ async function crearCanal() {
             firma_ligera: 'Yo me hago cargo de lo que digo aquí'
         }).select().single();
 
-        if (result.error) {
-            console.error('[Mensajes/Canales] Error INSERT:', result.error);
-            throw result.error;
-        }
+        if (result.error) throw result.error;
 
         toast('✅ Canal creado correctamente', 'success');
         cerrarModalCrearCanal();
@@ -2261,7 +2260,6 @@ async function crearGrupo() {
 
     if (!nombre) { toast('⚠️ El nombre es obligatorio', 'error'); return; }
     if (!municipio) { toast('⚠️ El municipio es obligatorio', 'error'); return; }
-    if (nombre.length > 80) { toast('⚠️ El nombre es muy largo', 'error'); return; }
 
     var btn = document.getElementById('btnCrearGrupo');
     if (btn) { btn.disabled = true; btn.textContent = 'Creando...'; }
@@ -2287,10 +2285,7 @@ async function crearGrupo() {
             firma_ligera: 'Yo me hago cargo de lo que digo aquí'
         }).select().single();
 
-        if (result.error) {
-            console.error('[Mensajes/Grupos] Error INSERT:', result.error);
-            throw result.error;
-        }
+        if (result.error) throw result.error;
 
         toast('✅ Grupo creado correctamente', 'success');
         cerrarModalCrearGrupo();
@@ -2310,7 +2305,7 @@ async function crearGrupo() {
 }
 
 // ================================================================
-// LLAMADAS (LiveKit)
+// LLAMADAS (LiveKit) — v2.2 con textos claros
 // ================================================================
 async function token(roomName, participantName) {
     const s = await session();
@@ -2334,7 +2329,7 @@ async function startCall() {
         return;
     }
     if (!current) {
-        toast('⚠️ Selecciona una conversación', 'error');
+        toast('⚠️ Selecciona una conversación primero', 'error');
         return;
     }
     if (call.active) {
@@ -2376,11 +2371,15 @@ async function startCall() {
 
         await connectCall(roomName, user.id);
         subscribeCall(id);
+
+        // ✅ v2.2: Texto más claro
         $('callOverlay').classList.add('show');
-        $('callInfo').textContent = '📞 Llamando a ' + (current.profile.nombre || 'usuario') + '…';
+        $('callInfo').innerHTML = '📞 <strong>Llamando a ' + esc(current.profile.nombre || 'usuario') + '…</strong><br><small style="opacity:.7">Esperando respuesta</small>';
+
+        toast('📞 Llamando a ' + (current.profile.nombre || 'usuario') + '…', 'success');
     } catch (e) {
         console.error(e);
-        toast('❌ ' + e.message, 'error');
+        toast('❌ No se pudo iniciar la llamada: ' + e.message, 'error');
         cleanupCall();
     }
 }
@@ -2422,6 +2421,9 @@ async function connectCall(roomName, name) {
     }
     call.room = room;
     call.active = true;
+
+    // ✅ v2.2: Actualizar texto cuando la llamada está activa
+    $('callInfo').innerHTML = '🟢 <strong>Llamada en curso</strong><br><small style="opacity:.7">Presiona ✕ para colgar</small>';
 }
 
 function subscribeCall(id) {
@@ -2432,6 +2434,9 @@ function subscribeCall(id) {
         table: 'llamadas',
         filter: 'id=eq.' + id
     }, p => {
+        if (p.new.estado === 'active') {
+            $('callInfo').innerHTML = '🟢 <strong>Llamada en curso</strong><br><small style="opacity:.7">Presiona ✕ para colgar</small>';
+        }
         if (['ended', 'rejected', 'missed'].includes(p.new.estado)) {
             toast('📞 La llamada terminó', '');
             cleanupCall();
@@ -2456,6 +2461,9 @@ async function incoming(data) {
         ? `<img src="${esc(p.avatar_url)}" alt="">`
         : esc((p.nombre || '◈').charAt(0).toUpperCase());
     $('incomingOverlay').classList.add('show');
+
+    // ✅ v2.2: Toast más visible
+    toast('🔔 ' + (p.nombre || 'Alguien') + ' te está llamando…', 'success');
 }
 
 async function acceptCall() {
@@ -2499,6 +2507,7 @@ async function rejectCall() {
     }
     incomingId = null;
     $('incomingOverlay').classList.remove('show');
+    toast('📵 Llamada rechazada', 'warning');
 }
 
 async function cleanupCall() {
@@ -2516,9 +2525,9 @@ async function cleanupCall() {
         room: null, id: null, active: false, audio: null, video: null, screen: null
     });
     $('callOverlay').classList.remove('show');
-    $('toggleMic').textContent = '🎤';
-    $('toggleCam').textContent = '📷';
-    $('toggleScreen').textContent = '🖥️';
+    $('toggleMic').innerHTML = '<span class="ctrl-icon">🎤</span><span class="ctrl-label">Micrófono</span>';
+    $('toggleCam').innerHTML = '<span class="ctrl-icon">📷</span><span class="ctrl-label">Cámara</span>';
+    $('toggleScreen').innerHTML = '<span class="ctrl-icon">🖥️</span><span class="ctrl-label">Pantalla</span>';
 }
 
 async function hangup() {
@@ -2528,19 +2537,24 @@ async function hangup() {
             finalizada_at: new Date().toISOString()
         }).eq('id', call.id);
     }
+    toast('📞 Llamada finalizada', 'warning');
     await cleanupCall();
 }
 
 async function toggleMic() {
     if (!call.audio) return;
     call.audio.enabled = !call.audio.enabled;
-    $('toggleMic').textContent = call.audio.enabled ? '🎤' : '🔇';
+    $('toggleMic').innerHTML = call.audio.enabled
+        ? '<span class="ctrl-icon">🎤</span><span class="ctrl-label">Micrófono</span>'
+        : '<span class="ctrl-icon">🔇</span><span class="ctrl-label">Silenciado</span>';
 }
 
 async function toggleCam() {
     if (!call.video) return;
     call.video.enabled = !call.video.enabled;
-    $('toggleCam').textContent = call.video.enabled ? '📷' : '📷❌';
+    $('toggleCam').innerHTML = call.video.enabled
+        ? '<span class="ctrl-icon">📷</span><span class="ctrl-label">Cámara</span>'
+        : '<span class="ctrl-icon">📷❌</span><span class="ctrl-label">Sin cámara</span>';
 }
 
 async function toggleScreen() {
@@ -2550,7 +2564,7 @@ async function toggleScreen() {
             await call.room.localParticipant.unpublishTrack(call.screen);
             call.screen.stop();
             call.screen = null;
-            $('toggleScreen').textContent = '🖥️';
+            $('toggleScreen').innerHTML = '<span class="ctrl-icon">🖥️</span><span class="ctrl-label">Pantalla</span>';
             return;
         }
         const s = await navigator.mediaDevices.getDisplayMedia({ video: true });
@@ -2560,7 +2574,7 @@ async function toggleScreen() {
             source: LivekitClient.TrackSource.ScreenShare
         });
         call.screen = t;
-        $('toggleScreen').textContent = '🖥️⏹️';
+        $('toggleScreen').innerHTML = '<span class="ctrl-icon">🖥️⏹️</span><span class="ctrl-label">Detener</span>';
         t.onended = () => toggleScreen();
     } catch (e) {
         if (e.name !== 'NotAllowedError') {
@@ -2570,18 +2584,24 @@ async function toggleScreen() {
 }
 
 // ================================================================
-// INIT — INICIALIZACIÓN PRINCIPAL
+// INIT — INICIALIZACIÓN PRINCIPAL (v2.2)
 // ================================================================
 async function init() {
-    db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-        auth: {
-            persistSession: true,
-            autoRefreshToken: true,
-            detectSessionInUrl: true
-        },
-        realtime: { params: { eventsPerSecond: 10 } }
-    });
-    window.supabaseClient = db;
+    try {
+        db = await window.supabaseReady;
+    } catch (e) {
+        db = null;
+    }
+
+    if (!db) {
+        db = window.supabaseClient;
+    }
+
+    if (!db) {
+        toast('❌ No se pudo conectar a Supabase. Revisa tu conexión.', 'error');
+        console.error('[Mensajes] No hay cliente Supabase disponible.');
+        return;
+    }
 
     try {
         const s = await session();
@@ -2791,7 +2811,7 @@ async function init() {
         }
     }).subscribe();
 
-    // Limpieza periódica de estados vistos
+    // Limpieza periódica
     setInterval(() => {
         limpiarVistosAntiguos();
         cargarEstados();
@@ -2811,7 +2831,7 @@ async function init() {
 }
 
 // ================================================================
-// EXPOSICIÓN GLOBAL (para los onclick del HTML)
+// EXPOSICIÓN GLOBAL
 // ================================================================
 window.cambiarPestana = cambiarPestana;
 window.onNuevoClick = onNuevoClick;
