@@ -1,6 +1,7 @@
 /* ============================================================
    contactos.js
    Sariel's Ecosystem · Contactos
+   v7 — Usa solo el cliente singleton de auth-global.js
    VERSIÓN ESCALA — Optimizado para 100k+ usuarios
 
    Características:
@@ -18,6 +19,7 @@
    - ✅ LOCK GLOBAL: evita cargas simultáneas
    - ✅ Contador online proporcional
    - ✅ v6: Clic en cualquier parte de la tarjeta abre el mensaje
+   - ✅ v7: Usa SOLO window.supabaseClient (creado por auth-global.js)
 
    Tablas/vistas:
    - public.contactos
@@ -96,18 +98,13 @@
        ============================================================ */
 
     function sb() {
+        // ✅ v7: Usa SOLO el cliente singleton de auth-global.js.
+        // Nunca crear cliente propio aquí.
         if (
             window.supabaseClient &&
             typeof window.supabaseClient.from === 'function'
         ) {
             return window.supabaseClient;
-        }
-
-        if (
-            window.supabase &&
-            typeof window.supabase.from === 'function'
-        ) {
-            return window.supabase;
         }
 
         return null;
