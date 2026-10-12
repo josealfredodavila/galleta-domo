@@ -1,298 +1,197 @@
 // ================================================================
-// ROUTES/PAYMENTS/LIVEPASS.JS - SARIEL'S ECOSYSTEM
-// Endpoint para Live Pass (Básico y Pro)
-// ================================================================
-// PRECIOS:
-// - live_basico: $300 MXN / 30 días / 2h al día
-// - live_pro:    $600 MXN / 30 días / 5h al día
+// ROUTES/PAYMENTS/LIVEPASS.JS — Csariel's
+//   POST /api/payments/live-pass/create  → crea factura NOWPayments
+//   GET  /api/payments/live-pass/status  → estado del Live Pass
+// Precios: se leen de planes_membresia (nunca del cliente).
+// La activación la hace el webhook IPN (confirmar_live_pass_ipn), no este archivo.
 // ================================================================
 
 const express = require('express');
+const crypto = require('crypto');
 const router = express.Router();
-
-const { createClient } = require('@supabase/supabase-js');
-
+const { supabaseAdmin } = require('../../config/supabase');
 const { limitadorPagos } = require('../../middleware/rateLimit');
 
-// ===== CONFIGURACIÓN =====
 const NOWPAYMENTS_API_KEY = process.env.NOWPAYMENTS_API_KEY;
 const NOWPAYMENTS_API_URL = 'https://api.nowpayments.io/v1';
 const PAY_CURRENCY = 'usdttrc20';
-
-const DEFAULT_SITE_URL = 'https://galleta-domo-production.up.railway.app';
+const PLANES_VALIDOS = ['live_basico', 'live_pro'];
 
 const SITE_URL =
     process.env.SITE_URL ||
     process.env.FRONTEND_URL ||
     process.env.PUBLIC_APP_URL ||
-    DEFAULT_SITE_URL;
+    'https://galleta-domo-production.up.railway.app';
 
-console.log('🔑 [LivePass] NOWPAYMENTS_API_KEY:', NOWPAYMENTS_API_KEY ? '✅ Definida' : '❌ NO DEFINIDA');
-console.log('🌐 [LivePass] SITE_URL:', SITE_URL);
-
-// ===== SUPABASE ADMIN =====
-const supabaseAdmin = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+const log = (...args) => console.log('[LivePass]', ...args);
+const logError = (...args) => console.error('[LivePass ERROR]', ...args);
 
 // ================================================================
-// MIDDLEWARE DE AUTENTICACIÓN
+// MIDDLEWARE: valida el JWT con el cliente admin (sin crear clientes por petición)
 // ================================================================
-
 async function verificarAutenticacion(req, res, next) {
     try {
-        const authHeader = req.headers.authorization;
+        if (!supabaseAdmin) return res.status(500).json({ success: false, error: 'config' });
 
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({ success: false, error: 'No autenticado: token requerido' });
+        const authHeader = req.headers.authorization || '';
+        if (!authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({ success: false, error: 'no_autenticado' });
         }
-
         const token = authHeader.slice(7).trim();
-        if (!token) {
-            return res.status(401).json({ success: false, error: 'No autenticado: token vacío' });
-        }
+        if (!token) return res.status(401).json({ success: false, error: 'no_autenticado' });
 
-        const supabaseUser = createClient(
-            process.env.SUPABASE_URL,
-            process.env.SUPABASE_ANON_KEY,
-            {
-                auth: { autoRefreshToken: false, persistSession: false },
-                global: { headers: { Authorization: `Bearer ${token}` } }
-            }
-        );
-
-        const { data: { user }, error } = await supabaseUser.auth.getUser();
-
-        if (error || !user) {
-            console.error('❌ [LivePass] Error de autenticación:', error);
-            return res.status(401).json({ success: false, error: 'Token inválido' });
-        }
+        const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+        if (error || !user) return res.status(401).json({ success: false, error: 'sesion_invalida' });
 
         req.user = user;
-        next();
-
-    } catch (error) {
-        console.error('❌ [LivePass] Error en autenticación:', error);
-        return res.status(500).json({ success: false, error: 'Error de autenticación' });
+        return next();
+    } catch (e) {
+        logError('auth:', e.message);
+        return res.status(500).json({ success: false, error: 'auth' });
     }
 }
 
 // ================================================================
-// POST /api/payments/live-pass/create
+// POST /create
 // ================================================================
-
 router.post('/create', verificarAutenticacion, limitadorPagos, async (req, res) => {
     try {
-        console.log('📩 [LivePass] Solicitud recibida');
+        const usuarioId = req.user.id;
+        const { plan_tipo, privacy_version } = req.body || {};
 
-        const { plan_tipo, privacy_version } = req.body;
-        const usuario_id = req.user.id;
-
-        console.log('👤 [LivePass] Usuario ID:', usuario_id);
-        console.log('📦 [LivePass] Plan solicitado:', plan_tipo);
-
-        if (plan_tipo !== 'live_basico' && plan_tipo !== 'live_pro') {
-            return res.status(400).json({
-                success: false,
-                error: 'Plan inválido. Debe ser "live_basico" o "live_pro"'
-            });
+        if (!PLANES_VALIDOS.includes(plan_tipo)) {
+            return res.status(400).json({ success: false, error: 'plan_invalido' });
         }
-
-        if (!supabaseAdmin) {
-            console.error('❌ [LivePass] supabaseAdmin NO DISPONIBLE');
-            return res.status(500).json({
-                success: false,
-                error: 'Error de configuración: supabaseAdmin no disponible.'
-            });
-        }
-
         if (!NOWPAYMENTS_API_KEY) {
-            console.error('❌ [LivePass] NOWPAYMENTS_API_KEY no configurada');
-            return res.status(500).json({ success: false, error: 'Servicio de pagos no configurado' });
+            logError('NOWPAYMENTS_API_KEY no configurada');
+            return res.status(500).json({ success: false, error: 'pagos_no_configurados' });
         }
 
-        const { data: usuario, error: userError } = await supabaseAdmin
+        const { data: usuario, error: errU } = await supabaseAdmin
             .from('usuarios')
             .select('id, email, nombre')
-            .eq('id', usuario_id)
-            .single();
+            .eq('id', usuarioId)
+            .maybeSingle();
+        if (errU || !usuario) return res.status(404).json({ success: false, error: 'usuario_no_encontrado' });
 
-        if (userError || !usuario) {
-            console.error('❌ [LivePass] Error obteniendo usuario:', userError);
-            return res.status(404).json({ success: false, error: 'Usuario no encontrado' });
-        }
-
-        console.log('👤 [LivePass] Usuario encontrado:', usuario.email);
-
-        const { data: plan, error: planError } = await supabaseAdmin
+        // Precio y nombre desde la base, nunca desde el cliente
+        const { data: plan, error: errP } = await supabaseAdmin
             .from('planes_membresia')
             .select('id, nombre, precio_mxn, intervalo_dias')
             .eq('id', plan_tipo)
             .eq('activo', true)
-            .single();
+            .maybeSingle();
+        if (errP || !plan) return res.status(404).json({ success: false, error: 'plan_no_disponible' });
 
-        if (planError || !plan) {
-            console.error('❌ [LivePass] Plan no encontrado:', planError);
-            return res.status(404).json({ success: false, error: 'Plan no disponible' });
+        const precioMxn = Number(plan.precio_mxn);
+        if (!Number.isFinite(precioMxn) || precioMxn <= 0) {
+            return res.status(500).json({ success: false, error: 'precio_invalido' });
         }
 
-        const precioMxn = parseFloat(plan.precio_mxn);
-        console.log('✅ [LivePass] Plan encontrado:', plan.nombre, '$' + precioMxn);
+        const orderId = `LP-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
 
-        const orderId = `LP-${Date.now()}-${usuario_id.slice(0, 8)}`;
-        console.log('📦 [LivePass] Order ID generado:', orderId);
-
-        const { data: pago, error: pagoError } = await supabaseAdmin
+        const { data: pago, error: errPago } = await supabaseAdmin
             .from('pagos_membresia')
             .insert({
-                usuario_id: usuario_id,
+                usuario_id: usuarioId,
                 proveedor: 'nowpayments',
                 order_id: orderId,
+                plan_tipo,
                 estado: 'pendiente',
                 monto_mxn: precioMxn,
-                privacy_version: privacy_version || '1.0',
+                moneda_pago: PAY_CURRENCY,
+                privacy_version: typeof privacy_version === 'string' ? privacy_version.slice(0, 20) : '1.0',
                 privacy_accepted_at: new Date().toISOString()
             })
             .select('id')
             .single();
 
-        if (pagoError || !pago) {
-            console.error('❌ [LivePass] Error guardando pago:', pagoError);
-            return res.status(500).json({ success: false, error: 'Error al guardar pago' });
+        if (errPago || !pago) {
+            logError('guardar pago:', errPago?.message);
+            return res.status(500).json({ success: false, error: 'no_se_guardo_pago' });
         }
 
-        console.log('✅ [LivePass] Pago pendiente guardado:', pago.id);
-
-        const invoiceData = {
-            price_amount: precioMxn,
-            price_currency: 'mxn',
-            pay_currency: PAY_CURRENCY,
-            order_id: orderId,
-            order_description: `${plan.nombre} Sariel's - ${usuario.email}`,
-            ipn_callback_url: `${SITE_URL}/api/webhook/nowpayments`,
-            success_url: `${SITE_URL}/features/live/membresia-live.html?payment=success`,
-            cancel_url: `${SITE_URL}/features/live/membresia-live.html?payment=cancel`
-        };
-
-        console.log('📤 [LivePass] Enviando invoice a NOWPayments...');
-
-        let nowpaymentsOk = false;
-        let nowpaymentsData = {};
-
+        // Factura en NOWPayments con timeout
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 15000);
+        let npData = {};
+        let npOk = false;
 
         try {
-            const nowpaymentsResponse = await fetch(`${NOWPAYMENTS_API_URL}/invoice`, {
+            const response = await fetch(`${NOWPAYMENTS_API_URL}/invoice`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-api-key': NOWPAYMENTS_API_KEY
-                },
-                body: JSON.stringify(invoiceData),
+                headers: { 'Content-Type': 'application/json', 'x-api-key': NOWPAYMENTS_API_KEY },
+                body: JSON.stringify({
+                    price_amount: precioMxn,
+                    price_currency: 'mxn',
+                    pay_currency: PAY_CURRENCY,
+                    order_id: orderId,
+                    order_description: `${plan.nombre} Csariel's`,
+                    ipn_callback_url: `${SITE_URL}/api/webhook/nowpayments`,
+                    success_url: `${SITE_URL}/features/live/membresia-live.html?payment=success`,
+                    cancel_url: `${SITE_URL}/features/live/membresia-live.html?payment=cancel`
+                }),
                 signal: controller.signal
             });
-
-            nowpaymentsData = await nowpaymentsResponse.json().catch(() => ({}));
-            nowpaymentsOk = nowpaymentsResponse.ok;
-        } catch (fetchError) {
-            nowpaymentsData = { message: fetchError.message };
-            nowpaymentsOk = false;
+            npData = await response.json().catch(() => ({}));
+            npOk = response.ok;
+        } catch (e) {
+            npData = { message: e.message };
         } finally {
             clearTimeout(timeout);
         }
 
-        if (!nowpaymentsOk || !nowpaymentsData.invoice_url) {
-            console.error('❌ [LivePass] Error en NOWPayments:', nowpaymentsData);
-
+        if (!npOk || !npData.invoice_url) {
+            // Guardamos la respuesta de NOWPayments para diagnosticar el rechazo
+            logError('NOWPayments rechazó la factura:', npData);
             await supabaseAdmin
                 .from('pagos_membresia')
-                .update({ estado: 'failed', updated_at: new Date().toISOString() })
+                .update({
+                    estado: 'failed',
+                    datos_webhook: { error_creacion: npData, at: new Date().toISOString() },
+                    updated_at: new Date().toISOString()
+                })
                 .eq('id', pago.id);
-
-            return res.status(502).json({
-                success: false,
-                error: nowpaymentsData.message || 'Error al crear pago en NOWPayments'
-            });
+            return res.status(502).json({ success: false, error: 'pago_no_creado' });
         }
 
-        console.log('✅ [LivePass] Invoice creado:', nowpaymentsData.id);
-        console.log('🔗 [LivePass] URL de pago:', nowpaymentsData.invoice_url);
-
-        const { error: urlError } = await supabaseAdmin
+        await supabaseAdmin
             .from('pagos_membresia')
-            .update({
-                payment_url: nowpaymentsData.invoice_url,
-                moneda_pago: nowpaymentsData.pay_currency || PAY_CURRENCY,
-                updated_at: new Date().toISOString()
-            })
+            .update({ payment_url: npData.invoice_url, updated_at: new Date().toISOString() })
             .eq('id', pago.id);
 
-        if (urlError) {
-            console.error('⚠️ [LivePass] No se pudo guardar payment_url:', urlError.message);
-        }
-
-        res.json({
+        log('factura creada', orderId, plan_tipo);
+        return res.json({
             success: true,
             order_id: orderId,
-            payment_id: null,
-            payment_url: nowpaymentsData.invoice_url,
-            pay_address: null,
-            price_amount: precioMxn,
-            price_currency: 'MXN',
-            plan_tipo: plan_tipo,
-            plan_nombre: plan.nombre
+            payment_url: npData.invoice_url,
+            plan_tipo,
+            plan_nombre: plan.nombre,
+            precio_mxn: precioMxn
         });
-
-    } catch (error) {
-        console.error('❌ [LivePass] Error en /create:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Error interno del servidor'
-        });
+    } catch (e) {
+        logError('create:', e.message);
+        return res.status(500).json({ success: false, error: 'interno' });
     }
 });
 
 // ================================================================
-// GET /api/payments/live-pass/status
+// GET /status
 // ================================================================
-
 router.get('/status', verificarAutenticacion, async (req, res) => {
     try {
-        const usuario_id = req.user.id;
-
-        console.log('📊 [LivePass] Consultando estado para:', usuario_id);
-
-        if (!supabaseAdmin) {
-            return res.status(500).json({ success: false, error: 'Servicio no configurado' });
-        }
-
-        const { data, error } = await supabaseAdmin
-            .rpc('puede_transmitir_live', {
-                p_usuario_id: usuario_id
-            });
-
-        if (error) {
-            console.error('❌ [LivePass] Error en puede_transmitir_live:', error);
-            return res.status(500).json({ success: false, error: error.message });
-        }
-
-        console.log('✅ [LivePass] Estado obtenido:', data);
-
-        res.json({
-            success: true,
-            data: data
+        const { data, error } = await supabaseAdmin.rpc('puede_transmitir_live', {
+            p_usuario_id: req.user.id
         });
-
-    } catch (error) {
-        console.error('❌ [LivePass] Error en /status:', error);
-        res.status(500).json({ success: false, error: error.message });
+        if (error) {
+            logError('status:', error.message);
+            return res.status(500).json({ success: false, error: 'db' });
+        }
+        return res.json({ success: true, data });
+    } catch (e) {
+        logError('status:', e.message);
+        return res.status(500).json({ success: false, error: 'interno' });
     }
 });
-
-// ================================================================
-// EXPORTAR
-// ================================================================
 
 module.exports = router;
