@@ -1,204 +1,127 @@
 // ================================================================
-// RUTAS DE LIVEKIT — Sariel's Ecosystem v2
-// ================================================================
-// Endpoints:
-//   POST /api/livekit/token          → Token JWT para unirse a un room
-//   GET  /api/livekit/streams        → Listar transmisiones activas
-//   POST /api/livekit/start          → Iniciar transmisión
-//   POST /api/livekit/end/:id        → Finalizar transmisión
-//
-// CAMBIOS v2:
-// - Devuelve "url" además de "wsUrl" (compatibilidad con mensajes.js)
-// - Acepta "participantName" del frontend con fallback
-// - Valida variables de entorno antes de generar tokens
-// - Valida roomName en el body
-// - Devuelve "identity" para debugging
-// - Token con TTL explícito de 2 horas
+// RUTAS LIVEKIT — Csariel's
+//   POST /api/livekit/token   → token para unirse a una sala
+//   GET  /api/livekit/streams → transmisiones activas (columnas públicas)
+// La sala y el permiso de publicar los decide SIEMPRE el servidor.
+// Se eliminaron /start y /end: el live se crea y se cierra por RPC.
 // ================================================================
 
 const express = require('express');
 const router = express.Router();
-const { supabase } = require('../config/supabase');
+const { AccessToken } = require('livekit-server-sdk');
+const { supabase, supabaseAdmin } = require('../config/supabase');
 const { verificarToken } = require('../middleware/auth');
 const logger = require('../utils/logger');
-const { AccessToken } = require('livekit-server-sdk');
+
+const { LIVEKIT_API_KEY, LIVEKIT_API_SECRET, LIVEKIT_WS_URL } = process.env;
 
 // ================================================================
-// POST /api/livekit/token
+// POST /token
+// Body: { streamId: number, rol: 'streamer' | 'viewer' }
 // ================================================================
 router.post('/token', verificarToken, async (req, res) => {
     try {
-        const { roomName, participantName } = req.body;
-        const userId = req.usuario.id;
+        const user = req.usuario;
+        const streamId = Number(req.body?.streamId);
 
-        // Validaciones básicas
-        if (!roomName || typeof roomName !== 'string' || !roomName.trim()) {
-            return res.status(400).json({
-                success: false,
-                error: 'Falta roomName o es inválido'
-            });
+        if (!Number.isInteger(streamId) || streamId <= 0) {
+            return res.status(400).json({ success: false, error: 'streamId_invalido' });
+        }
+        if (!LIVEKIT_API_KEY || !LIVEKIT_API_SECRET || !LIVEKIT_WS_URL) {
+            logger.error('[LiveKit] Variables de entorno incompletas');
+            return res.status(500).json({ success: false, error: 'livekit_no_configurado' });
         }
 
-        // Validar variables de entorno (evita errores confusos)
-        if (!process.env.LIVEKIT_API_KEY || !process.env.LIVEKIT_API_SECRET) {
-            logger.error('Faltan LIVEKIT_API_KEY o LIVEKIT_API_SECRET');
-            return res.status(500).json({
-                success: false,
-                error: 'LiveKit no está configurado en el servidor'
-            });
+        const db = supabaseAdmin || supabase;
+        if (!db) return res.status(500).json({ success: false, error: 'db_no_configurada' });
+
+        const { data: stream, error } = await db
+            .from('transmisiones')
+            .select('id, streamer_id, room_name, estado, is_live')
+            .eq('id', streamId)
+            .maybeSingle();
+
+        if (error) {
+            logger.error(`[LiveKit] db: ${error.message}`);
+            return res.status(500).json({ success: false, error: 'db' });
+        }
+        if (!stream || stream.estado !== 'en_vivo' || stream.is_live !== true) {
+            return res.status(404).json({ success: false, error: 'transmision_no_activa' });
         }
 
-        if (!process.env.LIVEKIT_WS_URL) {
-            logger.error('Falta LIVEKIT_WS_URL en el entorno');
-            return res.status(500).json({
-                success: false,
-                error: 'LiveKit URL no configurada'
+        // Publicar solo si: pide rol streamer + es el dueño + Live Pass válido
+        let canPublish = false;
+        if (req.body?.rol === 'streamer' && stream.streamer_id === user.id) {
+            const { data: pass, error: passErr } = await db.rpc('puede_transmitir_live', {
+                p_usuario_id: user.id
             });
-        }
-
-        // Nombre del participante: preferir el del frontend
-        const nombreFinal =
-            participantName ||
-            req.usuario.user_metadata?.nombre ||
-            req.usuario.email?.split('@')[0] ||
-            'Usuario';
-
-        // Crear token de acceso
-        const at = new AccessToken(
-            process.env.LIVEKIT_API_KEY,
-            process.env.LIVEKIT_API_SECRET,
-            {
-                identity: userId,
-                name: nombreFinal,
-                ttl: '2h'
+            if (passErr) {
+                logger.error(`[LiveKit] live pass: ${passErr.message}`);
+                return res.status(500).json({ success: false, error: 'live_pass_check' });
             }
-        );
+            if (pass?.puede !== true) {
+                return res.status(403).json({ success: false, error: 'live_pass_invalido' });
+            }
+            canPublish = true;
+        }
 
-        // Permisos para el room
+        // Nombre visible desde la tabla de perfiles, no desde metadatos editables
+        const { data: perfil } = await db
+            .from('usuarios')
+            .select('nombre')
+            .eq('id', user.id)
+            .maybeSingle();
+
+        const at = new AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET, {
+            identity: user.id,
+            name: perfil?.nombre || 'Usuario',
+            ttl: '2h'
+        });
         at.addGrant({
             roomJoin: true,
-            room: roomName,
-            canPublish: true,
+            room: stream.room_name,
+            canPublish,
             canSubscribe: true,
-            canPublishData: true
+            canPublishData: false
         });
-
-        // ⚠️ CRÍTICO: LiveKit SDK v2 requiere await en toJwt()
         const token = await at.toJwt();
 
-        logger.info(`[LiveKit] Token generado para ${userId} en room ${roomName}`);
-
-        // Devolvemos "url" (lo que usa el frontend) y "wsUrl" (compatibilidad)
-        res.json({
+        return res.json({
             success: true,
             token,
-            url: process.env.LIVEKIT_WS_URL,
-            wsUrl: process.env.LIVEKIT_WS_URL,
-            identity: userId
+            url: LIVEKIT_WS_URL,
+            wsUrl: LIVEKIT_WS_URL,
+            canPublish,
+            identity: user.id
         });
-    } catch (error) {
-        logger.error(`[LiveKit] Error generando token: ${error.message}`);
-        res.status(400).json({
-            success: false,
-            error: error.message
-        });
+    } catch (e) {
+        logger.error(`[LiveKit] token: ${e.message}`);
+        return res.status(500).json({ success: false, error: 'servidor' });
     }
 });
 
 // ================================================================
-// GET /api/livekit/streams — Listar transmisiones activas
+// GET /streams — solo columnas públicas, sin room_name ni streamer_id
 // ================================================================
 router.get('/streams', async (req, res) => {
     try {
-        const { data, error } = await supabase
+        const db = supabase || supabaseAdmin;
+        if (!db) return res.status(500).json({ success: false, error: 'db_no_configurada' });
+
+        const { data, error } = await db
             .from('transmisiones')
-            .select('*, usuarios(nombre, avatar)')
+            .select('id, titulo, categoria, viewers_count, fecha_inicio, estado, is_live')
             .eq('estado', 'en_vivo')
-            .order('fecha_inicio', { ascending: false });
+            .eq('is_live', true)
+            .is('grupo_id', null)
+            .order('fecha_inicio', { ascending: false })
+            .limit(50);
 
         if (error) throw error;
-
-        res.json({
-            success: true,
-            data
-        });
-    } catch (error) {
-        logger.error(`[LiveKit] Error obteniendo transmisiones: ${error.message}`);
-        res.status(400).json({
-            success: false,
-            error: error.message
-        });
-    }
-});
-
-// ================================================================
-// POST /api/livekit/start — Iniciar transmisión
-// ================================================================
-router.post('/start', verificarToken, async (req, res) => {
-    try {
-        const { titulo, descripcion, tipo, precio } = req.body;
-        const userId = req.usuario.id;
-
-        const { data, error } = await supabase
-            .from('transmisiones')
-            .insert({
-                streamer_id: userId,
-                titulo: titulo || "Live en Sariel's",
-                descripcion: descripcion || '',
-                tipo_transmision: tipo || 'gratis',
-                precio: precio || 0,
-                fecha_inicio: new Date().toISOString(),
-                estado: 'en_vivo'
-            })
-            .select();
-
-        if (error) throw error;
-
-        logger.info(`[LiveKit] Transmisión iniciada: ${data[0].id}`);
-        res.json({
-            success: true,
-            data: data[0]
-        });
-    } catch (error) {
-        logger.error(`[LiveKit] Error iniciando transmisión: ${error.message}`);
-        res.status(400).json({
-            success: false,
-            error: error.message
-        });
-    }
-});
-
-// ================================================================
-// POST /api/livekit/end/:transmisionId — Finalizar transmisión
-// ================================================================
-router.post('/end/:transmisionId', verificarToken, async (req, res) => {
-    try {
-        const { transmisionId } = req.params;
-        const userId = req.usuario.id;
-
-        const { data, error } = await supabase
-            .from('transmisiones')
-            .update({
-                estado: 'finalizada',
-                finalizado_en: new Date().toISOString()
-            })
-            .eq('id', transmisionId)
-            .eq('streamer_id', userId)
-            .select();
-
-        if (error) throw error;
-
-        logger.info(`[LiveKit] Transmisión finalizada: ${transmisionId}`);
-        res.json({
-            success: true,
-            data: data[0]
-        });
-    } catch (error) {
-        logger.error(`[Error finalizando transmisión: ${error.message}`);
-        res.status(400).json({
-            success: false,
-            error: error.message
-        });
+        return res.json({ success: true, data });
+    } catch (e) {
+        logger.error(`[LiveKit] streams: ${e.message}`);
+        return res.status(500).json({ success: false, error: 'db' });
     }
 });
 
