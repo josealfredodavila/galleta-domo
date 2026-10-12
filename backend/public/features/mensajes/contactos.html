@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" data-contactos-page="true">
+<html lang="es" data-require-auth>
 
 <head>
     <meta charset="UTF-8">
@@ -51,22 +51,38 @@
     >
 
     <!-- =========================================================
-         SUPABASE JS
-         DEBE CARGARSE ANTES DE APARIENCIA-GLOBAL.JS
+         SDK SUPABASE (primero)
     ========================================================== -->
     <script
         src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"
     ></script>
 
     <!-- =========================================================
-         APARIENCIA GLOBAL
-         Crea window.supabaseClient
+         AUTH GLOBAL (crea el cliente singleton)
     ========================================================== -->
     <script
-        src="/features/shared/js/apariencia-global.js?v=4"
+        src="/features/shared/js/auth-global.js"
+    ></script>
+
+    <!-- =========================================================
+         PRESENCIA GLOBAL (usa el cliente)
+    ========================================================== -->
+    <script
+        src="/features/shared/js/presencia-global.js"
+        defer
+    ></script>
+
+    <!-- =========================================================
+         APARIENCIA GLOBAL v3.0 (usa el cliente)
+    ========================================================== -->
+    <script
+        src="/features/shared/js/apariencia-global.js?v=7"
+        defer
     ></script>
 
     <style>
+        html:not(.auth-ready) .app { display: none !important; }
+
         :root {
             --gold: #D4AF37;
             --gold-dark: #b8923a;
