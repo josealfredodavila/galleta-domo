@@ -1,5 +1,5 @@
 /* ================================================================
-   APARIENCIA GLOBAL - SARIEL'S ECOSYSTEM v2.9
+   APARIENCIA GLOBAL - SARIEL'S ECOSYSTEM v3.0
    - Lee de localStorage (rápido, sin red)
    - Sincroniza con Supabase preferencias_usuario (persistente)
    - Aplica tema, color de acento y tamaño de fuente globalmente
@@ -7,6 +7,9 @@
    - ✅ v2.8: Selector de mascota activa (una sola a la vez)
    - ✅ v2.9: Inyecta itlasuhua-voice.js para el Rey Itlasuhua
              (el fix: sin este archivo la culebra no habla, solo escupe brillos)
+   - ✅ v3.0: Elimina credenciales hardcodeadas. Usa SOLO
+             window.supabaseClient (creado por auth-global.js o el
+             bloque centralizado del HTML). Sin clave pública en el código.
    ================================================================ */
 
 (function() {
@@ -27,17 +30,17 @@
     let prefsActuales = { ...DEFAULTS };
     let syncConSupabaseListo = false;
 
+    /* ================================================================
+       CLIENTE SUPABASE — v3.0
+       Ya NO crea un cliente nuevo. Solo reutiliza el que auth-global.js
+       (o el bloque centralizado del HTML) haya creado.
+       Si no existe, devuelve null y las funciones que dependen de
+       Supabase se saltan silenciosamente. La apariencia sigue
+       funcionando con localStorage.
+       ================================================================ */
     function getSupabase() {
-        if (window.supabaseClient) return window.supabaseClient;
-        if (window.supabase && typeof window.supabase.createClient === 'function') {
-            try {
-                const c = window.supabase.createClient(
-                    'https://zultnlogdoajehbswlih.supabase.co',
-                    'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu'
-                );
-                window.supabaseClient = c;
-                return c;
-            } catch (e) { return null; }
+        if (window.supabaseClient) {
+            return window.supabaseClient;
         }
         return null;
     }
@@ -497,5 +500,5 @@
         }
     })();
 
-    console.log('[Apariencia] ✅ Módulo global v2.9 cargado · mascota activa: ' + getMascotaActiva());
+    console.log('[Apariencia] ✅ Módulo global v3.0 cargado · mascota activa: ' + getMascotaActiva());
 })();
