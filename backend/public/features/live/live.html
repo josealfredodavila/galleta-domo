@@ -7,16 +7,9 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
-    <!-- SDK Supabase PRIMERO -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-
-    <!-- Auth global (crea el cliente singleton) -->
     <script src="/features/shared/js/auth-global.js"></script>
-
-    <!-- Presencia global -->
     <script src="/features/shared/js/presencia-global.js" defer></script>
-
-    <!-- Apariencia global -->
     <script src="/features/shared/js/apariencia-global.js?v=7" defer></script>
 
     <style>
@@ -302,7 +295,6 @@
     </div>
     <div class="toast" id="toast"></div>
 
-    <!-- Idiomas -->
     <script src="/features/shared/js/idiomas.js?v=9" defer></script>
 
     <script>
@@ -311,9 +303,6 @@
 // ================================================================
 'use strict';
 
-// ================================================================
-// CONFIGURACIÓN
-// ================================================================
 const LIVEKIT_CONFIG = { url: 'wss://csariels-domo-57ujk04t.livekit.cloud' };
 
 const DONACIONES = {
@@ -337,9 +326,6 @@ const REDES_DONACION = [
 
 const PALABRAS_PROHIBIDAS = ['puta','verga','mierda','pendejo','chingar','chingada','cabron','cabrón','pinche','wey','güey','culero','puto','maricon','maricón','joto','negro','indio','naco','naca','sudaca','matar','mata','asesinar','suicidio','violar','droga','cocaína','marihuana','perico','cristal','cerveza','tequila','whisky','ron','vodka','fuck','shit','bitch','asshole','motherfucker'];
 
-// ================================================================
-// ESTADO GLOBAL
-// ================================================================
 let supabaseClient = null;
 let currentUser = null;
 let currentStream = null;
@@ -368,9 +354,6 @@ let donacionPollingInterval = null;
 let donacionActualId = null;
 let juegosDisponibles = [];
 
-// ================================================================
-// HELPERS
-// ================================================================
 function showToast(msg, type = '', duration = 3500) {
     let t = document.getElementById('toast');
     if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); }
@@ -436,9 +419,6 @@ async function obtenerTokenLiveKit(roomName, participantName) {
     return data.token;
 }
 
-// ================================================================
-// MODAL LIVE PASS
-// ================================================================
 function mostrarModalLivePass(mensaje) {
     const existente = document.getElementById('livePassModalBackdrop');
     if (existente) existente.remove();
@@ -476,9 +456,6 @@ function abrirMembresiaLive() {
     window.location.href = '/features/live/membresia-live.html';
 }
 
-// ================================================================
-// LIVE PASS - Verificación y conteo
-// ================================================================
 async function verificarLivePassAntesDeTransmitir() {
     try {
         const session = await getSession();
@@ -546,9 +523,6 @@ function finalizarPorTiempoAgotado() {
     setTimeout(() => { finalizarTransmisionGeneral(); }, 2000);
 }
 
-// ================================================================
-// ANUNCIOS
-// ================================================================
 function getOrCreateAdSessionId() {
     if (adSessionId) return adSessionId;
     adSessionId = `ads_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
@@ -625,9 +599,6 @@ function detenerRefrescoAnuncios() {
     if (adVistaTimer) { clearTimeout(adVistaTimer); adVistaTimer = null; }
 }
 
-// ================================================================
-// INICIAR LIVE
-// ================================================================
 async function iniciarTransmisionGeneral() {
     try {
         const session = await getSession();
@@ -832,9 +803,6 @@ function verificarContenido(texto) {
     return { prohibido: false };
 }
 
-// ================================================================
-// DONACIONES
-// ================================================================
 let montoDonacionSeleccionado = null;
 let redDonacionSeleccionada = null;
 
@@ -1010,9 +978,6 @@ function mostrarEfectoDonacion(monto, d, usuario) {
     setTimeout(() => { if (overlay.parentNode) overlay.remove(); }, d.duracion + 500);
 }
 
-// ================================================================
-// OTROS
-// ================================================================
 function iniciarContadorEspectadores() {
     if (streamInterval) clearInterval(streamInterval);
     streamInterval = setInterval(async () => {
@@ -1021,22 +986,65 @@ function iniciarContadorEspectadores() {
     }, 15000);
 }
 
+// ================================================================
+// NOTIFICAR SEGUIDORES (in-app + push)
+// ================================================================
 async function notificarSeguidores() {
     if (!currentStream || !currentUser) return;
-    const { data: segs } = await supabaseClient.from('live_seguidores').select('seguidor_id').eq('streamer_id', currentUser.id);
-    if (!segs || segs.length === 0) return;
-    const nombre = currentUser.user_metadata?.nombre || 'Un streamer';
-    const notifs = segs.map(s => ({
-        user_id: s.seguidor_id,
-        tipo: 'live_iniciado',
-        mensaje: `${nombre} ha iniciado: ${currentStream.titulo}`,
-        emisor_id: currentUser.id,
-        leida: false,
-        fecha: new Date().toISOString(),
-        metadata: { stream_id: currentStream.id }
-    }));
-    for (let i = 0; i < notifs.length; i += 50) {
-        await supabaseClient.from('notificaciones').insert(notifs.slice(i, i + 50));
+
+    try {
+        const { data: segs } = await supabaseClient
+            .from('live_seguidores')
+            .select('seguidor_id')
+            .eq('streamer_id', currentUser.id);
+
+        if (!segs || segs.length === 0) return;
+
+        const nombre = currentUser.user_metadata?.nombre || 'Un streamer';
+
+        // 1) Notificaciones in-app (tabla notificaciones)
+        const notifs = segs
+            .filter(s => s.seguidor_id !== currentUser.id)
+            .map(s => ({
+                user_id: s.seguidor_id,
+                tipo: 'live_iniciado',
+                mensaje: `${nombre} ha iniciado: ${currentStream.titulo}`,
+                emisor_id: currentUser.id,
+                leida: false,
+                fecha: new Date().toISOString(),
+                metadata: { stream_id: currentStream.id }
+            }));
+
+        for (let i = 0; i < notifs.length; i += 50) {
+            await supabaseClient.from('notificaciones').insert(notifs.slice(i, i + 50));
+        }
+
+        // 2) Push notifications (suena el celular)
+        const session = await getSession();
+        if (session) {
+            try {
+                const pushRes = await fetch('/api/push/broadcast-live', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session.access_token}`
+                    },
+                    body: JSON.stringify({
+                        streamer_id: currentUser.id,
+                        stream_id: currentStream.id,
+                        titulo: currentStream.titulo
+                    })
+                });
+                if (pushRes.ok) {
+                    const pushData = await pushRes.json();
+                    console.log('[Live] Push enviados:', pushData.enviados, '· fallidos:', pushData.fallidos);
+                }
+            } catch (pushErr) {
+                console.warn('[Live] Error enviando push:', pushErr);
+            }
+        }
+    } catch (e) {
+        console.warn('[Live] Error notificando seguidores:', e);
     }
 }
 
@@ -1251,9 +1259,6 @@ async function cargarEstadisticas() {
     showToast(`◈ Transmisiones: ${data.length} · Horas: ${totalHoras.toFixed(1)}h · Espectadores: ${totalEspectadores}`, 'success', 6000);
 }
 
-// ================================================================
-// ARRANQUE
-// ================================================================
 window.addEventListener('DOMContentLoaded', async () => {
     console.log('◈ Csariel\'s Live - cargando...');
 
@@ -1293,9 +1298,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     console.log('◈ Live listo');
 });
 
-// ================================================================
-// EXPORTS GLOBALES
-// ================================================================
 window.iniciarTransmisionGeneral = iniciarTransmisionGeneral;
 window.finalizarTransmisionGeneral = finalizarTransmisionGeneral;
 window.unirseATransmision = unirseATransmision;
