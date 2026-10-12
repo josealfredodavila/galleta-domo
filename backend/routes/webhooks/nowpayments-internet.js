@@ -1,73 +1,134 @@
-// backend/routes/webhooks/nowpayments-internet.js
-// IPN de NOWPayments para paquetes de internet (order_id "NET-<uuid>").
-// Lo invoca routes/webhooks.js. Idempotente; responde 500 solo cuando conviene que NOWPayments reintente.
+// ================================================================
+// NOWPAYMENTS-INTERNET.JS — Csariel's (paquetes de Internet, order "NET-")
+// Llamado desde routes/webhooks.js, que ya verificó la firma.
+// Estados de ordenes_internet permitidos: pendiente, pagado, activo, cancelado.
+// Flujo: pendiente → pagado → (activar_orden_internet) activo → aprovisionar eSIM.
+// procesarOrdenInternet debe ser idempotente: se vuelve a llamar en cada IPN final.
+// ================================================================
+
+const { supabaseAdmin } = require('../../config/supabase');
 const { verificarFirmaNowPayments } = require('../../utils/nowpayments-sig');
-const { supabaseAdmin } = require('../../services/telnyx/supabase');
 const { procesarOrdenInternet } = require('../../services/telnyx/esim');
 
-const PAGADAS = ['pagada', 'activa', 'activada', 'completado'];
-const log = (...a) => console.log('[◈ Internet IPN]', ...a);
-const logError = (...a) => console.error('[✶ Internet IPN ERROR]', ...a);
+const NOWPAYMENTS_IPN_SECRET = process.env.NOWPAYMENTS_IPN_SECRET;
 
-function estadoLocal(np, actual) {
-  const s = String(np || '').toLowerCase();
-  if (s === 'failed' || s === 'refunded' || s === 'expired' || s === 'canceled' || s === 'cancelled') return 'cancelada';
-  if (s === 'confirming' || s === 'sending') return 'confirmando';
-  if (s === 'waiting' || s === 'partially_paid') return 'pagando';
-  return actual;
+const log = (...args) => console.log('[Internet IPN]', ...args);
+const logError = (...args) => console.error('[Internet IPN ERROR]', ...args);
+
+// Estado de NOWPayments → estado local permitido (o null si no cambia el estado)
+function estadoNoFinal(npStatus) {
+    const s = String(npStatus || '').toLowerCase();
+    if (['failed', 'refunded', 'expired', 'canceled', 'cancelled'].includes(s)) return 'cancelado';
+    return null; // waiting, confirming, sending, partially_paid: siguen pendientes
 }
 
 async function handleWebhookInternet(req, res) {
-  try {
-    if (!verificarFirmaNowPayments(req.body, req.rawBody, req.headers['x-nowpayments-sig'], process.env.NOWPAYMENTS_IPN_SECRET)) {
-      logError('Firma inválida — rechazado');
-      return res.status(401).json({ ok: false, error: 'Firma inválida' });
-    }
-
-    const { payment_id: paymentId, payment_status: npStatus } = req.body || {};
-    if (!paymentId) return res.status(200).json({ ok: true, ignorado: 'sin payment_id' });
-
-    const { data: orden, error } = await supabaseAdmin
-      .from('ordenes_internet').select('id, estado, pagado_en').eq('payment_id', String(paymentId)).maybeSingle();
-    if (error) { logError('consulta:', error.message); return res.status(500).json({ ok: false }); }
-    if (!orden) return res.status(200).json({ ok: true, ignorado: 'orden no registrada' });
-
-    const yaPagada = PAGADAS.includes(orden.estado);
-    const esFinal = String(npStatus).toLowerCase() === 'finished'; // mismo criterio que /internet/status
-
-    if (!esFinal) {
-      if (!yaPagada) {
-        await supabaseAdmin.from('ordenes_internet')
-          .update({ nowpayments_status: npStatus || null, estado: estadoLocal(npStatus, orden.estado), updated_at: new Date().toISOString() })
-          .eq('id', orden.id);
-      }
-      return res.status(200).json({ ok: true, estado: npStatus });
-    }
-
-    // Pago confirmado
-    if (!yaPagada) {
-      const { error: e1 } = await supabaseAdmin.from('ordenes_internet')
-        .update({ estado: 'pagada', nowpayments_status: 'finished', pagado_en: orden.pagado_en || new Date().toISOString() })
-        .eq('id', orden.id);
-      if (e1) { logError('marcar pagada:', e1.message); return res.status(500).json({ ok: false }); }
-    }
-
-    const { error: e2 } = await supabaseAdmin.rpc('activar_orden_internet', { p_orden_id: orden.id });
-    if (e2) { logError('activar_orden_internet:', e2.message); return res.status(500).json({ ok: false }); }
-
     try {
-      await procesarOrdenInternet(orden.id); // crea la eSIM (1ª vez) y acredita los gigas
-    } catch (e) {
-      logError('aprovisionamiento eSIM:', e.message);
-      return res.status(500).json({ ok: false, error: 'Aprovisionamiento pendiente' }); // reintento + ciclo de reconciliación
-    }
+        if (!NOWPAYMENTS_IPN_SECRET) {
+            logError('NOWPAYMENTS_IPN_SECRET no configurado');
+            return res.status(500).json({ ok: false, error: 'config' });
+        }
+        const firma = req.headers['x-nowpayments-sig'];
+        if (!verificarFirmaNowPayments(req.body, req.rawBody, firma, NOWPAYMENTS_IPN_SECRET)) {
+            logError('firma inválida');
+            return res.status(401).json({ ok: false, error: 'firma' });
+        }
 
-    log('✔ Orden procesada', orden.id);
-    return res.status(200).json({ ok: true, estado: 'activa' });
-  } catch (e) {
-    logError('excepción:', e);
-    return res.status(500).json({ ok: false, error: 'Error interno' });
-  }
+        const payload = req.body || {};
+        const paymentId = payload.payment_id != null ? String(payload.payment_id) : '';
+        const npStatus = String(payload.payment_status || '').toLowerCase();
+        if (!paymentId) return res.status(200).json({ ok: true, ignorado: 'sin_payment_id' });
+
+        const { data: orden, error: errOrden } = await supabaseAdmin
+            .from('ordenes_internet')
+            .select('id, estado, monto_mxn')
+            .eq('payment_id', paymentId)
+            .maybeSingle();
+
+        if (errOrden) {
+            logError('consulta orden:', errOrden.message);
+            return res.status(500).json({ ok: false, error: 'db' });
+        }
+        if (!orden) return res.status(200).json({ ok: true, ignorado: 'orden_no_registrada' });
+
+        // ---------- No final: solo registrar, sin retroceder órdenes ya pagadas ----------
+        if (npStatus !== 'finished') {
+            const nuevo = estadoNoFinal(npStatus);
+            if (orden.estado === 'pendiente') {
+                const { error } = await supabaseAdmin.from('ordenes_internet')
+                    .update({
+                        nowpayments_status: npStatus,
+                        ...(nuevo ? { estado: nuevo } : {}),
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', orden.id)
+                    .eq('estado', 'pendiente');
+                if (error) {
+                    logError('registrar estado:', error.message);
+                    return res.status(500).json({ ok: false, error: 'db' });
+                }
+            }
+            return res.status(200).json({ ok: true, estado: npStatus });
+        }
+
+        // ---------- Final ----------
+        if (orden.estado === 'cancelado') {
+            logError('pago final para orden cancelada, revisión manual:', orden.id);
+            return res.status(200).json({ ok: true, ignorado: 'orden_cancelada' });
+        }
+
+        // Validar monto (requiere factura creada en MXN, igual que Live Pass y Pro)
+        const precio = Number(payload.price_amount);
+        const moneda = String(payload.price_currency || '').toLowerCase();
+        if (moneda !== 'mxn' || !Number.isFinite(precio) || Math.abs(precio - Number(orden.monto_mxn)) > 0.01) {
+            logError('monto/moneda no coincide:', orden.id, { precio, moneda, esperado: orden.monto_mxn });
+            await supabaseAdmin.from('ordenes_internet')
+                .update({ estado: 'cancelado', nowpayments_status: npStatus, updated_at: new Date().toISOString() })
+                .eq('id', orden.id)
+                .eq('estado', 'pendiente');
+            return res.status(200).json({ ok: true, ignorado: 'monto_no_coincide' });
+        }
+
+        // 1) Marcar pagada (solo si sigue pendiente: evita carreras entre IPN)
+        if (orden.estado === 'pendiente') {
+            const { error } = await supabaseAdmin.from('ordenes_internet')
+                .update({
+                    estado: 'pagado',
+                    nowpayments_status: 'finished',
+                    pagado_en: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', orden.id)
+                .eq('estado', 'pendiente');
+            if (error) {
+                logError('marcar pagado:', error.message);
+                return res.status(500).json({ ok: false, error: 'db' });
+            }
+        }
+
+        // 2) Activar la orden (idempotente en SQL)
+        if (orden.estado !== 'activo') {
+            const { data: r, error } = await supabaseAdmin.rpc('activar_orden_internet', { p_orden_id: orden.id });
+            if (error || !r?.success) {
+                logError('activar_orden_internet:', error?.message || r?.error);
+                return res.status(500).json({ ok: false, error: 'activacion' });
+            }
+        }
+
+        // 3) Aprovisionar eSIM y acreditar datos (idempotente; se reintenta en cada IPN final)
+        try {
+            await procesarOrdenInternet(orden.id);
+        } catch (e) {
+            logError('aprovisionamiento eSIM:', e.message);
+            return res.status(500).json({ ok: false, error: 'aprovisionamiento_pendiente' });
+        }
+
+        log('orden procesada', orden.id);
+        return res.status(200).json({ ok: true, estado: 'activo' });
+    } catch (e) {
+        logError('excepción:', e.message);
+        return res.status(500).json({ ok: false, error: 'interno' });
+    }
 }
 
 module.exports = { handleWebhookInternet };
