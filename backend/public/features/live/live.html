@@ -93,6 +93,24 @@
         .watermark-live .text { font-family: 'Orbitron', monospace; font-size: 0.6rem; font-weight: 700; color: #fff; letter-spacing: 1px; }
         .watermark-live .text span { color: var(--gold); }
         .watermark-live .badge-web3 { font-size: 0.4rem; background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); padding: 1px 6px; border-radius: 10px; font-weight: 700; }
+        .marketing-ad-container { display: none; margin-bottom: 16px; background: linear-gradient(155deg, rgba(15, 45, 26, 0.55), rgba(8, 15, 26, 0.75)); border: 1px solid rgba(212, 175, 55, 0.25); border-radius: var(--radius-xl); overflow: hidden; backdrop-filter: blur(14px); position: relative; box-shadow: 0 10px 40px rgba(212, 175, 55, 0.08); animation: adFadeIn 0.5s ease; }
+        .marketing-ad-container.visible { display: block; }
+        @keyframes adFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .marketing-ad-container::before { content: ''; position: absolute; top: 0; left: 20%; width: 60%; height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); opacity: 0.5; }
+        .marketing-ad-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; border-bottom: 1px solid rgba(212, 175, 55, 0.1); }
+        .marketing-ad-label { font-family: 'Orbitron', monospace; font-size: 0.55rem; color: var(--gold); letter-spacing: 3px; text-transform: uppercase; display: flex; align-items: center; gap: 8px; opacity: 0.85; }
+        .marketing-ad-label::before { content: '◈'; color: var(--gold); font-size: 0.7rem; }
+        .marketing-ad-close { background: transparent; border: none; color: var(--text-muted); font-size: 1.1rem; cursor: pointer; line-height: 1; padding: 4px 8px; transition: var(--transition); }
+        .marketing-ad-close:hover { color: var(--gold); }
+        .marketing-ad-body { display: flex; gap: 14px; padding: 14px 16px 16px; align-items: flex-start; }
+        .marketing-ad-media { width: 96px; height: 96px; border-radius: 12px; overflow: hidden; flex-shrink: 0; background: rgba(0,0,0,0.4); border: 1px solid rgba(212, 175, 55, 0.15); display: flex; align-items: center; justify-content: center; color: var(--gold); font-family: 'Orbitron', monospace; font-size: 1.5rem; position: relative; }
+        .marketing-ad-media img, .marketing-ad-media video { width: 100%; height: 100%; object-fit: cover; }
+        .marketing-ad-content { flex: 1; min-width: 0; }
+        .marketing-ad-title { font-family: 'Orbitron', monospace; font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; line-height: 1.3; }
+        .marketing-ad-desc { font-size: 0.7rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 12px; word-wrap: break-word; }
+        .marketing-ad-cta { display: inline-flex; align-items: center; gap: 6px; padding: 8px 20px; border-radius: 30px; background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); font-size: 0.7rem; font-weight: 700; text-decoration: none; border: none; cursor: pointer; transition: var(--transition); font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: 0.5px; }
+        .marketing-ad-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(212, 175, 55, 0.4); }
+        @media (max-width: 480px) { .marketing-ad-body { flex-direction: column; } .marketing-ad-media { width: 100%; height: 140px; } }
         .donaciones-rapidas { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-bottom: 16px; }
         .btn-donacion { padding: 12px 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); backdrop-filter: blur(12px); color: var(--text-primary); cursor: pointer; transition: var(--transition); text-align: center; min-width: 72px; }
         .btn-donacion:hover { transform: translateY(-4px) scale(1.03); border-color: rgba(212, 175, 55, 0.3); background: rgba(212, 175, 55, 0.04); }
@@ -247,6 +265,23 @@
                     </button>
                 </div>
             </div>
+
+            <!-- ✅ Anuncios patrocinados (oculto por defecto) -->
+            <div class="marketing-ad-container" id="marketingAdContainer">
+                <div class="marketing-ad-header">
+                    <span class="marketing-ad-label" data-clave="live_patrocinado">Patrocinado</span>
+                    <button class="marketing-ad-close" onclick="cerrarAnuncio()" aria-label="Cerrar anuncio">&times;</button>
+                </div>
+                <div class="marketing-ad-body">
+                    <div class="marketing-ad-media" id="marketingAdMedia"><span>◈</span></div>
+                    <div class="marketing-ad-content">
+                        <div class="marketing-ad-title" id="marketingAdTitle">Cargando anuncio...</div>
+                        <div class="marketing-ad-desc" id="marketingAdDesc"></div>
+                        <button class="marketing-ad-cta" id="marketingAdCta" onclick="registrarClicAnuncio()" data-clave="live_ver_mas">Ver más</button>
+                    </div>
+                </div>
+            </div>
+
             <div class="donaciones-rapidas">
                 <button class="btn-donacion" onclick="abrirModalDonacion()"><span class="monto">◆</span><span class="label">Donar</span></button>
             </div>
@@ -299,7 +334,12 @@
 
     <script>
 // ================================================================
-// LIVE · JS v2.3 - Sariel's Ecosystem
+// LIVE · JS v2.4 - Sariel's Ecosystem
+// ================================================================
+// CAMBIOS v2.4:
+// - ✅ Fix: marketingAdContainer ahora está en el HTML
+// - ✅ Fix: modal elegante para título/categoría (sin prompt())
+// - ✅ Integración completa con Push Notifications
 // ================================================================
 'use strict';
 
@@ -417,6 +457,63 @@ async function obtenerTokenLiveKit(roomName, participantName) {
     }
     const data = await response.json();
     return data.token;
+}
+
+// ================================================================
+// MODAL: Pedir título y categoría (reemplaza prompt())
+// ================================================================
+function pedirDatosTransmision() {
+    return new Promise((resolve) => {
+        const modal = document.createElement('div');
+        modal.id = 'modalDatosTransmision';
+        modal.className = 'livepass-modal-backdrop';
+        modal.innerHTML = `
+            <div class="livepass-modal" style="max-width: 440px; text-align: left;">
+                <span class="livepass-modal-icon" style="text-align: center; display: block;">◉</span>
+                <div class="livepass-modal-title" style="text-align: center;">Iniciar transmisión</div>
+                <div class="livepass-modal-text" style="text-align: center; margin-bottom: 18px;">Personaliza tu live</div>
+
+                <label style="display:block; color: var(--text-secondary); font-size: 0.75rem; margin-bottom: 6px;">Título</label>
+                <input id="inputTituloLive" type="text" maxlength="80" value="Mi live en Csariel's" style="width:100%; padding:12px 14px; margin-bottom:14px; border-radius:12px; border:1px solid var(--glass-border); background:rgba(0,0,0,.35); color:var(--text-primary); font-size:.9rem; outline:none; font-family:inherit;">
+
+                <label style="display:block; color: var(--text-secondary); font-size: 0.75rem; margin-bottom: 6px;">Categoría</label>
+                <select id="inputCategoriaLive" style="width:100%; padding:12px 14px; margin-bottom:20px; border-radius:12px; border:1px solid var(--glass-border); background:rgba(0,0,0,.55); color:var(--text-primary); font-size:.9rem; outline:none; font-family:inherit;">
+                    <option value="general">General</option>
+                    <option value="gaming">Gaming</option>
+                    <option value="musica">Música</option>
+                    <option value="educacion">Educación</option>
+                    <option value="comunidad">Comunidad</option>
+                    <option value="tecnologia">Tecnología</option>
+                </select>
+
+                <div class="livepass-modal-actions">
+                    <button type="button" class="livepass-modal-btn-primary" id="btnAceptarTitulo">◉ Comenzar live</button>
+                    <button type="button" class="livepass-modal-btn-secondary" id="btnCancelarTitulo">Cancelar</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        const inputTitulo = modal.querySelector('#inputTituloLive');
+        setTimeout(() => { inputTitulo.focus(); inputTitulo.select(); }, 100);
+
+        const cerrar = (datos) => { modal.remove(); resolve(datos); };
+
+        modal.querySelector('#btnAceptarTitulo').onclick = () => {
+            const titulo = inputTitulo.value.trim() || 'Live en Csariel\'s';
+            const categoria = modal.querySelector('#inputCategoriaLive').value || 'general';
+            cerrar({ titulo, categoria });
+        };
+        modal.querySelector('#btnCancelarTitulo').onclick = () => cerrar(null);
+        modal.addEventListener('click', (e) => { if (e.target === modal) cerrar(null); });
+        inputTitulo.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const titulo = inputTitulo.value.trim() || 'Live en Csariel\'s';
+                const categoria = modal.querySelector('#inputCategoriaLive').value || 'general';
+                cerrar({ titulo, categoria });
+            }
+        });
+    });
 }
 
 function mostrarModalLivePass(mensaje) {
@@ -558,7 +655,20 @@ async function cargarAnuncioLive() {
 
 function mostrarAnuncio(ad) {
     const container = document.getElementById('marketingAdContainer');
-    if (!container) return;
+    const media = document.getElementById('marketingAdMedia');
+    const title = document.getElementById('marketingAdTitle');
+    const desc = document.getElementById('marketingAdDesc');
+    const cta = document.getElementById('marketingAdCta');
+    if (!container || !media || !title || !desc || !cta) return;
+
+    if (ad.imagen_url) media.innerHTML = `<img src="${attrHTML(ad.imagen_url)}" alt="${attrHTML(ad.titulo || 'Anuncio')}" loading="lazy" onerror="this.parentElement.innerHTML='<span>◈</span>'">`;
+    else if (ad.video_url) media.innerHTML = `<video src="${attrHTML(ad.video_url)}" muted autoplay loop playsinline></video>`;
+    else media.innerHTML = '<span>◈</span>';
+
+    title.textContent = ad.titulo || 'Patrocinado';
+    desc.textContent = ad.descripcion || '';
+    cta.textContent = ad.cta_texto || 'Ver más';
+    desc.style.display = ad.descripcion ? 'block' : 'none';
     container.classList.add('visible');
 }
 
@@ -585,6 +695,8 @@ async function registrarClicAnuncio() {
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
             body: JSON.stringify({ ad_id: anuncioActual.id, campaign_id: anuncioActual.campaign_id, target_tipo: 'live', target_id: currentStreamId, evento: 'clic', session_id: getOrCreateAdSessionId() })
         });
+        if (anuncioActual.video_url) window.open(anuncioActual.video_url, '_blank', 'noopener');
+        else if (anuncioActual.imagen_url) window.open(anuncioActual.imagen_url, '_blank', 'noopener');
     } catch (e) {}
 }
 
@@ -625,9 +737,13 @@ async function iniciarTransmisionGeneral() {
 
         if (streamActivo) { showToast('⚠️ Ya tienes una transmisión activa', 'warning'); return; }
 
+        // ✅ Modal elegante en lugar de prompt()
+        const datos = await pedirDatosTransmision();
+        if (!datos) return;
+        const titulo = datos.titulo;
+        const categoria = datos.categoria;
+
         showToast('⏳ Iniciando transmisión...', '', 3000);
-        const titulo = prompt('Título:', 'Mi live en Csariel\'s') || 'Live en Csariel\'s';
-        const categoria = prompt('Categoría:', 'general') || 'general';
 
         const roomNameNuevo = `live-${currentUser.id}-${Date.now()}`;
 
@@ -1002,7 +1118,7 @@ async function notificarSeguidores() {
 
         const nombre = currentUser.user_metadata?.nombre || 'Un streamer';
 
-        // 1) Notificaciones in-app (tabla notificaciones)
+        // 1) Notificaciones in-app
         const notifs = segs
             .filter(s => s.seguidor_id !== currentUser.id)
             .map(s => ({
@@ -1019,7 +1135,7 @@ async function notificarSeguidores() {
             await supabaseClient.from('notificaciones').insert(notifs.slice(i, i + 50));
         }
 
-        // 2) Push notifications (suena el celular)
+        // 2) Push notifications
         const session = await getSession();
         if (session) {
             try {
