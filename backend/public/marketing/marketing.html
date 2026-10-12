@@ -10,12 +10,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Orbitron:wght@400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 
-    <!-- 🆕 Apariencia global: tema, acento, fuente y mascota activa -->
     <script src="/features/shared/js/apariencia-global.js"></script>
-
-    <!-- 🆕 Sistema de idiomas global -->
     <script src="/features/shared/js/idiomas.js"></script>
-
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
     <style>
@@ -129,9 +125,7 @@
         }
 
         @media (prefers-reduced-motion: reduce) {
-            .particle, .bg-glow, .logo-hex, .marketing-hero::before, .badge.activa {
-                animation: none !important;
-            }
+            .particle, .bg-glow, .logo-hex, .marketing-hero::before { animation: none !important; }
         }
 
         .app {
@@ -361,7 +355,6 @@
             color: var(--gold);
             margin-bottom: 10px;
             filter: drop-shadow(0 0 10px var(--gold-glow));
-            letter-spacing: 0;
             opacity: 0.9;
         }
         .card h3 {
@@ -703,6 +696,18 @@
         .red-info strong { color: var(--gold); }
         .red-info .warn { color: var(--warning); }
 
+        .btn-retry {
+            margin-top: 12px;
+            background: transparent;
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            padding: 10px 18px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            font-family: 'Inter', sans-serif;
+        }
+
         @media (max-width: 640px) {
             .marketing-hero { flex-direction: column; text-align: center; padding: 22px; }
             .marketing-hero h1 { font-size: 1.15rem; }
@@ -758,7 +763,7 @@
 
         <div class="marketing-hero">
             <div class="hero-title-wrap">
-                <div class="hero-kicker">// SarieL's Ecosystem · Ads Network</div>
+                <div class="hero-kicker">// Sariel's Ecosystem · Ads Network</div>
                 <h1>◈ Panel de Marketing</h1>
                 <div class="hero-sub">Gestiona tus campañas publicitarias en LIVE y GRUPOS</div>
             </div>
@@ -809,7 +814,7 @@
 
     <div id="modal-detail" class="modal hidden">
         <div class="modal-content">
-            <button class="close-modal" data-close="modal-detail">&times;</button>
+            <button class="close-modal" data-close="modal-detail" aria-label="Cerrar">&times;</button>
             <h2 id="detail-title">◈ Detalle de Campaña</h2>
             <div id="detail-info"></div>
             <div class="stats-grid" id="detail-stats"></div>
@@ -823,7 +828,7 @@
 
     <div id="modal-create" class="modal hidden">
         <div class="modal-content">
-            <button class="close-modal" data-close="modal-create">&times;</button>
+            <button class="close-modal" data-close="modal-create" aria-label="Cerrar">&times;</button>
             <h2>◈ Nueva Campaña</h2>
             <div id="wizard-step-1" class="wizard-step">
                 <h3>▸ Paso 01 — ¿Dónde anunciar?</h3>
@@ -882,30 +887,25 @@
         </div>
     </div>
 
-    <div class="toast" id="toast"></div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <script>
     /* ============================================================
-       MARKETING - SARIEL'S ECOSYSTEM · AUDITED VERSION (v2)
-       Con selector de red filtrado por monto mínimo (Opción C)
+       MARKETING · Sariel's — v3
+       - La configuración (URL y clave pública) sale de /api/config/public
+       - Campañas: se crean una sola vez; si falla el pago, se reintenta
+         solo el pago (nunca se duplica la campaña)
+       - Destinos de live: solo transmisiones en vivo
+       - El servidor es la autoridad: campaña, presupuesto, estado y cobro
        ============================================================ */
 
-    const SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
     const BACKEND_URL = 'https://galleta-domo-production.up.railway.app';
     const DEBUG = false;
 
-    const ESTADOS_VALIDOS = ['borrador', 'pendiente_pago', 'pagada', 'pendiente_revision', 'activa', 'pausada', 'finalizada', 'rechazada', 'cancelada'];
-
-    // ------------------------------------------------------------
-    // TIPO DE CAMBIO APROXIMADO (MXN → USD)
-    // Debe coincidir con el backend para que el filtrado sea real.
-    // ------------------------------------------------------------
     const MXN_A_USD_APROX = 0.055;
+    const MAX_POLL_INTENTOS = 80;      // 80 × 15 s = 20 min
+    const INTERVALO_POLL_MS = 15000;
 
-    // ------------------------------------------------------------
-    // REDES DE PAGO (debe coincidir con REDES_PERMITIDAS del backend)
-    // ------------------------------------------------------------
     const REDES_PAGO = [
         { value: 'usdttrc20', moneda: 'USDT', red: 'TRON',     min: 1,  label: 'USDT · TRON (TRC20)' },
         { value: 'usdtbsc',   moneda: 'USDT', red: 'BSC',      min: 1,  label: 'USDT · BSC (BEP20)' },
@@ -915,48 +915,47 @@
         { value: 'usdcmatic', moneda: 'USDC', red: 'Polygon',  min: 1,  label: 'USDC · Polygon' },
         { value: 'usdcbsc',   moneda: 'USDC', red: 'BSC',      min: 1,  label: 'USDC · BSC (BEP20)' },
         { value: 'usdterc20', moneda: 'USDT', red: 'Ethereum', min: 20, label: 'USDT · Ethereum (ERC20) ⚠ gas alto' },
-        { value: 'usdc',      moneda: 'USDC', red: 'Ethereum', min: 20, label: 'USDC · Ethereum (ERC20) ⚠ gas alto' },
+        { value: 'usdc',      moneda: 'USDC', red: 'Ethereum', min: 20, label: 'USDC · Ethereum (ERC20) ⚠ gas alto' }
     ];
 
+    const ESTADOS_VALIDOS = ['borrador', 'pendiente_pago', 'pagada', 'pendiente_revision', 'activa', 'pausada', 'finalizada', 'rechazada', 'cancelada'];
+
+    let supabaseClient = null;
     let currentUser = null;
     let campaigns = [];
-    let currentWizardData = {};
     let currentFilter = 'all';
     let currentChartInstances = {};
     let toastTimeout = null;
-    let supabaseClient = null;
     let chartJsLoaded = false;
     let chartJsLoading = false;
 
-    function log(...args) { if (DEBUG) console.log('◈', ...args); }
-    function logError(...args) { console.error('✕', ...args); }
+    // Estado del wizard
+    let wizard = {};
+    // Campaña ya creada en el servidor (se reutiliza si el pago falla)
+    let campañaCreada = null;   // { campaign_id, pagoId?, paymentUrl? }
+    let pollTimer = null;
 
-    function escapeHTML(texto) {
-        if (texto === null || texto === undefined) return '';
-        return String(texto)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#39;');
+    function log(...a) { if (DEBUG) console.log('◈', ...a); }
+    function logError(...a) { console.error('✕', ...a); }
+
+    function escapeHTML(t) {
+        if (t === null || t === undefined) return '';
+        return String(t)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
-    function isValidHttpUrl(str) {
-        if (!str || typeof str !== 'string') return false;
-        try {
-            const u = new URL(str);
-            return u.protocol === 'http:' || u.protocol === 'https:';
-        } catch { return false; }
+    function isValidHttpUrl(s) {
+        if (!s || typeof s !== 'string') return false;
+        try { const u = new URL(s); return u.protocol === 'http:' || u.protocol === 'https:'; }
+        catch { return false; }
     }
 
-    function normalizeEstado(estado) {
-        return ESTADOS_VALIDOS.includes(estado) ? estado : 'borrador';
-    }
+    function normalizeEstado(e) { return ESTADOS_VALIDOS.includes(e) ? e : 'borrador'; }
 
-    function formatFecha(fecha) {
-        if (!fecha) return '—';
-        try { return new Date(fecha).toLocaleDateString('es-MX'); }
-        catch { return '—'; }
+    function formatFecha(f) {
+        if (!f) return '—';
+        try { return new Date(f).toLocaleDateString('es-MX'); } catch { return '—'; }
     }
 
     function showToast(msg, type, duration) {
@@ -970,8 +969,8 @@
 
     function renderParticles() {
         if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-        const container = document.getElementById('particles');
-        if (!container) return;
+        const c = document.getElementById('particles');
+        if (!c) return;
         for (let i = 0; i < 25; i++) {
             const p = document.createElement('div');
             p.className = 'particle';
@@ -979,10 +978,10 @@
             p.style.animationDuration = (8 + Math.random() * 12) + 's';
             p.style.animationDelay = (Math.random() * 10) + 's';
             p.style.opacity = 0.2 + Math.random() * 0.4;
-            const size = 1 + Math.random() * 2;
-            p.style.width = size + 'px';
-            p.style.height = size + 'px';
-            container.appendChild(p);
+            const s = 1 + Math.random() * 2;
+            p.style.width = s + 'px';
+            p.style.height = s + 'px';
+            c.appendChild(p);
         }
     }
 
@@ -996,161 +995,124 @@
                 return;
             }
             chartJsLoading = true;
-            const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
-            script.onload = () => { chartJsLoaded = true; chartJsLoading = false; resolve(); };
-            script.onerror = () => { chartJsLoading = false; reject(new Error('No se pudo cargar Chart.js')); };
-            document.head.appendChild(script);
+            const s = document.createElement('script');
+            s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
+            s.onload = () => { chartJsLoaded = true; chartJsLoading = false; resolve(); };
+            s.onerror = () => { chartJsLoading = false; reject(new Error('No se pudo cargar Chart.js')); };
+            document.head.appendChild(s);
         });
     }
 
     // ------------------------------------------------------------
-    // FILTRAR REDES DISPONIBLES SEGÚN MONTO EN MXN
+    // CONFIGURACIÓN: URL y clave pública desde el backend
+    // ------------------------------------------------------------
+    async function cargarConfig() {
+        const r = await fetch(`${BACKEND_URL}/api/config/public`, { cache: 'no-store' });
+        const j = await r.json();
+        if (!r.ok || !j.supabaseUrl || !j.supabaseAnonKey) {
+            throw new Error('Configuración pública no disponible');
+        }
+        return { url: j.supabaseUrl, key: j.supabaseAnonKey };
+    }
+
+    // ------------------------------------------------------------
+    // REDES DE PAGO según el monto en MXN
     // ------------------------------------------------------------
     function getRedesDisponibles(montoMxn) {
         const monto = Number(montoMxn);
         if (!Number.isFinite(monto) || monto <= 0) return [];
-
-        const montoUsd = monto * MXN_A_USD_APROX;
-
-        return REDES_PAGO.filter(r => montoUsd >= r.min);
+        const usd = monto * MXN_A_USD_APROX;
+        return REDES_PAGO.filter(r => usd >= r.min);
     }
 
-    // ------------------------------------------------------------
-    // REPOBLAR SELECT DE REDES SEGÚN PRESUPUESTO
-    // ------------------------------------------------------------
     function poblarRedesDePago(montoMxn) {
         const select = document.getElementById('pay-currency');
         const info = document.getElementById('red-info');
         if (!select) return;
-
         const monto = Number(montoMxn);
 
         if (!Number.isFinite(monto) || monto <= 0) {
             select.innerHTML = '<option value="">Ingresa un presupuesto primero…</option>';
-            if (info) {
-                info.innerHTML = '◈ Elige cuánto vas a invertir para ver las redes disponibles.';
-            }
+            if (info) info.innerHTML = '◈ Elige cuánto vas a invertir para ver las redes disponibles.';
             return;
         }
 
         const redes = getRedesDisponibles(monto);
-
         if (redes.length === 0) {
             const minimoMxn = Math.ceil(1 / MXN_A_USD_APROX);
-            select.innerHTML = `<option value="">Monto insuficiente</option>`;
-            if (info) {
-                info.innerHTML = `<span class="warn">⚠ Tu presupuesto ($${monto.toFixed(2)} MXN) es menor al mínimo soportado. Mínimo sugerido: ~$${minimoMxn} MXN (1 USD).</span>`;
-            }
+            select.innerHTML = '<option value="">Monto insuficiente</option>';
+            if (info) info.innerHTML = `<span class="warn">⚠ Tu presupuesto ($${monto.toFixed(2)} MXN) es menor al mínimo. Mínimo sugerido: ~$${minimoMxn} MXN (1 USD).</span>`;
             return;
         }
 
-        // Mantener selección previa si sigue siendo válida
         const previo = select.value;
-        select.innerHTML = redes.map(r => 
-            `<option value="${r.value}">${r.label} · mín ${r.min} USD</option>`
+        select.innerHTML = redes.map(r =>
+            `<option value="${escapeHTML(r.value)}">${escapeHTML(r.label)} · mín ${r.min} USD</option>`
         ).join('');
+        if (redes.some(r => r.value === previo)) select.value = previo;
 
-        if (redes.some(r => r.value === previo)) {
-            select.value = previo;
-        }
-
-        const montoUsd = (monto * MXN_A_USD_APROX).toFixed(2);
-        const redesDescartadas = REDES_PAGO.length - redes.length;
-
+        const usd = (monto * MXN_A_USD_APROX).toFixed(2);
+        const ocultas = REDES_PAGO.length - redes.length;
         if (info) {
-            info.innerHTML = `
-                ◈ Presupuesto: <strong>$${monto.toFixed(2)} MXN</strong> ≈ <strong>$${montoUsd} USD</strong><br>
-                ◈ ${redes.length} red(es) disponibles${redesDescartadas > 0 ? ` · ${redesDescartadas} ocultas por mínimo` : ''}
-            `;
+            info.innerHTML = `◈ Presupuesto: <strong>$${monto.toFixed(2)} MXN</strong> ≈ <strong>$${usd} USD</strong><br>` +
+                             `◈ ${redes.length} red(es) disponibles${ocultas > 0 ? ` · ${ocultas} ocultas por mínimo` : ''}`;
         }
     }
 
+    // ------------------------------------------------------------
+    // INICIO
+    // ------------------------------------------------------------
     async function init() {
-        log('INIT: Iniciando módulo Marketing');
         renderParticles();
         setupWizard();
+        setupFilters();
 
         if (!window.supabase || !window.supabase.createClient) {
             showBootError('El SDK de Supabase no cargó. Revisa tu conexión.');
             return;
         }
 
-        try {
-            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        } catch (err) {
-            logError('Error creando cliente Supabase:', err);
-            showBootError('Error creando cliente Supabase: ' + err.message);
-            return;
-        }
+        let cfg;
+        try { cfg = await cargarConfig(); }
+        catch (err) { logError(err); showBootError('No se pudo obtener la configuración del servidor.'); return; }
+
+        try { supabaseClient = window.supabase.createClient(cfg.url, cfg.key); }
+        catch (err) { logError(err); showBootError('Error creando el cliente de Supabase.'); return; }
 
         let user = null;
         try {
             const { data, error } = await supabaseClient.auth.getUser();
             if (error) throw error;
-            user = data?.user;
-        } catch (err) {
-            logError('Error obteniendo usuario:', err);
-        }
+            user = data?.user || null;
+        } catch (err) { logError('Usuario:', err); }
 
         if (!user) { showNoSession(); return; }
 
         currentUser = user;
-        log('Usuario autenticado:', user.id);
-
         try { await loadCampaigns(); }
-        catch (err) { logError('Error cargando campañas:', err); showCampaignsError(err.message); }
-
-        setupFilters();
+        catch (err) { logError('Campañas:', err); showCampaignsError(err.message); }
     }
 
     function showBootError(msg) {
         const el = document.getElementById('campaigns-list');
-        if (!el) return;
-        el.innerHTML = `
-            <div class="empty-state error-state">
-                <span class="icon">✕</span>
-                <p>Error inicializando Marketing</p>
-                <small>${escapeHTML(msg)}</small>
-            </div>
-        `;
+        if (el) el.innerHTML = `<div class="empty-state error-state"><span class="icon">✕</span><p>Error inicializando Marketing</p><small>${escapeHTML(msg)}</small></div>`;
     }
 
     function showNoSession() {
         const el = document.getElementById('campaigns-list');
-        if (!el) return;
-        el.innerHTML = `
-            <div class="empty-state">
-                <span class="icon">◈</span>
-                <p>Inicia sesión para ver tus campañas</p>
-                <a href="/" class="btn btn-primary" style="margin-top:20px;text-decoration:none;">Ir al inicio</a>
-            </div>
-        `;
+        if (el) el.innerHTML = `<div class="empty-state"><span class="icon">◈</span><p>Inicia sesión para ver tus campañas</p><a href="/" class="btn btn-primary" style="margin-top:20px;text-decoration:none;">Ir al inicio</a></div>`;
     }
 
     function showCampaignsError(msg) {
         const el = document.getElementById('campaigns-list');
-        if (!el) return;
-        el.innerHTML = `
-            <div class="empty-state error-state">
-                <span class="icon">✕</span>
-                <p>Error cargando campañas</p>
-                <small>${escapeHTML(msg || 'Error desconocido')}</small>
-            </div>
-        `;
+        if (el) el.innerHTML = `<div class="empty-state error-state"><span class="icon">✕</span><p>Error cargando campañas</p><small>${escapeHTML(msg || 'Error desconocido')}</small></div>`;
     }
 
     async function loadCampaigns() {
         const el = document.getElementById('campaigns-list');
-        if (!el) { logError('#campaigns-list no existe en el DOM'); return; }
-        if (!currentUser || !currentUser.id) { showNoSession(); return; }
+        if (!el || !supabaseClient || !currentUser) return;
 
-        el.innerHTML = `
-            <div class="empty-state">
-                <span class="icon">◈</span>
-                <p>Cargando campañas...</p>
-            </div>
-        `;
+        el.innerHTML = `<div class="empty-state"><span class="icon">◈</span><p>Cargando campañas...</p></div>`;
 
         const { data, error } = await supabaseClient
             .from('marketing_campaigns')
@@ -1158,21 +1120,14 @@
             .eq('anunciante_id', currentUser.id)
             .order('created_at', { ascending: false });
 
-        if (error) { logError('Error Supabase:', error); showCampaignsError(error.message); return; }
+        if (error) { showCampaignsError(error.message); return; }
 
         campaigns = data || [];
-
         if (campaigns.length === 0) {
-            el.innerHTML = `
-                <div class="empty-state">
-                    <span class="icon">◈</span>
-                    <p>No hay campañas creadas aún</p>
-                </div>
-            `;
+            el.innerHTML = `<div class="empty-state"><span class="icon">◈</span><p>No hay campañas creadas aún</p></div>`;
             calculateSummary();
             return;
         }
-
         renderCampaigns();
         calculateSummary();
     }
@@ -1181,54 +1136,24 @@
         const container = document.getElementById('campaigns-list');
         if (!container) return;
 
-        const filtered = currentFilter === 'all'
-            ? campaigns
-            : campaigns.filter(c => c.estado === currentFilter);
+        const filtered = currentFilter === 'all' ? campaigns : campaigns.filter(c => c.estado === currentFilter);
 
         if (filtered.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <span class="icon">◈</span>
-                    <p>No hay campañas ${currentFilter === 'all' ? 'creadas aún' : 'con este estado'}.</p>
-                </div>
-            `;
+            container.innerHTML = `<div class="empty-state"><span class="icon">◈</span><p>No hay campañas ${currentFilter === 'all' ? 'creadas aún' : 'con este estado'}.</p></div>`;
             return;
         }
 
         container.innerHTML = filtered.map(camp => {
             const estado = normalizeEstado(camp.estado);
-            const nombre = escapeHTML(camp.nombre) || 'Sin nombre';
-            const presupuesto = parseFloat(camp.presupuesto || 0).toFixed(2);
-            const gastado = parseFloat(camp.gastado || 0).toFixed(2);
-            const moneda = escapeHTML(camp.moneda || 'MXN');
-            const fechaInicio = formatFecha(camp.fecha_inicio);
-            const fechaFin = formatFecha(camp.fecha_fin);
-
             return `
                 <div class="campaign-card" data-id="${escapeHTML(camp.id)}">
-                    <h3>${nombre}</h3>
-                    <div class="info-row">
-                        <span class="label">Estado</span>
-                        <span class="badge ${estado}">${estado.replace('_', ' ')}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="label">Presupuesto</span>
-                        <span class="value">$${presupuesto} ${moneda}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="label">Gastado</span>
-                        <span class="value">$${gastado}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="label">Inicio</span>
-                        <span class="value">${fechaInicio}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="label">Fin</span>
-                        <span class="value">${fechaFin}</span>
-                    </div>
-                </div>
-            `;
+                    <h3>${escapeHTML(camp.nombre) || 'Sin nombre'}</h3>
+                    <div class="info-row"><span class="label">Estado</span><span class="badge ${estado}">${estado.replace(/_/g, ' ')}</span></div>
+                    <div class="info-row"><span class="label">Presupuesto</span><span class="value">$${parseFloat(camp.presupuesto || 0).toFixed(2)} ${escapeHTML(camp.moneda || 'MXN')}</span></div>
+                    <div class="info-row"><span class="label">Gastado</span><span class="value">$${parseFloat(camp.gastado || 0).toFixed(2)}</span></div>
+                    <div class="info-row"><span class="label">Inicio</span><span class="value">${formatFecha(camp.fecha_inicio)}</span></div>
+                    <div class="info-row"><span class="label">Fin</span><span class="value">${formatFecha(camp.fecha_fin)}</span></div>
+                </div>`;
         }).join('');
 
         if (!container._clickBound) {
@@ -1266,22 +1191,25 @@
         });
     }
 
+    // ------------------------------------------------------------
+    // DETALLE Y ESTADÍSTICAS
+    // ------------------------------------------------------------
     async function openDetail(campaignId) {
         const campaign = campaigns.find(c => c.id === campaignId);
         if (!campaign) return;
 
         const estado = normalizeEstado(campaign.estado);
+        const restante = parseFloat(campaign.presupuesto || 0) - parseFloat(campaign.gastado || 0);
 
         document.getElementById('detail-title').textContent = '◈ ' + (campaign.nombre || 'Sin nombre');
         document.getElementById('detail-info').innerHTML = `
-            <div class="detail-row"><span>Estado</span><span class="badge ${estado}">${estado.replace('_',' ')}</span></div>
+            <div class="detail-row"><span>Estado</span><span class="badge ${estado}">${estado.replace(/_/g, ' ')}</span></div>
             <div class="detail-row"><span>Presupuesto</span><span>$${parseFloat(campaign.presupuesto || 0).toFixed(2)} ${escapeHTML(campaign.moneda || 'MXN')}</span></div>
             <div class="detail-row"><span>Gastado</span><span>$${parseFloat(campaign.gastado || 0).toFixed(2)}</span></div>
-            <div class="detail-row"><span>Restante</span><span>$${(parseFloat(campaign.presupuesto || 0) - parseFloat(campaign.gastado || 0)).toFixed(2)}</span></div>
+            <div class="detail-row"><span>Restante</span><span>$${restante.toFixed(2)}</span></div>
             <div class="detail-row"><span>Objetivo</span><span>${escapeHTML(campaign.objetivo || '—')}</span></div>
             <div class="detail-row"><span>Inicio</span><span>${formatFecha(campaign.fecha_inicio)}</span></div>
-            <div class="detail-row"><span>Fin</span><span>${formatFecha(campaign.fecha_fin)}</span></div>
-        `;
+            <div class="detail-row"><span>Fin</span><span>${formatFecha(campaign.fecha_fin)}</span></div>`;
 
         document.getElementById('modal-detail').classList.remove('hidden');
 
@@ -1294,45 +1222,38 @@
         if (error || !stats || stats.length === 0) {
             document.getElementById('detail-stats').innerHTML = `
                 <div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--warning);font-size:0.72rem;line-height:1.6;">
-                    ✕ Las estadísticas aparecerán cuando la campaña<br>comience a recibir tráfico.
-                </div>
-            `;
+                    Las estadísticas aparecerán cuando la campaña<br>comience a recibir tráfico.
+                </div>`;
             return;
         }
 
-        const totals = stats.reduce((acc, s) => ({
-            impresiones: acc.impresiones + (s.impresiones || 0),
-            alcance: acc.alcance + (s.alcance || 0),
-            vistas: acc.vistas + (s.vistas || 0),
-            vistas_completas: acc.vistas_completas + (s.vistas_completas || 0),
-            clics: acc.clics + (s.clics || 0),
-            interacciones: acc.interacciones + (s.interacciones || 0),
-            reproducciones: acc.reproducciones + (s.reproducciones || 0),
-            conversiones: acc.conversiones + (s.conversiones || 0),
-        }), { impresiones: 0, alcance: 0, vistas: 0, vistas_completas: 0, clics: 0, interacciones: 0, reproducciones: 0, conversiones: 0 });
+        const t = stats.reduce((a, s) => ({
+            impresiones: a.impresiones + (s.impresiones || 0),
+            alcance: a.alcance + (s.alcance || 0),
+            vistas: a.vistas + (s.vistas || 0),
+            clics: a.clics + (s.clics || 0),
+            interacciones: a.interacciones + (s.interacciones || 0),
+            reproducciones: a.reproducciones + (s.reproducciones || 0),
+            conversiones: a.conversiones + (s.conversiones || 0)
+        }), { impresiones: 0, alcance: 0, vistas: 0, clics: 0, interacciones: 0, reproducciones: 0, conversiones: 0 });
 
         document.getElementById('detail-stats').innerHTML = `
-            <div class="stat-item"><div class="label">Alcance</div><div class="value">${totals.alcance.toLocaleString()}</div></div>
-            <div class="stat-item"><div class="label">Impresiones</div><div class="value">${totals.impresiones.toLocaleString()}</div></div>
-            <div class="stat-item"><div class="label">Vistas</div><div class="value">${totals.vistas.toLocaleString()}</div></div>
-            <div class="stat-item"><div class="label">Clics</div><div class="value">${totals.clics.toLocaleString()}</div></div>
-            <div class="stat-item"><div class="label">Interacciones</div><div class="value">${totals.interacciones.toLocaleString()}</div></div>
-            <div class="stat-item"><div class="label">Reproducciones</div><div class="value">${totals.reproducciones.toLocaleString()}</div></div>
-            <div class="stat-item"><div class="label">Conversiones</div><div class="value">${totals.conversiones.toLocaleString()}</div></div>
-        `;
+            <div class="stat-item"><div class="label">Alcance</div><div class="value">${t.alcance.toLocaleString()}</div></div>
+            <div class="stat-item"><div class="label">Impresiones</div><div class="value">${t.impresiones.toLocaleString()}</div></div>
+            <div class="stat-item"><div class="label">Vistas</div><div class="value">${t.vistas.toLocaleString()}</div></div>
+            <div class="stat-item"><div class="label">Clics</div><div class="value">${t.clics.toLocaleString()}</div></div>
+            <div class="stat-item"><div class="label">Interacciones</div><div class="value">${t.interacciones.toLocaleString()}</div></div>
+            <div class="stat-item"><div class="label">Reproducciones</div><div class="value">${t.reproducciones.toLocaleString()}</div></div>
+            <div class="stat-item"><div class="label">Conversiones</div><div class="value">${t.conversiones.toLocaleString()}</div></div>`;
 
-        try {
-            await loadChartJs();
-            renderCharts(stats);
-        } catch (err) {
-            logError('Error cargando Chart.js:', err);
-        }
+        try { await loadChartJs(); renderCharts(stats); }
+        catch (err) { logError('Chart.js:', err); }
     }
 
     function renderCharts(stats) {
         if (typeof Chart === 'undefined') return;
 
-        Object.values(currentChartInstances).forEach(c => { try { c.destroy(); } catch(e){} });
+        Object.values(currentChartInstances).forEach(c => { try { c.destroy(); } catch (e) {} });
         currentChartInstances = {};
 
         Chart.defaults.color = '#6b8a9e';
@@ -1344,19 +1265,14 @@
             catch { return ''; }
         });
 
-        const commonOpts = {
+        const opts = {
             responsive: true,
             maintainAspectRatio: true,
             plugins: {
                 legend: { display: false },
                 tooltip: {
-                    backgroundColor: 'rgba(4, 6, 13, 0.95)',
-                    borderColor: '#D4AF37',
-                    borderWidth: 1,
-                    titleColor: '#D4AF37',
-                    bodyColor: '#f0f4f8',
-                    padding: 10,
-                    cornerRadius: 8
+                    backgroundColor: 'rgba(4, 6, 13, 0.95)', borderColor: '#D4AF37', borderWidth: 1,
+                    titleColor: '#D4AF37', bodyColor: '#f0f4f8', padding: 10, cornerRadius: 8
                 }
             },
             scales: {
@@ -1369,68 +1285,38 @@
         const gradReach = ctxReach.createLinearGradient(0, 0, 0, 200);
         gradReach.addColorStop(0, 'rgba(212, 175, 55, 0.5)');
         gradReach.addColorStop(1, 'rgba(212, 175, 55, 0)');
-
         currentChartInstances.reach = new Chart(ctxReach, {
             type: 'line',
-            data: {
-                labels,
-                datasets: [{
-                    data: stats.map(s => s.alcance || 0),
-                    borderColor: '#D4AF37',
-                    backgroundColor: gradReach,
-                    fill: true,
-                    tension: 0.4,
-                    pointBackgroundColor: '#D4AF37',
-                    pointRadius: 4,
-                    borderWidth: 2
-                }]
-            },
-            options: commonOpts
+            data: { labels, datasets: [{ data: stats.map(s => s.alcance || 0), borderColor: '#D4AF37', backgroundColor: gradReach, fill: true, tension: 0.4, pointBackgroundColor: '#D4AF37', pointRadius: 4, borderWidth: 2 }] },
+            options: opts
         });
 
         currentChartInstances.impressions = new Chart(document.getElementById('chart-impressions'), {
             type: 'bar',
-            data: {
-                labels,
-                datasets: [{
-                    data: stats.map(s => s.impresiones || 0),
-                    backgroundColor: 'rgba(0, 214, 143, 0.7)',
-                    borderRadius: 6
-                }]
-            },
-            options: commonOpts
+            data: { labels, datasets: [{ data: stats.map(s => s.impresiones || 0), backgroundColor: 'rgba(0, 214, 143, 0.7)', borderRadius: 6 }] },
+            options: opts
         });
 
         const ctxSpent = document.getElementById('chart-spent').getContext('2d');
         const gradSpent = ctxSpent.createLinearGradient(0, 0, 0, 200);
         gradSpent.addColorStop(0, 'rgba(255, 51, 102, 0.5)');
         gradSpent.addColorStop(1, 'rgba(255, 51, 102, 0)');
-
         currentChartInstances.spent = new Chart(ctxSpent, {
             type: 'line',
-            data: {
-                labels,
-                datasets: [{
-                    data: stats.map(s => s.gasto || 0),
-                    borderColor: '#ff3366',
-                    backgroundColor: gradSpent,
-                    fill: true,
-                    tension: 0.4,
-                    pointBackgroundColor: '#ff3366',
-                    pointRadius: 4,
-                    borderWidth: 2
-                }]
-            },
-            options: commonOpts
+            data: { labels, datasets: [{ data: stats.map(s => s.gasto || 0), borderColor: '#ff3366', backgroundColor: gradSpent, fill: true, tension: 0.4, pointBackgroundColor: '#ff3366', pointRadius: 4, borderWidth: 2 }] },
+            options: opts
         });
     }
 
+    // ------------------------------------------------------------
+    // WIZARD
+    // ------------------------------------------------------------
     function setupWizard() {
         const btnCreate = document.getElementById('btn-create-campaign');
         if (btnCreate && !btnCreate._bound) {
             btnCreate._bound = true;
             btnCreate.addEventListener('click', () => {
-                if (!currentUser) { showToast('✕ Inicia sesión para crear campañas', 'warning'); return; }
+                if (!currentUser) { showToast('Inicia sesión para crear campañas', 'warning'); return; }
                 document.getElementById('modal-create').classList.remove('hidden');
                 resetWizard();
             });
@@ -1440,55 +1326,26 @@
             if (btn._bound) return;
             btn._bound = true;
             btn.addEventListener('click', (e) => {
-                const target = e.target.dataset.close;
+                const target = e.currentTarget.dataset.close;
                 document.getElementById(target).classList.add('hidden');
+                if (target === 'modal-create') detenerPolling();
             });
         });
 
         document.querySelectorAll('.btn-option').forEach(btn => {
             if (btn._bound) return;
             btn._bound = true;
-            btn.addEventListener('click', async (e) => {
-                const type = e.currentTarget.dataset.type;
-                currentWizardData.target_tipo = type;
-                const table = type === 'live' ? 'transmisiones' : 'grupos_video';
-                const columns = type === 'live' ? 'id, titulo' : 'id, nombre';
-
-                const select = document.getElementById('select-target');
-                select.innerHTML = '<option value="">Cargando...</option>';
-
-                try {
-                    const { data, error } = await supabaseClient
-                        .from(table).select(columns).limit(50);
-
-                    if (error || !data || data.length === 0) {
-                        select.innerHTML = '<option value="">No hay elementos disponibles</option>';
-                    } else {
-                        select.innerHTML = data.map(t => {
-                            const label = type === 'live' ? t.titulo : t.nombre;
-                            return `<option value="${escapeHTML(t.id)}">${escapeHTML(label || 'Sin nombre')}</option>`;
-                        }).join('');
-                    }
-                } catch (err) {
-                    select.innerHTML = '<option value="">Error cargando</option>';
-                }
-                showWizardStep('2');
-            });
+            btn.addEventListener('click', (e) => cargarDestinos(e.currentTarget.dataset.type));
         });
 
-        // Input del presupuesto: repoblar redes al cambiar
         const budgetInput = document.getElementById('campaign-budget');
         if (budgetInput && !budgetInput._bound) {
             budgetInput._bound = true;
-            budgetInput.addEventListener('input', (e) => {
-                poblarRedesDePago(e.target.value);
-            });
-            budgetInput.addEventListener('change', (e) => {
-                poblarRedesDePago(e.target.value);
-            });
+            budgetInput.addEventListener('input', (e) => poblarRedesDePago(e.target.value));
+            budgetInput.addEventListener('change', (e) => poblarRedesDePago(e.target.value));
         }
 
-        ['2','3','4','5','6'].forEach(n => {
+        ['2', '3', '4', '5', '6'].forEach(n => {
             const btn = document.querySelector(`#wizard-step-${n} .btn-next`);
             if (btn && !btn._bound) {
                 btn._bound = true;
@@ -1499,195 +1356,224 @@
         const payBtn = document.getElementById('btn-pay');
         if (payBtn && !payBtn._bound) {
             payBtn._bound = true;
-            payBtn.addEventListener('click', processPayment);
+            payBtn.addEventListener('click', onPagarClick);
         }
+    }
+
+    // Solo transmisiones EN VIVO (un anuncio a un live terminado nunca se mostraría)
+    async function cargarDestinos(tipo) {
+        wizard = { target_tipo: tipo };
+        const select = document.getElementById('select-target');
+        select.innerHTML = '<option value="">Cargando...</option>';
+
+        try {
+            let query;
+            if (tipo === 'live') {
+                query = supabaseClient.from('transmisiones')
+                    .select('id, titulo')
+                    .eq('estado', 'en_vivo')
+                    .eq('is_live', true)
+                    .is('grupo_id', null)
+                    .order('fecha_inicio', { ascending: false })
+                    .limit(50);
+            } else {
+                query = supabaseClient.from('grupos_video')
+                    .select('id, nombre')
+                    .order('created_at', { ascending: false })
+                    .limit(50);
+            }
+
+            const { data, error } = await query;
+            if (error) throw error;
+
+            if (!data || data.length === 0) {
+                select.innerHTML = tipo === 'live'
+                    ? '<option value="">No hay transmisiones en vivo ahora</option>'
+                    : '<option value="">No hay grupos disponibles</option>';
+            } else {
+                select.innerHTML = data.map(t => {
+                    const label = tipo === 'live' ? t.titulo : t.nombre;
+                    return `<option value="${escapeHTML(t.id)}">${escapeHTML(label || 'Sin nombre')}</option>`;
+                }).join('');
+            }
+        } catch (err) {
+            logError('Destinos:', err);
+            select.innerHTML = '<option value="">No se pudieron cargar los destinos</option>';
+            showToast('No se pudieron cargar los destinos. Intenta de nuevo.', 'error');
+        }
+        showWizardStep('2');
     }
 
     function showWizardStep(n) {
-        const num = String(n);
         document.querySelectorAll('.wizard-step').forEach(el => el.classList.add('hidden'));
-        const target = document.getElementById(`wizard-step-${num}`);
-        if (target) target.classList.remove('hidden');
+        const t = document.getElementById(`wizard-step-${n}`);
+        if (t) t.classList.remove('hidden');
     }
 
     function resetWizard() {
-        currentWizardData = {};
+        detenerPolling();
+        wizard = {};
+        campañaCreada = null;
         document.querySelectorAll('.wizard-step input, .wizard-step select, .wizard-step textarea')
-            .forEach(el => el.value = '');
+            .forEach(el => { el.value = ''; });
+        poblarRedesDePago('');
 
-        // Reset selector de redes
-        const selectRedes = document.getElementById('pay-currency');
-        if (selectRedes) {
-            selectRedes.innerHTML = '<option value="">Ingresa un presupuesto primero…</option>';
-        }
-
-        const info = document.getElementById('red-info');
-        if (info) {
-            info.innerHTML = '◈ Elige cuánto vas a invertir para ver las redes disponibles.';
-        }
-
-        // 🆕 Fix: volver a mostrar el botón de pago tras ocultarlo en mostrarPagoPendiente()
         const btnPay = document.getElementById('btn-pay');
         if (btnPay) {
             btnPay.style.display = '';
             btnPay.disabled = false;
             btnPay.textContent = '◈ Continuar al Pago';
         }
-
         showWizardStep('1');
     }
 
     function handleWizardStep(n) {
-        const step = String(n);
-
-        if (step === '2') {
-            currentWizardData.target_id = document.getElementById('select-target').value;
-            if (!currentWizardData.target_id) { showToast('✕ Selecciona un destino', 'warning'); return; }
+        if (n === '2') {
+            const id = document.getElementById('select-target').value;
+            if (!id) { showToast('Selecciona un destino', 'warning'); return; }
+            wizard.target_id = wizard.target_tipo === 'live' ? Number(id) : id;
             showWizardStep('3');
-        } else if (step === '3') {
+        } else if (n === '3') {
             const nombre = document.getElementById('campaign-name').value.trim();
-            if (!nombre) { showToast('✕ Escribe un nombre', 'warning'); return; }
-            if (nombre.length > 120) { showToast('✕ Máximo 120 caracteres', 'warning'); return; }
-            currentWizardData.nombre = nombre;
+            if (!nombre) { showToast('Escribe un nombre', 'warning'); return; }
+            if (nombre.length > 120) { showToast('Máximo 120 caracteres', 'warning'); return; }
+            wizard.nombre = nombre;
             showWizardStep('4');
-        } else if (step === '4') {
-            currentWizardData.objetivo = document.getElementById('campaign-objective').value;
+        } else if (n === '4') {
+            wizard.objetivo = document.getElementById('campaign-objective').value;
             showWizardStep('5');
-        } else if (step === '5') {
+        } else if (n === '5') {
             const budget = parseFloat(document.getElementById('campaign-budget').value);
-            if (!budget || budget <= 0) { showToast('✕ Ingresa un presupuesto válido', 'warning'); return; }
-            if (budget > 1000000) { showToast('✕ Presupuesto demasiado alto', 'warning'); return; }
-
-            const payCurrency = document.getElementById('pay-currency').value;
-            if (!payCurrency) {
-                showToast('✕ Selecciona una red de pago válida para tu monto', 'warning');
-                return;
-            }
-
-            currentWizardData.presupuesto = budget;
-            currentWizardData.pay_currency = payCurrency;
+            if (!budget || budget <= 0) { showToast('Ingresa un presupuesto válido', 'warning'); return; }
+            if (budget > 1000000) { showToast('Presupuesto demasiado alto', 'warning'); return; }
+            const red = document.getElementById('pay-currency').value;
+            if (!red) { showToast('Selecciona una red de pago válida para tu monto', 'warning'); return; }
+            wizard.presupuesto = budget;
+            wizard.pay_currency = red;
             showWizardStep('6');
-        } else if (step === '6') {
+        } else if (n === '6') {
             const titulo = document.getElementById('ad-title').value.trim();
             const descripcion = document.getElementById('ad-description').value.trim();
-            const imagenUrl = document.getElementById('ad-image').value.trim();
-            const videoUrl = document.getElementById('ad-video').value.trim();
+            const imagen = document.getElementById('ad-image').value.trim();
+            const video = document.getElementById('ad-video').value.trim();
             const cta = document.getElementById('ad-cta').value.trim();
 
-            if (!titulo) { showToast('✕ Escribe un título', 'warning'); return; }
-            if (imagenUrl && !isValidHttpUrl(imagenUrl)) { showToast('✕ URL de imagen inválida', 'warning'); return; }
-            if (videoUrl && !isValidHttpUrl(videoUrl)) { showToast('✕ URL de video inválida', 'warning'); return; }
+            if (!titulo) { showToast('Escribe un título', 'warning'); return; }
+            if (imagen && !isValidHttpUrl(imagen)) { showToast('URL de imagen inválida', 'warning'); return; }
+            if (video && !isValidHttpUrl(video)) { showToast('URL de video inválida', 'warning'); return; }
 
-            currentWizardData.ad = {
-                titulo: titulo,
-                descripcion: descripcion,
-                imagen_url: imagenUrl || null,
-                video_url: videoUrl || null,
-                cta_texto: cta || 'Ver más',
+            wizard.ad = {
+                titulo,
+                descripcion: descripcion || null,
+                imagen_url: imagen || null,
+                video_url: video || null,
+                cta_texto: cta || 'Ver más'
             };
-
-            const redSeleccionada = REDES_PAGO.find(r => r.value === currentWizardData.pay_currency);
-            const redLabel = redSeleccionada ? redSeleccionada.label : currentWizardData.pay_currency;
-            const montoUsd = (currentWizardData.presupuesto * MXN_A_USD_APROX).toFixed(2);
-
-            document.getElementById('summary-content').innerHTML = `
-                <div class="detail-row"><span>Campaña</span><span>${escapeHTML(currentWizardData.nombre)}</span></div>
-                <div class="detail-row"><span>Destino</span><span>${escapeHTML(currentWizardData.target_tipo.toUpperCase())}</span></div>
-                <div class="detail-row"><span>Objetivo</span><span>${escapeHTML(currentWizardData.objetivo)}</span></div>
-                <div class="detail-row"><span>Presupuesto</span><span>$${currentWizardData.presupuesto} MXN</span></div>
-                <div class="detail-row"><span>Red de pago</span><span>${escapeHTML(redLabel)}</span></div>
-                <div class="detail-row"><span>A pagar aprox</span><span>~$${montoUsd} USD</span></div>
-                <div class="detail-row"><span>Contenido</span><span>${escapeHTML(currentWizardData.ad.titulo)}</span></div>
-            `;
+            mostrarResumen();
             showWizardStep('7');
         }
     }
 
-    // ============================================================
-    // PAGO: CREAR CAMPAÑA VÍA BACKEND → GENERAR PAGO → ENLACE DE PAGO
-    // El wizard NUNCA escribe directo a Supabase (lo bloquea el trigger).
-    // El estado se consulta por polling cada 15 s hasta 20 min.
-    // ============================================================
-    async function processPayment() {
-        const payBtn = document.getElementById('btn-pay');
-        payBtn.disabled = true;
-        payBtn.textContent = '◈ Creando campaña...';
+    function mostrarResumen() {
+        const red = REDES_PAGO.find(r => r.value === wizard.pay_currency);
+        const usd = (wizard.presupuesto * MXN_A_USD_APROX).toFixed(2);
+        document.getElementById('summary-content').innerHTML = `
+            <div class="detail-row"><span>Campaña</span><span>${escapeHTML(wizard.nombre)}</span></div>
+            <div class="detail-row"><span>Destino</span><span>${escapeHTML(wizard.target_tipo.toUpperCase())}</span></div>
+            <div class="detail-row"><span>Objetivo</span><span>${escapeHTML(wizard.objetivo)}</span></div>
+            <div class="detail-row"><span>Presupuesto</span><span>$${wizard.presupuesto.toFixed(2)} MXN</span></div>
+            <div class="detail-row"><span>Red de pago</span><span>${escapeHTML(red ? red.label : wizard.pay_currency)}</span></div>
+            <div class="detail-row"><span>A pagar aprox</span><span>~$${usd} USD</span></div>
+            <div class="detail-row"><span>Anuncio</span><span>${escapeHTML(wizard.ad.titulo)}</span></div>`;
+    }
+
+    // ------------------------------------------------------------
+    // PAGO: la campaña se crea UNA vez; el pago se reintenta sin duplicar
+    // ------------------------------------------------------------
+    async function obtenerToken() {
+        const { data } = await supabaseClient.auth.getSession();
+        const token = data?.session?.access_token;
+        if (!token) throw new Error('Sesión expirada. Vuelve a iniciar sesión.');
+        return token;
+    }
+
+    async function onPagarClick() {
+        const btn = document.getElementById('btn-pay');
+        btn.disabled = true;
 
         try {
-            const { data: sess } = await supabaseClient.auth.getSession();
-            const token = sess?.session?.access_token;
-            if (!token) throw new Error('Sesión expirada. Vuelve a iniciar sesión.');
+            const token = await obtenerToken();
+            const headers = { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token };
 
-            const headers = {
-                'Content-Type': 'application/json',
-                Authorization: 'Bearer ' + token
-            };
-
-            // 1. Crear la campaña en el backend
-            const r1 = await fetch(`${BACKEND_URL}/api/campanas/crear`, {
-                method: 'POST',
-                headers,
-                body: JSON.stringify({
-                    nombre: currentWizardData.nombre,
-                    objetivo: currentWizardData.objetivo,
-                    presupuesto: currentWizardData.presupuesto,
-                    destino_tipo: currentWizardData.target_tipo,
-                    destino_id: currentWizardData.target_id,
-                    pay_currency: currentWizardData.pay_currency,
-                    ad: currentWizardData.ad
-                })
-            });
-            const j1 = await r1.json();
-            if (!r1.ok || !j1.success) {
-                throw new Error(j1.error || 'No se pudo crear la campaña');
+            // 1. Crear la campaña solo si aún no existe
+            if (!campañaCreada) {
+                btn.textContent = '◈ Creando campaña...';
+                const r1 = await fetch(`${BACKEND_URL}/api/campanas/crear`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({
+                        nombre: wizard.nombre,
+                        objetivo: wizard.objetivo,
+                        presupuesto: wizard.presupuesto,
+                        destino_tipo: wizard.target_tipo,
+                        destino_id: wizard.target_id,
+                        pay_currency: wizard.pay_currency,
+                        ad: wizard.ad
+                    })
+                });
+                const j1 = await r1.json().catch(() => ({}));
+                if (!r1.ok || !j1.success || !j1.data?.campaign_id) {
+                    throw new Error(j1.error || 'No se pudo crear la campaña');
+                }
+                campañaCreada = { campaign_id: j1.data.campaign_id };
             }
 
-            payBtn.textContent = '◈ Generando pago...';
-
-            // 2. Generar el pago
+            // 2. Generar el pago (reutiliza la campaña ya creada)
+            btn.textContent = '◈ Generando pago...';
             const r2 = await fetch(`${BACKEND_URL}/api/payments/marketing/create`, {
                 method: 'POST',
                 headers,
                 body: JSON.stringify({
-                    campaignId: j1.data.campaign_id,
-                    payCurrency: currentWizardData.pay_currency
+                    campaignId: campañaCreada.campaign_id,
+                    payCurrency: wizard.pay_currency
                 })
             });
-            const j2 = await r2.json();
+            const j2 = await r2.json().catch(() => ({}));
             if (!r2.ok || !j2.success || !j2.data?.payment_url) {
-                throw new Error(j2.error || 'No se pudo generar el pago');
+                throw new Error(j2.error || 'No se pudo generar el pago. Intenta de nuevo.');
             }
 
-            mostrarPagoPendiente(j2.data.payment_url, j2.data.pago_id, token);
-            await loadCampaigns();
-
+            campañaCreada.pagoId = j2.data.pago_id;
+            mostrarPagoPendiente(j2.data.payment_url, j2.data.pago_id);
+            loadCampaigns();
         } catch (err) {
-            logError('Error creando campaña:', err);
-            showToast('✕ ' + err.message, 'error');
-        } finally {
-            payBtn.disabled = false;
-            payBtn.textContent = '◈ Continuar al Pago';
+            logError('Pago:', err);
+            showToast(err.message, 'error', 5000);
+            btn.disabled = false;
+            btn.textContent = campañaCreada ? '◈ Reintentar pago' : '◈ Continuar al Pago';
         }
     }
 
-    function mostrarPagoPendiente(paymentUrl, pagoId, token) {
+    function mostrarPagoPendiente(paymentUrl, pagoId) {
         if (!isValidHttpUrl(paymentUrl)) {
-            showToast('✕ Enlace de pago inválido', 'error');
+            showToast('Enlace de pago inválido', 'error');
             return;
         }
-
         document.getElementById('summary-content').innerHTML = `
             <div class="red-info">◈ Tu campaña quedó en espera de pago. Complétalo para activarla.</div>
-            <a class="btn btn-primary" href="${escapeHTML(paymentUrl)}" target="_blank" rel="noopener"
+            <a class="btn btn-primary" href="${escapeHTML(paymentUrl)}" target="_blank" rel="noopener noreferrer"
                style="text-decoration:none;margin-top:12px;">Abrir página de pago</a>
             <div id="pago-estado" class="red-info" style="margin-top:12px;">Esperando confirmación…</div>`;
-
         document.getElementById('btn-pay').style.display = 'none';
-        pollearPago(pagoId, token);
+        pollearPago(pagoId);
     }
 
-    function pollearPago(pagoId, token) {
-        const MAX_INTENTOS = 80; // 80 × 15 s = 20 min
+    function detenerPolling() {
+        if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    }
+
+    function pollearPago(pagoId) {
+        detenerPolling();
         let intentos = 0;
 
         const setEstado = (txt) => {
@@ -1695,41 +1581,50 @@
             if (e) e.textContent = txt;
         };
 
-        const timer = setInterval(async () => {
+        pollTimer = setInterval(async () => {
             intentos++;
             try {
+                const token = await obtenerToken();
                 const r = await fetch(
                     `${BACKEND_URL}/api/payments/marketing/status/${encodeURIComponent(pagoId)}`,
                     { headers: { Authorization: 'Bearer ' + token } }
                 );
-                const j = await r.json();
+                const j = await r.json().catch(() => ({}));
 
                 if (j.paid) {
-                    clearInterval(timer);
+                    detenerPolling();
                     setEstado('✓ Pago confirmado. Tu campaña se activará.');
-                    showToast('◈ Pago confirmado', 'success');
+                    showToast('Pago confirmado', 'success');
                     loadCampaigns();
                     return;
                 }
 
                 if (j.failed) {
-                    clearInterval(timer);
-                    setEstado('✕ El pago falló o expiró. Crea la campaña de nuevo.');
+                    detenerPolling();
+                    setEstado('✕ El pago falló o expiró.');
+                    const btn = document.getElementById('btn-pay');
+                    if (btn) {
+                        btn.style.display = '';
+                        btn.disabled = false;
+                        btn.textContent = '◈ Reintentar pago';
+                    }
+                    campañaCreada.pagoId = null;   // el próximo intento genera un pago nuevo
                     return;
                 }
 
                 setEstado('Esperando confirmación de la red…');
             } catch (e) {
-                // Red intermitente: se reintenta
+                // Red intermitente: se reintenta en el siguiente ciclo
             }
 
-            if (intentos >= MAX_INTENTOS) {
-                clearInterval(timer);
+            if (intentos >= MAX_POLL_INTENTOS) {
+                detenerPolling();
                 setEstado('Aún sin confirmar. Revisa "Pendientes" más tarde.');
             }
-        }, 15000);
+        }, INTERVALO_POLL_MS);
     }
 
+    // ------------------------------------------------------------
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {
