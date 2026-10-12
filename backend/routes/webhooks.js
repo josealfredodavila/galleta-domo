@@ -4,42 +4,35 @@
 // Router principal de webhooks. server.js lo monta en /api/webhook
 //
 // Webhooks soportados:
-// - POST /api/webhook/nowpayments → IPN de NOWPayments
-// - POST /api/webhook/membresia   → Membresía Pro (alias)
-// - POST /api/webhook/stripe      → Placeholder
-// - POST /api/webhook/fintoc      → Placeholder
+//   POST /api/webhook/nowpayments → IPN de NOWPayments
+//   POST /api/webhook/membresia   → Membresía Pro (alias)
+//   POST /api/webhook/stripe      → Placeholder
+//   POST /api/webhook/fintoc      → Placeholder
+//
+// Depende de:
+//   - handleWebhookMembresia      (membresías Pro)
+//   - handleWebhookLivePass       (Live Pass - order_id "LP-")
+//   - handleWebhookDonacionLive   (Donaciones Live - order_id "DON-")
+//   - handleWebhookInternet       (Paquetes Internet - order_id "NET-")
+//   - procesarWebhookMuro         (Muro P2P - resto)
 // ================================================================
 
 const express = require('express');
 const router = express.Router();
 
 // ================================================================
-// HANDLER DE MEMBRESÍA PRO
+// HANDLERS
 // ================================================================
-const {
-    handleWebhookMembresia
-} = require('./membresia-webhook-handler');
+const { handleWebhookMembresia } = require('./membresia-webhook-handler');
 
-// ================================================================
-// HANDLER DE LIVEPASS (NUEVO)
-// ================================================================
-// Procesa los IPN de NOWPayments cuyo order_id empieza con "LP-".
-// Se encarga de activar el Live Pass (Básico o Pro) del usuario.
-// ================================================================
-const {
-    handleWebhookLivePass
-} = require('./livepass-webhook-handler');
+const { handleWebhookLivePass } = require('./livepass-webhook-handler');
 
-// ================================================================
-// HANDLER DE NOWPAYMENTS PARA INTERNET (PARCHE 2 - a)
-// ================================================================
+const { handleWebhookDonacionLive } = require('./live-donacion-webhook-handler');
+
 const { handleWebhookInternet } = require('./webhooks/nowpayments-internet');
 
-// ================================================================
-// HANDLER DE NOWPAYMENTS PARA EL MURO
-// ================================================================
+// Muro P2P — puede no existir
 let procesarWebhookMuro = null;
-
 try {
     const nowpaymentsHandler = require('./webhooks/nowpayments');
 
@@ -60,18 +53,18 @@ try {
 // ================================================================
 // POST /api/webhook/nowpayments
 // ================================================================
-// Recibe los IPN de NOWPayments.
-//
 // Según order_id:
-//   - "PRO-"  → Membresía Pro (storage)
-//   - "LP-"   → Live Pass (NUEVO)
-//   - "NET-"  → Paquete Internet
-//   - otro    → Muro P2P
+//   "PRO-"  → Membresía Pro
+//   "LP-"   → Live Pass
+//   "DON-"  → Donación de Live
+//   "NET-"  → Paquete Internet
+//   otro    → Muro P2P
 // ================================================================
 router.post('/nowpayments', async (req, res) => {
     try {
         const payload = req.body || {};
         const orderId = String(payload.order_id || '');
+        const orderUpper = orderId.toUpperCase();
 
         console.log(
             '📩 Webhook recibido en /api/webhook/nowpayments:',
@@ -82,54 +75,37 @@ router.post('/nowpayments', async (req, res) => {
             }
         );
 
-        // ============================================================
         // 1) MEMBRESÍA PRO
-        // ============================================================
-        if (orderId.toUpperCase().startsWith('PRO-')) {
-            console.log(
-                '💳 Webhook identificado como membresía Pro:',
-                orderId
-            );
-
+        if (orderUpper.startsWith('PRO-')) {
+            console.log('💳 Webhook identificado como membresía Pro:', orderId);
             return await handleWebhookMembresia(req, res);
         }
 
-        // ============================================================
-        // 2) LIVE PASS (NUEVO)
-        // ============================================================
-        if (orderId.toUpperCase().startsWith('LP-')) {
-            console.log(
-                '🎥 Webhook identificado como Live Pass:',
-                orderId
-            );
-
+        // 2) LIVE PASS
+        if (orderUpper.startsWith('LP-')) {
+            console.log('🎥 Webhook identificado como Live Pass:', orderId);
             return await handleWebhookLivePass(req, res);
         }
 
-        // ============================================================
-        // 3) PAQUETE DE INTERNET (eSIM Telnyx) — PARCHE 2 (b)
-        // ============================================================
-        if (orderId.toUpperCase().startsWith('NET-')) {
+        // 3) DONACIÓN DE LIVE
+        if (orderUpper.startsWith('DON-')) {
+            console.log('💎 Webhook identificado como donación de Live:', orderId);
+            return await handleWebhookDonacionLive(req, res);
+        }
+
+        // 4) PAQUETE DE INTERNET
+        if (orderUpper.startsWith('NET-')) {
             console.log('🌐 Webhook identificado como paquete de Internet:', orderId);
             return await handleWebhookInternet(req, res);
         }
 
-        // ============================================================
-        // 4) MURO P2P
-        // ============================================================
+        // 5) MURO P2P
         if (procesarWebhookMuro) {
             return procesarWebhookMuro(req, res);
         }
 
-        // ============================================================
-        // 5) FALLBACK
-        // ============================================================
-        console.warn(
-            '⚠️ Webhook sin handler específico:',
-            {
-                order_id: orderId
-            }
-        );
+        // 6) FALLBACK
+        console.warn('⚠️ Webhook sin handler específico:', { order_id: orderId });
 
         return res.status(200).json({
             status: 'ok',
@@ -137,11 +113,7 @@ router.post('/nowpayments', async (req, res) => {
         });
 
     } catch (error) {
-        console.error(
-            '❌ Error en /api/webhook/nowpayments:',
-            error
-        );
-
+        console.error('❌ Error en /api/webhook/nowpayments:', error);
         return res.status(500).json({
             status: 'error',
             error: 'Error interno'
@@ -154,18 +126,10 @@ router.post('/nowpayments', async (req, res) => {
 // ================================================================
 router.post('/membresia', async (req, res) => {
     try {
-        console.log(
-            '📩 Webhook de membresía recibido en /api/webhook/membresia'
-        );
-
+        console.log('📩 Webhook de membresía recibido en /api/webhook/membresia');
         return await handleWebhookMembresia(req, res);
-
     } catch (error) {
-        console.error(
-            '❌ Error en /api/webhook/membresia:',
-            error
-        );
-
+        console.error('❌ Error en /api/webhook/membresia:', error);
         return res.status(500).json({
             status: 'error',
             error: 'Error interno'
@@ -177,26 +141,16 @@ router.post('/membresia', async (req, res) => {
 // POST /api/webhook/stripe
 // ================================================================
 router.post('/stripe', (req, res) => {
-    console.log(
-        '📩 Webhook Stripe recibido (no implementado)'
-    );
-
-    return res.status(200).json({
-        received: true
-    });
+    console.log('📩 Webhook Stripe recibido (no implementado)');
+    return res.status(200).json({ received: true });
 });
 
 // ================================================================
 // POST /api/webhook/fintoc
 // ================================================================
 router.post('/fintoc', (req, res) => {
-    console.log(
-        '📩 Webhook Fintoc recibido (no implementado)'
-    );
-
-    return res.status(200).json({
-        received: true
-    });
+    console.log('📩 Webhook Fintoc recibido (no implementado)');
+    return res.status(200).json({ received: true });
 });
 
 // ================================================================
@@ -206,11 +160,15 @@ router.get('/health', (req, res) => {
     return res.status(200).json({
         status: 'ok',
         router: 'webhooks',
+        handlers: {
+            membresia_pro: !!handleWebhookMembresia,
+            live_pass: !!handleWebhookLivePass,
+            donacion_live: !!handleWebhookDonacionLive,
+            internet: !!handleWebhookInternet,
+            muro_p2p: !!procesarWebhookMuro
+        },
         timestamp: new Date().toISOString()
     });
 });
 
-// ================================================================
-// EXPORT
-// ================================================================
 module.exports = router;
