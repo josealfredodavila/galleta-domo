@@ -1,7 +1,7 @@
 // ================================================================
 // server.js — Sariel's Ecosystem
 // Backend principal — Producción Railway
-// ✅ v2.6: Router /api/live montado (donaciones + registro de minutos)
+// ✅ v2.7: Router /api/push montado (Web Push Notifications)
 // ================================================================
 
 require('dotenv').config();
@@ -107,6 +107,9 @@ if (!WALLETCONNECT_PROJECT_ID) {
 
 if (!TURNSTILE_SECRET_KEY) console.warn('⚠️ Falta TURNSTILE_SECRET_KEY');
 if (!TURNSTILE_SITE_KEY) console.warn('⚠️ Falta TURNSTILE_SITE_KEY');
+
+if (!process.env.VAPID_PUBLIC_KEY) console.warn('⚠️ Falta VAPID_PUBLIC_KEY (push notifications deshabilitadas)');
+if (!process.env.VAPID_PRIVATE_KEY) console.warn('⚠️ Falta VAPID_PRIVATE_KEY (push notifications deshabilitadas)');
 
 if (!process.env.NODE_ENV) console.warn('⚠️ NODE_ENV no está definido');
 
@@ -911,8 +914,11 @@ montarRouter('/api/webhooks/ia', './routes/webhooks/pagos-ia', 'routes/webhooks/
 
 montarRouter('/api/campanas', './routes/campanas', 'routes/campanas');
 
-// 🆕 v2.6 — Router /api/live (donaciones + registro de minutos)
+// ✅ v2.6 — Router /api/live (donaciones + registro de minutos)
 montarRouter('/api/live', './routes/live', 'routes/live');
+
+// ✅ v2.7 — Router /api/push (Web Push Notifications)
+montarRouter('/api/push', './routes/push', 'routes/push');
 
 // Admin IA
 try {
@@ -1046,6 +1052,10 @@ async function healthCheck(req, res) {
             (LIVEKIT_URL || LIVEKIT_WS_URL)
     );
 
+    const pushConfigured = Boolean(
+        process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY
+    );
+
     const criticalOk = supabaseStatus === 'ok';
 
     return res.status(criticalOk ? 200 : 503).json({
@@ -1057,6 +1067,10 @@ async function healthCheck(req, res) {
 
         livekit: {
             configured: livekitConfigured
+        },
+
+        push: {
+            configured: pushConfigured
         },
 
         web3: {
@@ -1155,6 +1169,13 @@ app.listen(PORT, () => {
     console.log(
         `🎥 LiveKit: ${
             LIVEKIT_API_KEY && LIVEKIT_API_SECRET
+                ? '✅ Configurado'
+                : '❌ No configurado'
+        }`
+    );
+    console.log(
+        `🔔 Push: ${
+            process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY
                 ? '✅ Configurado'
                 : '❌ No configurado'
         }`
