@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-require-auth>
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -8,66 +8,16 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron,monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/features/shared/config-layout.css" />
+
+    <!-- ✅ SDK Supabase PRIMERO -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script>
-        (function () {
-            'use strict';
-            window.__sarielsAuthenticated = null;
-            window.supabaseClient = window.supabaseClient || null;
-            window.supabaseReady = null;
-            window.getSupabaseClient = function () { return window.supabaseReady; };
-            function esRutaInternaSegura(valor) {
-                if (typeof valor !== 'string') return false;
-                if (!valor.startsWith('/')) return false;
-                if (valor.startsWith('//')) return false;
-                if (valor.startsWith('/\\')) return false;
-                return true;
-            }
-            function revelarPagina() { document.documentElement.classList.add('auth-ready'); }
-            function irAlIndexConReturnTo() {
-                try {
-                    var returnTo = window.location.pathname + window.location.search + window.location.hash;
-                    if (esRutaInternaSegura(returnTo)) { localStorage.setItem('wallet_returnTo', returnTo); }
-                    window.location.replace('/');
-                } catch (e) { window.location.replace('/'); }
-            }
-            var salvaguarda = setTimeout(function () { revelarPagina(); }, 10000);
-            async function inicializarSupabase() {
-                try {
-                    if (!window.supabase || typeof window.supabase.createClient !== 'function') {
-                        throw new Error('Supabase SDK no disponible.');
-                    }
-                    if (!window.supabaseClient) {
-                        var supabaseUrl = null, supabaseAnonKey = null;
-                        try {
-                            const response = await fetch('/api/config/public', { method: 'GET', credentials: 'same-origin', cache: 'no-store', headers: { 'Accept': 'application/json' } });
-                            if (response.ok) {
-                                const config = await response.json();
-                                supabaseUrl = config && config.supabaseUrl;
-                                supabaseAnonKey = config && config.supabaseAnonKey;
-                            }
-                        } catch (fetchErr) { console.warn('[LivePass] fetch config falló:', fetchErr); }
-                        if (!supabaseUrl || !supabaseAnonKey) { throw new Error('Config pública no disponible.'); }
-                        window.SupabaseSDK = window.supabase;
-                        window.supabaseClient = window.SupabaseSDK.createClient(supabaseUrl, supabaseAnonKey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
-                    }
-                    const resultado = await window.supabaseClient.auth.getSession();
-                    const session = resultado && resultado.data ? resultado.data.session : null;
-                    window.__sarielsAuthenticated = !!session;
-                    clearTimeout(salvaguarda);
-                    if (!session) { irAlIndexConReturnTo(); } else { revelarPagina(); }
-                    return window.supabaseClient;
-                } catch (error) {
-                    console.error('[LivePass] Error:', error);
-                    window.__sarielsAuthenticated = false;
-                    clearTimeout(salvaguarda);
-                    revelarPagina();
-                    return null;
-                }
-            }
-            window.supabaseReady = inicializarSupabase();
-        })();
-    </script>
+
+    <!-- ✅ AUTH GLOBAL (crea el cliente singleton) -->
+    <script src="/features/shared/js/auth-global.js"></script>
+
+    <!-- ✅ APARIENCIA GLOBAL v3.0 -->
+    <script src="/features/shared/js/apariencia-global.js?v=7" defer></script>
+
     <style>
         html:not(.auth-ready) body { visibility: hidden; }
         html.auth-ready body { visibility: visible; }
@@ -187,16 +137,19 @@
         let precios = { live_basico: null, live_pro: null };
         let passActivo = false;
         window.passTipoActual = null;
+        let supabaseClient = null;
 
         cfgInitPage({ title: 'Live Pass', subtitle: 'Sariel\'s Live', backUrl: '/features/live/live.html' });
 
         async function esperarCliente() {
-            const inicio = Date.now();
-            while (Date.now() - inicio < 10000) {
-                if (window.supabaseClient) return window.supabaseClient;
-                await new Promise(r => setTimeout(r, 100));
+            try {
+                supabaseClient = await window.supabaseReady;
+                if (!supabaseClient) supabaseClient = window.supabaseClient;
+                return supabaseClient;
+            } catch (e) {
+                console.error('[LivePass] Error obteniendo cliente:', e);
+                return null;
             }
-            return null;
         }
 
         function formatoMxn(n) {
