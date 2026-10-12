@@ -260,9 +260,9 @@
     }
 
     // ----------------------------------------------------------------
-    // Formato de tiempo relativo — con fallback local
+    // Formato de tiempo relativo — con fallback local i18n
     // Si window.formatearTiempoRelativo existe (expuesto por otro módulo),
-    // se prefiere. Si no, se calcula localmente sin depender de nadie.
+    // se prefiere. Si no, se usa el cálculo local con claves i18n.
     // ----------------------------------------------------------------
     function formatearTiempoRelativoLocal(iso) {
         if (typeof window.formatearTiempoRelativo === 'function') {
@@ -275,17 +275,28 @@
         var ms = Date.now() - new Date(iso).getTime();
         if (!isFinite(ms) || ms < 0) ms = 0;
         var seg = Math.floor(ms / 1000);
-        if (seg < 60) return 'hace unos segundos';
+        if (seg < 60) return t('perfil_publico_hace_segundos');
+
         var min = Math.floor(seg / 60);
-        if (min < 60) return 'hace ' + min + ' min';
+        if (min < 60) return t('perfil_publico_hace_min', { n: min });
+
         var h = Math.floor(min / 60);
-        if (h < 24) return 'hace ' + h + ' h';
+        if (h < 24) return t('perfil_publico_hace_h', { n: h });
+
         var d = Math.floor(h / 24);
-        if (d < 30) return 'hace ' + d + ' d';
+        if (d < 30) return t('perfil_publico_hace_d', { n: d });
+
         var mes = Math.floor(d / 30);
-        if (mes < 12) return 'hace ' + mes + ' mes' + (mes === 1 ? '' : 'es');
+        if (mes < 12) {
+            return mes === 1
+                ? t('perfil_publico_hace_mes', { n: mes })
+                : t('perfil_publico_hace_meses', { n: mes });
+        }
+
         var anio = Math.floor(mes / 12);
-        return 'hace ' + anio + ' año' + (anio === 1 ? '' : 's');
+        return anio === 1
+            ? t('perfil_publico_hace_anio', { n: anio })
+            : t('perfil_publico_hace_anios', { n: anio });
     }
 
     // ----------------------------------------------------------------
@@ -368,7 +379,7 @@
     async function cargarPerfil(client, handle) {
         var r = await client
             .from('perfiles_publicos')
-            .select('id, nombre, handle, avatar_url, online, ultima_conexion, verificado, seguidores_count, siguiendo_count')
+            .select('id, nombre, handle, avatar_url, ultima_conexion, verificado, seguidores_count, siguiendo_count')
             .eq('handle', handle)
             .maybeSingle();
         if (r.error) throw r.error;
@@ -459,37 +470,36 @@
     }
 
     // ----------------------------------------------------------------
-    // Estado — 3 fuentes en orden de preferencia:
-    //   1. Realtime (window.presenciaUsuarios / evento sar:presence:sync)
-    //   2. Snapshot de la vista (perfil.online === true)
-    //   3. Inactivo con última conexión (perfil.ultima_conexion)
-    // Si el dueño ocultó su estado, la vista devuelve online=false y
-    // ultima_conexion=null → no se muestra nada.
+    // Estado — única fuente confiable: Realtime.
+    // Sin Realtime, NO se muestra estado (ni "Activo" ni "Inactivo"),
+    // porque:
+    //   - online no se baja al desconectar (falso positivo).
+    //   - ultima_conexion solo cambia al cambiar estado manual, no
+    //     con actividad (falso negativo).
+    // Mostrar "no sé" es mejor que mostrar algo falso.
+    //
+    // Cuando exista presencia-global.js y emita 'sar:presence:sync',
+    // esta función activará los dos casos reales.
     // ----------------------------------------------------------------
     function pintarEstado() {
         if (!perfil || !el.estado) return;
         el.estado.hidden = true;
 
-        // 1. Realtime
-        if (presencia && typeof presencia === 'object') {
-            var entrada = presencia[perfil.id];
-            if (entrada && entrada.visible !== false) {
-                el.estadoDot.className = 'pp-dot activo';
-                el.estadoTexto.textContent = t('perfil_publico_activo_ahora');
-                el.estado.hidden = false;
-                return;
-            }
+        // Sin Realtime cargado → no podemos afirmar nada.
+        if (!(presencia && typeof presencia === 'object')) {
+            return;
         }
 
-        // 2. Snapshot de la vista
-        if (perfil.online === true) {
+        // 1. Realtime: usuario en el mapa → "Activo ahora".
+        var entrada = presencia[perfil.id];
+        if (entrada && entrada.visible !== false) {
             el.estadoDot.className = 'pp-dot activo';
             el.estadoTexto.textContent = t('perfil_publico_activo_ahora');
             el.estado.hidden = false;
             return;
         }
 
-        // 3. Inactivo con última conexión
+        // 2. Realtime: usuario NO en el mapa → "Inactivo · hace X".
         if (perfil.ultima_conexion) {
             el.estadoDot.className = 'pp-dot inactivo';
             el.estadoTexto.textContent = t('perfil_publico_inactivo') + ' · ' +
@@ -498,12 +508,11 @@
             return;
         }
 
-        // 4. Estado oculto por el usuario → no mostrar nada.
+        // 3. Estado oculto (ultima_conexion=null) → no mostrar nada.
     }
 
     function aplicarPresencia(mapa) {
-        // Solo sobreescribir si llega un mapa válido. Así el snapshot
-        // de perfil.online sigue funcionando si nadie emite el evento.
+        // Solo sobreescribir si llega un mapa válido.
         if (mapa && typeof mapa === 'object') {
             presencia = mapa;
         }
@@ -575,7 +584,7 @@
 
         // Si algún módulo externo ya llenó el mapa antes de que
         // cargáramos, lo respetamos. Si no, presencia queda en null
-        // y pintarEstado() usará el snapshot de la vista.
+        // y pintarEstado() no mostrará estado (esperando Realtime).
         if (window.presenciaUsuarios && typeof window.presenciaUsuarios === 'object') {
             presencia = window.presenciaUsuarios;
         }
