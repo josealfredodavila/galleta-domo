@@ -1,8 +1,7 @@
 // ================================================================
-// ROUTES/PAYMENTS.JS — Csariel's (v3)
+// ROUTES/PAYMENTS.JS — Csariel's (v3.1)
 // Transmisiones (pay-per-view), Muro P2P, Marketing e Internet.
-// Método: NOWPayments. NO toca membresías, Live Pass ni donaciones de Live
-// (esos tienen su propio flujo y webhook).
+// Método: NOWPayments. NO toca membresías, Live Pass ni donaciones de Live.
 // Estados de ordenes_internet permitidos: pendiente, pagado, activo, cancelado.
 // ================================================================
 
@@ -79,6 +78,7 @@ function estadoInternetLocal(npStatus, estadoActual) {
 // ================================================================
 // POST /api/payments/create  (acceso a transmisión de pago)
 // El monto se toma de transmisiones.precio_acceso, nunca del cliente.
+// Guarda payment_id para que el webhook pueda enlazar el pago con la orden.
 // ================================================================
 router.post('/create', verificarToken, limitadorPagos, verificarErrores, async (req, res) => {
     try {
@@ -144,6 +144,27 @@ router.post('/create', verificarToken, limitadorPagos, verificarErrores, async (
             return res.status(502).json({ success: false, error: 'No fue posible crear el pago con NOWPayments' });
         }
 
+        const paymentId = np?.payment_id || null;
+        if (!paymentId) {
+            return res.status(502).json({ success: false, error: 'NOWPayments no devolvió un identificador de pago' });
+        }
+
+        // Enlazar el pago con la orden: sin payment_id el webhook no puede encontrarla
+        const { error: errLink } = await supabaseAdmin
+            .from('pagos_transmision')
+            .update({
+                payment_id: String(paymentId),
+                payment_url: np.payment_url || null,
+                pay_address: np.pay_address || null,
+                pay_amount_esperado: numeroValido(np.pay_amount) ? Number(np.pay_amount) : null,
+                moneda_pago_esperada: np.pay_currency || 'usdttrc20'
+            })
+            .eq('id', orden.id);
+        if (errLink) {
+            logger.error(`guardar payment_id transmisión ${orden.id}: ${errLink.message}`);
+            return res.status(500).json({ success: false, error: 'El pago fue creado pero no se pudo guardar la orden', orden_id: orden.id, payment_id: paymentId });
+        }
+
         return res.status(201).json({
             success: true,
             data: {
@@ -151,7 +172,7 @@ router.post('/create', verificarToken, limitadorPagos, verificarErrores, async (
                 estado: orden.estado,
                 monto,
                 moneda: 'USD',
-                payment_id: np.payment_id || null,
+                payment_id: paymentId,
                 payment_url: np.payment_url || null,
                 pay_address: np.pay_address || null,
                 pay_amount: np.pay_amount || null,
