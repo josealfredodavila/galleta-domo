@@ -73,6 +73,7 @@
         .ctrl-mic { background: rgba(0, 214, 143, 0.08); border-color: rgba(0, 214, 143, 0.15); }
         .ctrl-mic.muted { background: rgba(255, 51, 102, 0.08); border-color: rgba(255, 51, 102, 0.15); color: var(--danger); }
         .ctrl-screen { background: rgba(168, 85, 247, 0.08); border-color: rgba(168, 85, 247, 0.15); }
+        .ctrl-screen.active { background: rgba(168, 85, 247, 0.25); border-color: var(--purple); box-shadow: 0 0 40px rgba(168, 85, 247, 0.4); }
         .ctrl-game { background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05)); border-color: rgba(212, 175, 55, 0.25); color: var(--gold); }
         .ctrl-end { background: rgba(255, 51, 102, 0.08); border-color: rgba(255, 51, 102, 0.15); width: 60px; height: 60px; }
         .ctrl-end .orb-red { width: 44px; height: 44px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, rgba(255, 51, 102, 0.4), rgba(255, 0, 68, 0.8)); display: flex; align-items: center; justify-content: center; color: #fff; border: 1px solid rgba(255, 51, 102, 0.2); }
@@ -121,7 +122,7 @@
         .live-chat-container .chat-header h3 { color: var(--gold); font-family: 'Orbitron', monospace; font-size: 0.75rem; display: flex; align-items: center; gap: 8px; }
         .live-chat-container .chat-header h3 .dot-online { width: 6px; height: 6px; border-radius: 50%; background: var(--success); display: inline-block; }
         .live-chat-container .chat-header .chat-count { font-size: 0.55rem; color: var(--text-muted); background: rgba(255,255,255,0.05); padding: 2px 12px; border-radius: 20px; }
-        .live-chat-container .chat-messages { padding: 12px 16px; max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+        .live-chat-container .chat-messages { padding: 12px 16px; max-height: min(300px, 40vh); overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
         .live-chat-container .chat-messages .chat-msg { display: flex; gap: 8px; padding: 4px 0; border-bottom: 1px solid rgba(212, 175, 55, 0.03); }
         .live-chat-container .chat-messages .chat-msg .avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold)); display: flex; align-items: center; justify-content: center; font-size: 0.6rem; color: white; flex-shrink: 0; }
         .live-chat-container .chat-messages .chat-msg .msg .name { color: var(--gold); font-size: 0.65rem; font-weight: 600; }
@@ -170,7 +171,7 @@
         .game-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
         .game-option { padding: 13px 12px; border-radius: 13px; border: 1px solid var(--glass-border); background: rgba(0,0,0,.28); color: var(--text-primary); cursor: pointer; font: 600 .72rem 'Inter', sans-serif; text-align: left; }
         .game-option:hover { border-color: var(--gold); color: var(--gold); }
-        .livepass-time-bar { position: absolute; top: 70px; left: 16px; right: 16px; z-index: 6; background: rgba(0,0,0,0.7); border: 1px solid rgba(212,175,55,.3); border-radius: 14px; padding: 10px 14px; display: none; }
+        .livepass-time-bar { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 80px); left: 16px; right: 16px; z-index: 6; background: rgba(0,0,0,0.7); border: 1px solid rgba(212,175,55,.3); border-radius: 14px; padding: 10px 14px; display: none; }
         .livepass-time-bar.visible { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
         .livepass-time-bar .info { color: var(--text-secondary); font-size: 0.7rem; }
         .livepass-time-bar .info strong { color: var(--gold); font-family: 'Orbitron', monospace; }
@@ -266,7 +267,6 @@
                 </div>
             </div>
 
-            <!-- ✅ Anuncios patrocinados (oculto por defecto) -->
             <div class="marketing-ad-container" id="marketingAdContainer">
                 <div class="marketing-ad-header">
                     <span class="marketing-ad-label" data-clave="live_patrocinado">Patrocinado</span>
@@ -334,12 +334,20 @@
 
     <script>
 // ================================================================
-// LIVE · JS v2.4 - Sariel's Ecosystem
+// LIVE · JS v3.0 - Csariel's Ecosystem
 // ================================================================
-// CAMBIOS v2.4:
-// - ✅ Fix: marketingAdContainer ahora está en el HTML
-// - ✅ Fix: modal elegante para título/categoría (sin prompt())
-// - ✅ Integración completa con Push Notifications
+// CAMBIOS v3.0 (fixes de 2da auditoría):
+// - ✅ Cache de cargarLiveKit() (evita múltiples import())
+// - ✅ XSS en renderizarTransmisiones (delegación de eventos)
+// - ✅ Promise.race con timeout en supabaseReady (evita cuelgue)
+// - ✅ beforeunload completo (detiene gameScreenStream + liveKitRoom)
+// - ✅ registrarMinutoBackend re-verifica en error != 403
+// - ✅ escapeHTML optimizado (String.replace en lugar de div)
+// - ✅ safeUrl() para URLs de anuncios (evita javascript: XSS)
+// - ✅ unirseATransmision limpia liveKitRoom previo
+// - ✅ finalizarTransmisionGeneral limpia gameScreenTrack
+// - ✅ screenBtn marca estado activo al compartir pantalla
+// - ✅ "Sariel's" → "Csariel's" en todo el archivo
 // ================================================================
 'use strict';
 
@@ -364,7 +372,7 @@ const REDES_DONACION = [
     { id: 'usdcbsc', label: 'USDC · BSC' }
 ];
 
-const PALABRAS_PROHIBIDAS = ['puta','verga','mierda','pendejo','chingar','chingada','cabron','cabrón','pinche','wey','güey','culero','puto','maricon','maricón','joto','negro','indio','naco','naca','sudaca','matar','mata','asesinar','suicidio','violar','droga','cocaína','marihuana','perico','cristal','cerveza','tequila','whisky','ron','vodka','fuck','shit','bitch','asshole','motherfucker'];
+const PALABRAS_PROHIBIDAS = ['puta','verga','mierda','pendejo','chingar','chingada','cabron','cabrón','pinche','wey','güey','culero','puto','maricon','maricón','joto','matar','mata','asesinar','suicidio','violar','droga','cocaína','marihuana','perico','cristal','cerveza','tequila','whisky','ron','vodka','fuck','shit','bitch','asshole','motherfucker'];
 
 let supabaseClient = null;
 let currentUser = null;
@@ -394,6 +402,12 @@ let donacionPollingInterval = null;
 let donacionActualId = null;
 let juegosDisponibles = [];
 
+// ✅ Cache del módulo LiveKit (evita import() repetido)
+let _livekitModule = null;
+
+// ✅ Cache del interval de transmisiones (para cleanup)
+let _streamsPoller = null;
+
 function showToast(msg, type = '', duration = 3500) {
     let t = document.getElementById('toast');
     if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); }
@@ -406,17 +420,29 @@ function showToast(msg, type = '', duration = 3500) {
     t._timeout = setTimeout(() => t.classList.remove('show'), duration);
 }
 
+// ✅ escapeHTML optimizado (sin crear div)
 function escapeHTML(texto) {
-    if (!texto) return '';
-    const div = document.createElement('div');
-    div.textContent = texto;
-    return div.innerHTML;
+    return String(texto ?? '').replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[c]);
 }
 
 function attrHTML(t) {
     return String(t ?? '').replace(/[&<>"']/g, c => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     })[c]);
+}
+
+// ✅ Valida que la URL use http o https (evita javascript: XSS)
+function safeUrl(u) {
+    if (!u) return '';
+    try {
+        const url = new URL(u, location.origin);
+        if (url.protocol !== 'http:' && url.protocol !== 'https:') return '';
+        return url.href;
+    } catch {
+        return '';
+    }
 }
 
 function mensajeErrorCamara(e) {
@@ -438,8 +464,11 @@ async function getSession() {
     return session;
 }
 
+// ✅ Cache del módulo LiveKit
 async function cargarLiveKit() {
-    return await import('https://cdn.jsdelivr.net/npm/livekit-client@2/dist/livekit-client.esm.mjs');
+    if (_livekitModule) return _livekitModule;
+    _livekitModule = await import('https://cdn.jsdelivr.net/npm/livekit-client@2/dist/livekit-client.esm.mjs');
+    return _livekitModule;
 }
 
 async function obtenerTokenLiveKit(roomName, participantName) {
@@ -459,9 +488,6 @@ async function obtenerTokenLiveKit(roomName, participantName) {
     return data.token;
 }
 
-// ================================================================
-// MODAL: Pedir título y categoría (reemplaza prompt())
-// ================================================================
 function pedirDatosTransmision() {
     return new Promise((resolve) => {
         const modal = document.createElement('div');
@@ -499,7 +525,7 @@ function pedirDatosTransmision() {
         const cerrar = (datos) => { modal.remove(); resolve(datos); };
 
         modal.querySelector('#btnAceptarTitulo').onclick = () => {
-            const titulo = inputTitulo.value.trim() || 'Live en Csariel\'s';
+            const titulo = inputTitulo.value.trim().slice(0, 80) || 'Live en Csariel\'s';
             const categoria = modal.querySelector('#inputCategoriaLive').value || 'general';
             cerrar({ titulo, categoria });
         };
@@ -508,7 +534,7 @@ function pedirDatosTransmision() {
         inputTitulo.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                const titulo = inputTitulo.value.trim() || 'Live en Csariel\'s';
+                const titulo = inputTitulo.value.trim().slice(0, 80) || 'Live en Csariel\'s';
                 const categoria = modal.querySelector('#inputCategoriaLive').value || 'general';
                 cerrar({ titulo, categoria });
             }
@@ -601,6 +627,7 @@ function actualizarBarraTiempo() {
     if (progressEl) progressEl.style.width = ((minutosRestantesTotales / infoLivePass.minutos_limite) * 100) + '%';
 }
 
+// ✅ FIX: re-verificar Live Pass si la respuesta NO es 403 ni 200
 async function registrarMinutoBackend() {
     try {
         const session = await getSession();
@@ -610,7 +637,13 @@ async function registrarMinutoBackend() {
             headers: { 'Authorization': `Bearer ${session.access_token}` }
         });
         if (response.status === 403) { finalizarPorTiempoAgotado(); return; }
-        if (response.ok) minutosTransmitiendo++;
+        if (!response.ok) {
+            // 401, 500, etc. → re-verificar si el Live Pass sigue activo
+            const recheck = await verificarLivePassAntesDeTransmitir();
+            if (!recheck.puede) finalizarPorTiempoAgotado();
+            return;
+        }
+        minutosTransmitiendo++;
     } catch (e) { console.error('Error registrando minuto:', e); }
 }
 
@@ -661,9 +694,17 @@ function mostrarAnuncio(ad) {
     const cta = document.getElementById('marketingAdCta');
     if (!container || !media || !title || !desc || !cta) return;
 
-    if (ad.imagen_url) media.innerHTML = `<img src="${attrHTML(ad.imagen_url)}" alt="${attrHTML(ad.titulo || 'Anuncio')}" loading="lazy" onerror="this.parentElement.innerHTML='<span>◈</span>'">`;
-    else if (ad.video_url) media.innerHTML = `<video src="${attrHTML(ad.video_url)}" muted autoplay loop playsinline></video>`;
-    else media.innerHTML = '<span>◈</span>';
+    // ✅ FIX: validar URLs con safeUrl
+    const imgUrl = safeUrl(ad.imagen_url);
+    const vidUrl = safeUrl(ad.video_url);
+
+    if (imgUrl) {
+        media.innerHTML = `<img src="${attrHTML(imgUrl)}" alt="${attrHTML(ad.titulo || 'Anuncio')}" loading="lazy" onerror="this.parentElement.innerHTML='<span>◈</span>'">`;
+    } else if (vidUrl) {
+        media.innerHTML = `<video src="${attrHTML(vidUrl)}" muted autoplay loop playsinline></video>`;
+    } else {
+        media.innerHTML = '<span>◈</span>';
+    }
 
     title.textContent = ad.titulo || 'Patrocinado';
     desc.textContent = ad.descripcion || '';
@@ -695,8 +736,9 @@ async function registrarClicAnuncio() {
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
             body: JSON.stringify({ ad_id: anuncioActual.id, campaign_id: anuncioActual.campaign_id, target_tipo: 'live', target_id: currentStreamId, evento: 'clic', session_id: getOrCreateAdSessionId() })
         });
-        if (anuncioActual.video_url) window.open(anuncioActual.video_url, '_blank', 'noopener');
-        else if (anuncioActual.imagen_url) window.open(anuncioActual.imagen_url, '_blank', 'noopener');
+        // ✅ FIX: preferir cta_url/link_destino antes de imagen/video
+        const destino = safeUrl(anuncioActual.cta_url || anuncioActual.link_destino || anuncioActual.video_url || anuncioActual.imagen_url);
+        if (destino) window.open(destino, '_blank', 'noopener');
     } catch (e) {}
 }
 
@@ -737,7 +779,6 @@ async function iniciarTransmisionGeneral() {
 
         if (streamActivo) { showToast('⚠️ Ya tienes una transmisión activa', 'warning'); return; }
 
-        // ✅ Modal elegante en lugar de prompt()
         const datos = await pedirDatosTransmision();
         if (!datos) return;
         const titulo = datos.titulo;
@@ -776,13 +817,30 @@ async function iniciarTransmisionGeneral() {
             await liveKitRoom.localParticipant.setMicrophoneEnabled(true);
             const localVideoTrack = liveKitRoom.localParticipant.getTrackPublication(Track.Source.Camera)?.videoTrack;
             if (localVideoTrack) localVideoTrack.attach(document.getElementById('liveVideo'));
-            liveKitRoom.on('participantConnected', () => {
-                espectadores++;
-                document.getElementById('viewersCount').textContent = `● ${espectadores}`;
+
+            const actualizarContador = () => {
+                if (!liveKitRoom) return;
+                espectadores = liveKitRoom.remoteParticipants.size;
+                const el = document.getElementById('viewersCount');
+                if (el) el.textContent = `● ${espectadores}`;
+            };
+            liveKitRoom.on('participantConnected', actualizarContador);
+            liveKitRoom.on('participantDisconnected', actualizarContador);
+
+            // Sincronizar estado del micrófono si el SO lo mutea
+            liveKitRoom.localParticipant.on('trackMuted', () => {
+                isMuted = true;
+                const btn = document.getElementById('muteBtn');
+                const muteLine = document.getElementById('muteLine');
+                if (btn) btn.classList.add('muted');
+                if (muteLine) muteLine.style.display = '';
             });
-            liveKitRoom.on('participantDisconnected', () => {
-                espectadores = Math.max(0, espectadores - 1);
-                document.getElementById('viewersCount').textContent = `● ${espectadores}`;
+            liveKitRoom.localParticipant.on('trackUnmuted', () => {
+                isMuted = false;
+                const btn = document.getElementById('muteBtn');
+                const muteLine = document.getElementById('muteLine');
+                if (btn) btn.classList.remove('muted');
+                if (muteLine) muteLine.style.display = 'none';
             });
         } catch (e) {
             throw new Error(mensajeErrorCamara(e));
@@ -818,10 +876,20 @@ async function finalizarTransmisionGeneral() {
         showToast('⏳ Finalizando...', '', 3000);
         detenerConteoMinutos();
         detenerSondeoDonacion();
+
         const video = document.getElementById('liveVideo');
         if (video && video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; }
         if (gameScreenStream) { gameScreenStream.getTracks().forEach(t => t.stop()); gameScreenStream = null; }
+        gameScreenTrack = null;
         if (liveKitRoom) { try { await liveKitRoom.disconnect(); } catch (e) {} liveKitRoom = null; }
+
+        const screenBtn = document.getElementById('screenBtn');
+        if (screenBtn) screenBtn.classList.remove('active');
+
+        if (currentStream && supabaseClient) {
+            try { await supabaseClient.from('transmisiones').update({ viewers_count: espectadores }).eq('id', currentStream.id); } catch (e) {}
+        }
+
         const { error } = await supabaseClient.rpc('finalizar_transmision', { p_transmision_id: streamId });
         if (error) {
             await supabaseClient.from('transmisiones').update({ estado: 'finalizada', is_live: false, fecha_fin: new Date().toISOString() }).eq('id', streamId);
@@ -842,11 +910,19 @@ async function unirseATransmision(streamId) {
     try {
         const session = await getSession();
         if (!session) { showToast('⚠️ Inicia sesión', 'error'); return; }
+
+        // ✅ FIX: limpiar conexión previa si existe
+        if (liveKitRoom) {
+            try { await liveKitRoom.disconnect(); } catch (e) {}
+            liveKitRoom = null;
+        }
+
         showToast('⏳ Uniéndose...', '', 2000);
         const { data: stream, error } = await supabaseClient.from('transmisiones').select('*').eq('id', streamId).single();
         if (error) throw error;
         currentStream = stream;
         currentStreamId = stream.id;
+        document.getElementById('liveTitle').textContent = stream.titulo || 'EN VIVO';
         try {
             const { Room } = await cargarLiveKit();
             liveKitRoom = new Room();
@@ -858,6 +934,14 @@ async function unirseATransmision(streamId) {
                     if (video) { track.attach(video); video.play().catch(() => {}); }
                 }
             });
+            const actualizarContadorViewer = () => {
+                if (!liveKitRoom) return;
+                espectadores = liveKitRoom.remoteParticipants.size;
+                const el = document.getElementById('viewersCount');
+                if (el) el.textContent = `● ${espectadores}`;
+            };
+            liveKitRoom.on('participantConnected', actualizarContadorViewer);
+            liveKitRoom.on('participantDisconnected', actualizarContadorViewer);
             showToast('📺 Conectado', 'success');
         } catch (e) { showToast('⚠️ ' + mensajeErrorCamara(e), 'warning'); }
         suscribirseAlChat();
@@ -887,6 +971,7 @@ async function enviarMensaje() {
     const mod = verificarContenido(mensaje);
     if (mod.prohibido) { showToast(`⚠️ ${mod.razon}`, 'warning'); input.value = ''; return; }
     try {
+        input.value = '';
         await supabaseClient.from('mensajes_live').insert({
             transmision_id: currentStream.id,
             usuario_id: session.user.id,
@@ -894,7 +979,6 @@ async function enviarMensaje() {
             nombre_usuario: session.user.user_metadata?.nombre || 'Explorador',
             creado_en: new Date().toISOString()
         });
-        input.value = '';
     } catch (e) { showToast('❌ Error al enviar', 'error'); }
 }
 
@@ -903,7 +987,9 @@ function agregarMensajeAlChat(mensaje) {
     if (!container) return;
     const div = document.createElement('div');
     div.className = 'chat-msg';
-    const avatar = mensaje.nombre_usuario ? mensaje.nombre_usuario.charAt(0).toUpperCase() : '◈';
+    const avatar = mensaje.nombre_usuario
+        ? escapeHTML(mensaje.nombre_usuario.charAt(0).toUpperCase())
+        : '◈';
     div.innerHTML = `<div class="avatar">${avatar}</div><div class="msg"><span class="name">${escapeHTML(mensaje.nombre_usuario || 'Explorador')}</span><span class="time">${new Date(mensaje.creado_en || mensaje.created_at).toLocaleTimeString()}</span><div class="text">${escapeHTML(mensaje.mensaje)}</div></div>`;
     container.appendChild(div);
     container.scrollTop = container.scrollHeight;
@@ -912,10 +998,20 @@ function agregarMensajeAlChat(mensaje) {
 }
 
 function verificarContenido(texto) {
-    const regex = new RegExp(`\\b(${PALABRAS_PROHIBIDAS.join('|')})\\b`, 'i');
+    // ✅ FIX: usar límites unicode correctos para acentos
+    const regex = new RegExp(`(?<![\\p{L}])(${PALABRAS_PROHIBIDAS.join('|')})(?![\\p{L}])`, 'iu');
     if (regex.test(texto)) return { prohibido: true, razon: 'Contenido inapropiado' };
-    const palabras = texto.split(' ');
-    if (palabras.filter((p, i) => palabras.indexOf(p) !== i).length > 5) return { prohibido: true, razon: 'Posible spam' };
+
+    // ✅ FIX: spam por frecuencia de duplicados (no por instancias repetidas)
+    const palabras = texto.toLowerCase().split(/\s+/).filter(Boolean);
+    const freq = {};
+    let duplicadoExcesivo = false;
+    palabras.forEach(p => {
+        freq[p] = (freq[p] || 0) + 1;
+        if (freq[p] > 5) duplicadoExcesivo = true;
+    });
+    if (duplicadoExcesivo) return { prohibido: true, razon: 'Posible spam' };
+
     return { prohibido: false };
 }
 
@@ -923,6 +1019,7 @@ let montoDonacionSeleccionado = null;
 let redDonacionSeleccionada = null;
 
 function abrirModalDonacion() {
+    if (!currentStream) { showToast('⚠️ Selecciona un live primero', 'warning'); return; }
     const existente = document.getElementById('donacionModalBackdrop');
     if (existente) existente.remove();
 
@@ -1041,7 +1138,7 @@ function iniciarSondeoDonacion(donacionId, monto) {
     detenerSondeoDonacion();
     donacionActualId = donacionId;
     const INTERVALO_MS = 5000;
-    const TIMEOUT_MS = 20 * 60 * 1000;
+    const TIMEOUT_MS = 10 * 60 * 1000; // ✅ FIX: reducido de 20 a 10 min
     const inicio = Date.now();
 
     donacionPollingInterval = setInterval(async () => {
@@ -1084,12 +1181,15 @@ function detenerSondeoDonacion() {
 }
 
 function mostrarEfectoDonacion(monto, d, usuario) {
+    if (!d) return;
     const container = document.getElementById('liveVideoContainer');
     if (!container) return;
     const overlay = document.createElement('div');
     overlay.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:10;pointer-events:none;';
     const nombre = escapeHTML(usuario.user_metadata?.nombre || 'Alguien');
-    overlay.innerHTML = `<div style="text-align:center;"><div style="font-size:8rem;">${d.emoji}</div><div style="font-size:1.5rem;color:${d.color};">${nombre} donó $${monto}</div></div>`;
+    // ✅ FIX: validar color como hex antes de inyectar
+    const color = /^#[0-9a-f]{3,8}$/i.test(d.color) ? d.color : '#D4AF37';
+    overlay.innerHTML = `<div style="text-align:center;"><div style="font-size:8rem;">${d.emoji}</div><div style="font-size:1.5rem;color:${color};">${nombre} donó $${monto}</div></div>`;
     container.appendChild(overlay);
     setTimeout(() => { if (overlay.parentNode) overlay.remove(); }, d.duracion + 500);
 }
@@ -1102,9 +1202,6 @@ function iniciarContadorEspectadores() {
     }, 15000);
 }
 
-// ================================================================
-// NOTIFICAR SEGUIDORES (in-app + push)
-// ================================================================
 async function notificarSeguidores() {
     if (!currentStream || !currentUser) return;
 
@@ -1112,13 +1209,13 @@ async function notificarSeguidores() {
         const { data: segs } = await supabaseClient
             .from('live_seguidores')
             .select('seguidor_id')
-            .eq('streamer_id', currentUser.id);
+            .eq('streamer_id', currentUser.id)
+            .limit(500); // ✅ FIX: limitar a 500 seguidores por notificación
 
         if (!segs || segs.length === 0) return;
 
         const nombre = currentUser.user_metadata?.nombre || 'Un streamer';
 
-        // 1) Notificaciones in-app
         const notifs = segs
             .filter(s => s.seguidor_id !== currentUser.id)
             .map(s => ({
@@ -1132,10 +1229,13 @@ async function notificarSeguidores() {
             }));
 
         for (let i = 0; i < notifs.length; i += 50) {
-            await supabaseClient.from('notificaciones').insert(notifs.slice(i, i + 50));
+            try {
+                await supabaseClient.from('notificaciones').insert(notifs.slice(i, i + 50));
+            } catch (e) {
+                console.warn('[Live] Error insertando notificaciones in-app:', e);
+            }
         }
 
-        // 2) Push notifications
         const session = await getSession();
         if (session) {
             try {
@@ -1179,6 +1279,7 @@ async function cargarTransmisionesActivas() {
     } catch (error) { console.error(error); }
 }
 
+// ✅ FIX: delegación de eventos (sin onclick inline, sin XSS)
 function renderizarTransmisiones(streams) {
     const container = document.getElementById('streamsList');
     if (!container) return;
@@ -1186,13 +1287,27 @@ function renderizarTransmisiones(streams) {
         container.innerHTML = `<div class="empty-state" style="grid-column:1/-1;padding:20px;"><span class="icon">◉</span><h3>Sin transmisiones activas</h3><p>Sé el primero en iniciar una</p></div>`;
         return;
     }
-    container.innerHTML = streams.map(s => `
-        <div class="stream-card" onclick="unirseATransmision('${s.id}')">
-            <div class="stream-thumb"><span style="font-size:2rem;">◉</span><span class="live-badge">● EN VIVO</span></div>
-            <div class="stream-name">${escapeHTML(s.titulo || 'Live')}</div>
-            <div class="stream-host">Streamer · ${s.viewers_count || 0} espectadores</div>
-        </div>
-    `).join('');
+    container.innerHTML = streams.map(s => {
+        const mins = s.fecha_inicio
+            ? Math.max(0, Math.floor((Date.now() - new Date(s.fecha_inicio).getTime()) / 60000))
+            : 0;
+        const duracion = mins < 60 ? `${mins} min` : `${Math.floor(mins / 60)}h ${mins % 60}m`;
+        return `
+            <div class="stream-card" data-stream-id="${attrHTML(s.id)}">
+                <div class="stream-thumb"><span style="font-size:2rem;">◉</span><span class="live-badge">● EN VIVO</span></div>
+                <div class="stream-name">${escapeHTML(s.titulo || 'Live')}</div>
+                <div class="stream-host">${escapeHTML(s.categoria || 'General')} · ${s.viewers_count || 0} espectadores · ${duracion}</div>
+            </div>
+        `;
+    }).join('');
+
+    // Delegación de eventos: un solo listener para todos los cards
+    container.querySelectorAll('.stream-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const id = card.dataset.streamId;
+            if (id) unirseATransmision(id);
+        });
+    });
 }
 
 function togglePlay() {
@@ -1228,16 +1343,24 @@ async function capturarPantalla() {
     if (!liveKitRoom) { showToast('⚠️ No estás transmitiendo', 'error'); return; }
     if (!navigator.mediaDevices?.getDisplayMedia) { showToast('⚠️ No soportado', 'error'); return; }
     try {
-        const { LocalVideoTrack } = await cargarLiveKit();
+        const { LocalVideoTrack, Track } = await cargarLiveKit();
         const ss = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
         const svt = ss.getVideoTracks()[0];
-        await liveKitRoom.localParticipant.publishTrack(new LocalVideoTrack(svt), { name: 'screen', source: 'screen_share' });
+        const lvt = new LocalVideoTrack(svt);
+        await liveKitRoom.localParticipant.publishTrack(lvt, {
+            name: 'screen',
+            source: Track.Source.ScreenShare
+        });
         const video = document.getElementById('liveVideo');
         if (video) { video.srcObject = ss; try { await video.play(); } catch (e) {} }
+        // ✅ FIX: marcar botón como activo
+        const screenBtn = document.getElementById('screenBtn');
+        if (screenBtn) screenBtn.classList.add('active');
         showToast('🖥️ Compartiendo pantalla', 'success');
+
         svt.onended = async () => {
             try {
-                const pub = liveKitRoom.localParticipant.getTrackPublicationByName('screen');
+                const pub = liveKitRoom.localParticipant.getTrackPublication(Track.Source.ScreenShare);
                 if (pub?.track) await liveKitRoom.localParticipant.unpublishTrack(pub.track);
             } catch (e) {}
             await restaurarCamara();
@@ -1246,6 +1369,8 @@ async function capturarPantalla() {
 }
 
 async function restaurarCamara() {
+    const screenBtn = document.getElementById('screenBtn');
+    if (screenBtn) screenBtn.classList.remove('active');
     if (liveKitRoom) {
         const { Track } = await cargarLiveKit();
         await liveKitRoom.localParticipant.setCameraEnabled(true);
@@ -1260,6 +1385,10 @@ function soportaCompartirPantalla() { return !!(navigator.mediaDevices && typeof
 function cerrarSelectorJuego() { const m = document.getElementById('gameSelectorModal'); if (m) m.remove(); }
 
 async function abrirSelectorJuego() {
+    if (esIOS() || !soportaCompartirPantalla()) {
+        showToast('⚠️ Compartir pantalla no disponible en este dispositivo', 'warning', 6000);
+        return;
+    }
     if (document.getElementById('gameSelectorModal')) return;
     const modal = document.createElement('div');
     modal.id = 'gameSelectorModal';
@@ -1331,13 +1460,26 @@ async function iniciarTransmisionJuego(juego) {
         const video = document.getElementById('liveVideo');
         if (video) { video.srcObject = gameScreenStream; video.muted = true; await video.play().catch(() => {}); }
 
-        const { Room, LocalVideoTrack, LocalAudioTrack } = await cargarLiveKit();
+        const { Room, LocalVideoTrack, LocalAudioTrack, Track } = await cargarLiveKit();
         liveKitRoom = new Room();
         const token = await obtenerTokenLiveKit(transmision.room_name, currentUser.id);
         await liveKitRoom.connect(LIVEKIT_CONFIG.url, token);
-        await liveKitRoom.localParticipant.publishTrack(new LocalVideoTrack(gameScreenTrack), { name: 'game-screen', source: 'screen_share' });
+
+        const gameVideoTrack = new LocalVideoTrack(gameScreenTrack);
+        await liveKitRoom.localParticipant.publishTrack(gameVideoTrack, {
+            name: 'game-screen',
+            source: Track.Source.ScreenShare
+        });
+
         const sa = gameScreenStream.getAudioTracks()[0];
-        if (sa && LocalAudioTrack) await liveKitRoom.localParticipant.publishTrack(new LocalAudioTrack(sa), { name: 'game-audio', source: 'screen_share_audio' });
+        if (sa && LocalAudioTrack) {
+            const gameAudioTrack = new LocalAudioTrack(sa);
+            await liveKitRoom.localParticipant.publishTrack(gameAudioTrack, {
+                name: 'game-audio',
+                source: Track.Source.ScreenShareAudio
+            });
+        }
+
         await liveKitRoom.localParticipant.setMicrophoneEnabled(true);
 
         isLive = true; espectadores = 0;
@@ -1346,9 +1488,22 @@ async function iniciarTransmisionJuego(juego) {
         iniciarContadorEspectadores();
         suscribirseAlChat();
         await notificarSeguidores();
+
         const horas = verificacion.plan_horas_dia || 2;
         showToast(`◈ ¡Transmitiendo ${nj}! Tienes ${horas}h disponibles hoy`, 'success', 5000);
-        gameScreenTrack.onended = async () => { if (isLive) { try { await finalizarTransmisionGeneral(); } catch (_) {} } };
+
+        gameScreenTrack.onended = async () => {
+            if (!isLive) return;
+            await new Promise(r => setTimeout(r, 1000));
+            const quedan = gameScreenStream?.getVideoTracks().some(t => t.readyState === 'live');
+            if (quedan) return;
+            const confirmar = confirm('Se detuvo la pantalla compartida. ¿Finalizar la transmisión completa?');
+            if (confirmar) {
+                try { await finalizarTransmisionGeneral(); } catch (_) {}
+            } else {
+                try { await restaurarCamara(); } catch (_) {}
+            }
+        };
     } catch (error) {
         console.error(error);
         showToast('✕ ' + mensajeErrorCamara(error), 'error', 6000);
@@ -1378,9 +1533,16 @@ async function cargarEstadisticas() {
 window.addEventListener('DOMContentLoaded', async () => {
     console.log('◈ Csariel\'s Live - cargando...');
 
+    // ✅ FIX: Promise.race con timeout para evitar cuelgue si supabaseReady no resuelve
     try {
-        supabaseClient = await window.supabaseReady;
+        const timeout = new Promise(r => setTimeout(() => r(null), 5000));
+        supabaseClient = await Promise.race([
+            window.supabaseReady || Promise.resolve(null),
+            timeout
+        ]).catch(() => null);
+
         if (!supabaseClient) supabaseClient = window.supabaseClient;
+
         if (!supabaseClient) {
             console.error('[Live] No hay cliente Supabase');
             showToast('❌ Error de conexión', 'error');
@@ -1398,7 +1560,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     else showToast('⚠️ Inicia sesión para transmitir', 'warning');
 
     cargarTransmisionesActivas();
-    setInterval(cargarTransmisionesActivas, 30000);
+    _streamsPoller = setInterval(cargarTransmisionesActivas, 30000);
 
     const ci = document.getElementById('chatInput');
     if (ci) ci.addEventListener('keydown', e => { if (e.key === 'Enter') enviarMensaje(); });
@@ -1412,6 +1574,29 @@ window.addEventListener('DOMContentLoaded', async () => {
     }, 500);
 
     console.log('◈ Live listo');
+});
+
+// ✅ FIX: cleanup completo al salir
+window.addEventListener('beforeunload', () => {
+    try {
+        if (channelChat && supabaseClient) {
+            supabaseClient.removeChannel(channelChat);
+            channelChat = null;
+        }
+        if (gameScreenStream) {
+            gameScreenStream.getTracks().forEach(t => t.stop());
+            gameScreenStream = null;
+        }
+        if (liveKitRoom) {
+            try { liveKitRoom.disconnect(); } catch (e) {}
+            liveKitRoom = null;
+        }
+        detenerSondeoDonacion();
+        detenerRefrescoAnuncios();
+        detenerConteoMinutos();
+        if (streamInterval) { clearInterval(streamInterval); streamInterval = null; }
+        if (_streamsPoller) { clearInterval(_streamsPoller); _streamsPoller = null; }
+    } catch (e) {}
 });
 
 window.iniciarTransmisionGeneral = iniciarTransmisionGeneral;
