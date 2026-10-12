@@ -1,236 +1,160 @@
 // ================================================================
-// MEMBRESIA-WEBHOOK-HANDLER.JS - SARIEL'S ECOSYSTEM
-//
-// CAMBIOS RESPECTO A LA VERSIÓN ANTERIOR
-// 1) Firma: HMAC-SHA512 sobre el JSON con llaves ordenadas
-//    (utils/nowpayments-sig.js). Antes usaba sha256 y rechazaba
-//    todos los webhooks reales.
-// 2) Estados: pagos_membresia_estado_check solo permite
-//    pendiente, waiting, confirming, confirmed, finished,
-//    partially_paid, failed, refunded, expired.
-//    Antes se escribía el estado crudo de NOWPayments ('sending',
-//    'canceled', etc.) y el UPDATE fallaba en silencio.
-// 3) La RPC activar_membresia_pro devuelve { success: false } SIN
-//    lanzar error de Supabase. Antes solo se revisaba result.error,
-//    así que una activación fallida se reportaba como éxito.
-// 4) La idempotencia ahora la garantiza la RPC (estado 'finished'
-//    + pagado_at) y ya no se puede activar dos veces el mismo pago.
-// 5) Errores temporales → 500 (NOWPayments reintenta).
-//    Errores permanentes (pago inexistente, plan no encontrado)
-//    → 200 con log, porque reintentar no los arregla.
-//
-// UBICACIÓN: backend/routes/membresia-webhook-handler.js
-//            (junto a routes/webhooks.js)
+// MEMBRESIA-WEBHOOK-HANDLER.JS — Csariel's (membresía Pro, order "PRO-")
+// Llamado desde routes/webhooks.js, que ya verificó la firma.
+// La activación la hace activar_membresia_pro (SQL, idempotente).
+// Errores temporales → 500 (NOWPayments reintenta).
+// Errores permanentes → 200 (reintentar no los arregla).
 // ================================================================
 
-const { createClient } = require('@supabase/supabase-js');
-const { verificarFirmaNowPayments } = require('../utils/nowpayments-sig.js');
-
-const supabaseAdmin = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+const { supabaseAdmin } = require('../config/supabase');
+const { verificarFirmaNowPayments } = require('../utils/nowpayments-sig');
 
 const NOWPAYMENTS_IPN_SECRET = process.env.NOWPAYMENTS_IPN_SECRET;
 
-// Estados internos que ya cuentan como pago confirmado
-// ('confirmado' es legado de la versión anterior)
-const ESTADOS_CONFIRMADOS = ['finished', 'confirmado'];
+// Estados que el CHECK de pagos_membresia permite
+const MAPA_ESTADO = {
+    waiting: 'waiting',
+    confirming: 'confirming',
+    sending: 'confirming',
+    confirmed: 'confirmed',
+    partially_paid: 'partially_paid',
+    failed: 'failed',
+    refunded: 'refunded',
+    expired: 'expired',
+    canceled: 'failed',
+    cancelled: 'failed'
+};
 
-// ===== VERIFICAR FIRMA =====
-function verificarFirma(payload, signature, rawBody) {
-    if (!NOWPAYMENTS_IPN_SECRET || !signature) {
-        console.warn('⚠️ IPN_SECRET no configurado o firma faltante');
-        return false;
-    }
+const log = (...args) => console.log('[Membresía Pro]', ...args);
+const logError = (...args) => console.error('[Membresía Pro ERROR]', ...args);
 
-    try {
-        return verificarFirmaNowPayments(
-            payload,
-            rawBody,
-            signature,
-            NOWPAYMENTS_IPN_SECRET
-        );
-    } catch (error) {
-        console.error('❌ Error verificando firma:', error);
-        return false;
-    }
+function firmaValida(payload, rawBody, signature) {
+    if (!NOWPAYMENTS_IPN_SECRET || !signature) return false;
+    return verificarFirmaNowPayments(payload, rawBody, signature, NOWPAYMENTS_IPN_SECRET);
 }
 
-// ===== MAPEAR ESTADO NOWPAYMENTS → ESTADO PERMITIDO POR EL CHECK =====
-function estadoPermitido(npStatus, estadoActual) {
-    const mapa = {
-        waiting: 'waiting',
-        confirming: 'confirming',
-        sending: 'confirming',
-        confirmed: 'confirmed',
-        partially_paid: 'partially_paid',
-        failed: 'failed',
-        refunded: 'refunded',
-        expired: 'expired',
-        canceled: 'failed',
-        cancelled: 'failed'
-    };
-
-    return mapa[String(npStatus || '').toLowerCase()] || estadoActual;
-}
-
-// ===== PROCESAR WEBHOOK =====
-// Devuelve { success, message?, error?, noRetry? }
-//   noRetry=true → el fallo es permanente; responder 200 para que
-//                  NOWPayments no reintente en vano.
+// Devuelve { success, noRetry?, error?, message?, data? }
 async function procesarWebhookMembresia(payload) {
     try {
-        const { order_id, payment_id, payment_status } = payload;
-        const status = String(payment_status || '').toLowerCase();
+        const orderId = String(payload.order_id || '');
+        const paymentId = payload.payment_id != null ? String(payload.payment_id) : null;
+        const status = String(payload.payment_status || '').toLowerCase();
 
-        console.log('📩 Webhook membresía:', { order_id, payment_status });
+        if (!orderId) return { success: false, noRetry: true, error: 'sin_order_id' };
 
-        if (!order_id) {
-            return { success: false, noRetry: true, error: 'Falta order_id' };
-        }
-
-        // Buscar el pago
-        const { data: pago, error: pagoError } = await supabaseAdmin
+        const { data: pago, error: errPago } = await supabaseAdmin
             .from('pagos_membresia')
             .select('id, usuario_id, estado, monto_mxn')
-            .eq('order_id', order_id)
+            .eq('order_id', orderId)
             .maybeSingle();
 
-        if (pagoError) {
-            console.error('❌ Error consultando pago:', pagoError.message);
-            return { success: false, error: pagoError.message };
+        if (errPago) {
+            logError('consulta pago:', errPago.message);
+            return { success: false, error: 'db' };
         }
-
         if (!pago) {
-            console.error('❌ Pago no encontrado:', order_id);
-            return { success: false, noRetry: true, error: 'Pago no encontrado' };
+            logError('pago no encontrado:', orderId);
+            return { success: false, noRetry: true, error: 'pago_no_encontrado' };
         }
-
-        // Ya confirmado: nada que hacer
-        if (ESTADOS_CONFIRMADOS.includes(pago.estado)) {
-            console.log('ℹ️ Pago ya confirmado, ignorando:', order_id);
-            return { success: true, message: 'Ya confirmado' };
+        if (pago.estado === 'finished') {
+            return { success: true, message: 'ya_confirmado' };
         }
 
         const esFinal = status === 'finished' || status === 'confirmed';
 
-        // ---------- Estados intermedios / fallidos: solo registrar ----------
+        // ---------- Estados intermedios o fallidos: solo registrar ----------
         if (!esFinal) {
-            const { error: updError } = await supabaseAdmin
+            const { error: errUpd } = await supabaseAdmin
                 .from('pagos_membresia')
                 .update({
-                    estado: estadoPermitido(status, pago.estado),
+                    estado: MAPA_ESTADO[status] || pago.estado,
+                    payment_id: paymentId || undefined,
                     datos_webhook: payload,
                     updated_at: new Date().toISOString()
                 })
                 .eq('id', pago.id)
                 .neq('estado', 'finished');
 
-            if (updError) {
-                console.error('❌ Error actualizando pago:', updError.message);
-                return { success: false, error: updError.message };
+            if (errUpd) {
+                logError('actualizar estado:', errUpd.message);
+                return { success: false, error: 'db' };
             }
-
-            return { success: true, message: 'Estado actualizado' };
+            return { success: true, message: 'estado_registrado' };
         }
 
-        // ---------- Pago confirmado: activar vía RPC (idempotente) ----------
-        const { data: resultado, error: rpcError } = await supabaseAdmin.rpc(
-            'activar_membresia_pro',
-            {
-                p_usuario_id: pago.usuario_id,
-                p_order_id: order_id,
-                p_payment_id: payment_id ? String(payment_id) : null,
-                p_monto_mxn: pago.monto_mxn,
-                p_pay_address: payload.pay_address || null,
-                p_privacy_version: '1.0'
-            }
-        );
-
-        if (rpcError) {
-            console.error('❌ Error RPC activar_membresia_pro:', rpcError.message);
-            return { success: false, error: rpcError.message };
+        // ---------- Pago final: validar monto antes de activar ----------
+        // Requiere que la factura Pro se haya creado en MXN (ver nota del paquete).
+        const precio = Number(payload.price_amount);
+        const moneda = String(payload.price_currency || '').toLowerCase();
+        if (moneda !== 'mxn' || !Number.isFinite(precio) || Math.abs(precio - Number(pago.monto_mxn)) > 0.01) {
+            logError('monto/moneda no coincide:', orderId, { precio, moneda, esperado: pago.monto_mxn });
+            await supabaseAdmin.from('pagos_membresia')
+                .update({
+                    estado: 'failed',
+                    datos_webhook: { ...payload, motivo: 'monto_o_moneda_no_coincide' },
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', pago.id);
+            return { success: false, noRetry: true, error: 'monto_no_coincide' };
         }
 
-        // La RPC puede devolver { success: false } sin lanzar error
-        if (!resultado || resultado.success !== true) {
-            const motivo = (resultado && resultado.error) || 'La RPC no devolvió respuesta';
-            console.error(
-                '🚨 activar_membresia_pro rechazó el pago', order_id, '→', motivo,
-                '— requiere revisión manual'
-            );
+        // ---------- Activación (idempotente en SQL) ----------
+        const { data: r, error: errRpc } = await supabaseAdmin.rpc('activar_membresia_pro', {
+            p_usuario_id: pago.usuario_id,
+            p_order_id: orderId,
+            p_payment_id: paymentId,
+            p_monto_mxn: pago.monto_mxn,
+            p_pay_address: payload.pay_address || null,
+            p_privacy_version: '1.0'
+        });
+
+        if (errRpc) {
+            logError('RPC activar_membresia_pro:', errRpc.message);
+            return { success: false, error: 'db' };
+        }
+
+        // La RPC devuelve { success: false } sin lanzar error
+        if (!r || r.success !== true) {
+            const motivo = r?.error || 'sin_respuesta';
+            logError('activación rechazada, revisión manual:', orderId, motivo);
             return { success: false, noRetry: true, error: motivo };
         }
 
-        if (resultado.already_processed) {
-            console.log('ℹ️ Membresía ya había sido activada:', order_id);
-        } else {
-            console.log('✅ Membresía activada para:', pago.usuario_id);
-        }
-
-        // Guardar el payload del webhook (mejor esfuerzo, no cambia el estado)
-        await supabaseAdmin
-            .from('pagos_membresia')
-            .update({
-                datos_webhook: payload,
-                updated_at: new Date().toISOString()
-            })
+        await supabaseAdmin.from('pagos_membresia')
+            .update({ datos_webhook: payload, updated_at: new Date().toISOString() })
             .eq('id', pago.id);
 
-        return { success: true, data: resultado };
-
-    } catch (error) {
-        console.error('❌ Error procesando webhook:', error);
-        return { success: false, error: error.message };
+        log(r.already_processed ? 'ya activada:' : 'activada:', orderId);
+        return { success: true, data: r };
+    } catch (e) {
+        logError('procesarWebhookMembresia:', e.message);
+        return { success: false, error: 'excepcion' };
     }
 }
 
-// ===== HANDLER PRINCIPAL =====
+// Handler HTTP. routes/webhooks.js lo llama tras verificar la firma;
+// aquí se vuelve a verificar para que también funcione montado solo.
 async function handleWebhookMembresia(req, res) {
     try {
-        const payload = req.body;
-        const signature = req.headers['x-nowpayments-sig'] || req.headers['x-signature'];
-
-        // Verificar firma (OBLIGATORIO)
+        const signature = req.headers['x-nowpayments-sig'];
         if (!NOWPAYMENTS_IPN_SECRET) {
-            console.error('❌ NOWPAYMENTS_IPN_SECRET no configurado');
-            return res.status(500).json({ error: 'Configuración incompleta' });
+            logError('NOWPAYMENTS_IPN_SECRET no configurado');
+            return res.status(500).json({ ok: false, error: 'config' });
+        }
+        if (!firmaValida(req.body, req.rawBody, signature)) {
+            logError('firma inválida');
+            return res.status(401).json({ ok: false, error: 'firma' });
         }
 
-        if (!signature) {
-            console.error('❌ Firma faltante en webhook');
-            return res.status(401).json({ error: 'Firma requerida' });
-        }
+        const result = await procesarWebhookMembresia(req.body || {});
 
-        const esValida = verificarFirma(payload, signature, req.rawBody);
-        if (!esValida) {
-            console.error('❌ Firma inválida en webhook');
-            return res.status(401).json({ error: 'Firma inválida' });
-        }
-
-        // Procesar
-        const result = await procesarWebhookMembresia(payload);
-
-        if (result.success) {
-            return res.status(200).json({ status: 'ok', ...result });
-        }
-
-        if (result.noRetry) {
-            // Fallo permanente: 200 para que NOWPayments deje de reintentar
-            return res.status(200).json({ status: 'ignored', error: result.error });
-        }
-
-        return res.status(500).json({ status: 'error', error: result.error });
-
-    } catch (error) {
-        console.error('❌ Error en webhook membresía:', error);
-        return res.status(500).json({ error: 'Error interno' });
+        if (result.success) return res.status(200).json({ ok: true, ...result });
+        if (result.noRetry) return res.status(200).json({ ok: true, ignorado: result.error });
+        return res.status(500).json({ ok: false, error: result.error });
+    } catch (e) {
+        logError('handler:', e.message);
+        return res.status(500).json({ ok: false, error: 'interno' });
     }
 }
 
-module.exports = {
-    handleWebhookMembresia,
-    procesarWebhookMembresia,
-    verificarFirma
-};
+module.exports = { handleWebhookMembresia, procesarWebhookMembresia };
