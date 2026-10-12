@@ -1,13 +1,13 @@
 // ================================================================
 // server.js — Sariel's Ecosystem
 // Backend principal — Producción Railway
-// ✅ v2.7: Router /api/push montado (Web Push Notifications)
+// v2.8: LiveKit seguro (routes/livekit.js), caché HTML/JS desactivada,
+//       Live Pass con fallback de nombre de archivo, /live → live.html
 // ================================================================
 
 require('dotenv').config();
 
 const express = require('express');
-const { AccessToken } = require('livekit-server-sdk');
 const cors = require('cors');
 const path = require('path');
 const helmet = require('helmet');
@@ -26,6 +26,7 @@ const app = express();
 
 app.disable('x-powered-by');
 
+// Railway usa proxy: sin esto, req.ip es siempre la IP del proxy
 app.set('trust proxy', 1);
 
 const PORT = process.env.PORT || 8080;
@@ -36,11 +37,9 @@ const isProduction = process.env.NODE_ENV === 'production';
 // CONFIGURACIÓN
 // ================================================================
 
-const DEFAULT_PUBLIC_APP_URL =
-    'https://galleta-domo-production.up.railway.app';
+const DEFAULT_PUBLIC_APP_URL = 'https://galleta-domo-production.up.railway.app';
 
-const PUBLIC_APP_URL =
-    process.env.PUBLIC_APP_URL || DEFAULT_PUBLIC_APP_URL;
+const PUBLIC_APP_URL = process.env.PUBLIC_APP_URL || DEFAULT_PUBLIC_APP_URL;
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
@@ -51,11 +50,9 @@ const LIVEKIT_API_SECRET = process.env.LIVEKIT_API_SECRET || '';
 const LIVEKIT_URL = process.env.LIVEKIT_URL || '';
 const LIVEKIT_WS_URL = process.env.LIVEKIT_WS_URL || '';
 
-const WALLETCONNECT_PROJECT_ID =
-    process.env.WALLETCONNECT_PROJECT_ID || '';
+const WALLETCONNECT_PROJECT_ID = process.env.WALLETCONNECT_PROJECT_ID || '';
 
-const WEB3_CHAIN_ID =
-    parseInt(process.env.POLYGON_CHAIN_ID, 10) || 80002;
+const WEB3_CHAIN_ID = parseInt(process.env.POLYGON_CHAIN_ID, 10) || 80002;
 
 const TURNSTILE_SECRET_KEY = process.env.TURNSTILE_SECRET_KEY || '';
 const TURNSTILE_SITE_KEY = process.env.TURNSTILE_SITE_KEY || '';
@@ -88,7 +85,6 @@ if (missingEnvironment.length > 0) {
     for (const name of missingEnvironment) {
         console.error(`❌ Variable de entorno crítica faltante o inválida: ${name}`);
     }
-
     if (isProduction) {
         console.error('🔴 Abortando arranque en producción.');
         process.exit(1);
@@ -97,12 +93,10 @@ if (missingEnvironment.length > 0) {
 
 if (!LIVEKIT_API_KEY) console.warn('⚠️ Falta LIVEKIT_API_KEY');
 if (!LIVEKIT_API_SECRET) console.warn('⚠️ Falta LIVEKIT_API_SECRET');
-if (!LIVEKIT_URL) console.warn('⚠️ Falta LIVEKIT_URL');
+if (!LIVEKIT_WS_URL && !LIVEKIT_URL) console.warn('⚠️ Falta LIVEKIT_WS_URL');
 
 if (!WALLETCONNECT_PROJECT_ID) {
-    console.warn(
-        '⚠️ Falta WALLETCONNECT_PROJECT_ID (WalletConnect no podrá conectarse)'
-    );
+    console.warn('⚠️ Falta WALLETCONNECT_PROJECT_ID (WalletConnect no podrá conectarse)');
 }
 
 if (!TURNSTILE_SECRET_KEY) console.warn('⚠️ Falta TURNSTILE_SECRET_KEY');
@@ -120,32 +114,6 @@ if (!process.env.NODE_ENV) console.warn('⚠️ NODE_ENV no está definido');
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
-// ================================================================
-// HELPERS SUPABASE
-// ================================================================
-
-function clienteDelUsuario(req) {
-    const authHeader = req.headers.authorization || '';
-
-    if (!authHeader.startsWith('Bearer ')) {
-        return null;
-    }
-
-    const token = authHeader.substring(7).trim();
-
-    if (!token) {
-        return null;
-    }
-
-    return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-        global: {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        }
-    });
-}
 
 // ================================================================
 // AUTH MIDDLEWARE
@@ -275,6 +243,7 @@ app.use(
                     "https://csariels-domo-57ujk04t.livekit.cloud",
                     "wss://csariels-domo-57ujk04t.livekit.cloud",
                     "https://esm.sh",
+                    "https://cdn.jsdelivr.net",
                     "https://api.web3modal.com",
                     "https://api.web3modal.org",
                     "https://explorer-api.walletconnect.com",
@@ -346,7 +315,7 @@ app.use(morgan(isProduction ? 'combined' : 'dev'));
 
 const corsOrigins = (process.env.CORS_ORIGINS || '')
     .split(',')
-    .map(origin => origin.trim())
+    .map((origin) => origin.trim())
     .filter(Boolean);
 
 const allowedCorsOrigins = Array.from(
@@ -356,16 +325,11 @@ const allowedCorsOrigins = Array.from(
 app.use(
     cors({
         origin: function (origin, callback) {
-            if (!origin) {
-                return callback(null, true);
-            }
+            if (!origin) return callback(null, true);
 
-            if (allowedCorsOrigins.includes(origin)) {
-                return callback(null, true);
-            }
+            if (allowedCorsOrigins.includes(origin)) return callback(null, true);
 
             console.warn(`⚠️ CORS bloqueado: ${origin}`);
-
             return callback(new Error('Origen no permitido por CORS'));
         },
 
@@ -397,7 +361,7 @@ app.use(
 app.use('/api/telnyx/webhook', require('./routes/telnyx-webhook'));
 
 // ================================================================
-// RATE LIMIT
+// RATE LIMIT GENERAL
 // ================================================================
 
 const apiLimiter = rateLimit({
@@ -436,7 +400,7 @@ app.use(
 );
 
 // ================================================================
-// WEB3 PUBLIC CONFIG
+// CONFIG PÚBLICA
 // ================================================================
 
 app.get('/api/config/web3', (req, res) => {
@@ -467,10 +431,7 @@ const i18nCache = new Map();
 
 app.get('/api/i18n', async (req, res) => {
     try {
-        const codigo =
-            String(req.query.idioma || I18N_DEFAULT_LANG)
-                .trim()
-                .slice(0, 16);
+        const codigo = String(req.query.idioma || I18N_DEFAULT_LANG).trim().slice(0, 16);
 
         const cached = i18nCache.get(codigo);
 
@@ -491,9 +452,7 @@ app.get('/api/i18n', async (req, res) => {
 
         if (idiomaError) {
             console.error('❌ Error resolviendo idioma:', idiomaError);
-            return res.status(500).json({
-                error: 'Error cargando traducciones'
-            });
+            return res.status(500).json({ error: 'Error cargando traducciones' });
         }
 
         if (!idioma) {
@@ -507,9 +466,7 @@ app.get('/api/i18n', async (req, res) => {
 
         if (error) {
             console.error('❌ Error I18N:', error);
-            return res.status(500).json({
-                error: 'Error cargando traducciones'
-            });
+            return res.status(500).json({ error: 'Error cargando traducciones' });
         }
 
         const traducciones = {};
@@ -531,57 +488,6 @@ app.get('/api/i18n', async (req, res) => {
     } catch (error) {
         console.error('❌ Error /api/i18n:', error);
         return res.status(500).json({ error: 'Error interno' });
-    }
-});
-
-// ================================================================
-// LIVEKIT TOKEN
-// ================================================================
-
-app.post('/api/livekit/token', authMiddleware, async (req, res) => {
-    try {
-        const { roomName, participantName } = req.body;
-
-        if (!roomName) {
-            return res.status(400).json({ error: 'roomName es requerido' });
-        }
-
-        if (!LIVEKIT_API_KEY || !LIVEKIT_API_SECRET) {
-            return res.status(503).json({
-                error: 'LiveKit no está configurado'
-            });
-        }
-
-        const participantIdentity = req.user.id;
-
-        const displayName =
-            participantName || req.user.email || participantIdentity;
-
-        const token = new AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET, {
-            identity: participantIdentity,
-            name: displayName,
-            ttl: '3h'
-        });
-
-        token.addGrant({
-            roomJoin: true,
-            room: roomName,
-            canPublish: true,
-            canSubscribe: true
-        });
-
-        const jwt = await token.toJwt();
-
-        return res.json({
-            success: true,
-            token: jwt,
-            url: LIVEKIT_WS_URL || LIVEKIT_URL
-        });
-    } catch (error) {
-        console.error('❌ Error generando LiveKit token:', error);
-        return res.status(500).json({
-            error: 'No se pudo generar el token'
-        });
     }
 });
 
@@ -625,16 +531,13 @@ app.post('/api/ai/embeddings', authMiddleware, async (req, res) => {
         const textoLimpio = text.trim().slice(0, 2000);
 
         const embedder = await obtenerEmbedder();
-        const output = await embedder(textoLimpio, {
-            pooling: 'mean',
-            normalize: true
-        });
+        const output = await embedder(textoLimpio, { pooling: 'mean', normalize: true });
 
         const embedding = Array.from(output.data);
 
         return res.json({
             success: true,
-            embedding: embedding,
+            embedding,
             dims: embedding.length
         });
     } catch (error) {
@@ -663,10 +566,7 @@ async function verificarTurnstile(token, remoteip) {
 
     if (!PUBLIC_APP_HOSTNAME) {
         console.error('❌ Turnstile: hostname de la aplicación no disponible');
-        return {
-            success: false,
-            error: 'Hostname de aplicación no configurado'
-        };
+        return { success: false, error: 'Hostname de aplicación no configurado' };
     }
 
     try {
@@ -675,36 +575,21 @@ async function verificarTurnstile(token, remoteip) {
         params.append('secret', TURNSTILE_SECRET_KEY);
         params.append('response', token);
 
-        if (remoteip) {
-            params.append('remoteip', remoteip);
-        }
+        if (remoteip) params.append('remoteip', remoteip);
 
         const response = await axios.post(
             'https://challenges.cloudflare.com/turnstile/v0/siteverify',
             params.toString(),
-            {
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                }
-            }
+            { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
         );
 
         const result = response.data || {};
 
-        if (!result.success) {
-            return result;
-        }
+        if (!result.success) return result;
 
         if (result.hostname !== PUBLIC_APP_HOSTNAME) {
-            console.warn(
-                '⚠️ Turnstile hostname inesperado:',
-                result.hostname
-            );
-
-            return {
-                success: false,
-                error: 'Hostname Turnstile no permitido'
-            };
+            console.warn('⚠️ Turnstile hostname inesperado:', result.hostname);
+            return { success: false, error: 'Hostname Turnstile no permitido' };
         }
 
         return result;
@@ -715,27 +600,37 @@ async function verificarTurnstile(token, remoteip) {
 }
 
 // ================================================================
-// STATIC FILES
+// ESTÁTICOS
+// HTML y JS sin caché: el navegador revalida con ETag (304, barato)
+// y así un despliegue se ve de inmediato. Antes, maxAge de 1 h
+// dejaba páginas viejas en el teléfono.
 // ================================================================
 
 const publicPath = path.join(__dirname, 'public');
+const featuresPath = path.join(publicPath, 'features');
+
+function cabecerasEstaticas(res, filePath) {
+    if (/\.(html|js)$/i.test(filePath)) {
+        res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+    }
+}
 
 app.use(
     express.static(publicPath, {
         index: false,
         maxAge: isProduction ? '1h' : 0,
-        fallthrough: true
+        fallthrough: true,
+        setHeaders: cabecerasEstaticas
     })
 );
-
-const featuresPath = path.join(publicPath, 'features');
 
 app.use(
     '/features',
     express.static(featuresPath, {
         index: false,
         maxAge: isProduction ? '1h' : 0,
-        fallthrough: true
+        fallthrough: true,
+        setHeaders: cabecerasEstaticas
     })
 );
 
@@ -758,34 +653,16 @@ app.get('/features/perfil/perfil.html', (req, res, next) => {
     enviarArchivoPublico('features/perfil/perfil.html', req, res, next);
 });
 
-app.get(
-    '/features/perfil/configuracion/sariels/wallet.html',
-    (req, res, next) => {
-        enviarArchivoPublico(
-            'features/perfil/configuracion/sariels/wallet.html',
-            req,
-            res,
-            next
-        );
-    }
-);
+app.get('/features/perfil/configuracion/sariels/wallet.html', (req, res, next) => {
+    enviarArchivoPublico('features/perfil/configuracion/sariels/wallet.html', req, res, next);
+});
 
 app.get('/features/perfil/configuracion/index.html', (req, res, next) => {
-    enviarArchivoPublico(
-        'features/perfil/configuracion/index.html',
-        req,
-        res,
-        next
-    );
+    enviarArchivoPublico('features/perfil/configuracion/index.html', req, res, next);
 });
 
 app.get('/features/perfil/shared/js/wallet-connect.js', (req, res, next) => {
-    enviarArchivoPublico(
-        'features/perfil/shared/js/wallet-connect.js',
-        req,
-        res,
-        next
-    );
+    enviarArchivoPublico('features/perfil/shared/js/wallet-connect.js', req, res, next);
 });
 
 app.get('/features/shared/config-layout.js', (req, res, next) => {
@@ -797,13 +674,7 @@ app.get('/features/shared/config-icons.js', (req, res, next) => {
 });
 
 app.get('/features/mensajes/js/mensajes.js', (req, res) => {
-    const filePath = path.join(
-        publicPath,
-        'features',
-        'mensajes',
-        'js',
-        'mensajes.js'
-    );
+    const filePath = path.join(publicPath, 'features', 'mensajes', 'js', 'mensajes.js');
 
     if (!fs.existsSync(filePath)) {
         return res.status(404).send('mensajes.js no encontrado');
@@ -817,9 +688,7 @@ app.get('/features/mensajes/js/mensajes.js', (req, res) => {
 // ================================================================
 
 function normalizarRouter(modulo, nombre) {
-    if (typeof modulo === 'function') {
-        return modulo;
-    }
+    if (typeof modulo === 'function') return modulo;
 
     if (modulo && typeof modulo.router === 'function') {
         console.log(`ℹ️ ${nombre}: usando export .router`);
@@ -832,36 +701,47 @@ function normalizarRouter(modulo, nombre) {
     }
 
     console.error(`❌ ${nombre} no exporta un Express Router válido`);
-
     return null;
 }
 
-function montarRouter(mountPath, requirePath, nombre) {
-    try {
-        const modulo = require(requirePath);
-        const router = normalizarRouter(modulo, nombre);
+// Monta el primer archivo que exista de una lista de rutas (útil cuando
+// el nombre del archivo puede variar en mayúsculas, que Linux distingue)
+function montarRouter(mountPath, requirePaths, nombre) {
+    const lista = Array.isArray(requirePaths) ? requirePaths : [requirePaths];
 
-        if (typeof router !== 'function') {
-            console.error(
-                `❌ ${nombre}: router inválido. Ruta no montada: ${mountPath}`
-            );
+    for (const requirePath of lista) {
+        try {
+            const modulo = require(requirePath);
+            const router = normalizarRouter(modulo, nombre);
+
+            if (typeof router !== 'function') {
+                console.error(`❌ ${nombre}: router inválido. Ruta no montada: ${mountPath}`);
+                return false;
+            }
+
+            app.use(mountPath, router);
+            console.log(`✅ ${nombre} cargado en ${mountPath} (${requirePath})`);
+            return true;
+        } catch (error) {
+            if (error.code === 'MODULE_NOT_FOUND' && lista.indexOf(requirePath) < lista.length - 1) {
+                continue; // probar la siguiente variante del nombre
+            }
+            console.error(`❌ Error cargando ${nombre}:`, error.message);
             return false;
         }
-
-        app.use(mountPath, router);
-
-        console.log(`✅ ${nombre} cargado en ${mountPath}`);
-
-        return true;
-    } catch (error) {
-        console.error(`❌ Error cargando ${nombre}:`, error);
-        return false;
     }
+
+    console.error(`❌ ${nombre}: ningún archivo encontrado (${lista.join(' | ')})`);
+    return false;
 }
 
 // ================================================================
 // ROUTERS
 // ================================================================
+
+// LiveKit: ÚNICO endpoint de token. El viejo token inline (que daba
+// canPublish a cualquier usuario) fue eliminado.
+montarRouter('/api/livekit', './routes/livekit', 'routes/livekit');
 
 montarRouter('/api/auth', './routes/auth', 'routes/auth');
 
@@ -869,16 +749,12 @@ montarRouter('/api/account', './routes/account', 'routes/account');
 
 montarRouter('/api/payments', './routes/payments', 'routes/payments');
 
-montarRouter(
-    '/api/payments/membresia',
-    './routes/membresia',
-    'routes/membresia'
-);
+montarRouter('/api/payments/membresia', './routes/membresia', 'routes/membresia');
 
 montarRouter(
     '/api/payments/live-pass',
-    './routes/payments/livePass',
-    'routes/payments/livePass'
+    ['./routes/payments/livepass', './routes/payments/livePass'],
+    'routes/payments/livepass'
 );
 
 montarRouter('/api/webhook', './routes/webhooks', 'routes/webhooks');
@@ -901,6 +777,8 @@ montarRouter('/api/ai/tts', './routes/ai-tts', 'routes/ai-tts');
 
 montarRouter('/api/ai/chat-maiz', './routes/ai-chat-maiz', 'routes/ai-chat-maiz');
 
+// NOTA: /api/ai/voice ya está montado arriba (ai-voice). Este segundo
+// montaje solo se alcanza para rutas que no existan en ai-voice.
 montarRouter('/api/ai/voice', './routes/ai-tts-maiz', 'routes/ai-tts-maiz');
 
 montarRouter('/api/ai/tts-itlasuhua', './routes/ai-tts-itlasuhua', 'routes/ai-tts-itlasuhua');
@@ -914,10 +792,10 @@ montarRouter('/api/webhooks/ia', './routes/webhooks/pagos-ia', 'routes/webhooks/
 
 montarRouter('/api/campanas', './routes/campanas', 'routes/campanas');
 
-// ✅ v2.6 — Router /api/live (donaciones + registro de minutos)
+// Live (donaciones + registro de minutos)
 montarRouter('/api/live', './routes/live', 'routes/live');
 
-// ✅ v2.7 — Router /api/push (Web Push Notifications)
+// Web Push Notifications
 montarRouter('/api/push', './routes/push', 'routes/push');
 
 // Admin IA
@@ -932,13 +810,9 @@ try {
 // HTML ROUTES
 // ================================================================
 
-app.get('/', (req, res) => {
-    return res.sendFile(path.join(publicPath, 'index.html'));
-});
+app.get('/', (req, res) => res.sendFile(path.join(publicPath, 'index.html')));
 
-app.get('/index.html', (req, res) => {
-    return res.sendFile(path.join(publicPath, 'index.html'));
-});
+app.get('/index.html', (req, res) => res.sendFile(path.join(publicPath, 'index.html')));
 
 // ================================================================
 // FRIENDLY ROUTES
@@ -953,7 +827,7 @@ const friendlyRoutes = {
     '/mercado': 'features/mercado/index.html',
     '/muro': 'features/muro/index.html',
     '/videos': 'features/videos/index.html',
-    '/live': 'features/live/index.html'
+    '/live': 'features/live/live.html'   // antes apuntaba a index.html, que no existe
 };
 
 for (const [route, file] of Object.entries(friendlyRoutes)) {
@@ -969,41 +843,29 @@ for (const [route, file] of Object.entries(friendlyRoutes)) {
 }
 
 // ================================================================
-// CSARIEL PAY FRIENDLY ROUTES
+// CSARIEL PAY
 // ================================================================
 
-app.get('/pay', (req, res) => {
-    return res.sendFile(path.join(publicPath, 'pay.html'));
-});
+app.get('/pay', (req, res) => res.sendFile(path.join(publicPath, 'pay.html')));
 
-app.get('/csariel-pay', (req, res) => {
-    return res.sendFile(path.join(publicPath, 'pay.html'));
-});
+app.get('/csariel-pay', (req, res) => res.sendFile(path.join(publicPath, 'pay.html')));
 
 // ================================================================
-// OTHER PAGES
+// OTRAS PÁGINAS
 // ================================================================
 
-app.get('/terminos', (req, res) => {
-    return res.sendFile(path.join(publicPath, 'terminos.html'));
-});
+app.get('/terminos', (req, res) => res.sendFile(path.join(publicPath, 'terminos.html')));
 
-app.get('/privacidad', (req, res) => {
-    return res.sendFile(path.join(publicPath, 'privacidad.html'));
-});
+app.get('/privacidad', (req, res) => res.sendFile(path.join(publicPath, 'privacidad.html')));
 
-app.get('/eliminar-cuenta', (req, res) => {
-    return res.sendFile(path.join(publicPath, 'eliminar-cuenta.html'));
-});
+app.get('/eliminar-cuenta', (req, res) => res.sendFile(path.join(publicPath, 'eliminar-cuenta.html')));
 
-app.get('/actualizar-contrasena', (req, res) => {
-    return res.sendFile(
-        path.join(publicPath, 'actualizar-contrasena.html')
-    );
-});
+app.get('/actualizar-contrasena', (req, res) =>
+    res.sendFile(path.join(publicPath, 'actualizar-contrasena.html'))
+);
 
 // ================================================================
-// TÉRMINOS DE USO DE LAS MASCOTAS IA
+// TÉRMINOS DE LAS MASCOTAS IA
 // ================================================================
 
 app.get('/legal/terminos-marquinhos', (req, res) => {
@@ -1036,20 +898,14 @@ async function healthCheck(req, res) {
     let supabaseStatus = 'unknown';
 
     try {
-        const { error } = await supabaseAdmin
-            .from('idiomas_sistema')
-            .select('codigo')
-            .limit(1);
-
+        const { error } = await supabaseAdmin.from('idiomas_sistema').select('codigo').limit(1);
         supabaseStatus = error ? 'error' : 'ok';
     } catch (error) {
         supabaseStatus = 'error';
     }
 
     const livekitConfigured = Boolean(
-        LIVEKIT_API_KEY &&
-            LIVEKIT_API_SECRET &&
-            (LIVEKIT_URL || LIVEKIT_WS_URL)
+        LIVEKIT_API_KEY && LIVEKIT_API_SECRET && (LIVEKIT_URL || LIVEKIT_WS_URL)
     );
 
     const pushConfigured = Boolean(
@@ -1064,15 +920,8 @@ async function healthCheck(req, res) {
         environment: process.env.NODE_ENV || 'development',
         timestamp: new Date().toISOString(),
         supabase: supabaseStatus,
-
-        livekit: {
-            configured: livekitConfigured
-        },
-
-        push: {
-            configured: pushConfigured
-        },
-
+        livekit: { configured: livekitConfigured },
+        push: { configured: pushConfigured },
         web3: {
             walletconnect_configured: Boolean(WALLETCONNECT_PROJECT_ID),
             public_url: PUBLIC_APP_URL,
@@ -1102,23 +951,15 @@ app.use('/api', (req, res) => {
 // ================================================================
 
 app.use((req, res, next) => {
-    if (req.method !== 'GET' && req.method !== 'HEAD') {
-        return next();
-    }
+    if (req.method !== 'GET' && req.method !== 'HEAD') return next();
 
-    if (req.path === '/api' || req.path.startsWith('/api/')) {
-        return next();
-    }
+    if (req.path === '/api' || req.path.startsWith('/api/')) return next();
 
-    if (path.extname(req.path)) {
-        return next();
-    }
+    if (path.extname(req.path)) return next();
 
     const indexPath = path.join(publicPath, 'index.html');
 
-    if (!fs.existsSync(indexPath)) {
-        return next();
-    }
+    if (!fs.existsSync(indexPath)) return next();
 
     return res.sendFile(indexPath);
 });
@@ -1141,14 +982,10 @@ app.use((req, res) => {
 app.use((err, req, res, next) => {
     console.error('❌ Error global:', err);
 
-    if (res.headersSent) {
-        return next(err);
-    }
+    if (res.headersSent) return next(err);
 
     return res.status(err.status || 500).json({
-        error: isProduction
-            ? 'Error interno del servidor'
-            : err.message || 'Error interno del servidor'
+        error: isProduction ? 'Error interno del servidor' : err.message || 'Error interno del servidor'
     });
 });
 
@@ -1163,15 +1000,9 @@ app.listen(PORT, () => {
     console.log('================================================');
     console.log(`🌐 Puerto: ${PORT}`);
     console.log(`🌍 Entorno: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🔗 Supabase: ${SUPABASE_URL ? '✅ Configurado' : '❌ Falta configuración'}`);
     console.log(
-        `🔗 Supabase: ${SUPABASE_URL ? '✅ Configurado' : '❌ Falta configuración'}`
-    );
-    console.log(
-        `🎥 LiveKit: ${
-            LIVEKIT_API_KEY && LIVEKIT_API_SECRET
-                ? '✅ Configurado'
-                : '❌ No configurado'
-        }`
+        `🎥 LiveKit: ${LIVEKIT_API_KEY && LIVEKIT_API_SECRET ? '✅ Configurado' : '❌ No configurado'}`
     );
     console.log(
         `🔔 Push: ${
@@ -1183,16 +1014,10 @@ app.listen(PORT, () => {
     console.log(`🌐 Web3 URL canónica: ${PUBLIC_APP_URL}`);
     console.log(`🔗 CORS orígenes permitidos: ${allowedCorsOrigins.join(', ')}`);
     console.log(
-        `🔗 WalletConnect: ${
-            WALLETCONNECT_PROJECT_ID ? '✅ Configurado' : '❌ No configurado'
-        }`
+        `🔗 WalletConnect: ${WALLETCONNECT_PROJECT_ID ? '✅ Configurado' : '❌ No configurado'}`
     );
     console.log(`⛓️ Polygon chainId: ${WEB3_CHAIN_ID}`);
-    console.log(
-        `🛡️ Hostname Turnstile esperado: ${
-            PUBLIC_APP_HOSTNAME || '(no disponible)'
-        }`
-    );
+    console.log(`🛡️ Hostname Turnstile esperado: ${PUBLIC_APP_HOSTNAME || '(no disponible)'}`);
     console.log('================================================');
     console.log('');
 });
@@ -1225,6 +1050,7 @@ async function ejecutarLimpiezaCuentas() {
         }
 
         let eliminadas = 0;
+
         for (const cuenta of cuentas) {
             const { error: delError } = await supabaseAdmin
                 .from('usuarios')
@@ -1232,27 +1058,19 @@ async function ejecutarLimpiezaCuentas() {
                 .eq('id', cuenta.id);
 
             if (delError) {
-                console.error(
-                    `❌ Cron — error borrando ${cuenta.id}:`,
-                    delError.message
-                );
+                console.error(`❌ Cron — error borrando ${cuenta.id}:`, delError.message);
                 continue;
             }
 
             await supabaseAdmin
                 .from('solicitudes_eliminacion')
-                .update({
-                    estado: 'completada',
-                    procesado_en: new Date().toISOString()
-                })
+                .update({ estado: 'completada', procesado_en: new Date().toISOString() })
                 .eq('usuario_id', cuenta.id);
 
             eliminadas++;
         }
 
-        console.log(
-            `🕒 Cron limpieza: ${eliminadas} cuentas borradas definitivamente.`
-        );
+        console.log(`🕒 Cron limpieza: ${eliminadas} cuentas borradas definitivamente.`);
     } catch (err) {
         console.error('❌ Cron limpieza — error fatal:', err);
     }
@@ -1267,6 +1085,7 @@ setInterval(ejecutarLimpiezaCuentas, 24 * 60 * 60 * 1000);
 // ================================================================
 
 const { cicloMantenimientoEsims } = require('./services/telnyx/esim');
+
 setTimeout(cicloMantenimientoEsims, 2 * 60 * 1000);
 setInterval(cicloMantenimientoEsims, 10 * 60 * 1000);
 
