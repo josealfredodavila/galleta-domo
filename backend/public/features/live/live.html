@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" data-require-auth>
+<html lang="es">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
@@ -7,69 +7,315 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
-    <!-- ✅ SDK Supabase PRIMERO -->
+    <!-- SDK Supabase PRIMERO -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
-    <!-- ✅ AUTH GLOBAL (crea el cliente singleton) -->
+    <!-- Auth global (crea el cliente singleton) -->
     <script src="/features/shared/js/auth-global.js"></script>
 
-    <!-- ✅ PRESENCIA GLOBAL -->
+    <!-- Presencia global -->
     <script src="/features/shared/js/presencia-global.js" defer></script>
 
-    <!-- ✅ APARIENCIA GLOBAL v3.0 -->
+    <!-- Apariencia global -->
     <script src="/features/shared/js/apariencia-global.js?v=7" defer></script>
 
     <style>
-        html:not(.auth-ready) .app { display: none !important; }
-        /* ... todo el CSS anterior se mantiene igual ... */
+        :root {
+            --gold: #D4AF37; --gold-dark: #b8923a; --gold-light: #e8c84a; --gold-glow: rgba(212, 175, 55, 0.4);
+            --green-deep: #0F2D1A; --green-mid: #1a4a2a; --space: #05080f;
+            --text-primary: #f0f4f8; --text-secondary: #c0d8e8; --text-muted: #8aa8b8;
+            --glass-bg: rgba(15, 45, 26, 0.45); --glass-border: rgba(212, 175, 55, 0.12);
+            --shadow-gold: 0 8px 40px rgba(212, 175, 55, 0.3); --shadow-gold-strong: 0 0 80px rgba(212, 175, 55, 0.15);
+            --radius: 16px; --radius-xl: 28px; --transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            --success: #00d68f; --danger: #ff3366; --live-red: #ff0044;
+            --bronze: #CD7F32; --bronze-light: #D4A574; --esmeralda: #50C878; --purple: #a855f7;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: var(--space); color: var(--text-primary); font-family: 'Inter', sans-serif; min-height: 100vh; background-image: radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.3) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.06) 0%, transparent 60%); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+        .bg-glow { position: fixed; border-radius: 50%; filter: blur(150px); pointer-events: none; z-index: 0; animation: glowFloat 20s ease-in-out infinite alternate; }
+        .bg-glow-1 { width: 600px; height: 600px; background: rgba(212, 175, 55, 0.06); top: -10%; right: -10%; }
+        .bg-glow-2 { width: 500px; height: 500px; background: rgba(168, 85, 247, 0.04); bottom: -10%; left: -10%; animation-delay: -7s; }
+        .bg-glow-3 { width: 400px; height: 400px; background: rgba(0, 214, 143, 0.03); top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -14s; }
+        @keyframes glowFloat { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(60px, -40px) scale(1.2); } }
+        .app { position: relative; z-index: 1; max-width: 100%; padding: 0; margin: 0; }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px 14px; border-bottom: 1px solid var(--glass-border); background: rgba(5, 8, 15, 0.92); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(20px); }
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .logo-hex { font-size: 1.8rem; color: var(--gold); font-family: 'Orbitron', monospace; }
+        .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--text-primary); letter-spacing: 2px; }
+        .logo-text span { color: var(--gold); }
+        .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; }
+        .network-badge { display: flex; align-items: center; gap: 6px; font-size: 0.6rem; color: var(--gold); background: rgba(212, 175, 55, 0.1); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(212, 175, 55, 0.1); }
+        .main-nav { display: flex; gap: 4px; background: rgba(15,45,26,0.3); border-radius: var(--radius); padding: 4px; border: 1px solid var(--glass-border); margin: 12px 16px 16px; overflow-x: auto; backdrop-filter: blur(10px); }
+        .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; transition: var(--transition); white-space: nowrap; }
+        .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212,175,55,0.05); }
+        .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); }
+        .main-nav .nav-link.live { color: var(--live-red); }
+        .live-container { padding: 0 16px 20px; }
+        .live-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); margin: 0 0 16px; flex-wrap: wrap; gap: 10px; backdrop-filter: blur(12px); }
+        .live-header h1 { font-family: 'Orbitron', monospace; font-size: 1.1rem; color: var(--gold); display: flex; align-items: center; gap: 10px; }
+        .live-header .live-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--live-red); animation: pulse-dot-live 1.5s infinite; }
+        @keyframes pulse-dot-live { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(0.8); } }
+        .live-header .live-status { font-size: 0.6rem; color: var(--live-red); font-family: 'Orbitron', monospace; }
+        .live-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px; border-radius: 30px; font-size: 0.7rem; font-weight: 600; border: none; cursor: pointer; font-family: 'Inter', sans-serif; transition: var(--transition); }
+        .btn-gold { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); box-shadow: 0 4px 20px rgba(212, 175, 55, 0.2); }
+        .btn-gold:hover { transform: translateY(-2px) scale(1.02); box-shadow: var(--shadow-gold); }
+        .btn-outline { background: transparent; color: var(--text-secondary); border: 1px solid var(--glass-border); }
+        .btn-outline:hover { border-color: var(--gold); color: var(--gold); background: rgba(212, 175, 55, 0.05); }
+        .btn-sm { padding: 4px 12px; font-size: 0.65rem; }
+        .live-video-container { position: relative; width: 100%; height: 75vh; min-height: 450px; max-height: 85vh; background: #000; border-radius: var(--radius-xl); overflow: hidden; margin-bottom: 16px; border: 1px solid var(--glass-border); box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
+        .live-video-container video { width: 100%; height: 100%; object-fit: cover; background: #000; }
+        .live-overlay-top { position: absolute; top: 0; left: 0; right: 0; padding: 16px 20px; background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 100%); z-index: 5; display: flex; justify-content: space-between; align-items: flex-start; }
+        .live-overlay-top .live-badge { display: flex; align-items: center; gap: 8px; background: rgba(255, 0, 68, 0.9); padding: 6px 14px 6px 10px; border-radius: 30px; box-shadow: 0 0 30px rgba(255, 0, 68, 0.3); }
+        .live-overlay-top .live-badge .dot { width: 8px; height: 8px; border-radius: 50%; background: #fff; animation: pulse-dot-live 1s infinite; }
+        .live-overlay-top .live-badge .text { font-size: 0.65rem; font-weight: 700; color: #fff; font-family: 'Orbitron', monospace; letter-spacing: 1px; }
+        .live-overlay-top .live-badge .viewers { font-size: 0.55rem; color: rgba(255,255,255,0.7); font-weight: 400; margin-left: 4px; }
+        .live-overlay-top .live-title { font-size: 0.7rem; color: rgba(255,255,255,0.8); background: rgba(0,0,0,0.5); padding: 4px 14px; border-radius: 20px; backdrop-filter: blur(8px); max-width: 60%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .live-controls-bottom { position: absolute; bottom: 0; left: 0; right: 0; padding: 20px 24px 24px; background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%); z-index: 5; display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; align-items: center; }
+        .ctrl-btn { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 50%; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); color: rgba(255,255,255,0.8); backdrop-filter: blur(12px); position: relative; outline: none; padding: 0; }
+        .ctrl-btn:hover { transform: scale(1.08) translateY(-2px); border-color: rgba(212, 175, 55, 0.3); color: var(--gold); box-shadow: 0 0 40px rgba(212, 175, 55, 0.15); }
+        .ctrl-btn:active { transform: scale(0.92); }
+        .ctrl-btn svg { width: 24px; height: 24px; }
+        .ctrl-play { background: rgba(212, 175, 55, 0.12); border-color: rgba(212, 175, 55, 0.2); }
+        .ctrl-mic { background: rgba(0, 214, 143, 0.08); border-color: rgba(0, 214, 143, 0.15); }
+        .ctrl-mic.muted { background: rgba(255, 51, 102, 0.08); border-color: rgba(255, 51, 102, 0.15); color: var(--danger); }
+        .ctrl-screen { background: rgba(168, 85, 247, 0.08); border-color: rgba(168, 85, 247, 0.15); }
+        .ctrl-game { background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05)); border-color: rgba(212, 175, 55, 0.25); color: var(--gold); }
+        .ctrl-end { background: rgba(255, 51, 102, 0.08); border-color: rgba(255, 51, 102, 0.15); width: 60px; height: 60px; }
+        .ctrl-end .orb-red { width: 44px; height: 44px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, rgba(255, 51, 102, 0.4), rgba(255, 0, 68, 0.8)); display: flex; align-items: center; justify-content: center; color: #fff; border: 1px solid rgba(255, 51, 102, 0.2); }
+        @media (max-width: 768px) {
+            .live-controls-bottom { padding: 16px 12px 18px; gap: 8px; }
+            .ctrl-btn { width: 44px; height: 44px; }
+            .ctrl-btn svg { width: 18px; height: 18px; }
+            .ctrl-end { width: 48px; height: 48px; }
+            .ctrl-end .orb-red { width: 34px; height: 34px; }
+        }
+        @media (max-width: 480px) {
+            .live-controls-bottom { gap: 6px; padding: 12px 8px 14px; }
+            .ctrl-btn { width: 38px; height: 38px; }
+            .ctrl-end { width: 42px; height: 42px; }
+        }
+        .watermark-live { position: absolute; bottom: 80px; right: 16px; z-index: 5; display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); padding: 6px 14px 6px 10px; border-radius: 30px; border: 1px solid rgba(212, 175, 55, 0.2); pointer-events: none; user-select: none; }
+        .watermark-live .icon { font-size: 1rem; color: var(--gold); font-family: 'Orbitron', monospace; }
+        .watermark-live .text { font-family: 'Orbitron', monospace; font-size: 0.6rem; font-weight: 700; color: #fff; letter-spacing: 1px; }
+        .watermark-live .text span { color: var(--gold); }
+        .watermark-live .badge-web3 { font-size: 0.4rem; background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); padding: 1px 6px; border-radius: 10px; font-weight: 700; }
+        .donaciones-rapidas { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-bottom: 16px; }
+        .btn-donacion { padding: 12px 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); backdrop-filter: blur(12px); color: var(--text-primary); cursor: pointer; transition: var(--transition); text-align: center; min-width: 72px; }
+        .btn-donacion:hover { transform: translateY(-4px) scale(1.03); border-color: rgba(212, 175, 55, 0.3); background: rgba(212, 175, 55, 0.04); }
+        .btn-donacion .monto { font-weight: 700; color: var(--gold); font-size: 0.85rem; display: block; font-family: 'Orbitron', monospace; }
+        .btn-donacion .label { font-size: 0.45rem; color: var(--text-muted); display: block; margin-top: 2px; }
+        .live-chat-container { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); overflow: hidden; margin-bottom: 16px; backdrop-filter: blur(12px); }
+        .live-chat-container .chat-header { padding: 12px 18px; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; }
+        .live-chat-container .chat-header h3 { color: var(--gold); font-family: 'Orbitron', monospace; font-size: 0.75rem; display: flex; align-items: center; gap: 8px; }
+        .live-chat-container .chat-header h3 .dot-online { width: 6px; height: 6px; border-radius: 50%; background: var(--success); display: inline-block; }
+        .live-chat-container .chat-header .chat-count { font-size: 0.55rem; color: var(--text-muted); background: rgba(255,255,255,0.05); padding: 2px 12px; border-radius: 20px; }
+        .live-chat-container .chat-messages { padding: 12px 16px; max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+        .live-chat-container .chat-messages .chat-msg { display: flex; gap: 8px; padding: 4px 0; border-bottom: 1px solid rgba(212, 175, 55, 0.03); }
+        .live-chat-container .chat-messages .chat-msg .avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold)); display: flex; align-items: center; justify-content: center; font-size: 0.6rem; color: white; flex-shrink: 0; }
+        .live-chat-container .chat-messages .chat-msg .msg .name { color: var(--gold); font-size: 0.65rem; font-weight: 600; }
+        .live-chat-container .chat-messages .chat-msg .msg .time { color: var(--text-muted); font-size: 0.45rem; margin-left: 6px; }
+        .live-chat-container .chat-messages .chat-msg .msg .text { color: var(--text-secondary); font-size: 0.7rem; word-wrap: break-word; }
+        .live-chat-container .chat-input { padding: 10px 16px; border-top: 1px solid var(--glass-border); display: flex; gap: 8px; background: rgba(0,0,0,0.2); }
+        .live-chat-container .chat-input input { flex: 1; padding: 8px 16px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 30px; color: var(--text-primary); outline: none; font-size: 0.75rem; }
+        .live-chat-container .chat-input button { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); border: none; padding: 6px 20px; border-radius: 30px; font-weight: 700; font-size: 0.7rem; cursor: pointer; }
+        .streams-section-title { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 0.8rem; margin: 16px 0 10px; display: flex; align-items: center; gap: 8px; }
+        .streams-section-title .pulse-bar { flex: 1; height: 1px; background: linear-gradient(to right, var(--gold), transparent); }
+        .streams-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+        .stream-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 14px; cursor: pointer; transition: var(--transition); }
+        .stream-card:hover { border-color: var(--gold); transform: translateY(-4px); box-shadow: var(--shadow-gold); }
+        .stream-card .stream-thumb { width: 100%; aspect-ratio: 16/9; background: var(--space); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 2rem; position: relative; }
+        .stream-card .stream-thumb .live-badge { position: absolute; top: 6px; left: 6px; background: var(--live-red); color: white; font-size: 0.4rem; padding: 2px 10px; border-radius: 12px; font-weight: 700; }
+        .stream-card .stream-name { font-weight: 600; font-size: 0.8rem; color: var(--text-primary); margin-top: 8px; }
+        .stream-card .stream-host { font-size: 0.65rem; color: var(--text-muted); }
+        .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+        .empty-state .icon { font-size: 2.5rem; display: block; margin-bottom: 12px; color: var(--gold); opacity: 0.3; font-family: 'Orbitron', monospace; }
+        .toast { position: fixed; bottom: 30px; right: 30px; padding: 14px 28px; border-radius: 16px; background: var(--glass-bg); border: 1px solid var(--gold); color: var(--gold); font-size: 0.8rem; font-weight: 500; box-shadow: var(--shadow-gold-strong); transform: translateY(100px); opacity: 0; transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94); z-index: 99999; max-width: 420px; backdrop-filter: blur(16px); }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { border-color: var(--danger); color: var(--danger); }
+        .toast.warning { border-color: #f7d44a; color: #f7d44a; }
+        .toast.success { border-color: var(--success); color: var(--success); }
+        .footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--text-muted); flex-wrap: wrap; gap: 10px; }
+        .footer .brand { color: var(--gold); font-weight: 600; }
+        .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; }
+        .footer-links a:hover { color: var(--gold); }
+        .livepass-modal-backdrop { position: fixed; inset: 0; z-index: 10001; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(0,0,0,.9); backdrop-filter: blur(14px); }
+        .livepass-modal { width: min(440px, 100%); background: linear-gradient(160deg, rgba(15,45,26,.98), rgba(5,8,15,.98)); border: 2px solid var(--gold); border-radius: 28px; padding: 32px 24px; box-shadow: 0 20px 80px rgba(0,0,0,.7), 0 0 80px rgba(212,175,55,.25); text-align: center; }
+        .livepass-modal-icon { font-size: 4rem; display: block; margin-bottom: 12px; }
+        .livepass-modal-title { font-family: 'Orbitron', monospace; font-size: 1.3rem; font-weight: 900; color: var(--gold); letter-spacing: 1.5px; margin-bottom: 10px; }
+        .livepass-modal-text { color: var(--text-secondary); font-size: 0.85rem; line-height: 1.6; margin-bottom: 22px; }
+        .livepass-modal-benefits { text-align: left; background: rgba(212,175,55,.06); border: 1px solid rgba(212,175,55,.15); border-radius: 14px; padding: 14px 16px; margin-bottom: 22px; }
+        .livepass-modal-benefit { display: flex; align-items: center; gap: 10px; padding: 6px 0; color: var(--text-secondary); font-size: 0.78rem; }
+        .livepass-modal-benefit::before { content: '✓'; color: var(--success); font-weight: 900; }
+        .livepass-modal-actions { display: flex; flex-direction: column; gap: 10px; }
+        .livepass-modal-btn-primary { padding: 14px 24px; border-radius: 30px; border: none; background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); font-family: 'Inter', sans-serif; font-size: 0.9rem; font-weight: 700; cursor: pointer; }
+        .livepass-modal-btn-secondary { padding: 12px 24px; border-radius: 30px; border: 1px solid var(--glass-border); background: transparent; color: var(--text-muted); font-family: 'Inter', sans-serif; font-size: 0.8rem; cursor: pointer; }
+        .game-modal-backdrop { position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(0,0,0,.85); backdrop-filter: blur(12px); }
+        .game-modal { width: min(680px, 100%); max-height: min(88vh, 720px); overflow-y: auto; background: linear-gradient(160deg, rgba(15,45,26,.98), rgba(5,8,15,.98)); border: 1px solid var(--gold); border-radius: 28px; padding: 24px; }
+        .game-modal-header { display: flex; justify-content: space-between; margin-bottom: 18px; }
+        .game-modal h2 { color: var(--text-primary); font: 700 1.05rem 'Orbitron', monospace; }
+        .game-modal-close { border: 0; background: transparent; color: var(--text-muted); font-size: 1.8rem; cursor: pointer; }
+        .game-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .game-option { padding: 13px 12px; border-radius: 13px; border: 1px solid var(--glass-border); background: rgba(0,0,0,.28); color: var(--text-primary); cursor: pointer; font: 600 .72rem 'Inter', sans-serif; text-align: left; }
+        .game-option:hover { border-color: var(--gold); color: var(--gold); }
+        .livepass-time-bar { position: absolute; top: 70px; left: 16px; right: 16px; z-index: 6; background: rgba(0,0,0,0.7); border: 1px solid rgba(212,175,55,.3); border-radius: 14px; padding: 10px 14px; display: none; }
+        .livepass-time-bar.visible { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .livepass-time-bar .info { color: var(--text-secondary); font-size: 0.7rem; }
+        .livepass-time-bar .info strong { color: var(--gold); font-family: 'Orbitron', monospace; }
+        .livepass-time-bar .progress { flex: 1; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; max-width: 200px; }
+        .livepass-time-bar .progress-bar { height: 100%; background: linear-gradient(90deg, var(--success), var(--gold)); border-radius: 3px; transition: width 1s linear; }
     </style>
 </head>
 <body>
-    <!-- ... todo el HTML anterior se mantiene igual ... -->
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+    <div class="bg-glow bg-glow-3"></div>
+    <div class="app">
+        <header class="header">
+            <a href="/" class="logo">
+                <span class="logo-hex">◈</span>
+                <span class="logo-text">Csariel<span>'s</span></span>
+                <span class="logo-badge">◇ WEB3</span>
+            </a>
+            <div class="header-actions">
+                <span class="network-badge"><span class="dot"></span> Polygon</span>
+            </div>
+        </header>
+        <nav class="main-nav">
+            <a href="/" class="nav-link">⌂ Inicio</a>
+            <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
+            <a href="/features/perfil/perfil.html" class="nav-link">◆ Perfil</a>
+            <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
+            <a href="/features/live/live.html" class="nav-link active live">◉ Live</a>
+            <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
+            <a href="/features/videos/videos.html" class="nav-link">▣ Videos</a>
+            <a href="/features/grupos/grupos.html" class="nav-link">⬡ Grupos</a>
+            <a href="/marketing/marketing.html" class="nav-link">◈ Marketing</a>
+        </nav>
+        <div class="live-container">
+            <div class="live-header">
+                <h1><span class="live-dot"></span> ◉ Live <span class="live-status">● En vivo</span></h1>
+                <div class="live-actions">
+                    <button class="btn btn-gold btn-sm" onclick="iniciarTransmisionGeneral()">◉ Iniciar live</button>
+                    <button class="btn btn-outline btn-sm" onclick="cargarTransmisionesActivas()">◈ Ver todas</button>
+                    <button class="btn btn-outline btn-sm" onclick="cargarEstadisticas()">◈ Estadísticas</button>
+                    <button class="btn btn-outline btn-sm" onclick="abrirMembresiaLive()">◆ Mi Live Pass</button>
+                </div>
+            </div>
+            <div class="live-video-container" id="liveVideoContainer">
+                <video id="liveVideo" autoplay playsinline muted></video>
+                <div class="live-overlay-top">
+                    <div class="live-badge"><span class="dot"></span><span class="text">EN VIVO</span><span class="viewers" id="viewersCount">● 0</span></div>
+                    <div class="live-title" id="liveTitle">Transmisión en vivo</div>
+                </div>
+                <div class="livepass-time-bar" id="livepassTimeBar">
+                    <div class="info">◉ <strong id="tiempoRestante">--:--</strong> restantes hoy</div>
+                    <div class="progress"><div class="progress-bar" id="tiempoProgress" style="width: 100%;"></div></div>
+                </div>
+                <div class="watermark-live">
+                    <span class="icon">◈</span>
+                    <span class="text">Csariel<span>'s</span></span>
+                    <span class="badge-web3">◇ WEB3</span>
+                </div>
+                <div class="live-controls-bottom">
+                    <button onclick="togglePlay()" id="playBtn" class="ctrl-btn ctrl-play" title="Play/Pause">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28">
+                            <polygon id="playIcon" points="5,3 19,12 5,21" />
+                            <rect id="pauseIcon" x="6" y="4" width="4" height="16" rx="1" style="display:none;" />
+                            <rect id="pauseIcon2" x="14" y="4" width="4" height="16" rx="1" style="display:none;" />
+                        </svg>
+                    </button>
+                    <button onclick="toggleMute()" id="muteBtn" class="ctrl-btn ctrl-mic" title="Micrófono">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28">
+                            <path d="M12 15c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v7c0 1.66 1.34 3 3 3z"/>
+                            <path d="M19 10v2c0 3.87-3.13 7-7 7s-7-3.13-7-7v-2"/>
+                            <line x1="5" y1="4" x2="19" y2="20" id="muteLine" style="display:none;"/>
+                        </svg>
+                    </button>
+                    <button onclick="capturarPantalla()" id="screenBtn" class="ctrl-btn ctrl-screen" title="Compartir pantalla">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28">
+                            <rect x="2" y="4" width="20" height="14" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                            <rect x="8" y="20" width="8" height="2" rx="0.5" fill="currentColor"/>
+                            <line x1="12" y1="18" x2="12" y2="20" stroke="currentColor" stroke-width="1.5"/>
+                        </svg>
+                    </button>
+                    <button onclick="abrirSelectorJuego()" class="ctrl-btn ctrl-game" id="gameBtn" title="Transmitir juego">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28">
+                            <path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-10 7H8v3H6v-3H3v-2h3V8h2v3h3v2zm4.5 2c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4-3c-.83 0-1.5-.67-1.5-1.5S18.67 9 19.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+                        </svg>
+                    </button>
+                    <button onclick="finalizarTransmisionGeneral()" class="ctrl-btn ctrl-end" id="endBtn" title="Finalizar transmisión">
+                        <div class="orb-red">
+                            <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                                <rect x="6" y="6" width="12" height="12" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                            </svg>
+                        </div>
+                    </button>
+                </div>
+            </div>
+            <div class="donaciones-rapidas">
+                <button class="btn-donacion" onclick="abrirModalDonacion()"><span class="monto">◆</span><span class="label">Donar</span></button>
+            </div>
+            <div class="live-chat-container">
+                <div class="chat-header">
+                    <h3><span class="dot-online"></span> Chat en vivo</h3>
+                    <span class="chat-count" id="chatCount">0 mensajes</span>
+                </div>
+                <div class="chat-messages" id="chatMessages">
+                    <div class="chat-msg">
+                        <div class="avatar">◈</div>
+                        <div class="msg">
+                            <span class="name">Csariel's Bot</span>
+                            <span class="time">●</span>
+                            <div class="text">¡Bienvenido al Live de Csariel's!</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-input">
+                    <input type="text" id="chatInput" placeholder="Escribe un mensaje..." />
+                    <button onclick="enviarMensaje()">Enviar</button>
+                </div>
+            </div>
+            <div class="streams-section-title">
+                <span>◈ Transmisiones activas</span>
+                <span class="pulse-bar"></span>
+            </div>
+            <div class="streams-list" id="streamsList">
+                <div class="empty-state" style="grid-column:1/-1;padding:20px;">
+                    <span class="icon">◉</span>
+                    <h3>Sin transmisiones activas</h3>
+                    <p>Sé el primero en iniciar una transmisión</p>
+                </div>
+            </div>
+        </div>
+        <footer class="footer">
+            <span><span class="brand">◈ Csariel's</span> · Sabor al Paladar · WEB3</span>
+            <div class="footer-links">
+                <a href="/terminos">◈ Términos</a>
+                <a href="/privacidad">◈ Privacidad</a>
+                <a href="/cookies">◈ Cookies</a>
+                <a href="/live-terminos">◉ Live Términos</a>
+                <span style="opacity:0.3;">⚡ Polygon</span>
+            </div>
+        </footer>
+    </div>
+    <div class="toast" id="toast"></div>
 
-    <!-- ✅ Idiomas -->
+    <!-- Idiomas -->
     <script src="/features/shared/js/idiomas.js?v=9" defer></script>
 
     <script>
 // ================================================================
-// LIVE · JS - Sariel's Ecosystem v2.3
+// LIVE · JS v2.3 - Sariel's Ecosystem
 // ================================================================
-// CAMBIOS v2.3:
-// - Ya NO crea su propio supabaseClient.
-// - Usa el cliente singleton de auth-global.js (window.supabaseReady).
-// - Sin credenciales hardcodeadas.
-// - Compatible con presencia-global.js y apariencia-global.js v3.0.
-// ================================================================
+'use strict';
 
 // ================================================================
-// ✅ CLIENTE SUPABASE SINGLETON
-// ================================================================
-let supabaseClient = null;
-
-(async function inicializarCliente() {
-    try {
-        supabaseClient = await window.supabaseReady;
-        if (!supabaseClient) {
-            supabaseClient = window.supabaseClient;
-        }
-        if (!supabaseClient) {
-            console.error('[Live] No hay cliente Supabase disponible');
-            return;
-        }
-        console.log('[Live] ✅ Cliente singleton listo');
-    } catch (e) {
-        console.error('[Live] Error inicializando cliente:', e);
-    }
-})();
-
-// ================================================================
-// CONFIGURACIÓN LIVEKIT
+// CONFIGURACIÓN
 // ================================================================
 const LIVEKIT_CONFIG = { url: 'wss://csariels-domo-57ujk04t.livekit.cloud' };
 
-// ================================================================
-// ✅ DONACIONES
-// ================================================================
 const DONACIONES = {
     2: { nombre: 'Cubo Plata', emoji: '◈', color: '#C0C0C0', duracion: 3000, efecto: 'cubo_plata' },
     5: { nombre: 'Cubo Bronce', emoji: '◈', color: '#CD7F32', duracion: 4000, efecto: 'cubo_bronce' },
@@ -94,18 +340,33 @@ const PALABRAS_PROHIBIDAS = ['puta','verga','mierda','pendejo','chingar','chinga
 // ================================================================
 // ESTADO GLOBAL
 // ================================================================
-let currentUser = null, currentStream = null, liveKitRoom = null, isLive = false, isMuted = false, streamInterval = null, channelChat = null, espectadores = 0, localStream = null, gameScreenStream = null, gameScreenTrack = null, currentStreamId = null, transmisionParamId = null, juegoSeleccionado = null;
-let anuncioActual = null, adRefreshInterval = null, adSessionId = null, adVistaTimer = null, adCerrado = false;
-
+let supabaseClient = null;
+let currentUser = null;
+let currentStream = null;
+let liveKitRoom = null;
+let isLive = false;
+let isMuted = false;
+let streamInterval = null;
+let channelChat = null;
+let espectadores = 0;
+let gameScreenStream = null;
+let gameScreenTrack = null;
+let currentStreamId = null;
+let transmisionParamId = null;
+let juegoSeleccionado = null;
+let anuncioActual = null;
+let adRefreshInterval = null;
+let adSessionId = null;
+let adVistaTimer = null;
+let adCerrado = false;
 let minutosTransmitiendo = 0;
 let tiempoInicioTransmision = null;
 let timerConteoMinutos = null;
 let timerBarraTiempo = null;
 let infoLivePass = null;
-
 let donacionPollingInterval = null;
-let donacionPollingTimeout = null;
 let donacionActualId = null;
+let juegosDisponibles = [];
 
 // ================================================================
 // HELPERS
@@ -122,7 +383,12 @@ function showToast(msg, type = '', duration = 3500) {
     t._timeout = setTimeout(() => t.classList.remove('show'), duration);
 }
 
-function escapeHTML(texto) { if (!texto) return ''; const div = document.createElement('div'); div.textContent = texto; return div.innerHTML; }
+function escapeHTML(texto) {
+    if (!texto) return '';
+    const div = document.createElement('div');
+    div.textContent = texto;
+    return div.innerHTML;
+}
 
 function attrHTML(t) {
     return String(t ?? '').replace(/[&<>"']/g, c => ({
@@ -132,32 +398,40 @@ function attrHTML(t) {
 
 function mensajeErrorCamara(e) {
     const name = e?.name || '';
-    if (name === 'NotAllowedError' || name === 'PermissionDeniedError') return 'Permiso de cámara/micrófono denegado. Revisa los permisos del sitio en tu navegador (icono de candado en la barra de direcciones) y actívalos.';
-    if (name === 'NotFoundError' || name === 'DevicesNotFoundError') return 'No se encontró cámara o micrófono en este dispositivo.';
-    if (name === 'NotReadableError' || name === 'TrackStartError') return 'La cámara o el micrófono están siendo usados por otra app. Ciérrala e inténtalo de nuevo.';
-    if (name === 'SecurityError') return 'El sitio no se está sirviendo por HTTPS o el contexto no es seguro; la cámara no se puede activar.';
-    if (name === 'OverconstrainedError') return 'La cámara no soporta la configuración solicitada.';
+    if (name === 'NotAllowedError' || name === 'PermissionDeniedError') return 'Permiso de cámara/micrófono denegado. Revisa los permisos del sitio.';
+    if (name === 'NotFoundError' || name === 'DevicesNotFoundError') return 'No se encontró cámara o micrófono.';
+    if (name === 'NotReadableError' || name === 'TrackStartError') return 'La cámara o el micrófono están siendo usados por otra app.';
+    if (name === 'SecurityError') return 'El sitio no se sirve por HTTPS.';
     return e?.message || 'Error desconocido al conectar con LiveKit';
 }
 
 async function getSession() {
-    if (!supabaseClient) supabaseClient = await window.supabaseReady;
+    if (!supabaseClient) {
+        try { supabaseClient = await window.supabaseReady; } catch (e) {}
+        if (!supabaseClient) supabaseClient = window.supabaseClient;
+    }
     if (!supabaseClient) return null;
     const { data: { session } } = await supabaseClient.auth.getSession();
     return session;
 }
 
-async function cargarLiveKit() { return await import('https://cdn.jsdelivr.net/npm/livekit-client@2/dist/livekit-client.esm.mjs'); }
+async function cargarLiveKit() {
+    return await import('https://cdn.jsdelivr.net/npm/livekit-client@2/dist/livekit-client.esm.mjs');
+}
 
-async function obtenerTokenLiveKit(roomName, participantName, role = 'subscriber') {
+async function obtenerTokenLiveKit(roomName, participantName) {
     const session = await getSession();
     if (!session) throw new Error('No autenticado');
     const response = await fetch('/api/livekit/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-        body: JSON.stringify({ roomName: roomName, participantName: participantName })
+        body: JSON.stringify({ roomName, participantName })
     });
-    if (!response.ok) { let error = { message: 'Error' }; try { error = await response.json(); } catch (e) {} throw new Error(error.message || error.error || `HTTP ${response.status}`); }
+    if (!response.ok) {
+        let error = { message: 'Error' };
+        try { error = await response.json(); } catch (e) {}
+        throw new Error(error.message || error.error || `HTTP ${response.status}`);
+    }
     const data = await response.json();
     return data.token;
 }
@@ -165,10 +439,9 @@ async function obtenerTokenLiveKit(roomName, participantName, role = 'subscriber
 // ================================================================
 // MODAL LIVE PASS
 // ================================================================
-function mostrarModalLivePass(mensaje, razon) {
+function mostrarModalLivePass(mensaje) {
     const existente = document.getElementById('livePassModalBackdrop');
     if (existente) existente.remove();
-
     const modal = document.createElement('div');
     modal.id = 'livePassModalBackdrop';
     modal.className = 'livepass-modal-backdrop';
@@ -176,7 +449,7 @@ function mostrarModalLivePass(mensaje, razon) {
         <div class="livepass-modal" role="dialog" aria-modal="true">
             <span class="livepass-modal-icon">◉</span>
             <div class="livepass-modal-title">Csariel's Live Pass</div>
-            <div class="livepass-modal-text">${mensaje || 'Necesitas un Live Pass activo para transmitir'}</div>
+            <div class="livepass-modal-text">${escapeHTML(mensaje || 'Necesitas un Live Pass activo para transmitir')}</div>
             <div class="livepass-modal-benefits">
                 <div class="livepass-modal-benefit">Transmite desde 2 horas al día</div>
                 <div class="livepass-modal-benefit">Planes desde $300 MXN / mes</div>
@@ -184,12 +457,8 @@ function mostrarModalLivePass(mensaje, razon) {
                 <div class="livepass-modal-benefit">Se renuevan cada día</div>
             </div>
             <div class="livepass-modal-actions">
-                <button type="button" class="livepass-modal-btn-primary" onclick="abrirMembresiaLive()">
-                    ◈ Ver planes Live Pass
-                </button>
-                <button type="button" class="livepass-modal-btn-secondary" onclick="cerrarModalLivePass()">
-                    Ahora no
-                </button>
+                <button type="button" class="livepass-modal-btn-primary" onclick="abrirMembresiaLive()">◈ Ver planes Live Pass</button>
+                <button type="button" class="livepass-modal-btn-secondary" onclick="cerrarModalLivePass()">Ahora no</button>
             </div>
         </div>
     `;
@@ -208,21 +477,17 @@ function abrirMembresiaLive() {
 }
 
 // ================================================================
-// CONTROL DE TIEMPO DEL LIVE PASS
+// LIVE PASS - Verificación y conteo
 // ================================================================
 async function verificarLivePassAntesDeTransmitir() {
     try {
         const session = await getSession();
         if (!session) return { puede: false, razon: 'sin_sesion' };
         if (!supabaseClient) supabaseClient = await window.supabaseReady;
-        const { data, error } = await supabaseClient.rpc('puede_transmitir_live', {
-            p_usuario_id: session.user.id
-        });
+        const { data, error } = await supabaseClient.rpc('puede_transmitir_live', { p_usuario_id: session.user.id });
         if (error) { console.error('Error verificando Live Pass:', error); return { puede: false, razon: 'error' }; }
         const info = Array.isArray(data) ? data[0] : data;
-        if (!info.puede) {
-            return { puede: false, razon: info.razon || 'sin_pass', mensaje: info.mensaje || 'No puedes transmitir ahora', minutos_restantes: info.minutos_restantes || 0 };
-        }
+        if (!info.puede) return { puede: false, razon: info.razon || 'sin_pass', mensaje: info.mensaje || 'No puedes transmitir ahora' };
         infoLivePass = info;
         return { puede: true, minutos_limite: info.minutos_limite, minutos_usados: info.minutos_usados, minutos_restantes: info.minutos_restantes, plan_horas_dia: info.plan_horas_dia };
     } catch (e) { console.error('Error:', e); return { puede: false, razon: 'error' }; }
@@ -233,8 +498,8 @@ function iniciarConteoMinutos() {
     tiempoInicioTransmision = Date.now();
     minutosTransmitiendo = 0;
     if (timerBarraTiempo) clearInterval(timerBarraTiempo);
-    timerBarraTiempo = setInterval(() => { actualizarBarraTiempo(); }, 1000);
-    timerConteoMinutos = setInterval(async () => { await registrarMinutoBackend(); }, 60000);
+    timerBarraTiempo = setInterval(actualizarBarraTiempo, 1000);
+    timerConteoMinutos = setInterval(registrarMinutoBackend, 60000);
 }
 
 function detenerConteoMinutos() {
@@ -258,10 +523,8 @@ function actualizarBarraTiempo() {
     barra.classList.add('visible');
     const horas = Math.floor(minutosRestantesTotales / 60);
     const mins = minutosRestantesTotales % 60;
-    const tiempoTexto = horas > 0 ? `${horas}h ${mins}m` : `${mins} min`;
-    if (restanteEl) restanteEl.textContent = tiempoTexto;
-    const porcentaje = (minutosRestantesTotales / infoLivePass.minutos_limite) * 100;
-    if (progressEl) progressEl.style.width = porcentaje + '%';
+    if (restanteEl) restanteEl.textContent = horas > 0 ? `${horas}h ${mins}m` : `${mins} min`;
+    if (progressEl) progressEl.style.width = ((minutosRestantesTotales / infoLivePass.minutos_limite) * 100) + '%';
 }
 
 async function registrarMinutoBackend() {
@@ -272,18 +535,9 @@ async function registrarMinutoBackend() {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${session.access_token}` }
         });
-        if (response.status === 403) {
-            console.warn('[Live] Límite de Live Pass alcanzado');
-            finalizarPorTiempoAgotado();
-            return;
-        }
-        if (response.ok) {
-            minutosTransmitiendo++;
-            console.log('✅ Minuto registrado. Total:', minutosTransmitiendo);
-        }
-    } catch (e) {
-        console.error('Error registrando minuto:', e);
-    }
+        if (response.status === 403) { finalizarPorTiempoAgotado(); return; }
+        if (response.ok) minutosTransmitiendo++;
+    } catch (e) { console.error('Error registrando minuto:', e); }
 }
 
 function finalizarPorTiempoAgotado() {
@@ -295,61 +549,87 @@ function finalizarPorTiempoAgotado() {
 // ================================================================
 // ANUNCIOS
 // ================================================================
-function getOrCreateAdSessionId() { if (adSessionId) return adSessionId; adSessionId = `ads_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`; return adSessionId; }
-function cerrarAnuncio() { adCerrado = true; const c = document.getElementById('marketingAdContainer'); if (c) c.classList.remove('visible'); anuncioActual = null; }
+function getOrCreateAdSessionId() {
+    if (adSessionId) return adSessionId;
+    adSessionId = `ads_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+    return adSessionId;
+}
+
+function cerrarAnuncio() {
+    adCerrado = true;
+    const c = document.getElementById('marketingAdContainer');
+    if (c) c.classList.remove('visible');
+    anuncioActual = null;
+}
 
 async function cargarAnuncioLive() {
     if (!currentStreamId || adCerrado) return;
-    const session = await getSession(); if (!session) return;
+    const session = await getSession();
+    if (!session) return;
     try {
-        const response = await fetch('/api/marketing/get-ad', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` }, body: JSON.stringify({ target_tipo: 'live', target_id: currentStreamId, session_id: getOrCreateAdSessionId() }) });
+        const response = await fetch('/api/marketing/get-ad', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+            body: JSON.stringify({ target_tipo: 'live', target_id: currentStreamId, session_id: getOrCreateAdSessionId() })
+        });
         if (!response.ok) return;
         const data = await response.json();
-        if (!data.success || !data.ad) { const c = document.getElementById('marketingAdContainer'); if (c) c.classList.remove('visible'); return; }
-        mostrarAnuncio(data.ad); anuncioActual = data.ad;
+        if (!data.success || !data.ad) return;
+        mostrarAnuncio(data.ad);
+        anuncioActual = data.ad;
         if (adVistaTimer) clearTimeout(adVistaTimer);
         adVistaTimer = setTimeout(() => { registrarVistaAnuncio(); }, 3000);
     } catch (error) { console.error('Error cargando anuncio:', error); }
 }
 
 function mostrarAnuncio(ad) {
-    const container = document.getElementById('marketingAdContainer'), media = document.getElementById('marketingAdMedia'), title = document.getElementById('marketingAdTitle'), desc = document.getElementById('marketingAdDesc'), cta = document.getElementById('marketingAdCta');
-    if (!container || !media || !title || !desc || !cta) return;
-    if (ad.imagen_url) media.innerHTML = `<img src="${attrHTML(ad.imagen_url)}" alt="${attrHTML(ad.titulo)}" loading="lazy" onerror="this.parentElement.innerHTML='<span>◈</span>'">`;
-    else if (ad.video_url) media.innerHTML = `<video src="${attrHTML(ad.video_url)}" muted autoplay loop playsinline></video>`;
-    else media.innerHTML = '<span>◈</span>';
-    title.textContent = ad.titulo || 'Patrocinado';
-    desc.textContent = ad.descripcion || '';
-    cta.textContent = ad.cta_texto || 'Ver más';
-    desc.style.display = ad.descripcion ? 'block' : 'none';
+    const container = document.getElementById('marketingAdContainer');
+    if (!container) return;
     container.classList.add('visible');
 }
 
 async function registrarVistaAnuncio() {
     if (!anuncioActual) return;
-    const session = await getSession(); if (!session) return;
-    try { await fetch('/api/marketing/register-event', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` }, body: JSON.stringify({ ad_id: anuncioActual.id, campaign_id: anuncioActual.campaign_id, target_tipo: 'live', target_id: currentStreamId, evento: 'vista', session_id: getOrCreateAdSessionId() }) }); } catch (e) {}
+    const session = await getSession();
+    if (!session) return;
+    try {
+        await fetch('/api/marketing/register-event', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+            body: JSON.stringify({ ad_id: anuncioActual.id, campaign_id: anuncioActual.campaign_id, target_tipo: 'live', target_id: currentStreamId, evento: 'vista', session_id: getOrCreateAdSessionId() })
+        });
+    } catch (e) {}
 }
 
 async function registrarClicAnuncio() {
     if (!anuncioActual) return;
-    const session = await getSession(); if (!session) return;
+    const session = await getSession();
+    if (!session) return;
     try {
-        await fetch('/api/marketing/register-event', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` }, body: JSON.stringify({ ad_id: anuncioActual.id, campaign_id: anuncioActual.campaign_id, target_tipo: 'live', target_id: currentStreamId, evento: 'clic', session_id: getOrCreateAdSessionId() }) });
-        if (anuncioActual.video_url) window.open(anuncioActual.video_url, '_blank', 'noopener');
-        else if (anuncioActual.imagen_url) window.open(anuncioActual.imagen_url, '_blank', 'noopener');
+        await fetch('/api/marketing/register-event', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+            body: JSON.stringify({ ad_id: anuncioActual.id, campaign_id: anuncioActual.campaign_id, target_tipo: 'live', target_id: currentStreamId, evento: 'clic', session_id: getOrCreateAdSessionId() })
+        });
     } catch (e) {}
 }
 
-function iniciarRefrescoAnuncios() { if (adRefreshInterval) clearInterval(adRefreshInterval); cargarAnuncioLive(); adRefreshInterval = setInterval(() => { if (currentStreamId && !adCerrado) cargarAnuncioLive(); }, 30000); }
-function detenerRefrescoAnuncios() { if (adRefreshInterval) { clearInterval(adRefreshInterval); adRefreshInterval = null; } if (adVistaTimer) { clearTimeout(adVistaTimer); adVistaTimer = null; } }
+function iniciarRefrescoAnuncios() {
+    if (adRefreshInterval) clearInterval(adRefreshInterval);
+    cargarAnuncioLive();
+    adRefreshInterval = setInterval(() => { if (currentStreamId && !adCerrado) cargarAnuncioLive(); }, 30000);
+}
+
+function detenerRefrescoAnuncios() {
+    if (adRefreshInterval) { clearInterval(adRefreshInterval); adRefreshInterval = null; }
+    if (adVistaTimer) { clearTimeout(adVistaTimer); adVistaTimer = null; }
+}
 
 // ================================================================
-// INICIAR LIVE PROFESIONAL
+// INICIAR LIVE
 // ================================================================
 async function iniciarTransmisionGeneral() {
     try {
-        console.log('🎬 [1] Iniciando transmisión PROFESIONAL...');
         const session = await getSession();
         if (!session) { showToast('⚠️ Inicia sesión para transmitir', 'error'); return; }
         currentUser = session.user;
@@ -357,24 +637,26 @@ async function iniciarTransmisionGeneral() {
 
         const verificacion = await verificarLivePassAntesDeTransmitir();
         if (!verificacion.puede) {
-            if (verificacion.razon === 'sin_live_pass') mostrarModalLivePass('Necesitas un Live Pass activo para transmitir');
-            else if (verificacion.razon === 'expirado') mostrarModalLivePass('Tu Live Pass ha expirado. Renueva para seguir transmitiendo');
-            else if (verificacion.razon === 'sin_horas') mostrarModalLivePass('Ya usaste todas tus horas de hoy. Vuelve mañana o mejora tu plan');
-            else mostrarModalLivePass(verificacion.mensaje || 'No puedes transmitir en este momento');
+            if (verificacion.razon === 'sin_live_pass') mostrarModalLivePass('Necesitas un Live Pass activo');
+            else if (verificacion.razon === 'expirado') mostrarModalLivePass('Tu Live Pass ha expirado');
+            else if (verificacion.razon === 'sin_horas') mostrarModalLivePass('Ya usaste todas tus horas de hoy');
+            else mostrarModalLivePass(verificacion.mensaje || 'No puedes transmitir ahora');
             return;
         }
 
-        const { data: streamGrupo, error: checkGrupoError } = await supabaseClient.from('transmisiones').select('id').eq('streamer_id', currentUser.id).eq('estado', 'en_vivo').eq('is_live', true).not('grupo_id', 'is', null).maybeSingle();
-        if (checkGrupoError) throw checkGrupoError;
-        if (streamGrupo) { showToast('⚠️ Estás transmitiendo en un grupo. Finalízalo primero.', 'warning', 6000); return; }
+        const { data: streamActivo } = await supabaseClient
+            .from('transmisiones')
+            .select('id')
+            .eq('streamer_id', currentUser.id)
+            .eq('estado', 'en_vivo')
+            .eq('is_live', true)
+            .maybeSingle();
 
-        const { data: streamActivo, error: checkError } = await supabaseClient.from('transmisiones').select('id').eq('streamer_id', currentUser.id).eq('estado', 'en_vivo').eq('is_live', true).is('grupo_id', null).maybeSingle();
-        if (checkError) throw checkError;
-        if (streamActivo) { showToast('⚠️ Ya tienes una transmisión profesional activa', 'warning'); return; }
+        if (streamActivo) { showToast('⚠️ Ya tienes una transmisión activa', 'warning'); return; }
 
         showToast('⏳ Iniciando transmisión...', '', 3000);
-        const titulo = prompt('Título de tu transmisión:', 'Mi live en Csariel\'s') || 'Live en Csariel\'s';
-        const categoria = prompt('Categoría (gaming, musica, educacion, comunidad, tecnologia, general):', 'general') || 'general';
+        const titulo = prompt('Título:', 'Mi live en Csariel\'s') || 'Live en Csariel\'s';
+        const categoria = prompt('Categoría:', 'general') || 'general';
 
         const roomNameNuevo = `live-${currentUser.id}-${Date.now()}`;
 
@@ -382,32 +664,40 @@ async function iniciarTransmisionGeneral() {
             p_titulo: titulo, p_categoria: categoria, p_room_name: roomNameNuevo, p_grupo_id: null
         });
 
-        if (streamError) { console.error('❌ Error en RPC:', streamError); throw new Error(streamError.message || 'Error al crear transmisión'); }
+        if (streamError) throw new Error(streamError.message || 'Error al crear transmisión');
         const nuevoId = (typeof rpcResult === 'object' && rpcResult !== null) ? rpcResult.id : rpcResult;
         if (!nuevoId) throw new Error('No se pudo crear la transmisión');
 
-        const { data: transmision, error: fetchError } = await supabaseClient.from('transmisiones').select('*').eq('id', nuevoId).single();
-        if (fetchError || !transmision) throw new Error('No se pudo recuperar la transmisión');
+        const { data: transmision } = await supabaseClient
+            .from('transmisiones')
+            .select('*')
+            .eq('id', nuevoId)
+            .single();
+
+        if (!transmision) throw new Error('No se pudo recuperar la transmisión');
 
         currentStream = transmision;
         currentStreamId = transmision.id;
         document.getElementById('liveTitle').textContent = titulo;
 
         try {
-            showToast('🔗 Conectando a LiveKit...', '', 2000);
             const { Room, Track } = await cargarLiveKit();
             liveKitRoom = new Room();
-            const token = await obtenerTokenLiveKit(transmision.room_name, currentUser.id, 'publisher');
+            const token = await obtenerTokenLiveKit(transmision.room_name, currentUser.id);
             await liveKitRoom.connect(LIVEKIT_CONFIG.url, token);
             await liveKitRoom.localParticipant.setCameraEnabled(true);
             await liveKitRoom.localParticipant.setMicrophoneEnabled(true);
             const localVideoTrack = liveKitRoom.localParticipant.getTrackPublication(Track.Source.Camera)?.videoTrack;
             if (localVideoTrack) localVideoTrack.attach(document.getElementById('liveVideo'));
-            else throw new Error('La cámara se activó pero no se pudo obtener el video track');
-            liveKitRoom.on('participantConnected', () => { espectadores++; document.getElementById('viewersCount').textContent = `● ${espectadores}`; });
-            liveKitRoom.on('participantDisconnected', () => { espectadores = Math.max(0, espectadores - 1); document.getElementById('viewersCount').textContent = `● ${espectadores}`; });
+            liveKitRoom.on('participantConnected', () => {
+                espectadores++;
+                document.getElementById('viewersCount').textContent = `● ${espectadores}`;
+            });
+            liveKitRoom.on('participantDisconnected', () => {
+                espectadores = Math.max(0, espectadores - 1);
+                document.getElementById('viewersCount').textContent = `● ${espectadores}`;
+            });
         } catch (e) {
-            console.error('❌ Error LiveKit/Cámara:', e);
             throw new Error(mensajeErrorCamara(e));
         }
 
@@ -418,8 +708,7 @@ async function iniciarTransmisionGeneral() {
         iniciarContadorEspectadores();
         suscribirseAlChat();
         await notificarSeguidores();
-        adCerrado = false;
-        iniciarRefrescoAnuncios();
+
         const horas = verificacion.plan_horas_dia || 2;
         showToast(`🎥 ¡Transmisión iniciada! Tienes ${horas}h disponibles hoy`, 'success', 5000);
     } catch (error) {
@@ -427,8 +716,7 @@ async function iniciarTransmisionGeneral() {
         showToast('❌ Error: ' + error.message, 'error', 6000);
         if (liveKitRoom) { try { await liveKitRoom.disconnect(); } catch (e) {} liveKitRoom = null; }
         if (currentStreamId && supabaseClient) {
-            try { await supabaseClient.rpc('finalizar_transmision', { p_transmision_id: currentStreamId }); }
-            catch (cleanupErr) { console.error('No se pudo limpiar la transmisión fallida:', cleanupErr); }
+            try { await supabaseClient.rpc('finalizar_transmision', { p_transmision_id: currentStreamId }); } catch (e) {}
         }
         detenerConteoMinutos();
         currentStream = null; currentStreamId = null; isLive = false;
@@ -437,16 +725,8 @@ async function iniciarTransmisionGeneral() {
 
 async function finalizarTransmisionGeneral() {
     try {
-        const streamId = transmisionParamId || currentStreamId || currentStream?.id;
-        if (!streamId) { showToast('⚠️ No se encontró el ID', 'error'); return; }
-        if (currentUser) {
-            if (!currentStream || currentStream.id !== streamId) {
-                const { data: stream } = await supabaseClient.from('transmisiones').select('streamer_id, estado').eq('id', streamId).maybeSingle();
-                if (!stream || stream.streamer_id !== currentUser.id) { showToast('⚠️ Solo el streamer puede finalizar', 'error'); return; }
-                if (stream.estado === 'finalizada') { showToast('⚠️ Ya finalizó', 'warning'); return; }
-                currentStream = stream;
-            }
-        }
+        const streamId = currentStreamId || currentStream?.id;
+        if (!streamId) { showToast('⚠️ No hay transmisión activa', 'error'); return; }
         if (!confirm('¿Finalizar la transmisión?')) return;
         showToast('⏳ Finalizando...', '', 3000);
         detenerConteoMinutos();
@@ -461,14 +741,12 @@ async function finalizarTransmisionGeneral() {
         }
         if (streamInterval) { clearInterval(streamInterval); streamInterval = null; }
         if (channelChat) { supabaseClient.removeChannel(channelChat); channelChat = null; }
-        detenerRefrescoAnuncios(); cerrarAnuncio();
-        isLive = false; currentStream = null; currentStreamId = null; transmisionParamId = null;
+        detenerRefrescoAnuncios();
+        isLive = false; currentStream = null; currentStreamId = null;
         showToast('✅ Transmisión finalizada', 'success');
-        setTimeout(() => { window.location.href = '/features/muro/muro.html'; }, 1500);
     } catch (error) {
         console.error(error);
         detenerConteoMinutos();
-        detenerSondeoDonacion();
         showToast('❌ Error: ' + error.message, 'error');
     }
 }
@@ -485,25 +763,31 @@ async function unirseATransmision(streamId) {
         try {
             const { Room } = await cargarLiveKit();
             liveKitRoom = new Room();
-            const token = await obtenerTokenLiveKit(stream.room_name, session.user.id, 'subscriber');
+            const token = await obtenerTokenLiveKit(stream.room_name, session.user.id);
             await liveKitRoom.connect(LIVEKIT_CONFIG.url, token);
             liveKitRoom.on('trackSubscribed', (track) => {
-                if (track.kind === 'video') { const video = document.getElementById('liveVideo'); if (video) { track.attach(video); video.play().catch(e => {}); } }
+                if (track.kind === 'video') {
+                    const video = document.getElementById('liveVideo');
+                    if (video) { track.attach(video); video.play().catch(() => {}); }
+                }
             });
             showToast('📺 Conectado', 'success');
         } catch (e) { showToast('⚠️ ' + mensajeErrorCamara(e), 'warning'); }
         suscribirseAlChat();
-        adCerrado = false;
-        iniciarRefrescoAnuncios();
     } catch (error) { console.error(error); showToast('❌ Error', 'error'); }
 }
 
 function suscribirseAlChat() {
     if (!currentStream) return;
     if (channelChat) supabaseClient.removeChannel(channelChat);
-    channelChat = supabaseClient.channel(`live-${currentStream.id}`)
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes_live', filter: `transmision_id=eq.${currentStream.id}` },
-            (payload) => { agregarMensajeAlChat(payload.new); })
+    channelChat = supabaseClient
+        .channel(`live-${currentStream.id}`)
+        .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'mensajes_live',
+            filter: `transmision_id=eq.${currentStream.id}`
+        }, (payload) => { agregarMensajeAlChat(payload.new); })
         .subscribe();
 }
 
@@ -516,7 +800,13 @@ async function enviarMensaje() {
     const mod = verificarContenido(mensaje);
     if (mod.prohibido) { showToast(`⚠️ ${mod.razon}`, 'warning'); input.value = ''; return; }
     try {
-        await supabaseClient.from('mensajes_live').insert({ transmision_id: currentStream.id, usuario_id: session.user.id, mensaje, nombre_usuario: session.user.user_metadata?.nombre || 'Explorador', creado_en: new Date().toISOString() });
+        await supabaseClient.from('mensajes_live').insert({
+            transmision_id: currentStream.id,
+            usuario_id: session.user.id,
+            mensaje,
+            nombre_usuario: session.user.user_metadata?.nombre || 'Explorador',
+            creado_en: new Date().toISOString()
+        });
         input.value = '';
     } catch (e) { showToast('❌ Error al enviar', 'error'); }
 }
@@ -537,7 +827,6 @@ function agregarMensajeAlChat(mensaje) {
 function verificarContenido(texto) {
     const regex = new RegExp(`\\b(${PALABRAS_PROHIBIDAS.join('|')})\\b`, 'i');
     if (regex.test(texto)) return { prohibido: true, razon: 'Contenido inapropiado' };
-    if (/(acoso|bullying|hostigamiento|amenaza)/i.test(texto)) return { prohibido: true, razon: 'Contenido de acoso' };
     const palabras = texto.split(' ');
     if (palabras.filter((p, i) => palabras.indexOf(p) !== i).length > 5) return { prohibido: true, razon: 'Posible spam' };
     return { prohibido: false };
@@ -546,6 +835,9 @@ function verificarContenido(texto) {
 // ================================================================
 // DONACIONES
 // ================================================================
+let montoDonacionSeleccionado = null;
+let redDonacionSeleccionada = null;
+
 function abrirModalDonacion() {
     const existente = document.getElementById('donacionModalBackdrop');
     if (existente) existente.remove();
@@ -557,7 +849,7 @@ function abrirModalDonacion() {
         <div class="livepass-modal" role="dialog" aria-modal="true" style="max-width: 520px;">
             <span class="livepass-modal-icon">◆</span>
             <div class="livepass-modal-title">Donar al Streamer</div>
-            <div class="livepass-modal-text">Elige el monto y la red para tu donación</div>
+            <div class="livepass-modal-text">Elige el monto y la red</div>
             <div style="margin-bottom: 16px;">
                 <label style="display:block; color: var(--text-secondary); font-size: 0.75rem; margin-bottom: 8px; text-align: left;">Monto (USD)</label>
                 <div id="donacionMontos" style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;">
@@ -593,9 +885,6 @@ function cerrarModalDonacion() {
     if (modal) modal.remove();
 }
 
-let montoDonacionSeleccionado = null;
-let redDonacionSeleccionada = null;
-
 function seleccionarMontoDonacion(monto) {
     montoDonacionSeleccionado = monto;
     document.querySelectorAll('#donacionMontos .btn-donacion').forEach(b => {
@@ -616,8 +905,7 @@ function seleccionarRedDonacion(redId) {
 
 function actualizarBotonDonacion() {
     const btn = document.getElementById('btnConfirmarDonacion');
-    if (!btn) return;
-    btn.disabled = !(montoDonacionSeleccionado && redDonacionSeleccionada);
+    if (btn) btn.disabled = !(montoDonacionSeleccionado && redDonacionSeleccionada);
 }
 
 async function confirmarDonacion() {
@@ -651,15 +939,12 @@ async function confirmarDonacion() {
         }
 
         const data = await response.json();
-        const paymentUrl = data.payment_url;
-        const donacionId = data.id || data.donacion_id;
-
-        if (!paymentUrl || !donacionId) throw new Error('Respuesta inválida del servidor');
+        if (!data.payment_url || !data.donacion_id) throw new Error('Respuesta inválida');
 
         cerrarModalDonacion();
-        window.open(paymentUrl, '_blank', 'noopener');
+        window.open(data.payment_url, '_blank', 'noopener');
         showToast('⏳ Esperando confirmación del pago…', 'warning', 8000);
-        iniciarSondeoDonacion(donacionId, montoDonacionSeleccionado);
+        iniciarSondeoDonacion(data.donacion_id, montoDonacionSeleccionado);
     } catch (e) {
         console.error('Error creando donación:', e);
         showToast('❌ ' + (e.message || 'Error al crear donación'), 'error', 6000);
@@ -678,7 +963,7 @@ function iniciarSondeoDonacion(donacionId, monto) {
     donacionPollingInterval = setInterval(async () => {
         if (Date.now() - inicio > TIMEOUT_MS) {
             detenerSondeoDonacion();
-            showToast('⏰ Tiempo de espera agotado. La donación no se confirmó.', 'warning', 8000);
+            showToast('⏰ Tiempo de espera agotado', 'warning', 8000);
             return;
         }
         try {
@@ -689,8 +974,7 @@ function iniciarSondeoDonacion(donacionId, monto) {
             });
             if (!resp.ok) return;
             const data = await resp.json();
-            const estado = data.estado;
-            if (estado === 'pagada') {
+            if (data.estado === 'pagada') {
                 detenerSondeoDonacion();
                 const d = DONACIONES[monto];
                 if (d && currentUser) {
@@ -702,17 +986,16 @@ function iniciarSondeoDonacion(donacionId, monto) {
                     });
                 }
                 showToast(`🎉 ¡Donación de $${monto} confirmada!`, 'success', 6000);
-            } else if (estado === 'fallida') {
+            } else if (data.estado === 'fallida') {
                 detenerSondeoDonacion();
-                showToast('❌ La donación falló. Intenta de nuevo.', 'error', 6000);
+                showToast('❌ La donación falló', 'error', 6000);
             }
-        } catch (e) { console.error('Error consultando estado de donación:', e); }
+        } catch (e) {}
     }, INTERVALO_MS);
 }
 
 function detenerSondeoDonacion() {
     if (donacionPollingInterval) { clearInterval(donacionPollingInterval); donacionPollingInterval = null; }
-    if (donacionPollingTimeout) { clearTimeout(donacionPollingTimeout); donacionPollingTimeout = null; }
     donacionActualId = null;
 }
 
@@ -722,16 +1005,7 @@ function mostrarEfectoDonacion(monto, d, usuario) {
     const overlay = document.createElement('div');
     overlay.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:10;pointer-events:none;';
     const nombre = escapeHTML(usuario.user_metadata?.nombre || 'Alguien');
-    let contenido = '';
-    switch (d.efecto) {
-        case 'cubo_plata': contenido = `<div style="background:linear-gradient(135deg,#E8E8E8,#C0C0C0);border-radius:8px;padding:30px;font-size:4rem;text-align:center;"><div>◈</div><div style="font-size:1rem;color:#C0C0C0;margin-top:10px;">${nombre} donó $${monto}</div></div>`; break;
-        case 'cubo_bronce': contenido = `<div style="background:linear-gradient(135deg,#D4A574,#CD7F32);border-radius:8px;padding:30px;font-size:5rem;text-align:center;"><div>◈</div><div style="font-size:1.2rem;color:#CD7F32;margin-top:10px;">${nombre} donó $${monto}</div></div>`; break;
-        case 'cubo_oro': contenido = `<div style="background:linear-gradient(135deg,#F0D060,#D4AF37);border-radius:8px;padding:30px;font-size:6rem;text-align:center;"><div>◈</div><div style="font-size:1.5rem;color:#D4AF37;margin-top:10px;">${nombre} donó $${monto}</div></div>`; break;
-        case 'cohete_explosion': contenido = `<div style="text-align:center;"><div style="font-size:8rem;">▲</div><div style="font-size:1.5rem;color:#CD7F32;">${nombre} donó $${monto}</div></div>`; break;
-        case 'cohete_esmeralda': contenido = `<div style="text-align:center;"><div style="font-size:10rem;">▲</div><div style="font-size:2rem;color:#50C878;">${nombre} donó $${monto}</div></div>`; break;
-        case 'cohete_diamante': contenido = `<div style="text-align:center;"><div style="font-size:12rem;">◇</div><div style="font-size:2.5rem;color:#B9F2FF;">${nombre} donó $${monto}</div></div>`; break;
-    }
-    overlay.innerHTML = contenido;
+    overlay.innerHTML = `<div style="text-align:center;"><div style="font-size:8rem;">${d.emoji}</div><div style="font-size:1.5rem;color:${d.color};">${nombre} donó $${monto}</div></div>`;
     container.appendChild(overlay);
     setTimeout(() => { if (overlay.parentNode) overlay.remove(); }, d.duracion + 500);
 }
@@ -747,32 +1021,33 @@ function iniciarContadorEspectadores() {
     }, 15000);
 }
 
-async function seguirStreamer(streamerId) {
-    const session = await getSession(); if (!session) { showToast('⚠️ Inicia sesión', 'error'); return; }
-    const { error } = await supabaseClient.from('live_seguidores').insert({ streamer_id: streamerId, seguidor_id: session.user.id, creado_en: new Date().toISOString() });
-    if (error) { if (error.code === '23505') { showToast('⚠️ Ya sigues', 'warning'); return; } throw error; }
-    showToast('✅ Ahora sigues', 'success');
-}
-
-async function getSeguidores(streamerId) {
-    const { data } = await supabaseClient.from('live_seguidores').select('seguidor_id').eq('streamer_id', streamerId);
-    return data ? data.length : 0;
-}
-
 async function notificarSeguidores() {
     if (!currentStream || !currentUser) return;
     const { data: segs } = await supabaseClient.from('live_seguidores').select('seguidor_id').eq('streamer_id', currentUser.id);
     if (!segs || segs.length === 0) return;
     const nombre = currentUser.user_metadata?.nombre || 'Un streamer';
-    const notifs = segs.map(s => ({ user_id: s.seguidor_id, tipo: 'live_iniciado', mensaje: `${nombre} ha iniciado: ${currentStream.titulo}`, emisor_id: currentUser.id, leida: false, fecha: new Date().toISOString(), metadata: { stream_id: currentStream.id } }));
-    for (let i = 0; i < notifs.length; i += 50) await supabaseClient.from('notificaciones').insert(notifs.slice(i, i + 50));
+    const notifs = segs.map(s => ({
+        user_id: s.seguidor_id,
+        tipo: 'live_iniciado',
+        mensaje: `${nombre} ha iniciado: ${currentStream.titulo}`,
+        emisor_id: currentUser.id,
+        leida: false,
+        fecha: new Date().toISOString(),
+        metadata: { stream_id: currentStream.id }
+    }));
+    for (let i = 0; i < notifs.length; i += 50) {
+        await supabaseClient.from('notificaciones').insert(notifs.slice(i, i + 50));
+    }
 }
 
 async function cargarTransmisionesActivas() {
     try {
         if (!supabaseClient) supabaseClient = await window.supabaseReady;
-        const { data, error } = await supabaseClient.from('transmisiones').select('*')
-            .eq('estado', 'en_vivo').eq('is_live', true)
+        const { data, error } = await supabaseClient
+            .from('transmisiones')
+            .select('*')
+            .eq('estado', 'en_vivo')
+            .eq('is_live', true)
             .is('grupo_id', null)
             .order('fecha_inicio', { ascending: false });
         if (error) throw error;
@@ -784,7 +1059,7 @@ function renderizarTransmisiones(streams) {
     const container = document.getElementById('streamsList');
     if (!container) return;
     if (!streams || streams.length === 0) {
-        container.innerHTML = `<div class="empty-state" style="grid-column:1/-1;padding:20px;"><span class="icon">◉</span><h3>Sin transmisiones profesionales activas</h3><p>Sé el primero en iniciar una</p></div>`;
+        container.innerHTML = `<div class="empty-state" style="grid-column:1/-1;padding:20px;"><span class="icon">◉</span><h3>Sin transmisiones activas</h3><p>Sé el primero en iniciar una</p></div>`;
         return;
     }
     container.innerHTML = streams.map(s => `
@@ -792,7 +1067,6 @@ function renderizarTransmisiones(streams) {
             <div class="stream-thumb"><span style="font-size:2rem;">◉</span><span class="live-badge">● EN VIVO</span></div>
             <div class="stream-name">${escapeHTML(s.titulo || 'Live')}</div>
             <div class="stream-host">Streamer · ${s.viewers_count || 0} espectadores</div>
-            <div style="font-size:0.55rem;color:var(--text-muted);margin-top:4px;">${escapeHTML(s.categoria || 'General')} · ${new Date(s.fecha_inicio).toLocaleTimeString()}</div>
         </div>
     `).join('');
 }
@@ -808,7 +1082,7 @@ function togglePlay() {
         if (pauseIcon) pauseIcon.style.display = reproduciendo ? '' : 'none';
         if (pauseIcon2) pauseIcon2.style.display = reproduciendo ? '' : 'none';
     };
-    if (v.paused) { v.play().then(() => setIconos(true)).catch(e => {}); }
+    if (v.paused) { v.play().then(() => setIconos(true)).catch(() => {}); }
     else { v.pause(); setIconos(false); }
 }
 
@@ -838,7 +1112,10 @@ async function capturarPantalla() {
         if (video) { video.srcObject = ss; try { await video.play(); } catch (e) {} }
         showToast('🖥️ Compartiendo pantalla', 'success');
         svt.onended = async () => {
-            try { const pub = liveKitRoom.localParticipant.getTrackPublicationByName('screen'); if (pub?.track) await liveKitRoom.localParticipant.unpublishTrack(pub.track); } catch (e) {}
+            try {
+                const pub = liveKitRoom.localParticipant.getTrackPublicationByName('screen');
+                if (pub?.track) await liveKitRoom.localParticipant.unpublishTrack(pub.track);
+            } catch (e) {}
             await restaurarCamara();
         };
     } catch (e) { showToast('⚠️ ' + mensajeErrorCamara(e), 'error'); }
@@ -854,8 +1131,7 @@ async function restaurarCamara() {
     }
 }
 
-let juegosDisponibles = [];
-function esIOS() { return /iPad|iPhone|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); }
+function esIOS() { return /iPad|iPhone|iPod/i.test(navigator.userAgent); }
 function soportaCompartirPantalla() { return !!(navigator.mediaDevices && typeof navigator.mediaDevices.getDisplayMedia === 'function'); }
 function cerrarSelectorJuego() { const m = document.getElementById('gameSelectorModal'); if (m) m.remove(); }
 
@@ -864,28 +1140,30 @@ async function abrirSelectorJuego() {
     const modal = document.createElement('div');
     modal.id = 'gameSelectorModal';
     modal.className = 'game-modal-backdrop';
-    modal.innerHTML = `<div class="game-modal" role="dialog" aria-modal="true"><div class="game-modal-header"><div><div class="game-modal-kicker">CSARIEL'S · LIVE</div><h2 id="gameModalTitle">◈ ¿Qué juego vas a transmitir?</h2></div><button type="button" class="game-modal-close" onclick="cerrarSelectorJuego()">×</button></div><div class="game-grid" id="gameGrid"><div style="grid-column:1/-1;padding:20px;text-align:center;">Cargando juegos...</div></div><div id="otroJuegoWrap" class="otro-juego-wrap" hidden><label for="otroJuegoInput">Nombre del juego</label><div class="otro-juego-row"><input id="otroJuegoInput" maxlength="80" autocomplete="off" placeholder="Ej. Apex Legends" /><button type="button" class="btn btn-gold btn-sm" onclick="confirmarOtroJuego()">Continuar</button></div></div></div>`;
+    modal.innerHTML = `<div class="game-modal" role="dialog"><div class="game-modal-header"><div><h2>◈ ¿Qué juego vas a transmitir?</h2></div><button type="button" class="game-modal-close" onclick="cerrarSelectorJuego()">×</button></div><div class="game-grid" id="gameGrid"><div style="grid-column:1/-1;padding:20px;text-align:center;">Cargando juegos...</div></div></div>`;
     modal.addEventListener('click', (e) => { if (e.target === modal) cerrarSelectorJuego(); });
     document.body.appendChild(modal);
     try {
-        const { data, error } = await supabaseClient.from('juegos').select('id, nombre, package_name, activo').eq('activo', true).order('nombre');
-        if (error) throw error;
+        const { data } = await supabaseClient.from('juegos').select('id, nombre').eq('activo', true).order('nombre');
         juegosDisponibles = data || [];
         const grid = document.getElementById('gameGrid');
         if (!grid) return;
         grid.innerHTML = '';
-        juegosDisponibles.forEach(j => { const b = document.createElement('button'); b.type = 'button'; b.className = 'game-option'; b.textContent = `◈ ${j.nombre}`; b.addEventListener('click', () => seleccionarJuego(j)); grid.appendChild(b); });
-        const o = document.createElement('button'); o.type = 'button'; o.className = 'game-option game-option-other'; o.textContent = '◆ Otro'; o.addEventListener('click', mostrarOtroJuego); grid.appendChild(o);
-    } catch (e) { const grid = document.getElementById('gameGrid'); if (grid) grid.innerHTML = '<div style="padding:20px;text-align:center;">✕ Error</div>'; }
+        juegosDisponibles.forEach(j => {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'game-option';
+            b.textContent = `◈ ${j.nombre}`;
+            b.addEventListener('click', () => seleccionarJuego(j));
+            grid.appendChild(b);
+        });
+    } catch (e) {
+        const grid = document.getElementById('gameGrid');
+        if (grid) grid.innerHTML = '<div style="padding:20px;text-align:center;">✕ Error</div>';
+    }
 }
 
-function mostrarOtroJuego() { const w = document.getElementById('otroJuegoWrap'); if (w) w.hidden = false; const i = document.getElementById('otroJuegoInput'); if (i) { i.focus(); i.select(); } }
-function confirmarOtroJuego() { const i = document.getElementById('otroJuegoInput'); const n = (i?.value || '').trim(); if (!n) { showToast('⚠️ Escribe el nombre', 'warning'); return; } seleccionarJuego({ id: null, nombre: n, package_name: null, activo: true }); }
-
 async function seleccionarJuego(juego) {
-    if (!juego || typeof juego !== 'object') juego = { id: null, nombre: String(juego || '').trim(), package_name: null, activo: true };
-    if (!juego.nombre) return;
-    juegoSeleccionado = juego;
     cerrarSelectorJuego();
     await iniciarTransmisionJuego(juego);
 }
@@ -893,29 +1171,20 @@ async function seleccionarJuego(juego) {
 async function iniciarTransmisionJuego(juego) {
     try {
         const nj = juego?.nombre || 'Juego';
-        if (esIOS()) { showToast('Compartir pantalla no disponible en iOS.', 'warning', 6000); return; }
-        if (!soportaCompartirPantalla()) { showToast('⚠️ Tu navegador no soporta compartir pantalla.', 'error', 6000); return; }
+        if (esIOS()) { showToast('Compartir pantalla no disponible en iOS', 'warning', 6000); return; }
+        if (!soportaCompartirPantalla()) { showToast('⚠️ No soportado', 'error', 6000); return; }
 
         const verificacion = await verificarLivePassAntesDeTransmitir();
         if (!verificacion.puede) {
-            if (verificacion.razon === 'sin_live_pass') mostrarModalLivePass('Necesitas un Live Pass activo para transmitir juegos');
-            else if (verificacion.razon === 'expirado') mostrarModalLivePass('Tu Live Pass ha expirado. Renueva para seguir transmitiendo');
-            else if (verificacion.razon === 'sin_horas') mostrarModalLivePass('Ya usaste todas tus horas de hoy. Vuelve mañana o mejora tu plan');
-            else mostrarModalLivePass(verificacion.mensaje || 'No puedes transmitir en este momento');
+            mostrarModalLivePass(verificacion.mensaje || 'Necesitas Live Pass');
             return;
         }
 
         showToast('🖥️ Elige la pantalla...', '', 5000);
         gameScreenStream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 30, max: 60 } }, audio: true });
         const session = await getSession();
-        if (!session) { gameScreenStream.getTracks().forEach(t => t.stop()); gameScreenStream = null; showToast('⚠️ Inicia sesión', 'error'); return; }
+        if (!session) { gameScreenStream.getTracks().forEach(t => t.stop()); return; }
         currentUser = session.user;
-
-        const { data: streamGrupo } = await supabaseClient.from('transmisiones').select('id').eq('streamer_id', currentUser.id).eq('estado', 'en_vivo').eq('is_live', true).not('grupo_id', 'is', null).maybeSingle();
-        if (streamGrupo) { gameScreenStream.getTracks().forEach(t => t.stop()); gameScreenStream = null; showToast('⚠️ Estás transmitiendo en un grupo. Finalízalo primero.', 'warning', 6000); return; }
-
-        const { data: act } = await supabaseClient.from('transmisiones').select('id').eq('streamer_id', currentUser.id).eq('estado', 'en_vivo').eq('is_live', true).is('grupo_id', null).maybeSingle();
-        if (act) { gameScreenStream.getTracks().forEach(t => t.stop()); gameScreenStream = null; showToast('⚠️ Ya tienes una transmisión activa', 'warning'); return; }
 
         gameScreenTrack = gameScreenStream.getVideoTracks()[0];
         if (!gameScreenTrack) throw new Error('No se obtuvo la pista');
@@ -929,10 +1198,7 @@ async function iniciarTransmisionJuego(juego) {
         if (rpcError) throw rpcError;
 
         const nuevoId = (typeof rpcResult === 'object' && rpcResult !== null) ? rpcResult.id : rpcResult;
-        if (!nuevoId) throw new Error('Sin ID');
-
         const { data: transmision } = await supabaseClient.from('transmisiones').select('*').eq('id', nuevoId).single();
-        if (!transmision) throw new Error('No se pudo recuperar');
 
         currentStream = transmision;
         currentStreamId = transmision.id;
@@ -943,7 +1209,7 @@ async function iniciarTransmisionJuego(juego) {
 
         const { Room, LocalVideoTrack, LocalAudioTrack } = await cargarLiveKit();
         liveKitRoom = new Room();
-        const token = await obtenerTokenLiveKit(transmision.room_name, currentUser.id, 'publisher');
+        const token = await obtenerTokenLiveKit(transmision.room_name, currentUser.id);
         await liveKitRoom.connect(LIVEKIT_CONFIG.url, token);
         await liveKitRoom.localParticipant.publishTrack(new LocalVideoTrack(gameScreenTrack), { name: 'game-screen', source: 'screen_share' });
         const sa = gameScreenStream.getAudioTracks()[0];
@@ -953,21 +1219,17 @@ async function iniciarTransmisionJuego(juego) {
         isLive = true; espectadores = 0;
         infoLivePass = verificacion;
         iniciarConteoMinutos();
-        iniciarContadorEspectadores(); suscribirseAlChat(); await notificarSeguidores();
-        adCerrado = false; iniciarRefrescoAnuncios();
+        iniciarContadorEspectadores();
+        suscribirseAlChat();
+        await notificarSeguidores();
         const horas = verificacion.plan_horas_dia || 2;
         showToast(`◈ ¡Transmitiendo ${nj}! Tienes ${horas}h disponibles hoy`, 'success', 5000);
-        gameScreenTrack.onended = async () => { if (isLive && currentStreamId) { try { await finalizarTransmisionGeneral(); } catch (_) {} } };
+        gameScreenTrack.onended = async () => { if (isLive) { try { await finalizarTransmisionGeneral(); } catch (_) {} } };
     } catch (error) {
         console.error(error);
         showToast('✕ ' + mensajeErrorCamara(error), 'error', 6000);
         if (gameScreenStream) { gameScreenStream.getTracks().forEach(t => t.stop()); gameScreenStream = null; }
-        gameScreenTrack = null;
         if (liveKitRoom) { try { await liveKitRoom.disconnect(); } catch (_) {} liveKitRoom = null; }
-        if (currentStreamId) {
-            try { await supabaseClient.rpc('finalizar_transmision', { p_transmision_id: currentStreamId }); }
-            catch (cleanupErr) { console.error('No se pudo limpiar la transmisión de juego fallida:', cleanupErr); }
-        }
         detenerConteoMinutos();
         currentStream = null; currentStreamId = null; isLive = false;
     }
@@ -977,41 +1239,42 @@ async function cargarEstadisticas() {
     const session = await getSession();
     if (!session) { showToast('⚠️ Inicia sesión', 'error'); return; }
     const { data, error } = await supabaseClient.from('transmisiones').select('*').eq('streamer_id', session.user.id).is('grupo_id', null).order('fecha_inicio', { ascending: false });
-    if (error) { showToast('✕ Error', 'error'); return; }
-    if (!data || data.length === 0) { showToast('◈ Sin estadísticas aún', 'warning'); return; }
-    const totalStreams = data.length;
-    const totalHoras = data.reduce((a, s) => { if (s.fecha_inicio && s.fecha_fin) { const d = (new Date(s.fecha_fin) - new Date(s.fecha_inicio)) / 1000; return a + (d > 0 ? d : 0); } return a; }, 0) / 3600;
+    if (error || !data || data.length === 0) { showToast('◈ Sin estadísticas aún', 'warning'); return; }
+    const totalHoras = data.reduce((a, s) => {
+        if (s.fecha_inicio && s.fecha_fin) {
+            const d = (new Date(s.fecha_fin) - new Date(s.fecha_inicio)) / 1000;
+            return a + (d > 0 ? d : 0);
+        }
+        return a;
+    }, 0) / 3600;
     const totalEspectadores = data.reduce((a, s) => a + (s.viewers_count || 0), 0);
-    showToast(`◈ Transmisiones: ${totalStreams} · Horas: ${totalHoras.toFixed(1)}h · Espectadores: ${totalEspectadores}`, 'success', 6000);
+    showToast(`◈ Transmisiones: ${data.length} · Horas: ${totalHoras.toFixed(1)}h · Espectadores: ${totalEspectadores}`, 'success', 6000);
 }
 
 // ================================================================
 // ARRANQUE
 // ================================================================
-document.addEventListener('DOMContentLoaded', async () => {
+window.addEventListener('DOMContentLoaded', async () => {
     console.log('◈ Csariel\'s Live - cargando...');
 
-    // Esperar al cliente singleton
     try {
         supabaseClient = await window.supabaseReady;
         if (!supabaseClient) supabaseClient = window.supabaseClient;
+        if (!supabaseClient) {
+            console.error('[Live] No hay cliente Supabase');
+            showToast('❌ Error de conexión', 'error');
+            return;
+        }
+        console.log('[Live] ✅ Cliente Supabase listo');
     } catch (e) {
-        console.warn('[Live] No se pudo obtener el cliente:', e);
+        console.error('[Live] Error inicializando:', e);
+        showToast('❌ Error de conexión', 'error');
+        return;
     }
 
     const session = await getSession();
     if (session) currentUser = session.user;
-    else showToast('⚠️ Inicia sesión', 'warning');
-
-    const params = new URLSearchParams(window.location.search);
-    transmisionParamId = params.get('transmision');
-    if (transmisionParamId) {
-        currentStreamId = Number(transmisionParamId) || transmisionParamId;
-        try {
-            const { data: stream } = await supabaseClient.from('transmisiones').select('*').eq('id', currentStreamId).single();
-            if (stream) { currentStream = stream; currentStreamId = stream.id; document.getElementById('liveTitle').textContent = stream.titulo || 'EN VIVO'; adCerrado = false; iniciarRefrescoAnuncios(); }
-        } catch (e) { console.error(e); }
-    }
+    else showToast('⚠️ Inicia sesión para transmitir', 'warning');
 
     cargarTransmisionesActivas();
     setInterval(cargarTransmisionesActivas, 30000);
@@ -1023,12 +1286,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             if (typeof window.inicializarIdiomas === 'function') {
                 await window.inicializarIdiomas();
-                console.log('✅ Idiomas aplicados al live');
             }
-        } catch (e) { console.warn('⚠️ Error aplicando idiomas:', e); }
+        } catch (e) {}
     }, 500);
 
-    console.log('◈ Live PROFESIONAL listo');
+    console.log('◈ Live listo');
 });
 
 // ================================================================
@@ -1036,7 +1298,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 // ================================================================
 window.iniciarTransmisionGeneral = iniciarTransmisionGeneral;
 window.finalizarTransmisionGeneral = finalizarTransmisionGeneral;
-window.verTodasLasTransmisiones = () => { cargarTransmisionesActivas(); showToast('📺 Cargando...', '', 2000); };
 window.unirseATransmision = unirseATransmision;
 window.enviarMensaje = enviarMensaje;
 window.abrirModalDonacion = abrirModalDonacion;
@@ -1049,11 +1310,7 @@ window.toggleMute = toggleMute;
 window.capturarPantalla = capturarPantalla;
 window.abrirSelectorJuego = abrirSelectorJuego;
 window.seleccionarJuego = seleccionarJuego;
-window.mostrarOtroJuego = mostrarOtroJuego;
-window.confirmarOtroJuego = confirmarOtroJuego;
 window.cerrarSelectorJuego = cerrarSelectorJuego;
-window.seguirStreamer = seguirStreamer;
-window.getSeguidores = getSeguidores;
 window.cargarEstadisticas = cargarEstadisticas;
 window.cargarTransmisionesActivas = cargarTransmisionesActivas;
 window.showToast = showToast;
