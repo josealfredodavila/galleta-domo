@@ -1,5 +1,19 @@
 // ================================================================
-// RUTAS DE LIVEKIT
+// RUTAS DE LIVEKIT — Sariel's Ecosystem v2
+// ================================================================
+// Endpoints:
+//   POST /api/livekit/token          → Token JWT para unirse a un room
+//   GET  /api/livekit/streams        → Listar transmisiones activas
+//   POST /api/livekit/start          → Iniciar transmisión
+//   POST /api/livekit/end/:id        → Finalizar transmisión
+//
+// CAMBIOS v2:
+// - Devuelve "url" además de "wsUrl" (compatibilidad con mensajes.js)
+// - Acepta "participantName" del frontend con fallback
+// - Valida variables de entorno antes de generar tokens
+// - Valida roomName en el body
+// - Devuelve "identity" para debugging
+// - Token con TTL explícito de 2 horas
 // ================================================================
 
 const express = require('express');
@@ -9,11 +23,45 @@ const { verificarToken } = require('../middleware/auth');
 const logger = require('../utils/logger');
 const { AccessToken } = require('livekit-server-sdk');
 
-// Generar token para LiveKit
+// ================================================================
+// POST /api/livekit/token
+// ================================================================
 router.post('/token', verificarToken, async (req, res) => {
     try {
-        const { roomName } = req.body;
+        const { roomName, participantName } = req.body;
         const userId = req.usuario.id;
+
+        // Validaciones básicas
+        if (!roomName || typeof roomName !== 'string' || !roomName.trim()) {
+            return res.status(400).json({
+                success: false,
+                error: 'Falta roomName o es inválido'
+            });
+        }
+
+        // Validar variables de entorno (evita errores confusos)
+        if (!process.env.LIVEKIT_API_KEY || !process.env.LIVEKIT_API_SECRET) {
+            logger.error('Faltan LIVEKIT_API_KEY o LIVEKIT_API_SECRET');
+            return res.status(500).json({
+                success: false,
+                error: 'LiveKit no está configurado en el servidor'
+            });
+        }
+
+        if (!process.env.LIVEKIT_WS_URL) {
+            logger.error('Falta LIVEKIT_WS_URL en el entorno');
+            return res.status(500).json({
+                success: false,
+                error: 'LiveKit URL no configurada'
+            });
+        }
+
+        // Nombre del participante: preferir el del frontend
+        const nombreFinal =
+            participantName ||
+            req.usuario.user_metadata?.nombre ||
+            req.usuario.email?.split('@')[0] ||
+            'Usuario';
 
         // Crear token de acceso
         const at = new AccessToken(
@@ -21,11 +69,12 @@ router.post('/token', verificarToken, async (req, res) => {
             process.env.LIVEKIT_API_SECRET,
             {
                 identity: userId,
-                name: req.usuario.user_metadata?.nombre || 'Usuario'
+                name: nombreFinal,
+                ttl: '2h'
             }
         );
 
-        // Otorgar permisos para la sala
+        // Permisos para el room
         at.addGrant({
             roomJoin: true,
             room: roomName,
@@ -34,19 +83,21 @@ router.post('/token', verificarToken, async (req, res) => {
             canPublishData: true
         });
 
-        // ✅ FIX CRÍTICO: LiveKit SDK v2 requiere await en toJwt()
-        // Sin await, se devolvía una Promise en lugar del JWT real,
-        // causando "invalid authorization token" en LiveKit Cloud.
+        // ⚠️ CRÍTICO: LiveKit SDK v2 requiere await en toJwt()
         const token = await at.toJwt();
 
-        logger.info(`Token LiveKit generado para: ${userId}`);
+        logger.info(`[LiveKit] Token generado para ${userId} en room ${roomName}`);
+
+        // Devolvemos "url" (lo que usa el frontend) y "wsUrl" (compatibilidad)
         res.json({
             success: true,
             token,
-            wsUrl: process.env.LIVEKIT_WS_URL
+            url: process.env.LIVEKIT_WS_URL,
+            wsUrl: process.env.LIVEKIT_WS_URL,
+            identity: userId
         });
     } catch (error) {
-        logger.error(`Error generando token LiveKit: ${error.message}`);
+        logger.error(`[LiveKit] Error generando token: ${error.message}`);
         res.status(400).json({
             success: false,
             error: error.message
@@ -54,7 +105,9 @@ router.post('/token', verificarToken, async (req, res) => {
     }
 });
 
-// Obtener transmisiones activas
+// ================================================================
+// GET /api/livekit/streams — Listar transmisiones activas
+// ================================================================
 router.get('/streams', async (req, res) => {
     try {
         const { data, error } = await supabase
@@ -70,7 +123,7 @@ router.get('/streams', async (req, res) => {
             data
         });
     } catch (error) {
-        logger.error(`Error obteniendo transmisiones: ${error.message}`);
+        logger.error(`[LiveKit] Error obteniendo transmisiones: ${error.message}`);
         res.status(400).json({
             success: false,
             error: error.message
@@ -78,7 +131,9 @@ router.get('/streams', async (req, res) => {
     }
 });
 
-// Iniciar transmisión
+// ================================================================
+// POST /api/livekit/start — Iniciar transmisión
+// ================================================================
 router.post('/start', verificarToken, async (req, res) => {
     try {
         const { titulo, descripcion, tipo, precio } = req.body;
@@ -88,7 +143,7 @@ router.post('/start', verificarToken, async (req, res) => {
             .from('transmisiones')
             .insert({
                 streamer_id: userId,
-                titulo: titulo || 'Live en Sariel\'s',
+                titulo: titulo || "Live en Sariel's",
                 descripcion: descripcion || '',
                 tipo_transmision: tipo || 'gratis',
                 precio: precio || 0,
@@ -99,13 +154,13 @@ router.post('/start', verificarToken, async (req, res) => {
 
         if (error) throw error;
 
-        logger.info(`Transmisión iniciada: ${data[0].id}`);
+        logger.info(`[LiveKit] Transmisión iniciada: ${data[0].id}`);
         res.json({
             success: true,
             data: data[0]
         });
     } catch (error) {
-        logger.error(`Error iniciando transmisión: ${error.message}`);
+        logger.error(`[LiveKit] Error iniciando transmisión: ${error.message}`);
         res.status(400).json({
             success: false,
             error: error.message
@@ -113,7 +168,9 @@ router.post('/start', verificarToken, async (req, res) => {
     }
 });
 
-// Finalizar transmisión
+// ================================================================
+// POST /api/livekit/end/:transmisionId — Finalizar transmisión
+// ================================================================
 router.post('/end/:transmisionId', verificarToken, async (req, res) => {
     try {
         const { transmisionId } = req.params;
@@ -131,13 +188,13 @@ router.post('/end/:transmisionId', verificarToken, async (req, res) => {
 
         if (error) throw error;
 
-        logger.info(`Transmisión finalizada: ${transmisionId}`);
+        logger.info(`[LiveKit] Transmisión finalizada: ${transmisionId}`);
         res.json({
             success: true,
             data: data[0]
         });
     } catch (error) {
-        logger.error(`Error finalizando transmisión: ${error.message}`);
+        logger.error(`[Error finalizando transmisión: ${error.message}`);
         res.status(400).json({
             success: false,
             error: error.message
