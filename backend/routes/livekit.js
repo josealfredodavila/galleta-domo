@@ -3,7 +3,9 @@
 //   POST /api/livekit/token   → token para unirse a una sala
 //   GET  /api/livekit/streams → transmisiones activas (columnas públicas)
 // La sala y el permiso de publicar los decide SIEMPRE el servidor.
-// Se eliminaron /start y /end: el live se crea y se cierra por RPC.
+// v2: los lives son gratis por defecto. Si el live tiene precio de
+//     acceso mayor a 0, el espectador debe tener un pago confirmado
+//     (pagos_transmision.estado = 'pagado') o recibe 402.
 // ================================================================
 
 const express = require('express');
@@ -37,7 +39,7 @@ router.post('/token', verificarToken, async (req, res) => {
 
         const { data: stream, error } = await db
             .from('transmisiones')
-            .select('id, streamer_id, room_name, estado, is_live')
+            .select('id, streamer_id, room_name, estado, is_live, precio_acceso')
             .eq('id', streamId)
             .maybeSingle();
 
@@ -49,9 +51,37 @@ router.post('/token', verificarToken, async (req, res) => {
             return res.status(404).json({ success: false, error: 'transmision_no_activa' });
         }
 
-        // Publicar solo si: pide rol streamer + es el dueño + Live Pass válido
+        const esDueno = stream.streamer_id === user.id;
+
+        // ---------- Candado de pago (solo espectadores de lives con precio) ----------
+        const precio = Number(stream.precio_acceso) || 0;
+        if (!esDueno && precio > 0) {
+            const { data: pago, error: errPago } = await db
+                .from('pagos_transmision')
+                .select('id')
+                .eq('transmision_id', stream.id)
+                .eq('espectador_id', user.id)
+                .eq('estado', 'pagado')
+                .limit(1)
+                .maybeSingle();
+
+            if (errPago) {
+                logger.error(`[LiveKit] pago: ${errPago.message}`);
+                return res.status(500).json({ success: false, error: 'db' });
+            }
+            if (!pago) {
+                return res.status(402).json({
+                    success: false,
+                    error: 'pago_requerido',
+                    precio_acceso: precio,
+                    moneda: 'USD'
+                });
+            }
+        }
+
+        // ---------- Publicar solo: dueño + rol streamer + Live Pass válido ----------
         let canPublish = false;
-        if (req.body?.rol === 'streamer' && stream.streamer_id === user.id) {
+        if (req.body?.rol === 'streamer' && esDueno) {
             const { data: pass, error: passErr } = await db.rpc('puede_transmitir_live', {
                 p_usuario_id: user.id
             });
@@ -110,7 +140,7 @@ router.get('/streams', async (req, res) => {
 
         const { data, error } = await db
             .from('transmisiones')
-            .select('id, titulo, categoria, viewers_count, fecha_inicio, estado, is_live')
+            .select('id, titulo, categoria, viewers_count, fecha_inicio, estado, is_live, precio_acceso')
             .eq('estado', 'en_vivo')
             .eq('is_live', true)
             .is('grupo_id', null)
