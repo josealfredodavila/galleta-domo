@@ -1,15 +1,23 @@
-<!DOCTYPE html><html lang="es">
+<!DOCTYPE html>
+<html lang="es">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#000000" />
-    <title>Seguridad y acceso · Sariel's</title><link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <title>Seguridad y acceso · Sariel's</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../shared/config-layout.css" />
+    <style>
+        .cfg-item-disabled { opacity: .55; cursor: not-allowed; }
+        .sec-row { display:flex; align-items:center; gap:12px; padding:12px 14px; }
+        .sec-badge { display:inline-block; margin-left:6px; padding:2px 8px; border-radius:999px; font-size:.6rem; font-weight:700;
+            background:rgba(247,212,74,.12); color:#f7d44a; border:1px solid rgba(247,212,74,.35); }
+    </style>
+</head>
+<body class="cfg-page">
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
-
-<link rel="stylesheet" href="../../shared/config-layout.css" />
-
-</head><body class="cfg-page"><div id="cfgHeaderSlot"></div>
+<div id="cfgHeaderSlot"></div>
 
 <main class="cfg-content">
 
@@ -19,20 +27,19 @@
     <h2 class="cfg-section-title">Contraseña</h2>
     <div class="cfg-list" id="seccionPassword"></div>
 
-    <h2 class="cfg-section-title">Sesiones activas</h2>
+    <h2 class="cfg-section-title">Sesiones</h2>
     <div class="cfg-list" id="seccionSesiones"></div>
 
     <h2 class="cfg-section-title">Apps conectadas</h2>
     <div class="cfg-list" id="seccionApps"></div>
 
     <div class="cfg-aviso cfg-aviso-info">
-        ℹ️ Mantén tu cuenta segura. Si ves algo sospechoso, ciérralo inmediatamente.
+        ℹ️ Mantén tu cuenta segura. Si ves algo sospechoso, cierra las sesiones de otros dispositivos y cambia tu contraseña.
     </div>
 
     <div class="cfg-footer">
         <strong>◈ Sariel's</strong> · Configuración · Seguridad
     </div>
-
 </main>
 
 <div id="cfgToast" class="cfg-toast" role="status" aria-live="polite"></div>
@@ -41,27 +48,14 @@
     <div class="cfg-modal" role="dialog" aria-modal="true">
         <h3 id="cfgModalTitle" class="cfg-modal-title"></h3>
         <p id="cfgModalText" class="cfg-modal-text"></p>
-
         <div class="cfg-modal-actions">
-            <button
-                type="button"
-                id="cfgModalCancel"
-                class="cfg-btn cfg-btn-outline">
-                Cancelar
-            </button>
-
-            <button
-                type="button"
-                id="cfgModalConfirm"
-                class="cfg-btn cfg-btn-primary">
-                Confirmar
-            </button>
+            <button type="button" id="cfgModalCancel" class="cfg-btn cfg-btn-outline">Cancelar</button>
+            <button type="button" id="cfgModalConfirm" class="cfg-btn cfg-btn-primary">Confirmar</button>
         </div>
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-
 <script src="../../shared/config-icons.js"></script>
 
 <script>
@@ -70,1049 +64,278 @@
 
     let clienteSupabase = null;
     let sesionActual = null;
-
-    let estado2FA = null;
     let sesionesActivas = [];
     let appsConectadas = [];
+    let ocupado = false;
 
-    const $ = function (selector) {
-        return document.querySelector(selector);
-    };
+    const $ = function (s) { return document.querySelector(s); };
 
-    /* ============================================================
-       ESCAPE HTML
-    ============================================================ */
-
-    function escapeHtml(valor) {
-        if (valor === null || valor === undefined) {
-            return '';
-        }
-
-        const div = document.createElement('div');
-        div.textContent = String(valor);
-
-        return div.innerHTML;
+    function escapeHtml(v) {
+        if (v === null || v === undefined) return '';
+        const d = document.createElement('div');
+        d.textContent = String(v);
+        return d.innerHTML;
     }
 
-    /* ============================================================
-       ICONOS
-    ============================================================ */
-
-    function obtenerIcono(nombre) {
-        if (
-            typeof window.cfgIcon === 'function'
-        ) {
-            return window.cfgIcon(nombre);
-        }
-
-        if (
-            window.CFG_ICONS &&
-            window.CFG_ICONS[nombre]
-        ) {
-            return window.CFG_ICONS[nombre];
-        }
-
-        return '';
+    function icono(nombre) {
+        if (typeof window.cfgIcon === 'function') return window.cfgIcon(nombre) || '';
+        return (window.CFG_ICONS && window.CFG_ICONS[nombre]) || '';
     }
 
-    /* ============================================================
-       ITEM DE CONFIGURACIÓN
-    ============================================================ */
-
-    function cfgRenderItem(opciones) {
-        opciones = opciones || {};
-
-        const icono = obtenerIcono(
-            opciones.icon || 'settings'
-        );
-
-        const titulo = escapeHtml(
-            opciones.title || ''
-        );
-
-        const descripcion = escapeHtml(
-            opciones.desc || ''
-        );
-
-        const clase = opciones.class
-            ? ' ' + opciones.class
-            : '';
-
-        const estilo = opciones.style
-            ? ' style="' + opciones.style + '"'
-            : '';
-
-        let atributoAccion = '';
-
-        if (opciones.href) {
-            atributoAccion =
-                ' href="' +
-                escapeHtml(opciones.href) +
-                '"';
-        } else if (opciones.onclick) {
-            atributoAccion =
-                ' onclick="' +
-                escapeHtml(opciones.onclick) +
-                '"';
-        }
-
-        const etiqueta =
-            opciones.href
-                ? 'a'
-                : 'button';
-
-        return `
-            <${etiqueta}
-                class="cfg-item${clase}"
-                ${atributoAccion}
-                ${estilo}
-                ${etiqueta === 'button' ? 'type="button"' : ''}
-            >
-                <div class="cfg-item-icon">
-                    ${icono}
-                </div>
-
-                <div class="cfg-item-content">
-                    <div class="cfg-item-title">
-                        ${titulo}
-                    </div>
-
-                    <div class="cfg-item-desc">
-                        ${descripcion}
-                    </div>
-                </div>
-
-                ${
-                    opciones.chevron === false
-                        ? ''
-                        : `
-                            <div class="cfg-item-chevron">
-                                ${obtenerIcono('chevronRight')}
-                            </div>
-                        `
-                }
-            </${etiqueta}>
-        `;
+    /* Ítem de lista. Los textos pasan por escapeHtml; los onclick son constantes del código. */
+    function item(o) {
+        const esLink = Boolean(o.href);
+        const tag = esLink ? 'a' : 'button';
+        const attr = esLink ? ' href="' + escapeHtml(o.href) + '"' : (o.onclick ? ' onclick="' + o.onclick + '"' : '');
+        const cls = 'cfg-item' + (o.disabled ? ' cfg-item-disabled' : '');
+        const estilo = o.danger ? ' style="color:var(--cfg-danger,#ff3366);"' : '';
+        const tipo = esLink ? '' : ' type="button"';
+        const dis = o.disabled ? ' disabled' : '';
+        const chevron = o.chevron === false ? '' :
+            '<div class="cfg-item-chevron">' + icono('chevronRight') + '</div>';
+        return '<' + tag + ' class="' + cls + '"' + attr + estilo + tipo + dis + '>' +
+            '<div class="cfg-item-icon">' + icono(o.icon || 'settings') + '</div>' +
+            '<div class="cfg-item-content">' +
+                '<div class="cfg-item-title">' + escapeHtml(o.title) + (o.badge ? ' <span class="sec-badge">' + escapeHtml(o.badge) + '</span>' : '') + '</div>' +
+                '<div class="cfg-item-desc">' + escapeHtml(o.desc || '') + '</div>' +
+            '</div>' + chevron +
+            '</' + tag + '>';
     }
 
-    /* ============================================================
-       TOAST
-    ============================================================ */
-
+    /* ---------- TOAST ---------- */
     let toastTimer = null;
-
-    function cfgToast(
-        mensaje,
-        tipo,
-        duracion
-    ) {
+    function cfgToast(mensaje, tipo, duracion) {
         const toast = $('#cfgToast');
-
-        if (!toast) {
-            return;
-        }
-
+        if (!toast) return;
         clearTimeout(toastTimer);
-
         toast.className = 'cfg-toast';
-
-        if (tipo === 'success') {
-            toast.classList.add(
-                'cfg-toast-success'
-            );
-        } else if (tipo === 'error') {
-            toast.classList.add(
-                'cfg-toast-error'
-            );
-        } else if (tipo === 'warning') {
-            toast.classList.add(
-                'cfg-toast-warning'
-            );
-        }
-
+        if (tipo === 'success') toast.classList.add('cfg-toast-success');
+        else if (tipo === 'error') toast.classList.add('cfg-toast-error');
+        else if (tipo === 'warning') toast.classList.add('cfg-toast-warning');
         toast.textContent = mensaje || '';
-
-        requestAnimationFrame(function () {
-            toast.classList.add('show');
-        });
-
-        toastTimer = setTimeout(
-            function () {
-                toast.classList.remove(
-                    'show'
-                );
-            },
-            duracion || 3000
-        );
+        requestAnimationFrame(function () { toast.classList.add('show'); });
+        toastTimer = setTimeout(function () { toast.classList.remove('show'); }, duracion || 3000);
     }
-
     window.cfgToast = cfgToast;
 
-    /* ============================================================
-       MODAL DE CONFIRMACIÓN
-    ============================================================ */
-
+    /* ---------- MODAL DE CONFIRMACIÓN ---------- */
     let modalResolver = null;
-
-    function cfgConfirm(opciones) {
-        opciones = opciones || {};
-
+    function cfgConfirm(o) {
+        o = o || {};
         return new Promise(function (resolve) {
-
-            const overlay = $('#cfgModal');
-            const titulo = $('#cfgModalTitle');
-            const texto = $('#cfgModalText');
-            const cancelar = $('#cfgModalCancel');
-            const confirmar = $('#cfgModalConfirm');
-
-            if (
-                !overlay ||
-                !titulo ||
-                !texto ||
-                !cancelar ||
-                !confirmar
-            ) {
-                resolve(
-                    window.confirm(
-                        opciones.text || '¿Confirmar acción?'
-                    )
-                );
-
-                return;
-            }
-
+            const overlay = $('#cfgModal'), titulo = $('#cfgModalTitle'), texto = $('#cfgModalText');
+            const cancelar = $('#cfgModalCancel'), confirmar = $('#cfgModalConfirm');
             modalResolver = resolve;
-
-            titulo.textContent =
-                opciones.title ||
-                'Confirmar acción';
-
-            texto.textContent =
-                opciones.text ||
-                '¿Quieres continuar?';
-
-            cancelar.textContent =
-                opciones.cancelText ||
-                'Cancelar';
-
-            confirmar.textContent =
-                opciones.confirmText ||
-                'Confirmar';
-
-            confirmar.className =
-                'cfg-btn ' +
-                (
-                    opciones.danger
-                        ? 'cfg-btn-danger'
-                        : 'cfg-btn-primary'
-                );
-
+            titulo.textContent = o.title || 'Confirmar acción';
+            texto.textContent = o.text || '¿Quieres continuar?';
+            cancelar.textContent = o.cancelText || 'Cancelar';
+            confirmar.textContent = o.confirmText || 'Confirmar';
+            confirmar.className = 'cfg-btn ' + (o.danger ? 'cfg-btn-danger' : 'cfg-btn-primary');
             overlay.classList.add('show');
-            overlay.setAttribute(
-                'aria-hidden',
-                'false'
-            );
-
-            cancelar.onclick =
-                function () {
-                    cerrarModal(false);
-                };
-
-            confirmar.onclick =
-                function () {
-                    cerrarModal(true);
-                };
-
-            overlay.onclick =
-                function (event) {
-                    if (
-                        event.target === overlay
-                    ) {
-                        cerrarModal(false);
-                    }
-                };
+            overlay.setAttribute('aria-hidden', 'false');
+            cancelar.onclick = function () { cerrarModal(false); };
+            confirmar.onclick = function () { cerrarModal(true); };
+            overlay.onclick = function (e) { if (e.target === overlay) cerrarModal(false); };
         });
     }
-
     function cerrarModal(resultado) {
         const overlay = $('#cfgModal');
-
-        if (overlay) {
-            overlay.classList.remove(
-                'show'
-            );
-
-            overlay.setAttribute(
-                'aria-hidden',
-                'true'
-            );
-        }
-
-        if (modalResolver) {
-            const resolver =
-                modalResolver;
-
-            modalResolver = null;
-
-            resolver(resultado);
-        }
+        if (overlay) { overlay.classList.remove('show'); overlay.setAttribute('aria-hidden', 'true'); }
+        if (modalResolver) { const r = modalResolver; modalResolver = null; r(resultado); }
     }
-
     window.cfgConfirm = cfgConfirm;
 
-    /* ============================================================
-       HEADER
-    ============================================================ */
-
-    function cfgInitPage(opciones) {
-        opciones = opciones || {};
-
+    /* ---------- HEADER ---------- */
+    function cfgInitPage(o) {
+        o = o || {};
         const slot = $('#cfgHeaderSlot');
-
-        if (!slot) {
-            return;
-        }
-
-        const titulo = escapeHtml(
-            opciones.title ||
-            'Configuración'
-        );
-
-        const subtitulo = escapeHtml(
-            opciones.subtitle || ''
-        );
-
-        const backUrl =
-            opciones.backUrl ||
-            '/features/perfil/configuracion/index.html';
-
-        slot.innerHTML = `
-            <header class="cfg-header">
-
-                <a
-                    class="cfg-header-back"
-                    href="${escapeHtml(backUrl)}"
-                    aria-label="Volver">
-                    ${obtenerIcono('back')}
-                </a>
-
-                <div class="cfg-header-text">
-                    <h1 class="cfg-header-title">
-                        ${titulo}
-                    </h1>
-
-                    ${
-                        subtitulo
-                            ? `
-                                <p class="cfg-header-subtitle">
-                                    ${subtitulo}
-                                </p>
-                            `
-                            : ''
-                    }
-                </div>
-
-            </header>
-        `;
+        if (!slot) return;
+        const backUrl = o.backUrl || '/features/perfil/configuracion/index.html';
+        slot.innerHTML =
+            '<header class="cfg-header">' +
+                '<a class="cfg-header-back" href="' + escapeHtml(backUrl) + '" aria-label="Volver">' + icono('back') + '</a>' +
+                '<div class="cfg-header-text">' +
+                    '<h1 class="cfg-header-title">' + escapeHtml(o.title || 'Configuración') + '</h1>' +
+                    (o.subtitle ? '<p class="cfg-header-subtitle">' + escapeHtml(o.subtitle) + '</p>' : '') +
+                '</div>' +
+            '</header>';
     }
-
     window.cfgInitPage = cfgInitPage;
 
-    /* ============================================================
-       SUPABASE
-    ============================================================ */
-
+    /* ---------- SUPABASE ---------- */
     async function obtenerCliente() {
-
-        if (clienteSupabase) {
+        if (clienteSupabase) return clienteSupabase;
+        if (window.supabaseClient && window.supabaseClient.auth) {
+            clienteSupabase = window.supabaseClient;
             return clienteSupabase;
         }
-
-        if (window.supabaseClient) {
-            clienteSupabase =
-                window.supabaseClient;
-
-            return clienteSupabase;
+        if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+            throw new Error('La librería de Supabase no está disponible.');
         }
-
-        if (
-            !window.supabase ||
-            typeof window.supabase.createClient !==
-                'function'
-        ) {
-            throw new Error(
-                'La librería de Supabase no está disponible.'
-            );
-        }
-
-        const respuesta =
-            await fetch(
-                '/api/config/public',
-                {
-                    method: 'GET',
-                    credentials: 'same-origin',
-                    cache: 'no-store',
-                    headers: {
-                        'Accept':
-                            'application/json'
-                    }
-                }
-            );
-
-        if (!respuesta.ok) {
-            throw new Error(
-                'No se pudo cargar la configuración pública de Supabase (' +
-                respuesta.status +
-                ').'
-            );
-        }
-
-        const config =
-            await respuesta.json();
-
-        const supabaseUrl =
-            config &&
-            config.supabaseUrl;
-
-        const supabaseAnonKey =
-            config &&
-            config.supabaseAnonKey;
-
-        if (
-            typeof supabaseUrl !==
-                'string' ||
-            !supabaseUrl.trim() ||
-            typeof supabaseAnonKey !==
-                'string' ||
-            !supabaseAnonKey.trim()
-        ) {
-            throw new Error(
-                'La configuración pública de Supabase está incompleta.'
-            );
-        }
-
-        window.supabaseClient =
-            window.supabase.createClient(
-                supabaseUrl.trim(),
-                supabaseAnonKey.trim(),
-                {
-                    auth: {
-                        persistSession: true,
-                        autoRefreshToken: true,
-                        detectSessionInUrl: true
-                    }
-                }
-            );
-
-        clienteSupabase =
-            window.supabaseClient;
-
+        const r = await fetch('/api/config/public', { credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' } });
+        if (!r.ok) throw new Error('No se pudo cargar la configuración pública (' + r.status + ').');
+        const cfg = await r.json();
+        if (!cfg || !cfg.supabaseUrl || !cfg.supabaseAnonKey) throw new Error('Configuración pública incompleta.');
+        clienteSupabase = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {
+            auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+        });
+        window.supabaseClient = clienteSupabase;
         return clienteSupabase;
     }
 
-    /* ============================================================
-       REDIRECCIÓN SI NO HAY SESIÓN
-    ============================================================ */
-
     function guardarRetornoYSalir() {
         try {
-            const retorno =
-                window.location.pathname +
-                window.location.search +
-                window.location.hash;
-
-            if (
-                retorno.startsWith('/') &&
-                !retorno.startsWith('//')
-            ) {
-                localStorage.setItem(
-                    'config_returnTo',
-                    retorno
-                );
+            const retorno = window.location.pathname + window.location.search + window.location.hash;
+            if (retorno.startsWith('/') && !retorno.startsWith('//')) {
+                localStorage.setItem('wallet_returnTo', retorno);
             }
-        } catch (e) {
-            // No bloquear navegación.
-        }
-
+        } catch (e) {}
         window.location.replace('/');
     }
 
-    /* ============================================================
-       GUARDIA DE AUTENTICACIÓN
-    ============================================================ */
-
     async function guardiaDeAutenticacion() {
-
         let timeoutId = null;
-
         try {
-
-            timeoutId =
-                setTimeout(
-                    function () {
-                        guardarRetornoYSalir();
-                    },
-                    10000
-                );
-
-            const client =
-                await obtenerCliente();
-
-            const resultado =
-                await client.auth.getSession();
-
-            const session =
-                resultado &&
-                resultado.data
-                    ? resultado.data.session
-                    : null;
-
+            timeoutId = setTimeout(guardarRetornoYSalir, 10000);
+            const client = await obtenerCliente();
+            const resultado = await client.auth.getSession();
+            const session = resultado && resultado.data ? resultado.data.session : null;
             clearTimeout(timeoutId);
-
-            if (!session) {
-                guardarRetornoYSalir();
-                return null;
-            }
-
+            if (!session) { guardarRetornoYSalir(); return null; }
             sesionActual = session;
-
-            document.documentElement.classList.add(
-                'auth-ready'
-            );
-
+            document.documentElement.classList.add('auth-ready');
             return client;
-
         } catch (error) {
-
             clearTimeout(timeoutId);
-
-            console.error(
-                '[Seguridad] Error de autenticación:',
-                error
-            );
-
+            console.error('[Seguridad] Error de autenticación:', error);
             guardarRetornoYSalir();
-
             return null;
         }
     }
 
-    /* ============================================================
-       2FA
-    ============================================================ */
-
-    async function cargar2FA(client) {
-
-        estado2FA = null;
-
-        if (!client || !sesionActual) {
-            return;
-        }
-
-        try {
-
-            const resultado =
-                await client
-                    .from('usuarios_2fa')
-                    .select(
-                        'habilitado, metodo, verificado_at'
-                    )
-                    .eq(
-                        'usuario_id',
-                        sesionActual.user.id
-                    )
-                    .maybeSingle();
-
-            if (resultado.error) {
-                console.warn(
-                    '[Seguridad] No se pudo leer 2FA:',
-                    resultado.error.message
-                );
-
-                return;
-            }
-
-            estado2FA =
-                resultado.data || null;
-
-        } catch (error) {
-
-            console.warn(
-                '[Seguridad] Error leyendo 2FA:',
-                error
-            );
-        }
-    }
-
-    /* ============================================================
-       SESIONES
-    ============================================================ */
-
+    /* ---------- CARGA ---------- */
     async function cargarSesiones(client) {
-
         sesionesActivas = [];
-
-        if (!client || !sesionActual) {
-            return;
-        }
-
         try {
-
-            const resultado =
-                await client
-                    .from('usuarios_sesiones')
-                    .select(
-                        'id, dispositivo, navegador, ubicacion_aproximada, ultima_actividad'
-                    )
-                    .eq(
-                        'usuario_id',
-                        sesionActual.user.id
-                    )
-                    .order(
-                        'ultima_actividad',
-                        {
-                            ascending: false
-                        }
-                    )
-                    .limit(10);
-
-            if (resultado.error) {
-                console.warn(
-                    '[Seguridad] No se pudieron cargar sesiones:',
-                    resultado.error.message
-                );
-
-                return;
-            }
-
-            sesionesActivas =
-                resultado.data || [];
-
+            const r = await client
+                .from('usuarios_sesiones')
+                .select('id, dispositivo, navegador, ubicacion_aproximada, ultima_actividad')
+                .eq('usuario_id', sesionActual.user.id)
+                .order('ultima_actividad', { ascending: false })
+                .limit(10);
+            if (r.error) throw r.error;
+            sesionesActivas = r.data || [];
         } catch (error) {
-
-            console.warn(
-                '[Seguridad] Error cargando sesiones:',
-                error
-            );
+            console.warn('[Seguridad] No se pudieron cargar sesiones:', error.message || error);
         }
     }
-
-    /* ============================================================
-       APPS CONECTADAS
-    ============================================================ */
 
     async function cargarApps(client) {
-
         appsConectadas = [];
-
-        if (!client) {
-            return;
-        }
-
         try {
-
-            const resultado =
-                await client.rpc(
-                    'listar_mis_apps'
-                );
-
-            if (resultado.error) {
-                console.warn(
-                    '[Seguridad] No se pudieron cargar apps:',
-                    resultado.error.message
-                );
-
-                return;
-            }
-
-            appsConectadas =
-                resultado.data || [];
-
+            const r = await client.rpc('listar_mis_apps');
+            if (r.error) throw r.error;
+            appsConectadas = r.data || [];
         } catch (error) {
-
-            console.warn(
-                '[Seguridad] Error cargando apps:',
-                error
-            );
+            console.warn('[Seguridad] No se pudieron cargar apps:', error.message || error);
         }
     }
 
-    /* ============================================================
-       RENDER AUTENTICACIÓN
-    ============================================================ */
-
+    /* ---------- RENDER ---------- */
     function renderAutenticacion() {
-
-        const contenedor =
-            $('#seccionAuth');
-
-        if (!contenedor) {
-            return;
-        }
-
-        const activo =
-            estado2FA &&
-            estado2FA.habilitado === true;
-
-        const badge =
-            activo
-                ? `
-                    <span
-                        class="cfg-badge cfg-badge-success">
-                        ✓ Activo
-                    </span>
-                `
-                : `
-                    <span
-                        class="cfg-badge cfg-badge-warning">
-                        ⚠ Inactivo
-                    </span>
-                `;
-
-        const descripcion =
-            activo
-                ? (
-                    'Tu cuenta está protegida con verificación en 2 pasos.'
-                )
-                : (
-                    'Añade una capa extra de seguridad a tu cuenta.'
-                );
-
-        contenedor.innerHTML = `
-            <button
-                type="button"
-                class="cfg-item"
-                onclick="window.onConfig2FA()">
-
-                <div class="cfg-item-icon">
-                    ${obtenerIcono('shield')}
-                </div>
-
-                <div class="cfg-item-content">
-
-                    <div class="cfg-item-title">
-                        Verificación en 2 pasos
-                        <span style="margin-left:8px;">
-                            ${badge}
-                        </span>
-                    </div>
-
-                    <div class="cfg-item-desc">
-                        ${descripcion}
-                    </div>
-
-                </div>
-
-                <div class="cfg-item-chevron">
-                    ${obtenerIcono('chevronRight')}
-                </div>
-
-            </button>
-        `;
+        $('#seccionAuth').innerHTML = item({
+            icon: 'shield',
+            title: 'Verificación en 2 pasos',
+            desc: 'Próximamente. Todavía no protege tu cuenta; lo estamos preparando.',
+            badge: 'Próximamente',
+            disabled: true,
+            chevron: false
+        });
     }
-
-    /* ============================================================
-       RENDER CONTRASEÑA
-    ============================================================ */
 
     function renderPassword() {
-
-        const contenedor =
-            $('#seccionPassword');
-
-        if (!contenedor) {
-            return;
-        }
-
-        contenedor.innerHTML =
-            cfgRenderItem({
-                icon: 'lock',
-                title: 'Cambiar contraseña',
-                desc: 'Actualiza la contraseña de tu cuenta.',
-                href: '/actualizar-contraseña.html'
-            });
+        $('#seccionPassword').innerHTML = item({
+            icon: 'lock',
+            title: 'Cambiar contraseña',
+            desc: 'Actualiza la contraseña de tu cuenta.',
+            href: '/actualizar-contrasena'
+        });
     }
-
-    /* ============================================================
-       DETECTAR DISPOSITIVO
-    ============================================================ */
 
     function obtenerDispositivoActual() {
-
-        const ua =
-            navigator.userAgent || '';
-
-        if (/Android/i.test(ua)) {
-            return {
-                nombre: 'Android',
-                icono: '📱'
-            };
-        }
-
-        if (
-            /iPhone|iPad|iPod/i.test(ua)
-        ) {
-            return {
-                nombre: 'iPhone / iPad',
-                icono: '📱'
-            };
-        }
-
-        if (/Windows/i.test(ua)) {
-            return {
-                nombre: 'Windows',
-                icono: '💻'
-            };
-        }
-
-        if (/Mac/i.test(ua)) {
-            return {
-                nombre: 'Mac',
-                icono: '💻'
-            };
-        }
-
-        if (/Linux/i.test(ua)) {
-            return {
-                nombre: 'Linux',
-                icono: '💻'
-            };
-        }
-
-        return {
-            nombre: 'Navegador web',
-            icono: '💻'
-        };
+        const ua = navigator.userAgent || '';
+        if (/Android/i.test(ua)) return { nombre: 'Android', icono: '📱' };
+        if (/iPhone|iPad|iPod/i.test(ua)) return { nombre: 'iPhone / iPad', icono: '📱' };
+        if (/Windows/i.test(ua)) return { nombre: 'Windows', icono: '💻' };
+        if (/Mac/i.test(ua)) return { nombre: 'Mac', icono: '💻' };
+        if (/Linux/i.test(ua)) return { nombre: 'Linux', icono: '💻' };
+        return { nombre: 'Navegador web', icono: '💻' };
     }
-
-    /* ============================================================
-       RENDER SESIONES
-    ============================================================ */
 
     function renderSesiones() {
+        const actual = obtenerDispositivoActual();
+        let html =
+            '<div class="cfg-session-item">' +
+                '<span class="cfg-session-icon">' + actual.icono + '</span>' +
+                '<div class="cfg-session-info">' +
+                    '<div class="cfg-session-title">' + escapeHtml(actual.nombre) +
+                        ' <span class="cfg-badge cfg-badge-success">Este dispositivo</span></div>' +
+                    '<div class="cfg-session-subtitle">Sesión actual activa</div>' +
+                '</div>' +
+            '</div>';
 
-        const contenedor =
-            $('#seccionSesiones');
-
-        if (!contenedor) {
-            return;
-        }
-
-        const dispositivo =
-            obtenerDispositivoActual();
-
-        let html = `
-            <div class="cfg-session-item">
-
-                <span class="cfg-session-icon">
-                    ${dispositivo.icono}
-                </span>
-
-                <div class="cfg-session-info">
-
-                    <div class="cfg-session-title">
-
-                        ${escapeHtml(
-                            dispositivo.nombre
-                        )}
-
-                        <span
-                            class="cfg-badge cfg-badge-success">
-                            Este dispositivo
-                        </span>
-
-                    </div>
-
-                    <div class="cfg-session-subtitle">
-                        Sesión actual activa
-                    </div>
-
-                    <div class="cfg-session-meta">
-                        Ahora mismo
-                    </div>
-
-                </div>
-
-            </div>
-        `;
-
-        sesionesActivas.forEach(
-            function (sesion) {
-
-                const dispositivoSesion =
-                    String(
-                        sesion.dispositivo ||
-                        ''
-                    );
-
-                const icono =
-                    /Android|iPhone|iPad/i.test(
-                        dispositivoSesion
-                    )
-                        ? '📱'
-                        : '💻';
-
-                let fecha =
-                    'Desconocido';
-
-                if (
-                    sesion.ultima_actividad
-                ) {
-                    const fechaObj =
-                        new Date(
-                            sesion.ultima_actividad
-                        );
-
-                    if (
-                        !Number.isNaN(
-                            fechaObj.getTime()
-                        )
-                    ) {
-                        fecha =
-                            fechaObj.toLocaleString(
-                                'es-MX',
-                                {
-                                    day: '2-digit',
-                                    month: 'short',
-                                    hour: '2-digit',
-                                    minute: '2-digit'
-                                }
-                            );
-                    }
+        sesionesActivas.forEach(function (s) {
+            let fecha = 'Desconocido';
+            if (s.ultima_actividad) {
+                const f = new Date(s.ultima_actividad);
+                if (!isNaN(f.getTime())) {
+                    fecha = f.toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
                 }
-
-                html += `
-                    <div class="cfg-session-item">
-
-                        <span class="cfg-session-icon">
-                            ${icono}
-                        </span>
-
-                        <div class="cfg-session-info">
-
-                            <div class="cfg-session-title">
-                                ${escapeHtml(
-                                    sesion.dispositivo ||
-                                    'Dispositivo'
-                                )}
-                            </div>
-
-                            <div class="cfg-session-subtitle">
-                                ${escapeHtml(
-                                    sesion.navegador ||
-                                    'Navegador'
-                                )}
-                            </div>
-
-                            <div class="cfg-session-meta">
-                                ${escapeHtml(
-                                    sesion.ubicacion_aproximada ||
-                                    'Ubicación desconocida'
-                                )}
-                                ·
-                                ${escapeHtml(fecha)}
-                            </div>
-
-                        </div>
-
-                        <button
-                            type="button"
-                            class="cfg-session-btn"
-                            onclick="window.onCerrarSesion(${JSON.stringify(String(sesion.id))})">
-                            Cerrar
-                        </button>
-
-                    </div>
-                `;
             }
-        );
-
-        html += cfgRenderItem({
-            icon: 'logout',
-            title: 'Cerrar sesión en otros dispositivos',
-            desc: 'Cierra las sesiones registradas en otros dispositivos.',
-            onclick:
-                'window.onCerrarOtrasSesiones()',
-            class: 'cfg-item-plain',
-            style:
-                'color: var(--cfg-warning);'
+            const icono = /Android|iPhone|iPad/i.test(String(s.dispositivo || '')) ? '📱' : '💻';
+            html +=
+                '<div class="cfg-session-item">' +
+                    '<span class="cfg-session-icon">' + icono + '</span>' +
+                    '<div class="cfg-session-info">' +
+                        '<div class="cfg-session-title">' + escapeHtml(s.dispositivo || 'Dispositivo') + '</div>' +
+                        '<div class="cfg-session-subtitle">' + escapeHtml(s.navegador || 'Navegador') + '</div>' +
+                        '<div class="cfg-session-meta">' + escapeHtml(s.ubicacion_aproximada || 'Ubicación desconocida') + ' · ' + escapeHtml(fecha) + '</div>' +
+                    '</div>' +
+                '</div>';
         });
 
-        contenedor.innerHTML = html;
+        html += item({
+            icon: 'logout',
+            title: 'Cerrar sesión en otros dispositivos',
+            desc: 'Cierra todas las sesiones abiertas en otros dispositivos. Este dispositivo se mantiene abierto.',
+            onclick: 'window.onCerrarOtrasSesiones()',
+            danger: true
+        });
+
+        $('#seccionSesiones').innerHTML = html;
     }
 
-    /* ============================================================
-       RENDER APPS
-    ============================================================ */
-
     function renderApps() {
-
-        const contenedor =
-            $('#seccionApps');
-
-        if (!contenedor) {
-            return;
-        }
-
         let html = '';
-
-        appsConectadas.forEach(
-            function (app) {
-
-                html += `
-                    <div class="cfg-session-item">
-
-                        <span class="cfg-session-icon">
-                            ${escapeHtml(
-                                app.app_icono ||
-                                '🔗'
-                            )}
-                        </span>
-
-                        <div class="cfg-session-info">
-
-                            <div class="cfg-session-title">
-                                ${escapeHtml(
-                                    app.app_nombre ||
-                                    'App'
-                                )}
-                            </div>
-
-                            <div class="cfg-session-subtitle">
-                                ${escapeHtml(
-                                    app.app_descripcion ||
-                                    'Aplicación conectada'
-                                )}
-                            </div>
-
-                        </div>
-
-                        <button
-                            type="button"
-                            class="cfg-session-btn"
-                            onclick="window.onRevocarApp(${JSON.stringify(String(app.id))})">
-                            Revocar
-                        </button>
-
-                    </div>
-                `;
-            }
-        );
-
-        html += cfgRenderItem({
+        appsConectadas.forEach(function (app) {
+            html +=
+                '<div class="cfg-session-item">' +
+                    '<span class="cfg-session-icon">' + escapeHtml(app.app_icono || '🔗') + '</span>' +
+                    '<div class="cfg-session-info">' +
+                        '<div class="cfg-session-title">' + escapeHtml(app.app_nombre || 'App') + '</div>' +
+                        '<div class="cfg-session-subtitle">' + escapeHtml(app.app_descripcion || 'Aplicación conectada') + '</div>' +
+                    '</div>' +
+                    '<button type="button" class="cfg-session-btn" onclick="window.onRevocarApp(' + JSON.stringify(String(app.id)) + ')">Revocar</button>' +
+                '</div>';
+        });
+        html += item({
             icon: 'wallet',
             title: 'Wallet conectada',
             desc: 'Consulta y administra la wallet vinculada a tu cuenta.',
-            onclick:
-                'window.onVerWallet()'
+            href: '/features/perfil/configuracion/sariels/wallet.html'
         });
-
-        contenedor.innerHTML = html;
+        $('#seccionApps').innerHTML = html;
     }
-
-    /* ============================================================
-       RENDER GENERAL
-    ============================================================ */
 
     function renderSecciones() {
         renderAutenticacion();
@@ -1121,445 +344,71 @@
         renderApps();
     }
 
-    /* ============================================================
-       ACTIVAR / DESACTIVAR 2FA
-    ============================================================ */
-
-    window.onConfig2FA =
-        async function () {
-
-            const activo =
-                estado2FA &&
-                estado2FA.habilitado === true;
-
-            if (activo) {
-
-                const confirmar =
-                    await cfgConfirm({
-                        title:
-                            'Desactivar 2FA',
-                        text:
-                            'Si lo desactivas, tu cuenta tendrá una capa menos de protección.',
-                        confirmText:
-                            'Desactivar',
-                        cancelText:
-                            'Mantener activo',
-                        danger: true
-                    });
-
-                if (!confirmar) {
-                    return;
-                }
-
-                await ejecutarDesactivar2FA();
-
-                return;
-            }
-
-            const confirmar =
-                await cfgConfirm({
-                    title:
-                        'Activar verificación en 2 pasos',
-                    text:
-                        'Añade una capa adicional de seguridad a tu cuenta.',
-                    confirmText:
-                        'Activar 2FA',
-                    cancelText:
-                        'Cancelar',
-                    danger: false
-                });
-
-            if (!confirmar) {
-                return;
-            }
-
-            await ejecutarActivar2FA();
-        };
-
-    async function ejecutarActivar2FA() {
-
+    /* ---------- ACCIONES ---------- */
+    window.onCerrarOtrasSesiones = async function () {
+        if (ocupado) return;
+        const ok = await cfgConfirm({
+            title: '¿Cerrar sesión en otros dispositivos?',
+            text: 'Los demás dispositivos tendrán que volver a iniciar sesión. Este dispositivo se mantiene abierto.',
+            confirmText: 'Cerrar sesiones',
+            cancelText: 'Cancelar',
+            danger: true
+        });
+        if (!ok) return;
+        ocupado = true;
         try {
-
-            const client =
-                await obtenerCliente();
-
-            cfgToast(
-                '⏳ Activando 2FA...',
-                '',
-                3000
-            );
-
-            /*
-             * Se conserva la llamada RPC existente
-             * del sistema actual.
-             */
-            const secretKey =
-                'SARIELS_' +
-                Math.random()
-                    .toString(36)
-                    .substring(2, 18)
-                    .toUpperCase();
-
-            const resultado =
-                await client.rpc(
-                    'activar_2fa',
-                    {
-                        p_metodo: 'totp',
-                        p_secret: secretKey
-                    }
-                );
-
-            if (resultado.error) {
-                throw resultado.error;
-            }
-
-            await cargar2FA(client);
-
-            renderSecciones();
-
-            cfgToast(
-                '✓ 2FA activado correctamente',
-                'success'
-            );
-
+            const client = await obtenerCliente();
+            const r = await client.auth.signOut({ scope: 'others' });
+            if (r && r.error) throw r.error;
+            await cargarSesiones(client);
+            renderSesiones();
+            cfgToast('✓ Sesiones de otros dispositivos cerradas', 'success');
         } catch (error) {
-
-            console.error(
-                '[Seguridad] Error activando 2FA:',
-                error
-            );
-
-            cfgToast(
-                'Error al activar 2FA: ' +
-                (
-                    error.message ||
-                    'Error desconocido'
-                ),
-                'error',
-                5000
-            );
+            console.error('[Seguridad] Error cerrando otras sesiones:', error);
+            cfgToast('No se pudieron cerrar las sesiones: ' + (error.message || 'Error desconocido'), 'error', 5000);
+        } finally {
+            ocupado = false;
         }
-    }
+    };
 
-    async function ejecutarDesactivar2FA() {
-
+    window.onRevocarApp = async function (appId) {
+        if (ocupado) return;
+        const ok = await cfgConfirm({
+            title: '¿Revocar acceso?',
+            text: "La aplicación ya no podrá acceder a tu cuenta de Sariel's.",
+            confirmText: 'Revocar',
+            cancelText: 'Cancelar',
+            danger: true
+        });
+        if (!ok) return;
+        ocupado = true;
         try {
-
-            const client =
-                await obtenerCliente();
-
-            cfgToast(
-                '⏳ Desactivando 2FA...',
-                '',
-                3000
-            );
-
-            const resultado =
-                await client.rpc(
-                    'desactivar_2fa'
-                );
-
-            if (resultado.error) {
-                throw resultado.error;
-            }
-
-            await cargar2FA(client);
-
-            renderSecciones();
-
-            cfgToast(
-                '✓ 2FA desactivado',
-                'warning'
-            );
-
+            const client = await obtenerCliente();
+            const r = await client.rpc('revocar_app', { p_app_id: appId });
+            if (r.error) throw r.error;
+            await cargarApps(client);
+            renderApps();
+            cfgToast('✓ App revocada', 'success');
         } catch (error) {
-
-            console.error(
-                '[Seguridad] Error desactivando 2FA:',
-                error
-            );
-
-            cfgToast(
-                'Error al desactivar 2FA: ' +
-                (
-                    error.message ||
-                    'Error desconocido'
-                ),
-                'error',
-                5000
-            );
+            console.error('[Seguridad] Error revocando app:', error);
+            cfgToast('No se pudo revocar la app: ' + (error.message || 'Error desconocido'), 'error', 5000);
+        } finally {
+            ocupado = false;
         }
-    }
+    };
 
-    /* ============================================================
-       CERRAR UNA SESIÓN
-    ============================================================ */
-
-    window.onCerrarSesion =
-        async function (sesionId) {
-
-            const confirmar =
-                await cfgConfirm({
-                    title:
-                        '¿Cerrar esta sesión?',
-                    text:
-                        'El dispositivo tendrá que volver a iniciar sesión.',
-                    confirmText:
-                        'Cerrar sesión',
-                    cancelText:
-                        'Cancelar',
-                    danger: true
-                });
-
-            if (!confirmar) {
-                return;
-            }
-
-            try {
-
-                const client =
-                    await obtenerCliente();
-
-                const resultado =
-                    await client
-                        .from(
-                            'usuarios_sesiones'
-                        )
-                        .delete()
-                        .eq(
-                            'id',
-                            sesionId
-                        );
-
-                if (resultado.error) {
-                    throw resultado.error;
-                }
-
-                await cargarSesiones(
-                    client
-                );
-
-                renderSecciones();
-
-                cfgToast(
-                    '✓ Sesión cerrada',
-                    'success'
-                );
-
-            } catch (error) {
-
-                console.error(
-                    '[Seguridad] Error cerrando sesión:',
-                    error
-                );
-
-                cfgToast(
-                    'Error al cerrar la sesión: ' +
-                    (
-                        error.message ||
-                        'Error desconocido'
-                    ),
-                    'error',
-                    5000
-                );
-            }
-        };
-
-    /* ============================================================
-       CERRAR OTRAS SESIONES
-    ============================================================ */
-
-    window.onCerrarOtrasSesiones =
-        async function () {
-
-            const confirmar =
-                await cfgConfirm({
-                    title:
-                        '¿Cerrar otras sesiones?',
-                    text:
-                        'Se cerrarán las sesiones registradas en otros dispositivos.',
-                    confirmText:
-                        'Cerrar sesiones',
-                    cancelText:
-                        'Cancelar',
-                    danger: true
-                });
-
-            if (!confirmar) {
-                return;
-            }
-
-            try {
-
-                const client =
-                    await obtenerCliente();
-
-                if (!sesionActual) {
-                    throw new Error(
-                        'No hay una sesión autenticada.'
-                    );
-                }
-
-                const resultado =
-                    await client
-                        .from(
-                            'usuarios_sesiones'
-                        )
-                        .delete()
-                        .eq(
-                            'usuario_id',
-                            sesionActual.user.id
-                        );
-
-                if (resultado.error) {
-                    throw resultado.error;
-                }
-
-                await cargarSesiones(
-                    client
-                );
-
-                renderSecciones();
-
-                cfgToast(
-                    '✓ Sesiones cerradas',
-                    'success'
-                );
-
-            } catch (error) {
-
-                console.error(
-                    '[Seguridad] Error cerrando sesiones:',
-                    error
-                );
-
-                cfgToast(
-                    'Error al cerrar sesiones: ' +
-                    (
-                        error.message ||
-                        'Error desconocido'
-                    ),
-                    'error',
-                    5000
-                );
-            }
-        };
-
-    /* ============================================================
-       REVOCAR APP
-    ============================================================ */
-
-    window.onRevocarApp =
-        async function (appId) {
-
-            const confirmar =
-                await cfgConfirm({
-                    title:
-                        '¿Revocar acceso?',
-                    text:
-                        "La aplicación ya no podrá acceder a tu cuenta de Sariel's.",
-                    confirmText:
-                        'Revocar',
-                    cancelText:
-                        'Cancelar',
-                    danger: true
-                });
-
-            if (!confirmar) {
-                return;
-            }
-
-            try {
-
-                const client =
-                    await obtenerCliente();
-
-                const resultado =
-                    await client.rpc(
-                        'revocar_app',
-                        {
-                            p_app_id: appId
-                        }
-                    );
-
-                if (resultado.error) {
-                    throw resultado.error;
-                }
-
-                await cargarApps(
-                    client
-                );
-
-                renderSecciones();
-
-                cfgToast(
-                    '✓ App revocada',
-                    'success'
-                );
-
-            } catch (error) {
-
-                console.error(
-                    '[Seguridad] Error revocando app:',
-                    error
-                );
-
-                cfgToast(
-                    'Error al revocar la app: ' +
-                    (
-                        error.message ||
-                        'Error desconocido'
-                    ),
-                    'error',
-                    5000
-                );
-            }
-        };
-
-    /* ============================================================
-       WALLET
-    ============================================================ */
-
-    window.onVerWallet =
-        function () {
-
-            window.location.href =
-                '/features/perfil/configuracion/sariels/wallet.html';
-        };
-
-    /* ============================================================
-       INICIO
-    ============================================================ */
-
-    window.addEventListener(
-        'DOMContentLoaded',
-        async function () {
-
-            const client =
-                await guardiaDeAutenticacion();
-
-            if (!client) {
-                return;
-            }
-
-            cfgInitPage({
-                title:
-                    'Seguridad y acceso a la cuenta',
-                subtitle:
-                    'Protege tu cuenta',
-                backUrl:
-                    '/features/perfil/configuracion/index.html'
-            });
-
-            await Promise.all([
-                cargar2FA(client),
-                cargarSesiones(client),
-                cargarApps(client)
-            ]);
-
-            renderSecciones();
-        }
-    );
+    /* ---------- INICIO ---------- */
+    window.addEventListener('DOMContentLoaded', async function () {
+        const client = await guardiaDeAutenticacion();
+        if (!client) return;
+        cfgInitPage({
+            title: 'Seguridad y acceso',
+            subtitle: 'Protege tu cuenta',
+            backUrl: '/features/perfil/configuracion/index.html'
+        });
+        await Promise.all([cargarSesiones(client), cargarApps(client)]);
+        renderSecciones();
+    }, { once: true });
 
 })();
 </script>
