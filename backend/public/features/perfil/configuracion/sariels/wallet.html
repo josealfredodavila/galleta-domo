@@ -938,6 +938,20 @@
         }
 
         // ========================================================
+        // NORMALIZADOR DE chainId — acepta hex ("0x13882") o decimal (80002)
+        // ========================================================
+        function normalizarChainId(c) {
+            if (typeof c === 'string' && c.startsWith('0x')) {
+                return parseInt(c, 16);
+            }
+            if (typeof c === 'string' && c.startsWith('0X')) {
+                return parseInt(c, 16);
+            }
+            const n = Number(c);
+            return Number.isFinite(n) && n > 0 ? n : 80002;
+        }
+
+        // ========================================================
         // GUARDAR WALLET — flujo seguro con nonce + firma
         // ========================================================
         async function guardarWalletEnSupabase(address, chainId) {
@@ -989,8 +1003,8 @@
                 throw signErr;
             }
 
-            // 3) Enviar al backend
-            const chainIdDecimal = String(parseInt(chainId, 16) || chainId || 80002);
+            // 3) Normalizar chainId (fix hex vs decimal)
+            const chainIdDecimal = String(normalizarChainId(chainId));
 
             const linkResp = await conTimeout(
                 fetch('/api/wallet/link', {
