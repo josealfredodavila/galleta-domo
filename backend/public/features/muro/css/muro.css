@@ -1,5 +1,7 @@
 /* ================================================================
    MURO · CSS
+   v2: los encabezados de "Tendencia ahora" y "Tokens destacados"
+       ya no son sticky (antes se encimaban con la barra principal).
    ================================================================ */
 
 :root {
@@ -19,7 +21,20 @@ body { background: var(--space); color: var(--text-primary); font-family: 'Inter
 .nebula-3 { width: 500px; height: 500px; background: var(--purple); top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -15s; opacity: 0.04; }
 @keyframes nebula-drift { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(40px,-30px) scale(1.15); } }
 .app { position: relative; z-index: 1; max-width: 100%; width: 100%; margin: 0 auto; padding: 12px 16px 30px; }
+
+/* Barra principal (esta sí es fija) */
 .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0 14px; border-bottom: 1px solid var(--glass-border); background: rgba(5, 8, 15, 0.92); position: sticky; top: 0; z-index: 100; }
+
+/* Encabezados de sección: NO son la barra principal */
+.trending-section .header,
+.tokens-destacados .header {
+    position: static;
+    background: none;
+    border-bottom: 0;
+    padding: 0;
+    z-index: auto;
+}
+
 .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
 .logo-hex { font-size: 1.8rem; color: var(--gold); font-family: 'Orbitron', monospace; }
 .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--text-primary); letter-spacing: 2px; }
