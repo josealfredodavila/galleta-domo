@@ -3,7 +3,46 @@
 // ================================================================
 // Cargar feed, renderizar posts, scroll infinito, verificar like.
 // Depende de: muro-config.js, muro-utils.js
+//
+// v2 (moderación):
+// - Se carga el campo aviso_moderacion en el SELECT.
+// - Si el post tiene aviso_moderacion = 'lenguaje_inapropiado',
+//   se muestra un cartel amarillo al lado del contenido.
+// - Se agrega helper manejarErrorModeracion() para los archivos
+//   que insertan texto (comentarios, posts).
 // ================================================================
+
+// ================================================================
+// HELPER — Manejo de errores de moderación
+// ================================================================
+// Uso en cualquier archivo del muro que inserte texto:
+//
+//   try {
+//     await supabaseClient.from('muro_comentarios').insert({...});
+//   } catch (e) {
+//     manejarErrorModeracion(e);
+//   }
+//
+// Este helper detecta el error del trigger de moderación y
+// muestra el mensaje correcto al usuario.
+// ================================================================
+function manejarErrorModeracion(e) {
+    var mensaje = (e && e.message) ? String(e.message) : '';
+
+    if (mensaje.indexOf('contenido_no_permitido') !== -1) {
+        // Trigger bloqueó el mensaje
+        if (typeof showToast === 'function') {
+            showToast('❌ Contenido no permitido por las normas de la comunidad', 'error', 6000);
+        } else {
+            alert('Contenido no permitido por las normas de la comunidad');
+        }
+        return true;
+    }
+
+    // Otros errores: mostrar el genérico
+    return false;
+}
+window.manejarErrorModeracion = manejarErrorModeracion;
 
 // ================================================================
 // CARGAR PUBLICACIONES (con scroll infinito)
@@ -26,9 +65,10 @@ async function cargarPublicaciones(reset) {
         var from = currentPage * POSTS_PER_PAGE;
         var to = from + POSTS_PER_PAGE - 1;
 
+        // ✅ Se agrega aviso_moderacion al SELECT
         var query = supabaseClient
             .from('muro_posts_publicos')
-            .select('*, temas:tema_id (id, nombre, emoji, slug), muro_likes(count), muro_comentarios(count)')
+            .select('*, aviso_moderacion, temas:tema_id (id, nombre, emoji, slug), muro_likes(count), muro_comentarios(count)')
             .order('created_at', { ascending: false })
             .range(from, to);
 
@@ -123,6 +163,23 @@ function renderizarPost(post) {
         }
     }
 
+    // ✅ NUEVO: Cartel de aviso inapropiado
+    var avisoBadge = '';
+    if (post.aviso_moderacion === 'lenguaje_inapropiado') {
+        avisoBadge =
+            '<div class="post-aviso-moderacion" style="' +
+                'display:flex;align-items:center;gap:8px;' +
+                'padding:8px 12px;margin:8px 0;border-radius:10px;' +
+                'background:rgba(247,212,74,0.12);' +
+                'border:1px solid rgba(247,212,74,0.4);' +
+                'color:#f7d44a;font-size:0.72rem;' +
+            '">' +
+                '<span style="font-size:1rem;">⚠️</span>' +
+                '<span>Este mensaje contiene lenguaje inapropiado. ' +
+                    'Considera expresarte con respeto.</span>' +
+            '</div>';
+    }
+
     // Sección de venta de tokens
     var seccionVenta = '';
     if (post.cantidad_venta && post.cantidad_venta > 0 && post.precio_venta) {
@@ -161,6 +218,7 @@ function renderizarPost(post) {
             '</div>' +
         '</div>' +
         temaBadge +
+        avisoBadge +                                     // ✅ Aviso visual agregado
         '<div class="post-content">' + contenidoSanitizado + '</div>' +
         imagenHtml +
         seccionVenta +
