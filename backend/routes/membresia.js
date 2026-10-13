@@ -1,6 +1,10 @@
 // ================================================================
 // MEMBRESIA.JS - SARIEL'S ECOSYSTEM
-// VERSIÓN SIMPLIFICADA - CON VERIFICACIÓN DE SUPABASE
+// v2 · Pago directo NOWPayments (/v1/payment) para Pro
+// ================================================================
+// Cambio: antes usaba /v1/invoice (página vacía al cargar). Ahora
+// crea el pago directo; la página de NOWPayments muestra monto en
+// USDT, red TRX, dirección y QR de inmediato.
 // ================================================================
 
 const express = require('express');
@@ -12,7 +16,7 @@ const { limitadorPagos } = require('../middleware/rateLimit');
 
 // ===== CONFIGURACIÓN =====
 const NOWPAYMENTS_API_KEY = process.env.NOWPAYMENTS_API_KEY;
-const NOWPAYMENTS_API_URL = 'https://api.nowpayments.io/v1';
+const NOWPAYMENTS_PAGO_URL = 'https://api.nowpayments.io/v1/payment';
 const PAY_CURRENCY = 'usdttrc20';
 
 const DEFAULT_SITE_URL = 'https://galleta-domo-production.up.railway.app';
@@ -22,6 +26,10 @@ const SITE_URL =
     process.env.FRONTEND_URL ||
     process.env.PUBLIC_APP_URL ||
     DEFAULT_SITE_URL;
+
+// Página hosted de NOWPayments: monto, red, dirección y QR
+const urlPaginaPago = (paymentId) =>
+    `https://nowpayments.io/payment/?iid=${encodeURIComponent(paymentId)}`;
 
 console.log('🔑 NOWPAYMENTS_API_KEY:', NOWPAYMENTS_API_KEY ? '✅ Definida' : '❌ NO DEFINIDA');
 console.log('🌐 SITE_URL:', SITE_URL);
@@ -82,16 +90,13 @@ router.post('/create', verificarAutenticacion, limitadorPagos, async (req, res) 
     try {
         console.log('📩 Solicitud de membresía recibida');
 
-        const { privacy_version } = req.body;
+        const { privacy_version } = req.body || {};
         const usuario_id = req.user.id;
 
-        console.log('👤 Usuario ID:', usuario_id);
-
         if (!supabaseAdmin) {
-            console.error('❌ supabaseAdmin NO DISPONIBLE');
             return res.status(500).json({
                 success: false,
-                error: 'Error de configuración: supabaseAdmin no disponible. Verifica SUPABASE_SERVICE_ROLE_KEY en Railway.'
+                error: 'Error de configuración: supabaseAdmin no disponible.'
             });
         }
 
@@ -111,8 +116,6 @@ router.post('/create', verificarAutenticacion, limitadorPagos, async (req, res) 
             return res.status(404).json({ success: false, error: 'Usuario no encontrado' });
         }
 
-        console.log('👤 Usuario encontrado:', usuario.email);
-
         const { data: plan, error: planError } = await supabaseAdmin
             .from('planes_membresia')
             .select('id, nombre, precio_mxn, intervalo_dias')
@@ -126,10 +129,7 @@ router.post('/create', verificarAutenticacion, limitadorPagos, async (req, res) 
         }
 
         const precioMxn = parseFloat(plan.precio_mxn);
-        console.log('✅ Plan encontrado:', plan.nombre, '$' + precioMxn);
-
         const orderId = `PRO-${Date.now()}-${usuario_id.slice(0, 8)}`;
-        console.log('📦 Order ID generado:', orderId);
 
         const { data: pago, error: pagoError } = await supabaseAdmin
             .from('pagos_membresia')
@@ -150,40 +150,33 @@ router.post('/create', verificarAutenticacion, limitadorPagos, async (req, res) 
             return res.status(500).json({ success: false, error: 'Error al guardar pago' });
         }
 
-        console.log('✅ Pago pendiente guardado en Supabase:', pago.id);
-
-        const invoiceData = {
-            price_amount: precioMxn,
-            price_currency: 'mxn',
-            pay_currency: PAY_CURRENCY,
-            order_id: orderId,
-            order_description: `Membresía Sariel's Pro - ${usuario.email}`,
-            ipn_callback_url: `${SITE_URL}/api/webhook/nowpayments`,
-            success_url: `${SITE_URL}/features/perfil/perfil.html?payment=success`,
-            cancel_url: `${SITE_URL}/features/perfil/perfil.html?payment=cancel`
-        };
-
-        console.log('📤 Enviando invoice a NOWPayments...');
-
-        let nowpaymentsOk = false;
+        // ---------- Pago directo en NOWPayments ----------
         let nowpaymentsData = {};
+        let nowpaymentsOk = false;
 
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 15000);
 
         try {
-            const nowpaymentsResponse = await fetch(`${NOWPAYMENTS_API_URL}/invoice`, {
+            const respuesta = await fetch(NOWPAYMENTS_PAGO_URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'x-api-key': NOWPAYMENTS_API_KEY
                 },
-                body: JSON.stringify(invoiceData),
+                body: JSON.stringify({
+                    price_amount: precioMxn,
+                    price_currency: 'mxn',
+                    pay_currency: PAY_CURRENCY,
+                    order_id: orderId,
+                    order_description: `Membresía Sariel's Pro - ${usuario.email}`,
+                    ipn_callback_url: `${SITE_URL}/api/webhook/nowpayments`
+                }),
                 signal: controller.signal
             });
 
-            nowpaymentsData = await nowpaymentsResponse.json().catch(() => ({}));
-            nowpaymentsOk = nowpaymentsResponse.ok;
+            nowpaymentsData = await respuesta.json().catch(() => ({}));
+            nowpaymentsOk = respuesta.ok;
         } catch (fetchError) {
             nowpaymentsData = { message: fetchError.message };
             nowpaymentsOk = false;
@@ -191,7 +184,7 @@ router.post('/create', verificarAutenticacion, limitadorPagos, async (req, res) 
             clearTimeout(timeout);
         }
 
-        if (!nowpaymentsOk || !nowpaymentsData.invoice_url) {
+        if (!nowpaymentsOk || !nowpaymentsData.payment_id || !nowpaymentsData.pay_address) {
             console.error('❌ Error en NOWPayments:', nowpaymentsData);
 
             await supabaseAdmin
@@ -205,13 +198,14 @@ router.post('/create', verificarAutenticacion, limitadorPagos, async (req, res) 
             });
         }
 
-        console.log('✅ Invoice creado en NOWPayments:', nowpaymentsData.id);
-        console.log('🔗 URL de pago:', nowpaymentsData.invoice_url);
+        const paymentId = String(nowpaymentsData.payment_id);
+        const paymentUrl = urlPaginaPago(paymentId);
 
         const { error: urlError } = await supabaseAdmin
             .from('pagos_membresia')
             .update({
-                payment_url: nowpaymentsData.invoice_url,
+                payment_id: paymentId,
+                payment_url: paymentUrl,
                 moneda_pago: nowpaymentsData.pay_currency || PAY_CURRENCY,
                 updated_at: new Date().toISOString()
             })
@@ -224,9 +218,11 @@ router.post('/create', verificarAutenticacion, limitadorPagos, async (req, res) 
         res.json({
             success: true,
             order_id: orderId,
-            payment_id: null,
-            payment_url: nowpaymentsData.invoice_url,
-            pay_address: null,
+            payment_id: paymentId,
+            payment_url: paymentUrl,
+            pay_address: nowpaymentsData.pay_address,
+            pay_amount: nowpaymentsData.pay_amount,
+            pay_currency: nowpaymentsData.pay_currency || PAY_CURRENCY,
             price_amount: precioMxn,
             price_currency: 'MXN'
         });
@@ -248,10 +244,7 @@ router.get('/status', verificarAutenticacion, async (req, res) => {
     try {
         const usuario_id = req.user.id;
 
-        console.log('📊 Consultando membresía para:', usuario_id);
-
         if (!supabaseAdmin) {
-            console.error('❌ supabaseAdmin no disponible');
             return res.status(500).json({ success: false, error: 'Servicio no configurado' });
         }
 
@@ -264,8 +257,6 @@ router.get('/status', verificarAutenticacion, async (req, res) => {
             console.error('❌ Error en obtener_membresia_usuario:', error);
             return res.status(500).json({ success: false, error: error.message });
         }
-
-        console.log('✅ Membresía obtenida:', data);
 
         res.json({
             success: true,
