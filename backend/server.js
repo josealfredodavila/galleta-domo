@@ -1,7 +1,8 @@
 // ================================================================
 // server.js — Sariel's Ecosystem
 // Backend principal — Producción Railway
-// v3.0: Mercado montado (/api/mercado), IPN de Mercado excluido del
+// v3.1: Geo montado (/api/geo) para ubicación con Google Geocoding.
+//       Mercado montado (/api/mercado), IPN de Mercado excluido del
 //       límite de peticiones, resto sin cambios.
 // ================================================================
 
@@ -97,6 +98,10 @@ if (!LIVEKIT_WS_URL && !LIVEKIT_URL) console.warn('⚠️ Falta LIVEKIT_WS_URL')
 
 if (!WALLETCONNECT_PROJECT_ID) {
     console.warn('⚠️ Falta WALLETCONNECT_PROJECT_ID (WalletConnect no podrá conectarse)');
+}
+
+if (!process.env.GOOGLE_MAPS_API_KEY) {
+    console.warn('⚠️ Falta GOOGLE_MAPS_API_KEY (ubicación por ciudad deshabilitada)');
 }
 
 if (!TURNSTILE_SECRET_KEY) console.warn('⚠️ Falta TURNSTILE_SECRET_KEY');
@@ -807,6 +812,9 @@ montarRouter('/api/mercado', './routes/mercado', 'routes/mercado');
 // Live (donaciones + registro de minutos)
 montarRouter('/api/live', './routes/live', 'routes/live');
 
+// Geo: convierte coordenadas en ciudad (Google) y guarda la ubicación
+montarRouter('/api/geo', './routes/geo', 'routes/geo');
+
 // Web Push Notifications
 montarRouter('/api/push', './routes/push', 'routes/push');
 
@@ -1022,6 +1030,9 @@ app.listen(PORT, () => {
                 ? '✅ Configurado'
                 : '❌ No configurado'
         }`
+    );
+    console.log(
+        `🗺️ Google Geocoding: ${process.env.GOOGLE_MAPS_API_KEY ? '✅ Configurado' : '❌ No configurado'}`
     );
     console.log(`🌐 Web3 URL canónica: ${PUBLIC_APP_URL}`);
     console.log(`🔗 CORS orígenes permitidos: ${allowedCorsOrigins.join(', ')}`);
