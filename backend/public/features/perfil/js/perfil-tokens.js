@@ -4,14 +4,12 @@
 // Canjear NFT, estado Pro, contratación de Pro.
 // Depende de: perfil-config.js, perfil-utils.js
 //
-// CAMBIO v3 (pago Pro real):
-// - contratarPro llama a /api/payments/membresia/create (membresía),
-//   no a /api/payments (transmisiones), que pedía transmisionId.
-// - El precio se lee de planes_membresia (id 'pro'); ya no se usa
-//   un valor fijo para el cobro.
-// - Se redirige en la misma pestaña (los navegadores móviles
-//   bloquean window.open sin gesto directo).
-// - Se quitó el insert en pagos_pro: el pago vive en pagos_membresia.
+// CAMBIO v4 (depósito dentro de la app):
+// - Tras crear el pago, la app muestra monto USDT, red TRON (TRC20),
+//   dirección y QR. Ya no depende de la página de NOWPayments, que en
+//   pruebas pedía elegir moneda y no ofrecía USDT.
+// - Si el servidor no devuelve dirección, se usa payment_url como respaldo.
+// - El polling cierra el depósito cuando la membresía queda activa.
 // ================================================================
 
 // ================================================================
@@ -19,7 +17,6 @@
 // ================================================================
 let proPrecioDB = null;
 
-// Lee el precio actual de Pro desde la base. Si falla, usa el de perfil-config.
 async function cargarPrecioProDB() {
     try {
         if (window.supabaseClient) {
@@ -42,7 +39,6 @@ async function cargarPrecioProDB() {
 // ================================================================
 // TEXTOS CON VARIABLES
 // ================================================================
-// Reemplaza {nombre} dentro de una traducción por su valor.
 function perfilTConVars(clave, respaldo, vars) {
     let texto = perfilT(clave, respaldo);
     if (vars) {
@@ -53,13 +49,11 @@ function perfilTConVars(clave, respaldo, vars) {
     return texto;
 }
 
-// Precio de Pro para mostrar en los textos
 function precioProTexto() {
     const p = proPrecioDB !== null ? proPrecioDB : PRO_PRECIO_MXN;
     return '$' + p + ' MXN';
 }
 
-// Código de idioma actual para formatear fechas
 function codigoIdiomaFechas() {
     try {
         if (typeof window.obtenerCodigoIdiomaActual === 'function') {
@@ -80,7 +74,6 @@ async function cargarEstadoPro() {
 
         await cargarPrecioProDB();
 
-        // 1. Intento con RPC específico
         try {
             const { data, error } = await window.supabaseClient.rpc('obtener_estado_pro');
             if (!error && data && data.success) {
@@ -94,7 +87,6 @@ async function cargarEstadoPro() {
             }
         } catch (rpcErr) {}
 
-        // 2. Fallback: leer perfil propio vía RPC seguro
         let usuario = null;
         try {
             const { data, error } = await window.supabaseClient.rpc('mi_perfil_privado');
@@ -177,7 +169,91 @@ function aplicarEstadoProUI(usuario) {
 }
 
 // ================================================================
-// CONTRATAR PRO (membresía real, con pasarela NOWPayments)
+// DEPÓSITO DENTRO DE LA APP (monto, red, dirección y QR)
+// ================================================================
+function mostrarDepositoPro(data) {
+    document.getElementById('depositoProModal')?.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'depositoProModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);' +
+        'display:flex;justify-content:center;align-items:center;z-index:10000;padding:16px;';
+
+    const caja = document.createElement('div');
+    caja.style.cssText = 'background:var(--bg-card);border:2px solid var(--gold);border-radius:20px;' +
+        'padding:22px;max-width:420px;width:100%;text-align:center;max-height:92vh;overflow-y:auto;';
+
+    const titulo = document.createElement('h3');
+    titulo.textContent = '◈ Pago de Sariel\'s Pro';
+    titulo.style.cssText = 'color:var(--gold);margin-bottom:12px;';
+
+    const monto = document.createElement('div');
+    const cantidad = data.pay_amount ? String(data.pay_amount) : '—';
+    monto.textContent = 'Envía exactamente ' + cantidad + ' USDT';
+    monto.style.cssText = 'font-weight:700;font-size:1.05rem;margin-bottom:6px;color:var(--text-primary);';
+
+    const red = document.createElement('div');
+    red.textContent = 'Red: TRON (TRC20). Solo USDT por esta red.';
+    red.style.cssText = 'font-size:0.8rem;color:var(--warning, #f7d44a);margin-bottom:14px;';
+
+    const qrBox = document.createElement('div');
+    qrBox.style.cssText = 'margin:0 auto 14px;min-height:200px;display:flex;justify-content:center;align-items:center;';
+
+    const direccion = document.createElement('div');
+    direccion.textContent = data.pay_address || '';
+    direccion.style.cssText = 'font-family:monospace;font-size:0.78rem;word-break:break-all;' +
+        'background:rgba(0,0,0,0.5);border:1px solid var(--line-black);border-radius:10px;padding:10px;margin-bottom:10px;';
+
+    const copiar = document.createElement('button');
+    copiar.type = 'button';
+    copiar.className = 'btn btn-outline';
+    copiar.textContent = 'Copiar dirección';
+    copiar.style.cssText = 'width:100%;justify-content:center;margin-bottom:8px;';
+    copiar.onclick = async function () {
+        try {
+            await navigator.clipboard.writeText(data.pay_address || '');
+            copiar.textContent = '✓ Copiada';
+        } catch (e) {
+            copiar.textContent = 'No se pudo copiar';
+        }
+    };
+
+    const estado = document.createElement('div');
+    estado.id = 'depositoProEstado';
+    estado.textContent = 'Esperando tu pago… se activa solo al confirmarse.';
+    estado.style.cssText = 'font-size:0.8rem;color:var(--text-muted);margin:10px 0;';
+
+    const cerrar = document.createElement('button');
+    cerrar.type = 'button';
+    cerrar.className = 'btn btn-outline';
+    cerrar.textContent = 'Cerrar';
+    cerrar.style.cssText = 'width:100%;justify-content:center;';
+    cerrar.onclick = function () { modal.remove(); };
+
+    caja.append(titulo, monto, red, qrBox, direccion, copiar, estado, cerrar);
+    modal.appendChild(caja);
+    document.body.appendChild(modal);
+
+    // QR de la dirección (librería qrcode cargada en perfil.html)
+    if (data.pay_address && typeof QRCode !== 'undefined' && QRCode.toDataURL) {
+        QRCode.toDataURL(data.pay_address, { width: 200, margin: 1 })
+            .then(function (url) {
+                const img = document.createElement('img');
+                img.src = url;
+                img.alt = 'QR de pago';
+                img.style.cssText = 'width:200px;height:200px;border-radius:10px;background:#fff;padding:6px;';
+                qrBox.appendChild(img);
+            })
+            .catch(function () {
+                qrBox.textContent = 'QR no disponible. Copia la dirección.';
+            });
+    } else {
+        qrBox.textContent = 'QR no disponible. Copia la dirección.';
+    }
+}
+
+// ================================================================
+// CONTRATAR PRO (membresía real, con pago directo NOWPayments)
 // ================================================================
 async function contratarPro() {
     try {
@@ -187,7 +263,6 @@ async function contratarPro() {
             return;
         }
 
-        // ¿Ya es Pro?
         let usuario = null;
         try {
             const { data, error } = await window.supabaseClient.rpc('mi_perfil_privado');
@@ -217,7 +292,6 @@ async function contratarPro() {
 
         showToast('⏳ ' + perfilT('perfil_pro_iniciando', 'Iniciando contratación...'), '', 4000);
 
-        // Crear el pago de membresía en el backend (precio leído de la base)
         let errorMsg = '';
         try {
             const response = await fetch('/api/payments/membresia/create', {
@@ -231,10 +305,18 @@ async function contratarPro() {
 
             const result = await response.json().catch(() => ({}));
 
-            if (response.ok && result.success && result.payment_url) {
-                // Misma pestaña: los navegadores móviles bloquean window.open sin gesto directo
-                window.location.href = result.payment_url;
-                return;
+            if (response.ok && result.success) {
+                if (result.pay_address) {
+                    // Depósito dentro de la app: no depende de la página de NOWPayments
+                    mostrarDepositoPro(result);
+                    iniciarPollingPagoPro();
+                    return;
+                }
+                if (result.payment_url) {
+                    // Respaldo si el servidor no devolvió dirección
+                    window.location.href = result.payment_url;
+                    return;
+                }
             }
 
             errorMsg = result.error || ('HTTP ' + response.status);
@@ -287,12 +369,12 @@ async function activarProDirecto(usuarioId) {
 }
 
 // ================================================================
-// POLLING DE PAGO PRO (consulta la membresía real, no pagos_pro)
+// POLLING DE PAGO PRO (consulta la membresía real)
 // ================================================================
 function iniciarPollingPagoPro() {
     if (pollingPagoProInterval) clearInterval(pollingPagoProInterval);
     let intentos = 0;
-    const maxIntentos = 60;
+    const maxIntentos = 120; // 120 × 5 s = 10 min
     pollingPagoProInterval = setInterval(async () => {
         intentos++;
         try {
@@ -304,6 +386,7 @@ function iniciarPollingPagoPro() {
                 if (m && m.activa) {
                     clearInterval(pollingPagoProInterval);
                     pollingPagoProInterval = null;
+                    document.getElementById('depositoProModal')?.remove();
                     showToast(perfilT('perfil_pro_pago_confirmado', '🎉 ¡Pago confirmado! Pro activado'), 'success', 5000);
                     crearConfeti();
                     await cargarEstadoPro();
@@ -312,6 +395,10 @@ function iniciarPollingPagoPro() {
                 }
             }
         } catch (e) {}
+        const estado = document.getElementById('depositoProEstado');
+        if (estado && intentos % 6 === 0) {
+            estado.textContent = 'Esperando confirmación de la red… puede tardar unos minutos.';
+        }
         if (intentos >= maxIntentos) {
             clearInterval(pollingPagoProInterval);
             pollingPagoProInterval = null;
@@ -363,7 +450,6 @@ function mostrarModalNFT(data) {
     modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; z-index: 9999;';
 
     const idNft = (data && data.nft_id) ? data.nft_id : ('NFT-' + Date.now().toString().slice(-6));
-    const nftId = escaparHTML(idNft);
     const vigencia = escaparHTML(perfilTConVars('perfil_nft_vigencia', '⏳ Vigencia: {dias} días', { dias: 30 }));
     const idTexto = escaparHTML(perfilTConVars('perfil_nft_id', 'ID: {id}', { id: idNft }));
 
