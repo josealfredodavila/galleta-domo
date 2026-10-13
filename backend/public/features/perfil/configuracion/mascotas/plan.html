@@ -8,6 +8,7 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 <script src="/features/shared/js/apariencia-global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 
 <style>
 :root { color-scheme: dark; }
@@ -150,6 +151,24 @@ button.sec:hover:not(:disabled) {
 
 .zona-cancelar { display: none; }
 .zona-cancelar.visible { display: block; }
+
+/* Depósito dentro de la app */
+.deposito { text-align: center; }
+.deposito .monto { font-family: 'Orbitron', monospace; font-size: 1.1rem; color: #00D4FF; margin-bottom: 6px; }
+.deposito .red { font-size: .78rem; color: #f7d44a; margin-bottom: 14px; }
+.deposito .qr { margin: 0 auto 14px; min-height: 200px; display: flex; justify-content: center; align-items: center; }
+.deposito .qr img { width: 200px; height: 200px; border-radius: 10px; background: #fff; padding: 6px; }
+.deposito .direccion {
+    font-family: monospace;
+    font-size: .78rem;
+    word-break: break-all;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+.deposito .estado { font-size: .8rem; color: #8aa8b8; margin: 10px 0; }
 </style>
 </head>
 <body>
@@ -174,6 +193,7 @@ button.sec:hover:not(:disabled) {
         <h2><span class="simbolo">◈</span> PLANES DISPONIBLES</h2>
         <div id="catalogo"><div class="loading">Cargando…</div></div>
         <div class="msg" id="msgCheckout"></div>
+        <div id="depositoIA" style="display:none;"></div>
     </div>
 
     <div class="card zona-cancelar" id="zonaCancelar">
@@ -192,20 +212,20 @@ button.sec:hover:not(:disabled) {
 
 (function() {
     const API = '';
+    let codigoPlanActual = null;
+    let timerPago = null;
 
     // ═══════════════════════════════════════════════════════
-    // OBTENER TOKEN (adaptado del proyecto)
+    // OBTENER TOKEN
     // ═══════════════════════════════════════════════════════
 
     async function obtenerToken() {
-        // 1) Cliente de Supabase ya cargado en la página
         if (window.supabaseClient?.auth) {
             const { data } = await window.supabaseClient.auth.getSession();
             const token = data?.session?.access_token;
             if (token) return token;
         }
 
-        // 2) getSupabase() helper global
         if (typeof window.getSupabase === 'function') {
             try {
                 const sb = await window.getSupabase();
@@ -217,7 +237,6 @@ button.sec:hover:not(:disabled) {
             } catch (e) {}
         }
 
-        // 3) Respaldo: localStorage (sb-<ref>-auth-token)
         for (let i = 0; i < localStorage.length; i++) {
             const clave = localStorage.key(i);
             if (clave && clave.startsWith('sb-') && clave.endsWith('-auth-token')) {
@@ -306,6 +325,7 @@ button.sec:hover:not(:disabled) {
         try {
             const data = await api('/api/ai/plan');
             const { plan, uso } = data;
+            codigoPlanActual = plan.codigo;
 
             estado.replaceChildren(
                 fila('Plan', plan.nombre),
@@ -390,6 +410,95 @@ button.sec:hover:not(:disabled) {
     }
 
     // ═══════════════════════════════════════════════════════
+    // Depósito dentro de la app
+    // ═══════════════════════════════════════════════════════
+
+    function mostrarDeposito(data) {
+        const cont = document.getElementById('depositoIA');
+        cont.style.display = 'block';
+        cont.replaceChildren();
+
+        const caja = document.createElement('div');
+        caja.className = 'deposito';
+
+        const monto = el('div', `Envía exactamente ${data.pay_amount ?? '—'} USDT`, 'monto');
+        const red = el('div', 'Red: TRON (TRC20). Solo USDT por esta red.', 'red');
+
+        const qr = document.createElement('div');
+        qr.className = 'qr';
+        qr.textContent = 'Generando QR…';
+
+        const direccion = el('div', data.pay_address || '', 'direccion');
+
+        const copiar = document.createElement('button');
+        copiar.type = 'button';
+        copiar.textContent = 'Copiar dirección';
+        copiar.onclick = async function () {
+            try {
+                await navigator.clipboard.writeText(data.pay_address || '');
+                copiar.textContent = '✓ Copiada';
+            } catch (e) {
+                copiar.textContent = 'No se pudo copiar';
+            }
+        };
+
+        const estado = el('div', 'Esperando tu pago… se activa solo al confirmarse.', 'estado');
+        estado.id = 'estadoPagoIA';
+
+        caja.append(monto, red, qr, direccion, copiar, estado);
+        cont.appendChild(caja);
+
+        if (data.pay_address && typeof QRCode !== 'undefined' && QRCode.toDataURL) {
+            QRCode.toDataURL(data.pay_address, { width: 200, margin: 1 })
+                .then(function (url) {
+                    qr.replaceChildren();
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.alt = 'QR de pago';
+                    qr.appendChild(img);
+                })
+                .catch(function () { qr.textContent = 'QR no disponible. Copia la dirección.'; });
+        } else {
+            qr.textContent = 'QR no disponible. Copia la dirección.';
+        }
+    }
+
+    function esperarActivacion() {
+        if (timerPago) clearInterval(timerPago);
+        const planInicial = codigoPlanActual;
+        let intentos = 0;
+
+        timerPago = setInterval(async () => {
+            intentos++;
+            try {
+                const d = await api('/api/ai/plan');
+                if (d.plan.codigo !== planInicial) {
+                    clearInterval(timerPago);
+                    timerPago = null;
+                    document.getElementById('depositoIA').style.display = 'none';
+                    const msg = document.getElementById('msgCheckout');
+                    msg.className = 'msg success';
+                    msg.textContent = '✅ Pago confirmado. Tu plan ya está activo.';
+                    await cargarPlan();
+                    return;
+                }
+            } catch (e) {}
+
+            const estado = document.getElementById('estadoPagoIA');
+            if (estado && intentos % 4 === 0) {
+                estado.textContent = 'Esperando confirmación de la red… puede tardar unos minutos.';
+            }
+            if (intentos >= 120) {
+                clearInterval(timerPago);
+                timerPago = null;
+                const msg = document.getElementById('msgCheckout');
+                msg.className = 'msg';
+                msg.textContent = 'El pago aún no se confirma. Revisa más tarde.';
+            }
+        }, 15000);
+    }
+
+    // ═══════════════════════════════════════════════════════
     // Contratar plan
     // ═══════════════════════════════════════════════════════
 
@@ -399,6 +508,7 @@ button.sec:hover:not(:disabled) {
         boton.disabled = true;
         msg.className = 'msg';
         msg.textContent = 'Creando tu pago…';
+        document.getElementById('depositoIA').style.display = 'none';
 
         try {
             const data = await api('/api/ai/plan/checkout', {
@@ -406,17 +516,19 @@ button.sec:hover:not(:disabled) {
                 body: JSON.stringify({ plan, proveedor: 'nowpayments' })
             });
 
-            if (!data?.url) {
-                throw new Error('No se recibió URL de pago.');
+            if (!data?.pay_address) {
+                throw new Error('No se recibió la dirección de pago.');
             }
 
-            msg.className = 'msg success';
-            msg.textContent = 'Redirigiendo a NOWPayments…';
-            window.location.href = data.url;
+            msg.className = 'msg';
+            msg.textContent = 'Envía el pago a la dirección de abajo.';
+            mostrarDeposito(data);
+            esperarActivacion();
 
         } catch (e) {
             msg.className = 'msg error';
             msg.textContent = 'Error: ' + e.message;
+        } finally {
             boton.disabled = false;
         }
     }
@@ -444,22 +556,6 @@ button.sec:hover:not(:disabled) {
             msg.textContent = 'Error: ' + e.message;
         }
     });
-
-    // ═══════════════════════════════════════════════════════
-    // Retorno de NOWPayments (query string)
-    // ═══════════════════════════════════════════════════════
-
-    const pago = new URLSearchParams(location.search).get('pago');
-    if (pago === 'ok') {
-        document.getElementById('msgCheckout').className = 'msg success';
-        document.getElementById('msgCheckout').textContent =
-            '✅ Pago recibido. Tu plan se actualizará en unos minutos.';
-    }
-    if (pago === 'cancelado') {
-        document.getElementById('msgCheckout').className = 'msg';
-        document.getElementById('msgCheckout').textContent =
-            'Pago cancelado. Puedes intentar de nuevo cuando quieras.';
-    }
 
     // ═══════════════════════════════════════════════════════
     // Init
