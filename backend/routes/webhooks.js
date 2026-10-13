@@ -2,7 +2,7 @@
 // ROUTES/WEBHOOKS.JS — Csariel's
 // Montado en /api/webhook
 //   POST /api/webhook/nowpayments → IPN de NOWPayments (firma verificada)
-//   POST /api/webhook/membresia   → alias de membresía PRO (firma verificada)
+//   POST /api/webhook/membresia   → membresía PRO (firma verificada)
 //   POST /api/webhook/stripe      → placeholder
 //   POST /api/webhook/fintoc      → placeholder
 // Toda petición de NOWPayments pasa primero por verificarFirmaNowPayments.
@@ -12,18 +12,15 @@ const express = require('express');
 const router = express.Router();
 
 const { verificarFirmaNowPayments } = require('../utils/nowpayments-sig');
-const nowpayments = require('./webhooks/nowpayments');               // procesarLivePass, procesarDonacion, procesarMembresia
-const { handleWebhookMembresia } = require('./membresia-webhook-handler'); // PRO- (legacy, pendiente de revisión)
-const { handleWebhookInternet } = require('./webhooks/nowpayments-internet'); // NET- (legacy, pendiente de revisión)
+const nowpayments = require('./webhooks/nowpayments');
+const { handleWebhookMembresia } = require('./membresia-webhook-handler');
+const { handleWebhookInternet } = require('./webhooks/nowpayments-internet');
 
 const NOWPAYMENTS_IPN_SECRET = process.env.NOWPAYMENTS_IPN_SECRET;
 
 const log = (...args) => console.log('[Webhook]', ...args);
 const logError = (...args) => console.error('[Webhook ERROR]', ...args);
 
-// ================================================================
-// VERIFICACIÓN DE FIRMA (obligatoria para todo IPN de NOWPayments)
-// ================================================================
 function firmaValida(req) {
     if (!NOWPAYMENTS_IPN_SECRET) {
         logError('NOWPAYMENTS_IPN_SECRET ausente: se rechazan todos los IPN');
@@ -37,9 +34,7 @@ function firmaValida(req) {
     );
 }
 
-// ================================================================
-// POST /nowpayments  (URL final: /api/webhook/nowpayments)
-// ================================================================
+// POST /api/webhook/nowpayments
 router.post('/nowpayments', async (req, res) => {
     try {
         if (!firmaValida(req)) {
@@ -67,7 +62,8 @@ router.post('/nowpayments', async (req, res) => {
             return handleWebhookInternet(req, res);
         }
 
-        // Resto: membresías de Mercado. Busca por payment_id; si no existe, responde 200 sin activar nada.
+        // Resto (muro_, MKT-, TRX-, membresía de Mercado): busca por payment_id.
+        // Si no existe, responde 200 sin activar nada.
         return nowpayments.procesarMembresia(npStatus, data, res);
     } catch (e) {
         logError('/nowpayments:', e.message);
@@ -75,9 +71,7 @@ router.post('/nowpayments', async (req, res) => {
     }
 });
 
-// ================================================================
-// POST /membresia  (alias legacy, también con firma)
-// ================================================================
+// POST /api/webhook/membresia
 router.post('/membresia', async (req, res) => {
     try {
         if (!firmaValida(req)) {
@@ -91,15 +85,11 @@ router.post('/membresia', async (req, res) => {
     }
 });
 
-// ================================================================
-// PLACEHOLDERS (sin lógica de negocio)
-// ================================================================
+// Placeholders
 router.post('/stripe', (req, res) => res.status(200).json({ received: true }));
 router.post('/fintoc', (req, res) => res.status(200).json({ received: true }));
 
-// ================================================================
-// GET /health
-// ================================================================
+// GET /api/webhook/health
 router.get('/health', (req, res) => {
     res.status(200).json({
         status: 'ok',
