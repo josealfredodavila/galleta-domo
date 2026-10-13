@@ -7,77 +7,26 @@
     <title>Notificaciones · Sariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
-    
     <link rel="stylesheet" href="../../shared/config-layout.css" />
-    
     <style>
-        .cfg-notif-preview {
-            margin: 16px;
-            padding: 16px;
-            background: rgba(212, 175, 55, 0.05);
-            border: 1px solid rgba(212, 175, 55, 0.2);
-            border-radius: 12px;
-        }
-
-        .cfg-notif-preview-title {
-            font-size: 0.72rem;
-            color: var(--cfg-gold);
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-family: 'Orbitron', monospace;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .cfg-notif-card {
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid var(--cfg-border);
-            border-radius: 10px;
-            padding: 12px 14px;
-            display: flex;
-            gap: 10px;
-            align-items: flex-start;
-        }
-
-        .cfg-notif-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #0F2D1A, #D4AF37);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1rem;
-            flex-shrink: 0;
-            color: #fff;
-        }
-
-        .cfg-notif-content {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .cfg-notif-title {
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: var(--cfg-text);
-            margin-bottom: 2px;
-        }
-
-        .cfg-notif-text {
-            font-size: 0.72rem;
-            color: var(--cfg-text-muted);
-            line-height: 1.4;
-        }
-
-        .cfg-notif-time {
-            font-size: 0.6rem;
-            color: var(--cfg-text-dim);
-            margin-top: 4px;
-        }
+        .nt-row { display:flex; align-items:center; gap:12px; }
+        .nt-row .cfg-item-content { flex:1; min-width:0; }
+        .nt-switch { position:relative; display:inline-block; width:52px; height:30px; flex:0 0 52px; }
+        .nt-switch input { opacity:0; width:0; height:0; position:absolute; }
+        .nt-slider { position:absolute; inset:0; cursor:pointer; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.2); border-radius:30px; transition:.25s; }
+        .nt-slider::before { content:''; position:absolute; height:22px; width:22px; left:3px; top:3px; background:#fff; border-radius:50%; transition:.25s; }
+        .nt-switch input:checked + .nt-slider { background:linear-gradient(135deg,#00e5ff,#8b5cf6); border-color:transparent; }
+        .nt-switch input:checked + .nt-slider::before { transform:translateX(22px); }
+        .nt-switch input:disabled + .nt-slider { opacity:.5; cursor:wait; }
+        .nt-preview { margin:16px; padding:16px; background:rgba(212,175,55,.05); border:1px solid rgba(212,175,55,.2); border-radius:12px; }
+        .nt-preview-title { font-size:.72rem; color:var(--cfg-gold,#D4AF37); font-weight:700; text-transform:uppercase; letter-spacing:1px; font-family:'Orbitron',monospace; margin-bottom:10px; }
+        .nt-card { background:rgba(0,0,0,.4); border:1px solid var(--cfg-border,rgba(255,255,255,.1)); border-radius:10px; padding:12px 14px; display:flex; gap:10px; align-items:flex-start; }
+        .nt-card-icon { width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,#0F2D1A,#D4AF37); display:flex; align-items:center; justify-content:center; flex-shrink:0; color:#fff; }
+        .nt-card-title { font-size:.8rem; font-weight:600; color:var(--cfg-text,#fff); margin-bottom:2px; }
+        .nt-card-text { font-size:.72rem; color:var(--cfg-text-muted,#8aa8b8); line-height:1.4; }
+        .nt-card-time { font-size:.6rem; color:var(--cfg-text-muted,#8aa8b8); margin-top:4px; opacity:.7; }
+        .nt-estado { margin:12px 16px; font-size:.72rem; color:var(--cfg-text-muted,#8aa8b8); }
+        .nt-estado.error { color:#ff3366; }
     </style>
 </head>
 <body class="cfg-page">
@@ -86,36 +35,39 @@
 
     <main class="cfg-content">
 
-        <h2 class="cfg-section-title">Tipos de notificaciones</h2>
-        <div class="cfg-list" id="seccionTipos"></div>
+        <h2 class="cfg-section-title">Notificaciones push</h2>
+        <div class="cfg-list" id="seccionPush"></div>
 
-        <h2 class="cfg-section-title">Preferencias por canal</h2>
+        <h2 class="cfg-section-title">Avisos del dispositivo</h2>
         <div class="cfg-list" id="seccionCanales"></div>
 
-        <h2 class="cfg-section-title">Filtros</h2>
+        <h2 class="cfg-section-title">Tipos de aviso</h2>
         <div class="cfg-list" id="seccionFiltros"></div>
 
-        <!-- Vista previa -->
-        <div class="cfg-notif-preview">
-            <div class="cfg-notif-preview-title">✨ Vista previa</div>
-            <div class="cfg-notif-card">
-                <div class="cfg-notif-icon">🔔</div>
-                <div class="cfg-notif-content">
-                    <div class="cfg-notif-title">Nueva interacción</div>
-                    <div class="cfg-notif-text">A @explorador le gustó tu publicación del Muro</div>
-                    <div class="cfg-notif-time">Hace unos segundos</div>
+        <div id="ntEstado" class="nt-estado" aria-live="polite"></div>
+
+        <div class="nt-preview">
+            <div class="nt-preview-title">✨ Vista previa</div>
+            <div class="nt-card">
+                <div class="nt-card-icon">🔔</div>
+                <div>
+                    <div class="nt-card-title">Nueva interacción</div>
+                    <div class="nt-card-text">A @explorador le gustó tu publicación del Muro</div>
+                    <div class="nt-card-time">Hace unos segundos</div>
                 </div>
             </div>
         </div>
 
         <div class="cfg-aviso cfg-aviso-info">
-            ℹ️ Puedes desactivar las notificaciones en cualquier momento.
+            ℹ️ Puedes cambiar estas preferencias en cualquier momento. Se guardan en tu cuenta.
         </div>
 
         <div class="cfg-footer">
             <strong>◈ Sariel's</strong> · Configuración · Notificaciones
         </div>
     </main>
+
+    <div id="ntToast" class="cfg-toast" role="status" aria-live="polite"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="../../shared/config-icons.js"></script>
@@ -125,166 +77,159 @@
     (function () {
         'use strict';
 
-        const $ = (sel) => document.querySelector(sel);
+        const $ = (s) => document.querySelector(s);
+        let clienteSupabase = null;
+        let prefs = {};
+        let cargando = true;
 
-        cfgInitPage({
-            title: 'Notificaciones',
-            subtitle: 'Elige qué notificaciones recibir',
-            backUrl: '/features/perfil/configuracion/index.html',
-        });
-
-        const PREF_KEYS = {
-            push_habilitado: 'notif_push_habilitado',
-            sonido: 'notif_sonido',
-            vibracion: 'notif_vibracion',
-            filtro_menciones: 'notif_filtro_menciones',
-            filtro_seguidores: 'notif_filtro_seguidores',
-            filtro_likes: 'notif_filtro_likes',
-            filtro_mensajes: 'notif_filtro_mensajes',
-            filtro_comentarios: 'notif_filtro_comentarios',
+        /* Claves guardadas en preferencias_usuario.prefs (jsonb). Valor por defecto: activado. */
+        const CLAVES = {
+            push:        { key: 'notif_push',        titulo: 'Notificaciones push', desc: 'Recibe avisos en tiempo real en este dispositivo.', seccion: 'push' },
+            sonido:      { key: 'notif_sonido',      titulo: 'Sonido',              desc: 'Reproduce un sonido al recibir avisos.',           seccion: 'canales' },
+            vibracion:   { key: 'notif_vibracion',   titulo: 'Vibración',           desc: 'Vibra al recibir avisos (si el dispositivo lo permite).', seccion: 'canales' },
+            menciones:   { key: 'notif_menciones',   titulo: 'Menciones',           desc: 'Cuando alguien te menciona con @.',              seccion: 'filtros' },
+            seguidores:  { key: 'notif_seguidores',  titulo: 'Nuevos seguidores',   desc: 'Cuando alguien empieza a seguirte.',             seccion: 'filtros' },
+            likes:       { key: 'notif_likes',       titulo: 'Me gusta y reacciones', desc: 'Cuando reaccionan a tus publicaciones.',       seccion: 'filtros' },
+            comentarios: { key: 'notif_comentarios', titulo: 'Comentarios',         desc: 'Cuando comentan en tus publicaciones.',          seccion: 'filtros' },
+            mensajes:    { key: 'notif_mensajes',    titulo: 'Mensajes directos',   desc: 'Cuando recibes un mensaje directo.',             seccion: 'filtros' }
         };
 
-        function renderSecciones() {
-            // ============================================================
-            // TIPOS DE NOTIFICACIONES
-            // ============================================================
-            $('#seccionTipos').innerHTML = [
-                cfgRenderToggle({
-                    id: 'togglePush',
-                    title: 'Notificaciones push',
-                    desc: 'Recibe notificaciones en tiempo real en este dispositivo',
-                    checked: cfgGetPref(PREF_KEYS.push_habilitado, true),
-                    onChange: `window.onTogglePush(this.checked)`,
-                }),
-            ].join('');
-
-            // ============================================================
-            // CANALES (sonido, vibración)
-            // ============================================================
-            $('#seccionCanales').innerHTML = [
-                cfgRenderToggle({
-                    id: 'toggleSonido',
-                    title: 'Sonido',
-                    desc: 'Reproduce un sonido al recibir notificaciones',
-                    checked: cfgGetPref(PREF_KEYS.sonido, true),
-                    onChange: `window.onToggleSonido(this.checked)`,
-                }),
-                cfgRenderToggle({
-                    id: 'toggleVibracion',
-                    title: 'Vibración',
-                    desc: 'Vibra al recibir notificaciones (si tu dispositivo lo soporta)',
-                    checked: cfgGetPref(PREF_KEYS.vibracion, true),
-                    onChange: `window.onToggleVibracion(this.checked)`,
-                }),
-            ].join('');
-
-            // ============================================================
-            // FILTROS POR TIPO
-            // ============================================================
-            $('#seccionFiltros').innerHTML = [
-                cfgRenderToggle({
-                    id: 'toggleMenciones',
-                    title: 'Menciones',
-                    desc: 'Cuando alguien te menciona con @ en una publicación',
-                    checked: cfgGetPref(PREF_KEYS.filtro_menciones, true),
-                    onChange: `window.onToggleFiltro('${PREF_KEYS.filtro_menciones}', this.checked, 'Menciones')`,
-                }),
-                cfgRenderToggle({
-                    id: 'toggleSeguidores',
-                    title: 'Nuevos seguidores',
-                    desc: 'Cuando alguien comienza a seguirte',
-                    checked: cfgGetPref(PREF_KEYS.filtro_seguidores, true),
-                    onChange: `window.onToggleFiltro('${PREF_KEYS.filtro_seguidores}', this.checked, 'Nuevos seguidores')`,
-                }),
-                cfgRenderToggle({
-                    id: 'toggleLikes',
-                    title: 'Me gusta y reacciones',
-                    desc: 'Cuando alguien reacciona a tus publicaciones',
-                    checked: cfgGetPref(PREF_KEYS.filtro_likes, true),
-                    onChange: `window.onToggleFiltro('${PREF_KEYS.filtro_likes}', this.checked, 'Me gusta')`,
-                }),
-                cfgRenderToggle({
-                    id: 'toggleComentarios',
-                    title: 'Comentarios',
-                    desc: 'Cuando alguien comenta en tus publicaciones',
-                    checked: cfgGetPref(PREF_KEYS.filtro_comentarios, true),
-                    onChange: `window.onToggleFiltro('${PREF_KEYS.filtro_comentarios}', this.checked, 'Comentarios')`,
-                }),
-                cfgRenderToggle({
-                    id: 'toggleMensajes',
-                    title: 'Mensajes directos',
-                    desc: 'Cuando recibes un mensaje directo',
-                    checked: cfgGetPref(PREF_KEYS.filtro_mensajes, true),
-                    onChange: `window.onToggleFiltro('${PREF_KEYS.filtro_mensajes}', this.checked, 'Mensajes')`,
-                }),
-            ].join('');
+        function escapeHtml(v) {
+            const d = document.createElement('div'); d.textContent = String(v == null ? '' : v); return d.innerHTML;
         }
 
-        // ============================================================
-        // CALLBACKS
-        // ============================================================
-        window.onTogglePush = async (value) => {
-            await cfgSetPref(PREF_KEYS.push_habilitado, value);
-            
-            if (value && 'Notification' in window) {
+        function valor(nombre) {
+            const clave = CLAVES[nombre].key;
+            return prefs[clave] === undefined ? true : prefs[clave] === true;
+        }
+
+        function filaHTML(nombre) {
+            const c = CLAVES[nombre];
+            return '<div class="cfg-item nt-row">' +
+                '<div class="cfg-item-content"><div class="cfg-item-title">' + escapeHtml(c.titulo) + '</div>' +
+                '<div class="cfg-item-desc">' + escapeHtml(c.desc) + '</div></div>' +
+                '<label class="nt-switch"><input type="checkbox" data-pref="' + nombre + '"' + (valor(nombre) ? ' checked' : '') + (cargando ? ' disabled' : '') + ' />' +
+                '<span class="nt-slider"></span></label></div>';
+        }
+
+        function renderSecciones() {
+            $('#seccionPush').innerHTML = filaHTML('push');
+            $('#seccionCanales').innerHTML = filaHTML('sonido') + filaHTML('vibracion');
+            $('#seccionFiltros').innerHTML = ['menciones', 'seguidores', 'likes', 'comentarios', 'mensajes'].map(filaHTML).join('');
+        }
+
+        let toastTimer = null;
+        function toast(msg, tipo) {
+            const t = $('#ntToast'); if (!t) return;
+            clearTimeout(toastTimer);
+            t.className = 'cfg-toast' + (tipo === 'success' ? ' cfg-toast-success' : tipo === 'error' ? ' cfg-toast-error' : tipo === 'warning' ? ' cfg-toast-warning' : '');
+            t.textContent = msg;
+            requestAnimationFrame(() => t.classList.add('show'));
+            toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+        }
+
+        function marcarEstado(texto, error) {
+            const e = $('#ntEstado');
+            e.textContent = texto || '';
+            e.className = 'nt-estado' + (error ? ' error' : '');
+        }
+
+        async function obtenerCliente() {
+            if (clienteSupabase) return clienteSupabase;
+            if (window.supabaseClient && window.supabaseClient.auth) return (clienteSupabase = window.supabaseClient);
+            if (!window.supabase || typeof window.supabase.createClient !== 'function') throw new Error('Supabase no disponible.');
+            const r = await fetch('/api/config/public', { credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' } });
+            if (!r.ok) throw new Error('Configuración pública no disponible (' + r.status + ').');
+            const cfg = await r.json();
+            if (!cfg || !cfg.supabaseUrl || !cfg.supabaseAnonKey) throw new Error('Configuración pública incompleta.');
+            clienteSupabase = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {
+                auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+            });
+            window.supabaseClient = clienteSupabase;
+            return clienteSupabase;
+        }
+
+        function irAlInicio() {
+            try { localStorage.setItem('wallet_returnTo', location.pathname + location.search + location.hash); } catch (_) {}
+            location.replace('/');
+        }
+
+        async function cargarPreferencias(client) {
+            const r = await client.rpc('obtener_mis_preferencias');
+            if (r.error) throw r.error;
+            prefs = (r.data && typeof r.data === 'object') ? r.data : {};
+        }
+
+        /* Guarda una preferencia en la base. Si falla, revierte el interruptor. */
+        async function guardarPreferencia(nombre, nuevo, input) {
+            const anterior = !nuevo;
+            try {
+                const client = await obtenerCliente();
+                const r = await client.rpc('actualizar_preferencia', { p_key: CLAVES[nombre].key, p_value: nuevo });
+                if (r.error) throw r.error;
+                prefs[CLAVES[nombre].key] = nuevo;
+                toast(nuevo ? '✅ ' + CLAVES[nombre].titulo + ' activado' : '🚫 ' + CLAVES[nombre].titulo + ' desactivado', nuevo ? 'success' : 'warning');
+            } catch (e) {
+                console.error('[Notificaciones] Error guardando preferencia:', e);
+                input.checked = anterior;
+                toast('No se pudo guardar. Revisa tu conexión.', 'error');
+            }
+        }
+
+        async function alCambiar(event) {
+            const input = event.target;
+            if (!input || !input.dataset || !input.dataset.pref) return;
+            const nombre = input.dataset.pref;
+            const nuevo = input.checked;
+
+            if (nombre === 'push' && nuevo && 'Notification' in window) {
                 try {
-                    const permiso = await Notification.requestPermission();
+                    const permiso = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
                     if (permiso !== 'granted') {
-                        cfgToast('⚠️ Permiso de notificaciones denegado', 'warning');
-                        document.getElementById('togglePush').checked = false;
-                        await cfgSetPref(PREF_KEYS.push_habilitado, false);
+                        input.checked = false;
+                        toast('Permiso de notificaciones denegado en el navegador.', 'warning');
+                        marcarEstado('Activa el permiso de notificaciones en la configuración de tu navegador.', true);
                         return;
                     }
+                    marcarEstado('');
                 } catch (e) {
-                    console.warn('Error solicitando permiso:', e);
+                    console.warn('[Notificaciones] Permiso:', e);
                 }
             }
 
-            cfgToast(
-                value ? '🔔 Notificaciones activadas' : '🔕 Notificaciones desactivadas',
-                value ? 'success' : 'warning'
-            );
-        };
-
-        window.onToggleSonido = async (value) => {
-            await cfgSetPref(PREF_KEYS.sonido, value);
-            cfgToast(
-                value ? '🔊 Sonido activado' : '🔇 Sonido desactivado',
-                value ? 'success' : ''
-            );
-        };
-
-        window.onToggleVibracion = async (value) => {
-            await cfgSetPref(PREF_KEYS.vibracion, value);
-            
-            if (value && 'vibrate' in navigator) {
-                try {
-                    navigator.vibrate(200);
-                } catch (e) {}
+            if (nombre === 'vibracion' && nuevo && 'vibrate' in navigator) {
+                try { navigator.vibrate(200); } catch (_) {}
             }
 
-            cfgToast(
-                value ? '📳 Vibración activada' : '📴 Vibración desactivada',
-                value ? 'success' : ''
-            );
-        };
+            await guardarPreferencia(nombre, nuevo, input);
+        }
 
-        window.onToggleFiltro = async (clave, value, nombre) => {
-            await cfgSetPref(clave, value);
-            cfgToast(
-                value ? `✅ ${nombre} activado` : `🚫 ${nombre} silenciado`,
-                value ? 'success' : 'warning'
-            );
-        };
+        async function iniciar() {
+            try {
+                const client = await obtenerCliente();
+                const { data } = await client.auth.getSession();
+                if (!data || !data.session) { irAlInicio(); return; }
+                document.documentElement.classList.add('auth-ready');
 
-        // ============================================================
-        // INICIALIZAR
-        // ============================================================
-        window.addEventListener('DOMContentLoaded', async () => {
-            await new Promise(resolve => setTimeout(resolve, 400));
-            renderSecciones();
-        });
+                if (typeof window.cfgInitPage === 'function') {
+                    window.cfgInitPage({ title: 'Notificaciones', subtitle: 'Elige qué avisos recibir', backUrl: '/features/perfil/configuracion/index.html' });
+                }
 
+                renderSecciones();
+                await cargarPreferencias(client);
+                cargando = false;
+                renderSecciones();
+                marcarEstado('');
+            } catch (e) {
+                console.error('[Notificaciones] Error cargando:', e);
+                cargando = false;
+                renderSecciones();
+                marcarEstado('No se pudieron cargar tus preferencias. Recarga la página para intentarlo de nuevo.', true);
+            }
+        }
+
+        document.addEventListener('change', alCambiar);
+        window.addEventListener('DOMContentLoaded', iniciar, { once: true });
     })();
     </script>
 </body>
