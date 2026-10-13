@@ -1,9 +1,8 @@
 // ================================================================
 // server.js — Sariel's Ecosystem
 // Backend principal — Producción Railway
-// v2.9: marketing montado, LiveKit seguro (routes/livekit.js),
-//       caché HTML/JS desactivada, Live Pass con fallback de nombre,
-//       /live → features/live/live.html
+// v3.0: Mercado montado (/api/mercado), IPN de Mercado excluido del
+//       límite de peticiones, resto sin cambios.
 // ================================================================
 
 require('dotenv').config();
@@ -363,7 +362,15 @@ app.use('/api/telnyx/webhook', require('./routes/telnyx-webhook'));
 
 // ================================================================
 // RATE LIMIT GENERAL
+// Los avisos de pago (IPN) NO cuentan para el límite: si NOWPayments
+// recibe un 429, no reintenta bien y el pago puede quedar sin activar.
 // ================================================================
+
+const RUTAS_WEBHOOK_SIN_LIMITE = [
+    '/api/webhook/',
+    '/api/webhooks/',
+    '/api/mercado/webhook-nowpayments'
+];
 
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -374,8 +381,7 @@ const apiLimiter = rateLimit({
         error: 'Demasiadas solicitudes. Intenta nuevamente más tarde.'
     },
     skip: (req) =>
-        req.originalUrl.startsWith('/api/webhook/') ||
-        req.originalUrl.startsWith('/api/webhooks/')
+        RUTAS_WEBHOOK_SIN_LIMITE.some((ruta) => req.originalUrl.startsWith(ruta))
 });
 
 app.use('/api/', apiLimiter);
@@ -794,6 +800,9 @@ montarRouter('/api/campanas', './routes/campanas', 'routes/campanas');
 
 // Marketing (anuncios en live, grupos y videos): /get-ad, /register-event
 montarRouter('/api/marketing', './routes/marketing', 'routes/marketing');
+
+// Mercado (membresías de tienda, pagos NOWPayments, IPN y ubicación del repartidor)
+montarRouter('/api/mercado', './routes/mercado', 'routes/mercado');
 
 // Live (donaciones + registro de minutos)
 montarRouter('/api/live', './routes/live', 'routes/live');
