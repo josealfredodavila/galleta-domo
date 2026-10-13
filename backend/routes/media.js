@@ -15,6 +15,7 @@
 //   - grupos-publicaciones (posts, avatares, portadas de grupos)
 //   - videos               (videos y miniaturas del feed de videos)
 //   - sariels-avatars      (avatares de perfil del usuario)
+//   - mercado              (logos, portadas y fotos de productos)
 //
 // Reglas:
 //   - Autenticación obligatoria (verificarToken).
@@ -52,7 +53,7 @@ const DESTINOS = {
         limiteMB: LIMITE_IMAGEN_MB
     },
     'muro-videos': {
-        tipo: 'auto', // imagen o video
+        tipo: 'auto',
         limiteMBImagen: LIMITE_IMAGEN_MB,
         limiteMBVideo: LIMITE_VIDEO_MB
     },
@@ -69,6 +70,12 @@ const DESTINOS = {
     'sariels-avatars': {
         tipo: 'imagen',
         limiteMB: LIMITE_AVATAR_MB
+    },
+    // Mercado: logos, portadas y fotos de productos.
+    // Acepta solo imágenes (no videos) con límite de 3 MB (igual que el frontend).
+    'mercado': {
+        tipo: 'imagen',
+        limiteMB: 3
     }
 };
 
