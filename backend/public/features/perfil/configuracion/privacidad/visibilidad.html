@@ -54,10 +54,7 @@
 
             async function inicializarSupabase() {
                 try {
-                    if (
-                        !window.supabase ||
-                        typeof window.supabase.createClient !== 'function'
-                    ) {
+                    if (!window.supabase || typeof window.supabase.createClient !== 'function') {
                         throw new Error('Supabase SDK no disponible.');
                     }
 
@@ -91,13 +88,7 @@
                         window.supabaseClient = window.SupabaseSDK.createClient(
                             supabaseUrl,
                             supabaseAnonKey,
-                            {
-                                auth: {
-                                    persistSession: true,
-                                    autoRefreshToken: true,
-                                    detectSessionInUrl: true
-                                }
-                            }
+                            { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } }
                         );
                     }
 
@@ -129,12 +120,8 @@
     </script>
 
     <style>
-        html:not(.auth-ready) body {
-            visibility: hidden;
-        }
-        html.auth-ready body {
-            visibility: visible;
-        }
+        html:not(.auth-ready) body { visibility: hidden; }
+        html.auth-ready body { visibility: visible; }
     </style>
 </head>
 <body class="cfg-page">
@@ -150,7 +137,7 @@
         <div class="cfg-list" id="seccionContactos"></div>
 
         <div class="cfg-aviso">
-            ℹ️ Los cambios se sincronizan automáticamente en todos tus dispositivos.
+            ℹ️ Las opciones marcadas como "Próximamente" aún no están activas.
         </div>
 
         <div class="cfg-footer">
@@ -178,186 +165,69 @@
 
         cfgInitPage({
             title: 'Visibilidad y contactos',
-            subtitle: '@tu_usuario',
+            subtitle: '',
             backUrl: '/features/perfil/configuracion/index.html',
         });
 
         const PREF_KEYS = {
             encontrarme_email: 'visibilidad_encontrarme_email',
             encontrarme_telefono: 'visibilidad_encontrarme_telefono',
-            sync_contactos: 'visibilidad_sync_contactos',
         };
-
-        let contadorContactos = null;
-
-        async function contarContactos() {
-            try {
-                const client = await esperarCliente();
-                if (!client) return null;
-
-                const { data: sessionData } = await client.auth.getSession();
-                const session = sessionData && sessionData.session;
-                if (!session) return null;
-
-                const { count, error } = await client
-                    .from('contactos')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('usuario_id', session.user.id);
-
-                if (error) {
-                    console.warn('Error contando contactos:', error.message);
-                    return null;
-                }
-
-                return count || 0;
-            } catch (e) {
-                console.warn('Error contando contactos:', e && e.message);
-                return null;
-            }
-        }
 
         function renderToggles() {
             $('#seccionVisibilidad').innerHTML = [
                 cfgRenderToggle({
                     id: 'toggleEmail',
-                    title: 'Permite que otros te encuentren por tu correo electrónico',
-                    desc: 'Quienes tengan tu correo electrónico podrán conectarse contigo en Sariel\'s.',
-                    checked: cfgGetPref(PREF_KEYS.encontrarme_email, true),
-                    onChange: `window.onToggleEmail(this.checked)`,
+                    title: 'Permite que otros te encuentren por tu correo electrónico (Próximamente)',
+                    desc: 'Esta opción aún no afecta las búsquedas. Estará disponible pronto.',
+                    checked: false,
+                    disabled: true,
                 }),
                 cfgRenderToggle({
                     id: 'toggleTelefono',
-                    title: 'Permitir que otros te encuentren por tu número de teléfono',
-                    desc: 'Necesitas añadir un número de teléfono para esta configuración.',
-                    checked: cfgGetPref(PREF_KEYS.encontrarme_telefono, false),
-                    onChange: `window.onToggleTelefono(this.checked)`,
+                    title: 'Permitir que otros te encuentren por tu número de teléfono (Próximamente)',
+                    desc: 'Requiere añadir un número de teléfono. Aún no está disponible.',
+                    checked: false,
+                    disabled: true,
                 }),
             ].join('');
-
-            const contactosTxt = contadorContactos === null
-                ? ''
-                : ' (' + contadorContactos + ')';
 
             $('#seccionContactos').innerHTML = [
                 cfgRenderToggle({
                     id: 'toggleSync',
-                    title: 'Sincronizar contactos de la libreta de direcciones',
-                    desc: 'Los contactos de tu libreta se cargarán en Sariel\'s de forma continua para ayudarte a conectar con tus amigos y personalizar tu contenido.',
-                    checked: cfgGetPref(PREF_KEYS.sync_contactos, false),
-                    onChange: `window.onToggleSync(this.checked)`,
-                }),
-                cfgRenderItem({
-                    icon: 'ban',
-                    title: 'Eliminar todos los contactos' + contactosTxt,
-                    desc: 'Elimina todos los contactos que hayas subido previamente y desactiva la sincronización en todos tus dispositivos.',
-                    onclick: 'window.onEliminarContactos()',
-                    class: 'cfg-item-plain',
-                    style: 'color: var(--cfg-danger, #ff3366);',
+                    title: 'Sincronizar contactos de la libreta (Próximamente)',
+                    desc: 'Permitirá cargar los contactos de tu teléfono para encontrar a tus amigos. Aún no está disponible.',
+                    checked: false,
+                    disabled: true,
                 }),
             ].join('');
         }
 
-        window.onToggleEmail = async (value) => {
-            await cfgSetPref(PREF_KEYS.encontrarme_email, value);
-            cfgToast(
-                value ? '✅ Permites ser encontrado por correo' : '🚫 Ya no te encontrarán por correo',
-                value ? 'success' : 'warning'
-            );
-        };
-
-        window.onToggleTelefono = async (value) => {
-            if (value) {
-                cfgToast('📱 Primero añade un número de teléfono en tu cuenta', 'warning');
-                setTimeout(() => {
-                    const t = document.getElementById('toggleTelefono');
-                    if (t) t.checked = false;
-                }, 300);
-                return;
-            }
-            await cfgSetPref(PREF_KEYS.encontrarme_telefono, value);
-            cfgToast('🚫 Ya no te encontrarán por teléfono', 'warning');
-        };
-
-        window.onToggleSync = async (value) => {
-            await cfgSetPref(PREF_KEYS.sync_contactos, value);
-            cfgToast(
-                value ? '📇 Sincronización activada' : '🚫 Sincronización desactivada',
-                value ? 'success' : 'warning'
-            );
-        };
-
-        window.onEliminarContactos = async () => {
-            const totalTxt = contadorContactos !== null
-                ? ' (' + contadorContactos + ')'
-                : '';
-
-            const ok = await cfgConfirm({
-                title: '¿Eliminar todos los contactos' + totalTxt + '?',
-                text: 'Esta acción eliminará todos los contactos cargados previamente y desactivará la sincronización. Puede tardar unos minutos.',
-                confirmText: 'Eliminar todo',
-                cancelText: 'Cancelar',
-                danger: true,
-            });
-
-            if (!ok) return;
-
-            cfgToast('⏳ Eliminando contactos...', 'error', 3000);
-
-            try {
-                const client = await esperarCliente();
-                if (!client) throw new Error('Supabase no disponible');
-
-                const { data: sessionData } = await client.auth.getSession();
-                const session = sessionData && sessionData.session;
-                if (!session) throw new Error('Sin sesión');
-
-                /* Borrar TODAS las filas del usuario en la tabla contactos. */
-                const { error } = await client
-                    .from('contactos')
-                    .delete()
-                    .eq('usuario_id', session.user.id);
-
-                if (error) {
-                    throw new Error(error.message);
-                }
-
-                /* Desactivar sincronización. */
-                await cfgSetPref(PREF_KEYS.sync_contactos, false);
-                const t = document.getElementById('toggleSync');
-                if (t) t.checked = false;
-
-                /* Actualizar contador local. */
-                contadorContactos = 0;
-                renderToggles();
-
-                cfgToast('✅ Todos los contactos eliminados', 'success', 4000);
-
-            } catch (e) {
-                console.error('Error eliminando contactos:', e);
-                cfgToast('❌ Error: ' + e.message, 'error');
-            }
-        };
-
-        window.addEventListener('DOMContentLoaded', async () => {
-            await new Promise(resolve => setTimeout(resolve, 400));
-            renderToggles();
-
-            contadorContactos = await contarContactos();
-            renderToggles();
-        });
-
-        (async function cargarHandleSubtitulo() {
+        /* ============================================================
+           SUBTÍTULO: handle real del usuario (no el correo)
+        ============================================================ */
+        async function cargarHandleSubtitulo() {
             try {
                 const client = await esperarCliente();
                 if (!client) return;
-                const { data } = await client.auth.getSession();
-                const session = data && data.session;
-                if (!session) return;
-                const handle = session.user.email ? session.user.email.split('@')[0] : 'usuario';
+
+                const { data: sd } = await client.auth.getSession();
+                if (!sd || !sd.session) return;
+
+                const { data } = await client.rpc('mi_perfil_privado');
+                const perfil = Array.isArray(data) ? data[0] : data;
+                const handle = perfil && (perfil.handle || perfil.username);
+
                 const subEl = document.querySelector('.cfg-header-subtitle');
-                if (subEl) subEl.textContent = '@' + handle;
+                if (subEl && handle) subEl.textContent = '@' + handle;
             } catch (e) { /* silencioso */ }
-        })();
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            await new Promise(resolve => setTimeout(resolve, 300));
+            renderToggles();
+            cargarHandleSubtitulo();
+        });
 
     })();
     </script>
