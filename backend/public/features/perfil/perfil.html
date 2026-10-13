@@ -250,7 +250,7 @@
                     <span class="pro-upgrade-name" data-no-traducir="1">Csariel's Pro</span>
                 </div>
                 <div class="pro-upgrade-price">
-                    <span id="proPrecio" data-no-traducir="1">$60 MXN</span>
+                    <span id="proPrecio" data-no-traducir="1">—</span>
                     <span class="pro-upgrade-period" data-clave="perfil_pro_periodo">/ 30 días</span>
                 </div>
                 <div class="pro-upgrade-features" id="proFeatures" data-clave="perfil_pro_features">
@@ -258,7 +258,7 @@
                 </div>
                 <button class="btn btn-gold pro-btn" onclick="window.contratarPro()" id="btnContratarPro" data-clave="perfil_pro_contratar">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
-                    Contratar Pro por $60 MXN
+                    Contratar Pro
                 </button>
             </div>
 
@@ -875,6 +875,58 @@
         document.addEventListener('DOMContentLoaded', cargarWalletPropia, { once: true });
     } else {
         cargarWalletPropia();
+    }
+})();
+</script>
+
+<!-- Precio de Pro: se lee de la base (planes_membresia), no está fijo en el HTML -->
+<script>
+(function () {
+    'use strict';
+
+    function esperar(ms) {
+        return new Promise(function (resolve) { setTimeout(resolve, ms); });
+    }
+
+    async function obtenerCliente() {
+        var inicio = Date.now();
+        while (Date.now() - inicio < 10000) {
+            if (window.supabaseClient) return window.supabaseClient;
+            await esperar(150);
+        }
+        return null;
+    }
+
+    async function cargarPrecioPro() {
+        try {
+            var client = await obtenerCliente();
+            if (!client) return;
+
+            var r = await client
+                .from('planes_membresia')
+                .select('precio_mxn')
+                .eq('id', 'pro')
+                .eq('activo', true)
+                .maybeSingle();
+
+            if (r.error || !r.data) return;
+
+            var precio = Number(r.data.precio_mxn);
+            if (!Number.isFinite(precio)) return;
+
+            var texto = '$' + precio.toLocaleString('es-MX', { maximumFractionDigits: 2 }) + ' MXN';
+
+            var precioEl = document.getElementById('proPrecio');
+            if (precioEl) precioEl.textContent = texto;
+        } catch (e) {
+            console.warn('[Perfil] No se pudo cargar el precio Pro:', e);
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', cargarPrecioPro, { once: true });
+    } else {
+        cargarPrecioPro();
     }
 })();
 </script>
