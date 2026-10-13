@@ -1,9 +1,14 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v1.3
+   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v1.4
    ================================================================
    FASE 1: UI de modales (sonidos, ubicación, borradores, preview)
    FASE 2: Carga modular de archivos (subirMultimedia)
    FASE 3C: (N/A aquí, el INSERT lo hace videos.html)
+
+   Novedades v1.4 (moderación):
+   - subirMultimediaSupabase() ya NO sube directo a Supabase Storage.
+   - Ahora llama a POST /api/media/upload con moderación.
+   - El bucket 'videos' sigue aceptando imágenes (miniaturas) y videos.
 
    Novedades v1.3:
    - Traducciones i18n completas (helper vt + data-clave en HTML generado)
@@ -26,7 +31,6 @@
     // ============================================================
     // HELPER DE TRADUCCIÓN
     // ============================================================
-    // Usa el respaldo en español si la clave no existe en la BD.
     function vt(clave, respaldo) {
         if (typeof window.tConFallback === 'function') {
             return window.tConFallback(clave, respaldo);
@@ -213,24 +217,65 @@
         }
     }
 
+    // ============================================================
+    // SUBIR VÍA /api/media/upload (con moderación)
+    // ============================================================
     async function subirMultimediaSupabase(archivo, tipo, opts) {
         const sb = getSupabaseClient();
         if (!sb) return { ok: false, error: 'Cliente Supabase no disponible' };
+
         const sessionResp = await sb.auth.getSession();
         const session = sessionResp && sessionResp.data && sessionResp.data.session;
         if (!session) return { ok: false, error: 'Sin sesión activa' };
-        const ext = (archivo.name.split('.').pop() || '').toLowerCase();
-        const carpeta = tipo === 'video' ? 'videos' : 'miniaturas';
-        const path = `${session.user.id}/${carpeta}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
-        const up = await sb.storage
-            .from(CONFIG.BUCKET)
-            .upload(path, archivo, { cacheControl: '31536000', upsert: false, contentType: archivo.type });
-        if (up.error) return { ok: false, error: up.error.message };
-        const pub = sb.storage.from(CONFIG.BUCKET).getPublicUrl(path);
-        const url = pub && pub.data && pub.data.publicUrl;
-        if (!url) return { ok: false, error: 'No se pudo obtener URL pública' };
-        return { ok: true, url, path, provider: 'supabase' };
+
+        const token = session.access_token;
+        if (!token) return { ok: false, error: 'Sin token de sesión' };
+
+        // El endpoint /api/media/upload recibe:
+        //   file    → el archivo
+        //   destino → el bucket ('videos' en este caso)
+        //   tipo    → 'video' o 'imagen'
+        const fd = new FormData();
+        fd.append('file', archivo);
+        fd.append('destino', CONFIG.BUCKET);
+        fd.append('tipo', tipo);
+
+        let respuesta;
+        try {
+            respuesta = await fetch('/api/media/upload', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                },
+                body: fd
+            });
+        } catch (e) {
+            warn('Error de red subiendo archivo:', e);
+            return { ok: false, error: 'No se pudo conectar con el servidor' };
+        }
+
+        let data = null;
+        try {
+            data = await respuesta.json();
+        } catch (e) {
+            data = {};
+        }
+
+        if (!respuesta.ok || !data.ok) {
+            const mensaje = data && data.error
+                ? data.error
+                : 'No se pudo subir el archivo';
+            return { ok: false, error: mensaje, status: respuesta.status };
+        }
+
+        return {
+            ok: true,
+            url: data.url,
+            path: data.path,
+            provider: 'supabase'
+        };
     }
+
     async function subirMultimediaR2(archivo, tipo, opts) {
         return { ok: false, error: 'Proveedor R2 aún no habilitado (Fase 3 del proyecto)' };
     }
@@ -588,7 +633,6 @@
         sheet.classList.add('show');
         document.body.style.overflow = 'hidden';
 
-        // Aplicar traducciones al sheet recién abierto
         if (typeof window.aplicarTraducciones === 'function') {
             try { window.aplicarTraducciones(sheet); } catch (e) {}
         }
@@ -842,7 +886,7 @@
         engancharInputArchivo();
         engancharListenersGlobales();
         engancharEventoPublicacionExitosa();
-        log('✅ Módulo Publicar v1.3 listo (Fase 3C + i18n soportadas)');
+        log('✅ Módulo Publicar v1.4 listo (moderación + i18n)');
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
