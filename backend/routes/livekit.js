@@ -1,11 +1,10 @@
 // ================================================================
 // RUTAS LIVEKIT — Csariel's
 //   POST /api/livekit/token   → token para unirse a una sala
-//   GET  /api/livekit/streams → transmisiones activas (columnas públicas)
+//   GET  /api/livekit/streams → transmisiones activas (público, sin datos sensibles)
 // La sala y el permiso de publicar los decide SIEMPRE el servidor.
-// v4: lives de CANAL (grupo_id) sin Live Pass: el dueño publica si le queda
-//     tiempo hoy en canal_live_uso (120 min totales por persona, medianoche MX).
-//     Lives normales (live.html) siguen exigiendo Live Pass y pago de acceso.
+// v5: /streams incluye lives de canal públicos (tipo 'canal') además de los
+//     lives normales (tipo 'live'). Los canales privados nunca se listan.
 // ================================================================
 
 const express = require('express');
@@ -18,6 +17,7 @@ const logger = require('../utils/logger');
 const { LIVEKIT_API_KEY, LIVEKIT_API_SECRET, LIVEKIT_WS_URL } = process.env;
 
 const LIMITE_CANAL_MINUTOS = 120;
+const MAX_STREAMS_PUBLICOS = 50;
 
 // Fecha de hoy en hora de México (YYYY-MM-DD)
 function fechaHoyMexico() {
@@ -173,7 +173,10 @@ router.post('/token', verificarToken, async (req, res) => {
 });
 
 // ================================================================
-// GET /streams — solo columnas públicas, sin room_name ni streamer_id
+// GET /streams — público, sin sesión.
+// Devuelve solo datos seguros: sin room_name, sin streamer_id.
+// - tipo 'live'  → lives normales (live.html)
+// - tipo 'canal' → lives de canales PÚBLICOS (grupos.html)
 // ================================================================
 router.get('/streams', async (req, res) => {
     try {
@@ -182,15 +185,63 @@ router.get('/streams', async (req, res) => {
 
         const { data, error } = await db
             .from('transmisiones')
-            .select('id, titulo, categoria, viewers_count, fecha_inicio, estado, is_live, precio_acceso')
+            .select('id, titulo, categoria, viewers_count, fecha_inicio, estado, is_live, precio_acceso, grupo_id')
             .eq('estado', 'en_vivo')
             .eq('is_live', true)
-            .is('grupo_id', null)
             .order('fecha_inicio', { ascending: false })
-            .limit(50);
+            .limit(MAX_STREAMS_PUBLICOS);
 
         if (error) throw error;
-        return res.json({ success: true, data });
+
+        const filas = data || [];
+
+        // Canales de los lives de canal: solo los públicos
+        const idsGrupo = [...new Set(filas.filter((f) => f.grupo_id).map((f) => f.grupo_id))];
+        const gruposPublicos = new Map();
+
+        if (idsGrupo.length > 0) {
+            const { data: grupos, error: errGrupos } = await db
+                .from('grupos_video')
+                .select('id, nombre, visibilidad')
+                .in('id', idsGrupo)
+                .eq('visibilidad', 'publico');
+
+            if (errGrupos) throw errGrupos;
+            (grupos || []).forEach((g) => gruposPublicos.set(g.id, g));
+        }
+
+        const lista = [];
+
+        for (const f of filas) {
+            if (f.grupo_id) {
+                const grupo = gruposPublicos.get(f.grupo_id);
+                if (!grupo) continue; // canal privado o inexistente: no se muestra
+
+                lista.push({
+                    id: f.id,
+                    tipo: 'canal',
+                    titulo: f.titulo,
+                    categoria: f.categoria,
+                    viewers_count: f.viewers_count,
+                    fecha_inicio: f.fecha_inicio,
+                    precio_acceso: 0,
+                    grupo_id: grupo.id,
+                    canal_nombre: grupo.nombre
+                });
+            } else {
+                lista.push({
+                    id: f.id,
+                    tipo: 'live',
+                    titulo: f.titulo,
+                    categoria: f.categoria,
+                    viewers_count: f.viewers_count,
+                    fecha_inicio: f.fecha_inicio,
+                    precio_acceso: f.precio_acceso
+                });
+            }
+        }
+
+        return res.json({ success: true, data: lista });
     } catch (e) {
         logger.error(`[LiveKit] streams: ${e.message}`);
         return res.status(500).json({ success: false, error: 'db' });
