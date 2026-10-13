@@ -6,7 +6,7 @@
 //   GET  /api/live/donacion/:id/estado         → estado de la donación (solo el donante)
 // Todas las operaciones usan supabaseAdmin (service_role) de config/supabase.js.
 // Las RPC de dinero están revocadas para anon/authenticated: solo el servidor las llama.
-// v2: donaciones de canal con montos mínimos de 20 USD y creador tomado del servidor.
+// v3: montos de donación de 20, 50, 100 y 200 USD (mínimo de la pasarela).
 // ================================================================
 
 const express = require('express');
@@ -18,13 +18,10 @@ const NOWPAYMENTS_API_KEY = process.env.NOWPAYMENTS_API_KEY;
 const NOWPAYMENTS_API_URL = 'https://api.nowpayments.io/v1';
 const SITE_URL = process.env.SITE_URL || process.env.PUBLIC_APP_URL || 'https://galleta-domo-production.up.railway.app';
 
-// Montos permitidos en lives normales (sin cambios)
-const MONTOS_DONACION = new Set([2, 5, 10, 20, 50, 100]);
+// Montos permitidos en lives y en canales (mínimo 20 USD: la pasarela rechaza montos menores)
+const MONTOS_DONACION = new Set([20, 50, 100, 200]);
 
-// Montos permitidos en canales: mínimo 20 USD (la pasarela rechaza montos menores a ~11 USDT)
-const MONTOS_DONACION_CANAL = new Set([20, 50, 100, 200]);
-
-// Redes permitidas: id del cliente → código de moneda de NOWPayments.
+// Redes permitidas en lives: id del cliente → código de moneda de NOWPayments.
 // VERIFICAR los códigos con GET https://api.nowpayments.io/v1/currencies antes de producción.
 const REDES_NOWPAYMENTS = {
     usdttrc20:   'usdttrc20',
@@ -166,7 +163,7 @@ router.post('/registrar-minuto', verificarAutenticacion, async (req, res) => {
 });
 
 // ================================================================
-// POST /donacion/crear  (live.html — sin cambios)
+// POST /donacion/crear  (live.html)
 // ================================================================
 router.post('/donacion/crear', verificarAutenticacion, async (req, res) => {
     try {
@@ -261,7 +258,7 @@ router.post('/donacion/canal/crear', verificarAutenticacion, async (req, res) =>
         }
 
         const montoNum = Number(monto_usd);
-        if (!MONTOS_DONACION_CANAL.has(montoNum)) {
+        if (!MONTOS_DONACION.has(montoNum)) {
             return res.status(400).json({ success: false, error: 'monto_invalido' });
         }
 
