@@ -3,8 +3,9 @@
 //   POST /api/livekit/token   → token para unirse a una sala
 //   GET  /api/livekit/streams → transmisiones activas (columnas públicas)
 // La sala y el permiso de publicar los decide SIEMPRE el servidor.
-// v3: registra cada espectador único en live_espectadores (vistas reales).
-//     Los lives de pago exigen un pago confirmado (402 si no lo tiene).
+// v4: lives de CANAL (grupo_id) sin Live Pass: el dueño publica si le queda
+//     tiempo hoy en canal_live_uso (120 min totales por persona, medianoche MX).
+//     Lives normales (live.html) siguen exigiendo Live Pass y pago de acceso.
 // ================================================================
 
 const express = require('express');
@@ -15,6 +16,13 @@ const { verificarToken } = require('../middleware/auth');
 const logger = require('../utils/logger');
 
 const { LIVEKIT_API_KEY, LIVEKIT_API_SECRET, LIVEKIT_WS_URL } = process.env;
+
+const LIMITE_CANAL_MINUTOS = 120;
+
+// Fecha de hoy en hora de México (YYYY-MM-DD)
+function fechaHoyMexico() {
+    return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' });
+}
 
 // ================================================================
 // POST /token
@@ -38,7 +46,7 @@ router.post('/token', verificarToken, async (req, res) => {
 
         const { data: stream, error } = await db
             .from('transmisiones')
-            .select('id, streamer_id, room_name, estado, is_live, precio_acceso')
+            .select('id, streamer_id, room_name, estado, is_live, precio_acceso, grupo_id')
             .eq('id', streamId)
             .maybeSingle();
 
@@ -51,10 +59,11 @@ router.post('/token', verificarToken, async (req, res) => {
         }
 
         const esDueno = stream.streamer_id === user.id;
+        const esCanal = stream.grupo_id != null;
 
-        // ---------- Candado de pago (solo espectadores de lives con precio) ----------
+        // ---------- Candado de pago (solo lives normales con precio) ----------
         const precio = Number(stream.precio_acceso) || 0;
-        if (!esDueno && precio > 0) {
+        if (!esCanal && !esDueno && precio > 0) {
             const { data: pago, error: errPago } = await db
                 .from('pagos_transmision')
                 .select('id')
@@ -78,20 +87,41 @@ router.post('/token', verificarToken, async (req, res) => {
             }
         }
 
-        // ---------- Publicar solo: dueño + rol streamer + Live Pass válido ----------
+        // ---------- Publicar ----------
         let canPublish = false;
         if (req.body?.rol === 'streamer' && esDueno) {
-            const { data: pass, error: passErr } = await db.rpc('puede_transmitir_live', {
-                p_usuario_id: user.id
-            });
-            if (passErr) {
-                logger.error(`[LiveKit] live pass: ${passErr.message}`);
-                return res.status(500).json({ success: false, error: 'live_pass_check' });
+            if (esCanal) {
+                // Canal: sin Live Pass; solo tiempo diario personal
+                const { data: uso, error: errUso } = await db
+                    .from('canal_live_uso')
+                    .select('minutos_usados')
+                    .eq('usuario_id', user.id)
+                    .eq('fecha', fechaHoyMexico())
+                    .maybeSingle();
+
+                if (errUso) {
+                    logger.error(`[LiveKit] canal uso: ${errUso.message}`);
+                    return res.status(500).json({ success: false, error: 'db' });
+                }
+                const restantes = LIMITE_CANAL_MINUTOS - (uso?.minutos_usados || 0);
+                if (restantes <= 0) {
+                    return res.status(403).json({ success: false, error: 'sin_minutos_hoy' });
+                }
+                canPublish = true;
+            } else {
+                // Live normal: Live Pass válido
+                const { data: pass, error: passErr } = await db.rpc('puede_transmitir_live', {
+                    p_usuario_id: user.id
+                });
+                if (passErr) {
+                    logger.error(`[LiveKit] live pass: ${passErr.message}`);
+                    return res.status(500).json({ success: false, error: 'live_pass_check' });
+                }
+                if (pass?.puede !== true) {
+                    return res.status(403).json({ success: false, error: 'live_pass_invalido' });
+                }
+                canPublish = true;
             }
-            if (pass?.puede !== true) {
-                return res.status(403).json({ success: false, error: 'live_pass_invalido' });
-            }
-            canPublish = true;
         }
 
         // ---------- Registrar espectador único (no cuenta al dueño) ----------
@@ -103,7 +133,6 @@ router.post('/token', verificarToken, async (req, res) => {
                     { onConflict: 'transmision_id,usuario_id', ignoreDuplicates: true }
                 );
             if (errEsp) {
-                // No bloquea la entrada: solo afecta el contador de vistas
                 logger.warn(`[LiveKit] registrar espectador: ${errEsp.message}`);
             }
         }
