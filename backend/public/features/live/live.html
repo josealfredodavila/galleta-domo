@@ -5,6 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>◉ Live · Csariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+
+    <!-- ✅ Compuerta de sesión: se ejecuta ANTES de dibujar la página -->
+    <script>
+    (function () {
+        var tieneSesion = false;
+        try {
+            for (var i = 0; i < localStorage.length; i++) {
+                var k = localStorage.key(i);
+                if (k && k.indexOf('sb-') === 0 && k.slice(-11) === '-auth-token') {
+                    tieneSesion = true;
+                    break;
+                }
+            }
+        } catch (e) {}
+        if (!tieneSesion) {
+            window.location.replace('/?returnTo=' + encodeURIComponent(window.location.pathname + window.location.search));
+        } else {
+            document.documentElement.classList.add('gate-ok');
+        }
+    })();
+    </script>
+    <style>
+        html:not(.gate-ok) body { visibility: hidden; }
+    </style>
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -353,6 +378,6 @@
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <script src="/features/shared/js/idiomas.js?v=9" defer></script>
-    <script type="module" src="/features/live/live.js?v=4.0"></script>
+    <script type="module" src="/features/live/live.js?v=4.1"></script>
 </body>
 </html>
