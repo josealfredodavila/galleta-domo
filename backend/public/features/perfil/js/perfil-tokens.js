@@ -1,16 +1,43 @@
 // ================================================================
 // PERFIL · TOKENS / NFT / PRO
 // ================================================================
-// Canjear NFT, estado Pro, contratación de Pro, polling de pago.
+// Canjear NFT, estado Pro, contratación de Pro.
 // Depende de: perfil-config.js, perfil-utils.js
 //
-// CAMBIO v2 (traducciones):
-// - Textos con perfilT(clave, respaldo) y reemplazo de variables
-//   ({precio}, {dias}, {id}).
-// - Las fechas usan el idioma actual en lugar de fijar es-MX.
-// - Se separaron claves que antes compartían el mismo nombre con
-//   textos distintos (por ejemplo, el mensaje de pago).
+// CAMBIO v3 (pago Pro real):
+// - contratarPro llama a /api/payments/membresia/create (membresía),
+//   no a /api/payments (transmisiones), que pedía transmisionId.
+// - El precio se lee de planes_membresia (id 'pro'); ya no se usa
+//   un valor fijo para el cobro.
+// - Se redirige en la misma pestaña (los navegadores móviles
+//   bloquean window.open sin gesto directo).
+// - Se quitó el insert en pagos_pro: el pago vive en pagos_membresia.
 // ================================================================
+
+// ================================================================
+// PRECIO PRO (fuente: planes_membresia)
+// ================================================================
+let proPrecioDB = null;
+
+// Lee el precio actual de Pro desde la base. Si falla, usa el de perfil-config.
+async function cargarPrecioProDB() {
+    try {
+        if (window.supabaseClient) {
+            const { data, error } = await window.supabaseClient
+                .from('planes_membresia')
+                .select('precio_mxn')
+                .eq('id', 'pro')
+                .eq('activo', true)
+                .maybeSingle();
+            if (!error && data && Number.isFinite(Number(data.precio_mxn))) {
+                proPrecioDB = Number(data.precio_mxn);
+            }
+        }
+    } catch (e) {
+        console.warn('[Perfil] No se pudo leer el precio Pro:', e);
+    }
+    return proPrecioDB !== null ? proPrecioDB : PRO_PRECIO_MXN;
+}
 
 // ================================================================
 // TEXTOS CON VARIABLES
@@ -28,7 +55,8 @@ function perfilTConVars(clave, respaldo, vars) {
 
 // Precio de Pro para mostrar en los textos
 function precioProTexto() {
-    return '$' + PRO_PRECIO_MXN + ' MXN';
+    const p = proPrecioDB !== null ? proPrecioDB : PRO_PRECIO_MXN;
+    return '$' + p + ' MXN';
 }
 
 // Código de idioma actual para formatear fechas
@@ -49,6 +77,8 @@ async function cargarEstadoPro() {
         if (!cli()) return;
         const session = await getSession();
         if (!session) return;
+
+        await cargarPrecioProDB();
 
         // 1. Intento con RPC específico
         try {
@@ -147,7 +177,7 @@ function aplicarEstadoProUI(usuario) {
 }
 
 // ================================================================
-// CONTRATAR PRO
+// CONTRATAR PRO (membresía real, con pasarela NOWPayments)
 // ================================================================
 async function contratarPro() {
     try {
@@ -157,7 +187,7 @@ async function contratarPro() {
             return;
         }
 
-        // Verificar si ya es Pro (lectura segura vía RPC)
+        // ¿Ya es Pro?
         let usuario = null;
         try {
             const { data, error } = await window.supabaseClient.rpc('mi_perfil_privado');
@@ -176,80 +206,55 @@ async function contratarPro() {
             return;
         }
 
+        const precio = await cargarPrecioProDB();
+
         const confirmMsg = perfilTConVars(
             'perfil_pro_confirmar',
             "¿Contratar Sariel's Pro por {precio} / {dias} días?",
-            { precio: precioProTexto(), dias: PRO_DURACION_DIAS }
+            { precio: '$' + precio + ' MXN', dias: PRO_DURACION_DIAS }
         );
         if (!confirm(confirmMsg)) return;
 
         showToast('⏳ ' + perfilT('perfil_pro_iniciando', 'Iniciando contratación...'), '', 4000);
 
-        // Crear registro pendiente en pagos_pro
-        let pago = null;
+        // Crear el pago de membresía en el backend (precio leído de la base)
+        let errorMsg = '';
         try {
-            const { data, error } = await window.supabaseClient
-                .from('pagos_pro')
-                .insert({
-                    usuario_id: session.user.id,
-                    plan_id: PRO_PLAN_ID,
-                    monto_mxn: PRO_PRECIO_MXN,
-                    estado: 'pendiente',
-                    metodo_pago: 'por_definir'
-                })
-                .select()
-                .single();
-            if (!error) pago = data;
-        } catch (e) {}
-
-        // Intentar llamar al backend de pagos
-        let pasarelaOk = false;
-        try {
-            const response = await fetch(API_ENDPOINTS.pagos + '/create', {
+            const response = await fetch('/api/payments/membresia/create', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': 'Bearer ' + session.access_token
                 },
-                body: JSON.stringify({
-                    transmisionId: null,
-                    monto: PRO_PRECIO_MXN,
-                    metodo: 'crypto',
-                    tipo: 'membresia_pro',
-                    planId: PRO_PLAN_ID,
-                    monto_mxn: PRO_PRECIO_MXN,
-                    pago_pro_id: pago?.id || null,
-                    idempotency_key: 'pro_' + session.user.id + '_' + Date.now()
-                })
+                body: JSON.stringify({ privacy_version: '1.0' })
             });
-            let result = null;
-            try { result = await response.json(); } catch (e) { result = null; }
 
-            if (response.ok && result && result.success && result.data) {
-                if (result.data.payment_url || result.data.pay_address) {
-                    pasarelaOk = true;
-                    window.open(result.data.payment_url || result.data.pay_address, '_blank');
-                    showToast('💳 ' + perfilT('perfil_pro_completa_pago', 'Completa el pago en la ventana que se abrió'), 'success', 5000);
-                    if (pago?.id) iniciarPollingPagoPro(pago.id);
-                    return;
-                }
-            }
-        } catch (backendError) {}
+            const result = await response.json().catch(() => ({}));
 
-        // Si no hay pasarela, activar directo SOLO si es admin
-        if (!pasarelaOk) {
-            if (perfilCache?.es_admin === true) {
-                const activar = confirm(perfilT(
-                    'perfil_pro_admin_confirm',
-                    'No se pudo conectar con la pasarela de pago. ¿Activar Pro en modo administrador (prueba)?'
-                ));
-                if (activar) await activarProDirecto(session.user.id);
-            } else {
-                showToast(perfilT(
-                    'perfil_pro_sin_pasarela',
-                    '⚠️ No se pudo conectar con la pasarela de pago. Intenta de nuevo en unos minutos.'
-                ), 'warning', 6000);
+            if (response.ok && result.success && result.payment_url) {
+                // Misma pestaña: los navegadores móviles bloquean window.open sin gesto directo
+                window.location.href = result.payment_url;
+                return;
             }
+
+            errorMsg = result.error || ('HTTP ' + response.status);
+        } catch (backendError) {
+            errorMsg = backendError.message || 'Error de red';
+        }
+
+        console.error('[Perfil] Error creando pago Pro:', errorMsg);
+
+        if (perfilCache?.es_admin === true) {
+            const activar = confirm(perfilT(
+                'perfil_pro_admin_confirm',
+                'No se pudo conectar con la pasarela de pago. ¿Activar Pro en modo administrador (prueba)?'
+            ));
+            if (activar) await activarProDirecto(session.user.id);
+        } else {
+            showToast(perfilT(
+                'perfil_pro_sin_pasarela',
+                '⚠️ No se pudo conectar con la pasarela de pago. Intenta de nuevo en unos minutos.'
+            ), 'warning', 6000);
         }
     } catch (error) {
         showToast(perfilT('perfil_error_generico', '❌ Error: ') + msgError(error), 'error');
@@ -282,29 +287,29 @@ async function activarProDirecto(usuarioId) {
 }
 
 // ================================================================
-// POLLING DE PAGO PRO (espera confirmación de la pasarela)
+// POLLING DE PAGO PRO (consulta la membresía real, no pagos_pro)
 // ================================================================
-function iniciarPollingPagoPro(pagoProId) {
-    if (!pagoProId) return;
+function iniciarPollingPagoPro() {
     if (pollingPagoProInterval) clearInterval(pollingPagoProInterval);
     let intentos = 0;
     const maxIntentos = 60;
     pollingPagoProInterval = setInterval(async () => {
         intentos++;
         try {
-            const { data: pago } = await window.supabaseClient
-                .from('pagos_pro')
-                .select('estado')
-                .eq('id', pagoProId)
-                .maybeSingle();
-            if (pago && pago.estado === 'completado') {
-                clearInterval(pollingPagoProInterval);
-                pollingPagoProInterval = null;
-                showToast(perfilT('perfil_pro_pago_confirmado', '🎉 ¡Pago confirmado! Pro activado'), 'success', 5000);
-                crearConfeti();
-                await cargarEstadoPro();
-                await cargarPerfil(true);
-                return;
+            const session = await getSession();
+            if (session) {
+                const { data } = await window.supabaseClient
+                    .rpc('obtener_membresia_usuario', { p_usuario_id: session.user.id });
+                const m = Array.isArray(data) ? data[0] : data;
+                if (m && m.activa) {
+                    clearInterval(pollingPagoProInterval);
+                    pollingPagoProInterval = null;
+                    showToast(perfilT('perfil_pro_pago_confirmado', '🎉 ¡Pago confirmado! Pro activado'), 'success', 5000);
+                    crearConfeti();
+                    await cargarEstadoPro();
+                    await cargarPerfil(true);
+                    return;
+                }
             }
         } catch (e) {}
         if (intentos >= maxIntentos) {
