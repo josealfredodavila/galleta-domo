@@ -5,7 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title data-clave="grupos_titulo_pagina">◈ Canales · Csariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
-    
+
+    <!-- ✅ Compuerta de sesión: se ejecuta ANTES de dibujar la página -->
+    <script>
+    (function () {
+        var tieneSesion = false;
+        try {
+            for (var i = 0; i < localStorage.length; i++) {
+                var k = localStorage.key(i);
+                if (k && k.indexOf('sb-') === 0 && k.slice(-11) === '-auth-token') {
+                    tieneSesion = true;
+                    break;
+                }
+            }
+        } catch (e) {}
+        if (!tieneSesion) {
+            window.location.replace('/?returnTo=' + encodeURIComponent(window.location.pathname + window.location.search));
+        } else {
+            document.documentElement.classList.add('gate-ok');
+        }
+    })();
+    </script>
+    <style>
+        html:not(.gate-ok) body { visibility: hidden; }
+    </style>
+
     <!-- Debug de errores -->
     <script>
     (function(){
@@ -24,13 +48,13 @@
         window.__dbgShow = show;
     })();
     </script>
-    
+
     <!-- Fuentes -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
-    
+
     <!-- Apariencia global -->
     <script src="/features/shared/js/apariencia-global.js"></script>
-    
+
     <!-- CSS del módulo grupos -->
     <link rel="stylesheet" href="/features/grupos/css/grupos.css">
 
@@ -263,9 +287,9 @@
 
             <div style="margin-top: 30px;">
                 <div class="grupos-header">
-                    <h1 data-clave="grupos_channel_directory" style="color: var(--gold) !important; display: inline-flex; align-items: center; gap: 8px;">
+                    <h1 data-no-traducir="1" style="color: var(--gold) !important; display: inline-flex; align-items: center; gap: 8px;">
                         <svg class="icon icon-lg" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/><polygon points="12 7 16 9.5 16 14.5 12 17 8 14.5 8 9.5 12 7"/></svg>
-                        <span>Channel Directory</span>
+                        <span data-no-traducir="1">Channel Directory</span>
                     </h1>
                     <div class="filtros" style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:12px;">
                         <input type="text" id="inputBuscar" data-placeholder="grupos_buscar_placeholder" placeholder="Buscar..." oninput="buscarGruposDebounce()" style="padding:8px 14px; border-radius:20px; font-size:0.7rem; min-width:180px;" />
@@ -637,13 +661,7 @@
                     <p style="color:var(--text-muted);font-size:0.8rem;margin-bottom:12px;">
                         <span data-clave="grupos_apoya_creador">Apoya a</span> <strong id="giftStreamerName" style="color:var(--gold);">el creador</strong> <span data-clave="grupos_con_usdt">con USDT/USDC</span>
                     </p>
-                    <div class="gift-options" id="giftOptions">
-                        <button class="gift-btn" onclick="enviarRegalo(2)"><span class="monto">$2</span><span class="label" data-clave="grupos_basico">Básico</span></button>
-                        <button class="gift-btn" onclick="enviarRegalo(5)"><span class="monto">$5</span><span class="label" data-clave="grupos_plata">Plata</span></button>
-                        <button class="gift-btn" onclick="enviarRegalo(10)"><span class="monto">$10</span><span class="label" data-clave="grupos_oro">Oro</span></button>
-                        <button class="gift-btn" onclick="enviarRegalo(20)" style="border-color:var(--bronze);"><span class="monto" style="color:var(--bronze);">$20</span><span class="label" style="color:var(--bronze-light);" data-clave="grupos_platino">Platino</span></button>
-                        <button class="gift-btn" onclick="enviarRegalo(50)" style="border-color:var(--esmeralda);"><span class="monto" style="color:var(--esmeralda);">$50</span><span class="label" style="color:var(--esmeralda);" data-clave="grupos_esmeralda">Esmeralda</span></button>
-                    </div>
+                    <div class="gift-options" id="giftOptions"></div>
                     <div id="giftStatus" style="margin-top:12px;font-size:0.7rem;color:var(--text-muted);" data-clave="grupos_selecciona_monto">Selecciona un monto para apoyar</div>
                 </div>
             </div>
