@@ -4,7 +4,48 @@
 // Abrir grupo, membresía, feed de publicaciones, interacciones,
 // reportes, etiquetas, comentarios, reacciones y acciones del canal.
 // Depende de: grupos-config.js, grupos-utils.js, grupos-anuncios.js
+//
+// v2 (moderación):
+// - subirFotoGrupo, subirVideoGrupo, cambiarAvatarGrupo y
+//   cambiarPortadaGrupo ya NO suben directo a Supabase Storage.
+// - Ahora llaman a POST /api/media/upload con moderación.
 // ================================================================
+
+// ================================================================
+// HELPER — Subida segura con moderación
+// ================================================================
+async function subirArchivoConModeracionGrupo(archivo, destino, tipo, token) {
+    const fd = new FormData();
+    fd.append('file', archivo);
+    fd.append('destino', destino);
+    fd.append('tipo', tipo);
+
+    const respuesta = await fetch('/api/media/upload', {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Bearer ' + token
+        },
+        body: fd
+    });
+
+    let data = null;
+    try {
+        data = await respuesta.json();
+    } catch (e) {
+        data = {};
+    }
+
+    if (!respuesta.ok || !data.ok) {
+        const mensaje = data && data.error
+            ? data.error
+            : 'No se pudo subir el archivo';
+        const error = new Error(mensaje);
+        error.status = respuesta.status;
+        throw error;
+    }
+
+    return data;
+}
 
 // ================================================================
 // ABRIR GRUPO
@@ -813,6 +854,9 @@ async function publicarEnGrupo() {
     }
 }
 
+// ================================================================
+// SUBIR FOTO DE GRUPO — con moderación
+// ================================================================
 async function subirFotoGrupo() {
     if (!sessionUser) { grpShowToast('Inicia sesión', 'error'); return; }
     if (!grupoActualId) { grpShowToast('No hay canal', 'error'); return; }
@@ -824,22 +868,24 @@ async function subirFotoGrupo() {
     input.onchange = async function(e) {
         var file = e.target.files[0];
         if (!file) return;
-        if (file.size > 10 * 1024 * 1024) { grpShowToast('Imagen > 10MB', 'error'); return; }
+        if (file.size > 5 * 1024 * 1024) { grpShowToast('Imagen > 5 MB', 'error'); return; }
         grpShowToast('Subiendo imagen...', '');
         try {
-            var fileExt = file.name.split('.').pop();
-            var filePath = grupoActualId + '/' + sessionUser.id + '/' + Date.now() + '.' + fileExt;
-            var uploadResult = await window.supabaseClient.storage
-                .from('grupos-publicaciones')
-                .upload(filePath, file, { cacheControl: '3600', upsert: true });
-            if (uploadResult.error) throw uploadResult.error;
-            var urlData = window.supabaseClient.storage
-                .from('grupos-publicaciones')
-                .getPublicUrl(filePath);
+            var session = await window.supabaseClient.auth.getSession();
+            var token = session && session.data && session.data.session && session.data.session.access_token;
+            if (!token) throw new Error('Sesión no disponible');
+
+            var subida = await subirArchivoConModeracionGrupo(
+                file,
+                'grupos-publicaciones',
+                'imagen',
+                token
+            );
+
             var result = await window.supabaseClient.from('grupos_video_publicaciones').insert({
                 grupo_id: grupoActualId,
                 usuario_id: sessionUser.id,
-                imagen_url: urlData.data.publicUrl,
+                imagen_url: subida.url,
                 tipo: 'imagen',
                 estado: 'publicado'
             }).select().single();
@@ -847,12 +893,16 @@ async function subirFotoGrupo() {
             grpShowToast('Foto publicada', 'success');
             await cargarPublicacionesGrupo(grupoActualId);
         } catch (error) {
-            grpShowToast('Error: ' + error.message, 'error');
+            var msg = error && error.message ? error.message : 'Error';
+            grpShowToast('Error: ' + msg, 'error');
         }
     };
     input.click();
 }
 
+// ================================================================
+// SUBIR VIDEO DE GRUPO — con moderación
+// ================================================================
 async function subirVideoGrupo() {
     if (!sessionUser) { grpShowToast('Inicia sesión', 'error'); return; }
     if (!grupoActualId) { grpShowToast('No hay canal', 'error'); return; }
@@ -864,22 +914,24 @@ async function subirVideoGrupo() {
     input.onchange = async function(e) {
         var file = e.target.files[0];
         if (!file) return;
-        if (file.size > 100 * 1024 * 1024) { grpShowToast('Video > 100MB', 'error'); return; }
+        if (file.size > 100 * 1024 * 1024) { grpShowToast('Video > 100 MB', 'error'); return; }
         grpShowToast('Subiendo video...', '');
         try {
-            var fileExt = file.name.split('.').pop();
-            var filePath = grupoActualId + '/' + sessionUser.id + '/' + Date.now() + '.' + fileExt;
-            var uploadResult = await window.supabaseClient.storage
-                .from('grupos-publicaciones')
-                .upload(filePath, file, { cacheControl: '3600', upsert: true });
-            if (uploadResult.error) throw uploadResult.error;
-            var urlData = window.supabaseClient.storage
-                .from('grupos-publicaciones')
-                .getPublicUrl(filePath);
+            var session = await window.supabaseClient.auth.getSession();
+            var token = session && session.data && session.data.session && session.data.session.access_token;
+            if (!token) throw new Error('Sesión no disponible');
+
+            var subida = await subirArchivoConModeracionGrupo(
+                file,
+                'grupos-publicaciones',
+                'video',
+                token
+            );
+
             var result = await window.supabaseClient.from('grupos_video_publicaciones').insert({
                 grupo_id: grupoActualId,
                 usuario_id: sessionUser.id,
-                video_url: urlData.data.publicUrl,
+                video_url: subida.url,
                 tipo: 'video',
                 estado: 'publicado'
             }).select().single();
@@ -887,7 +939,8 @@ async function subirVideoGrupo() {
             grpShowToast('Video publicado', 'success');
             await cargarPublicacionesGrupo(grupoActualId);
         } catch (error) {
-            grpShowToast('Error: ' + error.message, 'error');
+            var msg = error && error.message ? error.message : 'Error';
+            grpShowToast('Error: ' + msg, 'error');
         }
     };
     input.click();
@@ -1080,7 +1133,7 @@ function cerrarAjustesCanal() {
 }
 
 // ================================================================
-// CAMBIAR AVATAR / PORTADA DEL CANAL
+// CAMBIAR AVATAR DEL CANAL — con moderación
 // ================================================================
 async function cambiarAvatarGrupo() {
     cerrarAjustesCanal();
@@ -1093,32 +1146,39 @@ async function cambiarAvatarGrupo() {
     input.onchange = async function(e) {
         var file = e.target.files[0];
         if (!file) return;
-        if (file.size > 5 * 1024 * 1024) { grpShowToast('Imagen > 5MB', 'error'); return; }
+        if (file.size > 5 * 1024 * 1024) { grpShowToast('Imagen > 5 MB', 'error'); return; }
         grpShowToast('Subiendo avatar...', '');
         try {
-            var fileExt = file.name.split('.').pop();
-            var filePath = `avatares/${grupoActualId}/${Date.now()}.${fileExt}`;
-            var uploadResult = await window.supabaseClient.storage
-                .from('grupos-publicaciones')
-                .upload(filePath, file, { cacheControl: '3600', upsert: true });
-            if (uploadResult.error) throw uploadResult.error;
-            var urlData = window.supabaseClient.storage
-                .from('grupos-publicaciones')
-                .getPublicUrl(filePath);
+            var session = await window.supabaseClient.auth.getSession();
+            var token = session && session.data && session.data.session && session.data.session.access_token;
+            if (!token) throw new Error('Sesión no disponible');
+
+            var subida = await subirArchivoConModeracionGrupo(
+                file,
+                'grupos-publicaciones',
+                'imagen',
+                token
+            );
+
             var updateResult = await window.supabaseClient
                 .from('grupos_video')
-                .update({ avatar_url: urlData.data.publicUrl })
+                .update({ avatar_url: subida.url })
                 .eq('id', grupoActualId);
             if (updateResult.error) throw updateResult.error;
-            document.getElementById('grupoAvatar').innerHTML = '<img src="' + grpEscapeHTML(grpSafeUrl(urlData.data.publicUrl)) + '">';
+
+            document.getElementById('grupoAvatar').innerHTML = '<img src="' + grpEscapeHTML(grpSafeUrl(subida.url)) + '">';
             grpShowToast('Foto actualizada', 'success');
         } catch (error) {
-            grpShowToast('Error: ' + error.message, 'error');
+            var msg = error && error.message ? error.message : 'Error';
+            grpShowToast('Error: ' + msg, 'error');
         }
     };
     input.click();
 }
 
+// ================================================================
+// CAMBIAR PORTADA DEL CANAL — con moderación
+// ================================================================
 async function cambiarPortadaGrupo() {
     cerrarAjustesCanal();
     if (!sessionUser || !grupoActualId) { grpShowToast('Error de sesión', 'error'); return; }
@@ -1130,33 +1190,39 @@ async function cambiarPortadaGrupo() {
     input.onchange = async function(e) {
         var file = e.target.files[0];
         if (!file) return;
-        if (file.size > 20 * 1024 * 1024) { grpShowToast('Archivo > 20MB', 'error'); return; }
+        if (file.size > 20 * 1024 * 1024) { grpShowToast('Archivo > 20 MB', 'error'); return; }
         grpShowToast('Subiendo portada...', '');
         try {
-            var fileExt = file.name.split('.').pop();
-            var filePath = `portadas/${grupoActualId}/${Date.now()}.${fileExt}`;
-            var uploadResult = await window.supabaseClient.storage
-                .from('grupos-publicaciones')
-                .upload(filePath, file, { cacheControl: '3600', upsert: true });
-            if (uploadResult.error) throw uploadResult.error;
-            var urlData = window.supabaseClient.storage
-                .from('grupos-publicaciones')
-                .getPublicUrl(filePath);
+            var session = await window.supabaseClient.auth.getSession();
+            var token = session && session.data && session.data.session && session.data.session.access_token;
+            if (!token) throw new Error('Sesión no disponible');
+
+            var tipo = file.type.startsWith('video/') ? 'video' : 'imagen';
+
+            var subida = await subirArchivoConModeracionGrupo(
+                file,
+                'grupos-publicaciones',
+                tipo,
+                token
+            );
+
             var updateResult = await window.supabaseClient
                 .from('grupos_video')
-                .update({ portada_url: urlData.data.publicUrl })
+                .update({ portada_url: subida.url })
                 .eq('id', grupoActualId);
             if (updateResult.error) throw updateResult.error;
+
             var portadaEl = document.getElementById('grupoPortada');
-            var safePortada = grpSafeUrl(urlData.data.publicUrl);
-            if (file.type.startsWith('video/')) {
+            var safePortada = grpSafeUrl(subida.url);
+            if (tipo === 'video') {
                 portadaEl.innerHTML = `<video src="${grpEscapeHTML(safePortada)}" autoplay loop muted playsinline style="width:100%; height:100%; object-fit:cover;"></video>`;
             } else {
                 portadaEl.innerHTML = `<img src="${grpEscapeHTML(safePortada)}" style="width:100%; height:100%; object-fit:cover;">`;
             }
             grpShowToast('Portada actualizada', 'success');
         } catch (error) {
-            grpShowToast('Error: ' + error.message, 'error');
+            var msg = error && error.message ? error.message : 'Error';
+            grpShowToast('Error: ' + msg, 'error');
         }
     };
     input.click();
