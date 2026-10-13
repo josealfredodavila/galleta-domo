@@ -3,9 +3,8 @@
 //   POST /api/livekit/token   → token para unirse a una sala
 //   GET  /api/livekit/streams → transmisiones activas (columnas públicas)
 // La sala y el permiso de publicar los decide SIEMPRE el servidor.
-// v2: los lives son gratis por defecto. Si el live tiene precio de
-//     acceso mayor a 0, el espectador debe tener un pago confirmado
-//     (pagos_transmision.estado = 'pagado') o recibe 402.
+// v3: registra cada espectador único en live_espectadores (vistas reales).
+//     Los lives de pago exigen un pago confirmado (402 si no lo tiene).
 // ================================================================
 
 const express = require('express');
@@ -93,6 +92,20 @@ router.post('/token', verificarToken, async (req, res) => {
                 return res.status(403).json({ success: false, error: 'live_pass_invalido' });
             }
             canPublish = true;
+        }
+
+        // ---------- Registrar espectador único (no cuenta al dueño) ----------
+        if (!esDueno) {
+            const { error: errEsp } = await db
+                .from('live_espectadores')
+                .upsert(
+                    { transmision_id: stream.id, usuario_id: user.id },
+                    { onConflict: 'transmision_id,usuario_id', ignoreDuplicates: true }
+                );
+            if (errEsp) {
+                // No bloquea la entrada: solo afecta el contador de vistas
+                logger.warn(`[LiveKit] registrar espectador: ${errEsp.message}`);
+            }
         }
 
         // Nombre visible desde la tabla de perfiles, no desde metadatos editables
