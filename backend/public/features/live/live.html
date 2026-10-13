@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     <script src="/features/shared/js/auth-global.js"></script>
     <script src="/features/shared/js/presencia-global.js" defer></script>
     <script src="/features/shared/js/apariencia-global.js?v=7" defer></script>
@@ -56,6 +57,13 @@
         .btn-outline { background: transparent; color: var(--text-secondary); border: 1px solid var(--glass-border); }
         .btn-outline:hover { border-color: var(--gold); color: var(--gold); background: rgba(212, 175, 55, 0.05); }
         .btn-sm { padding: 4px 12px; font-size: 0.65rem; }
+
+        /* Métricas del live (header) */
+        .live-metricas { display: none; gap: 8px; flex-wrap: wrap; margin: 0 0 16px; }
+        .metrica { flex: 1 1 130px; min-width: 120px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px; padding: 12px 14px; text-align: center; backdrop-filter: blur(12px); }
+        .metrica-valor { display: block; font-family: 'Orbitron', monospace; font-size: 1rem; font-weight: 700; color: var(--gold); word-break: break-word; }
+        .metrica-label { display: block; font-size: 0.55rem; color: var(--text-muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.8px; }
+
         .live-video-container { position: relative; width: 100%; height: 75vh; min-height: 450px; max-height: 85vh; background: #000; border-radius: var(--radius-xl); overflow: hidden; margin-bottom: 16px; border: 1px solid var(--glass-border); box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
         .live-video-container video { width: 100%; height: 100%; object-fit: cover; background: #000; }
         .live-overlay-top { position: absolute; top: 0; left: 0; right: 0; padding: 16px 20px; background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 100%); z-index: 5; display: flex; justify-content: space-between; align-items: flex-start; }
@@ -157,7 +165,7 @@
         .footer-links a { color: var(--text-muted); text-decoration: none; }
         .footer-links a:hover { color: var(--gold); }
         .livepass-modal-backdrop { position: fixed; inset: 0; z-index: 10001; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(0,0,0,.9); backdrop-filter: blur(14px); }
-        .livepass-modal { width: min(440px, 100%); background: linear-gradient(160deg, rgba(15,45,26,.98), rgba(5,8,15,.98)); border: 2px solid var(--gold); border-radius: 28px; padding: 32px 24px; box-shadow: 0 20px 80px rgba(0,0,0,.7), 0 0 80px rgba(212,175,55,.25); text-align: center; }
+        .livepass-modal { width: min(440px, 100%); max-height: 92vh; overflow-y: auto; background: linear-gradient(160deg, rgba(15,45,26,.98), rgba(5,8,15,.98)); border: 2px solid var(--gold); border-radius: 28px; padding: 32px 24px; box-shadow: 0 20px 80px rgba(0,0,0,.7), 0 0 80px rgba(212,175,55,.25); text-align: center; }
         .livepass-modal-icon { font-size: 4rem; display: block; margin-bottom: 12px; }
         .livepass-modal-title { font-family: 'Orbitron', monospace; font-size: 1.3rem; font-weight: 900; color: var(--gold); letter-spacing: 1.5px; margin-bottom: 10px; }
         .livepass-modal-text { color: var(--text-secondary); font-size: 0.85rem; line-height: 1.6; margin-bottom: 22px; }
@@ -167,6 +175,7 @@
         .livepass-modal-actions { display: flex; flex-direction: column; gap: 10px; }
         .livepass-modal-btn-primary { padding: 14px 24px; border-radius: 30px; border: none; background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); font-family: 'Inter', sans-serif; font-size: 0.9rem; font-weight: 700; cursor: pointer; }
         .livepass-modal-btn-secondary { padding: 12px 24px; border-radius: 30px; border: 1px solid var(--glass-border); background: transparent; color: var(--text-muted); font-family: 'Inter', sans-serif; font-size: 0.8rem; cursor: pointer; }
+        .deposito-box { font-family: monospace; font-size: .75rem; word-break: break-all; background: rgba(0,0,0,.5); border: 1px solid var(--glass-border); border-radius: 12px; padding: 10px; margin: 10px 0; color: var(--text-primary); text-align: left; }
         .game-modal-backdrop { position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(0,0,0,.85); backdrop-filter: blur(12px); }
         .game-modal { width: min(680px, 100%); max-height: min(88vh, 720px); overflow-y: auto; background: linear-gradient(160deg, rgba(15,45,26,.98), rgba(5,8,15,.98)); border: 1px solid var(--gold); border-radius: 28px; padding: 24px; }
         .game-modal-header { display: flex; justify-content: space-between; margin-bottom: 18px; }
@@ -219,6 +228,15 @@
                     <button class="btn btn-outline btn-sm" data-action="mi-livepass">◆ Mi Live Pass</button>
                 </div>
             </div>
+
+            <div class="live-metricas" id="liveMetricas" aria-label="Métricas del live">
+                <div class="metrica"><span class="metrica-valor" id="metSeguidores">0</span><span class="metrica-label">Seguidores</span></div>
+                <div class="metrica"><span class="metrica-valor" id="metEspectadores">0</span><span class="metrica-label">Espectadores ahora</span></div>
+                <div class="metrica"><span class="metrica-valor" id="metVistas">0</span><span class="metrica-label">Vistas del live</span></div>
+                <div class="metrica"><span class="metrica-valor" id="metDonaciones">$0.00</span><span class="metrica-label">Donaciones (USD)</span></div>
+                <div class="metrica"><span class="metrica-valor" id="metPrecio">Gratis</span><span class="metrica-label">Acceso</span></div>
+            </div>
+
             <div class="live-video-container" id="liveVideoContainer">
                 <video id="liveVideo" autoplay playsinline muted></video>
                 <div class="live-overlay-top">
@@ -335,6 +353,6 @@
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <script src="/features/shared/js/idiomas.js?v=9" defer></script>
-    <script type="module" src="/features/live/live.js?v=3.4"></script>
+    <script type="module" src="/features/live/live.js?v=4.0"></script>
 </body>
 </html>
