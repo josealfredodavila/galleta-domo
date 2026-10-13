@@ -4,6 +4,11 @@
 // Cargar/actualizar perfil, contadores sociales, avatar, guardar.
 // Depende de: perfil-config.js, perfil-utils.js
 //
+// CAMBIO v5 (moderación):
+// - subirFoto() y subirVideo() ya NO suben directo a Supabase Storage.
+// - Ahora llaman a POST /api/media/upload con multipart/form-data.
+// - El backend modera con AWS Rekognition antes de guardar.
+//
 // CAMBIO v4 (robustez del arranque):
 // - Los auxiliares (conexión, amigos, historialQR, Pro, contadores)
 //   se llaman por separado con su propio catch. Si uno falla, ya no
@@ -18,6 +23,42 @@
 // CAMBIO v2 (traducciones):
 // - Todos los textos visibles y mensajes usan perfilT(clave, respaldo).
 // ================================================================
+
+// ================================================================
+// HELPER — Subida segura con moderación
+// ================================================================
+async function subirArchivoConModeracion(archivo, destino, tipo, token) {
+    const fd = new FormData();
+    fd.append('file', archivo);
+    fd.append('destino', destino);
+    fd.append('tipo', tipo);
+
+    const respuesta = await fetch('/api/media/upload', {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Bearer ' + token
+        },
+        body: fd
+    });
+
+    let data = null;
+    try {
+        data = await respuesta.json();
+    } catch (e) {
+        data = {};
+    }
+
+    if (!respuesta.ok || !data.ok) {
+        const mensaje = data && data.error
+            ? data.error
+            : 'No se pudo subir el archivo';
+        const error = new Error(mensaje);
+        error.status = respuesta.status;
+        throw error;
+    }
+
+    return data;
+}
 
 // ================================================================
 // PERFIL DE RESPALDO (si no hay fila en usuarios)
@@ -87,7 +128,6 @@ async function cargarPerfil(forzarActualizacion = false) {
         }
 
         // 2) Auxiliares: cada uno con su propio catch.
-        //    Si uno falla, no tumba al resto ni dispara el toast rojo.
         try { cargarEstadoConexion(); }
         catch (e) { console.warn('[Perfil] conexión:', e); }
 
@@ -111,8 +151,6 @@ async function cargarPerfil(forzarActualizacion = false) {
         }
     } catch (error) {
         console.error('[Perfil] cargarPerfil:', error && (error.message || error));
-        // Solo mostramos el toast si el fallo fue en el corazón del perfil,
-        // no en un auxiliar. Para no asustar al usuario con errores menores.
         if (!perfilCache) {
             showToast(perfilT('perfil_toast_error_cargar', '❌ Error al cargar perfil'), 'error');
         }
@@ -225,7 +263,6 @@ function actualizarUI(data) {
         }
     }
 
-    // Estas funciones viven en otros módulos: se llaman solo si existen
     if (typeof actualizarUIConexion === 'function') {
         actualizarUIConexion(typeof estadoConexion !== 'undefined' ? estadoConexion : null);
     }
@@ -426,7 +463,7 @@ function expandirFotoPublicacion(src) {
 }
 
 // ================================================================
-// SUBIR FOTO DE PERFIL
+// SUBIR FOTO DE PERFIL — con moderación
 // ================================================================
 async function subirFoto(event) {
     const file = event.target.files[0];
@@ -441,33 +478,41 @@ async function subirFoto(event) {
         event.target.value = '';
         return;
     }
-    if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) {
-        showToast(perfilT('perfil_foto_tipo', '❌ Solo JPG/PNG/WEBP/GIF'), 'error');
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+        showToast(perfilT('perfil_foto_tipo', '❌ Solo JPG/PNG/WEBP'), 'error');
         event.target.value = '';
         return;
     }
-    const fileExt = file.name.split('.').pop().toLowerCase();
-    const filePath = session.user.id + '/avatar.' + fileExt;
+
     try {
         showToast(perfilT('perfil_foto_subiendo', '⏳ Subiendo foto...'), '', 5000);
-        const { error: uploadError } = await window.supabaseClient.storage
-            .from('sariels-avatars')
-            .upload(filePath, file, { upsert: true, contentType: file.type });
-        if (uploadError) throw uploadError;
-        const { data: urlData } = window.supabaseClient.storage
-            .from('sariels-avatars')
-            .getPublicUrl(filePath);
-        const publicUrl = urlData.publicUrl + '?t=' + Date.now();
+
+        const token = session.access_token;
+        const resultado = await subirArchivoConModeracion(
+            file,
+            'sariels-avatars',
+            'imagen',
+            token
+        );
+
+        // Agregar cache-buster para que el navegador no muestre la foto vieja
+        const publicUrl = resultado.url + '?t=' + Date.now();
+
         const { error: updateError } = await window.supabaseClient
             .from('usuarios')
             .update({ avatar_url: publicUrl })
             .eq('id', session.user.id);
+
         if (updateError) throw updateError;
+
         showToast(perfilT('perfil_foto_actualizada', '✅ Foto actualizada'), 'success');
         event.target.value = '';
         await cargarPerfil(true);
     } catch (error) {
-        showToast(perfilT('perfil_error_subir', '❌ Error al subir: ') + msgError(error), 'error');
+        const mensaje = error && error.message
+            ? error.message
+            : perfilT('perfil_error_subir', 'Error al subir');
+        showToast('❌ ' + mensaje, 'error');
     }
 }
 
@@ -501,7 +546,7 @@ async function eliminarFotoPerfil() {
 }
 
 // ================================================================
-// SUBIR VIDEO (para publicaciones)
+// SUBIR VIDEO (para publicaciones) — con moderación
 // ================================================================
 async function subirVideo(event) {
     const file = event.target.files[0];
@@ -516,27 +561,31 @@ async function subirVideo(event) {
         event.target.value = '';
         return;
     }
-    if (file.size > 50 * 1024 * 1024) {
-        showToast(perfilT('perfil_video_max', '❌ Máximo 50 MB'), 'error');
+    if (file.size > 100 * 1024 * 1024) {
+        showToast(perfilT('perfil_video_max', '❌ Máximo 100 MB'), 'error');
         event.target.value = '';
         return;
     }
+
     try {
         showToast(perfilT('perfil_video_subiendo', '⏳ Subiendo video...'), '', 15000);
-        const fileExt = file.name.split('.').pop().toLowerCase();
-        const filePath = session.user.id + '/video_' + Date.now() + '.' + fileExt;
-        const { error: uploadError } = await window.supabaseClient.storage
-            .from('muro-videos')
-            .upload(filePath, file, { cacheControl: '3600', upsert: false, contentType: file.type });
-        if (uploadError) throw uploadError;
-        const { data: urlData } = window.supabaseClient.storage
-            .from('muro-videos')
-            .getPublicUrl(filePath);
+
+        const token = session.access_token;
+        const resultado = await subirArchivoConModeracion(
+            file,
+            'muro-videos',
+            'video',
+            token
+        );
+
         showToast(perfilT('perfil_video_subido', '✅ Video subido'), 'success');
         event.target.value = '';
-        return urlData.publicUrl;
+        return resultado.url;
     } catch (error) {
-        showToast(perfilT('perfil_error_generico', '❌ Error: ') + msgError(error), 'error');
+        const mensaje = error && error.message
+            ? error.message
+            : perfilT('perfil_error_generico', 'Error');
+        showToast('❌ ' + mensaje, 'error');
     }
 }
 
