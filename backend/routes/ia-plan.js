@@ -1,20 +1,17 @@
 /* ================================================================
-   routes/ia-plan.js - ENDPOINTS DE PLANES IA (v1.3)
+   routes/ia-plan.js - ENDPOINTS DE PLANES IA (v1.4)
    ================================================================
    Endpoints:
    - GET  /api/ai/plan/catalogo   → lista planes pagados disponibles
    - GET  /api/ai/plan            → plan vigente del usuario + uso
-   - POST /api/ai/plan/checkout   → crea pedido + factura NOWPayments
+   - POST /api/ai/plan/checkout   → crea pedido + pago directo NOWPayments
    - POST /api/ai/plan/cancelar   → cancela el plan al final del periodo
 
+   v1.4: el checkout usa /v1/payment (pago directo) en lugar de
+         /v1/invoice. La página de NOWPayments muestra de inmediato
+         monto en USDT, red TRX, dirección y QR.
+
    FASE 1: solo NOWPayments. Stripe se rechaza con 400.
-
-   v1.3: huella anti-abuso conectada (HUELLA_PEPPER) en GET /, /checkout y /cancelar.
-         Diagnóstico del feature flag IA_CHECKOUT_ENABLED (sin exponer el valor).
-
-   NO TOCA: payments.js, pay/*, membresia.js,
-   membresia-webhook-handler.js, livepass-webhook-handler.js,
-   telnyx.js, server.js.
 ================================================================ */
 
 'use strict';
@@ -37,8 +34,12 @@ if (!process.env.HUELLA_PEPPER) {
     throw new Error('Falta la variable HUELLA_PEPPER');
 }
 
-const NOWPAYMENTS_URL = 'https://api.nowpayments.io/v1/invoice';
+const NOWPAYMENTS_PAGO_URL = 'https://api.nowpayments.io/v1/payment';
 const NOWPAYMENTS_TIMEOUT_MS = 15000;
+
+// Página hosted de NOWPayments: muestra monto, red, dirección y QR
+const urlPaginaPago = (paymentId) =>
+    `https://nowpayments.io/payment/?iid=${encodeURIComponent(paymentId)}`;
 
 const PLANES_PAGO = ['ia_basico', 'ia_pro', 'ia_premium'];
 const RANGO_PLAN = { ia_basico: 1, ia_pro: 2, ia_premium: 3 };
@@ -90,9 +91,6 @@ function huellaDeUsuario(usuario) {
 
 /* ================================================================
    GET /api/ai/plan/catalogo
-   ----------------------------------------------------------------
-   Lista los planes pagados disponibles.
-   NO devuelve datos del usuario.
 ================================================================ */
 
 router.get('/catalogo', verificarToken, async (req, res) => {
@@ -118,15 +116,12 @@ router.get('/catalogo', verificarToken, async (req, res) => {
 
 /* ================================================================
    GET /api/ai/plan
-   ----------------------------------------------------------------
-   Plan vigente del usuario + contadores de uso.
 ================================================================ */
 
 router.get('/', verificarToken, async (req, res) => {
     try {
         const usuarioId = req.usuario.id;
 
-        // 1. Plan vigente (crea la prueba o el plan gratis si hace falta)
         const { data: planRows, error: errPlan } = await supabase.rpc(
             'obtener_plan_usuario',
             { p_usuario: usuarioId, p_huella: huellaDeUsuario(req.usuario) }
@@ -143,7 +138,6 @@ router.get('/', verificarToken, async (req, res) => {
             return err(res, 404, 'No se encontró un plan para este usuario.');
         }
 
-        // 2. Detalles del plan (nombre, personajes, cuotas)
         const { data: detalles, error: errDet } = await supabase
             .from('ai_planes_limites')
             .select('nombre, personajes, mensajes_max, tavily_max, perplexity_max')
@@ -155,21 +149,18 @@ router.get('/', verificarToken, async (req, res) => {
             return err(res, 500, 'No se pudo cargar tu plan.');
         }
 
-        // 3. Días restantes
         let diasRestantes = null;
         if (planRow.fin) {
             const ms = new Date(planRow.fin).getTime() - Date.now();
             diasRestantes = Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
         }
 
-        // 4. Cancelada
         const { data: periodo } = await supabase
             .from('usuarios_planes')
             .select('cancelada_at')
             .eq('id', planRow.periodo_id)
             .maybeSingle();
 
-        // 5. Contadores del periodo vigente
         const { data: contadores } = await supabase
             .from('ai_contadores_uso')
             .select('tipo, usados')
@@ -211,7 +202,6 @@ router.get('/', verificarToken, async (req, res) => {
 
 /* ================================================================
    POST /api/ai/plan/checkout
-   ----------------------------------------------------------------
    Body: { plan, proveedor }
    FASE 1: solo proveedor 'nowpayments'.
 ================================================================ */
@@ -227,7 +217,7 @@ router.post('/checkout', verificarToken, limitadorPagos, async (req, res) => {
             return err(res, 503, 'El sistema de pagos aún no está disponible.');
         }
 
-        // 0b. Configuración obligatoria: sin estas variables la factura saldría mal
+        // 0b. Configuración obligatoria
         const faltan = ['NOWPAYMENTS_API_KEY', 'IA_WEBHOOK_BASE_URL', 'PUBLIC_URL']
             .filter((v) => !process.env[v]);
         if (faltan.length) {
@@ -248,7 +238,7 @@ router.post('/checkout', verificarToken, limitadorPagos, async (req, res) => {
             return err(res, 400, 'Plan inválido.');
         }
 
-        // 3. Leer precio y verificar que el plan exista y esté activo
+        // 3. Precio desde la base
         const { data: planDb, error: errPlan } = await supabase
             .from('ai_planes_limites')
             .select('plan, nombre, precio_mxn, activo')
@@ -304,20 +294,18 @@ router.post('/checkout', verificarToken, limitadorPagos, async (req, res) => {
             return err(res, 500, 'No se pudo crear el pedido.');
         }
 
-        // 6. Crear factura en NOWPayments
-        let factura;
+        // 6. Crear el pago directo en NOWPayments
+        let pago;
         try {
             const respuesta = await axios.post(
-                NOWPAYMENTS_URL,
+                NOWPAYMENTS_PAGO_URL,
                 {
                     price_amount: montoMxn,
                     price_currency: 'mxn',
                     pay_currency: 'usdttrc20',
                     order_id: pedido.id,
                     order_description: `Plan ${planDb.nombre}`,
-                    ipn_callback_url: `${process.env.IA_WEBHOOK_BASE_URL}/api/webhooks/ia/nowpayments`,
-                    success_url: `${process.env.PUBLIC_URL}/features/perfil/configuracion/mascotas/plan.html?pago=ok`,
-                    cancel_url: `${process.env.PUBLIC_URL}/features/perfil/configuracion/mascotas/plan.html?pago=cancelado`
+                    ipn_callback_url: `${process.env.IA_WEBHOOK_BASE_URL}/api/webhooks/ia/nowpayments`
                 },
                 {
                     headers: {
@@ -328,7 +316,7 @@ router.post('/checkout', verificarToken, limitadorPagos, async (req, res) => {
                 }
             );
 
-            factura = respuesta.data;
+            pago = respuesta.data;
         } catch (e) {
             log('checkout_nowpayments_error', {
                 status: e.response?.status,
@@ -343,7 +331,7 @@ router.post('/checkout', verificarToken, limitadorPagos, async (req, res) => {
             return err(res, 502, 'No fue posible iniciar el pago.');
         }
 
-        if (!factura || !factura.invoice_url || !factura.id) {
+        if (!pago || !pago.payment_id || !pago.pay_address) {
             log('checkout_nowpayments_respuesta_invalida');
 
             await supabase
@@ -354,10 +342,10 @@ router.post('/checkout', verificarToken, limitadorPagos, async (req, res) => {
             return err(res, 502, 'No fue posible iniciar el pago.');
         }
 
-        // 7. Guardar proveedor_ref
+        // 7. Guardar la referencia del pago
         const { error: errUpdate } = await supabase
             .from('ai_pedidos_pago')
-            .update({ proveedor_ref: String(factura.id) })
+            .update({ proveedor_ref: String(pago.payment_id) })
             .eq('id', pedido.id);
 
         if (errUpdate) {
@@ -374,7 +362,7 @@ router.post('/checkout', verificarToken, limitadorPagos, async (req, res) => {
             success: true,
             data: {
                 pedido_id: pedido.id,
-                url: factura.invoice_url
+                url: urlPaginaPago(pago.payment_id)
             }
         });
 
@@ -386,7 +374,6 @@ router.post('/checkout', verificarToken, limitadorPagos, async (req, res) => {
 
 /* ================================================================
    POST /api/ai/plan/cancelar
-   ----------------------------------------------------------------
    Marca cancelada_at. El usuario conserva acceso hasta fecha_fin.
    NO llama a NOWPayments (no hay suscripciones).
 ================================================================ */
@@ -408,7 +395,6 @@ router.post('/cancelar', verificarToken, async (req, res) => {
             return err(res, 404, 'No tienes un plan de pago activo para cancelar.');
         }
 
-        // Fecha de fin del periodo vigente
         const { data: planRows } = await supabase.rpc('obtener_plan_usuario', {
             p_usuario: usuarioId,
             p_huella: huellaDeUsuario(req.usuario)
