@@ -1,19 +1,15 @@
-/* ================================================================
-   NOWPAYMENTS IPN — backend/routes/webhooks/nowpayments.js
-   Un solo endpoint, tres flujos según order_id:
-     - "LP-..."   → Live Pass           (confirmar_live_pass_ipn)
-     - "DON-<id>" → donaciones de Live  (confirmar_donacion_live)
-     - resto      → membresías Mercado  (confirmar_pago_membresia)
-   Toda la lógica crítica vive en funciones SQL atómicas.
-   200 = procesado o no reintentable. 500 = NOWPayments reintenta.
-   ================================================================ */
+// ================================================================
+// ROUTES/WEBHOOKS/NOWPAYMENTS.JS — Csariel's
+// Handlers de IPN para: Live Pass (LP-), donaciones (DON-) y membresía
+// de Mercado (resto). NO define router: lo usa routes/webhooks.js, que
+// ya verificó la firma.
+// Toda la lógica crítica vive en funciones SQL atómicas.
+// 200 = procesado o no reintentable. 500 = NOWPayments reintenta.
+// ================================================================
 
-const express = require('express');
-const router = express.Router();
+'use strict';
+
 const { supabaseAdmin } = require('../../config/supabase');
-const { verificarFirmaNowPayments } = require('../../utils/nowpayments-sig');
-
-const NOWPAYMENTS_IPN_SECRET = process.env.NOWPAYMENTS_IPN_SECRET;
 
 const ESTADOS_FALLIDOS = ['failed', 'refunded', 'expired', 'canceled', 'cancelled'];
 const MAPA_FALLIDO = {
@@ -28,42 +24,8 @@ const log = (...args) => console.log('[NOWPayments]', ...args);
 const logError = (...args) => console.error('[NOWPayments ERROR]', ...args);
 
 // ================================================================
-// POST /  (montado en /api/webhook/nowpayments)
-// ================================================================
-router.post('/', async (req, res) => {
-    try {
-        if (!supabaseAdmin) {
-            logError('supabaseAdmin no configurado');
-            return res.status(500).json({ ok: false, error: 'config' });
-        }
-        if (!NOWPAYMENTS_IPN_SECRET) {
-            logError('NOWPAYMENTS_IPN_SECRET ausente');
-            return res.status(500).json({ ok: false, error: 'config' });
-        }
-
-        const firma = req.headers['x-nowpayments-sig'];
-        if (!verificarFirmaNowPayments(req.body, req.rawBody, firma, NOWPAYMENTS_IPN_SECRET)) {
-            logError('Firma inválida, solicitud rechazada');
-            return res.status(401).json({ ok: false, error: 'firma' });
-        }
-
-        const data = req.body || {};
-        const npStatus = String(data.payment_status || '').toLowerCase();
-        const orderId = String(data.order_id || '');
-
-        log('IPN', { order_id: orderId, status: npStatus, payment_id: data.payment_id });
-
-        if (orderId.startsWith('LP-')) return await procesarLivePass(orderId, npStatus, data, res);
-        if (orderId.startsWith('DON-')) return await procesarDonacion(orderId, npStatus, data, res);
-        return await procesarMembresia(npStatus, data, res);
-    } catch (e) {
-        logError('Excepción en webhook:', e);
-        return res.status(500).json({ ok: false, error: 'interno' });
-    }
-});
-
-// ================================================================
-// LIVE PASS
+// LIVE PASS (LP-)
+// Firma SQL: confirmar_live_pass_ipn(p_order_id, p_payment_id, p_np_status, p_price_amount, p_pay_address)
 // ================================================================
 async function procesarLivePass(orderId, npStatus, data, res) {
     const { data: r, error } = await supabaseAdmin.rpc('confirmar_live_pass_ipn', {
@@ -76,9 +38,8 @@ async function procesarLivePass(orderId, npStatus, data, res) {
 
     if (error) {
         logError('RPC confirmar_live_pass_ipn:', error.message);
-        return res.status(500).json({ ok: false, error: 'db' });   // NOWPayments reintenta
+        return res.status(500).json({ ok: false, error: 'db' });
     }
-
     if (!r?.ok) {
         logError('Live Pass no activado:', orderId, r?.motivo);
         return res.status(200).json({ ok: true, ignorado: r?.motivo });
@@ -89,7 +50,8 @@ async function procesarLivePass(orderId, npStatus, data, res) {
 }
 
 // ================================================================
-// DONACIONES DE LIVE
+// DONACIONES DE LIVE (DON-<id>)
+// Firma SQL: confirmar_donacion_live(p_donacion_id, p_np_status, p_price_amount)
 // ================================================================
 async function procesarDonacion(orderId, npStatus, data, res) {
     const donacionId = parseInt(orderId.slice(4), 10);
@@ -107,7 +69,6 @@ async function procesarDonacion(orderId, npStatus, data, res) {
         logError('RPC confirmar_donacion_live:', error.message);
         return res.status(500).json({ ok: false, error: 'db' });
     }
-
     if (!r?.ok) {
         logError('Donación no confirmada:', donacionId, r?.motivo);
         return res.status(200).json({ ok: true, ignorado: r?.motivo });
@@ -118,7 +79,8 @@ async function procesarDonacion(orderId, npStatus, data, res) {
 }
 
 // ================================================================
-// MEMBRESÍAS DE MERCADO
+// MEMBRESÍA DE MERCADO (resto de order_id)
+// Firma SQL: confirmar_pago_membresia(p_payment_id, p_np_status, p_monto_pagado)
 // ================================================================
 async function procesarMembresia(npStatus, data, res) {
     const paymentId = data.payment_id != null ? String(data.payment_id) : '';
@@ -138,7 +100,7 @@ async function procesarMembresia(npStatus, data, res) {
             .neq('estado', 'pagada');
 
         if (error) {
-            logError('Error registrando fallo de pago:', error.message);
+            logError('Registrar fallo de pago:', error.message);
             return res.status(500).json({ ok: false, error: 'db' });
         }
         return res.status(200).json({ ok: true, estado: MAPA_FALLIDO[npStatus] });
@@ -154,7 +116,6 @@ async function procesarMembresia(npStatus, data, res) {
         logError('RPC confirmar_pago_membresia:', error.message);
         return res.status(500).json({ ok: false, error: 'db' });
     }
-
     if (!r?.ok) {
         logError('Membresía no activada:', paymentId, r?.motivo);
         return res.status(200).json({ ok: true, ignorado: r?.motivo });
@@ -168,9 +129,6 @@ async function procesarMembresia(npStatus, data, res) {
     return res.status(200).json({ ok: true, estado: r.motivo });
 }
 
-// ================================================================
-// NOTIFICACIÓN AL USUARIO (best-effort)
-// ================================================================
 async function crearNotificacionMembresia(usuarioId, planSlug, fechaFin) {
     try {
         const { error } = await supabaseAdmin.from('notificaciones').insert({
@@ -188,4 +146,4 @@ async function crearNotificacionMembresia(usuarioId, planSlug, fechaFin) {
     }
 }
 
-module.exports = router;
+module.exports = { procesarLivePass, procesarDonacion, procesarMembresia };
