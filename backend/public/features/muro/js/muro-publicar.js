@@ -3,6 +3,11 @@
 // ================================================================
 // Crear publicaciones (texto + imagen), emoji picker, hashtags.
 // Depende de: muro-config.js, muro-utils.js, muro-publicaciones.js
+//
+// v2 (moderación):
+// - publicar() maneja el error 'contenido_no_permitido' del trigger.
+// - subirImagenMuro() también lo maneja.
+// - Se usa manejarErrorModeracion() (definido en muro-publicaciones.js).
 // ================================================================
 
 // ================================================================
@@ -57,7 +62,15 @@ async function publicar() {
         await cargarTokensDestacados();
     } catch (e) {
         console.error('Error al publicar:', e);
-        showToast('Error al publicar: ' + e.message, 'error');
+
+        // ✅ Detectar error de moderación
+        var esErrorModeracion =
+            typeof manejarErrorModeracion === 'function' &&
+            manejarErrorModeracion(e);
+
+        if (!esErrorModeracion) {
+            showToast('Error al publicar: ' + e.message, 'error');
+        }
     } finally {
         publicando = false;
         if (btnPublicar) {
@@ -169,7 +182,28 @@ async function subirImagenMuro(event) {
         if (temaSeleccionado) insertData.tema_id = temaSeleccionado;
 
         var insertResult = await supabaseClient.from('muro_posts').insert(insertData);
-        if (insertResult.error) throw insertResult.error;
+
+        // ✅ Detectar error de moderación del insert
+        if (insertResult.error) {
+            // Borrar la imagen que se subió, porque el post no se creó
+            try {
+                await supabaseClient.storage
+                    .from('muro-imagenes')
+                    .remove([filePath]);
+            } catch (cleanupErr) {
+                console.warn('No se pudo borrar la imagen:', cleanupErr);
+            }
+
+            var esErrorModeracion =
+                typeof manejarErrorModeracion === 'function' &&
+                manejarErrorModeracion(insertResult.error);
+
+            if (!esErrorModeracion) {
+                throw insertResult.error;
+            }
+            event.target.value = '';
+            return;
+        }
 
         document.getElementById('postContent').value = '';
         temaSeleccionado = null;
