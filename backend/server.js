@@ -796,6 +796,8 @@ montarRouter('/api/marketing', './routes/marketing', 'routes/marketing');
 
 montarRouter('/api/mercado', './routes/mercado', 'routes/mercado');
 
+montarRouter('/api/mercado/pedidos', './routes/mercado-pedidos', 'routes/mercado-pedidos');
+
 montarRouter('/api/live', './routes/live', 'routes/live');
 
 // Geo
