@@ -1,15 +1,15 @@
 /* ================================================================
-   routes/ia-plan.js - ENDPOINTS DE PLANES IA (v1.4)
+   routes/ia-plan.js - ENDPOINTS DE PLANES IA (v1.5)
    ================================================================
    Endpoints:
    - GET  /api/ai/plan/catalogo   → lista planes pagados disponibles
    - GET  /api/ai/plan            → plan vigente del usuario + uso
-   - POST /api/ai/plan/checkout   → crea pedido + pago directo NOWPayments
+   - POST /api/ai/plan/checkout   → crea pago directo NOWPayments
    - POST /api/ai/plan/cancelar   → cancela el plan al final del periodo
 
-   v1.4: el checkout usa /v1/payment (pago directo) en lugar de
-         /v1/invoice. La página de NOWPayments muestra de inmediato
-         monto en USDT, red TRX, dirección y QR.
+   v1.5: /checkout devuelve pay_address, pay_amount y pay_currency,
+         para mostrar el depósito dentro de la app (monto, red,
+         dirección y QR), sin depender de la página de NOWPayments.
 
    FASE 1: solo NOWPayments. Stripe se rechaza con 400.
 ================================================================ */
@@ -37,7 +37,7 @@ if (!process.env.HUELLA_PEPPER) {
 const NOWPAYMENTS_PAGO_URL = 'https://api.nowpayments.io/v1/payment';
 const NOWPAYMENTS_TIMEOUT_MS = 15000;
 
-// Página hosted de NOWPayments: muestra monto, red, dirección y QR
+// Página hosted de NOWPayments (respaldo). La app muestra el depósito directamente.
 const urlPaginaPago = (paymentId) =>
     `https://nowpayments.io/payment/?iid=${encodeURIComponent(paymentId)}`;
 
@@ -203,12 +203,11 @@ router.get('/', verificarToken, async (req, res) => {
 /* ================================================================
    POST /api/ai/plan/checkout
    Body: { plan, proveedor }
-   FASE 1: solo proveedor 'nowpayments'.
 ================================================================ */
 
 router.post('/checkout', verificarToken, limitadorPagos, async (req, res) => {
     try {
-        // 0. Feature flag. Diagnóstico sin exponer el valor.
+        // 0. Feature flag y configuración
         if (process.env.IA_CHECKOUT_ENABLED !== 'true') {
             log('checkout_deshabilitado', {
                 definida: process.env.IA_CHECKOUT_ENABLED !== undefined,
@@ -217,7 +216,6 @@ router.post('/checkout', verificarToken, limitadorPagos, async (req, res) => {
             return err(res, 503, 'El sistema de pagos aún no está disponible.');
         }
 
-        // 0b. Configuración obligatoria
         const faltan = ['NOWPAYMENTS_API_KEY', 'IA_WEBHOOK_BASE_URL', 'PUBLIC_URL']
             .filter((v) => !process.env[v]);
         if (faltan.length) {
@@ -228,12 +226,12 @@ router.post('/checkout', verificarToken, limitadorPagos, async (req, res) => {
         const usuarioId = req.usuario.id;
         const { plan, proveedor } = req.body || {};
 
-        // 1. Validar proveedor
+        // 1. Proveedor
         if (proveedor !== 'nowpayments') {
             return err(res, 400, 'Proveedor no disponible todavía.');
         }
 
-        // 2. Validar plan
+        // 2. Plan
         if (!PLANES_PAGO.includes(plan)) {
             return err(res, 400, 'Plan inválido.');
         }
@@ -272,7 +270,7 @@ router.post('/checkout', verificarToken, limitadorPagos, async (req, res) => {
             }
         }
 
-        // 5. Crear pedido. El precio sale de la base, nunca del cliente.
+        // 5. Pedido. El precio sale de la base, nunca del cliente.
         const montoMxn = Number(planDb.precio_mxn);
         const expiraAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
 
@@ -294,7 +292,7 @@ router.post('/checkout', verificarToken, limitadorPagos, async (req, res) => {
             return err(res, 500, 'No se pudo crear el pedido.');
         }
 
-        // 6. Crear el pago directo en NOWPayments
+        // 6. Pago directo en NOWPayments
         let pago;
         try {
             const respuesta = await axios.post(
@@ -320,7 +318,8 @@ router.post('/checkout', verificarToken, limitadorPagos, async (req, res) => {
         } catch (e) {
             log('checkout_nowpayments_error', {
                 status: e.response?.status,
-                codigo: e.code
+                codigo: e.code,
+                detalle: e.response?.data?.message || null
             });
 
             await supabase
@@ -342,7 +341,7 @@ router.post('/checkout', verificarToken, limitadorPagos, async (req, res) => {
             return err(res, 502, 'No fue posible iniciar el pago.');
         }
 
-        // 7. Guardar la referencia del pago
+        // 7. Referencia del pago
         const { error: errUpdate } = await supabase
             .from('ai_pedidos_pago')
             .update({ proveedor_ref: String(pago.payment_id) })
@@ -362,6 +361,10 @@ router.post('/checkout', verificarToken, limitadorPagos, async (req, res) => {
             success: true,
             data: {
                 pedido_id: pedido.id,
+                payment_id: String(pago.payment_id),
+                pay_address: pago.pay_address,
+                pay_amount: pago.pay_amount,
+                pay_currency: pago.pay_currency || 'usdttrc20',
                 url: urlPaginaPago(pago.payment_id)
             }
         });
