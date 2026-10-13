@@ -1,9 +1,8 @@
 // ================================================================
 // server.js — Sariel's Ecosystem
 // Backend principal — Producción Railway
-// v3.1: Geo montado (/api/geo) para ubicación con Google Geocoding.
-//       Mercado montado (/api/mercado), IPN de Mercado excluido del
-//       límite de peticiones, resto sin cambios.
+// v3.2: Wallet router montado (/api/wallet) para vinculación
+//       segura con nonce + firma EOA.
 // ================================================================
 
 require('dotenv').config();
@@ -27,7 +26,6 @@ const app = express();
 
 app.disable('x-powered-by');
 
-// Railway usa proxy: sin esto, req.ip es siempre la IP del proxy
 app.set('trust proxy', 1);
 
 const PORT = process.env.PORT || 8080;
@@ -121,7 +119,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 // ================================================================
-// AUTH MIDDLEWARE
+// AUTH MIDDLEWARE (local, no exportado)
 // ================================================================
 
 async function authMiddleware(req, res, next) {
@@ -360,15 +358,13 @@ app.use(
 );
 
 // ================================================================
-// WEBHOOK TELNYX — ANTES de express.json() y rate limit
+// WEBHOOK TELNYX
 // ================================================================
 
 app.use('/api/telnyx/webhook', require('./routes/telnyx-webhook'));
 
 // ================================================================
 // RATE LIMIT GENERAL
-// Los avisos de pago (IPN) NO cuentan para el límite: si NOWPayments
-// recibe un 429, no reintenta bien y el pago puede quedar sin activar.
 // ================================================================
 
 const RUTAS_WEBHOOK_SIN_LIMITE = [
@@ -613,8 +609,6 @@ async function verificarTurnstile(token, remoteip) {
 
 // ================================================================
 // ESTÁTICOS
-// HTML y JS sin caché: el navegador revalida con ETag (304, barato)
-// y así un despliegue se ve de inmediato.
 // ================================================================
 
 const publicPath = path.join(__dirname, 'public');
@@ -715,8 +709,6 @@ function normalizarRouter(modulo, nombre) {
     return null;
 }
 
-// Monta el primer archivo que exista de una lista de rutas (útil cuando
-// el nombre del archivo puede variar en mayúsculas, que Linux distingue)
 function montarRouter(mountPath, requirePaths, nombre) {
     const lista = Array.isArray(requirePaths) ? requirePaths : [requirePaths];
 
@@ -735,7 +727,7 @@ function montarRouter(mountPath, requirePaths, nombre) {
             return true;
         } catch (error) {
             if (error.code === 'MODULE_NOT_FOUND' && lista.indexOf(requirePath) < lista.length - 1) {
-                continue; // probar la siguiente variante del nombre
+                continue;
             }
             console.error(`❌ Error cargando ${nombre}:`, error.message);
             return false;
@@ -750,8 +742,7 @@ function montarRouter(mountPath, requirePaths, nombre) {
 // ROUTERS
 // ================================================================
 
-// LiveKit: ÚNICO endpoint de token. El viejo token inline (que daba
-// canPublish a cualquier usuario) fue eliminado.
+// LiveKit
 montarRouter('/api/livekit', './routes/livekit', 'routes/livekit');
 
 montarRouter('/api/auth', './routes/auth', 'routes/auth');
@@ -788,8 +779,6 @@ montarRouter('/api/ai/tts', './routes/ai-tts', 'routes/ai-tts');
 
 montarRouter('/api/ai/chat-maiz', './routes/ai-chat-maiz', 'routes/ai-chat-maiz');
 
-// NOTA: /api/ai/voice ya está montado arriba (ai-voice). Este segundo
-// montaje solo se alcanza para rutas que no existan en ai-voice.
 montarRouter('/api/ai/voice', './routes/ai-tts-maiz', 'routes/ai-tts-maiz');
 
 montarRouter('/api/ai/tts-itlasuhua', './routes/ai-tts-itlasuhua', 'routes/ai-tts-itlasuhua');
@@ -803,19 +792,19 @@ montarRouter('/api/webhooks/ia', './routes/webhooks/pagos-ia', 'routes/webhooks/
 
 montarRouter('/api/campanas', './routes/campanas', 'routes/campanas');
 
-// Marketing (anuncios en live, grupos y videos): /get-ad, /register-event
 montarRouter('/api/marketing', './routes/marketing', 'routes/marketing');
 
-// Mercado (membresías de tienda, pagos NOWPayments, IPN y ubicación del repartidor)
 montarRouter('/api/mercado', './routes/mercado', 'routes/mercado');
 
-// Live (donaciones + registro de minutos)
 montarRouter('/api/live', './routes/live', 'routes/live');
 
-// Geo: convierte coordenadas en ciudad (Google) y guarda la ubicación
+// Geo
 montarRouter('/api/geo', './routes/geo', 'routes/geo');
 
-// Web Push Notifications
+// ⬇️ NUEVO: Wallet (nonce + firma EOA)
+montarRouter('/api/wallet', './routes/wallet', 'routes/wallet');
+
+// Web Push
 montarRouter('/api/push', './routes/push', 'routes/push');
 
 // Admin IA
@@ -1007,6 +996,19 @@ app.use((err, req, res, next) => {
     return res.status(err.status || 500).json({
         error: isProduction ? 'Error interno del servidor' : err.message || 'Error interno del servidor'
     });
+});
+
+// ================================================================
+// HANDLERS DE PROCESO
+// ================================================================
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('🔴 Unhandled Rejection en:', promise, 'razón:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+    console.error('🔴 Uncaught Exception:', err);
+    setTimeout(() => process.exit(1), 500);
 });
 
 // ================================================================
