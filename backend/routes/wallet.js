@@ -18,8 +18,18 @@
 //   - Una wallet activa por usuario.
 //   - La misma wallet no puede estar en dos cuentas (índice único en DB).
 //   - Re-vincular la misma wallet = 200.
-//   - El nonce se marca usado ANTES de verificar la firma (anti-replay).
+//   - El nonce se marca usado SOLO después de verificar firma y duplicado.
 //   - El mensaje firmado es EXACTO (no modificar).
+//
+// Orden de validaciones en /link (importante):
+//   1. Campos requeridos             → 400
+//   2. Address válida                → 400
+//   3. Nonce válido (no usado, > now) → 400
+//   4. Firma válida                  → 401
+//   5. Duplicado en otra cuenta      → 409  (no consume nonce)
+//   6. Marcar nonce usado            → 400 si ya fue consumido (race)
+//   7. Guardar usuarios.wallet_address
+//   8. Actualizar wallet_conexiones
 // ================================================================
 
 const express = require('express');
@@ -106,7 +116,7 @@ router.post('/link', verificarToken, async (req, res) => {
             return res.status(400).json({ error: 'Dirección inválida' });
         }
 
-        // 3) Buscar nonce válido
+        // 3) Buscar nonce válido (mismo usuario, no usado, no expirado)
         const ahoraISO = new Date().toISOString();
 
         const { data: nonceRow, error: nonceErr } = await supabaseAdmin
@@ -129,9 +139,29 @@ router.post('/link', verificarToken, async (req, res) => {
             });
         }
 
-        // 4) Verificar que la wallet no esté en OTRA cuenta (lowercase)
+        // 4) Verificar firma con el mensaje EXACTO
+        // (se hace ANTES de chequear duplicado para no filtrar información)
+        const mensaje = construirMensaje(nonce, address);
+
+        let recuperada;
+        try {
+            recuperada = ethers.verifyMessage(mensaje, signature);
+        } catch (e) {
+            console.warn('⚠️ /link — firma ilegible:', e.message || e);
+            return res.status(401).json({ error: 'Firma inválida' });
+        }
+
         const addressLower = address.toLowerCase();
 
+        if (!recuperada || recuperada.toLowerCase() !== addressLower) {
+            return res.status(401).json({
+                error: 'Firma no corresponde a la dirección proporcionada'
+            });
+        }
+
+        // 5) Verificar que la wallet no esté en OTRA cuenta (lowercase)
+        // Se hace DESPUÉS de validar la firma, así solo el dueño puede
+        // saber si su dirección ya está en uso.
         const { data: otraCuenta, error: dupErr } = await supabaseAdmin
             .from('usuarios')
             .select('id')
@@ -145,25 +175,9 @@ router.post('/link', verificarToken, async (req, res) => {
         }
 
         if (otraCuenta && otraCuenta.id) {
+            // NO consumimos nonce: el rechazo es por negocio, no por seguridad.
             return res.status(409).json({
                 error: 'Esta wallet ya está vinculada a otra cuenta'
-            });
-        }
-
-        // 5) Verificar firma con el mensaje EXACTO
-        const mensaje = construirMensaje(nonce, address);
-
-        let recuperada;
-        try {
-            recuperada = ethers.verifyMessage(mensaje, signature);
-        } catch (e) {
-            console.warn('⚠️ /link — firma ilegible:', e.message || e);
-            return res.status(401).json({ error: 'Firma inválida' });
-        }
-
-        if (!recuperada || recuperada.toLowerCase() !== addressLower) {
-            return res.status(401).json({
-                error: 'Firma no corresponde a la dirección proporcionada'
             });
         }
 
@@ -193,6 +207,25 @@ router.post('/link', verificarToken, async (req, res) => {
 
         if (updErr) {
             console.error('❌ /link — error guardando wallet_address:', updErr);
+
+            // 7.b) Si es violación de UNIQUE (índice único en wallet_address),
+            //      significa que OTRA cuenta ganó la carrera → 409.
+            if (updErr.code === '23505') {
+                // Revertir nonce para no dejarlo quemado sin motivo de seguridad.
+                try {
+                    await supabaseAdmin
+                        .from('wallet_nonces')
+                        .update({ usado: false })
+                        .eq('id', nonceRow.id);
+                } catch (revErr) {
+                    console.warn('⚠️ /link — no se pudo revertir nonce tras 23505:', revErr.message || revErr);
+                }
+                return res.status(409).json({
+                    error: 'Esta wallet ya está vinculada a otra cuenta'
+                });
+            }
+
+            // Otro tipo de error: intentar revertir nonce y devolver 500.
             try {
                 await supabaseAdmin
                     .from('wallet_nonces')
@@ -234,6 +267,7 @@ router.post('/link', verificarToken, async (req, res) => {
 
         if (insErr) {
             console.error('❌ /link — error insertando wallet_conexiones:', insErr);
+            // No bloqueante: la vinculación ya quedó guardada en usuarios.
         }
 
         return res.status(200).json({
