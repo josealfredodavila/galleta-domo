@@ -42,7 +42,7 @@ router.post('/nonce', authMiddleware, async (req, res) => {
 
         const { data, error } = await supabaseAdmin
             .from('wallet_nonces')
-            .insert({ usuario_id: userId, nonce, used: false, expires_at: expiresAt })
+            .insert({ usuario_id: userId, nonce, usado: false, expires_at: expiresAt })
             .select('id, nonce, expires_at')
             .single();
 
@@ -61,27 +61,28 @@ router.post('/nonce', authMiddleware, async (req, res) => {
 // POST /api/wallet/link — vincula wallet verificando nonce y firma
 router.post('/link', authMiddleware, async (req, res) => {
     try {
-        const { address, nonce, signature } = req.body || {};
+        const { address, nonce, signature, chain_id, network_name } = req.body || {};
         if (!address || !nonce || !signature) {
             return res.status(400).json({ error: 'address, nonce y signature son requeridos' });
         }
 
         let walletAddress;
         try {
-            walletAddress = ethers.utils.getAddress(String(address));
+            // ethers v6: getAddress normalizes to checksum
+            walletAddress = ethers.getAddress(String(address));
         } catch (e) {
             return res.status(400).json({ error: 'Dirección inválida' });
         }
 
         const userId = req.user.id;
 
-        // Buscar nonce válido
+        // Buscar nonce válido (columna 'usado' en español)
         const { data: nonceRow, error: nonceErr } = await supabaseAdmin
             .from('wallet_nonces')
             .select('*')
             .eq('usuario_id', userId)
             .eq('nonce', nonce)
-            .eq('used', false)
+            .eq('usado', false)
             .gt('expires_at', new Date().toISOString())
             .maybeSingle();
 
@@ -97,7 +98,7 @@ router.post('/link', authMiddleware, async (req, res) => {
         // MARCAR usado = true ANTES de continuar (previene reutilización)
         const { error: markErr } = await supabaseAdmin
             .from('wallet_nonces')
-            .update({ used: true, used_at: new Date().toISOString() })
+            .update({ usado: true })
             .eq('id', nonceRow.id);
 
         if (markErr) {
@@ -110,7 +111,8 @@ router.post('/link', authMiddleware, async (req, res) => {
 
         let recovered;
         try {
-            recovered = ethers.utils.verifyMessage(message, signature);
+            // ethers v6 verifyMessage
+            recovered = ethers.verifyMessage(message, signature);
         } catch (e) {
             console.warn('⚠️ Firma inválida:', e.message || e);
             return res.status(401).json({ error: 'Firma inválida' });
@@ -133,10 +135,18 @@ router.post('/link', authMiddleware, async (req, res) => {
 
         // Intentar insertar registro en wallet_conexiones (no crítico)
         try {
-            await supabaseAdmin.from('wallet_conexiones').insert({ usuario_id: userId, wallet_address: walletAddress, created_at: new Date().toISOString() });
+            await supabaseAdmin.from('wallet_conexiones').insert({
+                usuario_id: userId,
+                wallet_address: walletAddress,
+                chain_id: chain_id || null,
+                network_name: network_name || null,
+                firma_verificacion: signature,
+                activa: true,
+                conectada_en: new Date().toISOString()
+            });
         } catch (e) {
-            // no interrumpe el flujo
-            console.warn('⚠️ No se pudo registrar wallet_conexiones (no crítico):', e.message || e);
+            // log error but do not interrupt main flow
+            console.error('❌ No se pudo registrar wallet_conexiones:', e.message || e);
         }
 
         return res.json({ success: true, wallet: walletAddress });
