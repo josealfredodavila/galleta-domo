@@ -994,14 +994,12 @@
     <script src="/features/videos/js/videos-publicar.js" defer></script>
     <script>
     // ================================================================
-    // VIDEOS · v15.6 — Reels + Fullscreen + Audio + Eliminar + SVG + FASE 3C
+    // VIDEOS · v15.7 — Reels + Fullscreen + Audio + Eliminar + SVG + FASE 3C
     // ================================================================
-    // ✅ v15.6 — NUEVO (Fase 3C):
-    //   🎵📍 El INSERT de videos ahora guarda:
-    //      - sonido_id, sonido_url, sonido_nombre
-    //      - ubicacion_id, ubicacion_nombre, ubicacion_lat, ubicacion_lng
-    //      - es_borrador = false
-    //   🔄 Reset post-publicación + auto-refresh del feed
+    // ✅ v15.7 (moderación):
+    //   🛡️ subirVideo() ya NO sube directo a Supabase Storage.
+    //   Ahora llama a POST /api/media/upload con moderación.
+    //   El resto del flujo (INSERT, polling, ffmpeg en backend) queda igual.
     // ================================================================
 
     // ================================================================
@@ -2433,7 +2431,7 @@
     }
 
     // ================================================================
-    // SUBIR VIDEO — ✅ FASE 3C integrada
+    // SUBIR VIDEO — ✅ v15.7 con moderación vía /api/media/upload
     // ================================================================
     var subiendoVideo = false;
 
@@ -2486,18 +2484,63 @@
 
             if (btn) btn.textContent = 'Subiendo...';
             if (progressEl) progressEl.style.display = 'block';
-            if (progressFill) progressFill.style.width = '30%';
-            if (progressText) progressText.textContent = 'Subiendo...';
+            if (progressFill) progressFill.style.width = '20%';
+            if (progressText) progressText.textContent = 'Subiendo y moderando...';
 
-            var fileExt = file.name.split('.').pop().toLowerCase();
-            filePath = session.user.id + '/' + Date.now() + '.' + fileExt;
+            // ============================================
+            // SUBIDA VÍA /api/media/upload (con moderación)
+            // ============================================
+            var fd = new FormData();
+            fd.append('file', file);
+            fd.append('destino', 'videos');
+            fd.append('tipo', 'video');
 
-            var up = await sbVideos.storage.from('videos').upload(filePath, file, {
-                cacheControl: '31536000', upsert: false, contentType: file.type
-            });
-            if (up.error) { filePath = null; throw up.error; }
+            var subidaResp;
+            try {
+                subidaResp = await fetch('/api/media/upload', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + session.access_token
+                    },
+                    body: fd
+                });
+            } catch (netErr) {
+                throw new Error('No se pudo conectar con el servidor');
+            }
 
-            var videoUrl = sbVideos.storage.from('videos').getPublicUrl(filePath).data.publicUrl;
+            var subidaJson = null;
+            try {
+                subidaJson = await subidaResp.json();
+            } catch (e) {
+                subidaJson = {};
+            }
+
+            if (!subidaResp.ok || !subidaJson.ok) {
+                var errorMsg = subidaJson && subidaJson.error
+                    ? subidaJson.error
+                    : 'No se pudo subir el video';
+
+                // Si es rechazo por contenido (422) → mensaje específico
+                if (subidaResp.status === 422) {
+                    throw new Error('Contenido no permitido');
+                }
+
+                // 413 → demasiado grande
+                if (subidaResp.status === 413) {
+                    throw new Error('Video muy grande (máx 100 MB)');
+                }
+
+                // 503 → moderación caída
+                if (subidaResp.status === 503) {
+                    throw new Error('No pudimos revisar el contenido. Intenta de nuevo.');
+                }
+
+                throw new Error(errorMsg);
+            }
+
+            var videoUrl = subidaJson.url;
+            filePath = subidaJson.path;
+
             if (progressFill) progressFill.style.width = '60%';
             if (progressText) progressText.textContent = 'Creando registro...';
 
@@ -2768,7 +2811,7 @@
     // INIT
     // ================================================================
     document.addEventListener('DOMContentLoaded', function() {
-        console.log("◈ Csariel's - Videos v15.6 (Fase 3C: sonido + ubicación)");
+        console.log("◈ Csariel's - Videos v15.7 (moderación en subida de videos)");
         aplicarI18N();
         configurarTecladoMovil();
         cargarUsuarioActual().then(async function() {
