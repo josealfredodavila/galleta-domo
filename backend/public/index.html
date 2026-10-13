@@ -415,14 +415,15 @@ window.enviarRecuperacion = enviarRecuperacion;
 
 /* ============================================================
    CARRUSEL
-   - Con lives activos: muestra quién está transmitiendo ahora.
+   - Con lives activos: muestra quién está transmitiendo ahora
+     (lives normales y canales públicos).
    - Sin lives: muestra invitaciones a unirse al ecosistema.
    Los datos vienen de /api/livekit/streams (público, sin sesión).
    Todo texto se inserta con textContent: nunca HTML desde el servidor.
    ============================================================ */
 var CARRUSEL_DURACION_MS = 6500;
 var CARRUSEL_REFRESCO_MS = 30000;
-var carrusel = { slides: [], idx: 0, timer: null, pausado: false, modo: null, inicioSlide: 0, timerRefresco: null };
+var carrusel = { slides: [], idx: 0, timer: null, pausado: false, modo: null, timerRefresco: null };
 
 var GRADIENTES = [
     'linear-gradient(135deg,#ff2e97 0%,#ff7a00 50%,#ffd60a 100%)',
@@ -485,19 +486,27 @@ function tiempoDesde(fecha) {
 }
 
 function slideDeLive(live, i) {
+    var esCanal = live.tipo === 'canal';
+    var meta = [];
+    if (esCanal) {
+        meta.push(live.canal_nombre || 'Canal');
+    } else {
+        meta.push(live.categoria || 'General');
+    }
+    meta.push((Number(live.viewers_count) || 0) + ' viendo');
+    meta.push(textoPrecioCarrusel(live.precio_acceso));
+    meta.push(tiempoDesde(live.fecha_inicio));
+
     return {
         tipo: 'live',
         gradiente: GRADIENTES[i % GRADIENTES.length],
-        badge: 'EN VIVO',
-        titulo: live.titulo || 'Transmisión en vivo',
-        meta: [
-            (live.categoria || 'General'),
-            (Number(live.viewers_count) || 0) + ' viendo',
-            textoPrecioCarrusel(live.precio_acceso),
-            tiempoDesde(live.fecha_inicio)
-        ].filter(Boolean),
-        cta: 'Ver el live',
-        href: '/features/live/live.html'
+        badge: esCanal ? 'EN VIVO · CANAL' : 'EN VIVO',
+        titulo: live.titulo || (esCanal ? 'Canal en vivo' : 'Transmisión en vivo'),
+        meta: meta.filter(Boolean),
+        cta: esCanal ? 'Ver el canal' : 'Ver el live',
+        href: esCanal
+            ? '/features/grupos/grupos.html?grupo=' + encodeURIComponent(live.grupo_id || '')
+            : '/features/live/live.html'
     };
 }
 
