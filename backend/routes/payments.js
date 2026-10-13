@@ -1,8 +1,10 @@
 // ================================================================
-// ROUTES/PAYMENTS.JS — Csariel's (v3.1)
+// ROUTES/PAYMENTS.JS — Csariel's (v3.2)
 // Transmisiones (pay-per-view), Muro P2P, Marketing e Internet.
 // Método: NOWPayments. NO toca membresías, Live Pass ni donaciones de Live.
 // Estados de ordenes_internet permitidos: pendiente, pagado, activo, cancelado.
+// v3.2: mínimo de 16 USD en todas las redes USDT/USDC (confirmado en
+//       pruebas: NOWPayments rechaza montos menores a ~11 USDT).
 // ================================================================
 
 'use strict';
@@ -32,15 +34,17 @@ const NOWPAYMENTS_API_KEY = process.env.NOWPAYMENTS_API_KEY;
 const NOWPAYMENTS_API_URL = 'https://api.nowpayments.io/v1/payment';
 
 // Redes permitidas. Los códigos deben coincidir con los de NOWPayments.
+// minimo_usd: NOWPayments rechaza montos menores (comprobado: 10.94 USDT
+// rechazado, 16.3 USDT aceptado). Se usa 16 USD como mínimo seguro.
 const REDES_PERMITIDAS = {
-    usdttrc20: { moneda: 'USDT', red: 'TRON',     minimo_usd: 1  },
-    usdtbsc:   { moneda: 'USDT', red: 'BSC',      minimo_usd: 1  },
-    usdtmatic: { moneda: 'USDT', red: 'Polygon',  minimo_usd: 1  },
-    usdtsol:   { moneda: 'USDT', red: 'Solana',   minimo_usd: 1  },
+    usdttrc20: { moneda: 'USDT', red: 'TRON',     minimo_usd: 16 },
+    usdtbsc:   { moneda: 'USDT', red: 'BSC',      minimo_usd: 16 },
+    usdtmatic: { moneda: 'USDT', red: 'Polygon',  minimo_usd: 16 },
+    usdtsol:   { moneda: 'USDT', red: 'Solana',   minimo_usd: 16 },
     usdterc20: { moneda: 'USDT', red: 'Ethereum', minimo_usd: 20 },
-    usdcsol:   { moneda: 'USDC', red: 'Solana',   minimo_usd: 1  },
-    usdcmatic: { moneda: 'USDC', red: 'Polygon',  minimo_usd: 1  },
-    usdcbsc:   { moneda: 'USDC', red: 'BSC',      minimo_usd: 1  },
+    usdcsol:   { moneda: 'USDC', red: 'Solana',   minimo_usd: 16 },
+    usdcmatic: { moneda: 'USDC', red: 'Polygon',  minimo_usd: 16 },
+    usdcbsc:   { moneda: 'USDC', red: 'BSC',      minimo_usd: 16 },
     usdc:      { moneda: 'USDC', red: 'Ethereum', minimo_usd: 20 }
 };
 
