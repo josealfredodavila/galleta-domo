@@ -1,8 +1,11 @@
 // ================================================================
-// LIVE · JS v3.4 — Csariel's
+// LIVE · JS v4.0 — Csariel's
 // Cliente de transmisión en vivo. El SERVIDOR decide roles, publicación,
-// Live Pass, dueño del live y autor de los mensajes.
+// Live Pass, dueño del live, acceso de pago y autor de los mensajes.
 // Las validaciones del navegador son solo experiencia de usuario.
+// v4.0: precio de acceso al crear el live (0 = gratis, mínimo 16 USD),
+//       pago de acceso para espectadores, métricas en el header
+//       (seguidores, espectadores, vistas y donaciones en USD).
 // ================================================================
 'use strict';
 
@@ -16,6 +19,8 @@ const ENDPOINTS = {
     registrarMinuto: '/api/live/registrar-minuto',
     donacionCrear: '/api/live/donacion/crear',
     donacionEstado: (id) => `/api/live/donacion/${encodeURIComponent(id)}/estado`,
+    pagoAccesoCrear: '/api/payments/create',
+    pagoAccesoEstado: (id) => `/api/payments/status/${encodeURIComponent(id)}`,
     anuncioGet: '/api/marketing/get-ad',
     anuncioEvento: '/api/marketing/register-event',
     broadcast: '/api/push/broadcast-live'
@@ -23,8 +28,8 @@ const ENDPOINTS = {
 
 // Funciones reales de la base de datos (firmas verificadas)
 const RPC = {
-    crear: 'crear_transmision',          // (p_titulo, p_categoria, p_room_name, p_grupo_id) → bigint
-    finalizar: 'finalizar_transmision',  // (p_transmision_id integer) → jsonb
+    crear: 'crear_transmision',              // (p_titulo, p_categoria, p_room_name, p_grupo_id, p_precio_acceso) → bigint
+    finalizar: 'finalizar_transmision',      // (p_transmision_id integer) → jsonb
     puedeTransmitir: 'puede_transmitir_live' // (p_usuario_id uuid) → jsonb
 };
 
@@ -52,8 +57,11 @@ const CATEGORIAS = [
     ['educacion', 'Educación'], ['comunidad', 'Comunidad'], ['tecnologia', 'Tecnología']
 ];
 
-const COLUMNAS_LISTADO = 'id,titulo,categoria,viewers_count,fecha_inicio,estado,is_live';
-const COLUMNAS_FILA = 'id,titulo,categoria,estado,is_live,fecha_inicio';
+const PRECIO_MINIMO_USD = 16;
+const PRECIO_MAXIMO_USD = 500;
+
+const COLUMNAS_LISTADO = 'id,titulo,categoria,viewers_count,fecha_inicio,estado,is_live,precio_acceso,streamer_id';
+const COLUMNAS_FILA = 'id,titulo,categoria,estado,is_live,fecha_inicio,precio_acceso,streamer_id';
 
 const PALABRAS_PROHIBIDAS = [
     'puta','verga','mierda','pendejo','chingar','chingada','cabron','cabrón','pinche',
@@ -75,6 +83,9 @@ const INTERVALO_RESYNC_MINUTOS = 5;
 const COOLDOWN_CHAT_MS = 1500;
 const INTERVALO_SONDEO_MS = 5000;
 const TIMEOUT_DONACION_MS = 10 * 60 * 1000;
+const INTERVALO_METRICAS_MS = 10000;
+const INTERVALO_PAGO_ACCESO_MS = 5000;
+const TIMEOUT_PAGO_ACCESO_MS = 30 * 60 * 1000;
 const COLOR_HEX_RE = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
 const LABEL_STYLE = 'display:block;color:var(--text-secondary);font-size:.75rem;margin-bottom:6px;text-align:left;';
 const INPUT_STYLE = 'width:100%;padding:12px 14px;margin-bottom:14px;border-radius:12px;border:1px solid var(--glass-border);background:rgba(0,0,0,.35);color:var(--text-primary);font-size:.9rem;outline:none;font-family:inherit;';
@@ -104,6 +115,8 @@ let _minutosRegistrados = 0;
 let _fallosMinuto = 0;
 let _timerMinuto = null;
 let _timerBarra = null;
+let _metricasTimer = null;
+let _pagoAccesoTimer = null;
 
 let anuncioActual = null;
 let adSessionId = null;
@@ -168,6 +181,16 @@ function safeUrl(u) {
 
 const esIdValido = (v) => Number.isInteger(Number(v)) && Number(v) > 0;
 
+function formatoUsd(n) {
+    const v = Number(n) || 0;
+    return '$' + v.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function textoPrecio(precio) {
+    const p = Number(precio) || 0;
+    return p > 0 ? `${formatoUsd(p)} USD` : 'Gratis';
+}
+
 function esIOS() { return /iPad|iPhone|iPod/i.test(navigator.userAgent); }
 function soportaCompartirPantalla() {
     return !!(navigator.mediaDevices && typeof navigator.mediaDevices.getDisplayMedia === 'function');
@@ -194,7 +217,8 @@ function mensajeErrorServidor(code, status) {
         transmision_no_activa: 'Esta transmisión ya finalizó.',
         no_autenticado: 'Inicia sesión para continuar.',
         sesion_invalida: 'Tu sesión expiró. Vuelve a iniciar sesión.',
-        streamId_invalido: 'Transmisión no válida.'
+        streamId_invalido: 'Transmisión no válida.',
+        pago_requerido: 'Este live es de pago.'
     };
     return mapa[code] || `Error de servidor${status ? ` (${status})` : ''}`;
 }
@@ -252,7 +276,10 @@ async function pedirTokenSala(streamId, rol) {
     });
     if (!r.ok) {
         const d = await r.json().catch(() => ({}));
-        throw new Error(mensajeErrorServidor(d.error, r.status));
+        const err = new Error(mensajeErrorServidor(d.error, r.status));
+        err.code = d.error || '';
+        err.precioAcceso = Number(d.precio_acceso) || 0;
+        throw err;
     }
     const d = await r.json();
     if (!d?.token) throw new Error('Respuesta inválida del servidor');
@@ -425,6 +452,7 @@ function confirmarAccion(mensaje, titulo = 'Confirmar') {
     });
 }
 
+// Modal "Iniciar live": título, categoría y precio de acceso
 function pedirDatosTransmision() {
     return new Promise((resolve) => {
         $('modalDatosTransmision')?.remove();
@@ -433,8 +461,16 @@ function pedirDatosTransmision() {
             id: 'inputTituloLive', type: 'text', maxlength: '80',
             value: "Mi live en Csariel's", style: INPUT_STYLE, 'aria-label': 'Título del live'
         });
-        const select = el('select', { id: 'inputCategoriaLive', style: INPUT_STYLE.replace('margin-bottom:14px', 'margin-bottom:20px') },
+        const select = el('select', { id: 'inputCategoriaLive', style: INPUT_STYLE.replace('margin-bottom:14px', 'margin-bottom:14px') },
             ...CATEGORIAS.map(([v, t]) => el('option', { value: v, text: t })));
+        const precioInput = el('input', {
+            id: 'inputPrecioLive', type: 'number', min: '0', max: String(PRECIO_MAXIMO_USD), step: '0.01',
+            value: '0', style: INPUT_STYLE, 'aria-label': 'Precio de acceso en USD', inputmode: 'decimal'
+        });
+        const ayuda = el('div', {
+            style: 'font-size:.7rem;color:var(--text-muted);margin:-6px 0 16px;line-height:1.5;',
+            text: 'Si dejas en 0, tu transmisión será gratuita para todos. Si deseas cobrar un evento exclusivo, recuerda que el precio mínimo debe ser de $16 USD o más para cumplir con los requisitos de la pasarela de pagos.'
+        });
         const errorEl = el('div', { style: 'display:none;color:var(--danger);font-size:.7rem;margin-bottom:10px;' });
 
         const cerrar = (datos) => {
@@ -443,24 +479,36 @@ function pedirDatosTransmision() {
             backdrop.remove();
             resolve(datos);
         };
+        const mostrarError = (msg) => {
+            errorEl.textContent = `⚠️ ${msg}`;
+            errorEl.style.display = 'block';
+        };
         const confirmar = () => {
             const titulo = input.value.trim().slice(0, 80) || "Live en Csariel's";
             const mod = verificarContenido(titulo);
-            if (mod.prohibido) {
-                errorEl.textContent = `⚠️ ${mod.razon}`;
-                errorEl.style.display = 'block';
+            if (mod.prohibido) { mostrarError(mod.razon); return; }
+
+            const precioRaw = String(precioInput.value ?? '').trim();
+            const precio = precioRaw === '' ? 0 : Number(precioRaw);
+            if (!Number.isFinite(precio) || precio < 0) { mostrarError('El precio no es válido'); return; }
+            if (precio > PRECIO_MAXIMO_USD) { mostrarError(`El precio máximo es de $${PRECIO_MAXIMO_USD} USD`); return; }
+            if (precio > 0 && precio < PRECIO_MINIMO_USD) {
+                mostrarError(`Para cobrar, el precio mínimo es de $${PRECIO_MINIMO_USD} USD. Deja 0 para un live gratis.`);
                 return;
             }
+
             const categoria = CATEGORIAS.some(([v]) => v === select.value) ? select.value : 'general';
-            cerrar({ titulo, categoria });
+            cerrar({ titulo, categoria, precio: Math.round(precio * 100) / 100 });
         };
 
         const backdrop = crearModal({
             id: 'modalDatosTransmision', icono: '◉', titulo: 'Iniciar transmisión',
-            texto: 'Personaliza tu live', estilo: 'max-width:440px;text-align:left;',
+            texto: 'Configura tu live', estilo: 'max-width:440px;text-align:left;',
             contenido: [
-                el('label', { style: LABEL_STYLE, text: 'Título' }), input, errorEl,
+                el('label', { style: LABEL_STYLE, text: 'Título del live' }), input,
                 el('label', { style: LABEL_STYLE, text: 'Categoría' }), select,
+                el('label', { style: LABEL_STYLE, text: 'Precio de acceso (USD)' }), precioInput,
+                ayuda, errorEl,
                 el('div', { class: 'livepass-modal-actions' },
                     el('button', { type: 'button', class: 'livepass-modal-btn-primary', onclick: confirmar, text: '◉ Comenzar live' }),
                     el('button', { type: 'button', class: 'livepass-modal-btn-secondary', onclick: () => cerrar(null), text: 'Cancelar' }))
@@ -543,7 +591,9 @@ function onSalaDesconectada(room) {
 
 function actualizarContadorEspectadores() {
     if (!liveKitRoom) return;
-    setContadorEspectadores(liveKitRoom.remoteParticipants.size);
+    const n = liveKitRoom.remoteParticipants.size;
+    setContadorEspectadores(n);
+    setMetrica('metEspectadores', String(n));
 }
 
 function setContadorEspectadores(n) {
@@ -658,6 +708,8 @@ function resetearEstadoLocal() {
     detenerRefrescoAnuncios();
     resetEstadoAnuncios();
     detenerTodosSondeos();
+    detenerMetricas();
+    detenerEsperaPagoAcceso();
     cortarChat();
     limpiarChatDOM();
     _rol = 'idle';
@@ -681,14 +733,15 @@ async function limpiarFallido(streamId) {
 }
 
 // ---------- CREAR TRANSMISIÓN (servidor) ----------
-// crear_transmision ignora p_room_name: la sala la genera el servidor
-async function crearTransmisionServidor(titulo, categoria) {
+// El precio lo valida la base: 0 o mínimo 16 USD
+async function crearTransmisionServidor(titulo, categoria, precio = 0) {
     const sb = await sbOrThrow();
     const { data, error } = await sb.rpc(RPC.crear, {
         p_titulo: titulo,
         p_categoria: categoria,
         p_room_name: null,
-        p_grupo_id: null
+        p_grupo_id: null,
+        p_precio_acceso: Number(precio) || 0
     });
     if (error) throw new Error(error.message || 'No se pudo crear la transmisión');
     const id = Number(data);
@@ -741,6 +794,7 @@ async function activarStreamer({ streamId, titulo, modo, pass, gameStream = null
     setTitulo(titulo);
     aplicarRolUI('streamer');
     suscribirseAlChat(streamId);
+    iniciarMetricas(streamId);
     notificarSeguidores(streamId, titulo);  // sin await: no bloquea el inicio
     showToast(`🎥 ¡En vivo! ${horasTexto(pass)}`, 'success', 5000);
 }
@@ -761,7 +815,7 @@ async function iniciarCamara() {
         if (!datos) return;
 
         showToast('⏳ Iniciando transmisión…', '', 3000);
-        streamId = await crearTransmisionServidor(datos.titulo, datos.categoria);
+        streamId = await crearTransmisionServidor(datos.titulo, datos.categoria, datos.precio);
         await activarStreamer({ streamId, titulo: datos.titulo, modo: 'camara', pass: pass.info });
     } catch (e) {
         console.error('[Live] iniciarCamara', e);
@@ -894,7 +948,8 @@ function iniciarJuego(juego) {
             if (verificarContenido(titulo).prohibido) throw new Error('Título bloqueado por filtro de contenido');
 
             showToast('⏳ Iniciando transmisión…', '', 3000);
-            streamId = await crearTransmisionServidor(titulo, 'gaming');
+            // Los lives de juego son gratis por defecto
+            streamId = await crearTransmisionServidor(titulo, 'gaming', 0);
             await activarStreamer({ streamId, titulo, modo: 'juego', pass: pass.info, gameStream: capturada });
         } catch (e) {
             console.error('[Live] iniciarJuego', e);
@@ -1009,6 +1064,7 @@ async function unirseATransmision(streamId) {
 
         aplicarRolUI('viewer');
         suscribirseAlChat(id);
+        iniciarMetricas(id);
         resetEstadoAnuncios();
         iniciarRefrescoAnuncios();
         showToast('📺 Conectado', 'success', 2000);
@@ -1016,10 +1072,196 @@ async function unirseATransmision(streamId) {
         console.error('[Live] unirse', e);
         await desconectarSala();
         resetearEstadoLocal();
+        if (e.code === 'pago_requerido') {
+            mostrarPaywall(id, e.precioAcceso);
+            return;
+        }
         showToast('❌ ' + (e.message || 'No se pudo unir al live'), 'error', 5000);
     } finally {
         _iniciando = false;
     }
+}
+
+// ---------- PAGO DE ACCESO (espectadores de lives de pago) ----------
+function mostrarPaywall(streamId, precio) {
+    $('paywallBackdrop')?.remove();
+    const b = crearModal({
+        id: 'paywallBackdrop',
+        icono: '◆',
+        titulo: 'Live de pago',
+        texto: `Este live cuesta ${formatoUsd(precio)} USD. El pago es en USDT o USDC y se confirma automáticamente.`,
+        contenido: [
+            el('div', { class: 'livepass-modal-actions' },
+                el('button', { type: 'button', class: 'livepass-modal-btn-primary',
+                    text: `◆ Pagar ${formatoUsd(precio)} USD`,
+                    onclick: () => iniciarPagoAcceso(streamId) }),
+                el('button', { type: 'button', class: 'livepass-modal-btn-secondary',
+                    text: 'Ahora no', onclick: () => $('paywallBackdrop')?.remove() }))
+        ]
+    });
+    b.addEventListener('click', (e) => { if (e.target === b) b.remove(); });
+}
+
+async function iniciarPagoAcceso(streamId) {
+    try {
+        const session = await getSession();
+        if (!session) throw new Error('Inicia sesión para pagar');
+        showToast('⏳ Creando tu pago…', '', 3000);
+
+        const r = await fetch(ENDPOINTS.pagoAccesoCrear, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+            body: JSON.stringify({ transmisionId: Number(streamId), metodo: 'crypto' })
+        });
+        const d = await r.json().catch(() => ({}));
+        if (r.status !== 201 || !d?.data?.id) throw new Error(d.error || 'No se pudo crear el pago');
+
+        $('paywallBackdrop')?.remove();
+        mostrarDepositoAcceso(d.data, streamId);
+        iniciarEsperaPagoAcceso(d.data.id, streamId);
+    } catch (e) {
+        console.error('[Live] pago de acceso', e);
+        showToast('❌ ' + (e.message || 'No se pudo crear el pago'), 'error', 6000);
+    }
+}
+
+function mostrarDepositoAcceso(orden, streamId) {
+    $('depositoAccesoBackdrop')?.remove();
+    const moneda = String(orden.pay_currency || 'usdttrc20').toUpperCase();
+    const qrBox = el('div', { class: 'deposito-qr', style: 'margin:0 auto 10px;min-height:180px;display:flex;justify-content:center;align-items:center;' },
+        el('span', { style: 'font-size:.7rem;color:var(--text-muted);', text: 'Generando QR…' }));
+    const direccion = el('div', { class: 'deposito-box', text: String(orden.pay_address || '') });
+
+    const copiar = el('button', { type: 'button', class: 'livepass-modal-btn-secondary', text: 'Copiar dirección' });
+    copiar.addEventListener('click', async () => {
+        try {
+            await navigator.clipboard.writeText(String(orden.pay_address || ''));
+            copiar.textContent = '✓ Copiada';
+        } catch {
+            copiar.textContent = 'No se pudo copiar';
+        }
+    });
+
+    const cancelar = el('button', { type: 'button', class: 'livepass-modal-btn-secondary', text: 'Cerrar', onclick: () => {
+        detenerEsperaPagoAcceso();
+        $('depositoAccesoBackdrop')?.remove();
+    } });
+
+    const b = crearModal({
+        id: 'depositoAccesoBackdrop',
+        icono: '◆',
+        titulo: 'Paga tu acceso',
+        texto: `Envía exactamente ${orden.pay_amount ?? '—'} ${moneda} por la red correcta. Tu entrada se libera sola al confirmarse.`,
+        contenido: [
+            el('div', { class: 'deposito-monto', style: 'font-family:Orbitron,monospace;color:var(--gold);font-size:1rem;margin-bottom:6px;', text: `${orden.pay_amount ?? '—'} ${moneda}` }),
+            el('div', { style: 'font-size:.72rem;color:#f7d44a;margin-bottom:10px;', text: 'Red: TRON (TRC20). Solo USDT por esta red.' }),
+            qrBox,
+            direccion,
+            el('div', { class: 'livepass-modal-actions' }, copiar, cancelar)
+        ]
+    });
+    b.addEventListener('click', (e) => { if (e.target === b) { detenerEsperaPagoAcceso(); b.remove(); } });
+
+    if (orden.pay_address && typeof QRCode !== 'undefined' && QRCode.toDataURL) {
+        QRCode.toDataURL(String(orden.pay_address), { width: 180, margin: 1 })
+            .then((url) => {
+                qrBox.replaceChildren();
+                qrBox.append(el('img', { src: url, alt: 'QR de pago', style: 'width:180px;height:180px;background:#fff;padding:6px;border-radius:10px;' }));
+            })
+            .catch(() => { qrBox.replaceChildren(el('span', { style: 'font-size:.7rem;color:var(--text-muted);', text: 'QR no disponible. Copia la dirección.' })); });
+    } else {
+        qrBox.replaceChildren(el('span', { style: 'font-size:.7rem;color:var(--text-muted);', text: 'QR no disponible. Copia la dirección.' }));
+    }
+}
+
+function iniciarEsperaPagoAcceso(ordenId, streamId) {
+    detenerEsperaPagoAcceso();
+    const inicio = Date.now();
+    _pagoAccesoTimer = setInterval(async () => {
+        if (Date.now() - inicio > TIMEOUT_PAGO_ACCESO_MS) {
+            detenerEsperaPagoAcceso();
+            showToast('⏰ Tiempo agotado. Si ya pagaste, vuelve a unirte en unos minutos.', 'warning', 7000);
+            return;
+        }
+        try {
+            const session = await getSession();
+            if (!session) return;
+            const r = await fetch(ENDPOINTS.pagoAccesoEstado(ordenId), {
+                headers: { Authorization: `Bearer ${session.access_token}` }
+            });
+            if (!r.ok) return;
+            const d = await r.json();
+            const estado = d?.data?.estado;
+            if (estado === 'pagado') {
+                detenerEsperaPagoAcceso();
+                $('depositoAccesoBackdrop')?.remove();
+                showToast('✅ Pago confirmado. Entrando al live…', 'success', 3000);
+                unirseATransmision(streamId);
+            } else if (estado === 'fallido' || estado === 'cancelado') {
+                detenerEsperaPagoAcceso();
+                showToast('❌ El pago no se completó', 'error', 5000);
+            }
+        } catch {}
+    }, INTERVALO_PAGO_ACCESO_MS);
+}
+
+function detenerEsperaPagoAcceso() {
+    clearInterval(_pagoAccesoTimer);
+    _pagoAccesoTimer = null;
+}
+
+// ---------- MÉTRICAS DEL HEADER (seguidores, espectadores, vistas, donaciones) ----------
+function setMetrica(id, texto) {
+    const n = $(id);
+    if (n) n.textContent = texto;
+}
+
+async function cargarMetricas(streamId) {
+    try {
+        const sb = await sbOrThrow();
+        const { data: t } = await sb.from('transmisiones')
+            .select('streamer_id,precio_acceso,espectadores,donaciones_totales,viewers_count')
+            .eq('id', streamId)
+            .maybeSingle();
+        if (!t) return;
+
+        // Seguidores y totales del creador desde la vista pública del ranking
+        let seguidores = 0;
+        if (t.streamer_id) {
+            const { data: r } = await sb.from('ranking_creadores')
+                .select('seguidores_count')
+                .eq('usuario_id', t.streamer_id)
+                .maybeSingle();
+            seguidores = Number(r?.seguidores_count) || 0;
+        }
+
+        setMetrica('metSeguidores', String(seguidores));
+        setMetrica('metVistas', String(Number(t.espectadores) || 0));
+        setMetrica('metDonaciones', formatoUsd(t.donaciones_totales));
+        setMetrica('metPrecio', textoPrecio(t.precio_acceso));
+        if (!liveKitRoom || !liveKitRoom.remoteParticipants) {
+            setMetrica('metEspectadores', String(Number(t.viewers_count) || 0));
+        }
+    } catch (e) {
+        console.warn('[Live] métricas', e?.message);
+    }
+}
+
+function iniciarMetricas(streamId) {
+    detenerMetricas();
+    const bloque = $('liveMetricas');
+    if (bloque) bloque.style.display = 'flex';
+    cargarMetricas(streamId);
+    _metricasTimer = setInterval(() => {
+        if (currentStreamId === streamId && _rol !== 'idle') cargarMetricas(streamId);
+    }, INTERVALO_METRICAS_MS);
+}
+
+function detenerMetricas() {
+    clearInterval(_metricasTimer);
+    _metricasTimer = null;
+    const bloque = $('liveMetricas');
+    if (bloque) bloque.style.display = 'none';
 }
 
 // ---------- CONTROLES ----------
@@ -1122,10 +1364,12 @@ function renderizarTransmisiones(lista) {
     for (const s of lista) {
         const mins = s.fecha_inicio ? Math.max(0, Math.floor((Date.now() - new Date(s.fecha_inicio)) / 60000)) : 0;
         const dur = mins < 60 ? `${mins} min` : `${Math.floor(mins / 60)}h ${mins % 60}m`;
+        const precioTxt = textoPrecio(s.precio_acceso);
         const card = el('div', { class: 'stream-card', role: 'button', tabindex: '0', 'data-stream-id': s.id },
             el('div', { class: 'stream-thumb' },
                 el('span', { style: 'font-size:2rem;', text: '◉' }),
-                el('span', { class: 'live-badge', text: '● EN VIVO' })),
+                el('span', { class: 'live-badge', text: '● EN VIVO' }),
+                el('span', { style: 'position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,.6);color:var(--gold);font-size:.55rem;padding:2px 8px;border-radius:10px;', text: precioTxt })),
             el('div', { class: 'stream-name', text: s.titulo || 'Live' }),
             el('div', { class: 'stream-host', text: `${s.categoria || 'General'} · ${Number(s.viewers_count) || 0} espectadores · ${dur}` }));
         card.addEventListener('click', () => unirseATransmision(s.id));
@@ -1521,7 +1765,7 @@ async function cargarEstadisticas() {
     try {
         const sb = await sbOrThrow();
         const { data, error } = await sb.from('transmisiones')
-            .select('fecha_inicio,fecha_fin,viewers_count')
+            .select('fecha_inicio,fecha_fin,espectadores,donaciones_totales')
             .eq('streamer_id', session.user.id)
             .is('grupo_id', null)
             .order('fecha_inicio', { ascending: false })
@@ -1532,8 +1776,9 @@ async function cargarEstadisticas() {
             const d = (new Date(s.fecha_fin) - new Date(s.fecha_inicio)) / 1000;
             return a + (d > 0 ? d : 0);
         }, 0);
-        const espectadores = data.reduce((a, s) => a + (Number(s.viewers_count) || 0), 0);
-        showToast(`◈ Transmisiones: ${data.length} · Horas: ${(segundos / 3600).toFixed(1)}h · Espectadores: ${espectadores}`, 'success', 6000);
+        const vistas = data.reduce((a, s) => a + (Number(s.espectadores) || 0), 0);
+        const donado = data.reduce((a, s) => a + (Number(s.donaciones_totales) || 0), 0);
+        showToast(`◈ Lives: ${data.length} · Horas: ${(segundos / 3600).toFixed(1)}h · Vistas: ${vistas} · Donaciones: ${formatoUsd(donado)}`, 'success', 7000);
     } catch {
         showToast('❌ No se pudieron cargar las estadísticas', 'error');
     }
