@@ -1,7 +1,10 @@
 // ================================================================
-// GRUPOS · MARKETPLACE Y REGALOS
+// GRUPOS · MARKETPLACE Y DONACIONES
 // ================================================================
-// Publicación en Marketplace + sistema de donaciones/regalos.
+// Publicación en Marketplace + donaciones al creador del canal.
+// v2: las donaciones solo se hacen con un live activo en el canal.
+//     Montos de 20 USD en adelante. El servidor decide el creador
+//     y reparte 50% creador / 50% plataforma.
 // Depende de: grupos-config.js, grupos-utils.js, grupos-interno.js
 // ================================================================
 
@@ -166,69 +169,248 @@ async function publicarMarketplace() {
 }
 
 // ================================================================
-// MODAL REGALOS / DONACIONES
+// DONACIONES AL CREADOR DEL CANAL
 // ================================================================
-function abrirModalRegalos(streamerId, streamerNombre) {
+var GIFT_MONTOS = [20, 50, 100, 200];
+var GIFT_REDES = [
+    { id: 'usdttrc20', label: 'USDT · TRC20' },
+    { id: 'usdcpolygon', label: 'USDC · Polygon' }
+];
+var _giftMonto = null;
+var _giftRed = null;
+var _giftPollTimer = null;
+var _giftInicio = 0;
+var GIFT_TIMEOUT_MS = 10 * 60 * 1000;
+
+function giftCrearEl(tag, attrs, texto) {
+    var n = document.createElement(tag);
+    if (attrs) {
+        Object.keys(attrs).forEach(function(k) {
+            if (k === 'class') n.className = attrs[k];
+            else if (k === 'style') n.style.cssText = attrs[k];
+            else n.setAttribute(k, attrs[k]);
+        });
+    }
+    if (texto !== undefined) n.textContent = texto;
+    return n;
+}
+
+function giftSetStatus(texto, color) {
+    var st = document.getElementById('giftStatus');
+    if (!st) return;
+    st.replaceChildren();
+    st.textContent = texto;
+    st.style.color = color || 'var(--text-muted)';
+}
+
+function giftActualizarBotonPagar() {
+    var btn = document.getElementById('btnPagarDonacion');
+    if (btn) btn.disabled = !(_giftMonto && _giftRed);
+}
+
+// Muestra las opciones de monto y red, y solo habilita donar si hay live activo
+async function abrirModalRegalos(streamerId, streamerNombre) {
+    if (!sessionUser) { grpShowToast('Inicia sesión para donar', 'error'); return; }
+    if (!grupoActualId) return;
+
+    _giftMonto = null;
+    _giftRed = null;
+    detenerSondeoDonacion();
+
     document.getElementById('giftStreamerName').textContent = streamerNombre || 'el creador';
-    document.getElementById('giftStatus').textContent = 'Selecciona un monto';
+    var contenedor = document.getElementById('giftOptions');
+    contenedor.replaceChildren();
     document.getElementById('modalRegalos').classList.add('show');
+
+    var live = await verificarLiveActivoGrupo(grupoActualId);
+    if (!live) {
+        giftSetStatus('Las donaciones se hacen durante un live. Este canal no está en vivo ahora.', 'var(--warning)');
+        return;
+    }
+    if (live.streamer_id === sessionUser.id) {
+        giftSetStatus('No puedes donarte a ti mismo.', 'var(--warning)');
+        return;
+    }
+
+    var etiquetaMonto = giftCrearEl('div', { style: 'font-size:0.65rem;color:var(--text-muted);margin-bottom:6px;' }, 'Monto (USD)');
+    var filaMontos = giftCrearEl('div', { style: 'display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:14px;' });
+    GIFT_MONTOS.forEach(function(m) {
+        var b = giftCrearEl('button', { class: 'gift-btn', 'data-monto': String(m), type: 'button' });
+        b.appendChild(giftCrearEl('span', { class: 'monto' }, '$' + m));
+        b.addEventListener('click', function() { seleccionarMontoGift(m); });
+        filaMontos.appendChild(b);
+    });
+
+    var etiquetaRed = giftCrearEl('div', { style: 'font-size:0.65rem;color:var(--text-muted);margin-bottom:6px;' }, 'Red');
+    var filaRedes = giftCrearEl('div', { style: 'display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:14px;' });
+    GIFT_REDES.forEach(function(r) {
+        var b = giftCrearEl('button', { class: 'gift-btn', 'data-red': r.id, type: 'button', style: 'min-width:130px;' });
+        b.appendChild(giftCrearEl('span', { class: 'label' }, r.label));
+        b.addEventListener('click', function() { seleccionarRedGift(r.id); });
+        filaRedes.appendChild(b);
+    });
+
+    var btnPagar = giftCrearEl('button', {
+        id: 'btnPagarDonacion',
+        type: 'button',
+        class: 'btn-gold btn-sm',
+        disabled: 'true',
+        style: 'width:100%;justify-content:center;margin-top:4px;'
+    }, 'Generar pago');
+    btnPagar.addEventListener('click', function() { enviarRegalo(); });
+
+    contenedor.append(etiquetaMonto, filaMontos, etiquetaRed, filaRedes, btnPagar);
+    giftSetStatus('Elige el monto y la red para donar. Mínimo $20 USD.');
 }
 
 function cerrarModalRegalos() {
+    detenerSondeoDonacion();
     document.getElementById('modalRegalos').classList.remove('show');
 }
 
-async function enviarRegalo(monto) {
+function seleccionarMontoGift(monto) {
+    if (GIFT_MONTOS.indexOf(monto) === -1) return;
+    _giftMonto = monto;
+    document.querySelectorAll('#giftOptions [data-monto]').forEach(function(b) {
+        b.style.borderColor = Number(b.dataset.monto) === monto ? 'var(--gold)' : '';
+    });
+    giftActualizarBotonPagar();
+}
+
+function seleccionarRedGift(redId) {
+    if (!GIFT_REDES.some(function(r) { return r.id === redId; })) return;
+    _giftRed = redId;
+    document.querySelectorAll('#giftOptions [data-red]').forEach(function(b) {
+        b.style.borderColor = b.dataset.red === redId ? 'var(--gold)' : '';
+    });
+    giftActualizarBotonPagar();
+}
+
+// Crea la donación en el servidor y muestra el enlace de pago
+async function enviarRegalo(montoOpcional) {
+    if (montoOpcional) seleccionarMontoGift(Number(montoOpcional));
     if (!sessionUser) { grpShowToast('Inicia sesión', 'error'); return; }
     if (!grupoActualId) return;
-    var statusEl = document.getElementById('giftStatus');
-    statusEl.textContent = 'Procesando...';
+    if (!_giftMonto || !_giftRed) { giftSetStatus('Elige monto y red', 'var(--warning)'); return; }
+
+    var btn = document.getElementById('btnPagarDonacion');
+    if (btn) btn.disabled = true;
+    giftSetStatus('Creando tu pago…', 'var(--text-muted)');
+
     try {
         var session = await grpGetSession();
-        var response = await fetch('/api/payments/gift/create', {
+        if (!session) throw new Error('Inicia sesión para donar');
+
+        var response = await fetch('/api/live/donacion/canal/crear', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + (session?.access_token || '')
+                'Authorization': 'Bearer ' + session.access_token
             },
             body: JSON.stringify({
                 grupo_id: grupoActualId,
-                streamer_id: liveActivoEnGrupo ? liveActivoEnGrupo.streamer_id : grupoActual.creador_id,
-                monto: monto,
-                moneda: 'USDC'
+                monto_usd: _giftMonto,
+                pay_currency: _giftRed
             })
         });
-        var data = await response.json();
-        if (!data.success) throw new Error(data.error);
-        statusEl.innerHTML = 'Pago iniciado<br>Monto: ' + data.monto + ' USDC<br>ID: ' + data.payment_id +
-            '<button onclick="verificarRegalo(\'' + data.payment_id + '\')" style="margin-top:8px;padding:6px 20px;border-radius:20px;border:none;background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:var(--space);font-weight:700;font-size:0.7rem;cursor:pointer;">Verificar</button>';
-        statusEl.style.color = 'var(--success)';
+        var data = await response.json().catch(function() { return {}; });
+
+        if (response.status !== 201 || !data.success) {
+            throw new Error(giftMensajeError(data.error));
+        }
+
+        mostrarEnlacePagoGift(data.payment_url, data.donacion_id);
+        iniciarSondeoDonacion(data.donacion_id);
     } catch (e) {
-        statusEl.textContent = 'Error: ' + e.message;
-        statusEl.style.color = 'var(--danger)';
+        giftSetStatus('Error: ' + e.message, 'var(--danger)');
+    } finally {
+        if (btn) btn.disabled = false;
     }
 }
 
-async function verificarRegalo(paymentId) {
-    var statusEl = document.getElementById('giftStatus');
-    statusEl.textContent = 'Verificando...';
+function giftMensajeError(codigo) {
+    var mapa = {
+        sin_live_activo: 'Este canal no está en vivo ahora.',
+        no_puedes_donarte: 'No puedes donarte a ti mismo.',
+        monto_invalido: 'Monto no válido. El mínimo es $20 USD.',
+        red_invalida: 'Red no válida.',
+        pagos_no_configurados: 'Los pagos no están disponibles en este momento.',
+        pago_no_creado: 'No se pudo crear el pago. Intenta de nuevo.'
+    };
+    return mapa[codigo] || 'No se pudo crear la donación';
+}
+
+function mostrarEnlacePagoGift(url, donacionId) {
+    var st = document.getElementById('giftStatus');
+    if (!st) return;
+    st.replaceChildren();
+    st.style.color = 'var(--success)';
+    st.appendChild(document.createTextNode('Pago listo. Toca el botón para completar tu donación de $' + _giftMonto + ' USD.'));
+
+    var enlace = giftCrearEl('a', {
+        href: grpSafeUrl(url) || '#',
+        target: '_blank',
+        rel: 'noopener noreferrer',
+        class: 'btn-gold btn-sm',
+        style: 'display:block;margin-top:10px;text-align:center;text-decoration:none;'
+    }, 'Abrir pago');
+    st.appendChild(enlace);
+
+    var esperando = giftCrearEl('div', { style: 'margin-top:8px;font-size:0.65rem;color:var(--text-muted);' }, 'Esperando confirmación…');
+    esperando.id = 'giftEstadoEspera';
+    st.appendChild(esperando);
+}
+
+// Revisa cada 5 s el estado de la donación hasta que se confirme o falle
+function iniciarSondeoDonacion(donacionId) {
+    detenerSondeoDonacion();
+    _giftInicio = Date.now();
+    _giftPollTimer = setInterval(async function() {
+        if (Date.now() - _giftInicio > GIFT_TIMEOUT_MS) {
+            detenerSondeoDonacion();
+            var espera = document.getElementById('giftEstadoEspera');
+            if (espera) espera.textContent = 'Tiempo de espera agotado. Si ya pagaste, se confirmará en breve.';
+            return;
+        }
+        var estado = await consultarEstadoDonacion(donacionId);
+        if (estado === 'pagada') {
+            detenerSondeoDonacion();
+            giftSetStatus('¡Donación confirmada! Gracias por apoyar el canal.', 'var(--success)');
+            grpShowToast('Donación confirmada', 'success');
+        } else if (estado === 'fallida') {
+            detenerSondeoDonacion();
+            giftSetStatus('La donación no se completó.', 'var(--danger)');
+        }
+    }, 5000);
+}
+
+function detenerSondeoDonacion() {
+    if (_giftPollTimer) {
+        clearInterval(_giftPollTimer);
+        _giftPollTimer = null;
+    }
+}
+
+async function consultarEstadoDonacion(donacionId) {
     try {
         var session = await grpGetSession();
-        var response = await fetch('/api/payments/gift/status/' + paymentId, {
-            method: 'GET',
-            headers: { 'Authorization': 'Bearer ' + (session?.access_token || '') }
+        if (!session) return null;
+        var r = await fetch('/api/live/donacion/' + encodeURIComponent(donacionId) + '/estado', {
+            headers: { 'Authorization': 'Bearer ' + session.access_token }
         });
-        var data = await response.json();
-        if (data.estado === 'finished') {
-            statusEl.textContent = 'Regalo enviado';
-            statusEl.style.color = 'var(--success)';
-        } else if (data.estado === 'pending') {
-            statusEl.textContent = 'Pendiente';
-            statusEl.style.color = 'var(--warning)';
-        } else {
-            statusEl.textContent = 'Estado: ' + data.estado;
-        }
+        if (!r.ok) return null;
+        var d = await r.json();
+        return d.estado || null;
     } catch (e) {
-        console.warn(e);
+        return null;
     }
+}
+
+// Verificación manual (se expone para compatibilidad)
+async function verificarRegalo(donacionId) {
+    var estado = await consultarEstadoDonacion(donacionId);
+    if (estado === 'pagada') giftSetStatus('Donación confirmada', 'var(--success)');
+    else if (estado === 'fallida') giftSetStatus('La donación no se completó', 'var(--danger)');
+    else if (estado === 'pendiente') giftSetStatus('Pendiente de confirmación', 'var(--warning)');
+    else giftSetStatus('No se pudo verificar la donación', 'var(--text-muted)');
 }
