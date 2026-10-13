@@ -2,11 +2,12 @@
      CSARIEL'S ECOSYSTEM
      Checkout / Confirmar pedido
      Ruta: /features/mercado/checkout.html
-     
-     - GPS obligatorio (seguridad comprador + repartidor)
-     - Comisión de servicio: $5 MXN
-     - Pago: efectivo, transferencia, cripto
-     - Guarda comisiones en DB para cobro automático
+
+     v2:
+     - El pedido se crea en el servidor (POST /api/mercado/pedidos).
+       El navegador ya no escribe en mercado_pedidos ni en
+       mercado_pedido_items, ni descuenta stock.
+     - El total final lo calcula el servidor.
      ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
@@ -159,8 +160,8 @@
         .tipo-opcion:hover { border-color: var(--gold); }
         .tipo-opcion.activo { border-color: var(--gold); background: rgba(212,175,55,0.1); }
         .tipo-opcion.deshabilitado { opacity: 0.3; cursor: not-allowed; }
-        .tipo-opcion .icono { 
-            font-size: 1.4rem; margin-bottom: 4px; 
+        .tipo-opcion .icono {
+            font-size: 1.4rem; margin-bottom: 4px;
             color: var(--gold);
             font-family: 'Orbitron', monospace;
         }
@@ -210,8 +211,8 @@
         .gps-bloque.capturado { background: rgba(0,214,143,0.08); border-color: rgba(0,214,143,0.4); }
         .gps-bloque.error { background: rgba(255,51,102,0.08); border-color: rgba(255,51,102,0.3); }
         .gps-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-        .gps-header .gps-icono { 
-            font-size: 1.2rem; 
+        .gps-header .gps-icono {
+            font-size: 1.2rem;
             color: var(--cyan);
             font-family: 'Orbitron', monospace;
         }
@@ -293,8 +294,8 @@
         }
         .pago-opcion:hover { border-color: var(--gold); }
         .pago-opcion.activo { border-color: var(--gold); background: rgba(212,175,55,0.1); }
-        .pago-opcion .icono { 
-            font-size: 1.3rem; 
+        .pago-opcion .icono {
+            font-size: 1.3rem;
             color: var(--gold);
             font-family: 'Orbitron', monospace;
         }
@@ -316,8 +317,8 @@
             line-height: 1.5; margin-top: 12px;
             display: flex; gap: 10px; align-items: flex-start;
         }
-        .aviso-envio .icono { 
-            font-size: 1.2rem; flex-shrink: 0; 
+        .aviso-envio .icono {
+            font-size: 1.2rem; flex-shrink: 0;
             font-family: 'Orbitron', monospace;
         }
 
@@ -329,7 +330,7 @@
             line-height: 1.5; margin-top: 12px;
             display: flex; gap: 10px; align-items: flex-start;
         }
-        .aviso-servicio .icono { 
+        .aviso-servicio .icono {
             font-size: 1.2rem; flex-shrink: 0; color: var(--gold);
             font-family: 'Orbitron', monospace;
         }
@@ -438,8 +439,8 @@
             border: 1px solid var(--glass-border);
             border-radius: var(--radius-xl);
         }
-        .empty-state .icon { 
-            font-size: 3.5rem; display: block; margin-bottom: 16px; 
+        .empty-state .icon {
+            font-size: 3.5rem; display: block; margin-bottom: 16px;
             color: var(--gold); opacity: 0.4;
             font-family: 'Orbitron', monospace;
         }
@@ -604,896 +605,806 @@
         </button>
     </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="/features/shared/js/idiomas.js"></script>
-</body>
-</html><script>
-var CONFIG_LEGAL = {
-    nombre_comercial: 'Csariel\'s',
-    nombre_ecosistema: 'Csariel\'s Ecosystem',
-    slogan: 'Sabor al Paladar · Repostería Fina · Web3',
-    razon_social: '',
-    rfc: '',
-    email_contacto: '',
-    sitio_web: '',
-    pais_operacion: 'México',
-    ciudad_operacion: 'Puebla'
-};
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="/features/shared/js/idiomas.js"></script>
 
-var supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
-var supabaseKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
-var supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
-window.supabaseClient = supabaseClient;
-var supabase = supabaseClient;
-
-var CARRITO_KEY = 'mercado_carrito_v1';
-var COMISION_COMPRADOR = 5.00;
-
-var sessionUser = null;
-var itemsCarrito = [];
-var tiendasCache = {};
-var tipoEntrega = 'delivery';
-var metodoPago = 'efectivo';
-var coordenadas = { lat: null, lng: null, precision: null };
-var gpsTimeoutId = null;
-var procesando = false;
-var gruposTiendas = {};
-
-function mostrarErrorEnPantalla(mensaje) {
-    var banner = document.getElementById('errorBanner');
-    var texto = document.getElementById('errorBannerText');
-    if (banner && texto) { texto.textContent = mensaje; banner.style.display = 'block'; }
-}
-window.addEventListener('error', function (event) {
-    mostrarErrorEnPantalla((event.message || 'Error desconocido') + ' — línea ' + event.lineno);
-});
-window.addEventListener('unhandledrejection', function (event) {
-    mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason && event.reason.message ? event.reason.message : event.reason));
-});
-
-function showToast(mensaje, tipo) {
-    try {
-        var toastEl = document.getElementById('toast');
-        if (!toastEl) { console.warn(mensaje); return; }
-        toastEl.textContent = mensaje;
-        toastEl.className = 'toast show';
-        if (tipo === 'error') toastEl.classList.add('error');
-        else if (tipo === 'warning') toastEl.classList.add('warning');
-        else if (tipo === 'success') toastEl.classList.add('success');
-        clearTimeout(toastEl._timeout);
-        toastEl._timeout = setTimeout(function() { toastEl.classList.remove('show'); }, 3500);
-    } catch (e) { console.warn('Toast error:', e); }
-}
-
-function escapeHTML(texto) {
-    if (!texto) return '';
-    var div = document.createElement('div');
-    div.textContent = texto;
-    return div.innerHTML;
-}
-
-function formatearPrecio(n) {
-    return '$' + parseFloat(n || 0).toFixed(2);
-}
-
-function leerCarrito() {
-    try {
-        var raw = localStorage.getItem(CARRITO_KEY);
-        if (!raw) return [];
-        var data = JSON.parse(raw);
-        return Array.isArray(data) ? data : [];
-    } catch (e) { return []; }
-}
-
-function guardarCarrito(items) {
-    try {
-        localStorage.setItem(CARRITO_KEY, JSON.stringify(items));
-    } catch (e) { console.warn('Error:', e); }
-}
-
-function generarCodigoPedido() {
-    var ahora = new Date();
-    var ymd = ahora.getFullYear().toString().substr(-2) +
-        String(ahora.getMonth() + 1).padStart(2, '0') +
-        String(ahora.getDate()).padStart(2, '0');
-    var rand = Math.floor(Math.random() * 9000) + 1000;
-    return 'SAR-' + ymd + '-' + rand;
-}
-
-async function cargarUsuarioActual() {
-    try {
-        var result = await supabase.auth.getSession();
-        var session = result.data.session;
-        if (!session) { sessionUser = null; return null; }
-        sessionUser = session.user;
-        var u = await supabase
-            .from('usuarios')
-            .select('nombre, handle, telefono, direccion, tokens')
-            .eq('id', session.user.id)
-            .single();
-        if (!u.error && u.data) {
-            var badge = document.getElementById('tokenBadgeCantidad');
-            if (badge) badge.textContent = u.data.tokens || 0;
-        }
-        return u.data || null;
-    } catch (e) { console.error('Error usuario:', e); return null; }
-}
-
-async function prepararCheckout() {
-    itemsCarrito = leerCarrito();
-
-    if (itemsCarrito.length === 0) {
-        mostrarVacio('Tu carrito está vacío.');
-        return;
-    }
-
-    var tiendaIds = [];
-    itemsCarrito.forEach(function (it) {
-        if (it.tienda_id && tiendaIds.indexOf(it.tienda_id) === -1) {
-            tiendaIds.push(it.tienda_id);
-        }
-    });
-
-    if (tiendaIds.length > 0) {
-        try {
-            var resT = await supabase
-                .from('mercado_tiendas')
-                .select('id, nombre_negocio, slug, acepta_delivery, acepta_pickup, envio_mxn, estado')
-                .in('id', tiendaIds);
-            if (!resT.error && resT.data) {
-                resT.data.forEach(function (t) {
-                    tiendasCache[t.id] = t;
-                });
-            }
-        } catch (e) { console.error('Error tiendas:', e); }
-    }
-
-    var tiendaInactiva = null;
-    tiendaIds.forEach(function (tid) {
-        var t = tiendasCache[tid];
-        if (t && t.estado !== 'activa') tiendaInactiva = t;
-    });
-
-    if (tiendaInactiva) {
-        mostrarVacio('Una de las tiendas no está disponible actualmente');
-        return;
-    }
-
-    var todasAceptanDelivery = tiendaIds.every(function (tid) {
-        var t = tiendasCache[tid];
-        return t && t.acepta_delivery;
-    });
-    var todasAceptanPickup = tiendaIds.every(function (tid) {
-        var t = tiendasCache[tid];
-        return t && t.acepta_pickup;
-    });
-
-    if (todasAceptanDelivery) tipoEntrega = 'delivery';
-    else if (todasAceptanPickup) tipoEntrega = 'pickup';
-    else tipoEntrega = 'delivery';
-
-    gruposTiendas = {};
-    itemsCarrito.forEach(function (it) {
-        if (!gruposTiendas[it.tienda_id]) {
-            gruposTiendas[it.tienda_id] = [];
-        }
-        gruposTiendas[it.tienda_id].push(it);
-    });
-
-    renderCheckout(todasAceptanDelivery, todasAceptanPickup);
-}
-
-function mostrarVacio(mensaje) {
-    var container = document.getElementById('checkoutContainer');
-    if (!container) return;
-    container.innerHTML = '<div class="empty-state">' +
-        '<span class="icon">◈</span>' +
-        '<h3>No puedes continuar</h3>' +
-        '<p>' + escapeHTML(mensaje || 'Tu carrito está vacío o tiene problemas.') + '</p>' +
-        '<a href="/features/mercado/index.html" class="btn-ir"><span class="simbolo">◆</span> Ir al Mercado</a>' +
-    '</div>';
-}
-
-function calcularSubtotal() {
-    var sub = 0;
-    itemsCarrito.forEach(function (it) {
-        sub += parseFloat(it.subtotal || 0);
-    });
-    return sub;
-}
-
-function calcularEnvio() {
-    if (tipoEntrega === 'pickup') {
-        return { app: 0, coordinar: false, total_tiendas: Object.keys(gruposTiendas).length };
-    }
-
-    var envioApp = 0;
-    var hayCoordinar = false;
-
-    Object.keys(gruposTiendas).forEach(function (tid) {
-        var t = tiendasCache[tid];
-        if (!t) return;
-        var envio = parseFloat(t.envio_mxn || 0);
-        if (envio > 0) envioApp += envio;
-        else if (t.acepta_delivery) hayCoordinar = true;
-    });
-
-    return {
-        app: envioApp,
-        coordinar: hayCoordinar,
-        total_tiendas: Object.keys(gruposTiendas).length
+    <script>
+    var CONFIG_LEGAL = {
+        nombre_comercial: 'Csariel\'s',
+        nombre_ecosistema: 'Csariel\'s Ecosystem',
+        slogan: 'Sabor al Paladar · Repostería Fina · Web3',
+        razon_social: '',
+        rfc: '',
+        email_contacto: '',
+        sitio_web: '',
+        pais_operacion: 'México',
+        ciudad_operacion: 'Puebla'
     };
-}
 
-function calcularComisionServicio() {
-    var totalTiendas = Object.keys(gruposTiendas).length;
-    return COMISION_COMPRADOR * totalTiendas;
-}
+    var supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
+    var supabaseKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+    // Reutiliza el cliente existente para no crear dos clientes
+    var supabaseClient = window.supabaseClient || window.supabase.createClient(supabaseUrl, supabaseKey);
+    window.supabaseClient = supabaseClient;
+    var supabase = supabaseClient;
 
-function calcularTotal() {
-    return calcularSubtotal() + calcularEnvio().app + calcularComisionServicio();
-}
+    var CARRITO_KEY = 'mercado_carrito_v1';
+    var COMISION_COMPRADOR = 5.00;
 
-function renderCheckout(aceptaDelivery, aceptaPickup) {
-    var container = document.getElementById('checkoutContainer');
-    if (!container) return;
+    var sessionUser = null;
+    var itemsCarrito = [];
+    var tiendasCache = {};
+    var tipoEntrega = 'delivery';
+    var metodoPago = 'efectivo';
+    var coordenadas = { lat: null, lng: null, precision: null };
+    var gpsTimeoutId = null;
+    var procesando = false;
+    var gruposTiendas = {};
 
-    var html = '';
+    function mostrarErrorEnPantalla(mensaje) {
+        var banner = document.getElementById('errorBanner');
+        var texto = document.getElementById('errorBannerText');
+        if (banner && texto) { texto.textContent = mensaje; banner.style.display = 'block'; }
+    }
+    window.addEventListener('error', function (event) {
+        mostrarErrorEnPantalla((event.message || 'Error desconocido') + ' — línea ' + event.lineno);
+    });
+    window.addEventListener('unhandledrejection', function (event) {
+        mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason && event.reason.message ? event.reason.message : event.reason));
+    });
 
-    html += '<div class="seccion-card">' +
-        '<h2><span class="simbolo">◈</span> <span data-clave="mercado_tipo_entrega">Tipo de entrega</span></h2>' +
-        '<div class="tipo-entrega-toggle">' +
-            '<div class="tipo-opcion ' + (tipoEntrega === 'delivery' ? 'activo' : '') + (aceptaDelivery ? '' : ' deshabilitado') + '" onclick="' + (aceptaDelivery ? 'cambiarTipoEntrega(\'delivery\')' : '') + '">' +
-                '<div class="icono">◆</div>' +
-                '<div class="nombre">Delivery</div>' +
-                '<div class="precio">' + obtenerTextoEnvio() + '</div>' +
-            '</div>' +
-            '<div class="tipo-opcion ' + (tipoEntrega === 'pickup' ? 'activo' : '') + (aceptaPickup ? '' : ' deshabilitado') + '" onclick="' + (aceptaPickup ? 'cambiarTipoEntrega(\'pickup\')' : '') + '">' +
-                '<div class="icono">◇</div>' +
-                '<div class="nombre">Recoger en tienda</div>' +
-                '<div class="precio">Sin costo</div>' +
-            '</div>' +
-        '</div>' +
-    '</div>';
-
-    if (tipoEntrega === 'delivery') {
-        html += '<div class="seccion-card">' +
-            '<h2><span class="simbolo">◈</span> <span data-clave="mercado_direccion_entrega">Dirección de entrega</span></h2>' +
-
-            '<div class="form-group">' +
-                '<label><span data-clave="mercado_direccion">Dirección escrita</span> <span class="required">*</span></label>' +
-                '<input type="text" id="inputDireccion" maxlength="200" placeholder="Calle, número, colonia, referencias, depto, color de fachada..." />' +
-                '<div class="helper">Sé lo más específico posible: el repartidor debe encontrarte rápido</div>' +
-            '</div>' +
-
-            '<div class="form-group" style="margin-bottom:0;">' +
-                '<label><span data-clave="mercado_ubicacion_gps">Ubicación GPS</span> <span class="required">*</span></label>' +
-
-                '<div class="gps-bloque" id="gpsBloque">' +
-                    '<div class="gps-header">' +
-                        '<span class="gps-icono" id="gpsIcono">◈</span>' +
-                        '<span class="gps-titulo" id="gpsTitulo">Activa tu ubicación GPS</span>' +
-                    '</div>' +
-
-                    '<div class="gps-aviso" id="gpsAviso">' +
-                        '<strong>Obligatorio:</strong> activa tu GPS para que el repartidor llegue sin problemas. ' +
-                        'Tu ubicación exacta solo se comparte con el repartidor asignado y se borra al terminar la entrega.' +
-                    '</div>' +
-
-                    '<button type="button" class="btn-gps-grande" id="btnGPS" onclick="capturarUbicacion()">' +
-                        '<span class="simbolo">◈</span> <span data-clave="mercado_activar_gps">Activar mi ubicación GPS</span>' +
-                    '</button>' +
-
-                    '<div id="gpsCoordsBox" style="display:none; margin-top:10px;">' +
-                        '<div class="gps-coords" id="gpsCoords">' +
-                            '—<span class="precision" id="gpsPrecision"></span>' +
-                        '</div>' +
-                        '<button type="button" class="btn-gps-actualizar" onclick="capturarUbicacion()">' +
-                            '<span class="simbolo">✧</span> Actualizar ubicación' +
-                        '</button>' +
-                    '</div>' +
-
-                    '<div class="gps-instrucciones" id="gpsInstrucciones" style="display:none;">' +
-                        '<strong>No pudimos acceder a tu ubicación</strong>' +
-                        '<ol>' +
-                            '<li>Revisa que el GPS del teléfono esté encendido</li>' +
-                            '<li>Acepta el permiso de ubicación cuando el navegador pregunte</li>' +
-                            '<li>Si lo rechazaste antes, ve a configuración del navegador → este sitio → Permitir ubicación</li>' +
-                            '<li>Vuelve e intenta de nuevo</li>' +
-                        '</ol>' +
-                    '</div>' +
-                '</div>' +
-            '</div>' +
-
-            '<div class="form-group" style="margin-top:14px; margin-bottom:0;">' +
-                '<label><span data-clave="mercado_telefono_contacto">Teléfono de contacto</span> <span class="required">*</span></label>' +
-                '<input type="tel" id="inputTelefono" maxlength="20" placeholder="+52 123 456 7890" />' +
-                '<div class="helper">El repartidor podrá llamarte si se pierde</div>' +
-            '</div>' +
-        '</div>';
-    } else {
-        html += '<div class="seccion-card">' +
-            '<h2><span class="simbolo">◈</span> <span data-clave="mercado_contacto">Contacto</span></h2>' +
-            '<div class="form-group">' +
-                '<label><span data-clave="mercado_telefono_contacto">Teléfono de contacto</span> <span class="required">*</span></label>' +
-                '<input type="tel" id="inputTelefono" maxlength="20" placeholder="+52 123 456 7890" />' +
-            '</div>' +
-        '</div>';
+    function showToast(mensaje, tipo) {
+        try {
+            var toastEl = document.getElementById('toast');
+            if (!toastEl) { console.warn(mensaje); return; }
+            toastEl.textContent = mensaje;
+            toastEl.className = 'toast show';
+            if (tipo === 'error') toastEl.classList.add('error');
+            else if (tipo === 'warning') toastEl.classList.add('warning');
+            else if (tipo === 'success') toastEl.classList.add('success');
+            clearTimeout(toastEl._timeout);
+            toastEl._timeout = setTimeout(function() { toastEl.classList.remove('show'); }, 3500);
+        } catch (e) { console.warn('Toast error:', e); }
     }
 
-    html += '<div class="seccion-card">' +
-        '<h2><span class="simbolo">◈</span> <span data-clave="mercado_notas">Notas para el vendedor</span></h2>' +
-        '<div class="form-group" style="margin-bottom:0;">' +
-            '<textarea id="inputNotas" maxlength="300" placeholder="Instrucciones especiales, alergias, referencias..."></textarea>' +
-            '<div class="helper">Opcional · máx 300 caracteres</div>' +
-        '</div>' +
-    '</div>';
+    function escapeHTML(texto) {
+        if (!texto) return '';
+        var div = document.createElement('div');
+        div.textContent = texto;
+        return div.innerHTML;
+    }
 
-    html += '<div class="seccion-card">' +
-        '<h2><span class="simbolo">◈</span> <span data-clave="mercado_metodo_pago">Método de pago</span></h2>' +
-        '<div class="pago-opciones">' +
-            '<div class="pago-opcion ' + (metodoPago === 'efectivo' ? 'activo' : '') + '" onclick="cambiarMetodoPago(\'efectivo\')">' +
-                '<span class="icono">◆</span>' +
-                '<span class="texto">Efectivo</span>' +
-            '</div>' +
-            '<div class="pago-opcion ' + (metodoPago === 'transferencia' ? 'activo' : '') + '" onclick="cambiarMetodoPago(\'transferencia\')">' +
-                '<span class="icono">◇</span>' +
-                '<span class="texto">Transferencia</span>' +
-            '</div>' +
-            '<div class="pago-opcion ' + (metodoPago === 'cripto' ? 'activo' : '') + '" onclick="cambiarMetodoPago(\'cripto\')">' +
-                '<span class="icono">✦</span>' +
-                '<span class="texto">Cripto</span>' +
-            '</div>' +
-        '</div>' +
-        (metodoPago === 'cripto' ? 
-            '<div class="form-group" style="margin-top:14px; margin-bottom:0;">' +
-                '<label>Criptomoneda <span class="required">*</span></label>' +
-                '<select id="inputCripto">' +
-                    '<option value="usdttrc20">◆ USDT (TRC20) — Recomendado</option>' +
-                    '<option value="usdc">◇ USDC (ERC20)</option>' +
-                    '<option value="btc">◆ Bitcoin (BTC)</option>' +
-                    '<option value="eth">◇ Ethereum (ETH)</option>' +
-                '</select>' +
-                '<div class="helper">Serás redirigido a una pasarela de pago al confirmar</div>' +
-            '</div>' : ''
-        ) +
-    '</div>';
+    function formatearPrecio(n) {
+        return '$' + parseFloat(n || 0).toFixed(2);
+    }
 
-    html += renderResumen();
+    function leerCarrito() {
+        try {
+            var raw = localStorage.getItem(CARRITO_KEY);
+            if (!raw) return [];
+            var data = JSON.parse(raw);
+            return Array.isArray(data) ? data : [];
+        } catch (e) { return []; }
+    }
 
-    container.innerHTML = html;
+    function guardarCarrito(items) {
+        try {
+            localStorage.setItem(CARRITO_KEY, JSON.stringify(items));
+        } catch (e) { console.warn('Error:', e); }
+    }
 
-    autocompletarDatosUsuario();
+    async function cargarUsuarioActual() {
+        try {
+            var result = await supabase.auth.getSession();
+            var session = result.data.session;
+            if (!session) { sessionUser = null; return null; }
+            sessionUser = session.user;
+            var u = await supabase
+                .from('usuarios')
+                .select('nombre, handle, telefono, direccion, tokens')
+                .eq('id', session.user.id)
+                .single();
+            if (!u.error && u.data) {
+                var badge = document.getElementById('tokenBadgeCantidad');
+                if (badge) badge.textContent = u.data.tokens || 0;
+            }
+            return u.data || null;
+        } catch (e) { console.error('Error usuario:', e); return null; }
+    }
 
-    if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
+    async function prepararCheckout() {
+        itemsCarrito = leerCarrito();
 
-    actualizarEstadoBotonConfirmar();
-}
+        if (itemsCarrito.length === 0) {
+            mostrarVacio('Tu carrito está vacío.');
+            return;
+        }
 
-function obtenerTextoEnvio() {
-    var envio = calcularEnvio();
-    if (tipoEntrega === 'pickup') return 'Sin costo';
-    if (envio.app > 0 && envio.coordinar) return formatearPrecio(envio.app) + ' + efectivo';
-    if (envio.app > 0) return formatearPrecio(envio.app);
-    return 'A coordinar';
-}
-
-function renderResumen() {
-    var subtotal = calcularSubtotal();
-    var envio = calcularEnvio();
-    var comisionServicio = calcularComisionServicio();
-    var total = calcularTotal();
-    var numTiendas = Object.keys(gruposTiendas).length;
-
-    var html = '<div class="seccion-card">' +
-        '<h2><span class="simbolo">◈</span> <span data-clave="mercado_resumen_pedido">Resumen del pedido</span></h2>' +
-        '<div class="resumen-items">';
-
-    Object.keys(gruposTiendas).forEach(function (tid) {
-        var t = tiendasCache[tid] || {};
-        var items = gruposTiendas[tid];
-
-        html += '<div class="resumen-grupo">' +
-            '<div class="tienda-nombre"><span class="simbolo">◈</span> ' + escapeHTML(t.nombre_negocio || 'Tienda') + '</div>';
-
-        items.forEach(function (it) {
-            html += '<div class="resumen-item">' +
-                '<span><span class="cant">' + it.cantidad + '×</span>' + escapeHTML(it.nombre) + '</span>' +
-                '<span class="subtotal">' + formatearPrecio(it.subtotal) + '</span>' +
-            '</div>';
+        var tiendaIds = [];
+        itemsCarrito.forEach(function (it) {
+            if (it.tienda_id && tiendaIds.indexOf(it.tienda_id) === -1) {
+                tiendaIds.push(it.tienda_id);
+            }
         });
 
-        html += '</div>';
-    });
-
-    html += '</div>' +
-        '<div class="totales">' +
-            '<div class="fila">' +
-                '<span>Subtotal productos</span>' +
-                '<span>' + formatearPrecio(subtotal) + '</span>' +
-            '</div>';
-
-    if (tipoEntrega === 'pickup') {
-        html += '<div class="fila envio">' +
-            '<span><span class="lbl-simbolo">◇</span> Recoger en tienda</span>' +
-            '<span style="color:var(--success);">Sin costo</span>' +
-        '</div>';
-    } else {
-        if (envio.app > 0) {
-            html += '<div class="fila envio">' +
-                '<span><span class="lbl-simbolo">◆</span> Envío (por app)</span>' +
-                '<span style="color:var(--gold); font-weight:600;">' + formatearPrecio(envio.app) + '</span>' +
-            '</div>';
+        if (tiendaIds.length > 0) {
+            try {
+                var resT = await supabase
+                    .from('mercado_tiendas')
+                    .select('id, nombre_negocio, slug, acepta_delivery, acepta_pickup, envio_mxn, estado')
+                    .in('id', tiendaIds);
+                if (!resT.error && resT.data) {
+                    resT.data.forEach(function (t) {
+                        tiendasCache[t.id] = t;
+                    });
+                }
+            } catch (e) { console.error('Error tiendas:', e); }
         }
-        if (envio.coordinar) {
-            html += '<div class="fila envio">' +
-                '<span><span class="lbl-simbolo">◆</span> Envío (al repartidor)</span>' +
-                '<span style="color:var(--cyan); font-weight:600;">En efectivo</span>' +
-            '</div>';
+
+        var tiendaInactiva = null;
+        tiendaIds.forEach(function (tid) {
+            var t = tiendasCache[tid];
+            if (t && t.estado !== 'activa') tiendaInactiva = t;
+        });
+
+        if (tiendaInactiva) {
+            mostrarVacio('Una de las tiendas no está disponible actualmente');
+            return;
         }
+
+        var todasAceptanDelivery = tiendaIds.every(function (tid) {
+            var t = tiendasCache[tid];
+            return t && t.acepta_delivery;
+        });
+        var todasAceptanPickup = tiendaIds.every(function (tid) {
+            var t = tiendasCache[tid];
+            return t && t.acepta_pickup;
+        });
+
+        if (todasAceptanDelivery) tipoEntrega = 'delivery';
+        else if (todasAceptanPickup) tipoEntrega = 'pickup';
+        else tipoEntrega = 'delivery';
+
+        gruposTiendas = {};
+        itemsCarrito.forEach(function (it) {
+            if (!gruposTiendas[it.tienda_id]) {
+                gruposTiendas[it.tienda_id] = [];
+            }
+            gruposTiendas[it.tienda_id].push(it);
+        });
+
+        renderCheckout(todasAceptanDelivery, todasAceptanPickup);
     }
 
-    html += '<div class="fila servicio">' +
-        '<span><span class="lbl-simbolo">✦</span> Servicio de plataforma' +
-        (numTiendas > 1 ? ' (' + numTiendas + ' tiendas)' : '') +
-        '</span>' +
-        '<span class="val">' + formatearPrecio(comisionServicio) + '</span>' +
-    '</div>';
+    function mostrarVacio(mensaje) {
+        var container = document.getElementById('checkoutContainer');
+        if (!container) return;
+        container.innerHTML = '<div class="empty-state">' +
+            '<span class="icon">◈</span>' +
+            '<h3>No puedes continuar</h3>' +
+            '<p>' + escapeHTML(mensaje || 'Tu carrito está vacío o tiene problemas.') + '</p>' +
+            '<a href="/features/mercado/index.html" class="btn-ir"><span class="simbolo">◆</span> Ir al Mercado</a>' +
+        '</div>';
+    }
 
-    html += '<div class="fila total">' +
-        '<span class="lbl">Total a pagar ahora</span>' +
-        '<span class="val">' + formatearPrecio(total) + '</span>' +
-    '</div>' +
-    '</div>';
+    function calcularSubtotal() {
+        var sub = 0;
+        itemsCarrito.forEach(function (it) {
+            sub += parseFloat(it.subtotal || 0);
+        });
+        return sub;
+    }
 
-    if (tipoEntrega === 'delivery' && envio.coordinar) {
-        html += '<div class="aviso-envio">' +
-            '<span class="icono">◆</span>' +
-            '<div>' +
-                'El <strong>envío</strong> se paga en efectivo directamente al repartidor al recibir tu pedido. ' +
-                'El monto lo coordinas con él.' +
+    function calcularEnvio() {
+        if (tipoEntrega === 'pickup') {
+            return { app: 0, coordinar: false, total_tiendas: Object.keys(gruposTiendas).length };
+        }
+
+        var envioApp = 0;
+        var hayCoordinar = false;
+
+        Object.keys(gruposTiendas).forEach(function (tid) {
+            var t = tiendasCache[tid];
+            if (!t) return;
+            var envio = parseFloat(t.envio_mxn || 0);
+            if (envio > 0) envioApp += envio;
+            else if (t.acepta_delivery) hayCoordinar = true;
+        });
+
+        return {
+            app: envioApp,
+            coordinar: hayCoordinar,
+            total_tiendas: Object.keys(gruposTiendas).length
+        };
+    }
+
+    function calcularComisionServicio() {
+        var totalTiendas = Object.keys(gruposTiendas).length;
+        return COMISION_COMPRADOR * totalTiendas;
+    }
+
+    function calcularTotal() {
+        return calcularSubtotal() + calcularEnvio().app + calcularComisionServicio();
+    }
+
+    function renderCheckout(aceptaDelivery, aceptaPickup) {
+        var container = document.getElementById('checkoutContainer');
+        if (!container) return;
+
+        var html = '';
+
+        html += '<div class="seccion-card">' +
+            '<h2><span class="simbolo">◈</span> <span data-clave="mercado_tipo_entrega">Tipo de entrega</span></h2>' +
+            '<div class="tipo-entrega-toggle">' +
+                '<div class="tipo-opcion ' + (tipoEntrega === 'delivery' ? 'activo' : '') + (aceptaDelivery ? '' : ' deshabilitado') + '" onclick="' + (aceptaDelivery ? 'cambiarTipoEntrega(\'delivery\')' : '') + '">' +
+                    '<div class="icono">◆</div>' +
+                    '<div class="nombre">Delivery</div>' +
+                    '<div class="precio">' + obtenerTextoEnvio() + '</div>' +
+                '</div>' +
+                '<div class="tipo-opcion ' + (tipoEntrega === 'pickup' ? 'activo' : '') + (aceptaPickup ? '' : ' deshabilitado') + '" onclick="' + (aceptaPickup ? 'cambiarTipoEntrega(\'pickup\')' : '') + '">' +
+                    '<div class="icono">◇</div>' +
+                    '<div class="nombre">Recoger en tienda</div>' +
+                    '<div class="precio">Sin costo</div>' +
+                '</div>' +
             '</div>' +
         '</div>';
-    }
 
-    html += '<div class="aviso-servicio">' +
-        '<span class="icono">✦</span>' +
-        '<div>' +
-            'El <strong>servicio de plataforma</strong> (' + formatearPrecio(COMISION_COMPRADOR) + ' por tienda) ' +
-            'cubre verificación, seguimiento en vivo y soporte 24/7.' +
-        '</div>' +
-    '</div>';
+        if (tipoEntrega === 'delivery') {
+            html += '<div class="seccion-card">' +
+                '<h2><span class="simbolo">◈</span> <span data-clave="mercado_direccion_entrega">Dirección de entrega</span></h2>' +
 
-    html += '<button class="btn-confirmar" id="btnConfirmar" onclick="confirmarPedido()" disabled>' +
-        '<span class="simbolo">◆</span> <span data-clave="mercado_confirmar_pedido">Confirmar pedido</span>' +
-    '</button>';
+                '<div class="form-group">' +
+                    '<label><span data-clave="mercado_direccion">Dirección escrita</span> <span class="required">*</span></label>' +
+                    '<input type="text" id="inputDireccion" maxlength="200" placeholder="Calle, número, colonia, referencias, depto, color de fachada..." />' +
+                    '<div class="helper">Sé lo más específico posible: el repartidor debe encontrarte rápido</div>' +
+                '</div>' +
 
-    html += '<div class="aviso-bloqueo" id="avisoBloqueo">' +
-        '<span class="simbolo">✶</span> <span id="textoBloqueo">Completa todos los datos para continuar</span>' +
-    '</div>';
+                '<div class="form-group" style="margin-bottom:0;">' +
+                    '<label><span data-clave="mercado_ubicacion_gps">Ubicación GPS</span> <span class="required">*</span></label>' +
 
-    html += '</div>';
+                    '<div class="gps-bloque" id="gpsBloque">' +
+                        '<div class="gps-header">' +
+                            '<span class="gps-icono" id="gpsIcono">◈</span>' +
+                            '<span class="gps-titulo" id="gpsTitulo">Activa tu ubicación GPS</span>' +
+                        '</div>' +
 
-    return html;
-}
+                        '<div class="gps-aviso" id="gpsAviso">' +
+                            '<strong>Obligatorio:</strong> activa tu GPS para que el repartidor llegue sin problemas. ' +
+                            'Tu ubicación exacta solo se comparte con el repartidor asignado y se borra al terminar la entrega.' +
+                        '</div>' +
 
-function actualizarEstadoBotonConfirmar() {
-    var btn = document.getElementById('btnConfirmar');
-    var textoBloqueo = document.getElementById('textoBloqueo');
-    var avisoBloqueo = document.getElementById('avisoBloqueo');
-    if (!btn) return;
+                        '<button type="button" class="btn-gps-grande" id="btnGPS" onclick="capturarUbicacion()">' +
+                            '<span class="simbolo">◈</span> <span data-clave="mercado_activar_gps">Activar mi ubicación GPS</span>' +
+                        '</button>' +
 
-    var telefono = (document.getElementById('inputTelefono') || {}).value || '';
-    telefono = telefono.trim();
+                        '<div id="gpsCoordsBox" style="display:none; margin-top:10px;">' +
+                            '<div class="gps-coords" id="gpsCoords">' +
+                                '—<span class="precision" id="gpsPrecision"></span>' +
+                            '</div>' +
+                            '<button type="button" class="btn-gps-actualizar" onclick="capturarUbicacion()">' +
+                                '<span class="simbolo">✧</span> Actualizar ubicación' +
+                            '</button>' +
+                        '</div>' +
 
-    var direccion = '';
-    if (tipoEntrega === 'delivery') {
-        direccion = (document.getElementById('inputDireccion') || {}).value || '';
-        direccion = direccion.trim();
-    }
+                        '<div class="gps-instrucciones" id="gpsInstrucciones" style="display:none;">' +
+                            '<strong>No pudimos acceder a tu ubicación</strong>' +
+                            '<ol>' +
+                                '<li>Revisa que el GPS del teléfono esté encendido</li>' +
+                                '<li>Acepta el permiso de ubicación cuando el navegador pregunte</li>' +
+                                '<li>Si lo rechazaste antes, ve a configuración del navegador → este sitio → Permitir ubicación</li>' +
+                                '<li>Vuelve e intenta de nuevo</li>' +
+                            '</ol>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
 
-    var tieneTelefono = telefono.length >= 8;
-    var tieneDireccion = tipoEntrega === 'pickup' || direccion.length >= 5;
-    var tieneGPS = tipoEntrega === 'pickup' || (coordenadas.lat !== null && coordenadas.lng !== null);
-
-    var puedeContinuar = tieneTelefono && tieneDireccion && tieneGPS;
-
-    if (puedeContinuar) {
-        btn.disabled = false;
-        if (avisoBloqueo) avisoBloqueo.classList.add('hidden');
-    } else {
-        btn.disabled = true;
-        if (avisoBloqueo) avisoBloqueo.classList.remove('hidden');
-
-        var faltantes = [];
-        if (!tieneDireccion && tipoEntrega === 'delivery') faltantes.push('dirección');
-        if (!tieneGPS && tipoEntrega === 'delivery') faltantes.push('GPS');
-        if (!tieneTelefono) faltantes.push('teléfono');
-
-        if (textoBloqueo) {
-            textoBloqueo.textContent = 'Falta: ' + faltantes.join(', ');
-        }
-    }
-}
-
-async function autocompletarDatosUsuario() {
-    if (!sessionUser) return;
-    try {
-        var u = await supabase
-            .from('usuarios')
-            .select('telefono, direccion')
-            .eq('id', sessionUser.id)
-            .single();
-
-        if (!u.error && u.data) {
-            var tel = document.getElementById('inputTelefono');
-            if (tel && u.data.telefono && !tel.value) tel.value = u.data.telefono;
-
-            var dir = document.getElementById('inputDireccion');
-            if (dir && u.data.direccion && !dir.value) dir.value = u.data.direccion;
-
-            if (tel) tel.addEventListener('input', actualizarEstadoBotonConfirmar);
-            if (dir) dir.addEventListener('input', actualizarEstadoBotonConfirmar);
-
-            actualizarEstadoBotonConfirmar();
-        }
-    } catch (e) { /* silencioso */ }
-}
-
-function cambiarTipoEntrega(tipo) {
-    tipoEntrega = tipo;
-    var aceptaDelivery = Object.keys(gruposTiendas).every(function (tid) {
-        return tiendasCache[tid] && tiendasCache[tid].acepta_delivery;
-    });
-    var aceptaPickup = Object.keys(gruposTiendas).every(function (tid) {
-        return tiendasCache[tid] && tiendasCache[tid].acepta_pickup;
-    });
-    renderCheckout(aceptaDelivery, aceptaPickup);
-}
-
-function cambiarMetodoPago(metodo) {
-    metodoPago = metodo;
-    var aceptaDelivery = Object.keys(gruposTiendas).every(function (tid) {
-        return tiendasCache[tid] && tiendasCache[tid].acepta_delivery;
-    });
-    var aceptaPickup = Object.keys(gruposTiendas).every(function (tid) {
-        return tiendasCache[tid] && tiendasCache[tid].acepta_pickup;
-    });
-    renderCheckout(aceptaDelivery, aceptaPickup);
-}
-
-function capturarUbicacion() {
-    var btn = document.getElementById('btnGPS');
-    var btnActualizar = document.querySelector('.btn-gps-actualizar');
-    var bloque = document.getElementById('gpsBloque');
-    var titulo = document.getElementById('gpsTitulo');
-    var icono = document.getElementById('gpsIcono');
-    var aviso = document.getElementById('gpsAviso');
-    var instrucciones = document.getElementById('gpsInstrucciones');
-    var coordsBox = document.getElementById('gpsCoordsBox');
-    var coords = document.getElementById('gpsCoords');
-
-    if (!navigator.geolocation) {
-        showToast('✶ Tu navegador no soporta GPS', 'error');
-        if (bloque) bloque.classList.add('error');
-        if (instrucciones) instrucciones.style.display = 'block';
-        return;
-    }
-
-    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="simbolo">◈</span> Obteniendo ubicación...'; }
-    if (btnActualizar) { btnActualizar.disabled = true; btnActualizar.innerHTML = '<span class="simbolo">◈</span>...'; }
-    if (bloque) { bloque.classList.remove('capturado', 'error'); }
-    if (instrucciones) instrucciones.style.display = 'none';
-    if (titulo) titulo.textContent = 'Buscando tu ubicación...';
-    if (icono) icono.textContent = '◈';
-
-    if (gpsTimeoutId) clearTimeout(gpsTimeoutId);
-    gpsTimeoutId = setTimeout(function () {
-        if (coordenadas.lat === null) {
-            onGPSError({ code: 3, message: 'Tiempo de espera agotado' });
-        }
-    }, 15000);
-
-    navigator.geolocation.getCurrentPosition(
-        function (pos) {
-            if (gpsTimeoutId) clearTimeout(gpsTimeoutId);
-
-            coordenadas.lat = pos.coords.latitude;
-            coordenadas.lng = pos.coords.longitude;
-            coordenadas.precision = Math.round(pos.coords.accuracy || 0);
-
-            if (bloque) {
-                bloque.classList.remove('error');
-                bloque.classList.add('capturado');
-            }
-            if (icono) icono.textContent = '●';
-            if (titulo) titulo.textContent = '¡Ubicación capturada!';
-            if (aviso) aviso.style.display = 'none';
-            if (coordsBox) coordsBox.style.display = 'block';
-            if (coords) {
-                coords.innerHTML = pos.coords.latitude.toFixed(6) + ', ' + pos.coords.longitude.toFixed(6) +
-                    '<span class="precision">Precisión: ±' + coordenadas.precision + 'm</span>';
-            }
-            if (btn) btn.style.display = 'none';
-            if (btnActualizar) {
-                btnActualizar.disabled = false;
-                btnActualizar.innerHTML = '<span class="simbolo">✧</span> Actualizar ubicación';
-            }
-
-            showToast('◈ Ubicación capturada (±' + coordenadas.precision + 'm)', 'success');
-            actualizarEstadoBotonConfirmar();
-        },
-        function (err) {
-            if (gpsTimeoutId) clearTimeout(gpsTimeoutId);
-            onGPSError(err);
-        },
-        { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
-    );
-}
-
-function onGPSError(err) {
-    console.error('Error GPS:', err);
-
-    var btn = document.getElementById('btnGPS');
-    var btnActualizar = document.querySelector('.btn-gps-actualizar');
-    var bloque = document.getElementById('gpsBloque');
-    var titulo = document.getElementById('gpsTitulo');
-    var icono = document.getElementById('gpsIcono');
-    var aviso = document.getElementById('gpsAviso');
-    var instrucciones = document.getElementById('gpsInstrucciones');
-
-    if (bloque) {
-        bloque.classList.remove('capturado');
-        bloque.classList.add('error');
-    }
-    if (icono) icono.textContent = '✶';
-    if (titulo) titulo.textContent = 'No pudimos acceder a tu ubicación';
-    if (aviso) aviso.style.display = 'none';
-    if (instrucciones) instrucciones.style.display = 'block';
-
-    if (btn) {
-        btn.disabled = false;
-        btn.innerHTML = '<span class="simbolo">◈</span> Reintentar captura';
-        btn.style.display = 'inline-flex';
-    }
-    if (btnActualizar) {
-        btnActualizar.disabled = false;
-        btnActualizar.innerHTML = '<span class="simbolo">✧</span> Reintentar';
-    }
-
-    var msg = 'Error de GPS';
-    if (err && err.code === 1) msg = '✶ Permiso denegado. Revisa las instrucciones';
-    else if (err && err.code === 2) msg = '✶ Ubicación no disponible';
-    else if (err && err.code === 3) msg = '✶ Tiempo agotado. Intenta de nuevo';
-
-    showToast(msg, 'error');
-    actualizarEstadoBotonConfirmar();
-}
-
-async function confirmarPedido() {
-    if (procesando) return;
-    if (!sessionUser) { showToast('✶ Inicia sesión primero', 'warning'); return; }
-
-    var telefono = (document.getElementById('inputTelefono') || {}).value || '';
-    telefono = telefono.trim();
-    if (!telefono || telefono.length < 8) {
-        showToast('✶ Ingresa tu teléfono de contacto', 'warning');
-        document.getElementById('inputTelefono').focus();
-        return;
-    }
-
-    var direccion = '';
-    if (tipoEntrega === 'delivery') {
-        direccion = (document.getElementById('inputDireccion') || {}).value || '';
-        direccion = direccion.trim();
-        if (!direccion || direccion.length < 5) {
-            showToast('✶ Ingresa tu dirección completa', 'warning');
-            document.getElementById('inputDireccion').focus();
-            return;
-        }
-        if (coordenadas.lat === null || coordenadas.lng === null) {
-            showToast('✶ Activa tu ubicación GPS para continuar', 'warning');
-            var btnGps = document.getElementById('btnGPS');
-            if (btnGps) btnGps.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            return;
-        }
-    }
-
-    var notas = (document.getElementById('inputNotas') || {}).value || '';
-    notas = notas.trim();
-
-    var criptoSeleccionada = null;
-    if (metodoPago === 'cripto') {
-        var sel = document.getElementById('inputCripto');
-        criptoSeleccionada = sel ? sel.value : 'usdttrc20';
-    }
-
-    procesando = true;
-    var btn = document.getElementById('btnConfirmar');
-    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="simbolo">◈</span> Procesando...'; }
-
-    try {
-        var tiendasIds = Object.keys(gruposTiendas);
-        var pedidosCreados = [];
-
-        for (var i = 0; i < tiendasIds.length; i++) {
-            var tid = parseInt(tiendasIds[i]);
-            var items = gruposTiendas[tiendasIds[i]];
-            var t = tiendasCache[tid];
-
-            var subtotalTienda = items.reduce(function (s, it) {
-                return s + parseFloat(it.subtotal || 0);
-            }, 0);
-
-            var envioTienda = 0;
-            var envioCobradoEnApp = false;
-            if (tipoEntrega === 'delivery' && t && t.acepta_delivery) {
-                var envioT = parseFloat(t.envio_mxn || 0);
-                if (envioT > 0) {
-                    envioTienda = envioT;
-                    envioCobradoEnApp = true;
-                }
-            }
-
-            var comisionServicio = COMISION_COMPRADOR;
-            var totalTienda = subtotalTienda + envioTienda + comisionServicio;
-            var codigo = generarCodigoPedido();
-
-            var payloadPedido = {
-                codigo: codigo,
-                comprador_id: sessionUser.id,
-                tienda_id: tid,
-                estado: 'pendiente',
-                tipo_entrega: tipoEntrega,
-                subtotal_mxn: subtotalTienda,
-                envio_mxn: envioTienda,
-                total_mxn: totalTienda,
-                total_items: items.reduce(function (s, it) { return s + (it.cantidad || 0); }, 0),
-                direccion_entrega: tipoEntrega === 'delivery' ? direccion : null,
-                latitud_entrega: tipoEntrega === 'delivery' ? coordenadas.lat : null,
-                longitud_entrega: tipoEntrega === 'delivery' ? coordenadas.lng : null,
-                telefono_contacto: telefono,
-                notas: notas || null,
-                forma_pago: metodoPago,
-                envio_cobrado_en_app: envioCobradoEnApp,
-                comision_comprador_mxn: comisionServicio,
-                comision_total_plataforma_mxn: comisionServicio,
-                metodo_pago_comprador: metodoPago,
-                cripto_usada: criptoSeleccionada || null
-            };
-
-            var insPedido = await supabase
-                .from('mercado_pedidos')
-                .insert(payloadPedido)
-                .select()
-                .single();
-
-            if (insPedido.error) {
-                throw new Error('Error al crear pedido: ' + insPedido.error.message);
-            }
-
-            var pedido = insPedido.data;
-
-            var itemsPayload = items.map(function (it) {
-                return {
-                    pedido_id: pedido.id,
-                    producto_id: it.producto_id,
-                    nombre_producto: it.nombre,
-                    precio_unitario: it.precio_unitario,
-                    cantidad: it.cantidad,
-                    subtotal: it.subtotal,
-                    foto_url: it.foto_url || null
-                };
-            });
-
-            var insItems = await supabase
-                .from('mercado_pedido_items')
-                .insert(itemsPayload);
-
-            if (insItems.error) {
-                console.error('Error items:', insItems.error);
-                await supabase.from('mercado_pedidos').delete().eq('id', pedido.id);
-                throw new Error('Error al guardar items: ' + insItems.error.message);
-            }
-
-            for (var j = 0; j < items.length; j++) {
-                var it = items[j];
-                try {
-                    var prod = await supabase
-                        .from('mercado_productos')
-                        .select('stock, stock_ilimitado')
-                        .eq('id', it.producto_id)
-                        .single();
-
-                    if (!prod.error && prod.data && !prod.data.stock_ilimitado) {
-                        var nuevoStock = Math.max(0, parseInt(prod.data.stock || 0) - parseInt(it.cantidad || 0));
-                        await supabase
-                            .from('mercado_productos')
-                            .update({ stock: nuevoStock })
-                            .eq('id', it.producto_id);
-                    }
-                } catch (eStock) {
-                    console.warn('No se pudo actualizar stock:', eStock);
-                }
-            }
-
-            try {
-                var tiendaActual = await supabase
-                    .from('mercado_tiendas')
-                    .select('total_pedidos, total_ventas_mxn')
-                    .eq('id', tid)
-                    .single();
-
-                if (!tiendaActual.error && tiendaActual.data) {
-                    await supabase
-                        .from('mercado_tiendas')
-                        .update({
-                            total_pedidos: (parseInt(tiendaActual.data.total_pedidos || 0)) + 1,
-                            total_ventas_mxn: (parseFloat(tiendaActual.data.total_ventas_mxn || 0)) + totalTienda
-                        })
-                        .eq('id', tid);
-                }
-            } catch (e2) { console.warn('No se pudo actualizar tienda:', e2); }
-
-            pedidosCreados.push(pedido);
-        }
-
-        guardarCarrito([]);
-        showToast('✦ ¡Pedido' + (pedidosCreados.length > 1 ? 's' : '') + ' confirmado' + (pedidosCreados.length > 1 ? 's' : '') + '!', 'success');
-
-        setTimeout(function () {
-            if (pedidosCreados.length === 1) {
-                window.location.href = '/features/mercado/pedido.html?id=' + pedidosCreados[0].id;
-            } else {
-                window.location.href = '/features/mercado/mis-pedidos.html';
-            }
-        }, 1200);
-
-    } catch (e) {
-        console.error('Error confirmando pedido:', e);
-        showToast('✶ ' + (e.message || 'Error al confirmar'), 'error');
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = '<span class="simbolo">◆</span> Confirmar pedido';
-        }
-        procesando = false;
-    }
-}
-
-function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
-
-document.addEventListener('DOMContentLoaded', async function () {
-    await cargarUsuarioActual();
-
-    if (!sessionUser) {
-        var container = document.getElementById('checkoutContainer');
-        if (container) {
-            container.innerHTML = '<div class="empty-state">' +
-                '<span class="icon">●</span>' +
-                '<h3>Inicia sesión</h3>' +
-                '<p>Necesitas iniciar sesión para confirmar tu pedido.</p>' +
-                '<a href="/" class="btn-ir"><span class="simbolo">◈</span> Volver al inicio</a>' +
+                '<div class="form-group" style="margin-top:14px; margin-bottom:0;">' +
+                    '<label><span data-clave="mercado_telefono_contacto">Teléfono de contacto</span> <span class="required">*</span></label>' +
+                    '<input type="tel" id="inputTelefono" maxlength="20" placeholder="+52 123 456 7890" />' +
+                    '<div class="helper">El repartidor podrá llamarte si se pierde</div>' +
+                '</div>' +
+            '</div>';
+        } else {
+            html += '<div class="seccion-card">' +
+                '<h2><span class="simbolo">◈</span> <span data-clave="mercado_contacto">Contacto</span></h2>' +
+                '<div class="form-group">' +
+                    '<label><span data-clave="mercado_telefono_contacto">Teléfono de contacto</span> <span class="required">*</span></label>' +
+                    '<input type="tel" id="inputTelefono" maxlength="20" placeholder="+52 123 456 7890" />' +
+                '</div>' +
             '</div>';
         }
-        return;
+
+        html += '<div class="seccion-card">' +
+            '<h2><span class="simbolo">◈</span> <span data-clave="mercado_notas">Notas para el vendedor</span></h2>' +
+            '<div class="form-group" style="margin-bottom:0;">' +
+                '<textarea id="inputNotas" maxlength="300" placeholder="Instrucciones especiales, alergias, referencias..."></textarea>' +
+                '<div class="helper">Opcional · máx 300 caracteres</div>' +
+            '</div>' +
+        '</div>';
+
+        html += '<div class="seccion-card">' +
+            '<h2><span class="simbolo">◈</span> <span data-clave="mercado_metodo_pago">Método de pago</span></h2>' +
+            '<div class="pago-opciones">' +
+                '<div class="pago-opcion ' + (metodoPago === 'efectivo' ? 'activo' : '') + '" onclick="cambiarMetodoPago(\'efectivo\')">' +
+                    '<span class="icono">◆</span>' +
+                    '<span class="texto">Efectivo</span>' +
+                '</div>' +
+                '<div class="pago-opcion ' + (metodoPago === 'transferencia' ? 'activo' : '') + '" onclick="cambiarMetodoPago(\'transferencia\')">' +
+                    '<span class="icono">◇</span>' +
+                    '<span class="texto">Transferencia</span>' +
+                '</div>' +
+                '<div class="pago-opcion ' + (metodoPago === 'cripto' ? 'activo' : '') + '" onclick="cambiarMetodoPago(\'cripto\')">' +
+                    '<span class="icono">✦</span>' +
+                    '<span class="texto">Cripto</span>' +
+                '</div>' +
+            '</div>' +
+            (metodoPago === 'cripto' ?
+                '<div class="form-group" style="margin-top:14px; margin-bottom:0;">' +
+                    '<label>Criptomoneda <span class="required">*</span></label>' +
+                    '<select id="inputCripto">' +
+                        '<option value="usdttrc20">◆ USDT (TRC20) — Recomendado</option>' +
+                        '<option value="usdc">◇ USDC (ERC20)</option>' +
+                        '<option value="btc">◆ Bitcoin (BTC)</option>' +
+                        '<option value="eth">◇ Ethereum (ETH)</option>' +
+                    '</select>' +
+                    '<div class="helper">Serás redirigido a una pasarela de pago al confirmar</div>' +
+                '</div>' : ''
+            ) +
+        '</div>';
+
+        html += renderResumen();
+
+        container.innerHTML = html;
+
+        autocompletarDatosUsuario();
+
+        if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(container);
+
+        actualizarEstadoBotonConfirmar();
     }
 
-    await prepararCheckout();
+    function obtenerTextoEnvio() {
+        var envio = calcularEnvio();
+        if (tipoEntrega === 'pickup') return 'Sin costo';
+        if (envio.app > 0 && envio.coordinar) return formatearPrecio(envio.app) + ' + efectivo';
+        if (envio.app > 0) return formatearPrecio(envio.app);
+        return 'A coordinar';
+    }
 
-    setTimeout(async function () {
-        try {
-            if (typeof window.inicializarIdiomas === 'function') {
-                await window.inicializarIdiomas();
+    function renderResumen() {
+        var subtotal = calcularSubtotal();
+        var envio = calcularEnvio();
+        var comisionServicio = calcularComisionServicio();
+        var total = calcularTotal();
+        var numTiendas = Object.keys(gruposTiendas).length;
+
+        var html = '<div class="seccion-card">' +
+            '<h2><span class="simbolo">◈</span> <span data-clave="mercado_resumen_pedido">Resumen del pedido</span></h2>' +
+            '<div class="resumen-items">';
+
+        Object.keys(gruposTiendas).forEach(function (tid) {
+            var t = tiendasCache[tid] || {};
+            var items = gruposTiendas[tid];
+
+            html += '<div class="resumen-grupo">' +
+                '<div class="tienda-nombre"><span class="simbolo">◈</span> ' + escapeHTML(t.nombre_negocio || 'Tienda') + '</div>';
+
+            items.forEach(function (it) {
+                html += '<div class="resumen-item">' +
+                    '<span><span class="cant">' + it.cantidad + '×</span>' + escapeHTML(it.nombre) + '</span>' +
+                    '<span class="subtotal">' + formatearPrecio(it.subtotal) + '</span>' +
+                '</div>';
+            });
+
+            html += '</div>';
+        });
+
+        html += '</div>' +
+            '<div class="totales">' +
+                '<div class="fila">' +
+                    '<span>Subtotal productos</span>' +
+                    '<span>' + formatearPrecio(subtotal) + '</span>' +
+                '</div>';
+
+        if (tipoEntrega === 'pickup') {
+            html += '<div class="fila envio">' +
+                '<span><span class="lbl-simbolo">◇</span> Recoger en tienda</span>' +
+                '<span style="color:var(--success);">Sin costo</span>' +
+            '</div>';
+        } else {
+            if (envio.app > 0) {
+                html += '<div class="fila envio">' +
+                    '<span><span class="lbl-simbolo">◆</span> Envío (por app)</span>' +
+                    '<span style="color:var(--gold); font-weight:600;">' + formatearPrecio(envio.app) + '</span>' +
+                '</div>';
             }
-        } catch (e) { console.warn('Error idiomas:', e); }
-    }, 400);
-});
+            if (envio.coordinar) {
+                html += '<div class="fila envio">' +
+                    '<span><span class="lbl-simbolo">◆</span> Envío (al repartidor)</span>' +
+                    '<span style="color:var(--cyan); font-weight:600;">En efectivo</span>' +
+                '</div>';
+            }
+        }
 
-window.verTokens = verTokens;
-window.showToast = showToast;
-window.cambiarTipoEntrega = cambiarTipoEntrega;
-window.cambiarMetodoPago = cambiarMetodoPago;
-window.capturarUbicacion = capturarUbicacion;
-window.confirmarPedido = confirmarPedido;
-window.CONFIG_LEGAL = CONFIG_LEGAL;
-</script>
+        html += '<div class="fila servicio">' +
+            '<span><span class="lbl-simbolo">✦</span> Servicio de plataforma' +
+            (numTiendas > 1 ? ' (' + numTiendas + ' tiendas)' : '') +
+            '</span>' +
+            '<span class="val">' + formatearPrecio(comisionServicio) + '</span>' +
+        '</div>';
+
+        html += '<div class="fila total">' +
+            '<span class="lbl">Total estimado</span>' +
+            '<span class="val">' + formatearPrecio(total) + '</span>' +
+        '</div>' +
+        '</div>';
+
+        html += '<div style="font-size:0.62rem; color:var(--text-muted); margin-top:8px;">El total final lo confirma el servidor al crear el pedido.</div>';
+
+        if (tipoEntrega === 'delivery' && envio.coordinar) {
+            html += '<div class="aviso-envio">' +
+                '<span class="icono">◆</span>' +
+                '<div>' +
+                    'El <strong>envío</strong> se paga en efectivo directamente al repartidor al recibir tu pedido. ' +
+                    'El monto lo coordinas con él.' +
+                '</div>' +
+            '</div>';
+        }
+
+        html += '<div class="aviso-servicio">' +
+            '<span class="icono">✦</span>' +
+            '<div>' +
+                'El <strong>servicio de plataforma</strong> (' + formatearPrecio(COMISION_COMPRADOR) + ' por tienda) ' +
+                'cubre verificación, seguimiento en vivo y soporte 24/7.' +
+            '</div>' +
+        '</div>';
+
+        html += '<button class="btn-confirmar" id="btnConfirmar" onclick="confirmarPedido()" disabled>' +
+            '<span class="simbolo">◆</span> <span data-clave="mercado_confirmar_pedido">Confirmar pedido</span>' +
+        '</button>';
+
+        html += '<div class="aviso-bloqueo" id="avisoBloqueo">' +
+            '<span class="simbolo">✶</span> <span id="textoBloqueo">Completa todos los datos para continuar</span>' +
+        '</div>';
+
+        html += '</div>';
+
+        return html;
+    }
+
+    function actualizarEstadoBotonConfirmar() {
+        var btn = document.getElementById('btnConfirmar');
+        var textoBloqueo = document.getElementById('textoBloqueo');
+        var avisoBloqueo = document.getElementById('avisoBloqueo');
+        if (!btn) return;
+
+        var telefono = ((document.getElementById('inputTelefono') || {}).value || '').trim();
+
+        var direccion = '';
+        if (tipoEntrega === 'delivery') {
+            direccion = ((document.getElementById('inputDireccion') || {}).value || '').trim();
+        }
+
+        var tieneTelefono = telefono.length >= 8;
+        var tieneDireccion = tipoEntrega === 'pickup' || direccion.length >= 5;
+        var tieneGPS = tipoEntrega === 'pickup' || (coordenadas.lat !== null && coordenadas.lng !== null);
+
+        var puedeContinuar = tieneTelefono && tieneDireccion && tieneGPS;
+
+        if (puedeContinuar) {
+            btn.disabled = false;
+            if (avisoBloqueo) avisoBloqueo.classList.add('hidden');
+        } else {
+            btn.disabled = true;
+            if (avisoBloqueo) avisoBloqueo.classList.remove('hidden');
+
+            var faltantes = [];
+            if (!tieneDireccion && tipoEntrega === 'delivery') faltantes.push('dirección');
+            if (!tieneGPS && tipoEntrega === 'delivery') faltantes.push('GPS');
+            if (!tieneTelefono) faltantes.push('teléfono');
+
+            if (textoBloqueo) {
+                textoBloqueo.textContent = 'Falta: ' + faltantes.join(', ');
+            }
+        }
+    }
+
+    async function autocompletarDatosUsuario() {
+        if (!sessionUser) return;
+        try {
+            var u = await supabase
+                .from('usuarios')
+                .select('telefono, direccion')
+                .eq('id', sessionUser.id)
+                .single();
+
+            if (!u.error && u.data) {
+                var tel = document.getElementById('inputTelefono');
+                if (tel && u.data.telefono && !tel.value) tel.value = u.data.telefono;
+
+                var dir = document.getElementById('inputDireccion');
+                if (dir && u.data.direccion && !dir.value) dir.value = u.data.direccion;
+
+                if (tel) tel.addEventListener('input', actualizarEstadoBotonConfirmar);
+                if (dir) dir.addEventListener('input', actualizarEstadoBotonConfirmar);
+
+                actualizarEstadoBotonConfirmar();
+            }
+        } catch (e) { /* silencioso */ }
+    }
+
+    function cambiarTipoEntrega(tipo) {
+        tipoEntrega = tipo;
+        var aceptaDelivery = Object.keys(gruposTiendas).every(function (tid) {
+            return tiendasCache[tid] && tiendasCache[tid].acepta_delivery;
+        });
+        var aceptaPickup = Object.keys(gruposTiendas).every(function (tid) {
+            return tiendasCache[tid] && tiendasCache[tid].acepta_pickup;
+        });
+        renderCheckout(aceptaDelivery, aceptaPickup);
+    }
+
+    function cambiarMetodoPago(metodo) {
+        metodoPago = metodo;
+        var aceptaDelivery = Object.keys(gruposTiendas).every(function (tid) {
+            return tiendasCache[tid] && tiendasCache[tid].acepta_delivery;
+        });
+        var aceptaPickup = Object.keys(gruposTiendas).every(function (tid) {
+            return tiendasCache[tid] && tiendasCache[tid].acepta_pickup;
+        });
+        renderCheckout(aceptaDelivery, aceptaPickup);
+    }
+
+    function capturarUbicacion() {
+        var btn = document.getElementById('btnGPS');
+        var btnActualizar = document.querySelector('.btn-gps-actualizar');
+        var bloque = document.getElementById('gpsBloque');
+        var titulo = document.getElementById('gpsTitulo');
+        var icono = document.getElementById('gpsIcono');
+        var aviso = document.getElementById('gpsAviso');
+        var instrucciones = document.getElementById('gpsInstrucciones');
+        var coordsBox = document.getElementById('gpsCoordsBox');
+        var coords = document.getElementById('gpsCoords');
+
+        if (!navigator.geolocation) {
+            showToast('✶ Tu navegador no soporta GPS', 'error');
+            if (bloque) bloque.classList.add('error');
+            if (instrucciones) instrucciones.style.display = 'block';
+            return;
+        }
+
+        if (btn) { btn.disabled = true; btn.innerHTML = '<span class="simbolo">◈</span> Obteniendo ubicación...'; }
+        if (btnActualizar) { btnActualizar.disabled = true; btnActualizar.innerHTML = '<span class="simbolo">◈</span>...'; }
+        if (bloque) { bloque.classList.remove('capturado', 'error'); }
+        if (instrucciones) instrucciones.style.display = 'none';
+        if (titulo) titulo.textContent = 'Buscando tu ubicación...';
+        if (icono) icono.textContent = '◈';
+
+        if (gpsTimeoutId) clearTimeout(gpsTimeoutId);
+        gpsTimeoutId = setTimeout(function () {
+            if (coordenadas.lat === null) {
+                onGPSError({ code: 3, message: 'Tiempo de espera agotado' });
+            }
+        }, 15000);
+
+        navigator.geolocation.getCurrentPosition(
+            function (pos) {
+                if (gpsTimeoutId) clearTimeout(gpsTimeoutId);
+
+                coordenadas.lat = pos.coords.latitude;
+                coordenadas.lng = pos.coords.longitude;
+                coordenadas.precision = Math.round(pos.coords.accuracy || 0);
+
+                if (bloque) {
+                    bloque.classList.remove('error');
+                    bloque.classList.add('capturado');
+                }
+                if (icono) icono.textContent = '●';
+                if (titulo) titulo.textContent = '¡Ubicación capturada!';
+                if (aviso) aviso.style.display = 'none';
+                if (coordsBox) coordsBox.style.display = 'block';
+                if (coords) {
+                    coords.innerHTML = pos.coords.latitude.toFixed(6) + ', ' + pos.coords.longitude.toFixed(6) +
+                        '<span class="precision">Precisión: ±' + coordenadas.precision + 'm</span>';
+                }
+                if (btn) btn.style.display = 'none';
+                if (btnActualizar) {
+                    btnActualizar.disabled = false;
+                    btnActualizar.innerHTML = '<span class="simbolo">✧</span> Actualizar ubicación';
+                }
+
+                showToast('◈ Ubicación capturada (±' + coordenadas.precision + 'm)', 'success');
+                actualizarEstadoBotonConfirmar();
+            },
+            function (err) {
+                if (gpsTimeoutId) clearTimeout(gpsTimeoutId);
+                onGPSError(err);
+            },
+            { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+        );
+    }
+
+    function onGPSError(err) {
+        console.error('Error GPS:', err);
+
+        var btn = document.getElementById('btnGPS');
+        var btnActualizar = document.querySelector('.btn-gps-actualizar');
+        var bloque = document.getElementById('gpsBloque');
+        var titulo = document.getElementById('gpsTitulo');
+        var icono = document.getElementById('gpsIcono');
+        var aviso = document.getElementById('gpsAviso');
+        var instrucciones = document.getElementById('gpsInstrucciones');
+
+        if (bloque) {
+            bloque.classList.remove('capturado');
+            bloque.classList.add('error');
+        }
+        if (icono) icono.textContent = '✶';
+        if (titulo) titulo.textContent = 'No pudimos acceder a tu ubicación';
+        if (aviso) aviso.style.display = 'none';
+        if (instrucciones) instrucciones.style.display = 'block';
+
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<span class="simbolo">◈</span> Reintentar captura';
+            btn.style.display = 'inline-flex';
+        }
+        if (btnActualizar) {
+            btnActualizar.disabled = false;
+            btnActualizar.innerHTML = '<span class="simbolo">✧</span> Reintentar';
+        }
+
+        var msg = 'Error de GPS';
+        if (err && err.code === 1) msg = '✶ Permiso denegado. Revisa las instrucciones';
+        else if (err && err.code === 2) msg = '✶ Ubicación no disponible';
+        else if (err && err.code === 3) msg = '✶ Tiempo agotado. Intenta de nuevo';
+
+        showToast(msg, 'error');
+        actualizarEstadoBotonConfirmar();
+    }
+
+    /* ================================================================
+       CONFIRMAR PEDIDO
+       El servidor valida precios, stock y total. El navegador solo
+       envía IDs, cantidades y datos de entrega.
+    ================================================================ */
+    async function confirmarPedido() {
+        if (procesando) return;
+        if (!sessionUser) { showToast('✶ Inicia sesión primero', 'warning'); return; }
+
+        var telefono = ((document.getElementById('inputTelefono') || {}).value || '').trim();
+        if (telefono.length < 8) {
+            showToast('✶ Ingresa tu teléfono de contacto', 'warning');
+            return;
+        }
+
+        var direccion = '';
+        var lat = null;
+        var lng = null;
+        if (tipoEntrega === 'delivery') {
+            direccion = ((document.getElementById('inputDireccion') || {}).value || '').trim();
+            if (direccion.length < 5) {
+                showToast('✶ Ingresa tu dirección completa', 'warning');
+                return;
+            }
+            if (coordenadas.lat === null || coordenadas.lng === null) {
+                showToast('✶ Activa tu ubicación GPS para continuar', 'warning');
+                return;
+            }
+            lat = coordenadas.lat;
+            lng = coordenadas.lng;
+        }
+
+        var notas = ((document.getElementById('inputNotas') || {}).value || '').trim();
+
+        // Valores que acepta el servidor
+        var metodo = 'efectivo';
+        if (metodoPago === 'transferencia') metodo = 'spei';
+        if (metodoPago === 'cripto') metodo = 'usdt';
+
+        procesando = true;
+        var btn = document.getElementById('btnConfirmar');
+        if (btn) { btn.disabled = true; btn.innerHTML = '<span class="simbolo">◈</span> Procesando...'; }
+
+        try {
+            var sesion = await supabase.auth.getSession();
+            var token = sesion.data && sesion.data.session ? sesion.data.session.access_token : null;
+            if (!token) throw new Error('Tu sesión expiró. Vuelve a iniciar sesión.');
+
+            var pedidosCreados = [];
+            var tiendasIds = Object.keys(gruposTiendas);
+
+            for (var i = 0; i < tiendasIds.length; i++) {
+                var tid = parseInt(tiendasIds[i], 10);
+
+                var itemsEnviar = gruposTiendas[tiendasIds[i]].map(function (it) {
+                    return { producto_id: Number(it.producto_id), cantidad: Number(it.cantidad) };
+                });
+
+                var resp = await fetch('/api/mercado/pedidos', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({
+                        tienda_id: tid,
+                        items: itemsEnviar,
+                        tipo_entrega: tipoEntrega,
+                        direccion_entrega: direccion || null,
+                        latitud_entrega: lat,
+                        longitud_entrega: lng,
+                        telefono_contacto: telefono,
+                        notas: notas || null,
+                        metodo_pago_comprador: metodo
+                    })
+                });
+
+                var json = await resp.json().catch(function () { return {}; });
+                if (!resp.ok || !json.ok) {
+                    throw new Error(json.error || 'No se pudo crear el pedido');
+                }
+                pedidosCreados.push(json.pedido);
+            }
+
+            guardarCarrito([]);
+            showToast('✦ ¡Pedido' + (pedidosCreados.length > 1 ? 's' : '') + ' confirmado' + (pedidosCreados.length > 1 ? 's' : '') + '!', 'success');
+
+            setTimeout(function () {
+                if (pedidosCreados.length === 1) {
+                    window.location.href = '/features/mercado/pedido.html?id=' + pedidosCreados[0].id;
+                } else {
+                    window.location.href = '/features/mercado/mis-pedidos.html';
+                }
+            }, 1200);
+
+        } catch (e) {
+            console.error('Error confirmando pedido:', e);
+            showToast('✶ ' + (e.message || 'Error al confirmar'), 'error');
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<span class="simbolo">◆</span> Confirmar pedido';
+            }
+            procesando = false;
+        }
+    }
+
+    function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
+
+    document.addEventListener('DOMContentLoaded', async function () {
+        await cargarUsuarioActual();
+
+        if (!sessionUser) {
+            var container = document.getElementById('checkoutContainer');
+            if (container) {
+                container.innerHTML = '<div class="empty-state">' +
+                    '<span class="icon">●</span>' +
+                    '<h3>Inicia sesión</h3>' +
+                    '<p>Necesitas iniciar sesión para confirmar tu pedido.</p>' +
+                    '<a href="/" class="btn-ir"><span class="simbolo">◈</span> Volver al inicio</a>' +
+                '</div>';
+            }
+            return;
+        }
+
+        await prepararCheckout();
+
+        setTimeout(async function () {
+            try {
+                if (typeof window.inicializarIdiomas === 'function') {
+                    await window.inicializarIdiomas();
+                }
+            } catch (e) { console.warn('Error idiomas:', e); }
+        }, 400);
+    });
+
+    window.verTokens = verTokens;
+    window.showToast = showToast;
+    window.cambiarTipoEntrega = cambiarTipoEntrega;
+    window.cambiarMetodoPago = cambiarMetodoPago;
+    window.capturarUbicacion = capturarUbicacion;
+    window.confirmarPedido = confirmarPedido;
+    window.CONFIG_LEGAL = CONFIG_LEGAL;
+    </script>
+</body>
+</html>
