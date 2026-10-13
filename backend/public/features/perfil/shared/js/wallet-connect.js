@@ -1,13 +1,12 @@
 /* ================================================================
  * WALLET CONNECT - Sariel's Ecosystem
  * ================================================================
- * v3.0.0 - 30/09/2026
- *
- * FIX CRÍTICO:
- * - WalletConnect NO publica bundle UMD. Usar esm.sh (más confiable
- *   que jsdelivr +esm que fallaba silenciosamente en móvil).
- * - Timeout extendido a 20s con retry.
- * - Fallback a jsdelivr +esm si esm.sh falla.
+ * v3.1.0 - Eventos de desconexión con motivo explícito.
+ *   - 'sar:wallet:disconnected' ahora incluye detail.motivo:
+ *       · 'usuario_desconecto_en_navegador'  → botón/llamada desconectar()
+ *       · 'wallet_se_desconecto'             → la wallet cerró la sesión
+ *   - Desconectar en el navegador NO desvincula la wallet de la base.
+ *     Eso solo lo hace /api/wallet/unlink (botón "Desconectar wallet").
  * ================================================================ */
 
 (function () {
@@ -37,6 +36,9 @@
     const RED = REDES[RED_ACTIVA];
     const CHAIN_ID_OBJETIVO = RED.chainId;
     const CHAIN_ID_HEX = RED.chainIdHex;
+
+    const MOTIVO_NAVEGADOR = 'usuario_desconecto_en_navegador';
+    const MOTIVO_WALLET = 'wallet_se_desconecto';
 
     let WALLETCONNECT_PROJECT_ID = null;
     let PUBLIC_APP_URL = DEFAULT_PUBLIC_APP_URL;
@@ -70,6 +72,12 @@
     function errorUsuarioCancelo(error) {
         const code = obtenerErrorCode(error);
         return code === '4001' || code === 'USER_REJECTED' || code === 'USER_CANCELLED';
+    }
+
+    function emitirDesconexion(motivo) {
+        window.dispatchEvent(new CustomEvent('sar:wallet:disconnected', {
+            detail: { motivo: motivo }
+        }));
     }
 
     function obtenerInjectedProvider() {
@@ -306,10 +314,13 @@
         const provider = obtenerInjectedProvider();
         if (eventosInjectedRegistrados || !provider || typeof provider.on !== 'function') return;
         eventosInjectedRegistrados = true;
+
         provider.on('accountsChanged', function (accounts) {
             if (!Array.isArray(accounts) || accounts.length === 0) {
-                currentAccount = null; currentProviderType = null; limpiarSesion();
-                window.dispatchEvent(new CustomEvent('sar:wallet:disconnected'));
+                currentAccount = null;
+                currentProviderType = null;
+                limpiarSesion();
+                emitirDesconexion(MOTIVO_WALLET);
                 return;
             }
             const address = normalizarAddress(accounts[0]);
@@ -317,17 +328,23 @@
             guardarSesion({ tipo: 'injected', address, chainId: CHAIN_ID_OBJETIVO });
             window.dispatchEvent(new CustomEvent('sar:wallet:accountsChanged', { detail: { address } }));
         });
+
         provider.on('chainChanged', function (chainIdHex) {
             const chainId = obtenerChainIdNumerico(chainIdHex);
             window.dispatchEvent(new CustomEvent('sar:wallet:chainChanged', { detail: { chainId } }));
             if (chainId !== CHAIN_ID_OBJETIVO) {
-                window.dispatchEvent(new CustomEvent('sar:wallet:wrongNetwork', { detail: { chainId, expectedChainId: CHAIN_ID_OBJETIVO } }));
+                window.dispatchEvent(new CustomEvent('sar:wallet:wrongNetwork', {
+                    detail: { chainId, expectedChainId: CHAIN_ID_OBJETIVO }
+                }));
             }
         });
+
         try {
             provider.on('disconnect', function () {
-                currentAccount = null; currentProviderType = null; limpiarSesion();
-                window.dispatchEvent(new CustomEvent('sar:wallet:disconnected'));
+                currentAccount = null;
+                currentProviderType = null;
+                limpiarSesion();
+                emitirDesconexion(MOTIVO_WALLET);
             });
         } catch (_) {}
     }
@@ -344,10 +361,8 @@
     }
 
     /* ============================================================
-       ✅ FIX CRÍTICO v3.0.0:
-       - WalletConnect NO publica bundle UMD oficial.
-       - Usar esm.sh (más confiable que jsdelivr +esm).
-       - Fallback: intentar jsdelivr +esm si esm.sh falla.
+       WalletConnect no publica bundle UMD: se carga como ESM desde
+       esm.sh (principal) y jsdelivr +esm (respaldo).
        ============================================================ */
     let EthereumProviderPromise = null;
 
@@ -355,9 +370,8 @@
         if (EthereumProviderPromise) return EthereumProviderPromise;
 
         EthereumProviderPromise = (async function () {
-            console.log('[SarWallet] Cargando WalletConnect SDK (v3)...');
+            console.log('[SarWallet] Cargando WalletConnect SDK (v3.1)...');
 
-            // Opción 1: ESM via esm.sh (más confiable)
             const urls = [
                 'https://esm.sh/@walletconnect/ethereum-provider@2.17.0',
                 'https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.17.0/+esm'
@@ -369,7 +383,6 @@
                 const url = urls[i];
                 try {
                     console.log('[SarWallet] Intentando cargar desde:', url);
-
                     const modulo = await import(/* @vite-ignore */ url);
                     const Provider = modulo.EthereumProvider || modulo.default || modulo;
 
@@ -380,7 +393,6 @@
 
                     console.warn('[SarWallet] SDK no expone init() en:', url);
                     ultimoError = new Error('WALLETCONNECT_SDK_INVALID');
-
                 } catch (error) {
                     console.warn('[SarWallet] Falló carga desde:', url, error.message);
                     ultimoError = error;
@@ -470,29 +482,40 @@
     function registrarEventosWalletConnect() {
         if (!wcProvider || eventosWcRegistrados || typeof wcProvider.on !== 'function') return;
         eventosWcRegistrados = true;
+
         wcProvider.on('accountsChanged', function (accounts) {
             if (!Array.isArray(accounts) || accounts.length === 0) {
                 limpiarEstadoLocal();
-                window.dispatchEvent(new CustomEvent('sar:wallet:disconnected'));
+                emitirDesconexion(MOTIVO_WALLET);
                 return;
             }
             const address = normalizarAddress(accounts[0]);
             currentAccount = address;
-            guardarSesion({ tipo: 'walletconnect', address, chainId: obtenerChainIdNumerico((wcProvider && wcProvider.chainId) || CHAIN_ID_OBJETIVO) });
+            guardarSesion({
+                tipo: 'walletconnect',
+                address,
+                chainId: obtenerChainIdNumerico((wcProvider && wcProvider.chainId) || CHAIN_ID_OBJETIVO)
+            });
             window.dispatchEvent(new CustomEvent('sar:wallet:accountsChanged', { detail: { address } }));
         });
+
         wcProvider.on('chainChanged', function (chainId) {
             const numericChainId = obtenerChainIdNumerico(chainId);
             window.dispatchEvent(new CustomEvent('sar:wallet:chainChanged', { detail: { chainId: numericChainId } }));
             if (numericChainId !== CHAIN_ID_OBJETIVO) {
-                window.dispatchEvent(new CustomEvent('sar:wallet:wrongNetwork', { detail: { chainId: numericChainId, expectedChainId: CHAIN_ID_OBJETIVO } }));
+                window.dispatchEvent(new CustomEvent('sar:wallet:wrongNetwork', {
+                    detail: { chainId: numericChainId, expectedChainId: CHAIN_ID_OBJETIVO }
+                }));
             }
         });
+
         wcProvider.on('disconnect', function () {
-            wcProvider = null; eventosWcRegistrados = false;
-            currentAccount = null; currentProviderType = null;
+            wcProvider = null;
+            eventosWcRegistrados = false;
+            currentAccount = null;
+            currentProviderType = null;
             limpiarSesion();
-            window.dispatchEvent(new CustomEvent('sar:wallet:disconnected'));
+            emitirDesconexion(MOTIVO_WALLET);
         });
     }
 
@@ -702,6 +725,7 @@
     async function restaurarSesion() {
         const sesion = leerSesion();
         if (!sesion || !sesion.address) return null;
+
         if (sesion.tipo === 'injected') {
             if (!debeUsarInjected()) return null;
             const estado = await validarSesionInjected();
@@ -711,6 +735,7 @@
             registrarEventosInjected();
             return { tipo: 'injected', address: estado.address, chainId: estado.chainId, provider: estado.provider };
         }
+
         if (sesion.tipo === 'walletconnect') {
             if (wcProvider && Array.isArray(wcProvider.accounts) && wcProvider.accounts.length) {
                 const account = normalizarAddress(wcProvider.accounts[0]);
@@ -724,6 +749,7 @@
             }
             return null;
         }
+
         return null;
     }
 
@@ -733,20 +759,28 @@
         limpiarSesion();
     }
 
+    /* Desconectar en el NAVEGADOR. No desvincula la wallet de la base:
+       eso lo hace /api/wallet/unlink desde el botón "Desconectar wallet". */
     async function desconectar() {
         if (desconectando) return;
         desconectando = true;
+
         const provider = wcProvider;
         wcProvider = null;
         eventosWcRegistrados = false;
+
         try { if (provider && typeof provider.removeAllListeners === 'function') provider.removeAllListeners(); }
         catch (e) { console.warn('[SarWallet] No se pudo limpiar listeners:', e); }
+
         try { if (provider && typeof provider.disconnect === 'function') await provider.disconnect(); }
         catch (error) { console.warn('[SarWallet] Error desconectando WalletConnect:', error); }
+
         currentAccount = null;
         currentProviderType = null;
         limpiarSesion();
-        window.dispatchEvent(new CustomEvent('sar:wallet:disconnected'));
+
+        emitirDesconexion(MOTIVO_NAVEGADOR);
+
         desconectando = false;
     }
 
@@ -755,11 +789,14 @@
         if (currentProviderType === 'walletconnect') return wcProvider;
         return null;
     }
+
     function obtenerCuenta() { return currentAccount; }
     function obtenerTipoProvider() { return currentProviderType; }
+
     function redActual() {
         return { nombre: RED_ACTIVA, chainId: CHAIN_ID_OBJETIVO, chainIdHex: CHAIN_ID_HEX, info: RED };
     }
+
     function obtenerConfiguracion() {
         return {
             publicUrl: PUBLIC_APP_URL,
@@ -772,12 +809,26 @@
     }
 
     window.SarWallet = {
-        conectar, seleccionarConexion, desconectar, obtenerProvider, obtenerCuenta,
-        obtenerTipoProvider, obtenerConfiguracion, restaurarSesion,
-        tieneInjectedProvider, debeUsarInjected, esMovil, esAndroid, esIOS,
-        esNavegadorDeMetaMask, esNavegadorDeCoinbase, esNavegadorWalletInterno,
-        abrirMetaMaskApp, abrirRainbowApp, redActual
+        conectar,
+        seleccionarConexion,
+        desconectar,
+        obtenerProvider,
+        obtenerCuenta,
+        obtenerTipoProvider,
+        obtenerConfiguracion,
+        restaurarSesion,
+        tieneInjectedProvider,
+        debeUsarInjected,
+        esMovil,
+        esAndroid,
+        esIOS,
+        esNavegadorDeMetaMask,
+        esNavegadorDeCoinbase,
+        esNavegadorWalletInterno,
+        abrirMetaMaskApp,
+        abrirRainbowApp,
+        redActual
     };
 
-    console.log('[SarWallet] cargado v3', '| red:', RED_ACTIVA, '| chainId:', CHAIN_ID_OBJETIVO, '| móvil:', esMovil(), '| injected:', tieneInjectedProvider());
+    console.log('[SarWallet] cargado v3.1', '| red:', RED_ACTIVA, '| chainId:', CHAIN_ID_OBJETIVO, '| móvil:', esMovil(), '| injected:', tieneInjectedProvider());
 })();
