@@ -1,8 +1,9 @@
 // ================================================================
 // server.js — Sariel's Ecosystem
 // Backend principal — Producción Railway
-// v3.3: Wallet (nonce + firma EOA) y Media (moderación
-//       centralizada con AWS Rekognition) montados.
+// v3.4: Wallet (nonce + firma EOA), Media (moderación con AWS
+//       Rekognition) y Moderar-Texto (OpenAI Moderation API)
+//       montados.
 // ================================================================
 
 require('dotenv').config();
@@ -108,9 +109,11 @@ if (!TURNSTILE_SITE_KEY) console.warn('⚠️ Falta TURNSTILE_SITE_KEY');
 if (!process.env.VAPID_PUBLIC_KEY) console.warn('⚠️ Falta VAPID_PUBLIC_KEY (push notifications deshabilitadas)');
 if (!process.env.VAPID_PRIVATE_KEY) console.warn('⚠️ Falta VAPID_PRIVATE_KEY (push notifications deshabilitadas)');
 
-if (!process.env.AWS_ACCESS_KEY_ID) console.warn('⚠️ Falta AWS_ACCESS_KEY_ID (moderación deshabilitada)');
-if (!process.env.AWS_SECRET_ACCESS_KEY) console.warn('⚠️ Falta AWS_SECRET_ACCESS_KEY (moderación deshabilitada)');
+if (!process.env.AWS_ACCESS_KEY_ID) console.warn('⚠️ Falta AWS_ACCESS_KEY_ID (moderación de imagen/video deshabilitada)');
+if (!process.env.AWS_SECRET_ACCESS_KEY) console.warn('⚠️ Falta AWS_SECRET_ACCESS_KEY (moderación de imagen/video deshabilitada)');
 if (!process.env.AWS_REGION) console.warn('⚠️ Falta AWS_REGION (moderación usará us-east-1 por defecto)');
+
+if (!process.env.OPENAI_API_KEY) console.warn('⚠️ Falta OPENAI_API_KEY (moderación de texto deshabilitada)');
 
 if (!process.env.NODE_ENV) console.warn('⚠️ NODE_ENV no está definido');
 
@@ -807,8 +810,11 @@ montarRouter('/api/live', './routes/live', 'routes/live');
 // Geo
 montarRouter('/api/geo', './routes/geo', 'routes/geo');
 
-// ⬇️ Media (moderación + subida centralizada)
+// ⬇️ Media (moderación de imagen/video + subida centralizada)
 montarRouter('/api/media', './routes/media', 'routes/media');
+
+// ⬇️ NUEVO: Moderación de texto (OpenAI Moderation API)
+montarRouter('/api/moderar-texto', './routes/moderar-texto', 'routes/moderar-texto');
 
 // ⬇️ NUEVO: Wallet (nonce + firma EOA)
 montarRouter('/api/wallet', './routes/wallet', 'routes/wallet');
@@ -930,11 +936,13 @@ async function healthCheck(req, res) {
         process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY
     );
 
-    const moderacionConfigured = Boolean(
+    const moderacionImagenConfigured = Boolean(
         process.env.AWS_ACCESS_KEY_ID &&
         process.env.AWS_SECRET_ACCESS_KEY &&
         process.env.AWS_REGION
     );
+
+    const moderacionTextoConfigured = Boolean(process.env.OPENAI_API_KEY);
 
     const criticalOk = supabaseStatus === 'ok';
 
@@ -946,7 +954,8 @@ async function healthCheck(req, res) {
         supabase: supabaseStatus,
         livekit: { configured: livekitConfigured },
         push: { configured: pushConfigured },
-        moderacion: { configured: moderacionConfigured },
+        moderacion: { configured: moderacionImagenConfigured },
+        moderacion_texto: { configured: moderacionTextoConfigured },
         web3: {
             walletconnect_configured: Boolean(WALLETCONNECT_PROJECT_ID),
             public_url: PUBLIC_APP_URL,
@@ -1055,6 +1064,13 @@ app.listen(PORT, () => {
     console.log(
         `🛡️ Moderación (AWS Rekognition): ${
             process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY
+                ? '✅ Configurado'
+                : '❌ No configurado'
+        }`
+    );
+    console.log(
+        `📝 Moderación de texto (OpenAI): ${
+            process.env.OPENAI_API_KEY
                 ? '✅ Configurado'
                 : '❌ No configurado'
         }`
