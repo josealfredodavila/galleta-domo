@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <meta name="theme-color" content="#000000" />
 <title>Tu cuenta · Sariel's</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
 <link rel="stylesheet" href="../../shared/config-layout.css" />
 <style>
-/* ===== Tarjeta de perfil: tamaños fijos (evita que la foto se pinte gigante y salte el layout) ===== */
 #perfilCard{display:flex;flex-direction:column;align-items:center;text-align:center;padding:24px 16px 20px;min-height:208px;box-sizing:border-box}
 #avatarCuenta{width:96px;height:96px;flex:0 0 96px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:36px;color:#D4AF37;background:rgba(212,175,55,.10);border:2px solid rgba(212,175,55,.45);margin:0 auto 12px;contain:layout paint size}
 #avatarCuenta img{width:100%;height:100%;max-width:none;object-fit:cover;display:block;opacity:0;transition:opacity .25s ease}
@@ -16,22 +16,27 @@
 #nombreCuenta{font-size:20px;font-weight:700;line-height:1.25;max-width:100%;overflow-wrap:anywhere}
 #handleCuenta{font-size:14px;opacity:.7;margin-top:2px;max-width:100%;overflow-wrap:anywhere}
 #bioCuenta{font-size:14px;opacity:.85;margin-top:8px;max-width:420px;line-height:1.4;overflow-wrap:anywhere;min-height:20px}
-/* ===== Esqueletos (reservan el espacio antes de que lleguen los datos) ===== */
 .cu-skel{height:64px;margin:6px 0;border-radius:12px;background:linear-gradient(90deg,rgba(255,255,255,.04),rgba(255,255,255,.09),rgba(255,255,255,.04));background-size:200% 100%;animation:cuSh 1.2s linear infinite}
 @keyframes cuSh{to{background-position:-200% 0}}
 @media (prefers-reduced-motion:reduce){.cu-skel{animation:none}#avatarCuenta img{transition:none}}
 .cu-banner{margin:12px 0;padding:12px 14px;border-radius:12px;font-size:14px;line-height:1.4;background:rgba(247,212,74,.10);border:1px solid rgba(247,212,74,.35)}
 .cu-banner button,.cu-retry{margin-top:8px;padding:8px 14px;border-radius:10px;border:1px solid rgba(212,175,55,.6);background:transparent;color:#D4AF37;font:inherit;cursor:pointer}
 .cu-nota{font-size:12px;opacity:.6;padding:8px 4px}
-/* ===== Modal de edición (reemplaza prompt(), que se bloquea en móvil) ===== */
+.cu-item-off{opacity:.55;cursor:not-allowed}
 .cu-ov{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.65);display:flex;align-items:flex-end;justify-content:center}
 .cu-sheet{width:100%;max-width:520px;box-sizing:border-box;background:#0d1410;border:1px solid rgba(212,175,55,.35);border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));color:#fff}
 .cu-sheet h3{margin:0 0 4px;font-size:17px}.cu-sheet p{margin:0 0 12px;font-size:13px;opacity:.7}
 .cu-sheet input,.cu-sheet textarea{width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.06);color:#fff;font:inherit;font-size:16px;resize:none}
 .cu-cnt{font-size:12px;opacity:.6;text-align:right;margin-top:4px}
-.cu-err{color:var(--cfg-danger,#ff3366);font-size:13px;min-height:18px;margin-top:6px}
-.cu-btns{display:flex;gap:10px;margin-top:10px}.cu-btns button{flex:1;padding:12px;border-radius:12px;font:inherit;font-weight:600;cursor:pointer;border:1px solid rgba(255,255,255,.25);background:transparent;color:#fff}
-.cu-btns .go{background:#D4AF37;color:#05080F;border-color:#D4AF37}.cu-btns button:disabled{opacity:.5}
+.cu-err{color:#ff3366;font-size:13px;min-height:18px;margin-top:6px}
+.cu-btns{display:flex;gap:10px;margin-top:10px}
+.cu-btns button{flex:1;padding:12px;border-radius:12px;font:inherit;font-weight:600;cursor:pointer;border:1px solid rgba(255,255,255,.25);background:transparent;color:#fff}
+.cu-btns .go{background:#D4AF37;color:#05080F;border-color:#D4AF37}
+.cu-btns .peligro{background:#ff3366;color:#fff;border-color:#ff3366}
+.cu-btns button:disabled{opacity:.5}
+.cu-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);opacity:0;background:#0d1410;border:1px solid rgba(212,175,55,.5);color:#fff;padding:12px 16px;border-radius:12px;font-size:14px;z-index:10000;transition:.25s;max-width:92%;text-align:center;pointer-events:none}
+.cu-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.cu-toast.error{border-color:#ff3366}.cu-toast.success{border-color:#00d68f}.cu-toast.warning{border-color:#f7d44a}
 </style>
 </head>
 <body class="cfg-page">
@@ -47,10 +52,10 @@
 <div id="avisoCuenta"></div>
 
 <h2 class="cfg-section-title">Información de la cuenta</h2>
-<div class="cfg-list" id="seccionInfo"><div class="cu-skel"></div><div class="cu-skel"></div><div class="cu-skel"></div><div class="cu-skel"></div><div class="cu-skel"></div><div class="cu-skel"></div></div>
+<div class="cfg-list" id="seccionInfo"><div class="cu-skel"></div><div class="cu-skel"></div><div class="cu-skel"></div><div class="cu-skel"></div></div>
 
 <h2 class="cfg-section-title">Tu actividad en Sariel's</h2>
-<div class="cfg-list" id="seccionActividad"><div class="cu-skel"></div><div class="cu-skel"></div><div class="cu-skel"></div></div>
+<div class="cfg-list" id="seccionActividad"></div>
 
 <h2 class="cfg-section-title">Historial de accesos</h2>
 <div class="cfg-list" id="seccionHistorial"><div class="cu-skel"></div><div class="cu-skel"></div></div>
@@ -64,6 +69,8 @@
 <div class="cfg-footer"><strong>◈ Sariel's</strong> · Configuración · Tu cuenta</div>
 </main>
 
+<div id="cuToast" class="cu-toast" role="status" aria-live="polite"></div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="../../shared/config-icons.js"></script>
 <script src="../../shared/config-layout.js"></script>
@@ -71,7 +78,7 @@
 (function () {
 'use strict';
 
-/* Pon en true SOLO cuando exista la RPC real de desactivación temporal en Supabase. */
+/* Pon en true SOLO cuando exista una desactivación temporal real en Supabase. */
 const HABILITAR_DESACTIVACION = false;
 
 const $ = (s) => document.querySelector(s);
@@ -84,13 +91,26 @@ function escapeHtml(v) {
   const d = document.createElement('div'); d.textContent = String(v); return d.innerHTML;
 }
 
-/* cfgRenderItem con texto dinámico escapado por nosotros (funciona aunque cfgRenderItem ya escape o no) */
-function item(opts, descDinamica) {
-  const T = '@@D@@';
-  const o = Object.assign({}, opts);
-  if (descDinamica !== undefined) o.desc = T;
-  const html = cfgRenderItem(o);
-  return descDinamica !== undefined ? html.replace(T, () => escapeHtml(descDinamica)) : html;
+function icono(n) {
+  if (typeof window.cfgIcon === 'function') return window.cfgIcon(n) || '';
+  return (window.CFG_ICONS && window.CFG_ICONS[n]) || '';
+}
+
+/* Ítem propio: no depende de cfgRenderItem del layout. */
+function item(o) {
+  const esLink = Boolean(o.href);
+  const tag = esLink ? 'a' : 'button';
+  const attr = esLink ? ' href="' + escapeHtml(o.href) + '"' : (o.onclick ? ' onclick="' + o.onclick + '"' : '');
+  const cls = 'cfg-item' + (o.disabled ? ' cu-item-off' : '');
+  const estilo = o.danger ? ' style="color:var(--cfg-danger,#ff3366);"' : '';
+  const tipo = esLink ? '' : ' type="button"';
+  const dis = o.disabled ? ' disabled' : '';
+  const chevron = o.chevron === false ? '' : '<div class="cfg-item-chevron">' + icono('chevronRight') + '</div>';
+  return '<' + tag + ' class="' + cls + '"' + attr + estilo + tipo + dis + '>' +
+    '<div class="cfg-item-icon">' + icono(o.icon || 'settings') + '</div>' +
+    '<div class="cfg-item-content"><div class="cfg-item-title">' + escapeHtml(o.title) + '</div>' +
+    '<div class="cfg-item-desc">' + escapeHtml(o.desc || '') + '</div></div>' + chevron +
+    '</' + tag + '>';
 }
 
 function fmtFecha(v, opts) {
@@ -99,12 +119,47 @@ function fmtFecha(v, opts) {
   return isNaN(d.getTime()) ? '' : d.toLocaleDateString('es-MX', opts || { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
+/* ---------- Toast y confirmación propios ---------- */
+let toastTimer = null;
+function toast(msg, tipo, ms) {
+  const t = $('#cuToast'); if (!t) return;
+  clearTimeout(toastTimer);
+  t.className = 'cu-toast' + (tipo ? ' ' + tipo : '');
+  t.textContent = msg || '';
+  requestAnimationFrame(() => t.classList.add('show'));
+  toastTimer = setTimeout(() => t.classList.remove('show'), ms || 3000);
+}
+
+function confirmar(cfg) {
+  return new Promise((resolve) => {
+    const ov = document.createElement('div'); ov.className = 'cu-ov'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true');
+    ov.innerHTML = '<div class="cu-sheet"><h3>' + escapeHtml(cfg.titulo) + '</h3><p>' + escapeHtml(cfg.texto || '') + '</p>' +
+      '<div class="cu-btns"><button type="button" id="cfNo">' + escapeHtml(cfg.cancelar || 'Cancelar') + '</button>' +
+      '<button type="button" class="' + (cfg.peligro ? 'peligro' : 'go') + '" id="cfSi">' + escapeHtml(cfg.aceptar || 'Confirmar') + '</button></div></div>';
+    document.body.appendChild(ov);
+    const cerrar = (v) => { document.removeEventListener('keydown', teclas); ov.remove(); resolve(v); };
+    const teclas = (e) => { if (e.key === 'Escape') cerrar(false); };
+    ov.querySelector('#cfNo').onclick = () => cerrar(false);
+    ov.querySelector('#cfSi').onclick = () => cerrar(true);
+    ov.addEventListener('click', (e) => { if (e.target === ov) cerrar(false); });
+    document.addEventListener('keydown', teclas);
+  });
+}
+
 /* ---------- Supabase ---------- */
 async function obtenerCliente() {
   if (clienteSupabase) return clienteSupabase;
   if (window.supabaseClient && window.supabaseClient.auth) return (clienteSupabase = window.supabaseClient);
-  if (typeof window.cfgEsperarSupabase === 'function') return (clienteSupabase = await window.cfgEsperarSupabase());
-  throw new Error('No fue posible inicializar Supabase.');
+  if (!window.supabase || typeof window.supabase.createClient !== 'function') throw new Error('Supabase no disponible.');
+  const r = await fetch('/api/config/public', { credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' } });
+  if (!r.ok) throw new Error('Configuración pública no disponible (' + r.status + ').');
+  const cfg = await r.json();
+  if (!cfg || !cfg.supabaseUrl || !cfg.supabaseAnonKey) throw new Error('Configuración pública incompleta.');
+  clienteSupabase = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+  });
+  window.supabaseClient = clienteSupabase;
+  return clienteSupabase;
 }
 
 function irAlInicio() {
@@ -131,7 +186,7 @@ async function guardiaDeAutenticacion() {
   }
 }
 
-/* ---------- Carga de datos (en paralelo) ---------- */
+/* ---------- Carga ---------- */
 const COLUMNAS = ['id','email','nombre','handle','bio','avatar_url','created_at','plan','plan_expira_at','wallet_address','telefono','ciudad','pais_codigo','ubicacion','sitio_web'].join(', ');
 
 async function cargarDatosUsuario(client) {
@@ -145,7 +200,7 @@ async function cargarDatosUsuario(client) {
     console.error('[Cuenta] No se pudo leer usuarios:', e);
     estadoPerfil = 'error';
   }
-  /* Respaldo solo de lectura: NO se permiten ediciones sobre datos que no pudimos confirmar */
+  /* Respaldo de solo lectura: no se permite editar datos que no pudimos confirmar */
   usuarioActual = { id: user.id, email: user.email || null, nombre: meta.nombre || 'Explorador', handle: meta.handle || 'explorador',
     bio: meta.bio || null, avatar_url: meta.avatar_url || null, created_at: null, plan: 'Gratis' };
 }
@@ -190,9 +245,10 @@ function renderAviso() {
 }
 
 function renderSecciones() {
-  const u = usuarioActual || {}, au = sesionActual && sesionActual.user ? sesionActual.user : {};
+  const u = usuarioActual || {}, au = (sesionActual && sesionActual.user) || {};
   const editable = estadoPerfil === 'ok';
-  const ed = (fn) => editable ? { onclick: 'window.' + fn + '()' } : { chevron: false };
+  const ed = (fn, o) => Object.assign({ onclick: editable ? 'window.' + fn + '()' : undefined, disabled: !editable, chevron: editable }, o);
+
   const email = u.email || au.email || 'No disponible';
   const pendiente = au.new_email ? ' · pendiente de confirmar: ' + au.new_email : '';
   const creado = fmtFecha(au.created_at || u.created_at) || 'No disponible';
@@ -200,31 +256,30 @@ function renderSecciones() {
   const plan = (u.plan || 'Gratis') + (vence && u.plan && u.plan !== 'Gratis' ? ' · vence ' + vence : '');
 
   $('#seccionInfo').innerHTML = [
-    item(Object.assign({ icon: 'user', title: 'Nombre de usuario' }, ed('onEditarNombre')), u.nombre || 'Explorador'),
-    item(Object.assign({ icon: 'fileText', title: 'Handle' }, ed('onEditarHandle')), '@' + (u.handle || 'explorador')),
-    item(Object.assign({ icon: 'info', title: 'Biografía' }, ed('onEditarBio')), u.bio || 'Sin biografía'),
-    item({ icon: 'info', title: 'Correo electrónico', onclick: 'window.onEditarEmail()' }, email + pendiente),
-    item({ icon: 'crown', title: 'Plan actual', onclick: 'window.onVerPlan()' }, plan),
-    item({ icon: 'info', title: 'Cuenta creada el', chevron: false }, creado)
+    item(ed('onEditarNombre', { icon: 'user', title: 'Nombre de usuario', desc: u.nombre || 'Explorador' })),
+    item(ed('onEditarHandle', { icon: 'fileText', title: 'Handle', desc: '@' + (u.handle || 'explorador') })),
+    item(ed('onEditarBio', { icon: 'info', title: 'Biografía', desc: u.bio || 'Sin biografía' })),
+    item({ icon: 'info', title: 'Correo electrónico', desc: email + pendiente, onclick: 'window.onEditarEmail()' }),
+    item({ icon: 'crown', title: 'Plan actual', desc: plan, onclick: 'window.onVerPlan()' }),
+    item({ icon: 'info', title: 'Cuenta creada el', desc: creado, chevron: false, disabled: true })
   ].join('');
 
   $('#seccionActividad').innerHTML = [
-    item({ icon: 'fileText', title: 'Tus publicaciones', desc: 'Consulta y administra todas tus publicaciones', href: '/features/perfil/perfil.html' }),
-    item({ icon: 'users', title: 'Tus contactos', desc: 'Administra tus contactos y solicitudes', href: '/features/mensajes/contactos.html' }),
-    item({ icon: 'coin', title: 'Tu historial de transacciones', desc: 'Consulta tu historial de compras y transacciones', href: '/features/perfil/perfil.html' })
+    item({ icon: 'fileText', title: 'Tus publicaciones', desc: 'Consulta y administra tus publicaciones', href: '/features/perfil/perfil.html' }),
+    item({ icon: 'users', title: 'Tus contactos', desc: 'Administra tus contactos y solicitudes', href: '/features/mensajes/contactos.html' })
   ].join('');
 
   $('#seccionDescarga').innerHTML = item({ icon: 'database', title: 'Descargar archivo con tus datos',
     desc: "Obtén un archivo con tu información de Sariel's", onclick: 'window.onDescargarDatos()' });
 
-  const peligro = [];
+  let peligro = '';
   if (HABILITAR_DESACTIVACION) {
-    peligro.push(item({ icon: 'lock', title: 'Desactivar temporalmente mi cuenta', desc: 'Oculta tu perfil y contenido temporalmente',
-      onclick: 'window.onDesactivarCuenta()', class: 'cfg-item-plain', style: 'color: var(--cfg-warning, #f7d44a);' }));
+    peligro += item({ icon: 'lock', title: 'Desactivar temporalmente mi cuenta', desc: 'Oculta tu perfil y contenido temporalmente',
+      onclick: 'window.onDesactivarCuenta()', danger: true });
   }
-  peligro.push(item({ icon: 'logout', title: 'Eliminar mi cuenta', desc: 'Elimina permanentemente tu cuenta y todos tus datos',
-    href: '/eliminar-cuenta.html', class: 'cfg-item-plain', style: 'color: var(--cfg-danger, #ff3366);' }));
-  $('#seccionPeligro').innerHTML = peligro.join('');
+  peligro += item({ icon: 'logout', title: 'Eliminar mi cuenta', desc: 'Elimina permanentemente tu cuenta y todos tus datos',
+    href: '/eliminar-cuenta.html', danger: true });
+  $('#seccionPeligro').innerHTML = peligro;
 }
 
 const ICONOS = { login: '🔓', logout: '🔒', login_fallido: '⚠️', cambio_password: '🔑', cambio_email: '📧', activacion_2fa: '🛡️', desactivacion_2fa: '🔓' };
@@ -243,7 +298,7 @@ function renderHistorial() {
   }
   c.innerHTML = historialAccesos.map((h) => {
     const f = h.created_at ? new Date(h.created_at).toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
-    const fallido = h.exitoso === false ? ' <span style="color:var(--cfg-danger);">· FALLIDO</span>' : '';
+    const fallido = h.exitoso === false ? ' <span style="color:#ff3366;">· FALLIDO</span>' : '';
     return '<div class="cfg-session-item"><span class="cfg-session-icon">' + (ICONOS[h.evento] || '◈') + '</span><div class="cfg-session-info">' +
       '<div class="cfg-session-title">' + escapeHtml(NOMBRES[h.evento] || h.evento || 'Evento') + '</div>' +
       '<div class="cfg-session-subtitle">' + escapeHtml(h.dispositivo || 'Dispositivo') + '</div>' +
@@ -253,7 +308,7 @@ function renderHistorial() {
 
 function renderTodo() { renderPerfilCard(); renderAviso(); renderSecciones(); renderHistorial(); }
 
-/* ---------- Modal de edición ---------- */
+/* ---------- Modal de texto (reemplaza prompt(), que se bloquea en móvil) ---------- */
 function pedirTexto(cfg) {
   return new Promise((resolve) => {
     const ov = document.createElement('div'); ov.className = 'cu-ov'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true');
@@ -263,37 +318,46 @@ function pedirTexto(cfg) {
       '<div class="cu-btns"><button type="button" id="cuNo">Cancelar</button><button type="button" class="go" id="cuSi">Guardar</button></div></div>';
     document.body.appendChild(ov);
     const inp = ov.querySelector('#cuIn'), err = ov.querySelector('#cuErr'), cnt = ov.querySelector('#cuCnt');
-    inp.value = cfg.valor || ''; if (cfg.max) inp.maxLength = cfg.max + 20;
+    inp.value = cfg.valor || '';
     const actualizar = () => { cnt.textContent = cfg.max ? inp.value.trim().length + '/' + cfg.max : ''; };
     const cerrar = (v) => { document.removeEventListener('keydown', teclas); ov.remove(); resolve(v); };
-    const aceptar = () => { const v = inp.value.trim(); const m = cfg.validar ? cfg.validar(v) : null; if (m) { err.textContent = m; return; } cerrar(v); };
-    const teclas = (e) => { if (e.key === 'Escape') cerrar(null); else if (e.key === 'Enter' && !cfg.multilinea) { e.preventDefault(); aceptar(); } };
+    const aceptar = () => {
+      const v = inp.value.trim();
+      const m = cfg.validar ? cfg.validar(v) : null;
+      if (m) { err.textContent = m; return; }
+      cerrar(v);
+    };
+    const teclas = (e) => {
+      if (e.key === 'Escape') cerrar(null);
+      else if (e.key === 'Enter' && !cfg.multilinea) { e.preventDefault(); aceptar(); }
+    };
     inp.addEventListener('input', () => { err.textContent = ''; actualizar(); });
     ov.querySelector('#cuNo').onclick = () => cerrar(null);
     ov.querySelector('#cuSi').onclick = aceptar;
     ov.addEventListener('click', (e) => { if (e.target === ov) cerrar(null); });
     document.addEventListener('keydown', teclas);
-    actualizar(); setTimeout(() => inp.focus(), 50);
+    actualizar();
+    setTimeout(() => inp.focus(), 50);
   });
 }
 
-/* ---------- Guardar perfil ---------- */
+/* ---------- Guardar perfil (solo mediante la RPC actualizar_perfil) ---------- */
 async function guardarPerfil(cambios) {
-  if (ocupado) return; ocupado = true;
+  if (ocupado) return;
+  ocupado = true;
   try {
     const client = await obtenerCliente();
-    cfgToast('Guardando cambios...', '', 2500);
-    const datos = { nombre: usuarioActual.nombre || null, handle: usuarioActual.handle || null, bio: usuarioActual.bio || null };
-    Object.assign(datos, cambios);
+    toast('Guardando cambios...', '', 2500);
+    const datos = Object.assign({ nombre: usuarioActual.nombre || null, handle: usuarioActual.handle || null, bio: usuarioActual.bio || null }, cambios);
     const r = await client.rpc('actualizar_perfil', { p_nombre: datos.nombre, p_handle: datos.handle, p_bio: datos.bio });
     if (r.error) throw r.error;
     Object.assign(usuarioActual, datos);
     renderPerfilCard(); renderSecciones();
-    cfgToast('Cambios guardados correctamente.', 'success');
+    toast('Cambios guardados correctamente.', 'success');
   } catch (e) {
     console.error('[Cuenta] Error actualizando perfil:', e);
     const dup = e && (e.code === '23505' || /duplicate|unique/i.test(e.message || ''));
-    cfgToast(dup ? 'Ese handle ya está en uso. Prueba con otro.' : 'No se pudieron guardar los cambios: ' + ((e && e.message) || 'Error desconocido'), 'error', 5000);
+    toast(dup ? 'Ese handle ya está en uso. Prueba con otro.' : 'No se pudieron guardar los cambios: ' + ((e && e.message) || 'Error desconocido'), 'error', 5000);
   } finally { ocupado = false; }
 }
 
@@ -326,22 +390,23 @@ window.onEditarEmail = async function () {
     validar: (t) => (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t) ? null : 'El correo electrónico no es válido.') });
   if (v === null) return;
   const email = v.toLowerCase();
-  if (email === actual.toLowerCase()) { cfgToast('Ese ya es tu correo actual.', 'warning'); return; }
-  if (ocupado) return; ocupado = true;
+  if (email === actual.toLowerCase()) { toast('Ese ya es tu correo actual.', 'warning'); return; }
+  if (ocupado) return;
+  ocupado = true;
   try {
     const client = await obtenerCliente();
-    cfgToast('Enviando confirmación...', '', 4000);
+    toast('Enviando confirmación...', '', 4000);
     const r = await client.auth.updateUser({ email: email });
     if (r.error) throw r.error;
-    try { await client.rpc('registrar_acceso', { p_evento: 'cambio_email', p_metadata: { estado: 'pendiente_confirmacion', email_nuevo: email } }); }
+    try { await client.rpc('registrar_acceso', { p_evento: 'cambio_email', p_metadata: { estado: 'pendiente_confirmacion' } }); }
     catch (re) { console.warn('[Cuenta] No se pudo registrar el cambio de correo:', re); }
     try { const g = await client.auth.getUser(); if (g.data && g.data.user) sesionActual.user = g.data.user; } catch (_) {}
     renderSecciones();
-    cfgToast('Revisa tu correo para confirmar el cambio (puede pedirte confirmar en el correo actual y en el nuevo).', 'success', 6000);
+    toast('Revisa tu correo para confirmar el cambio.', 'success', 6000);
     await cargarHistorial(client); renderHistorial();
   } catch (e) {
     console.error('[Cuenta] Error cambiando correo:', e);
-    cfgToast('No se pudo cambiar el correo: ' + ((e && e.message) || 'Error desconocido'), 'error', 5000);
+    toast('No se pudo cambiar el correo: ' + ((e && e.message) || 'Error desconocido'), 'error', 5000);
   } finally { ocupado = false; }
 };
 
@@ -349,8 +414,7 @@ window.onVerPlan = function () { location.href = '/features/perfil/configuracion
 
 window.onDescargarDatos = async function () {
   if (ocupado) return;
-  const ok = await cfgConfirm({ title: '¿Descargar tus datos?', text: 'Se descargará un archivo con los datos de tu cuenta y tu historial de accesos.',
-    confirmText: 'Descargar', cancelText: 'Cancelar', danger: false });
+  const ok = await confirmar({ titulo: '¿Descargar tus datos?', texto: 'Se descargará un archivo con los datos de tu cuenta y tu historial de accesos.', aceptar: 'Descargar' });
   if (!ok) return;
   ocupado = true;
   try {
@@ -358,35 +422,41 @@ window.onDescargarDatos = async function () {
     let hist = [];
     try { const r = await client.rpc('obtener_mis_accesos', { p_limit: 100 }); if (!r.error && Array.isArray(r.data)) hist = r.data; } catch (_) {}
     const u = usuarioActual || {};
-    const datos = { generado_en: new Date().toISOString(),
-      usuario: { id: sesionActual.user.id, email: u.email || sesionActual.user.email || null, nombre: u.nombre || null, handle: u.handle || null, bio: u.bio || null,
-        avatar_url: u.avatar_url || null, plan: u.plan || null, plan_expira_at: u.plan_expira_at || null, wallet_address: u.wallet_address || null,
-        telefono: u.telefono || null, ciudad: u.ciudad || null, pais_codigo: u.pais_codigo || null, ubicacion: u.ubicacion || null,
-        sitio_web: u.sitio_web || null, created_at: sesionActual.user.created_at || u.created_at || null },
-      historial_accesos: hist };
+    const datos = {
+      generado_en: new Date().toISOString(),
+      usuario: {
+        id: sesionActual.user.id, email: u.email || sesionActual.user.email || null, nombre: u.nombre || null, handle: u.handle || null,
+        bio: u.bio || null, avatar_url: u.avatar_url || null, plan: u.plan || null, plan_expira_at: u.plan_expira_at || null,
+        wallet_address: u.wallet_address || null, telefono: u.telefono || null, ciudad: u.ciudad || null, pais_codigo: u.pais_codigo || null,
+        ubicacion: u.ubicacion || null, sitio_web: u.sitio_web || null, created_at: sesionActual.user.created_at || u.created_at || null
+      },
+      historial_accesos: hist
+    };
     const url = URL.createObjectURL(new Blob([JSON.stringify(datos, null, 2)], { type: 'application/json;charset=utf-8' }));
     const a = document.createElement('a'); a.href = url; a.download = 'sariels-mis-datos-' + Date.now() + '.json';
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    cfgToast('Archivo descargado correctamente.', 'success');
+    toast('Archivo descargado correctamente.', 'success');
   } catch (e) {
     console.error('[Cuenta] Error descargando datos:', e);
-    cfgToast('No se pudo generar el archivo.', 'error');
+    toast('No se pudo generar el archivo.', 'error');
   } finally { ocupado = false; }
 };
 
-/* Solo se muestra si HABILITAR_DESACTIVACION = true (requiere RPC real en Supabase) */
 window.onDesactivarCuenta = async function () {
-  await cfgConfirm({ title: 'Función no disponible', text: 'La desactivación temporal aún no está habilitada.', confirmText: 'Entendido', cancelText: 'Cerrar', danger: false });
+  await confirmar({ titulo: 'Función no disponible', texto: 'La desactivación temporal aún no está habilitada.', aceptar: 'Entendido', cancelar: 'Cerrar' });
 };
 
 window.cuentaReintentarHistorial = async function () {
   $('#seccionHistorial').innerHTML = '<div class="cu-skel"></div><div class="cu-skel"></div>';
-  await cargarHistorial(await obtenerCliente()); renderHistorial();
+  await cargarHistorial(await obtenerCliente());
+  renderHistorial();
 };
+
 window.cuentaReintentar = async function () {
   const c = await obtenerCliente();
-  await Promise.all([cargarDatosUsuario(c), cargarHistorial(c)]); renderTodo();
+  await Promise.all([cargarDatosUsuario(c), cargarHistorial(c)]);
+  renderTodo();
 };
 
 /* ---------- Inicio ---------- */
@@ -394,18 +464,22 @@ window.addEventListener('DOMContentLoaded', async function () {
   try {
     const client = await guardiaDeAutenticacion();
     if (!client) return;
-    cfgInitPage({ title: 'Tu cuenta', subtitle: 'Información de tu cuenta', backUrl: '/features/perfil/configuracion/index.html' });
+    if (typeof window.cfgInitPage === 'function') {
+      window.cfgInitPage({ title: 'Tu cuenta', subtitle: 'Información de tu cuenta', backUrl: '/features/perfil/configuracion/index.html' });
+    }
     await Promise.all([cargarDatosUsuario(client), cargarHistorial(client)]);
     renderTodo();
   } catch (e) {
     console.error('[Cuenta] Error inicializando página:', e);
     $('#nombreCuenta').textContent = 'No se pudo cargar';
-    $('#seccionInfo').innerHTML = $('#seccionActividad').innerHTML = '';
-    $('#avisoCuenta').innerHTML = '<div class="cu-banner">No se pudieron cargar los datos de la cuenta.<br><button type="button" onclick="location.reload()">Recargar</button></div>';
+    $('#seccionInfo').innerHTML = '';
+    $('#seccionActividad').innerHTML = '';
     $('#seccionHistorial').innerHTML = '';
-    cfgToast('No se pudieron cargar todos los datos de la cuenta.', 'error', 5000);
+    $('#avisoCuenta').innerHTML = '<div class="cu-banner">No se pudieron cargar los datos de la cuenta.<br><button type="button" onclick="location.reload()">Recargar</button></div>';
+    toast('No se pudieron cargar todos los datos de la cuenta.', 'error', 5000);
   }
 }, { once: true });
+
 })();
 </script>
 </body>
