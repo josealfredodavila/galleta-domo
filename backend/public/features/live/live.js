@@ -1,11 +1,9 @@
 // ================================================================
-// LIVE · JS v4.0 — Csariel's
+// LIVE · JS v4.1 — Csariel's
 // Cliente de transmisión en vivo. El SERVIDOR decide roles, publicación,
 // Live Pass, dueño del live, acceso de pago y autor de los mensajes.
 // Las validaciones del navegador son solo experiencia de usuario.
-// v4.0: precio de acceso al crear el live (0 = gratis, mínimo 16 USD),
-//       pago de acceso para espectadores, métricas en el header
-//       (seguidores, espectadores, vistas y donaciones en USD).
+// v4.1: donaciones de 20, 50, 100 y 200 USD (mínimo de la pasarela).
 // ================================================================
 'use strict';
 
@@ -33,13 +31,12 @@ const RPC = {
     puedeTransmitir: 'puede_transmitir_live' // (p_usuario_id uuid) → jsonb
 };
 
+// Montos de donación (deben coincidir con MONTOS_DONACION de routes/live.js)
 const DONACIONES = {
-    2:   { nombre: 'Cubo Plata',       emoji: '◈', color: '#C0C0C0', duracion: 3000 },
-    5:   { nombre: 'Cubo Bronce',      emoji: '◈', color: '#CD7F32', duracion: 4000 },
-    10:  { nombre: 'Cubo Oro',         emoji: '◈', color: '#D4AF37', duracion: 5000 },
     20:  { nombre: 'Cohete Bronce',    emoji: '▲', color: '#CD7F32', duracion: 6000 },
     50:  { nombre: 'Cohete Esmeralda', emoji: '▲', color: '#50C878', duracion: 8000 },
-    100: { nombre: 'Cohete Diamante',  emoji: '◇', color: '#B9F2FF', duracion: 10000 }
+    100: { nombre: 'Cohete Diamante',  emoji: '◇', color: '#B9F2FF', duracion: 10000 },
+    200: { nombre: 'Cohete Rubí',      emoji: '◆', color: '#E0115F', duracion: 12000 }
 };
 
 const REDES_DONACION = [
@@ -948,7 +945,6 @@ function iniciarJuego(juego) {
             if (verificarContenido(titulo).prohibido) throw new Error('Título bloqueado por filtro de contenido');
 
             showToast('⏳ Iniciando transmisión…', '', 3000);
-            // Los lives de juego son gratis por defecto
             streamId = await crearTransmisionServidor(titulo, 'gaming', 0);
             await activarStreamer({ streamId, titulo, modo: 'juego', pass: pass.info, gameStream: capturada });
         } catch (e) {
@@ -1486,7 +1482,7 @@ function abrirModalDonacion() {
 
     const b = crearModal({
         id: 'donacionModalBackdrop', icono: '◆', titulo: 'Donar al streamer',
-        texto: 'Elige el monto y la red', estilo: 'max-width:520px;',
+        texto: 'Elige el monto y la red. Mínimo $20 USD.', estilo: 'max-width:520px;',
         contenido: [
             el('div', { style: 'margin-bottom:16px;' },
                 el('label', { style: LABEL_STYLE, text: 'Monto (USD)' }),
