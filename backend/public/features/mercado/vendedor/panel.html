@@ -1848,18 +1848,55 @@ function onPortadaFileChange(event) {
     reader.readAsDataURL(file);
 }
 
+// ================================================================
+// SUBIR IMAGEN VÍA /api/media/upload (con moderación)
+// ================================================================
 async function subirImagen(file, carpeta) {
-    var ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
-    var nombre = carpeta + '/' + sessionUser.id + '-' + Date.now() + '-' + Math.random().toString(36).substring(7) + '.' + ext;
+    // Obtener el token de sesión
+    var sessionResp = await supabase.auth.getSession();
+    var session = sessionResp && sessionResp.data && sessionResp.data.session;
+    if (!session) throw new Error('Sesión no disponible');
+    var token = session.access_token;
+    if (!token) throw new Error('Token no disponible');
 
-    var upload = await supabase.storage
-        .from(STORAGE_BUCKET)
-        .upload(nombre, file, { cacheControl: '3600', upsert: false, contentType: file.type });
+    // Enviar al endpoint con moderación
+    var fd = new FormData();
+    fd.append('file', file);
+    fd.append('destino', STORAGE_BUCKET); // 'mercado'
+    fd.append('tipo', 'imagen');
 
-    if (upload.error) throw upload.error;
+    var respuesta;
+    try {
+        respuesta = await fetch('/api/media/upload', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + token
+            },
+            body: fd
+        });
+    } catch (e) {
+        throw new Error('No se pudo conectar con el servidor');
+    }
 
-    var pub = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(nombre);
-    return pub.data.publicUrl;
+    var data = null;
+    try {
+        data = await respuesta.json();
+    } catch (e) {
+        data = {};
+    }
+
+    if (!respuesta.ok || !data.ok) {
+        var mensaje = data && data.error ? data.error : 'No se pudo subir la imagen';
+
+        // Mensajes específicos por código HTTP
+        if (respuesta.status === 422) throw new Error('Contenido no permitido');
+        if (respuesta.status === 413) throw new Error('La imagen es demasiado grande');
+        if (respuesta.status === 503) throw new Error('No pudimos revisar el contenido. Intenta de nuevo.');
+
+        throw new Error(mensaje);
+    }
+
+    return data.url;
 }
 
 async function guardarTienda() {
