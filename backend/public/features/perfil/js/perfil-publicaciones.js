@@ -5,9 +5,10 @@
 // reacciones, comentarios, eliminar publicación.
 // Depende de: perfil-config.js, perfil-utils.js
 //
-// CAMBIO v2 (traducciones):
-// - Todos los textos visibles y mensajes usan perfilT(clave, respaldo).
-// - Las fechas usan el idioma actual.
+// v3 (moderación):
+// - publicarDesdePerfil() ya NO sube directo a Supabase Storage.
+// - Ahora llama a POST /api/media/upload con multipart/form-data.
+// - El backend modera con AWS Rekognition antes de guardar.
 // ================================================================
 
 // Código de idioma actual para formatear fechas
@@ -18,6 +19,42 @@ function pubCodigoIdioma() {
         }
     } catch (e) {}
     return 'es-MX';
+}
+
+// ================================================================
+// HELPER — Subida segura con moderación
+// ================================================================
+async function subirArchivoConModeracion(archivo, destino, tipo, token) {
+    const fd = new FormData();
+    fd.append('file', archivo);
+    fd.append('destino', destino);
+    fd.append('tipo', tipo);
+
+    const respuesta = await fetch('/api/media/upload', {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Bearer ' + token
+        },
+        body: fd
+    });
+
+    let data = null;
+    try {
+        data = await respuesta.json();
+    } catch (e) {
+        data = {};
+    }
+
+    if (!respuesta.ok || !data.ok) {
+        const mensaje = data && data.error
+            ? data.error
+            : 'No se pudo subir el archivo';
+        const error = new Error(mensaje);
+        error.status = respuesta.status;
+        throw error;
+    }
+
+    return data;
 }
 
 // ================================================================
@@ -79,8 +116,8 @@ function seleccionarArchivoPerfil(event, tipo) {
     var file = event.target.files[0];
     if (!file) return;
     if (tipo === 'imagen') {
-        if (file.size > 10 * 1024 * 1024) {
-            if (window.showToast) window.showToast(perfilT('perfil_pub_imagen_max', 'Imagen mayor a 10 MB'), 'error');
+        if (file.size > 5 * 1024 * 1024) {
+            if (window.showToast) window.showToast(perfilT('perfil_pub_imagen_max', 'Imagen mayor a 5 MB'), 'error');
             event.target.value = '';
             return;
         }
@@ -90,8 +127,8 @@ function seleccionarArchivoPerfil(event, tipo) {
             return;
         }
     } else if (tipo === 'video') {
-        if (file.size > 50 * 1024 * 1024) {
-            if (window.showToast) window.showToast(perfilT('perfil_pub_video_max', 'Video mayor a 50 MB'), 'error');
+        if (file.size > 100 * 1024 * 1024) {
+            if (window.showToast) window.showToast(perfilT('perfil_pub_video_max', 'Video mayor a 100 MB'), 'error');
             event.target.value = '';
             return;
         }
@@ -139,7 +176,7 @@ function quitarArchivoPerfil(tipo) {
 }
 
 // ================================================================
-// PUBLICAR DESDE EL PERFIL
+// PUBLICAR DESDE EL PERFIL — con moderación
 // ================================================================
 async function publicarDesdePerfil() {
     var btn = document.getElementById('btnPublicarPerfil');
@@ -169,40 +206,36 @@ async function publicarDesdePerfil() {
             return;
         }
 
+        var token = session.access_token;
+
         var mediaUrl = null;
         var mediaType = null;
 
-        // Subir imagen
+        // Subir imagen (con moderación)
         if (archivosSeleccionados.imagen) {
             if (window.showToast) window.showToast(perfilT('perfil_pub_subiendo_imagen', 'Subiendo imagen...'), '', 5000);
             var file = archivosSeleccionados.imagen;
-            var ext = file.name.split('.').pop().toLowerCase();
-            var filePath = session.user.id + '/post_' + Date.now() + '.' + ext;
-            var uploadResult = await client.storage
-                .from('muro-videos')
-                .upload(filePath, file, { cacheControl: '3600', upsert: false, contentType: file.type });
-            if (uploadResult.error) {
-                throw new Error(perfilT('perfil_pub_error_imagen', 'Error subiendo imagen:') + ' ' + uploadResult.error.message);
-            }
-            var urlData = client.storage.from('muro-videos').getPublicUrl(filePath);
-            mediaUrl = urlData.data.publicUrl;
+            var resultadoImagen = await subirArchivoConModeracion(
+                file,
+                'muro-videos',
+                'imagen',
+                token
+            );
+            mediaUrl = resultadoImagen.url;
             mediaType = 'imagen';
         }
 
-        // Subir video
+        // Subir video (con moderación)
         if (archivosSeleccionados.video) {
             if (window.showToast) window.showToast(perfilT('perfil_pub_subiendo_video', 'Subiendo video...'), '', 15000);
             var vfile = archivosSeleccionados.video;
-            var vext = vfile.name.split('.').pop().toLowerCase();
-            var vfilePath = session.user.id + '/video_' + Date.now() + '.' + vext;
-            var vuploadResult = await client.storage
-                .from('muro-videos')
-                .upload(vfilePath, vfile, { cacheControl: '3600', upsert: false, contentType: vfile.type });
-            if (vuploadResult.error) {
-                throw new Error(perfilT('perfil_pub_error_video', 'Error subiendo video:') + ' ' + vuploadResult.error.message);
-            }
-            var vurlData = client.storage.from('muro-videos').getPublicUrl(vfilePath);
-            mediaUrl = vurlData.data.publicUrl;
+            var resultadoVideo = await subirArchivoConModeracion(
+                vfile,
+                'muro-videos',
+                'video',
+                token
+            );
+            mediaUrl = resultadoVideo.url;
             mediaType = 'video';
         }
 
@@ -232,7 +265,7 @@ async function publicarDesdePerfil() {
     } catch (error) {
         console.error('Error publicando:', error);
         if (window.showToast) {
-            window.showToast(perfilT('perfil_error_generico', '❌ Error: ') + error.message, 'error');
+            window.showToast('❌ ' + (error.message || perfilT('perfil_error_generico', 'Error')), 'error');
         }
     } finally {
         if (btn) {
@@ -259,7 +292,6 @@ async function cargarMisPublicaciones(forzarRefresco) {
             return;
         }
 
-        // Esperar sesión con reintentos
         var sessionResult = await client.auth.getSession();
         var session = sessionResult.data.session;
 
