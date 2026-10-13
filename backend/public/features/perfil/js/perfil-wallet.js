@@ -9,7 +9,6 @@
 // - Ya NO usa supabase.rpc('vincular_wallet').
 // - Flujo seguro: POST /api/wallet/nonce → personal_sign → POST /api/wallet/link.
 // - Desconectar: POST /api/wallet/unlink.
-// - Mantiene textos con perfilT(clave, respaldo).
 // ================================================================
 
 // Reemplaza {nombre} dentro de una traducción por su valor
@@ -27,15 +26,6 @@ function walletTexto(clave, respaldo, vars) {
 // HELPERS INTERNOS — flujo seguro de wallet
 // ================================================================
 
-// Obtiene el access_token de la sesión activa.
-async function _walletObtenerToken() {
-    const session = await getSession();
-    if (!session) return null;
-    return session.access_token || (session.session && session.session.access_token) || null;
-}
-
-// Construye el mensaje EXACTO a firmar. NO modificar el formato:
-// debe coincidir byte por byte con lo que el backend reconstruye.
 function _walletConstruirMensaje(nonce, address) {
     return "Csariel's: vincular wallet\n" +
            "Nonce: " + nonce + "\n" +
@@ -46,7 +36,6 @@ function _walletConstruirMensaje(nonce, address) {
 // CONECTAR WALLET
 // ================================================================
 async function conectarWallet() {
-    // 1. Verificar MetaMask
     if (typeof window.ethereum === 'undefined') {
         showToast(perfilT('perfil_wallet_instalar', '⚠️ Instala MetaMask para conectar tu wallet'), 'error', 5000);
         setTimeout(() => {
@@ -126,7 +115,7 @@ async function conectarWallet() {
             }
         }
 
-        // 4. FLUJO SEGURO: pedir nonce al backend
+        // 4. FLUJO SEGURO — pedir nonce al backend
         const nonceResp = await fetch('/api/wallet/nonce', {
             method: 'POST',
             headers: {
@@ -148,7 +137,7 @@ async function conectarWallet() {
 
         const nonce = nonceJson.nonce;
 
-        // 5. Pedir firma a MetaMask con el mensaje EXACTO
+        // 5. Firmar mensaje EXACTO
         const mensaje = _walletConstruirMensaje(nonce, cuenta);
 
         let signature;
@@ -166,7 +155,9 @@ async function conectarWallet() {
             return;
         }
 
-        // 6. Enviar al backend para validar y guardar
+        // 6. Enviar al backend
+        const chainIdDecimal = String(parseInt(chainId, 16) || 80002);
+
         const linkResp = await fetch('/api/wallet/link', {
             method: 'POST',
             headers: {
@@ -177,7 +168,7 @@ async function conectarWallet() {
                 address: cuenta,
                 nonce: nonce,
                 signature: signature,
-                chain_id: String(parseInt(chainId, 16) || WEB3_CHAIN_ID_FALLBACK),
+                chain_id: chainIdDecimal,
                 network_name: ENV.networkName
             })
         });
@@ -185,7 +176,6 @@ async function conectarWallet() {
         const linkJson = await linkResp.json().catch(() => ({}));
 
         if (!linkResp.ok) {
-            // Manejo específico por código
             if (linkResp.status === 409) {
                 showToast('⚠️ ' + (linkJson.error || 'Esta wallet ya está vinculada a otra cuenta'), 'warning', 5000);
             } else if (linkResp.status === 401) {
@@ -209,10 +199,6 @@ async function conectarWallet() {
         }
     }
 }
-
-// Fallback de chain_id decimal (Polygon Amoy = 80002).
-// Solo se usa si window.ethereum devuelve algo raro en eth_chainId.
-const WEB3_CHAIN_ID_FALLBACK = 80002;
 
 // ================================================================
 // DESCONECTAR WALLET
@@ -265,7 +251,7 @@ function iniciarEscuchaWallet() {
 
     try {
         window.ethereum.on('accountsChanged', (accounts) => {
-            if (perfilCache?.wallet_address) {
+            if (perfilCache && perfilCache.wallet_address) {
                 if (!accounts || accounts.length === 0) {
                     showToast(perfilT('perfil_wallet_desconectada_mm', '🔌 Wallet desconectada desde MetaMask'), 'warning');
                 } else if (accounts[0].toLowerCase() !== (perfilCache.wallet_address || '').toLowerCase()) {
@@ -275,7 +261,7 @@ function iniciarEscuchaWallet() {
         });
 
         window.ethereum.on('chainChanged', (chainId) => {
-            if (perfilCache?.wallet_address && chainId !== ENV.networkChainId) {
+            if (perfilCache && perfilCache.wallet_address && chainId !== ENV.networkChainId) {
                 showToast(walletTexto(
                     'perfil_wallet_red_distinta',
                     '⚠️ Cambiaste a una red distinta de {red}',
