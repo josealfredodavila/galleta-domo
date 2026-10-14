@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Términos de Uso de Marquinhos · Sariel's</title>
 
-<!-- Supabase JS -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
@@ -16,7 +15,7 @@
         line-height: 1.7;
         max-width: 800px;
         margin: 0 auto;
-        padding: 32px 20px 140px;
+        padding: 32px 20px 180px;
     }
     h1 { color: #D4AF37; font-size: 1.8rem; margin-bottom: 8px; }
     h2 {
@@ -38,6 +37,20 @@
     a { color: #D4AF37; }
     strong { color: #f0f4f8; }
 
+    /* Diagnóstico visible en pantalla */
+    .diagnostico {
+        background: #0b1220;
+        border: 1px solid rgba(138,168,184,0.35);
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-family: ui-monospace, Menlo, Consolas, monospace;
+        font-size: 0.72rem;
+        color: #8aa8b8;
+        margin-bottom: 20px;
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+
     /* Barra fija de acciones */
     .acciones-terminos {
         position: fixed;
@@ -57,7 +70,6 @@
         font-size: 0.95rem;
         cursor: pointer;
         font-family: inherit;
-        transition: transform 0.15s ease, box-shadow 0.15s ease;
         min-width: 140px;
     }
     .btn-aceptar {
@@ -70,13 +82,11 @@
         border: 1px solid rgba(138,168,184,0.4);
         color: #8aa8b8;
     }
-    .btn-aceptar:hover, .btn-rechazar:hover { transform: scale(1.03); }
-    .btn-aceptar:active, .btn-rechazar:active { transform: scale(0.97); }
     .btn-aceptar:disabled {
-        opacity: 0.6; cursor: default; transform: none !important;
+        opacity: 0.6; cursor: default;
     }
 
-    /* Toast / estado */
+    /* Toast */
     .estado-toast {
         position: fixed;
         top: 16px; left: 50%; transform: translateX(-50%) translateY(-80px);
@@ -93,26 +103,15 @@
         text-align: center;
     }
     .estado-toast.visible { transform: translateX(-50%) translateY(0); }
-    .estado-toast.success {
-        background: rgba(76,175,80,0.15);
-        border-color: #4CAF50;
-        color: #A5D6A7;
-    }
-    .estado-toast.error {
-        background: rgba(244,67,54,0.15);
-        border-color: #F44336;
-        color: #FFCDD2;
-    }
-    .estado-toast.info {
-        background: rgba(33,150,243,0.15);
-        border-color: #2196F3;
-        color: #BBDEFB;
-    }
+    .estado-toast.error { background: rgba(244,67,54,0.15); border-color: #F44336; color: #FFCDD2; }
+    .estado-toast.info { background: rgba(33,150,243,0.15); border-color: #2196F3; color: #BBDEFB; }
 </style>
 </head>
 <body>
 
 <div class="estado-toast" id="estadoToast"></div>
+
+<div class="diagnostico" id="diagnostico">Diagnóstico: iniciando…</div>
 
 <h1>◈ Términos de Uso de Marquinhos</h1>
 <p class="fecha">Última actualización: 7 de octubre de 2026</p>
@@ -232,36 +231,38 @@
     <strong>Recuerda:</strong> Marquinhos es un asistente de IA en desarrollo continuo. Puede mejorar, cambiar o presentar comportamientos inesperados. Úsalo con criterio y reporta cualquier comportamiento anómalo.
 </div>
 
-<!-- ═══════════════════════════════════════════════════════ -->
-<!-- BOTONES DE ACEPTAR / RECHAZAR -->
-<!-- ═══════════════════════════════════════════════════════ -->
 <div class="acciones-terminos">
     <button class="btn-rechazar" id="btnRechazar" type="button">No acepto</button>
-    <button class="btn-aceptar" id="btnAceptar" type="button">✅ Acepto los términos</button>
+    <button class="btn-aceptar" id="btnAceptar" type="button" disabled>Cargando…</button>
 </div>
 
 <script>
-    // ═══════════════════════════════════════════════════════════
-    // CONFIG
-    // ═══════════════════════════════════════════════════════════
     const SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
     const TERMINOS_VERSION = '1.0';
     const TERMINOS_KEY = 'marquinhos_terminos_aceptados_' + TERMINOS_VERSION;
 
-    let supabase = null;
+    let cliente = null;
+    let lineasDiag = [];
 
-    // ═══════════════════════════════════════════════════════════
-    // HELPERS
-    // ═══════════════════════════════════════════════════════════
+    // ── Diagnóstico visible en pantalla ─────────────────────────
+    function diag(linea) {
+        lineasDiag.push(linea);
+        if (lineasDiag.length > 12) lineasDiag.shift();
+        document.getElementById('diagnostico').textContent = lineasDiag.join('\n');
+    }
+
     function toast(msg, tipo) {
         const el = document.getElementById('estadoToast');
         el.textContent = msg;
         el.className = 'estado-toast visible' + (tipo ? ' ' + tipo : '');
         clearTimeout(el._timer);
-        el._timer = setTimeout(() => {
-            el.classList.remove('visible');
-        }, 3200);
+        el._timer = setTimeout(function () { el.classList.remove('visible'); }, 4000);
+    }
+
+    function textoError(e) {
+        if (!e) return 'desconocido';
+        return e.message || e.error_description || e.details || JSON.stringify(e);
     }
 
     function volverAtras() {
@@ -270,14 +271,6 @@
             window.location.href = ref;
         } else {
             window.location.href = '/';
-        }
-    }
-
-    function leerLocal() {
-        try {
-            return localStorage.getItem(TERMINOS_KEY) === 'true';
-        } catch (e) {
-            return false;
         }
     }
 
@@ -297,127 +290,113 @@
         } catch (e) {}
     }
 
-    async function obtenerSesion() {
-        if (!supabase) return null;
-        try {
-            const { data } = await supabase.auth.getSession();
-            return data.session || null;
-        } catch (e) {
-            return null;
-        }
-    }
-
-    // Consulta el servidor (fuente de verdad). Lanza error si falla.
-    async function consultarServidor() {
-        const { data, error } = await supabase.rpc('verificar_aceptacion_terminos', {
-            p_version: TERMINOS_VERSION
-        });
-        if (error) throw error;
-        return data;
-    }
-
-    // Registra la aceptación en el servidor. Lanza error si falla.
-    async function registrarServidor() {
-        const { data, error } = await supabase.rpc('registrar_aceptacion_terminos', {
-            p_version: TERMINOS_VERSION,
-            p_user_agent: navigator.userAgent
-        });
-        if (error) throw error;
-        if (!data || data.success !== true) {
-            throw new Error('El servidor no confirmó el registro');
-        }
-        return data;
-    }
-
-    function marcarComoAceptado() {
+    function marcarYaAceptado() {
         const btn = document.getElementById('btnAceptar');
         btn.textContent = '✅ Ya aceptaste estos términos';
         btn.disabled = true;
-        toast('Ya aceptaste estos términos', 'info');
     }
 
-    function pedirLogin() {
+    function marcarListo() {
         const btn = document.getElementById('btnAceptar');
-        btn.textContent = 'Inicia sesión para aceptar';
+        btn.textContent = '✅ Acepto los términos';
         btn.disabled = false;
     }
 
-    // ═══════════════════════════════════════════════════════════
-    // INICIALIZACIÓN
-    // ═══════════════════════════════════════════════════════════
+    async function obtenerSesion() {
+        if (!cliente) return null;
+        const r = await cliente.auth.getSession();
+        return (r && r.data && r.data.session) ? r.data.session : null;
+    }
+
+    // ── Inicio ──────────────────────────────────────────────────
     async function init() {
         try {
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            window.supabaseClient = supabase;
-        } catch (e) {
-            console.warn('[Terminos] No se pudo inicializar Supabase:', e);
-        }
-
-        const sesion = await obtenerSesion();
-
-        if (sesion) {
-            // Con sesión: el servidor manda. No usamos localStorage para decidir.
-            try {
-                const data = await consultarServidor();
-                if (data && data.aceptado === true) {
-                    guardarLocal(data.fecha_aceptacion);
-                    marcarComoAceptado();
-                } else {
-                    // Si el servidor dice que no aceptó, limpiamos cualquier marca vieja
-                    borrarLocal();
-                }
-            } catch (e) {
-                console.warn('[Terminos] No se pudo verificar en el servidor:', e);
-                // Solo si el servidor falla usamos la marca local como respaldo
-                if (leerLocal()) marcarComoAceptado();
-            }
-        } else {
-            // Sin sesión no podemos registrar nada en el servidor
-            if (leerLocal()) {
-                marcarComoAceptado();
-            } else {
-                pedirLogin();
-            }
-        }
-
-        // BOTÓN ACEPTAR
-        document.getElementById('btnAceptar').addEventListener('click', async function () {
-            const btn = this;
-
-            const sesionActual = await obtenerSesion();
-            if (!sesionActual) {
-                toast('Inicia sesión para registrar tu aceptación', 'error');
+            if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+                diag('✗ Supabase no cargó desde el CDN');
+                toast('No se cargó la librería de conexión. Revisa tu internet.', 'error');
+                marcarListo();
                 return;
             }
+            cliente = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            window.supabaseClient = cliente;
+            diag('✓ Conexión lista');
+        } catch (e) {
+            diag('✗ Error creando cliente: ' + textoError(e));
+            marcarListo();
+            return;
+        }
 
-            btn.disabled = true;
-            btn.textContent = 'Guardando...';
-
-            try {
-                const data = await registrarServidor();
-                guardarLocal(data.fecha_aceptacion);
-                toast('✅ Términos aceptados y registrados', 'success');
-                setTimeout(volverAtras, 1200);
-            } catch (e) {
-                console.error('[Terminos] Error registrando aceptación:', e);
-                toast('⚠️ No se pudo registrar. Revisa tu conexión e intenta de nuevo.', 'error');
-                btn.disabled = false;
-                btn.textContent = '✅ Acepto los términos';
+        try {
+            const sesion = await obtenerSesion();
+            if (!sesion) {
+                diag('✗ Sin sesión: inicia sesión en la app');
+                marcarListo();
+                return;
             }
-        });
+            diag('✓ Sesión activa');
 
-        // BOTÓN RECHAZAR
-        document.getElementById('btnRechazar').addEventListener('click', function () {
-            const ok = confirm(
-                '¿Seguro que no aceptas los términos?\n\n' +
-                'Sin aceptarlos, no podrás hablar con Marquinhos.'
-            );
-            if (!ok) return;
-
-            borrarLocal();
-            volverAtras();
-        });
+            const r = await cliente.rpc('verificar_aceptacion_terminos', { p_version: TERMINOS_VERSION });
+            if (r.error) {
+                diag('✗ Error consultando estado: ' + textoError(r.error));
+                marcarListo();
+                return;
+            }
+            if (r.data && r.data.aceptado === true) {
+                guardarLocal(r.data.fecha_aceptacion);
+                diag('✓ Ya aceptaste estos términos');
+                marcarYaAceptado();
+            } else {
+                borrarLocal();
+                diag('• Aún no has aceptado la versión ' + TERMINOS_VERSION);
+                marcarListo();
+            }
+        } catch (e) {
+            diag('✗ Error al iniciar: ' + textoError(e));
+            marcarListo();
+        }
     }
+
+    // ── Clic en Aceptar ─────────────────────────────────────────
+    async function aceptar() {
+        const btn = document.getElementById('btnAceptar');
+        btn.disabled = true;
+        btn.textContent = 'Guardando…';
+        diag('→ Enviando aceptación…');
+
+        try {
+            if (!cliente) throw new Error('la conexión no está lista');
+            const sesion = await obtenerSesion();
+            if (!sesion) throw new Error('sesión no encontrada, inicia sesión en la app');
+
+            const r = await cliente.rpc('registrar_aceptacion_terminos', {
+                p_version: TERMINOS_VERSION,
+                p_user_agent: navigator.userAgent
+            });
+            if (r.error) throw r.error;
+            if (!r.data || r.data.success !== true) {
+                throw new Error('el servidor respondió: ' + JSON.stringify(r.data));
+            }
+
+            guardarLocal(r.data.fecha_aceptacion);
+            diag('✓ Aceptación registrada');
+            toast('✅ Términos aceptados y registrados', 'success');
+            setTimeout(volverAtras, 1200);
+        } catch (e) {
+            diag('✗ No se guardó: ' + textoError(e));
+            toast('No se pudo registrar: ' + textoError(e), 'error');
+            marcarListo();
+        }
+    }
+
+    function rechazar() {
+        const ok = confirm('¿Seguro que no aceptas los términos?\n\nSin aceptarlos, no podrás hablar con Marquinhos.');
+        if (!ok) return;
+        borrarLocal();
+        volverAtras();
+    }
+
+    document.getElementById('btnAceptar').addEventListener('click', aceptar);
+    document.getElementById('btnRechazar').addEventListener('click', rechazar);
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
