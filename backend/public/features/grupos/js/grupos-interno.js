@@ -5,11 +5,35 @@
 // reportes, etiquetas, comentarios, reacciones y acciones del canal.
 // Depende de: grupos-config.js, grupos-utils.js, grupos-anuncios.js
 //
-// v2 (moderación):
+// v3 (moderación):
 // - subirFotoGrupo, subirVideoGrupo, cambiarAvatarGrupo y
-//   cambiarPortadaGrupo ya NO suben directo a Supabase Storage.
-// - Ahora llaman a POST /api/media/upload con moderación.
+//   cambiarPortadaGrupo ya suben vía POST /api/media/upload.
+// - publicarEnGrupo() y enviarComentarioPublicacion() manejan el
+//   error 'contenido_no_permitido' del trigger de DB.
+// - Cartel amarillo ⚠️ en posts y comentarios con aviso_moderacion.
 // ================================================================
+
+// ================================================================
+// HELPERS — Moderación
+// ================================================================
+function esErrorModeracionGrupo(error) {
+    var msg = (error && error.message) ? String(error.message) : '';
+    return msg.indexOf('contenido_no_permitido') !== -1;
+}
+
+function htmlAvisoModeracionGrupo() {
+    return '<div class="grp-aviso-moderacion" style="' +
+        'display:flex;align-items:center;gap:8px;' +
+        'padding:8px 12px;margin:8px 0;border-radius:10px;' +
+        'background:rgba(247,212,74,0.12);' +
+        'border:1px solid rgba(247,212,74,0.4);' +
+        'color:#f7d44a;font-size:0.72rem;' +
+    '">' +
+        '<span style="font-size:1rem;">⚠️</span>' +
+        '<span>Este mensaje contiene lenguaje inapropiado. ' +
+            'Considera expresarte con respeto.</span>' +
+    '</div>';
+}
 
 // ================================================================
 // HELPER — Subida segura con moderación
@@ -393,6 +417,12 @@ function renderizarPublicacionHTML(p) {
     var mias = misInteracciones[p.id] || {};
     var tengoMeInteresa = mias.me_interesa ? ' interesado' : '';
 
+    // ✅ Cartel amarillo si hay aviso_moderacion
+    var avisoHTML = '';
+    if (p.aviso_moderacion === 'lenguaje_inapropiado') {
+        avisoHTML = htmlAvisoModeracionGrupo();
+    }
+
     var mkHTML = '';
     if (p.tipo_marketplace) {
         var tipoLabels = { vendo: 'VENDO', rento: 'RENTO', busco: 'BUSCO', regalo: 'REGALO', servicio: 'SERVICIO' };
@@ -445,6 +475,7 @@ function renderizarPublicacionHTML(p) {
         '<button class="post-menu-item danger" onclick="abrirModalReportar(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg> Reportar publicación</button>' +
         '<button class="post-menu-item danger" onclick="abrirModalReportarAdmin(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Reportar al administrador</button>' +
         '</div></div></div>' +
+        avisoHTML +
         '<div class="contenido">' + contenido + '</div>' + mkHTML +
         '<div class="stats">' +
         '<span onclick="reaccionarPublicacion(' + p.id + ')" id="like-btn-' + p.id + '"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> <span id="likes-' + p.id + '">' + likesCount + '</span></span>' +
@@ -478,7 +509,7 @@ document.addEventListener('click', function(e) {
 });
 
 // ================================================================
-// INTERACCIONES (me interesa, no me interesa, ocultar)
+// INTERACCIONES
 // ================================================================
 async function toggleInteraccion(publicacionId, tipo) {
     if (!sessionUser) { grpShowToast('Inicia sesión para interactuar', 'error'); return false; }
@@ -803,9 +834,10 @@ async function guardarEtiquetas() {
 // ================================================================
 async function cargarPublicacionesGrupo(grupoId) {
     try {
+        // ✅ Se agrega aviso_moderacion al SELECT
         var result = await window.supabaseClient
             .from('grupos_video_publicaciones_publicas')
-            .select('*')
+            .select('*, aviso_moderacion')
             .eq('grupo_id', grupoId)
             .eq('estado', 'publicado')
             .order('created_at', { ascending: false })
@@ -821,7 +853,7 @@ async function cargarPublicacionesGrupo(grupoId) {
 }
 
 // ================================================================
-// PUBLICAR (texto, foto, video)
+// PUBLICAR EN GRUPO — con moderación
 // ================================================================
 async function publicarEnGrupo() {
     if (publicando) { grpShowToast('Ya estás publicando...', 'warning'); return; }
@@ -843,7 +875,16 @@ async function publicarEnGrupo() {
             tipo: 'texto',
             estado: 'publicado'
         }).select().single();
-        if (result.error) throw result.error;
+
+        if (result.error) {
+            // ✅ Detectar error de moderación
+            if (esErrorModeracionGrupo(result.error)) {
+                grpShowToast('❌ Contenido no permitido por las normas de la comunidad', 'error', 6000);
+                return;
+            }
+            throw result.error;
+        }
+
         input.value = '';
         grpShowToast('Publicación creada', 'success');
         await cargarPublicacionesGrupo(grupoActualId);
@@ -989,9 +1030,10 @@ async function cargarComentariosPublicacion(publicacionId) {
     var lista = document.getElementById('comentariosLista-' + publicacionId);
     if (!lista) return;
     try {
+        // ✅ Se agrega aviso_moderacion al SELECT
         var result = await window.supabaseClient
             .from('grupos_video_comentarios_publicos')
-            .select('*')
+            .select('*, aviso_moderacion')
             .eq('publicacion_id', publicacionId)
             .order('created_at', { ascending: true });
         if (result.error) throw result.error;
@@ -1004,9 +1046,15 @@ async function cargarComentariosPublicacion(publicacionId) {
             var avatar = c.usuario_avatar_url && grpSafeUrl(c.usuario_avatar_url)
                 ? '<img src="' + grpEscapeHTML(grpSafeUrl(c.usuario_avatar_url)) + '">'
                 : '◈';
+            // ✅ Cartel amarillo si hay aviso_moderacion
+            var avisoMini = '';
+            if (c.aviso_moderacion === 'lenguaje_inapropiado') {
+                avisoMini = htmlAvisoModeracionGrupo();
+            }
             return '<div style="display:flex;gap:6px;padding:4px 0;border-bottom:1px solid rgba(212,175,55,0.04);">' +
                 '<div style="width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,var(--green-deep),var(--gold));display:flex;align-items:center;justify-content:center;font-size:0.5rem;color:#fff;overflow:hidden;flex-shrink:0;">' + avatar + '</div>' +
                 '<div style="flex:1;font-size:0.65rem;"><strong style="color:var(--gold);">' + grpEscapeHTML(c.usuario_nombre || 'Usuario') + '</strong> ' + grpEscapeHTML(c.contenido || '') +
+                avisoMini +
                 '<div style="font-size:0.5rem;color:var(--text-muted);">' + new Date(c.created_at).toLocaleString() + '</div></div></div>';
         }).join('');
     } catch (e) {
@@ -1021,11 +1069,21 @@ async function enviarComentarioPublicacion(publicacionId) {
     if (!texto) return;
     if (!validarTextoPermitido(texto, 'Comentario')) return;
     try {
-        grpOk(await window.supabaseClient.from('grupos_video_comentarios').insert({
+        var result = await window.supabaseClient.from('grupos_video_comentarios').insert({
             publicacion_id: publicacionId,
             usuario_id: sessionUser.id,
             contenido: texto
-        }));
+        });
+
+        if (result.error) {
+            // ✅ Detectar error de moderación
+            if (esErrorModeracionGrupo(result.error)) {
+                grpShowToast('❌ Contenido no permitido por las normas de la comunidad', 'error', 6000);
+                return;
+            }
+            throw result.error;
+        }
+
         input.value = '';
         var countSpan = document.getElementById('comentarios-' + publicacionId);
         if (countSpan) countSpan.textContent = (parseInt(countSpan.textContent) || 0) + 1;
