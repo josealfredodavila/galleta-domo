@@ -4,12 +4,12 @@
 // Cargar feed, renderizar posts, scroll infinito, verificar like.
 // Depende de: muro-config.js, muro-utils.js
 //
-// v2 (moderación):
-// - Se carga el campo aviso_moderacion en el SELECT.
-// - Si el post tiene aviso_moderacion = 'lenguaje_inapropiado',
-//   se muestra un cartel amarillo al lado del contenido.
-// - Se agrega helper manejarErrorModeracion() para los archivos
-//   que insertan texto (comentarios, posts).
+// v2.1:
+// - Se quitó aviso_moderacion del SELECT explícito: la vista
+//   muro_posts_publicos aún no tiene esa columna y la consulta fallaba.
+// - El cartel de aviso ya está programado y se activará cuando la
+//   vista exponga aviso_moderacion.
+// - Helper manejarErrorModeracion() para los archivos que insertan texto.
 // ================================================================
 
 // ================================================================
@@ -22,15 +22,11 @@
 //   } catch (e) {
 //     manejarErrorModeracion(e);
 //   }
-//
-// Este helper detecta el error del trigger de moderación y
-// muestra el mensaje correcto al usuario.
 // ================================================================
 function manejarErrorModeracion(e) {
     var mensaje = (e && e.message) ? String(e.message) : '';
 
     if (mensaje.indexOf('contenido_no_permitido') !== -1) {
-        // Trigger bloqueó el mensaje
         if (typeof showToast === 'function') {
             showToast('❌ Contenido no permitido por las normas de la comunidad', 'error', 6000);
         } else {
@@ -39,7 +35,6 @@ function manejarErrorModeracion(e) {
         return true;
     }
 
-    // Otros errores: mostrar el genérico
     return false;
 }
 window.manejarErrorModeracion = manejarErrorModeracion;
@@ -65,10 +60,11 @@ async function cargarPublicaciones(reset) {
         var from = currentPage * POSTS_PER_PAGE;
         var to = from + POSTS_PER_PAGE - 1;
 
-        // ✅ Se agrega aviso_moderacion al SELECT
+        // El SELECT trae todas las columnas de la vista. Cuando la vista
+        // exponga aviso_moderacion, llega automáticamente con el '*'.
         var query = supabaseClient
             .from('muro_posts_publicos')
-            .select('*, aviso_moderacion, temas:tema_id (id, nombre, emoji, slug), muro_likes(count), muro_comentarios(count)')
+            .select('*, temas:tema_id (id, nombre, emoji, slug), muro_likes(count), muro_comentarios(count)')
             .order('created_at', { ascending: false })
             .range(from, to);
 
@@ -163,7 +159,7 @@ function renderizarPost(post) {
         }
     }
 
-    // ✅ NUEVO: Cartel de aviso inapropiado
+    // Cartel de aviso inapropiado (se activa cuando la vista expone aviso_moderacion)
     var avisoBadge = '';
     if (post.aviso_moderacion === 'lenguaje_inapropiado') {
         avisoBadge =
@@ -218,7 +214,7 @@ function renderizarPost(post) {
             '</div>' +
         '</div>' +
         temaBadge +
-        avisoBadge +                                     // ✅ Aviso visual agregado
+        avisoBadge +
         '<div class="post-content">' + contenidoSanitizado + '</div>' +
         imagenHtml +
         seccionVenta +
