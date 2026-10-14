@@ -5,10 +5,11 @@
 // reacciones, comentarios, eliminar publicación.
 // Depende de: perfil-config.js, perfil-utils.js
 //
-// v3 (moderación):
-// - publicarDesdePerfil() ya NO sube directo a Supabase Storage.
-// - Ahora llama a POST /api/media/upload con multipart/form-data.
-// - El backend modera con AWS Rekognition antes de guardar.
+// v4 (moderación):
+// - publicarDesdePerfil() maneja error 'contenido_no_permitido'.
+// - enviarComentarioPerfil() maneja error 'contenido_no_permitido'.
+// - Cartel amarillo ⚠️ en posts y comentarios con aviso_moderacion.
+// - Sube imagen/video vía /api/media/upload (ya existente).
 // ================================================================
 
 // Código de idioma actual para formatear fechas
@@ -19,6 +20,31 @@ function pubCodigoIdioma() {
         }
     } catch (e) {}
     return 'es-MX';
+}
+
+// ================================================================
+// HELPER — Detectar error de moderación
+// ================================================================
+function esErrorModeracionPerfil(error) {
+    var msg = (error && error.message) ? String(error.message) : '';
+    return msg.indexOf('contenido_no_permitido') !== -1;
+}
+
+// ================================================================
+// HELPER — Cartel amarillo ⚠️
+// ================================================================
+function htmlAvisoModeracionPerfil() {
+    return '<div class="perfil-aviso-moderacion" style="' +
+        'display:flex;align-items:center;gap:8px;' +
+        'padding:8px 12px;margin:8px 0;border-radius:10px;' +
+        'background:rgba(247,212,74,0.12);' +
+        'border:1px solid rgba(247,212,74,0.4);' +
+        'color:#f7d44a;font-size:0.72rem;' +
+    '">' +
+        '<span style="font-size:1rem;">⚠️</span>' +
+        '<span>Este mensaje contiene lenguaje inapropiado. ' +
+            'Considera expresarte con respeto.</span>' +
+    '</div>';
 }
 
 // ================================================================
@@ -265,7 +291,12 @@ async function publicarDesdePerfil() {
     } catch (error) {
         console.error('Error publicando:', error);
         if (window.showToast) {
-            window.showToast('❌ ' + (error.message || perfilT('perfil_error_generico', 'Error')), 'error');
+            // ✅ Detectar error de moderación
+            if (esErrorModeracionPerfil(error)) {
+                window.showToast('❌ Contenido no permitido por las normas de la comunidad', 'error', 6000);
+            } else {
+                window.showToast('❌ ' + (error.message || perfilT('perfil_error_generico', 'Error')), 'error');
+            }
         }
     } finally {
         if (btn) {
@@ -276,7 +307,7 @@ async function publicarDesdePerfil() {
 }
 
 // ================================================================
-// CARGAR MIS PUBLICACIONES (con reintentos si la sesión no está lista)
+// CARGAR MIS PUBLICACIONES
 // ================================================================
 async function cargarMisPublicaciones(forzarRefresco) {
     var container = document.getElementById('misPublicacionesList');
@@ -316,9 +347,10 @@ async function cargarMisPublicaciones(forzarRefresco) {
 
         container._intentos = 0;
 
+        // ✅ Se agrega aviso_moderacion al SELECT
         var result = await client
             .from('publicaciones_publicas')
-            .select('*')
+            .select('*, aviso_moderacion')
             .eq('usuario_id', session.user.id)
             .order('created_at', { ascending: false })
             .limit(50);
@@ -382,6 +414,13 @@ async function cargarMisPublicaciones(forzarRefresco) {
                 '<div class="fecha" data-no-traducir="1">' + (p.created_at ? escaparHTML(new Date(p.created_at).toLocaleString(pubCodigoIdioma())) : '') + '</div>';
             header.appendChild(headerMeta);
             card.appendChild(header);
+
+            // ✅ Cartel amarillo si hay aviso_moderacion
+            if (p.aviso_moderacion === 'lenguaje_inapropiado') {
+                var avisoDiv = document.createElement('div');
+                avisoDiv.innerHTML = htmlAvisoModeracionPerfil();
+                card.appendChild(avisoDiv.firstChild);
+            }
 
             // CONTENIDO
             var contenido = document.createElement('div');
@@ -675,9 +714,11 @@ async function cargarComentariosPerfil(publicacionId) {
     try {
         var client = window.supabaseClient;
         if (!client) return;
+
+        // ✅ Se agrega aviso_moderacion al SELECT
         var result = await client
             .from('publicaciones_comentarios_publicos')
-            .select('*')
+            .select('*, aviso_moderacion')
             .eq('publicacion_id', publicacionId)
             .order('created_at', { ascending: true });
 
@@ -712,6 +753,14 @@ async function cargarComentariosPerfil(publicacionId) {
                     (handle ? ' <span style="color:var(--text-muted);font-weight:400;font-size:0.65rem;">' + handle + '</span>' : '') +
                 '</div>';
             contenidoDiv.appendChild(textoDiv);
+
+            // ✅ Cartel amarillo si hay aviso_moderacion
+            if (c.aviso_moderacion === 'lenguaje_inapropiado') {
+                var avisoMini = document.createElement('div');
+                avisoMini.innerHTML = htmlAvisoModeracionPerfil();
+                avisoMini.style.marginTop = '4px';
+                contenidoDiv.appendChild(avisoMini.firstChild);
+            }
 
             var fechaDiv = document.createElement('div');
             fechaDiv.className = 'fecha';
@@ -756,6 +805,15 @@ async function enviarComentarioPerfil(publicacionId) {
         await cargarComentariosPerfil(publicacionId);
     } catch (error) {
         console.error('Error enviando comentario:', error);
+
+        // ✅ Detectar error de moderación
+        if (window.showToast) {
+            if (esErrorModeracionPerfil(error)) {
+                window.showToast('❌ Contenido no permitido por las normas de la comunidad', 'error', 6000);
+            } else {
+                window.showToast('Error al enviar comentario: ' + error.message, 'error');
+            }
+        }
     }
 }
 
