@@ -5,11 +5,13 @@
 // reacciones, comentarios, eliminar publicación.
 // Depende de: perfil-config.js, perfil-utils.js
 //
-// v4 (moderación):
+// v4.1 (moderación):
+// - Las consultas usan select('*'): las vistas publicaciones_publicas
+//   y publicaciones_comentarios_publicos ya exponen aviso_moderacion.
 // - publicarDesdePerfil() maneja error 'contenido_no_permitido'.
 // - enviarComentarioPerfil() maneja error 'contenido_no_permitido'.
 // - Cartel amarillo ⚠️ en posts y comentarios con aviso_moderacion.
-// - Sube imagen/video vía /api/media/upload (ya existente).
+// - Sube imagen/video vía /api/media/upload (destino muro-videos).
 // ================================================================
 
 // Código de idioma actual para formatear fechas
@@ -291,7 +293,6 @@ async function publicarDesdePerfil() {
     } catch (error) {
         console.error('Error publicando:', error);
         if (window.showToast) {
-            // ✅ Detectar error de moderación
             if (esErrorModeracionPerfil(error)) {
                 window.showToast('❌ Contenido no permitido por las normas de la comunidad', 'error', 6000);
             } else {
@@ -347,10 +348,10 @@ async function cargarMisPublicaciones(forzarRefresco) {
 
         container._intentos = 0;
 
-        // ✅ Se agrega aviso_moderacion al SELECT
+        // La vista ya expone aviso_moderacion: se usa '*'
         var result = await client
             .from('publicaciones_publicas')
-            .select('*, aviso_moderacion')
+            .select('*')
             .eq('usuario_id', session.user.id)
             .order('created_at', { ascending: false })
             .limit(50);
@@ -415,7 +416,7 @@ async function cargarMisPublicaciones(forzarRefresco) {
             header.appendChild(headerMeta);
             card.appendChild(header);
 
-            // ✅ Cartel amarillo si hay aviso_moderacion
+            // Cartel amarillo si hay aviso_moderacion
             if (p.aviso_moderacion === 'lenguaje_inapropiado') {
                 var avisoDiv = document.createElement('div');
                 avisoDiv.innerHTML = htmlAvisoModeracionPerfil();
@@ -715,10 +716,10 @@ async function cargarComentariosPerfil(publicacionId) {
         var client = window.supabaseClient;
         if (!client) return;
 
-        // ✅ Se agrega aviso_moderacion al SELECT
+        // La vista ya expone aviso_moderacion: se usa '*'
         var result = await client
             .from('publicaciones_comentarios_publicos')
-            .select('*, aviso_moderacion')
+            .select('*')
             .eq('publicacion_id', publicacionId)
             .order('created_at', { ascending: true });
 
@@ -754,7 +755,7 @@ async function cargarComentariosPerfil(publicacionId) {
                 '</div>';
             contenidoDiv.appendChild(textoDiv);
 
-            // ✅ Cartel amarillo si hay aviso_moderacion
+            // Cartel amarillo si hay aviso_moderacion
             if (c.aviso_moderacion === 'lenguaje_inapropiado') {
                 var avisoMini = document.createElement('div');
                 avisoMini.innerHTML = htmlAvisoModeracionPerfil();
@@ -806,7 +807,6 @@ async function enviarComentarioPerfil(publicacionId) {
     } catch (error) {
         console.error('Error enviando comentario:', error);
 
-        // ✅ Detectar error de moderación
         if (window.showToast) {
             if (esErrorModeracionPerfil(error)) {
                 window.showToast('❌ Contenido no permitido por las normas de la comunidad', 'error', 6000);
