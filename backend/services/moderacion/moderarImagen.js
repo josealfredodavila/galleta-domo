@@ -8,19 +8,20 @@
 //   if (!resultado.ok) { /* rechazar */ }
 //
 // Contrato:
-//   Entrada:  Buffer con bytes de imagen (JPEG, PNG o WebP)
+//   Entrada:  Buffer con bytes de imagen (JPEG o PNG)
 //   Salida:   { ok: true }
 //           | { ok: false, motivo: 'tipo_invalido' | 'tamano_invalido'
 //                              | 'contenido_no_permitido' | 'timeout'
-//                              | 'servicio_no_disponible' | 'error_interno',
+//                              | 'servicio_no_disponible',
 //               detalle?: string, etiquetas?: array }
 //
 // Reglas:
 //   - Detecta el tipo real por magic bytes (no confía en mimetype).
-//   - Acepta solo JPEG, PNG y WebP.
+//   - Acepta JPEG y PNG. WebP se rechaza: Rekognition no lo analiza.
 //   - Tamaño máximo configurable vía MODERACION_MAX_BYTES (default 5 MB).
 //   - Umbral configurable vía MODERACION_UMBRAL (default 80).
-//   - Fail closed: si Rekognition falla o tarda > 10 s, rechaza.
+//   - Fail closed: si Rekognition falla o tarda > timeout, rechaza.
+//   - Los errores de AWS se registran con su tipo para poder diagnosticarlos.
 //   - Las etiquetas "Suggestive" se registran en log pero NO bloquean.
 // ================================================================
 
@@ -85,6 +86,11 @@ function obtenerCliente() {
     return clienteRekognition;
 }
 
+// Aviso al arrancar si faltan credenciales (no bloquea, solo informa)
+if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
+    console.warn('⚠️ [ModerarImagen] Faltan AWS_ACCESS_KEY_ID o AWS_SECRET_ACCESS_KEY. Toda subida será rechazada.');
+}
+
 // ================================================================
 // DETECCIÓN DE TIPO POR MAGIC BYTES
 // ================================================================
@@ -108,7 +114,6 @@ function detectarTipo(buffer) {
     }
 
     // WebP: "RIFF" .... "WEBP"
-    // 52 49 46 46 (RIFF) + 4 bytes tamaño + 57 45 42 50 (WEBP)
     if (
         buffer[0] === 0x52 && buffer[1] === 0x49 &&
         buffer[2] === 0x46 && buffer[3] === 0x46 &&
@@ -150,7 +155,16 @@ async function moderarImagen(buffer) {
     // 1) Validar tipo real
     const tipo = detectarTipo(buffer);
     if (!tipo) {
-        return { ok: false, motivo: 'tipo_invalido', detalle: 'Solo JPEG, PNG o WebP' };
+        return { ok: false, motivo: 'tipo_invalido', detalle: 'Solo JPEG o PNG' };
+    }
+
+    // Rekognition no analiza WebP: se rechaza con un motivo claro
+    if (tipo === 'image/webp') {
+        return {
+            ok: false,
+            motivo: 'tipo_invalido',
+            detalle: 'WebP no soportado para revisión. Sube la imagen en JPEG o PNG.'
+        };
     }
 
     // 2) Validar tamaño
@@ -181,8 +195,23 @@ async function moderarImagen(buffer) {
         if (error.message === 'moderacion_timeout') {
             return { ok: false, motivo: 'timeout' };
         }
-        console.error('❌ [ModerarImagen] Error de Rekognition:', error.message || error);
-        return { ok: false, motivo: 'servicio_no_disponible' };
+
+        // Registrar el tipo de error de AWS para diagnosticar la causa real
+        const codigo = error.name || 'ErrorDesconocido';
+        const estado = error.$metadata && error.$metadata.httpStatusCode;
+        console.error(
+            `❌ [ModerarImagen] Error de Rekognition: ${codigo}` +
+            (estado ? ` (HTTP ${estado})` : '') +
+            ` — ${error.message || ''}`
+        );
+
+        // Formato de imagen rechazado por AWS: es un problema del archivo
+        if (codigo === 'InvalidImageFormatException') {
+            return { ok: false, motivo: 'tipo_invalido', detalle: 'Formato no aceptado por el servicio' };
+        }
+
+        // Credenciales, permisos o servicio caído: fail closed
+        return { ok: false, motivo: 'servicio_no_disponible', detalle: codigo };
     }
 
     // 4) Analizar etiquetas
