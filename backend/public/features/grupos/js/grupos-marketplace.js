@@ -2,6 +2,8 @@
 // GRUPOS · MARKETPLACE Y DONACIONES
 // ================================================================
 // Publicación en Marketplace + donaciones al creador del canal.
+// v3: las imágenes y videos del Marketplace se suben vía
+//     /api/media/upload (moderación con Rekognition).
 // v2: las donaciones solo se hacen con un live activo en el canal.
 //     Montos de 20 USD en adelante. El servidor decide el creador
 //     y reparte 50% creador / 50% plataforma.
@@ -56,6 +58,32 @@ function validarDuracionVideo(file) {
 }
 
 // ================================================================
+// SUBIR IMAGEN O VIDEO DEL MARKETPLACE VÍA BACKEND (con moderación)
+// Devuelve la URL pública del archivo ya revisado.
+// ================================================================
+async function subirMediaMarketplace(archivo, tipo) {
+    var session = await grpGetSession();
+    if (!session) throw new Error('Sesión no válida');
+
+    var fd = new FormData();
+    fd.append('file', archivo);
+    fd.append('destino', 'grupos-publicaciones');
+    fd.append('tipo', tipo);
+
+    var respuesta = await fetch('/api/media/upload', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + session.access_token },
+        body: fd
+    });
+    var data = await respuesta.json().catch(function() { return {}; });
+
+    if (!respuesta.ok || !data.ok) {
+        throw new Error(data.error || 'No se pudo subir el archivo');
+    }
+    return data.url;
+}
+
+// ================================================================
 // PUBLICAR EN MARKETPLACE
 // ================================================================
 async function publicarMarketplace() {
@@ -97,23 +125,15 @@ async function publicarMarketplace() {
 
     btn.disabled = true;
     btn.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Publicando...';
-    statusEl.textContent = 'Subiendo...';
+    statusEl.textContent = 'Revisando y subiendo...';
 
     try {
         var imagenUrl = null, videoUrl = null;
 
         if (imagenInput.files && imagenInput.files[0]) {
             var file = imagenInput.files[0];
-            if (file.size > 10 * 1024 * 1024) throw new Error('Imagen > 10MB');
-            var fileExt = file.name.split('.').pop();
-            var filePath = grupoActualId + '/marketplace/' + sessionUser.id + '/' + Date.now() + '.' + fileExt;
-            var uploadResult = await window.supabaseClient.storage
-                .from('grupos-publicaciones')
-                .upload(filePath, file, { cacheControl: '3600', upsert: true });
-            if (uploadResult.error) throw uploadResult.error;
-            imagenUrl = window.supabaseClient.storage
-                .from('grupos-publicaciones')
-                .getPublicUrl(filePath).data.publicUrl;
+            if (file.size > 5 * 1024 * 1024) throw new Error('Imagen > 5MB');
+            imagenUrl = await subirMediaMarketplace(file, 'imagen');
         }
 
         if (videoInput.files && videoInput.files[0]) {
@@ -121,15 +141,7 @@ async function publicarMarketplace() {
             if (vfile.size > 50 * 1024 * 1024) throw new Error('Video > 50MB');
             var validacion = await validarDuracionVideo(vfile);
             if (!validacion.valido) throw new Error('Video > 40s');
-            var vext = vfile.name.split('.').pop();
-            var vfilePath = grupoActualId + '/marketplace/' + sessionUser.id + '/video_' + Date.now() + '.' + vext;
-            var vuploadResult = await window.supabaseClient.storage
-                .from('grupos-publicaciones')
-                .upload(vfilePath, vfile, { cacheControl: '3600', upsert: true });
-            if (vuploadResult.error) throw vuploadResult.error;
-            videoUrl = window.supabaseClient.storage
-                .from('grupos-publicaciones')
-                .getPublicUrl(vfilePath).data.publicUrl;
+            videoUrl = await subirMediaMarketplace(vfile, 'video');
         }
 
         var result = await window.supabaseClient.from('grupos_video_publicaciones').insert({
