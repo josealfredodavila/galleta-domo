@@ -2,30 +2,13 @@
 // MURO · PUBLICAR
 // ================================================================
 // Crear publicaciones (texto + imagen), emoji picker, hashtags.
-// v2: las imágenes pasan por /api/media/upload (moderación).
-//     Los textos bloqueados por la base muestran aviso claro.
 // Depende de: muro-config.js, muro-utils.js, muro-publicaciones.js
+//
+// v2 (moderación):
+// - publicar() maneja el error 'contenido_no_permitido' del trigger.
+// - subirImagenMuro() también lo maneja.
+// - Se usa manejarErrorModeracion() (definido en muro-publicaciones.js).
 // ================================================================
-
-// ================================================================
-// TRADUCIR ERRORES DE PUBLICACIÓN
-// ================================================================
-function traducirErrorPublicacionMuro(error) {
-    var mensaje = (error && error.message) ? String(error.message) : '';
-    if (mensaje.indexOf('contenido_no_permitido') !== -1) {
-        return 'Contenido no permitido. Revisa tu mensaje e intenta de nuevo.';
-    }
-    return 'Error al publicar: ' + mensaje;
-}
-
-// ================================================================
-// TOKEN DE SESIÓN (para llamadas al backend)
-// ================================================================
-async function obtenerTokenMuro() {
-    var resultado = await supabaseClient.auth.getSession();
-    var session = resultado && resultado.data ? resultado.data.session : null;
-    return session ? session.access_token : null;
-}
 
 // ================================================================
 // PUBLICAR (texto)
@@ -79,7 +62,15 @@ async function publicar() {
         await cargarTokensDestacados();
     } catch (e) {
         console.error('Error al publicar:', e);
-        showToast(traducirErrorPublicacionMuro(e), 'error');
+
+        // ✅ Detectar error de moderación
+        var esErrorModeracion =
+            typeof manejarErrorModeracion === 'function' &&
+            manejarErrorModeracion(e);
+
+        if (!esErrorModeracion) {
+            showToast('Error al publicar: ' + e.message, 'error');
+        }
     } finally {
         publicando = false;
         if (btnPublicar) {
@@ -148,7 +139,7 @@ function abrirSelectorImagen() {
 }
 
 // ================================================================
-// SUBIR IMAGEN AL MURO (con moderación)
+// SUBIR IMAGEN AL MURO
 // ================================================================
 async function subirImagenMuro(event) {
     var file = event.target.files[0];
@@ -167,38 +158,52 @@ async function subirImagenMuro(event) {
         return;
     }
 
+    var fileExt = file.name.split('.').pop().toLowerCase();
+    var filePath = sessionUser.id + '/' + Date.now() + '.' + fileExt;
+
     try {
-        showToast('Revisando y subiendo imagen...', '');
+        showToast('Subiendo imagen...', '');
 
-        var token = await obtenerTokenMuro();
-        if (!token) throw new Error('Inicia sesión de nuevo');
+        var uploadResult = await supabaseClient.storage
+            .from('muro-imagenes')
+            .upload(filePath, file, { cacheControl: '3600', upsert: true });
+        if (uploadResult.error) throw uploadResult.error;
 
-        var fd = new FormData();
-        fd.append('file', file);
-        fd.append('destino', 'muro-imagenes');
-        fd.append('tipo', 'imagen');
-
-        var respuesta = await fetch('/api/media/upload', {
-            method: 'POST',
-            headers: { 'Authorization': 'Bearer ' + token },
-            body: fd
-        });
-        var data = await respuesta.json().catch(function() { return {}; });
-
-        if (!respuesta.ok || !data.ok) {
-            throw new Error(data.error || 'No se pudo subir la imagen');
-        }
+        var publicUrl = supabaseClient.storage
+            .from('muro-imagenes')
+            .getPublicUrl(filePath).data.publicUrl;
 
         var contenido = document.getElementById('postContent').value.trim();
         var insertData = {
             usuario_id: sessionUser.id,
             contenido: contenido,
-            imagen_url: data.url
+            imagen_url: publicUrl
         };
         if (temaSeleccionado) insertData.tema_id = temaSeleccionado;
 
         var insertResult = await supabaseClient.from('muro_posts').insert(insertData);
-        if (insertResult.error) throw insertResult.error;
+
+        // ✅ Detectar error de moderación del insert
+        if (insertResult.error) {
+            // Borrar la imagen que se subió, porque el post no se creó
+            try {
+                await supabaseClient.storage
+                    .from('muro-imagenes')
+                    .remove([filePath]);
+            } catch (cleanupErr) {
+                console.warn('No se pudo borrar la imagen:', cleanupErr);
+            }
+
+            var esErrorModeracion =
+                typeof manejarErrorModeracion === 'function' &&
+                manejarErrorModeracion(insertResult.error);
+
+            if (!esErrorModeracion) {
+                throw insertResult.error;
+            }
+            event.target.value = '';
+            return;
+        }
 
         document.getElementById('postContent').value = '';
         temaSeleccionado = null;
@@ -210,6 +215,6 @@ async function subirImagenMuro(event) {
         await cargarPublicaciones(true);
     } catch (e) {
         console.error('Error subiendo imagen:', e);
-        showToast(traducirErrorPublicacionMuro(e), 'error');
+        showToast(e.message, 'error');
     }
 }
