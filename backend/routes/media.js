@@ -15,6 +15,8 @@
 //   - grupos-publicaciones (posts, avatares, portadas de grupos)
 //   - videos               (videos y miniaturas del feed de videos)
 //   - sariels-avatars      (avatares de perfil del usuario)
+//   - sariels-estados      (historias de 24 h)
+//   - chat-attachments     (fotos y videos enviados en mensajes)
 //   - mercado              (logos, portadas y fotos de productos)
 //
 // Reglas:
@@ -23,6 +25,7 @@
 //   - Los límites de tamaño se validan ANTES de moderar.
 //   - Si la moderación rechaza → 422 sin revelar la etiqueta.
 //   - Logs solo con: usuario, fecha, destino, resultado. Nunca el archivo.
+//   - El audio de voz NO pasa por aquí (no hay moderación de audio).
 // ================================================================
 
 'use strict';
@@ -44,7 +47,7 @@ const router = express.Router();
 const LIMITE_IMAGEN_MB = 5;
 const LIMITE_VIDEO_MB = 100;
 const LIMITE_AVATAR_MB = 5;
-const LIMITE_PORTADA_MB = 20;
+const LIMITE_CHAT_VIDEO_MB = 50;
 
 // Whitelist de destinos con sus reglas
 const DESTINOS = {
@@ -71,8 +74,16 @@ const DESTINOS = {
         tipo: 'imagen',
         limiteMB: LIMITE_AVATAR_MB
     },
-    // Mercado: logos, portadas y fotos de productos.
-    // Acepta solo imágenes (no videos) con límite de 3 MB (igual que el frontend).
+    'sariels-estados': {
+        tipo: 'imagen',
+        limiteMB: LIMITE_IMAGEN_MB
+    },
+    'chat-attachments': {
+        tipo: 'auto',
+        limiteMBImagen: LIMITE_IMAGEN_MB,
+        limiteMBVideo: LIMITE_CHAT_VIDEO_MB
+    },
+    // Mercado: logos, portadas y fotos de productos (solo imágenes, 3 MB)
     'mercado': {
         tipo: 'imagen',
         limiteMB: 3
