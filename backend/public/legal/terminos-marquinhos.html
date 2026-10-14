@@ -37,7 +37,6 @@
     a { color: #D4AF37; }
     strong { color: #f0f4f8; }
 
-    /* Diagnóstico visible en pantalla */
     .diagnostico {
         background: #0b1220;
         border: 1px solid rgba(138,168,184,0.35);
@@ -51,7 +50,6 @@
         word-break: break-word;
     }
 
-    /* Barra fija de acciones */
     .acciones-terminos {
         position: fixed;
         bottom: 0; left: 0; right: 0;
@@ -86,7 +84,6 @@
         opacity: 0.6; cursor: default;
     }
 
-    /* Toast */
     .estado-toast {
         position: fixed;
         top: 16px; left: 50%; transform: translateX(-50%) translateY(-80px);
@@ -239,39 +236,45 @@
 <script>
     const SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+    const SUPABASE_STORAGE_KEY = 'sb-zultnlogdoajehbswlih-auth-token';
     const TERMINOS_VERSION = '1.0';
     const TERMINOS_KEY = 'marquinhos_terminos_aceptados_' + TERMINOS_VERSION;
 
     let cliente = null;
     let lineasDiag = [];
+    let estadoUI = 'iniciando'; // iniciando | pendiente | aceptado | sin_sesion | error
 
     // ── Diagnóstico visible en pantalla ─────────────────────────
     function diag(linea) {
         lineasDiag.push(linea);
-        if (lineasDiag.length > 12) lineasDiag.shift();
-        document.getElementById('diagnostico').textContent = lineasDiag.join('\n');
+        if (lineasDiag.length > 14) lineasDiag.shift();
+        const el = document.getElementById('diagnostico');
+        if (el) el.textContent = lineasDiag.join('\n');
     }
 
     function toast(msg, tipo) {
         const el = document.getElementById('estadoToast');
+        if (!el) return;
         el.textContent = msg;
         el.className = 'estado-toast visible' + (tipo ? ' ' + tipo : '');
         clearTimeout(el._timer);
-        el._timer = setTimeout(function () { el.classList.remove('visible'); }, 4000);
+        el._timer = setTimeout(function () { el.classList.remove('visible'); }, 4500);
     }
 
     function textoError(e) {
         if (!e) return 'desconocido';
-        return e.message || e.error_description || e.details || JSON.stringify(e);
+        return e.message || e.error_description || e.details || e.hint || (typeof e === 'string' ? e : JSON.stringify(e));
     }
 
     function volverAtras() {
-        const ref = document.referrer;
-        if (ref && ref.indexOf(window.location.host) !== -1) {
-            window.location.href = ref;
-        } else {
-            window.location.href = '/';
-        }
+        try {
+            const ref = document.referrer;
+            if (ref && ref.indexOf(window.location.host) !== -1) {
+                window.location.href = ref;
+                return;
+            }
+        } catch (e) {}
+        window.location.href = '/';
     }
 
     function guardarLocal(fecha) {
@@ -290,60 +293,127 @@
         } catch (e) {}
     }
 
-    function marcarYaAceptado() {
-        const btn = document.getElementById('btnAceptar');
-        btn.textContent = '✅ Ya aceptaste estos términos';
-        btn.disabled = true;
-    }
-
+    // ── Estados visuales del botón ──────────────────────────────
     function marcarListo() {
+        estadoUI = 'pendiente';
         const btn = document.getElementById('btnAceptar');
+        if (!btn) return;
         btn.textContent = '✅ Acepto los términos';
         btn.disabled = false;
     }
 
-    async function obtenerSesion() {
-        if (!cliente) return null;
-        const r = await cliente.auth.getSession();
-        return (r && r.data && r.data.session) ? r.data.session : null;
+    function marcarYaAceptado() {
+        estadoUI = 'aceptado';
+        const btn = document.getElementById('btnAceptar');
+        if (!btn) return;
+        btn.textContent = '✅ Ya aceptaste estos términos';
+        btn.disabled = true;
     }
 
-    // ── Inicio ──────────────────────────────────────────────────
-    async function init() {
+    function marcarSinSesion() {
+        estadoUI = 'sin_sesion';
+        const btn = document.getElementById('btnAceptar');
+        if (!btn) return;
+        btn.textContent = '🔒 Inicia sesión para aceptar';
+        btn.disabled = false;
+    }
+
+    function marcarError() {
+        estadoUI = 'error';
+        const btn = document.getElementById('btnAceptar');
+        if (!btn) return;
+        btn.textContent = '⚠️ Reintentar';
+        btn.disabled = false;
+    }
+
+    // ── Sesión ──────────────────────────────────────────────────
+    async function obtenerSesion() {
+        if (!cliente) return null;
         try {
-            if (!window.supabase || typeof window.supabase.createClient !== 'function') {
-                diag('✗ Supabase no cargó desde el CDN');
-                toast('No se cargó la librería de conexión. Revisa tu internet.', 'error');
-                marcarListo();
-                return;
-            }
-            cliente = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            window.supabaseClient = cliente;
-            diag('✓ Conexión lista');
+            const r = await cliente.auth.getSession();
+            return (r && r.data && r.data.session) ? r.data.session : null;
         } catch (e) {
-            diag('✗ Error creando cliente: ' + textoError(e));
-            marcarListo();
-            return;
+            diag('✗ Error leyendo sesión: ' + textoError(e));
+            return null;
+        }
+    }
+
+    // ── Verificación de aceptación (robusta) ────────────────────
+    function interpretarVerificacion(data) {
+        if (data === true) return true;
+        if (data === false || data === null || data === undefined) return false;
+        if (typeof data === 'string') {
+            const s = data.trim().toLowerCase();
+            if (s === 'true') return true;
+            if (s === 'false' || s === '') return false;
+            try { return interpretarVerificacion(JSON.parse(data)); } catch (e) { return false; }
+        }
+        if (typeof data === 'object') {
+            if (data.aceptado === true || data.aceptado === 'true') return true;
+            if (data.aceptado === false || data.aceptado === 'false') return false;
+            if (data.success === true && data.aceptado !== false) return true;
+        }
+        return false;
+    }
+
+    function extraerFechaVerificacion(data) {
+        if (!data) return null;
+        if (typeof data === 'string') {
+            try { return extraerFechaVerificacion(JSON.parse(data)); } catch (e) { return null; }
+        }
+        if (typeof data === 'object') {
+            return data.fecha_aceptacion || data.fecha || null;
+        }
+        return null;
+    }
+
+    // ── Crear/reutilizar cliente Supabase ───────────────────────
+    function crearCliente() {
+        // Reutiliza cliente inyectado por la app si existe
+        if (window.supabaseClient && window.supabaseClient.auth) {
+            diag('✓ Reutilizando cliente Supabase de la app');
+            cliente = window.supabaseClient;
+            return cliente;
         }
 
+        if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+            return null;
+        }
+
+        cliente = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+            auth: {
+                persistSession: true,
+                autoRefreshToken: true,
+                detectSessionInUrl: true,
+                storageKey: SUPABASE_STORAGE_KEY,
+                flowType: 'pkce'
+            }
+        });
+        window.supabaseClient = cliente;
+        return cliente;
+    }
+
+    // ── Refrescar estado desde el servidor ──────────────────────
+    async function refrescarEstado() {
         try {
             const sesion = await obtenerSesion();
             if (!sesion) {
-                diag('✗ Sin sesión: inicia sesión en la app');
-                marcarListo();
+                diag('✗ Sin sesión: inicia sesión en la app Sariel\'s');
+                marcarSinSesion();
                 return;
             }
-            diag('✓ Sesión activa');
+            diag('✓ Sesión activa (' + (sesion.user && sesion.user.id ? 'user ok' : 'user ?') + ')');
 
             const r = await cliente.rpc('verificar_aceptacion_terminos', { p_version: TERMINOS_VERSION });
             if (r.error) {
-                diag('✗ Error consultando estado: ' + textoError(r.error));
-                marcarListo();
+                diag('✗ Error RPC verificar: ' + textoError(r.error));
+                marcarError();
                 return;
             }
-            if (r.data && r.data.aceptado === true) {
-                guardarLocal(r.data.fecha_aceptacion);
-                diag('✓ Ya aceptaste estos términos');
+
+            if (interpretarVerificacion(r.data)) {
+                guardarLocal(extraerFechaVerificacion(r.data));
+                diag('✓ Ya aceptaste estos términos (v' + TERMINOS_VERSION + ')');
                 marcarYaAceptado();
             } else {
                 borrarLocal();
@@ -351,40 +421,109 @@
                 marcarListo();
             }
         } catch (e) {
-            diag('✗ Error al iniciar: ' + textoError(e));
-            marcarListo();
+            diag('✗ Error al refrescar estado: ' + textoError(e));
+            marcarError();
+        }
+    }
+
+    // ── Inicio ──────────────────────────────────────────────────
+    async function init() {
+        try {
+            if (!crearCliente()) {
+                diag('✗ Supabase no cargó desde el CDN');
+                toast('No se cargó la librería de conexión. Revisa tu internet.', 'error');
+                marcarError();
+                return;
+            }
+            diag('✓ Conexión lista');
+
+            // Suscripción a cambios de sesión para no dejar la UI bloqueada
+            try {
+                cliente.auth.onAuthStateChange(function (evento, sesion) {
+                    diag('• auth: ' + evento);
+                    if (evento === 'SIGNED_OUT') {
+                        marcarSinSesion();
+                    } else if (sesion) {
+                        // Re-verificar sin bloquear el hilo actual
+                        setTimeout(refrescarEstado, 0);
+                    }
+                });
+            } catch (e) {
+                diag('• onAuthStateChange no disponible: ' + textoError(e));
+            }
+
+            await refrescarEstado();
+        } catch (e) {
+            diag('✗ Error en init: ' + textoError(e));
+            marcarError();
         }
     }
 
     // ── Clic en Aceptar ─────────────────────────────────────────
     async function aceptar() {
         const btn = document.getElementById('btnAceptar');
+        if (!btn) return;
+
+        // Si no hay sesión, avisar y no intentar registrar
+        if (estadoUI === 'sin_sesion') {
+            toast('Necesitas iniciar sesión en Sariel\'s antes de aceptar.', 'error');
+            diag('✗ Aceptar bloqueado: sin sesión');
+            return;
+        }
+
+        // Evitar dobles clics
+        if (btn.disabled) return;
         btn.disabled = true;
+        const textoPrevio = btn.textContent;
         btn.textContent = 'Guardando…';
         diag('→ Enviando aceptación…');
 
         try {
             if (!cliente) throw new Error('la conexión no está lista');
+
             const sesion = await obtenerSesion();
-            if (!sesion) throw new Error('sesión no encontrada, inicia sesión en la app');
+            if (!sesion) {
+                diag('✗ Sesión no encontrada al aceptar');
+                toast('Tu sesión no está activa. Inicia sesión de nuevo.', 'error');
+                marcarSinSesion();
+                return;
+            }
 
             const r = await cliente.rpc('registrar_aceptacion_terminos', {
                 p_version: TERMINOS_VERSION,
                 p_user_agent: navigator.userAgent
             });
-            if (r.error) throw r.error;
-            if (!r.data || r.data.success !== true) {
-                throw new Error('el servidor respondió: ' + JSON.stringify(r.data));
+
+            if (r.error) {
+                diag('✗ Error RPC registrar: ' + textoError(r.error));
+                throw r.error;
             }
 
-            guardarLocal(r.data.fecha_aceptacion);
-            diag('✓ Aceptación registrada');
+            // Interpretar respuesta (jsonb u objeto, o string JSON)
+            let data = r.data;
+            if (typeof data === 'string') {
+                try { data = JSON.parse(data); } catch (e) {}
+            }
+
+            const exito = !!(data && (data.success === true || data.success === 'true'));
+            if (!exito) {
+                diag('✗ Servidor no confirmó: ' + JSON.stringify(data));
+                throw new Error('el servidor no confirmó la aceptación');
+            }
+
+            // Solo ahora guardamos local
+            guardarLocal(data.fecha_aceptacion);
+            diag('✓ Aceptación registrada y confirmada por el servidor');
             toast('✅ Términos aceptados y registrados', 'success');
+            marcarYaAceptado();
             setTimeout(volverAtras, 1200);
         } catch (e) {
             diag('✗ No se guardó: ' + textoError(e));
             toast('No se pudo registrar: ' + textoError(e), 'error');
-            marcarListo();
+            // Restaurar botón para permitir reintento
+            btn.textContent = textoPrevio && textoPrevio !== 'Guardando…' ? '⚠️ Reintentar' : '⚠️ Reintentar';
+            btn.disabled = false;
+            estadoUI = 'error';
         }
     }
 
