@@ -1,12 +1,13 @@
 // ================================================================
-// MENSAJES · JS v2.2 (Parte 1 de 3)
+// MENSAJES · JS v3.0 (Parte 1 de 3)
 // Configuración, utilidades, autenticación, avatar, perfil, estados
 //
-// CAMBIO v2.2:
-// - Textos de llamadas más claros ("Llamar", "Aceptar", "Rechazar").
-// - Al iniciar llamada muestra "📞 Llamando a X…" en vez de "📞 ...".
-// - Al recibir muestra "🔔 Llamada entrante de X".
-// - Botones del overlay usan texto + ícono (Micrófono, Cámara, etc.).
+// CAMBIOS v3.0:
+// - Subidas de imágenes, videos, avatares y estados ahora pasan por
+//   POST /api/media/upload (moderación con Rekognition en backend).
+// - Audios siguen subiéndose directo a Storage (sin moderación de audio).
+// - Se muestra cartel amarillo cuando aviso_moderacion = 'lenguaje_inapropiado'.
+// - Textos bloqueados por la BD se devuelven al input para edición.
 // ================================================================
 
 'use strict';
@@ -84,6 +85,10 @@ function esc(v) {
     return d.innerHTML;
 }
 
+function esErrorContenidoNoPermitido(err) {
+    return !!(err && err.message && err.message.indexOf('contenido_no_permitido') !== -1);
+}
+
 /* ================================================================
    LIMPIEZA DE MARKDOWN
    ================================================================ */
@@ -133,6 +138,27 @@ async function auth() {
     }
     user = s.user;
     return true;
+}
+
+async function subirViaBackend(file, destino, tipo) {
+    const s = await session();
+    if (!s) throw new Error('Inicia sesión primero');
+
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('destino', destino);
+    fd.append('tipo', tipo);
+
+    const r = await fetch('/api/media/upload', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + s.access_token },
+        body: fd
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok || !d.ok) {
+        throw new Error(d.error || 'No se pudo subir el archivo');
+    }
+    return d;
 }
 
 function avatar(name, url, cls = 'avatar') {
@@ -211,22 +237,13 @@ async function subirFotoHeader(event) {
         return;
     }
 
-    const fileExt = file.name.split('.').pop().toLowerCase();
-    const filePath = `${user.id}/avatar.${fileExt}`;
-
     try {
-        toast('⏳ Subiendo foto...', '', 5000);
-        const { error: uploadError } = await db.storage
-            .from('sariels-avatars')
-            .upload(filePath, file, { upsert: true, contentType: file.type });
-        if (uploadError) throw uploadError;
-
-        const { data: urlData } = db.storage.from('sariels-avatars').getPublicUrl(filePath);
-        const publicUrl = urlData.publicUrl + '?t=' + Date.now();
+        toast('⏳ Revisando y subiendo foto...', '', 5000);
+        const d = await subirViaBackend(file, 'sariels-avatars', 'imagen');
 
         const { error: updateError } = await db
             .from('usuarios')
-            .update({ avatar_url: publicUrl })
+            .update({ avatar_url: d.url + '?t=' + Date.now() })
             .eq('id', user.id);
         if (updateError) throw updateError;
 
@@ -235,7 +252,8 @@ async function subirFotoHeader(event) {
         await cargarFotoHeader();
     } catch (error) {
         console.error('Error al subir foto:', error);
-        toast('❌ Error al subir foto: ' + error.message, 'error');
+        toast('❌ ' + (error.message || 'No se pudo subir la foto'), 'error');
+        event.target.value = '';
     }
 }
 
@@ -625,20 +643,11 @@ async function publicarEstado() {
     btn.textContent = '⏳ Publicando...';
 
     try {
-        const fileExt = file.name.split('.').pop().toLowerCase();
-        const filePath = `${user.id}/${Date.now()}.${fileExt}`;
-
-        const { error: uploadError } = await db.storage
-            .from(ESTADOS_BUCKET)
-            .upload(filePath, file, { upsert: false, contentType: file.type });
-        if (uploadError) throw uploadError;
-
-        const { data: urlData } = db.storage.from(ESTADOS_BUCKET).getPublicUrl(filePath);
-        const publicUrl = urlData.publicUrl;
+        const d = await subirViaBackend(file, ESTADOS_BUCKET, 'imagen');
 
         const { error: insertError } = await db.from('estados').insert({
             usuario_id: user.id,
-            imagen_url: publicUrl,
+            imagen_url: d.url,
             caption: caption || null
         });
         if (insertError) throw insertError;
@@ -648,20 +657,17 @@ async function publicarEstado() {
         await cargarEstados();
     } catch (e) {
         console.error('Error publicando estado:', e);
-        if (e.message?.includes('Bucket') || e.message?.includes('not found')) {
-            toast('❌ Bucket "sariels-estados" no existe. Créalo en Supabase.', 'error');
-        } else if (e.code === '42P01') {
+        if (e.code === '42P01') {
             toast('❌ Tabla "estados" no existe. Ejecuta el SQL.', 'error');
         } else {
-            toast('❌ Error: ' + e.message, 'error');
+            toast('❌ ' + (e.message || 'No se pudo publicar el estado'), 'error');
         }
     } finally {
         btn.disabled = false;
         btn.textContent = 'Publicar estado';
     }
-}
-// ================================================================
-// MENSAJES · JS v2.2 (Parte 2 de 3)
+}// ================================================================
+// MENSAJES · JS v3.0 (Parte 2 de 3)
 // Conversaciones, chat, Marquinhos (candados + términos), voz, archivos
 // ================================================================
 
@@ -796,7 +802,6 @@ async function loadConversations() {
     const list = $('conversationList');
     list.innerHTML = '';
 
-    // Botón del bot siempre primero
     const botEl = document.createElement('div');
     botEl.className = 'conv conv-bot' + (current?.id === BOT_ID ? ' active' : '');
     botEl.dataset.id = BOT_ID;
@@ -936,7 +941,6 @@ async function openConversation(id) {
     $('voiceBot').style.display = esBot ? 'inline-flex' : 'none';
     $('chatActions').style.display = 'flex';
 
-    // ✅ v2.2: Botón de llamada con texto según contexto
     const callBtn = $('videoCall');
     if (callBtn) {
         if (esBot) {
@@ -1124,8 +1128,12 @@ function messageHTML(m, sent, signedUrl) {
     const esBotRecibido = !sent && (m.es_bot || m.bot_message);
     const headerBot = esBotRecibido ? '<div class="bubble-bot-info">✦ MARQUINHOS</div>' : '';
 
+    const avisoHTML = m.aviso_moderacion === 'lenguaje_inapropiado'
+        ? '<div style="margin-top:6px;padding:6px 8px;border-radius:8px;background:rgba(247,212,74,.12);border:1px solid rgba(247,212,74,.4);color:#f7d44a;font-size:.68rem;">⚠️ Este mensaje contiene lenguaje inapropiado. Considera expresarte con respeto.</div>'
+        : '';
+
     return `<div class="bubblewrap ${sent ? 'sent' : 'received'}">
-        <div class="bubble">${headerBot}${body}</div>
+        <div class="bubble">${headerBot}${body}${avisoHTML}</div>
         <div class="meta">${m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}${sent ? (m.leido ? ' · ◆◆' : ' · ◈◈') : ''}</div>
     </div>`;
 }
@@ -1141,7 +1149,10 @@ async function sendMessage(text) {
     $('messageInput').value = '';
 
     if (current.bot) {
-        if (!verificarTerminosMarquinhos()) return;
+        if (!verificarTerminosMarquinhos()) {
+            $('messageInput').value = textoLimpio;
+            return;
+        }
 
         let userMsg = {
             contenido: textoLimpio,
@@ -1160,8 +1171,14 @@ async function sendMessage(text) {
                 editado: false,
                 eliminado: false
             }).select('*').single();
-            if (!ins.error) userMsg = ins.data;
+            if (ins.error) throw ins.error;
+            userMsg = ins.data;
         } catch (e) {
+            if (esErrorContenidoNoPermitido(e)) {
+                toast('❌ Contenido no permitido por las normas de la comunidad', 'error');
+                $('messageInput').value = textoLimpio;
+                return;
+            }
             console.warn('No se pudo guardar el mensaje del usuario:', e);
         }
 
@@ -1201,15 +1218,14 @@ async function sendMessage(text) {
         } catch (e) {
             quitarTypingBot();
             console.error('Error Marquinhos:', e);
-            const errorMsg = {
+            append({
                 contenido: '⚠️ ' + (e.message || 'Ups, tuve un problema.'),
                 created_at: new Date().toISOString(),
                 tipo: 'texto',
                 remitente_id: BOT_UUID,
                 leido: true,
                 es_bot: true
-            };
-            append(errorMsg, false);
+            }, false);
         }
         return;
     }
@@ -1226,7 +1242,12 @@ async function sendMessage(text) {
 
     if (r.error) {
         console.error(r.error);
-        toast('❌ Error al enviar mensaje', 'error');
+        if (esErrorContenidoNoPermitido(r.error)) {
+            toast('❌ Contenido no permitido por las normas de la comunidad', 'error');
+        } else {
+            toast('❌ Error al enviar mensaje', 'error');
+        }
+        $('messageInput').value = textoLimpio;
         return;
     }
     await append(r.data, true);
@@ -1706,22 +1727,34 @@ async function uploadFile(file) {
         : file.type.startsWith('audio/') ? 'audio'
         : 'archivo';
 
-    const bucket = type === 'audio' ? 'chat-audio' : 'chat-attachments';
-    const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-    const path = `${user.id}/mensajes/${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${safe}`;
-
-    const up = await db.storage.from(bucket).upload(path, file, {
-        contentType: file.type || 'application/octet-stream',
-        cacheControl: '3600',
-        upsert: false
-    });
-    if (up.error) {
-        console.error(up.error);
-        toast('❌ No se pudo subir el archivo', 'error');
+    if (type === 'archivo') {
+        toast('⚠️ En el chat solo se pueden enviar imágenes, videos o audios', 'error');
         return;
     }
 
-    const storageRef = `bucket://${bucket}/${path}`;
+    let storageRef;
+
+    try {
+        if (type === 'audio') {
+            const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+            const path = `${user.id}/mensajes/${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${safe}`;
+            const up = await db.storage.from('chat-audio').upload(path, file, {
+                contentType: file.type || 'application/octet-stream',
+                cacheControl: '3600',
+                upsert: false
+            });
+            if (up.error) throw up.error;
+            storageRef = `bucket://chat-audio/${path}`;
+        } else {
+            const d = await subirViaBackend(file, 'chat-attachments', type);
+            storageRef = `bucket://chat-attachments/${d.path}`;
+        }
+    } catch (e) {
+        console.error('Error subiendo archivo:', e);
+        toast('❌ ' + (e.message || 'No se pudo subir el archivo'), 'error');
+        return;
+    }
+
     const r = await db.from('mensajes_chat').insert({
         remitente_id: user.id,
         destinatario_id: current.id,
@@ -1736,7 +1769,11 @@ async function uploadFile(file) {
 
     if (r.error) {
         console.error(r.error);
-        toast('❌ No se pudo guardar el archivo', 'error');
+        if (esErrorContenidoNoPermitido(r.error)) {
+            toast('❌ Contenido no permitido por las normas de la comunidad', 'error');
+        } else {
+            toast('❌ No se pudo guardar el archivo', 'error');
+        }
         return;
     }
     await append(r.data, true);
@@ -1896,14 +1933,13 @@ async function recordAudioNota() {
         $('audio').textContent = '🎙️';
         toast('❌ No se pudo acceder al micrófono', 'error');
     }
-}
-// ================================================================
-// MENSAJES · JS v2.2 (Parte 3 de 3) — FINAL
+}// ================================================================
+// MENSAJES · JS v3.0 (Parte 3 de 3) — FINAL
 // Canales, grupos, llamadas, inicialización y listeners
 //
-// CAMBIO v2.2:
-// - Botones de llamada con etiquetas de texto (Micrófono, Cámara, etc.)
-// - Mensajes de estado más claros: "📞 Llamando a X…", "🔔 Llamada entrante"
+// CAMBIO v3.0:
+// - Subidas vía endpoint /api/media/upload con moderación.
+// - Cartel de lenguaje inapropiado en burbujas.
 // ================================================================
 
 // ================================================================
@@ -2372,7 +2408,6 @@ async function startCall() {
         await connectCall(roomName, user.id);
         subscribeCall(id);
 
-        // ✅ v2.2: Texto más claro
         $('callOverlay').classList.add('show');
         $('callInfo').innerHTML = '📞 <strong>Llamando a ' + esc(current.profile.nombre || 'usuario') + '…</strong><br><small style="opacity:.7">Esperando respuesta</small>';
 
@@ -2422,7 +2457,6 @@ async function connectCall(roomName, name) {
     call.room = room;
     call.active = true;
 
-    // ✅ v2.2: Actualizar texto cuando la llamada está activa
     $('callInfo').innerHTML = '🟢 <strong>Llamada en curso</strong><br><small style="opacity:.7">Presiona ✕ para colgar</small>';
 }
 
@@ -2462,7 +2496,6 @@ async function incoming(data) {
         : esc((p.nombre || '◈').charAt(0).toUpperCase());
     $('incomingOverlay').classList.add('show');
 
-    // ✅ v2.2: Toast más visible
     toast('🔔 ' + (p.nombre || 'Alguien') + ' te está llamando…', 'success');
 }
 
@@ -2584,7 +2617,7 @@ async function toggleScreen() {
 }
 
 // ================================================================
-// INIT — INICIALIZACIÓN PRINCIPAL (v2.2)
+// INIT — INICIALIZACIÓN PRINCIPAL (v3.0)
 // ================================================================
 async function init() {
     try {
