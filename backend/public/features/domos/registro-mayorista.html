@@ -543,12 +543,14 @@ function usarMiUbicacion() {
     );
 }
 
+// Sube la foto al backend (moderación con Rekognition) y devuelve la URL pública
 async function subirFoto(event, tipo) {
     var file = event.target.files[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-        showToast('⚠️ Máximo 5 MB por foto', 'warning');
+    // El endpoint /api/media/upload acepta fotos de hasta 3 MB para el destino 'mercado'
+    if (file.size > 3 * 1024 * 1024) {
+        showToast('⚠️ Máximo 3 MB por foto', 'warning');
         return;
     }
 
@@ -557,7 +559,7 @@ async function subirFoto(event, tipo) {
         return;
     }
 
-    showToast('⏳ Subiendo foto...', '', 3000);
+    showToast('⏳ Revisando y subiendo foto...', '', 3000);
 
     try {
         var client = await window.supabaseReady;
@@ -568,18 +570,25 @@ async function subirFoto(event, tipo) {
             throw new Error('Sesión no válida');
         }
 
-        var usuarioId = session.data.session.user.id;
-        var ext = file.name.split('.').pop().toLowerCase();
-        var ruta = 'mayoristas/' + usuarioId + '/' + tipo + '_' + Date.now() + '.' + ext;
+        var token = session.data.session.access_token;
 
-        var upload = await client.storage
-            .from('mercado')
-            .upload(ruta, file, { upsert: true, cacheControl: '3600', contentType: file.type });
+        var fd = new FormData();
+        fd.append('file', file);
+        fd.append('destino', 'mercado');
+        fd.append('tipo', 'imagen');
 
-        if (upload.error) throw upload.error;
+        var respuesta = await fetch('/api/media/upload', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token },
+            body: fd
+        });
+        var data = await respuesta.json().catch(function() { return {}; });
 
-        var urlData = client.storage.from('mercado').getPublicUrl(ruta);
-        var publicUrl = urlData.data.publicUrl;
+        if (!respuesta.ok || !data.ok) {
+            throw new Error(data.error || 'No se pudo subir la foto');
+        }
+
+        var publicUrl = data.url;
 
         fotosSubidas[tipo] = publicUrl;
 
