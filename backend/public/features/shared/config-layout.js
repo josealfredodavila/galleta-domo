@@ -1,29 +1,15 @@
 
 /* ================================================================
    SARIEL'S · CONFIGURACIÓN
-   LAYOUT COMPARTIDO v3.0
-
-   Conserva:
-   - Cliente Supabase compartido y carga de configuración pública.
+   LAYOUT COMPARTIDO v2.1
+   - Textos del modal traducibles.
+   - Cliente Supabase compartido.
    - Preferencias locales y remotas.
-   - cfgEsperarSupabase, cfgGetPref y cfgSetPref.
-   - cfgRenderItem y cfgRenderToggle.
-   - cfgInitPage, cfgConfirm y cfgToast.
-   - Eventos, IDs y clases existentes.
-
-   Mejoras visuales:
-   - Transiciones suaves.
-   - Efectos glow en botones y tarjetas.
-   - Modal con entrada y salida animadas.
-   - Toast con desplazamiento sutil.
-   - Respuesta táctil y soporte para movimiento reducido.
+   - Microinteracciones visuales sin modificar el layout.
    ================================================================ */
 
 (function () {
     'use strict';
-
-    if (window.__sarielsLayoutV30) return;
-    window.__sarielsLayoutV30 = true;
 
     let clienteSupabase = null;
     let promesaSupabase = null;
@@ -31,207 +17,6 @@
     let preferencias = {};
     let toastTimer = null;
     let modalResolver = null;
-
-    /* ============================================================
-       ESTILOS VISUALES
-       Se limita a las clases del layout y a controles comunes.
-       ============================================================ */
-
-    function instalarEstilosLayout() {
-        if (document.getElementById('sariels-layout-motion-styles')) {
-            return;
-        }
-
-        const style = document.createElement('style');
-        style.id = 'sariels-layout-motion-styles';
-
-        style.textContent = `
-            :root {
-                --cfg-motion-fast: 150ms;
-                --cfg-motion-normal: 210ms;
-                --cfg-motion-ease: cubic-bezier(.22, 1, .36, 1);
-                --cfg-motion-glow:
-                    0 0 14px rgba(212, 175, 55, .24);
-            }
-
-            @keyframes cfgLayoutEnter {
-                from {
-                    opacity: 0;
-                    transform: translate3d(0, 7px, 0);
-                }
-                to {
-                    opacity: 1;
-                    transform: translate3d(0, 0, 0);
-                }
-            }
-
-            @keyframes cfgModalEnter {
-                from {
-                    opacity: 0;
-                    transform: translate3d(0, 12px, 0) scale(.985);
-                }
-                to {
-                    opacity: 1;
-                    transform: translate3d(0, 0, 0) scale(1);
-                }
-            }
-
-            @keyframes cfgToastEnter {
-                from {
-                    opacity: 0;
-                    transform: translate3d(0, 10px, 0);
-                }
-                to {
-                    opacity: 1;
-                    transform: translate3d(0, 0, 0);
-                }
-            }
-
-            .cfg-header,
-            .cfg-item,
-            .cfg-modal,
-            .cfg-toast,
-            .cfg-btn,
-            .cfg-header-back,
-            .cfg-header-action,
-            .cfg-toggle-slider {
-                -webkit-tap-highlight-color: transparent;
-            }
-
-            .cfg-header {
-                animation: cfgLayoutEnter 220ms
-                    var(--cfg-motion-ease) both;
-            }
-
-            .cfg-item {
-                transition:
-                    transform var(--cfg-motion-fast)
-                        var(--cfg-motion-ease),
-                    box-shadow var(--cfg-motion-normal) ease,
-                    border-color var(--cfg-motion-normal) ease,
-                    background-color var(--cfg-motion-normal) ease;
-            }
-
-            .cfg-item:active {
-                transform: scale(.992);
-            }
-
-            .cfg-item:focus-within {
-                border-color: var(--accent, #D4AF37);
-                box-shadow: var(--cfg-motion-glow);
-            }
-
-            .cfg-btn,
-            .cfg-header-back,
-            .cfg-header-action {
-                transition:
-                    transform var(--cfg-motion-fast)
-                        var(--cfg-motion-ease),
-                    box-shadow var(--cfg-motion-normal) ease,
-                    filter var(--cfg-motion-normal) ease;
-            }
-
-            .cfg-btn:active,
-            .cfg-header-back:active,
-            .cfg-header-action:active {
-                transform: scale(.96);
-                filter: brightness(1.1);
-            }
-
-            .cfg-btn:focus-visible,
-            .cfg-header-back:focus-visible,
-            .cfg-header-action:focus-visible {
-                outline: 2px solid var(--accent, #D4AF37);
-                outline-offset: 3px;
-                box-shadow: var(--cfg-motion-glow);
-            }
-
-            .cfg-item-chevron {
-                transition: transform var(--cfg-motion-normal)
-                    var(--cfg-motion-ease);
-            }
-
-            @media (hover: hover) and (pointer: fine) {
-                .cfg-item:hover {
-                    box-shadow: var(--cfg-motion-glow);
-                }
-
-                .cfg-item:hover .cfg-item-chevron {
-                    transform: translateX(3px);
-                }
-
-                .cfg-btn:hover,
-                .cfg-header-back:hover,
-                .cfg-header-action:hover {
-                    box-shadow: var(--cfg-motion-glow);
-                }
-            }
-
-            .cfg-modal-overlay {
-                transition:
-                    opacity 190ms ease,
-                    backdrop-filter 190ms ease;
-            }
-
-            .cfg-modal-overlay.show .cfg-modal {
-                animation: cfgModalEnter 210ms
-                    var(--cfg-motion-ease) both;
-            }
-
-            .cfg-modal {
-                transform-origin: center;
-                will-change: transform, opacity;
-            }
-
-            .cfg-toast.show {
-                animation: cfgToastEnter 190ms
-                    var(--cfg-motion-ease) both;
-            }
-
-            .cfg-toggle-slider {
-                transition:
-                    background-color var(--cfg-motion-normal) ease,
-                    box-shadow var(--cfg-motion-normal) ease;
-            }
-
-            .cfg-toggle input:focus-visible +
-            .cfg-toggle-slider {
-                outline: 2px solid var(--accent, #D4AF37);
-                outline-offset: 3px;
-                box-shadow: var(--cfg-motion-glow);
-            }
-
-            @media (prefers-reduced-motion: reduce) {
-                .cfg-header,
-                .cfg-modal-overlay.show .cfg-modal,
-                .cfg-toast.show {
-                    animation: none !important;
-                }
-
-                .cfg-item,
-                .cfg-btn,
-                .cfg-header-back,
-                .cfg-header-action,
-                .cfg-item-chevron,
-                .cfg-toggle-slider,
-                .cfg-modal-overlay {
-                    transition: none !important;
-                }
-
-                .cfg-item:active,
-                .cfg-btn:active,
-                .cfg-header-back:active,
-                .cfg-header-action:active {
-                    transform: none;
-                }
-            }
-        `;
-
-        (document.head || document.documentElement)
-            .appendChild(style);
-    }
-
-    instalarEstilosLayout();
 
     /* ============================================================
        HELPERS
@@ -268,7 +53,6 @@
 
     /* ============================================================
        SUPABASE
-       Reutiliza el cliente global si ya existe.
        ============================================================ */
 
     async function crearClienteSupabase() {
@@ -353,12 +137,12 @@
     }
 
     window.cfgEsperarSupabase = function () {
-        if (clienteSupabase) {
+        if (window.supabaseClient) {
+            clienteSupabase = window.supabaseClient;
             return Promise.resolve(clienteSupabase);
         }
 
-        if (window.supabaseClient) {
-            clienteSupabase = window.supabaseClient;
+        if (clienteSupabase) {
             return Promise.resolve(clienteSupabase);
         }
 
@@ -611,6 +395,14 @@
                 .eq('usuario_id', session.user.id)
                 .maybeSingle();
 
+            if (actual.error) {
+                return {
+                    ok: false,
+                    local: true,
+                    error: actual.error.message
+                };
+            }
+
             const prefs =
                 actual.data &&
                 actual.data.prefs &&
@@ -627,7 +419,9 @@
                         usuario_id: session.user.id,
                         prefs: prefs
                     },
-                    { onConflict: 'usuario_id' }
+                    {
+                        onConflict: 'usuario_id'
+                    }
                 );
 
             if (upsert.error) {
@@ -660,7 +454,10 @@
     window.cfgRenderItem = function (opciones) {
         opciones = opciones || {};
 
-        const icono = obtenerIcono(opciones.icon || 'settings');
+        const icono = obtenerIcono(
+            opciones.icon || 'settings'
+        );
+
         const titulo = escapeHtml(opciones.title || '');
         const descripcion = escapeHtml(opciones.desc || '');
 
@@ -677,8 +474,10 @@
         if (opciones.href) {
             accion = 'href="' + escapeHtml(opciones.href) + '"';
         } else if (opciones.onclick) {
-            accion = 'onclick="' +
-                escapeHtml(opciones.onclick) + '"';
+            accion =
+                'onclick="' +
+                escapeHtml(opciones.onclick) +
+                '"';
         }
 
         const etiqueta = opciones.href ? 'a' : 'button';
@@ -724,8 +523,10 @@
     window.cfgRenderToggle = function (opciones) {
         opciones = opciones || {};
 
-        const id = opciones.id ||
-            'cfgToggle_' + Math.random().toString(36).slice(2);
+        const id =
+            opciones.id ||
+            'cfgToggle_' +
+            Math.random().toString(36).slice(2);
 
         return `
             <div class="cfg-item">
@@ -786,7 +587,9 @@
             opciones.title || 'Configuración'
         );
 
-        const subtitulo = escapeHtml(opciones.subtitle || '');
+        const subtitulo = escapeHtml(
+            opciones.subtitle || ''
+        );
 
         const backUrl = opciones.backUrl ||
             '/features/perfil/configuracion/index.html';
@@ -1014,26 +817,123 @@
     };
 
     /* ============================================================
+       MICROINTERACCIONES
+       No aplica anchos, escalas ni márgenes a contenedores.
+       ============================================================ */
+
+    function instalarMicrointeraccionesLayout() {
+        if (document.getElementById('cfg-motion-safe-css')) {
+            return;
+        }
+
+        const style = document.createElement('style');
+        style.id = 'cfg-motion-safe-css';
+
+        style.textContent = `
+            .cfg-item,
+            .cfg-btn,
+            .cfg-header-back,
+            .cfg-header-action,
+            .cfg-toggle-slider {
+                -webkit-tap-highlight-color: transparent;
+            }
+
+            .cfg-item,
+            .cfg-btn,
+            .cfg-header-back,
+            .cfg-header-action {
+                transition:
+                    color 140ms ease,
+                    background-color 160ms ease,
+                    border-color 160ms ease,
+                    box-shadow 160ms ease,
+                    filter 140ms ease;
+            }
+
+            .cfg-item:active,
+            .cfg-btn:active,
+            .cfg-header-back:active,
+            .cfg-header-action:active {
+                filter: brightness(1.10);
+            }
+
+            .cfg-item:focus-visible,
+            .cfg-btn:focus-visible,
+            .cfg-header-back:focus-visible,
+            .cfg-header-action:focus-visible {
+                outline: 2px solid var(--accent, #D4AF37);
+                outline-offset: 2px;
+            }
+
+            .cfg-modal-overlay {
+                transition: opacity 160ms ease;
+            }
+
+            .cfg-modal {
+                transition: box-shadow 160ms ease;
+            }
+
+            .cfg-toast {
+                transition: opacity 180ms ease;
+            }
+
+            @media (hover: hover) and (pointer: fine) {
+                .cfg-item:hover,
+                .cfg-btn:hover {
+                    box-shadow:
+                        0 0 0 1px
+                        color-mix(
+                            in srgb,
+                            var(--accent, #D4AF37) 22%,
+                            transparent
+                        );
+                }
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                .cfg-item,
+                .cfg-btn,
+                .cfg-header-back,
+                .cfg-header-action,
+                .cfg-modal-overlay,
+                .cfg-modal,
+                .cfg-toast {
+                    transition: none !important;
+                    animation: none !important;
+                }
+            }
+        `;
+
+        (document.head || document.documentElement).appendChild(style);
+    }
+
+    /* ============================================================
        INICIO
        ============================================================ */
 
     cargarPreferenciasLocales();
-
-    function iniciarConfiguracion() {
-        asegurarModal();
-
-        // No bloquea la interfaz mientras se cargan las preferencias.
-        setTimeout(cargarPreferenciasSupabase, 0);
-    }
+    instalarMicrointeraccionesLayout();
 
     if (document.readyState === 'loading') {
         document.addEventListener(
             'DOMContentLoaded',
-            iniciarConfiguracion,
+            function () {
+                asegurarModal();
+
+                setTimeout(
+                    cargarPreferenciasSupabase,
+                    0
+                );
+            },
             { once: true }
         );
     } else {
-        iniciarConfiguracion();
+        asegurarModal();
+
+        setTimeout(
+            cargarPreferenciasSupabase,
+            0
+        );
     }
 
     window.addEventListener('storage', function (evento) {
@@ -1048,5 +948,4 @@
             evento.newValue
         );
     });
-
 })();
