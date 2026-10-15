@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#05080f">
+<title>Crear anuncio · Csariel's</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Arial' font-size='48' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+<style>
+    html:not(.auth-ready) body { visibility: hidden; }
+    html.auth-ready body { visibility: visible; }
+
+    :root {
+        --gold: #D4AF37;
+        --cyan: #00e5ff;
+        --danger: #ff3366;
+        --success: #00d68f;
+        --text: #f0f4f8;
+        --muted: #8aa8b8;
+        --line: rgba(212, 175, 55, 0.22);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+        min-height: 100vh;
+        background: #05080f;
+        color: var(--text);
+        font-family: 'Inter', sans-serif;
+        padding: 16px 16px 60px;
+    }
+
+    .wrap { max-width: 640px; margin: 0 auto; }
+
+    .cabecera {
+        display: flex; align-items: center; gap: 12px;
+        margin-bottom: 18px;
+    }
+    .cabecera a {
+        color: var(--gold); text-decoration: none;
+        border: 1px solid var(--line); border-radius: 99px;
+        padding: 6px 12px; font-size: .75rem;
+    }
+    .cabecera h1 {
+        font-family: 'Orbitron', monospace;
+        font-size: 1.05rem; color: var(--gold); margin: 0;
+        letter-spacing: 1px;
+    }
+
+    .tarjeta {
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        padding: 18px;
+        margin-bottom: 16px;
+        background: linear-gradient(160deg, rgba(20, 40, 34, .75), rgba(5, 8, 15, .9));
+    }
+    .tarjeta h2 {
+        font-family: 'Orbitron', monospace;
+        font-size: .85rem; color: var(--gold);
+        margin: 0 0 12px; letter-spacing: 1px;
+    }
+
+    .aviso {
+        font-size: .75rem; line-height: 1.5; color: var(--muted);
+        border-left: 3px solid var(--gold);
+        padding: 8px 12px; background: rgba(212, 175, 55, .06);
+        border-radius: 8px; margin-bottom: 14px;
+    }
+
+    label { display: block; font-size: .72rem; color: var(--muted); margin: 12px 0 6px; font-weight: 600; }
+    input[type="text"], input[type="url"], textarea, select {
+        width: 100%; padding: 12px 14px; border-radius: 12px;
+        border: 1px solid var(--line); background: rgba(0, 0, 0, .4);
+        color: var(--text); font-size: .9rem; font-family: inherit;
+    }
+    textarea { min-height: 70px; resize: vertical; }
+    .contador { font-size: .65rem; color: var(--muted); text-align: right; margin-top: 4px; }
+
+    .archivo {
+        border: 2px dashed var(--line); border-radius: 14px;
+        padding: 18px; text-align: center; cursor: pointer;
+        color: var(--muted); font-size: .8rem;
+    }
+    .archivo input { display: none; }
+
+    .vista-previa {
+        margin-top: 12px; border-radius: 16px; overflow: hidden;
+        aspect-ratio: 16 / 9; background: #000; display: none;
+        position: relative;
+    }
+    .vista-previa img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .vista-previa .etiq {
+        position: absolute; top: 10px; left: 10px; font-size: .6rem;
+        padding: 3px 9px; border-radius: 99px; background: rgba(0,0,0,.6);
+        border: 1px solid var(--line); color: var(--gold); letter-spacing: 1px;
+    }
+
+    .boton {
+        width: 100%; padding: 14px; border: 0; border-radius: 14px;
+        background: linear-gradient(135deg, var(--cyan), #8b5cf6);
+        color: #fff; font-weight: 800; font-size: .9rem; cursor: pointer;
+        margin-top: 16px;
+    }
+    .boton:disabled { opacity: .5; cursor: wait; }
+    .boton-secundario {
+        background: transparent; border: 1px solid var(--line);
+        color: var(--gold); font-size: .75rem; padding: 8px 12px;
+        border-radius: 99px; cursor: pointer; width: auto; margin: 0;
+    }
+
+    .estado { margin-top: 10px; font-size: .8rem; min-height: 1.2em; }
+    .estado.error { color: var(--danger); }
+    .estado.ok { color: var(--success); }
+
+    .mis-anuncios { display: flex; flex-direction: column; gap: 10px; }
+    .mi-anuncio {
+        display: flex; gap: 12px; align-items: center;
+        border: 1px solid var(--line); border-radius: 14px; padding: 10px;
+    }
+    .mi-anuncio img { width: 72px; height: 48px; object-fit: cover; border-radius: 8px; flex-shrink: 0; }
+    .mi-anuncio .datos { flex: 1; min-width: 0; }
+    .mi-anuncio .titulo { font-weight: 700; font-size: .85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mi-anuncio .meta { font-size: .68rem; color: var(--muted); margin-top: 3px; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: .6rem; border: 1px solid var(--line); }
+    .badge.activo { color: var(--success); border-color: var(--success); }
+    .badge.pausado { color: var(--muted); }
+    .badge.reportado { color: var(--danger); border-color: var(--danger); }
+
+    .vacio { color: var(--muted); font-size: .8rem; text-align: center; padding: 14px 0; }
+
+    @media (prefers-reduced-motion: reduce) {
+        * { transition: none !important; animation: none !important; }
+    }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+    <div class="cabecera">
+        <a href="/features/perfil/perfil.html">← Perfil</a>
+        <h1>CREAR ANUNCIO</h1>
+    </div>
+
+    <div class="aviso">
+        Cualquier cuenta activa puede anunciarse. Cada anuncio dura 7 días.
+        Puedes tener 1 activo a la vez (2 con Csariel's Pro) y publicar hasta 3 nuevos por semana.
+        Los anuncios pasan revisión automática.
+    </div>
+
+    <form class="tarjeta" id="formAnuncio" novalidate>
+        <h2>NUEVO ANUNCIO</h2>
+
+        <label for="titulo">Título <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="titulo" maxlength="80" placeholder="Ej: Galletas de temporada">
+        <div class="contador" id="contadorTitulo">0 / 80</div>
+
+        <label for="texto">Texto (opcional)</label>
+        <textarea id="texto" maxlength="200" placeholder="Una frase que invite a tocar el anuncio"></textarea>
+        <div class="contador" id="contadorTexto">0 / 200</div>
+
+        <label>Imagen <span style="color:var(--danger)">*</span></label>
+        <label class="archivo" for="archivo">
+            Toca para elegir una imagen (JPEG, PNG o WebP, máximo 5 MB)
+            <input type="file" id="archivo" accept="image/jpeg,image/png,image/webp">
+        </label>
+        <div class="vista-previa" id="vistaPrevia">
+            <img id="imgPrevia" alt="Vista previa">
+            <span class="etiq">ANUNCIO</span>
+        </div>
+
+        <label for="destino">Al tocar el anuncio, llevar a</label>
+        <select id="destino">
+            <option value="/features/perfil/perfil.html">Mi perfil</option>
+            <option value="/features/muro/muro.html">Muro</option>
+            <option value="/features/mercado/index.html">Mercado</option>
+            <option value="/features/grupos/grupos.html">Grupos</option>
+            <option value="/features/live/live.html">Live</option>
+            <option value="/features/internet/internet.html">Internet</option>
+            <option value="/features/videos/videos.html">Videos</option>
+            <option value="externo">Enlace externo (https)</option>
+        </select>
+        <input type="url" id="destinoExterno" placeholder="https://..." style="display:none; margin-top:8px;">
+
+        <button type="submit" class="boton" id="btnPublicar">Publicar anuncio</button>
+        <div class="estado" id="estado"></div>
+    </form>
+
+    <div class="tarjeta">
+        <h2>MIS ANUNCIOS</h2>
+        <div class="mis-anuncios" id="misAnuncios">
+            <div class="vacio">Cargando…</div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+(function () {
+    'use strict';
+
+    var SUPABASE_URL_FALLBACK = null;
+    var MAX_BYTES = 5 * 1024 * 1024;
+    var TIPOS = ['image/jpeg', 'image/png', 'image/webp'];
+
+    var client = null;
+    var uid = null;
+    var archivoSeleccionado = null;
+    var urlPreviaActual = null;
+
+    function $(id) { return document.getElementById(id); }
+
+    function estado(texto, tipo) {
+        var el = $('estado');
+        el.textContent = texto || '';
+        el.className = 'estado' + (tipo ? ' ' + tipo : '');
+    }
+
+    function mensajeError(err) {
+        var m = String((err && err.message) || err || '');
+        if (m.indexOf('limite_anuncios_activos') >= 0) {
+            return 'Ya tienes el máximo de anuncios activos. Pausa uno para publicar otro.';
+        }
+        if (m.indexOf('limite_anuncios_semana') >= 0) {
+            return 'Ya publicaste 3 anuncios esta semana. Intenta más tarde.';
+        }
+        if (m.indexOf('contenido_no_permitido') >= 0) {
+            return 'El texto no cumple las normas de la comunidad. Edítalo e intenta de nuevo.';
+        }
+        if (m.indexOf('media_no_valida') >= 0) {
+            return 'La imagen no pasó la revisión. Prueba con otra.';
+        }
+        if (m.indexOf('rechaz') >= 0 || m.indexOf('contenido') >= 0) {
+            return 'La imagen no pasó la revisión. Prueba con otra.';
+        }
+        return 'No se pudo publicar. Intenta de nuevo.';
+    }
+
+    async function crearCliente() {
+        if (window.supabaseClient) return window.supabaseClient;
+        var r = await fetch('/api/config/public', { cache: 'no-store', credentials: 'same-origin' });
+        var config = await r.json();
+        window.supabaseClient = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey, {
+            auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+        });
+        return window.supabaseClient;
+    }
+
+    async function iniciar() {
+        try {
+            client = await crearCliente();
+            var s = await client.auth.getSession();
+            if (!s.data || !s.data.session) {
+                window.location.replace('/');
+                return;
+            }
+            uid = s.data.session.user.id;
+        } catch (e) {
+            console.error('[Crear anuncio]', e);
+            document.documentElement.classList.add('auth-ready');
+            estado('No se pudo conectar. Recarga la página.', 'error');
+            return;
+        }
+        document.documentElement.classList.add('auth-ready');
+        cargarMisAnuncios();
+    }
+
+    // Contadores
+    $('titulo').addEventListener('input', function () {
+        $('contadorTitulo').textContent = this.value.length + ' / 80';
+    });
+    $('texto').addEventListener('input', function () {
+        $('contadorTexto').textContent = this.value.length + ' / 200';
+    });
+
+    // Destino externo
+    $('destino').addEventListener('change', function () {
+        $('destinoExterno').style.display = this.value === 'externo' ? 'block' : 'none';
+    });
+
+    // Imagen y vista previa
+    $('archivo').addEventListener('change', function () {
+        var f = this.files && this.files[0];
+        if (!f) return;
+
+        if (TIPOS.indexOf(f.type) === -1) {
+            estado('Solo JPEG, PNG o WebP.', 'error');
+            this.value = '';
+            return;
+        }
+        if (f.size > MAX_BYTES) {
+            estado('La imagen supera 5 MB.', 'error');
+            this.value = '';
+            return;
+        }
+
+        archivoSeleccionado = f;
+        if (urlPreviaActual) URL.revokeObjectURL(urlPreviaActual);
+        urlPreviaActual = URL.createObjectURL(f);
+        $('imgPrevia').src = urlPreviaActual;
+        $('vistaPrevia').style.display = 'block';
+        estado('');
+    });
+
+    async function subirImagen(archivo) {
+        var s = await client.auth.getSession();
+        var token = s.data.session.access_token;
+
+        var fd = new FormData();
+        fd.append('file', archivo);
+        fd.append('destino', 'muro-imagenes');
+        fd.append('tipo', 'imagen');
+
+        var r = await fetch('/api/media/upload', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token },
+            body: fd
+        });
+        var d = await r.json().catch(function () { return {}; });
+        if (!r.ok || !d.ok) {
+            throw new Error(d.error || 'upload_fallido');
+        }
+        return d.url;
+    }
+
+    $('formAnuncio').addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        var titulo = $('titulo').value.trim();
+        var texto = $('texto').value.trim();
+        var destinoSel = $('destino').value;
+        var destino = destinoSel;
+
+        if (!titulo) { estado('Escribe un título.', 'error'); return; }
+        if (!archivoSeleccionado) { estado('Elige una imagen.', 'error'); return; }
+
+        if (destinoSel === 'externo') {
+            destino = $('destinoExterno').value.trim();
+            if (destino.indexOf('https://') !== 0) {
+                estado('El enlace externo debe empezar con https://', 'error');
+                return;
+            }
+        }
+
+        var btn = $('btnPublicar');
+        btn.disabled = true;
+        btn.textContent = 'Revisando y publicando…';
+        estado('Subiendo imagen…');
+
+        try {
+            var url = await subirImagen(archivoSeleccionado);
+
+            estado('Publicando…');
+            var r = await client.from('anuncios').insert({
+                usuario_id: uid,
+                tipo: 'imagen',
+                titulo: titulo,
+                texto: texto || null,
+                media_url: url,
+                destino_url: destino
+            }).select('id').single();
+
+            if (r.error) throw r.error;
+
+            estado('¡Anuncio publicado! Ya aparece en el carrusel.', 'ok');
+            $('formAnuncio').reset();
+            $('contadorTitulo').textContent = '0 / 80';
+            $('contadorTexto').textContent = '0 / 200';
+            $('vistaPrevia').style.display = 'none';
+            $('destinoExterno').style.display = 'none';
+            archivoSeleccionado = null;
+            cargarMisAnuncios();
+        } catch (err) {
+            console.error('[Crear anuncio]', err);
+            estado(mensajeError(err), 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Publicar anuncio';
+        }
+    });
+
+    function estadoDe(a) {
+        if (a.reportes >= 5 || a.pausado_automatico) return ['reportado', 'Pausado por reportes'];
+        if (!a.activo) return ['pausado', 'Pausado'];
+        if (new Date(a.vigencia_fin) <= new Date()) return ['pausado', 'Vencido'];
+        return ['activo', 'Activo'];
+    }
+
+    async function cambiarActivo(a, nuevo) {
+        var r = await client.from('anuncios').update({ activo: nuevo }).eq('id', a.id);
+        if (r.error) {
+            estado('No se pudo cambiar el anuncio.', 'error');
+            return;
+        }
+        cargarMisAnuncios();
+    }
+
+    async function cargarMisAnuncios() {
+        var cont = $('misAnuncios');
+        var r = await client.from('anuncios')
+            .select('id, titulo, media_url, activo, vistas, toques, reportes, pausado_automatico, vigencia_fin, created_at')
+            .eq('usuario_id', uid)
+            .order('created_at', { ascending: false })
+            .limit(20);
+
+        cont.innerHTML = '';
+
+        if (r.error) {
+            cont.innerHTML = '<div class="vacio">No se pudieron cargar tus anuncios.</div>';
+            return;
+        }
+        if (!r.data || !r.data.length) {
+            cont.innerHTML = '<div class="vacio">Aún no tienes anuncios.</div>';
+            return;
+        }
+
+        r.data.forEach(function (a) {
+            var item = document.createElement('div');
+            item.className = 'mi-anuncio';
+
+            var img = document.createElement('img');
+            img.src = a.media_url;
+            img.alt = '';
+
+            var datos = document.createElement('div');
+            datos.className = 'datos';
+
+            var titulo = document.createElement('div');
+            titulo.className = 'titulo';
+            titulo.textContent = a.titulo;
+
+            var meta = document.createElement('div');
+            meta.className = 'meta';
+            meta.textContent = a.vistas + ' vistas · ' + a.toques + ' toques · ' + a.reportes + ' reportes';
+
+            var est = estadoDe(a);
+            var badge = document.createElement('span');
+            badge.className = 'badge ' + est[0];
+            badge.textContent = est[1];
+
+            datos.appendChild(titulo);
+            datos.appendChild(meta);
+            datos.appendChild(badge);
+
+            item.appendChild(img);
+            item.appendChild(datos);
+
+            if (est[0] !== 'reportado' && new Date(a.vigencia_fin) > new Date()) {
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'boton-secundario';
+                btn.textContent = a.activo ? 'Pausar' : 'Activar';
+                btn.addEventListener('click', function () { cambiarActivo(a, !a.activo); });
+                item.appendChild(btn);
+            }
+
+            cont.appendChild(item);
+        });
+    }
+
+    iniciar();
+})();
+</script>
+
+</body>
+</html>
