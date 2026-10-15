@@ -391,12 +391,9 @@
        ================================================================ */
 
     // Lista única de elementos interactivos (antes estaba repetida)
+    // Solo elementos de Configuración: nunca botones ni enlaces globales,
+    // para no afectar a la mascota ni al resto de la app.
     const SELECTOR_INTERACTIVO = [
-        'button',
-        'a',
-        '[role="button"]',
-        'input[type="button"]',
-        'input[type="submit"]',
         '.cfg-item',
         '.cfg-btn',
         '.cfg-header-back',
@@ -404,14 +401,7 @@
     ].join(',');
 
     // Elementos que reaccionan al toque con una compresión sutil
-    const SELECTOR_PRESIONABLE = [
-        'button',
-        '[role="button"]',
-        '.cfg-item',
-        '.cfg-btn',
-        '.cfg-header-back',
-        '.cfg-header-action'
-    ].join(',');
+    const SELECTOR_PRESIONABLE = SELECTOR_INTERACTIVO;
 
     // Elementos que se animan al entrar (solo opacidad, nunca ocultan contenido)
     const SELECTOR_ENTRADA = '.cfg-item, .cfg-header';
