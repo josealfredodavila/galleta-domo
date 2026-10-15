@@ -19,6 +19,8 @@
 <link rel="stylesheet" href="/features/perfil/css/carrusel-3d.css">
 <!-- CSS del Carrusel 3D FULLSCREEN (overlay infinito) -->
 <link rel="stylesheet" href="/features/perfil/css/carrusel-3d-fullscreen.css">
+<!-- CSS del carrusel de anuncios (imagen) -->
+<link rel="stylesheet" href="/features/anuncios/anuncios-carrusel.css">
 
 <style>
     html:not(.auth-ready) .app { display: none !important; }
@@ -350,6 +352,8 @@
     </div>
 </div>
 <!-- ============ FIN DEL CARRUSEL 3D HORIZONTAL ============ -->
+
+<div class="anuncios-imagen-contenedor" id="anunciosImagenes" hidden></div>
 
 <div class="perfil-container">
 
@@ -1311,6 +1315,9 @@
     }
 })();
 </script>
+<!-- Script del carrusel de anuncios (imagen) -->
+<script src="/features/anuncios/anuncios-carrusel.js" defer></script>
+
 <!-- Script del Carrusel 3D horizontal -->
 <script src="/features/perfil/js/carrusel-3d.js" defer></script>
 <!-- Script del Carrusel 3D FULLSCREEN infinito -->
