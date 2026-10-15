@@ -241,6 +241,18 @@
         opacity: 0.4;
     }
 </style>
+<style>
+    /* Respaldo: evita que una imagen de anuncio cubra toda la pantalla si el CSS del carrusel no carga */
+    .anuncios-imagen-contenedor img {
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        height: auto;
+        max-height: 260px;
+        object-fit: cover;
+        border-radius: 16px;
+    }
+</style>
 </head>
 <body>
 
