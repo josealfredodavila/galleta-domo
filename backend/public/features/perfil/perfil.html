@@ -15,6 +15,8 @@
 
 <!-- CSS del módulo perfil -->
 <link rel="stylesheet" href="/features/perfil/css/perfil.css">
+<!-- ✅ NUEVO: CSS del Carrusel 3D -->
+<link rel="stylesheet" href="/features/perfil/css/carrusel-3d.css">
 
 <style>
     html:not(.auth-ready) .app { display: none !important; }
@@ -66,6 +68,50 @@
         <span data-clave="nav_internet">Internet</span>
     </a>
 </nav>
+
+<!-- ============ INICIO DEL CARRUSEL 3D ============ -->
+<div class="carrusel-3d-wrapper">
+    <div class="carrusel-3d-track">
+
+        <a href="/" class="carrusel-3d-card">
+            <div class="card-icon">🏠</div>
+            <div class="card-title">Inicio</div>
+            <div class="card-desc">Tu punto de partida en el ecosistema Csariel's.</div>
+        </a>
+
+        <a href="/features/muro/muro.html" class="carrusel-3d-card">
+            <div class="card-icon">💬</div>
+            <div class="card-title">Muro</div>
+            <div class="card-desc">Comparte, interactúa y conecta con la comunidad.</div>
+        </a>
+
+        <a href="/features/perfil/perfil.html" class="carrusel-3d-card active">
+            <div class="card-icon">👤</div>
+            <div class="card-title">Perfil</div>
+            <div class="card-desc">Gestiona tu identidad, tokens y configuración.</div>
+        </a>
+
+        <a href="/features/mercado/mercado.html" class="carrusel-3d-card">
+            <div class="card-icon">🛒</div>
+            <div class="card-title">Tienda</div>
+            <div class="card-desc">Productos físicos y digitales en Web3.</div>
+        </a>
+
+        <a href="/features/live/live.html" class="carrusel-3d-card">
+            <div class="card-icon">🔴</div>
+            <div class="card-title">Live</div>
+            <div class="card-desc">Transmisiones en vivo y eventos exclusivos.</div>
+        </a>
+
+        <a href="/features/internet/internet.html" class="carrusel-3d-card">
+            <div class="card-icon">🌐</div>
+            <div class="card-title">Internet</div>
+            <div class="card-desc">Conectividad eSIM y datos descentralizados.</div>
+        </a>
+
+    </div>
+</div>
+<!-- ============ FIN DEL CARRUSEL 3D ============ -->
 
 <div class="perfil-container">
 
@@ -778,6 +824,8 @@
 <script src="/features/perfil/js/perfil-internet.js?v=8"></script>
 <script src="/features/perfil/js/perfil-repartidor.js?v=8"></script>
 <script src="/features/perfil/js/perfil-init.js?v=8"></script>
+<!-- ✅ NUEVO: Script del Carrusel 3D -->
+<script src="/features/perfil/js/carrusel-3d.js" defer></script>
 
 </body>
 </html>
