@@ -1,11 +1,19 @@
-
 /* ================================================================
    SARIEL'S · CONFIGURACIÓN
-   LAYOUT COMPARTIDO v2.1
-   - Textos del modal traducibles.
+   LAYOUT COMPARTIDO v2.2
+   Archivo: backend/public/features/shared/config-layout.js
+
+   Conserva sin cambios:
+   - Textos del modal traducibles (tConFallback).
    - Cliente Supabase compartido.
    - Preferencias locales y remotas.
-   - Microinteracciones visuales sin modificar el layout.
+   - Modal de confirmación y toasts.
+
+   v2.2:
+   - Microinteracciones táctiles con transform y brillo (sin tocar layout).
+   - Transiciones de toasts y modales más suaves.
+   - CSS inyectado consolidado en una sola lista de selectores.
+   - prefers-reduced-motion respetado en todas las animaciones.
    ================================================================ */
 
 (function () {
@@ -818,8 +826,89 @@
 
     /* ============================================================
        MICROINTERACCIONES
-       No aplica anchos, escalas ni márgenes a contenedores.
+       Solo transform, brillo, color, sombra y opacidad.
+       Nunca dimensiones, márgenes ni escalas de contenedores.
        ============================================================ */
+
+    // Lista única de elementos interactivos del layout
+    const SELECTOR_INTERACTIVO = [
+        '.cfg-item',
+        '.cfg-btn',
+        '.cfg-header-back',
+        '.cfg-header-action'
+    ].join(',');
+
+    // Elementos que reaccionan al toque con una compresión sutil
+    const SELECTOR_PRESIONABLE = [
+        '.cfg-item',
+        '.cfg-btn',
+        '.cfg-header-back',
+        '.cfg-header-action'
+    ].join(',');
+
+    const CSS_LAYOUT = `
+        .cfg-item,
+        .cfg-btn,
+        .cfg-header-back,
+        .cfg-header-action,
+        .cfg-toggle-slider {
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        ${SELECTOR_INTERACTIVO} {
+            transition:
+                color 140ms ease,
+                background-color 160ms ease,
+                border-color 160ms ease,
+                box-shadow 180ms ease,
+                filter 140ms ease,
+                transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        ${SELECTOR_PRESIONABLE}:active {
+            transform: scale(0.98);
+            filter: brightness(1.08);
+        }
+
+        ${SELECTOR_INTERACTIVO}:focus-visible {
+            outline: 2px solid var(--accent, #D4AF37);
+            outline-offset: 2px;
+        }
+
+        .cfg-modal-overlay {
+            transition: opacity 180ms ease;
+        }
+
+        .cfg-modal {
+            transition: box-shadow 180ms ease, transform 180ms ease;
+        }
+
+        .cfg-toast {
+            transition: opacity 180ms ease, transform 180ms ease;
+        }
+
+        @media (hover: hover) and (pointer: fine) {
+            .cfg-item:hover,
+            .cfg-btn:hover {
+                box-shadow: 0 0 0 1px
+                    color-mix(in srgb, var(--accent, #D4AF37) 22%, transparent);
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            ${SELECTOR_INTERACTIVO},
+            .cfg-modal-overlay,
+            .cfg-modal,
+            .cfg-toast {
+                transition: none !important;
+                animation: none !important;
+            }
+
+            ${SELECTOR_PRESIONABLE}:active {
+                transform: none !important;
+            }
+        }
+    `;
 
     function instalarMicrointeraccionesLayout() {
         if (document.getElementById('cfg-motion-safe-css')) {
@@ -828,81 +917,7 @@
 
         const style = document.createElement('style');
         style.id = 'cfg-motion-safe-css';
-
-        style.textContent = `
-            .cfg-item,
-            .cfg-btn,
-            .cfg-header-back,
-            .cfg-header-action,
-            .cfg-toggle-slider {
-                -webkit-tap-highlight-color: transparent;
-            }
-
-            .cfg-item,
-            .cfg-btn,
-            .cfg-header-back,
-            .cfg-header-action {
-                transition:
-                    color 140ms ease,
-                    background-color 160ms ease,
-                    border-color 160ms ease,
-                    box-shadow 160ms ease,
-                    filter 140ms ease;
-            }
-
-            .cfg-item:active,
-            .cfg-btn:active,
-            .cfg-header-back:active,
-            .cfg-header-action:active {
-                filter: brightness(1.10);
-            }
-
-            .cfg-item:focus-visible,
-            .cfg-btn:focus-visible,
-            .cfg-header-back:focus-visible,
-            .cfg-header-action:focus-visible {
-                outline: 2px solid var(--accent, #D4AF37);
-                outline-offset: 2px;
-            }
-
-            .cfg-modal-overlay {
-                transition: opacity 160ms ease;
-            }
-
-            .cfg-modal {
-                transition: box-shadow 160ms ease;
-            }
-
-            .cfg-toast {
-                transition: opacity 180ms ease;
-            }
-
-            @media (hover: hover) and (pointer: fine) {
-                .cfg-item:hover,
-                .cfg-btn:hover {
-                    box-shadow:
-                        0 0 0 1px
-                        color-mix(
-                            in srgb,
-                            var(--accent, #D4AF37) 22%,
-                            transparent
-                        );
-                }
-            }
-
-            @media (prefers-reduced-motion: reduce) {
-                .cfg-item,
-                .cfg-btn,
-                .cfg-header-back,
-                .cfg-header-action,
-                .cfg-modal-overlay,
-                .cfg-modal,
-                .cfg-toast {
-                    transition: none !important;
-                    animation: none !important;
-                }
-            }
-        `;
+        style.textContent = CSS_LAYOUT;
 
         (document.head || document.documentElement).appendChild(style);
     }
