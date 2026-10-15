@@ -1,11 +1,29 @@
+
 /* ================================================================
    SARIEL'S · CONFIGURACIÓN
-   LAYOUT COMPARTIDO
-   v2 · textos del modal traducibles
+   LAYOUT COMPARTIDO v3.0
+
+   Conserva:
+   - Cliente Supabase compartido y carga de configuración pública.
+   - Preferencias locales y remotas.
+   - cfgEsperarSupabase, cfgGetPref y cfgSetPref.
+   - cfgRenderItem y cfgRenderToggle.
+   - cfgInitPage, cfgConfirm y cfgToast.
+   - Eventos, IDs y clases existentes.
+
+   Mejoras visuales:
+   - Transiciones suaves.
+   - Efectos glow en botones y tarjetas.
+   - Modal con entrada y salida animadas.
+   - Toast con desplazamiento sutil.
+   - Respuesta táctil y soporte para movimiento reducido.
    ================================================================ */
 
 (function () {
     'use strict';
+
+    if (window.__sarielsLayoutV30) return;
+    window.__sarielsLayoutV30 = true;
 
     let clienteSupabase = null;
     let promesaSupabase = null;
@@ -13,6 +31,207 @@
     let preferencias = {};
     let toastTimer = null;
     let modalResolver = null;
+
+    /* ============================================================
+       ESTILOS VISUALES
+       Se limita a las clases del layout y a controles comunes.
+       ============================================================ */
+
+    function instalarEstilosLayout() {
+        if (document.getElementById('sariels-layout-motion-styles')) {
+            return;
+        }
+
+        const style = document.createElement('style');
+        style.id = 'sariels-layout-motion-styles';
+
+        style.textContent = `
+            :root {
+                --cfg-motion-fast: 150ms;
+                --cfg-motion-normal: 210ms;
+                --cfg-motion-ease: cubic-bezier(.22, 1, .36, 1);
+                --cfg-motion-glow:
+                    0 0 14px rgba(212, 175, 55, .24);
+            }
+
+            @keyframes cfgLayoutEnter {
+                from {
+                    opacity: 0;
+                    transform: translate3d(0, 7px, 0);
+                }
+                to {
+                    opacity: 1;
+                    transform: translate3d(0, 0, 0);
+                }
+            }
+
+            @keyframes cfgModalEnter {
+                from {
+                    opacity: 0;
+                    transform: translate3d(0, 12px, 0) scale(.985);
+                }
+                to {
+                    opacity: 1;
+                    transform: translate3d(0, 0, 0) scale(1);
+                }
+            }
+
+            @keyframes cfgToastEnter {
+                from {
+                    opacity: 0;
+                    transform: translate3d(0, 10px, 0);
+                }
+                to {
+                    opacity: 1;
+                    transform: translate3d(0, 0, 0);
+                }
+            }
+
+            .cfg-header,
+            .cfg-item,
+            .cfg-modal,
+            .cfg-toast,
+            .cfg-btn,
+            .cfg-header-back,
+            .cfg-header-action,
+            .cfg-toggle-slider {
+                -webkit-tap-highlight-color: transparent;
+            }
+
+            .cfg-header {
+                animation: cfgLayoutEnter 220ms
+                    var(--cfg-motion-ease) both;
+            }
+
+            .cfg-item {
+                transition:
+                    transform var(--cfg-motion-fast)
+                        var(--cfg-motion-ease),
+                    box-shadow var(--cfg-motion-normal) ease,
+                    border-color var(--cfg-motion-normal) ease,
+                    background-color var(--cfg-motion-normal) ease;
+            }
+
+            .cfg-item:active {
+                transform: scale(.992);
+            }
+
+            .cfg-item:focus-within {
+                border-color: var(--accent, #D4AF37);
+                box-shadow: var(--cfg-motion-glow);
+            }
+
+            .cfg-btn,
+            .cfg-header-back,
+            .cfg-header-action {
+                transition:
+                    transform var(--cfg-motion-fast)
+                        var(--cfg-motion-ease),
+                    box-shadow var(--cfg-motion-normal) ease,
+                    filter var(--cfg-motion-normal) ease;
+            }
+
+            .cfg-btn:active,
+            .cfg-header-back:active,
+            .cfg-header-action:active {
+                transform: scale(.96);
+                filter: brightness(1.1);
+            }
+
+            .cfg-btn:focus-visible,
+            .cfg-header-back:focus-visible,
+            .cfg-header-action:focus-visible {
+                outline: 2px solid var(--accent, #D4AF37);
+                outline-offset: 3px;
+                box-shadow: var(--cfg-motion-glow);
+            }
+
+            .cfg-item-chevron {
+                transition: transform var(--cfg-motion-normal)
+                    var(--cfg-motion-ease);
+            }
+
+            @media (hover: hover) and (pointer: fine) {
+                .cfg-item:hover {
+                    box-shadow: var(--cfg-motion-glow);
+                }
+
+                .cfg-item:hover .cfg-item-chevron {
+                    transform: translateX(3px);
+                }
+
+                .cfg-btn:hover,
+                .cfg-header-back:hover,
+                .cfg-header-action:hover {
+                    box-shadow: var(--cfg-motion-glow);
+                }
+            }
+
+            .cfg-modal-overlay {
+                transition:
+                    opacity 190ms ease,
+                    backdrop-filter 190ms ease;
+            }
+
+            .cfg-modal-overlay.show .cfg-modal {
+                animation: cfgModalEnter 210ms
+                    var(--cfg-motion-ease) both;
+            }
+
+            .cfg-modal {
+                transform-origin: center;
+                will-change: transform, opacity;
+            }
+
+            .cfg-toast.show {
+                animation: cfgToastEnter 190ms
+                    var(--cfg-motion-ease) both;
+            }
+
+            .cfg-toggle-slider {
+                transition:
+                    background-color var(--cfg-motion-normal) ease,
+                    box-shadow var(--cfg-motion-normal) ease;
+            }
+
+            .cfg-toggle input:focus-visible +
+            .cfg-toggle-slider {
+                outline: 2px solid var(--accent, #D4AF37);
+                outline-offset: 3px;
+                box-shadow: var(--cfg-motion-glow);
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                .cfg-header,
+                .cfg-modal-overlay.show .cfg-modal,
+                .cfg-toast.show {
+                    animation: none !important;
+                }
+
+                .cfg-item,
+                .cfg-btn,
+                .cfg-header-back,
+                .cfg-header-action,
+                .cfg-item-chevron,
+                .cfg-toggle-slider,
+                .cfg-modal-overlay {
+                    transition: none !important;
+                }
+
+                .cfg-item:active,
+                .cfg-btn:active,
+                .cfg-header-back:active,
+                .cfg-header-action:active {
+                    transform: none;
+                }
+            }
+        `;
+
+        (document.head || document.documentElement)
+            .appendChild(style);
+    }
+
+    instalarEstilosLayout();
 
     /* ============================================================
        HELPERS
@@ -29,7 +248,6 @@
         return div.innerHTML;
     }
 
-    // Texto traducido con respaldo (si idiomas.js aún no cargó, usa respaldo)
     function tt(clave, respaldo) {
         return typeof window.tConFallback === 'function'
             ? window.tConFallback(clave, respaldo)
@@ -50,6 +268,7 @@
 
     /* ============================================================
        SUPABASE
+       Reutiliza el cliente global si ya existe.
        ============================================================ */
 
     async function crearClienteSupabase() {
@@ -71,17 +290,14 @@
             );
         }
 
-        const respuesta = await fetch(
-            '/api/config/public',
-            {
-                method: 'GET',
-                credentials: 'same-origin',
-                cache: 'no-store',
-                headers: {
-                    Accept: 'application/json'
-                }
+        const respuesta = await fetch('/api/config/public', {
+            method: 'GET',
+            credentials: 'same-origin',
+            cache: 'no-store',
+            headers: {
+                Accept: 'application/json'
             }
-        );
+        });
 
         if (!respuesta.ok) {
             throw new Error(
@@ -95,17 +311,11 @@
 
         const supabaseUrl =
             config &&
-            (
-                config.supabaseUrl ||
-                config.supabase_url
-            );
+            (config.supabaseUrl || config.supabase_url);
 
         const supabaseAnonKey =
             config &&
-            (
-                config.supabaseAnonKey ||
-                config.supabase_anon_key
-            );
+            (config.supabaseAnonKey || config.supabase_anon_key);
 
         if (
             typeof supabaseUrl !== 'string' ||
@@ -125,18 +335,17 @@
             );
         }
 
-        clienteSupabase =
-            window.supabase.createClient(
-                supabaseUrl.trim(),
-                supabaseAnonKey.trim(),
-                {
-                    auth: {
-                        persistSession: true,
-                        autoRefreshToken: true,
-                        detectSessionInUrl: true
-                    }
+        clienteSupabase = window.supabase.createClient(
+            supabaseUrl.trim(),
+            supabaseAnonKey.trim(),
+            {
+                auth: {
+                    persistSession: true,
+                    autoRefreshToken: true,
+                    detectSessionInUrl: true
                 }
-            );
+            }
+        );
 
         window.supabaseClient = clienteSupabase;
 
@@ -148,12 +357,18 @@
             return Promise.resolve(clienteSupabase);
         }
 
+        if (window.supabaseClient) {
+            clienteSupabase = window.supabaseClient;
+            return Promise.resolve(clienteSupabase);
+        }
+
         if (!promesaSupabase) {
-            promesaSupabase =
-                crearClienteSupabase().catch(function (error) {
+            promesaSupabase = crearClienteSupabase().catch(
+                function (error) {
                     promesaSupabase = null;
                     throw error;
-                });
+                }
+            );
         }
 
         return promesaSupabase;
@@ -164,13 +379,8 @@
        ============================================================ */
 
     function normalizarValor(valor) {
-        if (valor === 'true') {
-            return true;
-        }
-
-        if (valor === 'false') {
-            return false;
-        }
+        if (valor === 'true') return true;
+        if (valor === 'false') return false;
 
         if (
             typeof valor === 'string' &&
@@ -191,8 +401,7 @@
                 const valor = localStorage.getItem(clave);
 
                 if (valor !== null) {
-                    preferencias[clave] =
-                        normalizarValor(valor);
+                    preferencias[clave] = normalizarValor(valor);
                 }
             });
 
@@ -202,12 +411,8 @@
 
             agrupadas.forEach(function (clave) {
                 try {
-                    const raw =
-                        localStorage.getItem(clave);
-
-                    if (!raw) {
-                        return;
-                    }
+                    const raw = localStorage.getItem(clave);
+                    if (!raw) return;
 
                     const datos = JSON.parse(raw);
 
@@ -216,10 +421,7 @@
                         typeof datos === 'object' &&
                         !Array.isArray(datos)
                     ) {
-                        Object.assign(
-                            preferencias,
-                            datos
-                        );
+                        Object.assign(preferencias, datos);
                     }
                 } catch (_) {}
             });
@@ -233,32 +435,23 @@
 
     async function cargarPreferenciasSupabase() {
         try {
-            const client =
-                await window.cfgEsperarSupabase();
+            const client = await window.cfgEsperarSupabase();
 
-            const resultadoSession =
-                await client.auth.getSession();
+            const resultadoSession = await client.auth.getSession();
 
             const session =
-                resultadoSession &&
-                resultadoSession.data
+                resultadoSession && resultadoSession.data
                     ? resultadoSession.data.session
                     : null;
 
-            if (!session || !session.user) {
-                return;
-            }
+            if (!session || !session.user) return;
 
             try {
-                const resultado =
-                    await client.rpc(
-                        'obtener_mis_preferencias'
-                    );
+                const resultado = await client.rpc(
+                    'obtener_mis_preferencias'
+                );
 
-                if (
-                    !resultado.error &&
-                    resultado.data
-                ) {
+                if (!resultado.error && resultado.data) {
                     let datos = resultado.data;
 
                     if (
@@ -285,15 +478,11 @@
             }
 
             try {
-                const resultado =
-                    await client
-                        .from('preferencias_usuario')
-                        .select('prefs')
-                        .eq(
-                            'usuario_id',
-                            session.user.id
-                        )
-                        .maybeSingle();
+                const resultado = await client
+                    .from('preferencias_usuario')
+                    .select('prefs')
+                    .eq('usuario_id', session.user.id)
+                    .maybeSingle();
 
                 if (
                     !resultado.error &&
@@ -318,20 +507,13 @@
             );
         } finally {
             window.dispatchEvent(
-                new CustomEvent(
-                    'cfg-preferences-ready'
-                )
+                new CustomEvent('cfg-preferences-ready')
             );
         }
     }
 
     function guardarPreferenciasLocales(datos) {
-        if (
-            !datos ||
-            typeof datos !== 'object'
-        ) {
-            return;
-        }
+        if (!datos || typeof datos !== 'object') return;
 
         Object.keys(datos).forEach(function (clave) {
             const valor = datos[clave];
@@ -360,15 +542,11 @@
         }
 
         try {
-            const valor =
-                localStorage.getItem(clave);
+            const valor = localStorage.getItem(clave);
 
             if (valor !== null) {
-                const normalizado =
-                    normalizarValor(valor);
-
+                const normalizado = normalizarValor(valor);
                 preferencias[clave] = normalizado;
-
                 return normalizado;
             }
         } catch (_) {}
@@ -394,15 +572,12 @@
         }
 
         try {
-            const client =
-                await window.cfgEsperarSupabase();
+            const client = await window.cfgEsperarSupabase();
 
-            const resultadoSession =
-                await client.auth.getSession();
+            const resultadoSession = await client.auth.getSession();
 
             const session =
-                resultadoSession &&
-                resultadoSession.data
+                resultadoSession && resultadoSession.data
                     ? resultadoSession.data.session
                     : null;
 
@@ -413,14 +588,13 @@
                 };
             }
 
-            const rpc =
-                await client.rpc(
-                    'actualizar_preferencia',
-                    {
-                        p_key: clave,
-                        p_value: valor
-                    }
-                );
+            const rpc = await client.rpc(
+                'actualizar_preferencia',
+                {
+                    p_key: clave,
+                    p_value: valor
+                }
+            );
 
             if (!rpc.error) {
                 return { ok: true };
@@ -431,46 +605,36 @@
                 rpc.error
             );
 
-            const actual =
-                await client
-                    .from('preferencias_usuario')
-                    .select('prefs')
-                    .eq(
-                        'usuario_id',
-                        session.user.id
-                    )
-                    .maybeSingle();
+            const actual = await client
+                .from('preferencias_usuario')
+                .select('prefs')
+                .eq('usuario_id', session.user.id)
+                .maybeSingle();
 
             const prefs =
                 actual.data &&
                 actual.data.prefs &&
                 typeof actual.data.prefs === 'object'
-                    ? actual.data.prefs
+                    ? { ...actual.data.prefs }
                     : {};
 
             prefs[clave] = valor;
 
-            const upsert =
-                await client
-                    .from('preferencias_usuario')
-                    .upsert(
-                        {
-                            usuario_id:
-                                session.user.id,
-                            prefs: prefs
-                        },
-                        {
-                            onConflict:
-                                'usuario_id'
-                        }
-                    );
+            const upsert = await client
+                .from('preferencias_usuario')
+                .upsert(
+                    {
+                        usuario_id: session.user.id,
+                        prefs: prefs
+                    },
+                    { onConflict: 'usuario_id' }
+                );
 
             if (upsert.error) {
                 return {
                     ok: false,
                     local: true,
-                    error:
-                        upsert.error.message
+                    error: upsert.error.message
                 };
             }
 
@@ -496,58 +660,35 @@
     window.cfgRenderItem = function (opciones) {
         opciones = opciones || {};
 
-        const icono =
-            obtenerIcono(
-                opciones.icon || 'settings'
-            );
+        const icono = obtenerIcono(opciones.icon || 'settings');
+        const titulo = escapeHtml(opciones.title || '');
+        const descripcion = escapeHtml(opciones.desc || '');
 
-        const titulo =
-            escapeHtml(opciones.title || '');
+        const claseExtra = opciones.class
+            ? ' ' + opciones.class
+            : '';
 
-        const descripcion =
-            escapeHtml(opciones.desc || '');
-
-        const claseExtra =
-            opciones.class
-                ? ' ' + opciones.class
-                : '';
-
-        const estilo =
-            opciones.style
-                ? ' style="' +
-                  escapeHtml(opciones.style) +
-                  '"'
-                : '';
+        const estilo = opciones.style
+            ? ' style="' + escapeHtml(opciones.style) + '"'
+            : '';
 
         let accion = '';
 
         if (opciones.href) {
-            accion =
-                'href="' +
-                escapeHtml(opciones.href) +
-                '"';
+            accion = 'href="' + escapeHtml(opciones.href) + '"';
         } else if (opciones.onclick) {
-            accion =
-                'onclick="' +
-                escapeHtml(opciones.onclick) +
-                '"';
+            accion = 'onclick="' +
+                escapeHtml(opciones.onclick) + '"';
         }
 
-        const etiqueta =
-            opciones.href
-                ? 'a'
-                : 'button';
+        const etiqueta = opciones.href ? 'a' : 'button';
 
         return `
             <${etiqueta}
                 class="cfg-item${claseExtra}"
                 ${accion}
                 ${estilo}
-                ${
-                    etiqueta === 'button'
-                        ? 'type="button"'
-                        : ''
-                }
+                ${etiqueta === 'button' ? 'type="button"' : ''}
             >
                 <div class="cfg-item-icon">
                     ${icono}
@@ -583,12 +724,8 @@
     window.cfgRenderToggle = function (opciones) {
         opciones = opciones || {};
 
-        const id =
-            opciones.id ||
-            'cfgToggle_' +
-            Math.random()
-                .toString(36)
-                .slice(2);
+        const id = opciones.id ||
+            'cfgToggle_' + Math.random().toString(36).slice(2);
 
         return `
             <div class="cfg-item">
@@ -597,9 +734,7 @@
                     opciones.icon
                         ? `
                             <div class="cfg-item-icon">
-                                ${obtenerIcono(
-                                    opciones.icon
-                                )}
+                                ${obtenerIcono(opciones.icon)}
                             </div>
                         `
                         : ''
@@ -607,41 +742,24 @@
 
                 <div class="cfg-item-content">
                     <div class="cfg-item-title">
-                        ${escapeHtml(
-                            opciones.title || ''
-                        )}
+                        ${escapeHtml(opciones.title || '')}
                     </div>
 
                     <div class="cfg-item-desc">
-                        ${escapeHtml(
-                            opciones.desc || ''
-                        )}
+                        ${escapeHtml(opciones.desc || '')}
                     </div>
                 </div>
 
-                <label
-                    class="cfg-toggle"
-                    for="${escapeHtml(id)}"
-                >
+                <label class="cfg-toggle" for="${escapeHtml(id)}">
                     <input
                         type="checkbox"
                         id="${escapeHtml(id)}"
-                        ${
-                            opciones.checked === true
-                                ? 'checked'
-                                : ''
-                        }
-                        ${
-                            opciones.disabled === true
-                                ? 'disabled'
-                                : ''
-                        }
+                        ${opciones.checked === true ? 'checked' : ''}
+                        ${opciones.disabled === true ? 'disabled' : ''}
                         ${
                             opciones.onChange
                                 ? 'onchange="' +
-                                  escapeHtml(
-                                      opciones.onChange
-                                  ) +
+                                  escapeHtml(opciones.onChange) +
                                   '"'
                                 : ''
                         }
@@ -661,29 +779,16 @@
     window.cfgInitPage = function (opciones) {
         opciones = opciones || {};
 
-        const slot =
-            document.querySelector(
-                '#cfgHeaderSlot'
-            );
+        const slot = document.querySelector('#cfgHeaderSlot');
+        if (!slot) return;
 
-        if (!slot) {
-            return;
-        }
+        const titulo = escapeHtml(
+            opciones.title || 'Configuración'
+        );
 
-        const titulo =
-            escapeHtml(
-                opciones.title ||
-                'Configuración'
-            );
+        const subtitulo = escapeHtml(opciones.subtitle || '');
 
-        const subtitulo =
-            escapeHtml(
-                opciones.subtitle ||
-                ''
-            );
-
-        const backUrl =
-            opciones.backUrl ||
+        const backUrl = opciones.backUrl ||
             '/features/perfil/configuracion/index.html';
 
         slot.innerHTML = `
@@ -719,15 +824,11 @@
                             <button
                                 type="button"
                                 class="cfg-header-action"
-                                onclick="${escapeHtml(
-                                    opciones.action
-                                )}"
+                                onclick="${escapeHtml(opciones.action)}"
                             >
                                 ${
                                     opciones.actionIcon
-                                        ? obtenerIcono(
-                                            opciones.actionIcon
-                                        )
+                                        ? obtenerIcono(opciones.actionIcon)
                                         : ''
                                 }
                             </button>
@@ -746,24 +847,14 @@
        ============================================================ */
 
     function asegurarModal() {
-        let overlay =
-            document.getElementById(
-                'cfgModal'
-            );
+        let overlay = document.getElementById('cfgModal');
 
-        if (overlay) {
-            return overlay;
-        }
+        if (overlay) return overlay;
 
-        overlay =
-            document.createElement('div');
-
+        overlay = document.createElement('div');
         overlay.id = 'cfgModal';
         overlay.className = 'cfg-modal-overlay';
-        overlay.setAttribute(
-            'aria-hidden',
-            'true'
-        );
+        overlay.setAttribute('aria-hidden', 'true');
 
         overlay.innerHTML = `
             <div
@@ -804,14 +895,11 @@
 
         document.body.appendChild(overlay);
 
-        overlay.addEventListener(
-            'click',
-            function (event) {
-                if (event.target === overlay) {
-                    cerrarModal(false);
-                }
+        overlay.addEventListener('click', function (evento) {
+            if (evento.target === overlay) {
+                cerrarModal(false);
             }
-        );
+        });
 
         return overlay;
     }
@@ -819,28 +907,12 @@
     window.cfgConfirm = function (opciones) {
         opciones = opciones || {};
 
-        const overlay =
-            asegurarModal();
+        const overlay = asegurarModal();
 
-        const titulo =
-            overlay.querySelector(
-                '#cfgModalTitle'
-            );
-
-        const texto =
-            overlay.querySelector(
-                '#cfgModalText'
-            );
-
-        const cancelar =
-            overlay.querySelector(
-                '#cfgModalCancel'
-            );
-
-        const confirmar =
-            overlay.querySelector(
-                '#cfgModalConfirm'
-            );
+        const titulo = overlay.querySelector('#cfgModalTitle');
+        const texto = overlay.querySelector('#cfgModalText');
+        const cancelar = overlay.querySelector('#cfgModalCancel');
+        const confirmar = overlay.querySelector('#cfgModalConfirm');
 
         return new Promise(function (resolve) {
             if (modalResolver) {
@@ -849,24 +921,19 @@
 
             modalResolver = resolve;
 
-            titulo.textContent =
-                opciones.title ||
+            titulo.textContent = opciones.title ||
                 tt('cfg_confirmar_accion', 'Confirmar acción');
 
-            texto.textContent =
-                opciones.text ||
+            texto.textContent = opciones.text ||
                 tt('cfg_quieres_continuar', '¿Quieres continuar?');
 
-            cancelar.textContent =
-                opciones.cancelText ||
+            cancelar.textContent = opciones.cancelText ||
                 tt('cfg_cancelar', 'Cancelar');
 
-            confirmar.textContent =
-                opciones.confirmText ||
+            confirmar.textContent = opciones.confirmText ||
                 tt('cfg_confirmar', 'Confirmar');
 
-            confirmar.className =
-                'cfg-btn ' +
+            confirmar.className = 'cfg-btn ' +
                 (
                     opciones.danger
                         ? 'cfg-btn-danger'
@@ -874,46 +941,29 @@
                 );
 
             overlay.classList.add('show');
-            overlay.setAttribute(
-                'aria-hidden',
-                'false'
-            );
+            overlay.setAttribute('aria-hidden', 'false');
 
-            cancelar.onclick =
-                function () {
-                    cerrarModal(false);
-                };
+            cancelar.onclick = function () {
+                cerrarModal(false);
+            };
 
-            confirmar.onclick =
-                function () {
-                    cerrarModal(true);
-                };
+            confirmar.onclick = function () {
+                cerrarModal(true);
+            };
         });
     };
 
     function cerrarModal(resultado) {
-        const overlay =
-            document.getElementById(
-                'cfgModal'
-            );
+        const overlay = document.getElementById('cfgModal');
 
         if (overlay) {
-            overlay.classList.remove(
-                'show'
-            );
-
-            overlay.setAttribute(
-                'aria-hidden',
-                'true'
-            );
+            overlay.classList.remove('show');
+            overlay.setAttribute('aria-hidden', 'true');
         }
 
         if (modalResolver) {
-            const resolver =
-                modalResolver;
-
+            const resolver = modalResolver;
             modalResolver = null;
-
             resolver(resultado);
         }
     }
@@ -922,38 +972,18 @@
        TOAST
        ============================================================ */
 
-    window.cfgToast = function (
-        mensaje,
-        tipo,
-        duracion
-    ) {
-        let toast =
-            document.getElementById(
-                'cfgToast'
-            );
+    window.cfgToast = function (mensaje, tipo, duracion) {
+        let toast = document.getElementById('cfgToast');
 
         if (!toast) {
-            toast =
-                document.createElement(
-                    'div'
-                );
-
+            toast = document.createElement('div');
             toast.id = 'cfgToast';
             toast.className = 'cfg-toast';
 
-            toast.setAttribute(
-                'role',
-                'status'
-            );
+            toast.setAttribute('role', 'status');
+            toast.setAttribute('aria-live', 'polite');
 
-            toast.setAttribute(
-                'aria-live',
-                'polite'
-            );
-
-            document.body.appendChild(
-                toast
-            );
+            document.body.appendChild(toast);
         }
 
         clearTimeout(toastTimer);
@@ -961,43 +991,26 @@
         toast.className = 'cfg-toast';
 
         if (tipo === 'success') {
-            toast.classList.add(
-                'cfg-toast-success'
-            );
+            toast.classList.add('cfg-toast-success');
         }
 
         if (tipo === 'error') {
-            toast.classList.add(
-                'cfg-toast-error'
-            );
+            toast.classList.add('cfg-toast-error');
         }
 
         if (tipo === 'warning') {
-            toast.classList.add(
-                'cfg-toast-warning'
-            );
+            toast.classList.add('cfg-toast-warning');
         }
 
-        toast.textContent =
-            mensaje || '';
+        toast.textContent = mensaje || '';
 
-        requestAnimationFrame(
-            function () {
-                toast.classList.add(
-                    'show'
-                );
-            }
-        );
+        requestAnimationFrame(function () {
+            toast.classList.add('show');
+        });
 
-        toastTimer =
-            setTimeout(
-                function () {
-                    toast.classList.remove(
-                        'show'
-                    );
-                },
-                duracion || 3000
-            );
+        toastTimer = setTimeout(function () {
+            toast.classList.remove('show');
+        }, duracion || 3000);
     };
 
     /* ============================================================
@@ -1006,51 +1019,34 @@
 
     cargarPreferenciasLocales();
 
-    if (
-        document.readyState ===
-        'loading'
-    ) {
+    function iniciarConfiguracion() {
+        asegurarModal();
+
+        // No bloquea la interfaz mientras se cargan las preferencias.
+        setTimeout(cargarPreferenciasSupabase, 0);
+    }
+
+    if (document.readyState === 'loading') {
         document.addEventListener(
             'DOMContentLoaded',
-            function () {
-                asegurarModal();
-
-                setTimeout(
-                    cargarPreferenciasSupabase,
-                    0
-                );
-            },
+            iniciarConfiguracion,
             { once: true }
         );
     } else {
-        asegurarModal();
-
-        setTimeout(
-            cargarPreferenciasSupabase,
-            0
-        );
+        iniciarConfiguracion();
     }
 
-    window.addEventListener(
-        'storage',
-        function (evento) {
-            if (!evento.key) {
-                return;
-            }
+    window.addEventListener('storage', function (evento) {
+        if (!evento.key) return;
 
-            if (
-                evento.newValue === null
-            ) {
-                delete preferencias[
-                    evento.key
-                ];
-                return;
-            }
-
-            preferencias[evento.key] =
-                normalizarValor(
-                    evento.newValue
-                );
+        if (evento.newValue === null) {
+            delete preferencias[evento.key];
+            return;
         }
-    );
+
+        preferencias[evento.key] = normalizarValor(
+            evento.newValue
+        );
+    });
+
 })();
