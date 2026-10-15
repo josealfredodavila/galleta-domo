@@ -1,6 +1,7 @@
 /* ============================================
    CARRUSEL 3D HORIZONTAL - Csariel's
    Ruta: /features/perfil/js/carrusel-3d.js
+   SCROLL LIBRE (sin stops)
    ============================================ */
 
 (function () {
@@ -51,13 +52,15 @@
             }
         }
 
+        // Escuchar scroll del track
         track.addEventListener('scroll', onScroll, { passive: true });
 
+        // Actualizar al cambiar tamaño
         window.addEventListener('resize', function () {
             onScroll();
         });
 
-        // Centrar la tarjeta activa al cargar
+        // ✅ Al cargar, centrar la tarjeta activa (la del centro)
         setTimeout(function () {
             const activeCard = track.querySelector('.carrusel-3d-card.active');
             if (activeCard) {
@@ -69,6 +72,21 @@
             }
             setTimeout(updateActiveCard, 200);
         }, 300);
+
+        // ✅ También actualiza cuando el usuario deja de tocar (para que la tarjeta
+        //    que quedó cerca del centro se marque como activa)
+        let touchEndTimer = null;
+        track.addEventListener('touchend', function () {
+            clearTimeout(touchEndTimer);
+            touchEndTimer = setTimeout(updateActiveCard, 100);
+        }, { passive: true });
+
+        // ✅ Para mouse wheel
+        let wheelTimer = null;
+        track.addEventListener('wheel', function () {
+            clearTimeout(wheelTimer);
+            wheelTimer = setTimeout(updateActiveCard, 100);
+        }, { passive: true });
     }
 
     if (document.readyState === 'loading') {
