@@ -9,19 +9,142 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/features/shared/js/auth-global.js"></script>
-<script src="/features/shared/js/apariencia-global.js?v=6" defer></script>
+<script src="/features/shared/js/apariencia-global.js?v=7" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 
 <!-- CSS del módulo perfil -->
 <link rel="stylesheet" href="/features/perfil/css/perfil.css">
-<!-- ✅ NUEVO: CSS del Carrusel 3D (horizontal en el perfil) -->
+<!-- CSS del Carrusel 3D (horizontal en el perfil) -->
 <link rel="stylesheet" href="/features/perfil/css/carrusel-3d.css">
-<!-- ✅ NUEVO: CSS del Carrusel 3D FULLSCREEN (overlay infinito) -->
+<!-- CSS del Carrusel 3D FULLSCREEN (overlay infinito) -->
 <link rel="stylesheet" href="/features/perfil/css/carrusel-3d-fullscreen.css">
 
 <style>
     html:not(.auth-ready) .app { display: none !important; }
+</style>
+
+<style>
+    /* ================================================================
+       PERFIL · MICROINTERACCIONES Y TRANSICIONES (v2)
+       Solo transform, brillo, color, sombra y opacidad.
+       No cambian dimensiones ni márgenes.
+       El carrusel 3D (.carrusel-3d-*) queda excluido a propósito.
+       ================================================================ */
+
+    .btn,
+    .btn-estado,
+    .btn-conexion,
+    .accion-btn,
+    .tab-btn,
+    .btn-publicar,
+    .config-btn,
+    .rep-btn,
+    .pro-btn,
+    .internet-filter,
+    .nav-link,
+    .avatar-menu button {
+        -webkit-tap-highlight-color: transparent;
+        transition:
+            transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1),
+            filter 160ms ease,
+            background-color 180ms ease,
+            border-color 180ms ease,
+            color 160ms ease,
+            box-shadow 200ms ease,
+            opacity 160ms ease;
+    }
+
+    .btn:active,
+    .btn-estado:active,
+    .btn-conexion:active,
+    .accion-btn:active,
+    .tab-btn:active,
+    .btn-publicar:active,
+    .config-btn:active,
+    .rep-btn:active,
+    .pro-btn:active,
+    .internet-filter:active,
+    .avatar-menu button:active {
+        transform: scale(0.97);
+        filter: brightness(1.08);
+    }
+
+    .nav-link:active {
+        opacity: 0.8;
+    }
+
+    .btn:focus-visible,
+    .btn-estado:focus-visible,
+    .btn-conexion:focus-visible,
+    .accion-btn:focus-visible,
+    .tab-btn:focus-visible,
+    .btn-publicar:focus-visible,
+    .config-btn:focus-visible,
+    .rep-btn:focus-visible,
+    .pro-btn:focus-visible,
+    .internet-filter:focus-visible,
+    .nav-link:focus-visible,
+    .avatar-menu button:focus-visible {
+        outline: 2px solid var(--gold, #D4AF37);
+        outline-offset: 2px;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .btn:hover,
+        .btn-estado:hover,
+        .btn-conexion:hover,
+        .accion-btn:hover,
+        .tab-btn:hover,
+        .internet-filter:hover,
+        .nav-link:hover {
+            box-shadow: 0 0 0 1px
+                color-mix(in srgb, var(--gold, #D4AF37) 25%, transparent);
+        }
+    }
+
+    /* Entrada suave de cada pestaña (solo opacidad: nunca oculta contenido) */
+    @keyframes perfilTabIn {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+    }
+
+    .tab-content.active {
+        animation: perfilTabIn 240ms ease both;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .btn,
+        .btn-estado,
+        .btn-conexion,
+        .accion-btn,
+        .tab-btn,
+        .btn-publicar,
+        .config-btn,
+        .rep-btn,
+        .pro-btn,
+        .internet-filter,
+        .nav-link,
+        .avatar-menu button,
+        .tab-content.active {
+            transition: none !important;
+            animation: none !important;
+        }
+
+        .btn:active,
+        .btn-estado:active,
+        .btn-conexion:active,
+        .accion-btn:active,
+        .tab-btn:active,
+        .btn-publicar:active,
+        .config-btn:active,
+        .rep-btn:active,
+        .pro-btn:active,
+        .internet-filter:active,
+        .avatar-menu button:active {
+            transform: none !important;
+        }
+    }
 </style>
 </head>
 <body>
@@ -141,7 +264,7 @@
         <a href="/features/perfil/configuracion/index.html" class="config-btn" data-clave-title="perfil_titulo_config" title="Configuración">
             <svg class="icon icon-lg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         </a>
-        
+
         <div class="avatar-container" style="position:relative;">
             <div class="avatar" id="perfilAvatar" onclick="window.toggleAvatarMenu(event)">
                 ◈
@@ -407,7 +530,7 @@
         <div class="panel-body">
             <div class="form-publicacion">
                 <textarea id="inputNuevaPublicacion" data-placeholder="perfil_que_piensas" placeholder="¿Qué estás pensando? Puedes usar #hashtags, @menciones y emojis ✨"></textarea>
-                
+
                 <div class="acciones">
                     <button type="button" class="accion-btn" onclick="window.toggleEmojiPickerPerfil()" id="btnEmojiPerfil" data-clave="perfil_emoji">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
@@ -425,10 +548,10 @@
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
                         Video
                     </button>
-                    
+
                     <input type="file" id="inputFotoPerfilPost" accept="image/*" style="display:none;" onchange="window.seleccionarArchivoPerfil(event, 'imagen')" />
                     <input type="file" id="inputVideoPerfilPost" accept="video/*" style="display:none;" onchange="window.seleccionarArchivoPerfil(event, 'video')" />
-                    
+
                     <button type="button" class="btn-publicar" onclick="window.publicarDesdePerfil()" id="btnPublicarPerfil" data-clave="perfil_publicar">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                         Publicar
@@ -653,7 +776,7 @@
             <div class="config-group">
                 <label data-clave="perfil_codigo_qr">Código del QR (escanea o escribe)</label>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                    <input type="text" id="qrInput" data-placeholder="perfil_ejemplo_codigo_qr" placeholder="Ej: DOMO-2025-ABC123" 
+                    <input type="text" id="qrInput" data-placeholder="perfil_ejemplo_codigo_qr" placeholder="Ej: DOMO-2025-ABC123"
                            style="flex:1;padding:10px 14px;background:rgba(0,0,0,0.5);border:2px solid var(--line-black);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;">
                     <button class="btn btn-gold" onclick="window.escanearQR()" id="btnEscanearQR" data-clave="perfil_validar_codigo">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -846,9 +969,9 @@
 <script src="/features/perfil/js/perfil-internet.js?v=8"></script>
 <script src="/features/perfil/js/perfil-repartidor.js?v=8"></script>
 <script src="/features/perfil/js/perfil-init.js?v=8"></script>
-<!-- ✅ Script del Carrusel 3D horizontal -->
+<!-- Script del Carrusel 3D horizontal -->
 <script src="/features/perfil/js/carrusel-3d.js" defer></script>
-<!-- ✅ Script del Carrusel 3D FULLSCREEN infinito -->
+<!-- Script del Carrusel 3D FULLSCREEN infinito -->
 <script src="/features/perfil/js/carrusel-3d-fullscreen.js" defer></script>
 
 </body>
