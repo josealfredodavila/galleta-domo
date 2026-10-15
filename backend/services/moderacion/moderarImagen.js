@@ -1,94 +1,64 @@
 // ================================================================
 // SERVICES/MODERACION/MODERARIMAGEN.JS
-// Sariel's Ecosystem — Moderación de imágenes con AWS Rekognition
+// Sariel's Ecosystem — Moderación de imágenes con OpenAI
 // ================================================================
+// Usa el endpoint de moderación de OpenAI (omni-moderation-latest),
+// que acepta imágenes en base64. Reemplaza a AWS Rekognition.
+//
 // Uso:
 //   const { moderarImagen } = require('../../services/moderacion/moderarImagen');
 //   const resultado = await moderarImagen(buffer);
 //   if (!resultado.ok) { /* rechazar */ }
 //
 // Contrato:
-//   Entrada:  Buffer con bytes de imagen (JPEG o PNG)
+//   Entrada:  Buffer con bytes de imagen (JPEG, PNG o WebP)
 //   Salida:   { ok: true }
 //           | { ok: false, motivo: 'tipo_invalido' | 'tamano_invalido'
 //                              | 'contenido_no_permitido' | 'timeout'
 //                              | 'servicio_no_disponible',
-//               detalle?: string, etiquetas?: array }
+//               detalle?: string, categorias?: array }
 //
 // Reglas:
 //   - Detecta el tipo real por magic bytes (no confía en mimetype).
-//   - Acepta JPEG y PNG. WebP se rechaza: Rekognition no lo analiza.
+//   - Acepta JPEG, PNG y WebP.
 //   - Tamaño máximo configurable vía MODERACION_MAX_BYTES (default 5 MB).
-//   - Umbral configurable vía MODERACION_UMBRAL (default 80).
-//   - Fail closed: si Rekognition falla o tarda > timeout, rechaza.
-//   - Los errores de AWS se registran con su tipo para poder diagnosticarlos.
-//   - Las etiquetas "Suggestive" se registran en log pero NO bloquean.
+//   - Umbral configurable vía OPENAI_UMBRAL (default 0.8, escala 0 a 1).
+//   - Fail closed: si OpenAI falla, responde con error y la subida se rechaza.
+//   - Variables requeridas: OPENAI_API_KEY.
 // ================================================================
 
 'use strict';
-
-const {
-    RekognitionClient,
-    DetectModerationLabelsCommand
-} = require('@aws-sdk/client-rekognition');
 
 // ================================================================
 // CONFIGURACIÓN (leída desde process.env, nunca hardcodeada)
 // ================================================================
 
-const UMBRAL = Number(process.env.MODERACION_UMBRAL) || 80;
+const OPENAI_URL = 'https://api.openai.com/v1/moderations';
+const MODELO = 'omni-moderation-latest';
+
+const UMBRAL = Number(process.env.OPENAI_UMBRAL) || 0.8;
 
 const MAX_BYTES = Number(process.env.MODERACION_MAX_BYTES) || (5 * 1024 * 1024);
 
 const TIMEOUT_MS = Number(process.env.MODERACION_TIMEOUT_MS) || 10000;
 
-// Etiquetas que BLOQUEAN la subida (comparadas con Name o ParentName)
-// Referencia: https://docs.aws.amazon.com/rekognition/latest/dg/moderation.html
-const ETIQUETAS_BLOQUEADAS = new Set([
-    'Explicit Nudity',
-    'Explicit Nudity of Intimate parts and Kissing',
-    'Exposed Genitalia',
-    'Exposed Female Nipple',
-    'Female Swimwear Or Underwear',
-    'Male Swimwear Or Underwear',
-    'Violence',
-    'Graphic Violence Or Gore',
-    'Physical Violence',
-    'Weapon Violence',
-    'Weapons',
-    'Visually Disturbing',
-    'Emaciated Bodies',
-    'Corpses',
-    'Hanging',
-    'Air Crash',
-    'Explosions and Blasts',
-    'Hate Symbols',
-    'Nazi Party',
-    'White Supremacy',
-    'Extremist'
+// Categorías que BLOQUEAN la subida si su puntuación supera el umbral
+const CATEGORIAS_BLOQUEADAS = new Set([
+    'sexual',
+    'sexual/minors',
+    'violence',
+    'violence/graphic',
+    'hate',
+    'hate/threatening',
+    'harassment/threatening',
+    'self-harm/intent',
+    'self-harm/instructions',
+    'illicit/violent'
 ]);
 
-// ================================================================
-// CLIENTE REKOGNITION (singleton)
-// ================================================================
-
-let clienteRekognition = null;
-
-function obtenerCliente() {
-    if (clienteRekognition) return clienteRekognition;
-
-    const region = process.env.AWS_REGION || 'us-east-1';
-
-    // El SDK toma AWS_ACCESS_KEY_ID y AWS_SECRET_ACCESS_KEY
-    // automáticamente desde process.env.
-    clienteRekognition = new RekognitionClient({ region });
-
-    return clienteRekognition;
-}
-
-// Aviso al arrancar si faltan credenciales (no bloquea, solo informa)
-if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
-    console.warn('⚠️ [ModerarImagen] Faltan AWS_ACCESS_KEY_ID o AWS_SECRET_ACCESS_KEY. Toda subida será rechazada.');
+// Aviso al arrancar si falta la clave (no bloquea el arranque)
+if (!process.env.OPENAI_API_KEY) {
+    console.warn('⚠️ [ModerarImagen] Falta OPENAI_API_KEY. Toda subida será rechazada.');
 }
 
 // ================================================================
@@ -127,19 +97,49 @@ function detectarTipo(buffer) {
 }
 
 // ================================================================
-// TIMEOUT HELPER
+// LLAMADA A OPENAI CON TIMEOUT
 // ================================================================
 
-function conTimeout(promesa, ms, mensaje) {
-    let timeoutId = null;
+async function llamarOpenAI(buffer, mimeType) {
+    const controlador = new AbortController();
+    const temporizador = setTimeout(() => controlador.abort(), TIMEOUT_MS);
 
-    const timeoutPromesa = new Promise((_, reject) => {
-        timeoutId = setTimeout(() => reject(new Error(mensaje)), ms);
-    });
+    try {
+        const imagenBase64 = buffer.toString('base64');
 
-    return Promise.race([promesa, timeoutPromesa]).finally(() => {
-        if (timeoutId) clearTimeout(timeoutId);
-    });
+        const respuesta = await fetch(OPENAI_URL, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: MODELO,
+                input: [
+                    {
+                        type: 'image_url',
+                        image_url: { url: `data:${mimeType};base64,${imagenBase64}` }
+                    }
+                ]
+            }),
+            signal: controlador.signal
+        });
+
+        const datos = await respuesta.json().catch(() => ({}));
+
+        if (!respuesta.ok) {
+            const codigo = (datos.error && datos.error.code) || (datos.error && datos.error.type) || 'desconocido';
+            const mensaje = (datos.error && datos.error.message) || '';
+            const error = new Error(`HTTP ${respuesta.status} ${codigo} ${mensaje}`);
+            error.status = respuesta.status;
+            error.codigo = codigo;
+            throw error;
+        }
+
+        return datos;
+    } finally {
+        clearTimeout(temporizador);
+    }
 }
 
 // ================================================================
@@ -147,24 +147,15 @@ function conTimeout(promesa, ms, mensaje) {
 // ================================================================
 
 /**
- * Modera un buffer de imagen con AWS Rekognition.
+ * Modera un buffer de imagen con OpenAI.
  * @param {Buffer} buffer — bytes de la imagen
- * @returns {Promise<{ok: boolean, motivo?: string, detalle?: string, etiquetas?: array}>}
+ * @returns {Promise<{ok: boolean, motivo?: string, detalle?: string, categorias?: array}>}
  */
 async function moderarImagen(buffer) {
     // 1) Validar tipo real
     const tipo = detectarTipo(buffer);
     if (!tipo) {
-        return { ok: false, motivo: 'tipo_invalido', detalle: 'Solo JPEG o PNG' };
-    }
-
-    // Rekognition no analiza WebP: se rechaza con un motivo claro
-    if (tipo === 'image/webp') {
-        return {
-            ok: false,
-            motivo: 'tipo_invalido',
-            detalle: 'WebP no soportado para revisión. Sube la imagen en JPEG o PNG.'
-        };
+        return { ok: false, motivo: 'tipo_invalido', detalle: 'Solo JPEG, PNG o WebP' };
     }
 
     // 2) Validar tamaño
@@ -176,84 +167,43 @@ async function moderarImagen(buffer) {
         };
     }
 
-    // 3) Llamar a Rekognition con timeout
-    let respuesta;
+    // 3) Llamar a OpenAI
+    let datos;
     try {
-        const cliente = obtenerCliente();
-
-        const comando = new DetectModerationLabelsCommand({
-            Image: { Bytes: buffer },
-            MinConfidence: 50
-        });
-
-        respuesta = await conTimeout(
-            cliente.send(comando),
-            TIMEOUT_MS,
-            'moderacion_timeout'
-        );
+        datos = await llamarOpenAI(buffer, tipo);
     } catch (error) {
-        if (error.message === 'moderacion_timeout') {
+        if (error.name === 'AbortError') {
+            console.error('❌ [ModerarImagen] Tiempo de espera agotado con OpenAI');
             return { ok: false, motivo: 'timeout' };
         }
 
-        // Registrar el tipo de error de AWS para diagnosticar la causa real
-        const codigo = error.name || 'ErrorDesconocido';
-        const estado = error.$metadata && error.$metadata.httpStatusCode;
-        console.error(
-            `❌ [ModerarImagen] Error de Rekognition: ${codigo}` +
-            (estado ? ` (HTTP ${estado})` : '') +
-            ` — ${error.message || ''}`
-        );
-
-        // Formato de imagen rechazado por AWS: es un problema del archivo
-        if (codigo === 'InvalidImageFormatException') {
-            return { ok: false, motivo: 'tipo_invalido', detalle: 'Formato no aceptado por el servicio' };
-        }
-
-        // Credenciales, permisos o servicio caído: fail closed
-        return { ok: false, motivo: 'servicio_no_disponible', detalle: codigo };
+        // Clave inválida, sin saldo, límite de uso o servicio caído: fail closed
+        console.error(`❌ [ModerarImagen] Error de OpenAI: ${error.message}`);
+        return { ok: false, motivo: 'servicio_no_disponible', detalle: error.codigo || 'error' };
     }
 
-    // 4) Analizar etiquetas
-    const etiquetas = respuesta && Array.isArray(respuesta.ModerationLabels)
-        ? respuesta.ModerationLabels
-        : [];
+    // 4) Analizar resultado
+    const resultado = Array.isArray(datos.results) ? datos.results[0] : null;
 
-    const bloqueadas = etiquetas.filter((etiqueta) => {
-        const confianza = Number(etiqueta.Confidence) || 0;
-        if (confianza < UMBRAL) return false;
-
-        const name = etiqueta.Name || '';
-        const parent = etiqueta.ParentName || '';
-
-        return ETIQUETAS_BLOQUEADAS.has(name) || ETIQUETAS_BLOQUEADAS.has(parent);
-    });
-
-    // 5) Registrar sugerentes en log (sin bloquear)
-    const sugerentes = etiquetas.filter((etiqueta) => {
-        const confianza = Number(etiqueta.Confidence) || 0;
-        if (confianza < UMBRAL) return false;
-        const name = etiqueta.Name || '';
-        const parent = etiqueta.ParentName || '';
-        return name === 'Suggestive' || parent === 'Suggestive';
-    });
-
-    if (sugerentes.length > 0) {
-        console.warn(
-            '⚠️ [ModerarImagen] Etiquetas sugerentes (no bloquean):',
-            sugerentes.map((e) => `${e.Name} (${Math.round(e.Confidence)}%)`).join(', ')
-        );
+    if (!resultado || !resultado.category_scores) {
+        console.error('❌ [ModerarImagen] Respuesta de OpenAI sin resultados');
+        return { ok: false, motivo: 'servicio_no_disponible', detalle: 'respuesta_vacia' };
     }
 
-    // 6) Decisión
+    const puntuaciones = resultado.category_scores;
+
+    const bloqueadas = Object.keys(puntuaciones).filter((categoria) => {
+        return CATEGORIAS_BLOQUEADAS.has(categoria) && Number(puntuaciones[categoria]) >= UMBRAL;
+    });
+
+    // 5) Decisión
     if (bloqueadas.length > 0) {
         return {
             ok: false,
             motivo: 'contenido_no_permitido',
-            etiquetas: bloqueadas.map((e) => ({
-                name: e.Name,
-                parent: e.ParentName,
-                confidence: Math.round(e.Confidence)
+            categorias: bloqueadas.map((c) => ({
+                categoria: c,
+                puntuacion: Number(puntuaciones[c]).toFixed(2)
             }))
         };
     }
