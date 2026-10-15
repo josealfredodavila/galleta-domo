@@ -1,97 +1,131 @@
 /* ============================================
    CARRUSEL 3D HORIZONTAL - Csariel's
    Ruta: /features/perfil/js/carrusel-3d.js
-   SCROLL LIBRE (sin stops)
+   Scroll libre. Cada tarjeta se inclina y escala según
+   qué tan cerca esté del centro; la más cercana queda activa.
    ============================================ */
 
 (function () {
     'use strict';
 
-    function initCarrusel3D() {
-        const track = document.querySelector('.carrusel-3d-track');
-        if (!track) return;
+    // Color por módulo, en el mismo orden que las tarjetas del HTML
+    var PALETA = [
+        '#22d3a6', // Muro
+        '#D4AF37', // Perfil
+        '#a855f7', // Grupos
+        '#00e5ff', // Contactos
+        '#f59e0b', // Mercado
+        '#ff3366', // Live
+        '#3b82f6', // Internet
+        '#f472b6'  // Videos
+    ];
 
-        const cards = track.querySelectorAll('.carrusel-3d-card');
+    var MAX_ROTACION = 28;   // grados de inclinación en los extremos
+    var PERDIDA_ESCALA = 0.1; // cuánto se reduce una tarjeta en los extremos
+    var OPACIDAD_MIN = 0.55;
+
+    function init() {
+        var wrapper = document.querySelector('.carrusel-3d-wrapper');
+        var track = document.querySelector('.carrusel-3d-track');
+        if (!wrapper || !track) return;
+
+        var cards = Array.prototype.slice.call(track.querySelectorAll('.carrusel-3d-card'));
         if (cards.length === 0) return;
 
-        let ticking = false;
+        // Color por tarjeta
+        cards.forEach(function (card, i) {
+            card.style.setProperty('--c', PALETA[i % PALETA.length]);
+        });
 
-        function updateActiveCard() {
-            const trackRect = track.getBoundingClientRect();
-            const trackCenter = trackRect.left + trackRect.width / 2;
+        // Puntos de navegación
+        var dots = document.createElement('div');
+        dots.className = 'carrusel-3d-dots';
+        cards.forEach(function (card, i) {
+            var punto = document.createElement('button');
+            punto.type = 'button';
+            punto.setAttribute('aria-label', 'Ir al módulo ' + (i + 1));
+            punto.addEventListener('click', function () {
+                irACard(i, true);
+            });
+            dots.appendChild(punto);
+        });
+        wrapper.appendChild(dots);
+        var puntos = Array.prototype.slice.call(dots.querySelectorAll('button'));
 
-            let closestCard = null;
-            let closestDistance = Infinity;
+        // Centrar una tarjeta dentro del track (sin mover la página)
+        function irACard(i, suave) {
+            var card = cards[i];
+            if (!card) return;
+            var trackRect = track.getBoundingClientRect();
+            var cardRect = card.getBoundingClientRect();
+            var diferencia = (cardRect.left + cardRect.width / 2) - (trackRect.left + trackRect.width / 2);
+            track.scrollTo({
+                left: track.scrollLeft + diferencia,
+                behavior: suave ? 'smooth' : 'auto'
+            });
+        }
 
-            cards.forEach(function (card) {
-                const cardRect = card.getBoundingClientRect();
-                const cardCenter = cardRect.left + cardRect.width / 2;
-                const distance = Math.abs(trackCenter - cardCenter);
+        // Recalcula inclinación, escala, opacidad y tarjeta activa
+        var pendiente = false;
+        function actualizar() {
+            pendiente = false;
+            var trackRect = track.getBoundingClientRect();
+            var centro = trackRect.left + trackRect.width / 2;
 
-                if (distance < closestDistance) {
-                    closestDistance = distance;
-                    closestCard = card;
+            var mejor = 0;
+            var mejorDistancia = Infinity;
+
+            cards.forEach(function (card, i) {
+                var r = card.getBoundingClientRect();
+                var distancia = (r.left + r.width / 2) - centro;
+                var t = Math.max(-1, Math.min(1, distancia / (r.width + 14)));
+                var lejania = Math.abs(t);
+
+                card.style.transform =
+                    'perspective(900px) rotateY(' + (-t * MAX_ROTACION).toFixed(2) + 'deg) ' +
+                    'scale(' + (1 - lejania * PERDIDA_ESCALA).toFixed(3) + ')';
+                card.style.opacity = (1 - lejania * (1 - OPACIDAD_MIN)).toFixed(3);
+
+                if (Math.abs(distancia) < mejorDistancia) {
+                    mejorDistancia = Math.abs(distancia);
+                    mejor = i;
                 }
             });
 
-            cards.forEach(function (card) {
-                card.classList.remove('active');
+            cards.forEach(function (card, i) {
+                card.classList.toggle('active', i === mejor);
             });
-
-            if (closestCard) {
-                closestCard.classList.add('active');
-            }
-
-            ticking = false;
+            puntos.forEach(function (punto, i) {
+                punto.classList.toggle('active', i === mejor);
+            });
         }
 
-        function onScroll() {
-            if (!ticking) {
-                window.requestAnimationFrame(updateActiveCard);
-                ticking = true;
+        function pedirActualizacion() {
+            if (!pendiente) {
+                pendiente = true;
+                window.requestAnimationFrame(actualizar);
             }
         }
 
-        // Escuchar scroll del track
-        track.addEventListener('scroll', onScroll, { passive: true });
+        track.addEventListener('scroll', pedirActualizacion, { passive: true });
+        window.addEventListener('resize', pedirActualizacion);
+        window.addEventListener('load', pedirActualizacion);
 
-        // Actualizar al cambiar tamaño
-        window.addEventListener('resize', function () {
-            onScroll();
+        // Posición inicial: la tarjeta marcada como activa en el HTML (Perfil)
+        var inicial = 0;
+        cards.forEach(function (card, i) {
+            if (card.classList.contains('active')) inicial = i;
         });
 
-        // ✅ Al cargar, centrar la tarjeta activa (la del centro)
-        setTimeout(function () {
-            const activeCard = track.querySelector('.carrusel-3d-card.active');
-            if (activeCard) {
-                activeCard.scrollIntoView({
-                    behavior: 'auto',
-                    block: 'nearest',
-                    inline: 'center'
-                });
-            }
-            setTimeout(updateActiveCard, 200);
-        }, 300);
-
-        // ✅ También actualiza cuando el usuario deja de tocar (para que la tarjeta
-        //    que quedó cerca del centro se marque como activa)
-        let touchEndTimer = null;
-        track.addEventListener('touchend', function () {
-            clearTimeout(touchEndTimer);
-            touchEndTimer = setTimeout(updateActiveCard, 100);
-        }, { passive: true });
-
-        // ✅ Para mouse wheel
-        let wheelTimer = null;
-        track.addEventListener('wheel', function () {
-            clearTimeout(wheelTimer);
-            wheelTimer = setTimeout(updateActiveCard, 100);
-        }, { passive: true });
+        window.requestAnimationFrame(function () {
+            irACard(inicial, false);
+            actualizar();
+        });
     }
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initCarrusel3D);
+        document.addEventListener('DOMContentLoaded', init);
     } else {
-        initCarrusel3D();
+        init();
     }
 })();
