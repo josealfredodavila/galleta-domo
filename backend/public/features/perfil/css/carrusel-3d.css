@@ -1,0 +1,124 @@
+/* ============================================
+   CARRUSEL 3D - Csariel's
+   Ruta: /features/perfil/css/carrusel-3d.css
+   ============================================ */
+
+.carrusel-3d-wrapper {
+    width: 100%;
+    overflow: hidden;
+    padding: 20px 0 10px 0;
+    position: relative;
+    perspective: 1200px;
+    -webkit-perspective: 1200px;
+}
+
+.carrusel-3d-track {
+    display: flex;
+    gap: 15px;
+    padding: 10px 40px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.carrusel-3d-track::-webkit-scrollbar {
+    display: none;
+}
+
+.carrusel-3d-card {
+    flex: 0 0 250px;
+    height: 340px;
+    scroll-snap-align: center;
+    border-radius: 20px;
+    background: rgba(15, 45, 26, 0.65);
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    text-decoration: none;
+    color: var(--text-primary, #ffffff);
+    transition: transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1),
+                box-shadow 0.5s ease,
+                opacity 0.5s ease,
+                border-color 0.5s ease;
+    
+    transform: rotateY(25deg) scale(0.9);
+    opacity: 0.6;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.carrusel-3d-card.active {
+    transform: rotateY(0deg) scale(1.05);
+    opacity: 1;
+    box-shadow: 0 0 25px rgba(212, 175, 55, 0.45),
+                0 15px 40px rgba(0, 0, 0, 0.8);
+    border-color: var(--gold, #D4AF37);
+    z-index: 10;
+}
+
+.carrusel-3d-card .card-icon {
+    font-size: 2.8rem;
+    margin-bottom: 12px;
+    filter: drop-shadow(0 0 12px rgba(212, 175, 55, 0.7));
+    transition: transform 0.5s ease;
+}
+
+.carrusel-3d-card.active .card-icon {
+    transform: scale(1.1);
+}
+
+.carrusel-3d-card .card-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--gold, #D4AF37);
+}
+
+.carrusel-3d-card .card-desc {
+    font-size: 0.75rem;
+    color: var(--text-secondary, #a0a0a0);
+    line-height: 1.4;
+    font-family: 'Inter', sans-serif;
+}
+
+.carrusel-3d-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(180deg, transparent 40%, rgba(0, 0, 0, 0.85) 100%);
+    z-index: 0;
+    pointer-events: none;
+}
+
+.carrusel-3d-card > * {
+    position: relative;
+    z-index: 1;
+}
+
+@media (max-width: 480px) {
+    .carrusel-3d-card {
+        flex: 0 0 220px;
+        height: 300px;
+        padding: 16px;
+    }
+    .carrusel-3d-card .card-icon {
+        font-size: 2.3rem;
+    }
+    .carrusel-3d-card .card-title {
+        font-size: 1rem;
+    }
+}
