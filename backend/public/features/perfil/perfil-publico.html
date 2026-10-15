@@ -1,70 +1,342 @@
 <!DOCTYPE html>
 <html lang="es" data-public>
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title data-clave="perfil_publico_titulo_pagina">◈ Perfil · Csariel's</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-size='50' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>">
+
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/features/shared/js/auth-global.js"></script>
 <script src="/features/shared/js/apariencia-global.js?v=6" defer></script>
-
 <link rel="stylesheet" href="/features/perfil/css/perfil.css">
 
 <style>
-    html:not(.auth-ready) .app { display: none !important; }
-    [hidden] { display: none !important; }
+html:not(.auth-ready) .app{display:none!important}
+[hidden]{display:none!important}
 
-    .pp-estado {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        margin-top: 6px;
-        font-size: 0.75rem;
-        color: var(--text-secondary);
-    }
-    .pp-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        display: inline-block;
-        flex-shrink: 0;
-    }
-    .pp-dot.activo {
-        background: var(--success);
-        box-shadow: 0 0 8px var(--success);
-    }
-    .pp-dot.inactivo {
-        background: var(--text-muted);
-    }
-    .pp-wallet {
-        cursor: pointer;
-        font-family: monospace;
-        border-color: var(--cyan);
-        color: var(--cyan);
-        background: rgba(0, 229, 255, 0.05);
-    }
-    .pp-acciones-sociales {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        justify-content: center;
-        margin-top: 12px;
-    }
-    .pp-volver {
-        width: 100%;
-        justify-content: center;
-        margin-top: 16px;
-    }
-    .pp-mensaje {
-        text-align: center;
-        padding: 30px 10px;
-    }
-    .pp-mensaje .btn {
-        margin-top: 14px;
-    }
+.pp-estado{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:.75rem;color:var(--text-secondary)}
+.pp-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}
+.pp-dot.activo{background:var(--success);box-shadow:0 0 8px var(--success)}
+.pp-dot.inactivo{background:var(--text-muted)}
+.pp-wallet{cursor:pointer;font-family:monospace;border-color:var(--cyan);color:var(--cyan);background:rgba(0,229,255,.05)}
+.pp-acciones-sociales{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:12px}
+.pp-volver{width:100%;justify-content:center;margin-top:16px}
+.pp-mensaje{text-align:center;padding:30px 10px}
+.pp-mensaje .btn{margin-top:14px}
+
+/* =====================================
+   CARRUSEL MI ECOSISTEMA · CSARIEL'S
+===================================== */
+
+.ecosistema{
+ --eco-cyan:#00e5ff;
+ position:relative;
+ isolation:isolate;
+ overflow:hidden;
+ margin:22px 0 28px;
+ padding:24px 12px 20px;
+ border:1px solid rgba(0,229,255,.22);
+ border-radius:28px;
+ background:
+ radial-gradient(ellipse at 50% 35%,rgba(0,117,180,.19),transparent 55%),
+ linear-gradient(160deg,#06111e,#020811 65%,#071021);
+ color:#eaf7ff;
+ box-shadow:0 18px 55px rgba(0,0,0,.28),inset 0 0 35px rgba(0,229,255,.035);
+}
+
+.ecosistema *{box-sizing:border-box}
+
+.eco-heading{
+ text-align:center;
+ margin:0 auto 18px;
+ max-width:650px;
+}
+
+.eco-kicker{
+ display:inline-flex;
+ align-items:center;
+ gap:7px;
+ padding:6px 11px;
+ border:1px solid rgba(0,229,255,.35);
+ border-radius:99px;
+ color:#65efff;
+ font-size:.68rem;
+ letter-spacing:.13em;
+ text-transform:uppercase;
+}
+
+.eco-heading h2{
+ font-family:Inter,sans-serif;
+ font-size:clamp(1.35rem,5vw,2rem);
+ line-height:1.2;
+ margin:13px 0 8px;
+ color:#f5fbff;
+}
+
+.eco-heading h2 span{color:var(--eco-cyan)}
+
+.eco-heading p{
+ margin:0;
+ color:#9eb9d2;
+ font-size:.88rem;
+ line-height:1.55;
+}
+
+.eco-carousel{position:relative;padding:9px 0 16px}
+
+.eco-track{
+ display:flex;
+ align-items:center;
+ gap:12px;
+ overflow-x:auto;
+ overscroll-behavior-x:contain;
+ scroll-snap-type:x mandatory;
+ scroll-behavior:smooth;
+ padding:12px max(12px,calc((100% - 240px)/2)) 20px;
+ scrollbar-width:none;
+ -webkit-overflow-scrolling:touch;
+}
+
+.eco-track::-webkit-scrollbar{display:none}
+
+.eco-card{
+ position:relative;
+ flex:0 0 76%;
+ max-width:270px;
+ min-height:290px;
+ scroll-snap-align:center;
+ display:flex;
+ flex-direction:column;
+ justify-content:flex-end;
+ gap:10px;
+ padding:18px;
+ overflow:hidden;
+ border:1px solid var(--eco-color,#00e5ff);
+ border-radius:23px;
+ background:
+ radial-gradient(ellipse at 50% 15%,color-mix(in srgb,var(--eco-color,#00e5ff) 19%,transparent),transparent 55%),
+ linear-gradient(155deg,#10243a,#050d19 78%);
+ box-shadow:0 0 20px color-mix(in srgb,var(--eco-color,#00e5ff) 12%,transparent);
+ transform:scale(.91);
+ opacity:.78;
+ transition:transform .28s ease,opacity .28s ease,box-shadow .28s ease;
+ color:#f3f9ff;
+ text-align:left;
+ cursor:pointer;
+ font:inherit;
+}
+
+.eco-card.is-active{
+ transform:scale(1);
+ opacity:1;
+ box-shadow:0 0 26px color-mix(in srgb,var(--eco-color,#00e5ff) 24%,transparent),inset 0 0 25px rgba(255,255,255,.025);
+}
+
+.eco-art{
+ position:absolute;
+ inset:0 0 35% 0;
+ display:grid;
+ place-items:center;
+ overflow:hidden;
+ pointer-events:none;
+}
+
+.eco-art:before{
+ content:"";
+ position:absolute;
+ width:190px;
+ height:190px;
+ border-radius:50%;
+ background:radial-gradient(circle,var(--eco-color,#00e5ff),transparent 68%);
+ opacity:.19;
+ filter:blur(12px);
+}
+
+.eco-symbol{
+ position:relative;
+ display:grid;
+ place-items:center;
+ width:104px;
+ height:104px;
+ border:1px solid color-mix(in srgb,var(--eco-color,#00e5ff) 75%,transparent);
+ border-radius:28px;
+ color:var(--eco-color,#00e5ff);
+ font-size:3.3rem;
+ text-shadow:0 0 22px var(--eco-color,#00e5ff);
+ background:rgba(1,8,18,.5);
+ transform:rotate(-7deg);
+}
+
+.eco-number{
+ position:absolute;
+ top:13px;
+ left:14px;
+ color:var(--eco-color,#00e5ff);
+ font:700 .65rem Orbitron,monospace;
+ letter-spacing:.12em;
+}
+
+.eco-card h3{
+ position:relative;
+ margin:0;
+ font-size:1.22rem;
+ line-height:1.2;
+}
+
+.eco-card p{
+ position:relative;
+ margin:0;
+ color:#b5cce0;
+ font-size:.82rem;
+ line-height:1.45;
+ min-height:2.4em;
+}
+
+.eco-card .eco-open{
+ position:relative;
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ gap:8px;
+ margin-top:3px;
+ padding:10px 12px;
+ border:1px solid var(--eco-color,#00e5ff);
+ border-radius:99px;
+ color:#eafaff;
+ font-size:.8rem;
+ font-weight:700;
+}
+
+.eco-card .eco-open span:last-child{
+ color:var(--eco-color,#00e5ff);
+ font-size:1.1rem;
+}
+
+.eco-card[data-section="ecosistema"]{--eco-color:#00e5ff}
+.eco-card[data-section="cripto"]{--eco-color:#28c9ff}
+.eco-card[data-section="tienda"]{--eco-color:#e34cff}
+.eco-card[data-section="social"]{--eco-color:#ff4ca6}
+.eco-card[data-section="live"]{--eco-color:#ff315d}
+.eco-card[data-section="mensajes"]{--eco-color:#2be7b5}
+.eco-card[data-section="pagos"]{--eco-color:#ffc247}
+.eco-card[data-section="servicios"]{--eco-color:#4d9dff}
+
+.eco-controls{
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ gap:15px;
+}
+
+.eco-arrow{
+ display:grid;
+ place-items:center;
+ width:38px;
+ height:38px;
+ border-radius:50%;
+ border:1px solid rgba(0,229,255,.6);
+ background:#041321;
+ color:#00e5ff;
+ font-size:1.25rem;
+ cursor:pointer;
+}
+
+.eco-dots{
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ gap:7px;
+}
+
+.eco-dot{
+ width:7px;
+ height:7px;
+ padding:0;
+ border:0;
+ border-radius:99px;
+ background:#526a84;
+ cursor:pointer;
+ transition:width .2s,background .2s;
+}
+
+.eco-dot[aria-current="true"]{
+ width:23px;
+ background:#00e5ff;
+ box-shadow:0 0 10px #00e5ff;
+}
+
+.eco-description{
+ margin:18px 3px 0;
+ padding:19px 14px;
+ border:1px solid rgba(0,229,255,.18);
+ border-radius:20px;
+ background:rgba(0,14,28,.62);
+ text-align:center;
+}
+
+.eco-description h3{
+ margin:0 0 8px;
+ font-size:1.2rem;
+ color:#00e5ff;
+}
+
+.eco-description p{
+ margin:0;
+ color:#a9c2d9;
+ font-size:.86rem;
+ line-height:1.6;
+}
+
+.eco-features{
+ display:grid;
+ grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:8px;
+ margin-top:14px;
+}
+
+.eco-feature{
+ padding:13px 8px;
+ border:1px solid rgba(0,229,255,.16);
+ border-radius:14px;
+ text-align:center;
+ background:rgba(3,20,35,.68);
+}
+
+.eco-feature b{
+ display:block;
+ margin-bottom:5px;
+ color:#e5f8ff;
+ font-size:.78rem;
+}
+
+.eco-feature span{color:#00e5ff;font-size:1.35rem}
+
+.eco-hint{
+ text-align:center;
+ color:#7597b3;
+ font-size:.72rem;
+ margin:10px 0 0;
+}
+
+@media(min-width:700px){
+ .ecosistema{padding:30px 24px}
+ .eco-track{
+  padding-left:calc((100% - 280px)/2);
+  padding-right:calc((100% - 280px)/2);
+  gap:18px;
+ }
+ .eco-card{flex-basis:280px;min-height:330px}
+ .eco-features{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+
+@media(prefers-reduced-motion:reduce){
+ .eco-track{scroll-behavior:auto}
+ .eco-card,.eco-dot{transition:none}
+}
 </style>
 </head>
 
@@ -78,541 +350,1065 @@
 <div class="app">
 
 <header class="header">
-    <a href="/" class="logo">
-        <span class="logo-hex">◈</span>
-        <span class="logo-text">Csariel<span>'s</span></span>
-        <span class="logo-badge">✦ WEB3</span>
-    </a>
-    <div class="header-actions">
-        <span class="network-badge" data-no-traducir="1"><span class="dot"></span> Polygon</span>
-    </div>
+ <a href="/" class="logo">
+  <span class="logo-hex">◈</span>
+  <span class="logo-text">Csariel<span>'s</span></span>
+  <span class="logo-badge">✦ WEB3</span>
+ </a>
+
+ <div class="header-actions">
+  <span class="network-badge" data-no-traducir="1">
+   <span class="dot"></span> Polygon
+  </span>
+ </div>
 </header>
 
 <nav class="main-nav">
-    <a href="/" class="nav-link">
-        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        <span data-clave="nav_inicio">Inicio</span>
-    </a>
-    <a href="/features/muro/muro.html" class="nav-link">
-        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        <span data-clave="nav_muro">Muro</span>
-    </a>
-    <a href="/features/perfil/perfil.html" class="nav-link">
-        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        <span data-clave="nav_perfil">Perfil</span>
-    </a>
-    <a href="/features/mensajes/contactos.html" class="nav-link">
-        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        <span data-clave="nav_contactos">Contactos</span>
-    </a>
-    <a href="/features/live/live.html" class="nav-link live">
-        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4.93 19.07A10 10 0 0 1 4.93 4.93M19.07 19.07a10 10 0 0 0 0-14.14M7.76 16.24a6 6 0 0 1 0-8.48M16.24 16.24a6 6 0 0 0 0-8.48"/><circle cx="12" cy="12" r="2"/></svg>
-        <span data-clave="nav_live">Live</span>
-    </a>
-    <a href="/features/internet/internet.html" class="nav-link">
-        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4.93 19.07A10 10 0 0 1 4.93 4.93M19.07 19.07a10 10 0 0 0 0-14.14M7.76 16.24a6 6 0 0 1 0-8.48M16.24 16.24a6 6 0 0 0 0-8.48"/><circle cx="12" cy="12" r="2"/></svg>
-        <span data-clave="nav_internet">Internet</span>
-    </a>
+
+ <a href="/" class="nav-link">
+  <svg class="icon icon-sm" viewBox="0 0 24 24">
+   <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+   <polyline points="9 22 9 12 15 12 15 22"/>
+  </svg>
+  <span data-clave="nav_inicio">Inicio</span>
+ </a>
+
+ <a href="/features/muro/muro.html" class="nav-link">
+  <svg class="icon icon-sm" viewBox="0 0 24 24">
+   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+  </svg>
+  <span data-clave="nav_muro">Muro</span>
+ </a>
+
+ <a href="/features/perfil/perfil.html" class="nav-link">
+  <svg class="icon icon-sm" viewBox="0 0 24 24">
+   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+   <circle cx="12" cy="7" r="4"/>
+  </svg>
+  <span data-clave="nav_perfil">Perfil</span>
+ </a>
+
+ <a href="/features/mensajes/contactos.html" class="nav-link">
+  <svg class="icon icon-sm" viewBox="0 0 24 24">
+   <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+   <circle cx="9" cy="7" r="4"/>
+   <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+  </svg>
+  <span data-clave="nav_contactos">Contactos</span>
+ </a>
+
+ <a href="/features/live/live.html" class="nav-link live">
+  <svg class="icon icon-sm" viewBox="0 0 24 24">
+   <path d="M4.93 19.07A10 10 0 0 1 4.93 4.93M19.07 19.07a10 10 0 0 0 0-14.14M7.76 16.24a6 6 0 0 1 0-8.48M16.24 16.24a6 6 0 0 0 0-8.48"/>
+   <circle cx="12" cy="12" r="2"/>
+  </svg>
+  <span data-clave="nav_live">Live</span>
+ </a>
+
+ <a href="/features/internet/internet.html" class="nav-link">
+  <svg class="icon icon-sm" viewBox="0 0 24 24">
+   <path d="M4.93 19.07A10 10 0 0 1 4.93 4.93M19.07 19.07a10 10 0 0 0 0-14.14M7.76 16.24a6 6 0 0 1 0-8.48M16.24 16.24a6 6 0 0 0 0-8.48"/>
+   <circle cx="12" cy="12" r="2"/>
+  </svg>
+  <span data-clave="nav_internet">Internet</span>
+ </a>
+
 </nav>
+
+<!-- =====================================
+     CARRUSEL INTERACTIVO DE MI ECOSISTEMA
+====================================== -->
+
+<section class="ecosistema" aria-labelledby="ecoTitle">
+
+ <div class="eco-heading">
+  <span class="eco-kicker">◈ Csariel's · WEB3</span>
+
+  <h2 id="ecoTitle">
+   Explora <span>Mi Ecosistema</span>
+  </h2>
+
+  <p>
+   Desliza las tarjetas para elegir una sección.
+   Todo tu mundo físico y digital, en un solo lugar.
+  </p>
+ </div>
+
+ <div class="eco-carousel">
+
+  <div class="eco-track" id="ecoTrack"
+       aria-label="Carrusel de secciones de Csariel's">
+
+   <button class="eco-card is-active"
+           type="button"
+           data-section="ecosistema"
+           data-href="/"
+           aria-label="Abrir Mi Ecosistema">
+
+    <span class="eco-number">01 / ECOSISTEMA</span>
+    <span class="eco-art"><span class="eco-symbol">◈</span></span>
+
+    <h3>Mi Ecosistema</h3>
+    <p>Todo conectado: mundo físico, digital y Web3.</p>
+
+    <span class="eco-open">
+     <span>Explorar ecosistema</span><span>→</span>
+    </span>
+   </button>
+
+   <button class="eco-card"
+           type="button"
+           data-section="cripto"
+           data-href="/features/cripto/cripto.html"
+           aria-label="Abrir Cripto y NFTs">
+
+    <span class="eco-number">02 / WEB3</span>
+    <span class="eco-art"><span class="eco-symbol">₿</span></span>
+
+    <h3>Cripto y NFTs</h3>
+    <p>Activos digitales, tokens y herramientas Web3.</p>
+
+    <span class="eco-open">
+     <span>Explorar cripto</span><span>→</span>
+    </span>
+   </button>
+
+   <button class="eco-card"
+           type="button"
+           data-section="tienda"
+           data-href="/features/tienda/tienda.html"
+           aria-label="Abrir Tienda">
+
+    <span class="eco-number">03 / COMERCIO</span>
+    <span class="eco-art"><span class="eco-symbol">🛍</span></span>
+
+    <h3>Tienda</h3>
+    <p>Productos físicos y digitales en un solo espacio.</p>
+
+    <span class="eco-open">
+     <span>Visitar tienda</span><span>→</span>
+    </span>
+   </button>
+
+   <button class="eco-card"
+           type="button"
+           data-section="social"
+           data-href="/features/muro/muro.html"
+           aria-label="Abrir Red Social">
+
+    <span class="eco-number">04 / COMUNIDAD</span>
+    <span class="eco-art"><span class="eco-symbol">♧</span></span>
+
+    <h3>Red social</h3>
+    <p>Publica, conecta, comparte y descubre la comunidad.</p>
+
+    <span class="eco-open">
+     <span>Ir al Muro</span><span>→</span>
+    </span>
+   </button>
+
+   <button class="eco-card"
+           type="button"
+           data-section="live"
+           data-href="/features/live/live.html"
+           aria-label="Abrir Live">
+
+    <span class="eco-number">05 / EN VIVO</span>
+    <span class="eco-art"><span class="eco-symbol">◉</span></span>
+
+    <h3>Live</h3>
+    <p>Transmisiones en vivo y experiencias compartidas.</p>
+
+    <span class="eco-open">
+     <span>Entrar a Live</span><span>→</span>
+    </span>
+   </button>
+
+   <button class="eco-card"
+           type="button"
+           data-section="mensajes"
+           data-href="/features/mensajes/contactos.html"
+           aria-label="Abrir Mensajería">
+
+    <span class="eco-number">06 / MENSAJES</span>
+    <span class="eco-art"><span class="eco-symbol">✉</span></span>
+
+    <h3>Mensajería</h3>
+    <p>Conversaciones privadas, contactos y comunidad.</p>
+
+    <span class="eco-open">
+     <span>Ver contactos</span><span>→</span>
+    </span>
+   </button>
+
+   <button class="eco-card"
+           type="button"
+           data-section="pagos"
+           data-href="/features/pagos/pagos.html"
+           aria-label="Abrir Pagos">
+
+    <span class="eco-number">07 / PAGOS</span>
+    <span class="eco-art"><span class="eco-symbol">＄</span></span>
+
+    <h3>Pagos</h3>
+    <p>Descubre las opciones de pago disponibles.</p>
+
+    <span class="eco-open">
+     <span>Ver pagos</span><span>→</span>
+    </span>
+   </button>
+
+   <button class="eco-card"
+           type="button"
+           data-section="servicios"
+           data-href="/features/servicios/servicios.html"
+           aria-label="Abrir Servicios Digitales">
+
+    <span class="eco-number">08 / SERVICIOS</span>
+    <span class="eco-art"><span class="eco-symbol">⚙</span></span>
+
+    <h3>Servicios digitales</h3>
+    <p>Herramientas y servicios del ecosistema.</p>
+
+    <span class="eco-open">
+     <span>Descubrir</span><span>→</span>
+    </span>
+   </button>
+
+  </div>
+
+  <div class="eco-controls">
+   <button type="button" class="eco-arrow" id="ecoPrev"
+           aria-label="Sección anterior">‹</button>
+
+   <div class="eco-dots" id="ecoDots"
+        aria-label="Elegir sección"></div>
+
+   <button type="button" class="eco-arrow" id="ecoNext"
+           aria-label="Sección siguiente">›</button>
+  </div>
+
+  <p class="eco-hint">
+   Desliza horizontalmente · Toca una tarjeta para abrir la sección
+  </p>
+
+ </div>
+
+ <div class="eco-description">
+  <h3>Mi Ecosistema</h3>
+
+  <p>
+   Csariel's reúne comercio, comunidad y tecnología Web3.
+   Elige una tarjeta para entrar directamente a la sección que buscas.
+  </p>
+
+  <div class="eco-features">
+
+   <div class="eco-feature">
+    <span>🛒</span>
+    <b>Comercio físico y digital</b>
+   </div>
+
+   <div class="eco-feature">
+    <span>◇</span>
+    <b>NFTs y activos digitales</b>
+   </div>
+
+   <div class="eco-feature">
+    <span>♧</span>
+    <b>Red social y comunidad</b>
+   </div>
+
+   <div class="eco-feature">
+    <span>◉</span>
+    <b>Transmisiones en vivo</b>
+   </div>
+
+   <div class="eco-feature">
+    <span>✉</span>
+    <b>Mensajería privada</b>
+   </div>
+
+   <div class="eco-feature">
+    <span>＄</span>
+    <b>Pagos y cobros</b>
+   </div>
+
+   <div class="eco-feature">
+    <span>⚙</span>
+    <b>Servicios digitales</b>
+   </div>
+
+   <div class="eco-feature">
+    <span>◈</span>
+    <b>Experiencia Web3</b>
+   </div>
+
+  </div>
+ </div>
+
+</section>
+
+<!-- =====================================
+     PERFIL PÚBLICO
+====================================== -->
 
 <div class="perfil-container">
 
-    <div id="pantallaCargando" class="panel">
-        <div class="panel-body">
-            <div class="empty-state">
-                <svg class="icon" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/><path d="M2 9h20M12 3l-4 6 4 12 4-12-4-6"/></svg>
-                <h4 data-clave="perfil_publico_cargando">Cargando perfil...</h4>
-            </div>
-        </div>
-    </div>
+ <div id="pantallaCargando" class="panel">
+  <div class="panel-body">
+   <div class="empty-state">
+    <svg class="icon" viewBox="0 0 24 24">
+     <path d="M6 3h12l4 6-10 12L2 9l4-6z"/>
+     <path d="M2 9h20M12 3l-4 6 4 12 4-12-4-6"/>
+    </svg>
+    <h4 data-clave="perfil_publico_cargando">Cargando perfil...</h4>
+   </div>
+  </div>
+ </div>
 
-    <div id="pantallaNoEncontrado" class="panel" hidden>
-        <div class="panel-body pp-mensaje">
-            <h4 data-clave="perfil_publico_no_encontrado">Perfil no encontrado</h4>
-            <p data-clave="perfil_publico_no_encontrado_desc">No existe ningún usuario con ese nombre de usuario.</p>
-            <a href="/features/muro/muro.html" class="btn btn-outline btn-sm" data-clave="perfil_publico_volver_muro">← Volver al Muro</a>
-        </div>
-    </div>
+ <div id="pantallaNoEncontrado" class="panel" hidden>
+  <div class="panel-body pp-mensaje">
+   <h4 data-clave="perfil_publico_no_encontrado">Perfil no encontrado</h4>
+   <p data-clave="perfil_publico_no_encontrado_desc">
+    No existe ningún usuario con ese nombre de usuario.
+   </p>
+   <a href="/features/muro/muro.html"
+      class="btn btn-outline btn-sm"
+      data-clave="perfil_publico_volver_muro">← Volver al Muro</a>
+  </div>
+ </div>
 
-    <div id="pantallaError" class="panel" hidden>
-        <div class="panel-body pp-mensaje">
-            <p data-clave="perfil_publico_error_cargar">No pudimos cargar este perfil. Intenta de nuevo.</p>
-            <button type="button" id="btnReintentar" class="btn btn-outline btn-sm" data-clave="perfil_publico_reintentar">Reintentar</button>
-        </div>
-    </div>
+ <div id="pantallaError" class="panel" hidden>
+  <div class="panel-body pp-mensaje">
+   <p data-clave="perfil_publico_error_cargar">
+    No pudimos cargar este perfil. Intenta de nuevo.
+   </p>
+   <button type="button" id="btnReintentar"
+           class="btn btn-outline btn-sm"
+           data-clave="perfil_publico_reintentar">Reintentar</button>
+  </div>
+ </div>
 
-    <div id="pantallaPerfil" class="perfil-header" hidden>
+ <div id="pantallaPerfil" class="perfil-header" hidden>
 
-        <div class="avatar-container">
-            <div class="avatar" id="pubAvatar">◈</div>
-        </div>
+  <div class="avatar-container">
+   <div class="avatar" id="pubAvatar">◈</div>
+  </div>
 
-        <div class="info">
-            <div class="nombre">
-                <span id="pubNombre" data-no-traducir="1"></span>
-                <span class="verified" id="pubVerificado" data-clave="perfil_publico_verificado" hidden>✦ VERIFICADO</span>
-            </div>
-            <div class="handle" id="pubHandle"></div>
+  <div class="info">
 
-            <div class="pp-estado" id="pubEstado" hidden>
-                <span class="pp-dot" id="pubEstadoDot"></span>
-                <span id="pubEstadoTexto"></span>
-            </div>
+   <div class="nombre">
+    <span id="pubNombre" data-no-traducir="1"></span>
+    <span class="verified" id="pubVerificado"
+          data-clave="perfil_publico_verificado" hidden>✦ VERIFICADO</span>
+   </div>
 
-            <div class="badges">
-                <button type="button" class="badge pp-wallet" id="walletChip" hidden>
-                    <span data-clave="perfil_publico_wallet_publica">Wallet pública</span>:
-                    <span id="walletDir" data-no-traducir="1"></span>
-                </button>
-                <span class="badge" data-no-traducir="1">WEB3</span>
-            </div>
-        </div>
+   <div class="handle" id="pubHandle"></div>
 
-        <div class="stats">
-            <div class="stat">
-                <div class="number" id="pubSeguidores">0</div>
-                <div class="label" data-clave="perfil_publico_seguidores">Seguidores</div>
-            </div>
-            <div class="stat">
-                <div class="number" id="pubSiguiendo">0</div>
-                <div class="label" data-clave="perfil_publico_siguiendo">Siguiendo</div>
-            </div>
-        </div>
+   <div class="pp-estado" id="pubEstado" hidden>
+    <span class="pp-dot" id="pubEstadoDot"></span>
+    <span id="pubEstadoTexto"></span>
+   </div>
 
-        <div class="acciones">
-            <button type="button" class="btn btn-outline btn-sm" id="btnCompartir">
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-                <span id="btnCompartirTxt" data-clave="perfil_publico_compartir">Compartir</span>
-            </button>
-        </div>
+   <div class="badges">
+    <button type="button" class="badge pp-wallet" id="walletChip" hidden>
+     <span data-clave="perfil_publico_wallet_publica">Wallet pública</span>:
+     <span id="walletDir" data-no-traducir="1"></span>
+    </button>
 
-        <div class="pp-acciones-sociales">
-            <a id="linkWhatsapp" class="btn btn-outline btn-sm" target="_blank" rel="noopener" data-no-traducir="1">WhatsApp</a>
-            <a id="linkX" class="btn btn-outline btn-sm" target="_blank" rel="noopener" data-no-traducir="1">X</a>
-            <a id="linkTelegram" class="btn btn-outline btn-sm" target="_blank" rel="noopener" data-no-traducir="1">Telegram</a>
-        </div>
+    <span class="badge" data-no-traducir="1">WEB3</span>
+   </div>
 
-        <a href="/features/muro/muro.html" class="btn btn-outline pp-volver" data-clave="perfil_publico_volver_muro">← Volver al Muro</a>
-    </div>
+  </div>
 
+  <div class="stats">
+
+   <div class="stat">
+    <div class="number" id="pubSeguidores">0</div>
+    <div class="label" data-clave="perfil_publico_seguidores">Seguidores</div>
+   </div>
+
+   <div class="stat">
+    <div class="number" id="pubSiguiendo">0</div>
+    <div class="label" data-clave="perfil_publico_siguiendo">Siguiendo</div>
+   </div>
+
+  </div>
+
+  <div class="acciones">
+   <button type="button" class="btn btn-outline btn-sm" id="btnCompartir">
+    <svg class="icon icon-sm" viewBox="0 0 24 24">
+     <circle cx="18" cy="5" r="3"/>
+     <circle cx="6" cy="12" r="3"/>
+     <circle cx="18" cy="19" r="3"/>
+     <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+     <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+    </svg>
+    <span id="btnCompartirTxt" data-clave="perfil_publico_compartir">Compartir</span>
+   </button>
+  </div>
+
+  <div class="pp-acciones-sociales">
+   <a id="linkWhatsapp" class="btn btn-outline btn-sm"
+      target="_blank" rel="noopener" data-no-traducir="1">WhatsApp</a>
+
+   <a id="linkX" class="btn btn-outline btn-sm"
+      target="_blank" rel="noopener" data-no-traducir="1">X</a>
+
+   <a id="linkTelegram" class="btn btn-outline btn-sm"
+      target="_blank" rel="noopener" data-no-traducir="1">Telegram</a>
+  </div>
+
+  <a href="/features/muro/muro.html"
+     class="btn btn-outline pp-volver"
+     data-clave="perfil_publico_volver_muro">← Volver al Muro</a>
+
+ </div>
 </div>
 
 <footer class="footer">
-    <span data-no-traducir="1"><span class="brand">© Csariel's</span> · Sabor al Paladar · WEB3</span>
-    <div class="footer-links">
-        <span style="opacity:0.3;display:inline-flex;align-items:center;gap:4px;" data-no-traducir="1">
-            <svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-            Polygon
-        </span>
-    </div>
+ <span data-no-traducir="1">
+  <span class="brand">© Csariel's</span> · Sabor al Paladar · WEB3
+ </span>
+
+ <div class="footer-links">
+  <span style="opacity:.3;display:inline-flex;align-items:center;gap:4px"
+        data-no-traducir="1">
+   <svg class="icon icon-sm" viewBox="0 0 24 24">
+    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+   </svg>
+   Polygon
+  </span>
+ </div>
 </footer>
 
 </div>
 
 <script>
-(function () {
-    'use strict';
+/* =====================================
+   CONTROL DEL CARRUSEL
+===================================== */
+(function(){
+ 'use strict';
 
-    var RUTA_PERFIL_PROPIO = '/features/perfil/perfil.html';
-    var HANDLE_RE = /^[A-Za-z0-9_]{1,40}$/;
+ var track=document.getElementById('ecoTrack');
+ if(!track)return;
 
-    function $(id) { return document.getElementById(id); }
+ var cards=Array.prototype.slice.call(
+  track.querySelectorAll('.eco-card')
+ );
 
-    var el = {
-        cargando: $('pantallaCargando'),
-        noEncontrado: $('pantallaNoEncontrado'),
-        error: $('pantallaError'),
-        perfil: $('pantallaPerfil'),
-        btnReintentar: $('btnReintentar'),
-        avatar: $('pubAvatar'),
-        nombre: $('pubNombre'),
-        verificado: $('pubVerificado'),
-        handle: $('pubHandle'),
-        estado: $('pubEstado'),
-        estadoDot: $('pubEstadoDot'),
-        estadoTexto: $('pubEstadoTexto'),
-        seguidores: $('pubSeguidores'),
-        siguiendo: $('pubSiguiendo'),
-        wallet: $('walletChip'),
-        walletDir: $('walletDir'),
-        btnCompartir: $('btnCompartir'),
-        btnCompartirTxt: $('btnCompartirTxt'),
-        linkWa: $('linkWhatsapp'),
-        linkX: $('linkX'),
-        linkTg: $('linkTelegram')
-    };
+ var dotsWrap=document.getElementById('ecoDots');
+ var prev=document.getElementById('ecoPrev');
+ var next=document.getElementById('ecoNext');
+ var active=0;
+ var scrollTimer=null;
 
-    var perfil = null;
-    var sesionId = null;
-    var direccionWallet = null;
-    // null = todavía no sabemos el estado de presencia; objeto = mapa id → meta.
-    // Se llena SOLO si algún módulo externo (presencia-global.js u otro)
-    // emite 'sar:presence:sync'. Esta página NUNCA crea canales ni trackea.
-    var presencia = null;
+ cards.forEach(function(card,index){
+  var dot=document.createElement('button');
 
-    // ----------------------------------------------------------------
-    // Traducción
-    // ----------------------------------------------------------------
-    function t(clave, vars) {
-        return typeof window.t === 'function'
-            ? window.t(clave, null, vars || null)
-            : clave;
-    }
+  dot.type='button';
+  dot.className='eco-dot';
+  dot.setAttribute('aria-label','Mostrar sección '+(index+1));
 
-    // ----------------------------------------------------------------
-    // Formato de tiempo relativo — con fallback local i18n
-    // Si window.formatearTiempoRelativo existe (expuesto por otro módulo),
-    // se prefiere. Si no, se usa el cálculo local con claves i18n.
-    // ----------------------------------------------------------------
-    function formatearTiempoRelativoLocal(iso) {
-        if (typeof window.formatearTiempoRelativo === 'function') {
-            try {
-                var externo = window.formatearTiempoRelativo(iso);
-                if (externo) return externo;
-            } catch (e) { /* cae al fallback */ }
-        }
+  dot.addEventListener('click',function(){
+   goTo(index);
+  });
 
-        var ms = Date.now() - new Date(iso).getTime();
-        if (!isFinite(ms) || ms < 0) ms = 0;
-        var seg = Math.floor(ms / 1000);
-        if (seg < 60) return t('perfil_publico_hace_segundos');
+  dotsWrap.appendChild(dot);
 
-        var min = Math.floor(seg / 60);
-        if (min < 60) return t('perfil_publico_hace_min', { n: min });
+  card.addEventListener('click',function(){
+   if(index!==active){
+    goTo(index);
+    return;
+   }
 
-        var h = Math.floor(min / 60);
-        if (h < 24) return t('perfil_publico_hace_h', { n: h });
+   var href=card.getAttribute('data-href');
 
-        var d = Math.floor(h / 24);
-        if (d < 30) return t('perfil_publico_hace_d', { n: d });
+   if(href){
+    window.location.href=href;
+   }
+  });
+ });
 
-        var mes = Math.floor(d / 30);
-        if (mes < 12) {
-            return mes === 1
-                ? t('perfil_publico_hace_mes', { n: mes })
-                : t('perfil_publico_hace_meses', { n: mes });
-        }
+ var dots=Array.prototype.slice.call(
+  dotsWrap.querySelectorAll('.eco-dot')
+ );
 
-        var anio = Math.floor(mes / 12);
-        return anio === 1
-            ? t('perfil_publico_hace_anio', { n: anio })
-            : t('perfil_publico_hace_anios', { n: anio });
-    }
+ function setActive(index){
+  active=(index+cards.length)%cards.length;
 
-    // ----------------------------------------------------------------
-    // Pantallas
-    // ----------------------------------------------------------------
-    function mostrar(pantalla) {
-        var todas = [el.cargando, el.noEncontrado, el.error, el.perfil];
-        for (var i = 0; i < todas.length; i++) {
-            if (todas[i]) todas[i].hidden = todas[i] !== pantalla;
-        }
-    }
+  cards.forEach(function(card,i){
+   card.classList.toggle('is-active',i===active);
 
-    // ----------------------------------------------------------------
-    // URL
-    // ----------------------------------------------------------------
-    function leerHandle() {
-        var raw = new URLSearchParams(window.location.search).get('u');
-        var handle = raw ? raw.trim() : '';
-        return HANDLE_RE.test(handle) ? handle : null;
-    }
+   if(i===active){
+    card.setAttribute('aria-current','true');
+   }else{
+    card.removeAttribute('aria-current');
+   }
+  });
 
-    function urlPerfil() {
-        return window.location.origin + window.location.pathname +
-            '?u=' + encodeURIComponent(perfil.handle);
-    }
+  dots.forEach(function(dot,i){
+   dot.setAttribute('aria-current',i===active?'true':'false');
+  });
+ }
 
-    // ----------------------------------------------------------------
-    // Fechas: la vista devuelve timestamp without time zone,
-    // así que forzamos UTC antes de formatear.
-    // ----------------------------------------------------------------
-    function fechaUTC(iso) {
-        if (!iso) return null;
-        return /(Z|[+-]\d{2}:?\d{2})$/i.test(iso) ? iso : iso + 'Z';
-    }
+ function goTo(index){
+  active=(index+cards.length)%cards.length;
 
-    function acortar(direccion) {
-        return direccion.slice(0, 6) + '...' + direccion.slice(-4);
-    }
+  cards[active].scrollIntoView({
+   behavior:window.matchMedia(
+    '(prefers-reduced-motion: reduce)'
+   ).matches?'auto':'smooth',
+   block:'nearest',
+   inline:'center'
+  });
 
-    function textoCompartir() {
-        return t('perfil_publico_compartir_texto', { nombre: perfil.nombre || perfil.handle });
-    }
+  setActive(active);
+ }
 
-    function flash(nodo, mensaje, ms) {
-        if (!nodo) return;
-        var previo = nodo.textContent;
-        nodo.textContent = mensaje;
-        setTimeout(function () { nodo.textContent = previo; }, ms || 1800);
-    }
+ function detectActive(){
+  var center=track.getBoundingClientRect().left+
+             track.clientWidth/2;
 
-    function copiarAlPortapapeles(texto) {
-        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-            return navigator.clipboard.writeText(texto).then(function () { return true; });
-        }
-        return Promise.resolve(false);
-    }
+  var closest=0;
+  var distance=Infinity;
 
-    // ----------------------------------------------------------------
-    // Supabase
-    // ----------------------------------------------------------------
-    async function obtenerCliente() {
-        try {
-            var c = await window.supabaseReady;
-            if (c) return c;
-        } catch (e) { /* cae al fallback */ }
-        return window.supabaseClient || null;
-    }
+  cards.forEach(function(card,i){
+   var r=card.getBoundingClientRect();
+   var d=Math.abs((r.left+r.right)/2-center);
 
-    async function obtenerSesionId(client) {
-        try {
-            var r = await client.auth.getSession();
-            return (r && r.data && r.data.session && r.data.session.user)
-                ? r.data.session.user.id
-                : null;
-        } catch (e) {
-            return null;
-        }
-    }
+   if(d<distance){
+    distance=d;
+    closest=i;
+   }
+  });
 
-    async function cargarPerfil(client, handle) {
-        var r = await client
-            .from('perfiles_publicos')
-            .select('id, nombre, handle, avatar_url, ultima_conexion, verificado, seguidores_count, siguiendo_count')
-            .eq('handle', handle)
-            .maybeSingle();
-        if (r.error) throw r.error;
-        return r.data || null;
-    }
+  setActive(closest);
+ }
 
-    async function cargarWallet(client, id) {
-        var r = await client
-            .from('wallet_publica')
-            .select('wallet_address')
-            .eq('id', id)
-            .maybeSingle();
-        if (r.error || !r.data || !r.data.wallet_address) return;
-        direccionWallet = r.data.wallet_address;
-        el.walletDir.textContent = acortar(direccionWallet);
-        el.wallet.hidden = false;
-    }
+ prev.addEventListener('click',function(){
+  goTo(active-1);
+ });
 
-    async function copiarWallet() {
-        if (!direccionWallet) return;
-        try {
-            var ok = await copiarAlPortapapeles(direccionWallet);
-            flash(el.walletDir, ok ? t('perfil_publico_wallet_copiada') : acortar(direccionWallet));
-        } catch (e) {
-            console.warn('[PerfilPublico] No se pudo copiar la wallet:', e);
-        }
-    }
+ next.addEventListener('click',function(){
+  goTo(active+1);
+ });
 
-    // ----------------------------------------------------------------
-    // Pintado
-    // ----------------------------------------------------------------
-    function pintarAvatar(url) {
-        el.avatar.textContent = '';
-        if (!url) {
-            el.avatar.textContent = '◈';
-            return;
-        }
-        var img = document.createElement('img');
-        img.alt = '';
-        img.onerror = function () { el.avatar.textContent = '◈'; };
-        img.src = url;
-        el.avatar.appendChild(img);
-    }
+ track.addEventListener('scroll',function(){
+  if(scrollTimer)clearTimeout(scrollTimer);
 
-    function prepararEnlacesCompartir() {
-        var url = urlPerfil();
-        var texto = textoCompartir();
-        el.linkWa.href = 'https://wa.me/?text=' + encodeURIComponent(texto + ' ' + url);
-        el.linkX.href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(texto) +
-            '&url=' + encodeURIComponent(url);
-        el.linkTg.href = 'https://t.me/share/url?url=' + encodeURIComponent(url) +
-            '&text=' + encodeURIComponent(texto);
-    }
+  scrollTimer=setTimeout(detectActive,70);
+ },{passive:true});
 
-    async function compartirPerfil() {
-        var url = urlPerfil();
-        var texto = textoCompartir();
+ track.addEventListener('keydown',function(e){
+  if(e.key==='ArrowRight'){
+   e.preventDefault();
+   goTo(active+1);
+  }
 
-        if (navigator.share) {
-            try {
-                await navigator.share({ title: texto, text: texto, url: url });
-                return;
-            } catch (e) {
-                if (e && e.name === 'AbortError') return;
-            }
-        }
+  if(e.key==='ArrowLeft'){
+   e.preventDefault();
+   goTo(active-1);
+  }
+ });
 
-        try {
-            var ok = await copiarAlPortapapeles(url);
-            if (ok) {
-                flash(el.btnCompartirTxt, t('perfil_publico_enlace_copiado'));
-            } else {
-                window.prompt(t('perfil_publico_copiar_enlace'), url);
-            }
-        } catch (e) {
-            window.prompt(t('perfil_publico_copiar_enlace'), url);
-        }
-    }
+ setActive(0);
+})();
 
-    function renderPerfil(p) {
-        el.nombre.textContent = p.nombre || p.handle;
-        el.handle.textContent = '@' + p.handle;
-        el.verificado.hidden = !p.verificado;
-        el.seguidores.textContent = String(p.seguidores_count || 0);
-        el.siguiendo.textContent = String(p.siguiendo_count || 0);
-        pintarAvatar(p.avatar_url);
-        prepararEnlacesCompartir();
-    }
+/* =====================================
+   LÓGICA ORIGINAL DEL PERFIL PÚBLICO
+===================================== */
+(function(){
+ 'use strict';
 
-    // ----------------------------------------------------------------
-    // Estado — única fuente confiable: Realtime.
-    // Sin Realtime, NO se muestra estado (ni "Activo" ni "Inactivo"),
-    // porque:
-    //   - online no se baja al desconectar (falso positivo).
-    //   - ultima_conexion solo cambia al cambiar estado manual, no
-    //     con actividad (falso negativo).
-    // Mostrar "no sé" es mejor que mostrar algo falso.
-    //
-    // Cuando exista presencia-global.js y emita 'sar:presence:sync',
-    // esta función activará los dos casos reales.
-    // ----------------------------------------------------------------
-    function pintarEstado() {
-        if (!perfil || !el.estado) return;
-        el.estado.hidden = true;
+ var RUTA_PERFIL_PROPIO='/features/perfil/perfil.html';
+ var HANDLE_RE=/^[A-Za-z0-9_]{1,40}$/;
 
-        // Sin Realtime cargado → no podemos afirmar nada.
-        if (!(presencia && typeof presencia === 'object')) {
-            return;
-        }
+ function $(id){
+  return document.getElementById(id);
+ }
 
-        // 1. Realtime: usuario en el mapa → "Activo ahora".
-        var entrada = presencia[perfil.id];
-        if (entrada && entrada.visible !== false) {
-            el.estadoDot.className = 'pp-dot activo';
-            el.estadoTexto.textContent = t('perfil_publico_activo_ahora');
-            el.estado.hidden = false;
-            return;
-        }
+ var el={
+  cargando:$('pantallaCargando'),
+  noEncontrado:$('pantallaNoEncontrado'),
+  error:$('pantallaError'),
+  perfil:$('pantallaPerfil'),
+  btnReintentar:$('btnReintentar'),
+  avatar:$('pubAvatar'),
+  nombre:$('pubNombre'),
+  verificado:$('pubVerificado'),
+  handle:$('pubHandle'),
+  estado:$('pubEstado'),
+  estadoDot:$('pubEstadoDot'),
+  estadoTexto:$('pubEstadoTexto'),
+  seguidores:$('pubSeguidores'),
+  siguiendo:$('pubSiguiendo'),
+  wallet:$('walletChip'),
+  walletDir:$('walletDir'),
+  btnCompartir:$('btnCompartir'),
+  btnCompartirTxt:$('btnCompartirTxt'),
+  linkWa:$('linkWhatsapp'),
+  linkX:$('linkX'),
+  linkTg:$('linkTelegram')
+ };
 
-        // 2. Realtime: usuario NO en el mapa → "Inactivo · hace X".
-        if (perfil.ultima_conexion) {
-            el.estadoDot.className = 'pp-dot inactivo';
-            el.estadoTexto.textContent = t('perfil_publico_inactivo') + ' · ' +
-                formatearTiempoRelativoLocal(fechaUTC(perfil.ultima_conexion));
-            el.estado.hidden = false;
-            return;
-        }
+ var perfil=null;
+ var sesionId=null;
+ var direccionWallet=null;
+ var presencia=null;
 
-        // 3. Estado oculto (ultima_conexion=null) → no mostrar nada.
-    }
+ function t(clave,vars){
+  return typeof window.t==='function'
+   ?window.t(clave,null,vars||null)
+   :clave;
+ }
 
-    function aplicarPresencia(mapa) {
-        // Solo sobreescribir si llega un mapa válido.
-        if (mapa && typeof mapa === 'object') {
-            presencia = mapa;
-        }
-        pintarEstado();
-    }
+ function formatearTiempoRelativoLocal(iso){
+  if(typeof window.formatearTiempoRelativo==='function'){
+   try{
+    var externo=window.formatearTiempoRelativo(iso);
+    if(externo)return externo;
+   }catch(e){}
+  }
 
-    window.addEventListener('sar:presence:sync', function (e) {
-        aplicarPresencia(e.detail);
-        if (typeof window.aplicarTraducciones === 'function' && el.estado) {
-            try { window.aplicarTraducciones(el.estado); } catch (_) {}
-        }
+  var ms=Date.now()-new Date(iso).getTime();
+
+  if(!isFinite(ms)||ms<0)ms=0;
+
+  var seg=Math.floor(ms/1000);
+
+  if(seg<60)return t('perfil_publico_hace_segundos');
+
+  var min=Math.floor(seg/60);
+
+  if(min<60){
+   return t('perfil_publico_hace_min',{n:min});
+  }
+
+  var h=Math.floor(min/60);
+
+  if(h<24)return t('perfil_publico_hace_h',{n:h});
+
+  var d=Math.floor(h/24);
+
+  if(d<30)return t('perfil_publico_hace_d',{n:d});
+
+  var mes=Math.floor(d/30);
+
+  if(mes<12){
+   return mes===1
+    ?t('perfil_publico_hace_mes',{n:mes})
+    :t('perfil_publico_hace_meses',{n:mes});
+  }
+
+  var anio=Math.floor(mes/12);
+
+  return anio===1
+   ?t('perfil_publico_hace_anio',{n:anio})
+   :t('perfil_publico_hace_anios',{n:anio});
+ }
+
+ function mostrar(pantalla){
+  [
+   el.cargando,
+   el.noEncontrado,
+   el.error,
+   el.perfil
+  ].forEach(function(n){
+   if(n)n.hidden=n!==pantalla;
+  });
+ }
+
+ function leerHandle(){
+  var raw=new URLSearchParams(
+   window.location.search
+  ).get('u');
+
+  var handle=raw?raw.trim():'';
+
+  return HANDLE_RE.test(handle)?handle:null;
+ }
+
+ function urlPerfil(){
+  return window.location.origin+
+   window.location.pathname+
+   '?u='+encodeURIComponent(perfil.handle);
+ }
+
+ function fechaUTC(iso){
+  if(!iso)return null;
+
+  return /(Z|[+-]\d{2}:?\d{2})$/i.test(iso)
+   ?iso
+   :iso+'Z';
+ }
+
+ function acortar(direccion){
+  return direccion.slice(0,6)+'...'+direccion.slice(-4);
+ }
+
+ function textoCompartir(){
+  return t('perfil_publico_compartir_texto',{
+   nombre:perfil.nombre||perfil.handle
+  });
+ }
+
+ function flash(nodo,mensaje,ms){
+  if(!nodo)return;
+
+  var previo=nodo.textContent;
+  nodo.textContent=mensaje;
+
+  setTimeout(function(){
+   nodo.textContent=previo;
+  },ms||1800);
+ }
+
+ function copiarAlPortapapeles(texto){
+  if(
+   navigator.clipboard&&
+   typeof navigator.clipboard.writeText==='function'
+  ){
+   return navigator.clipboard.writeText(texto)
+    .then(function(){return true;});
+  }
+
+  return Promise.resolve(false);
+ }
+
+ async function obtenerCliente(){
+  try{
+   var c=await window.supabaseReady;
+
+   if(c)return c;
+  }catch(e){}
+
+  return window.supabaseClient||null;
+ }
+
+ async function obtenerSesionId(client){
+  try{
+   var r=await client.auth.getSession();
+
+   return(
+    r&&r.data&&r.data.session&&r.data.session.user
+   )?r.data.session.user.id:null;
+  }catch(e){
+   return null;
+  }
+ }
+
+ async function cargarPerfil(client,handle){
+  var r=await client
+   .from('perfiles_publicos')
+   .select(
+    'id, nombre, handle, avatar_url, ultima_conexion, verificado, seguidores_count, siguiendo_count'
+   )
+   .eq('handle',handle)
+   .maybeSingle();
+
+  if(r.error)throw r.error;
+
+  return r.data||null;
+ }
+
+ async function cargarWallet(client,id){
+  var r=await client
+   .from('wallet_publica')
+   .select('wallet_address')
+   .eq('id',id)
+   .maybeSingle();
+
+  if(
+   r.error||
+   !r.data||
+   !r.data.wallet_address
+  )return;
+
+  direccionWallet=r.data.wallet_address;
+  el.walletDir.textContent=acortar(direccionWallet);
+  el.wallet.hidden=false;
+ }
+
+ async function copiarWallet(){
+  if(!direccionWallet)return;
+
+  try{
+   var ok=await copiarAlPortapapeles(direccionWallet);
+
+   flash(
+    el.walletDir,
+    ok?t('perfil_publico_wallet_copiada'):acortar(direccionWallet)
+   );
+  }catch(e){
+   console.warn(
+    '[PerfilPublico] No se pudo copiar la wallet:',
+    e
+   );
+  }
+ }
+
+ function pintarAvatar(url){
+  el.avatar.textContent='';
+
+  if(!url){
+   el.avatar.textContent='◈';
+   return;
+  }
+
+  var img=document.createElement('img');
+  img.alt='';
+
+  img.onerror=function(){
+   el.avatar.textContent='◈';
+  };
+
+  img.src=url;
+  el.avatar.appendChild(img);
+ }
+
+ function prepararEnlacesCompartir(){
+  var url=urlPerfil();
+  var texto=textoCompartir();
+
+  el.linkWa.href='https://wa.me/?text='+
+   encodeURIComponent(texto+' '+url);
+
+  el.linkX.href='https://twitter.com/intent/tweet?text='+
+   encodeURIComponent(texto)+
+   '&url='+encodeURIComponent(url);
+
+  el.linkTg.href='https://t.me/share/url?url='+
+   encodeURIComponent(url)+
+   '&text='+encodeURIComponent(texto);
+ }
+
+ async function compartirPerfil(){
+  var url=urlPerfil();
+  var texto=textoCompartir();
+
+  if(navigator.share){
+   try{
+    await navigator.share({
+     title:texto,
+     text:texto,
+     url:url
     });
 
-    // ----------------------------------------------------------------
-    // Idiomas: esperar a que inicializarIdiomas() esté disponible.
-    // Replica el patrón usado en perfil.html.
-    // ----------------------------------------------------------------
-    function esperarIdiomas() {
-        return new Promise(function (resolve) {
-            var intentos = 0;
-            (function intentar() {
-                if (typeof window.inicializarIdiomas === 'function') {
-                    try {
-                        Promise.resolve(window.inicializarIdiomas())
-                            .then(resolve, resolve);
-                    } catch (e) {
-                        resolve();
-                    }
-                    return;
-                }
-                if (intentos++ >= 25) { resolve(); return; }
-                setTimeout(intentar, 200);
-            })();
-        });
+    return;
+   }catch(e){
+    if(e&&e.name==='AbortError')return;
+   }
+  }
+
+  try{
+   var ok=await copiarAlPortapapeles(url);
+
+   if(ok){
+    flash(
+     el.btnCompartirTxt,
+     t('perfil_publico_enlace_copiado')
+    );
+   }else{
+    window.prompt(
+     t('perfil_publico_copiar_enlace'),
+     url
+    );
+   }
+  }catch(e){
+   window.prompt(
+    t('perfil_publico_copiar_enlace'),
+    url
+   );
+  }
+ }
+
+ function renderPerfil(p){
+  el.nombre.textContent=p.nombre||p.handle;
+  el.handle.textContent='@'+p.handle;
+  el.verificado.hidden=!p.verificado;
+
+  el.seguidores.textContent=String(
+   p.seguidores_count||0
+  );
+
+  el.siguiendo.textContent=String(
+   p.siguiendo_count||0
+  );
+
+  pintarAvatar(p.avatar_url);
+  prepararEnlacesCompartir();
+ }
+
+ function pintarEstado(){
+  if(!perfil||!el.estado)return;
+
+  el.estado.hidden=true;
+
+  if(!(presencia&&typeof presencia==='object')){
+   return;
+  }
+
+  var entrada=presencia[perfil.id];
+
+  if(entrada&&entrada.visible!==false){
+   el.estadoDot.className='pp-dot activo';
+   el.estadoTexto.textContent=
+    t('perfil_publico_activo_ahora');
+
+   el.estado.hidden=false;
+   return;
+  }
+
+  if(perfil.ultima_conexion){
+   el.estadoDot.className='pp-dot inactivo';
+
+   el.estadoTexto.textContent=
+    t('perfil_publico_inactivo')+
+    ' · '+
+    formatearTiempoRelativoLocal(
+     fechaUTC(perfil.ultima_conexion)
+    );
+
+   el.estado.hidden=false;
+  }
+ }
+
+ function aplicarPresencia(mapa){
+  if(mapa&&typeof mapa==='object'){
+   presencia=mapa;
+  }
+
+  pintarEstado();
+ }
+
+ window.addEventListener(
+  'sar:presence:sync',
+  function(e){
+   aplicarPresencia(e.detail);
+
+   if(
+    typeof window.aplicarTraducciones==='function'&&
+    el.estado
+   ){
+    try{
+     window.aplicarTraducciones(el.estado);
+    }catch(_){}
+   }
+  }
+ );
+
+ function esperarIdiomas(){
+  return new Promise(function(resolve){
+   var intentos=0;
+
+   (function intentar(){
+    if(typeof window.inicializarIdiomas==='function'){
+     try{
+      Promise.resolve(window.inicializarIdiomas())
+       .then(resolve,resolve);
+     }catch(e){
+      resolve();
+     }
+
+     return;
     }
 
-    // ----------------------------------------------------------------
-    // Init
-    // ----------------------------------------------------------------
-    async function init() {
-        mostrar(el.cargando);
-
-        var handle = leerHandle();
-        if (!handle) {
-            mostrar(el.noEncontrado);
-            return;
-        }
-
-        await esperarIdiomas();
-
-        var client = await obtenerCliente();
-        if (!client) throw new Error('Cliente de Supabase no disponible');
-
-        sesionId = await obtenerSesionId(client);
-
-        var p = await cargarPerfil(client, handle);
-        if (!p) {
-            mostrar(el.noEncontrado);
-            return;
-        }
-
-        if (sesionId && p.id === sesionId) {
-            window.location.replace(RUTA_PERFIL_PROPIO);
-            return;
-        }
-
-        perfil = p;
-        renderPerfil(p);
-
-        // Si algún módulo externo ya llenó el mapa antes de que
-        // cargáramos, lo respetamos. Si no, presencia queda en null
-        // y pintarEstado() no mostrará estado (esperando Realtime).
-        if (window.presenciaUsuarios && typeof window.presenciaUsuarios === 'object') {
-            presencia = window.presenciaUsuarios;
-        }
-
-        mostrar(el.perfil);
-        pintarEstado();
-
-        cargarWallet(client, p.id).catch(function (e) {
-            console.warn('[PerfilPublico] No se pudo cargar la wallet:', e);
-        });
+    if(intentos++>=25){
+     resolve();
+     return;
     }
 
-    el.wallet.addEventListener('click', copiarWallet);
-    el.btnCompartir.addEventListener('click', compartirPerfil);
-    el.btnReintentar.addEventListener('click', function () { window.location.reload(); });
+    setTimeout(intentar,200);
+   })();
+  });
+ }
 
-    function arrancar() {
-        init().catch(function (err) {
-            console.error('[PerfilPublico]', err);
-            mostrar(el.error);
-        });
-    }
+ async function init(){
+  mostrar(el.cargando);
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', arrancar);
-    } else {
-        arrancar();
-    }
+  var handle=leerHandle();
+
+  if(!handle){
+   mostrar(el.noEncontrado);
+   return;
+  }
+
+  await esperarIdiomas();
+
+  var client=await obtenerCliente();
+
+  if(!client){
+   throw new Error('Cliente de Supabase no disponible');
+  }
+
+  sesionId=await obtenerSesionId(client);
+
+  var p=await cargarPerfil(client,handle);
+
+  if(!p){
+   mostrar(el.noEncontrado);
+   return;
+  }
+
+  if(sesionId&&p.id===sesionId){
+   window.location.replace(RUTA_PERFIL_PROPIO);
+   return;
+  }
+
+  perfil=p;
+
+  renderPerfil(p);
+
+  if(
+   window.presenciaUsuarios&&
+   typeof window.presenciaUsuarios==='object'
+  ){
+   presencia=window.presenciaUsuarios;
+  }
+
+  mostrar(el.perfil);
+  pintarEstado();
+
+  cargarWallet(client,p.id).catch(function(e){
+   console.warn(
+    '[PerfilPublico] No se pudo cargar la wallet:',
+    e
+   );
+  });
+ }
+
+ el.wallet.addEventListener('click',copiarWallet);
+
+ el.btnCompartir.addEventListener(
+  'click',
+  compartirPerfil
+ );
+
+ el.btnReintentar.addEventListener(
+  'click',
+  function(){
+   window.location.reload();
+  }
+ );
+
+ function arrancar(){
+  init().catch(function(err){
+   console.error('[PerfilPublico]',err);
+   mostrar(el.error);
+  });
+ }
+
+ if(document.readyState==='loading'){
+  document.addEventListener(
+   'DOMContentLoaded',
+   arrancar
+  );
+ }else{
+  arrancar();
+ }
 })();
 </script>
 
