@@ -74,34 +74,8 @@
         opacity: 0.8;
     }
 
-    .btn:focus-visible,
-    .btn-estado:focus-visible,
-    .btn-conexion:focus-visible,
-    .accion-btn:focus-visible,
-    .tab-btn:focus-visible,
-    .btn-publicar:focus-visible,
-    .config-btn:focus-visible,
-    .rep-btn:focus-visible,
-    .pro-btn:focus-visible,
-    .internet-filter:focus-visible,
-    .nav-link:focus-visible,
-    .avatar-menu button:focus-visible {
-        outline: 2px solid var(--gold, #D4AF37);
-        outline-offset: 2px;
-    }
-
-    @media (hover: hover) and (pointer: fine) {
-        .btn:hover,
-        .btn-estado:hover,
-        .btn-conexion:hover,
-        .accion-btn:hover,
-        .tab-btn:hover,
-        .internet-filter:hover,
-        .nav-link:hover {
-            box-shadow: 0 0 0 1px
-                color-mix(in srgb, var(--gold, #D4AF37) 25%, transparent);
-        }
-    }
+    /* Sin anillos de enfoque ni sombras de hover: evitan recuadros
+       alrededor de botones, pestañas y la mascota. */
 
     /* Entrada suave de cada pestaña (solo opacidad: nunca oculta contenido) */
     @keyframes perfilTabIn {
@@ -144,6 +118,64 @@
         .avatar-menu button:active {
             transform: none !important;
         }
+    }
+
+    /* Sección de wallet (Polygon) */
+    .wallet-section {
+        margin: 0 0 16px;
+        padding: 14px;
+        border-radius: 16px;
+        border: 2px solid var(--line-black);
+        background: rgba(0,0,0,0.35);
+    }
+    .wallet-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    .wallet-header h3 {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: var(--cyan, #00e5ff);
+    }
+    .wallet-estado {
+        font-size: 0.65rem;
+        padding: 3px 10px;
+        border-radius: 99px;
+        border: 1px solid var(--text-muted);
+        color: var(--text-muted);
+    }
+    .wallet-estado.conectada {
+        border-color: var(--success);
+        color: var(--success);
+    }
+    .wallet-direccion {
+        margin: 10px 0;
+        font-family: monospace;
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        word-break: break-all;
+    }
+    .wallet-acciones {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    .wallet-acciones .btn { flex: 1; justify-content: center; }
+    .wallet-visible {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 12px;
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+    }
+    .wallet-hint {
+        margin-top: 8px;
+        font-size: 0.65rem;
+        color: var(--text-muted);
     }
 </style>
 </head>
@@ -459,6 +491,27 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <div class="wallet-section" id="walletSection">
+        <div class="wallet-header">
+            <h3>Wallet · Polygon</h3>
+            <span class="wallet-estado" id="walletEstado">Sin conectar</span>
+        </div>
+        <div class="wallet-direccion" id="walletDireccion">—</div>
+        <div class="wallet-acciones">
+            <button class="btn btn-gold" id="btnConectarWallet" type="button" onclick="window.conectarWalletPerfil()">
+                Conectar wallet
+            </button>
+            <button class="btn btn-outline" id="btnDesconectarWallet" type="button" style="display:none;" onclick="window.desconectarWalletPerfil()">
+                Desconectar
+            </button>
+        </div>
+        <label class="wallet-visible" for="walletVisible">
+            <input type="checkbox" id="walletVisible" disabled />
+            Mostrar mi wallet en mi perfil
+        </label>
+        <div class="wallet-hint" id="walletHint"></div>
     </div>
 
     <div class="conexion-section">
@@ -969,6 +1022,117 @@
 <script src="/features/perfil/js/perfil-internet.js?v=8"></script>
 <script src="/features/perfil/js/perfil-repartidor.js?v=8"></script>
 <script src="/features/perfil/js/perfil-init.js?v=8"></script>
+
+<script>
+/* ================================================================
+   WALLET · INTEGRACIÓN CON EL PERFIL
+   Usa las funciones de perfil-wallet.js (conectarWallet,
+   desconectarWallet, iniciarEscuchaWallet). Este bloque solo
+   dibuja el estado y guarda wallet_visible en Supabase.
+   ================================================================ */
+(function () {
+    'use strict';
+
+    function $w(id) { return document.getElementById(id); }
+
+    function acortar(direccion) {
+        if (!direccion) return '';
+        return direccion.slice(0, 6) + '…' + direccion.slice(-4);
+    }
+
+    async function obtenerUsuario() {
+        const client = window.supabaseClient;
+        if (!client) return null;
+        const r = await client.auth.getSession();
+        return r && r.data && r.data.session ? r.data.session.user : null;
+    }
+
+    async function refrescarWallet() {
+        const client = window.supabaseClient;
+        const user = await obtenerUsuario();
+        if (!client || !user) return;
+
+        const { data, error } = await client
+            .from('usuarios')
+            .select('wallet_address, wallet_visible')
+            .eq('id', user.id)
+            .maybeSingle();
+
+        if (error) {
+            $w('walletHint').textContent = 'No se pudo leer tu wallet.';
+            return;
+        }
+
+        const conectada = Boolean(data && data.wallet_address);
+
+        $w('walletEstado').textContent = conectada ? 'Conectada' : 'Sin conectar';
+        $w('walletEstado').classList.toggle('conectada', conectada);
+        $w('walletDireccion').textContent = conectada ? data.wallet_address : 'Aún no tienes una wallet vinculada.';
+        $w('btnConectarWallet').style.display = conectada ? 'none' : '';
+        $w('btnDesconectarWallet').style.display = conectada ? '' : 'none';
+
+        const visible = $w('walletVisible');
+        visible.checked = Boolean(data && data.wallet_visible);
+        visible.disabled = !conectada;
+        $w('walletHint').textContent = conectada
+            ? 'Vinculada en Polygon (' + acortar(data.wallet_address) + ').'
+            : 'Necesitas MetaMask para vincular tu wallet.';
+    }
+
+    window.conectarWalletPerfil = async function () {
+        if (typeof window.conectarWallet !== 'function') return;
+        await window.conectarWallet();
+        await refrescarWallet();
+    };
+
+    window.desconectarWalletPerfil = async function () {
+        if (typeof window.desconectarWallet !== 'function') return;
+        const ok = window.confirm('¿Seguro que quieres desvincular tu wallet?');
+        if (!ok) return;
+        await window.desconectarWallet();
+        await refrescarWallet();
+    };
+
+    async function guardarVisibilidad(valor) {
+        const client = window.supabaseClient;
+        const user = await obtenerUsuario();
+        if (!client || !user) return;
+
+        const { error } = await client
+            .from('usuarios')
+            .update({ wallet_visible: valor })
+            .eq('id', user.id);
+
+        if (error) {
+            if (typeof window.showToast === 'function') {
+                window.showToast('❌ No se pudo cambiar la visibilidad de tu wallet', 'error');
+            }
+            await refrescarWallet();
+        }
+    }
+
+    function iniciar() {
+        const visible = $w('walletVisible');
+        if (visible) {
+            visible.addEventListener('change', function () {
+                guardarVisibilidad(visible.checked);
+            });
+        }
+
+        if (typeof window.iniciarEscuchaWallet === 'function') {
+            window.iniciarEscuchaWallet();
+        }
+
+        refrescarWallet();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', iniciar, { once: true });
+    } else {
+        iniciar();
+    }
+})();
+</script>
 <!-- Script del Carrusel 3D horizontal -->
 <script src="/features/perfil/js/carrusel-3d.js" defer></script>
 <!-- Script del Carrusel 3D FULLSCREEN infinito -->
