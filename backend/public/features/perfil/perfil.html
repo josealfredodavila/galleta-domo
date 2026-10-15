@@ -15,8 +15,10 @@
 
 <!-- CSS del módulo perfil -->
 <link rel="stylesheet" href="/features/perfil/css/perfil.css">
-<!-- ✅ NUEVO: CSS del Carrusel 3D -->
+<!-- ✅ NUEVO: CSS del Carrusel 3D (horizontal en el perfil) -->
 <link rel="stylesheet" href="/features/perfil/css/carrusel-3d.css">
+<!-- ✅ NUEVO: CSS del Carrusel 3D FULLSCREEN (overlay infinito) -->
+<link rel="stylesheet" href="/features/perfil/css/carrusel-3d-fullscreen.css">
 
 <style>
     html:not(.auth-ready) .app { display: none !important; }
@@ -69,7 +71,7 @@
     </a>
 </nav>
 
-<!-- ============ INICIO DEL CARRUSEL 3D ============ -->
+<!-- ============ INICIO DEL CARRUSEL 3D HORIZONTAL (dentro del perfil) ============ -->
 <div class="carrusel-3d-wrapper">
     <div class="carrusel-3d-track">
 
@@ -131,7 +133,7 @@
 
     </div>
 </div>
-<!-- ============ FIN DEL CARRUSEL 3D ============ -->
+<!-- ============ FIN DEL CARRUSEL 3D HORIZONTAL ============ -->
 
 <div class="perfil-container">
 
@@ -844,8 +846,10 @@
 <script src="/features/perfil/js/perfil-internet.js?v=8"></script>
 <script src="/features/perfil/js/perfil-repartidor.js?v=8"></script>
 <script src="/features/perfil/js/perfil-init.js?v=8"></script>
-<!-- ✅ NUEVO: Script del Carrusel 3D -->
+<!-- ✅ Script del Carrusel 3D horizontal -->
 <script src="/features/perfil/js/carrusel-3d.js" defer></script>
+<!-- ✅ Script del Carrusel 3D FULLSCREEN infinito -->
+<script src="/features/perfil/js/carrusel-3d-fullscreen.js" defer></script>
 
 </body>
 </html>
