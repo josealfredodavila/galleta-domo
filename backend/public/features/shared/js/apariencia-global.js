@@ -4,25 +4,22 @@
    Archivo: backend/public/features/js/apariencia-global.js
 
    Conserva:
-   - Preferencias locales y Supabase.
-   - Tema, color de acento y tamaño de fuente.
-   - window.SarielApariencia y sus métodos públicos.
-   - Inyección de Marquinhos, Capitán Maíz e Itlasuhua.
-   - Rutas, identificadores y eventos existentes.
+   - Preferencias locales y sincronización con Supabase.
+   - Tema, color de acento y tamaño de fuente (80–140 %).
+   - window.SarielApariencia y todas sus funciones públicas.
+   - Carga exclusiva de la mascota activa.
+   - Compatibilidad con Vanilla JS y componentes modulares.
 
-   Mejoras:
-   - Entrada suave de página.
-   - Microinteracciones táctiles y glow.
-   - Transiciones de secciones y pestañas visibles.
-   - Animaciones ligeras mediante transform y opacity.
-   - Respeto a prefers-reduced-motion.
+   Mejora:
+   - Microinteracciones táctiles ligeras.
+   - Transiciones suaves sin cambiar la geometría del layout.
+   - Respeto por prefers-reduced-motion.
+
+   No modifica anchos, alturas, márgenes ni escalas de contenedores.
    ================================================================ */
 
 (function () {
     'use strict';
-
-    if (window.__sarielsAparienciaV31) return;
-    window.__sarielsAparienciaV31 = true;
 
     const KEYS = {
         tema: 'mostrar_tema',
@@ -38,10 +35,10 @@
 
     let prefsActuales = { ...DEFAULTS };
     let syncConSupabaseListo = false;
+    let inicializacionEnCurso = null;
 
     /* ================================================================
-       SUPABASE
-       Reutiliza el cliente compartido. No crea otro cliente.
+       SUPABASE COMPARTIDO
        ================================================================ */
 
     function getSupabase() {
@@ -63,13 +60,6 @@
             : DEFAULTS.tema;
     }
 
-    function normalizarFuente(valor) {
-        const numero = Number.parseInt(valor, 10);
-        return Number.isFinite(numero)
-            ? Math.max(80, Math.min(140, numero))
-            : DEFAULTS.tamano_fuente;
-    }
-
     function normalizarColor(valor) {
         return typeof valor === 'string' &&
             /^#[0-9a-fA-F]{6}$/.test(valor)
@@ -77,24 +67,36 @@
             : DEFAULTS.color_acento;
     }
 
-    function leerDeLocalStorage() {
+    function normalizarFuente(valor) {
+        const numero = Number.parseInt(valor, 10);
+
+        return Number.isFinite(numero)
+            ? Math.max(80, Math.min(140, numero))
+            : DEFAULTS.tamano_fuente;
+    }
+
+    function normalizarPreferencias(datos) {
+        datos = datos || {};
+
         return {
-            tema: normalizarTema(
-                leerPref(KEYS.tema, DEFAULTS.tema)
-            ),
-            tamano_fuente: normalizarFuente(
-                leerPref(
-                    KEYS.tamano_fuente,
-                    DEFAULTS.tamano_fuente
-                )
-            ),
-            color_acento: normalizarColor(
-                leerPref(
-                    KEYS.color_acento,
-                    DEFAULTS.color_acento
-                )
-            )
+            tema: normalizarTema(datos.tema),
+            tamano_fuente: normalizarFuente(datos.tamano_fuente),
+            color_acento: normalizarColor(datos.color_acento)
         };
+    }
+
+    function leerDeLocalStorage() {
+        return normalizarPreferencias({
+            tema: leerPref(KEYS.tema, DEFAULTS.tema),
+            tamano_fuente: leerPref(
+                KEYS.tamano_fuente,
+                DEFAULTS.tamano_fuente
+            ),
+            color_acento: leerPref(
+                KEYS.color_acento,
+                DEFAULTS.color_acento
+            )
+        });
     }
 
     async function leerDeSupabase() {
@@ -102,67 +104,72 @@
             const client = getSupabase();
             if (!client) return null;
 
-            const sessionResult = await client.auth.getSession();
-            const session = sessionResult?.data?.session;
+            const resultadoSesion = await client.auth.getSession();
 
-            if (sessionResult?.error || !session?.user) {
+            if (
+                resultadoSesion.error ||
+                !resultadoSesion.data?.session?.user
+            ) {
                 return null;
             }
 
             try {
-                const { data, error } = await client.rpc(
+                const resultado = await client.rpc(
                     'obtener_mis_preferencias'
                 );
 
-                if (!error && data) {
-                    const datos = data.prefs &&
-                        typeof data.prefs === 'object'
-                        ? data.prefs
-                        : data;
+                if (!resultado.error && resultado.data) {
+                    let datos = resultado.data;
 
-                    return {
-                        tema: normalizarTema(
-                            datos.mostrar_tema || DEFAULTS.tema
-                        ),
-                        tamano_fuente: normalizarFuente(
-                            datos.mostrar_tamano_fuente
-                        ),
-                        color_acento: normalizarColor(
-                            datos.mostrar_color_acento
-                        )
-                    };
+                    if (
+                        datos.prefs &&
+                        typeof datos.prefs === 'object'
+                    ) {
+                        datos = datos.prefs;
+                    }
+
+                    return normalizarPreferencias({
+                        tema: datos.mostrar_tema,
+                        tamano_fuente: datos.mostrar_tamano_fuente,
+                        color_acento: datos.mostrar_color_acento
+                    });
                 }
             } catch (error) {
                 console.warn(
-                    '[Apariencia] RPC de preferencias no disponible:',
+                    '[Apariencia] RPC de lectura no disponible:',
                     error
                 );
             }
 
-            const { data: pref, error } = await client
+            const resultadoTabla = await client
                 .from('preferencias_usuario')
                 .select('prefs')
-                .eq('usuario_id', session.user.id)
+                .eq(
+                    'usuario_id',
+                    resultadoSesion.data.session.user.id
+                )
                 .maybeSingle();
 
-            if (error || !pref?.prefs) return null;
+            if (
+                resultadoTabla.error ||
+                !resultadoTabla.data?.prefs
+            ) {
+                return null;
+            }
 
-            return {
-                tema: normalizarTema(
-                    pref.prefs.mostrar_tema || DEFAULTS.tema
-                ),
-                tamano_fuente: normalizarFuente(
-                    pref.prefs.mostrar_tamano_fuente
-                ),
-                color_acento: normalizarColor(
-                    pref.prefs.mostrar_color_acento
-                )
-            };
+            const prefs = resultadoTabla.data.prefs;
+
+            return normalizarPreferencias({
+                tema: prefs.mostrar_tema,
+                tamano_fuente: prefs.mostrar_tamano_fuente,
+                color_acento: prefs.mostrar_color_acento
+            });
         } catch (error) {
             console.warn(
-                '[Apariencia] Error leyendo Supabase:',
+                '[Apariencia] Error leyendo preferencias:',
                 error
             );
+
             return null;
         }
     }
@@ -181,66 +188,86 @@
         if (!client) return;
 
         try {
-            const sessionResult = await client.auth.getSession();
-            const session = sessionResult?.data?.session;
+            const resultadoSesion = await client.auth.getSession();
+            const usuario = resultadoSesion.data?.session?.user;
 
-            if (!session?.user) return;
+            if (!usuario) return;
 
             const keyPrefs =
-                clave === KEYS.tema ? 'mostrar_tema' :
-                clave === KEYS.tamano_fuente
-                    ? 'mostrar_tamano_fuente' :
-                clave === KEYS.color_acento
-                    ? 'mostrar_color_acento' :
-                clave;
+                clave === KEYS.tema
+                    ? 'mostrar_tema'
+                    : clave === KEYS.tamano_fuente
+                        ? 'mostrar_tamano_fuente'
+                        : clave === KEYS.color_acento
+                            ? 'mostrar_color_acento'
+                            : clave;
 
-            const rpc = await client.rpc(
-                'actualizar_preferencia',
-                {
-                    p_key: keyPrefs,
-                    p_value: valor
-                }
-            );
+            let rpcCorrecto = false;
 
-            if (!rpc.error) return;
+            try {
+                const resultado = await client.rpc(
+                    'actualizar_preferencia',
+                    {
+                        p_key: keyPrefs,
+                        p_value: valor
+                    }
+                );
 
-            const { data: pref } = await client
+                rpcCorrecto = !resultado.error;
+            } catch (error) {
+                console.warn(
+                    '[Apariencia] No se pudo actualizar mediante RPC:',
+                    error
+                );
+            }
+
+            if (rpcCorrecto) return;
+
+            const resultadoActual = await client
                 .from('preferencias_usuario')
                 .select('prefs')
-                .eq('usuario_id', session.user.id)
+                .eq('usuario_id', usuario.id)
                 .maybeSingle();
 
+            if (resultadoActual.error) {
+                console.warn(
+                    '[Apariencia] No se pudieron recuperar las preferencias:',
+                    resultadoActual.error
+                );
+                return;
+            }
+
             const nuevoPrefs = {
-                ...(pref?.prefs || {}),
+                ...(resultadoActual.data?.prefs || {}),
                 [keyPrefs]: valor
             };
 
-            const resultado = await client
+            const resultadoGuardar = await client
                 .from('preferencias_usuario')
                 .upsert(
                     {
-                        usuario_id: session.user.id,
+                        usuario_id: usuario.id,
                         prefs: nuevoPrefs
                     },
                     { onConflict: 'usuario_id' }
                 );
 
-            if (resultado.error) {
+            if (resultadoGuardar.error) {
                 console.warn(
                     '[Apariencia] Error guardando preferencias:',
-                    resultado.error
+                    resultadoGuardar.error
                 );
             }
         } catch (error) {
             console.warn(
-                '[Apariencia] No se pudo guardar en Supabase:',
+                '[Apariencia] No se pudo sincronizar con Supabase:',
                 error
             );
         }
     }
 
     /* ================================================================
-       COLOR Y APARIENCIA
+       COLOR
        ================================================================ */
 
     function ajustarColor(hex, porcentaje) {
@@ -265,14 +292,23 @@
                 b = Math.round(b * (1 + factor));
             }
 
+            r = Math.max(0, Math.min(255, r));
+            g = Math.max(0, Math.min(255, g));
+            b = Math.max(0, Math.min(255, b));
+
             return '#' + [r, g, b]
-                .map(valor => Math.max(0, Math.min(255, valor))
-                    .toString(16).padStart(2, '0'))
+                .map(function (numero) {
+                    return numero.toString(16).padStart(2, '0');
+                })
                 .join('');
         } catch (_) {
-            return DEFAULTS.color_acento;
+            return hex;
         }
     }
+
+    /* ================================================================
+       TEMA
+       ================================================================ */
 
     function aplicarTema(tema) {
         const html = document.documentElement;
@@ -284,23 +320,26 @@
         if (tema === 'dia') {
             html.classList.add('tema-dia');
             html.setAttribute('data-tema', 'dia');
-        } else if (tema === 'noche') {
+            return;
+        }
+
+        if (tema === 'noche') {
             html.classList.add('tema-noche');
             html.setAttribute('data-tema', 'noche');
-        } else {
-            const oscuro = window.matchMedia &&
-                window.matchMedia(
-                    '(prefers-color-scheme: dark)'
-                ).matches;
-
-            html.setAttribute(
-                'data-tema',
-                oscuro ? 'noche' : 'dia'
-            );
-            html.classList.add(
-                oscuro ? 'tema-noche' : 'tema-dia'
-            );
+            return;
         }
+
+        const prefiereOscuro = Boolean(
+            window.matchMedia &&
+            window.matchMedia('(prefers-color-scheme: dark)').matches
+        );
+
+        const temaSistema = prefiereOscuro ? 'noche' : 'dia';
+
+        html.setAttribute('data-tema', temaSistema);
+        html.classList.add(
+            temaSistema === 'noche' ? 'tema-noche' : 'tema-dia'
+        );
     }
 
     function aplicarColorAcento(color) {
@@ -315,19 +354,21 @@
         html.style.setProperty('--accent', color);
         html.style.setProperty('--accent-dark', ajustarColor(color, -15));
         html.style.setProperty('--accent-light', ajustarColor(color, 15));
-
-        html.style.setProperty(
-            '--sariel-glow',
-            '0 0 14px ' + ajustarColor(color, 5) + '40'
-        );
     }
 
     function aplicarTamanoFuente(porcentaje) {
         const html = document.documentElement;
         const valor = normalizarFuente(porcentaje);
 
+        /*
+         * Se conserva el ajuste original de Configuración.
+         * No se modifica el ancho, alto, zoom ni escala de los
+         * contenedores. El tamaño raíz sigue siendo compatible
+         * con los diseños que usan rem.
+         */
         html.style.fontSize = (16 * valor / 100) + 'px';
         html.setAttribute('data-font-size', String(valor));
+
         html.style.setProperty(
             '--preview-size',
             (15 * valor / 100) + 'px'
@@ -335,397 +376,183 @@
     }
 
     function aplicarTodo(prefs) {
-        const p = prefs || prefsActuales;
+        const p = normalizarPreferencias(prefs || prefsActuales);
 
-        const seguras = {
-            tema: normalizarTema(p.tema),
-            tamano_fuente: normalizarFuente(p.tamano_fuente),
-            color_acento: normalizarColor(p.color_acento)
-        };
+        aplicarTema(p.tema);
+        aplicarColorAcento(p.color_acento);
+        aplicarTamanoFuente(p.tamano_fuente);
 
-        aplicarTema(seguras.tema);
-        aplicarColorAcento(seguras.color_acento);
-        aplicarTamanoFuente(seguras.tamano_fuente);
-
-        prefsActuales = { ...seguras };
+        prefsActuales = { ...p };
     }
 
     /* ================================================================
-       SISTEMA VISUAL GLOBAL
-       No reemplaza CSS existente ni intercepta la navegación.
+       MICROINTERACCIONES SEGURAS
+       No asigna dimensiones ni transforma contenedores.
        ================================================================ */
 
-    function instalarEstilosGlobales() {
-        if (document.getElementById('sariels-motion-styles')) {
+    function instalarMicrointeracciones() {
+        if (
+            document.getElementById('sariels-motion-safe-css')
+        ) {
             return;
         }
 
         const style = document.createElement('style');
-        style.id = 'sariels-motion-styles';
+        style.id = 'sariels-motion-safe-css';
 
         style.textContent = `
-            :root {
-                --sariel-motion-fast: 150ms;
-                --sariel-motion-normal: 210ms;
-                --sariel-motion-slow: 280ms;
-                --sariel-ease: cubic-bezier(.22, 1, .36, 1);
-                --sariel-glow:
-                    0 0 14px rgba(212, 175, 55, .25);
-            }
-
-            @keyframes sarielPageEnter {
-                from {
-                    opacity: 0;
-                    transform: translate3d(0, 5px, 0);
-                }
-                to {
-                    opacity: 1;
-                    transform: translate3d(0, 0, 0);
-                }
-            }
-
-            @keyframes sarielSectionEnter {
-                from {
-                    opacity: 0;
-                    transform: translate3d(0, 7px, 0);
-                }
-                to {
-                    opacity: 1;
-                    transform: translate3d(0, 0, 0);
-                }
-            }
-
-            @keyframes sarielGlowPulse {
-                0%, 100% {
-                    box-shadow: 0 0 0 rgba(212, 175, 55, 0);
-                }
-                50% {
-                    box-shadow: var(--sariel-glow);
-                }
-            }
-
-            html.sariel-motion-ready body {
-                animation: sarielPageEnter 220ms
-                    var(--sariel-ease) both;
-            }
-
-            html.sariel-motion-ready
-            :is(
-                button,
-                [role="button"],
-                .cfg-btn,
-                .cfg-item,
-                .cfg-header-back,
-                .cfg-header-action,
-                .cfg-toggle-slider
-            ) {
+            button,
+            a,
+            [role="button"],
+            input[type="button"],
+            input[type="submit"],
+            .cfg-item,
+            .cfg-btn,
+            .cfg-header-back,
+            .cfg-header-action {
                 -webkit-tap-highlight-color: transparent;
+            }
+
+            button,
+            a,
+            [role="button"],
+            input[type="button"],
+            input[type="submit"],
+            .cfg-item,
+            .cfg-btn,
+            .cfg-header-back,
+            .cfg-header-action {
                 transition:
-                    transform var(--sariel-motion-fast)
-                        var(--sariel-ease),
-                    box-shadow var(--sariel-motion-normal) ease,
-                    filter var(--sariel-motion-normal) ease,
-                    border-color var(--sariel-motion-normal) ease;
+                    color 140ms ease,
+                    background-color 160ms ease,
+                    border-color 160ms ease,
+                    box-shadow 160ms ease,
+                    filter 140ms ease;
             }
 
-            html.sariel-motion-ready
-            :is(
-                button,
-                [role="button"],
-                .cfg-btn,
-                .cfg-header-back,
-                .cfg-header-action
-            ):active {
-                transform: scale(.965);
-                filter: brightness(1.12);
+            button:active,
+            a:active,
+            [role="button"]:active,
+            input[type="button"]:active,
+            input[type="submit"]:active,
+            .cfg-item:active,
+            .cfg-btn:active,
+            .cfg-header-back:active,
+            .cfg-header-action:active {
+                filter: brightness(1.10);
             }
 
-            html.sariel-motion-ready
-            :is(
-                button,
-                [role="button"],
-                .cfg-btn,
-                .cfg-item,
-                .cfg-header-back,
-                .cfg-header-action
-            ):focus-visible {
+            button:focus-visible,
+            a:focus-visible,
+            [role="button"]:focus-visible,
+            input[type="button"]:focus-visible,
+            input[type="submit"]:focus-visible {
                 outline: 2px solid var(--accent, #D4AF37);
-                outline-offset: 3px;
-                box-shadow: var(--sariel-glow);
-            }
-
-            html.sariel-motion-ready
-            :is(
-                .cfg-item,
-                .card,
-                .feed-card,
-                .post-card,
-                .product-card,
-                .channel-card,
-                .profile-card,
-                .market-card
-            ):active {
-                transform: scale(.992);
-            }
-
-            html.sariel-motion-ready
-            :is(
-                .cfg-item,
-                .card,
-                .feed-card,
-                .post-card,
-                .product-card,
-                .channel-card,
-                .profile-card,
-                .market-card
-            ):hover {
-                border-color: color-mix(
-                    in srgb,
-                    var(--accent, #D4AF37) 38%,
-                    transparent
-                );
-            }
-
-            html.sariel-motion-ready
-            :is(
-                input,
-                textarea,
-                select
-            ):focus-visible {
-                outline: 2px solid color-mix(
-                    in srgb,
-                    var(--accent, #D4AF37) 70%,
-                    transparent
-                );
                 outline-offset: 2px;
             }
 
-            html.sariel-motion-ready
-            :is(
-                .tab-content,
-                [role="tabpanel"],
-                .section-content,
-                .page-section,
-                .view-content
-            ).sariel-section-enter {
-                animation: sarielSectionEnter 190ms
-                    var(--sariel-ease) both;
-            }
-
             @media (hover: hover) and (pointer: fine) {
-                html.sariel-motion-ready
-                :is(
-                    button,
-                    .cfg-btn,
-                    .cfg-header-back,
-                    .cfg-header-action
-                ):hover {
-                    box-shadow: var(--sariel-glow);
+                button:hover,
+                a:hover,
+                [role="button"]:hover,
+                .cfg-item:hover,
+                .cfg-btn:hover {
+                    box-shadow:
+                        0 0 0 1px
+                        color-mix(
+                            in srgb,
+                            var(--accent, #D4AF37) 22%,
+                            transparent
+                        );
                 }
             }
 
             @media (prefers-reduced-motion: reduce) {
-                html.sariel-motion-ready *,
-                html.sariel-motion-ready *::before,
-                html.sariel-motion-ready *::after {
-                    animation-duration: .01ms !important;
-                    animation-iteration-count: 1 !important;
-                    transition-duration: .01ms !important;
-                    scroll-behavior: auto !important;
+                button,
+                a,
+                [role="button"],
+                input[type="button"],
+                input[type="submit"],
+                .cfg-item,
+                .cfg-btn,
+                .cfg-header-back,
+                .cfg-header-action {
+                    transition: none !important;
+                    animation: none !important;
                 }
             }
         `;
 
-        (document.head || document.documentElement)
-            .appendChild(style);
-
-        const activar = function () {
-            requestAnimationFrame(function () {
-                document.documentElement.classList.add(
-                    'sariel-motion-ready'
-                );
-            });
-        };
-
-        if (document.readyState === 'loading') {
-            document.addEventListener(
-                'DOMContentLoaded',
-                activar,
-                { once: true }
-            );
-        } else {
-            activar();
-        }
+        (document.head || document.documentElement).appendChild(style);
     }
-
-    function instalarTransicionesDeSeccion() {
-        if (window.__sarielsSectionMotionInstalled) return;
-        window.__sarielsSectionMotionInstalled = true;
-
-        const selectores = [
-            '.tab-content',
-            '[role="tabpanel"]',
-            '.section-content',
-            '.page-section',
-            '.view-content'
-        ].join(',');
-
-        function visible(elemento) {
-            if (!(elemento instanceof Element)) return false;
-            if (elemento.hidden) return false;
-            if (elemento.getAttribute('aria-hidden') === 'true') {
-                return false;
-            }
-
-            const estilo = window.getComputedStyle(elemento);
-
-            return estilo.display !== 'none' &&
-                estilo.visibility !== 'hidden';
-        }
-
-        function animar(elemento) {
-            if (!visible(elemento)) return;
-
-            elemento.classList.remove('sariel-section-enter');
-
-            // Reinicia solo la animación del panel que cambió.
-            void elemento.offsetWidth;
-
-            elemento.classList.add('sariel-section-enter');
-
-            elemento.addEventListener(
-                'animationend',
-                function limpiarAnimacion() {
-                    elemento.classList.remove(
-                        'sariel-section-enter'
-                    );
-                },
-                { once: true }
-            );
-        }
-
-        document.addEventListener('click', function (evento) {
-            const objetivo = evento.target instanceof Element
-                ? evento.target.closest(
-                    '[role="tab"], [data-tab], .tab-button, .nav-tab'
-                )
-                : null;
-
-            if (!objetivo) return;
-
-            // No cancela el evento ni modifica la lógica de navegación.
-            requestAnimationFrame(function () {
-                document.querySelectorAll(selectores)
-                    .forEach(function (panel) {
-                        if (visible(panel)) animar(panel);
-                    });
-            });
-        }, true);
-
-        if ('MutationObserver' in window) {
-            const observer = new MutationObserver(function (mutaciones) {
-                const pendientes = new Set();
-
-                mutaciones.forEach(function (mutacion) {
-                    const elemento = mutacion.target instanceof Element
-                        ? mutacion.target
-                        : mutacion.target.parentElement;
-
-                    if (!elemento) return;
-
-                    if (elemento.matches(selectores)) {
-                        pendientes.add(elemento);
-                    } else {
-                        const panel = elemento.closest(selectores);
-                        if (panel) pendientes.add(panel);
-                    }
-                });
-
-                pendientes.forEach(function (panel) {
-                    if (visible(panel)) animar(panel);
-                });
-            });
-
-            function observar() {
-                if (!document.body) return;
-
-                observer.observe(document.body, {
-                    subtree: true,
-                    attributes: true,
-                    attributeFilter: [
-                        'class',
-                        'style',
-                        'hidden',
-                        'aria-hidden'
-                    ]
-                });
-            }
-
-            if (document.readyState === 'loading') {
-                document.addEventListener(
-                    'DOMContentLoaded',
-                    observar,
-                    { once: true }
-                );
-            } else {
-                observar();
-            }
-        }
-    }
-
-    instalarEstilosGlobales();
-    instalarTransicionesDeSeccion();
 
     /* ================================================================
        INICIALIZACIÓN Y SINCRONIZACIÓN
        ================================================================ */
 
     async function inicializar() {
-        const prefsLocal = leerDeLocalStorage();
-        aplicarTodo(prefsLocal);
-
-        let intentos = 0;
-
-        while (!getSupabase() && intentos < 20) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            intentos++;
+        if (inicializacionEnCurso) {
+            return inicializacionEnCurso;
         }
 
-        const prefsSupabase = await leerDeSupabase();
+        inicializacionEnCurso = (async function () {
+            const prefsLocal = leerDeLocalStorage();
+            aplicarTodo(prefsLocal);
 
-        if (prefsSupabase) {
-            const diferentes =
-                prefsSupabase.tema !== prefsLocal.tema ||
-                prefsSupabase.tamano_fuente !==
-                    prefsLocal.tamano_fuente ||
-                prefsSupabase.color_acento !==
-                    prefsLocal.color_acento;
+            let intentos = 0;
 
-            if (diferentes) {
-                aplicarTodo(prefsSupabase);
+            while (!getSupabase() && intentos < 20) {
+                await new Promise(function (resolve) {
+                    setTimeout(resolve, 100);
+                });
 
-                try {
-                    localStorage.setItem(
-                        KEYS.tema,
-                        prefsSupabase.tema
-                    );
-                    localStorage.setItem(
-                        KEYS.tamano_fuente,
-                        String(prefsSupabase.tamano_fuente)
-                    );
-                    localStorage.setItem(
-                        KEYS.color_acento,
-                        prefsSupabase.color_acento
-                    );
-                } catch (_) {}
-
-                console.log(
-                    '[Apariencia] Preferencias sincronizadas desde Supabase.'
-                );
+                intentos++;
             }
-        }
 
-        syncConSupabaseListo = true;
+            const prefsSupabase = await leerDeSupabase();
+
+            if (prefsSupabase) {
+                const hayDiferencias =
+                    prefsSupabase.tema !== prefsLocal.tema ||
+                    prefsSupabase.tamano_fuente !==
+                        prefsLocal.tamano_fuente ||
+                    prefsSupabase.color_acento !==
+                        prefsLocal.color_acento;
+
+                if (hayDiferencias) {
+                    aplicarTodo(prefsSupabase);
+
+                    try {
+                        localStorage.setItem(
+                            KEYS.tema,
+                            prefsSupabase.tema
+                        );
+
+                        localStorage.setItem(
+                            KEYS.tamano_fuente,
+                            String(prefsSupabase.tamano_fuente)
+                        );
+
+                        localStorage.setItem(
+                            KEYS.color_acento,
+                            prefsSupabase.color_acento
+                        );
+                    } catch (_) {}
+
+                    console.log(
+                        '[Apariencia] Preferencias sincronizadas desde Supabase.'
+                    );
+                }
+            }
+
+            syncConSupabaseListo = true;
+        })();
+
+        try {
+            await inicializacionEnCurso;
+        } finally {
+            inicializacionEnCurso = null;
+        }
     }
 
     window.addEventListener('storage', function (evento) {
@@ -742,20 +569,20 @@
             '(prefers-color-scheme: dark)'
         );
 
-        const cambiarSistema = function () {
+        const actualizarTemaSistema = function () {
             if (prefsActuales.tema === 'sistema') {
                 aplicarTema('sistema');
             }
         };
 
         if (typeof mq.addEventListener === 'function') {
-            mq.addEventListener('change', cambiarSistema);
+            mq.addEventListener('change', actualizarTemaSistema);
         } else if (typeof mq.addListener === 'function') {
-            mq.addListener(cambiarSistema);
+            mq.addListener(actualizarTemaSistema);
         }
     } catch (_) {}
 
-    inicializar();
+    instalarMicrointeracciones();
 
     if (document.readyState === 'loading') {
         document.addEventListener(
@@ -766,6 +593,12 @@
             { once: true }
         );
     }
+
+    inicializar();
+
+    /* ================================================================
+       API PÚBLICA COMPATIBLE
+       ================================================================ */
 
     window.SarielApariencia = {
         aplicar: aplicarTodo,
@@ -778,38 +611,38 @@
 
         setTema: function (tema) {
             tema = normalizarTema(tema);
+
             prefsActuales.tema = tema;
             aplicarTema(tema);
+
             return guardarPref(KEYS.tema, tema);
         },
 
         setColor: function (color) {
             color = normalizarColor(color);
+
             prefsActuales.color_acento = color;
             aplicarColorAcento(color);
+
             return guardarPref(KEYS.color_acento, color);
         },
 
         setFuente: function (fuente) {
             fuente = normalizarFuente(fuente);
+
             prefsActuales.tamano_fuente = fuente;
             aplicarTamanoFuente(fuente);
+
             return guardarPref(KEYS.tamano_fuente, fuente);
         },
 
         recargar: inicializar,
         KEYS: KEYS,
-        DEFAULTS: DEFAULTS,
-
-        // Disponible para diagnóstico sin cambiar la API anterior.
-        get sincronizacionLista() {
-            return syncConSupabaseListo;
-        }
+        DEFAULTS: DEFAULTS
     };
 
     /* ================================================================
-       MASCOTAS
-       Conserva rutas, identificadores y orden de carga originales.
+       MASCOTA ACTIVA
        ================================================================ */
 
     function getMascotaActiva() {
@@ -829,35 +662,34 @@
         });
     }
 
-    function insertarArchivo(etiqueta, id, src, defer, onload) {
-        if (document.getElementById(id)) return;
-
-        const elemento = document.createElement(etiqueta);
-        elemento.id = id;
-        elemento.src = src;
-
-        if (defer && etiqueta === 'script') {
-            elemento.defer = true;
-        }
-
-        if (typeof onload === 'function') {
-            elemento.onload = onload;
-        }
-
-        document.head.appendChild(elemento);
-    }
-
-    function insertarCSS(id, href) {
+    function cargarCSS(id, src) {
         if (document.getElementById(id)) return;
 
         const css = document.createElement('link');
-        css.rel = 'stylesheet';
         css.id = id;
-        css.href = href;
-        document.head.appendChild(css);
+        css.rel = 'stylesheet';
+        css.href = src;
+
+        (document.head || document.documentElement).appendChild(css);
     }
 
-    function cuandoDOMListo(callback) {
+    function cargarScript(id, src, alCargar) {
+        if (document.getElementById(id)) return;
+
+        const script = document.createElement('script');
+        script.id = id;
+        script.src = src;
+        script.defer = true;
+
+        if (typeof alCargar === 'function') {
+            script.onload = alCargar;
+        }
+
+        (document.head || document.documentElement)
+            .appendChild(script);
+    }
+
+    function alDOMListo(callback) {
         if (document.readyState === 'loading') {
             document.addEventListener(
                 'DOMContentLoaded',
@@ -869,113 +701,136 @@
         }
     }
 
+    const RUTAS_EXCLUIDAS_BASE = [
+        '/login',
+        '/registro',
+        '/pagar',
+        '/pay',
+        '/checkout',
+        '/success',
+        '/cancel',
+        '/terminos',
+        '/privacidad',
+        '/cookies',
+        '/legal',
+        '/info',
+        '/live-terminos',
+        '/eliminar-cuenta',
+        '/actualizar-contrasena'
+    ];
+
+    function puedeInyectarMascota(rutaTienda) {
+        return !rutaExcluida(
+            RUTAS_EXCLUIDAS_BASE.concat(rutaTienda)
+        );
+    }
+
+    /* ================================================================
+       MARQUINHOS
+       ================================================================ */
+
     (function inyectarMarquinhosPet() {
         if (getMascotaActiva() !== 'marquinhos') return;
-
-        if (rutaExcluida([
-            '/login', '/registro',
-            '/pagar', '/pay', '/checkout', '/success', '/cancel',
-            '/terminos', '/privacidad', '/cookies', '/legal',
-            '/info', '/live-terminos', '/eliminar-cuenta',
-            '/actualizar-contrasena',
-            '/features/marquinhos/tienda'
-        ])) return;
+        if (!puedeInyectarMascota(['/features/marquinhos/tienda'])) {
+            return;
+        }
 
         if (document.getElementById('marquinhos-pet-script')) return;
 
-        cuandoDOMListo(function () {
-            insertarCSS(
+        alDOMListo(function () {
+            cargarCSS(
                 'marquinhos-pet-css',
                 '/features/marquinhos/marquinhos-pet.css'
             );
 
-            [
-                ['marquinhos-boca-script',
-                    '/features/marquinhos/marquinhos-boca.js'],
-                ['marquinhos-fit-script',
-                    '/features/marquinhos/marquinhos-fit.js'],
-                ['marquinhos-accesorios-svg-script',
-                    '/features/marquinhos/marquinhos-accesorios-svg.js'],
-                ['marquinhos-anim-script',
-                    '/features/marquinhos/marquinhos-animaciones.js'],
-                ['marquinhos-pet-script',
-                    '/features/marquinhos/marquinhos-pet.js'],
-                ['marquinhos-brain-script',
-                    '/features/marquinhos/marquinhos-brain.js']
-            ].forEach(function (archivo) {
-                insertarArchivo(
-                    'script',
-                    archivo[0],
-                    archivo[1],
-                    true
-                );
-            });
+            cargarScript(
+                'marquinhos-boca-script',
+                '/features/marquinhos/marquinhos-boca.js'
+            );
+
+            cargarScript(
+                'marquinhos-fit-script',
+                '/features/marquinhos/marquinhos-fit.js'
+            );
+
+            cargarScript(
+                'marquinhos-accesorios-svg-script',
+                '/features/marquinhos/marquinhos-accesorios-svg.js'
+            );
+
+            cargarScript(
+                'marquinhos-anim-script',
+                '/features/marquinhos/marquinhos-animaciones.js'
+            );
+
+            cargarScript(
+                'marquinhos-pet-script',
+                '/features/marquinhos/marquinhos-pet.js'
+            );
+
+            cargarScript(
+                'marquinhos-brain-script',
+                '/features/marquinhos/marquinhos-brain.js'
+            );
         });
     })();
 
+    /* ================================================================
+       CAPITÁN MAÍZ
+       ================================================================ */
+
     (function inyectarCapitanMaizPet() {
         if (getMascotaActiva() !== 'capitan-maiz') return;
-
-        if (rutaExcluida([
-            '/login', '/registro',
-            '/pagar', '/pay', '/checkout', '/success', '/cancel',
-            '/terminos', '/privacidad', '/cookies', '/legal',
-            '/info', '/live-terminos', '/eliminar-cuenta',
-            '/actualizar-contrasena',
-            '/features/capitan-maiz/tienda'
-        ])) return;
+        if (!puedeInyectarMascota(['/features/capitan-maiz/tienda'])) {
+            return;
+        }
 
         if (document.getElementById('capitan-maiz-pet-script')) return;
 
-        cuandoDOMListo(function () {
-            insertarCSS(
+        alDOMListo(function () {
+            cargarCSS(
                 'capitan-maiz-pet-css',
                 '/features/capitan-maiz/capitan-maiz-pet.css'
             );
 
-            [
-                ['capitan-maiz-fit-script',
-                    '/features/capitan-maiz/capitan-maiz-fit.js'],
-                ['capitan-maiz-pet-script',
-                    '/features/capitan-maiz/capitan-maiz-pet.js'],
-                ['capitan-maiz-brain-script',
-                    '/features/capitan-maiz/capitan-maiz-brain.js']
-            ].forEach(function (archivo) {
-                insertarArchivo(
-                    'script',
-                    archivo[0],
-                    archivo[1],
-                    true
-                );
-            });
+            cargarScript(
+                'capitan-maiz-fit-script',
+                '/features/capitan-maiz/capitan-maiz-fit.js'
+            );
+
+            cargarScript(
+                'capitan-maiz-pet-script',
+                '/features/capitan-maiz/capitan-maiz-pet.js'
+            );
+
+            cargarScript(
+                'capitan-maiz-brain-script',
+                '/features/capitan-maiz/capitan-maiz-brain.js'
+            );
         });
     })();
 
+    /* ================================================================
+       ITLASUHUA
+       ================================================================ */
+
     (function inyectarItlasuhuaPet() {
         if (getMascotaActiva() !== 'itlasuhua') return;
-
-        if (rutaExcluida([
-            '/login', '/registro',
-            '/pagar', '/pay', '/checkout', '/success', '/cancel',
-            '/terminos', '/privacidad', '/cookies', '/legal',
-            '/info', '/live-terminos', '/eliminar-cuenta',
-            '/actualizar-contrasena',
-            '/features/itlasuhua/tienda'
-        ])) return;
+        if (!puedeInyectarMascota(['/features/itlasuhua/tienda'])) {
+            return;
+        }
 
         if (document.getElementById('itlasuhua-pet-script')) return;
 
-        cuandoDOMListo(function () {
-            insertarCSS(
+        alDOMListo(function () {
+            cargarCSS(
                 'itlasuhua-pet-css',
                 '/features/itlasuhua/itlasuhua-pet.css'
             );
 
-            insertarArchivo(
-                'script',
+            cargarScript(
                 'itlasuhua-pet-script',
                 '/features/itlasuhua/itlasuhua-pet.js',
-                true,
                 function () {
                     if (
                         window.ItlasuhuaPet &&
@@ -987,18 +842,14 @@
                 }
             );
 
-            insertarArchivo(
-                'script',
+            cargarScript(
                 'itlasuhua-brain-script',
-                '/features/itlasuhua/itlasuhua-brain.js',
-                true
+                '/features/itlasuhua/itlasuhua-brain.js'
             );
 
-            insertarArchivo(
-                'script',
+            cargarScript(
                 'itlasuhua-voice-script',
-                '/features/itlasuhua/itlasuhua-voice.js',
-                true
+                '/features/itlasuhua/itlasuhua-voice.js'
             );
         });
     })();
