@@ -1,6 +1,7 @@
 /* ============================================
    CARRUSEL 3D HORIZONTAL - Csariel's
    Ruta: /features/perfil/css/carrusel-3d.css
+   SCROLL LIBRE (sin stops) + EFECTO 3D
    ============================================ */
 
 .carrusel-3d-wrapper {
@@ -17,11 +18,14 @@
     gap: 15px;
     padding: 10px 40px;
     overflow-x: auto;
-    scroll-snap-type: x mandatory;
+    /* ✅ SCROLL LIBRE: quitamos scroll-snap para que no se detenga */
+    scroll-snap-type: none;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     justify-content: flex-start;
     align-items: center;
+    /* ✅ Suaviza el desplazamiento */
+    scroll-behavior: smooth;
 }
 
 .carrusel-3d-track::-webkit-scrollbar {
@@ -31,7 +35,8 @@
 .carrusel-3d-card {
     flex: 0 0 250px;
     height: 340px;
-    scroll-snap-align: center;
+    /* ✅ Quitamos scroll-snap-align para que no fuerce el encaje */
+    scroll-snap-align: none;
     border-radius: 20px;
     background: rgba(15, 45, 26, 0.65);
     border: 1px solid rgba(212, 175, 55, 0.25);
