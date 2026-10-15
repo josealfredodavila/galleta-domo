@@ -177,6 +177,67 @@
         font-size: 0.65rem;
         color: var(--text-muted);
     }
+
+    .wallet-switch {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 12px;
+        padding: 12px;
+        border-radius: 14px;
+        border: 1px solid var(--line-black);
+        background: rgba(0,0,0,0.25);
+        cursor: pointer;
+    }
+    .wallet-switch-texto strong {
+        display: block;
+        font-size: 0.8rem;
+        color: var(--text-primary);
+    }
+    .wallet-switch-texto small {
+        display: block;
+        margin-top: 3px;
+        font-size: 0.65rem;
+        color: var(--text-muted);
+        line-height: 1.4;
+    }
+    .wallet-switch input {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    .wallet-switch-slider {
+        position: relative;
+        flex-shrink: 0;
+        width: 52px;
+        height: 28px;
+        border-radius: 99px;
+        background: rgba(255,255,255,0.15);
+        transition: background 0.2s ease;
+    }
+    .wallet-switch-slider::after {
+        content: '';
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #fff;
+        transition: transform 0.2s ease;
+    }
+    .wallet-switch input:checked + .wallet-switch-slider {
+        background: linear-gradient(135deg, var(--cyan, #00e5ff), var(--purple, #a855f7));
+    }
+    .wallet-switch input:checked + .wallet-switch-slider::after {
+        transform: translateX(24px);
+    }
+    .wallet-switch input:disabled + .wallet-switch-slider {
+        opacity: 0.4;
+    }
 </style>
 </head>
 <body>
@@ -469,7 +530,7 @@
                     <span class="pro-upgrade-name" data-no-traducir="1">Csariel's Pro</span>
                 </div>
                 <div class="pro-upgrade-price">
-                    <span id="proPrecio" data-no-traducir="1">$60 MXN</span>
+                    <span id="proPrecio" data-no-traducir="1">$300 MXN</span>
                     <span class="pro-upgrade-period" data-clave="perfil_pro_periodo">/ 30 días</span>
                 </div>
                 <div class="pro-upgrade-features" id="proFeatures" data-clave="perfil_pro_features">
@@ -477,7 +538,7 @@
                 </div>
                 <button class="btn btn-gold pro-btn" onclick="window.contratarPro()" id="btnContratarPro" data-clave="perfil_pro_contratar">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
-                    Contratar Pro por $60 MXN
+                    Contratar Pro por $300 MXN
                 </button>
             </div>
 
@@ -506,10 +567,20 @@
             <button class="btn btn-outline" id="btnDesconectarWallet" type="button" style="display:none;" onclick="window.desconectarWalletPerfil()">
                 Desconectar
             </button>
+            <button class="btn btn-outline btn-sm" id="btnCopiarWallet" type="button" style="display:none;" onclick="window.copiarWalletPerfil()">
+                Copiar dirección
+            </button>
+            <a class="btn btn-outline btn-sm" id="linkPolygonScan" href="#" target="_blank" rel="noopener noreferrer" style="display:none;">
+                Ver en PolygonScan
+            </a>
         </div>
-        <label class="wallet-visible" for="walletVisible">
+        <label class="wallet-switch" for="walletVisible">
+            <span class="wallet-switch-texto">
+                <strong>Mostrar dirección en mi perfil</strong>
+                <small id="walletVisibleTexto">Oculta: solo tú puedes ver tu dirección.</small>
+            </span>
             <input type="checkbox" id="walletVisible" disabled />
-            Mostrar mi wallet en mi perfil
+            <span class="wallet-switch-slider"></span>
         </label>
         <div class="wallet-hint" id="walletHint"></div>
     </div>
@@ -1005,6 +1076,41 @@
 })();
 </script>
 
+<script>
+/* PRECIO DE PRO — se toma de planes_membresia (fuente de verdad) */
+(function () {
+    'use strict';
+    function aplicarPrecio(precio) {
+        var el = document.getElementById('proPrecio');
+        if (el && Number.isFinite(Number(precio))) {
+            el.textContent = '$' + Number(precio).toFixed(0) + ' MXN';
+        }
+    }
+    async function cargarPrecioPro() {
+        for (var i = 0; i < 100 && !window.supabaseClient; i++) {
+            await new Promise(function (r) { setTimeout(r, 100); });
+        }
+        if (!window.supabaseClient) return;
+        try {
+            var r = await window.supabaseClient
+                .from('planes_membresia')
+                .select('precio_mxn')
+                .eq('id', 'pro')
+                .eq('activo', true)
+                .maybeSingle();
+            if (!r.error && r.data) aplicarPrecio(r.data.precio_mxn);
+        } catch (e) {
+            console.warn('[Perfil] No se pudo cargar el precio de Pro:', e);
+        }
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', cargarPrecioPro, { once: true });
+    } else {
+        cargarPrecioPro();
+    }
+})();
+</script>
+
 <script src="/features/shared/js/idiomas.js?v=9" defer></script>
 
 <!-- Scripts del módulo perfil (en orden de dependencia) -->
@@ -1067,17 +1173,60 @@
 
         $w('walletEstado').textContent = conectada ? 'Conectada' : 'Sin conectar';
         $w('walletEstado').classList.toggle('conectada', conectada);
-        $w('walletDireccion').textContent = conectada ? data.wallet_address : 'Aún no tienes una wallet vinculada.';
+        const mostrarCompleta = conectada && Boolean(data.wallet_visible);
+        if (!conectada) {
+            $w('walletDireccion').textContent = 'Aún no tienes una wallet vinculada.';
+        } else if (mostrarCompleta) {
+            $w('walletDireccion').textContent = data.wallet_address;
+        } else {
+            $w('walletDireccion').textContent = data.wallet_address.slice(0, 6) + '…' + data.wallet_address.slice(-4);
+        }
+        $w('walletDireccion').dataset.full = conectada ? data.wallet_address : '';
+        $w('walletDireccion').style.cursor = mostrarCompleta ? 'pointer' : 'default';
+        $w('btnCopiarWallet').style.display = mostrarCompleta ? '' : 'none';
+        $w('linkPolygonScan').style.display = conectada ? '' : 'none';
+        if (conectada) {
+            $w('linkPolygonScan').href = 'https://amoy.polygonscan.com/address/' + data.wallet_address;
+        }
         $w('btnConectarWallet').style.display = conectada ? 'none' : '';
         $w('btnDesconectarWallet').style.display = conectada ? '' : 'none';
 
         const visible = $w('walletVisible');
         visible.checked = Boolean(data && data.wallet_visible);
         visible.disabled = !conectada;
+        $w('walletVisibleTexto').textContent = visible.checked
+            ? 'Visible: otros usuarios pueden ver tu dirección en tu perfil.'
+            : 'Oculta: solo tú puedes ver tu dirección.';
         $w('walletHint').textContent = conectada
             ? 'Vinculada en Polygon (' + acortar(data.wallet_address) + ').'
             : 'Necesitas MetaMask para vincular tu wallet.';
     }
+
+    window.copiarWalletPerfil = async function () {
+        const direccion = ($w('walletDireccion').dataset.full || '').trim();
+        if (!direccion || direccion.indexOf('0x') !== 0) return;
+        try {
+            if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                await navigator.clipboard.writeText(direccion);
+            } else {
+                const area = document.createElement('textarea');
+                area.value = direccion;
+                area.style.position = 'fixed';
+                area.style.opacity = '0';
+                document.body.appendChild(area);
+                area.select();
+                document.execCommand('copy');
+                area.remove();
+            }
+            if (typeof window.showToast === 'function') {
+                window.showToast('✅ Dirección copiada', 'success');
+            }
+        } catch (e) {
+            if (typeof window.showToast === 'function') {
+                window.showToast('❌ No se pudo copiar la dirección', 'error');
+            }
+        }
+    };
 
     window.conectarWalletPerfil = async function () {
         if (typeof window.conectarWallet !== 'function') return;
@@ -1108,7 +1257,9 @@
                 window.showToast('❌ No se pudo cambiar la visibilidad de tu wallet', 'error');
             }
             await refrescarWallet();
+            return;
         }
+        await refrescarWallet();
     }
 
     function iniciar() {
@@ -1116,6 +1267,15 @@
         if (visible) {
             visible.addEventListener('change', function () {
                 guardarVisibilidad(visible.checked);
+            });
+        }
+
+        const direccionEl = $w('walletDireccion');
+        if (direccionEl) {
+            direccionEl.addEventListener('click', function () {
+                if (direccionEl.dataset.full && $w('btnCopiarWallet').style.display !== 'none') {
+                    window.copiarWalletPerfil();
+                }
             });
         }
 
