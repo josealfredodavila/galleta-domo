@@ -1,176 +1,144 @@
 /* ============================================
-   CARRUSEL 3D HORIZONTAL - Csariel's
-   Ruta: /features/perfil/css/carrusel-3d.css
-   Scroll libre + inclinación 3D controlada por JS (carrusel-3d.js)
+   CARRUSEL DE ANUNCIOS · IMAGEN - Csariel's
+   Ruta: /features/anuncios/anuncios-carrusel.css
    ============================================ */
 
-.carrusel-3d-wrapper {
+.anuncios-imagen-contenedor {
     width: 100%;
-    position: relative;
-    padding: 18px 0 10px;
-    overflow: hidden;
+    max-width: 720px;
+    margin: 14px auto;
+    padding: 0 16px;
+    box-sizing: border-box;
 }
 
-.carrusel-3d-track {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 14px 40px 20px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-x: contain;
-    scrollbar-width: none;
-}
-
-.carrusel-3d-track::-webkit-scrollbar {
+.anuncios-imagen-contenedor[hidden] {
     display: none;
 }
 
-/* Tarjeta: el color de cada módulo llega desde --c (lo asigna carrusel-3d.js) */
-.carrusel-3d-card {
-    --c: #D4AF37;
+.anuncios-slider {
     position: relative;
-    flex: 0 0 240px;
-    height: 330px;
-    padding: 20px;
-    border-radius: 22px;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 20px;
     overflow: hidden;
-    text-decoration: none;
-    color: var(--text-primary, #ffffff);
-    background:
-        radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--c) 24%, transparent), transparent 60%),
-        linear-gradient(165deg, rgba(20, 40, 34, 0.92), rgba(5, 8, 15, 0.96));
-    border: 1px solid color-mix(in srgb, var(--c) 35%, transparent);
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55);
-    transform: perspective(900px) rotateY(0deg) scale(0.92);
-    opacity: 0.7;
-    will-change: transform, opacity;
-    transition: box-shadow 0.35s ease, border-color 0.35s ease;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+    touch-action: pan-y;
+    user-select: none;
+    -webkit-user-select: none;
     -webkit-tap-highlight-color: transparent;
+    cursor: pointer;
 }
 
-/* Brillo que cruza la tarjeta activa */
-.carrusel-3d-card::after {
-    content: '';
+.anuncio-slide {
     position: absolute;
-    inset: -40% -60%;
-    background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, 0.16) 50%, transparent 58%);
-    transform: translateX(-60%);
-    transition: transform 1s ease;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.6s ease;
     pointer-events: none;
-    z-index: 2;
 }
 
-.carrusel-3d-card.active::after {
-    transform: translateX(60%);
+.anuncio-slide.active {
+    opacity: 1;
+    pointer-events: auto;
 }
 
-/* Degradado inferior para legibilidad del texto */
-.carrusel-3d-card::before {
+.anuncio-slide img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.anuncio-slide::after {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, transparent 40%, rgba(0, 0, 0, 0.88) 100%);
+    background: linear-gradient(180deg, transparent 45%, rgba(0, 0, 0, 0.85) 100%);
     pointer-events: none;
-    z-index: 0;
 }
 
-.carrusel-3d-card > * {
-    position: relative;
-    z-index: 1;
-}
-
-.carrusel-3d-card.active {
-    border-color: var(--c);
-    box-shadow:
-        0 0 28px color-mix(in srgb, var(--c) 50%, transparent),
-        0 16px 40px rgba(0, 0, 0, 0.7);
-}
-
-.carrusel-3d-card .card-icon {
-    font-size: 2.9rem;
-    line-height: 1;
-    margin-bottom: 12px;
-    filter: drop-shadow(0 0 14px color-mix(in srgb, var(--c) 80%, transparent));
-}
-
-.carrusel-3d-card.active .card-icon {
-    animation: carruselFloat 3.6s ease-in-out infinite;
-}
-
-@keyframes carruselFloat {
-    0%, 100% { transform: scale(1.08) translateY(0); }
-    50%      { transform: scale(1.12) translateY(-5px); }
-}
-
-.carrusel-3d-card .card-title {
-    font-family: 'Orbitron', sans-serif;
-    font-size: 1.15rem;
-    font-weight: 700;
+.anuncio-etiqueta {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 2;
+    padding: 4px 10px;
+    border-radius: 99px;
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(212, 175, 55, 0.5);
+    color: var(--gold, #D4AF37);
+    font-size: 0.6rem;
     letter-spacing: 1px;
     text-transform: uppercase;
-    margin-bottom: 6px;
-    color: var(--c);
-    text-shadow: 0 0 16px color-mix(in srgb, var(--c) 50%, transparent);
+    pointer-events: none;
 }
 
-.carrusel-3d-card .card-desc {
-    font-family: 'Inter', sans-serif;
-    font-size: 0.75rem;
-    line-height: 1.45;
-    color: var(--text-secondary, #c0d8e8);
+.anuncio-info {
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    z-index: 2;
+    color: #fff;
+    pointer-events: none;
 }
 
-/* Indicadores (puntos) creados por carrusel-3d.js */
-.carrusel-3d-dots {
+.anuncio-titulo {
+    font-family: 'Orbitron', monospace;
+    font-size: 1rem;
+    font-weight: 700;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
+}
+
+.anuncio-texto {
+    margin-top: 4px;
+    font-size: 0.78rem;
+    opacity: 0.9;
+    line-height: 1.4;
+}
+
+.anuncio-reportar {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 3;
+    padding: 4px 10px;
+    border-radius: 99px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    font-size: 0.65rem;
+    cursor: pointer;
+}
+
+.anuncio-dots {
     display: flex;
     justify-content: center;
-    gap: 7px;
-    margin-top: 6px;
+    gap: 6px;
+    margin-top: 8px;
 }
 
-.carrusel-3d-dots button {
-    width: 7px;
-    height: 7px;
+.anuncio-dots button {
+    width: 6px;
+    height: 6px;
     padding: 0;
     border: 0;
     border-radius: 99px;
-    background: rgba(212, 175, 55, 0.25);
+    background: rgba(212, 175, 55, 0.3);
     cursor: pointer;
     transition: width 0.3s ease, background 0.3s ease;
-    -webkit-tap-highlight-color: transparent;
 }
 
-.carrusel-3d-dots button.active {
-    width: 22px;
+.anuncio-dots button.active {
+    width: 18px;
     background: var(--gold, #D4AF37);
-    box-shadow: 0 0 10px rgba(212, 175, 55, 0.6);
-}
-
-@media (max-width: 480px) {
-    .carrusel-3d-card {
-        flex: 0 0 215px;
-        height: 300px;
-        padding: 16px;
-    }
-    .carrusel-3d-card .card-icon {
-        font-size: 2.4rem;
-    }
-    .carrusel-3d-card .card-title {
-        font-size: 1rem;
-    }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .carrusel-3d-card,
-    .carrusel-3d-card::after,
-    .carrusel-3d-card .card-icon,
-    .carrusel-3d-dots button {
+    .anuncio-slide,
+    .anuncio-dots button {
         transition: none !important;
-        animation: none !important;
     }
 }
