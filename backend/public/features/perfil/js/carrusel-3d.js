@@ -1,5 +1,5 @@
 /* ============================================
-   CARRUSEL 3D - Csariel's
+   CARRUSEL 3D HORIZONTAL - Csariel's
    Ruta: /features/perfil/js/carrusel-3d.js
    ============================================ */
 
