@@ -1,19 +1,18 @@
-
 /* ================================================================
-   SARIEL'S ECOSYSTEM · APARIENCIA GLOBAL v3.1
+   SARIEL'S ECOSYSTEM · APARIENCIA GLOBAL v3.2
    Archivo: backend/public/features/js/apariencia-global.js
 
-   Conserva:
+   Conserva sin cambios:
    - Preferencias locales y sincronización con Supabase.
    - Tema, color de acento y tamaño de fuente (80–140 %).
    - window.SarielApariencia y todas sus funciones públicas.
    - Carga exclusiva de la mascota activa.
-   - Compatibilidad con Vanilla JS y componentes modulares.
 
-   Mejora:
-   - Microinteracciones táctiles ligeras.
-   - Transiciones suaves sin cambiar la geometría del layout.
-   - Respeto por prefers-reduced-motion.
+   v3.2:
+   - Microinteracciones táctiles con transform y brillo (sin tocar layout).
+   - Entrada suave de tarjetas y encabezados (sin ocultar contenido).
+   - CSS inyectado consolidado en una sola lista de selectores.
+   - prefers-reduced-motion respetado en todas las animaciones.
 
    No modifica anchos, alturas, márgenes ni escalas de contenedores.
    ================================================================ */
@@ -386,102 +385,96 @@
     }
 
     /* ================================================================
-       MICROINTERACCIONES SEGURAS
-       No asigna dimensiones ni transforma contenedores.
+       MICROINTERACCIONES
+       Solo transform, brillo, color y sombra: nunca dimensiones,
+       márgenes ni escalas de contenedores.
        ================================================================ */
 
+    // Lista única de elementos interactivos (antes estaba repetida)
+    const SELECTOR_INTERACTIVO = [
+        'button',
+        'a',
+        '[role="button"]',
+        'input[type="button"]',
+        'input[type="submit"]',
+        '.cfg-item',
+        '.cfg-btn',
+        '.cfg-header-back',
+        '.cfg-header-action'
+    ].join(',');
+
+    // Elementos que reaccionan al toque con una compresión sutil
+    const SELECTOR_PRESIONABLE = [
+        'button',
+        '[role="button"]',
+        '.cfg-item',
+        '.cfg-btn',
+        '.cfg-header-back',
+        '.cfg-header-action'
+    ].join(',');
+
+    // Elementos que se animan al entrar (solo opacidad, nunca ocultan contenido)
+    const SELECTOR_ENTRADA = '.cfg-item, .cfg-header';
+
+    const CSS_MICROINTERACCIONES = `
+        ${SELECTOR_INTERACTIVO} {
+            -webkit-tap-highlight-color: transparent;
+            transition:
+                color 140ms ease,
+                background-color 160ms ease,
+                border-color 160ms ease,
+                box-shadow 180ms ease,
+                filter 140ms ease,
+                transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        ${SELECTOR_PRESIONABLE}:active {
+            transform: scale(0.98);
+            filter: brightness(1.08);
+        }
+
+        ${SELECTOR_INTERACTIVO}:focus-visible {
+            outline: 2px solid var(--accent, #D4AF37);
+            outline-offset: 2px;
+        }
+
+        @media (hover: hover) and (pointer: fine) {
+            ${SELECTOR_PRESIONABLE}:hover {
+                box-shadow: 0 0 0 1px
+                    color-mix(in srgb, var(--accent, #D4AF37) 22%, transparent);
+            }
+        }
+
+        @keyframes sarielFadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+
+        ${SELECTOR_ENTRADA} {
+            animation: sarielFadeIn 220ms ease both;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            ${SELECTOR_INTERACTIVO},
+            ${SELECTOR_ENTRADA} {
+                transition: none !important;
+                animation: none !important;
+            }
+
+            ${SELECTOR_PRESIONABLE}:active {
+                transform: none !important;
+            }
+        }
+    `;
+
     function instalarMicrointeracciones() {
-        if (
-            document.getElementById('sariels-motion-safe-css')
-        ) {
+        if (document.getElementById('sariels-motion-safe-css')) {
             return;
         }
 
         const style = document.createElement('style');
         style.id = 'sariels-motion-safe-css';
-
-        style.textContent = `
-            button,
-            a,
-            [role="button"],
-            input[type="button"],
-            input[type="submit"],
-            .cfg-item,
-            .cfg-btn,
-            .cfg-header-back,
-            .cfg-header-action {
-                -webkit-tap-highlight-color: transparent;
-            }
-
-            button,
-            a,
-            [role="button"],
-            input[type="button"],
-            input[type="submit"],
-            .cfg-item,
-            .cfg-btn,
-            .cfg-header-back,
-            .cfg-header-action {
-                transition:
-                    color 140ms ease,
-                    background-color 160ms ease,
-                    border-color 160ms ease,
-                    box-shadow 160ms ease,
-                    filter 140ms ease;
-            }
-
-            button:active,
-            a:active,
-            [role="button"]:active,
-            input[type="button"]:active,
-            input[type="submit"]:active,
-            .cfg-item:active,
-            .cfg-btn:active,
-            .cfg-header-back:active,
-            .cfg-header-action:active {
-                filter: brightness(1.10);
-            }
-
-            button:focus-visible,
-            a:focus-visible,
-            [role="button"]:focus-visible,
-            input[type="button"]:focus-visible,
-            input[type="submit"]:focus-visible {
-                outline: 2px solid var(--accent, #D4AF37);
-                outline-offset: 2px;
-            }
-
-            @media (hover: hover) and (pointer: fine) {
-                button:hover,
-                a:hover,
-                [role="button"]:hover,
-                .cfg-item:hover,
-                .cfg-btn:hover {
-                    box-shadow:
-                        0 0 0 1px
-                        color-mix(
-                            in srgb,
-                            var(--accent, #D4AF37) 22%,
-                            transparent
-                        );
-                }
-            }
-
-            @media (prefers-reduced-motion: reduce) {
-                button,
-                a,
-                [role="button"],
-                input[type="button"],
-                input[type="submit"],
-                .cfg-item,
-                .cfg-btn,
-                .cfg-header-back,
-                .cfg-header-action {
-                    transition: none !important;
-                    animation: none !important;
-                }
-            }
-        `;
+        style.textContent = CSS_MICROINTERACCIONES;
 
         (document.head || document.documentElement).appendChild(style);
     }
@@ -855,7 +848,7 @@
     })();
 
     console.log(
-        '[Apariencia] Módulo global v3.1 cargado. Mascota activa:',
+        '[Apariencia] Módulo global v3.2 cargado. Mascota activa:',
         getMascotaActiva()
     );
 })();
