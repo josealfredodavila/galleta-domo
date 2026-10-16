@@ -2,8 +2,7 @@
    ANUNCIOS · IMAGEN dentro del carrusel - Csariel's
    Ruta: /features/anuncios/anuncios-carrusel.js
    Inserta una tarjeta de anuncio dentro de .carrusel-3d-track,
-   justo después de la tarjeta Perfil. Rota cada 8 s y se pausa
-   al tocar o mantener presionado. Requiere carrusel-3d.js.
+   justo después de la tarjeta Perfil. Rota cada 8 s.
    ============================================ */
 
 (function () {
@@ -57,7 +56,7 @@
         setTimeout(function () { el.remove(); }, 3200);
     }
 
-    // Ejecuta fn cuando el carrusel ya esté listo (o ya lo estaba)
+    // Espera a que el carrusel esté listo (o ya lo estaba)
     function cuandoCarruselListo(fn) {
         if (window.carrusel3D && typeof window.carrusel3D.refrescar === 'function') {
             fn();
@@ -78,9 +77,8 @@
 
     // Tarjeta de anuncio (se crea una sola vez)
     function crearCard() {
-        var card = document.createElement('a');
+        var card = document.createElement('div');
         card.className = 'carrusel-3d-card anuncio-card';
-        card.href = '#';
         card.style.setProperty('--c', '#D4AF37');
         card.setAttribute('aria-label', 'Anuncio');
 
@@ -88,6 +86,7 @@
         img.className = 'anuncio-img';
         img.alt = '';
         img.decoding = 'async';
+        img.loading = 'lazy';
 
         var etiqueta = document.createElement('span');
         etiqueta.className = 'anuncio-etiqueta';
@@ -116,7 +115,6 @@
         card.appendChild(reportar);
 
         card.addEventListener('click', function (e) {
-            e.preventDefault();
             if (state.movido) return;
             tocarActual();
         });
@@ -182,9 +180,7 @@
             anuncio.usuario_id === state.uid ? 'none' : '';
 
         card.setAttribute('data-id', String(anuncio.id));
-        card.href = (esRutaInterna(anuncio.destino_url) || esEnlaceSeguro(anuncio.destino_url))
-            ? anuncio.destino_url
-            : '#';
+        card.setAttribute('data-destino', anuncio.destino_url || '');
     }
 
     function programar() {
@@ -301,8 +297,11 @@
             if (document.hidden) pausar(); else reanudar();
         });
 
-        await cargar();
-        setInterval(cargar, REFRESCO_MS);
+        // Espera a que el carrusel 3D esté listo antes de insertar
+        cuandoCarruselListo(function () {
+            cargar();
+            setInterval(cargar, REFRESCO_MS);
+        });
     }
 
     if (document.readyState === 'loading') {
