@@ -21,6 +21,10 @@
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-x: contain;
     scrollbar-width: none;
+    /* Centrado estable: evita posiciones intermedias al arrancar */
+    scroll-snap-type: x mandatory;
+    scroll-padding-left: 40px;
+    scroll-padding-right: 40px;
 }
 
 .carrusel-3d-track::-webkit-scrollbar {
@@ -51,6 +55,10 @@
     will-change: transform, opacity;
     transition: box-shadow 0.35s ease, border-color 0.35s ease;
     -webkit-tap-highlight-color: transparent;
+    /* Alineación al centro del track */
+    scroll-snap-align: center;
+    /* Aísla el pintado para acelerar el render */
+    contain: layout paint;
 }
 
 /* Brillo que cruza la tarjeta activa */
@@ -245,6 +253,15 @@
 
 .carrusel-3d-card.anuncio-card .anuncio-reportar:active {
     transform: scale(0.96);
+}
+
+/* Desactiva transiciones durante el primer frame de arranque */
+.carrusel-3d-booting .carrusel-3d-card,
+.carrusel-3d-booting .carrusel-3d-card::after,
+.carrusel-3d-booting .carrusel-3d-card::before,
+.carrusel-3d-booting .carrusel-3d-card .card-icon {
+    transition: none !important;
+    animation: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
