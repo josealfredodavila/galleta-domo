@@ -623,11 +623,11 @@
     <div class="wallet-section" id="walletSection">
         <div class="wallet-header">
             <h3>Wallet · Polygon</h3>
-            <span class="wallet-estado" id="walletEstado">Sin conectar</span>
+            <span class="wallet-estado" id="walletEstado">Cargando…</span>
         </div>
         <div class="wallet-direccion" id="walletDireccion">—</div>
         <div class="wallet-acciones">
-            <button class="btn btn-gold" id="btnConectarWallet" type="button" onclick="window.conectarWalletPerfil()">
+            <button class="btn btn-gold" id="btnConectarWallet" type="button" onclick="window.conectarWalletPerfil()" style="display:none;">
                 Conectar wallet
             </button>
             <button class="btn btn-outline" id="btnDesconectarWallet" type="button" style="display:none;" onclick="window.desconectarWalletPerfil()">
@@ -1215,13 +1215,18 @@
 
 <script>
 /* ================================================================
-   WALLET · INTEGRACIÓN CON EL PERFIL
-   Usa las funciones de perfil-wallet.js (conectarWallet,
-   desconectarWallet, iniciarEscuchaWallet). Este bloque solo
-   dibuja el estado y guarda wallet_visible en Supabase.
+   WALLET · INTEGRACIÓN CON EL PERFIL (v3)
+   - Espera a que Supabase y la sesión existan antes de leer.
+   - Vuelve a cargar al volver a la página (bfcache / historial),
+     al regresar a la pestaña y tras conectar o desconectar.
+   - Usa perfil-wallet.js (conectarWallet, desconectarWallet,
+     iniciarEscuchaWallet). Este bloque solo dibuja el estado.
    ================================================================ */
 (function () {
     'use strict';
+
+    var refrescando = false;
+    var pendiente = false;
 
     function $w(id) { return document.getElementById(id); }
 
@@ -1230,70 +1235,126 @@
         return direccion.slice(0, 6) + '…' + direccion.slice(-4);
     }
 
-    async function obtenerUsuario() {
-        const client = window.supabaseClient;
-        if (!client) return null;
-        const r = await client.auth.getSession();
-        return r && r.data && r.data.session ? r.data.session.user : null;
+    function esperar(ms) {
+        return new Promise(function (r) { setTimeout(r, ms); });
     }
 
-    async function refrescarWallet() {
-        const client = window.supabaseClient;
-        const user = await obtenerUsuario();
-        if (!client || !user) return;
-
-        const { data, error } = await client
-            .from('usuarios')
-            .select('wallet_address, wallet_visible')
-            .eq('id', user.id)
-            .maybeSingle();
-
-        if (error) {
-            $w('walletHint').textContent = 'No se pudo leer tu wallet.';
-            return;
+    async function esperarCliente() {
+        for (var i = 0; i < 150; i++) {
+            if (window.supabaseClient) return window.supabaseClient;
+            await esperar(100);
         }
+        return null;
+    }
 
-        const conectada = Boolean(data && data.wallet_address);
+    async function obtenerUsuario(client) {
+        for (var i = 0; i < 20; i++) {
+            try {
+                var r = await client.auth.getSession();
+                if (r && r.data && r.data.session) return r.data.session.user;
+            } catch (e) { /* reintenta */ }
+            await esperar(150);
+        }
+        return null;
+    }
+
+    function pintarWallet(data) {
+        var conectada = Boolean(data && data.wallet_address);
+        var visibleDireccion = conectada && Boolean(data.wallet_visible);
+
+        $w('walletSection').style.display = '';
 
         $w('walletEstado').textContent = conectada ? 'Conectada' : 'Sin conectar';
         $w('walletEstado').classList.toggle('conectada', conectada);
-        const mostrarCompleta = conectada && Boolean(data.wallet_visible);
+
         if (!conectada) {
             $w('walletDireccion').textContent = 'Aún no tienes una wallet vinculada.';
-        } else if (mostrarCompleta) {
+        } else if (visibleDireccion) {
             $w('walletDireccion').textContent = data.wallet_address;
         } else {
-            $w('walletDireccion').textContent = data.wallet_address.slice(0, 6) + '…' + data.wallet_address.slice(-4);
+            $w('walletDireccion').textContent = acortar(data.wallet_address);
         }
+
         $w('walletDireccion').dataset.full = conectada ? data.wallet_address : '';
-        $w('walletDireccion').style.cursor = mostrarCompleta ? 'pointer' : 'default';
-        $w('btnCopiarWallet').style.display = mostrarCompleta ? '' : 'none';
+        $w('walletDireccion').style.cursor = visibleDireccion ? 'pointer' : 'default';
+
+        $w('btnConectarWallet').style.display = conectada ? 'none' : '';
+        $w('btnDesconectarWallet').style.display = conectada ? '' : 'none';
+        $w('btnCopiarWallet').style.display = visibleDireccion ? '' : 'none';
         $w('linkPolygonScan').style.display = conectada ? '' : 'none';
         if (conectada) {
             $w('linkPolygonScan').href = 'https://amoy.polygonscan.com/address/' + data.wallet_address;
         }
-        $w('btnConectarWallet').style.display = conectada ? 'none' : '';
-        $w('btnDesconectarWallet').style.display = conectada ? '' : 'none';
 
-        const visible = $w('walletVisible');
+        var visible = $w('walletVisible');
         visible.checked = Boolean(data && data.wallet_visible);
         visible.disabled = !conectada;
         $w('walletVisibleTexto').textContent = visible.checked
             ? 'Visible: otros usuarios pueden ver tu dirección en tu perfil.'
             : 'Oculta: solo tú puedes ver tu dirección.';
+
         $w('walletHint').textContent = conectada
             ? 'Vinculada en Polygon (' + acortar(data.wallet_address) + ').'
             : 'Necesitas MetaMask para vincular tu wallet.';
     }
 
+    function mostrarErrorWallet(texto) {
+        $w('walletSection').style.display = '';
+        $w('walletEstado').textContent = 'Sin conexión';
+        $w('walletEstado').classList.remove('conectada');
+        $w('walletHint').textContent = texto;
+    }
+
+    async function refrescarWallet() {
+        if (refrescando) { pendiente = true; return; }
+        refrescando = true;
+        try {
+            var client = await esperarCliente();
+            if (!client) {
+                mostrarErrorWallet('No se pudo conectar con la base de datos. Intenta recargar.');
+                return;
+            }
+
+            var user = await obtenerUsuario(client);
+            if (!user) {
+                mostrarErrorWallet('Inicia sesión para ver tu wallet.');
+                return;
+            }
+
+            var r = await client
+                .from('usuarios')
+                .select('wallet_address, wallet_visible')
+                .eq('id', user.id)
+                .maybeSingle();
+
+            if (r.error) {
+                mostrarErrorWallet('No se pudo leer tu wallet.');
+                return;
+            }
+
+            pintarWallet(r.data);
+        } catch (e) {
+            console.warn('[Perfil] Error refrescando wallet:', e);
+            mostrarErrorWallet('No se pudo leer tu wallet.');
+        } finally {
+            refrescando = false;
+            if (pendiente) {
+                pendiente = false;
+                refrescarWallet();
+            }
+        }
+    }
+
+    window.refrescarWalletPerfil = refrescarWallet;
+
     window.copiarWalletPerfil = async function () {
-        const direccion = ($w('walletDireccion').dataset.full || '').trim();
+        var direccion = ($w('walletDireccion').dataset.full || '').trim();
         if (!direccion || direccion.indexOf('0x') !== 0) return;
         try {
             if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
                 await navigator.clipboard.writeText(direccion);
             } else {
-                const area = document.createElement('textarea');
+                var area = document.createElement('textarea');
                 area.value = direccion;
                 area.style.position = 'fixed';
                 area.style.opacity = '0';
@@ -1316,45 +1377,52 @@
         if (typeof window.conectarWallet !== 'function') return;
         await window.conectarWallet();
         await refrescarWallet();
+        // Por si perfil-wallet.js guarda en la base de datos después de conectar
+        setTimeout(refrescarWallet, 1500);
     };
 
     window.desconectarWalletPerfil = async function () {
         if (typeof window.desconectarWallet !== 'function') return;
-        const ok = window.confirm('¿Seguro que quieres desvincular tu wallet?');
+        var ok = window.confirm('¿Seguro que quieres desvincular tu wallet?');
         if (!ok) return;
         await window.desconectarWallet();
         await refrescarWallet();
+        setTimeout(refrescarWallet, 1500);
     };
 
     async function guardarVisibilidad(valor) {
-        const client = window.supabaseClient;
-        const user = await obtenerUsuario();
-        if (!client || !user) return;
+        var client = await esperarCliente();
+        var user = client ? await obtenerUsuario(client) : null;
+        if (!client || !user) {
+            if (typeof window.showToast === 'function') {
+                window.showToast('❌ No se pudo cambiar la visibilidad de tu wallet', 'error');
+            }
+            refrescarWallet();
+            return;
+        }
 
-        const { error } = await client
+        var r = await client
             .from('usuarios')
             .update({ wallet_visible: valor })
             .eq('id', user.id);
 
-        if (error) {
+        if (r.error) {
             if (typeof window.showToast === 'function') {
                 window.showToast('❌ No se pudo cambiar la visibilidad de tu wallet', 'error');
             }
-            await refrescarWallet();
-            return;
         }
-        await refrescarWallet();
+        refrescarWallet();
     }
 
     function iniciar() {
-        const visible = $w('walletVisible');
+        var visible = $w('walletVisible');
         if (visible) {
             visible.addEventListener('change', function () {
                 guardarVisibilidad(visible.checked);
             });
         }
 
-        const direccionEl = $w('walletDireccion');
+        var direccionEl = $w('walletDireccion');
         if (direccionEl) {
             direccionEl.addEventListener('click', function () {
                 if (direccionEl.dataset.full && $w('btnCopiarWallet').style.display !== 'none') {
@@ -1366,6 +1434,19 @@
         if (typeof window.iniciarEscuchaWallet === 'function') {
             window.iniciarEscuchaWallet();
         }
+
+        // Evento que puede emitir perfil-wallet.js al cambiar la wallet
+        window.addEventListener('wallet:actualizada', refrescarWallet);
+
+        // Volver a la página desde el historial o caché del navegador
+        window.addEventListener('pageshow', function () {
+            refrescarWallet();
+        });
+
+        // Al regresar a la pestaña o a la app
+        document.addEventListener('visibilitychange', function () {
+            if (!document.hidden) refrescarWallet();
+        });
 
         refrescarWallet();
     }
