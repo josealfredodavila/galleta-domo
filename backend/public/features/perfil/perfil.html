@@ -2,7 +2,7 @@
 <html lang="es" data-require-auth>
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title data-clave="perfil_titulo_pagina">◈ Perfil · Csariel's</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
@@ -76,10 +76,6 @@
         opacity: 0.8;
     }
 
-    /* Sin anillos de enfoque ni sombras de hover: evitan recuadros
-       alrededor de botones, pestañas y la mascota. */
-
-    /* Entrada suave de cada pestaña (solo opacidad: nunca oculta contenido) */
     @keyframes perfilTabIn {
         from { opacity: 0; }
         to   { opacity: 1; }
@@ -253,6 +249,115 @@
         border-radius: 16px;
     }
 </style>
+
+<!-- ================================================================
+     HOTFIX · BORDES BLANCOS INFERIORES + CORTE DEL CARRUSEL 3D
+     Se aplica después de todos los CSS del módulo para ganar
+     especificidad sin tocar los archivos originales.
+     ================================================================ -->
+<style id="perfil-hotfix-carrusel-bordes">
+    /* ---------- 1) Fondo continuo y sin franjas blancas ---------- */
+    html, body {
+        /* Usa el mismo fondo que .app para que nunca asome blanco.
+           Si tu fondo real es un gradiente, reemplaza por el color
+           sólido dominante (por ejemplo #050505 o #0a0a0a). */
+        background-color: #050505;
+        background-image: none;
+        overflow-x: hidden;
+        margin: 0;
+        padding: 0;
+        min-height: 100%;
+    }
+
+    body {
+        /* Respeta el notch en iPhone sin dejar hueco blanco */
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    .app {
+        overflow: hidden;
+        padding-bottom: 0 !important;
+        margin-bottom: 0 !important;
+        background-color: transparent;
+    }
+
+    /* El footer no debe generar aire blanco por debajo */
+    .app > .footer,
+    footer.footer {
+        margin-bottom: 0 !important;
+        padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px) !important;
+        background: transparent;
+    }
+
+    /* Si algún contenedor deja ver el fondo del body, lo tapamos */
+    .perfil-container {
+        background: transparent;
+        padding-bottom: 0 !important;
+    }
+
+    /* ---------- 2) Carrusel 3D: sin cortes en las orillas ---------- */
+    .carrusel-3d-wrapper {
+        width: 100%;
+        max-width: 100%;
+        margin: 0 auto;
+        box-sizing: border-box;
+        /* Reserva simétrica: la 1ª y última tarjeta nunca se pegan al borde */
+        padding-top: 12px;
+        padding-bottom: 18px;
+        padding-left: max(16px, env(safe-area-inset-left, 0px));
+        padding-right: max(16px, env(safe-area-inset-right, 0px));
+        overflow: hidden;                 /* recorta solo lo que sobra */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        /* El fondo del wrapper hereda el del .app, sin blanco */
+        background: transparent;
+    }
+
+    .carrusel-3d-track {
+        display: flex;
+        align-items: stretch;
+        gap: 16px;
+        margin: 0 auto;                   /* centrado óptico */
+        padding: 0;                       /* el JS mide el track, no el wrapper */
+        will-change: transform;
+        background: transparent;
+    }
+
+    .carrusel-3d-card {
+        flex: 0 0 auto;
+        box-sizing: border-box;
+        overflow: visible;                /* evita recorte de bordes/sombras */
+        background-clip: padding-box;
+    }
+
+    /* ---------- 3) Móvil: una tarjeta visible, centrada ---------- */
+    @media (max-width: 640px) {
+        .carrusel-3d-wrapper {
+            padding-left: max(12px, env(safe-area-inset-left, 0px));
+            padding-right: max(12px, env(safe-area-inset-right, 0px));
+            padding-top: 10px;
+            padding-bottom: 14px;
+        }
+        .carrusel-3d-track {
+            gap: 12px;
+        }
+    }
+
+    /* ---------- 4) Blindaje contra overflow horizontal global ---------- */
+    .perfil-container,
+    .carrusel-3d-wrapper,
+    .carrusel-3d-track,
+    .anuncios-crear-acceso {
+        max-width: 100vw;
+    }
+
+    /* Evita que el botón flotante del carrusel fullscreen
+       deje margen inferior blanco */
+    #btnAbrirCarruselFullscreen {
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+    }
+</style>
 </head>
 <body>
 
@@ -301,77 +406,77 @@
     </a>
 </nav>
 
-<!-- ============ INICIO DEL CARRUSEL 3D HORIZONTAL (dentro del perfil) ============ -->
-<div class="carrusel-3d-wrapper">
-    <div class="carrusel-3d-track">
-
-        <!-- 1. Muro (Mercado de Tokens) -->
-        <a href="/features/muro/muro.html" class="carrusel-3d-card">
-            <div class="card-icon">🤝</div>
-            <div class="card-title">Muro</div>
-            <div class="card-desc">Publica, conecta y comparte con la comunidad.</div>
-        </a>
-
-        <!-- 2. Perfil (Activo) -->
-        <a href="/features/perfil/perfil.html" class="carrusel-3d-card active">
-            <div class="card-icon">👤</div>
-            <div class="card-title">Perfil</div>
-            <div class="card-desc">Gestiona tu identidad, tokens y configuración.</div>
-        </a>
-
-        <!-- 3. Grupos / Canales -->
-        <a href="/features/grupos/grupos.html" class="carrusel-3d-card">
-            <div class="card-icon">👥</div>
-            <div class="card-title">Grupos</div>
-            <div class="card-desc">Únete a comunidades y crea tus propios canales.</div>
-        </a>
-
-        <!-- 4. Contactos / Mensajes -->
-        <a href="/features/mensajes/contactos.html" class="carrusel-3d-card">
-            <div class="card-icon">💬</div>
-            <div class="card-title">Contactos</div>
-            <div class="card-desc">Chatea y mantente en contacto con amigos.</div>
-        </a>
-
-        <!-- 5. Mercado / Tienda -->
-        <a href="/features/mercado/index.html" class="carrusel-3d-card">
-            <div class="card-icon">🛒</div>
-            <div class="card-title">Mercado</div>
-            <div class="card-desc">Descubre tiendas y productos cerca de ti.</div>
-        </a>
-
-        <!-- 6. Live -->
-        <a href="/features/live/live.html" class="carrusel-3d-card">
-            <div class="card-icon">🔴</div>
-            <div class="card-title">Live</div>
-            <div class="card-desc">Transmisiones en vivo y eventos exclusivos.</div>
-        </a>
-
-        <!-- 7. Internet -->
-        <a href="/features/internet/internet.html" class="carrusel-3d-card">
-            <div class="card-icon">🌐</div>
-            <div class="card-title">Internet</div>
-            <div class="card-desc">Conectividad eSIM y datos descentralizados.</div>
-        </a>
-
-        <!-- 8. Videos -->
-        <a href="/features/videos/videos.html" class="carrusel-3d-card">
-            <div class="card-icon">🎬</div>
-            <div class="card-title">Videos</div>
-            <div class="card-desc">Explora y comparte videos en la comunidad.</div>
-        </a>
-
-    </div>
-</div>
-<!-- ============ FIN DEL CARRUSEL 3D HORIZONTAL ============ -->
-
-<div class="anuncios-crear-acceso" style="max-width:720px;margin:12px auto 0;padding:0 16px;box-sizing:border-box;display:flex;justify-content:flex-end;">
-    <a href="/features/anuncios/anuncios-crear.html" style="display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:99px;border:1px solid var(--gold,#D4AF37);color:var(--gold,#D4AF37);text-decoration:none;font-size:.78rem;font-weight:700;letter-spacing:.5px;background:rgba(212,175,55,.08);">
-        📢 Crear anuncio
-    </a>
-</div>
-
 <div class="perfil-container">
+
+    <!-- ============ CARRUSEL 3D HORIZONTAL (dentro del perfil) ============ -->
+    <div class="carrusel-3d-wrapper">
+        <div class="carrusel-3d-track">
+
+            <!-- 1. Muro (Mercado de Tokens) -->
+            <a href="/features/muro/muro.html" class="carrusel-3d-card">
+                <div class="card-icon">🤝</div>
+                <div class="card-title">Muro</div>
+                <div class="card-desc">Publica, conecta y comparte con la comunidad.</div>
+            </a>
+
+            <!-- 2. Perfil (Activo) -->
+            <a href="/features/perfil/perfil.html" class="carrusel-3d-card active">
+                <div class="card-icon">👤</div>
+                <div class="card-title">Perfil</div>
+                <div class="card-desc">Gestiona tu identidad, tokens y configuración.</div>
+            </a>
+
+            <!-- 3. Grupos / Canales -->
+            <a href="/features/grupos/grupos.html" class="carrusel-3d-card">
+                <div class="card-icon">👥</div>
+                <div class="card-title">Grupos</div>
+                <div class="card-desc">Únete a comunidades y crea tus propios canales.</div>
+            </a>
+
+            <!-- 4. Contactos / Mensajes -->
+            <a href="/features/mensajes/contactos.html" class="carrusel-3d-card">
+                <div class="card-icon">💬</div>
+                <div class="card-title">Contactos</div>
+                <div class="card-desc">Chatea y mantente en contacto con amigos.</div>
+            </a>
+
+            <!-- 5. Mercado / Tienda -->
+            <a href="/features/mercado/index.html" class="carrusel-3d-card">
+                <div class="card-icon">🛒</div>
+                <div class="card-title">Mercado</div>
+                <div class="card-desc">Descubre tiendas y productos cerca de ti.</div>
+            </a>
+
+            <!-- 6. Live -->
+            <a href="/features/live/live.html" class="carrusel-3d-card">
+                <div class="card-icon">🔴</div>
+                <div class="card-title">Live</div>
+                <div class="card-desc">Transmisiones en vivo y eventos exclusivos.</div>
+            </a>
+
+            <!-- 7. Internet -->
+            <a href="/features/internet/internet.html" class="carrusel-3d-card">
+                <div class="card-icon">🌐</div>
+                <div class="card-title">Internet</div>
+                <div class="card-desc">Conectividad eSIM y datos descentralizados.</div>
+            </a>
+
+            <!-- 8. Videos -->
+            <a href="/features/videos/videos.html" class="carrusel-3d-card">
+                <div class="card-icon">🎬</div>
+                <div class="card-title">Videos</div>
+                <div class="card-desc">Explora y comparte videos en la comunidad.</div>
+            </a>
+
+        </div>
+    </div>
+    <!-- ============ FIN DEL CARRUSEL 3D HORIZONTAL ============ -->
+
+    <div class="anuncios-crear-acceso" style="max-width:720px;margin:12px auto 0;padding:0 16px;box-sizing:border-box;display:flex;justify-content:flex-end;">
+        <a href="/features/anuncios/anuncios-crear.html" style="display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:99px;border:1px solid var(--gold,#D4AF37);color:var(--gold,#D4AF37);text-decoration:none;font-size:.78rem;font-weight:700;letter-spacing:.5px;background:rgba(212,175,55,.08);">
+            📢 Crear anuncio
+        </a>
+    </div>
 
     <div class="perfil-header" id="perfilHeader">
         <a href="/features/perfil/configuracion/index.html" class="config-btn" data-clave-title="perfil_titulo_config" title="Configuración">
