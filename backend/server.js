@@ -1,9 +1,9 @@
 // ================================================================
 // server.js — Sariel's Ecosystem
 // Backend principal — Producción Railway
-// v3.4: Wallet (nonce + firma EOA), Media (moderación con AWS
-//       Rekognition) y Moderar-Texto (OpenAI Moderation API)
-//       montados.
+// v3.5: Wallet (nonce + firma EOA), Media (moderación con AWS
+//       Rekognition), Moderar-Texto (OpenAI Moderation API) y
+//       Llamadas mixtas (/api/llamadas: LiveKit hoy, Telnyx después).
 // ================================================================
 
 require('dotenv').config();
@@ -116,6 +116,10 @@ if (!process.env.AWS_REGION) console.warn('⚠️ Falta AWS_REGION (moderación 
 if (!process.env.OPENAI_API_KEY) console.warn('⚠️ Falta OPENAI_API_KEY (moderación de texto deshabilitada)');
 
 if (!process.env.NODE_ENV) console.warn('⚠️ NODE_ENV no está definido');
+
+if (process.env.TELNYX_CALLS_ENABLED !== 'true') {
+    console.log('ℹ️ Llamadas a números externos (Telnyx) desactivadas');
+}
 
 // ================================================================
 // SUPABASE
@@ -752,6 +756,9 @@ function montarRouter(mountPath, requirePaths, nombre) {
 // LiveKit
 montarRouter('/api/livekit', './routes/livekit', 'routes/livekit');
 
+// Llamadas mixtas (decide motor: LiveKit hoy, Telnyx en Fase 2)
+montarRouter('/api/llamadas', './routes/llamadas', 'routes/llamadas');
+
 montarRouter('/api/auth', './routes/auth', 'routes/auth');
 
 montarRouter('/api/account', './routes/account', 'routes/account');
@@ -810,13 +817,13 @@ montarRouter('/api/live', './routes/live', 'routes/live');
 // Geo
 montarRouter('/api/geo', './routes/geo', 'routes/geo');
 
-// ⬇️ Media (moderación de imagen/video + subida centralizada)
+// Media (moderación de imagen/video + subida centralizada)
 montarRouter('/api/media', './routes/media', 'routes/media');
 
-// ⬇️ NUEVO: Moderación de texto (OpenAI Moderation API)
+// Moderación de texto (OpenAI Moderation API)
 montarRouter('/api/moderar-texto', './routes/moderar-texto', 'routes/moderar-texto');
 
-// ⬇️ NUEVO: Wallet (nonce + firma EOA)
+// Wallet (nonce + firma EOA)
 montarRouter('/api/wallet', './routes/wallet', 'routes/wallet');
 
 // Web Push
@@ -953,6 +960,10 @@ async function healthCheck(req, res) {
         timestamp: new Date().toISOString(),
         supabase: supabaseStatus,
         livekit: { configured: livekitConfigured },
+        llamadas: {
+            motor_livekit: livekitConfigured,
+            telefonia_externa: process.env.TELNYX_CALLS_ENABLED === 'true'
+        },
         push: { configured: pushConfigured },
         moderacion: { configured: moderacionImagenConfigured },
         moderacion_texto: { configured: moderacionTextoConfigured },
