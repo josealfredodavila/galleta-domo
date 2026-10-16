@@ -253,6 +253,52 @@
         border-radius: 16px;
     }
 </style>
+<style>
+    /* Respaldo del overlay "Módulos" y su botón flotante.
+       Si carrusel-3d-fullscreen.css carga bien, sus reglas tienen prioridad. */
+    .carrusel-fullscreen-overlay {
+        display: none;
+    }
+    .carrusel-fullscreen-overlay.is-open,
+    .carrusel-fullscreen-overlay.open,
+    .carrusel-fullscreen-overlay.active,
+    .carrusel-fullscreen-overlay.abierto,
+    .carrusel-fullscreen-overlay.visible {
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+        inset: 0;
+        z-index: 9500;
+        background: rgba(5, 8, 15, 0.97);
+        color: var(--text-primary, #ffffff);
+        padding: 16px;
+        box-sizing: border-box;
+    }
+    .btn-abrir-carrusel-fullscreen {
+        position: fixed;
+        right: 16px;
+        bottom: 24px;
+        z-index: 9000;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        border: 1px solid var(--gold, #D4AF37);
+        background: rgba(5, 8, 15, 0.9);
+        color: var(--gold, #D4AF37);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        padding: 0;
+    }
+    .btn-abrir-carrusel-fullscreen svg {
+        width: 22px;
+        height: 22px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+    }
+</style>
 </head>
 <body>
 
@@ -911,7 +957,7 @@
     <div class="panel">
         <div class="panel-header">
             <h3 data-clave="perfil_escanear_qr">
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="17"/><line x1="17" y1="14" x2="21" y2="14"/><line x1="14" y1="21" x2="21" y2="21"/></svg>
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="17"/><line x1="17" y1="14" x2="21" y2="14"/><line x1="14" y1="21" x2="21" y2="21"/><line x1="17" y1="17" x2="21" y2="21"/></svg>
                 Escanear QR
             </h3>
             <span class="panel-badge" data-clave="perfil_recibe_estoks">Recibe Es.stoks</span>
