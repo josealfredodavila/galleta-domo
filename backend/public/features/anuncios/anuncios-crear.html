@@ -114,6 +114,47 @@
         border: 1px solid var(--line); color: var(--gold); letter-spacing: 1px;
     }
 
+    /* ============ TÉRMINOS Y CONDICIONES ============ */
+    .terminos-aceptacion {
+        margin-top: 18px;
+        padding: 14px;
+        border-radius: 12px;
+        background: rgba(212, 175, 55, .04);
+        border: 1px solid var(--line);
+    }
+    .terminos-check {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        cursor: pointer;
+        user-select: none;
+    }
+    .terminos-check input[type="checkbox"] {
+        flex: 0 0 18px;
+        width: 18px;
+        height: 18px;
+        margin-top: 3px;
+        accent-color: var(--gold);
+        cursor: pointer;
+    }
+    .terminos-texto {
+        font-size: .75rem;
+        line-height: 1.55;
+        color: var(--muted);
+        display: block;
+    }
+    .terminos-texto a {
+        color: var(--gold);
+        text-decoration: underline;
+        font-weight: 700;
+    }
+    .terminos-texto a:hover {
+        color: #fff;
+    }
+    .terminos-texto strong {
+        color: var(--gold);
+    }
+
     .boton {
         width: 100%; padding: 14px; border: 0; border-radius: 14px;
         background: linear-gradient(135deg, var(--cyan), #8b5cf6);
@@ -228,6 +269,30 @@
             <option value="externo">Enlace externo (https)</option>
         </select>
         <input type="url" id="destinoExterno" placeholder="https://..." style="display:none; margin-top:8px;">
+
+        <!-- ============ TÉRMINOS Y CONDICIONES ============ -->
+        <div class="terminos-aceptacion">
+            <label class="terminos-check">
+                <input type="checkbox" id="aceptoTerminos" required>
+                <span class="terminos-texto">
+                    He leído y acepto los
+                    <a href="/features/anuncios/terminos-anunciantes.html"
+                       target="_blank"
+                       rel="noopener">
+                        Términos y Condiciones para Anunciantes
+                    </a>
+                    de Csariel's. Entiendo que:
+                    <br>
+                    • Soy el único responsable de la veracidad y legalidad
+                      de lo que anuncio.
+                    <br>
+                    • Mi anuncio será identificado como <strong>PATROCINADO</strong>.
+                    <br>
+                    • Csariel's puede pausar o remover mi anuncio si
+                      infringe las normas.
+                </span>
+            </label>
+        </div>
 
         <button type="submit" class="boton" id="btnPublicar">Publicar anuncio</button>
         <div class="estado" id="estado"></div>
@@ -435,6 +500,14 @@
         var destinoSel = $('destino').value;
         var destino = destinoSel;
 
+        // ============ VALIDACIÓN: TÉRMINOS ACEPTADOS ============
+        var aceptoTerminos = $('aceptoTerminos');
+        if (!aceptoTerminos.checked) {
+            estado('Debes aceptar los Términos y Condiciones para publicar.', 'error');
+            aceptoTerminos.focus();
+            return;
+        }
+
         if (!titulo) { estado('Escribe un título.', 'error'); return; }
         if (!archivoSeleccionado) { estado('Elige una imagen.', 'error'); return; }
 
@@ -488,6 +561,7 @@
             $('vistaPrevia').style.display = 'none';
             $('destinoExterno').style.display = 'none';
             archivoSeleccionado = null;
+            // El reset() ya desmarca el checkbox automáticamente
             cargarMisAnuncios();
         } catch (err) {
             console.error('[Crear anuncio]', err);
