@@ -1,81 +1,76 @@
 /* ============================================
    CARRUSEL 3D HORIZONTAL - Csariel's
    Ruta: /features/perfil/js/carrusel-3d.js
-   Scroll libre. Cada tarjeta se inclina y escala según
-   qué tan cerca esté del centro; la más cercana queda activa.
-   Expone window.carrusel3D.refrescar() para registrar tarjetas
-   nuevas (por ejemplo, un anuncio) después de cargar.
 
-   v2 · MARKETING
-   - Paleta llamativa estilo Index (degradados vibrantes).
-   - Los colores ya no representan secciones (Muro, Perfil…)
-     sino anuncios promocionales.
-   - Si no hay anuncios, se inyectan placeholders de marketing.
+   v3 · MARKETING AUTOMÁTICO
+   - Carga anuncios reales desde Supabase (tabla `anuncios`).
+   - Si no hay anuncios activos → muestra placeholders de marketing.
+   - Realtime: se actualiza cuando alguien publica un anuncio.
+   - Registra toques al hacer click en un anuncio.
+   - Respeta `destino_url` para redirigir.
    ============================================ */
 
 (function () {
     'use strict';
 
-    // Paleta llamativa estilo Index (naranja→dorado, verde→cian,
-    // morado→rosa, azul→turquesa, rojo→naranja, etc.)
-    // Cada color es un par [inicio, fin] de degradado.
+    // -----------------------------------------------------------
+    // CONFIGURACIÓN
+    // -----------------------------------------------------------
+    var TABLA = 'anuncios';
+    var MAX_ANUNCIOS = 8;
+
+    // Paleta llamativa estilo Index (par [inicio, fin] de degradado)
     var PALETA = [
-        ['#ff3d00', '#ffc400'], // 0 · Naranja → Dorado
-        ['#00c853', '#00e5ff'], // 1 · Verde → Cian
-        ['#7c4dff', '#ff3cb4'], // 2 · Morado → Rosa
-        ['#2962ff', '#00e5ff'], // 3 · Azul → Turquesa
-        ['#d50000', '#ff6d00'], // 4 · Rojo → Naranja
-        ['#ffd600', '#00e676'], // 5 · Amarillo → Verde
-        ['#ff4081', '#7c4dff']  // 6 · Rosa → Violeta
+        ['#ff3d00', '#ffc400'], // Naranja → Dorado
+        ['#00c853', '#00e5ff'], // Verde → Cian
+        ['#7c4dff', '#ff3cb4'], // Morado → Rosa
+        ['#2962ff', '#00e5ff'], // Azul → Turquesa
+        ['#d50000', '#ff6d00'], // Rojo → Naranja
+        ['#ffd600', '#00e676'], // Amarillo → Verde
+        ['#ff4081', '#7c4dff'], // Rosa → Violeta
+        ['#00bcd4', '#3f51b5']  // Cian → Índigo
     ];
 
-    // Placeholders de marketing (cuando aún no hay anuncios reales)
+    // Placeholders cuando no hay anuncios reales
     var PLACEHOLDERS = [
         {
-            chip: 'MARKETING GRATIS',
-            icon: '📣',
+            chip: 'MARKETING GRATIS', icon: '📣',
             title: 'ANÚNCIATE GRATIS',
             desc: 'Miles de personas te están buscando. Da a conocer tu negocio sin costo.',
             cta: 'Quiero anunciarme'
         },
         {
-            chip: 'SIN COSTO',
-            icon: '🚀',
+            chip: 'SIN COSTO', icon: '🚀',
             title: 'IMPULSA TU MARCA',
             desc: 'Llega a más clientes en el ecosistema Web3. Sin inversión inicial.',
             cta: 'Empezar gratis'
         },
         {
-            chip: 'ESPACIO PREMIUM',
-            icon: '💎',
+            chip: 'ESPACIO PREMIUM', icon: '💎',
             title: 'SÉ VISIBLE',
             desc: 'Tu marca merece brillar. Ocupa este espacio destacado gratis.',
             cta: 'Destacar ahora'
         },
         {
-            chip: 'RED DE ANUNCIANTES',
-            icon: '🌐',
+            chip: 'RED DE ANUNCIANTES', icon: '🌐',
             title: 'CRECE CON NOSOTROS',
             desc: 'Únete a la red de anunciantes de Sariel\'s. Publicar es gratis.',
             cta: 'Unirme'
         },
         {
-            chip: 'TE ESTÁN BUSCANDO',
-            icon: '🎯',
+            chip: 'TE ESTÁN BUSCANDO', icon: '🎯',
             title: 'HAZTE VER',
             desc: 'Clientes potenciales quieren encontrarte. Aparece sin pagar nada.',
             cta: 'Aparecer aquí'
         },
         {
-            chip: '100% GRATUITO',
-            icon: '📢',
+            chip: '100% GRATUITO', icon: '📢',
             title: 'PROMOCIONA TU NEGOCIO',
             desc: 'Espacio premium para tu marca en la comunidad. Sin costo.',
             cta: 'Promocionar'
         },
         {
-            chip: 'ANÚNCIATE GRATIS',
-            icon: '✨',
+            chip: 'ANÚNCIATE GRATIS', icon: '✨',
             title: 'DESTACA AQUÍ',
             desc: 'Contenido exclusivo para anunciantes de Sariel\'s. Anúnciate gratis.',
             cta: 'Destacar gratis'
@@ -86,6 +81,9 @@
     var PERDIDA_ESCALA = 0.1;
     var OPACIDAD_MIN = 0.55;
 
+    // -----------------------------------------------------------
+    // ESTADO
+    // -----------------------------------------------------------
     var wrapper = null;
     var track = null;
     var dots = null;
@@ -94,7 +92,13 @@
     var pendiente = false;
     var inicializado = false;
     var activoActual = -1;
+    var anunciosCache = [];
+    var realtimeChannel = null;
+    var cargaEnCurso = false;
 
+    // -----------------------------------------------------------
+    // HELPERS DE DOM
+    // -----------------------------------------------------------
     function obtenerWrapper() {
         return document.getElementById('carruselPerfilWrapper') ||
                document.querySelector('.carrusel-3d-wrapper:not(.carrusel-fullscreen-overlay *)');
@@ -110,11 +114,116 @@
         return Array.prototype.slice.call(track.querySelectorAll('.carrusel-3d-card'));
     }
 
+    function esc(s) {
+        var d = document.createElement('div');
+        d.textContent = s == null ? '' : String(s);
+        return d.innerHTML;
+    }
+
+    // -----------------------------------------------------------
+    // CARGA DE ANUNCIOS DESDE SUPABASE
+    // -----------------------------------------------------------
+    async function obtenerCliente() {
+        // Reutiliza el cliente global si ya existe
+        if (window.supabaseClient) return window.supabaseClient;
+
+        // Espera al cliente que use el resto de la app
+        if (window.supabaseReady) {
+            try {
+                var c = await window.supabaseReady;
+                if (c) return c;
+            } catch (e) { /* silencioso */ }
+        }
+
+        // Fallback: crear uno nuevo
+        if (!window.supabase || !window.supabase.createClient) return null;
+        try {
+            var r = await fetch('/api/config/public', { cache: 'no-store', credentials: 'same-origin' });
+            var config = await r.json();
+            window.supabaseClient = window.supabase.createClient(
+                config.supabaseUrl,
+                config.supabaseAnonKey,
+                { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } }
+            );
+            return window.supabaseClient;
+        } catch (e) {
+            console.warn('[Carrusel] No se pudo crear cliente Supabase:', e);
+            return null;
+        }
+    }
+
     /**
-     * Asigna color de acento (--c) y degradado (--c1, --c2) a cada tarjeta.
-     * - Si la tarjeta es un anuncio real (anuncio-card), respeta sus variables.
-     * - Si no, aplica la paleta llamativa por índice.
+     * Consulta la tabla `anuncios` y devuelve los activos y vigentes.
      */
+    async function cargarAnunciosDesdeSupabase() {
+        var db = await obtenerCliente();
+        if (!db) return [];
+
+        try {
+            var ahora = new Date().toISOString();
+            var r = await db
+                .from(TABLA)
+                .select('id, titulo, texto, media_url, destino_url, vistas, toques, created_at, vigencia_fin')
+                .eq('activo', true)
+                .eq('pausado_automatico', false)
+                .gt('vigencia_fin', ahora)
+                .order('created_at', { ascending: false })
+                .limit(MAX_ANUNCIOS);
+
+            if (r.error) {
+                if (r.error.code === '42P01') {
+                    console.info('[Carrusel] Tabla `anuncios` no existe todavía.');
+                    return [];
+                }
+                console.warn('[Carrusel] Error consultando anuncios:', r.error.message);
+                return [];
+            }
+            return r.data || [];
+        } catch (e) {
+            console.warn('[Carrusel] Excepción cargando anuncios:', e);
+            return [];
+        }
+    }
+
+    /**
+     * Registra un "toque" (click) en el anuncio.
+     * No bloquea la navegación.
+     */
+    function registrarToque(anuncio) {
+        if (!anuncio || !anuncio.id) return;
+        obtenerCliente().then(function (db) {
+            if (!db) return;
+            db.from(TABLA)
+              .update({ toques: (anuncio.toques || 0) + 1 })
+              .eq('id', anuncio.id)
+              .then(function () { /* silencioso */ })
+              .catch(function () { /* silencioso */ });
+        });
+    }
+
+    /**
+     * Registra una "vista" cuando el anuncio se vuelve activo en el carrusel.
+     * Se llama una sola vez por anuncio por sesión de página.
+     */
+    var vistasRegistradas = {};
+    function registrarVista(anuncio) {
+        if (!anuncio || !anuncio.id) return;
+        if (vistasRegistradas[anuncio.id]) return;
+        vistasRegistradas[anuncio.id] = true;
+
+        obtenerCliente().then(function (db) {
+            if (!db) return;
+            db.from(TABLA)
+              .update({ vistas: (anuncio.vistas || 0) + 1 })
+              .eq('id', anuncio.id)
+              .then(function () { /* silencioso */ })
+              .catch(function () { /* silencioso */ });
+        });
+    }
+
+    // -----------------------------------------------------------
+    // RENDERIZADO
+    // -----------------------------------------------------------
     function asignarColores() {
         cards.forEach(function (card, i) {
             var par = PALETA[i % PALETA.length];
@@ -129,56 +238,100 @@
     }
 
     /**
-     * Si no hay tarjetas en el DOM, inyecta los placeholders de marketing.
+     * HTML de un anuncio real.
      */
-    function inyectarPlaceholders() {
+    function htmlAnuncioReal(a, i, total) {
+        var par = PALETA[i % PALETA.length];
+        var destino = a.destino_url || '#';
+        var titulo = esc(a.titulo || 'Anuncio');
+        var texto = esc(a.texto || '');
+        var media = a.media_url
+            ? '<img class="anuncio-img" src="' + esc(a.media_url) + '" alt="" loading="lazy">'
+            : '';
+
+        return '' +
+            '<a class="carrusel-3d-card anuncio-card" href="' + esc(destino) + '" ' +
+                'data-anuncio-id="' + esc(a.id) + '" ' +
+                'style="--c:' + par[0] + ';--c1:' + par[0] + ';--c2:' + par[1] + ';">' +
+                '<div class="ads-tag"><span class="dot"></span> PATROCINADO</div>' +
+                '<div class="ads-counter">' + (i + 1) + '/' + total + '</div>' +
+                '<span class="anuncio-etiqueta">ANUNCIO</span>' +
+                media +
+                '<div class="card-title anuncio-titulo">' + titulo + '</div>' +
+                (texto ? '<div class="card-desc anuncio-texto">' + texto + '</div>' : '') +
+            '</a>';
+    }
+
+    /**
+     * HTML de un placeholder de marketing.
+     */
+    function htmlPlaceholder(p, i, total) {
+        var par = PALETA[i % PALETA.length];
+        return '' +
+            '<a class="carrusel-3d-card anuncio-placeholder" href="#" ' +
+                'data-placeholder="1" ' +
+                'style="--c:' + par[0] + ';--c1:' + par[0] + ';--c2:' + par[1] + ';">' +
+                '<div class="ads-tag"><span class="dot"></span> ÚNETE A SARIEL\'S</div>' +
+                '<div class="ads-counter">' + (i + 1) + '/' + total + '</div>' +
+                '<span class="ads-chip">' + esc(p.chip) + '</span>' +
+                '<div class="card-icon">' + p.icon + '</div>' +
+                '<div class="card-title">' + esc(p.title) + '</div>' +
+                '<div class="card-desc">' + esc(p.desc) + '</div>' +
+                '<button class="ads-cta" type="button">' + esc(p.cta) + '</button>' +
+            '</a>';
+    }
+
+    /**
+     * Renderiza el track completo con anuncios reales o placeholders.
+     */
+    function renderizar(anuncios) {
         if (!track) return;
-        if (track.querySelectorAll('.carrusel-3d-card').length > 0) return;
+        anunciosCache = anuncios || [];
 
-        track.innerHTML = PLACEHOLDERS.map(function (p, i) {
-            var par = PALETA[i % PALETA.length];
-            return '' +
-                '<a class="carrusel-3d-card anuncio-placeholder" href="#" ' +
-                    'style="--c:' + par[0] + ';--c1:' + par[0] + ';--c2:' + par[1] + ';" ' +
-                    'data-indice="' + i + '">' +
-                    '<div class="ads-tag"><span class="dot"></span> ÚNETE A SARIEL\'S</div>' +
-                    '<div class="ads-counter">' + (i + 1) + '/' + PLACEHOLDERS.length + '</div>' +
-                    '<span class="ads-chip">' + p.chip + '</span>' +
-                    '<div class="card-icon">' + p.icon + '</div>' +
-                    '<div class="card-title">' + p.title + '</div>' +
-                    '<div class="card-desc">' + p.desc + '</div>' +
-                    '<button class="ads-cta" type="button">' + p.cta + '</button>' +
-                '</a>';
-        }).join('');
+        if (anuncios && anuncios.length > 0) {
+            // Anuncios reales
+            track.innerHTML = anuncios.map(function (a, i) {
+                return htmlAnuncioReal(a, i, anuncios.length);
+            }).join('');
 
-        // Click handler
-        track.querySelectorAll('.carrusel-3d-card').forEach(function (card) {
-            card.addEventListener('click', function (e) {
-                if (e.target.closest('.ads-cta') || card.classList.contains('anuncio-placeholder')) {
-                    e.preventDefault();
-                    if (typeof window.abrirModalCrearAnuncio === 'function') {
-                        window.abrirModalCrearAnuncio();
-                    } else {
-                        // Fallback: muestra toast
-                        var t = document.getElementById('toast');
-                        if (t) {
-                            t.textContent = '📣 Muy pronto podrás crear tu anuncio aquí';
-                            t.className = 'toast show success';
-                            clearTimeout(t._t);
-                            t._t = setTimeout(function () { t.className = 'toast'; }, 3000);
-                        }
-                    }
-                }
+            // Click → registrar toque + navegar
+            track.querySelectorAll('.anuncio-card').forEach(function (card) {
+                card.addEventListener('click', function (e) {
+                    var id = card.getAttribute('data-anuncio-id');
+                    var anuncio = anunciosCache.filter(function (a) { return a.id === id; })[0];
+                    if (anuncio) registrarToque(anuncio);
+                    // La navegación la hace el href del <a>
+                });
             });
-        });
+        } else {
+            // Placeholders de marketing
+            track.innerHTML = PLACEHOLDERS.map(function (p, i) {
+                return htmlPlaceholder(p, i, PLACEHOLDERS.length);
+            }).join('');
+
+            // Click → abrir modal de crear anuncio
+            track.querySelectorAll('.anuncio-placeholder').forEach(function (card) {
+                card.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    irACrearAnuncio();
+                });
+            });
+        }
     }
 
-    function centroTrack() {
-        if (!track) return 0;
-        var trackRect = track.getBoundingClientRect();
-        return trackRect.left + trackRect.width / 2;
+    function irACrearAnuncio() {
+        // Si existe un modal de crear anuncio en la página, úsalo
+        if (typeof window.abrirModalCrearAnuncio === 'function') {
+            window.abrirModalCrearAnuncio();
+            return;
+        }
+        // Si no, redirige a la página del formulario
+        window.location.href = '/features/perfil/crear-anuncio.html';
     }
 
+    // -----------------------------------------------------------
+    // NAVEGACIÓN DEL CARRUSEL (sin cambios)
+    // -----------------------------------------------------------
     function irACard(i, suave) {
         var card = cards[i];
         if (!card || !track) return;
@@ -204,9 +357,7 @@
             var punto = document.createElement('button');
             punto.type = 'button';
             punto.setAttribute('aria-label', 'Ir al anuncio ' + (i + 1));
-            punto.addEventListener('click', function () {
-                irACard(i, true);
-            });
+            punto.addEventListener('click', function () { irACard(i, true); });
             if (i === activo) punto.classList.add('active');
             dots.appendChild(punto);
         });
@@ -219,7 +370,6 @@
 
         var trackRect = track.getBoundingClientRect();
         var centro = trackRect.left + trackRect.width / 2;
-
         var mejor = 0;
         var mejorDistancia = Infinity;
 
@@ -248,6 +398,15 @@
         puntos.forEach(function (punto, i) {
             punto.classList.toggle('active', i === mejor);
         });
+
+        // Registrar vista del anuncio activo (solo anuncios reales)
+        if (anunciosCache.length > 0 && cards[mejor]) {
+            var id = cards[mejor].getAttribute('data-anuncio-id');
+            if (id) {
+                var anuncio = anunciosCache.filter(function (a) { return a.id === id; })[0];
+                if (anuncio) registrarVista(anuncio);
+            }
+        }
     }
 
     function pedirActualizacion() {
@@ -257,17 +416,16 @@
         }
     }
 
+    // -----------------------------------------------------------
+    // REFRESCAR (público)
+    // -----------------------------------------------------------
     function refrescar() {
         if (!track) {
             track = obtenerTrack();
             if (!track) return;
         }
         cards = coleccionar();
-        if (cards.length === 0) {
-            inyectarPlaceholders();
-            cards = coleccionar();
-            if (cards.length === 0) return;
-        }
+        if (cards.length === 0) return;
         asignarColores();
         construirPuntos();
         pedirActualizacion();
@@ -289,6 +447,52 @@
         });
     }
 
+    // -----------------------------------------------------------
+    // REALTIME · Escucha cambios en la tabla anuncios
+    // -----------------------------------------------------------
+    async function suscribirRealtime() {
+        var db = await obtenerCliente();
+        if (!db || realtimeChannel) return;
+
+        try {
+            realtimeChannel = db
+                .channel('anuncios-carrusel-realtime')
+                .on('postgres_changes',
+                    { event: '*', schema: 'public', table: TABLA },
+                    function () {
+                        // Cualquier cambio (INSERT/UPDATE/DELETE) → recargar
+                        if (!cargaEnCurso) cargarYRenderizar();
+                    }
+                )
+                .subscribe();
+        } catch (e) {
+            console.warn('[Carrusel] No se pudo suscribir a Realtime:', e);
+        }
+    }
+
+    // -----------------------------------------------------------
+    // CARGA PRINCIPAL
+    // -----------------------------------------------------------
+    async function cargarYRenderizar() {
+        if (!track) return;
+        cargaEnCurso = true;
+        try {
+            var anuncios = await cargarAnunciosDesdeSupabase();
+            renderizar(anuncios);
+            refrescar();
+        } catch (e) {
+            console.warn('[Carrusel] Error cargando y renderizando:', e);
+            // Fallback: placeholders
+            renderizar([]);
+            refrescar();
+        } finally {
+            cargaEnCurso = false;
+        }
+    }
+
+    // -----------------------------------------------------------
+    // INIT
+    // -----------------------------------------------------------
     function init() {
         wrapper = obtenerWrapper();
         track = obtenerTrack();
@@ -299,15 +503,9 @@
         if (inicializado) return;
         inicializado = true;
 
-        // Si el DOM no tiene tarjetas aún, inyectamos los placeholders.
-        inyectarPlaceholders();
-
+        // 1) Placeholders inmediatos (para que no se vea vacío)
+        renderizar([]);
         cards = coleccionar();
-        if (cards.length === 0) {
-            window.requestAnimationFrame(init);
-            return;
-        }
-
         asignarColores();
         construirPuntos();
 
@@ -324,11 +522,18 @@
             irACardInicial(inicial, 0);
         });
 
-        window.carrusel3D = { refrescar: refrescar };
+        // 2) Carga real desde Supabase
+        cargarYRenderizar();
+
+        // 3) Realtime
+        suscribirRealtime();
+
+        // API global
+        window.carrusel3D = { refrescar: refrescar, recargar: cargarYRenderizar };
         window.dispatchEvent(new Event('carrusel3d:listo'));
     }
 
-    window.carrusel3D = window.carrusel3D || { refrescar: function () {} };
+    window.carrusel3D = window.carrusel3D || { refrescar: function () {}, recargar: function () {} };
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
