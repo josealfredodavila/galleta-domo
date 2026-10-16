@@ -2,7 +2,8 @@
    ANUNCIOS · IMAGEN dentro del carrusel - Csariel's
    Ruta: /features/anuncios/anuncios-carrusel.js
    Inserta una tarjeta de anuncio dentro de .carrusel-3d-track,
-   justo después de la tarjeta Perfil. Rota cada 8 s.
+   justo después de la tarjeta Perfil. Rota cada 8 s y se pausa
+   al tocar o mantener presionado. Requiere carrusel-3d.js.
    ============================================ */
 
 (function () {
@@ -56,7 +57,7 @@
         setTimeout(function () { el.remove(); }, 3200);
     }
 
-    // Espera a que el carrusel esté listo (o ya lo estaba)
+    // Ejecuta fn cuando el carrusel ya esté listo (o ya lo estaba)
     function cuandoCarruselListo(fn) {
         if (window.carrusel3D && typeof window.carrusel3D.refrescar === 'function') {
             fn();
