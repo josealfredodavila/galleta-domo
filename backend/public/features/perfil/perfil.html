@@ -23,7 +23,102 @@
 <link rel="stylesheet" href="/features/anuncios/anuncios-carrusel.css?v=2">
 
 <style>
-    html:not(.auth-ready) .app { display: none !important; }
+    /* ============================================================
+       CORRECCIÓN DE FONDO Y LAYOUT (Auditoría Quirúrgica)
+       ============================================================ */
+    html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        min-height: 100vh;
+        overflow-x: hidden; /* Evita scroll horizontal fantasma */
+        background-color: #0a0a0a; /* Fondo oscuro explícito para evitar blanco */
+        color: #fff;
+    }
+
+    /* Asegurar que el canvas de estrellas cubra TODO el fondo fijo */
+    #stars-canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: -1;
+        pointer-events: none;
+    }
+
+    /* Contenedor principal con espacio para el botón flotante y footer */
+    .app {
+        position: relative;
+        z-index: 1;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        padding-bottom: 80px; /* Espacio para el botón flotante */
+    }
+
+    /* Corrección del Footer para móviles */
+    .footer {
+        margin-top: auto;
+        padding: 24px 16px 40px;
+        border-top: 1px solid rgba(255,255,255,0.08);
+        font-size: 0.7rem;
+        color: var(--text-muted, #888);
+        text-align: center;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .footer-links {
+        display: flex;
+        flex-wrap: wrap; /* CRUCIAL: Permite que los enlaces bajen a la siguiente línea */
+        justify-content: center;
+        align-items: center;
+        gap: 12px 16px;
+        margin-top: 12px;
+        width: 100%;
+    }
+
+    .footer-links a {
+        color: var(--text-muted, #888);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        white-space: nowrap;
+    }
+
+    /* Botón flotante del carrusel fullscreen */
+    #btnAbrirCarruselFullscreen {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        z-index: 9999;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--gold, #D4AF37), #b8932c);
+        border: none;
+        box-shadow: 0 4px 16px rgba(212, 175, 55, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+        color: #000;
+    }
+    #btnAbrirCarruselFullscreen:active {
+        transform: scale(0.92);
+    }
+    #btnAbrirCarruselFullscreen svg {
+        width: 24px;
+        height: 24px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
 
     /* ============================================================
        BLINDAJE DEL OVERLAY FULLSCREEN — v2
