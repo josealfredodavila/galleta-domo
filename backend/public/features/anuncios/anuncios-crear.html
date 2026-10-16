@@ -73,10 +73,15 @@
     }
 
     label { display: block; font-size: .72rem; color: var(--muted); margin: 12px 0 6px; font-weight: 600; }
-    input[type="text"], input[type="url"], textarea, select {
+    label .opcional { color: var(--muted); font-weight: 400; font-size: .65rem; }
+
+    input[type="text"], input[type="url"], input[type="tel"], textarea, select {
         width: 100%; padding: 12px 14px; border-radius: 12px;
         border: 1px solid var(--line); background: rgba(0, 0, 0, .4);
         color: var(--text); font-size: .9rem; font-family: inherit;
+    }
+    input:focus, textarea:focus, select:focus {
+        outline: 2px solid var(--gold); outline-offset: 2px;
     }
     textarea { min-height: 70px; resize: vertical; }
     .contador { font-size: .65rem; color: var(--muted); text-align: right; margin-top: 4px; }
@@ -133,6 +138,16 @@
 
     .vacio { color: var(--muted); font-size: .8rem; text-align: center; padding: 14px 0; }
 
+    .fila-doble {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-top: 4px;
+    }
+    @media (max-width: 420px) {
+        .fila-doble { grid-template-columns: 1fr; }
+    }
+
     @media (prefers-reduced-motion: reduce) {
         * { transition: none !important; animation: none !important; }
     }
@@ -174,6 +189,36 @@
             <span class="etiq">ANUNCIO</span>
         </div>
 
+        <!-- ══════════════════════════════════════════════
+             CONTACTO Y UBICACIÓN DEL NEGOCIO
+             ══════════════════════════════════════════════ -->
+        <h2 style="margin-top:22px;">CONTACTO DEL NEGOCIO</h2>
+
+        <label for="whatsapp">
+            WhatsApp / Celular <span class="opcional">(opcional)</span>
+        </label>
+        <input
+            type="tel"
+            id="whatsapp"
+            maxlength="20"
+            inputmode="tel"
+            placeholder="Ej: +521234567890">
+        <div class="contador" id="contadorWhatsapp" style="text-align:left;">
+            Con código de país. Se usará para el botón "WhatsApp".
+        </div>
+
+        <label for="ubicacion">
+            Ubicación o Ciudad <span class="opcional">(opcional)</span>
+        </label>
+        <input
+            type="text"
+            id="ubicacion"
+            maxlength="100"
+            placeholder="Ej: Texcoco, Estado de México">
+        <div class="contador" id="contadorUbicacion" style="text-align:left;">
+            Aparecerá en el detalle del anuncio.
+        </div>
+
         <label for="destino">Al tocar el anuncio, llevar a</label>
         <select id="destino">
             <option value="/features/perfil/perfil.html">Mi perfil</option>
@@ -204,7 +249,6 @@
 (function () {
     'use strict';
 
-    var SUPABASE_URL_FALLBACK = null;
     var MAX_BYTES = 5 * 1024 * 1024;
     var TIPOS = ['image/jpeg', 'image/png', 'image/webp'];
 
@@ -241,13 +285,55 @@
         return 'No se pudo publicar. Intenta de nuevo.';
     }
 
+    /**
+     * Normaliza el número de WhatsApp:
+     * - Deja solo dígitos y un signo + al inicio.
+     * - Si empieza con 0, lo quita.
+     * - Si no empieza con +, intenta deducir código de país MX (+52).
+     */
+    function normalizarWhatsApp(valor) {
+        var v = String(valor || '').trim();
+        if (!v) return null;
+
+        // Deja solo dígitos y +
+        v = v.replace(/[^\d+]/g, '');
+
+        // Si empieza con 00, cambia a +
+        if (/^00/.test(v)) v = '+' + v.slice(2);
+
+        // Si NO empieza con +, deduce por longitud:
+        // 10 dígitos → asumimos MX sin código → +52
+        if (!/^\+/.test(v)) {
+            var soloDigitos = v.replace(/\D/g, '');
+            if (soloDigitos.length === 10) {
+                v = '+52' + soloDigitos;
+            } else {
+                v = '+' + soloDigitos;
+            }
+        }
+
+        // Debe tener al menos 8 dígitos totales
+        var soloDigitos = v.replace(/\D/g, '');
+        if (soloDigitos.length < 8 || soloDigitos.length > 15) return null;
+
+        return v;
+    }
+
     async function crearCliente() {
         if (window.supabaseClient) return window.supabaseClient;
         var r = await fetch('/api/config/public', { cache: 'no-store', credentials: 'same-origin' });
         var config = await r.json();
-        window.supabaseClient = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey, {
-            auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
-        });
+        window.supabaseClient = window.supabase.createClient(
+            config.supabaseUrl,
+            config.supabaseAnonKey,
+            {
+                auth: {
+                    persistSession: true,
+                    autoRefreshToken: true,
+                    detectSessionInUrl: true
+                }
+            }
+        );
         return window.supabaseClient;
     }
 
@@ -276,6 +362,20 @@
     });
     $('texto').addEventListener('input', function () {
         $('contadorTexto').textContent = this.value.length + ' / 200';
+    });
+    $('whatsapp').addEventListener('input', function () {
+        var norm = normalizarWhatsApp(this.value);
+        var hint = $('contadorWhatsapp');
+        if (!this.value.trim()) {
+            hint.textContent = 'Con código de país. Se usará para el botón "WhatsApp".';
+            hint.style.color = 'var(--muted)';
+        } else if (norm) {
+            hint.textContent = 'Se guardará como: ' + norm;
+            hint.style.color = 'var(--success)';
+        } else {
+            hint.textContent = 'Número inválido. Ejemplo: +521234567890';
+            hint.style.color = 'var(--danger)';
+        }
     });
 
     // Destino externo
@@ -333,11 +433,24 @@
 
         var titulo = $('titulo').value.trim();
         var texto = $('texto').value.trim();
+        var whatsappRaw = $('whatsapp').value.trim();
+        var ubicacionRaw = $('ubicacion').value.trim();
         var destinoSel = $('destino').value;
         var destino = destinoSel;
 
         if (!titulo) { estado('Escribe un título.', 'error'); return; }
         if (!archivoSeleccionado) { estado('Elige una imagen.', 'error'); return; }
+
+        // Validar WhatsApp si lo escribió
+        var whatsapp = null;
+        if (whatsappRaw) {
+            whatsapp = normalizarWhatsApp(whatsappRaw);
+            if (!whatsapp) {
+                estado('El número de WhatsApp no es válido. Usa formato +521234567890.', 'error');
+                $('whatsapp').focus();
+                return;
+            }
+        }
 
         if (destinoSel === 'externo') {
             destino = $('destinoExterno').value.trim();
@@ -356,14 +469,19 @@
             var url = await subirImagen(archivoSeleccionado);
 
             estado('Publicando…');
-            var r = await client.from('anuncios').insert({
+
+            var payload = {
                 usuario_id: uid,
                 tipo: 'imagen',
                 titulo: titulo,
                 texto: texto || null,
                 media_url: url,
-                destino_url: destino
-            }).select('id').single();
+                destino_url: destino,
+                whatsapp_contacto: whatsapp,
+                ubicacion_negocio: ubicacionRaw || null
+            };
+
+            var r = await client.from('anuncios').insert(payload).select('id').single();
 
             if (r.error) throw r.error;
 
@@ -371,6 +489,8 @@
             $('formAnuncio').reset();
             $('contadorTitulo').textContent = '0 / 80';
             $('contadorTexto').textContent = '0 / 200';
+            $('contadorWhatsapp').textContent = 'Con código de país. Se usará para el botón "WhatsApp".';
+            $('contadorWhatsapp').style.color = 'var(--muted)';
             $('vistaPrevia').style.display = 'none';
             $('destinoExterno').style.display = 'none';
             archivoSeleccionado = null;
