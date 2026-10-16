@@ -34,7 +34,6 @@
         min-height: 100vh;
     }
 
-    /* Fondo con sutil degradado radial */
     body::before {
         content: '';
         position: fixed;
@@ -54,7 +53,6 @@
         padding: 20px 18px 80px;
     }
 
-    /* Cabecera */
     .legal-header {
         display: flex;
         align-items: center;
@@ -109,10 +107,7 @@
         transform: translateX(-2px);
     }
 
-    /* Título principal */
-    .legal-title-wrap {
-        margin-bottom: 22px;
-    }
+    .legal-title-wrap { margin-bottom: 22px; }
 
     .legal-tag {
         display: inline-flex;
@@ -156,7 +151,6 @@
         margin: 0;
     }
 
-    /* Aviso de fecha */
     .legal-updated {
         display: inline-flex;
         align-items: center;
@@ -170,7 +164,6 @@
         margin-top: 12px;
     }
 
-    /* Secciones */
     .legal-section {
         margin-top: 28px;
         padding: 22px 20px;
@@ -256,17 +249,9 @@
         opacity: .75;
     }
 
-    .legal-section ul li strong {
-        color: #fff;
-        font-weight: 700;
-    }
+    .legal-section ul li strong { color: #fff; font-weight: 700; }
+    .legal-section p strong { color: var(--gold); font-weight: 700; }
 
-    .legal-section p strong {
-        color: var(--gold);
-        font-weight: 700;
-    }
-
-    /* Bloque destacado (warning) */
     .legal-warning {
         margin-top: 16px;
         padding: 14px 16px;
@@ -293,7 +278,6 @@
         line-height: 1.6;
     }
 
-    /* Bloque destacado (success) */
     .legal-highlight {
         margin-top: 16px;
         padding: 14px 16px;
@@ -320,7 +304,6 @@
         line-height: 1.6;
     }
 
-    /* Declaración final de aceptación */
     .legal-acceptance {
         margin-top: 32px;
         padding: 24px 20px;
@@ -337,11 +320,8 @@
         color: var(--gold);
         margin: 0 0 14px;
     }
-    .legal-acceptance ul li::before {
-        background: var(--verde);
-    }
+    .legal-acceptance ul li::before { background: var(--verde); }
 
-    /* Footer */
     .legal-footer {
         margin-top: 40px;
         padding-top: 20px;
@@ -351,12 +331,8 @@
         color: var(--muted);
         line-height: 1.6;
     }
-    .legal-footer strong {
-        color: var(--gold);
-        font-weight: 700;
-    }
+    .legal-footer strong { color: var(--gold); font-weight: 700; }
 
-    /* Botón flotante volver arriba */
     .btn-top {
         position: fixed;
         right: 16px;
@@ -384,7 +360,6 @@
         background: rgba(212,175,55,.15);
     }
 
-    /* Responsive */
     @media (max-width: 480px) {
         .wrap { padding: 16px 14px 80px; }
         h1.legal-title { font-size: 1.4rem; }
@@ -405,7 +380,6 @@
 
 <div class="wrap" id="top">
 
-    <!-- Cabecera -->
     <header class="legal-header">
         <a class="legal-brand" href="/">
             <span class="brand-icon">◈</span>
@@ -417,7 +391,6 @@
         </a>
     </header>
 
-    <!-- Título -->
     <div class="legal-title-wrap">
         <span class="legal-tag">
             <span class="dot"></span>
@@ -429,7 +402,7 @@
         </p>
         <div class="legal-updated">
             <span aria-hidden="true">📅</span>
-            <span>Última actualización: 16 de octubre de 2026 · Versión 1.0</span>
+            <span>Última actualización: 16 de octubre de 2026 · Versión 1.1</span>
         </div>
     </div>
 
@@ -467,9 +440,7 @@
             <span class="legal-section-number">2</span>
             Contenido prohibido
         </h2>
-        <p>
-            Queda estrictamente prohibido anunciar, promocionar o publicar en la plataforma:
-        </p>
+        <p>Queda estrictamente prohibido anunciar, promocionar o publicar en la plataforma:</p>
 
         <h3 class="legal-h3">2.1 · Contenido ilegal</h3>
         <ul>
@@ -548,9 +519,7 @@
             <span class="legal-section-number">4</span>
             Responsabilidad del anunciante
         </h2>
-        <p>
-            Al publicar un anuncio, el anunciante declara y garantiza:
-        </p>
+        <p>Al publicar un anuncio, el anunciante declara y garantiza:</p>
         <ul>
             <li>Tener la titularidad o autorización legal para publicitar los productos o servicios ofrecidos.</li>
             <li>Contar con los permisos, licencias, registros sanitarios y autorizaciones aplicables para comercializar lo que anuncia.</li>
@@ -565,6 +534,16 @@
                 demanda, multa o sanción que se derive del contenido de su anuncio.
             </p>
         </div>
+        <p>
+            El anunciante se obliga a <strong>sacar a salvo y en paz</strong> a Csariel's, sus
+            socios, representantes, empleados y desarrolladores, cubriendo de manera directa
+            cualquier gasto legal, honorarios de abogados, costas judiciales, multas, sanciones
+            o indemnizaciones que surjan por demandas, reclamaciones o procedimientos
+            administrativos de terceros derivados del contenido, veracidad o legalidad de su
+            anuncio. Esta obligación de indemnización se mantiene vigente incluso después de que
+            el anuncio sea removido, pausado o dado de baja, y mientras subsistan las
+            reclamaciones que la motivaron.
+        </p>
     </section>
 
     <!-- 5. Moderación y cancelación -->
@@ -629,6 +608,27 @@
             <li>Al publicar, el anunciante otorga a Csariel's una licencia no exclusiva, mundial y gratuita para mostrar, reproducir y distribuir el contenido dentro de la plataforma y en materiales promocionales de la misma.</li>
             <li>Csariel's respeta los derechos de propiedad intelectual de terceros. Si eres titular de derechos y consideras que un anuncio los infringe, puedes reportarlo a través de los canales de contacto.</li>
         </ul>
+
+        <h3 class="legal-h3">7.1 · Procedimiento de Aviso y Retiro por Infracción de Propiedad Intelectual (conforme a la Ley Federal del Derecho de Autor)</h3>
+        <p>
+            Si un titular de derechos de propiedad intelectual, marca registrada, derecho de
+            autor o cualquier otro derecho protegido, detecta contenido que infringe sus
+            derechos en un anuncio alojado en Csariel's, deberá notificarlo por escrito al
+            correo oficial <strong>contacto@csariels.com</strong>, incluyendo:
+        </p>
+        <ul>
+            <li>Identificación del anuncio afectado (ID, título o URL).</li>
+            <li>Descripción del derecho presuntamente infringido.</li>
+            <li>Prueba de titularidad de los derechos.</li>
+            <li>Datos de contacto del reclamante.</li>
+        </ul>
+        <p>
+            Al recibir una notificación válida, Csariel's procederá a retirar el anuncio de
+            manera inmediata, sin previo aviso al anunciante, y sin derecho a compensación,
+            reembolso o indemnización alguna por parte del anunciante hacia la plataforma. El
+            anunciante infractor asumirá toda la responsabilidad legal derivada del contenido
+            retirado.
+        </p>
     </section>
 
     <!-- 8. Protección de datos -->
@@ -654,6 +654,7 @@
             <li>Csariel's podrá modificar estos términos en cualquier momento para adaptarse a cambios legales, técnicos o de negocio.</li>
             <li>Las modificaciones se notificarán en la plataforma y entrarán en vigor al momento de su publicación.</li>
             <li>El uso continuado de la plataforma después de la publicación de los cambios implica la aceptación de los nuevos términos.</li>
+            <li>Es obligación exclusiva del anunciante revisar los Términos y Condiciones para Anunciantes de forma periódica, y como mínimo antes de publicar cada nuevo anuncio. El uso continuado de la plataforma o la publicación de nuevos anuncios implica la aceptación tácita de la versión vigente de estos términos. Csariel's no será responsable por el desconocimiento de modificaciones publicadas en la plataforma.</li>
         </ul>
     </section>
 
@@ -686,7 +687,6 @@
         </ul>
     </section>
 
-    <!-- Footer -->
     <footer class="legal-footer">
         <p><strong>Csariel's</strong> · Plataforma de intermediación tecnológica</p>
         <p>© 2026 · Todos los derechos reservados</p>
@@ -694,7 +694,6 @@
 
 </div>
 
-<!-- Botón volver arriba -->
 <a href="#top" class="btn-top" aria-label="Volver arriba">↑</a>
 
 </body>
