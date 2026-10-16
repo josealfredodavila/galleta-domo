@@ -26,16 +26,22 @@
     html:not(.auth-ready) .app { display: none !important; }
 
     /* ============================================================
-       BLINDAJE DEL OVERLAY FULLSCREEN
-       Se oculta siempre hasta que se le añada .activo / .is-open
-       o se cambie aria-hidden a "false". Esto evita que se vea
-       "roto" abajo cuando el CSS externo no carga o hay un bug JS.
+       BLINDAJE DEL OVERLAY FULLSCREEN — v2
        ============================================================ */
-    #carruselFullscreenOverlay:not(.activo):not(.is-open):not(.abierto) {
+    #carruselFullscreenOverlay {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
         pointer-events: none !important;
+    }
+    #carruselFullscreenOverlay.activo,
+    #carruselFullscreenOverlay.is-open,
+    #carruselFullscreenOverlay.abierto,
+    #carruselFullscreenOverlay[aria-hidden="false"] {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
     }
 </style>
 
