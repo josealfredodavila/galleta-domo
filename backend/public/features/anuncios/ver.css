@@ -1,7 +1,7 @@
 /* ============================================
    CSARIEL'S · VER ANUNCIO EN DETALLE
    Ruta: /features/anuncios/ver.css
-   v2 · Con ubicación y WhatsApp dinámico.
+   v3 · Cabecera limpia sin barra superior.
    ============================================ */
 
 :root {
@@ -94,62 +94,7 @@ html, body {
     padding-bottom: 60px;
 }
 
-/* ============ TOPBAR ============ */
-.detail-topbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 14px 16px;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    background: rgba(5, 8, 15, .85);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-bottom: 1px solid rgba(255,255,255,.06);
-}
-.detail-back {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    text-decoration: none;
-    color: var(--gold);
-    font-size: .85rem;
-    font-weight: 700;
-    padding: 8px 14px;
-    border-radius: 99px;
-    border: 1px solid var(--line);
-    background: rgba(212,175,55,.06);
-    transition: background .2s ease, transform .2s ease;
-}
-.detail-back:hover {
-    background: rgba(212,175,55,.14);
-    transform: translateX(-2px);
-}
-.detail-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    font-family: 'Rajdhani', sans-serif;
-    font-size: .68rem;
-    font-weight: 800;
-    letter-spacing: .14em;
-    text-transform: uppercase;
-    color: var(--gold);
-    background: rgba(212,175,55,.08);
-    border: 1px solid rgba(212,175,55,.35);
-    padding: 5px 11px;
-    border-radius: 99px;
-}
-.detail-tag .dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--verde);
-    box-shadow: 0 0 10px rgba(0,230,118,.8);
-}
-
-/* ============ MEDIA ============ */
+/* ============ MEDIA (imagen/video limpia) ============ */
 .detail-media-wrap {
     width: 100%;
     aspect-ratio: 16 / 10;
@@ -162,6 +107,38 @@ html, body {
     height: 100%;
     object-fit: cover;
     display: block;
+}
+
+/* Etiqueta PATROCINADO discreta, flotando arriba de la imagen */
+.detail-tag-floating {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: .62rem;
+    font-weight: 800;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: #ffffff;
+    background: rgba(0, 0, 0, .42);
+    border: 1px solid rgba(255, 255, 255, .22);
+    padding: 5px 10px;
+    border-radius: 99px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    pointer-events: none;
+    text-shadow: 0 1px 4px rgba(0,0,0,.6);
+}
+.detail-tag-floating .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--verde);
+    box-shadow: 0 0 8px rgba(0,230,118,.9);
 }
 
 /* ============ BODY ============ */
