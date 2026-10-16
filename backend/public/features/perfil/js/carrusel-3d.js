@@ -2,12 +2,13 @@
    CARRUSEL 3D HORIZONTAL - Csariel's
    Ruta: /features/perfil/js/carrusel-3d.js
 
-   v3 · MARKETING AUTOMÁTICO
-   - Carga anuncios reales desde Supabase (tabla `anuncios`).
-   - Si no hay anuncios activos → muestra placeholders de marketing.
-   - Realtime: se actualiza cuando alguien publica un anuncio.
-   - Registra toques al hacer click en un anuncio.
-   - Respeta `destino_url` para redirigir.
+   v4 · SLOTS FIJOS
+   - 7 slots fijos en el carrusel.
+   - Cada slot muestra un anuncio real (si hay) o un placeholder.
+   - Los placeholders NUNCA desaparecen todos: si sobran slots,
+     siguen mostrándose para invitar al usuario a anunciarse.
+   - Realtime: se actualiza al publicar/pausar/vencer un anuncio.
+   - Registra vistas (al activarse) y toques (al hacer click).
    ============================================ */
 
 (function () {
@@ -17,44 +18,44 @@
     // CONFIGURACIÓN
     // -----------------------------------------------------------
     var TABLA = 'anuncios';
-    var MAX_ANUNCIOS = 8;
+    var TOTAL_SLOTS = 7;
+    var MAX_ANUNCIOS = TOTAL_SLOTS;
 
     // Paleta llamativa estilo Index (par [inicio, fin] de degradado)
     var PALETA = [
-        ['#ff3d00', '#ffc400'], // Naranja → Dorado
-        ['#00c853', '#00e5ff'], // Verde → Cian
-        ['#7c4dff', '#ff3cb4'], // Morado → Rosa
-        ['#2962ff', '#00e5ff'], // Azul → Turquesa
-        ['#d50000', '#ff6d00'], // Rojo → Naranja
-        ['#ffd600', '#00e676'], // Amarillo → Verde
-        ['#ff4081', '#7c4dff'], // Rosa → Violeta
-        ['#00bcd4', '#3f51b5']  // Cian → Índigo
+        ['#ff3d00', '#ffc400'], // 0 · Naranja → Dorado
+        ['#00c853', '#00e5ff'], // 1 · Verde → Cian
+        ['#7c4dff', '#ff3cb4'], // 2 · Morado → Rosa
+        ['#2962ff', '#00e5ff'], // 3 · Azul → Turquesa
+        ['#d50000', '#ff6d00'], // 4 · Rojo → Naranja
+        ['#ffd600', '#00e676'], // 5 · Amarillo → Verde
+        ['#ff4081', '#7c4dff']  // 6 · Rosa → Violeta
     ];
 
-    // Placeholders cuando no hay anuncios reales
+    // 7 placeholders (uno por slot). Mensajes de la plataforma al usuario.
     var PLACEHOLDERS = [
         {
-            chip: 'MARKETING GRATIS', icon: '📣',
-            title: 'ANÚNCIATE GRATIS',
-            desc: 'Miles de personas te están buscando. Da a conocer tu negocio sin costo.',
-            cta: 'Quiero anunciarme'
+            chip: 'ANÚNCIATE GRATIS', icon: '🚀',
+            title: 'IMPULSA TU NEGOCIO',
+            desc: 'Llega a más clientes en el ecosistema Web3. Anúnciate sin costo.',
+            cta: 'Empezar gratis'
         },
         {
-            chip: 'SIN COSTO', icon: '🚀',
-            title: 'IMPULSA TU MARCA',
-            desc: 'Llega a más clientes en el ecosistema Web3. Sin inversión inicial.',
-            cta: 'Empezar gratis'
+            chip: 'SIN COSTO', icon: '📣',
+            title: 'ANÚNCIATE GRATIS',
+            desc: 'Miles de personas te están buscando. Da a conocer tu negocio.',
+            cta: 'Quiero anunciarme'
         },
         {
             chip: 'ESPACIO PREMIUM', icon: '💎',
             title: 'SÉ VISIBLE',
-            desc: 'Tu marca merece brillar. Ocupa este espacio destacado gratis.',
+            desc: 'Tu marca merece brillar. Ocupa este espacio destacado.',
             cta: 'Destacar ahora'
         },
         {
             chip: 'RED DE ANUNCIANTES', icon: '🌐',
             title: 'CRECE CON NOSOTROS',
-            desc: 'Únete a la red de anunciantes de Sariel\'s. Publicar es gratis.',
+            desc: 'Únete a la red de anunciantes de la comunidad. Publicar es gratis.',
             cta: 'Unirme'
         },
         {
@@ -72,7 +73,7 @@
         {
             chip: 'ANÚNCIATE GRATIS', icon: '✨',
             title: 'DESTACA AQUÍ',
-            desc: 'Contenido exclusivo para anunciantes de Sariel\'s. Anúnciate gratis.',
+            desc: 'Contenido exclusivo para anunciantes. Anúnciate gratis.',
             cta: 'Destacar gratis'
         }
     ];
@@ -95,9 +96,10 @@
     var anunciosCache = [];
     var realtimeChannel = null;
     var cargaEnCurso = false;
+    var vistasRegistradas = {};
 
     // -----------------------------------------------------------
-    // HELPERS DE DOM
+    // HELPERS
     // -----------------------------------------------------------
     function obtenerWrapper() {
         return document.getElementById('carruselPerfilWrapper') ||
@@ -121,28 +123,22 @@
     }
 
     // -----------------------------------------------------------
-    // CARGA DE ANUNCIOS DESDE SUPABASE
+    // CLIENTE SUPABASE
     // -----------------------------------------------------------
     async function obtenerCliente() {
-        // Reutiliza el cliente global si ya existe
         if (window.supabaseClient) return window.supabaseClient;
-
-        // Espera al cliente que use el resto de la app
         if (window.supabaseReady) {
             try {
                 var c = await window.supabaseReady;
                 if (c) return c;
-            } catch (e) { /* silencioso */ }
+            } catch (e) {}
         }
-
-        // Fallback: crear uno nuevo
         if (!window.supabase || !window.supabase.createClient) return null;
         try {
             var r = await fetch('/api/config/public', { cache: 'no-store', credentials: 'same-origin' });
             var config = await r.json();
             window.supabaseClient = window.supabase.createClient(
-                config.supabaseUrl,
-                config.supabaseAnonKey,
+                config.supabaseUrl, config.supabaseAnonKey,
                 { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } }
             );
             return window.supabaseClient;
@@ -152,9 +148,9 @@
         }
     }
 
-    /**
-     * Consulta la tabla `anuncios` y devuelve los activos y vigentes.
-     */
+    // -----------------------------------------------------------
+    // CARGA DE ANUNCIOS DESDE SUPABASE
+    // -----------------------------------------------------------
     async function cargarAnunciosDesdeSupabase() {
         var db = await obtenerCliente();
         if (!db) return [];
@@ -171,10 +167,7 @@
                 .limit(MAX_ANUNCIOS);
 
             if (r.error) {
-                if (r.error.code === '42P01') {
-                    console.info('[Carrusel] Tabla `anuncios` no existe todavía.');
-                    return [];
-                }
+                if (r.error.code === '42P01') return [];
                 console.warn('[Carrusel] Error consultando anuncios:', r.error.message);
                 return [];
             }
@@ -185,10 +178,9 @@
         }
     }
 
-    /**
-     * Registra un "toque" (click) en el anuncio.
-     * No bloquea la navegación.
-     */
+    // -----------------------------------------------------------
+    // MÉTRICAS
+    // -----------------------------------------------------------
     function registrarToque(anuncio) {
         if (!anuncio || !anuncio.id) return;
         obtenerCliente().then(function (db) {
@@ -196,16 +188,11 @@
             db.from(TABLA)
               .update({ toques: (anuncio.toques || 0) + 1 })
               .eq('id', anuncio.id)
-              .then(function () { /* silencioso */ })
-              .catch(function () { /* silencioso */ });
+              .then(function () {})
+              .catch(function () {});
         });
     }
 
-    /**
-     * Registra una "vista" cuando el anuncio se vuelve activo en el carrusel.
-     * Se llama una sola vez por anuncio por sesión de página.
-     */
-    var vistasRegistradas = {};
     function registrarVista(anuncio) {
         if (!anuncio || !anuncio.id) return;
         if (vistasRegistradas[anuncio.id]) return;
@@ -216,13 +203,13 @@
             db.from(TABLA)
               .update({ vistas: (anuncio.vistas || 0) + 1 })
               .eq('id', anuncio.id)
-              .then(function () { /* silencioso */ })
-              .catch(function () { /* silencioso */ });
+              .then(function () {})
+              .catch(function () {});
         });
     }
 
     // -----------------------------------------------------------
-    // RENDERIZADO
+    // RENDER
     // -----------------------------------------------------------
     function asignarColores() {
         cards.forEach(function (card, i) {
@@ -237,9 +224,6 @@
         });
     }
 
-    /**
-     * HTML de un anuncio real.
-     */
     function htmlAnuncioReal(a, i, total) {
         var par = PALETA[i % PALETA.length];
         var destino = a.destino_url || '#';
@@ -262,16 +246,13 @@
             '</a>';
     }
 
-    /**
-     * HTML de un placeholder de marketing.
-     */
     function htmlPlaceholder(p, i, total) {
         var par = PALETA[i % PALETA.length];
         return '' +
             '<a class="carrusel-3d-card anuncio-placeholder" href="#" ' +
                 'data-placeholder="1" ' +
                 'style="--c:' + par[0] + ';--c1:' + par[0] + ';--c2:' + par[1] + ';">' +
-                '<div class="ads-tag"><span class="dot"></span> ÚNETE A SARIEL\'S</div>' +
+                '<div class="ads-tag"><span class="dot"></span> ÚNETE A LA COMUNIDAD</div>' +
                 '<div class="ads-counter">' + (i + 1) + '/' + total + '</div>' +
                 '<span class="ads-chip">' + esc(p.chip) + '</span>' +
                 '<div class="card-icon">' + p.icon + '</div>' +
@@ -282,55 +263,70 @@
     }
 
     /**
-     * Renderiza el track completo con anuncios reales o placeholders.
+     * Combina anuncios reales + placeholders para rellenar los 7 slots.
+     * Los anuncios reales ocupan los primeros slots; el resto se rellena
+     * con los placeholders en orden.
      */
+    function construirSlots(anuncios) {
+        var slots = [];
+        var usados = 0;
+
+        // 1) Anuncios reales ocupan los primeros slots
+        for (var i = 0; i < anuncios.length && usados < TOTAL_SLOTS; i++) {
+            slots.push({ tipo: 'real', data: anuncios[i] });
+            usados++;
+        }
+
+        // 2) El resto de slots se rellenan con placeholders
+        for (var j = 0; usados < TOTAL_SLOTS; j++, usados++) {
+            slots.push({ tipo: 'placeholder', data: PLACEHOLDERS[j % PLACEHOLDERS.length] });
+        }
+
+        return slots;
+    }
+
     function renderizar(anuncios) {
         if (!track) return;
         anunciosCache = anuncios || [];
 
-        if (anuncios && anuncios.length > 0) {
-            // Anuncios reales
-            track.innerHTML = anuncios.map(function (a, i) {
-                return htmlAnuncioReal(a, i, anuncios.length);
-            }).join('');
+        var slots = construirSlots(anunciosCache);
+        var total = slots.length;
 
-            // Click → registrar toque + navegar
-            track.querySelectorAll('.anuncio-card').forEach(function (card) {
-                card.addEventListener('click', function (e) {
-                    var id = card.getAttribute('data-anuncio-id');
-                    var anuncio = anunciosCache.filter(function (a) { return a.id === id; })[0];
-                    if (anuncio) registrarToque(anuncio);
-                    // La navegación la hace el href del <a>
-                });
-            });
-        } else {
-            // Placeholders de marketing
-            track.innerHTML = PLACEHOLDERS.map(function (p, i) {
-                return htmlPlaceholder(p, i, PLACEHOLDERS.length);
-            }).join('');
+        track.innerHTML = slots.map(function (slot, i) {
+            if (slot.tipo === 'real') {
+                return htmlAnuncioReal(slot.data, i, total);
+            }
+            return htmlPlaceholder(slot.data, i, total);
+        }).join('');
 
-            // Click → abrir modal de crear anuncio
-            track.querySelectorAll('.anuncio-placeholder').forEach(function (card) {
-                card.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    irACrearAnuncio();
-                });
+        // Handlers: anuncios reales → registrar toque
+        track.querySelectorAll('.anuncio-card').forEach(function (card) {
+            card.addEventListener('click', function () {
+                var id = card.getAttribute('data-anuncio-id');
+                var anuncio = anunciosCache.filter(function (a) { return a.id === id; })[0];
+                if (anuncio) registrarToque(anuncio);
             });
-        }
+        });
+
+        // Handlers: placeholders → ir a crear anuncio
+        track.querySelectorAll('.anuncio-placeholder').forEach(function (card) {
+            card.addEventListener('click', function (e) {
+                e.preventDefault();
+                irACrearAnuncio();
+            });
+        });
     }
 
     function irACrearAnuncio() {
-        // Si existe un modal de crear anuncio en la página, úsalo
         if (typeof window.abrirModalCrearAnuncio === 'function') {
             window.abrirModalCrearAnuncio();
             return;
         }
-        // Si no, redirige a la página del formulario
         window.location.href = '/features/perfil/crear-anuncio.html';
     }
 
     // -----------------------------------------------------------
-    // NAVEGACIÓN DEL CARRUSEL (sin cambios)
+    // NAVEGACIÓN DEL CARRUSEL
     // -----------------------------------------------------------
     function irACard(i, suave) {
         var card = cards[i];
@@ -356,7 +352,7 @@
         cards.forEach(function (card, i) {
             var punto = document.createElement('button');
             punto.type = 'button';
-            punto.setAttribute('aria-label', 'Ir al anuncio ' + (i + 1));
+            punto.setAttribute('aria-label', 'Ir al módulo ' + (i + 1));
             punto.addEventListener('click', function () { irACard(i, true); });
             if (i === activo) punto.classList.add('active');
             dots.appendChild(punto);
@@ -399,7 +395,7 @@
             punto.classList.toggle('active', i === mejor);
         });
 
-        // Registrar vista del anuncio activo (solo anuncios reales)
+        // Vista del anuncio activo (solo si es real)
         if (anunciosCache.length > 0 && cards[mejor]) {
             var id = cards[mejor].getAttribute('data-anuncio-id');
             if (id) {
@@ -416,9 +412,6 @@
         }
     }
 
-    // -----------------------------------------------------------
-    // REFRESCAR (público)
-    // -----------------------------------------------------------
     function refrescar() {
         if (!track) {
             track = obtenerTrack();
@@ -448,7 +441,7 @@
     }
 
     // -----------------------------------------------------------
-    // REALTIME · Escucha cambios en la tabla anuncios
+    // REALTIME
     // -----------------------------------------------------------
     async function suscribirRealtime() {
         var db = await obtenerCliente();
@@ -460,7 +453,6 @@
                 .on('postgres_changes',
                     { event: '*', schema: 'public', table: TABLA },
                     function () {
-                        // Cualquier cambio (INSERT/UPDATE/DELETE) → recargar
                         if (!cargaEnCurso) cargarYRenderizar();
                     }
                 )
@@ -481,8 +473,7 @@
             renderizar(anuncios);
             refrescar();
         } catch (e) {
-            console.warn('[Carrusel] Error cargando y renderizando:', e);
-            // Fallback: placeholders
+            console.warn('[Carrusel] Error cargando:', e);
             renderizar([]);
             refrescar();
         } finally {
@@ -503,7 +494,7 @@
         if (inicializado) return;
         inicializado = true;
 
-        // 1) Placeholders inmediatos (para que no se vea vacío)
+        // 1) Render inicial con placeholders (para que no se vea vacío)
         renderizar([]);
         cards = coleccionar();
         asignarColores();
@@ -522,7 +513,7 @@
             irACardInicial(inicial, 0);
         });
 
-        // 2) Carga real desde Supabase
+        // 2) Carga real desde Supabase (rellena slots con anuncios reales)
         cargarYRenderizar();
 
         // 3) Realtime
