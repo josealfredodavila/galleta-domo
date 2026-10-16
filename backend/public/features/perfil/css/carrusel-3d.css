@@ -2,12 +2,13 @@
    CARRUSEL 3D HORIZONTAL - Csariel's
    Ruta: /features/perfil/css/carrusel-3d.css
 
-   v4 · ARCOÍRIS FLUIDO (estilo Times Square)
-   - Cada tarjeta tiene un degradado multicolor animado.
-   - Los colores fluyen constantemente (nunca estáticos).
-   - Cada tarjeta ve una parte distinta del arcoíris.
-   - Degradado lleno + partículas + glow pulsante.
-   - Soporta imágenes (Ken Burns) y videos (autoplay muted loop).
+   v5 · OPTIMIZADO (fluido + ahorro batería)
+   - Degradado vivo estático (cada tarjeta con su color).
+   - SIN animaciones de fondo (no repinta).
+   - SIN box-shadow animado.
+   - Partículas reducidas (2 por tarjeta).
+   - Animaciones ligeras: kenBurns, dotPulse, iconFloat.
+   - Pausa animaciones cuando la pestaña no está visible.
    ============================================ */
 
 .carrusel-3d-wrapper {
@@ -15,6 +16,13 @@
     position: relative;
     padding: 18px 0 10px;
     overflow: hidden;
+}
+
+/* Pausa todas las animaciones cuando la pestaña no está visible */
+.carrusel-3d-wrapper.is-paused *,
+.carrusel-3d-wrapper.is-paused *::before,
+.carrusel-3d-wrapper.is-paused *::after {
+    animation-play-state: paused !important;
 }
 
 .carrusel-3d-track {
@@ -30,11 +38,13 @@
     scroll-snap-type: x mandatory;
     scroll-padding-left: 40px;
     scroll-padding-right: 40px;
+    will-change: scroll-position;
+    contain: content;
 }
 .carrusel-3d-track::-webkit-scrollbar { display: none; }
 
 /* ============================================
-   TARJETA BASE — ARCOÍRIS FLUIDO
+   TARJETA BASE — Degradado vivo ESTÁTICO
    ============================================ */
 .carrusel-3d-card {
     position: relative;
@@ -49,47 +59,30 @@
     text-decoration: none;
     color: #ffffff;
 
-    background:
-        linear-gradient(
-            var(--angle, 135deg),
-            #ff3d00 0%,
-            #ff9100 12%,
-            #ffd600 24%,
-            #00e676 36%,
-            #00e5ff 48%,
-            #2962ff 60%,
-            #7c4dff 72%,
-            #ff3cb4 84%,
-            #ff3d00 100%
-        );
-    background-size: 400% 400%;
-    background-position: var(--phase, 0%) 50%;
+    /* Degradado fijo (sin animación). Cada tarjeta usa --c1 y --c2
+       que el JS asigna según su índice. */
+    background: linear-gradient(
+        135deg,
+        var(--c1, #ff3d00) 0%,
+        var(--c2, #ffc400) 100%
+    );
 
-    animation: rainbowFlow 14s ease-in-out infinite;
-
-    border: 1.5px solid rgba(255, 255, 255, 0.18);
+    border: 1.5px solid rgba(255, 255, 255, 0.22);
     box-shadow:
         0 12px 30px rgba(0, 0, 0, 0.55),
-        0 0 0 1px rgba(255, 255, 255, 0.06) inset,
-        0 0 24px -6px rgba(255, 255, 255, 0.25);
+        0 0 0 1px rgba(255, 255, 255, 0.06) inset;
 
     transform: perspective(900px) rotateY(0deg) scale(0.92);
     opacity: 0.75;
-    will-change: transform, opacity, background-position;
-    transition: transform 0.4s ease, box-shadow 0.35s ease, border-color 0.35s ease;
+    will-change: transform, opacity;
+    transition: transform 0.35s ease, opacity 0.35s ease, box-shadow 0.35s ease;
     -webkit-tap-highlight-color: transparent;
     scroll-snap-align: center;
     contain: layout paint;
     isolation: isolate;
 }
 
-@keyframes rainbowFlow {
-    0%   { background-position: var(--phase, 0%) 50%; }
-    50%  { background-position: calc(var(--phase, 0%) + 100%) 50%; }
-    100% { background-position: var(--phase, 0%) 50%; }
-}
-
-/* Overlay: brillo arriba + sombra abajo (legibilidad) sin oscurecer el centro */
+/* Overlay: brillo arriba + sombra abajo (legibilidad) */
 .carrusel-3d-card::before {
     content: '';
     position: absolute;
@@ -101,50 +94,19 @@
     z-index: 1;
 }
 
-/* Destello que cruza la tarjeta activa */
-.carrusel-3d-card::after {
-    content: '';
-    position: absolute;
-    inset: -40% -60%;
-    background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, 0.3) 50%, transparent 58%);
-    transform: translateX(-60%);
-    transition: transform 1s ease;
-    pointer-events: none;
-    z-index: 5;
-    mix-blend-mode: overlay;
-}
-.carrusel-3d-card.active::after {
-    transform: translateX(60%);
-}
-
 .carrusel-3d-card > * {
     position: relative;
     z-index: 2;
 }
 
-/* ============================================
-   TARJETA ACTIVA: glow pulsante
-   ============================================ */
+/* Tarjeta activa: solo un borde más brillante, sin pulsos */
 .carrusel-3d-card.active {
-    border-color: rgba(255, 255, 255, 0.7);
+    border-color: rgba(255, 255, 255, 0.75);
     opacity: 1;
-    animation:
-        rainbowFlow 14s ease-in-out infinite,
-        neonPulse 3s ease-in-out infinite;
-}
-@keyframes neonPulse {
-    0%, 100% {
-        box-shadow:
-            0 0 26px -2px rgba(255, 255, 255, 0.55),
-            0 18px 44px rgba(0, 0, 0, 0.7),
-            0 0 0 1px rgba(255, 255, 255, 0.2) inset;
-    }
-    50% {
-        box-shadow:
-            0 0 48px 4px rgba(255, 255, 255, 0.85),
-            0 18px 44px rgba(0, 0, 0, 0.85),
-            0 0 0 1px rgba(255, 255, 255, 0.35) inset;
-    }
+    box-shadow:
+        0 0 26px -2px rgba(255, 255, 255, 0.5),
+        0 18px 44px rgba(0, 0, 0, 0.75),
+        0 0 0 1px rgba(255, 255, 255, 0.2) inset;
 }
 
 /* ============================================
@@ -162,13 +124,15 @@
     opacity: 0.95;
 }
 
+/* Ken Burns (zoom lento) solo en imágenes — es barato */
 .carrusel-3d-card .anuncio-img {
-    animation: kenBurns 14s ease-in-out infinite alternate;
+    animation: kenBurns 16s ease-in-out infinite alternate;
     transform-origin: center;
+    will-change: transform;
 }
 @keyframes kenBurns {
     0%   { transform: scale(1) translate(0, 0); }
-    100% { transform: scale(1.14) translate(-2%, -1%); }
+    100% { transform: scale(1.1) translate(-1.5%, -1%); }
 }
 
 .carrusel-3d-card .anuncio-video {
@@ -181,7 +145,7 @@
 }
 
 /* ============================================
-   PARTÍCULAS DE LUZ FLOTANDO
+   PARTÍCULAS — SOLO 2 por tarjeta (ligero)
    ============================================ */
 .carrusel-3d-card .times-particles {
     position: absolute;
@@ -189,30 +153,32 @@
     z-index: 1;
     pointer-events: none;
     overflow: hidden;
-    opacity: 0.85;
+    opacity: 0.7;
     mix-blend-mode: screen;
+    contain: strict;
 }
 .carrusel-3d-card .times-particles span {
     position: absolute;
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 5px;
     border-radius: 50%;
     background: radial-gradient(circle, #fff 0%, rgba(255, 255, 255, 0) 70%);
-    box-shadow: 0 0 12px rgba(255, 255, 255, 0.95);
-    animation: floatUp 7s ease-in-out infinite;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.9);
+    animation: floatUp 8s ease-in-out infinite;
     opacity: 0;
+    will-change: transform, opacity;
 }
-.carrusel-3d-card .times-particles span:nth-child(1) { left: 12%; top: 80%; animation-delay: 0s; }
-.carrusel-3d-card .times-particles span:nth-child(2) { left: 28%; top: 65%; animation-delay: 1.2s; }
-.carrusel-3d-card .times-particles span:nth-child(3) { left: 55%; top: 88%; animation-delay: 2.4s; }
-.carrusel-3d-card .times-particles span:nth-child(4) { left: 72%; top: 72%; animation-delay: 3.6s; }
-.carrusel-3d-card .times-particles span:nth-child(5) { left: 85%; top: 90%; animation-delay: 4.8s; }
+.carrusel-3d-card .times-particles span:nth-child(1) { left: 20%; top: 85%; animation-delay: 0s; }
+.carrusel-3d-card .times-particles span:nth-child(2) { left: 75%; top: 75%; animation-delay: 4s; }
+.carrusel-3d-card .times-particles span:nth-child(3) { display: none; }
+.carrusel-3d-card .times-particles span:nth-child(4) { display: none; }
+.carrusel-3d-card .times-particles span:nth-child(5) { display: none; }
 
 @keyframes floatUp {
     0%   { opacity: 0; transform: translateY(0) scale(0.6); }
     20%  { opacity: 1; }
     80%  { opacity: 1; }
-    100% { opacity: 0; transform: translateY(-90px) scale(1.2); }
+    100% { opacity: 0; transform: translateY(-80px) scale(1.1); }
 }
 
 /* ============================================
@@ -240,12 +206,8 @@
     height: 9px;
     border-radius: 50%;
     background: #fff;
-    box-shadow: 0 0 12px rgba(255, 255, 255, 0.95);
-    animation: dotPulse 1.8s ease-in-out infinite;
-}
-@keyframes dotPulse {
-    0%, 100% { transform: scale(1); opacity: 1; }
-    50%      { transform: scale(1.25); opacity: 0.85; }
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.9);
+    /* Sin animación: es solo un punto estático con glow */
 }
 
 /* ============================================
@@ -289,20 +251,13 @@
 }
 
 /* ============================================
-   ICONO
+   ICONO — sin flotación (ahorra CPU)
    ============================================ */
 .carrusel-3d-card .card-icon {
     font-size: 2.6rem;
     line-height: 1;
     margin-bottom: 10px;
     filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.55));
-}
-.carrusel-3d-card.active .card-icon {
-    animation: iconFloat 3.6s ease-in-out infinite;
-}
-@keyframes iconFloat {
-    0%, 100% { transform: translateY(0) scale(1); }
-    50%      { transform: translateY(-5px) scale(1.05); }
 }
 
 /* ============================================
@@ -350,14 +305,13 @@
     border-radius: 99px;
     cursor: pointer;
     box-shadow: 0 6px 18px -4px rgba(0, 0, 0, 0.5);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.2s ease;
     -webkit-tap-highlight-color: transparent;
     position: relative;
     z-index: 3;
 }
-.carrusel-3d-card .ads-cta:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 10px 24px -6px rgba(0, 0, 0, 0.6);
+.carrusel-3d-card .ads-cta:active {
+    transform: scale(0.97);
 }
 
 /* ============================================
@@ -372,15 +326,16 @@
     background: linear-gradient(
         to bottom,
         transparent 0%,
-        rgba(0, 0, 0, 0.35) 55%,
-        rgba(0, 0, 0, 0.6) 100%
+        rgba(0, 0, 0, 0.3) 55%,
+        rgba(0, 0, 0, 0.55) 100%
     );
     pointer-events: none;
     z-index: 0;
 }
 
 /* ============================================
-   BARRA TRICOLOR (arcoíris animado)
+   BARRA TRICOLOR (arcoíris) — animación ligera
+   Solo animamos background-position, es barato.
    ============================================ */
 .carrusel-3d-wrapper::after {
     content: '';
@@ -397,8 +352,8 @@
         #7c4dff 100%);
     background-size: 200% 100%;
     border-radius: 99px;
-    box-shadow: 0 0 18px -2px rgba(124, 77, 255, 0.75);
-    animation: colorBarFlow 4s linear infinite;
+    box-shadow: 0 0 14px -2px rgba(124, 77, 255, 0.6);
+    animation: colorBarFlow 6s linear infinite;
 }
 @keyframes colorBarFlow {
     0%   { background-position: 0% 0; }
@@ -422,13 +377,13 @@
     border-radius: 99px;
     background: rgba(255, 255, 255, 0.28);
     cursor: pointer;
-    transition: width 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
+    transition: width 0.3s ease, background 0.3s ease;
     -webkit-tap-highlight-color: transparent;
 }
 .carrusel-3d-dots button.active {
     width: 22px;
     background: #ffffff;
-    box-shadow: 0 0 14px rgba(255, 255, 255, 0.95);
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.85);
 }
 
 /* ============================================
@@ -453,11 +408,8 @@
     .carrusel-3d-card,
     .carrusel-3d-card::after,
     .carrusel-3d-card::before,
-    .carrusel-3d-card .card-icon,
     .carrusel-3d-card .anuncio-img,
     .carrusel-3d-card .times-particles span,
-    .carrusel-3d-card .ads-tag .dot,
-    .carrusel-3d-dots button,
     .carrusel-3d-wrapper::after {
         animation: none !important;
         transition: none !important;
