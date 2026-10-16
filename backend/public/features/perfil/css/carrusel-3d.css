@@ -1,14 +1,15 @@
 /* ============================================
-   CARRUSEL 3D HORIZONTAL - Csariel's
+   CSARIEL'S · CARRUSEL 3D HORIZONTAL
    Ruta: /features/perfil/css/carrusel-3d.css
+   v7 · DISEÑO VIVO + RESPONSIVE + OPTIMIZADO
 
-   v5 · OPTIMIZADO (fluido + ahorro batería)
-   - Degradado vivo estático (cada tarjeta con su color).
-   - SIN animaciones de fondo (no repinta).
-   - SIN box-shadow animado.
-   - Partículas reducidas (2 por tarjeta).
-   - Animaciones ligeras: kenBurns, dotPulse, iconFloat.
-   - Pausa animaciones cuando la pestaña no está visible.
+   - Paleta: verde esmeralda, oro, naranja, azul.
+   - Degradados ricos por slot.
+   - Sin animaciones de fondo (ahorro batería).
+   - Respeta prefers-reduced-motion.
+   - Soporta .is-slow-connection (desactiva brillos).
+   - Contraste de texto mejorado.
+   - Content-visibility para tarjetas fuera de pantalla.
    ============================================ */
 
 .carrusel-3d-wrapper {
@@ -16,14 +17,33 @@
     position: relative;
     padding: 18px 0 10px;
     overflow: hidden;
+    isolation: isolate;
+    color: #fff;
+    --cs-verde: #00e676;
+    --cs-esmeralda: #00c896;
+    --cs-naranja: #ff7900;
+    --cs-oro: #ffd54f;
+    --cs-azul: #2962ff;
 }
 
-/* Pausa todas las animaciones cuando la pestaña no está visible */
+/* Pausa cuando la pestaña no está visible */
 .carrusel-3d-wrapper.is-paused *,
 .carrusel-3d-wrapper.is-paused *::before,
 .carrusel-3d-wrapper.is-paused *::after {
     animation-play-state: paused !important;
 }
+
+/* Desactiva brillos decorativos en conexión lenta */
+.carrusel-3d-wrapper.is-slow-connection .times-particles {
+    display: none;
+}
+.carrusel-3d-wrapper.is-slow-connection .anuncio-img {
+    animation: none !important;
+}
+
+/* --------------------------------------------
+   PISTA HORIZONTAL
+   -------------------------------------------- */
 
 .carrusel-3d-track {
     display: flex;
@@ -36,62 +56,80 @@
     overscroll-behavior-x: contain;
     scrollbar-width: none;
     scroll-snap-type: x mandatory;
-    scroll-padding-left: 40px;
-    scroll-padding-right: 40px;
-    will-change: scroll-position;
-    contain: content;
+    scroll-padding-inline: 40px;
+    contain: layout paint;
 }
-.carrusel-3d-track::-webkit-scrollbar { display: none; }
 
-/* ============================================
-   TARJETA BASE — Degradado vivo ESTÁTICO
-   ============================================ */
+.carrusel-3d-track::-webkit-scrollbar {
+    display: none;
+}
+
+/* --------------------------------------------
+   TARJETA BASE
+   -------------------------------------------- */
+
 .carrusel-3d-card {
     position: relative;
     flex: 0 0 240px;
     height: 330px;
+    box-sizing: border-box;
     padding: 20px;
-    border-radius: 22px;
+    border-radius: 24px;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
     overflow: hidden;
     text-decoration: none;
-    color: #ffffff;
-
-    /* Degradado fijo (sin animación). Cada tarjeta usa --c1 y --c2
-       que el JS asigna según su índice. */
+    color: #fff;
     background: linear-gradient(
-        135deg,
-        var(--c1, #ff3d00) 0%,
-        var(--c2, #ffc400) 100%
+        145deg,
+        var(--c1, #ff7900) 0%,
+        var(--c2, #00c896) 100%
     );
-
-    border: 1.5px solid rgba(255, 255, 255, 0.22);
+    border: 1.5px solid rgba(255,255,255,.30);
     box-shadow:
-        0 12px 30px rgba(0, 0, 0, 0.55),
-        0 0 0 1px rgba(255, 255, 255, 0.06) inset;
-
-    transform: perspective(900px) rotateY(0deg) scale(0.92);
-    opacity: 0.75;
-    will-change: transform, opacity;
-    transition: transform 0.35s ease, opacity 0.35s ease, box-shadow 0.35s ease;
+        0 12px 30px rgba(0,0,0,.40),
+        inset 0 0 0 1px rgba(255,255,255,.06);
+    transform: perspective(900px) rotateY(0deg) scale(.92);
+    opacity: .75;
+    transition:
+        transform .28s ease,
+        opacity .28s ease,
+        border-color .28s ease,
+        box-shadow .28s ease;
     -webkit-tap-highlight-color: transparent;
     scroll-snap-align: center;
     contain: layout paint;
     isolation: isolate;
+    /* Mejora rendimiento de tarjetas fuera de pantalla */
+    content-visibility: auto;
+    contain-intrinsic-size: 240px 330px;
 }
 
-/* Overlay: brillo arriba + sombra abajo (legibilidad) */
+.carrusel-3d-card:focus-visible,
+.carrusel-3d-dots button:focus-visible {
+    outline: 3px solid var(--cs-oro);
+    outline-offset: 4px;
+}
+
 .carrusel-3d-card::before {
-    content: '';
+    content: "";
     position: absolute;
     inset: 0;
-    background:
-        radial-gradient(140% 65% at 50% 0%, rgba(255, 255, 255, 0.28) 0%, transparent 55%),
-        linear-gradient(180deg, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
-    pointer-events: none;
     z-index: 1;
+    pointer-events: none;
+    background:
+        radial-gradient(
+            130% 55% at 50% 0%,
+            rgba(255,255,255,.32),
+            transparent 65%
+        ),
+        linear-gradient(
+            180deg,
+            rgba(0,0,0,0) 25%,
+            rgba(0,0,0,.10) 42%,
+            rgba(0,0,0,.82) 100%
+        );
 }
 
 .carrusel-3d-card > * {
@@ -99,19 +137,19 @@
     z-index: 2;
 }
 
-/* Tarjeta activa: solo un borde más brillante, sin pulsos */
 .carrusel-3d-card.active {
-    border-color: rgba(255, 255, 255, 0.75);
     opacity: 1;
+    border-color: var(--cs-oro);
     box-shadow:
-        0 0 26px -2px rgba(255, 255, 255, 0.5),
-        0 18px 44px rgba(0, 0, 0, 0.75),
-        0 0 0 1px rgba(255, 255, 255, 0.2) inset;
+        0 0 0 1px rgba(255,213,79,.30),
+        0 0 24px rgba(0,230,118,.18),
+        0 18px 40px rgba(0,0,0,.55);
 }
 
-/* ============================================
-   IMAGEN / VIDEO DE FONDO (anuncios reales)
-   ============================================ */
+/* --------------------------------------------
+   IMAGEN / VIDEO
+   -------------------------------------------- */
+
 .carrusel-3d-card .anuncio-img,
 .carrusel-3d-card .anuncio-video {
     position: absolute;
@@ -121,18 +159,12 @@
     object-fit: cover;
     z-index: 0;
     pointer-events: none;
-    opacity: 0.95;
 }
 
-/* Ken Burns (zoom lento) solo en imágenes — es barato */
 .carrusel-3d-card .anuncio-img {
-    animation: kenBurns 16s ease-in-out infinite alternate;
+    animation: csImagenSuave 18s ease-in-out infinite alternate;
     transform-origin: center;
     will-change: transform;
-}
-@keyframes kenBurns {
-    0%   { transform: scale(1) translate(0, 0); }
-    100% { transform: scale(1.1) translate(-1.5%, -1%); }
 }
 
 .carrusel-3d-card .anuncio-video {
@@ -144,273 +176,360 @@
     display: none;
 }
 
-/* ============================================
-   PARTÍCULAS — SOLO 2 por tarjeta (ligero)
-   ============================================ */
+@keyframes csImagenSuave {
+    from { transform: scale(1); }
+    to   { transform: scale(1.055); }
+}
+
+/* --------------------------------------------
+   BRILLOS DECORATIVOS
+   -------------------------------------------- */
+
 .carrusel-3d-card .times-particles {
     position: absolute;
     inset: 0;
     z-index: 1;
     pointer-events: none;
     overflow: hidden;
-    opacity: 0.7;
-    mix-blend-mode: screen;
+    opacity: .65;
     contain: strict;
 }
+
 .carrusel-3d-card .times-particles span {
     position: absolute;
-    width: 5px;
-    height: 5px;
+    width: 4px;
+    height: 4px;
     border-radius: 50%;
-    background: radial-gradient(circle, #fff 0%, rgba(255, 255, 255, 0) 70%);
-    box-shadow: 0 0 10px rgba(255, 255, 255, 0.9);
-    animation: floatUp 8s ease-in-out infinite;
+    background: #fff;
+    box-shadow: 0 0 8px rgba(255,255,255,.8);
+    animation: csBrillo 8s ease-in-out infinite;
     opacity: 0;
     will-change: transform, opacity;
 }
-.carrusel-3d-card .times-particles span:nth-child(1) { left: 20%; top: 85%; animation-delay: 0s; }
-.carrusel-3d-card .times-particles span:nth-child(2) { left: 75%; top: 75%; animation-delay: 4s; }
-.carrusel-3d-card .times-particles span:nth-child(3) { display: none; }
-.carrusel-3d-card .times-particles span:nth-child(4) { display: none; }
-.carrusel-3d-card .times-particles span:nth-child(5) { display: none; }
 
-@keyframes floatUp {
-    0%   { opacity: 0; transform: translateY(0) scale(0.6); }
-    20%  { opacity: 1; }
-    80%  { opacity: 1; }
-    100% { opacity: 0; transform: translateY(-80px) scale(1.1); }
+.carrusel-3d-card .times-particles span:nth-child(1) {
+    left: 20%;
+    top: 85%;
 }
 
-/* ============================================
+.carrusel-3d-card .times-particles span:nth-child(2) {
+    left: 76%;
+    top: 74%;
+    animation-delay: 4s;
+}
+
+@keyframes csBrillo {
+    0%, 100% { opacity: 0; transform: translateY(0); }
+    25%, 70% { opacity: .8; }
+    90% { opacity: 0; transform: translateY(-55px); }
+}
+
+/* --------------------------------------------
    ETIQUETA SUPERIOR
-   ============================================ */
+   -------------------------------------------- */
+
 .carrusel-3d-card .ads-tag {
     position: absolute;
     top: 16px;
-    left: 18px;
+    left: 16px;
     z-index: 3;
     display: inline-flex;
     align-items: center;
     gap: 7px;
-    font-family: 'Rajdhani', 'Orbitron', sans-serif;
-    font-size: 0.62rem;
+    max-width: calc(100% - 70px);
+    font-family: "Rajdhani", "Orbitron", sans-serif;
+    font-size: .62rem;
     font-weight: 800;
-    letter-spacing: 0.14em;
+    letter-spacing: .12em;
     text-transform: uppercase;
     color: #fff;
-    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.55);
+    text-shadow: 0 2px 8px #000;
     pointer-events: none;
 }
+
 .carrusel-3d-card .ads-tag .dot {
-    width: 9px;
-    height: 9px;
+    flex: 0 0 8px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
-    background: #fff;
-    box-shadow: 0 0 10px rgba(255, 255, 255, 0.9);
-    /* Sin animación: es solo un punto estático con glow */
+    background: var(--cs-verde);
+    box-shadow: 0 0 10px rgba(0,230,118,.8);
 }
 
-/* ============================================
-   CONTADOR
-   ============================================ */
 .carrusel-3d-card .ads-counter {
     position: absolute;
-    top: 18px;
-    right: 18px;
+    top: 17px;
+    right: 16px;
     z-index: 3;
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 0.72rem;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.95);
-    letter-spacing: 0.06em;
-    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.55);
+    font-family: "Rajdhani", sans-serif;
+    font-size: .72rem;
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 2px 8px #000;
     pointer-events: none;
 }
 
-/* ============================================
+/* --------------------------------------------
    CHIP
-   ============================================ */
+   -------------------------------------------- */
+
 .carrusel-3d-card .ads-chip {
-    display: inline-block;
+    display: inline-flex;
     align-self: flex-start;
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 0.58rem;
+    align-items: center;
+    max-width: 100%;
+    box-sizing: border-box;
+    font-family: "Rajdhani", sans-serif;
+    font-size: .62rem;
     font-weight: 800;
-    letter-spacing: 0.16em;
+    letter-spacing: .10em;
     text-transform: uppercase;
     color: #fff;
-    background: rgba(0, 0, 0, 0.35);
-    border: 1px solid rgba(255, 255, 255, 0.45);
-    padding: 5px 11px;
+    background: rgba(0,0,0,.42);
+    border: 1px solid rgba(255,255,255,.55);
+    padding: 6px 11px;
     border-radius: 99px;
-    margin-bottom: 10px;
-    backdrop-filter: blur(6px);
-    position: relative;
-    z-index: 2;
-    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
-}
-
-/* ============================================
-   ICONO — sin flotación (ahorra CPU)
-   ============================================ */
-.carrusel-3d-card .card-icon {
-    font-size: 2.6rem;
-    line-height: 1;
-    margin-bottom: 10px;
-    filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.55));
-}
-
-/* ============================================
-   TÍTULO
-   ============================================ */
-.carrusel-3d-card .card-title {
-    font-family: 'Orbitron', 'Rajdhani', sans-serif;
-    font-size: 1.05rem;
-    font-weight: 900;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-    line-height: 1.1;
-    margin-bottom: 8px;
-    color: #ffffff;
-    text-shadow:
-        0 2px 8px rgba(0, 0, 0, 0.65),
-        0 0 20px rgba(0, 0, 0, 0.35);
-}
-
-/* ============================================
-   DESCRIPCIÓN
-   ============================================ */
-.carrusel-3d-card .card-desc {
-    font-family: 'Inter', sans-serif;
-    font-size: 0.72rem;
-    line-height: 1.42;
-    color: rgba(255, 255, 255, 0.98);
-    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
     margin-bottom: 12px;
+    backdrop-filter: blur(6px);
 }
 
-/* ============================================
-   CTA BLANCO
-   ============================================ */
-.carrusel-3d-card .ads-cta {
-    align-self: flex-start;
-    font-family: 'Rajdhani', 'Inter', sans-serif;
-    font-weight: 800;
-    font-size: 0.75rem;
-    letter-spacing: 0.02em;
-    color: #0a0a0a;
-    background: #ffffff;
-    border: none;
-    padding: 9px 18px;
+/* --------------------------------------------
+   INDICADOR VISUAL DE INVITACIÓN
+   -------------------------------------------- */
+
+.carrusel-3d-card .card-icon {
+    width: 48px;
+    height: 5px;
     border-radius: 99px;
-    cursor: pointer;
-    box-shadow: 0 6px 18px -4px rgba(0, 0, 0, 0.5);
-    transition: transform 0.2s ease;
-    -webkit-tap-highlight-color: transparent;
-    position: relative;
-    z-index: 3;
-}
-.carrusel-3d-card .ads-cta:active {
-    transform: scale(0.97);
+    margin-bottom: 13px;
+    background: linear-gradient(
+        90deg,
+        var(--cs-oro),
+        #fff,
+        var(--cs-verde)
+    );
+    box-shadow: 0 0 14px rgba(0,230,118,.45);
 }
 
-/* ============================================
-   REFLEJO INFERIOR tipo piso mojado
-   ============================================ */
+/* --------------------------------------------
+   TÍTULO
+   -------------------------------------------- */
+
+.carrusel-3d-card .card-title {
+    font-family: "Orbitron", "Rajdhani", sans-serif;
+    font-size: 1.02rem;
+    font-weight: 900;
+    letter-spacing: .025em;
+    text-transform: uppercase;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+    margin: 0 0 9px;
+    color: #fff;
+    text-shadow: 0 2px 9px rgba(0,0,0,.85);
+}
+
+/* --------------------------------------------
+   DESCRIPCIÓN
+   -------------------------------------------- */
+
+.carrusel-3d-card .card-desc {
+    font-family: "Inter", sans-serif;
+    font-size: .75rem;
+    line-height: 1.5;
+    color: rgba(255,255,255,.98);
+    text-shadow: 0 1px 6px rgba(0,0,0,.9);
+    margin: 0 0 14px;
+    overflow-wrap: anywhere;
+}
+
+/* --------------------------------------------
+   CTA
+   -------------------------------------------- */
+
+.carrusel-3d-card .ads-cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    align-self: flex-start;
+    gap: 8px;
+    max-width: 100%;
+    box-sizing: border-box;
+    font-family: "Rajdhani", "Inter", sans-serif;
+    font-weight: 900;
+    font-size: .76rem;
+    letter-spacing: .025em;
+    color: #08251a;
+    background: linear-gradient(110deg, #fff1a8, #ffd54f 48%, #ffad42);
+    border: 1px solid rgba(255,255,255,.7);
+    padding: 10px 16px;
+    border-radius: 99px;
+    box-shadow: 0 5px 16px rgba(0,0,0,.35);
+    transition: transform .18s ease, filter .18s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.carrusel-3d-card:active .ads-cta {
+    transform: scale(.97);
+    filter: brightness(1.06);
+}
+
+/* --------------------------------------------
+   VARIANTES POR SLOT
+   Cada slot tiene su propio degradado,
+   manteniendo la paleta verde/oro/naranja/azul.
+   -------------------------------------------- */
+
+.carrusel-3d-card.anuncio-placeholder[data-slot="0"] {
+    background: linear-gradient(145deg, #ff7900 0%, #ffb300 52%, #e34c00 100%);
+}
+.carrusel-3d-card.anuncio-placeholder[data-slot="1"] {
+    background: linear-gradient(145deg, #00c853 0%, #00bfa5 52%, #00695c 100%);
+}
+.carrusel-3d-card.anuncio-placeholder[data-slot="2"] {
+    background: linear-gradient(145deg, #008f68 0%, #00a878 52%, #ffd54f 100%);
+}
+.carrusel-3d-card.anuncio-placeholder[data-slot="3"] {
+    background: linear-gradient(145deg, #2962ff 0%, #00e5ff 52%, #008f68 100%);
+}
+.carrusel-3d-card.anuncio-placeholder[data-slot="4"] {
+    background: linear-gradient(145deg, #e65100 0%, #ff8f00 48%, #d4a017 100%);
+}
+.carrusel-3d-card.anuncio-placeholder[data-slot="5"] {
+    background: linear-gradient(145deg, #00a878 0%, #ffd54f 52%, #ff7900 100%);
+}
+.carrusel-3d-card.anuncio-placeholder[data-slot="6"] {
+    background: linear-gradient(145deg, #d84315 0%, #ff8f00 48%, #008f68 100%);
+}
+
+/* --------------------------------------------
+   REFLEJO INFERIOR
+   -------------------------------------------- */
+
 .carrusel-3d-wrapper::before {
-    content: '';
+    content: "";
     position: absolute;
-    left: 0; right: 0;
+    left: 0;
+    right: 0;
     bottom: 0;
-    height: 40%;
+    height: 35%;
     background: linear-gradient(
         to bottom,
-        transparent 0%,
-        rgba(0, 0, 0, 0.3) 55%,
-        rgba(0, 0, 0, 0.55) 100%
+        transparent,
+        rgba(0,0,0,.20) 60%,
+        rgba(0,0,0,.35)
     );
     pointer-events: none;
     z-index: 0;
 }
 
-/* ============================================
-   BARRA TRICOLOR (arcoíris) — animación ligera
-   Solo animamos background-position, es barato.
-   ============================================ */
+/* --------------------------------------------
+   BARRA TRICOLOR
+   -------------------------------------------- */
+
 .carrusel-3d-wrapper::after {
-    content: '';
+    content: "";
     display: block;
     height: 4px;
     width: calc(100% - 80px);
     margin: 8px auto 0;
-    background: linear-gradient(90deg,
-        #ff3d00 0%,
-        #ffd600 20%,
-        #00e676 40%,
-        #00e5ff 60%,
-        #2962ff 80%,
-        #7c4dff 100%);
-    background-size: 200% 100%;
+    background: linear-gradient(
+        90deg,
+        #00e676 0%,
+        #00c896 25%,
+        #ffd54f 50%,
+        #ff7900 72%,
+        #2962ff 100%
+    );
     border-radius: 99px;
-    box-shadow: 0 0 14px -2px rgba(124, 77, 255, 0.6);
-    animation: colorBarFlow 6s linear infinite;
-}
-@keyframes colorBarFlow {
-    0%   { background-position: 0% 0; }
-    100% { background-position: 200% 0; }
+    box-shadow: 0 0 12px rgba(0,200,150,.25);
 }
 
-/* ============================================
+/* --------------------------------------------
    DOTS
-   ============================================ */
+   -------------------------------------------- */
+
 .carrusel-3d-dots {
+    position: relative;
+    z-index: 4;
     display: flex;
     justify-content: center;
-    gap: 7px;
+    align-items: center;
+    gap: 8px;
     margin-top: 10px;
+    padding: 2px 8px;
 }
+
 .carrusel-3d-dots button {
-    width: 7px;
-    height: 7px;
+    flex: 0 0 8px;
+    width: 8px;
+    height: 8px;
     padding: 0;
     border: 0;
     border-radius: 99px;
-    background: rgba(255, 255, 255, 0.28);
+    background: rgba(255,255,255,.28);
     cursor: pointer;
-    transition: width 0.3s ease, background 0.3s ease;
+    transition: width .22s ease, background .22s ease;
     -webkit-tap-highlight-color: transparent;
 }
+
 .carrusel-3d-dots button.active {
-    width: 22px;
-    background: #ffffff;
-    box-shadow: 0 0 12px rgba(255, 255, 255, 0.85);
+    flex-basis: 24px;
+    width: 24px;
+    background: linear-gradient(90deg, #00e676, #00c896);
+    box-shadow: 0 0 10px rgba(0,230,118,.45);
 }
 
-/* ============================================
+/* --------------------------------------------
    RESPONSIVE
-   ============================================ */
+   -------------------------------------------- */
+
 @media (max-width: 480px) {
+    .carrusel-3d-wrapper {
+        padding-top: 14px;
+    }
+
+    .carrusel-3d-track {
+        gap: 12px;
+        padding: 14px 40px 18px;
+        scroll-padding-inline: 40px;
+    }
+
     .carrusel-3d-card {
-        flex: 0 0 215px;
+        flex-basis: 215px;
         height: 310px;
         padding: 16px;
+        border-radius: 22px;
     }
-    .carrusel-3d-card .card-icon { font-size: 2.2rem; }
-    .carrusel-3d-card .card-title { font-size: 0.95rem; }
-    .carrusel-3d-card .card-desc { font-size: 0.68rem; }
-    .carrusel-3d-card .ads-cta { font-size: 0.68rem; padding: 7px 14px; }
+
+    .carrusel-3d-card .card-title {
+        font-size: .95rem;
+    }
+
+    .carrusel-3d-card .card-desc {
+        font-size: .70rem;
+    }
+
+    .carrusel-3d-card .ads-cta {
+        font-size: .70rem;
+        padding: 9px 13px;
+    }
+
+    .carrusel-3d-wrapper::after {
+        width: calc(100% - 48px);
+    }
 }
 
-/* ============================================
-   ACCESIBILIDAD: reduce motion
-   ============================================ */
+/* --------------------------------------------
+   ACCESIBILIDAD: movimiento reducido
+   -------------------------------------------- */
+
 @media (prefers-reduced-motion: reduce) {
     .carrusel-3d-card,
-    .carrusel-3d-card::after,
     .carrusel-3d-card::before,
     .carrusel-3d-card .anuncio-img,
     .carrusel-3d-card .times-particles span,
-    .carrusel-3d-wrapper::after {
+    .carrusel-3d-card .ads-cta,
+    .carrusel-3d-dots button {
         animation: none !important;
         transition: none !important;
     }
