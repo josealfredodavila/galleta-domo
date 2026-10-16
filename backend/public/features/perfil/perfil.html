@@ -254,8 +254,8 @@
     }
 </style>
 <style>
-    /* Respaldo del overlay "Módulos" y su botón flotante.
-       Si carrusel-3d-fullscreen.css carga bien, sus reglas tienen prioridad. */
+    /* Respaldo del overlay "Módulos". Se mantiene en el HTML para que sus scripts no fallen,
+       pero el botón redondo de módulos ya no se muestra: lo reemplaza el botón de llamadas. */
     .carrusel-fullscreen-overlay {
         display: none;
     }
@@ -274,29 +274,124 @@
         padding: 16px;
         box-sizing: border-box;
     }
-    .btn-abrir-carrusel-fullscreen {
+    #btnAbrirCarruselFullscreen {
+        display: none !important;
+    }
+</style>
+
+<style>
+    /* ================= BOTÓN FLOTANTE DE LLAMADAS (arrastrable) ================= */
+    #btnLlamarFlotante {
         position: fixed;
-        right: 16px;
-        bottom: 24px;
-        z-index: 9000;
-        width: 48px;
-        height: 48px;
+        left: calc(100vw - 72px);
+        top: calc(100vh - 150px);
+        width: 56px;
+        height: 56px;
         border-radius: 50%;
-        border: 1px solid var(--gold, #D4AF37);
-        background: rgba(5, 8, 15, 0.9);
-        color: var(--gold, #D4AF37);
+        border: 2px solid var(--cyan, #1de9b6);
+        background: rgba(5, 8, 15, 0.92);
+        color: var(--cyan, #1de9b6);
         display: flex;
         align-items: center;
         justify-content: center;
-        cursor: pointer;
+        box-shadow: 0 0 18px rgba(29, 233, 182, 0.35);
+        z-index: 9000;
+        cursor: grab;
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-tap-highlight-color: transparent;
         padding: 0;
     }
-    .btn-abrir-carrusel-fullscreen svg {
-        width: 22px;
-        height: 22px;
+    #btnLlamarFlotante.arrastrando {
+        cursor: grabbing;
+        transform: scale(1.06);
+        box-shadow: 0 0 26px rgba(29, 233, 182, 0.55);
+    }
+    #btnLlamarFlotante svg {
+        width: 26px;
+        height: 26px;
         fill: none;
         stroke: currentColor;
         stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        pointer-events: none;
+    }
+
+    /* ================= PANEL DE LLAMADA ================= */
+    #panelLlamar {
+        position: fixed;
+        left: 50%;
+        bottom: 16px;
+        transform: translate(-50%, 140%);
+        width: min(92vw, 380px);
+        padding: 18px;
+        border-radius: 18px;
+        background: rgba(5, 8, 15, 0.97);
+        border: 1px solid var(--cyan, #1de9b6);
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+        z-index: 9100;
+        transition: transform 0.25s ease;
+        box-sizing: border-box;
+    }
+    #panelLlamar.abierto {
+        transform: translate(-50%, 0);
+    }
+    #panelLlamar .llamar-titulo {
+        font-family: Orbitron, monospace;
+        font-size: 0.85rem;
+        color: var(--cyan, #1de9b6);
+        margin-bottom: 4px;
+    }
+    #panelLlamar .llamar-sub {
+        font-size: 0.68rem;
+        color: var(--text-secondary, #9fb3c8);
+        margin-bottom: 12px;
+        line-height: 1.4;
+    }
+    #llamarNumero {
+        width: 100%;
+        padding: 10px 12px;
+        background: rgba(0, 0, 0, 0.4);
+        border: 1px solid var(--glass-border, #2a3a4a);
+        border-radius: 10px;
+        color: white;
+        outline: none;
+        font-size: 0.9rem;
+        font-family: 'Inter', sans-serif;
+        box-sizing: border-box;
+    }
+    #panelLlamar .llamar-acciones {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+    }
+    #panelLlamar .llamar-acciones button {
+        flex: 1;
+        text-align: center;
+        padding: 10px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        cursor: pointer;
+        box-sizing: border-box;
+    }
+    #btnHacerLlamada {
+        border: 1px solid var(--cyan, #1de9b6);
+        background: linear-gradient(135deg, rgba(29, 233, 182, 0.25), rgba(29, 233, 182, 0.08));
+        color: var(--cyan, #1de9b6);
+    }
+    #btnCerrarLlamar {
+        border: 1px solid var(--text-muted, #6b7d90);
+        background: transparent;
+        color: var(--text-muted, #6b7d90);
+    }
+    #llamarAviso {
+        margin-top: 8px;
+        font-size: 0.65rem;
+        color: var(--danger, #ff3366);
+        min-height: 14px;
     }
 </style>
 </head>
@@ -1082,6 +1177,7 @@
 
 </div>
 
+<!-- Botón de módulos (oculto; se conserva el id para que sus scripts no fallen) -->
 <button id="btnAbrirCarruselFullscreen" class="btn-abrir-carrusel-fullscreen" type="button" aria-label="Abrir módulos">
     <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
 </button>
@@ -1098,6 +1194,25 @@
     </div>
     <div class="carrusel-fullscreen-dots" id="carruselFullscreenDots"></div>
     <div class="carrusel-fullscreen-hint">Desliza para explorar</div>
+</div>
+
+<!-- ============ BOTÓN FLOTANTE DE LLAMADAS (arrastrable) ============ -->
+<button id="btnLlamarFlotante" type="button" aria-label="Llamar o comprar eSIM" title="Llamar">
+    <svg viewBox="0 0 24 24">
+        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+    </svg>
+</button>
+
+<!-- Panel que se abre al tocar el botón flotante -->
+<div id="panelLlamar" role="dialog" aria-modal="false" aria-label="Llamar">
+    <div class="llamar-titulo">◈ Llamar</div>
+    <div class="llamar-sub">Escribe el número al que quieres llamar. Se abrirá la app de teléfono de tu celular.</div>
+    <input id="llamarNumero" type="tel" inputmode="tel" autocomplete="tel" placeholder="Ej. +52 55 1234 5678" />
+    <div id="llamarAviso"></div>
+    <div class="llamar-acciones">
+        <button id="btnHacerLlamada" type="button">📞 Llamar</button>
+        <button id="btnCerrarLlamar" type="button">Cerrar</button>
+    </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -1472,6 +1587,179 @@
     }
 })();
 </script>
+
+<!-- ============ LÓGICA DEL BOTÓN FLOTANTE DE LLAMADAS (arrastrable) ============ -->
+<script>
+/* ================================================================
+   BOTÓN FLOTANTE DE LLAMADAS
+   - Se arrastra con el dedo o el mouse a cualquier parte de la pantalla.
+   - Un toque sin mover abre el panel de llamada.
+   - Recuerda su posición en este navegador.
+   ================================================================ */
+(function () {
+    'use strict';
+
+    var CLAVE_POS = 'sariels_llamar_pos';
+    var UMBRAL_TAP = 6;
+    var MARGEN = 4;
+
+    var btn = document.getElementById('btnLlamarFlotante');
+    var panel = document.getElementById('panelLlamar');
+    var input = document.getElementById('llamarNumero');
+    var aviso = document.getElementById('llamarAviso');
+    var btnLlamar = document.getElementById('btnHacerLlamada');
+    var btnCerrar = document.getElementById('btnCerrarLlamar');
+
+    if (!btn || !panel) return;
+
+    var pid = null;
+    var inicioX = 0, inicioY = 0;
+    var origenLeft = 0, origenTop = 0;
+    var seMovio = false;
+
+    function limitar(valor, min, max) {
+        return Math.min(Math.max(valor, min), max);
+    }
+
+    function aplicarPosicion(left, top) {
+        var w = btn.offsetWidth || 56;
+        var h = btn.offsetHeight || 56;
+        var maxLeft = window.innerWidth - w - MARGEN;
+        var maxTop = window.innerHeight - h - MARGEN;
+        btn.style.left = limitar(left, MARGEN, Math.max(MARGEN, maxLeft)) + 'px';
+        btn.style.top = limitar(top, MARGEN, Math.max(MARGEN, maxTop)) + 'px';
+        btn.style.right = 'auto';
+        btn.style.bottom = 'auto';
+    }
+
+    function guardarPosicion() {
+        try {
+            localStorage.setItem(CLAVE_POS, JSON.stringify({
+                left: parseFloat(btn.style.left),
+                top: parseFloat(btn.style.top)
+            }));
+        } catch (e) { /* almacenamiento no disponible */ }
+    }
+
+    function restaurarPosicion() {
+        try {
+            var guardada = JSON.parse(localStorage.getItem(CLAVE_POS) || 'null');
+            if (guardada && Number.isFinite(guardada.left) && Number.isFinite(guardada.top)) {
+                aplicarPosicion(guardada.left, guardada.top);
+                return;
+            }
+        } catch (e) { /* ignorar */ }
+        aplicarPosicion(window.innerWidth - 72, window.innerHeight - 150);
+    }
+
+    function abrirPanel() {
+        panel.classList.add('abierto');
+        aviso.textContent = '';
+        setTimeout(function () { input.focus(); }, 260);
+    }
+
+    function cerrarPanel() {
+        panel.classList.remove('abierto');
+        aviso.textContent = '';
+        input.blur();
+    }
+
+    function alternarPanel() {
+        if (panel.classList.contains('abierto')) cerrarPanel();
+        else abrirPanel();
+    }
+
+    btn.addEventListener('pointerdown', function (e) {
+        if (pid !== null) return;
+        pid = e.pointerId;
+        inicioX = e.clientX;
+        inicioY = e.clientY;
+        var rect = btn.getBoundingClientRect();
+        origenLeft = rect.left;
+        origenTop = rect.top;
+        seMovio = false;
+        try { btn.setPointerCapture(pid); } catch (err) { /* ignorar */ }
+    });
+
+    btn.addEventListener('pointermove', function (e) {
+        if (e.pointerId !== pid) return;
+        var dx = e.clientX - inicioX;
+        var dy = e.clientY - inicioY;
+
+        if (!seMovio && Math.hypot(dx, dy) > UMBRAL_TAP) {
+            seMovio = true;
+            btn.classList.add('arrastrando');
+            cerrarPanel();
+        }
+        if (seMovio) {
+            e.preventDefault();
+            aplicarPosicion(origenLeft + dx, origenTop + dy);
+        }
+    });
+
+    function terminarArrastre(e, cancelado) {
+        if (e.pointerId !== pid) return;
+        try { btn.releasePointerCapture(pid); } catch (err) { /* ignorar */ }
+        pid = null;
+        btn.classList.remove('arrastrando');
+
+        if (cancelado) return;
+
+        if (seMovio) {
+            guardarPosicion();
+        } else {
+            alternarPanel();
+        }
+    }
+
+    btn.addEventListener('pointerup', function (e) { terminarArrastre(e, false); });
+    btn.addEventListener('pointercancel', function (e) { terminarArrastre(e, true); });
+
+    btn.addEventListener('touchmove', function (e) {
+        if (seMovio) e.preventDefault();
+    }, { passive: false });
+
+    window.addEventListener('resize', function () {
+        var rect = btn.getBoundingClientRect();
+        aplicarPosicion(rect.left, rect.top);
+        guardarPosicion();
+    });
+
+    function limpiarNumero(valor) {
+        var limpio = String(valor || '').trim();
+        var signo = limpio.charAt(0) === '+' ? '+' : '';
+        return signo + limpio.replace(/\D/g, '');
+    }
+
+    function llamar() {
+        var numero = limpiarNumero(input.value);
+        if (numero.replace(/\D/g, '').length < 7) {
+            aviso.textContent = 'Escribe un número válido (mínimo 7 dígitos).';
+            input.focus();
+            return;
+        }
+        aviso.textContent = '';
+        window.location.href = 'tel:' + numero;
+    }
+
+    btnLlamar.addEventListener('click', llamar);
+    btnCerrar.addEventListener('click', cerrarPanel);
+
+    input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') llamar();
+        if (e.key === 'Escape') cerrarPanel();
+    });
+
+    document.addEventListener('pointerdown', function (e) {
+        if (!panel.classList.contains('abierto')) return;
+        if (panel.contains(e.target) || btn.contains(e.target)) return;
+        cerrarPanel();
+    });
+
+    restaurarPosicion();
+})();
+</script>
+
 <!-- Script del carrusel de anuncios (imagen) -->
 <script src="/features/anuncios/anuncios-carrusel.js" defer></script>
 
