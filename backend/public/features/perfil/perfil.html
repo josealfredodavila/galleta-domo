@@ -29,7 +29,11 @@
 <style>
     /* ================================================================
        PERFIL · MICROINTERACCIONES Y TRANSICIONES (v2)
+       Solo transform, brillo, color, sombra y opacidad.
+       No cambian dimensiones ni márgenes.
+       El carrusel 3D (.carrusel-3d-*) queda excluido a propósito.
        ================================================================ */
+
     .btn,
     .btn-estado,
     .btn-conexion,
@@ -68,114 +72,185 @@
         filter: brightness(1.08);
     }
 
-    .nav-link:active { opacity: 0.8; }
+    .nav-link:active {
+        opacity: 0.8;
+    }
 
+    /* Sin anillos de enfoque ni sombras de hover: evitan recuadros
+       alrededor de botones, pestañas y la mascota. */
+
+    /* Entrada suave de cada pestaña (solo opacidad: nunca oculta contenido) */
     @keyframes perfilTabIn {
         from { opacity: 0; }
         to   { opacity: 1; }
     }
 
-    .tab-content.active { animation: perfilTabIn 240ms ease both; }
+    .tab-content.active {
+        animation: perfilTabIn 240ms ease both;
+    }
 
     @media (prefers-reduced-motion: reduce) {
-        .btn, .btn-estado, .btn-conexion, .accion-btn, .tab-btn,
-        .btn-publicar, .config-btn, .rep-btn, .pro-btn, .internet-filter,
-        .nav-link, .avatar-menu button, .tab-content.active {
+        .btn,
+        .btn-estado,
+        .btn-conexion,
+        .accion-btn,
+        .tab-btn,
+        .btn-publicar,
+        .config-btn,
+        .rep-btn,
+        .pro-btn,
+        .internet-filter,
+        .nav-link,
+        .avatar-menu button,
+        .tab-content.active {
             transition: none !important;
             animation: none !important;
         }
-        .btn:active, .btn-estado:active, .btn-conexion:active,
-        .accion-btn:active, .tab-btn:active, .btn-publicar:active,
-        .config-btn:active, .rep-btn:active, .pro-btn:active,
-        .internet-filter:active, .avatar-menu button:active {
+
+        .btn:active,
+        .btn-estado:active,
+        .btn-conexion:active,
+        .accion-btn:active,
+        .tab-btn:active,
+        .btn-publicar:active,
+        .config-btn:active,
+        .rep-btn:active,
+        .pro-btn:active,
+        .internet-filter:active,
+        .avatar-menu button:active {
             transform: none !important;
         }
     }
 
     /* Sección de wallet (Polygon) */
     .wallet-section {
-        margin: 0 0 16px; padding: 14px; border-radius: 16px;
+        margin: 0 0 16px;
+        padding: 14px;
+        border-radius: 16px;
         border: 2px solid var(--line-black);
         background: rgba(0,0,0,0.35);
     }
     .wallet-header {
-        display: flex; justify-content: space-between;
-        align-items: center; gap: 8px; flex-wrap: wrap;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
     }
     .wallet-header h3 {
-        font-size: 0.9rem; font-weight: 700; color: var(--cyan, #00e5ff);
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: var(--cyan, #00e5ff);
     }
     .wallet-estado {
-        font-size: 0.65rem; padding: 3px 10px; border-radius: 99px;
-        border: 1px solid var(--text-muted); color: var(--text-muted);
+        font-size: 0.65rem;
+        padding: 3px 10px;
+        border-radius: 99px;
+        border: 1px solid var(--text-muted);
+        color: var(--text-muted);
     }
-    .wallet-estado.conectada { border-color: var(--success); color: var(--success); }
+    .wallet-estado.conectada {
+        border-color: var(--success);
+        color: var(--success);
+    }
     .wallet-direccion {
-        margin: 10px 0; font-family: monospace; font-size: 0.8rem;
-        color: var(--text-secondary); word-break: break-all;
+        margin: 10px 0;
+        font-family: monospace;
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        word-break: break-all;
     }
-    .wallet-acciones { display: flex; gap: 8px; flex-wrap: wrap; }
+    .wallet-acciones {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
     .wallet-acciones .btn { flex: 1; justify-content: center; }
     .wallet-visible {
-        display: flex; align-items: center; gap: 8px;
-        margin-top: 12px; font-size: 0.75rem; color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 12px;
+        font-size: 0.75rem;
+        color: var(--text-secondary);
     }
-    .wallet-hint { margin-top: 8px; font-size: 0.65rem; color: var(--text-muted); }
+    .wallet-hint {
+        margin-top: 8px;
+        font-size: 0.65rem;
+        color: var(--text-muted);
+    }
 
     .wallet-switch {
-        position: relative; display: flex; align-items: center;
-        justify-content: space-between; gap: 12px; margin-top: 12px;
-        padding: 12px; border-radius: 14px;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 12px;
+        padding: 12px;
+        border-radius: 14px;
         border: 1px solid var(--line-black);
-        background: rgba(0,0,0,0.25); cursor: pointer;
+        background: rgba(0,0,0,0.25);
+        cursor: pointer;
     }
-    .wallet-switch-texto strong { display: block; font-size: 0.8rem; color: var(--text-primary); }
-    .wallet-switch-texto small { display: block; margin-top: 3px; font-size: 0.65rem; color: var(--text-muted); line-height: 1.4; }
-    .wallet-switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+    .wallet-switch-texto strong {
+        display: block;
+        font-size: 0.8rem;
+        color: var(--text-primary);
+    }
+    .wallet-switch-texto small {
+        display: block;
+        margin-top: 3px;
+        font-size: 0.65rem;
+        color: var(--text-muted);
+        line-height: 1.4;
+    }
+    .wallet-switch input {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
     .wallet-switch-slider {
-        position: relative; flex-shrink: 0; width: 52px; height: 28px;
-        border-radius: 99px; background: rgba(255,255,255,0.15);
+        position: relative;
+        flex-shrink: 0;
+        width: 52px;
+        height: 28px;
+        border-radius: 99px;
+        background: rgba(255,255,255,0.15);
         transition: background 0.2s ease;
     }
     .wallet-switch-slider::after {
-        content: ''; position: absolute; top: 3px; left: 3px;
-        width: 22px; height: 22px; border-radius: 50%; background: #fff;
+        content: '';
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #fff;
         transition: transform 0.2s ease;
     }
     .wallet-switch input:checked + .wallet-switch-slider {
         background: linear-gradient(135deg, var(--cyan, #00e5ff), var(--purple, #a855f7));
     }
-    .wallet-switch input:checked + .wallet-switch-slider::after { transform: translateX(24px); }
-    .wallet-switch input:disabled + .wallet-switch-slider { opacity: 0.4; }
+    .wallet-switch input:checked + .wallet-switch-slider::after {
+        transform: translateX(24px);
+    }
+    .wallet-switch input:disabled + .wallet-switch-slider {
+        opacity: 0.4;
+    }
 </style>
 <style>
+    /* Respaldo: evita que una imagen de anuncio cubra toda la pantalla si el CSS del carrusel no carga */
     .anuncios-imagen-contenedor img {
-        display: block; width: 100%; max-width: 100%; height: auto;
-        max-height: 260px; object-fit: cover; border-radius: 16px;
-    }
-</style>
-
-<!-- ================================================================
-     HOTFIX · SOLO BORDES BLANCOS INFERIORES
-     NO toca .carrusel-3d-* para no romper su layout original.
-     ================================================================ -->
-<style id="perfil-hotfix-bordes">
-    html, body {
-        background-color: #050505;      /* ← cambia este color si tu fondo es otro */
-        overflow-x: hidden;
-        margin: 0;
-        padding: 0;
-    }
-    body {
-        padding-bottom: env(safe-area-inset-bottom, 0px);
-    }
-    .app {
-        padding-bottom: 0 !important;
-        margin-bottom: 0 !important;
-    }
-    footer.footer {
-        margin-bottom: 0 !important;
-        padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px) !important;
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        height: auto;
+        max-height: 260px;
+        object-fit: cover;
+        border-radius: 16px;
     }
 </style>
 </head>
@@ -1000,19 +1075,23 @@
     }
     window.mostrarErrorEnPantalla = mostrarErrorEnPantalla;
     window.addEventListener('error', function (event) {
+        // REVISAR: mensajes de debug interno, no traducibles (solo visibles con ?debug=1)
         mostrarErrorEnPantalla((event.message || 'Error desconocido') + ' — línea ' + event.lineno + ' de ' + (event.filename || 'este archivo'));
     });
     window.addEventListener('unhandledrejection', function (event) {
+        // REVISAR: mensaje de debug interno, no traducible
         mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason?.message || event.reason));
     });
     window.addEventListener('load', function () {
         if (typeof window.supabase === 'undefined') {
+            // REVISAR: mensaje de debug interno, no traducible
             mostrarErrorEnPantalla('No se pudo cargar la conexión a la base de datos (Supabase). Revisa tu internet o si algo está bloqueando cdn.jsdelivr.net.');
         }
     });
 </script>
 
 <script>
+/* INICIALIZACIÓN DE IDIOMAS — UNA SOLA VEZ */
 (function() {
     'use strict';
     var intentos = 0;
@@ -1036,6 +1115,7 @@
 </script>
 
 <script>
+/* PRECIO DE PRO — se toma de planes_membresia (fuente de verdad) */
 (function () {
     'use strict';
     function aplicarPrecio(precio) {
@@ -1071,6 +1151,7 @@
 
 <script src="/features/shared/js/idiomas.js?v=9" defer></script>
 
+<!-- Scripts del módulo perfil (en orden de dependencia) -->
 <script src="/features/perfil/js/perfil-config.js?v=8"></script>
 <script src="/features/perfil/js/perfil-utils.js?v=8"></script>
 <script src="/features/perfil/js/perfil-datos.js?v=8"></script>
@@ -1087,30 +1168,47 @@
 <script src="/features/perfil/js/perfil-init.js?v=8"></script>
 
 <script>
+/* ================================================================
+   WALLET · INTEGRACIÓN CON EL PERFIL
+   Usa las funciones de perfil-wallet.js (conectarWallet,
+   desconectarWallet, iniciarEscuchaWallet). Este bloque solo
+   dibuja el estado y guarda wallet_visible en Supabase.
+   ================================================================ */
 (function () {
     'use strict';
+
     function $w(id) { return document.getElementById(id); }
+
     function acortar(direccion) {
         if (!direccion) return '';
         return direccion.slice(0, 6) + '…' + direccion.slice(-4);
     }
+
     async function obtenerUsuario() {
         const client = window.supabaseClient;
         if (!client) return null;
         const r = await client.auth.getSession();
         return r && r.data && r.data.session ? r.data.session.user : null;
     }
+
     async function refrescarWallet() {
         const client = window.supabaseClient;
         const user = await obtenerUsuario();
         if (!client || !user) return;
+
         const { data, error } = await client
             .from('usuarios')
             .select('wallet_address, wallet_visible')
             .eq('id', user.id)
             .maybeSingle();
-        if (error) { $w('walletHint').textContent = 'No se pudo leer tu wallet.'; return; }
+
+        if (error) {
+            $w('walletHint').textContent = 'No se pudo leer tu wallet.';
+            return;
+        }
+
         const conectada = Boolean(data && data.wallet_address);
+
         $w('walletEstado').textContent = conectada ? 'Conectada' : 'Sin conectar';
         $w('walletEstado').classList.toggle('conectada', conectada);
         const mostrarCompleta = conectada && Boolean(data.wallet_visible);
@@ -1130,6 +1228,7 @@
         }
         $w('btnConectarWallet').style.display = conectada ? 'none' : '';
         $w('btnDesconectarWallet').style.display = conectada ? '' : 'none';
+
         const visible = $w('walletVisible');
         visible.checked = Boolean(data && data.wallet_visible);
         visible.disabled = !conectada;
@@ -1140,6 +1239,7 @@
             ? 'Vinculada en Polygon (' + acortar(data.wallet_address) + ').'
             : 'Necesitas MetaMask para vincular tu wallet.';
     }
+
     window.copiarWalletPerfil = async function () {
         const direccion = ($w('walletDireccion').dataset.full || '').trim();
         if (!direccion || direccion.indexOf('0x') !== 0) return;
@@ -1165,11 +1265,13 @@
             }
         }
     };
+
     window.conectarWalletPerfil = async function () {
         if (typeof window.conectarWallet !== 'function') return;
         await window.conectarWallet();
         await refrescarWallet();
     };
+
     window.desconectarWalletPerfil = async function () {
         if (typeof window.desconectarWallet !== 'function') return;
         const ok = window.confirm('¿Seguro que quieres desvincular tu wallet?');
@@ -1177,14 +1279,17 @@
         await window.desconectarWallet();
         await refrescarWallet();
     };
+
     async function guardarVisibilidad(valor) {
         const client = window.supabaseClient;
         const user = await obtenerUsuario();
         if (!client || !user) return;
+
         const { error } = await client
             .from('usuarios')
             .update({ wallet_visible: valor })
             .eq('id', user.id);
+
         if (error) {
             if (typeof window.showToast === 'function') {
                 window.showToast('❌ No se pudo cambiar la visibilidad de tu wallet', 'error');
@@ -1194,6 +1299,7 @@
         }
         await refrescarWallet();
     }
+
     function iniciar() {
         const visible = $w('walletVisible');
         if (visible) {
@@ -1201,6 +1307,7 @@
                 guardarVisibilidad(visible.checked);
             });
         }
+
         const direccionEl = $w('walletDireccion');
         if (direccionEl) {
             direccionEl.addEventListener('click', function () {
@@ -1209,11 +1316,14 @@
                 }
             });
         }
+
         if (typeof window.iniciarEscuchaWallet === 'function') {
             window.iniciarEscuchaWallet();
         }
+
         refrescarWallet();
     }
+
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', iniciar, { once: true });
     } else {
@@ -1221,8 +1331,12 @@
     }
 })();
 </script>
+<!-- Script del carrusel de anuncios (imagen) -->
 <script src="/features/anuncios/anuncios-carrusel.js" defer></script>
+
+<!-- Script del Carrusel 3D horizontal -->
 <script src="/features/perfil/js/carrusel-3d.js" defer></script>
+<!-- Script del Carrusel 3D FULLSCREEN infinito -->
 <script src="/features/perfil/js/carrusel-3d-fullscreen.js" defer></script>
 
 </body>
