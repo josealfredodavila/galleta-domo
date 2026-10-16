@@ -114,7 +114,6 @@
         border: 1px solid var(--line); color: var(--gold); letter-spacing: 1px;
     }
 
-    /* ============ TÉRMINOS Y CONDICIONES ============ */
     .terminos-aceptacion {
         margin-top: 18px;
         padding: 14px;
@@ -148,12 +147,8 @@
         text-decoration: underline;
         font-weight: 700;
     }
-    .terminos-texto a:hover {
-        color: #fff;
-    }
-    .terminos-texto strong {
-        color: var(--gold);
-    }
+    .terminos-texto a:hover { color: #fff; }
+    .terminos-texto strong { color: var(--gold); }
 
     .boton {
         width: 100%; padding: 14px; border: 0; border-radius: 14px;
@@ -270,7 +265,6 @@
         </select>
         <input type="url" id="destinoExterno" placeholder="https://..." style="display:none; margin-top:8px;">
 
-        <!-- ============ TÉRMINOS Y CONDICIONES ============ -->
         <div class="terminos-aceptacion">
             <label class="terminos-check">
                 <input type="checkbox" id="aceptoTerminos" required>
@@ -347,22 +341,11 @@
         return 'No se pudo publicar. Intenta de nuevo.';
     }
 
-    /**
-     * Normaliza el número de WhatsApp:
-     * - Deja solo dígitos y +.
-     * - Si empieza con 00 → cambia a +.
-     * - Si es 10 dígitos sin + → asume México (+52).
-     * - Valida entre 8 y 15 dígitos.
-     * @returns {string|null} Número normalizado o null si es inválido.
-     */
     function normalizarWhatsApp(valor) {
         var v = String(valor || '').trim();
         if (!v) return null;
-
         v = v.replace(/[^\d+]/g, '');
-
         if (/^00/.test(v)) v = '+' + v.slice(2);
-
         if (!/^\+/.test(v)) {
             var soloDigitos = v.replace(/\D/g, '');
             if (soloDigitos.length === 10) {
@@ -371,10 +354,8 @@
                 v = '+' + soloDigitos;
             }
         }
-
         var total = v.replace(/\D/g, '');
         if (total.length < 8 || total.length > 15) return null;
-
         return v;
     }
 
@@ -415,7 +396,6 @@
         cargarMisAnuncios();
     }
 
-    // Contadores
     $('titulo').addEventListener('input', function () {
         $('contadorTitulo').textContent = this.value.length + ' / 80';
     });
@@ -440,12 +420,10 @@
         }
     });
 
-    // Destino externo
     $('destino').addEventListener('change', function () {
         $('destinoExterno').style.display = this.value === 'externo' ? 'block' : 'none';
     });
 
-    // Imagen y vista previa
     $('archivo').addEventListener('change', function () {
         var f = this.files && this.files[0];
         if (!f) return;
@@ -500,7 +478,7 @@
         var destinoSel = $('destino').value;
         var destino = destinoSel;
 
-        // ============ VALIDACIÓN: TÉRMINOS ACEPTADOS ============
+        // Validación: términos aceptados
         var aceptoTerminos = $('aceptoTerminos');
         if (!aceptoTerminos.checked) {
             estado('Debes aceptar los Términos y Condiciones para publicar.', 'error');
@@ -546,7 +524,10 @@
                 media_url: url,
                 destino_url: destino,
                 whatsapp_contacto: whatsapp,
-                ubicacion_negocio: ubicacionRaw || null
+                ubicacion_negocio: ubicacionRaw || null,
+                // Auditoría de términos: SOLO enviamos la versión.
+                // El timestamp lo sella el trigger del servidor.
+                terminos_version: '1.1'
             }).select('id').single();
 
             if (r.error) throw r.error;
@@ -561,7 +542,6 @@
             $('vistaPrevia').style.display = 'none';
             $('destinoExterno').style.display = 'none';
             archivoSeleccionado = null;
-            // El reset() ya desmarca el checkbox automáticamente
             cargarMisAnuncios();
         } catch (err) {
             console.error('[Crear anuncio]', err);
