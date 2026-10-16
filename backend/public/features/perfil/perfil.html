@@ -14,135 +14,24 @@
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 
 <!-- CSS del módulo perfil -->
-<link rel="stylesheet" href="/features/perfil/css/perfil.css?v=2">
+<link rel="stylesheet" href="/features/perfil/css/perfil.css">
 <!-- CSS del Carrusel 3D (horizontal en el perfil) -->
-<link rel="stylesheet" href="/features/perfil/css/carrusel-3d.css?v=2">
+<link rel="stylesheet" href="/features/perfil/css/carrusel-3d.css">
 <!-- CSS del Carrusel 3D FULLSCREEN (overlay infinito) -->
-<link rel="stylesheet" href="/features/perfil/css/carrusel-3d-fullscreen.css?v=2">
+<link rel="stylesheet" href="/features/perfil/css/carrusel-3d-fullscreen.css">
 <!-- CSS del carrusel de anuncios (imagen) -->
-<link rel="stylesheet" href="/features/anuncios/anuncios-carrusel.css?v=2">
+<link rel="stylesheet" href="/features/anuncios/anuncios-carrusel.css">
 
 <style>
-    /* ============================================================
-       CORRECCIÓN DE FONDO Y LAYOUT (Auditoría Quirúrgica)
-       ============================================================ */
-    html, body {
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        min-height: 100vh;
-        overflow-x: hidden; /* Evita scroll horizontal fantasma */
-        background-color: #0a0a0a; /* Fondo oscuro explícito para evitar blanco */
-        color: #fff;
-    }
-
-    /* Asegurar que el canvas de estrellas cubra TODO el fondo fijo */
-    #stars-canvas {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        z-index: -1;
-        pointer-events: none;
-    }
-
-    /* Contenedor principal con espacio para el botón flotante y footer */
-    .app {
-        position: relative;
-        z-index: 1;
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-        padding-bottom: 80px; /* Espacio para el botón flotante */
-    }
-
-    /* Corrección del Footer para móviles */
-    .footer {
-        margin-top: auto;
-        padding: 24px 16px 40px;
-        border-top: 1px solid rgba(255,255,255,0.08);
-        font-size: 0.7rem;
-        color: var(--text-muted, #888);
-        text-align: center;
-        width: 100%;
-        box-sizing: border-box;
-    }
-
-    .footer-links {
-        display: flex;
-        flex-wrap: wrap; /* CRUCIAL: Permite que los enlaces bajen a la siguiente línea */
-        justify-content: center;
-        align-items: center;
-        gap: 12px 16px;
-        margin-top: 12px;
-        width: 100%;
-    }
-
-    .footer-links a {
-        color: var(--text-muted, #888);
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        white-space: nowrap;
-    }
-
-    /* Botón flotante del carrusel fullscreen */
-    #btnAbrirCarruselFullscreen {
-        position: fixed;
-        bottom: 24px;
-        right: 24px;
-        z-index: 9999;
-        width: 56px;
-        height: 56px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, var(--gold, #D4AF37), #b8932c);
-        border: none;
-        box-shadow: 0 4px 16px rgba(212, 175, 55, 0.4);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: transform 0.2s, box-shadow 0.2s;
-        color: #000;
-    }
-    #btnAbrirCarruselFullscreen:active {
-        transform: scale(0.92);
-    }
-    #btnAbrirCarruselFullscreen svg {
-        width: 24px;
-        height: 24px;
-        stroke: currentColor;
-        fill: none;
-        stroke-width: 2;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-    }
-
-    /* ============================================================
-       BLINDAJE DEL OVERLAY FULLSCREEN — v2
-       ============================================================ */
-    #carruselFullscreenOverlay {
-        display: none !important;
-        visibility: hidden !important;
-        opacity: 0 !important;
-        pointer-events: none !important;
-    }
-    #carruselFullscreenOverlay.activo,
-    #carruselFullscreenOverlay.is-open,
-    #carruselFullscreenOverlay.abierto,
-    #carruselFullscreenOverlay[aria-hidden="false"] {
-        display: flex !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        pointer-events: auto !important;
-    }
+    html:not(.auth-ready) .app { display: none !important; }
 </style>
 
 <style>
     /* ================================================================
        PERFIL · MICROINTERACCIONES Y TRANSICIONES (v2)
+       Solo transform, brillo, color, sombra y opacidad.
+       No cambian dimensiones ni márgenes.
+       El carrusel 3D (.carrusel-3d-*) queda excluido a propósito.
        ================================================================ */
 
     .btn,
@@ -187,6 +76,10 @@
         opacity: 0.8;
     }
 
+    /* Sin anillos de enfoque ni sombras de hover: evitan recuadros
+       alrededor de botones, pestañas y la mascota. */
+
+    /* Entrada suave de cada pestaña (solo opacidad: nunca oculta contenido) */
     @keyframes perfilTabIn {
         from { opacity: 0; }
         to   { opacity: 1; }
@@ -408,53 +301,61 @@
     </a>
 </nav>
 
-<!-- ============ INICIO DEL CARRUSEL 3D HORIZONTAL ============ -->
+<!-- ============ INICIO DEL CARRUSEL 3D HORIZONTAL (dentro del perfil) ============ -->
 <div class="carrusel-3d-wrapper">
     <div class="carrusel-3d-track">
 
-        <a href="/features/muro/muro.html" class="carrusel-3d-card" style="--c:#22d3a6;">
+        <!-- 1. Muro (Mercado de Tokens) -->
+        <a href="/features/muro/muro.html" class="carrusel-3d-card">
             <div class="card-icon">🤝</div>
             <div class="card-title">Muro</div>
             <div class="card-desc">Publica, conecta y comparte con la comunidad.</div>
         </a>
 
-        <a href="/features/perfil/perfil.html" class="carrusel-3d-card active" style="--c:#D4AF37;">
+        <!-- 2. Perfil (Activo) -->
+        <a href="/features/perfil/perfil.html" class="carrusel-3d-card active">
             <div class="card-icon">👤</div>
             <div class="card-title">Perfil</div>
             <div class="card-desc">Gestiona tu identidad, tokens y configuración.</div>
         </a>
 
-        <a href="/features/grupos/grupos.html" class="carrusel-3d-card" style="--c:#a855f7;">
+        <!-- 3. Grupos / Canales -->
+        <a href="/features/grupos/grupos.html" class="carrusel-3d-card">
             <div class="card-icon">👥</div>
             <div class="card-title">Grupos</div>
             <div class="card-desc">Únete a comunidades y crea tus propios canales.</div>
         </a>
 
-        <a href="/features/mensajes/contactos.html" class="carrusel-3d-card" style="--c:#00e5ff;">
+        <!-- 4. Contactos / Mensajes -->
+        <a href="/features/mensajes/contactos.html" class="carrusel-3d-card">
             <div class="card-icon">💬</div>
             <div class="card-title">Contactos</div>
             <div class="card-desc">Chatea y mantente en contacto con amigos.</div>
         </a>
 
-        <a href="/features/mercado/index.html" class="carrusel-3d-card" style="--c:#f59e0b;">
+        <!-- 5. Mercado / Tienda -->
+        <a href="/features/mercado/index.html" class="carrusel-3d-card">
             <div class="card-icon">🛒</div>
             <div class="card-title">Mercado</div>
             <div class="card-desc">Descubre tiendas y productos cerca de ti.</div>
         </a>
 
-        <a href="/features/live/live.html" class="carrusel-3d-card" style="--c:#ff3366;">
+        <!-- 6. Live -->
+        <a href="/features/live/live.html" class="carrusel-3d-card">
             <div class="card-icon">🔴</div>
             <div class="card-title">Live</div>
             <div class="card-desc">Transmisiones en vivo y eventos exclusivos.</div>
         </a>
 
-        <a href="/features/internet/internet.html" class="carrusel-3d-card" style="--c:#3b82f6;">
+        <!-- 7. Internet -->
+        <a href="/features/internet/internet.html" class="carrusel-3d-card">
             <div class="card-icon">🌐</div>
             <div class="card-title">Internet</div>
             <div class="card-desc">Conectividad eSIM y datos descentralizados.</div>
         </a>
 
-        <a href="/features/videos/videos.html" class="carrusel-3d-card" style="--c:#f472b6;">
+        <!-- 8. Videos -->
+        <a href="/features/videos/videos.html" class="carrusel-3d-card">
             <div class="card-icon">🎬</div>
             <div class="card-title">Videos</div>
             <div class="card-desc">Explora y comparte videos en la comunidad.</div>
@@ -1139,7 +1040,7 @@
     <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
 </button>
 
-<div class="carrusel-fullscreen-overlay" id="carruselFullscreenOverlay" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Módulos de Csariel's">
+<div class="carrusel-fullscreen-overlay" id="carruselFullscreenOverlay" role="dialog" aria-modal="true" aria-label="Módulos de Csariel's">
     <div class="carrusel-fullscreen-header">
         <div class="carrusel-fullscreen-title">Módulos</div>
         <button id="btnCerrarCarruselFullscreen" class="btn-cerrar-carrusel" type="button" aria-label="Cerrar">
@@ -1174,13 +1075,16 @@
     }
     window.mostrarErrorEnPantalla = mostrarErrorEnPantalla;
     window.addEventListener('error', function (event) {
+        // REVISAR: mensajes de debug interno, no traducibles (solo visibles con ?debug=1)
         mostrarErrorEnPantalla((event.message || 'Error desconocido') + ' — línea ' + event.lineno + ' de ' + (event.filename || 'este archivo'));
     });
     window.addEventListener('unhandledrejection', function (event) {
+        // REVISAR: mensaje de debug interno, no traducible
         mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason?.message || event.reason));
     });
     window.addEventListener('load', function () {
         if (typeof window.supabase === 'undefined') {
+            // REVISAR: mensaje de debug interno, no traducible
             mostrarErrorEnPantalla('No se pudo cargar la conexión a la base de datos (Supabase). Revisa tu internet o si algo está bloqueando cdn.jsdelivr.net.');
         }
     });
@@ -1264,7 +1168,12 @@
 <script src="/features/perfil/js/perfil-init.js?v=8"></script>
 
 <script>
-/* WALLET · INTEGRACIÓN CON EL PERFIL */
+/* ================================================================
+   WALLET · INTEGRACIÓN CON EL PERFIL
+   Usa las funciones de perfil-wallet.js (conectarWallet,
+   desconectarWallet, iniciarEscuchaWallet). Este bloque solo
+   dibuja el estado y guarda wallet_visible en Supabase.
+   ================================================================ */
 (function () {
     'use strict';
 
@@ -1422,11 +1331,13 @@
     }
 })();
 </script>
-
-<!-- ORDEN CORRECTO: primero carrusel-3d.js, luego anuncios-carrusel.js -->
-<script src="/features/perfil/js/carrusel-3d.js" defer></script>
-<script src="/features/perfil/js/carrusel-3d-fullscreen.js" defer></script>
+<!-- Script del carrusel de anuncios (imagen) -->
 <script src="/features/anuncios/anuncios-carrusel.js" defer></script>
+
+<!-- Script del Carrusel 3D horizontal -->
+<script src="/features/perfil/js/carrusel-3d.js" defer></script>
+<!-- Script del Carrusel 3D FULLSCREEN infinito -->
+<script src="/features/perfil/js/carrusel-3d-fullscreen.js" defer></script>
 
 </body>
 </html>
