@@ -88,41 +88,55 @@
         white-space: nowrap;
     }
 
-    /* ============================================================
-       CORRECCIÓN QUIRÚRGICA DEL BOTÓN FLOTANTE
-       ============================================================ */
+    /* Botón flotante del carrusel fullscreen */
     #btnAbrirCarruselFullscreen {
-        position: fixed !important;
-        bottom: 24px !important;
-        right: 24px !important;
-        top: auto !important;
-        left: auto !important;
-        z-index: 99999 !important;
-        width: 56px !important;
-        height: 56px !important;
-        border-radius: 50% !important;
-        background: linear-gradient(135deg, var(--gold, #D4AF37), #b8932c) !important;
-        border: none !important;
-        box-shadow: 0 4px 16px rgba(212, 175, 55, 0.4) !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        cursor: pointer !important;
-        transition: transform 0.2s, box-shadow 0.2s !important;
-        color: #000 !important;
-        padding: 0 !important;
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        z-index: 9999;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--gold, #D4AF37), #b8932c);
+        border: none;
+        box-shadow: 0 4px 16px rgba(212, 175, 55, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+        color: #000;
     }
     #btnAbrirCarruselFullscreen:active {
-        transform: scale(0.92) !important;
+        transform: scale(0.92);
     }
     #btnAbrirCarruselFullscreen svg {
-        width: 24px !important;
-        height: 24px !important;
-        stroke: currentColor !important;
-        fill: none !important;
-        stroke-width: 2 !important;
-        stroke-linecap: round !important;
-        stroke-linejoin: round !important;
+        width: 24px;
+        height: 24px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    /* ============================================================
+       BLINDAJE DEL OVERLAY FULLSCREEN — v2
+       ============================================================ */
+    #carruselFullscreenOverlay {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+    #carruselFullscreenOverlay.activo,
+    #carruselFullscreenOverlay.is-open,
+    #carruselFullscreenOverlay.abierto,
+    #carruselFullscreenOverlay[aria-hidden="false"] {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
     }
 </style>
 
