@@ -1,10 +1,14 @@
 // ================================================================
-// MENSAJES · JS v3.1 (Parte 1 de 3)
+// MENSAJES · JS v3.2
 // Configuración, utilidades, autenticación, avatar, perfil, estados
 //
-// CAMBIOS v3.1:
-// - Llamadas migradas 100% a /api/llamadas/* (LiveKit centralizado).
-// - Eliminadas inserciones/updates directos a Supabase en llamadas.
+// CAMBIOS v3.2:
+// - Fix crítico en loadConversations(): ahora construye la lista
+//   desde los mensajes reales, calculando el otherUserId de cada
+//   conversación (nunca muestra al usuario actual como interlocutor).
+// - Trae los perfiles en lote desde perfiles_publicos (1 sola query).
+// - Elimina la dependencia exclusiva de la tabla `contactos`.
+// - Mantiene compatibilidad total con el resto del sistema.
 // ================================================================
 
 'use strict';
@@ -668,11 +672,6 @@ async function publicarEstado() {
 }
 
 // ================================================================
-// MENSAJES · JS v3.1 (Parte 2 de 3)
-// Conversaciones, chat, Marquinhos (candados + términos), voz, archivos
-// ================================================================
-
-// ================================================================
 // SCROLL
 // ================================================================
 function scrollToBottom(force = false) {
@@ -795,7 +794,12 @@ async function getSignedUrlForMessage(m) {
 }
 
 // ================================================================
-// CARGAR CONVERSACIONES
+// CARGAR CONVERSACIONES — v3.2 · FIX
+//
+// Construye la lista desde los MENSAJES REALES del usuario.
+// Calcula el otherUserId de cada conversación (nunca muestra al
+// propio usuario). Trae los perfiles en lote desde
+// perfiles_publicos en 1 sola consulta.
 // ================================================================
 let conversationFilter = '';
 
@@ -803,6 +807,7 @@ async function loadConversations() {
     const list = $('conversationList');
     list.innerHTML = '';
 
+    // ---------- 1) Marquinhos (bot) siempre primero ----------
     const botEl = document.createElement('div');
     botEl.className = 'conv conv-bot' + (current?.id === BOT_ID ? ' active' : '');
     botEl.dataset.id = BOT_ID;
@@ -820,6 +825,7 @@ async function loadConversations() {
 
     if (!await auth()) return;
 
+    // ---------- 2) Preview del bot ----------
     try {
         const { data: lastBot } = await db
             .from('mensajes_chat')
@@ -854,45 +860,149 @@ async function loadConversations() {
         console.warn('Error cargando badge bot:', e);
     }
 
+    // ---------- 3) Construir conversaciones desde MENSAJES REALES ----------
     try {
-        const { data, error } = await db
-            .from('contactos')
-            .select('contacto_id,created_at,fecha,estado')
-            .eq('usuario_id', user.id)
-            .neq('estado', 'bloqueado')
-            .order('created_at', { ascending: false });
+        // 3.1 · Traer TODOS los mensajes donde participa el usuario actual
+        //       (como remitente o como destinatario), excluyendo el bot.
+        const { data: mensajes, error } = await db
+            .from('mensajes_chat')
+            .select('id, remitente_id, destinatario_id, contenido, tipo, leido, created_at')
+            .eq('eliminado', false)
+            .neq('remitente_id', BOT_UUID)
+            .neq('destinatario_id', BOT_UUID)
+            .or(`remitente_id.eq.${user.id},destinatario_id.eq.${user.id}`)
+            .order('created_at', { ascending: false })
+            .limit(500);
+
         if (error) {
-            console.error('Error cargando contactos:', error);
+            console.error('Error cargando mensajes:', error);
             return;
         }
-        if (!data?.length) return;
 
-        for (const c of data) {
-            if (c.contacto_id === BOT_UUID) continue;
-            const p = await profile(c.contacto_id);
-            const { data: last } = await db
-                .from('mensajes_chat')
-                .select('contenido,tipo,created_at,leido,remitente_id')
-                .eq('eliminado', false)
-                .or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${c.contacto_id}),and(remitente_id.eq.${c.contacto_id},destinatario_id.eq.${user.id})`)
-                .order('created_at', { ascending: false })
-                .limit(1)
-                .maybeSingle();
+        // 3.2 · Agrupar por otherUserId (el OTRO participante)
+        const conversacionesMap = new Map();
+
+        (mensajes || []).forEach(m => {
+            // Calcular el "otro" usuario: el que NO soy yo
+            const otherUserId = (m.remitente_id === user.id)
+                ? m.destinatario_id
+                : m.remitente_id;
+
+            // Seguridad: nunca listar al usuario como su propio interlocutor
+            if (!otherUserId || otherUserId === user.id) return;
+            if (otherUserId === BOT_UUID) return;
+
+            if (!conversacionesMap.has(otherUserId)) {
+                conversacionesMap.set(otherUserId, {
+                    otherUserId,
+                    lastMsg: m,
+                    unread: 0
+                });
+            }
+
+            // Contar no leídos: mensajes que el OTRO me envió y no he leído
+            if (m.remitente_id === otherUserId &&
+                m.destinatario_id === user.id &&
+                m.leido === false) {
+                conversacionesMap.get(otherUserId).unread++;
+            }
+        });
+
+        // 3.3 · Fallback: incluir contactos sin mensajes aún
+        try {
+            const { data: contactos } = await db
+                .from('contactos')
+                .select('contacto_id')
+                .eq('usuario_id', user.id)
+                .neq('estado', 'bloqueado');
+
+            (contactos || []).forEach(c => {
+                if (!c.contacto_id) return;
+                if (c.contacto_id === user.id) return;
+                if (c.contacto_id === BOT_UUID) return;
+                if (!conversacionesMap.has(c.contacto_id)) {
+                    conversacionesMap.set(c.contacto_id, {
+                        otherUserId: c.contacto_id,
+                        lastMsg: null,
+                        unread: 0
+                    });
+                }
+            });
+        } catch (e) {
+            console.warn('No se pudieron cargar contactos extra:', e);
+        }
+
+        const conversaciones = Array.from(conversacionesMap.values());
+
+        if (!conversaciones.length) {
+            aplicarFiltroConversaciones();
+            return;
+        }
+
+        // 3.4 · Traer los perfiles de todos los interlocutores en 1 sola query
+        const otherIds = conversaciones.map(c => c.otherUserId);
+        const { data: perfiles } = await db
+            .from('perfiles_publicos')
+            .select('id, nombre, handle, avatar_url, online')
+            .in('id', otherIds);
+
+        const perfilMap = {};
+        (perfiles || []).forEach(p => { perfilMap[p.id] = p; });
+
+        // 3.5 · Ordenar: primero los que tienen mensajes, luego los vacíos
+        conversaciones.sort((a, b) => {
+            const aDate = a.lastMsg?.created_at ? new Date(a.lastMsg.created_at).getTime() : 0;
+            const bDate = b.lastMsg?.created_at ? new Date(b.lastMsg.created_at).getTime() : 0;
+            return bDate - aDate;
+        });
+
+        // 3.6 · Renderizar cada conversación
+        conversaciones.forEach(conv => {
+            const otherId = conv.otherUserId;
+            const p = perfilMap[otherId] || {
+                id: otherId,
+                nombre: 'Usuario',
+                handle: 'usuario',
+                avatar_url: null,
+                online: false
+            };
+
+            const last = conv.lastMsg;
+            const preview = last
+                ? (last.tipo === 'texto'
+                    ? (last.contenido || '').slice(0, 60)
+                    : ('📎 ' + (last.contenido || last.tipo)))
+                : 'Sin mensajes';
+
+            const hora = last?.created_at
+                ? new Date(last.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                : '';
 
             const el = document.createElement('div');
-            el.className = 'conv' + (current?.id === c.contacto_id ? ' active' : '');
-            el.dataset.id = c.contacto_id;
-            el.dataset.name = (p.nombre || '').toLowerCase() + ' ' + (p.handle || '').toLowerCase();
+            el.className = 'conv' + (current?.id === otherId ? ' active' : '');
+            el.dataset.id = otherId;
+            el.dataset.name = (
+                (p.nombre || '').toLowerCase() + ' ' +
+                (p.handle || '').toLowerCase()
+            ).trim();
+
             el.innerHTML = avatar(p.nombre, p.avatar_url) + `
                 <div class="convinfo">
                     <div class="convname">${esc(p.nombre || 'Usuario')}</div>
-                    <div class="convmsg">${esc(last?.contenido || 'Sin mensajes')}</div>
+                    <div class="convmsg">${esc(preview)}</div>
                 </div>
-                <div class="convtime">${last?.created_at ? new Date(last.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</div>
+                <div class="convtime">
+                    ${hora}
+                    ${conv.unread > 0
+                        ? `<span style="display:inline-block;margin-left:6px;background:var(--danger);color:#fff;font-size:.6rem;font-weight:800;padding:2px 7px;border-radius:99px;min-width:18px;text-align:center;">${conv.unread > 9 ? '9+' : conv.unread}</span>`
+                        : ''}
+                </div>
             `;
-            el.onclick = () => openConversation(c.contacto_id);
+
+            el.onclick = () => openConversation(otherId);
             list.appendChild(el);
-        }
+        });
+
         aplicarFiltroConversaciones();
     } catch (e) {
         console.error('Error en loadConversations:', e);
@@ -902,7 +1012,9 @@ async function loadConversations() {
 function aplicarFiltroConversaciones() {
     const q = conversationFilter.trim().toLowerCase();
     document.querySelectorAll('.conv').forEach(el => {
-        if (!q || el.dataset.name?.includes(q) || el.querySelector('.convname')?.textContent.toLowerCase().includes(q)) {
+        if (!q ||
+            el.dataset.name?.includes(q) ||
+            el.querySelector('.convname')?.textContent.toLowerCase().includes(q)) {
             el.style.display = 'flex';
         } else {
             el.style.display = 'none';
@@ -1937,11 +2049,6 @@ async function recordAudioNota() {
 }
 
 // ================================================================
-// MENSAJES · JS v3.1 (Parte 3 de 3) — FINAL
-// Canales, grupos, llamadas (migradas a /api/llamadas/*), init
-// ================================================================
-
-// ================================================================
 // CANALES Y GRUPOS
 // ================================================================
 var _canalesTimer = null;
@@ -2340,14 +2447,8 @@ async function crearGrupo() {
 }
 
 // ================================================================
-// LLAMADAS (LiveKit) — v3.1 · Migrado a /api/llamadas/*
+// LLAMADAS (LiveKit) — v3.2 · Migrado a /api/llamadas/*
 // ================================================================
-
-/**
- * Inicia una llamada a través del backend.
- * POST /api/llamadas/iniciar  { destinatarioId, tipo }
- * @param {string} tipo - 'audio' | 'video'
- */
 async function startCall(tipo = 'video') {
     if (current?.bot) {
         toast('⚠️ Marquinhos no acepta llamadas', 'warning');
@@ -2385,13 +2486,11 @@ async function startCall(tipo = 'video') {
             throw new Error(d.error || 'No se pudo iniciar la llamada');
         }
 
-        // d = { ok: true, llamadaId, roomName }
         call.id = d.llamadaId;
         call.roomName = d.roomName;
         call.tipo = tipo;
         call.initiator = true;
 
-        // El backend ya gestiona los participantes. Conectamos a LiveKit con el token que nos dará el backend.
         await connectCallWithToken(d.roomName, user.id);
         subscribeCall(d.llamadaId);
 
@@ -2406,10 +2505,6 @@ async function startCall(tipo = 'video') {
     }
 }
 
-/**
- * Obtiene un token de LiveKit para una sala y conecta.
- * POST /api/llamadas/:llamadaId/token
- */
 async function obtenerTokenLlamada(llamadaId) {
     const s = await session();
     if (!s) throw new Error('No autenticado');
@@ -2426,13 +2521,9 @@ async function obtenerTokenLlamada(llamadaId) {
     if (!r.ok || !d.ok) {
         throw new Error(d.error || 'No se pudo obtener el token de la sala');
     }
-    // d = { ok: true, token, url }
     return d;
 }
 
-/**
- * Conecta a LiveKit usando el token obtenido del backend.
- */
 async function connectCallWithToken(roomName, participantName) {
     if (!window.LivekitClient) {
         throw new Error('LiveKit no está cargado');
@@ -2486,10 +2577,6 @@ async function connectCallWithToken(roomName, participantName) {
     $('callInfo').innerHTML = '🟢 <strong>Llamada en curso</strong><br><small style="opacity:.7">Presiona ✕ para colgar</small>';
 }
 
-/**
- * Suscribe a cambios en la tabla de llamadas para reaccionar al estado.
- * Esto es solo lectura de notificaciones; no modifica nada en Supabase.
- */
 function subscribeCall(llamadaId) {
     if (callChannel) db.removeChannel(callChannel);
     callChannel = db.channel('call-' + llamadaId).on('postgres_changes', {
@@ -2508,13 +2595,8 @@ function subscribeCall(llamadaId) {
     }).subscribe();
 }
 
-/**
- * Gestiona una llamada entrante (notificación vía Supabase Realtime).
- * Al aceptar/rechazar se llama al backend.
- */
 async function incoming(data) {
     if (call.active) {
-        // Rechazar automáticamente la nueva llamada si ya estamos en una
         try {
             const s = await session();
             if (s) {
@@ -2543,11 +2625,6 @@ async function incoming(data) {
     toast('🔔 ' + (p.nombre || 'Alguien') + ' te está llamando…', 'success');
 }
 
-/**
- * Acepta una llamada entrante.
- * POST /api/llamadas/:llamadaId/aceptar
- * El backend devuelve el token y los datos de la sala.
- */
 async function acceptCall() {
     if (!incomingId) return;
     try {
@@ -2566,7 +2643,6 @@ async function acceptCall() {
         if (!r.ok || !d.ok) {
             throw new Error(d.error || 'No se pudo aceptar la llamada');
         }
-        // d = { ok: true, token, url, roomName, llamadaId? }
 
         call.id = d.llamadaId || incomingId;
         call.roomName = d.roomName;
@@ -2576,7 +2652,6 @@ async function acceptCall() {
         $('incomingOverlay').classList.remove('show');
         incomingId = null;
 
-        // Conectar directamente con el token devuelto
         if (!window.LivekitClient) throw new Error('LiveKit no está cargado');
         const room = new LivekitClient.Room();
 
@@ -2629,10 +2704,6 @@ async function acceptCall() {
     }
 }
 
-/**
- * Rechaza una llamada entrante.
- * POST /api/llamadas/:llamadaId/terminar
- */
 async function rejectCall() {
     if (incomingId) {
         try {
@@ -2656,10 +2727,6 @@ async function rejectCall() {
     toast('📵 Llamada rechazada', 'warning');
 }
 
-/**
- * Cuelga una llamada activa o iniciada.
- * POST /api/llamadas/:llamadaId/terminar
- */
 async function hangup() {
     if (call.id) {
         try {
@@ -2746,7 +2813,7 @@ async function toggleScreen() {
 }
 
 // ================================================================
-// INIT — INICIALIZACIÓN PRINCIPAL (v3.1)
+// INIT
 // ================================================================
 async function init() {
     try {
@@ -2785,30 +2852,25 @@ async function init() {
         }
     });
 
-    // Header
     $('headerAvatar').onclick = abrirProfileModal;
     $('avatarInput').addEventListener('change', subirFotoHeader);
 
-    // Profile modal
     $('btnCambiarFoto').onclick = () => $('avatarInput').click();
     $('btnCerrarProfileModal').onclick = cerrarProfileModal;
     $('profileModal').addEventListener('click', e => {
         if (e.target.id === 'profileModal') cerrarProfileModal();
     });
 
-    // Vistas modal
     $('closeVistasModal').onclick = cerrarVistasModal;
     $('vistasModal').addEventListener('click', e => {
         if (e.target.id === 'vistasModal') cerrarVistasModal();
     });
 
-    // Photo viewer
     $('pvClose').onclick = cerrarPhotoViewer;
     $('photoViewer').addEventListener('click', e => {
         if (e.target.id === 'photoViewer') cerrarPhotoViewer();
     });
 
-    // Estado viewer
     $('evClose').onclick = cerrarEstadoViewer;
     $('evPrev').onclick = (e) => { e.stopPropagation(); anteriorEstado(); };
     $('evNext').onclick = (e) => { e.stopPropagation(); siguienteEstado(); };
@@ -2818,7 +2880,6 @@ async function init() {
         if (estadoId) abrirVistasModal(estadoId);
     };
 
-    // Pausa en estado viewer
     const evBody = $('evBody');
     evBody.addEventListener('mousedown', activarPausaEstado);
     evBody.addEventListener('mouseup', desactivarPausaEstado);
@@ -2827,7 +2888,6 @@ async function init() {
     evBody.addEventListener('touchend', (e) => { e.preventDefault(); desactivarPausaEstado(); }, { passive: false });
     evBody.addEventListener('touchcancel', desactivarPausaEstado);
 
-    // Keyboard pausa
     document.addEventListener('keydown', e => {
         if (e.key === ' ' && $('estadoViewer').classList.contains('show')) {
             e.preventDefault();
@@ -2836,7 +2896,6 @@ async function init() {
         }
     });
 
-    // Subir estado
     $('btnSubirEstado').onclick = abrirModalEstado;
     $('closeEstadoModal').onclick = cerrarModalEstado;
     $('btnSeleccionarEstado').onclick = seleccionarArchivoEstado;
@@ -2846,7 +2905,6 @@ async function init() {
         if (e.target.id === 'estadoUploadModal') cerrarModalEstado();
     });
 
-    // Escape cierra modales
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape') {
             cerrarProfileModal();
@@ -2860,29 +2918,24 @@ async function init() {
         }
     });
 
-    // Composer
     $('composer').addEventListener('submit', e => {
         e.preventDefault();
         sendMessage($('messageInput').value);
     });
 
-    // Nueva conversación
     $('newChat').onclick = onNuevoClick;
     $('closeModal').onclick = () => $('newModal').classList.remove('show');
     $('newModal').addEventListener('click', e => {
         if (e.target.id === 'newModal') $('newModal').classList.remove('show');
     });
 
-    // Búsqueda usuarios
     $('userSearch').addEventListener('input', e => searchUsers(e.target.value));
 
-    // Búsqueda conversaciones
     $('searchConversations').addEventListener('input', e => {
         conversationFilter = e.target.value;
         aplicarFiltroConversaciones();
     });
 
-    // Attach
     $('attach').onclick = () => {
         if (current?.bot) {
             toast('⚠️ Para Marquinhos usa el botón 🔊', 'error');
@@ -2898,16 +2951,13 @@ async function init() {
         e.target.value = '';
     });
 
-    // Audio y voz
     $('audio').onclick = recordAudioNota;
     $('voiceBot').onclick = grabarVozParaBot;
 
-    // Chat actions
     $('deleteChat').onclick = deleteConversation;
     $('videoCall').onclick = () => startCall('video');
     $('backBtn').onclick = cerrarConversacion;
 
-    // Controles llamada
     $('hangup').onclick = hangup;
     $('toggleMic').onclick = toggleMic;
     $('toggleCam').onclick = toggleCam;
@@ -2915,7 +2965,6 @@ async function init() {
     $('acceptCall').onclick = acceptCall;
     $('rejectCall').onclick = rejectCall;
 
-    // Scroll detect
     $('messages').addEventListener('scroll', detectarSiEstaAbajo);
 
     $('scrollDownBtn').onclick = () => {
@@ -2924,7 +2973,6 @@ async function init() {
         actualizarFlecha();
     };
 
-    // Buscar en la conversación
     $('searchChat').onclick = async () => {
         if (!current) {
             toast('⚠️ Selecciona una conversación', 'error');
@@ -2951,7 +2999,6 @@ async function init() {
         await renderMessages(r.data || []);
     };
 
-    // Modales crear canal/grupo
     $('closeModalCanal')?.addEventListener('click', cerrarModalCrearCanal);
     $('modalCrearCanal')?.addEventListener('click', e => {
         if (e.target.id === 'modalCrearCanal') cerrarModalCrearCanal();
@@ -2962,7 +3009,6 @@ async function init() {
         if (e.target.id === 'modalCrearGrupo') cerrarModalCrearGrupo();
     });
 
-    // Suscripción a llamadas entrantes (solo notificación; el backend gestiona todo)
     db.channel('incoming-calls').on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
@@ -2973,13 +3019,11 @@ async function init() {
         }
     }).subscribe();
 
-    // Limpieza periódica
     setInterval(() => {
         limpiarVistosAntiguos();
         cargarEstados();
     }, 5 * 60 * 1000);
 
-    // Idiomas
     setTimeout(async () => {
         try {
             if (typeof window.inicializarIdiomas === 'function') {
