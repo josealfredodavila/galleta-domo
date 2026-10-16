@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#05080f">
+<title>Términos y Condiciones para Anunciantes · Csariel's</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Arial' font-size='48' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+    :root {
+        --gold: #D4AF37;
+        --cyan: #00e5ff;
+        --verde: #00e676;
+        --danger: #ff3366;
+        --text: #f0f4f8;
+        --muted: #8aa8b8;
+        --line: rgba(212, 175, 55, 0.22);
+        --bg: #05080f;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+        margin: 0;
+        padding: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        min-height: 100vh;
+    }
+
+    /* Fondo con sutil degradado radial */
+    body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background:
+            radial-gradient(120% 60% at 20% 0%, rgba(212,175,55,.06), transparent 60%),
+            radial-gradient(120% 60% at 80% 100%, rgba(0,230,118,.05), transparent 60%);
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    .wrap {
+        position: relative;
+        z-index: 1;
+        max-width: 780px;
+        margin: 0 auto;
+        padding: 20px 18px 80px;
+    }
+
+    /* Cabecera */
+    .legal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 0 18px;
+        border-bottom: 1px solid var(--line);
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+    }
+
+    .legal-brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        color: var(--gold);
+        font-family: 'Orbitron', sans-serif;
+        font-weight: 900;
+        font-size: 1rem;
+        letter-spacing: .06em;
+    }
+
+    .legal-brand .brand-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #0F2D1A, #05080f);
+        border: 1.5px solid var(--gold);
+        display: grid;
+        place-items: center;
+        font-size: .85rem;
+        color: var(--gold);
+    }
+
+    .legal-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        color: var(--gold);
+        font-size: .8rem;
+        font-weight: 700;
+        padding: 8px 14px;
+        border-radius: 99px;
+        border: 1px solid var(--line);
+        background: rgba(212,175,55,.06);
+        transition: background .2s ease, transform .2s ease;
+    }
+    .legal-back:hover {
+        background: rgba(212,175,55,.14);
+        transform: translateX(-2px);
+    }
+
+    /* Título principal */
+    .legal-title-wrap {
+        margin-bottom: 22px;
+    }
+
+    .legal-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        font-family: 'Rajdhani', sans-serif;
+        font-size: .68rem;
+        font-weight: 800;
+        letter-spacing: .16em;
+        text-transform: uppercase;
+        color: var(--gold);
+        background: rgba(212,175,55,.08);
+        border: 1px solid rgba(212,175,55,.35);
+        padding: 6px 12px;
+        border-radius: 99px;
+        margin-bottom: 14px;
+    }
+    .legal-tag .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--verde);
+        box-shadow: 0 0 8px rgba(0,230,118,.9);
+    }
+
+    h1.legal-title {
+        font-family: 'Orbitron', 'Rajdhani', sans-serif;
+        font-size: 1.8rem;
+        line-height: 1.15;
+        font-weight: 900;
+        letter-spacing: .01em;
+        text-transform: uppercase;
+        color: #fff;
+        margin: 0 0 12px;
+    }
+
+    .legal-subtitle {
+        font-size: .9rem;
+        color: var(--muted);
+        line-height: 1.5;
+        margin: 0;
+    }
+
+    /* Aviso de fecha */
+    .legal-updated {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: .75rem;
+        color: var(--muted);
+        background: rgba(255,255,255,.03);
+        border: 1px solid rgba(255,255,255,.07);
+        padding: 7px 12px;
+        border-radius: 99px;
+        margin-top: 12px;
+    }
+
+    /* Secciones */
+    .legal-section {
+        margin-top: 28px;
+        padding: 22px 20px;
+        border-radius: 18px;
+        background: rgba(255,255,255,.025);
+        border: 1px solid rgba(255,255,255,.06);
+    }
+
+    .legal-section-number {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--gold), #b8941f);
+        color: #05080f;
+        font-family: 'Orbitron', sans-serif;
+        font-weight: 900;
+        font-size: .85rem;
+        margin-right: 10px;
+        vertical-align: middle;
+        flex-shrink: 0;
+    }
+
+    h2.legal-h2 {
+        font-family: 'Orbitron', 'Rajdhani', sans-serif;
+        font-size: 1.05rem;
+        font-weight: 800;
+        letter-spacing: .02em;
+        text-transform: uppercase;
+        color: #fff;
+        margin: 0 0 14px;
+        display: flex;
+        align-items: center;
+    }
+
+    h3.legal-h3 {
+        font-family: 'Rajdhani', sans-serif;
+        font-size: .88rem;
+        font-weight: 800;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+        color: var(--gold);
+        margin: 18px 0 8px;
+    }
+
+    .legal-section p {
+        font-size: .92rem;
+        line-height: 1.68;
+        color: rgba(240,244,248,.9);
+        margin: 0 0 12px;
+    }
+
+    .legal-section p:last-child { margin-bottom: 0; }
+
+    .legal-section ul {
+        list-style: none;
+        padding: 0;
+        margin: 8px 0 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .legal-section ul li {
+        position: relative;
+        padding-left: 22px;
+        font-size: .9rem;
+        line-height: 1.6;
+        color: rgba(240,244,248,.88);
+    }
+
+    .legal-section ul li::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 9px;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--gold);
+        opacity: .75;
+    }
+
+    .legal-section ul li strong {
+        color: #fff;
+        font-weight: 700;
+    }
+
+    .legal-section p strong {
+        color: var(--gold);
+        font-weight: 700;
+    }
+
+    /* Bloque destacado (warning) */
+    .legal-warning {
+        margin-top: 16px;
+        padding: 14px 16px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, rgba(255,51,102,.08), rgba(255,51,102,.02));
+        border: 1px solid rgba(255,51,102,.28);
+    }
+    .legal-warning .w-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        font-family: 'Rajdhani', sans-serif;
+        font-size: .68rem;
+        font-weight: 800;
+        letter-spacing: .14em;
+        text-transform: uppercase;
+        color: var(--danger);
+        margin-bottom: 8px;
+    }
+    .legal-warning p {
+        margin: 0;
+        color: rgba(240,244,248,.94);
+        font-size: .88rem;
+        line-height: 1.6;
+    }
+
+    /* Bloque destacado (success) */
+    .legal-highlight {
+        margin-top: 16px;
+        padding: 14px 16px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, rgba(0,230,118,.08), rgba(0,200,150,.02));
+        border: 1px solid rgba(0,230,118,.28);
+    }
+    .legal-highlight .h-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        font-family: 'Rajdhani', sans-serif;
+        font-size: .68rem;
+        font-weight: 800;
+        letter-spacing: .14em;
+        text-transform: uppercase;
+        color: var(--verde);
+        margin-bottom: 8px;
+    }
+    .legal-highlight p {
+        margin: 0;
+        color: rgba(240,244,248,.94);
+        font-size: .88rem;
+        line-height: 1.6;
+    }
+
+    /* Declaración final de aceptación */
+    .legal-acceptance {
+        margin-top: 32px;
+        padding: 24px 20px;
+        border-radius: 20px;
+        background: linear-gradient(160deg, rgba(212,175,55,.08), rgba(5,8,15,.9));
+        border: 1.5px solid var(--line);
+    }
+    .legal-acceptance h2 {
+        font-family: 'Orbitron', 'Rajdhani', sans-serif;
+        font-size: 1rem;
+        font-weight: 900;
+        letter-spacing: .02em;
+        text-transform: uppercase;
+        color: var(--gold);
+        margin: 0 0 14px;
+    }
+    .legal-acceptance ul li::before {
+        background: var(--verde);
+    }
+
+    /* Footer */
+    .legal-footer {
+        margin-top: 40px;
+        padding-top: 20px;
+        border-top: 1px solid rgba(255,255,255,.06);
+        text-align: center;
+        font-size: .78rem;
+        color: var(--muted);
+        line-height: 1.6;
+    }
+    .legal-footer strong {
+        color: var(--gold);
+        font-weight: 700;
+    }
+
+    /* Botón flotante volver arriba */
+    .btn-top {
+        position: fixed;
+        right: 16px;
+        bottom: 20px;
+        z-index: 30;
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        border: 1.5px solid var(--gold);
+        background: rgba(5,8,15,.85);
+        color: var(--gold);
+        font-size: 1.1rem;
+        font-weight: 900;
+        cursor: pointer;
+        display: grid;
+        place-items: center;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        box-shadow: 0 8px 24px rgba(0,0,0,.45);
+        transition: transform .2s ease, background .2s ease;
+        text-decoration: none;
+    }
+    .btn-top:hover {
+        transform: translateY(-2px);
+        background: rgba(212,175,55,.15);
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+        .wrap { padding: 16px 14px 80px; }
+        h1.legal-title { font-size: 1.4rem; }
+        .legal-section { padding: 18px 16px; }
+        .legal-section p,
+        .legal-section ul li { font-size: .88rem; }
+        h2.legal-h2 { font-size: .95rem; }
+        .legal-header { gap: 10px; }
+        .legal-back { font-size: .74rem; padding: 7px 12px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        * { transition: none !important; animation: none !important; }
+    }
+</style>
+</head>
+<body>
+
+<div class="wrap" id="top">
+
+    <!-- Cabecera -->
+    <header class="legal-header">
+        <a class="legal-brand" href="/">
+            <span class="brand-icon">◈</span>
+            <span>CSARIEL'S</span>
+        </a>
+        <a class="legal-back" href="javascript:history.back()">
+            <span aria-hidden="true">←</span>
+            <span>Volver</span>
+        </a>
+    </header>
+
+    <!-- Título -->
+    <div class="legal-title-wrap">
+        <span class="legal-tag">
+            <span class="dot"></span>
+            Documento legal
+        </span>
+        <h1 class="legal-title">Términos y Condiciones para Anunciantes</h1>
+        <p class="legal-subtitle">
+            Reglas de uso, responsabilidades y moderación para publicar anuncios en Csariel's.
+        </p>
+        <div class="legal-updated">
+            <span aria-hidden="true">📅</span>
+            <span>Última actualización: 16 de octubre de 2026 · Versión 1.0</span>
+        </div>
+    </div>
+
+    <!-- 1. Naturaleza del servicio -->
+    <section class="legal-section">
+        <h2 class="legal-h2">
+            <span class="legal-section-number">1</span>
+            Naturaleza del servicio
+        </h2>
+        <p>
+            <strong>Csariel's</strong> actúa únicamente como una plataforma de intermediación
+            tecnológica y espacio publicitario digital. No somos fabricantes, distribuidores,
+            vendedores ni prestadores de los productos o servicios anunciados.
+        </p>
+        <p>
+            Los usuarios y comercios anunciantes son los <strong>únicos responsables</strong> de la
+            veracidad, calidad, permisos sanitarios, precios, garantías, existencias, entregas y
+            legalidad de los productos o servicios promocionados en sus anuncios.
+        </p>
+        <p>
+            Csariel's <strong>no participa</strong> en la transacción comercial entre el anunciante
+            y el consumidor final, y por lo tanto <strong>no es responsable</strong> por:
+        </p>
+        <ul>
+            <li>Daños, perjuicios o incumplimientos del anunciante.</li>
+            <li>Diferencias entre lo anunciado y lo entregado.</li>
+            <li>Problemas de calidad, higiene o seguridad.</li>
+            <li>Reclamaciones derivadas de la relación comercial.</li>
+        </ul>
+    </section>
+
+    <!-- 2. Contenido prohibido -->
+    <section class="legal-section">
+        <h2 class="legal-h2">
+            <span class="legal-section-number">2</span>
+            Contenido prohibido
+        </h2>
+        <p>
+            Queda estrictamente prohibido anunciar, promocionar o publicar en la plataforma:
+        </p>
+
+        <h3 class="legal-h3">2.1 · Contenido ilegal</h3>
+        <ul>
+            <li>Piratería de software, música, películas o cualquier obra protegida por derechos de autor.</li>
+            <li>Productos robados, falsificados o de procedencia ilícita.</li>
+            <li>Esquemas piramidales, multiniveles sin registro o cualquier tipo de fraude financiero.</li>
+            <li>Productos o servicios prohibidos por la legislación mexicana vigente.</li>
+        </ul>
+
+        <h3 class="legal-h3">2.2 · Medicamentos y productos milagro</h3>
+        <ul>
+            <li>Medicamentos sin registro sanitario de COFEPRIS.</li>
+            <li>Suplementos alimenticios con propiedades terapéuticas no comprobadas.</li>
+            <li>Productos "milagro" que prometan curar enfermedades.</li>
+            <li>Dispositivos médicos sin registro sanitario.</li>
+        </ul>
+
+        <h3 class="legal-h3">2.3 · Sustancias reguladas</h3>
+        <ul>
+            <li>Bebidas alcohólicas sin licencia de venta.</li>
+            <li>Tabaco, vapeadores o productos con nicotina sin permisos correspondientes.</li>
+            <li>Productos derivados del cannabis sin autorización.</li>
+            <li>Cualquier sustancia controlada por la Ley General de Salud.</li>
+        </ul>
+
+        <h3 class="legal-h3">2.4 · Publicidad engañosa</h3>
+        <ul>
+            <li>Promesas falsas o no comprobables.</li>
+            <li>Testimonios falsos o inventados.</li>
+            <li>Comparaciones difamatorias contra terceros.</li>
+            <li>Uso de marcas registradas sin autorización expresa del titular.</li>
+            <li>Uso no autorizado de imágenes, logos, nombres comerciales o personajes protegidos.</li>
+        </ul>
+
+        <h3 class="legal-h3">2.5 · Contenido sensible</h3>
+        <ul>
+            <li>Contenido sexual explícito o prostitución.</li>
+            <li>Apuestas o juegos de azar sin permiso de SEGOB.</li>
+            <li>Armas, explosivos o materiales peligrosos.</li>
+            <li>Contenido que incite al odio, discriminación o violencia.</li>
+        </ul>
+    </section>
+
+    <!-- 3. Identificación y etiquetado -->
+    <section class="legal-section">
+        <h2 class="legal-h2">
+            <span class="legal-section-number">3</span>
+            Identificación y etiquetado obligatorio
+        </h2>
+        <p>
+            Conforme a las directrices de comercio electrónico y protección al consumidor
+            vigentes en México:
+        </p>
+        <ul>
+            <li>
+                Todo contenido publicitario alojado en la plataforma llevará de manera
+                <strong>visible y clara</strong> la distintiva <strong>"PATROCINADO"</strong> o
+                <strong>"ANUNCIO"</strong>, con el fin de que el usuario pueda diferenciarlo del
+                contenido editorial o del contenido generado por otros usuarios.
+            </li>
+            <li>
+                Esta distintiva es <strong>obligatoria</strong> y se aplica de forma automática
+                por la plataforma. El anunciante acepta que su anuncio siempre será identificado
+                como contenido publicitario.
+            </li>
+            <li>
+                El anunciante se compromete a <strong>no intentar ocultar, disfrazar o modificar</strong>
+                la distintiva "PATROCINADO" para hacer pasar su publicidad como contenido orgánico.
+            </li>
+        </ul>
+    </section>
+
+    <!-- 4. Responsabilidad del anunciante -->
+    <section class="legal-section">
+        <h2 class="legal-h2">
+            <span class="legal-section-number">4</span>
+            Responsabilidad del anunciante
+        </h2>
+        <p>
+            Al publicar un anuncio, el anunciante declara y garantiza:
+        </p>
+        <ul>
+            <li>Tener la titularidad o autorización legal para publicitar los productos o servicios ofrecidos.</li>
+            <li>Contar con los permisos, licencias, registros sanitarios y autorizaciones aplicables para comercializar lo que anuncia.</li>
+            <li>Que la información publicada es veraz, exacta, actualizada y comprobable.</li>
+            <li>Que las imágenes, textos, marcas y contenidos utilizados <strong>no infringen</strong> derechos de terceros (autor, marca, imagen, etc.).</li>
+            <li>Cumplir con la Ley Federal de Protección al Consumidor, la Ley Federal de Protección de Datos Personales y demás normativa aplicable.</li>
+        </ul>
+        <div class="legal-warning">
+            <span class="w-label">⚠ Importante</span>
+            <p>
+                El anunciante liberará a Csariel's de cualquier responsabilidad, reclamación,
+                demanda, multa o sanción que se derive del contenido de su anuncio.
+            </p>
+        </div>
+    </section>
+
+    <!-- 5. Moderación y cancelación -->
+    <section class="legal-section">
+        <h2 class="legal-h2">
+            <span class="legal-section-number">5</span>
+            Moderación y cancelación
+        </h2>
+        <p>
+            Csariel's se reserva el derecho de revisar, moderar, pausar, remover o dar de baja
+            cualquier anuncio que:
+        </p>
+        <ul>
+            <li>Vulnere estas políticas.</li>
+            <li>Infrinja las leyes mexicanas vigentes.</li>
+            <li>Reciba reportes justificados por parte de los usuarios.</li>
+            <li>Contenga contenido prohibido (sección 2).</li>
+            <li>Sea considerado spam, duplicado o fraudulento.</li>
+            <li>Afecte la experiencia de la comunidad.</li>
+        </ul>
+        <ul>
+            <li>Los anuncios que infrinjan las normas podrán ser removidos <strong>sin previo aviso</strong> y <strong>sin derecho a reembolso</strong>, cuando aplique.</li>
+            <li>El anunciante recibirá una notificación cuando su anuncio sea pausado o removido, salvo en casos de contenido ilegal, donde la remoción es inmediata.</li>
+            <li>Csariel's podrá suspender o cancelar la cuenta del anunciante reincidente, sin derecho a reembolso.</li>
+            <li>Los reportes de usuarios serán evaluados por el equipo de moderación. La decisión de la plataforma será final en cuanto al contenido alojado.</li>
+        </ul>
+    </section>
+
+    <!-- 6. Publicidad pagada -->
+    <section class="legal-section">
+        <h2 class="legal-h2">
+            <span class="legal-section-number">6</span>
+            Publicidad pagada
+        </h2>
+        <div class="legal-highlight">
+            <span class="h-label">✓ Actualmente gratis</span>
+            <p>
+                Por ahora, la publicación de anuncios en Csariel's es
+                <strong>gratuita</strong> para los usuarios de la comunidad.
+            </p>
+        </div>
+        <p>
+            En el futuro, Csariel's podrá introducir planes de publicidad pagada con beneficios
+            adicionales (mayor alcance, más días, prioridad, etc.).
+        </p>
+        <ul>
+            <li>Cuando existan planes pagados, se informará el precio, la duración y los beneficios concretos.</li>
+            <li>La política de reembolsos (si aplica) será informada al momento de contratar.</li>
+            <li>Los términos de la publicidad pagada serán adicionales a estos términos generales y se aceptarán por separado.</li>
+            <li><strong>La publicidad pagada NO exime al anunciante</strong> de cumplir con las secciones 2, 3 y 4 de este documento.</li>
+        </ul>
+    </section>
+
+    <!-- 7. Propiedad intelectual -->
+    <section class="legal-section">
+        <h2 class="legal-h2">
+            <span class="legal-section-number">7</span>
+            Propiedad intelectual
+        </h2>
+        <ul>
+            <li>El anunciante conserva los derechos sobre el contenido que sube a la plataforma (imágenes, textos, videos).</li>
+            <li>Al publicar, el anunciante otorga a Csariel's una licencia no exclusiva, mundial y gratuita para mostrar, reproducir y distribuir el contenido dentro de la plataforma y en materiales promocionales de la misma.</li>
+            <li>Csariel's respeta los derechos de propiedad intelectual de terceros. Si eres titular de derechos y consideras que un anuncio los infringe, puedes reportarlo a través de los canales de contacto.</li>
+        </ul>
+    </section>
+
+    <!-- 8. Protección de datos -->
+    <section class="legal-section">
+        <h2 class="legal-h2">
+            <span class="legal-section-number">8</span>
+            Protección de datos
+        </h2>
+        <ul>
+            <li>Los datos personales del anunciante se tratarán conforme al Aviso de Privacidad de Csariel's.</li>
+            <li>Los datos de contacto que el anunciante decida mostrar en su anuncio (WhatsApp, ubicación, etc.) serán visibles públicamente para los usuarios de la plataforma.</li>
+            <li>El anunciante es responsable de contar con el consentimiento de las personas cuyos datos decida publicar.</li>
+        </ul>
+    </section>
+
+    <!-- 9. Modificaciones -->
+    <section class="legal-section">
+        <h2 class="legal-h2">
+            <span class="legal-section-number">9</span>
+            Modificaciones
+        </h2>
+        <ul>
+            <li>Csariel's podrá modificar estos términos en cualquier momento para adaptarse a cambios legales, técnicos o de negocio.</li>
+            <li>Las modificaciones se notificarán en la plataforma y entrarán en vigor al momento de su publicación.</li>
+            <li>El uso continuado de la plataforma después de la publicación de los cambios implica la aceptación de los nuevos términos.</li>
+        </ul>
+    </section>
+
+    <!-- 10. Legislación aplicable -->
+    <section class="legal-section">
+        <h2 class="legal-h2">
+            <span class="legal-section-number">10</span>
+            Legislación aplicable y jurisdicción
+        </h2>
+        <ul>
+            <li>Estos términos se rigen por las leyes de los Estados Unidos Mexicanos.</li>
+            <li>Cualquier controversia se resolverá conforme a la legislación mexicana aplicable.</li>
+            <li>Para cualquier aclaración, contacta a: <strong>contacto@csariels.com</strong></li>
+        </ul>
+    </section>
+
+    <!-- Declaración de aceptación -->
+    <section class="legal-acceptance">
+        <h2>Declaración de aceptación</h2>
+        <p>
+            Al marcar la casilla "Acepto los Términos y Condiciones para Anunciantes" y publicar
+            un anuncio, el usuario declara:
+        </p>
+        <ul>
+            <li>Haber leído y comprendido estos términos.</li>
+            <li>Aceptar íntegramente las condiciones aquí descritas.</li>
+            <li>Ser mayor de edad y tener capacidad legal.</li>
+            <li>Ser responsable del contenido que publica.</li>
+            <li>Cumplir con las leyes mexicanas vigentes.</li>
+        </ul>
+    </section>
+
+    <!-- Footer -->
+    <footer class="legal-footer">
+        <p><strong>Csariel's</strong> · Plataforma de intermediación tecnológica</p>
+        <p>© 2026 · Todos los derechos reservados</p>
+    </footer>
+
+</div>
+
+<!-- Botón volver arriba -->
+<a href="#top" class="btn-top" aria-label="Volver arriba">↑</a>
+
+</body>
+</html>
