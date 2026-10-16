@@ -1,7 +1,13 @@
 // backend/routes/llamadas.js
 // Decide el motor de cada llamada en el servidor:
 //   - usuario del ecosistema  → LiveKit (motor 'livekit')
-//   - número real             → Telnyx  (motor 'telnyx', Fase 2, deshabilitado por ahora)
+//   - número real             → Telnyx  (motor 'telnyx', Fase 2, deshabilitado)
+// Esquema verificado contra Supabase (proyecto zultnlogdoajehbswlih):
+//   llamadas: motor, origen, numero_destino, duracion_seg, motivo_fin,
+//             contestada_at, finalizada_at, conversation_id, room_name
+//   llamadas_participantes: salio_at, invitado_at (default)
+//   función public.puede_llamar(origen, destino) ya existente
+// Las políticas RLS existentes no se modifican: el backend usa service_role.
 const express = require('express');
 const crypto = require('crypto');
 const { AccessToken } = require('livekit-server-sdk');
@@ -33,22 +39,24 @@ function esParticipante(llamada, uid) {
 }
 
 async function registrarParticipante(llamadaId, uid, rol) {
+  const ahora = new Date().toISOString();
+
   const { data } = await supabaseAdmin
     .from('llamadas_participantes').select('id')
     .eq('llamada_id', llamadaId).eq('usuario_id', uid).maybeSingle();
 
-  const ahora = new Date().toISOString();
-
   if (data) {
-    await supabaseAdmin.from('llamadas_participantes')
+    const { error } = await supabaseAdmin.from('llamadas_participantes')
       .update({ estado: 'conectado', entro_at: ahora, salio_at: null })
       .eq('id', data.id);
+    if (error) throw error;
     return;
   }
 
-  await supabaseAdmin.from('llamadas_participantes').insert({
+  const { error } = await supabaseAdmin.from('llamadas_participantes').insert({
     llamada_id: llamadaId, usuario_id: uid, rol, estado: 'conectado', entro_at: ahora
   });
+  if (error) throw error;
 }
 
 async function tokenParaSala(roomName, uid) {
@@ -79,7 +87,7 @@ function livekitConfigurado() {
 // POST /iniciar
 // Body: { destinatarioId, tipo: 'audio' | 'video' }
 //    o: { numero: '+52...', tipo }   (Fase 2)
-// Crea la fila en llamadas. Eso también dispara el aviso Realtime
+// Crea la fila en llamadas; el INSERT dispara el aviso Realtime
 // que ya escucha mensajes.js (estado 'ringing').
 // ================================================================
 router.post('/iniciar', verificarToken, async (req, res) => {
@@ -97,7 +105,6 @@ router.post('/iniciar', verificarToken, async (req, res) => {
       if (!TELNYX_CALLS_ENABLED) {
         return res.status(503).json({ success: false, error: 'telefonia_no_disponible' });
       }
-      // Fase 2: aquí irá el alta en Telnyx con motor 'telnyx'
       return res.status(501).json({ success: false, error: 'telefonia_en_construccion' });
     }
 
@@ -115,7 +122,7 @@ router.post('/iniciar', verificarToken, async (req, res) => {
       .rpc('puede_llamar', { p_origen: uid, p_destino: destinoId });
     if (errPuede) throw errPuede;
 
-    // Mensaje genérico: no revela si hay bloqueo o si el usuario existe
+    // Mensaje genérico: no revela si hay bloqueo ni si el usuario existe
     if (!puede) {
       return res.status(403).json({ success: false, error: 'llamada_no_permitida' });
     }
@@ -132,8 +139,7 @@ router.post('/iniciar', verificarToken, async (req, res) => {
       estado: 'ringing',
       room_name: roomName,
       motor: 'livekit',
-      origen: 'app',
-      iniciada_at: new Date().toISOString()
+      origen: 'app'
     });
     if (errIns) throw errIns;
 
@@ -184,7 +190,7 @@ router.post('/:id/aceptar', verificarToken, async (req, res) => {
 });
 
 // ================================================================
-// POST /:id/token  → el creador se une a la sala (después de iniciar)
+// POST /:id/token  → el creador (o un participante) se une a la sala
 // ================================================================
 router.post('/:id/token', verificarToken, async (req, res) => {
   try {
@@ -211,8 +217,8 @@ router.post('/:id/token', verificarToken, async (req, res) => {
 
 // ================================================================
 // POST /:id/terminar
-// Body: opcional { motivo }. Reglas:
-//   - creador, estado ringing  → 'missed'  (cancelada antes de contestar)
+// Reglas:
+//   - creador, ringing         → 'missed'   (cancelada antes de contestar)
 //   - destinatario, ringing    → 'rejected'
 //   - cualquiera, active       → 'ended' (con duración)
 // ================================================================
@@ -263,7 +269,10 @@ router.post('/:id/terminar', verificarToken, async (req, res) => {
       .eq('llamada_id', llamada.id)
       .eq('usuario_id', uid);
 
-    return res.json({ success: true, data: { estado: nuevoEstado, duracion_seg: update.duracion_seg ?? null } });
+    return res.json({
+      success: true,
+      data: { estado: nuevoEstado, duracion_seg: update.duracion_seg ?? null }
+    });
   } catch (e) {
     logger.error(`[llamadas] terminar: ${e.message}`);
     return res.status(500).json({ success: false, error: 'servidor' });
@@ -272,7 +281,7 @@ router.post('/:id/terminar', verificarToken, async (req, res) => {
 
 // ================================================================
 // GET /historial?limite=50
-// Devuelve llamadas perdidas, entrantes, salientes y realizadas.
+// Perdidas, entrantes, salientes y realizadas.
 // ================================================================
 router.get('/historial', verificarToken, async (req, res) => {
   try {
@@ -289,7 +298,6 @@ router.get('/historial', verificarToken, async (req, res) => {
 
     const lista = (data || []).map((l) => {
       const saliente = l.creador_id === uid;
-      let direccion = saliente ? 'saliente' : 'entrante';
       let resultado = 'realizada';
 
       if (!l.contestada_at) {
@@ -299,7 +307,7 @@ router.get('/historial', verificarToken, async (req, res) => {
 
       return {
         id: l.id,
-        direccion,
+        direccion: saliente ? 'saliente' : 'entrante',
         resultado,
         contraparte_id: saliente ? l.destinatario_id : l.creador_id,
         numero_destino: l.numero_destino,
