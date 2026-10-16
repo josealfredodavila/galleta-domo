@@ -1,42 +1,24 @@
 // ============================================
 // CSARIEL'S · CARRUSEL 3D HORIZONTAL
 // Ruta: /features/perfil/js/carrusel-3d.js
-// v8 · PRODUCCIÓN MEJORADA
+// v9 · MODAL FULLSCREEN DE DETALLE
 //
-// BASADO EN v7 CON LAS SIGUIENTES MEJORAS:
+// NUEVO EN ESTA VERSIÓN:
+// ✅ Al tocar una tarjeta de ANUNCIO se abre un modal fullscreen
+//    con la info del anuncio + datos del anunciante.
+// ✅ Al tocar una INVITACIÓN también se abre un modal con la info.
+// ✅ Se traen datos del perfil del anunciante (nombre, handle,
+//    avatar, ubicación, contacto) mediante JOIN con perfiles_publicos.
+// ✅ Fallback: si el JOIN falla o la columna no existe, se consulta
+//    el perfil por separado.
+// ✅ NO redirige a ninguna URL. NO abre el formulario de crear.
+// ✅ Botón "Visitar" usa destino_url del anuncio.
+// ✅ Botón "Ver perfil" usa el handle del anunciante.
 //
-// ✅ BUG FIX 1 · Consulta limpia a Supabase
-//    - .neq('pausado_automatico', true) en lugar de .or() con is.null
-//    - .gt('vigencia_fin', ahora) porque la columna es NOT NULL
-//
-// ✅ BUG FIX 2 · Reset de activoActual en render
-//    - Activa el dot correcto tras un re-render
-//
-// ✅ BUG FIX 3 · document.hidden solo en pedirActualizacion
-//    - La primera animación 3D se aplica aunque el navegador
-//      tarde en marcar la pestaña como visible
-//
-// ✅ MEJORAS NUEVAS:
-//    - Cache en sessionStorage (evita flash al navegar).
-//    - Detección de conexión lenta → desactiva animaciones.
-//    - Lazy video: solo carga cuando la tarjeta se acerca.
-//    - IntersectionObserver pausa videos fuera de vista.
-//    - Respeto prefers-reduced-motion desde JS.
-//    - createDocumentFragment para render más limpio.
-//    - Limpieza de URLs blob al destruir.
-//
-// ✅ CONSERVADO DE v7:
-//    - Guard global __csarielsCarrusel3DIniciado.
-//    - Deduplicación de anuncios por ID.
-//    - urlSegura() para href.
-//    - Recarga pendiente con debounce.
-//    - Pausa de animaciones al ocultar pestaña.
-//    - Manejo de errores que conserva el contenido visible.
-//
-// ✅ GARANTÍAS:
-//    - No modifica contadores (vistas/toques).
-//    - No escribe en Supabase.
-//    - No bloquea la página si Supabase falla.
+// CONSERVADO DE v8:
+// ✅ Guard global, deduplicación, urlSegura, recarga pendiente,
+//    pausa de animaciones al ocultar, detección de conexión lenta,
+//    lazy video, IntersectionObserver, cache en sessionStorage.
 // ============================================
 
 (function () {
@@ -50,71 +32,77 @@
     // --------------------------------------------
     // CONFIGURACIÓN
     // --------------------------------------------
-    var TABLA = 'anuncios';
+    var TABLA_ANUNCIOS = 'anuncios';
+    var TABLA_PERFILES = 'perfiles_publicos';
     var TOTAL_SLOTS = 7;
     var REALTIME_DEBOUNCE_MS = 600;
-    var CACHE_KEY = 'csariels_anuncios_cache_v1';
-    var CACHE_TTL_MS = 60 * 1000; // 1 minuto
+    var CACHE_KEY = 'csariels_anuncios_cache_v2';
+    var CACHE_TTL_MS = 60 * 1000;
 
-    // Paleta profesional: pares [inicio, fin] de degradados
-    // armónicos entre verde esmeralda, oro y naranja.
+    // Paleta de degradados por slot
     var PALETA = [
-        ['#ff7900', '#ffb300'], // Naranja → Ámbar
-        ['#00c853', '#00bfa5'], // Verde → Esmeralda
-        ['#008f68', '#ffd54f'], // Esmeralda → Oro
-        ['#2962ff', '#00e5ff'], // Azul → Cian
-        ['#e65100', '#ff8f00'], // Terracota → Naranja
-        ['#00a878', '#ffd54f'], // Verde agua → Oro
-        ['#ff4081', '#7c4dff']  // Rosa → Violeta
+        ['#ff7900', '#ffb300'],
+        ['#00c853', '#00bfa5'],
+        ['#008f68', '#ffd54f'],
+        ['#2962ff', '#00e5ff'],
+        ['#e65100', '#ff8f00'],
+        ['#00a878', '#ffd54f'],
+        ['#ff4081', '#7c4dff']
     ];
 
-    // 7 invitaciones. Sin emojis, copy profesional.
+    // 7 invitaciones (placeholders)
     var PLACEHOLDERS = [
         {
             chip: 'ANÚNCIATE GRATIS',
             title: 'IMPULSA TU NEGOCIO',
             desc: 'Presenta tu negocio a la comunidad Csariel’s y permite que más clientes te descubran.',
-            cta: 'Crear mi anuncio'
+            descLarga: 'Publica tu anuncio en el carrusel del perfil y llega a miles de usuarios de la comunidad. Es completamente gratis y tu anuncio aparece durante 7 días.',
+            cta: 'Quiero anunciarme'
         },
         {
             chip: 'PUBLICA SIN COSTO',
             title: 'DA A CONOCER TU MARCA',
             desc: 'Dale visibilidad a tus productos o servicios con un espacio para tu negocio.',
-            cta: 'Quiero anunciarme'
+            descLarga: 'Presenta tus productos o servicios directamente en el carrusel del perfil. Miles de usuarios pasan por aquí cada día.',
+            cta: 'Publicar mi anuncio'
         },
         {
             chip: 'DESTACA TU MARCA',
             title: 'TU NEGOCIO MERECE BRILLAR',
             desc: 'Presenta tu propuesta y destaca entre las opciones de la comunidad.',
-            cta: 'Dar el siguiente paso'
+            descLarga: 'Diferénciate del resto mostrando tu negocio con una imagen llamativa y una descripción que atraiga a tus clientes.',
+            cta: 'Destacar ahora'
         },
         {
             chip: 'CRECE EN COMUNIDAD',
             title: 'CONECTA CON CLIENTES',
             desc: 'Haz que tu negocio sea más fácil de descubrir dentro del ecosistema.',
-            cta: 'Publicar mi anuncio'
+            descLarga: 'Aparece en el carrusel principal y permite que los usuarios te encuentren fácilmente.',
+            cta: 'Quiero aparecer'
         },
         {
             chip: 'ES TU MOMENTO',
             title: 'HAZTE VISIBLE',
             desc: 'Muestra lo que ofreces y acerca tu negocio a nuevos clientes.',
-            cta: 'Quiero aparecer'
+            descLarga: 'Tu negocio merece ser visto. Publica tu anuncio gratis y empieza a recibir clientes de la comunidad.',
+            cta: 'Empezar ahora'
         },
         {
             chip: 'ESPACIO PARA TU MARCA',
             title: 'PROMOCIONA TU NEGOCIO',
             desc: 'Comparte tu propuesta con una presentación llamativa y profesional.',
+            descLarga: 'Sube una imagen atractiva y describe tu propuesta. Los usuarios podrán ver tu anuncio en pantalla completa.',
             cta: 'Promocionar mi marca'
         },
         {
             chip: 'BIENVENIDO A CSARIEL’S',
             title: 'TU PRÓXIMO CLIENTE PUEDE ESTAR AQUÍ',
             desc: 'Empieza a presentar tu negocio a la comunidad. Consulta las condiciones al crear tu anuncio.',
-            cta: 'Empezar ahora'
+            descLarga: 'Publica tu anuncio gratis y llega a más personas. Solo necesitas una imagen y una breve descripción.',
+            cta: 'Comenzar ahora'
         }
     ];
 
-    // Constantes visuales
     var MAX_ROTACION = 28;
     var PERDIDA_ESCALA = 0.10;
     var OPACIDAD_MIN = 0.60;
@@ -140,17 +128,16 @@
     var observerVideos = null;
     var reducirMovimiento = false;
     var conexionLenta = false;
+    var modalActivo = null;
 
     // --------------------------------------------
-    // DETECCIÓN DE CAPACIDADES DEL DISPOSITIVO
+    // DETECCIÓN DE CAPACIDADES
     // --------------------------------------------
     function detectarPreferencias() {
         try {
             reducirMovimiento = window.matchMedia &&
                 window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        } catch (e) {
-            reducirMovimiento = false;
-        }
+        } catch (e) { reducirMovimiento = false; }
 
         try {
             var conn = navigator.connection ||
@@ -161,15 +148,12 @@
                          conn.saveData === true)) {
                 conexionLenta = true;
             }
-        } catch (e) {
-            conexionLenta = false;
-        }
+        } catch (e) { conexionLenta = false; }
     }
 
     // --------------------------------------------
     // UTILIDADES
     // --------------------------------------------
-
     function obtenerWrapper() {
         return document.getElementById('carruselPerfilWrapper') ||
             document.querySelector('.carrusel-3d-wrapper');
@@ -177,16 +161,12 @@
 
     function obtenerTrack() {
         return document.getElementById('carruselPerfilTrack') ||
-            document.querySelector(
-                '.carrusel-3d-track:not(.carrusel-fullscreen-track)'
-            );
+            document.querySelector('.carrusel-3d-track:not(.carrusel-fullscreen-track)');
     }
 
     function coleccionar() {
         if (!track) return [];
-        return Array.prototype.slice.call(
-            track.querySelectorAll('.carrusel-3d-card')
-        );
+        return Array.prototype.slice.call(track.querySelectorAll('.carrusel-3d-card'));
     }
 
     function esc(valor) {
@@ -205,9 +185,7 @@
                     var parsed = new URL(url);
                     if (parsed.protocol !== 'https:' &&
                         parsed.protocol !== 'http:') return '#';
-                } catch (e) {
-                    return '#';
-                }
+                } catch (e) { return '#'; }
             }
             return url;
         }
@@ -219,9 +197,8 @@
     }
 
     // --------------------------------------------
-    // CACHE EN sessionStorage
+    // CACHE
     // --------------------------------------------
-
     function leerCache() {
         try {
             var raw = sessionStorage.getItem(CACHE_KEY);
@@ -230,9 +207,7 @@
             if (!obj || !obj.ts || !Array.isArray(obj.data)) return null;
             if (Date.now() - obj.ts > CACHE_TTL_MS) return null;
             return obj.data;
-        } catch (e) {
-            return null;
-        }
+        } catch (e) { return null; }
     }
 
     function escribirCache(anuncios) {
@@ -241,15 +216,12 @@
                 ts: Date.now(),
                 data: anuncios || []
             }));
-        } catch (e) {
-            // sessionStorage lleno o bloqueado: ignorar
-        }
+        } catch (e) {}
     }
 
     // --------------------------------------------
     // CLIENTE SUPABASE
     // --------------------------------------------
-
     async function obtenerCliente() {
         if (window.supabaseClient) return window.supabaseClient;
 
@@ -260,13 +232,10 @@
                     window.supabaseClient = cliente;
                     return cliente;
                 }
-            } catch (error) {
-                console.warn('[Carrusel] Supabase aún no está disponible.', error);
-            }
+            } catch (error) {}
         }
 
-        if (!window.supabase ||
-            typeof window.supabase.createClient !== 'function') {
+        if (!window.supabase || typeof window.supabase.createClient !== 'function') {
             return null;
         }
 
@@ -301,13 +270,12 @@
     }
 
     // --------------------------------------------
-    // CONSULTA A SUPABASE
+    // CARGA DE ANUNCIOS + PERFILES
     //
-    // Devuelve:
-    //   Array = consulta correcta (posiblemente vacía).
-    //   null  = error; conservar contenido visible.
+    // 1) Consulta anuncios activos y vigentes.
+    // 2) Trae los perfiles de los anunciantes en bloque.
+    // 3) Combina y devuelve.
     // --------------------------------------------
-
     async function cargarAnunciosDesdeSupabase() {
         var db = await obtenerCliente();
         if (!db) return null;
@@ -315,14 +283,12 @@
         try {
             var ahora = new Date().toISOString();
 
-            // BUG FIX 1 · Consulta limpia
-            // - .neq en lugar de .or(is.null) porque la columna es NOT NULL.
-            // - .gt('vigencia_fin', ahora) directo.
+            // 1) Anuncios
             var resultado = await db
-                .from(TABLA)
+                .from(TABLA_ANUNCIOS)
                 .select(
-                    'id, titulo, texto, tipo, media_url, destino_url, ' +
-                    'duracion_video_seg, created_at, vigencia_fin'
+                    'id, usuario_id, titulo, texto, tipo, media_url, ' +
+                    'destino_url, duracion_video_seg, created_at, vigencia_fin'
                 )
                 .eq('activo', true)
                 .eq('estado_moderacion', 'aprobado')
@@ -333,29 +299,53 @@
                 .limit(50);
 
             if (resultado.error) {
-                console.warn(
-                    '[Carrusel] No se pudo consultar anuncios:',
-                    resultado.error.message
-                );
+                console.warn('[Carrusel] Error consultando anuncios:', resultado.error.message);
                 return null;
             }
 
             var filas = Array.isArray(resultado.data) ? resultado.data : [];
 
-            // Deduplicación por ID
+            // Deduplicación
             var vistos = Object.create(null);
             var unicos = [];
-            filas.forEach(function (anuncio) {
-                if (!anuncio || anuncio.id == null) return;
-                var clave = String(anuncio.id);
+            filas.forEach(function (a) {
+                if (!a || a.id == null) return;
+                var clave = String(a.id);
                 if (vistos[clave]) return;
                 vistos[clave] = true;
-                unicos.push(anuncio);
+                unicos.push(a);
             });
 
-            var finales = unicos.slice(0, TOTAL_SLOTS);
-            escribirCache(finales);
-            return finales;
+            var anuncios = unicos.slice(0, TOTAL_SLOTS);
+
+            // 2) Traer perfiles de anunciantes en bloque
+            if (anuncios.length) {
+                var idsUnicos = [];
+                var idsVistos = Object.create(null);
+                anuncios.forEach(function (a) {
+                    if (!a.usuario_id) return;
+                    var k = String(a.usuario_id);
+                    if (idsVistos[k]) return;
+                    idsVistos[k] = true;
+                    idsUnicos.push(a.usuario_id);
+                });
+
+                if (idsUnicos.length) {
+                    var perfiles = await cargarPerfiles(db, idsUnicos);
+                    var mapaPerfiles = Object.create(null);
+                    perfiles.forEach(function (p) {
+                        if (p && p.id) mapaPerfiles[String(p.id)] = p;
+                    });
+                    anuncios.forEach(function (a) {
+                        if (a.usuario_id && mapaPerfiles[String(a.usuario_id)]) {
+                            a._perfil = mapaPerfiles[String(a.usuario_id)];
+                        }
+                    });
+                }
+            }
+
+            escribirCache(anuncios);
+            return anuncios;
         } catch (error) {
             console.warn('[Carrusel] Error consultando anuncios:', error);
             return null;
@@ -363,9 +353,55 @@
     }
 
     // --------------------------------------------
+    // CARGA DE PERFILES
+    //
+    // Intenta traer el máximo de columnas. Si Supabase
+    // rechaza alguna (porque no existe), reintenta con las
+    // columnas mínimas garantizadas.
+    // --------------------------------------------
+    async function cargarPerfiles(db, ids) {
+        if (!ids || !ids.length) return [];
+
+        // Intento 1: columnas extendidas
+        try {
+            var r1 = await db
+                .from(TABLA_PERFILES)
+                .select(
+                    'id, nombre, handle, avatar_url, bio, ' +
+                    'ciudad, estado_region, ubicacion, ' +
+                    'whatsapp, telefono, sitio_web, email'
+                )
+                .in('id', ids);
+
+            if (!r1.error && r1.data) return r1.data;
+        } catch (e) {}
+
+        // Intento 2: columnas seguras
+        try {
+            var r2 = await db
+                .from(TABLA_PERFILES)
+                .select('id, nombre, handle, avatar_url, bio')
+                .in('id', ids);
+
+            if (!r2.error && r2.data) return r2.data;
+        } catch (e) {}
+
+        // Intento 3: mínimas
+        try {
+            var r3 = await db
+                .from(TABLA_PERFILES)
+                .select('id, nombre, handle, avatar_url')
+                .in('id', ids);
+
+            if (!r3.error && r3.data) return r3.data;
+        } catch (e) {}
+
+        return [];
+    }
+
+    // --------------------------------------------
     // HTML DECORATIVO
     // --------------------------------------------
-
     function htmlParticulas() {
         return '<div class="times-particles" aria-hidden="true">' +
             '<span></span><span></span></div>';
@@ -374,7 +410,6 @@
     // --------------------------------------------
     // HTML: ANUNCIO REAL
     // --------------------------------------------
-
     function htmlAnuncioReal(anuncio, indice, total) {
         var destino = urlSegura(anuncio.destino_url);
         var titulo = esc(anuncio.titulo || 'Anuncio');
@@ -386,9 +421,7 @@
 
         if (mediaUrl && /^https?:\/\//i.test(mediaUrl)) {
             var mediaSegura = esc(mediaUrl);
-
             if (tipo === 'video') {
-                // Lazy: sin autoplay hasta que el observer lo active
                 media =
                     '<video class="anuncio-video" src="' +
                     mediaSegura +
@@ -430,12 +463,10 @@
     }
 
     // --------------------------------------------
-    // HTML: INVITACIÓN (sin emojis)
+    // HTML: INVITACIÓN
     // --------------------------------------------
-
     function htmlPlaceholder(placeholder, indice, total) {
         var par = obtenerColores(indice);
-
         return (
             '<a class="carrusel-3d-card anuncio-placeholder" ' +
                 'href="#" ' +
@@ -468,92 +499,360 @@
     }
 
     // --------------------------------------------
-    // CONSTRUCCIÓN DE SLOTS
+    // SLOTS
     // --------------------------------------------
-
     function construirSlots(anuncios) {
         var slots = [];
         var usados = 0;
-
         for (var i = 0; i < anuncios.length && usados < TOTAL_SLOTS; i++) {
             slots.push({ tipo: 'real', data: anuncios[i] });
             usados++;
         }
-
         for (var j = 0; usados < TOTAL_SLOTS; j++, usados++) {
             slots.push({
                 tipo: 'placeholder',
                 data: PLACEHOLDERS[j % PLACEHOLDERS.length]
             });
         }
-
         return slots;
     }
 
     // --------------------------------------------
     // RENDER
     // --------------------------------------------
-
     function renderizar(anuncios) {
         if (!track) return;
 
         anunciosCache = Array.isArray(anuncios) ? anuncios : [];
-
         var slots = construirSlots(anunciosCache);
         var total = slots.length;
 
         var html = slots.map(function (slot, indice) {
-            if (slot.tipo === 'real') {
-                return htmlAnuncioReal(slot.data, indice, total);
-            }
+            if (slot.tipo === 'real') return htmlAnuncioReal(slot.data, indice, total);
             return htmlPlaceholder(slot.data, indice, total);
         }).join('');
 
-        // Reemplazo único del HTML
         track.innerHTML = html;
-
-        // BUG FIX 2 · Resetear el activo
-        // Después de un re-render el dot activo debe empezar en 0
-        // y no conservar el índice de la tarjeta anterior.
         activoActual = 0;
-
-        // Refrescar referencias
         cards = coleccionar();
 
-        // Handlers de invitaciones
+        // Delegación de clic: abre modal en lugar de navegar
         cards.forEach(function (card) {
-            if (card.classList.contains('anuncio-placeholder')) {
-                card.addEventListener('click', function (evento) {
-                    evento.preventDefault();
-                    irACrearAnuncio();
-                });
-            }
+            card.addEventListener('click', manejarClickTarjeta);
         });
 
-        // Registrar videos lazy con IntersectionObserver
         configurarVideosLazy();
-
         construirPuntos();
         asignarColores();
         pedirActualizacion();
     }
 
-    function irACrearAnuncio() {
-        if (typeof window.abrirModalCrearAnuncio === 'function') {
-            window.abrirModalCrearAnuncio();
+    // --------------------------------------------
+    // CLIC EN TARJETA
+    // --------------------------------------------
+    function manejarClickTarjeta(evento) {
+        var card = evento.currentTarget;
+
+        // Invitación
+        if (card.classList.contains('anuncio-placeholder')) {
+            evento.preventDefault();
+            var slot = parseInt(card.getAttribute('data-slot') || '0', 10);
+            var placeholder = PLACEHOLDERS[slot % PLACEHOLDERS.length];
+            abrirModalInvitacion(placeholder);
             return;
         }
-        window.location.href = '/features/perfil/crear-anuncio.html';
+
+        // Anuncio real
+        if (card.classList.contains('anuncio-card')) {
+            evento.preventDefault();
+            var idAnuncio = card.getAttribute('data-anuncio-id');
+            var anuncio = anunciosCache.filter(function (a) {
+                return String(a.id) === String(idAnuncio);
+            })[0];
+            if (anuncio) abrirModalAnuncio(anuncio);
+            return;
+        }
     }
 
     // --------------------------------------------
-    // VIDEOS LAZY
+    // HELPERS DE UI: partículas en el modal
     // --------------------------------------------
+    function htmlParticulasModal() {
+        return '<div class="ad-modal-particles" aria-hidden="true">' +
+            '<span></span><span></span><span></span>' +
+            '</div>';
+    }
 
+    // --------------------------------------------
+    // MODAL DE ANUNCIO REAL (fullscreen)
+    // --------------------------------------------
+    function abrirModalAnuncio(anuncio) {
+        cerrarModalActual();
+
+        var tipo = String(anuncio.tipo || 'imagen').toLowerCase();
+        var mediaUrl = String(anuncio.media_url || '').trim();
+        var titulo = esc(anuncio.titulo || 'Anuncio');
+        var texto = esc(anuncio.texto || '');
+        var destino = urlSegura(anuncio.destino_url);
+        var perfil = anuncio._perfil || null;
+
+        // Media
+        var mediaHTML = '';
+        if (mediaUrl && /^https?:\/\//i.test(mediaUrl)) {
+            if (tipo === 'video') {
+                mediaHTML =
+                    '<video class="ad-modal-media" src="' +
+                    esc(mediaUrl) +
+                    '" autoplay muted loop playsinline ' +
+                    'controls preload="metadata"></video>';
+            } else {
+                mediaHTML =
+                    '<img class="ad-modal-media" src="' +
+                    esc(mediaUrl) +
+                    '" alt="" loading="eager" decoding="async">';
+            }
+        }
+
+        // Perfil
+        var perfilHTML = '';
+        if (perfil) {
+            var nombreNeg = esc(perfil.nombre || 'Negocio');
+            var handle = perfil.handle ? '@' + esc(perfil.handle) : '';
+            var avatar = perfil.avatar_url
+                ? '<img src="' + esc(perfil.avatar_url) + '" alt="">'
+                : '<span class="ad-modal-avatar-letter">' +
+                    esc((perfil.nombre || '?').charAt(0).toUpperCase()) +
+                  '</span>';
+
+            var ubicacion = perfil.ubicacion || perfil.ciudad ||
+                perfil.estado_region || '';
+
+            var contactoItems = [];
+            if (perfil.whatsapp) {
+                contactoItems.push(
+                    '<a class="ad-modal-contact-item" ' +
+                       'href="https://wa.me/' + esc(String(perfil.whatsapp).replace(/\D/g, '')) +
+                       '" target="_blank" rel="noopener">' +
+                       '<span class="ad-modal-contact-icon">☎</span>' +
+                       '<span>' + esc(perfil.whatsapp) + '</span>' +
+                    '</a>'
+                );
+            }
+            if (perfil.telefono) {
+                contactoItems.push(
+                    '<a class="ad-modal-contact-item" ' +
+                       'href="tel:' + esc(String(perfil.telefono).replace(/[^\d+]/g, '')) + '">' +
+                       '<span class="ad-modal-contact-icon">☎</span>' +
+                       '<span>' + esc(perfil.telefono) + '</span>' +
+                    '</a>'
+                );
+            }
+            if (perfil.email) {
+                contactoItems.push(
+                    '<a class="ad-modal-contact-item" ' +
+                       'href="mailto:' + esc(perfil.email) + '">' +
+                       '<span class="ad-modal-contact-icon">✉</span>' +
+                       '<span>' + esc(perfil.email) + '</span>' +
+                    '</a>'
+                );
+            }
+            if (perfil.sitio_web) {
+                contactoItems.push(
+                    '<a class="ad-modal-contact-item" ' +
+                       'href="' + esc(urlSegura(perfil.sitio_web)) + '" ' +
+                       'target="_blank" rel="noopener">' +
+                       '<span class="ad-modal-contact-icon">🌐</span>' +
+                       '<span>Sitio web</span>' +
+                    '</a>'
+                );
+            }
+
+            var contactoHTML = contactoItems.length
+                ? '<div class="ad-modal-contact">' + contactoItems.join('') + '</div>'
+                : '';
+
+            perfilHTML =
+                '<div class="ad-modal-perfil">' +
+                    '<div class="ad-modal-avatar">' + avatar + '</div>' +
+                    '<div class="ad-modal-perfil-info">' +
+                        '<div class="ad-modal-perfil-name">' + nombreNeg + '</div>' +
+                        (handle ? '<div class="ad-modal-perfil-handle">' + handle + '</div>' : '') +
+                        (ubicacion
+                            ? '<div class="ad-modal-perfil-loc">' +
+                                '<span>📍</span> ' + esc(ubicacion) +
+                              '</div>'
+                            : '') +
+                    '</div>' +
+                '</div>' +
+                (contactoHTML ? contactoHTML : '');
+        }
+
+        // Botón visitar
+        var botonVisitar = (destino && destino !== '#')
+            ? '<a class="ad-modal-btn ad-modal-btn-primary" ' +
+                  'href="' + esc(destino) + '" ' +
+                  'target="_blank" rel="noopener">' +
+                  'Visitar <span aria-hidden="true">→</span>' +
+              '</a>'
+            : '';
+
+        // Botón ver perfil
+        var botonPerfil = (perfil && perfil.handle)
+            ? '<a class="ad-modal-btn ad-modal-btn-secondary" ' +
+                  'href="/perfil/' + esc(perfil.handle) + '">' +
+                  'Ver perfil' +
+              '</a>'
+            : '';
+
+        var html =
+            '<div class="ad-modal-backdrop" data-ad-modal-close="1"></div>' +
+            '<div class="ad-modal-card" role="dialog" aria-modal="true">' +
+                '<button type="button" class="ad-modal-close" ' +
+                    'aria-label="Cerrar" data-ad-modal-close="1">✕</button>' +
+                htmlParticulasModal() +
+                (mediaHTML
+                    ? '<div class="ad-modal-media-wrap">' + mediaHTML + '</div>'
+                    : '') +
+                '<div class="ad-modal-content">' +
+                    '<div class="ad-modal-tag">PATROCINADO</div>' +
+                    '<h2 class="ad-modal-title">' + titulo + '</h2>' +
+                    (texto
+                        ? '<p class="ad-modal-text">' + texto + '</p>'
+                        : '') +
+                    perfilHTML +
+                    '<div class="ad-modal-actions">' +
+                        botonVisitar +
+                        botonPerfil +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+
+        crearModal(html, 'ad-modal-announcement');
+    }
+
+    // --------------------------------------------
+    // MODAL DE INVITACIÓN (fullscreen)
+    // --------------------------------------------
+    function abrirModalInvitacion(placeholder) {
+        cerrarModalActual();
+
+        var chip = esc(placeholder.chip || 'INVITACIÓN');
+        var titulo = esc(placeholder.title || '');
+        var desc = esc(placeholder.descLarga || placeholder.desc || '');
+        var cta = esc(placeholder.cta || 'Quiero anunciarme');
+
+        var beneficios = [
+            '100% gratis · sin costo',
+            'Vigencia de 7 días',
+            'Aparece en el carrusel del perfil',
+            'Miles de usuarios lo ven cada día',
+            'Imagen o video en alta resolución'
+        ];
+
+        var beneficiosHTML = beneficios.map(function (b) {
+            return '<li class="ad-modal-benefit">' +
+                '<span class="ad-modal-check">✓</span>' +
+                '<span>' + esc(b) + '</span>' +
+            '</li>';
+        }).join('');
+
+        var html =
+            '<div class="ad-modal-backdrop" data-ad-modal-close="1"></div>' +
+            '<div class="ad-modal-card ad-modal-card-invite" role="dialog" aria-modal="true">' +
+                '<button type="button" class="ad-modal-close" ' +
+                    'aria-label="Cerrar" data-ad-modal-close="1">✕</button>' +
+                htmlParticulasModal() +
+                '<div class="ad-modal-content">' +
+                    '<div class="ad-modal-tag ad-modal-tag-invite">' +
+                        '<span class="ad-modal-tag-dot"></span> INVITACIÓN CSARIEL’S' +
+                    '</div>' +
+                    '<div class="ad-modal-chip">' + chip + '</div>' +
+                    '<h2 class="ad-modal-title ad-modal-title-invite">' + titulo + '</h2>' +
+                    '<p class="ad-modal-text">' + desc + '</p>' +
+                    '<ul class="ad-modal-benefits">' + beneficiosHTML + '</ul>' +
+                    '<div class="ad-modal-actions">' +
+                        '<a class="ad-modal-btn ad-modal-btn-primary" ' +
+                            'href="/features/anuncios/anuncios-crear.html">' +
+                            cta + ' <span aria-hidden="true">→</span>' +
+                        '</a>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+
+        crearModal(html, 'ad-modal-invitation');
+    }
+
+    // --------------------------------------------
+    // CREAR / CERRAR MODAL
+    // --------------------------------------------
+    function crearModal(html, claseExtra) {
+        var cont = document.createElement('div');
+        cont.className = 'ad-modal ' + (claseExtra || '');
+        cont.setAttribute('role', 'presentation');
+        cont.innerHTML = html;
+
+        document.body.appendChild(cont);
+        document.documentElement.style.overflow = 'hidden';
+
+        modalActivo = cont;
+
+        // Cierre por botón X o backdrop
+        cont.querySelectorAll('[data-ad-modal-close]').forEach(function (el) {
+            el.addEventListener('click', function () {
+                cerrarModalActual();
+            });
+        });
+
+        // Cierre por tecla ESC
+        document.addEventListener('keydown', manejarTecladoModal);
+
+        // Animación de entrada
+        window.requestAnimationFrame(function () {
+            cont.classList.add('is-open');
+        });
+
+        // Focus accesible
+        var btnCerrar = cont.querySelector('.ad-modal-close');
+        if (btnCerrar) {
+            setTimeout(function () { btnCerrar.focus(); }, 80);
+        }
+    }
+
+    function manejarTecladoModal(evento) {
+        if (evento.key === 'Escape' && modalActivo) {
+            cerrarModalActual();
+        }
+    }
+
+    function cerrarModalActual() {
+        if (!modalActivo) return;
+
+        var cont = modalActivo;
+        modalActivo = null;
+
+        cont.classList.remove('is-open');
+
+        // Pausar videos del modal
+        cont.querySelectorAll('video').forEach(function (v) {
+            try { v.pause(); } catch (e) {}
+        });
+
+        document.removeEventListener('keydown', manejarTecladoModal);
+
+        setTimeout(function () {
+            if (cont && cont.parentNode) {
+                cont.parentNode.removeChild(cont);
+            }
+            document.documentElement.style.overflow = '';
+        }, 220);
+    }
+
+    // --------------------------------------------
+    // VIDEOS LAZY EN CARRUSEL
+    // --------------------------------------------
     function configurarVideosLazy() {
         if (!track) return;
 
-        // Desconectar observer previo
         if (observerVideos) {
             observerVideos.disconnect();
             observerVideos = null;
@@ -562,7 +861,6 @@
         var videos = track.querySelectorAll('video[data-lazy-video]');
         if (!videos.length) return;
 
-        // Si no hay IntersectionObserver, reproducir todos
         if (!('IntersectionObserver' in window)) {
             videos.forEach(function (v) {
                 v.muted = true;
@@ -577,7 +875,6 @@
         observerVideos = new IntersectionObserver(function (entries) {
             entries.forEach(function (entry) {
                 var video = entry.target;
-
                 if (entry.isIntersecting) {
                     if (video.preload === 'none') {
                         video.preload = 'metadata';
@@ -589,7 +886,6 @@
                     var p = video.play();
                     if (p && typeof p.catch === 'function') p.catch(function () {});
                 } else {
-                    // Pausar fuera de vista
                     try { video.pause(); } catch (e) {}
                 }
             });
@@ -605,7 +901,6 @@
     // --------------------------------------------
     // COLORES
     // --------------------------------------------
-
     function asignarColores() {
         cards.forEach(function (card, indice) {
             var par = obtenerColores(indice);
@@ -617,7 +912,6 @@
     // --------------------------------------------
     // NAVEGACIÓN
     // --------------------------------------------
-
     function irACard(indice, suave) {
         var card = cards[indice];
         if (!card || !track) return;
@@ -650,7 +944,6 @@
         }
 
         dots.innerHTML = '';
-
         cards.forEach(function (card, indice) {
             var punto = document.createElement('button');
             punto.type = 'button';
@@ -661,19 +954,12 @@
             if (indice === activoActual) punto.classList.add('active');
             dots.appendChild(punto);
         });
-
-        puntos = Array.prototype.slice.call(
-            dots.querySelectorAll('button')
-        );
+        puntos = Array.prototype.slice.call(dots.querySelectorAll('button'));
     }
 
     function actualizar() {
         pendiente = false;
         rafId = null;
-
-        // BUG FIX 3 · Sin `document.hidden` aquí
-        // La primera animación debe aplicarse aunque el navegador
-        // tarde en marcar la pestaña como visible.
         if (!cards.length || !track) return;
 
         var rectPista = track.getBoundingClientRect();
@@ -684,10 +970,7 @@
         cards.forEach(function (card, indice) {
             var rect = card.getBoundingClientRect();
             var distancia = rect.left + rect.width / 2 - centro;
-            var proporcion = Math.max(
-                -1,
-                Math.min(1, distancia / (rect.width + 14))
-            );
+            var proporcion = Math.max(-1, Math.min(1, distancia / (rect.width + 14)));
             var lejania = Math.abs(proporcion);
 
             card.style.transform =
@@ -708,13 +991,11 @@
         });
 
         activoActual = mejor;
-
-        cards.forEach(function (card, indice) {
-            card.classList.toggle('active', indice === mejor);
+        cards.forEach(function (card, i) {
+            card.classList.toggle('active', i === mejor);
         });
-
-        puntos.forEach(function (punto, indice) {
-            punto.classList.toggle('active', indice === mejor);
+        puntos.forEach(function (punto, i) {
+            punto.classList.toggle('active', i === mejor);
         });
     }
 
@@ -735,14 +1016,12 @@
         construirPuntos();
         asignarColores();
         pedirActualizacion();
-
         window.dispatchEvent(new Event('carrusel3d:refrescar'));
     }
 
     // --------------------------------------------
-    // CARGA SEGURA
+    // CARGA
     // --------------------------------------------
-
     async function cargarYRenderizar() {
         if (cargaEnCurso) {
             recargaPendiente = true;
@@ -751,19 +1030,14 @@
         if (!track) return;
 
         cargaEnCurso = true;
-
         try {
             var anuncios = await cargarAnunciosDesdeSupabase();
-
-            // null = error: conservar contenido visible
             if (anuncios === null) return;
-
             renderizar(anuncios);
         } catch (error) {
             console.warn('[Carrusel] Error de actualización:', error);
         } finally {
             cargaEnCurso = false;
-
             if (recargaPendiente) {
                 recargaPendiente = false;
                 window.setTimeout(function () {
@@ -776,7 +1050,6 @@
     // --------------------------------------------
     // REALTIME
     // --------------------------------------------
-
     async function suscribirRealtime() {
         var db = await obtenerCliente();
         if (!db || realtimeChannel) return;
@@ -784,9 +1057,8 @@
         try {
             realtimeChannel = db
                 .channel('csariels-anuncios-carrusel')
-                .on(
-                    'postgres_changes',
-                    { event: '*', schema: 'public', table: TABLA },
+                .on('postgres_changes',
+                    { event: '*', schema: 'public', table: TABLA_ANUNCIOS },
                     function () {
                         if (realtimeTimer) clearTimeout(realtimeTimer);
                         realtimeTimer = setTimeout(function () {
@@ -796,17 +1068,15 @@
                 )
                 .subscribe();
         } catch (error) {
-            console.warn('[Carrusel] No se pudo activar realtime:', error);
+            console.warn('[Carrusel] Realtime error:', error);
         }
     }
 
     // --------------------------------------------
     // VISIBILIDAD
     // --------------------------------------------
-
     function gestionarVisibilidad() {
         if (!wrapper) return;
-
         wrapper.classList.toggle('is-paused', document.hidden);
 
         if (document.hidden) {
@@ -815,7 +1085,6 @@
                 rafId = null;
                 pendiente = false;
             }
-
             if (track) {
                 track.querySelectorAll('video.anuncio-video').forEach(function (v) {
                     try { v.pause(); } catch (e) {}
@@ -836,13 +1105,11 @@
     // --------------------------------------------
     // INIT
     // --------------------------------------------
-
     function init() {
         if (inicializado) return;
 
         wrapper = obtenerWrapper();
         track = obtenerTrack();
-
         if (!wrapper || !track) {
             window.requestAnimationFrame(init);
             return;
@@ -853,48 +1120,38 @@
 
         detectarPreferencias();
 
-        // Marca en el wrapper si el dispositivo tiene conexión lenta
-        // o prefiere menos movimiento. El CSS reaccionará a esas clases.
-        if (reducesMovimientoActivo()) {
-            wrapper.classList.add('is-reduced-motion');
-        }
-        if (conexionLenta) {
-            wrapper.classList.add('is-slow-connection');
-        }
+        if (reducesMovimientoActivo()) wrapper.classList.add('is-reduced-motion');
+        if (conexionLenta) wrapper.classList.add('is-slow-connection');
 
-        // 1) Render inicial
-        // Si hay cache en sessionStorage, úsalo para evitar el flash.
         var cache = leerCache();
-
         if (cache && cache.length) {
             renderizar(cache);
         } else {
-            // Si el HTML ya trae tarjetas, respetarlas.
             cards = coleccionar();
             if (!cards.length) {
                 renderizar([]);
             } else {
                 activoActual = 0;
+                cards.forEach(function (card) {
+                    card.addEventListener('click', manejarClickTarjeta);
+                });
                 construirPuntos();
                 asignarColores();
                 pedirActualizacion();
             }
         }
 
-        // 2) Listeners
         track.addEventListener('scroll', pedirActualizacion, { passive: true });
         window.addEventListener('resize', pedirActualizacion, { passive: true });
         document.addEventListener('visibilitychange', gestionarVisibilidad);
 
         gestionarVisibilidad();
 
-        // 3) API pública
         window.carrusel3D = {
             refrescar: refrescar,
             recargar: cargarYRenderizar
         };
 
-        // 4) Carga real + realtime
         cargarYRenderizar();
         suscribirRealtime();
 
@@ -905,9 +1162,7 @@
         try {
             return window.matchMedia &&
                 window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        } catch (e) {
-            return false;
-        }
+        } catch (e) { return false; }
     }
 
     window.carrusel3D = window.carrusel3D || {
