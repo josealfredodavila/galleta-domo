@@ -28,18 +28,12 @@
 
 <article class="detail hidden" id="detail">
 
-    <header class="detail-topbar">
-        <a href="/features/perfil/perfil.html" class="detail-back" aria-label="Volver">
-            <span aria-hidden="true">←</span>
-            <span>Volver</span>
-        </a>
-        <span class="detail-tag">
+    <!-- Media con etiqueta flotante discreta -->
+    <div class="detail-media-wrap" id="mediaWrap">
+        <span class="detail-tag-floating">
             <span class="dot"></span>
             PATROCINADO
         </span>
-    </header>
-
-    <div class="detail-media-wrap" id="mediaWrap">
         <img id="mediaImg" class="detail-media hidden" alt="" loading="eager" decoding="async">
         <video id="mediaVideo" class="detail-media hidden" controls autoplay muted loop playsinline preload="metadata"></video>
     </div>
@@ -297,7 +291,6 @@
             $('avatarLetter').textContent = inicial;
         }
 
-        // Solo mostrar ubicación del perfil si NO hay una del anuncio
         var ubicacionPerfil = perfil.ubicacion || perfil.ciudad || perfil.estado_region || '';
         if (ubicacionPerfil && !anuncio.ubicacion_negocio) {
             $('perfilLocTexto').textContent = ubicacionPerfil;
@@ -308,7 +301,6 @@
     function renderAcciones() {
         var mostradas = 0;
 
-        // 1) WhatsApp (prioritario: del anuncio; si no, del perfil)
         var wa = normalizarWhatsApp(anuncio.whatsapp_contacto);
         if (!wa && perfil) wa = normalizarWhatsApp(perfil.whatsapp);
         if (wa) {
@@ -317,7 +309,6 @@
             mostradas++;
         }
 
-        // 2) Visitar sitio
         var destino = urlSegura(anuncio.destino_url);
         if (destino && destino !== '#') {
             $('btnVisitar').href = destino;
@@ -325,7 +316,6 @@
             mostradas++;
         }
 
-        // 3) Ver perfil
         if (perfil && perfil.handle) {
             $('btnPerfil').href = '/perfil/' + encodeURIComponent(perfil.handle);
             $('btnPerfil').classList.remove('hidden');
