@@ -29,7 +29,11 @@
 <style>
     /* ================================================================
        PERFIL · MICROINTERACCIONES Y TRANSICIONES (v2)
+       Solo transform, brillo, color, sombra y opacidad.
+       No cambian dimensiones ni márgenes.
+       El carrusel 3D (.carrusel-3d-*) queda excluido a propósito.
        ================================================================ */
+
     .btn,
     .btn-estado,
     .btn-conexion,
@@ -68,8 +72,14 @@
         filter: brightness(1.08);
     }
 
-    .nav-link:active { opacity: 0.8; }
+    .nav-link:active {
+        opacity: 0.8;
+    }
 
+    /* Sin anillos de enfoque ni sombras de hover: evitan recuadros
+       alrededor de botones, pestañas y la mascota. */
+
+    /* Entrada suave de cada pestaña (solo opacidad: nunca oculta contenido) */
     @keyframes perfilTabIn {
         from { opacity: 0; }
         to   { opacity: 1; }
@@ -112,6 +122,7 @@
         }
     }
 
+    /* Sección de wallet (Polygon) */
     .wallet-section {
         margin: 0 0 16px;
         padding: 14px;
@@ -229,13 +240,6 @@
     .wallet-switch input:disabled + .wallet-switch-slider {
         opacity: 0.4;
     }
-
-    /* Desactiva transiciones del carrusel durante el primer frame */
-    .carrusel-3d-booting .carrusel-3d-card,
-    .carrusel-3d-booting .carrusel-3d-card::after,
-    .carrusel-3d-booting .carrusel-3d-card .card-icon {
-        transition: none !important;
-    }
 </style>
 <style>
     /* Respaldo: evita que una imagen de anuncio cubra toda la pantalla si el CSS del carrusel no carga */
@@ -298,8 +302,8 @@
 </nav>
 
 <!-- ============ INICIO DEL CARRUSEL 3D HORIZONTAL (dentro del perfil) ============ -->
-<div class="carrusel-3d-wrapper" id="carruselPerfilWrapper">
-    <div class="carrusel-3d-track" id="carruselPerfilTrack">
+<div class="carrusel-3d-wrapper">
+    <div class="carrusel-3d-track">
 
         <!-- 1. Muro (Mercado de Tokens) -->
         <a href="/features/muro/muro.html" class="carrusel-3d-card">
@@ -1071,13 +1075,16 @@
     }
     window.mostrarErrorEnPantalla = mostrarErrorEnPantalla;
     window.addEventListener('error', function (event) {
+        // REVISAR: mensajes de debug interno, no traducibles (solo visibles con ?debug=1)
         mostrarErrorEnPantalla((event.message || 'Error desconocido') + ' — línea ' + event.lineno + ' de ' + (event.filename || 'este archivo'));
     });
     window.addEventListener('unhandledrejection', function (event) {
+        // REVISAR: mensaje de debug interno, no traducible
         mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason?.message || event.reason));
     });
     window.addEventListener('load', function () {
         if (typeof window.supabase === 'undefined') {
+            // REVISAR: mensaje de debug interno, no traducible
             mostrarErrorEnPantalla('No se pudo cargar la conexión a la base de datos (Supabase). Revisa tu internet o si algo está bloqueando cdn.jsdelivr.net.');
         }
     });
@@ -1163,6 +1170,9 @@
 <script>
 /* ================================================================
    WALLET · INTEGRACIÓN CON EL PERFIL
+   Usa las funciones de perfil-wallet.js (conectarWallet,
+   desconectarWallet, iniciarEscuchaWallet). Este bloque solo
+   dibuja el estado y guarda wallet_visible en Supabase.
    ================================================================ */
 (function () {
     'use strict';
@@ -1321,107 +1331,13 @@
     }
 })();
 </script>
-
-<!-- ORDEN CORREGIDO:
-     1) carrusel-3d.js primero para que window.carrusel3D exista
-     2) anuncios-carrusel.js después para que al insertar pueda llamar refrescar()
-     3) fullscreen al final, sin tocar el track del perfil -->
-<script src="/features/perfil/js/carrusel-3d.js" defer></script>
+<!-- Script del carrusel de anuncios (imagen) -->
 <script src="/features/anuncios/anuncios-carrusel.js" defer></script>
+
+<!-- Script del Carrusel 3D horizontal -->
+<script src="/features/perfil/js/carrusel-3d.js" defer></script>
+<!-- Script del Carrusel 3D FULLSCREEN infinito -->
 <script src="/features/perfil/js/carrusel-3d-fullscreen.js" defer></script>
-
-<script>
-/* ================================================================
-   SINCRONIZACIÓN FINAL DEL CARRUSEL 3D
-   - Re-centra cuando cargan las fuentes.
-   - Re-centra cuando termina de cargar cada imagen de anuncio.
-   - Re-centra cuando el contenedor cambia de tamaño.
-   - Desactiva transiciones durante el primer frame para evitar el salto.
-   ================================================================ */
-(function () {
-    'use strict';
-
-    function cuandoEsteListo(cb) {
-        if (window.carrusel3D && typeof window.carrusel3D.refrescar === 'function') {
-            cb();
-        } else {
-            window.addEventListener('carrusel3d:listo', cb, { once: true });
-        }
-    }
-
-    function sincronizarCarruselPerfil() {
-        cuandoEsteListo(function () {
-            var wrapper = document.getElementById('carruselPerfilWrapper');
-            var track = document.getElementById('carruselPerfilTrack');
-            if (!wrapper || !track) return;
-
-            wrapper.classList.add('carrusel-3d-booting');
-
-            // Forzar re-cálculo tras el siguiente frame
-            requestAnimationFrame(function () {
-                requestAnimationFrame(function () {
-                    window.carrusel3D.refrescar();
-                    wrapper.classList.remove('carrusel-3d-booting');
-                });
-            });
-        });
-    }
-
-    // 1) Fuentes listas
-    if (document.fonts && typeof document.fonts.ready === 'then') {
-        document.fonts.ready.then(sincronizarCarruselPerfil);
-    }
-
-    // 2) Ventana completamente cargada (imágenes incluidas)
-    if (document.readyState === 'complete') {
-        sincronizarCarruselPerfil();
-    } else {
-        window.addEventListener('load', sincronizarCarruselPerfil, { once: true });
-    }
-
-    // 3) Observar cambios de tamaño del track y de las tarjetas
-    cuandoEsteListo(function () {
-        var wrapper = document.getElementById('carruselPerfilWrapper');
-        var track = document.getElementById('carruselPerfilTrack');
-        if (!wrapper || !track) return;
-
-        if (typeof ResizeObserver === 'function') {
-            var ro = new ResizeObserver(function () {
-                if (window.carrusel3D && typeof window.carrusel3D.refrescar === 'function') {
-                    window.carrusel3D.refrescar();
-                }
-            });
-            ro.observe(track);
-            Array.prototype.forEach.call(
-                track.querySelectorAll('.carrusel-3d-card'),
-                function (card) { ro.observe(card); }
-            );
-            window.__carrusel3DPerfilRO = ro;
-        }
-
-        // 4) Cuando una imagen de anuncio termina de cargar, re-centrar
-        track.addEventListener('load', function (ev) {
-            if (ev.target && ev.target.tagName === 'IMG') {
-                if (window.carrusel3D && typeof window.carrusel3D.refrescar === 'function') {
-                    window.carrusel3D.refrescar();
-                }
-            }
-        }, true);
-
-        // 5) Refrescar cuando anuncios-carrusel termine de insertar
-        window.addEventListener('anuncios-carrusel:listo', function () {
-            if (window.carrusel3D && typeof window.carrusel3D.refrescar === 'function') {
-                window.carrusel3D.refrescar();
-            }
-        });
-        window.addEventListener('carrusel3d:refrescar', function () {
-            if (window.carrusel3D && typeof window.carrusel3D.refrescar === 'function') {
-                window.carrusel3D.refrescar();
-            }
-        });
-    });
-})();
-</script>
 
 </body>
 </html>
