@@ -1,15 +1,10 @@
 /* ============================================
    CSARIEL'S · CARRUSEL 3D HORIZONTAL
    Ruta: /features/perfil/css/carrusel-3d.css
-   v7 · DISEÑO VIVO + RESPONSIVE + OPTIMIZADO
+   v8 · DISEÑO VIVO + MODAL FULLSCREEN
 
-   - Paleta: verde esmeralda, oro, naranja, azul.
-   - Degradados ricos por slot.
-   - Sin animaciones de fondo (ahorro batería).
-   - Respeta prefers-reduced-motion.
-   - Soporta .is-slow-connection (desactiva brillos).
-   - Contraste de texto mejorado.
-   - Content-visibility para tarjetas fuera de pantalla.
+   - Estilos del carrusel (sin cambios respecto a v7).
+   - NUEVO: estilos del modal fullscreen de anuncio e invitación.
    ============================================ */
 
 .carrusel-3d-wrapper {
@@ -26,14 +21,12 @@
     --cs-azul: #2962ff;
 }
 
-/* Pausa cuando la pestaña no está visible */
 .carrusel-3d-wrapper.is-paused *,
 .carrusel-3d-wrapper.is-paused *::before,
 .carrusel-3d-wrapper.is-paused *::after {
     animation-play-state: paused !important;
 }
 
-/* Desactiva brillos decorativos en conexión lenta */
 .carrusel-3d-wrapper.is-slow-connection .times-particles {
     display: none;
 }
@@ -41,10 +34,7 @@
     animation: none !important;
 }
 
-/* --------------------------------------------
-   PISTA HORIZONTAL
-   -------------------------------------------- */
-
+/* PISTA */
 .carrusel-3d-track {
     display: flex;
     align-items: center;
@@ -59,15 +49,9 @@
     scroll-padding-inline: 40px;
     contain: layout paint;
 }
+.carrusel-3d-track::-webkit-scrollbar { display: none; }
 
-.carrusel-3d-track::-webkit-scrollbar {
-    display: none;
-}
-
-/* --------------------------------------------
-   TARJETA BASE
-   -------------------------------------------- */
-
+/* TARJETA */
 .carrusel-3d-card {
     position: relative;
     flex: 0 0 240px;
@@ -101,9 +85,9 @@
     scroll-snap-align: center;
     contain: layout paint;
     isolation: isolate;
-    /* Mejora rendimiento de tarjetas fuera de pantalla */
     content-visibility: auto;
     contain-intrinsic-size: 240px 330px;
+    cursor: pointer;
 }
 
 .carrusel-3d-card:focus-visible,
@@ -119,17 +103,8 @@
     z-index: 1;
     pointer-events: none;
     background:
-        radial-gradient(
-            130% 55% at 50% 0%,
-            rgba(255,255,255,.32),
-            transparent 65%
-        ),
-        linear-gradient(
-            180deg,
-            rgba(0,0,0,0) 25%,
-            rgba(0,0,0,.10) 42%,
-            rgba(0,0,0,.82) 100%
-        );
+        radial-gradient(130% 55% at 50% 0%, rgba(255,255,255,.32), transparent 65%),
+        linear-gradient(180deg, rgba(0,0,0,0) 25%, rgba(0,0,0,.10) 42%, rgba(0,0,0,.82) 100%);
 }
 
 .carrusel-3d-card > * {
@@ -146,10 +121,7 @@
         0 18px 40px rgba(0,0,0,.55);
 }
 
-/* --------------------------------------------
-   IMAGEN / VIDEO
-   -------------------------------------------- */
-
+/* MEDIA */
 .carrusel-3d-card .anuncio-img,
 .carrusel-3d-card .anuncio-video {
     position: absolute;
@@ -160,31 +132,21 @@
     z-index: 0;
     pointer-events: none;
 }
-
 .carrusel-3d-card .anuncio-img {
     animation: csImagenSuave 18s ease-in-out infinite alternate;
     transform-origin: center;
     will-change: transform;
 }
-
-.carrusel-3d-card .anuncio-video {
-    animation: none;
-}
-
+.carrusel-3d-card .anuncio-video { animation: none; }
 .carrusel-3d-card.anuncio-placeholder .anuncio-img,
-.carrusel-3d-card.anuncio-placeholder .anuncio-video {
-    display: none;
-}
+.carrusel-3d-card.anuncio-placeholder .anuncio-video { display: none; }
 
 @keyframes csImagenSuave {
     from { transform: scale(1); }
     to   { transform: scale(1.055); }
 }
 
-/* --------------------------------------------
-   BRILLOS DECORATIVOS
-   -------------------------------------------- */
-
+/* PARTÍCULAS */
 .carrusel-3d-card .times-particles {
     position: absolute;
     inset: 0;
@@ -194,7 +156,6 @@
     opacity: .65;
     contain: strict;
 }
-
 .carrusel-3d-card .times-particles span {
     position: absolute;
     width: 4px;
@@ -206,17 +167,8 @@
     opacity: 0;
     will-change: transform, opacity;
 }
-
-.carrusel-3d-card .times-particles span:nth-child(1) {
-    left: 20%;
-    top: 85%;
-}
-
-.carrusel-3d-card .times-particles span:nth-child(2) {
-    left: 76%;
-    top: 74%;
-    animation-delay: 4s;
-}
+.carrusel-3d-card .times-particles span:nth-child(1) { left: 20%; top: 85%; }
+.carrusel-3d-card .times-particles span:nth-child(2) { left: 76%; top: 74%; animation-delay: 4s; }
 
 @keyframes csBrillo {
     0%, 100% { opacity: 0; transform: translateY(0); }
@@ -224,10 +176,7 @@
     90% { opacity: 0; transform: translateY(-55px); }
 }
 
-/* --------------------------------------------
-   ETIQUETA SUPERIOR
-   -------------------------------------------- */
-
+/* ETIQUETA */
 .carrusel-3d-card .ads-tag {
     position: absolute;
     top: 16px;
@@ -246,7 +195,6 @@
     text-shadow: 0 2px 8px #000;
     pointer-events: none;
 }
-
 .carrusel-3d-card .ads-tag .dot {
     flex: 0 0 8px;
     width: 8px;
@@ -269,10 +217,7 @@
     pointer-events: none;
 }
 
-/* --------------------------------------------
-   CHIP
-   -------------------------------------------- */
-
+/* CHIP */
 .carrusel-3d-card .ads-chip {
     display: inline-flex;
     align-self: flex-start;
@@ -293,28 +238,17 @@
     backdrop-filter: blur(6px);
 }
 
-/* --------------------------------------------
-   INDICADOR VISUAL DE INVITACIÓN
-   -------------------------------------------- */
-
+/* INDICADOR */
 .carrusel-3d-card .card-icon {
     width: 48px;
     height: 5px;
     border-radius: 99px;
     margin-bottom: 13px;
-    background: linear-gradient(
-        90deg,
-        var(--cs-oro),
-        #fff,
-        var(--cs-verde)
-    );
+    background: linear-gradient(90deg, var(--cs-oro), #fff, var(--cs-verde));
     box-shadow: 0 0 14px rgba(0,230,118,.45);
 }
 
-/* --------------------------------------------
-   TÍTULO
-   -------------------------------------------- */
-
+/* TÍTULO */
 .carrusel-3d-card .card-title {
     font-family: "Orbitron", "Rajdhani", sans-serif;
     font-size: 1.02rem;
@@ -328,10 +262,7 @@
     text-shadow: 0 2px 9px rgba(0,0,0,.85);
 }
 
-/* --------------------------------------------
-   DESCRIPCIÓN
-   -------------------------------------------- */
-
+/* DESCRIPCIÓN */
 .carrusel-3d-card .card-desc {
     font-family: "Inter", sans-serif;
     font-size: .75rem;
@@ -342,10 +273,7 @@
     overflow-wrap: anywhere;
 }
 
-/* --------------------------------------------
-   CTA
-   -------------------------------------------- */
-
+/* CTA */
 .carrusel-3d-card .ads-cta {
     display: inline-flex;
     align-items: center;
@@ -367,18 +295,12 @@
     transition: transform .18s ease, filter .18s ease;
     -webkit-tap-highlight-color: transparent;
 }
-
 .carrusel-3d-card:active .ads-cta {
     transform: scale(.97);
     filter: brightness(1.06);
 }
 
-/* --------------------------------------------
-   VARIANTES POR SLOT
-   Cada slot tiene su propio degradado,
-   manteniendo la paleta verde/oro/naranja/azul.
-   -------------------------------------------- */
-
+/* VARIANTES POR SLOT */
 .carrusel-3d-card.anuncio-placeholder[data-slot="0"] {
     background: linear-gradient(145deg, #ff7900 0%, #ffb300 52%, #e34c00 100%);
 }
@@ -401,10 +323,7 @@
     background: linear-gradient(145deg, #d84315 0%, #ff8f00 48%, #008f68 100%);
 }
 
-/* --------------------------------------------
-   REFLEJO INFERIOR
-   -------------------------------------------- */
-
+/* REFLEJO */
 .carrusel-3d-wrapper::before {
     content: "";
     position: absolute;
@@ -412,42 +331,24 @@
     right: 0;
     bottom: 0;
     height: 35%;
-    background: linear-gradient(
-        to bottom,
-        transparent,
-        rgba(0,0,0,.20) 60%,
-        rgba(0,0,0,.35)
-    );
+    background: linear-gradient(to bottom, transparent, rgba(0,0,0,.20) 60%, rgba(0,0,0,.35));
     pointer-events: none;
     z-index: 0;
 }
 
-/* --------------------------------------------
-   BARRA TRICOLOR
-   -------------------------------------------- */
-
+/* BARRA */
 .carrusel-3d-wrapper::after {
     content: "";
     display: block;
     height: 4px;
     width: calc(100% - 80px);
     margin: 8px auto 0;
-    background: linear-gradient(
-        90deg,
-        #00e676 0%,
-        #00c896 25%,
-        #ffd54f 50%,
-        #ff7900 72%,
-        #2962ff 100%
-    );
+    background: linear-gradient(90deg, #00e676 0%, #00c896 25%, #ffd54f 50%, #ff7900 72%, #2962ff 100%);
     border-radius: 99px;
     box-shadow: 0 0 12px rgba(0,200,150,.25);
 }
 
-/* --------------------------------------------
-   DOTS
-   -------------------------------------------- */
-
+/* DOTS */
 .carrusel-3d-dots {
     position: relative;
     z-index: 4;
@@ -458,7 +359,6 @@
     margin-top: 10px;
     padding: 2px 8px;
 }
-
 .carrusel-3d-dots button {
     flex: 0 0 8px;
     width: 8px;
@@ -471,7 +371,6 @@
     transition: width .22s ease, background .22s ease;
     -webkit-tap-highlight-color: transparent;
 }
-
 .carrusel-3d-dots button.active {
     flex-basis: 24px;
     width: 24px;
@@ -479,49 +378,16 @@
     box-shadow: 0 0 10px rgba(0,230,118,.45);
 }
 
-/* --------------------------------------------
-   RESPONSIVE
-   -------------------------------------------- */
-
+/* RESPONSIVE CARRUSEL */
 @media (max-width: 480px) {
-    .carrusel-3d-wrapper {
-        padding-top: 14px;
-    }
-
-    .carrusel-3d-track {
-        gap: 12px;
-        padding: 14px 40px 18px;
-        scroll-padding-inline: 40px;
-    }
-
-    .carrusel-3d-card {
-        flex-basis: 215px;
-        height: 310px;
-        padding: 16px;
-        border-radius: 22px;
-    }
-
-    .carrusel-3d-card .card-title {
-        font-size: .95rem;
-    }
-
-    .carrusel-3d-card .card-desc {
-        font-size: .70rem;
-    }
-
-    .carrusel-3d-card .ads-cta {
-        font-size: .70rem;
-        padding: 9px 13px;
-    }
-
-    .carrusel-3d-wrapper::after {
-        width: calc(100% - 48px);
-    }
+    .carrusel-3d-wrapper { padding-top: 14px; }
+    .carrusel-3d-track { gap: 12px; padding: 14px 40px 18px; scroll-padding-inline: 40px; }
+    .carrusel-3d-card { flex-basis: 215px; height: 310px; padding: 16px; border-radius: 22px; }
+    .carrusel-3d-card .card-title { font-size: .95rem; }
+    .carrusel-3d-card .card-desc { font-size: .70rem; }
+    .carrusel-3d-card .ads-cta { font-size: .70rem; padding: 9px 13px; }
+    .carrusel-3d-wrapper::after { width: calc(100% - 48px); }
 }
-
-/* --------------------------------------------
-   ACCESIBILIDAD: movimiento reducido
-   -------------------------------------------- */
 
 @media (prefers-reduced-motion: reduce) {
     .carrusel-3d-card,
@@ -533,4 +399,375 @@
         animation: none !important;
         transition: none !important;
     }
+}
+
+/* ============================================
+   MODAL FULLSCREEN (anuncio + invitación)
+   ============================================ */
+
+.ad-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    background: transparent;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .25s ease;
+    font-family: "Inter", "Rajdhani", system-ui, sans-serif;
+    color: #fff;
+}
+.ad-modal.is-open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.ad-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(3, 6, 12, 0.86);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.ad-modal-card {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 720px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(160deg, #0b1418 0%, #06090d 100%);
+    border: 1px solid rgba(255,255,255,.10);
+    box-shadow: 0 30px 80px rgba(0,0,0,.65);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    transform: translateY(20px) scale(.98);
+    opacity: 0;
+    transition: transform .3s cubic-bezier(.2,.9,.3,1), opacity .3s ease;
+}
+.ad-modal.is-open .ad-modal-card {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+}
+
+@media (min-width: 720px) {
+    .ad-modal { align-items: center; padding: 24px; }
+    .ad-modal-card { max-height: 92vh; border-radius: 24px; }
+}
+
+/* Botón cerrar */
+.ad-modal-close {
+    position: sticky;
+    top: 12px;
+    align-self: flex-end;
+    margin: 12px 12px -52px 0;
+    z-index: 10;
+    width: 40px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,.25);
+    background: rgba(0,0,0,.55);
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 800;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+    transition: transform .2s ease, background .2s ease;
+}
+.ad-modal-close:hover {
+    transform: scale(1.06);
+    background: rgba(0,0,0,.75);
+}
+
+/* Media */
+.ad-modal-media-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    background: #000;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+.ad-modal-media {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* Contenido */
+.ad-modal-content {
+    padding: 26px 24px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.ad-modal-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    align-self: flex-start;
+    font-family: "Rajdhani", sans-serif;
+    font-size: .68rem;
+    font-weight: 800;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--cs-oro, #ffd54f);
+    background: rgba(255,213,79,.08);
+    border: 1px solid rgba(255,213,79,.35);
+    padding: 6px 12px;
+    border-radius: 99px;
+}
+.ad-modal-tag-invite {
+    color: #d6ffe9;
+    background: rgba(0,230,118,.08);
+    border-color: rgba(0,230,118,.35);
+}
+.ad-modal-tag-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--cs-verde, #00e676);
+    box-shadow: 0 0 10px rgba(0,230,118,.7);
+}
+
+.ad-modal-chip {
+    display: inline-flex;
+    align-self: flex-start;
+    font-family: "Rajdhani", sans-serif;
+    font-size: .72rem;
+    font-weight: 800;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: #fff;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.28);
+    padding: 7px 14px;
+    border-radius: 99px;
+}
+
+.ad-modal-title {
+    font-family: "Orbitron", "Rajdhani", sans-serif;
+    font-size: 1.9rem;
+    line-height: 1.15;
+    font-weight: 900;
+    letter-spacing: .02em;
+    text-transform: uppercase;
+    color: #fff;
+    margin: 0;
+    text-shadow: 0 4px 20px rgba(0,0,0,.5);
+}
+.ad-modal-title-invite {
+    background: linear-gradient(90deg, #ffffff 0%, #d6ffe9 50%, #ffd54f 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.ad-modal-text {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: rgba(255,255,255,.90);
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+/* Perfil del anunciante */
+.ad-modal-perfil {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px;
+    border-radius: 16px;
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.08);
+}
+.ad-modal-avatar {
+    flex: 0 0 56px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(135deg, #00e676, #2962ff);
+    font-weight: 900;
+    font-size: 1.3rem;
+    color: #fff;
+}
+.ad-modal-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.ad-modal-avatar-letter {
+    font-family: "Orbitron", sans-serif;
+}
+.ad-modal-perfil-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+.ad-modal-perfil-name {
+    font-family: "Orbitron", "Rajdhani", sans-serif;
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: .02em;
+    color: #fff;
+}
+.ad-modal-perfil-handle {
+    font-size: .78rem;
+    color: rgba(255,255,255,.7);
+}
+.ad-modal-perfil-loc {
+    font-size: .82rem;
+    color: rgba(255,255,255,.85);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Contacto */
+.ad-modal-contact {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.ad-modal-contact-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    color: #fff;
+    font-size: .84rem;
+    padding: 9px 14px;
+    border-radius: 99px;
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.14);
+    transition: transform .2s ease, background .2s ease;
+}
+.ad-modal-contact-item:hover {
+    transform: translateY(-1px);
+    background: rgba(255,255,255,.10);
+}
+.ad-modal-contact-icon {
+    font-size: 1rem;
+    line-height: 1;
+}
+
+/* Beneficios */
+.ad-modal-benefits {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.ad-modal-benefit {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: .95rem;
+    color: rgba(255,255,255,.94);
+}
+.ad-modal-check {
+    flex: 0 0 22px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #00e676, #00c896);
+    color: #062a1a;
+    font-weight: 900;
+    font-size: .78rem;
+    box-shadow: 0 0 12px rgba(0,230,118,.45);
+}
+
+/* Acciones */
+.ad-modal-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 6px;
+}
+.ad-modal-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-family: "Rajdhani", "Inter", sans-serif;
+    font-weight: 900;
+    font-size: .92rem;
+    letter-spacing: .02em;
+    text-decoration: none;
+    padding: 13px 22px;
+    border-radius: 99px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: transform .18s ease, filter .18s ease, background .2s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+.ad-modal-btn:active { transform: scale(.97); }
+.ad-modal-btn-primary {
+    color: #08251a;
+    background: linear-gradient(110deg, #fff1a8, #ffd54f 48%, #ffad42);
+    box-shadow: 0 8px 22px rgba(255,173,66,.35);
+}
+.ad-modal-btn-primary:hover { filter: brightness(1.05); }
+.ad-modal-btn-secondary {
+    color: #fff;
+    background: rgba(255,255,255,.06);
+    border-color: rgba(255,255,255,.22);
+}
+.ad-modal-btn-secondary:hover { background: rgba(255,255,255,.12); }
+
+/* Partículas decorativas del modal */
+.ad-modal-particles {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 0;
+    opacity: .55;
+}
+.ad-modal-particles span {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 12px rgba(255,255,255,.9);
+    animation: adModalFloat 10s linear infinite;
+    opacity: 0;
+}
+.ad-modal-particles span:nth-child(1) { left: 15%; top: 90%; animation-delay: 0s; }
+.ad-modal-particles span:nth-child(2) { left: 70%; top: 88%; animation-delay: 3s; }
+.ad-modal-particles span:nth-child(3) { left: 45%; top: 92%; animation-delay: 6s; }
+
+@keyframes adModalFloat {
+    0%   { opacity: 0; transform: translateY(0) scale(.7); }
+    20%  { opacity: 1; }
+    80%  { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-160px) scale(1.1); }
+}
+
+/* Responsive del modal */
+@media (max-width: 480px) {
+    .ad-modal-title { font-size: 1.5rem; }
+    .ad-modal-text { font-size: .92rem; }
+    .ad-modal-content { padding: 20px 18px 26px; }
+    .ad-modal-btn { font-size: .86rem; padding: 12px 18px; }
 }
