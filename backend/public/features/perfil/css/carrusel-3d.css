@@ -1,12 +1,14 @@
 /* ============================================
    CARRUSEL 3D HORIZONTAL - Csariel's
    Ruta: /features/perfil/css/carrusel-3d.css
-   Scroll libre + inclinación 3D controlada por JS.
-   
-   v2 · MARKETING
-   - Degradados vibrantes estilo Index.
-   - Etiqueta "ÚNETE A SARIEL'S", chip, contador, CTA.
-   - Barra tricolor inferior.
+
+   v3 · MODO TIMES SQUARE
+   - Degradados vivos animados (nunca estáticos).
+   - Borde con glow pulsante (respira).
+   - Partículas de luz flotando dentro.
+   - Ken Burns en imágenes.
+   - Reflejo inferior tipo piso mojado.
+   - Video dentro de la tarjeta (autoplay muted loop).
    ============================================ */
 
 .carrusel-3d-wrapper {
@@ -30,12 +32,9 @@
     scroll-padding-left: 40px;
     scroll-padding-right: 40px;
 }
+.carrusel-3d-track::-webkit-scrollbar { display: none; }
 
-.carrusel-3d-track::-webkit-scrollbar {
-    display: none;
-}
-
-/* ---------- Tarjeta base ---------- */
+/* ---------- TARJETA BASE ---------- */
 .carrusel-3d-card {
     --c: #ff9100;
     --c1: #ff3d00;
@@ -53,42 +52,52 @@
     text-decoration: none;
     color: #ffffff;
     background: linear-gradient(135deg, var(--c1) 0%, var(--c2) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    background-size: 200% 200%;
+    animation: timesGradientShift 8s ease-in-out infinite;
+    border: 1.5px solid rgba(255, 255, 255, 0.22);
     box-shadow:
         0 12px 30px rgba(0, 0, 0, 0.55),
-        0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+        0 0 0 1px rgba(255, 255, 255, 0.06) inset,
+        0 0 20px -4px color-mix(in srgb, var(--c) 45%, transparent);
     transform: perspective(900px) rotateY(0deg) scale(0.92);
     opacity: 0.7;
     will-change: transform, opacity;
-    transition: box-shadow 0.35s ease, border-color 0.35s ease, transform 0.4s ease;
+    transition: transform 0.4s ease, box-shadow 0.35s ease, border-color 0.35s ease;
     -webkit-tap-highlight-color: transparent;
     scroll-snap-align: center;
     contain: layout paint;
     isolation: isolate;
 }
 
-/* Brillo superior sutil */
+@keyframes timesGradientShift {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Capa de brillo superior + degradado inferior para legibilidad */
 .carrusel-3d-card::before {
     content: '';
     position: absolute;
     inset: 0;
     background:
         radial-gradient(120% 60% at 50% 0%, rgba(255, 255, 255, 0.22) 0%, transparent 60%),
-        linear-gradient(180deg, transparent 45%, rgba(0, 0, 0, 0.55) 100%);
+        linear-gradient(180deg, transparent 45%, rgba(0, 0, 0, 0.62) 100%);
     pointer-events: none;
     z-index: 1;
 }
 
-/* Brillo que cruza la tarjeta activa */
+/* Destello que cruza la tarjeta activa */
 .carrusel-3d-card::after {
     content: '';
     position: absolute;
     inset: -40% -60%;
-    background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, 0.22) 50%, transparent 58%);
+    background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, 0.28) 50%, transparent 58%);
     transform: translateX(-60%);
     transition: transform 1s ease;
     pointer-events: none;
-    z-index: 4;
+    z-index: 5;
+    mix-blend-mode: overlay;
 }
 .carrusel-3d-card.active::after {
     transform: translateX(60%);
@@ -99,15 +108,96 @@
     z-index: 2;
 }
 
+/* ---------- TARJETA ACTIVA: glow pulsante ---------- */
 .carrusel-3d-card.active {
-    border-color: rgba(255, 255, 255, 0.55);
-    box-shadow:
-        0 0 30px color-mix(in srgb, var(--c) 60%, transparent),
-        0 18px 44px rgba(0, 0, 0, 0.7),
-        0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+    border-color: rgba(255, 255, 255, 0.65);
+    animation:
+        timesGradientShift 8s ease-in-out infinite,
+        timesNeonPulse 3s ease-in-out infinite;
+}
+@keyframes timesNeonPulse {
+    0%, 100% {
+        box-shadow:
+            0 0 22px -2px color-mix(in srgb, var(--c) 55%, transparent),
+            0 18px 44px rgba(0, 0, 0, 0.7),
+            0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+    }
+    50% {
+        box-shadow:
+            0 0 42px 2px color-mix(in srgb, var(--c) 85%, transparent),
+            0 18px 44px rgba(0, 0, 0, 0.8),
+            0 0 0 1px rgba(255, 255, 255, 0.25) inset;
+    }
 }
 
-/* ---------- Etiqueta "● ÚNETE A SARIEL'S" ---------- */
+/* ---------- IMAGEN / VIDEO DE FONDO ---------- */
+.carrusel-3d-card .anuncio-img,
+.carrusel-3d-card .anuncio-video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.95;
+}
+
+/* Ken Burns (zoom lento) solo para imágenes */
+.carrusel-3d-card .anuncio-img {
+    animation: timesKenBurns 14s ease-in-out infinite alternate;
+    transform-origin: center;
+}
+@keyframes timesKenBurns {
+    0%   { transform: scale(1) translate(0, 0); }
+    100% { transform: scale(1.14) translate(-2%, -1%); }
+}
+
+/* El video no lleva Ken Burns (ya tiene su propio movimiento) */
+.carrusel-3d-card .anuncio-video {
+    animation: none;
+}
+
+/* Asegurar que los placeholders no tengan imagen/video de fondo */
+.carrusel-3d-card.anuncio-placeholder .anuncio-img,
+.carrusel-3d-card.anuncio-placeholder .anuncio-video {
+    display: none;
+}
+
+/* ---------- PARTÍCULAS DE LUZ FLOTANDO ---------- */
+.carrusel-3d-card .times-particles {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    overflow: hidden;
+    opacity: 0.75;
+    mix-blend-mode: screen;
+}
+.carrusel-3d-card .times-particles span {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #fff 0%, rgba(255, 255, 255, 0) 70%);
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.9);
+    animation: timesFloat 7s ease-in-out infinite;
+    opacity: 0;
+}
+.carrusel-3d-card .times-particles span:nth-child(1) { left: 12%; top: 80%; animation-delay: 0s; }
+.carrusel-3d-card .times-particles span:nth-child(2) { left: 28%; top: 65%; animation-delay: 1.2s; }
+.carrusel-3d-card .times-particles span:nth-child(3) { left: 55%; top: 88%; animation-delay: 2.4s; }
+.carrusel-3d-card .times-particles span:nth-child(4) { left: 72%; top: 72%; animation-delay: 3.6s; }
+.carrusel-3d-card .times-particles span:nth-child(5) { left: 85%; top: 90%; animation-delay: 4.8s; }
+
+@keyframes timesFloat {
+    0%   { opacity: 0; transform: translateY(0) scale(0.6); }
+    20%  { opacity: 1; }
+    80%  { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-90px) scale(1.2); }
+}
+
+/* ---------- ETIQUETA SUPERIOR ---------- */
 .carrusel-3d-card .ads-tag {
     position: absolute;
     top: 16px;
@@ -122,7 +212,7 @@
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: #fff;
-    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
     pointer-events: none;
 }
 .carrusel-3d-card .ads-tag .dot {
@@ -130,10 +220,15 @@
     height: 9px;
     border-radius: 50%;
     background: #fff;
-    box-shadow: 0 0 12px rgba(255, 255, 255, 0.9);
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.95);
+    animation: timesDotPulse 1.8s ease-in-out infinite;
+}
+@keyframes timesDotPulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50%      { transform: scale(1.25); opacity: 0.85; }
 }
 
-/* ---------- Contador "1/7" ---------- */
+/* ---------- CONTADOR "1/7" ---------- */
 .carrusel-3d-card .ads-counter {
     position: absolute;
     top: 18px;
@@ -142,13 +237,13 @@
     font-family: 'Rajdhani', sans-serif;
     font-size: 0.72rem;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.9);
+    color: rgba(255, 255, 255, 0.92);
     letter-spacing: 0.06em;
-    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
     pointer-events: none;
 }
 
-/* ---------- Chip pequeño (ej. "MARKETING GRATIS") ---------- */
+/* ---------- CHIP ---------- */
 .carrusel-3d-card .ads-chip {
     display: inline-block;
     align-self: flex-start;
@@ -158,8 +253,8 @@
     letter-spacing: 0.16em;
     text-transform: uppercase;
     color: #fff;
-    background: rgba(0, 0, 0, 0.35);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.35);
     padding: 5px 11px;
     border-radius: 99px;
     margin-bottom: 10px;
@@ -168,22 +263,22 @@
     z-index: 2;
 }
 
-/* ---------- Icono ---------- */
+/* ---------- ICONO ---------- */
 .carrusel-3d-card .card-icon {
     font-size: 2.6rem;
     line-height: 1;
     margin-bottom: 10px;
-    filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.5));
+    filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.55));
 }
 .carrusel-3d-card.active .card-icon {
-    animation: carruselFloat 3.6s ease-in-out infinite;
+    animation: timesIconFloat 3.6s ease-in-out infinite;
 }
-@keyframes carruselFloat {
-    0%, 100% { transform: translateY(0); }
-    50%      { transform: translateY(-5px); }
+@keyframes timesIconFloat {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50%      { transform: translateY(-5px) scale(1.04); }
 }
 
-/* ---------- Título ---------- */
+/* ---------- TÍTULO ---------- */
 .carrusel-3d-card .card-title {
     font-family: 'Orbitron', 'Rajdhani', sans-serif;
     font-size: 1.05rem;
@@ -193,20 +288,20 @@
     line-height: 1.1;
     margin-bottom: 8px;
     color: #ffffff;
-    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.55);
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.65);
 }
 
-/* ---------- Descripción ---------- */
+/* ---------- DESCRIPCIÓN ---------- */
 .carrusel-3d-card .card-desc {
     font-family: 'Inter', sans-serif;
     font-size: 0.72rem;
     line-height: 1.42;
     color: rgba(255, 255, 255, 0.95);
-    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
     margin-bottom: 12px;
 }
 
-/* ---------- CTA blanco tipo píldora ---------- */
+/* ---------- CTA BLANCO ---------- */
 .carrusel-3d-card .ads-cta {
     align-self: flex-start;
     font-family: 'Rajdhani', 'Inter', sans-serif;
@@ -219,7 +314,7 @@
     padding: 9px 18px;
     border-radius: 99px;
     cursor: pointer;
-    box-shadow: 0 6px 18px -4px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 6px 18px -4px rgba(0, 0, 0, 0.45);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     -webkit-tap-highlight-color: transparent;
     position: relative;
@@ -227,13 +322,27 @@
 }
 .carrusel-3d-card .ads-cta:hover {
     transform: translateY(-1px);
-    box-shadow: 0 10px 24px -6px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 10px 24px -6px rgba(0, 0, 0, 0.55);
 }
 
-/* ============================================
-   BARRA TRICOLOR INFERIOR (estilo Index)
-   Se añade automáticamente al wrapper por CSS.
-   ============================================ */
+/* ---------- REFLEJO INFERIOR (piso mojado) ---------- */
+.carrusel-3d-wrapper::before {
+    content: '';
+    position: absolute;
+    left: 0; right: 0;
+    bottom: 0;
+    height: 40%;
+    background: linear-gradient(
+        to bottom,
+        transparent 0%,
+        rgba(0, 0, 0, 0.35) 55%,
+        rgba(0, 0, 0, 0.6) 100%
+    );
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* ---------- BARRA TRICOLOR INFERIOR ---------- */
 .carrusel-3d-wrapper::after {
     content: '';
     display: block;
@@ -244,11 +353,17 @@
         #ff3d00 0%, #ffc400 25%,
         #00c853 50%, #00e5ff 75%,
         #7c4dff 100%);
+    background-size: 200% 100%;
     border-radius: 99px;
     box-shadow: 0 0 18px -2px rgba(124, 77, 255, 0.7);
+    animation: timesColorBar 4s linear infinite;
+}
+@keyframes timesColorBar {
+    0%   { background-position: 0% 0; }
+    100% { background-position: 200% 0; }
 }
 
-/* ---------- Dots ---------- */
+/* ---------- DOTS ---------- */
 .carrusel-3d-dots {
     display: flex;
     justify-content: center;
@@ -261,18 +376,18 @@
     padding: 0;
     border: 0;
     border-radius: 99px;
-    background: rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.28);
     cursor: pointer;
-    transition: width 0.3s ease, background 0.3s ease;
+    transition: width 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
     -webkit-tap-highlight-color: transparent;
 }
 .carrusel-3d-dots button.active {
     width: 22px;
     background: #ffffff;
-    box-shadow: 0 0 12px rgba(255, 255, 255, 0.85);
+    box-shadow: 0 0 14px rgba(255, 255, 255, 0.95);
 }
 
-/* ---------- Responsive ---------- */
+/* ---------- RESPONSIVE ---------- */
 @media (max-width: 480px) {
     .carrusel-3d-card {
         flex: 0 0 215px;
@@ -285,100 +400,18 @@
     .carrusel-3d-card .ads-cta { font-size: 0.68rem; padding: 7px 14px; }
 }
 
-/* ============================================
-   TARJETA DE ANUNCIO REAL (imagen) dentro del carrusel
-   ============================================ */
-.carrusel-3d-card.anuncio-card {
-    padding: 0;
-    background: #05080f;
-}
-
-.carrusel-3d-card.anuncio-card .anuncio-img {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    z-index: 0;
-    transition: opacity 0.45s ease;
-    pointer-events: none;
-}
-.carrusel-3d-card.anuncio-card .anuncio-img.cambiando {
-    opacity: 0;
-}
-
-.carrusel-3d-card.anuncio-card::before {
-    z-index: 1;
-}
-
-.carrusel-3d-card.anuncio-card > .card-title,
-.carrusel-3d-card.anuncio-card > .card-desc {
-    position: relative;
-    z-index: 2;
-    padding: 0 16px;
-}
-.carrusel-3d-card.anuncio-card > .card-title { padding-bottom: 4px; }
-.carrusel-3d-card.anuncio-card > .card-desc  { padding-bottom: 14px; }
-
-.carrusel-3d-card.anuncio-card .anuncio-titulo {
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.85);
-}
-.carrusel-3d-card.anuncio-card .anuncio-texto {
-    color: #fff;
-    opacity: 0.92;
-    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.85);
-}
-.carrusel-3d-card.anuncio-card .anuncio-etiqueta {
-    position: absolute;
-    top: 12px;
-    left: 12px;
-    z-index: 3;
-    padding: 4px 10px;
-    border-radius: 99px;
-    background: rgba(0, 0, 0, 0.55);
-    border: 1px solid rgba(212, 175, 55, 0.5);
-    color: #D4AF37;
-    font-size: 0.6rem;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    pointer-events: none;
-}
-.carrusel-3d-card.anuncio-card .anuncio-reportar {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    z-index: 3;
-    padding: 4px 10px;
-    border-radius: 99px;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    background: rgba(0, 0, 0, 0.55);
-    color: #fff;
-    font-size: 0.65rem;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-}
-.carrusel-3d-card.anuncio-card .anuncio-reportar:active {
-    transform: scale(0.96);
-}
-
-/* Desactiva transiciones durante el primer frame de arranque */
-.carrusel-3d-booting .carrusel-3d-card,
-.carrusel-3d-booting .carrusel-3d-card::after,
-.carrusel-3d-booting .carrusel-3d-card::before,
-.carrusel-3d-booting .carrusel-3d-card .card-icon {
-    transition: none !important;
-    animation: none !important;
-}
-
+/* ---------- ACCESIBILIDAD: reduce motion ---------- */
 @media (prefers-reduced-motion: reduce) {
     .carrusel-3d-card,
     .carrusel-3d-card::after,
+    .carrusel-3d-card::before,
     .carrusel-3d-card .card-icon,
-    .carrusel-3d-dots button {
-        transition: none !important;
+    .carrusel-3d-card .anuncio-img,
+    .carrusel-3d-card .times-particles span,
+    .carrusel-3d-card .ads-tag .dot,
+    .carrusel-3d-dots button,
+    .carrusel-3d-wrapper::after {
         animation: none !important;
-    }
-    .carrusel-3d-card.anuncio-card .anuncio-img {
         transition: none !important;
     }
 }
