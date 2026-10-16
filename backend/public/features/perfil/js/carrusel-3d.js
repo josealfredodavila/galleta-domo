@@ -2,13 +2,15 @@
    CARRUSEL 3D HORIZONTAL - Csariel's
    Ruta: /features/perfil/js/carrusel-3d.js
 
-   v4 · SLOTS FIJOS
-   - 7 slots fijos en el carrusel.
-   - Cada slot muestra un anuncio real (si hay) o un placeholder.
-   - Los placeholders NUNCA desaparecen todos: si sobran slots,
-     siguen mostrándose para invitar al usuario a anunciarse.
+   v5 · MODO TIMES SQUARE
+   - Carga anuncios reales desde Supabase (tabla `anuncios`).
+   - 7 slots fijos: los primeros se llenan con anuncios reales,
+     el resto con placeholders de marketing.
+   - Soporta imagen O video (según el campo `tipo` del anuncio).
+   - Los medios SIEMPRE se reproducen DENTRO de la tarjeta.
    - Realtime: se actualiza al publicar/pausar/vencer un anuncio.
-   - Registra vistas (al activarse) y toques (al hacer click).
+   - NO modifica contadores (vistas/toques) para no chocar con
+     los triggers de Supabase. Esos ya funcionan por su lado.
    ============================================ */
 
 (function () {
@@ -96,7 +98,6 @@
     var anunciosCache = [];
     var realtimeChannel = null;
     var cargaEnCurso = false;
-    var vistasRegistradas = {};
 
     // -----------------------------------------------------------
     // HELPERS
@@ -159,10 +160,12 @@
             var ahora = new Date().toISOString();
             var r = await db
                 .from(TABLA)
-                .select('id, titulo, texto, media_url, destino_url, vistas, toques, created_at, vigencia_fin')
+                .select('id, titulo, texto, tipo, media_url, destino_url, duracion_video_seg, created_at, vigencia_fin')
                 .eq('activo', true)
                 .eq('pausado_automatico', false)
+                .eq('estado_moderacion', 'aprobado')
                 .gt('vigencia_fin', ahora)
+                .order('prioridad', { ascending: false })
                 .order('created_at', { ascending: false })
                 .limit(MAX_ANUNCIOS);
 
@@ -179,37 +182,7 @@
     }
 
     // -----------------------------------------------------------
-    // MÉTRICAS
-    // -----------------------------------------------------------
-    function registrarToque(anuncio) {
-        if (!anuncio || !anuncio.id) return;
-        obtenerCliente().then(function (db) {
-            if (!db) return;
-            db.from(TABLA)
-              .update({ toques: (anuncio.toques || 0) + 1 })
-              .eq('id', anuncio.id)
-              .then(function () {})
-              .catch(function () {});
-        });
-    }
-
-    function registrarVista(anuncio) {
-        if (!anuncio || !anuncio.id) return;
-        if (vistasRegistradas[anuncio.id]) return;
-        vistasRegistradas[anuncio.id] = true;
-
-        obtenerCliente().then(function (db) {
-            if (!db) return;
-            db.from(TABLA)
-              .update({ vistas: (anuncio.vistas || 0) + 1 })
-              .eq('id', anuncio.id)
-              .then(function () {})
-              .catch(function () {});
-        });
-    }
-
-    // -----------------------------------------------------------
-    // RENDER
+    // ASIGNACIÓN DE COLORES
     // -----------------------------------------------------------
     function asignarColores() {
         cards.forEach(function (card, i) {
@@ -224,34 +197,57 @@
         });
     }
 
+    // -----------------------------------------------------------
+    // HTML: partículas (para el efecto Times Square)
+    // -----------------------------------------------------------
+    function htmlParticulas() {
+        return '<div class="times-particles"><span></span><span></span><span></span><span></span><span></span></div>';
+    }
+
+    // -----------------------------------------------------------
+    // HTML: anuncio real (imagen o video)
+    // -----------------------------------------------------------
     function htmlAnuncioReal(a, i, total) {
         var par = PALETA[i % PALETA.length];
         var destino = a.destino_url || '#';
         var titulo = esc(a.titulo || 'Anuncio');
         var texto = esc(a.texto || '');
-        var media = a.media_url
-            ? '<img class="anuncio-img" src="' + esc(a.media_url) + '" alt="" loading="lazy">'
-            : '';
+        var tipo = (a.tipo || 'imagen').toLowerCase();
+
+        var media = '';
+        if (a.media_url && tipo === 'video') {
+            // Video: autoplay, muted, loop, playsinline (SIEMPRE DENTRO DE LA TARJETA)
+            media = '<video class="anuncio-video" src="' + esc(a.media_url) + '" ' +
+                    'autoplay muted loop playsinline preload="metadata"></video>';
+        } else if (a.media_url) {
+            // Imagen con Ken Burns
+            media = '<img class="anuncio-img" src="' + esc(a.media_url) + '" alt="" loading="lazy">';
+        }
 
         return '' +
             '<a class="carrusel-3d-card anuncio-card" href="' + esc(destino) + '" ' +
                 'data-anuncio-id="' + esc(a.id) + '" ' +
+                'data-tipo="' + esc(tipo) + '" ' +
                 'style="--c:' + par[0] + ';--c1:' + par[0] + ';--c2:' + par[1] + ';">' +
+                htmlParticulas() +
                 '<div class="ads-tag"><span class="dot"></span> PATROCINADO</div>' +
                 '<div class="ads-counter">' + (i + 1) + '/' + total + '</div>' +
-                '<span class="anuncio-etiqueta">ANUNCIO</span>' +
                 media +
                 '<div class="card-title anuncio-titulo">' + titulo + '</div>' +
                 (texto ? '<div class="card-desc anuncio-texto">' + texto + '</div>' : '') +
             '</a>';
     }
 
+    // -----------------------------------------------------------
+    // HTML: placeholder
+    // -----------------------------------------------------------
     function htmlPlaceholder(p, i, total) {
         var par = PALETA[i % PALETA.length];
         return '' +
             '<a class="carrusel-3d-card anuncio-placeholder" href="#" ' +
                 'data-placeholder="1" ' +
                 'style="--c:' + par[0] + ';--c1:' + par[0] + ';--c2:' + par[1] + ';">' +
+                htmlParticulas() +
                 '<div class="ads-tag"><span class="dot"></span> ÚNETE A LA COMUNIDAD</div>' +
                 '<div class="ads-counter">' + (i + 1) + '/' + total + '</div>' +
                 '<span class="ads-chip">' + esc(p.chip) + '</span>' +
@@ -262,22 +258,18 @@
             '</a>';
     }
 
-    /**
-     * Combina anuncios reales + placeholders para rellenar los 7 slots.
-     * Los anuncios reales ocupan los primeros slots; el resto se rellena
-     * con los placeholders en orden.
-     */
+    // -----------------------------------------------------------
+    // CONSTRUIR SLOTS (anuncios reales + placeholders)
+    // -----------------------------------------------------------
     function construirSlots(anuncios) {
         var slots = [];
         var usados = 0;
 
-        // 1) Anuncios reales ocupan los primeros slots
         for (var i = 0; i < anuncios.length && usados < TOTAL_SLOTS; i++) {
             slots.push({ tipo: 'real', data: anuncios[i] });
             usados++;
         }
 
-        // 2) El resto de slots se rellenan con placeholders
         for (var j = 0; usados < TOTAL_SLOTS; j++, usados++) {
             slots.push({ tipo: 'placeholder', data: PLACEHOLDERS[j % PLACEHOLDERS.length] });
         }
@@ -285,6 +277,9 @@
         return slots;
     }
 
+    // -----------------------------------------------------------
+    // RENDER
+    // -----------------------------------------------------------
     function renderizar(anuncios) {
         if (!track) return;
         anunciosCache = anuncios || [];
@@ -293,20 +288,9 @@
         var total = slots.length;
 
         track.innerHTML = slots.map(function (slot, i) {
-            if (slot.tipo === 'real') {
-                return htmlAnuncioReal(slot.data, i, total);
-            }
+            if (slot.tipo === 'real') return htmlAnuncioReal(slot.data, i, total);
             return htmlPlaceholder(slot.data, i, total);
         }).join('');
-
-        // Handlers: anuncios reales → registrar toque
-        track.querySelectorAll('.anuncio-card').forEach(function (card) {
-            card.addEventListener('click', function () {
-                var id = card.getAttribute('data-anuncio-id');
-                var anuncio = anunciosCache.filter(function (a) { return a.id === id; })[0];
-                if (anuncio) registrarToque(anuncio);
-            });
-        });
 
         // Handlers: placeholders → ir a crear anuncio
         track.querySelectorAll('.anuncio-placeholder').forEach(function (card) {
@@ -314,6 +298,15 @@
                 e.preventDefault();
                 irACrearAnuncio();
             });
+        });
+
+        // Asegurar que los videos estén silenciados y reproduciéndose
+        track.querySelectorAll('video.anuncio-video').forEach(function (v) {
+            v.muted = true;
+            v.playsInline = true;
+            v.setAttribute('playsinline', '');
+            var p = v.play();
+            if (p && typeof p.catch === 'function') p.catch(function () {});
         });
     }
 
@@ -394,15 +387,6 @@
         puntos.forEach(function (punto, i) {
             punto.classList.toggle('active', i === mejor);
         });
-
-        // Vista del anuncio activo (solo si es real)
-        if (anunciosCache.length > 0 && cards[mejor]) {
-            var id = cards[mejor].getAttribute('data-anuncio-id');
-            if (id) {
-                var anuncio = anunciosCache.filter(function (a) { return a.id === id; })[0];
-                if (anuncio) registrarVista(anuncio);
-            }
-        }
     }
 
     function pedirActualizacion() {
@@ -494,7 +478,7 @@
         if (inicializado) return;
         inicializado = true;
 
-        // 1) Render inicial con placeholders (para que no se vea vacío)
+        // 1) Placeholders inmediatos
         renderizar([]);
         cards = coleccionar();
         asignarColores();
@@ -513,7 +497,7 @@
             irACardInicial(inicial, 0);
         });
 
-        // 2) Carga real desde Supabase (rellena slots con anuncios reales)
+        // 2) Carga real desde Supabase
         cargarYRenderizar();
 
         // 3) Realtime
