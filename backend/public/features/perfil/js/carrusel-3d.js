@@ -2,12 +2,13 @@
    CARRUSEL 3D HORIZONTAL - Csariel's
    Ruta: /features/perfil/js/carrusel-3d.js
 
-   v5 · MODO TIMES SQUARE
+   v5 · ARCOÍRIS FLUIDO (estilo Times Square)
    - Carga anuncios reales desde Supabase (tabla `anuncios`).
    - 7 slots fijos: los primeros se llenan con anuncios reales,
      el resto con placeholders de marketing.
    - Soporta imagen O video (según el campo `tipo` del anuncio).
    - Los medios SIEMPRE se reproducen DENTRO de la tarjeta.
+   - Cada tarjeta recibe una "fase" distinta del arcoíris.
    - Realtime: se actualiza al publicar/pausar/vencer un anuncio.
    - NO modifica contadores (vistas/toques) para no chocar con
      los triggers de Supabase. Esos ya funcionan por su lado.
@@ -22,17 +23,6 @@
     var TABLA = 'anuncios';
     var TOTAL_SLOTS = 7;
     var MAX_ANUNCIOS = TOTAL_SLOTS;
-
-    // Paleta llamativa estilo Index (par [inicio, fin] de degradado)
-    var PALETA = [
-        ['#ff3d00', '#ffc400'], // 0 · Naranja → Dorado
-        ['#00c853', '#00e5ff'], // 1 · Verde → Cian
-        ['#7c4dff', '#ff3cb4'], // 2 · Morado → Rosa
-        ['#2962ff', '#00e5ff'], // 3 · Azul → Turquesa
-        ['#d50000', '#ff6d00'], // 4 · Rojo → Naranja
-        ['#ffd600', '#00e676'], // 5 · Amarillo → Verde
-        ['#ff4081', '#7c4dff']  // 6 · Rosa → Violeta
-    ];
 
     // 7 placeholders (uno por slot). Mensajes de la plataforma al usuario.
     var PLACEHOLDERS = [
@@ -182,23 +172,24 @@
     }
 
     // -----------------------------------------------------------
-    // ASIGNACIÓN DE COLORES
+    // ASIGNACIÓN DE FASES DEL ARCOÍRIS
     // -----------------------------------------------------------
+    /**
+     * Asigna a cada tarjeta una "fase" distinta del arcoíris,
+     * para que no se vean todas iguales.
+     * La variable CSS --phase controla desde qué punto del
+     * degradado arranca cada tarjeta (0% a 100%).
+     */
     function asignarColores() {
+        var total = cards.length || 1;
         cards.forEach(function (card, i) {
-            var par = PALETA[i % PALETA.length];
-            if (!card.style.getPropertyValue('--c1')) {
-                card.style.setProperty('--c1', par[0]);
-                card.style.setProperty('--c2', par[1]);
-            }
-            if (!card.style.getPropertyValue('--c')) {
-                card.style.setProperty('--c', par[0]);
-            }
+            var fase = Math.round((i * 100) / total);
+            card.style.setProperty('--phase', fase + '%');
         });
     }
 
     // -----------------------------------------------------------
-    // HTML: partículas (para el efecto Times Square)
+    // HTML: partículas (efecto Times Square)
     // -----------------------------------------------------------
     function htmlParticulas() {
         return '<div class="times-particles"><span></span><span></span><span></span><span></span><span></span></div>';
@@ -208,7 +199,7 @@
     // HTML: anuncio real (imagen o video)
     // -----------------------------------------------------------
     function htmlAnuncioReal(a, i, total) {
-        var par = PALETA[i % PALETA.length];
+        var fase = Math.round((i * 100) / total);
         var destino = a.destino_url || '#';
         var titulo = esc(a.titulo || 'Anuncio');
         var texto = esc(a.texto || '');
@@ -216,11 +207,9 @@
 
         var media = '';
         if (a.media_url && tipo === 'video') {
-            // Video: autoplay, muted, loop, playsinline (SIEMPRE DENTRO DE LA TARJETA)
             media = '<video class="anuncio-video" src="' + esc(a.media_url) + '" ' +
                     'autoplay muted loop playsinline preload="metadata"></video>';
         } else if (a.media_url) {
-            // Imagen con Ken Burns
             media = '<img class="anuncio-img" src="' + esc(a.media_url) + '" alt="" loading="lazy">';
         }
 
@@ -228,7 +217,7 @@
             '<a class="carrusel-3d-card anuncio-card" href="' + esc(destino) + '" ' +
                 'data-anuncio-id="' + esc(a.id) + '" ' +
                 'data-tipo="' + esc(tipo) + '" ' +
-                'style="--c:' + par[0] + ';--c1:' + par[0] + ';--c2:' + par[1] + ';">' +
+                'style="--phase:' + fase + '%;">' +
                 htmlParticulas() +
                 '<div class="ads-tag"><span class="dot"></span> PATROCINADO</div>' +
                 '<div class="ads-counter">' + (i + 1) + '/' + total + '</div>' +
@@ -242,11 +231,11 @@
     // HTML: placeholder
     // -----------------------------------------------------------
     function htmlPlaceholder(p, i, total) {
-        var par = PALETA[i % PALETA.length];
+        var fase = Math.round((i * 100) / total);
         return '' +
             '<a class="carrusel-3d-card anuncio-placeholder" href="#" ' +
                 'data-placeholder="1" ' +
-                'style="--c:' + par[0] + ';--c1:' + par[0] + ';--c2:' + par[1] + ';">' +
+                'style="--phase:' + fase + '%;">' +
                 htmlParticulas() +
                 '<div class="ads-tag"><span class="dot"></span> ÚNETE A LA COMUNIDAD</div>' +
                 '<div class="ads-counter">' + (i + 1) + '/' + total + '</div>' +
